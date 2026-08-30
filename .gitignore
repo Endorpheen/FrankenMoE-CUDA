@@ -1,0 +1,12 @@
+/build/
+/build-*/
+/models/
+/upstream/
+/work/
+/runtime/third_party/llama.cpp
+/results/*.raw.json
+/results/*.csv
+*.log
+*.tmp
+__pycache__/
+*.pyc

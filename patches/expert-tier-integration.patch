@@ -1,0 +1,379 @@
+diff --git a/ggml/include/ggml-cpu.h b/ggml/include/ggml-cpu.h
+index dc6453c..feeb932 100644
+--- a/ggml/include/ggml-cpu.h
++++ b/ggml/include/ggml-cpu.h
+@@ -140,6 +140,14 @@ extern "C" {
+ 
+     GGML_BACKEND_API ggml_backend_reg_t ggml_backend_cpu_reg(void);
+ 
++    // The CPU backend invokes this hook before reading a selected expert in mul_mat_id.
++    // An external streamer may block the worker until the corresponding weights are ready.
++    typedef void (*ggml_cpu_expert_ready_hook_t)(const struct ggml_tensor * src0, int expert, void * user_data);
++
++    // Registration is process-wide; NULL disables the hook. Do not change it while a graph runs.
++
++    GGML_BACKEND_API void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data);
++// Process-wide expert-readiness hook for an external SSD streamer.
+     GGML_BACKEND_API void ggml_cpu_fp32_to_fp32(const float *,       float *, int64_t);
+     GGML_BACKEND_API void ggml_cpu_fp32_to_i32 (const float *,     int32_t *, int64_t);
+     GGML_BACKEND_API void ggml_cpu_fp32_to_fp16(const float *, ggml_fp16_t *, int64_t);
+diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+index 5b6ce3b..59bb611 100644
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -55,6 +55,15 @@
+ #    include "spacemit/ime.h"
+ #endif
+ 
++        // Let the external streamer make the expert resident before its rows are read.
++static ggml_cpu_expert_ready_hook_t g_expert_ready_hook      = NULL;
++static void *                       g_expert_ready_hook_data = NULL;
++        // Called before a dynamic H2D promotion; false leaves the current slot unchanged.
++void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data) {
++    g_expert_ready_hook      = hook;
++    g_expert_ready_hook_data = user_data;
++}
++
+ // Note: once we move threading into a separate C++ file
+ // will use std::hardware_destructive_interference_size instead of hardcoding it here
+ // and we'll use C++ attribute syntax.
+@@ -1645,6 +1654,11 @@ static void ggml_compute_forward_mul_mat_id(
+             continue;
+         }
+ 
++
++        if (g_expert_ready_hook) {
++            g_expert_ready_hook(src0, cur_a, g_expert_ready_hook_data);
++        }
++
+         const char * src0_cur = (const char *) src0->data + cur_a * nb02;
+         const void * wdata = (src1->type == vec_dot_type) ? src1->data : params->wdata;
+         const size_t row_size = ggml_row_size(vec_dot_type, ne10);
+diff --git a/include/llama.h b/include/llama.h
+index 9f9ccb1..7ba8bc7 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -242,6 +242,7 @@ extern "C" {
+     } llama_token_data_array;
+ 
+     typedef bool (*llama_progress_callback)(float progress, void * user_data);
++    typedef bool (*llama_expert_prepare_callback)(int32_t layer, int32_t expert, void * user_data);
+ 
+     // Input data for llama_encode/llama_decode
+     // A llama_batch object can contain input about one or many sequences
+@@ -419,6 +420,9 @@ extern "C" {
+         float expert_hyst;            // hysteresis ratio for slot swaps
+         int   expert_dwell;           // min updates a resident slot keeps before swap
+         bool  expert_cache_force;      // bypass the CUDA-only hot store guard
++
++        llama_expert_prepare_callback expert_prepare;
++        void * expert_prepare_user_data;
+ 
+         // a source/target/parent context
+         // can be utilized in various ways, for example by sharing results or llama_memory between 2 contexts
+@@ -1590,6 +1594,16 @@ extern "C" {
+         int32_t n_reused;   // number of times a ggml compute graph had been reused
+     };
+ 
++    // Telemetry for the bounded CUDA expert cache. Counters are cumulative for the
++    // context; zero values mean that the hot store is disabled.
++    struct llama_expert_cache_stats {
++        uint64_t h2d_bytes;
++        uint64_t h2d_copies;
++        uint64_t h2d_time_us;
++        uint64_t swaps;
++        uint64_t allocated_bytes;
++    };
++
+     struct llama_perf_sampler_data {
+         double t_sample_ms; // time needed for sampling in ms
+ 
+@@ -1599,6 +1613,7 @@ extern "C" {
+     LLAMA_API struct llama_perf_context_data llama_perf_context      (const struct llama_context * ctx);
+     LLAMA_API void                           llama_perf_context_print(const struct llama_context * ctx);
+     LLAMA_API void                           llama_perf_context_reset(      struct llama_context * ctx);
++    LLAMA_API struct llama_expert_cache_stats llama_get_expert_cache_stats(const struct llama_context * ctx);
+ 
+     // NOTE: the following work only with samplers constructed via llama_sampler_chain_init
+     LLAMA_API struct llama_perf_sampler_data llama_perf_sampler      (const struct llama_sampler * chain);
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index c9ca5a4..81c4d70 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -489,7 +489,8 @@ llama_context::llama_context(
+         expert_hotstore = std::make_unique<llama_expert_hotstore>(
+             &model, hparams.n_layer(), hparams.n_expert,
+             params.expert_hot_s, sync_period,
+-            params.expert_hyst, params.expert_dwell);
++            params.expert_hyst, params.expert_dwell,
++            params.expert_prepare, params.expert_prepare_user_data);
+         // the GPU hot store is only supported on CUDA. On CPU it buys nothing
+         // and on Vulkan it corrupts output (see manuallog section 12).
+         // --expert-cache-force (or LLAMA_EXPERT_CACHE_FORCE) overrides the
+@@ -3698,6 +3699,8 @@ llama_context_params llama_context_default_params() {
+         /*.expert_hyst                 =*/ 1.3f,
+         /*.expert_dwell                =*/ 0,
+         /*.expert_cache_force         =*/ false,
++        /*.expert_prepare             =*/ nullptr,
++        /*.expert_prepare_user_data   =*/ nullptr,
+         /*.ctx_other                   =*/ nullptr,
+     };
+ 
+@@ -4307,6 +4310,24 @@ llama_perf_context_data llama_perf_context(const llama_context * ctx) {
+     return data;
+ }
+ 
++llama_expert_cache_stats llama_context::expert_cache_stats() const {
++    llama_expert_cache_stats data = {};
++    if (!expert_hotstore) {
++        return data;
++    }
++    const llama_expert_hotstore & hs = *expert_hotstore;
++    data.h2d_bytes = hs.h2d_bytes;
++    data.h2d_copies = hs.h2d_copies;
++    data.h2d_time_us = hs.h2d_time_us;
++    data.swaps = hs.swaps_total;
++    data.allocated_bytes = hs.allocated_bytes;
++    return data;
++}
++
++llama_expert_cache_stats llama_get_expert_cache_stats(const llama_context * ctx) {
++    return ctx ? ctx->expert_cache_stats() : llama_expert_cache_stats{};
++}
++
+ void llama_perf_context_print(const llama_context * ctx) {
+     const auto data = llama_perf_context(ctx);
+ 
+diff --git a/src/llama-context.h b/src/llama-context.h
+index a56ea56..156e312 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -187,6 +187,7 @@ struct llama_context {
+     //
+ 
+     llama_perf_context_data perf_get_data() const;
++    llama_expert_cache_stats expert_cache_stats() const;
+     void perf_reset();
+ 
+     llama_memory_breakdown memory_breakdown() const;
+diff --git a/src/llama-expert-hotstore.cpp b/src/llama-expert-hotstore.cpp
+index 003ae07..f10daba 100644
+--- a/src/llama-expert-hotstore.cpp
++++ b/src/llama-expert-hotstore.cpp
+@@ -10,6 +10,7 @@
+ #include <cstdlib>
+ #include <cstring>
+ #include <algorithm>
++#include <chrono>
+ #include <regex>
+ 
+ #ifdef __linux__
+@@ -56,6 +57,11 @@ static size_t g_ehs_promoted_bytes = 0;
+ static size_t g_ehs_demoted_bytes  = 0;
+ static int    g_ehs_swaps          = 0;
+ 
++static uint64_t ehs_now_us() {
++    using clock = std::chrono::steady_clock;
++    return (uint64_t) std::chrono::duration_cast<std::chrono::microseconds>(clock::now().time_since_epoch()).count();
++}
++
+ // mode 2: replace the expert slice's file-backed pages with empty anonymous
+ // pages (inward page-aligned). Frees the host memory; a later D2H demote
+ // writes real bytes back into them without ever touching the disk.
+@@ -116,14 +122,16 @@ static const std::regex g_re_exps_weight("blk\\.(\\d+)\\.ffn_(up|down|gate|gate_
+ 
+ llama_expert_hotstore::llama_expert_hotstore(
+         const llama_model * model, int n_layers, int n_experts, int hot_s, int sync_period,
+-        float hyst, int dwell) :
++        float hyst, int dwell, bool (*prepare)(int32_t, int32_t, void *), void * prepare_user_data) :
+     n_layers(n_layers),
+     n_experts(n_experts),
+     hot_s(hot_s),
+     bytes_per_slot(n_layers, 0),
+     sync_period(sync_period),
+     hyst(hyst),
+-    dwell(dwell) {
++    dwell(dwell),
++    prepare(prepare),
++    prepare_user_data(prepare_user_data) {
+     n_sent = std::max(8, (int) model->hparams.n_expert_used);
+ 
+     if (n_layers <= 0) {
+@@ -137,7 +145,7 @@ llama_expert_hotstore::llama_expert_hotstore(
+             if (il >= 0 && il < n_layers && tensor->ne[2] > 0) {
+                 // a slot holds nbytes/n_experts of this tensor
+                 bytes_per_slot[il] += ggml_nbytes(tensor) / (size_t) tensor->ne[2];
+-                entries.push_back({il, tensor, nullptr});
++                entries.push_back({il, tensor, nullptr, nullptr});
+             }
+         }
+     }
+@@ -225,8 +233,27 @@ bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft) {
+             __func__, hot_s, need / (1024 * 1024)));
+     }
+     buf = ggml_backend_buffer_ptr(b);
++    allocated_bytes = ggml_backend_buffer_get_size(b);
+     ggml_backend_buffer_set_usage(buf.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+ 
++    // One pinned staging slot is sufficient: migrations are serialized and tensor_set
++    // completes H2D before returning, after which the SSD/RAM entry may be evicted.
++    size_t max_slice = 0;
++    for (const auto & e : entries) {
++        max_slice = std::max(max_slice, ggml_nbytes(e.src) / (size_t) e.src->ne[2]);
++    }
++    ggml_backend_buffer_type_t host_buft = dev ? ggml_backend_dev_host_buffer_type(dev) : nullptr;
++    if (host_buft && max_slice > 0) {
++        buf_staging.reset(ggml_backend_buft_alloc_buffer(host_buft, max_slice));
++        if (buf_staging) {
++            staging_ptr = ggml_backend_buffer_get_base(buf_staging.get());
++            staging_bytes = ggml_backend_buffer_get_size(buf_staging.get());
++        }
++    }
++    if (!staging_ptr) {
++        LLAMA_LOG_WARN("%s: pinned H2D staging unavailable; using direct host copies\n", __func__);
++    }
++
+     // zero the whole buffer so the sentinel slot (index hot_s) AND every
+     // not-yet-filled expert slot is zero; copy_top_s/resync_top_s only write
+     // slots 0..hot_s-1, so slot hot_s stays zero for the lifetime of the store.
+@@ -342,7 +369,7 @@ void llama_expert_hotstore::copy_top_s(const llama_expert_heatmap & heatmap) {
+                 if (ex < 0) {
+                     continue;
+                 }
+-                ggml_backend_tensor_set(e->dst, src + (size_t) ex * slot, (size_t) p * slot, slot);
++                upload(e->dst, src + (size_t) ex * slot, (size_t) p * slot, slot);
+                 ehs_drop_host_pages(src + (size_t) ex * slot, slot);
+                 ehs_release_host(src + (size_t) ex * slot, slot);
+             }
+@@ -402,7 +429,7 @@ void llama_expert_hotstore::plant_static() {
+             const char * src = e->src->data ? (const char *) ggml_get_data(e->src) : nullptr;
+             if (!src) continue;
+             for (int p = 0; p < hot_s && p < n_experts; p++) {
+-                ggml_backend_tensor_set(e->dst, src + (size_t) p * slot, (size_t) p * slot, slot);
++                upload(e->dst, src + (size_t) p * slot, (size_t) p * slot, slot);
+                 ehs_drop_host_pages(src + (size_t) p * slot, slot);
+                 ehs_release_host(src + (size_t) p * slot, slot);
+             }
+@@ -488,6 +515,11 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+             if (p < 0) {
+                 break; // no slot free or displaceable under the gate
+             }
++            // In checked mode, the cold-tier owner first makes the complete expert resident.
++            // Refusal safely skips the promotion.
++            if (prepare && !prepare(il, e_cold, prepare_user_data)) {
++                continue;
++            }
+             const int e_old = ste[p];
+             if (cold_bank) {
+                 const int q = expert_to_cold_slot[il][e_cold];
+@@ -504,7 +536,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+                         ggml_backend_tensor_get(ent->dst, swap_tmp.data(), (size_t) p * slot, slot);
+                     }
+                     // promote: bank slot q -> VRAM slot p (H2D from pinned host)
+-                    ggml_backend_tensor_set(ent->dst, bank + (size_t) q * slot, (size_t) p * slot, slot);
++                    upload(ent->dst, bank + (size_t) q * slot, (size_t) p * slot, slot);
+                     if (e_old >= 0) {
+                         // demote lands in the vacated bank slot
+                         memcpy(bank + (size_t) q * slot, swap_tmp.data(), slot);
+@@ -562,7 +594,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+                 if (!src) {
+                     continue;
+                 }
+-                ggml_backend_tensor_set(ent->dst, src + (size_t) e_cold * slot, (size_t) p * slot, slot);
++                upload(ent->dst, src + (size_t) e_cold * slot, (size_t) p * slot, slot);
+                 ehs_drop_host_pages(src + (size_t) e_cold * slot, slot);
+                 ehs_release_host(src + (size_t) e_cold * slot, slot);
+             }
+@@ -586,6 +618,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+ 
+     last_sync_tokens = heatmap.tokens_total;
+     if (swapped > 0) {
++        swaps_total += (uint64_t) swapped;
+         update_luts();
+         if (getenv("LLAMA_EXPERT_DEBUG")) {
+             LLAMA_LOG("=== Expert hot store: re-sync swapped %d expert slots ===\n", swapped);
+@@ -603,6 +636,19 @@ void llama_expert_hotstore::maybe_resync(const llama_expert_heatmap & heatmap, b
+     }
+ }
+ 
++void llama_expert_hotstore::upload(ggml_tensor * dst, const void * src, size_t dst_offset, size_t bytes) {
++    const void * transfer_src = src;
++    if (staging_ptr && bytes <= staging_bytes) {
++        std::memcpy(staging_ptr, src, bytes);
++        transfer_src = staging_ptr;
++    }
++    const uint64_t t0 = ehs_now_us();
++    ggml_backend_tensor_set(dst, transfer_src, dst_offset, bytes);
++    h2d_time_us += ehs_now_us() - t0;
++    h2d_bytes += bytes;
++    h2d_copies++;
++}
++
+ int llama_expert_hotstore::slot_of(int layer_idx, int expert_id) const {
+     if (layer_idx < 0 || layer_idx >= n_layers || hot_s <= 0) {
+         return -1;
+diff --git a/src/llama-expert-hotstore.h b/src/llama-expert-hotstore.h
+index 69884f6..ff1d805 100644
+--- a/src/llama-expert-hotstore.h
++++ b/src/llama-expert-hotstore.h
+@@ -59,6 +59,9 @@ struct llama_expert_hotstore {
+     // keeps the GPU buffer (and its no_alloc context) alive
+     ggml_context_ptr        ctx;
+     ggml_backend_buffer_ptr buf;
++    ggml_backend_buffer_ptr buf_staging;
++    void * staging_ptr = nullptr;
++    size_t staging_bytes = 0;
+ 
+     // Stage C cold bank (LLAMA_EHS_COLD_BANK=1): every non-hot expert lives in
+     // a compact pinned-host bank that the GPU reads directly (UVA), replacing
+@@ -87,9 +90,22 @@ struct llama_expert_hotstore {
+     // dwell_count[il][p] = syncs since slot p last changed (0 = fresh/empty)
+     std::vector<std::vector<int>> dwell_count;
+ 
++    bool (*prepare)(int32_t layer, int32_t expert, void * user_data) = nullptr;
++    void * prepare_user_data = nullptr;
++    // Hot-store copy counters. Initial population is included; callers may snapshot
++    // before and after the phase they need to measure.
++    // Copy one projection slice through the pinned host staging buffer.
++    uint64_t h2d_bytes = 0;
++    uint64_t h2d_copies = 0;
++    uint64_t h2d_time_us = 0;
++    uint64_t swaps_total = 0;
++    uint64_t allocated_bytes = 0;
++
+ llama_expert_hotstore(const llama_model * model, int n_layers,
+                       int n_experts, int hot_s, int sync_period = 0,
+-                      float hyst = 0.0f, int dwell = 0);
++                      float hyst = 0.0f, int dwell = 0,
++                      bool (*prepare)(int32_t, int32_t, void *) = nullptr,
++                      void * prepare_user_data = nullptr);
+ 
+     ~llama_expert_hotstore();
+ 
+@@ -127,4 +143,7 @@ llama_expert_hotstore(const llama_model * model, int n_layers,
+     void update_luts();
+ 
+     void log() const;
++
++
++    void upload(ggml_tensor * dst, const void * src, size_t dst_offset, size_t bytes);
+ };
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index fc83658..ae0d4f6 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -1678,7 +1678,13 @@ bool llama_model_base::load_tensors(llama_model_loader & ml) {
+         }
+     }
+ 
+-    ml.init_mappings(true, use_mlock ? &pimpl->mlock_mmaps : nullptr);
++    // FrankenMoE-CUDA: prefetch only when the mapping will be mlocked anyway. An unconditional
++    // prefetch maps every shard that carries no lazy tensor with MAP_POPULATE — measured at a
++    // whole 30 GiB shard faulted into RSS at load on Qwen3.8 UD-IQ3_XXS, which the streaming
++    // runtime then has to evict from the page cache it does not own. With use_mlock the pages
++    // fault on demand, which is what a streamed model wants: only the dense weights actually
++    // copied to a device, and the rows the graph gathers.
++    ml.init_mappings(use_mlock, use_mlock ? &pimpl->mlock_mmaps : nullptr);
+     pimpl->mappings.reserve(ml.mappings.size());
+ 
+     // create the backend buffers
