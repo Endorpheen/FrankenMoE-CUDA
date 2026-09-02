@@ -132,21 +132,71 @@ def drop_model_cache(model):
             os.close(descriptor)
 
 
+def start_perf(pid, output):
+    perf_data = output + ".perf.data"
+    perf_stat = output + ".perf-stat.csv"
+    events = ",".join([
+        "cycles:u",
+        "instructions:u",
+        "cache-references:u",
+        "cache-misses:u",
+        "stalled-cycles-frontend:u",
+        "stalled-cycles-backend:u",
+        "context-switches:u",
+        "cpu-migrations:u",
+        "page-faults:u",
+    ])
+    stat_process = subprocess.Popen([
+        "perf", "stat", "-x", ";", "-e", events,
+        "-p", str(pid), "-o", perf_stat,
+    ], stdin=subprocess.DEVNULL)
+    record_process = subprocess.Popen([
+        "perf", "record", "-q", "-F", "199", "-e", "cycles:u",
+        "-g", "--call-graph", "dwarf,4096", "-p", str(pid), "-o", perf_data,
+    ], stdin=subprocess.DEVNULL)
+    time.sleep(0.5)
+    return stat_process, record_process, perf_stat, perf_data
+
+
+def stop_perf(processes, perf_data):
+    for process in processes:
+        if process.poll() is None:
+            process.send_signal(signal.SIGINT)
+    for process in processes:
+        try:
+            process.wait(15)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            process.wait(5)
+
+    report_path = perf_data + ".report.txt"
+    report_env = os.environ.copy()
+    report_env["DEBUGINFOD_URLS"] = ""
+    with open(report_path, "w", encoding="utf-8") as report:
+        subprocess.run([
+            "perf", "report", "--stdio", "--no-children",
+            "--sort", "dso,symbol", "--percent-limit", "0.5", "-i", perf_data,
+        ], stdout=report, stderr=subprocess.STDOUT, check=False, env=report_env)
+    return report_path
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("model")
     parser.add_argument("--server", default="build/expert-tier-franken-cuda/bin/llama-server")
     parser.add_argument("--output", default="benchmarks/exp011-profile.json")
+    parser.add_argument("--experiment-id", default="EXP-2026-09-02-011-expert-tier-bottleneck-profile")
     parser.add_argument("--port", type=int, default=8095)
     parser.add_argument("--threads", type=int, default=16)
     parser.add_argument("--drop-model-cache", action="store_true")
+    parser.add_argument("--perf-profile", action="store_true")
     args = parser.parse_args()
 
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     server = args.server if os.path.isabs(args.server) else os.path.join(root, args.server)
     model = os.path.abspath(args.model)
     output = args.output if os.path.isabs(args.output) else os.path.join(root, args.output)
-    log_path = os.path.join(root, "results", "exp011-profile-server.log")
+    log_path = os.path.join(root, "results", args.experiment_id.lower() + "-server.log")
     os.makedirs(os.path.dirname(output), exist_ok=True)
     api = f"http://127.0.0.1:{args.port}"
     if args.drop_model_cache:
@@ -178,17 +228,32 @@ def main():
 
         prompt = "Briefly explain why addressed expert loading is useful for MoE models."
         requests = []
-        for tag in ("cold", "warm"):
+        tags = ("warmup", "reference", "profiled") if args.perf_profile else ("cold", "warm")
+        perf_artifacts = None
+        for tag in tags:
             sampler.phase = tag
             before = proc_snapshot(process.pid)
-            timings, text = chat(api, prompt, 256)
+            perf_processes = None
+            if tag == "profiled":
+                stat_process, record_process, perf_stat, perf_data = start_perf(process.pid, output)
+                perf_processes = (stat_process, record_process)
+            try:
+                timings, text = chat(api, prompt, 256)
+            finally:
+                if perf_processes is not None:
+                    perf_report = stop_perf(perf_processes, perf_data)
+                    perf_artifacts = {
+                        "stat": perf_stat,
+                        "data": perf_data,
+                        "report": perf_report,
+                    }
             after = proc_snapshot(process.pid)
             phase_samples = [row for row in sampler.rows if row["phase"] == tag]
             requests.append(summarize_request(before, after, phase_samples, timings, text, tag))
             sampler.phase = "idle"
 
         result = {
-            "experiment_id": "EXP-2026-09-02-011-expert-tier-bottleneck-profile",
+            "experiment_id": args.experiment_id,
             "server": server,
             "model": model,
             "command": command,
@@ -196,6 +261,7 @@ def main():
             "threads": args.threads,
             "model_cache_dropped": args.drop_model_cache,
             "requests": requests,
+            "perf_artifacts": perf_artifacts,
             "samples": sampler.rows,
             "server_log": log_path,
         }

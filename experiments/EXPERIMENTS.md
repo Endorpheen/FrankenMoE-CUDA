@@ -280,3 +280,24 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - A preceding exploratory pair also agreed: 12 threads `17.754 tok/s` versus 16 threads `17.718 tok/s` (`+0.20%`). It is supporting evidence and is not included in the formal three-pair medians.
 - The 24-thread guardrail measured `15.943 tok/s` against `17.718 tok/s` at 16 threads (`-10.02%`). An incomplete 32-thread warmup held `0.69-0.70 tok/s` through 106 tokens and was stopped rather than wasting more than an hour.
 - Decision: `ACCEPTED` as a resource-efficiency tradeoff explicitly requested after the three-pair gate. The launcher defaults to `THREADS=12`, retaining effectively identical single-stream speed while leaving four physical cores free. `THREADS=16` remains available; 24 and 32 are rejected.
+
+## EXP-2026-09-02-014-cpu-kernel-profile
+
+- Status: `ACCEPTED` (measurement infrastructure).
+- Hypothesis: a small set of CPU expert functions dominates warm decode and hardware counters can distinguish compute throughput from cache/memory stalls before any kernel rewrite.
+- Bottleneck under test: at 12 threads the warm path sustains about `17.6 tok/s`, uses about 11.95 CPU cores, performs no physical reads or major faults, and leaves mean GPU utilization near 31.5%.
+- Change: no inference-path change. Capture `perf stat` counters and a userspace call-graph sample over one warm 256-token request, then compare its generation speed with an unprofiled request from the same server.
+- Primary outputs: hottest symbols and their self/children percentages, cycles, instructions, IPC, cache references/misses, stalled cycles, context switches, and migrations.
+- Risks: sampling may perturb throughput, call graphs may be incomplete without frame pointers, and system security policy may block access to performance counters.
+- Acceptance: identify a dominant function or measured stall class that selects one isolated optimization; output hash must match, swap must stay zero, and profiler overhead must be reported rather than mistaken for a regression.
+- Environment gate: `perf 7.0.12` and userspace symbols are present, but `kernel.perf_event_paranoid=4` blocks all unprivileged events. A temporary change to level 2, restored to 4 immediately after profiling, requires Igor's explicit approval and sudo authentication.
+
+### Results
+
+- Requests: warmup `17.611 tok/s`, unprofiled reference `17.650 tok/s`, and profiled `17.421 tok/s`. Simultaneous `perf stat` plus DWARF sampling overhead was `1.30%`.
+- The two dominant compute kernels were `ggml_vec_dot_iq2_s_q8_K` at `29.19%` of sampled cycles and `ggml_vec_dot_iq4_nl_q8_0` at `24.50%`; `ggml_vec_dot_iq3_s_q8_K` added `0.81%`.
+- About `39.96%` of sampled cycles landed in a small set of `libgomp` addresses. Local disassembly resolves them to `pause`-based spin loops and their surrounding futex path, so this is OpenMP wait/barrier overhead rather than expert arithmetic.
+- Hardware counters: 752.62 billion cycles, 872.42 billion instructions, IPC `1.159`, 10.81 billion cache references, 602.69 million cache misses (`5.58%`), and frontend stalled cycles equal to `0.66%` of cycles. Backend-stall counting is unsupported by this Zen 3 PMU event mapping.
+- Correctness and safety: all three outputs had the same SHA-256; physical reads and major faults were zero; process swap was zero; peak RSS stayed near `29,474 MiB`. No samples were lost.
+- The 123 MiB raw `perf.data` remains local and is ignored by Git; its SHA-256 is `d8696652ff69d3e1f2015eba1a41722a70ab9d522d14124f74c72d661bdccbd1`. The JSON, counter CSV, and compact symbol report are retained in `benchmarks/`.
+- Decision: `ACCEPTED`. The first isolated follow-up is a separate `GGML_OPENMP=OFF` build: compare ggml's persistent native threadpool against the current OpenMP graph execution without changing model parameters or thread count.

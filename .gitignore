@@ -13,5 +13,6 @@
 /benchmarks/runs/*.json
 *.log
 *.tmp
+*.perf.data
 __pycache__/
 *.pyc

@@ -24,6 +24,8 @@ The expert-tier GPU hot store is currently disabled by default (`EHS=0`). EXP-01
 
 The interactive launcher defaults to 12 CPU threads. EXP-013 measured `17.615 tok/s` at 12 threads versus `17.656 tok/s` at 16 across three interleaved warm pairs (`-0.23%`, inside noise), while mean occupied CPU cores fell from `15.93` to `11.95`. The previous setting remains available with `THREADS=16`; 24 and 32 threads are rejected because SMT contention reduced throughput.
 
+EXP-014 profiled one warm 12-thread decode request. Quantized IQ2_S and IQ4_NL vector-dot kernels consumed `53.69%` of sampled CPU cycles, while OpenMP spin/wait paths consumed about `39.96%`. IPC was `1.159` and the cache-reference miss ratio was `5.58%`. This selects a no-OpenMP build as the next isolated runtime experiment before attempting hand-written quantized kernels.
+
 ## Verified target
 
 - CPU: AMD Ryzen 9 5950X.

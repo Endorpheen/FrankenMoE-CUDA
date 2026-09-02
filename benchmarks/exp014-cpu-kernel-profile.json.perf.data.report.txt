@@ -1,0 +1,28 @@
+# EXP-2026-09-02-014 compact offline perf report
+
+Samples: 29K cycles:u samples
+Lost samples: 0
+Approximate event count: 622614418661
+
+Overhead;Shared object;Symbol
+29.19%;libggml-cpu.so.0.22.0;ggml_vec_dot_iq2_s_q8_K
+24.50%;libggml-cpu.so.0.22.0;ggml_vec_dot_iq4_nl_q8_0
+23.84%;libgomp.so.1.0.0;spin/wait loop at 0x26a86
+7.02%;libgomp.so.1.0.0;spin/wait loop at 0x26c76
+5.21%;libgomp.so.1.0.0;spin/wait loop at 0x26a82
+1.36%;libgomp.so.1.0.0;spin/wait loop at 0x26c72
+1.33%;libgomp.so.1.0.0;spin/wait loop at 0x26a8d
+0.84%;libggml-cpu.so.0.22.0;ggml_compute_forward_mul_mat_id_one_chunk
+0.81%;libggml-cpu.so.0.22.0;ggml_vec_dot_iq3_s_q8_K
+0.62%;libgomp.so.1.0.0;spin/wait loop at 0x26c7d
+0.61%;libc.so.6;__memmove_avx_unaligned_erms
+0.54%;libggml-cpu.so.0.22.0;ggml_graph_compute_thread.isra.0
+0.47%;libgomp.so.1.0.0;spin/wait loop at 0x26a89
+0.39%;[vdso];0x0000000000000a09
+0.14%;libggml-cpu.so.0.22.0;quantize_row_q8_0
+0.11%;libgomp.so.1.0.0;spin/wait loop at 0x26c79
+0.11%;libggml-base.so.0.22.0;quantize_row_q8_K_ref
+
+The libgomp labels are inferred from local disassembly: the sampled addresses are
+inside pause-based spin loops and their surrounding futex wait paths. Debuginfod
+was disabled for offline report generation.
