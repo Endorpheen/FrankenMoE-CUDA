@@ -88,7 +88,7 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 
 ## EXP-2026-09-01-003-eight-io-lanes
 
-- Status: `INCONCLUSIVE`.
+- Status: `REJECTED` as a general speedup; retained as a documented cold-start profile for `bmoe-cli` (resolved by the EXP-004 deterministic retrial below).
 - Hypothesis: eight independent O_DIRECT lanes reduce per-layer completion latency enough to lower drain wait, despite extra CPU and storage queue contention.
 - Bottleneck: 23,247 small reads with 2.122 ms median decode latency and 44 ms/token median drain wait.
 - Change: `--io-threads 8` instead of `4`; all other baseline parameters remain fixed.
@@ -104,6 +104,12 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - The paired configurations followed different generated-token and expert-routing trajectories. The eight-lane runs consequently read about 1.6 GiB more expert data and used 5.28% more peak RSS, so neither delta isolates lane count.
 - An additional five-pair repetition was stopped to conserve the available execution quota; incomplete runs are excluded.
 - Decision: `INCONCLUSIVE`. Eight lanes clearly reduce early drain wait, but the existing benchmark cannot determine their sustained benefit because each process executes a different expert workload.
+
+### Deterministic retrial (EXP-2026-09-01-004 infrastructure)
+
+- Three interleaved 4-lane/8-lane pairs over one fixed 256-token workload: overall 8.274 -> 8.753 tok/s median (`+5.80%`; pairs `+5.92/+6.08/+5.52%`), first-32 window `+12.4%` with non-overlapping distributions, last-32 window `-0.13%` (no change), median drain 0.043 -> 0.037 s/token.
+- Resolution: eight lanes accelerate only the cache-fill phase; warm throughput, RAM (peaks overlap at 25.9-26.4 GiB), and swap are unchanged. The +3% sustained-generation acceptance bar is therefore not met.
+- `--io-threads 8` remains available as a cold-start profile for short interactive `bmoe-cli` runs. The interactive server (`scripts/run_qwen38_server.sh`) runs the separate expert-tier llama.cpp binary and is unaffected either way.
 
 ## EXP-2026-09-01-004-deterministic-replay
 
