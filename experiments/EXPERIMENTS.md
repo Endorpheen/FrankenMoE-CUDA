@@ -30,3 +30,32 @@
 ## Next experiment
 
 `EXP-2026-09-01-001-two-wave-overlap`: publish first-projection expert reads before the remaining projections so existing I/O lanes start earlier and reduce the measured 43-45 ms/token drain wait. H2D overlap is deferred because the baseline spent only about 66-70 ms on H2D across the entire 256-token run, which cannot explain the dominant stall.
+
+## EXP-2026-09-01-001-two-wave-overlap
+
+- Status: `REJECTED`.
+- Hypothesis: publishing the first projection before committing the remaining cache pages starts SSD reads earlier and reduces per-token drain wait.
+- Bottleneck: baseline drain wait is 43-45 ms/token, while total H2D time is only 66-70 ms per 256-token run.
+- Change: enable the existing `--io-two-wave` mode without changing the model, prompt, cache budgets, thread counts, or other runtime behavior.
+- Primary metric: median overall single-stream generation tok/s; drain seconds/token is the diagnostic metric.
+- Risks: extra worker wakeups, contention while the second wave grows the batch, and improvement only in cold windows.
+- Acceptance: at least +3% median generation speed outside baseline variance, no warm-window regression, byte-equality gate passes, no memory growth, no process swap, and no I/O errors.
+
+### Results
+
+- Runs: 5 x 256 generated tokens with `--io-two-wave`.
+- Overall generation: median 8.506 tok/s versus 8.515 baseline, `-0.11%`.
+- First 32 tokens: median 4.882 tok/s versus 4.876 baseline, `+0.11%`.
+- Last 32 tokens: median 11.504 tok/s versus 11.446 baseline, `+0.51%`.
+- Drain wait: median 0.044 s/token in both configurations.
+- Physical SSD throughput: median 576.2 MiB/s versus 581.5 MiB/s baseline.
+- Peak RSS: median 26,773 MiB versus 26,794 MiB baseline.
+- Peak VRAM delta: median 6,887 MiB versus 6,874 MiB baseline.
+- Process swap: 0 MiB in every run; no I/O errors or corrupted output observed.
+- Correctness: the existing small-model two-wave byte-equality gate passed before the experiment. Full-model hashes retained the known cross-process nondeterminism.
+- Decision: `REJECTED`. The changes are inside normal variance, miss the 3% threshold, and do not reduce the targeted drain wait.
+- Revisit only if page-commit latency becomes material after changing the cache layout or storage platform.
+
+## Next experiment
+
+Capture an expert-level I/O trace on the unchanged baseline to quantify request sizes, adjacency, lane balance, and per-read latency before choosing between higher I/O concurrency and read coalescing.

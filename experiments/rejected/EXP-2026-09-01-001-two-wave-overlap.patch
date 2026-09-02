@@ -1,0 +1,34 @@
+diff --git a/scripts/aggregate_baseline.py b/scripts/aggregate_baseline.py
+--- a/scripts/aggregate_baseline.py
++++ b/scripts/aggregate_baseline.py
+@@ -6,0 +7 @@
++import os
+@@ -107 +108 @@
+-    "kind": "baseline",
++    "kind": os.environ.get("BENCH_KIND", "baseline"),
+@@ -109 +110 @@
+-    "experiment_id": "EXP-2026-09-01-000-baseline",
++    "experiment_id": os.environ.get("EXPERIMENT_ID", "EXP-2026-09-01-000-baseline"),
+@@ -138,0 +140 @@
++        "io_two_wave": os.environ.get("IO_TWO_WAVE", "0") == "1",
+diff --git a/scripts/run_baseline.sh b/scripts/run_baseline.sh
+--- a/scripts/run_baseline.sh
++++ b/scripts/run_baseline.sh
+@@ -8,0 +9 @@
++OUTPUT_PATH="${OUTPUT_PATH:-${ROOT_DIR}/benchmarks/baseline.json}"
+@@ -21 +22,4 @@
+-python3 "${ROOT_DIR}/scripts/aggregate_baseline.py" "${RUN_DIR}" "${ROOT_DIR}/benchmarks/baseline.json"
++EXPERIMENT_ID="${EXPERIMENT_ID:-EXP-2026-09-01-000-baseline}" \
++BENCH_KIND="${BENCH_KIND:-baseline}" \
++IO_TWO_WAVE="${IO_TWO_WAVE:-0}" \
++    python3 "${ROOT_DIR}/scripts/aggregate_baseline.py" "${RUN_DIR}" "${OUTPUT_PATH}"
+diff --git a/scripts/run_qwen38.sh b/scripts/run_qwen38.sh
+--- a/scripts/run_qwen38.sh
++++ b/scripts/run_qwen38.sh
+@@ -40,0 +41,4 @@
++TWO_WAVE_ARGS=()
++if [[ "${IO_TWO_WAVE:-0}" == "1" ]]; then
++    TWO_WAVE_ARGS+=(--io-two-wave)
++fi
+@@ -59,0 +64 @@
++    "${TWO_WAVE_ARGS[@]}" \
