@@ -378,10 +378,10 @@ index fc83658..ae0d4f6 100644
  
      // create the backend buffers
 diff --git a/common/arg.cpp b/common/arg.cpp
-index fd94baf..c79947d 100644
+index fd94baf..df0c349 100644
 --- a/common/arg.cpp
 +++ b/common/arg.cpp
-@@ -2860,6 +2860,14 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+@@ -2860,6 +2860,21 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
              params.expert_cache_force = value;
          }
      ));
@@ -393,18 +393,26 @@ index fd94baf..c79947d 100644
 +            params.swap_watchdog = value;
 +        }
 +    ).set_env("LLAMA_ARG_SWAP_WATCHDOG"));
++    add_opt(common_arg(
++        {"--ram-headroom-gib"}, "N",
++        "refuse to start if MemAvailable is below N GiB, 0 = disabled (default: 8)",
++        [](common_params & params, int value) {
++            params.ram_headroom_gib = value;
++        }
++    ).set_env("LLAMA_ARG_RAM_HEADROOM_GIB"));
      add_opt(common_arg(
          {"-ncffn", "--n-cpu-ffn"}, "N",
          "keep the dense FFN weights of the first N layers in the CPU\n"
 diff --git a/common/common.h b/common/common.h
-index 3ca9342..90644e1 100644
+index 3ca9342..936a399 100644
 --- a/common/common.h
 +++ b/common/common.h
-@@ -541,6 +541,7 @@ struct common_params {
+@@ -541,6 +541,8 @@ struct common_params {
      float expert_hyst            = 1.3f;  // hysteresis ratio: only swap when cold >= hyst x hot
      int   expert_dwell           = 0;    // minimum updates a resident slot must keep before a swap
      bool  expert_cache_force      = false;  // bypass the CUDA-only hot store guard
 +    bool  swap_watchdog            = false;  // stop the server on process or system swap bursts
++    int32_t ram_headroom_gib       = 8;      // refuse to start with less free RAM (0 = off)
      bool    offline                    = false;
  
      int32_t ppl_stride      = 0;     // stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
@@ -599,7 +607,7 @@ index 0000000..1f7ea1b
 +
 +bool server_swap_watchdog_start();
 diff --git a/tools/server/server.cpp b/tools/server/server.cpp
-index 22378b3..83b02bb 100644
+index 22378b3..155b9e7 100644
 --- a/tools/server/server.cpp
 +++ b/tools/server/server.cpp
 @@ -3,6 +3,7 @@
@@ -610,7 +618,17 @@ index 22378b3..83b02bb 100644
  #include "server-tools.h"
  
  #include "arg.h"
-@@ -106,6 +107,11 @@ int llama_server(int argc, char ** argv) {
+@@ -15,7 +16,9 @@
+ #include <atomic>
+ #include <clocale>
+ #include <exception>
++#include <fstream>
+ #include <signal.h>
++#include <string>
+ #include <thread> // for std::thread::hardware_concurrency
+ 
+ #if defined(_WIN32)
+@@ -106,6 +109,37 @@ int llama_server(int argc, char ** argv) {
          return 1;
      }
  
@@ -618,6 +636,32 @@ index 22378b3..83b02bb 100644
 +    if (params.swap_watchdog) {
 +        server_swap_watchdog_start();
 +    }
++
++#if defined(__linux__)
++    // One-shot RAM headroom gate, the same check the launcher performs before exec
++    if (params.ram_headroom_gib > 0) {
++        std::ifstream meminfo("/proc/meminfo");
++        std::string key;
++        long value_kb;
++        long available_kb = -1;
++        std::string unit;
++        while (meminfo >> key >> value_kb >> unit) {
++            if (key == "MemAvailable:") {
++                available_kb = value_kb;
++                break;
++            }
++        }
++        if (available_kb >= 0) {
++            long need_kb = (long) params.ram_headroom_gib * (1L << 20);
++            if (available_kb < need_kb) {
++                SRV_ERR("insufficient RAM headroom: %ld MiB available, %d GiB required (lower it with --ram-headroom-gib, or disable with --ram-headroom-gib 0)\n",
++                        available_kb / 1024, params.ram_headroom_gib);
++                return 1;
++            }
++            LOG_INF("RAM headroom: %ld MiB available, %d GiB required\n", available_kb / 1024, params.ram_headroom_gib);
++        }
++    }
++#endif
 +
      llama_backend_init();
      llama_numa_init(params.numa);

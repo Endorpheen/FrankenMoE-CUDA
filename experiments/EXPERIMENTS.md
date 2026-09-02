@@ -183,3 +183,14 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Cold-start note: the watchdog is active during model loading; the clean cold run of B (EXP-005 correction, EXP-006) showed zero process swap, and the file-backed model read does not count as swap.
 - Limitation: under artificial cgroup throttling (`MemoryHigh` on the server's own cgroup) the monitor thread itself is stalled by the kernel like every other thread in the cgroup; real burst scenarios do not self-throttle the server, so this does not affect production behaviour.
 - Decision: `ACCEPTED`. The launcher keeps its external monitor for CSV telemetry; the in-server watchdog is the safety layer that works without it.
+
+## EXP-2026-09-01-008-ram-headroom-check
+
+- Status: `ACCEPTED` (safety mechanism, startup gate).
+- Subject: Phase 4 mechanism 2 — the launcher's RAM headroom check moved into the server itself, so the gate works no matter how the server is started.
+- Change under test: `--ram-headroom-gib N` (`common/common.h`, `common/arg.cpp`, env `LLAMA_ARG_RAM_HEADROOM_GIB`, default 8, 0 = off) plus a one-shot `MemAvailable` check in `tools/server/server.cpp` before backend init and model load. Below the threshold the server fails closed with a clear error and exit code 1.
+- Functional gate (tiny synthetic MoE model, 7 MB, CPU-only, no GPU):
+  - refusal path: `--ram-headroom-gib 200` with 48.0 GiB available -> the server refused to start, logged `insufficient RAM headroom: 49180 MiB available, 200 GiB required`, exit code 1.
+  - pass path: default 8 GiB with 48.0 GiB available -> the server started and logged `RAM headroom: 49085 MiB available, 8 GiB required`.
+- The gate matches the one `scripts/run_qwen38_server.sh` performs before exec (8 GiB minimum); the launcher check stays as a first line, the in-server check is the layer that works without the launcher.
+- Decision: `ACCEPTED`. No speed measurement required: the check runs once before any allocation and adds no runtime path.
