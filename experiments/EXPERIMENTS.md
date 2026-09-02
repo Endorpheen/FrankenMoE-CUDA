@@ -59,3 +59,29 @@
 ## Next experiment
 
 Capture an expert-level I/O trace on the unchanged baseline to quantify request sizes, adjacency, lane balance, and per-read latency before choosing between higher I/O concurrency and read coalescing.
+
+## EXP-2026-09-01-002-io-lane-trace
+
+- Status: `REJECTED` (hypothesis).
+- Hypothesis: the 44 ms/token drain persists because heterogeneous random reads leave work unevenly distributed across four lanes, so the slowest lane gates layer completion.
+- Bottleneck: unchanged drain wait despite moving page commits earlier.
+- Change: no runtime behavior change; enable `--io-trace` for one 64-token baseline run.
+- Primary metric: per-lane total requested bytes and total/percentile read latency.
+- Supporting metrics: request-size distribution, file-offset adjacency, per-projection balance, and effective bandwidth.
+- Risks: trace locking can perturb absolute speed, so this run is diagnostic and will not replace the performance baseline.
+- Acceptance: the trace must account for all demand reads and identify a measurable imbalance or adjacency opportunity that defines one isolated follow-up experiment.
+
+### Results
+
+- Trace: 23,247 demand reads and 14,734.5 MiB of aligned physical traffic.
+- Request sizes: 15,050 x 524,800 bytes; 448 x 704,000 bytes; 7,749 x 921,600 bytes.
+- Read latency: 1.919 ms median, 2.859 ms p95, 3.288 ms p99, and 5.913 ms maximum.
+- Lane balance: 5,779-5,839 reads and 3,657-3,718 MiB per lane; no material imbalance.
+- Decode reads were slower than prefill reads: 2.122 ms versus 0.900 ms median.
+- Exact adjacency: 9.02% of within-layer/projection pairs; merging them can remove about 6.6% of calls without over-read.
+- A 1 MiB gap threshold can merge 16.56% of pairs but adds 5.54% traffic; larger gaps are unattractive.
+- Decision: `REJECTED` hypothesis. The slowest lane is not systematically gating progress; work is balanced. The trace supports testing eight lanes before implementing limited exact-adjacency coalescing.
+
+## Next experiment
+
+`EXP-2026-09-01-003-eight-io-lanes`: change only `--io-threads 4` to `8` and compare five full runs. Accept only if median generation improves by at least 3% without a warm-window, CPU, memory, or stability regression.
