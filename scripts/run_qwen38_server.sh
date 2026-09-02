@@ -7,7 +7,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/expert-tier-cuda}"
+# Default to the patched expert-tier build (state B in docs/RUN_QWEN38.md): identical outputs and
+# speed to the clean fork, minus 12.9 GiB peak RSS (EXP-2026-09-01-006). Build it with
+# scripts/prepare_upstreams.sh, then cmake -S work/llama.cpp-integration -B build/expert-tier-franken-cuda.
+# Set BUILD_DIR=build/expert-tier-cuda to launch the clean public fork instead.
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/expert-tier-franken-cuda}"
 SERVER_BIN="${BUILD_DIR}/bin/llama-server"
 [[ -x "${SERVER_BIN}" ]] || { echo "Missing llama-server: ${SERVER_BIN} (see scripts/build.sh)" >&2; exit 2; }
 
