@@ -131,3 +131,36 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Replay overhead: matched-trajectory comparisons (capture vs replay over the same 64-token workload) measured about `1.3%`; a natural four-lane 256-token run without workload flags read 5% fewer expert bytes by route luck, so single-run natural comparisons overstate it. Both arms of an A/B replay the same workload and pay the same overhead.
 - The workload file records arch, layer count, and effective top-k but not a model hash; `benchmarks/baseline.json` already pins the shard SHA-256 values, which is the identity gate for local A/Bs.
 - Decision: `ACCEPTED`. The gate reproduced outputs, tokens, and routes exactly; every corruption attempt failed closed; 13/13 tests plus the CUDA equality gates passed after the change.
+
+## EXP-2026-09-01-005-expert-tier-baseline
+
+- Status: `ACCEPTED` (the practical speed baseline for Qwen3.8 shifts from bmoe-cli to the public expert-tier server).
+- Subject: the clean public expert-tier `llama-server` (state A: `upstream/llama.cpp-expert-tier` at `4aaad5d`, built in `build/expert-tier-cuda`; provenance verified via CMakeCache `CMAKE_HOME_DIRECTORY` and `ldd`).
+- Parameters: Igor's interactive profile — `-c 64000 -ctk q4_0 -ctv q4_0 --reasoning-effort low -ngl 99 --cpu-moe -ehs -1 -fa on --jinja -t 16`; greedy requests (`temperature 0`) through `/v1/chat/completions` streaming; model shards and SHA-256 as pinned in `benchmarks/baseline.json`.
+- Protocol: one server process with a cold request, a warmup, five repeated main-prompt runs (256 tokens), then three distinct-prompt scenarios (coding 256, free text 256, long 512); a second process for restart behaviour. Measured by wall clock around each streamed request; server print_timing cross-checked the cold prefill.
+
+### Results
+
+- Repeated-prompt warm generation: median `18.09 tok/s` (18.00-18.16 across five runs) — the hot store fully adapted to one repeated prompt.
+- Distinct-prompt scenarios: coding `13.5`, free text `14.8`, long 512-token `15.4 tok/s` — the earlier "14-15 tok/s interactive" observation is the distinct-prompt band, not the repeated-prompt peak.
+- True cold (first request after boot, empty page cache): `1.025 tok/s` — 256 tokens take about 4 minutes; prefill alone 13.7 s for 50 tokens; server startup 22 s.
+- Cold with a warm OS page cache (process restart): 15.8-16.3 tok/s, startup 5-8 s. Warm TTFT 0.2-0.4 s; cold TTFT 1.6-2.0 s.
+- Peak RSS 42.7 GiB (the upstream loader faults a whole 30 GiB shard at load), and during the true-cold run the process silently swapped `435 MiB` (VmSwap) with no watchdog to notice.
+- Decision: `ACCEPTED` as the new practical baseline. Notes for every later experiment: cold start is a safety problem (swap) and a latency cliff (1 tok/s), while warm distinct-prompt speed (13.5-15.4) is the honest interactive number to beat.
+
+## EXP-2026-09-01-006-expert-tier-franken-patches
+
+- Status: `ACCEPTED` (stability and memory improvement, speed-neutral).
+- Subject: our `patches/expert-tier-integration.patch` on top of the same public fork (state B: `work/llama.cpp-integration`, built separately in `build/expert-tier-franken-cuda`).
+- Change under test: the loader fix (`init_mappings(use_mlock, ...)` — no unconditional MAP_POPULATE), pinned host staging for hot-store uploads, and the telemetry counters; nothing else differs from state A.
+- Protocol: identical to EXP-005, run back-to-back on the same machine state; outputs compared byte-wise per prompt.
+
+### Results
+
+- Warm repeated-prompt generation: A `18.09` vs B `17.99 tok/s` median (`-0.55%`, inside the 17.3-18.6 spread) — no speed regression.
+- Distinct-prompt scenarios (single runs each): coding 18.96 -> 17.11 s, free 17.25 -> 16.44 s, long 33.34 -> 30.46 s — all three faster on B, but one run each, recorded as "no regression" rather than a claimed win.
+- Peak RSS: A `42.7 GiB` vs B `29.8 GiB` (`-12.9 GiB`), visible from the first minute and constant afterwards — the loader fix removes the whole-shard fault storm while leaving demand paging in place.
+- Pinned staging is active (the patch logs a warning when staging is unavailable; none appeared in B's log).
+- Output correctness: byte-identical text between A and B on all four prompts (main, coding, free, long).
+- Swap: 0 in both arms on a warm cache. The true-cold swap case was only observed on A (435 MiB); B was not run from an empty page cache, so cold-swap parity remains unverified.
+- Decision: `ACCEPTED` as a stability improvement: same speed, same bytes, 12.9 GiB less RAM. Speedups on top of the expert-tier baseline remain unclaimed and are Phase 7+ work.
