@@ -143,10 +143,11 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 
 - Repeated-prompt warm generation: median `18.09 tok/s` (18.00-18.16 across five runs) — the hot store fully adapted to one repeated prompt.
 - Distinct-prompt scenarios: coding `13.5`, free text `14.8`, long 512-token `15.4 tok/s` — the earlier "14-15 tok/s interactive" observation is the distinct-prompt band, not the repeated-prompt peak.
-- True cold (first request after boot, empty page cache): `1.025 tok/s` — 256 tokens take about 4 minutes; prefill alone 13.7 s for 50 tokens; server startup 22 s.
+- Cold start, clean re-measure (model pages dropped with `posix_fadvise`, no other load; read from the server's own print_timing log): startup 18.9 s, prefill 50 tokens in 6.5 s (7.7 tok/s), generation `~12.1 tok/s` (25.6 s for 310 tokens total).
 - Cold with a warm OS page cache (process restart): 15.8-16.3 tok/s, startup 5-8 s. Warm TTFT 0.2-0.4 s; cold TTFT 1.6-2.0 s.
-- Peak RSS 42.7 GiB (the upstream loader faults a whole 30 GiB shard at load), and during the true-cold run the process silently swapped `435 MiB` (VmSwap) with no watchdog to notice.
-- Decision: `ACCEPTED` as the new practical baseline. Notes for every later experiment: cold start is a safety problem (swap) and a latency cliff (1 tok/s), while warm distinct-prompt speed (13.5-15.4) is the honest interactive number to beat.
+- Peak RSS 42.7 GiB (the upstream loader faults a whole 30 GiB shard at load).
+- Correction (2026-09-01, later the same day): the originally recorded cold figures — `1.025 tok/s`, 13.7 s prefill, and `435 MiB` of silent process swap — came from a run that overlapped a parallel 16-thread build on the same CPU (`--cpu-moe` generation is CPU-bound), so they are retracted. The clean numbers above replace them. The 435 MiB swap observation is not confirmed by the clean run and must be re-established before being cited as a fact.
+- Decision: `ACCEPTED` as the new practical baseline. The honest interactive number to beat is the distinct-prompt band (13.5-15.4 tok/s); cold start is a ~12 tok/s phase from an empty model cache, not a cliff.
 
 ## EXP-2026-09-01-006-expert-tier-franken-patches
 
@@ -162,5 +163,5 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Peak RSS: A `42.7 GiB` vs B `29.8 GiB` (`-12.9 GiB`), visible from the first minute and constant afterwards — the loader fix removes the whole-shard fault storm while leaving demand paging in place.
 - Pinned staging is active (the patch logs a warning when staging is unavailable; none appeared in B's log).
 - Output correctness: byte-identical text between A and B on all four prompts (main, coding, free, long).
-- Swap: 0 in both arms on a warm cache. The true-cold swap case was only observed on A (435 MiB); B was not run from an empty page cache, so cold-swap parity remains unverified.
+- Swap: 0 in both arms on a warm cache. The originally reported 435 MiB cold swap on A is retracted (contaminated run, see the EXP-005 correction); cold-swap behaviour of either arm remains unmeasured.
 - Decision: `ACCEPTED` as a stability improvement: same speed, same bytes, 12.9 GiB less RAM. Speedups on top of the expert-tier baseline remain unclaimed and are Phase 7+ work.
