@@ -221,3 +221,21 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Correctness: all five off-arm greedy outputs had the same SHA-256. The live-hot-store arm produced five different hashes across the first five repeated requests and only stabilized for the last two, so the correctness gate failed.
 - Memory: process swap remained zero in both arms. End RSS was 36.18 GiB off versus 38.50 GiB with autofit; total GPU use was about 9.79 versus 10.91 GiB. Physical-read totals are not comparable because the arms ran sequentially against a warming OS page cache.
 - Decision: `REJECTED`. The hot store is disabled by default and is retained only behind explicit `EHS=-1` for future debugging. It must not become the baseline until both output stability and the speed regression are fixed.
+
+## EXP-2026-09-02-011-expert-tier-bottleneck-profile
+
+- Status: `ACCEPTED` (measurement infrastructure; no inference-path change).
+- Hypothesis: with `EHS=0`, Qwen3.8 decode is primarily the stock CPU `MUL_MAT_ID` path over mmap-backed expert tensors; the useful P1 target is either page-cache latency or CPU vector-dot work, not H2D transfer.
+- Bottleneck under test: time and resource split between mmap page faults/physical reads, CPU execution, and GPU utilization during cold and warm decode.
+- Plan: run the unchanged patched server at the accepted 64K profile and record one cold 256-token request followed by one warm identical request. Collect server timings, output hashes, `/proc/<pid>/{stat,status,io}` deltas, and half-second GPU utilization samples. No cache dropping and no performance claim from this diagnostic run.
+- Primary metrics: generation tok/s, process physical-read bytes, major/minor faults, CPU task time/utilization, GPU utilization, RSS, VRAM, and process swap for cold versus warm requests.
+- Risks: the OS page cache may already be warm, system-wide GPU activity can contaminate utilization, and attaching profilers can perturb timing. The trace therefore selects the next hypothesis but does not become a speed baseline.
+- Acceptance: measurements must distinguish CPU compute from storage wait well enough to choose exactly one next experiment. Output hashes must remain unchanged and process swap must stay zero.
+
+### Results
+
+- Cold request: `14.418 tok/s`, 2905.94 MiB of physical reads, 62,192 major faults, 797,703 minor faults, and 29,592 MiB peak RSS. The request used 293.37 CPU-seconds over 20.19 seconds of server time, equivalent to about 14.5 fully occupied CPU cores. Mean GPU utilization was 24.0%.
+- Warm identical request: `17.679 tok/s`, 0.27 MiB of physical reads, 6 major faults, 116,144 minor faults, and 29,969 MiB peak RSS. It used 232.96 CPU-seconds over 14.63 seconds, equivalent to about 15.9 occupied CPU cores. Mean GPU utilization was 31.2%.
+- Correctness: cold and warm SHA-256 hashes were identical. Process swap stayed at zero. Raw counters and half-second samples are stored in `benchmarks/exp011-profile.json`.
+- Interpretation: storage faults explain the first-request penalty, but they disappear after page-cache warm-up while all CPU cores remain saturated and GPU utilization stays low. RAM prefetch can improve cold or changing-expert workloads; it cannot raise the warm sustained ceiling by itself.
+- Decision: `ACCEPTED`. The next isolated hypothesis is asynchronous `POSIX_MADV_WILLNEED` for all experts selected by one CPU `MUL_MAT_ID`, issued before computing the first selected expert. It targets cold latency only and must remain opt-in until a five-run A/B proves a gain without increasing RSS or changing output.
