@@ -117,12 +117,28 @@ def chat(api, prompt, max_tokens):
     return timings, "".join(pieces)
 
 
+def drop_model_cache(model):
+    match = re.search(r"(\d{5})-of-(\d{5})", model)
+    paths = [model]
+    if match:
+        count = int(match.group(2))
+        paths = [model[:match.start(1)] + f"{index:05d}" + model[match.end(1):]
+                 for index in range(1, count + 1)]
+    for path in paths:
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.posix_fadvise(descriptor, 0, 0, os.POSIX_FADV_DONTNEED)
+        finally:
+            os.close(descriptor)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("model")
     parser.add_argument("--server", default="build/expert-tier-franken-cuda/bin/llama-server")
     parser.add_argument("--output", default="benchmarks/exp011-profile.json")
     parser.add_argument("--port", type=int, default=8095)
+    parser.add_argument("--drop-model-cache", action="store_true")
     args = parser.parse_args()
 
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -132,6 +148,8 @@ def main():
     log_path = os.path.join(root, "results", "exp011-profile-server.log")
     os.makedirs(os.path.dirname(output), exist_ok=True)
     api = f"http://127.0.0.1:{args.port}"
+    if args.drop_model_cache:
+        drop_model_cache(model)
     command = [
         "setsid", "nohup", server, "-m", model, "-ngl", "99", "--cpu-moe",
         "-ehs", "0", "-ot", "per_layer_token_embd.weight=CPU", "-c", "64000",
@@ -173,6 +191,8 @@ def main():
             "server": server,
             "model": model,
             "command": command,
+            "cpu_moe_prefetch": os.getenv("LLAMA_CPU_MOE_PREFETCH", "0"),
+            "model_cache_dropped": args.drop_model_cache,
             "requests": requests,
             "samples": sampler.rows,
             "server_log": log_path,

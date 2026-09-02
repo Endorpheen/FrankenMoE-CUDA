@@ -239,3 +239,23 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Correctness: cold and warm SHA-256 hashes were identical. Process swap stayed at zero. Raw counters and half-second samples are stored in `benchmarks/exp011-profile.json`.
 - Interpretation: storage faults explain the first-request penalty, but they disappear after page-cache warm-up while all CPU cores remain saturated and GPU utilization stays low. RAM prefetch can improve cold or changing-expert workloads; it cannot raise the warm sustained ceiling by itself.
 - Decision: `ACCEPTED`. The next isolated hypothesis is asynchronous `POSIX_MADV_WILLNEED` for all experts selected by one CPU `MUL_MAT_ID`, issued before computing the first selected expert. It targets cold latency only and must remain opt-in until a five-run A/B proves a gain without increasing RSS or changing output.
+
+## EXP-2026-09-02-012-selected-expert-madvise
+
+- Status: `REJECTED`.
+- Hypothesis: after `MUL_MAT_ID` groups rows by selected expert, issuing `POSIX_MADV_WILLNEED` for every selected mmap-backed expert slice before the worker barrier lets Linux overlap later expert page-ins with computation of the first expert.
+- Bottleneck under test: 2.91 GiB of physical reads and 62,192 major faults observed during the first 256-token request in EXP-011.
+- Change: an opt-in `LLAMA_CPU_MOE_PREFETCH=1` path in the stock CPU `MUL_MAT_ID` kernel. Thread zero advises each selected expert slice once before releasing the worker barrier. The disabled path keeps the existing computation and ordering.
+- Primary metric: cold generation tok/s. Secondary metrics: physical-read volume, major faults, warm generation tok/s, RSS, CPU time, GPU utilization, and process swap.
+- Risks: syscall overhead, excessive readahead, page-cache pollution, increased RSS, or no overlap because advice is issued too late. The optimization must not change tensor contents, routing, or output hashes.
+- Acceptance: five comparable runs per arm; at least 3% median cold-generation improvement outside normal spread, identical output hashes, zero swap, no material warm regression, and no unexplained memory growth.
+
+### Results
+
+- Protocol: five interleaved off/prefetch pairs. Every arm started a fresh server after dropping all three model shards from the OS page cache, then ran one cold and one immediately repeated warm 256-token request.
+- Cold generation: `11.744 tok/s` median without prefetch (range `11.586-11.809`) versus `10.827 tok/s` with prefetch (range `10.764-10.917`), a `-7.81%` regression.
+- Warm generation: `17.596 tok/s` median without prefetch (range `17.407-17.928`) versus `15.473 tok/s` with prefetch (range `15.358-15.707`), a `-12.07%` regression.
+- The advice reduced median cold physical reads from `26,052.0` to `24,888.9 MiB` (`-4.46%`) and major faults from `266,237` to `182,945` (`-31.28%`), but the per-operation advice overhead and competing readahead cost more time than they saved.
+- Median cold RSS decreased from `29,475.6` to `29,031.2 MiB` (`-1.51%`). Process swap remained zero in every request.
+- Correctness passed: every off and prefetch request produced the same SHA-256 (`3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2`).
+- Decision: `REJECTED`. The runtime code was removed. Revisit prefetch only when selected reads can be batched and issued earlier than `MUL_MAT_ID`, rather than making repeated advice calls in the compute path.

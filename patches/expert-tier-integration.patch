@@ -90,7 +90,7 @@ diff --git a/ggml/include/ggml-cpu.h b/ggml/include/ggml-cpu.h
 index dc6453c6e..4bff7aca5 100644
 --- a/ggml/include/ggml-cpu.h
 +++ b/ggml/include/ggml-cpu.h
-@@ -140,6 +140,14 @@ extern "C" {
+@@ -140,6 +140,13 @@ extern "C" {
  
      GGML_BACKEND_API ggml_backend_reg_t ggml_backend_cpu_reg(void);
  
@@ -101,7 +101,6 @@ index dc6453c6e..4bff7aca5 100644
 +    // Registration is process-wide; NULL disables the hook. Do not change it while a graph runs.
 +
 +    GGML_BACKEND_API void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data);
-+// Process-wide expert-readiness hook for an external SSD streamer.
      GGML_BACKEND_API void ggml_cpu_fp32_to_fp32(const float *,       float *, int64_t);
      GGML_BACKEND_API void ggml_cpu_fp32_to_i32 (const float *,     int32_t *, int64_t);
      GGML_BACKEND_API void ggml_cpu_fp32_to_fp16(const float *, ggml_fp16_t *, int64_t);
@@ -109,14 +108,13 @@ diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
 index 5b6ce3b7b..8a4240455 100644
 --- a/ggml/src/ggml-cpu/ggml-cpu.c
 +++ b/ggml/src/ggml-cpu/ggml-cpu.c
-@@ -55,6 +55,15 @@
+@@ -55,6 +55,14 @@
  #    include "spacemit/ime.h"
  #endif
  
-+        // Let the external streamer make the expert resident before its rows are read.
++// Process-wide expert-readiness hook for an external SSD streamer.
 +static ggml_cpu_expert_ready_hook_t g_expert_ready_hook      = NULL;
 +static void *                       g_expert_ready_hook_data = NULL;
-+        // Called before a dynamic H2D promotion; false leaves the current slot unchanged.
 +void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data) {
 +    g_expert_ready_hook      = hook;
 +    g_expert_ready_hook_data = user_data;
@@ -129,7 +127,7 @@ index 5b6ce3b7b..8a4240455 100644
              continue;
          }
  
-+
++        // Let the external streamer make the expert resident before its rows are read.
 +        if (g_expert_ready_hook) {
 +            g_expert_ready_hook(src0, cur_a, g_expert_ready_hook_data);
 +        }
