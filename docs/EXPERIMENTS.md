@@ -50,3 +50,20 @@ Warm-profile windows:
 The warm profile improved latency by 2.05x and reduced SSD traffic by 6.7x from the first to the last window. The model produced coherent natural language. Subsequent warmed interactive coding chats through `llama-server` were observed at approximately 14–15 tok/s.
 
 Raw CSV traces are intentionally ignored because of their size. Summary JSON files are committed under `results/`.
+
+## Cold start A/B, llama-server (Qwen3.8-Flash-Next UD-IQ3_XXS, 64K ctx, --cpu-moe, 16 threads, one run at a time, model pages dropped via posix_fadvise before start)
+
+Variant A = `expert-tier-cuda` build, variant B = `expert-tier-franken-cuda` build (same flags). Logs: `/tmp/bmoe-srv/coldA.log`, `/tmp/bmoe-srv/coldB.log`.
+
+| Metric | A (expert-tier) cold | B (franken) cold |
+| --- | ---: | ---: |
+| Startup to listening | 18.9 s | 2.8 s |
+| Prompt eval (54 tok) | 6.5 s | 2.0 s (37.1 ms/tok) |
+| Decode (256 tok) | ~12.1 tok/s | 14,864 ms = 17.2 tok/s (58.3 ms/tok) |
+| Wall gen time incl. prefill | — | 16.9 s = 15.2 tok/s |
+| read_bytes before request | — | 1,340,604,416 (1.25 GiB) |
+| read_bytes after request | — | 1,476,624,384 (1.37 GiB, Δ ~130 MiB) |
+| VmRSS after request | — | 29.4 GiB |
+| Process swap | 0 | 0 |
+
+An earlier cold measurement of A (1.03 tok/s with 435 MiB swap) was invalidated: a parallel 16-core build was running while the server computed on CPU. The numbers above are the corrected clean remeasurement. Warm numbers (18.09 tok/s repeat prompt; 13.5–15.4 tok/s across other prompts) and the A/B patch results (−12.9 GiB RSS, identical output) remain valid. No swap behavior was confirmed in the clean cold run of B.
