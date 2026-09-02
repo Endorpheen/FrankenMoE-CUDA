@@ -22,6 +22,8 @@ Four blocking `pread` lanes can already overlap expert reads with CPU cold-exper
 
 The expert-tier GPU hot store is currently disabled by default (`EHS=0`). EXP-010 measured one live slot at `-7.91%` median warm decode and found unstable greedy output hashes. Safe bounded autofit remains available only as an explicit experimental mode (`EHS=-1`); it uses exact CUDA layout sizing, allocation backoff, and a mandatory 1024 MiB runtime headroom.
 
+The interactive launcher defaults to 12 CPU threads. EXP-013 measured `17.615 tok/s` at 12 threads versus `17.656 tok/s` at 16 across three interleaved warm pairs (`-0.23%`, inside noise), while mean occupied CPU cores fell from `15.93` to `11.95`. The previous setting remains available with `THREADS=16`; 24 and 32 threads are rejected because SMT contention reduced throughput.
+
 ## Verified target
 
 - CPU: AMD Ryzen 9 5950X.

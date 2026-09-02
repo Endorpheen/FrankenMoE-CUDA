@@ -259,3 +259,24 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Median cold RSS decreased from `29,475.6` to `29,031.2 MiB` (`-1.51%`). Process swap remained zero in every request.
 - Correctness passed: every off and prefetch request produced the same SHA-256 (`3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2`).
 - Decision: `REJECTED`. The runtime code was removed. Revisit prefetch only when selected reads can be batched and issued earlier than `MUL_MAT_ID`, rather than making repeated advice calls in the compute path.
+
+## EXP-2026-09-02-013-cpu-thread-scaling
+
+- Status: `ACCEPTED` (12-thread balanced profile); 24 and 32 threads are rejected.
+- Hypothesis: reducing CPU contention may retain the warm `EHS=0` throughput of the 16-thread profile while releasing cores for the desktop and other services.
+- Bottleneck under test: EXP-011 measured about 15.9 occupied CPU cores, negligible warm physical I/O, and only 31.2% mean GPU utilization.
+- Change: compare `-t 12` against `-t 16`; model, context, prompt, output length, GPU offload, cache quantization, and all other server parameters remain unchanged. Earlier 24- and 32-thread guardrails remain diagnostic only.
+- Protocol: three interleaved 12/16 pairs. Each fresh server receives one 256-token warmup request followed by one identical measured 256-token request. The OS model page cache is not dropped because the target is sustained CPU decode, not cold storage behavior.
+- Primary metric: median measured warm generation tok/s. Secondary metrics: paired speed deltas, CPU-core utilization, GPU utilization, physical reads, major faults, RSS, process swap, and output hashes.
+- Risks: SMT contention may reduce vector throughput, process-to-process routing nondeterminism may change work, or the warmup may not make every selected expert resident.
+- Acceptance: at least 3% median and paired speed improvement outside the observed spread, identical output hashes across both arms, zero swap, no material memory growth, and no periodic slow runs.
+- Early guardrail: an initial 32-thread warmup was stopped after 106 tokens because generation remained at only `0.69-0.70 tok/s`, versus `17.72 tok/s` for the immediately preceding 16-thread measured request. No 32-thread performance claim is made from the incomplete request; it is excluded from the A/B and establishes only that saturating all logical CPUs is unsafe on the active workstation.
+
+### Results
+
+- Formal three-pair medians: 12 threads `17.615 tok/s` (range `17.387-17.786`) versus 16 threads `17.656 tok/s` (range `17.421-17.765`), a `-0.23%` difference inside noise. Pair deltas were `+2.10%`, `-2.13%`, and `-0.23%`.
+- Mean occupied CPU cores fell from `15.93` to `11.95` (`-24.98%`). Median mean GPU utilization was `31.48%` versus `31.93%`; median peak RSS was `29,473.3` versus `29,473.9 MiB`.
+- All six measured requests had zero physical reads, zero major faults, zero process swap, and the same 256-token output SHA-256.
+- A preceding exploratory pair also agreed: 12 threads `17.754 tok/s` versus 16 threads `17.718 tok/s` (`+0.20%`). It is supporting evidence and is not included in the formal three-pair medians.
+- The 24-thread guardrail measured `15.943 tok/s` against `17.718 tok/s` at 16 threads (`-10.02%`). An incomplete 32-thread warmup held `0.69-0.70 tok/s` through 106 tokens and was stopped rather than wasting more than an hour.
+- Decision: `ACCEPTED` as a resource-efficiency tradeoff explicitly requested after the three-pair gate. The launcher defaults to `THREADS=12`, retaining effectively identical single-stream speed while leaving four physical cores free. `THREADS=16` remains available; 24 and 32 are rejected.

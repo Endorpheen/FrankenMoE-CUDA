@@ -138,6 +138,7 @@ def main():
     parser.add_argument("--server", default="build/expert-tier-franken-cuda/bin/llama-server")
     parser.add_argument("--output", default="benchmarks/exp011-profile.json")
     parser.add_argument("--port", type=int, default=8095)
+    parser.add_argument("--threads", type=int, default=16)
     parser.add_argument("--drop-model-cache", action="store_true")
     args = parser.parse_args()
 
@@ -153,7 +154,7 @@ def main():
     command = [
         "setsid", "nohup", server, "-m", model, "-ngl", "99", "--cpu-moe",
         "-ehs", "0", "-ot", "per_layer_token_embd.weight=CPU", "-c", "64000",
-        "-fa", "on", "--jinja", "-t", "16", "--host", "127.0.0.1",
+        "-fa", "on", "--jinja", "-t", str(args.threads), "--host", "127.0.0.1",
         "--port", str(args.port), "-ctk", "q4_0", "-ctv", "q4_0",
         "--reasoning-effort", "low",
     ]
@@ -192,6 +193,7 @@ def main():
             "model": model,
             "command": command,
             "cpu_moe_prefetch": os.getenv("LLAMA_CPU_MOE_PREFETCH", "0"),
+            "threads": args.threads,
             "model_cache_dropped": args.drop_model_cache,
             "requests": requests,
             "samples": sampler.rows,

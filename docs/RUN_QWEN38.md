@@ -65,6 +65,8 @@ scripts/run_qwen38_server.sh \
   models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf
 ```
 
+The default is `THREADS=12`. EXP-013 measured the same warm generation speed as 16 threads within noise (`17.615` versus `17.656 tok/s` median across three interleaved pairs) while leaving four physical CPU cores available to the desktop and other services. Set `THREADS=16` explicitly to restore the previous maximum-CPU profile.
+
 ### Which binary is which (three states)
 
 | State | Binary | Source tree |
@@ -73,7 +75,7 @@ scripts/run_qwen38_server.sh \
 | B: expert-tier + our patches | `build/expert-tier-franken-cuda/bin/llama-server` | `work/llama.cpp-integration` (upstream + `patches/expert-tier-integration.patch`) — what `run_qwen38_server.sh` launches since EXP-006 |
 | C: bmoe-cli research engine | `build/franken-cuda/cli/bmoe-cli` | this repository's `runtime/` |
 
-Provenance is checkable per build via `CMAKE_HOME_DIRECTORY` in the build dir's `CMakeCache.txt` and `ldd` on the binary. EXP-005/006 measured A and B with the interactive profile (`-c 64000 -ctk q4_0 -ctv q4_0 --reasoning-effort low`): warm distinct-prompt speed is 13.5-15.4 tok/s and a repeated prompt peaks at 18.1; the first request after a cold boot runs at about 1 tok/s and the unpatched loader peaks at 42.7 GiB RSS (29.8 GiB with our patches). Do not mix numbers between A, B, and C.
+Provenance is checkable per build via `CMAKE_HOME_DIRECTORY` in the build dir's `CMakeCache.txt` and `ldd` on the binary. EXP-005/006 measured A and B with the interactive profile (`-c 64000 -ctk q4_0 -ctv q4_0 --reasoning-effort low`): warm distinct-prompt speed is 13.5-15.4 tok/s and a repeated prompt peaks at 18.1; a clean empty-page-cache request measured about 12.1 tok/s, and the unpatched loader peaks at 42.7 GiB RSS (29.8 GiB with our patches). Do not mix numbers between A, B, and C.
 
 Open `http://127.0.0.1:8080`. The same endpoint exposes the standard OpenAI-compatible `llama-server` API. On the validated machine, warmed interactive conversations have been observed around 14–15 tok/s.
 

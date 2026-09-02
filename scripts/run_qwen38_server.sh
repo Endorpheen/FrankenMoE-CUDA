@@ -36,7 +36,8 @@ EHS="${EHS:-0}"
 PORT="${PORT:-8080}"
 HOST="${HOST:-127.0.0.1}"
 CTX_SIZE="${CTX_SIZE:-8192}"
-THREADS="${THREADS:-16}"
+# EXP-013 found equivalent warm decode with 12 threads while leaving four physical cores free.
+THREADS="${THREADS:-12}"
 
 mkdir -p "${ROOT_DIR}/results"
 LOG_PATH="${LOG_PATH:-${ROOT_DIR}/results/qwen38-server.log}"
