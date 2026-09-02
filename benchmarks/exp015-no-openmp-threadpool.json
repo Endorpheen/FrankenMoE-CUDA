@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-02-015-no-openmp-threadpool",
+  "status": "REJECTED",
+  "kind": "early_guardrail",
+  "pairs": 1,
+  "source": {
+    "upstream_commit": "4aaad5d318a790a42c2197975ec8fadbad42602b",
+    "root_commit_before_experiment": "31118a00e4623e1040e2be36dd1f7d5272ee85f7"
+  },
+  "common_build": {
+    "generator": "Ninja",
+    "build_type": "Release",
+    "cuda": true,
+    "cuda_architectures": "89",
+    "build_shared_libs": true,
+    "build_server": true
+  },
+  "arms": {
+    "openmp_on": {
+      "build_dir": "build/expert-tier-franken-cuda",
+      "ggml_openmp": true,
+      "server_sha256": "3cd3586ef8f7773345a424bd396f61eb8d8c235184b17b136aec030c1a874bdb",
+      "warmup_generation_tok_s": 17.427308305076032,
+      "measured": {
+        "generation_tok_s": 17.913886472465617,
+        "generation_ms": 14234.767,
+        "wall_s": 14.63,
+        "cpu_cores_mean": 11.774,
+        "rss_peak_mib": 29469.9,
+        "gpu_util_pct_mean": 29.8,
+        "gpu_util_pct_peak": 40,
+        "physical_read_mib": 0.0,
+        "major_faults": 0,
+        "process_swap_mib": 0.0,
+        "output_sha256": "3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2"
+      }
+    },
+    "openmp_off": {
+      "build_dir": "build/expert-tier-franken-no-openmp",
+      "ggml_openmp": false,
+      "server_sha256": "3ff830f32659a2a28a3e3a8bef73dc5785b145d3868bd6327ee75214c352095a",
+      "warmup_generation_tok_s": 17.744408702025034,
+      "measured": {
+        "generation_tok_s": 17.544344879713908,
+        "generation_ms": 14534.598,
+        "wall_s": 14.94,
+        "cpu_cores_mean": 11.601,
+        "rss_peak_mib": 29468.0,
+        "gpu_util_pct_mean": 30.1,
+        "gpu_util_pct_peak": 52,
+        "physical_read_mib": 0.0,
+        "major_faults": 0,
+        "process_swap_mib": 0.0,
+        "output_sha256": "3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2"
+      }
+    }
+  },
+  "delta_off_vs_on": {
+    "generation_pct": -2.062878,
+    "cpu_cores_pct": -1.469339,
+    "rss_peak_mib": -1.9
+  },
+  "raw_local_artifacts": {
+    "results/exp015-on-warmup.sse": "d3e95f672d291bb096e7d48797b18504cf1af47f2e0a0375a1c34cf3ed11edcb",
+    "results/exp015-on-measured.sse": "94ce7f5f55600e786fa6779e35bc691da70a792d37503b16da96769f144b5af2",
+    "results/exp015-off-warmup.sse": "589ce36063fa4c9a256c7d44e9a2bf3e98539f15087639e5cb8dbca46cea785f",
+    "results/exp015-off-measured.sse": "5fcb0f5348d21d2d5cf5833a49721c5eeb28e6bf20966765b4889247193ad23e",
+    "results/exp015-on-monitor.csv": "bc5b02361264e1010cd7bec04f76dcff91e5580c6c02f4932029b0f76314198e",
+    "results/exp015-off-monitor.csv": "0e5cb1903c5d934b87d79092bd7862d5d72802ded772fb6438dd14f4636173ba",
+    "results/exp015-on-server.log": "dde4713a2fe7a839dd89ba3731ca0cb43b6d12a52cdb64c620a77aebfee6986f",
+    "results/exp015-off-server.log": "5cb5483f1d3cc937f04d27f2d4b87af7a2f584d8a4f0657d2a27dbb5e085daa9"
+  },
+  "correctness_gate": "all four output hashes match the historical reference",
+  "decision_note": "No positive signal justified a long A/B. Keep GGML_OPENMP=ON; the OFF build remains a local reproducibility artifact."
+}

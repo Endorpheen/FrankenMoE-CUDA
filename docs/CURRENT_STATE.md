@@ -26,6 +26,8 @@ The interactive launcher defaults to 12 CPU threads. EXP-013 measured `17.615 to
 
 EXP-014 profiled one warm 12-thread decode request. Quantized IQ2_S and IQ4_NL vector-dot kernels consumed `53.69%` of sampled CPU cycles, while OpenMP spin/wait paths consumed about `39.96%`. IPC was `1.159` and the cache-reference miss ratio was `5.58%`. This selects a no-OpenMP build as the next isolated runtime experiment before attempting hand-written quantized kernels.
 
+EXP-015 rejected a no-OpenMP build after an early paired gate: warm decode was `17.914 tok/s` with OpenMP and `17.544 tok/s` with ggml's native pool (`-2.06%`, within observed pair noise), while CPU occupancy improved by only `1.47%` and memory, GPU use, storage activity, swap, and output hashes were unchanged. The working build therefore remains `GGML_OPENMP=ON`.
+
 ## Verified target
 
 - CPU: AMD Ryzen 9 5950X.

@@ -6,6 +6,7 @@
 /runtime/third_party/llama.cpp
 /results/*.raw.json
 /results/*.csv
+/results/*.sse
 /benchmarks/runs/*.csv
 /benchmarks/runs/*.monitor.csv
 /benchmarks/runs/*.out

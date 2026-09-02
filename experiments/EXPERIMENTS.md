@@ -301,3 +301,25 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Correctness and safety: all three outputs had the same SHA-256; physical reads and major faults were zero; process swap was zero; peak RSS stayed near `29,474 MiB`. No samples were lost.
 - The 123 MiB raw `perf.data` remains local and is ignored by Git; its SHA-256 is `d8696652ff69d3e1f2015eba1a41722a70ab9d522d14124f74c72d661bdccbd1`. The JSON, counter CSV, and compact symbol report are retained in `benchmarks/`.
 - Decision: `ACCEPTED`. The first isolated follow-up is a separate `GGML_OPENMP=OFF` build: compare ggml's persistent native threadpool against the current OpenMP graph execution without changing model parameters or thread count.
+
+## EXP-2026-09-02-015-no-openmp-threadpool
+
+- Status: `REJECTED` (early gate).
+- Hypothesis: building with `GGML_OPENMP=OFF` switches graph compute to ggml's persistent internal threadpool and removes a substantial part of the OpenMP spin/wait cycles measured in EXP-014.
+- Bottleneck under test: at 12 threads about `39.96%` of sampled warm-decode cycles sit in libgomp `pause`-based spin/wait paths, while the two dominant expert dot-product kernels together account for about `53.7%`.
+- Change: build-only. A separate directory `build/expert-tier-franken-no-openmp` is configured identically to the working build (Ninja, Release, CUDA arch 89, shared libs, server, tests, examples, same source `work/llama.cpp-integration`) except `-DGGML_OPENMP=OFF`. No source, model, launcher, or parameter changes; the working build `build/expert-tier-franken-cuda` stays untouched.
+- Protocol: small correctness gate first; then, only after Igor's approval, one short exploratory pair OpenMP ON versus OFF at 12 threads, warm 256 tokens each; if OFF does not fail, a reproducible interleaved A/B.
+- Primary metric: median warm 256-token single-stream generation tok/s at 12 threads, OFF versus ON. Secondary metrics: paired speed deltas, occupied CPU cores, GPU utilization, physical reads, major faults, RSS, process swap, and output hashes.
+- Risks: the internal threadpool also uses a spin barrier; the libgomp cycles may reflect normal waiting for the slowest worker; disabling OpenMP may worsen wake-up latency; the disappearance of libgomp samples does not count as a speedup without a tok/s A/B.
+- Acceptance: `ACCEPTED` only at `+3%` median and paired speed outside the observed spread, or a proven CPU-core reduction without noticeable speed loss; identical output hashes across arms, zero swap, no material memory growth, and no periodic slow runs.
+- On rejection: the separate build directory may remain as a reproducible artifact, but the working launcher is not switched.
+
+### Results
+
+- Build provenance passed: both builds use the same patched source at upstream commit `4aaad5d`, Release, CUDA architecture 89, shared libraries, and server target. The only material CMake difference is `GGML_OPENMP=ON` versus `OFF`; `ldd` confirms that only the ON CPU library links `libgomp`.
+- One immediately paired warm 256-token gate measured OpenMP ON at `17.914 tok/s` (`14,234.77 ms`) and OFF at `17.544 tok/s` (`14,534.60 ms`), a `-2.06%` change. Wall time was `14.63` versus `14.94 s`.
+- Mean occupied CPU cores were `11.774` ON and `11.601` OFF (`-1.47%`). Peak RSS was `29,469.9` versus `29,468.0 MiB`; mean GPU utilization was `29.8%` versus `30.1%`.
+- Correctness and safety passed: all four warmup/measured outputs produced the historical SHA-256 `3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2`; measured physical reads, major faults, and process swap were zero.
+- The speed delta is within EXP-013's approximately `+/-2%` paired noise, so this is not evidence that OFF is intrinsically slower. It is conclusive only for the acceptance gate: there is no positive signal on speed, CPU use, memory, or GPU use that justifies a long A/B.
+- The claim that the measured `39.96%` OpenMP wait cycles "moved" into ggml is not made: the OFF build was not perf-profiled. Source inspection confirms that the native pool has a spin barrier, while this gate proves only that switching pools did not improve user-visible performance.
+- Decision: `REJECTED` after the early gate. Keep the working build and launcher on `GGML_OPENMP=ON`. The separate OFF build remains an ignored reproducibility artifact; no baseline update and no source patch are required.
