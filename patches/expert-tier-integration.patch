@@ -1,5 +1,93 @@
+diff --git a/common/arg.cpp b/common/arg.cpp
+index fd94bafc4..16e61866f 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -2852,6 +2852,13 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.expert_hot_s = value;
+         }
+     ).set_env("LLAMA_ARG_EXPERT_HOT_S"));
++    add_opt(common_arg(
++        {"--ehs-reserve-mb"}, "N",
++        "VRAM in MiB kept free when autofitting hot store slots (-ehs -1), default: 0",
++        [](common_params & params, int value) {
++            params.expert_hot_reserve_mb = value;
++        }
++    ).set_env("LLAMA_ARG_EHS_RESERVE_MB"));
+     add_opt(common_arg(
+         {"--ecf", "--expert-cache-force"},
+         {},
+@@ -2860,6 +2867,21 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.expert_cache_force = value;
+         }
+     ));
++    add_opt(common_arg(
++        {"--swap-watchdog"},
++        {},
++        "stop the server if process swap or system swap I/O bursts (default: off)",
++        [](common_params & params, bool value) {
++            params.swap_watchdog = value;
++        }
++    ).set_env("LLAMA_ARG_SWAP_WATCHDOG"));
++    add_opt(common_arg(
++        {"--ram-headroom-gib"}, "N",
++        "refuse to start if MemAvailable is below N GiB, 0 = disabled (default: 8)",
++        [](common_params & params, int value) {
++            params.ram_headroom_gib = value;
++        }
++    ).set_env("LLAMA_ARG_RAM_HEADROOM_GIB"));
+     add_opt(common_arg(
+         {"-ncffn", "--n-cpu-ffn"}, "N",
+         "keep the dense FFN weights of the first N layers in the CPU\n"
+diff --git a/common/common.cpp b/common/common.cpp
+index c432c5f2b..3a5366922 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -1331,10 +1331,12 @@ common_init_result::common_init_result(common_params & params, bool model_only)
+             has_draft || spec_mtp ? &extra : nullptr,
+             params.verbosity >= LOG_LEVEL_DEBUG ? GGML_LOG_LEVEL_DEBUG : GGML_LOG_LEVEL_ERROR,
+             p_expert_hot_s);
+-        if (params.expert_hot_s == -1) {
+-            // -1 = autofit slots from what the fit leaves on GPU; send all experts
+-            // to CPU so the hot store copy reads host pointers (<=> -cmoe).
+-            params.expert_hot_s = n_expert_hot_s > 0 ? n_expert_hot_s : 0;
++        if (params.expert_hot_s == -1 && n_expert_hot_s >= 0) {
++            // fit produced a slot count; send all experts to CPU so the hot
++            // store copy reads host pointers (<=> -cmoe). If the fit failed
++            // (n_expert_hot_s still -1, e.g. n_gpu_layers is user-set) the -1
++            // is kept and the hot store autofits from free VRAM at allocate.
++            params.expert_hot_s = n_expert_hot_s;
+             cparams.expert_hot_s = params.expert_hot_s;
+             if (params.expert_hot_s > 0) {
+                 for (auto & o : params.tensor_buft_overrides) {
+@@ -1777,6 +1779,7 @@ struct llama_context_params common_context_params_to_llama(const common_params &
+     cparams.expert_heat_decay      = params.expert_heat_decay;
+     cparams.expert_heat_log_period = params.expert_heat_log_period;
+     cparams.expert_hot_s           = params.expert_hot_s;
++    cparams.expert_hot_reserve_mb  = params.expert_hot_reserve_mb;
+     cparams.expert_hyst            = params.expert_hyst;
+     cparams.expert_dwell           = params.expert_dwell;
+     cparams.expert_cache_force      = params.expert_cache_force;
+diff --git a/common/common.h b/common/common.h
+index 3ca9342e4..2db9672e0 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -537,10 +537,13 @@ struct common_params {
+ 
+     float expert_heat_decay      = 0.999f; // multiplicative decay per update
+     int   expert_heat_log_period = 0;    // log period in updates (0 = off)
+-    int   expert_hot_s           = 0;      // top-S expert slots (0 = disabled)
++    int   expert_hot_s           = 0;      // top-S expert slots (0 = disabled, -1 = autofit from free VRAM)
++    int32_t expert_hot_reserve_mb = 0;     // VRAM kept free when autofitting hot store slots
+     float expert_hyst            = 1.3f;  // hysteresis ratio: only swap when cold >= hyst x hot
+     int   expert_dwell           = 0;    // minimum updates a resident slot must keep before a swap
+     bool  expert_cache_force      = false;  // bypass the CUDA-only hot store guard
++    bool  swap_watchdog            = false;  // stop the server on process or system swap bursts
++    int32_t ram_headroom_gib       = 8;      // refuse to start with less free RAM (0 = off)
+     bool    offline                    = false;
+ 
+     int32_t ppl_stride      = 0;     // stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
 diff --git a/ggml/include/ggml-cpu.h b/ggml/include/ggml-cpu.h
-index dc6453c..feeb932 100644
+index dc6453c6e..4bff7aca5 100644
 --- a/ggml/include/ggml-cpu.h
 +++ b/ggml/include/ggml-cpu.h
 @@ -140,6 +140,14 @@ extern "C" {
@@ -18,7 +106,7 @@ index dc6453c..feeb932 100644
      GGML_BACKEND_API void ggml_cpu_fp32_to_i32 (const float *,     int32_t *, int64_t);
      GGML_BACKEND_API void ggml_cpu_fp32_to_fp16(const float *, ggml_fp16_t *, int64_t);
 diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
-index 5b6ce3b..59bb611 100644
+index 5b6ce3b7b..8a4240455 100644
 --- a/ggml/src/ggml-cpu/ggml-cpu.c
 +++ b/ggml/src/ggml-cpu/ggml-cpu.c
 @@ -55,6 +55,15 @@
@@ -50,7 +138,7 @@ index 5b6ce3b..59bb611 100644
          const void * wdata = (src1->type == vec_dot_type) ? src1->data : params->wdata;
          const size_t row_size = ggml_row_size(vec_dot_type, ne10);
 diff --git a/include/llama.h b/include/llama.h
-index 9f9ccb1..7ba8bc7 100644
+index 9f9ccb155..ae5d0bfe8 100644
 --- a/include/llama.h
 +++ b/include/llama.h
 @@ -242,6 +242,7 @@ extern "C" {
@@ -61,17 +149,22 @@ index 9f9ccb1..7ba8bc7 100644
  
      // Input data for llama_encode/llama_decode
      // A llama_batch object can contain input about one or many sequences
-@@ -419,6 +420,9 @@ extern "C" {
+@@ -416,10 +417,14 @@ extern "C" {
+         float expert_heat_decay;      // expert heatmap decay per update
+         int   expert_heat_log_period; // expert heatmap log interval
+         int   expert_hot_s;           // number of top-S expert slots for GPU hot store
++        int32_t expert_hot_reserve_mb; // VRAM in MiB kept free when autofitting slots (expert_hot_s == -1)
          float expert_hyst;            // hysteresis ratio for slot swaps
          int   expert_dwell;           // min updates a resident slot keeps before swap
          bool  expert_cache_force;      // bypass the CUDA-only hot store guard
-+
+ 
 +        llama_expert_prepare_callback expert_prepare;
 +        void * expert_prepare_user_data;
- 
++
          // a source/target/parent context
          // can be utilized in various ways, for example by sharing results or llama_memory between 2 contexts
-@@ -1590,6 +1594,16 @@ extern "C" {
+         struct llama_context * ctx_other;
+@@ -1590,6 +1595,16 @@ extern "C" {
          int32_t n_reused;   // number of times a ggml compute graph had been reused
      };
  
@@ -88,7 +181,7 @@ index 9f9ccb1..7ba8bc7 100644
      struct llama_perf_sampler_data {
          double t_sample_ms; // time needed for sampling in ms
  
-@@ -1599,6 +1613,7 @@ extern "C" {
+@@ -1599,6 +1614,7 @@ extern "C" {
      LLAMA_API struct llama_perf_context_data llama_perf_context      (const struct llama_context * ctx);
      LLAMA_API void                           llama_perf_context_print(const struct llama_context * ctx);
      LLAMA_API void                           llama_perf_context_reset(      struct llama_context * ctx);
@@ -97,7 +190,7 @@ index 9f9ccb1..7ba8bc7 100644
      // NOTE: the following work only with samplers constructed via llama_sampler_chain_init
      LLAMA_API struct llama_perf_sampler_data llama_perf_sampler      (const struct llama_sampler * chain);
 diff --git a/src/llama-context.cpp b/src/llama-context.cpp
-index c9ca5a4..81c4d70 100644
+index c9ca5a46f..9d81438e4 100644
 --- a/src/llama-context.cpp
 +++ b/src/llama-context.cpp
 @@ -489,7 +489,8 @@ llama_context::llama_context(
@@ -110,7 +203,20 @@ index c9ca5a4..81c4d70 100644
          // the GPU hot store is only supported on CUDA. On CPU it buys nothing
          // and on Vulkan it corrupts output (see manuallog section 12).
          // --expert-cache-force (or LLAMA_EXPERT_CACHE_FORCE) overrides the
-@@ -3698,6 +3699,8 @@ llama_context_params llama_context_default_params() {
+@@ -506,7 +507,7 @@ llama_context::llama_context(
+             if (!force && !supported) {
+                 break;
+             }
+-            cache_enabled = expert_hotstore->allocate(ggml_backend_get_default_buffer_type(backend.get()));
++            cache_enabled = expert_hotstore->allocate(ggml_backend_get_default_buffer_type(backend.get()), params.expert_hot_reserve_mb);
+             break;
+         }
+         // launch hint: cache did not engage, usually a non-CUDA (or no) accelerator
+@@ -3695,9 +3696,12 @@ llama_context_params llama_context_default_params() {
+         /*.expert_heat_decay           =*/ 0.999f,
+         /*.expert_heat_log_period      =*/ 0,
+         /*.expert_hot_s                =*/ 0,
++        /*.expert_hot_reserve_mb       =*/ 0,
          /*.expert_hyst                 =*/ 1.3f,
          /*.expert_dwell                =*/ 0,
          /*.expert_cache_force         =*/ false,
@@ -119,7 +225,7 @@ index c9ca5a4..81c4d70 100644
          /*.ctx_other                   =*/ nullptr,
      };
  
-@@ -4307,6 +4310,24 @@ llama_perf_context_data llama_perf_context(const llama_context * ctx) {
+@@ -4307,6 +4311,24 @@ llama_perf_context_data llama_perf_context(const llama_context * ctx) {
      return data;
  }
  
@@ -145,7 +251,7 @@ index c9ca5a4..81c4d70 100644
      const auto data = llama_perf_context(ctx);
  
 diff --git a/src/llama-context.h b/src/llama-context.h
-index a56ea56..156e312 100644
+index a56ea5647..156e3123e 100644
 --- a/src/llama-context.h
 +++ b/src/llama-context.h
 @@ -187,6 +187,7 @@ struct llama_context {
@@ -157,7 +263,7 @@ index a56ea56..156e312 100644
  
      llama_memory_breakdown memory_breakdown() const;
 diff --git a/src/llama-expert-hotstore.cpp b/src/llama-expert-hotstore.cpp
-index 003ae07..f10daba 100644
+index 003ae07cc..cb72c1983 100644
 --- a/src/llama-expert-hotstore.cpp
 +++ b/src/llama-expert-hotstore.cpp
 @@ -10,6 +10,7 @@
@@ -208,13 +314,186 @@ index 003ae07..f10daba 100644
              }
          }
      }
-@@ -225,8 +233,27 @@ bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft) {
-             __func__, hot_s, need / (1024 * 1024)));
+@@ -155,78 +163,150 @@ llama_expert_hotstore::llama_expert_hotstore(
+     }
+ }
+ 
+-bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft) {
+-    if (hot_s <= 0 || entries.empty()) {
++bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft, int reserve_mb) {
++    const bool autofit = hot_s == -1;
++    if (entries.empty()) {
++        return false;
++    }
++    if (!autofit && hot_s <= 0) {
+         return false;
+     }
+-    if (hot_s > n_experts) {
++    if (!autofit && hot_s > n_experts) {
+         throw std::runtime_error(format("%s: hot store S=%d exceeds n_experts=%d",
+             __func__, hot_s, n_experts));
+     }
+ 
+-    // a no_alloc context just for the hot tensor metadata
+-    // (also holds the per-layer LUT/mask tensors created below)
+     cold_bank = getenv("LLAMA_EHS_COLD_BANK") != nullptr;
+-    ggml_init_params params = {
+-        /*.mem_size   =*/ ggml_tensor_overhead() * (2 * entries.size() + 8 * n_layers),
+-        /*.mem_buffer =*/ nullptr,
+-        /*.no_alloc   =*/ true,
++    auto build_layout = [&](int slots) -> size_t {
++        ctx.reset();
++        ggml_init_params params = {
++            /*.mem_size   =*/ ggml_tensor_overhead() * (2 * entries.size() + 8 * n_layers),
++            /*.mem_buffer =*/ nullptr,
++            /*.no_alloc   =*/ true,
++        };
++        ctx = ggml_context_ptr(ggml_init(params));
++        if (!ctx) {
++            return 0;
++        }
++        for (auto & e : entries) {
++            // Each routing lane needs a distinct zero sentinel so MMQ compaction cannot merge
++            // unrelated cold selections. Autofit must price these slots as well as live slots.
++            e.dst = ggml_new_tensor_3d(ctx.get(), e.src->type, e.src->ne[0], e.src->ne[1], slots + n_sent);
++        }
++        luts.assign(n_layers, layer_lut{});
++        for (int il = 0; il < n_layers; il++) {
++            luts[il].hot_lut   = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
++            luts[il].cold_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
++            if (cold_bank) {
++                luts[il].cold_lut = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
++                luts[il].hot_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
++            }
++        }
++        return ggml_backend_alloc_ctx_tensors_from_buft_size(ctx.get(), gpu_buft);
+     };
+-    ctx = ggml_context_ptr(ggml_init(params));
+-    if (!ctx) {
+-        LLAMA_LOG_ERROR("%s: hot store: failed to create ggml context\n", __func__);
+-        return false;
+-    }
+ 
+-    // one hot tensor per model expert tensor, with hot_s expert slots plus
+-    // 1 sentinel slot (index hot_s) that stays zero so cold selections read
+-    // zeros via a valid in-range index (sentinel trick, oldtricks Trick 2).
+-    for (auto & e : entries) {
+-        // hot_s live slots + 8 zero sentinel slots (one per possible expert lane):
+-        // the tier remap sends cold lane j to slot hot_s + j, so every id within a
+-        // token stays DISTINCT and the batched (MMQ) mul_mat_id compaction is safe.
+-        e.dst = ggml_new_tensor_3d(ctx.get(), e.src->type, e.src->ne[0], e.src->ne[1], hot_s + n_sent);
++    size_t free_mem = 0, total_mem = 0;
++    ggml_backend_dev_t dev = ggml_backend_buft_get_device(gpu_buft);
++    if (dev) {
++        ggml_backend_dev_memory(dev, &free_mem, &total_mem);
+     }
+-
+-    // per-layer LUTs and masks for in-graph routing (oldtricks Trick 4).
+-    // hot_lut i32, cold_mask f32, both [n_experts].
+-    luts.assign(n_layers, layer_lut{});
+-    for (int il = 0; il < n_layers; il++) {
+-        luts[il].hot_lut   = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
+-        luts[il].cold_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
+-        if (cold_bank) {
+-            luts[il].cold_lut = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
+-            luts[il].hot_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
++    const size_t reserve = reserve_mb > 0 ? (size_t) reserve_mb * 1024 * 1024 : 0;
++    // Context construction still has to create CUDA compute/VMM buffers after the hot store.
++    // Keep a mandatory internal margin in addition to the caller's reserve; consuming all memory
++    // reported free here otherwise succeeds at cudaMalloc and aborts on the first graph warm-up.
++    constexpr size_t runtime_headroom = 1024ull * 1024 * 1024;
++    const size_t fixed_reserve = reserve <= SIZE_MAX - runtime_headroom ? reserve + runtime_headroom : SIZE_MAX;
++    const size_t budget = free_mem > fixed_reserve ? free_mem - fixed_reserve : 0;
++
++    if (autofit) {
++        // The CUDA allocator's exact layout includes sentinel slots, per-tensor alignment and
++        // routing LUTs. Binary-search that layout instead of estimating from raw expert bytes.
++        int lo = 0;
++        int hi = n_experts;
++        while (lo < hi) {
++            const int mid = lo + (hi - lo + 1) / 2;
++            const size_t candidate = build_layout(mid);
++            if (candidate > 0 && candidate <= budget) {
++                lo = mid;
++            } else {
++                hi = mid - 1;
++            }
+         }
++        hot_s = lo;
++        const size_t exact_need = hot_s > 0 ? build_layout(hot_s) : 0;
++        LLAMA_LOG("%s: hot store: autofit %d slots from %zu MiB free, %zu MiB caller reserve, %zu MiB runtime headroom, %zu MiB exact allocation\n",
++            __func__, hot_s, free_mem / (1024 * 1024), reserve / (1024 * 1024),
++            runtime_headroom / (1024 * 1024), exact_need / (1024 * 1024));
+     }
+-
+-    // check whether the buffer would fit before committing any VRAM
+-    const size_t need = ggml_backend_alloc_ctx_tensors_from_buft_size(ctx.get(), gpu_buft);
+-    if (need == 0) {
+-        LLAMA_LOG_ERROR("%s: hot store: zero-sized buffer, disabled\n", __func__);
++    if (hot_s <= 0) {
+         ctx.reset();
+         return false;
+     }
+ 
+-    size_t free_mem = 0, total_mem = 0;
+-    ggml_backend_dev_t dev = ggml_backend_buft_get_device(gpu_buft);
+-    if (dev) {
+-        ggml_backend_dev_memory(dev, &free_mem, &total_mem);
+-    }
+-    if (dev && free_mem < need) {
+-        throw std::runtime_error(format("%s: not enough memory to allocate the GPU hot store of %d slots (%zu MiB needed, %zu MiB free on %s)", 
+-            __func__, hot_s, need / (1024 * 1024), free_mem / (1024 * 1024),
+-            ggml_backend_dev_name(dev)));
++    size_t need = 0;
++    ggml_backend_buffer_t b = nullptr;
++    while (hot_s > 0) {
++        need = build_layout(hot_s);
++        if (need == 0) {
++            LLAMA_LOG_ERROR("%s: hot store: zero-sized buffer, disabled\n", __func__);
++            ctx.reset();
++            return false;
++        }
++        if (dev) {
++            ggml_backend_dev_memory(dev, &free_mem, &total_mem);
++        }
++        const size_t required = autofit && fixed_reserve <= SIZE_MAX - need ? need + fixed_reserve : need;
++        if (!dev || free_mem >= required) {
++            b = ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), gpu_buft);
++            if (b != nullptr) {
++                break;
++            }
++        }
++        if (!autofit) {
++            throw std::runtime_error(format("%s: unable to allocate hot store buffer of %d slots (%zu MiB needed, %zu MiB free on %s, reserve %d MiB)",
++                __func__, hot_s, need / (1024 * 1024), free_mem / (1024 * 1024),
++                dev ? ggml_backend_dev_name(dev) : "unknown device", reserve_mb));
++        }
++        LLAMA_LOG_WARN("%s: hot store: allocation of %d slots (%zu MiB) failed, retrying with %d\n",
++            __func__, hot_s, need / (1024 * 1024), hot_s - 1);
++        --hot_s;
+     }
+-
+-    ggml_backend_buffer_t b = ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), gpu_buft);
+     if (b == nullptr) {
+-        throw std::runtime_error(format("%s: unable to allocate hot store buffer of %d slots (%zu MiB)", 
+-            __func__, hot_s, need / (1024 * 1024)));
++        LLAMA_LOG_WARN("%s: hot store: no autofit allocation succeeded, disabled\n", __func__);
++        ctx.reset();
++        return false;
++    }
++    if (autofit) {
++        LLAMA_LOG("%s: hot store: autofit allocated %d slots using %zu MiB\n",
++            __func__, hot_s, need / (1024 * 1024));
      }
      buf = ggml_backend_buffer_ptr(b);
 +    allocated_bytes = ggml_backend_buffer_get_size(b);
      ggml_backend_buffer_set_usage(buf.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
  
++    // Autofit happens after construction, so size the routing state only once the final slot
++    // count is known. Manual sizing reaches the same initialization path for consistency.
++    slot_to_expert.assign(n_layers, std::vector<int>(hot_s, -1));
++    dwell_count.assign(n_layers, std::vector<int>(hot_s, 0));
++
 +    // One pinned staging slot is sufficient: migrations are serialized and tensor_set
 +    // completes H2D before returning, after which the SSD/RAM entry may be evicted.
 +    size_t max_slice = 0;
@@ -236,7 +515,7 @@ index 003ae07..f10daba 100644
      // zero the whole buffer so the sentinel slot (index hot_s) AND every
      // not-yet-filled expert slot is zero; copy_top_s/resync_top_s only write
      // slots 0..hot_s-1, so slot hot_s stays zero for the lifetime of the store.
-@@ -342,7 +369,7 @@ void llama_expert_hotstore::copy_top_s(const llama_expert_heatmap & heatmap) {
+@@ -342,7 +422,7 @@ void llama_expert_hotstore::copy_top_s(const llama_expert_heatmap & heatmap) {
                  if (ex < 0) {
                      continue;
                  }
@@ -245,7 +524,7 @@ index 003ae07..f10daba 100644
                  ehs_drop_host_pages(src + (size_t) ex * slot, slot);
                  ehs_release_host(src + (size_t) ex * slot, slot);
              }
-@@ -402,7 +429,7 @@ void llama_expert_hotstore::plant_static() {
+@@ -402,7 +482,7 @@ void llama_expert_hotstore::plant_static() {
              const char * src = e->src->data ? (const char *) ggml_get_data(e->src) : nullptr;
              if (!src) continue;
              for (int p = 0; p < hot_s && p < n_experts; p++) {
@@ -254,7 +533,7 @@ index 003ae07..f10daba 100644
                  ehs_drop_host_pages(src + (size_t) p * slot, slot);
                  ehs_release_host(src + (size_t) p * slot, slot);
              }
-@@ -488,6 +515,11 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+@@ -488,6 +568,11 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
              if (p < 0) {
                  break; // no slot free or displaceable under the gate
              }
@@ -266,7 +545,7 @@ index 003ae07..f10daba 100644
              const int e_old = ste[p];
              if (cold_bank) {
                  const int q = expert_to_cold_slot[il][e_cold];
-@@ -504,7 +536,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+@@ -504,7 +589,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
                          ggml_backend_tensor_get(ent->dst, swap_tmp.data(), (size_t) p * slot, slot);
                      }
                      // promote: bank slot q -> VRAM slot p (H2D from pinned host)
@@ -275,7 +554,7 @@ index 003ae07..f10daba 100644
                      if (e_old >= 0) {
                          // demote lands in the vacated bank slot
                          memcpy(bank + (size_t) q * slot, swap_tmp.data(), slot);
-@@ -562,7 +594,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+@@ -562,7 +647,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
                  if (!src) {
                      continue;
                  }
@@ -284,7 +563,7 @@ index 003ae07..f10daba 100644
                  ehs_drop_host_pages(src + (size_t) e_cold * slot, slot);
                  ehs_release_host(src + (size_t) e_cold * slot, slot);
              }
-@@ -586,6 +618,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+@@ -586,6 +671,7 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
  
      last_sync_tokens = heatmap.tokens_total;
      if (swapped > 0) {
@@ -292,7 +571,7 @@ index 003ae07..f10daba 100644
          update_luts();
          if (getenv("LLAMA_EXPERT_DEBUG")) {
              LLAMA_LOG("=== Expert hot store: re-sync swapped %d expert slots ===\n", swapped);
-@@ -603,6 +636,19 @@ void llama_expert_hotstore::maybe_resync(const llama_expert_heatmap & heatmap, b
+@@ -603,6 +689,19 @@ void llama_expert_hotstore::maybe_resync(const llama_expert_heatmap & heatmap, b
      }
  }
  
@@ -312,8 +591,22 @@ index 003ae07..f10daba 100644
  int llama_expert_hotstore::slot_of(int layer_idx, int expert_id) const {
      if (layer_idx < 0 || layer_idx >= n_layers || hot_s <= 0) {
          return -1;
+@@ -718,11 +817,11 @@ void llama_expert_hotstore::log() const {
+     LLAMA_LOG("  total bytes/slot across all layers = %zu (%zu MiB)\n",
+         total, total / (1024 * 1024));
+     if (buf) {
+-        LLAMA_LOG("  GPU hot store allocated: %s, %zu bytes (%zu MiB) for %d+1 slots (%d expert + 1 sentinel)\n",
++        LLAMA_LOG("  GPU hot store allocated: %s, %zu bytes (%zu MiB) for %d+%d slots (%d expert + %d sentinels)\n",
+             ggml_backend_buffer_name(buf.get()),
+             ggml_backend_buffer_get_size(buf.get()),
+             ggml_backend_buffer_get_size(buf.get()) / (1024 * 1024),
+-            hot_s, hot_s);
++            hot_s, n_sent, hot_s, n_sent);
+     } else if (hot_s > 0) {
+         LLAMA_LOG("  hot store DISABLED (%d slots requested)\n", hot_s);
+     }
 diff --git a/src/llama-expert-hotstore.h b/src/llama-expert-hotstore.h
-index 69884f6..ff1d805 100644
+index 69884f65f..24e099262 100644
 --- a/src/llama-expert-hotstore.h
 +++ b/src/llama-expert-hotstore.h
 @@ -59,6 +59,9 @@ struct llama_expert_hotstore {
@@ -326,7 +619,7 @@ index 69884f6..ff1d805 100644
  
      // Stage C cold bank (LLAMA_EHS_COLD_BANK=1): every non-hot expert lives in
      // a compact pinned-host bank that the GPU reads directly (UVA), replacing
-@@ -87,9 +90,22 @@ struct llama_expert_hotstore {
+@@ -87,15 +90,29 @@ struct llama_expert_hotstore {
      // dwell_count[il][p] = syncs since slot p last changed (0 = fresh/empty)
      std::vector<std::vector<int>> dwell_count;
  
@@ -350,7 +643,16 @@ index 69884f6..ff1d805 100644
  
      ~llama_expert_hotstore();
  
-@@ -127,4 +143,7 @@ llama_expert_hotstore(const llama_model * model, int n_layers,
+-    // allocate the GPU hot store for `hot_s` slots. returns false (and
++    // allocate the GPU hot store for `hot_s` slots. when hot_s == -1 the slot
++    // count is autofit from free VRAM minus `reserve_mb`. returns false (and
+     // leaves the store disabled) on failure or shortage of VRAM.
+-    bool allocate(ggml_backend_buffer_type_t gpu_buft);
++    bool allocate(ggml_backend_buffer_type_t gpu_buft, int reserve_mb = 0);
+ 
+     // copy the top-S expert slices for every layer into the GPU hot store,
+     // using the given heatmap for the ranking. one-shot (guarded by is_filled).
+@@ -127,4 +144,7 @@ llama_expert_hotstore(const llama_model * model, int n_layers,
      void update_luts();
  
      void log() const;
@@ -359,7 +661,7 @@ index 69884f6..ff1d805 100644
 +    void upload(ggml_tensor * dst, const void * src, size_t dst_offset, size_t bytes);
  };
 diff --git a/src/llama-model.cpp b/src/llama-model.cpp
-index fc83658..ae0d4f6 100644
+index fc83658dd..ae0d4f69d 100644
 --- a/src/llama-model.cpp
 +++ b/src/llama-model.cpp
 @@ -1678,7 +1678,13 @@ bool llama_model_base::load_tensors(llama_model_loader & ml) {
@@ -377,172 +679,6 @@ index fc83658..ae0d4f6 100644
      pimpl->mappings.reserve(ml.mappings.size());
  
      // create the backend buffers
-diff --git a/common/arg.cpp b/common/arg.cpp
-index fd94bafc4..16e61866f 100644
---- a/common/arg.cpp
-+++ b/common/arg.cpp
-@@ -2852,6 +2852,13 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
-             params.expert_hot_s = value;
-         }
-     ).set_env("LLAMA_ARG_EXPERT_HOT_S"));
-+    add_opt(common_arg(
-+        {"--ehs-reserve-mb"}, "N",
-+        "VRAM in MiB kept free when autofitting hot store slots (-ehs -1), default: 0",
-+        [](common_params & params, int value) {
-+            params.expert_hot_reserve_mb = value;
-+        }
-+    ).set_env("LLAMA_ARG_EHS_RESERVE_MB"));
-     add_opt(common_arg(
-         {"--ecf", "--expert-cache-force"},
-         {},
-@@ -2860,6 +2867,21 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
-             params.expert_cache_force = value;
-         }
-     ));
-+    add_opt(common_arg(
-+        {"--swap-watchdog"},
-+        {},
-+        "stop the server if process swap or system swap I/O bursts (default: off)",
-+        [](common_params & params, bool value) {
-+            params.swap_watchdog = value;
-+        }
-+    ).set_env("LLAMA_ARG_SWAP_WATCHDOG"));
-+    add_opt(common_arg(
-+        {"--ram-headroom-gib"}, "N",
-+        "refuse to start if MemAvailable is below N GiB, 0 = disabled (default: 8)",
-+        [](common_params & params, int value) {
-+            params.ram_headroom_gib = value;
-+        }
-+    ).set_env("LLAMA_ARG_RAM_HEADROOM_GIB"));
-     add_opt(common_arg(
-         {"-ncffn", "--n-cpu-ffn"}, "N",
-         "keep the dense FFN weights of the first N layers in the CPU\n"
-diff --git a/common/common.cpp b/common/common.cpp
-index c432c5f2b..11b9065ea 100644
---- a/common/common.cpp
-+++ b/common/common.cpp
-@@ -1777,6 +1777,7 @@ struct llama_context_params common_context_params_to_llama(const common_params &
-     cparams.expert_heat_decay      = params.expert_heat_decay;
-     cparams.expert_heat_log_period = params.expert_heat_log_period;
-     cparams.expert_hot_s           = params.expert_hot_s;
-+    cparams.expert_hot_reserve_mb  = params.expert_hot_reserve_mb;
-     cparams.expert_hyst            = params.expert_hyst;
-     cparams.expert_dwell           = params.expert_dwell;
-     cparams.expert_cache_force      = params.expert_cache_force;
-diff --git a/common/common.h b/common/common.h
-index 3ca9342e4..2db9672e0 100644
---- a/common/common.h
-+++ b/common/common.h
-@@ -537,10 +537,13 @@ struct common_params {
- 
-     float expert_heat_decay      = 0.999f; // multiplicative decay per update
-     int   expert_heat_log_period = 0;    // log period in updates (0 = off)
--    int   expert_hot_s           = 0;      // top-S expert slots (0 = disabled)
-+    int   expert_hot_s           = 0;      // top-S expert slots (0 = disabled, -1 = autofit from free VRAM)
-+    int32_t expert_hot_reserve_mb = 0;     // VRAM kept free when autofitting hot store slots
-     float expert_hyst            = 1.3f;  // hysteresis ratio: only swap when cold >= hyst x hot
-     int   expert_dwell           = 0;    // minimum updates a resident slot must keep before a swap
-     bool  expert_cache_force      = false;  // bypass the CUDA-only hot store guard
-+    bool  swap_watchdog            = false;  // stop the server on process or system swap bursts
-+    int32_t ram_headroom_gib       = 8;      // refuse to start with less free RAM (0 = off)
-     bool    offline                    = false;
- 
-     int32_t ppl_stride      = 0;     // stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
-diff --git a/include/llama.h b/include/llama.h
-index 0c3bfd713..ae5d0bfe8 100644
---- a/include/llama.h
-+++ b/include/llama.h
-@@ -417,6 +417,7 @@ extern "C" {
-         float expert_heat_decay;      // expert heatmap decay per update
-         int   expert_heat_log_period; // expert heatmap log interval
-         int   expert_hot_s;           // number of top-S expert slots for GPU hot store
-+        int32_t expert_hot_reserve_mb; // VRAM in MiB kept free when autofitting slots (expert_hot_s == -1)
-         float expert_hyst;            // hysteresis ratio for slot swaps
-         int   expert_dwell;           // min updates a resident slot keeps before swap
-         bool  expert_cache_force;      // bypass the CUDA-only hot store guard
-diff --git a/src/llama-context.cpp b/src/llama-context.cpp
-index 81c4d70ff..9d81438e4 100644
---- a/src/llama-context.cpp
-+++ b/src/llama-context.cpp
-@@ -507,7 +507,7 @@ llama_context::llama_context(
-             if (!force && !supported) {
-                 break;
-             }
--            cache_enabled = expert_hotstore->allocate(ggml_backend_get_default_buffer_type(backend.get()));
-+            cache_enabled = expert_hotstore->allocate(ggml_backend_get_default_buffer_type(backend.get()), params.expert_hot_reserve_mb);
-             break;
-         }
-         // launch hint: cache did not engage, usually a non-CUDA (or no) accelerator
-@@ -3696,6 +3696,7 @@ llama_context_params llama_context_default_params() {
-         /*.expert_heat_decay           =*/ 0.999f,
-         /*.expert_heat_log_period      =*/ 0,
-         /*.expert_hot_s                =*/ 0,
-+        /*.expert_hot_reserve_mb       =*/ 0,
-         /*.expert_hyst                 =*/ 1.3f,
-         /*.expert_dwell                =*/ 0,
-         /*.expert_cache_force         =*/ false,
-diff --git a/src/llama-expert-hotstore.cpp b/src/llama-expert-hotstore.cpp
-index 95c404852..67e300014 100644
---- a/src/llama-expert-hotstore.cpp
-+++ b/src/llama-expert-hotstore.cpp
-@@ -163,7 +163,27 @@ llama_expert_hotstore::llama_expert_hotstore(
-     }
- }
- 
--bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft) {
-+bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft, int reserve_mb) {
-+    if (hot_s == -1) {
-+        // autofit: one slot holds one expert slice per layer, so the per-slot
-+        // cost is the sum of every entry's per-expert slice size. The reserve
-+        // stays free on the GPU for processes that start after this server.
-+        size_t slot_bytes = 0;
-+        for (const auto & e : entries) {
-+            slot_bytes += ggml_nbytes(e.src) / (size_t) e.src->ne[2];
-+        }
-+        size_t free_mem = 0, total_mem = 0;
-+        ggml_backend_dev_t dev_probe = ggml_backend_buft_get_device(gpu_buft);
-+        if (dev_probe) {
-+            ggml_backend_dev_memory(dev_probe, &free_mem, &total_mem);
-+        }
-+        const size_t reserve = reserve_mb > 0 ? (size_t) reserve_mb * 1024 * 1024 : 0;
-+        const size_t budget = free_mem > reserve ? free_mem - reserve : 0;
-+        const int fit = slot_bytes > 0 ? (int) (budget / slot_bytes) : 0;
-+        hot_s = std::min(fit > 0 ? fit : 0, n_experts);
-+        LLAMA_LOG("%s: hot store: autofit %d slots from %zu MiB free, %zu MiB reserve, %zu MiB per slot\n",
-+            __func__, hot_s, free_mem / (1024 * 1024), reserve / (1024 * 1024), slot_bytes / (1024 * 1024));
-+    }
-     if (hot_s <= 0 || entries.empty()) {
-         return false;
-     }
-@@ -222,9 +242,9 @@ bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft) {
-         ggml_backend_dev_memory(dev, &free_mem, &total_mem);
-     }
-     if (dev && free_mem < need) {
--        throw std::runtime_error(format("%s: not enough memory to allocate the GPU hot store of %d slots (%zu MiB needed, %zu MiB free on %s)", 
-+        throw std::runtime_error(format("%s: not enough memory to allocate the GPU hot store of %d slots (%zu MiB needed, %zu MiB free on %s, reserve %d MiB)",
-             __func__, hot_s, need / (1024 * 1024), free_mem / (1024 * 1024),
--            ggml_backend_dev_name(dev)));
-+            ggml_backend_dev_name(dev), reserve_mb));
-     }
- 
-     ggml_backend_buffer_t b = ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), gpu_buft);
-diff --git a/src/llama-expert-hotstore.h b/src/llama-expert-hotstore.h
-index 56c2ac3e6..24e099262 100644
---- a/src/llama-expert-hotstore.h
-+++ b/src/llama-expert-hotstore.h
-@@ -109,9 +109,10 @@ llama_expert_hotstore(const llama_model * model, int n_layers,
- 
-     ~llama_expert_hotstore();
- 
--    // allocate the GPU hot store for `hot_s` slots. returns false (and
-+    // allocate the GPU hot store for `hot_s` slots. when hot_s == -1 the slot
-+    // count is autofit from free VRAM minus `reserve_mb`. returns false (and
-     // leaves the store disabled) on failure or shortage of VRAM.
--    bool allocate(ggml_backend_buffer_type_t gpu_buft);
-+    bool allocate(ggml_backend_buffer_type_t gpu_buft, int reserve_mb = 0);
- 
-     // copy the top-S expert slices for every layer into the GPU hot store,
-     // using the given heatmap for the ranking. one-shot (guarded by is_filled).
 diff --git a/tools/server/CMakeLists.txt b/tools/server/CMakeLists.txt
 index 280bd9e19..80f68819b 100644
 --- a/tools/server/CMakeLists.txt
@@ -556,183 +692,6 @@ index 280bd9e19..80f68819b 100644
  )
  set_target_properties(${TARGET} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
  
-diff --git a/tools/server/server-swapwatchdog.cpp b/tools/server/server-swapwatchdog.cpp
-new file mode 100644
-index 000000000..35e6ccf3f
---- /dev/null
-+++ b/tools/server/server-swapwatchdog.cpp
-@@ -0,0 +1,158 @@
-+#include "server-swapwatchdog.h"
-+
-+#include "log.h"
-+
-+#include <atomic>
-+#include <chrono>
-+#include <cstdio>
-+#include <cstdlib>
-+#include <fstream>
-+#include <string>
-+#include <thread>
-+
-+#ifdef __linux__
-+#include <csignal>
-+#include <unistd.h>
-+
-+// Thresholds copied from scripts/run_qwen38_server.sh. Samples are one second apart.
-+// Cold startup legitimately page-faults the 82 GB model from the file cache, that is
-+// file-backed read, not swap, so the same thresholds apply from the very first sample.
-+// Env overrides are a test hook for small cgroup tests, the launcher never sets them.
-+static long proc_swap_burst_kib() {
-+    const char * env = getenv("SWAP_WATCHDOG_PROC_BURST_KIB");
-+    return env ? atol(env) : 256 * 1024;
-+}
-+
-+static long sys_rate_hard_mib_s() {
-+    const char * env = getenv("SWAP_WATCHDOG_SYS_RATE_HARD_MIB_S");
-+    return env ? atol(env) : 2048;
-+}
-+
-+static long sys_rate_burst_mib_s() {
-+    const char * env = getenv("SWAP_WATCHDOG_SYS_RATE_MIB_S");
-+    return env ? atol(env) : 512;
-+}
-+
-+static int sys_rate_burst_samples() {
-+    const char * env = getenv("SWAP_WATCHDOG_BURST_SAMPLES");
-+    return env ? atoi(env) : 5;
-+}
-+
-+static std::atomic<bool> g_running{false};
-+
-+static bool read_status(long * rss_kib, long * swap_kib) {
-+    std::ifstream f("/proc/self/status");
-+    if (!f) {
-+        return false;
-+    }
-+    std::string line;
-+    *rss_kib  = -1;
-+    *swap_kib = -1;
-+    while (std::getline(f, line)) {
-+        // /proc fields are separated by tabs, match the key only
-+        if (line.compare(0, 6, "VmRSS:") == 0) {
-+            sscanf(line.c_str() + 6, "%ld", rss_kib);
-+        } else if (line.compare(0, 7, "VmSwap:") == 0) {
-+            sscanf(line.c_str() + 7, "%ld", swap_kib);
-+        }
-+    }
-+    return *rss_kib >= 0 && *swap_kib >= 0;
-+}
-+
-+static bool read_vmstat(unsigned long long * in, unsigned long long * out) {
-+    std::ifstream f("/proc/vmstat");
-+    if (!f) {
-+        return false;
-+    }
-+    std::string key;
-+    unsigned long long value;
-+    *in  = 0;
-+    *out = 0;
-+    while (f >> key >> value) {
-+        if (key == "pswpin") {
-+            *in = value;
-+        } else if (key == "pswpout") {
-+            *out = value;
-+        }
-+    }
-+    return true;
-+}
-+
-+static void stop_server(const char * reason, long value) {
-+    LOG_ERR("swap watchdog: %s (%ld MiB); stopping server\n", reason, value);
-+    g_running.store(false);
-+
-+    // Escalate to SIGKILL if the graceful stop hangs, the launcher script does the same.
-+    std::thread([]() {
-+        std::this_thread::sleep_for(std::chrono::seconds(30));
-+        kill(getpid(), SIGKILL);
-+    }).detach();
-+
-+    kill(getpid(), SIGINT);
-+}
-+
-+static void watchdog_loop() {
-+    long    last_swap_kib = -1;
-+    unsigned long long last_in = 0;
-+    unsigned long long last_out = 0;
-+    int burst_samples = 0;
-+
-+    if (!read_vmstat(&last_in, &last_out)) {
-+        LOG_WRN("swap watchdog: cannot read /proc/vmstat, only VmSwap is monitored\n");
-+    }
-+
-+    while (g_running.load(std::memory_order_relaxed)) {
-+        std::this_thread::sleep_for(std::chrono::seconds(1));
-+
-+        long rss_kib;
-+        long swap_kib;
-+        if (!read_status(&rss_kib, &swap_kib)) {
-+            continue;
-+        }
-+
-+        if (last_swap_kib >= 0) {
-+            long burst = swap_kib - last_swap_kib;
-+            if (burst > proc_swap_burst_kib()) {
-+                stop_server("process swap grew past the per-sample burst limit", burst / 1024);
-+                return;
-+            }
-+        }
-+        last_swap_kib = swap_kib;
-+
-+        unsigned long long in;
-+        unsigned long long out;
-+        if (read_vmstat(&in, &out)) {
-+            long rate_mib = (long) ((in - last_in) + (out - last_out)) * 4 / 1024;
-+            last_in  = in;
-+            last_out = out;
-+            if (rate_mib > sys_rate_hard_mib_s()) {
-+                stop_server("system swap I/O burst", rate_mib);
-+                return;
-+            }
-+            if (rate_mib > sys_rate_burst_mib_s()) {
-+                if (++burst_samples >= sys_rate_burst_samples()) {
-+                    stop_server("sustained system swap I/O", rate_mib);
-+                    return;
-+                }
-+            } else {
-+                burst_samples = 0;
-+            }
-+        }
-+    }
-+}
-+
-+bool server_swap_watchdog_start() {
-+    if (g_running.exchange(true)) {
-+        return true;
-+    }
-+    std::thread(watchdog_loop).detach();
-+    LOG_INF("swap watchdog: monitoring VmSwap and system swap I/O\n");
-+    return true;
-+}
-+#else
-+
-+bool server_swap_watchdog_start() {
-+    return false;
-+}
-+
-+#endif
-diff --git a/tools/server/server-swapwatchdog.h b/tools/server/server-swapwatchdog.h
-new file mode 100644
-index 000000000..1f7ea1b78
---- /dev/null
-+++ b/tools/server/server-swapwatchdog.h
-@@ -0,0 +1,7 @@
-+#pragma once
-+
-+// In-process swap watchdog: stops the server when its own swap usage grows fast
-+// or system swap I/O stays high. Linux only; start() is a no-op elsewhere.
-+// Mirrors the external monitor in scripts/run_qwen38_server.sh.
-+
-+bool server_swap_watchdog_start();
 diff --git a/tools/server/server.cpp b/tools/server/server.cpp
 index 22378b38c..155b9e7b0 100644
 --- a/tools/server/server.cpp

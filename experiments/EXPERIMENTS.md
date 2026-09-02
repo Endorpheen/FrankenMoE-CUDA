@@ -206,5 +206,18 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
   - the hot-store allocation failure message now reports the reserve.
   - `scripts/run_qwen38_server.sh` finally passes its `VRAM_RESERVE_MB` (default 2048) to the server; the variable existed since the launcher was written but was never forwarded.
   - `patches/expert-tier-integration.patch` was rebuilt as original integration plus the safety mechanisms; it applies cleanly to the pinned upstream commit and reproduces the benchmarked binary functionally (the preserved local comment edits in the worktree stay out of it).
-- Speed impact: none measured yet. Note that enabling autofit CHANGES the runtime: the hot store will now actually engage where every earlier run had it off. A speed A/B (store off vs autofit on, same protocol as EXP-005) is required before any performance claim; this experiment claims only that the mechanism works and is bounded.
-- Functional gate: pending - requires a Qwen server start to observe the autofit log line and VRAM occupancy with the reserve in place.
+- The first implementation estimated only live expert bytes and was unsafe: 15 estimated slots required 2264 MiB after the eight sentinel lanes and allocator alignment were included. Exact layout sizing then exposed CUDA fragmentation, and an allocation that consumed all reported free VRAM failed during the first graph warm-up.
+- Final safety behavior: binary-search the exact CUDA layout, retry with fewer slots after allocation failure, preserve `-ehs -1` when the upstream fit aborts on explicit `-ngl`, initialize routing state after the final slot count is known, and keep a mandatory 1024 MiB runtime margin in addition to the caller reserve.
+- Functional gate: with `--ehs-reserve-mb 0`, one live slot allocated as a 996 MiB buffer, the server reached the listening state, generated 16 coherent reasoning tokens, used zero process swap, and shut down cleanly. With the launcher's 2048 MiB reserve, autofit safely selected zero slots.
+- Decision: `ACCEPTED` as allocation-safety infrastructure only. Performance activation is governed by EXP-010 and remains opt-in.
+
+## EXP-2026-09-01-010-ehs-ab
+
+- Status: `REJECTED` (hot-store activation); the launcher defaults to `EHS=0`.
+- Hypothesis: a live GPU expert slot improves repeated and sustained decode by avoiding CPU expert work without changing greedy output.
+- Protocol: patched server, Qwen3.8 UD-IQ3_XXS, 64K context, greedy output, identical prompt and parameters, five 256-token warm runs per arm plus cold, warmup, and 512-token long requests. Both arms used `-ngl 47` because `-ngl 99` left only 1943 MiB free and safe autofit correctly selected zero slots; 47 GPU layers made one 996 MiB live slot fit. Raw per-run results are in `benchmarks/exp010-ehs-ab.json`.
+- Warm decode median: hot store off `15.419 tok/s` (range `14.097-15.746`) versus one-slot autofit `14.199 tok/s` (range `13.983-14.272`), a `-7.91%` regression.
+- Long decode: `14.992` versus `13.312 tok/s`, a `-11.21%` regression. Cold decode: `15.148` versus `13.593 tok/s`, a `-10.27%` regression.
+- Correctness: all five off-arm greedy outputs had the same SHA-256. The live-hot-store arm produced five different hashes across the first five repeated requests and only stabilized for the last two, so the correctness gate failed.
+- Memory: process swap remained zero in both arms. End RSS was 36.18 GiB off versus 38.50 GiB with autofit; total GPU use was about 9.79 versus 10.91 GiB. Physical-read totals are not comparable because the arms ran sequentially against a warming OS page cache.
+- Decision: `REJECTED`. The hot store is disabled by default and is retained only behind explicit `EHS=-1` for future debugging. It must not become the baseline until both output stability and the speed regression are fixed.

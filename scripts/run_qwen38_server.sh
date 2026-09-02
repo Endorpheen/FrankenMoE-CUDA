@@ -2,7 +2,7 @@
 # Launch the expert-tier llama-server for Qwen3.8-Flash-Next UD-IQ3_XXS.
 # The standard llama.cpp web UI and OpenAI-compatible API are exposed on the same port.
 # Usage: scripts/run_qwen38_server.sh /path/to/Qwen...-00001-of-00003.gguf
-# Environment: PORT, HOST, CTX_SIZE, EHS (-1 = autofit), SWAPS_PER_TOK,
+# Environment: PORT, HOST, CTX_SIZE, EHS (0 = off, -1 = experimental autofit), SWAPS_PER_TOK,
 # VRAM_RESERVE_MB, THREADS, EXTRA_ARGS.
 set -euo pipefail
 
@@ -28,10 +28,10 @@ if (( MEM_AVAILABLE_KIB < 8 * 1024 * 1024 )); then
     exit 3
 fi
 
-# Autofit (-ehs -1) derives the hot-slot count from free VRAM minus the reserve.
+# Autofit remains opt-in because EXP-010 found a decode regression and unstable greedy output.
 # The reserve leaves room for GPU processes that start after the server has initialized.
 VRAM_RESERVE_MB="${VRAM_RESERVE_MB:-2048}"
-EHS="${EHS:--1}"
+EHS="${EHS:-0}"
 
 PORT="${PORT:-8080}"
 HOST="${HOST:-127.0.0.1}"

@@ -1,0 +1,198 @@
+{
+  "experiment_id": "EXP-2026-09-01-010-ehs-ab",
+  "n_gpu_layers": 47,
+  "arms": [
+    {
+      "label": "autofit",
+      "ehs": -1,
+      "reserve_mb": 0,
+      "startup_s": 4.513,
+      "gpu_before_mib": 3873,
+      "start_metrics": {
+        "rss_kib": 5933824,
+        "swap_kib": 0,
+        "read_bytes": 4718592,
+        "gpu_used_mib": 10923
+      },
+      "end_metrics": {
+        "rss_kib": 40366840,
+        "swap_kib": 0,
+        "read_bytes": 2207969280,
+        "gpu_used_mib": 10909
+      },
+      "warm_generation_tok_s": [
+        14.199,
+        13.983,
+        14.272,
+        14.071,
+        14.224
+      ],
+      "warm_median_tok_s": 14.199,
+      "warm_min_tok_s": 13.983,
+      "warm_max_tok_s": 14.272,
+      "rows": [
+        {
+          "tag": "cold",
+          "completion_tokens": 256,
+          "wall_s": 20.927,
+          "generation_tok_s": 13.593,
+          "prompt_tok_s": 24.947,
+          "text_sha256": "64f58d0a10311cd52ba4ee0fed392320ff55f3e36af186e8c2fd2d7b514a942f"
+        },
+        {
+          "tag": "warmup",
+          "completion_tokens": 256,
+          "wall_s": 19.01,
+          "generation_tok_s": 13.733,
+          "prompt_tok_s": 15.304,
+          "text_sha256": "446ba04d75b390704c8973da8848ae08e29c218f17bb11d7f40060e0e8f9665d"
+        },
+        {
+          "tag": "warm1",
+          "completion_tokens": 256,
+          "wall_s": 18.422,
+          "generation_tok_s": 14.199,
+          "prompt_tok_s": 14.88,
+          "text_sha256": "b0d2043be00845e49c25e1571f15ee77e7f0d216d640b1468ccfd238946a4bea"
+        },
+        {
+          "tag": "warm2",
+          "completion_tokens": 256,
+          "wall_s": 18.688,
+          "generation_tok_s": 13.983,
+          "prompt_tok_s": 15.448,
+          "text_sha256": "e56af4c852904f70a582bb683b1db8726148a5334ba3e6dc19c4da89032d1b56"
+        },
+        {
+          "tag": "warm3",
+          "completion_tokens": 256,
+          "wall_s": 18.337,
+          "generation_tok_s": 14.272,
+          "prompt_tok_s": 14.533,
+          "text_sha256": "9d8aea1f953f8f7c01359da9d68311901fcb691469599385de2e186d47115ef4"
+        },
+        {
+          "tag": "warm4",
+          "completion_tokens": 256,
+          "wall_s": 18.575,
+          "generation_tok_s": 14.071,
+          "prompt_tok_s": 14.936,
+          "text_sha256": "bfa170f952c1e6243911c635cbaa3cf6b8249b32cfb601f4ca98674e444deb28"
+        },
+        {
+          "tag": "warm5",
+          "completion_tokens": 256,
+          "wall_s": 18.392,
+          "generation_tok_s": 14.224,
+          "prompt_tok_s": 14.645,
+          "text_sha256": "bfa170f952c1e6243911c635cbaa3cf6b8249b32cfb601f4ca98674e444deb28"
+        },
+        {
+          "tag": "long",
+          "completion_tokens": 512,
+          "wall_s": 39.436,
+          "generation_tok_s": 13.312,
+          "prompt_tok_s": 31.576,
+          "text_sha256": "5231919e9fab0557e6c8a3a83af5aca0336ddc7b53f3a618d43586aa72b0add6"
+        }
+      ],
+      "log": "/tmp/bmoe-srv/exp010-autofit.log"
+    },
+    {
+      "label": "off",
+      "ehs": 0,
+      "reserve_mb": 0,
+      "startup_s": 4.364,
+      "gpu_before_mib": 3794,
+      "start_metrics": {
+        "rss_kib": 7187780,
+        "swap_kib": 0,
+        "read_bytes": 4022272,
+        "gpu_used_mib": 9831
+      },
+      "end_metrics": {
+        "rss_kib": 37934888,
+        "swap_kib": 0,
+        "read_bytes": 476106752,
+        "gpu_used_mib": 9793
+      },
+      "warm_generation_tok_s": [
+        14.097,
+        15.138,
+        15.419,
+        15.746,
+        15.721
+      ],
+      "warm_median_tok_s": 15.419,
+      "warm_min_tok_s": 14.097,
+      "warm_max_tok_s": 15.746,
+      "rows": [
+        {
+          "tag": "cold",
+          "completion_tokens": 256,
+          "wall_s": 18.846,
+          "generation_tok_s": 15.148,
+          "prompt_tok_s": 26.863,
+          "text_sha256": "2fbd2d3b0366ba325879db632a1973ee313a08555dc8e1707dfa8bd646c19691"
+        },
+        {
+          "tag": "warmup",
+          "completion_tokens": 256,
+          "wall_s": 18.826,
+          "generation_tok_s": 13.908,
+          "prompt_tok_s": 14.084,
+          "text_sha256": "2fbd2d3b0366ba325879db632a1973ee313a08555dc8e1707dfa8bd646c19691"
+        },
+        {
+          "tag": "warm1",
+          "completion_tokens": 256,
+          "wall_s": 18.369,
+          "generation_tok_s": 14.097,
+          "prompt_tok_s": 14.51,
+          "text_sha256": "2fbd2d3b0366ba325879db632a1973ee313a08555dc8e1707dfa8bd646c19691"
+        },
+        {
+          "tag": "warm2",
+          "completion_tokens": 256,
+          "wall_s": 17.122,
+          "generation_tok_s": 15.138,
+          "prompt_tok_s": 14.578,
+          "text_sha256": "2fbd2d3b0366ba325879db632a1973ee313a08555dc8e1707dfa8bd646c19691"
+        },
+        {
+          "tag": "warm3",
+          "completion_tokens": 256,
+          "wall_s": 16.78,
+          "generation_tok_s": 15.419,
+          "prompt_tok_s": 16.696,
+          "text_sha256": "2fbd2d3b0366ba325879db632a1973ee313a08555dc8e1707dfa8bd646c19691"
+        },
+        {
+          "tag": "warm4",
+          "completion_tokens": 256,
+          "wall_s": 16.449,
+          "generation_tok_s": 15.746,
+          "prompt_tok_s": 15.89,
+          "text_sha256": "2fbd2d3b0366ba325879db632a1973ee313a08555dc8e1707dfa8bd646c19691"
+        },
+        {
+          "tag": "warm5",
+          "completion_tokens": 256,
+          "wall_s": 16.481,
+          "generation_tok_s": 15.721,
+          "prompt_tok_s": 15.543,
+          "text_sha256": "2fbd2d3b0366ba325879db632a1973ee313a08555dc8e1707dfa8bd646c19691"
+        },
+        {
+          "tag": "long",
+          "completion_tokens": 512,
+          "wall_s": 35.046,
+          "generation_tok_s": 14.992,
+          "prompt_tok_s": 34.457,
+          "text_sha256": "7e420eb791006a452e651c29a3d8f6b0b1a67b22d9f3c109e8ec5fd593559dec"
+        }
+      ],
+      "log": "/tmp/bmoe-srv/exp010-off.log"
+    }
+  ]
+}

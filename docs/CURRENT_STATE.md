@@ -20,6 +20,8 @@ Dense and non-MoE weights use the normal llama.cpp scheduler. A separate 64 MiB 
 
 Four blocking `pread` lanes can already overlap expert reads with CPU cold-expert computation. RAM entries have read/use leases, and VRAM mappings are published only after a complete upload. The remaining P1 boundary is synchronous `ggml_backend_tensor_set`: pinned staging exists, but H2D transfer does not overlap CUDA compute.
 
+The expert-tier GPU hot store is currently disabled by default (`EHS=0`). EXP-010 measured one live slot at `-7.91%` median warm decode and found unstable greedy output hashes. Safe bounded autofit remains available only as an explicit experimental mode (`EHS=-1`); it uses exact CUDA layout sizing, allocation backoff, and a mandatory 1024 MiB runtime headroom.
+
 ## Verified target
 
 - CPU: AMD Ryzen 9 5950X.
