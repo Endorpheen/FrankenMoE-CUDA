@@ -49,6 +49,8 @@ struct ggml_tensor;
 
 namespace bmoe {
 
+class DeterministicWorkload;
+
 class RouterHook {
 public:
     RouterHook(const MoeRecipe & recipe, int n_layer);
@@ -198,6 +200,11 @@ public:
     // is decode-only unless armed for prefill, and unlike the traces it must know this on every
     // run, so it cannot ride on begin_trace_batch.
     void set_batch_phase(int phase) { batch_phase_ = phase; }
+
+    // Capture/replay expert IDs at the existing top-k barrier. Unlike route tracing this does not
+    // ask the graph for any additional nodes, so a replay remains suitable for benchmarking.
+    void set_deterministic_workload(DeterministicWorkload * workload) { workload_ = workload; }
+    void begin_deterministic_batch(int base_pos, int n_tokens, int phase);
 
     long long experts_routed() const { return experts_routed_; }
     long long experts_dropped() const { return experts_dropped_; }
@@ -475,6 +482,7 @@ private:
     bool drop_renorm_ = true;
     bool drop_prefill_ = false;
     int batch_phase_ = 1; // 0 prefill, 1 decode
+    DeterministicWorkload * workload_ = nullptr; // non-owning; valid for one Session::generate call
     long long experts_routed_ = 0, experts_dropped_ = 0;
 
     // Cache-aware substitution. Inert unless sub_lambda_ > 0.

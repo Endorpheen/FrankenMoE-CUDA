@@ -35,6 +35,28 @@ The swap watchdog stops the process if its own `VmSwap` grows rapidly or if syst
 
 The validated cold run generated 128 greedy tokens at 7.25 tok/s. The warm-profile request ended naturally at 255 tokens and averaged 8.96 tok/s.
 
+## Deterministic workload A/B
+
+Full-model greedy CUDA output is not byte-deterministic across processes, so two configurations being compared normally execute different expert routes and read different amounts of data. Capture one natural run once and force every later run through exactly its token and expert-route sequence:
+
+```bash
+# 1. Capture one workload (natural routing, greedy), same flags as the A/B arms:
+bmoe-cli -m <model> -p "<prompt>" -n 256 <baseline flags> --workload-capture run.workload
+
+# 2. Replay it under each configuration; only the flag under test differs:
+bmoe-cli -m <model> -p "<prompt>" -n 256 <baseline flags> --io-threads 4 --workload-replay run.workload
+bmoe-cli -m <model> -p "<prompt>" -n 256 <baseline flags> --io-threads 8 --workload-replay run.workload
+```
+
+Rules and guarantees:
+
+- Replay requires the same tokenized prompt, architecture, layer count, and effective top-k, and consumes exactly the captured number of route records and output tokens. Any deviation — different prompt, changed top-k, edited or missing route records, a different graph shape — fails closed with a specific error before or during the run.
+- `-n` must be at least the captured token count; a larger `-n` simply stops at the workload's end. The generated stream is byte-identical to the capture in every replay.
+- Capture and replay are mutually exclusive, require `--moe-stream`, work in one-shot mode only (not with `--session`, `--ppl`, or `--ppl-list`), and do not support speculative decoding.
+- The replay applies after every route modifier (substitute, route-ahead), so the storage and expert-compute workload is exactly the captured one; physical reads can still differ slightly through cache timing, which is part of the effect under test. Logical demand (`token_demand_MiB`) is the work-equality check.
+- The workload file stores arch/layers/top-k, not a model hash; `benchmarks/baseline.json` pins the shard SHA-256 values, which is the model-identity gate for local A/Bs.
+- Matched-trajectory overhead measured about 1.3%; both arms of an A/B replay the same workload and pay the same overhead, so relative comparisons are unaffected. Capture mode allocates as it goes and is not a benchmark mode.
+
 ## Interactive server
 
 ```bash

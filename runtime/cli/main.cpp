@@ -519,6 +519,8 @@ static void print_usage(const char * argv0) {
         "                          predicted below the drop threshold are not speculated.\n"
         "      --predict-spec-max N  speculated predicted misses per layer [0..8] (default 2;\n"
         "                          0 = retention only, the prediction spends no flash at all)\n"
+        "      --workload-capture F capture prompt/output token IDs and final expert routes to F\n"
+        "      --workload-replay F  force a captured workload for deterministic A/B benchmarks\n"
         "      --list-archs        print supported MoE architectures and exit\n"
         "\n"
         "  Env overrides (flag wins): BMOE_CACHE_MB, BMOE_IO_THREADS, BMOE_PROGRESS, BMOE_OVERLAP, BMOE_PREFETCH, "
@@ -675,6 +677,10 @@ int main(int argc, char ** argv) {
             cfg.compute_trace_layers = true;
         } else if (a == "--io-trace")
             io_trace_path = next("--io-trace");
+        else if (a == "--workload-capture")
+            cfg.workload_capture_path = next("--workload-capture");
+        else if (a == "--workload-replay")
+            cfg.workload_replay_path = next("--workload-replay");
         else if (a == "--moe-stream")
             cfg.moe.enabled = true;
         else if (a == "--cache-mb") {
@@ -861,6 +867,16 @@ int main(int argc, char ** argv) {
     // Interactive session: one persistent process serves many prompts over stdin, keeping the
     // model loaded and the expert cache warm between them. Prompts arrive as JSON requests, not
     // via -p. This is a superset of --progress output (BMOE_* lines), so it never streams inline.
+    // Session and perplexity modes never build a GenerateRequest from the CLI flags, so a workload
+    // flag there would be silently ignored — reject the pair instead.
+    if (!cfg.workload_capture_path.empty() || !cfg.workload_replay_path.empty()) {
+        if (session_mode || !ppl_path.empty() || !ppl_list.empty()) {
+            std::fprintf(stderr,
+                         "config error: --workload-capture/--workload-replay apply to one-shot generation "
+                         "only and cannot be combined with --session, --ppl, or --ppl-list\n");
+            return 1;
+        }
+    }
     if (session_mode) return run_session_loop(cfg, sink.get(), route_trace.get(), compute_trace.get(), io_trace.get());
 
     // Perplexity mode: score a fixed text instead of generating one. It opens the same session

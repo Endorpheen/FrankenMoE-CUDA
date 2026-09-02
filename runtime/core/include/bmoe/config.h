@@ -383,6 +383,12 @@ struct RunConfig {
     // bmoe/decode_trace.h for what the layer-mode rows contain.
     bool compute_trace_layers = false;
 
+    // Deterministic benchmark workload. Capture stores token IDs and final per-layer expert IDs;
+    // replay forces them so configurations execute the same storage and expert-compute route.
+    // Mutually exclusive and currently limited to plain, non-speculative streaming generation.
+    std::string workload_capture_path;
+    std::string workload_replay_path;
+
     SamplingConfig sampling; // greedy by default (temp <= 0); opt-in stochastic decoding
     MoeStreamConfig moe;
     SpecConfig spec; // self-speculative decoding (MTP head or n-gram lookup); off by default

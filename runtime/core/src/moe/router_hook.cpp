@@ -1,4 +1,5 @@
 #include "router_hook.h"
+#include "deterministic_workload.h"
 
 #include "ggml.h"
 #include "ggml-backend.h"
@@ -1234,6 +1235,10 @@ void RouterHook::set_trace(bool on) {
     trace_rows_.clear();
 }
 
+void RouterHook::begin_deterministic_batch(int base_pos, int n_tokens, int phase) {
+    if (workload_) workload_->begin_batch(base_pos, n_tokens, phase);
+}
+
 void RouterHook::begin_trace_batch(int base_pos, int n_tokens, int phase, int turn) {
     trace_base_pos_ = base_pos;
     trace_batch_n_ = n_tokens > 0 ? n_tokens : 1;
@@ -1577,10 +1582,37 @@ bool RouterHook::on_eval(ggml_tensor * t, bool ask) {
             apply_route_ahead(t, il, nu, nt);
         }
 
+        // Gather through the backend-aware accessor FIRST: the topk view can live in a GPU buffer,
+        // so a bare t->data dereference would fault — and the workload below is a pure-data class
+        // that must not know how tensors are stored.
         gathered_.clear();
         for (int j = 0; j < nt; ++j)
             for (int k = 0; k < nu; ++k)
                 gathered_.push_back(id_read(t, j, k));
+
+        // Capture/replay rides the same barrier, deliberately LAST among the route modifiers: the
+        // captured route is the final one every consumer below sees, and a replay overrides
+        // substitute and route-ahead so both benchmark arms execute the identical storage and
+        // expert-compute workload. Shape mismatches fail closed through the abort callback.
+        if (workload_) {
+            if (workload_->mode() == DeterministicWorkload::Mode::Capture) {
+                if (!workload_->capture_topk(il, nu, nt, gathered_.data())) fatal_.store(true, std::memory_order_release);
+            } else {
+                const int32_t * expected = nullptr;
+                if (!workload_->replay_topk(il, nu, nt, expected)) {
+                    fatal_.store(true, std::memory_order_release);
+                } else {
+                    // Write back through the same accessor, then re-gather so the trace, the drop
+                    // policy's counters and everything downstream report the replayed route, not the
+                    // natural one this pass collected.
+                    size_t p = 0;
+                    for (int j = 0; j < nt; ++j)
+                        for (int k = 0; k < nu; ++k)
+                            id_write(t, j, k, expected[p++]);
+                    gathered_.assign(expected, expected + (size_t) nu * (size_t) nt);
+                }
+            }
+        }
 
         if (trace_on_) {
             flush_pending(); // the previous layer's whole weight chain has been offered by now

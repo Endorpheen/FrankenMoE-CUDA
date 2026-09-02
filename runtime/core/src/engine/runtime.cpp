@@ -61,6 +61,8 @@ RunResult run(const RunConfig & cfg,
     // and a benchmark run reads neither. Building it re-parses the whole generation every token, so
     // an unread one is O(n²) of nothing. The final answer is parsed once at the end either way.
     req.render_text = cfg.progress;
+    req.workload_capture_path = cfg.workload_capture_path;
+    req.workload_replay_path = cfg.workload_replay_path;
 
     return session->generate(req, on_token, sink);
 }

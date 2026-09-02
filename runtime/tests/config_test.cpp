@@ -339,6 +339,38 @@ int main() {
         expect_ok("the same narrow ubatch is fine without speculation", c);
     }
 
+    // Deterministic workload capture/replay: a benchmark-only mode that rides on the MoE streaming
+    // path (its hook lives in the router), takes one mode at a time, and is defined only for plain
+    // generation — a speculative verify batch has no single-route shape to capture or force.
+    {
+        RunConfig c = ok_moe();
+        c.workload_capture_path = "run.workload";
+        expect_ok("a valid capture config is accepted", c);
+        c.workload_capture_path.clear();
+        c.workload_replay_path = "run.workload";
+        expect_ok("a valid replay config is accepted", c);
+        c.workload_capture_path = "run.workload";
+        expect_fail("capture and replay at once are rejected", c);
+    }
+    {
+        RunConfig c = ok_base(); // streaming off
+        c.workload_capture_path = "run.workload";
+        expect_fail("capture without MoE streaming is rejected", c);
+        c.workload_capture_path.clear();
+        c.workload_replay_path = "run.workload";
+        expect_fail("replay without MoE streaming is rejected", c);
+    }
+    {
+        RunConfig c = ok_moe();
+        c.workload_replay_path = "run.workload";
+        c.spec.source = DraftSource::mtp;
+        expect_fail("replay with the MTP draft source is rejected", c);
+        c.spec.source = DraftSource::ngram;
+        expect_fail("replay with the n-gram draft source is rejected", c);
+        c.spec.source = DraftSource::none;
+        expect_ok("replay with speculation off is valid", c);
+    }
+
     if (failures == 0) {
         std::printf("all config checks passed\n");
         return 0;

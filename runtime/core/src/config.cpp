@@ -39,6 +39,15 @@ ValidationResult validate(const RunConfig & cfg) {
     if (cfg.n_expert_used < 0) {
         return fail("n_expert_used must be >= 0 (0 = model default)");
     }
+    if (!cfg.workload_capture_path.empty() && !cfg.workload_replay_path.empty()) {
+        return fail("workload capture and replay are mutually exclusive");
+    }
+    if ((!cfg.workload_capture_path.empty() || !cfg.workload_replay_path.empty()) && !cfg.moe.enabled) {
+        return fail("deterministic workload capture/replay requires moe.enabled");
+    }
+    if ((!cfg.workload_capture_path.empty() || !cfg.workload_replay_path.empty()) && cfg.spec.enabled()) {
+        return fail("deterministic workload capture/replay does not yet support speculative decoding");
+    }
     if (cfg.vram_cache_mb < 0) {
         return fail("vram_cache_mb must be >= 0");
     }

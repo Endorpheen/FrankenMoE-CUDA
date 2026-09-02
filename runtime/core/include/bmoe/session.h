@@ -97,6 +97,8 @@ struct GenerateRequest {
     // default output, and every benchmark run) does not, and should turn it off. Default on so an
     // embedder that does not know about this flag keeps the old behaviour.
     bool render_text = true;
+    std::string workload_capture_path;
+    std::string workload_replay_path;
 };
 
 // Teacher-forced quality measurement. The text is fixed, so every cell scores the SAME token

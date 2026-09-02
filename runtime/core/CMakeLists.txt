@@ -27,6 +27,7 @@ if(BMOE_HAVE_LLAMA)
         src/moe/row_stream.cpp
         src/moe/gguf_offsets.cpp
         src/moe/expert_stream_source.cpp
+        src/moe/deterministic_workload.cpp
         src/moe/router_hook.cpp
         src/engine/session.cpp
         src/engine/chat_parse.cpp

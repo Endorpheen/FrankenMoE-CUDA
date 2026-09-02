@@ -85,3 +85,43 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 ## Next experiment
 
 `EXP-2026-09-01-003-eight-io-lanes`: change only `--io-threads 4` to `8` and compare five full runs. Accept only if median generation improves by at least 3% without a warm-window, CPU, memory, or stability regression.
+
+## EXP-2026-09-01-003-eight-io-lanes
+
+- Status: `INCONCLUSIVE`.
+- Hypothesis: eight independent O_DIRECT lanes reduce per-layer completion latency enough to lower drain wait, despite extra CPU and storage queue contention.
+- Bottleneck: 23,247 small reads with 2.122 ms median decode latency and 44 ms/token median drain wait.
+- Change: `--io-threads 8` instead of `4`; all other baseline parameters remain fixed.
+- Primary metric: median overall single-stream generation tok/s; drain seconds/token is diagnostic.
+- Risks: CPU contention with 16 compute threads, higher p99 storage latency, no benefit if the per-layer dependency chain rather than lane count is limiting.
+- Acceptance: at least +3% median generation speed, no warm-window regression, stable RAM/VRAM, zero process swap, no I/O errors, and correctness gate unchanged.
+
+### Results
+
+- Five 256-token runs improved median overall generation from 8.515 to 8.958 tok/s (`+5.20%`) and reduced median drain wait from 0.044 to about 0.037 s/token.
+- The same runs improved the first 32-token window by `+11.48%`, but the last 32-token window moved by `-1.40%`, inside substantial route-dependent variance.
+- Five paired 512-token runs improved the first 32-token window by `+20.74%` and the last 32-token window by `+1.54%`, while overall generation moved by `-1.38%`.
+- The paired configurations followed different generated-token and expert-routing trajectories. The eight-lane runs consequently read about 1.6 GiB more expert data and used 5.28% more peak RSS, so neither delta isolates lane count.
+- An additional five-pair repetition was stopped to conserve the available execution quota; incomplete runs are excluded.
+- Decision: `INCONCLUSIVE`. Eight lanes clearly reduce early drain wait, but the existing benchmark cannot determine their sustained benefit because each process executes a different expert workload.
+
+## EXP-2026-09-01-004-deterministic-replay
+
+- Status: `ACCEPTED` (measurement infrastructure).
+- Hypothesis: forcing both configurations through identical prompt tokens, output tokens, and per-layer expert IDs removes route-dependent work variance and makes a smaller paired benchmark conclusive.
+- Bottleneck under test: benchmark nondeterminism, not an inference optimization.
+- Change: capture one natural workload in a compact text file, then replay its token and expert route sequence without enabling the expensive route-trace barriers.
+- Primary metric: exact equality of replayed token IDs and expert-route records; performance is secondary until this correctness gate passes.
+- Risks: graph shapes can differ between capture and replay, route modifiers could conflict with replay, and instrumentation in the eval callback could perturb timing.
+- Acceptance: fail closed on every metadata/shape mismatch, reproduce the captured output and route count exactly, pass the existing test suite and clean build, and add negligible steady-state work beyond copying the already materialized top-k IDs.
+
+### Results
+
+- Capture/replay runs through the existing top-k eval barrier, deliberately after every route modifier, and never dereferences tensor storage directly: the hook gathers and writes the IDs backend-aware, which is what fixed a first-run segfault (the top-k view can live in a GPU buffer).
+- Tiny model (16 tokens): capture plus two replays produced byte-identical token streams; 76 route records consumed exactly. Wrong prompt, changed top-k, a deleted route record, and an edited route shape each failed closed with a specific error surfaced through the graph abort path.
+- Full model, 64-token proof (4-lane capture, then 4-lane and 8-lane replays): all three token streams byte-identical; logical expert demand exactly 905.8 MiB in every run; physical expert reads 8471.4 / 8471.4 / 8472.9 MiB — the four-lane replay matched the capture to 0.1 MiB.
+- Full model, 256-token fixed workload, three interleaved 4-lane/8-lane pairs plus the capture: all seven outputs byte-identical, 12,336 route records consumed exactly, demand 905.8 MiB everywhere, cache hit 90.8% everywhere, process swap zero, peak RSS 26-27.6 GiB in both arms.
+- Fixed-workload lane effect (this retrial of EXP-003's question, accepted as evidence for the infrastructure only): overall 8.274 -> 8.753 tok/s median (`+5.80%`; pairs `+5.92/+6.08/+5.52%`), first-32 window `+12.4%` with non-overlapping distributions, last-32 window `-0.13%` (no change), median drain 0.043 -> 0.037 s/token overall and 0.1246 -> 0.1024 in the first 32. Eight lanes accelerate the cache-fill phase; sustained warm throughput is unchanged.
+- Replay overhead: matched-trajectory comparisons (capture vs replay over the same 64-token workload) measured about `1.3%`; a natural four-lane 256-token run without workload flags read 5% fewer expert bytes by route luck, so single-run natural comparisons overstate it. Both arms of an A/B replay the same workload and pay the same overhead.
+- The workload file records arch, layer count, and effective top-k but not a model hash; `benchmarks/baseline.json` already pins the shard SHA-256 values, which is the identity gate for local A/Bs.
+- Decision: `ACCEPTED`. The gate reproduced outputs, tokens, and routes exactly; every corruption attempt failed closed; 13/13 tests plus the CUDA equality gates passed after the change.

@@ -7,6 +7,7 @@
 #include "chat_parse.h"
 #include "thinking_control.h"
 #include "../moe/router_hook.h"
+#include "../moe/deterministic_workload.h"
 #include "../moe/expert_stream_source.h"
 #include "../moe/gguf_offsets.h"
 #include "../io/platform_io.h"
@@ -329,6 +330,7 @@ struct Session::Impl {
     std::unique_ptr<llama_model, void (*)(llama_model *)> model{nullptr, llama_model_free};
     std::unique_ptr<llama_context, void (*)(llama_context *)> ctx{nullptr, llama_free};
     std::unique_ptr<RouterHook> hook; // heap: its address is baked into cparams.cb_eval_user_data
+    std::unique_ptr<DeterministicWorkload> workload; // optional capture/replay state for one generation
     ExpertStreamSource source;
 
     // The MTP draft source (SpecConfig::source == mtp). A SECOND context over the SAME model,
@@ -1292,6 +1294,31 @@ RunResult Session::generate(const GenerateRequest & req,
         return res;
     };
 
+    im.workload.reset();
+    im.hook->set_deterministic_workload(nullptr);
+    if (!req.workload_capture_path.empty() && !req.workload_replay_path.empty())
+        return fail("workload capture and replay are mutually exclusive");
+    if (!req.workload_capture_path.empty()) {
+        im.workload = DeterministicWorkload::capture();
+        im.workload->set_static(im.arch, im.n_layer, im.n_expert_used);
+    } else if (!req.workload_replay_path.empty()) {
+        std::string workload_error;
+        im.workload = DeterministicWorkload::load(req.workload_replay_path, workload_error);
+        if (!im.workload) return fail(workload_error);
+        if (!im.workload->check_static(im.arch, im.n_layer, im.n_expert_used)) return fail(im.workload->error());
+        // A shorter n_predict would decode part of the workload and only fail at finish(), after the
+        // whole run had already been paid for. A longer one is fine: the loop stops at the captured
+        // token count, which is the length the workload defines.
+        if ((size_t) req.n_predict < im.workload->token_count())
+            return fail("replay n_predict " + std::to_string(req.n_predict) + " is below the workload's " +
+                        std::to_string(im.workload->token_count()) + " captured tokens");
+    }
+    if (im.workload) {
+        if (!moe.enabled) return fail("deterministic workload capture/replay requires MoE streaming");
+        if (im.cfg.spec.enabled()) return fail("deterministic workload capture/replay does not support speculation");
+        im.hook->set_deterministic_workload(im.workload.get());
+    }
+
     // clear_kv = "new chat": drop the KV and the engine-held conversation. Otherwise this turn
     // continues the conversation, reusing the KV prefix already decoded from earlier turns.
     if (req.clear_kv) {
@@ -1369,6 +1396,7 @@ RunResult Session::generate(const GenerateRequest & req,
     }
     if (n_prompt < 1) return fail("empty prompt after tokenization");
     tokens.resize(n_prompt);
+    if (im.workload && !im.workload->prompt(tokens)) return fail(im.workload->error());
     if (n_prompt + req.n_predict + 8 > im.cfg.n_ctx)
         return fail("prompt + n_predict exceeds the session n_ctx (" + std::to_string(im.cfg.n_ctx) +
                     "); open the session with a larger n_ctx");
@@ -1458,6 +1486,7 @@ RunResult Session::generate(const GenerateRequest & req,
         // Not a trace concern, but the same per-decode frame: the drop policy is decode-only
         // unless armed for prefill, so it has to be told which phase this batch is.
         im.hook->set_batch_phase(phase);
+        im.hook->begin_deterministic_batch(base_pos, n_tokens, phase);
         if (im.route_trace) im.hook->begin_trace_batch(base_pos, n_tokens, phase, im.turn);
         // A node is computed once for the whole batch, not per token, so a prefill chunk's graph is
         // attributed to its last position rather than pretending to split across the chunk.
@@ -1528,6 +1557,9 @@ RunResult Session::generate(const GenerateRequest & req,
                 res.cancelled = true;
                 return res;
             }
+            // The workload's own mismatch text first: it says WHICH record disagreed, while the
+            // generic messages below only say that something in the graph was fatal.
+            if (im.workload && !im.workload->error().empty()) return fail(im.workload->error());
             if (im.hook->fatal()) return fail("SSD row/expert streaming failed during prefill");
             if (moe.overlap && im.source.fatal()) return fail("expert stream I/O failed during overlap prefill");
             return fail("prefill decode failed");
@@ -1624,7 +1656,17 @@ RunResult Session::generate(const GenerateRequest & req,
     llama_token tok = im.smpl ? llama_sampler_sample(im.smpl, ctx, -1) : argmax(logits, im.n_vocab);
 
     while (n_gen < req.n_predict) {
+        if (im.workload && im.workload->mode() == DeterministicWorkload::Mode::Replay) {
+            if ((size_t) n_gen == im.workload->token_count()) break;
+            int32_t selected = tok;
+            if (!im.workload->token((size_t) n_gen, tok, selected)) return fail(im.workload->error());
+            tok = selected;
+        }
         if (llama_vocab_is_eog(im.vocab, tok)) break;
+        if (im.workload && im.workload->mode() == DeterministicWorkload::Mode::Capture) {
+            int32_t selected = tok;
+            if (!im.workload->token((size_t) n_gen, tok, selected)) return fail(im.workload->error());
+        }
 
         // ── draft ──
         // The source proposes a continuation of `tok`, capped at the caller's remaining budget: a
@@ -1712,6 +1754,9 @@ RunResult Session::generate(const GenerateRequest & req,
                 res.cancelled = true;
                 break;
             }
+            // Same ordering as the prefill path: a workload mismatch names the record; the generic
+            // messages only name the phase.
+            if (im.workload && !im.workload->error().empty()) return fail(im.workload->error());
             if (im.hook->fatal()) return fail("SSD row/expert streaming failed during decode");
             if (moe.overlap && im.source.fatal()) return fail("expert stream I/O failed during overlap decode");
             return fail("decode failed during generation");
@@ -1962,6 +2007,19 @@ RunResult Session::generate(const GenerateRequest & req,
         s.route_ahead_gemv_jobs = im.hook->route_ahead_gemv_jobs();
         s.route_ahead_issue_ns = im.hook->route_ahead_issue_ns();
         s.route_ahead_wd_ns = im.hook->route_ahead_wd_ns();
+    }
+    if (im.workload) {
+        // A cancelled generation is half a workload: capture would save routes from a decode whose
+        // token was never emitted (an unreplayable file), and replay stopped mid-sequence. Neither
+        // is a benchmark result, so fail closed instead of writing or accepting anything.
+        if (res.cancelled)
+            return fail("generation cancelled; the deterministic workload is incomplete and was not saved");
+        if (!im.workload->finish((size_t) n_gen)) return fail(im.workload->error());
+        if (im.workload->mode() == DeterministicWorkload::Mode::Capture) {
+            if (!im.workload->save(req.workload_capture_path)) return fail(im.workload->error());
+            std::fprintf(stderr, "bmoe: captured deterministic workload: %zu tokens, %zu route records\n",
+                         im.workload->token_count(), im.workload->route_count());
+        }
     }
     if (sink) sink->on_summary(s);
 
