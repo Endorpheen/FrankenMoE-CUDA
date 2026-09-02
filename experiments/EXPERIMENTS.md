@@ -165,3 +165,21 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Output correctness: byte-identical text between A and B on all four prompts (main, coding, free, long).
 - Swap: 0 in both arms on a warm cache. The originally reported 435 MiB cold swap on A is retracted (contaminated run, see the EXP-005 correction); cold-swap behaviour of either arm remains unmeasured.
 - Decision: `ACCEPTED` as a stability improvement: same speed, same bytes, 12.9 GiB less RAM. Speedups on top of the expert-tier baseline remain unclaimed and are Phase 7+ work.
+
+## EXP-2026-09-01-007-swap-watchdog-in-server
+
+- Status: `ACCEPTED` (safety mechanism, speed-neutral).
+- Subject: Phase 4 mechanism 1 — the external swap watchdog of `scripts/run_qwen38_server.sh` moved into the server itself, so the protection no longer depends on the launcher.
+- Change under test: `--swap-watchdog` flag (`common/common.h`, `common/arg.cpp`, env `LLAMA_ARG_SWAP_WATCHDOG`) plus a monitor thread in `tools/server/server-swapwatchdog.{h,cpp}`. The thread samples `/proc/self/status` (VmRSS, VmSwap) and `/proc/vmstat` (pswpin/pswpout) once per second and stops the server (SIGINT, escalation to SIGKILL after 30 s) when:
+  - process VmSwap grows by over 256 MiB within one sample;
+  - system swap I/O exceeds 2048 MiB/s in one sample; or
+  - system swap I/O stays above 512 MiB/s for 5 consecutive samples.
+  Thresholds mirror the launcher script. Env overrides of the thresholds exist as a test hook for small cgroup tests and are never set by the launcher.
+- Functional gate (tiny synthetic MoE model, 7 MB):
+  - burst path: a neighbouring cgroup hog under `MemoryHigh=1M` produced ~4 MiB/s of system swap-out; with the hard threshold lowered the watchdog tripped 4 s after start, logged the reason and the unit exited cleanly (`inactive`, no kill signal needed).
+  - no-false-trip path: normal runs with production thresholds never tripped; generation completed.
+  - one bug was found and fixed during the gate: the `/proc/self/status` parser compared `VmRSS: ` with a trailing space while the kernel writes a tab, so every sample failed and the loop never reached the swap checks.
+- Speed gate (Qwen3.8-Flash-Next UD-IQ3_XXS, 64K ctx, `--cpu-moe`, warm cache, patched build with `--swap-watchdog`): measured warm greedy run `16.26 tok/s` (decode, 256 tokens, prefill 0.24 s) after a 13.82 tok/s warmup run — inside the accepted warm band (13.5-15.4 distinct, up to 18.09 repeated), no regression. VmSwap 0 the whole run, no watchdog events.
+- Cold-start note: the watchdog is active during model loading; the clean cold run of B (EXP-005 correction, EXP-006) showed zero process swap, and the file-backed model read does not count as swap.
+- Limitation: under artificial cgroup throttling (`MemoryHigh` on the server's own cgroup) the monitor thread itself is stalled by the kernel like every other thread in the cgroup; real burst scenarios do not self-throttle the server, so this does not affect production behaviour.
+- Decision: `ACCEPTED`. The launcher keeps its external monitor for CSV telemetry; the in-server watchdog is the safety layer that works without it.

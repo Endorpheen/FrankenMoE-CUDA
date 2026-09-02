@@ -377,3 +377,248 @@ index fc83658..ae0d4f6 100644
      pimpl->mappings.reserve(ml.mappings.size());
  
      // create the backend buffers
+diff --git a/common/arg.cpp b/common/arg.cpp
+index fd94baf..c79947d 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -2860,6 +2860,14 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.expert_cache_force = value;
+         }
+     ));
++    add_opt(common_arg(
++        {"--swap-watchdog"},
++        {},
++        "stop the server if process swap or system swap I/O bursts (default: off)",
++        [](common_params & params, bool value) {
++            params.swap_watchdog = value;
++        }
++    ).set_env("LLAMA_ARG_SWAP_WATCHDOG"));
+     add_opt(common_arg(
+         {"-ncffn", "--n-cpu-ffn"}, "N",
+         "keep the dense FFN weights of the first N layers in the CPU\n"
+diff --git a/common/common.h b/common/common.h
+index 3ca9342..90644e1 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -541,6 +541,7 @@ struct common_params {
+     float expert_hyst            = 1.3f;  // hysteresis ratio: only swap when cold >= hyst x hot
+     int   expert_dwell           = 0;    // minimum updates a resident slot must keep before a swap
+     bool  expert_cache_force      = false;  // bypass the CUDA-only hot store guard
++    bool  swap_watchdog            = false;  // stop the server on process or system swap bursts
+     bool    offline                    = false;
+ 
+     int32_t ppl_stride      = 0;     // stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
+diff --git a/tools/server/CMakeLists.txt b/tools/server/CMakeLists.txt
+index 280bd9e..80f6881 100644
+--- a/tools/server/CMakeLists.txt
++++ b/tools/server/CMakeLists.txt
+@@ -43,6 +43,8 @@ add_library(${TARGET}
+     server-http.h
+     server-models.cpp
+     server-models.h
++    server-swapwatchdog.cpp
++    server-swapwatchdog.h
+ )
+ set_target_properties(${TARGET} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+ 
+diff --git a/tools/server/server-swapwatchdog.cpp b/tools/server/server-swapwatchdog.cpp
+new file mode 100644
+index 0000000..35e6ccf
+--- /dev/null
++++ b/tools/server/server-swapwatchdog.cpp
+@@ -0,0 +1,158 @@
++#include "server-swapwatchdog.h"
++
++#include "log.h"
++
++#include <atomic>
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
++#include <fstream>
++#include <string>
++#include <thread>
++
++#ifdef __linux__
++#include <csignal>
++#include <unistd.h>
++
++// Thresholds copied from scripts/run_qwen38_server.sh. Samples are one second apart.
++// Cold startup legitimately page-faults the 82 GB model from the file cache, that is
++// file-backed read, not swap, so the same thresholds apply from the very first sample.
++// Env overrides are a test hook for small cgroup tests, the launcher never sets them.
++static long proc_swap_burst_kib() {
++    const char * env = getenv("SWAP_WATCHDOG_PROC_BURST_KIB");
++    return env ? atol(env) : 256 * 1024;
++}
++
++static long sys_rate_hard_mib_s() {
++    const char * env = getenv("SWAP_WATCHDOG_SYS_RATE_HARD_MIB_S");
++    return env ? atol(env) : 2048;
++}
++
++static long sys_rate_burst_mib_s() {
++    const char * env = getenv("SWAP_WATCHDOG_SYS_RATE_MIB_S");
++    return env ? atol(env) : 512;
++}
++
++static int sys_rate_burst_samples() {
++    const char * env = getenv("SWAP_WATCHDOG_BURST_SAMPLES");
++    return env ? atoi(env) : 5;
++}
++
++static std::atomic<bool> g_running{false};
++
++static bool read_status(long * rss_kib, long * swap_kib) {
++    std::ifstream f("/proc/self/status");
++    if (!f) {
++        return false;
++    }
++    std::string line;
++    *rss_kib  = -1;
++    *swap_kib = -1;
++    while (std::getline(f, line)) {
++        // /proc fields are separated by tabs, match the key only
++        if (line.compare(0, 6, "VmRSS:") == 0) {
++            sscanf(line.c_str() + 6, "%ld", rss_kib);
++        } else if (line.compare(0, 7, "VmSwap:") == 0) {
++            sscanf(line.c_str() + 7, "%ld", swap_kib);
++        }
++    }
++    return *rss_kib >= 0 && *swap_kib >= 0;
++}
++
++static bool read_vmstat(unsigned long long * in, unsigned long long * out) {
++    std::ifstream f("/proc/vmstat");
++    if (!f) {
++        return false;
++    }
++    std::string key;
++    unsigned long long value;
++    *in  = 0;
++    *out = 0;
++    while (f >> key >> value) {
++        if (key == "pswpin") {
++            *in = value;
++        } else if (key == "pswpout") {
++            *out = value;
++        }
++    }
++    return true;
++}
++
++static void stop_server(const char * reason, long value) {
++    LOG_ERR("swap watchdog: %s (%ld MiB); stopping server\n", reason, value);
++    g_running.store(false);
++
++    // Escalate to SIGKILL if the graceful stop hangs, the launcher script does the same.
++    std::thread([]() {
++        std::this_thread::sleep_for(std::chrono::seconds(30));
++        kill(getpid(), SIGKILL);
++    }).detach();
++
++    kill(getpid(), SIGINT);
++}
++
++static void watchdog_loop() {
++    long    last_swap_kib = -1;
++    unsigned long long last_in = 0;
++    unsigned long long last_out = 0;
++    int burst_samples = 0;
++
++    if (!read_vmstat(&last_in, &last_out)) {
++        LOG_WRN("swap watchdog: cannot read /proc/vmstat, only VmSwap is monitored\n");
++    }
++
++    while (g_running.load(std::memory_order_relaxed)) {
++        std::this_thread::sleep_for(std::chrono::seconds(1));
++
++        long rss_kib;
++        long swap_kib;
++        if (!read_status(&rss_kib, &swap_kib)) {
++            continue;
++        }
++
++        if (last_swap_kib >= 0) {
++            long burst = swap_kib - last_swap_kib;
++            if (burst > proc_swap_burst_kib()) {
++                stop_server("process swap grew past the per-sample burst limit", burst / 1024);
++                return;
++            }
++        }
++        last_swap_kib = swap_kib;
++
++        unsigned long long in;
++        unsigned long long out;
++        if (read_vmstat(&in, &out)) {
++            long rate_mib = (long) ((in - last_in) + (out - last_out)) * 4 / 1024;
++            last_in  = in;
++            last_out = out;
++            if (rate_mib > sys_rate_hard_mib_s()) {
++                stop_server("system swap I/O burst", rate_mib);
++                return;
++            }
++            if (rate_mib > sys_rate_burst_mib_s()) {
++                if (++burst_samples >= sys_rate_burst_samples()) {
++                    stop_server("sustained system swap I/O", rate_mib);
++                    return;
++                }
++            } else {
++                burst_samples = 0;
++            }
++        }
++    }
++}
++
++bool server_swap_watchdog_start() {
++    if (g_running.exchange(true)) {
++        return true;
++    }
++    std::thread(watchdog_loop).detach();
++    LOG_INF("swap watchdog: monitoring VmSwap and system swap I/O\n");
++    return true;
++}
++#else
++
++bool server_swap_watchdog_start() {
++    return false;
++}
++
++#endif
+diff --git a/tools/server/server-swapwatchdog.h b/tools/server/server-swapwatchdog.h
+new file mode 100644
+index 0000000..1f7ea1b
+--- /dev/null
++++ b/tools/server/server-swapwatchdog.h
+@@ -0,0 +1,7 @@
++#pragma once
++
++// In-process swap watchdog: stops the server when its own swap usage grows fast
++// or system swap I/O stays high. Linux only; start() is a no-op elsewhere.
++// Mirrors the external monitor in scripts/run_qwen38_server.sh.
++
++bool server_swap_watchdog_start();
+diff --git a/tools/server/server.cpp b/tools/server/server.cpp
+index 22378b3..83b02bb 100644
+--- a/tools/server/server.cpp
++++ b/tools/server/server.cpp
+@@ -3,6 +3,7 @@
+ #include "server-models.h"
+ #include "server-cors-proxy.h"
+ #include "server-stream.h"
++#include "server-swapwatchdog.h"
+ #include "server-tools.h"
+ 
+ #include "arg.h"
+@@ -106,6 +107,11 @@ int llama_server(int argc, char ** argv) {
+         return 1;
+     }
+ 
++    // Start before the backend init so the watchdog covers model loading too
++    if (params.swap_watchdog) {
++        server_swap_watchdog_start();
++    }
++
+     llama_backend_init();
+     llama_numa_init(params.numa);
+ 
