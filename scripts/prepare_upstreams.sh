@@ -35,8 +35,21 @@ if [[ "$(git -C "${WORK_DIR}" rev-parse HEAD)" != "${EXPERT_SHA}" ]]; then
     echo "Error: the llama.cpp worktree has an unexpected HEAD; nothing was changed" >&2
     exit 1
 fi
+
+integration_present() {
+    grep -Fq "ggml_cpu_set_expert_ready_hook" "${WORK_DIR}/ggml/include/ggml-cpu.h" &&
+        grep -Fq "ggml_cpu_set_expert_ready_hook" "${WORK_DIR}/ggml/src/ggml-cpu/ggml-cpu.c" &&
+        grep -Fq "llama_expert_prepare_callback" "${WORK_DIR}/include/llama.h" &&
+        grep -Fq "llama_get_expert_cache_stats" "${WORK_DIR}/src/llama-context.cpp" &&
+        grep -Fq "buf_staging" "${WORK_DIR}/src/llama-expert-hotstore.h" &&
+        grep -Fq "llama_expert_hotstore::upload" "${WORK_DIR}/src/llama-expert-hotstore.cpp" &&
+        grep -Fq "ml.init_mappings(use_mlock" "${WORK_DIR}/src/llama-model.cpp"
+}
+
 if git -C "${WORK_DIR}" apply --reverse --check "${PATCH_FILE}" >/dev/null 2>&1; then
     echo "Integration patch is already applied"
+elif integration_present; then
+    echo "Integration patch is present with preserved local changes"
 else
     git -C "${WORK_DIR}" apply --check "${PATCH_FILE}"
     git -C "${WORK_DIR}" apply "${PATCH_FILE}"

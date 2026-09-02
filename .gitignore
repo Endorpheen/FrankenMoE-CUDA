@@ -6,6 +6,11 @@
 /runtime/third_party/llama.cpp
 /results/*.raw.json
 /results/*.csv
+/benchmarks/runs/*.csv
+/benchmarks/runs/*.monitor.csv
+/benchmarks/runs/*.out
+/benchmarks/runs/*.log
+/benchmarks/runs/*.json
 *.log
 *.tmp
 __pycache__/

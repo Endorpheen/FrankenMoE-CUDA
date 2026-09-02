@@ -38,11 +38,11 @@ CSV_PATH="${CSV_PATH:-${ROOT_DIR}/results/qwen38-latest.csv}"
 MONITOR_PATH="${MONITOR_PATH:-${ROOT_DIR}/results/qwen38-monitor.csv}"
 JSON_PATH="${JSON_PATH:-${ROOT_DIR}/results/qwen38-latest.json}"
 
-echo "timestamp,rss_kib,process_swap_kib,gpu_used_mib,gpu_temp_c,read_bytes,system_pswpin,system_pswpout" >"${MONITOR_PATH}"
-BASE_GPU="$(nvidia-smi --query-gpu=memory.used,temperature.gpu --format=csv,noheader,nounits | head -1 | tr -d ' ')"
+echo "timestamp,rss_kib,process_swap_kib,gpu_used_mib,gpu_temp_c,gpu_util_pct,gpu_mem_util_pct,read_bytes,process_cpu_ticks,system_pswpin,system_pswpout" >"${MONITOR_PATH}"
+BASE_GPU="$(nvidia-smi --query-gpu=memory.used,temperature.gpu,utilization.gpu,utilization.memory --format=csv,noheader,nounits | head -1 | tr -d ' ')"
 BASE_SWAP_IN="$(awk '$1 == "pswpin" {print $2}' /proc/vmstat)"
 BASE_SWAP_OUT="$(awk '$1 == "pswpout" {print $2}' /proc/vmstat)"
-printf '%(%s)T,0,0,%s,0,%s,%s\n' -1 "${BASE_GPU:-0,0}" "${BASE_SWAP_IN}" "${BASE_SWAP_OUT}" >>"${MONITOR_PATH}"
+printf '%(%s)T,0,0,%s,0,0,%s,%s\n' -1 "${BASE_GPU:-0,0,0,0}" "${BASE_SWAP_IN}" "${BASE_SWAP_OUT}" >>"${MONITOR_PATH}"
 
 # The generic --chatml template makes qwen4exp emit an immediate end-of-generation token.
 # A raw prompt produces coherent text until architecture-specific chat-template support lands.
@@ -95,11 +95,12 @@ trap stop_children INT TERM
         rss="$(awk '$1 == "VmRSS:" {print $2}' "/proc/${RUN_PID}/status" 2>/dev/null || echo 0)"
         proc_swap="$(awk '$1 == "VmSwap:" {print $2}' "/proc/${RUN_PID}/status" 2>/dev/null || echo 0)"
         read_bytes="$(awk '$1 == "read_bytes:" {print $2}' "/proc/${RUN_PID}/io" 2>/dev/null || echo 0)"
-        gpu="$(nvidia-smi --query-gpu=memory.used,temperature.gpu --format=csv,noheader,nounits | head -1 | tr -d ' ')"
+        gpu="$(nvidia-smi --query-gpu=memory.used,temperature.gpu,utilization.gpu,utilization.memory --format=csv,noheader,nounits | head -1 | tr -d ' ')"
+        cpu_ticks="$(awk '{print $14 + $15}' "/proc/${RUN_PID}/stat" 2>/dev/null || echo 0)"
         cur_in="$(awk '$1 == "pswpin" {print $2}' /proc/vmstat)"
         cur_out="$(awk '$1 == "pswpout" {print $2}' /proc/vmstat)"
-        printf '%(%s)T,%s,%s,%s,%s,%s,%s\n' -1 "${rss:-0}" "${proc_swap:-0}" "${gpu:-0,0}" \
-            "${read_bytes:-0}" "${cur_in:-0}" "${cur_out:-0}" >>"${MONITOR_PATH}"
+        printf '%(%s)T,%s,%s,%s,%s,%s,%s,%s,%s\n' -1 "${rss:-0}" "${proc_swap:-0}" "${gpu:-0,0,0,0}" \
+            "${read_bytes:-0}" "${cpu_ticks:-0}" "${cur_in:-0}" "${cur_out:-0}" >>"${MONITOR_PATH}"
 
         # Process VmSwap is a direct danger signal. System swap counters may include unrelated
         # activity, so require either a catastrophic spike or several sustained intervals.
