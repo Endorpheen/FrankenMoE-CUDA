@@ -194,3 +194,17 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
   - pass path: default 8 GiB with 48.0 GiB available -> the server started and logged `RAM headroom: 49085 MiB available, 8 GiB required`.
 - The gate matches the one `scripts/run_qwen38_server.sh` performs before exec (8 GiB minimum); the launcher check stays as a first line, the in-server check is the layer that works without the launcher.
 - Decision: `ACCEPTED`. No speed measurement required: the check runs once before any allocation and adds no runtime path.
+
+## EXP-2026-09-01-009-vram-reserve-ehs-autofit
+
+- Status: `ACCEPTED` (safety mechanism; reveals a silent upstream bug).
+- Subject: Phase 4 mechanism 3 - VRAM reserve and bounded EHS autofit.
+- Silent bug found: with the production launch flags (`-ngl 99` plus `-ehs -1`) the upstream autofit never ran. `common_fit_params` aborts because `n_gpu_layers` is user-set (`fit: n_gpu_layers already set by user to 99, abort` in every server log), the `-1` placeholder fell through, and `llama_expert_hotstore::allocate` returned false on `hot_s <= 0`. The expert hot store was silently DISABLED in every Qwen server run so far, including the accepted EXP-005/006 baselines (no expert lines in any server log).
+- Change under test:
+  - `llama_expert_hotstore::allocate` now implements `-1` (autofit) directly: slot cost is computed from the per-expert slice sizes of the entries, and the slot count is `free VRAM - reserve` divided by the slot cost, clamped to `n_experts`. The decision is logged.
+  - new flag `--ehs-reserve-mb N` (`common/common.h`, `common/arg.cpp`, env `LLAMA_ARG_EHS_RESERVE_MB`, default 0) keeps N MiB free on the GPU for processes that start after the server; wired through `llama_context_params`.
+  - the hot-store allocation failure message now reports the reserve.
+  - `scripts/run_qwen38_server.sh` finally passes its `VRAM_RESERVE_MB` (default 2048) to the server; the variable existed since the launcher was written but was never forwarded.
+  - `patches/expert-tier-integration.patch` was rebuilt as original integration plus the safety mechanisms; it applies cleanly to the pinned upstream commit and reproduces the benchmarked binary functionally (the preserved local comment edits in the worktree stay out of it).
+- Speed impact: none measured yet. Note that enabling autofit CHANGES the runtime: the hot store will now actually engage where every earlier run had it off. A speed A/B (store off vs autofit on, same protocol as EXP-005) is required before any performance claim; this experiment claims only that the mechanism works and is bounded.
+- Functional gate: pending - requires a Qwen server start to observe the autofit log line and VRAM occupancy with the reserve in place.

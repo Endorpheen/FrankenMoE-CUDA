@@ -45,7 +45,8 @@ integration_present() {
         grep -Fq "llama_expert_hotstore::upload" "${WORK_DIR}/src/llama-expert-hotstore.cpp" &&
         grep -Fq "ml.init_mappings(use_mlock" "${WORK_DIR}/src/llama-model.cpp" &&
         grep -Fq "server_swap_watchdog_start" "${WORK_DIR}/tools/server/server.cpp" &&
-        grep -Fq "ram_headroom_gib" "${WORK_DIR}/tools/server/server.cpp"
+        grep -Fq "ram_headroom_gib" "${WORK_DIR}/tools/server/server.cpp" &&
+        grep -Fq "expert_hot_reserve_mb" "${WORK_DIR}/include/llama.h"
 }
 
 if git -C "${WORK_DIR}" apply --reverse --check "${PATCH_FILE}" >/dev/null 2>&1; then

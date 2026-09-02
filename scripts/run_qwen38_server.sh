@@ -28,8 +28,8 @@ if (( MEM_AVAILABLE_KIB < 8 * 1024 * 1024 )); then
     exit 3
 fi
 
-# Autofit derives the hot-slot count after dense weights and KV allocation. The reserve leaves
-# room for GPU processes that start after the server has initialized.
+# Autofit (-ehs -1) derives the hot-slot count from free VRAM minus the reserve.
+# The reserve leaves room for GPU processes that start after the server has initialized.
 VRAM_RESERVE_MB="${VRAM_RESERVE_MB:-2048}"
 EHS="${EHS:--1}"
 
@@ -51,6 +51,7 @@ echo "timestamp,rss_kib,process_swap_kib,gpu_used_mib,gpu_temp_c,read_bytes,syst
     -ngl 99 \
     --cpu-moe \
     -ehs "${EHS}" \
+    --ehs-reserve-mb "${VRAM_RESERVE_MB}" \
     -ot "per_layer_token_embd.weight=CPU" \
     -c "${CTX_SIZE}" -fa on --jinja \
     -t "${THREADS}" \
