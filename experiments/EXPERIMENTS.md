@@ -341,3 +341,22 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Barrier wait is about `3-5%` of useful `MUL_MAT_ID` compute per worker. Therefore the OpenMP spin samples from EXP-014 are not primarily explained by an imbalanced `MUL_MAT_ID` schedule.
 - The diagnostic request was cold and generated a reasoning-only truncated response, so its `6.979 tok/s` is explicitly not compared with the warm baseline and is not a performance result. The server was stopped cleanly after the run; its RSS was about `19.2 GiB` and its process swap was zero.
 - Decision: `REJECTED` as a scheduling-optimization direction. Do not alter chunk scheduling. Preserve the findings here; do not merge the experiment-only instrumentation. A future profiling experiment must instead localize graph-level OpenMP waits or evaluate runtime OpenMP wait-policy settings under a controlled warm A/B.
+
+## EXP-2026-09-03-017-openmp-wait-policy
+
+- Status: `REJECTED` as a default profile; `OMP_WAIT_POLICY=PASSIVE` is documented as a manual opt-in mode.
+- Hypothesis: OpenMP wait-policy tuning can reduce spin CPU without rewriting the MoE kernel and without losing warm decode speed.
+- Bottleneck under test: EXP-014 attributed about `39.96%` of sampled cycles to libgomp pause-based spin waits; EXP-016 excluded `MUL_MAT_ID` chunk imbalance as the cause.
+- Change: runtime environment only. The working binary was started with `OMP_WAIT_POLICY=PASSIVE`; no code, model, quantization, context, or thread-count change. The server command otherwise matched the EXP-014/015 reference exactly (12 threads, port 8095, 64K context, q4_0 KV cache, `--reasoning-effort low`), and the variable was verified in `/proc/<pid>/environ`.
+- Protocol: one approved gate — a single server start, one warmup 256-token request, one measured 256-token request with 0.5 s `/proc` plus `nvidia-smi` telemetry, compared against the EXP-015 same-setup ON reference. Guardrail: stop at clear degradation above 10%; no formal A/B unless the gate is clean.
+- Primary metric: measured warm generation tok/s. Secondary metrics: occupied CPU cores, RSS, GPU utilization, major faults, process swap, and output hash.
+- Risks: PASSIVE may cut spin but increase wake-up latency and slow decode; a lower spin-sample count alone would not count as a win without the tok/s comparison.
+
+### Results
+
+- Measured warm decode: `15.72 tok/s` (`16,220.20 ms` per 256 tokens) versus the ON reference `17.914 tok/s`, `-12.25%`; wall time `16.67` versus `14.63 s`. The warmup request took `23.94 s` versus `16.77 s`.
+- Mean occupied CPU cores fell from `11.774` to `6.606` (`-43.9%`); peak RSS was `30,002.9` versus `29,469.9 MiB`; mean GPU utilization was `26.5%` versus `29.8%`.
+- Correctness and safety passed: the output SHA-256 matched the historical `3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2`; physical reads, major faults, and process swap were zero.
+- Interpretation: sleeping instead of spinning frees about `5.2` cores, which proves the EXP-014 spin cycles are real CPU burn rather than a sampling artifact. The price is a `12.25%` decode loss, so full-passive fails the acceptance gate (noticeable speed loss) and trips the early-stop guardrail.
+- Manual mode: `OMP_WAIT_POLICY=PASSIVE` is recorded as an opt-in runtime mode for periods when free cores matter more than single-stream speed, analogous to the retained `THREADS=16` profile. No launcher or code change.
+- Decision: `REJECTED` as a default after the early gate. The middle-ground follow-up is conditional EXP-018 with a moderate `GOMP_SPINCOUNT` and no `OMP_WAIT_POLICY`.
