@@ -48,6 +48,8 @@ These figures belong to the standalone `bmoe-cli` streaming runtime. They must n
 
 The current daily-use server is the public `expert-tier` fork with the FrankenMoE integration patch applied. On the verified warm 256-token workload, the accepted 12-thread profile measured **17.615 tok/s median**, compared with **17.656 tok/s** at 16 threads. The `-0.23%` difference is inside observed run-to-run noise, while mean occupied CPU cores fell from 15.93 to 11.95.
 
+On top of that floor, EXP-2026-09-03-024 added a head-only MTP speculative draft (stock MTP head as a sidecar GGUF, dense part on GPU and experts on CPU via `--spec-draft-cpu-moe`). In the paired same-binary test the warm 256-token greedy workload rose from 18.58 to **21.10 tok/s (+13.6%)** at draft acceptance 0.71 and mean accepted chain 2.42, with 934 MiB of VRAM to spare at `-c 32000`. A fully-CPU draft placement was tested first and rejected (`-13.1%`, EXP-023) because draft and verify serialize on the same CPU threads.
+
 Compared with the clean public fork, our patches have demonstrated:
 
 - lower peak process RSS during model loading: approximately 29.8 GiB instead of 42.7 GiB;
@@ -57,7 +59,7 @@ Compared with the clean public fork, our patches have demonstrated:
 - bounded VRAM hot-store autofit with an explicit reserve;
 - reproducible benchmark, correctness, CPU, GPU, memory, and storage telemetry.
 
-The patches have not yet demonstrated a decode-speed improvement over the clean public fork. The server's current 14–18 tok/s range primarily comes from upstream `expert-tier`; FrankenMoE uses it as the performance floor for subsequent optimization.
+The patches have not yet demonstrated a decode-speed improvement over the clean public fork. The server's non-speculative 14–18 tok/s range primarily comes from upstream `expert-tier`; FrankenMoE uses it as the performance floor, and the accepted MTP draft configuration lifts the same server to 19–21 tok/s in daily use.
 
 Machine-readable results are in [`results/`](results/). Hardware, prompts, cache state, background GPU use, and storage performance materially affect throughput.
 
@@ -83,6 +85,7 @@ The small-model gate compares the streamed and resident greedy byte streams. It 
 - Defaults to 12 CPU threads; `THREADS=16` restores the previous maximum-CPU profile.
 - Defaults to `EHS=0` because EXP-010 found that a one-slot GPU expert hot store reduced warm decode speed by 7.91% and produced unstable greedy hashes.
 - Retains `EHS=-1` as an explicit experimental bounded-autofit mode.
+- Loads a head-only MTP sidecar GGUF as a speculative draft: the head's dense tensors run on the GPU next to the target model while its experts stay on the CPU (`--spec-draft-cpu-moe`), so the draft fits in the remaining VRAM of a 12 GB card.
 - Reserves configurable RAM and VRAM headroom and monitors process swap.
 - Exposes an OpenAI-compatible API through `llama-server`.
 
@@ -146,6 +149,21 @@ scripts/run_qwen38_server.sh \
 
 Then open `http://127.0.0.1:8080`.
 
+Run the same server with the accepted MTP speculative draft (requires the MTP head GGUF at `models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf`; the context drops to 32000 and both embedding tables move to the CPU so that the head fits on the GPU):
+
+```bash
+build/expert-tier-franken-cuda/bin/llama-server \
+  -m models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf \
+  --host 127.0.0.1 --port 8081 \
+  -c 32000 -fa on --jinja -t 12 -ctk q4_0 -ctv q4_0 \
+  --reasoning-effort low -ehs 0 --cpu-moe \
+  -ot per_layer_token_embd.weight=CPU,token_embd.weight=CPU -ngl 99 \
+  -md models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf \
+  --spec-type draft-mtp --spec-draft-n-max 2 -ngld 99 --spec-draft-cpu-moe
+```
+
+Do not replace the split placement with `-ngld 0`: a fully-CPU draft was measured 13.1% slower than no draft at all (EXP-023).
+
 The launcher currently defaults to `THREADS=12` and `EHS=0`. These can be overridden explicitly through environment variables. Do not enable the GPU expert hot store expecting an automatic speedup: the tested one-slot configuration was slower and remains rejected.
 
 Read [`docs/RUN_QWEN38.md`](docs/RUN_QWEN38.md) before changing memory budgets.
@@ -154,9 +172,9 @@ Read [`docs/RUN_QWEN38.md`](docs/RUN_QWEN38.md) before changing memory budgets.
 
 Both the standalone prototype and the patched interactive server work. The patched server is the current user-facing path because it is substantially faster; the standalone runtime remains the controlled research path for deeper streaming changes.
 
-CPU profiling showed that IQ2_S and IQ4_NL vector-dot kernels account for 53.69% of sampled cycles and OpenMP spin/wait paths account for about 39.96%. Disabling OpenMP did not help: EXP-015 measured a 2.06% slowdown with only a 1.47% reduction in CPU occupancy, so that configuration was rejected.
+CPU profiling showed that IQ2_S and IQ4_NL vector-dot kernels account for 53.69% of sampled cycles and OpenMP spin/wait paths account for about 39.96%. Disabling OpenMP did not help: EXP-015 measured a 2.06% slowdown with only a 1.47% reduction in CPU occupancy, so that configuration was rejected. Subsequent experiments (EXP-016 through EXP-022) ruled out selected-expert scheduling changes, madvise prefetch of the selected-expert window, and n-gram speculative decoding; the accepted wins so far are the balanced 12-thread default (EXP-013) and the split MTP speculative draft (EXP-024, +13.6% paired).
 
-The next experiment, EXP-016, investigates whether `MUL_MAT_ID` distributes selected-expert work unevenly across CPU workers. Existing profiling data will be analyzed first; a model run will only be requested if the saved data cannot answer the question. If imbalance is confirmed, chunk scheduling will be changed and benchmarked as a separate experiment.
+The next experiment, EXP-025, raises `--spec-draft-n-max` from 2 to 4: acceptance is high enough (0.71 in the lab, up to 0.78 on coding traffic) that longer draft chains may pay for the extra verify work. It is a flags-only change and will be measured against the 21.10 tok/s paired baseline with the same +2% acceptance gate.
 
 The broader P1 target remains overlap and reduced idle time across SSD, RAM, CPU, and GPU. Coalesced expert reads, router-stage prefetch, double buffering, explicit H2D timing, `io_uring`, and `O_DIRECT` will be tested as isolated hypotheses rather than introduced together.
 
