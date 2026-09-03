@@ -360,3 +360,20 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Interpretation: sleeping instead of spinning frees about `5.2` cores, which proves the EXP-014 spin cycles are real CPU burn rather than a sampling artifact. The price is a `12.25%` decode loss, so full-passive fails the acceptance gate (noticeable speed loss) and trips the early-stop guardrail.
 - Manual mode: `OMP_WAIT_POLICY=PASSIVE` is recorded as an opt-in runtime mode for periods when free cores matter more than single-stream speed, analogous to the retained `THREADS=16` profile. No launcher or code change.
 - Decision: `REJECTED` as a default after the early gate. The middle-ground follow-up is conditional EXP-018 with a moderate `GOMP_SPINCOUNT` and no `OMP_WAIT_POLICY`.
+
+## EXP-2026-09-03-018-gomp-spincount
+
+- Status: `REJECTED` (early gate).
+- Hypothesis: a moderate `GOMP_SPINCOUNT` — spin briefly, then sleep — captures part of the `5.2`-core CPU saving of EXP-017 without its `-12.25%` decode loss.
+- Change: runtime environment only: `GOMP_SPINCOUNT=30000` (one tenth of the libgomp default `300000`), no `OMP_WAIT_POLICY`, working binary, otherwise the identical EXP-014/015/017 server command; the variable was verified in `/proc/<pid>/environ`.
+- Protocol: one approved gate — one server start, one warmup 256-token request, one measured 256-token request with 0.5 s `/proc` plus `nvidia-smi` telemetry, against the ON reference `17.914 tok/s` / `11.774` cores.
+- Acceptance: `>=3%` speed, or a proven noticeable CPU-core reduction without noticeable speed loss; identical output hash; zero swap.
+- Risks: the spin may be load-bearing for barrier latency, in which case even a reduced count degrades decode; only one variable may differ from the reference.
+
+### Results
+
+- Measured warm decode: `17.83 tok/s` (`14,302.61 ms` per 256 tokens) versus the `17.914` reference, `-0.47%`, inside the `+/-2%` paired noise; wall time `14.74 s`; warmup `16.36 s`.
+- Mean occupied CPU cores were `11.346` versus `11.774` (`-3.6%`); peak RSS `30,040.0 MiB`; mean GPU utilization `30.4%`.
+- Correctness and safety passed: the output SHA-256 matched the historical `3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2`; physical reads, major faults, and process swap were zero.
+- Interpretation: with a still-generous spin budget the workers spin through the typical short graph waits, so neither CPU nor speed changes materially. Together with EXP-015 (native pool) and EXP-017 (PASSIVE) this closes the OpenMP wait-tuning direction: the spin is load-bearing, and its CPU cost can only be removed by sleeping, which costs about `12%` of decode speed.
+- Decision: `REJECTED` at the early gate. No default or launcher change. The remaining warm-path options are localizing graph-level waits by separate profiling, or the P5 kernel work where the `iq2_s` and `iq4_nl` dot products hold about `53.7%` of cycles.
