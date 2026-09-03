@@ -423,3 +423,20 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Realistic prefill mapping: with top-8 routing over 128 experts, a 512-token batch routes about 32 activation rows per activated expert, i.e. the `Ny=32` regime: about `+180%` kernel speed on `iq2_s` (the dominant prefill cost of the MoE layers) and `+31-35%` on `iq4_nl`.
 - Decision: proceed to an integration experiment for the `iq2_s` `MUL_MAT_ID` path only, gated to multi-token chunks (prefill/batch); decode stays on the plain `vec_dot` path (`Ny=1` fused is `-15%`). The `iq4_nl` fused direction is `CLOSED` (ceiling `1.41x`, decode regression, added complexity for no material gain).
 - Artifacts: `benchmarks/exp021_fused_bench.c`, `benchmarks/exp021_iq2s_grid.h`, `results/exp021-fused-bench.txt`.
+
+## EXP-2026-09-03-022-ngram-simple-spec-decode
+
+- Status: `REJECTED` (zero effect on the gate workload; direction closed for this workload).
+- Hypothesis: the fork's runtime-only `--spec-type ngram-simple` could raise single-stream decode by drafting ahead from repeated n-grams and verifying drafts in one batched step, with no second model and no code change.
+- Change: the reference measurement command (EXP-014/015/017/018 profile: port 8095, `-c 64000 -fa on --jinja -t 12 -ctk q4_0 -ctv q4_0 --reasoning-effort low -ehs 0 --cpu-moe -ot per_layer_token_embd.weight=CPU -ngl 99`) plus a single added flag `--spec-type ngram-simple` (defaults: lookup n-gram `size-n 12`, draft `size-m 48`, `min-hits 1`).
+- Protocol: one server process, one warmup and one measured 256-token greedy request (`temperature 0`, same prompt as every prior gate) through `/v1/chat/completions` streaming; 0.5 s telemetry (`ts,utime,stime,majflt,rss,swap,read_bytes,gpu_util,gpu_mib`), same artifact pattern as EXP-015/017/018.
+- Acceptance (pre-registered): `ACCEPT` at `>=+3%` tok/s with zero swap and the historical output hash; guardrail stop at `-10%`.
+- Baseline: `17.914 tok/s` measured / `11.774` cores / `29,469.9 MiB` RSS / `29.8%` GPU (EXP-014/015 references), paired noise `±2%`.
+
+### Results
+
+- Measured `17.827 tok/s` vs baseline `17.914` = `-0.49%`, inside the `±2%` paired noise band. Warmup `15.377 tok/s` (not comparable; reference warmups run colder).
+- Zero drafts fired: `graphs reused = 507`, identical to the non-speculative reference - no multi-token verify step ever executed. `ngram-simple` needs an exact 12-token context match to emit a draft, and a novel greedy reasoning answer contains none.
+- Correctness and safety passed: warmup and measured output SHA-256 both equal the historical `3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2` (speculative verification is lossless); process swap `0`, physical reads `1.2 MiB`, `28` major faults over the 14 s window, peak RSS `~29.3 GiB`, mean GPU `30.5%`, `11.004` occupied cores.
+- Decision: `REJECTED` - string-match drafting adds nothing to a single-stream novel-text workload. Stronger draft sources (a same-tokenizer draft model, or MTP/EAGLE-style heads) remain roadmap P6 but need artifacts that do not exist for this model, and the 11/12 GiB VRAM / fully-loaded CPU leave no room for a second model. If a real draft source ever lands, verify steps will process `Ny>1` tokens per step, where the shelved EXP-021 fused `iq2_s` kernel applies directly.
+- Artifacts: `results/exp022-ngram-server.log`, `results/exp022-ngram-monitor.csv`, `results/exp022-ngram-warmup.sse`, `results/exp022-ngram-measured.sse`.
