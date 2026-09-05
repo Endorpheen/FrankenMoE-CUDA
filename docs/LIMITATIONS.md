@@ -10,3 +10,5 @@
 - System swap activity from unrelated workloads can distort measurements even when this process itself never swaps.
 - Lossy expert dropping, substitution, route-ahead, and reduced top-k exist for research but are disabled in correctness runs.
 - Performance numbers are machine- and prompt-specific. The 14–15 tok/s server result is an interactive observation, not the same workload as the instrumented JSON runs.
+
+- Evicting expert-weight pages of a running server in mid-session (madvise MADV_DONTNEED plus posix_fadvise on the gguf mappings) reproducibly destabilized the CUDA driver during testing (EXP-2026-09-05-027): three aborts in cudaGraphExecDestroy with libc heap corruption inside libcuda. Do not synthesize page-cache eviction for a live CUDA-backed server; drop the cache before the server starts instead.

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-05-027-expert-cache-warm",
+  "status": "REJECTED",
+  "kind": "early_guardrail",
+  "pairs_completed": 1,
+  "workload": "MTP server (12 threads, ctx 32000, spec-draft-n-max 2), fixed prompt, 256 greedy tokens, sequential single runs",
+  "arm_a_baseline": {
+    "config": "LLAMA_EXPERT_CACHE_WARM=1 LLAMA_EXPERT_CACHE_WARM_S=0 LLAMA_EXPERT_CACHE_WARM_DROP=1",
+    "evicted_bytes": "all ffn_*_exps slices (madvise MADV_DONTNEED + posix_fadvise DONTNEED on file-backed gguf mappings, one pass between requests)",
+    "measured_tok_s": 12.053,
+    "majflt_delta_request": 8818,
+    "output_sha256_prefix": "9052bcabc9d6c94b"
+  },
+  "arm_b_warmer": {
+    "config": "LLAMA_EXPERT_CACHE_WARM=1 LLAMA_EXPERT_CACHE_WARM_S=32 LLAMA_EXPERT_CACHE_WARM_DROP=1",
+    "warmed_mib": 2898,
+    "measured_tok_s": 11.942,
+    "output_sha256_prefix": "9052bcabc9d6c94b"
+  },
+  "change_pct": -0.9,
+  "process_swap_peak_mib": 0.0,
+  "crashes": {
+    "count": 3,
+    "signature": "double free or corruption (out) in cudaGraphExecDestroy (libcuda heap)",
+    "location": "~token 215-218 of the first request, always in runs where the drop pass really evicted pages",
+    "core_dumps": "coredumpctl 1829188, 1831892, 1836729 (retained locally)"
+  },
+  "decision": "REJECTED",
+  "decision_note": "No speed signal: kernel readahead already overlaps fault-fill with compute (consistent with EXP-012). The eviction hook destabilizes the CUDA driver. Warmer code removed from the runtime and integration patch. P1 closed."
+}
