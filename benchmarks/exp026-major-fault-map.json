@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-05-026-major-fault-map",
+  "kind": "measurement_infrastructure",
+  "status": "ACCEPTED",
+  "runs": 1,
+  "workload": "single cold 128-token MTP request, perf record -e major-faults:u, server stopped after",
+  "note": "diagnostic run; cold start + perf overhead distort speed, not a performance comparison",
+  "total_major_faults": 216805,
+  "attribution": {
+    "expert_weights_total": 206114,
+    "expert_weights_pct": 95.07,
+    "expert_down_exps": 99154,
+    "expert_gate_exps": 53856,
+    "expert_up_exps": 53104,
+    "mtp_head": 6923,
+    "model_other_non_expert": 3404,
+    "outside_model_mapping": 364
+  },
+  "by_shard": {
+    "shard2": 85243,
+    "shard3": 124275,
+    "mtp": 6923,
+    "outside": 364
+  },
+  "top_faulting_tensors": {
+    "per_layer_token_embd.weight": 3333,
+    "blk.7.ffn_down_exps.weight": 2607,
+    "blk.0.ffn_down_exps.weight": 2532,
+    "blk.1.ffn_down_exps.weight": 2529,
+    "blk.2.ffn_down_exps.weight": 2469,
+    "blk.6.ffn_down_exps.weight": 2457,
+    "blk.22.ffn_down_exps.weight": 2436,
+    "blk.12.ffn_down_exps.weight": 2364,
+    "blk.34.ffn_down_exps.weight": 2299,
+    "blk.38.ffn_down_exps.weight": 2293,
+    "blk.5.ffn_down_exps.weight": 2285,
+    "blk.21.ffn_down_exps.weight": 2282,
+    "blk.13.ffn_down_exps.weight": 2274,
+    "blk.18.ffn_down_exps.weight": 2257,
+    "blk.28.ffn_down_exps.weight": 2251,
+    "blk.8.ffn_down_exps.weight": 2245,
+    "blk.29.ffn_down_exps.weight": 2218,
+    "blk.30.ffn_down_exps.weight": 2197,
+    "blk.37.ffn_down_exps.weight": 2178,
+    "blk.26.ffn_down_exps.weight": 2175
+  },
+  "inputs": {
+    "perf_data": "/tmp/exp026-major-faults.perf.data",
+    "perf_data_sha256": "4a122c218e767359a135089f09d2ca213fa998180bf049ecd97918fc4308ee25",
+    "perf_script_txt": "/tmp/exp026-major-faults.txt",
+    "maps": "/tmp/exp026-server.maps",
+    "shard2_index_sha256": "c6c79f658cf94f7645b31a6368f5d85c287865d9373215ab712daeef63649",
+    "shard3_index_sha256": "d65ecd6011c59d4c5bb4b17bfc2b7b82632520e163b8e49ac01ab5e623f06970",
+    "parser": "offline; field 5 of perf script output is the faulting file address (not field 6)"
+  },
+  "reproduce": "perf script -i /tmp/exp026-major-faults.perf.data -F comm,pid,tid,time,event,ip,addr > /tmp/exp026-major-faults.txt; then map addresses via /tmp/exp026-server.maps + shard gguf indexes",
+  "correction_note": "earlier inline Perl sum had // operator precedence bug and reported only the down projection (99154); corrected expert total is the three-way sum"
+}
