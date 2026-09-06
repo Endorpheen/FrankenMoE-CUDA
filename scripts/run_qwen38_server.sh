@@ -38,6 +38,9 @@ HOST="${HOST:-127.0.0.1}"
 CTX_SIZE="${CTX_SIZE:-8192}"
 # EXP-013 found equivalent warm decode with 12 threads while leaving four physical cores free.
 THREADS="${THREADS:-12}"
+# Opt-in internal swap watchdog for explicit benchmark profiles; the default profile is unchanged.
+# Units match the external monitor below and the internal defaults in server-swapwatchdog.cpp.
+if [[ "${SWAP_WATCHDOG:-0}" == 1 ]]; then SWAP_WATCHDOG_ARGS="--swap-watchdog"; else SWAP_WATCHDOG_ARGS=""; fi
 
 mkdir -p "${ROOT_DIR}/results"
 LOG_PATH="${LOG_PATH:-${ROOT_DIR}/results/qwen38-server.log}"
@@ -57,6 +60,7 @@ echo "timestamp,rss_kib,process_swap_kib,gpu_used_mib,gpu_temp_c,read_bytes,syst
     -c "${CTX_SIZE}" -fa on --jinja \
     -t "${THREADS}" \
     --host "${HOST}" --port "${PORT}" \
+    ${SWAP_WATCHDOG_ARGS} \
     ${EXTRA_ARGS:-} \
     >"${LOG_PATH}" 2>&1 &
 RUN_PID=$!
@@ -91,12 +95,12 @@ trap stop_children INT TERM
             "${read_bytes:-0}" "${cur_in:-0}" "${cur_out:-0}" >>"${MONITOR_PATH}"
         proc_burst=$(( proc_swap - last_proc_swap ))
         if (( proc_burst > 262144 )); then
-            echo "Process swap grew by $(( proc_burst * 4 / 1024 )) MiB in one second; stopping server" >&2
+            echo "Process swap grew by $(( proc_burst / 1024 )) MiB in one second; stopping server" >&2
             stop_children
             break
         fi
         sys_rate=$(( (cur_in - last_in + cur_out - last_out) * 4 / 1024 ))
-        if (( sys_rate > 2097152 )) || { (( sys_rate > 512 )) && (( ++burst_secs >= 5 )); }; then
+        if (( sys_rate > 2048 )) || { (( sys_rate > 512 )) && (( ++burst_secs >= 5 )); }; then
             echo "Sustained system swap I/O at ${sys_rate} MiB/s; stopping server" >&2
             stop_children
             break

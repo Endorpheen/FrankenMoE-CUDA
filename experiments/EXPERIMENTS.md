@@ -537,9 +537,22 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 
 ## EXP-2026-09-06-034-provenance
 
-- Status: `PASS` (infrastructure, без performance-заявлений).
+- Status: `ACCEPTED` (`kind=infrastructure`, без performance-заявлений). `PASS` — формулировка отдельных gates, не финальный статус.
 - Гипотеза: живой split-MTP server воспроизводится цепочкой `4aaad5d + expert-tier-integration.patch + integration-drift.patch + mtp-sidecar.patch` без опоры на грязное `work/llama.cpp-integration`.
 - Цепочка применяется чисто; результат идентичен рабочему дереву кроме одной пустой строки `src/llama-context.cpp:487` (нелогическая правка, не доставляется). `drift` закрывает отставание опубликованного патча: уточнение EHS autofit (`common/common.cpp`, `src/llama-expert-hotstore.cpp`) плюс перевод комментариев. `mtp-sidecar` = форк-коммиты `aaff9b3d5`+`c40681659`.
 - Изолированная сборка `build/exp034-mtp-repro` собрана; `--help` побайтово совпадает с живым бинарником (`5471e44b…`). Модель не загружалась.
 - Инструментальный сдвиг окружения зафиксирован: g++-15.2.0/CUDA 12.6 против g++-13/CUDA 12.4 в `baseline.json` (EXP-000). Хэши независимо собранных бинарников не обязаны совпадать; gate — функциональная паритетность.
 - Артефакты: `benchmarks/manifests/exp034-provenance.json`, `results/archive/EXP-2026-09-06-034/` (audit + инвентарь 119 raw-файлов EXP-023–033; 39 gitignored, помечены LOCAL_ONLY), `patches/integration-drift.patch`, `patches/mtp-sidecar.patch`, `patches/README-mtp-sidecar.md`.
+- Addendum 2026-09-06: commit `1cf489a` сделан без пред-коммитного блока (outcome, memory impact, correctness, список файлов) — нарушение Hard rule 2; содержимое коммита остаётся, отката нет. Дальше любой коммит только после показа этих четырёх пунктов Игорю и явного approval. Raw-архив `results/archive/EXP-2026-09-06-034/raw/` остаётся LOCAL_ONLY/untracked; в коммите manifest, хэши и компактные audit-артефакты. Current runtime (не evidence R0): сервер перезапущен владельцем в 14:07 MSK, PID 2470518, `-c 196608 -np 1`, порт 8081, тот же бинарник `5471e44b…`.
+
+## EXP-2026-09-06-035-watchdog-safety-profile
+
+- Status: `ACCEPTED` (`kind=correctness`), pending commit approval. Static audit + synthetic + lifecycle + модельный smoke выполнены.
+- Гипотеза: внешний launcher-monitor и внутренний watchdog можно привести к одинаковым единицам/порогам, корректному lifecycle и явному включению в будущий benchmark profile.
+- Найдено: `sys_rate > 2097152` в лаунчере нерабочий (sys_rate уже MiB/s; внутренний default 2048); сообщение VmSwap `proc_burst*4/1024` завышает KiB->MiB в 4 раза; burst-пороги (262144 KiB, 512 MiB/s x5, строгий `>`) совпадают с внутренними; `--swap-watchdog` не включён ни в одном пути запуска; `pkill` нет нигде.
+- Lifecycle: оригинальный лаунчер 4/4 PASS, исправленный 6/6 PASS; exit 0/7 сохраняются, SIGINT/SIGTERM -> 130/143, детей/сирот не осталось (`lifecycle-results.txt`).
+- Синтетика (извлечённая логика monitor, векторный vmstat): orig 7/7 PASS (2049 single no-trip — демо бага), fixed 7/7 PASS (2049 trip; 2048/2047 no-trip; 5 подряд >512 trip; 4 — no-trip; ровно 512 — no-trip); VmSwap burst 255/256/257 MiB — константы совпадают (`synthetic-results.txt`).
+- Кандидат-дифф (порог 2048, KiB/1024 в сообщении, opt-in `SWAP_WATCHDOG=1` -> `--swap-watchdog`): применён в рабочий `scripts/run_qwen38_server.sh` (`git apply --check` чистый, +6/-2; default профиль без флага).
+- Модельный smoke (старший помощник в Codex, отдельный согласованный блок): один сервер, ровно один запрос `/v1/chat/completions`; активация `swap watchdog: monitoring VmSwap and system swap I/O` видна; загрузка ~9 с; 48 prompt + 35 completion, total 6305,08 мс; MTP acceptance 24/24 (1,00000); CUDA error/OOM/trip нет; сервер штатно остановлен. VmRSS 5 608 140 -> 23 391 028 KiB; VmSwap 153 608 -> 144 500 KiB (был до запроса, выросшим не стал — сократился на 9 108 KiB). Компактный результат `results/archive/EXP-2026-09-06-035/audit/model-smoke-results.txt`; raw-журнал LOCAL_ONLY `/tmp/exp035-model-smoke-server.log` (sha256 `c1bd4bb2…`).
+- Ограничение: формальный VmSwap=0 не достигнут (~150 MiB swap до запроса). Допустимо для functional gate R1; данные НЕ являются performance baseline — в R2 отдельный чистый контроль памяти.
+- Тесты: `/tmp/exp035-watchdog` (fake llama-server/nvidia-smi); копии тестов и результатов в `results/archive/EXP-2026-09-06-035/audit/` и `tests/`. Уроки harness: сброс унаследованного SIGINT=ignored перед exec; не проверять своего ребёнка через `kill(pid,0)` (zombie); уникальный pidfile fake-сервера.

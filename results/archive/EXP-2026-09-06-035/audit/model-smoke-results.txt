@@ -1,0 +1,48 @@
+== EXP-2026-09-06-035 model smoke (single functional request) ==
+
+Performed 2026-09-06 by the senior helper in Codex (one server, one request, then clean shutdown).
+Raw log is LOCAL_ONLY: /tmp/exp035-model-smoke-server.log (sha256 c1bd4bb2c074f29f10d30afc79e28dcb5568f3d14a595debf5da49603261d353).
+
+Profile:
+  Binary:  build/exp023-mtp-sidecar/bin/llama-server
+  Saved profile + only functional additions `--swap-watchdog` and journaling:
+    -c 196608 -np 1, 12 threads, EHS=0, MTP draft n_max=2,
+    KV target/draft q4_0, draft model mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf.
+
+Watchdog activation confirmed in log:
+  0.00.095.645 I swap watchdog: monitoring VmSwap and system swap I/O
+
+Model load:
+  RAM headroom gate passed: 51547 MiB available, 8 GiB required.
+  Model loaded in ~9 s (loading starts 0.00.098, "model loaded" at 0.09.073).
+  n_slots=1, n_ctx_slot=196608; listening on http://127.0.0.1:8081.
+
+Single request (POST /v1/chat/completions, exactly one):
+  prompt tokens: 48
+  completion tokens: 35
+  prompt eval:  3853.16 ms / 48 tokens (80.27 ms/token, 12.46 tok/s)
+  decode eval:  2451.92 ms / 35 tokens (72.12 ms/token, 13.87 tok/s)
+  total:        6305.08 ms / 83 tokens
+  graphs reused: 12
+  model response: "готово"
+  MTP acceptance = 1.00000 (24 accepted / 24 generated), mean len = 3.00
+
+Memory around the single request (process, /proc):
+  VmRSS:  5 608 140 KiB before -> 23 391 028 KiB after (model+KV resident growth)
+  VmSwap:   153 608 KiB before ->   144 500 KiB after
+  VmSwap was already ~150 MiB before the request and DECREASED by 9 108 KiB
+  during it; no swap growth during the smoke run.
+
+Safety outcome:
+  No CUDA error, no OOM, no watchdog trip (external or internal) during load or request.
+
+Shutdown:
+  Server stopped cleanly after the check; log ends with "cleaning up before exit...".
+  PID 2593447 finished, port 8081 closed at that time.
+  (The owner restarted a separate runtime server on 8081 afterwards; it is not part of this evidence.)
+
+Caveat (honest limitation):
+  Formal VmSwap=0 was NOT reached: ~150 MiB swap predated the request. It decreased
+  during the run and the watchdog did not false-trip, which is acceptable for the R1
+  functional gate. These numbers are NOT a performance baseline; R2 needs its own
+  clean memory control.

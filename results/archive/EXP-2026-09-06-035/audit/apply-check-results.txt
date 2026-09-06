@@ -1,0 +1,12 @@
+EXP-2026-09-06-035 candidate patch validation
+
+Command:
+git apply --check --verbose results/archive/EXP-2026-09-06-035/audit/launcher-swap-watchdog.candidate.patch
+
+Result:
+Checking patch scripts/run_qwen38_server.sh...
+exit=0
+
+Stat:
+scripts/run_qwen38_server.sh | 8 ++++++--
+1 file changed, 6 insertions(+), 2 deletions(-)
