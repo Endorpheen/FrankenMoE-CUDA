@@ -1,0 +1,170 @@
+{
+  "experiment_id": "EXP-2026-09-06-038-bounded-pinned-ring",
+  "status": "ACCEPTED",
+  "kind": "performance",
+  "configuration": {
+    "context_tokens": 196608,
+    "parallel_slots": 1,
+    "threads": 12,
+    "ehs_slots": 0,
+    "prompt_tokens": 395,
+    "predicted_tokens": 48,
+    "temperature": 0,
+    "cache_prompt": false,
+    "mtp_draft_n_max": 2,
+    "formal_pair_order": [
+      "A,B",
+      "B,A",
+      "A,B",
+      "B,A",
+      "A,B"
+    ]
+  },
+  "control": {
+    "binary": "build/exp023-mtp-sidecar/bin/llama-server",
+    "binary_sha256": "5471e44b9d394d2e45c7adfb65c46a4ef1deeb32cee58b815eb2e0d02f4b9b78",
+    "env": {
+      "GGML_EXPERT_PINNED_RING": "unset"
+    },
+    "prompt_ms": [
+      4361.766,
+      3930.674,
+      3990.943,
+      3904.822,
+      4007.06
+    ],
+    "decode_tps": [
+      21.060971063121972,
+      21.39463914071846,
+      20.766807748405267,
+      21.64113473217945,
+      20.675644882162022
+    ],
+    "median_prompt_ms": 3990.943,
+    "median_decode_tps": 21.060971063121972
+  },
+  "candidate": {
+    "binary": "build/exp038-pinned-ring/bin/llama-server",
+    "binary_sha256": "fbbdd956df1d99afae8700139a40639daea5b9d8bb40451f803310650d43d707",
+    "cuda_library_sha256": "b1b9ca799383167d4cbf547f3968d4e2d7fbecd057230b618132678aa02dbbef",
+    "env": {
+      "GGML_EXPERT_PINNED_RING": "1"
+    },
+    "prompt_ms": [
+      3854.742,
+      3657.907,
+      3412.125,
+      3397.844,
+      3465.613
+    ],
+    "decode_tps": [
+      22.163245981850658,
+      22.43336098523503,
+      22.014783629806892,
+      22.75889085755985,
+      21.996011701878224
+    ],
+    "median_prompt_ms": 3465.613,
+    "median_decode_tps": 22.163245981850658,
+    "ring_calls_per_run": 17886,
+    "ring_chunks_per_run": 17886,
+    "host_pinned_budget_mib": 32,
+    "device_staging_mib": 0
+  },
+  "result": {
+    "status": "ACCEPTED",
+    "formal_pairs": 5,
+    "wins": 5,
+    "median_A_prompt_ms": 3990.943,
+    "median_B_prompt_ms": 3465.613,
+    "median_prefill_gain_pct": 13.163054446029431,
+    "median_paired_gain_pct": 12.983383109396538,
+    "paired_gain_mean_pct": 11.912545278660652,
+    "paired_mean_gain_bootstrap_95_pct": [
+      9.357020848856363,
+      13.802922548816065
+    ],
+    "median_A_decode_tps": 21.060971063121972,
+    "median_B_decode_tps": 22.163245981850658,
+    "median_decode_change_pct": 5.233732649007727,
+    "median_A_rss_after_kib": 33308800,
+    "median_B_rss_after_kib": 33333532,
+    "median_rss_after_delta_kib": 24732,
+    "all_http_200": true,
+    "all_swap_zero": true,
+    "all_content_identical": true,
+    "content_sha256": "7dfa7d1eccbcf2b70008864a40d5eb0a0989bfbbf8f8110d371b7c013fbbf2c1",
+    "all_B_ring_valid": true,
+    "any_cuda_error": false,
+    "memory_budget": "32 MiB pinned per CUDA backend context + metadata < 1 MiB",
+    "excluded_runs": [
+      "pair1-A-invalid-http400",
+      "pair1-A-invalid-cold-cache",
+      "pair1-A-invalid-cold-cache-2",
+      "pair1-B-invalid-info-log"
+    ],
+    "bootstrap_method": "exact enumeration of 5^5 paired resamples; percentile interval for mean pair gain"
+  },
+  "pair_results": [
+    {
+      "pair": 1,
+      "A_prompt_ms": 4361.766,
+      "B_prompt_ms": 3854.742,
+      "gain_pct": 11.624282458068578,
+      "A_decode_tps": 21.060971063121972,
+      "B_decode_tps": 22.163245981850658
+    },
+    {
+      "pair": 2,
+      "A_prompt_ms": 3930.674,
+      "B_prompt_ms": 3657.907,
+      "gain_pct": 6.939446008496248,
+      "A_decode_tps": 21.39463914071846,
+      "B_decode_tps": 22.43336098523503
+    },
+    {
+      "pair": 3,
+      "A_prompt_ms": 3990.943,
+      "B_prompt_ms": 3412.125,
+      "gain_pct": 14.50328907228192,
+      "A_decode_tps": 20.766807748405267,
+      "B_decode_tps": 22.014783629806892
+    },
+    {
+      "pair": 4,
+      "A_prompt_ms": 3904.822,
+      "B_prompt_ms": 3397.844,
+      "gain_pct": 12.983383109396538,
+      "A_decode_tps": 21.64113473217945,
+      "B_decode_tps": 22.75889085755985
+    },
+    {
+      "pair": 5,
+      "A_prompt_ms": 4007.06,
+      "B_prompt_ms": 3465.613,
+      "gain_pct": 13.512325745059972,
+      "A_decode_tps": 20.675644882162022,
+      "B_decode_tps": 21.996011701878224
+    }
+  ],
+  "artifacts": {
+    "request": "results/archive/EXP-2026-09-06-038/ab/request.json",
+    "request_sha256": "792ad70b50bbee09fed7c48ef75336d7be9fb20e34155592813d4a039ed56341",
+    "results_json": "results/archive/EXP-2026-09-06-038/ab/results.json",
+    "results_json_sha256": "682d488736208c8bc1a6cfbfc52f58bf458e927b097dc77abab6d580b5ab2891",
+    "results_txt": "results/archive/EXP-2026-09-06-038/ab/results.txt",
+    "results_txt_sha256": "8de5e3dfa930505d7204e09ca5883f84fc1592cc344ea7829912f32e2576d455",
+    "validation_txt": "results/archive/EXP-2026-09-06-038/ab/validation.txt",
+    "validation_txt_sha256": "cb02780a4ae4605afea4f38d3594298f4ebc663ee439014064c75ef82e71015a",
+    "candidate_patch": "results/archive/EXP-2026-09-06-038/exp038-pinned-ring.patch",
+    "candidate_patch_sha256": "e1e6803cec1e26099ee452fcb3537b7e660132e6e30da69febffca4785dbd7de",
+    "raw_runs": "results/archive/EXP-2026-09-06-038/ab/pair[1-5]-{A,B}/",
+    "excluded_preflight": [
+      "pair1-A-invalid-http400",
+      "pair1-A-invalid-cold-cache",
+      "pair1-A-invalid-cold-cache-2",
+      "pair1-B-invalid-info-log"
+    ]
+  },
+  "verdict_reason": "Median prefill latency improved 13.163%, candidate won 5/5 pairs, paired bootstrap interval stayed above zero, decode improved, outputs matched, VmSwap stayed zero, and every candidate run confirmed non-zero ring staging."
+}

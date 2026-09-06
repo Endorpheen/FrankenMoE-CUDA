@@ -1,0 +1,9 @@
+CHECK PASS destination byte equality (sparse+consecutive+padding+chunked)
+CHECK PASS uncovered expert untouched
+CHECK PASS sentinel guards unchanged
+CHECK PASS flag OFF: every staged call declined, pageable fallback used
+CHECK PASS flag OFF: ring never used
+CHECK PASS flag OFF: no ring init
+CHECK PASS capture guard: ring declined during CUDA graph capture
+VMPIN before_free=0 KiB after_free=0 KiB
+CHECK PASS free leaves no pinned ring memory

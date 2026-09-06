@@ -1,0 +1,5 @@
+CHECK PASS mul_mat_id token dimensions match 395-token prefill
+CHECK PASS sched graph compute
+RING_LOG 0
+CHECK PASS 395-token sched: flag OFF stays on fallback
+OUT_SHA 56d68487adca6899
