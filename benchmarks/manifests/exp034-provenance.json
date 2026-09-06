@@ -2,6 +2,8 @@
   "experiment": "EXP-2026-09-06-034",
   "scope": "provenance and reproducible MTP package",
   "captured_at": "2026-09-06",
+  "status": "ACCEPTED",
+  "kind": "infrastructure",
   "identity": {
     "root_repo_branch": "main",
     "root_repo_head": "3c02e5de56061c7c30c45ec325a0d8845639c825",
@@ -50,6 +52,16 @@
     "build_cache": {"CMAKE_HOME_DIRECTORY": "/home/end0/AI/FrankenMoE-CUDA/work/llama.cpp-exp023", "CMAKE_BUILD_TYPE": "Release", "CMAKE_CUDA_ARCHITECTURES": "89", "GGML_CUDA": "ON", "GGML_OPENMP": "ON", "BUILD_SHARED_LIBS": "ON", "LLAMA_OPENSSL": "ON", "curl": "absent from cache and ldd"},
     "loaded_libs_sha256_file": "results/archive/EXP-2026-09-06-034/audit/loaded-libs.sha256"
   },
+  "current_runtime": {
+    "recorded_at": "2026-09-06T14:24 (MSK), separate from R0 evidence capture",
+    "pid": 2470518,
+    "started_at": "2026-09-06T14:07 (restarted by the machine owner)",
+    "endpoint": "http://127.0.0.1:8081",
+    "argv_delta_vs_live_server": "-c 196608 (was 131072); otherwise same flags",
+    "binary": "build/exp023-mtp-sidecar/bin/llama-server",
+    "binary_sha256": "5471e44b9d394d2e45c7adfb65c46a4ef1deeb32cee58b815eb2e0d02f4b9b78",
+    "note": "current runtime configuration only; not a benchmark, does not change R0 evidence; no timings taken"
+  },
   "model": {
     "shard1_sha256": "268f81fdedf3149a538f252308927a4d5d1f6e062c178568a51e3b519744f8a8",
     "shard1_verified_against": "benchmarks/baseline.json",
@@ -82,6 +94,7 @@
   "artifacts": {
     "audit": "results/archive/EXP-2026-09-06-034/audit/",
     "raw_archive": "results/archive/EXP-2026-09-06-034/raw/",
+    "raw_archive_status": "LOCAL_ONLY/untracked; not committed. Commit 1cf489a carries the manifest, hashes, inventory and compact audit artifacts only",
     "inventory": "results/archive/EXP-2026-09-06-034/artifacts-inventory.json",
     "reference_status_source_paths": 38,
     "reference_status_counts": {"TRACKED": 21, "LOCAL_ONLY": 12, "UNTRACKED": 5}

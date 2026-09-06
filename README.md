@@ -174,9 +174,9 @@ Both the standalone prototype and the patched interactive server work. The patch
 
 CPU profiling showed that IQ2_S and IQ4_NL vector-dot kernels account for 53.69% of sampled cycles and OpenMP spin/wait paths account for about 39.96%. Disabling OpenMP did not help: EXP-015 measured a 2.06% slowdown with only a 1.47% reduction in CPU occupancy, so that configuration was rejected. Subsequent experiments (EXP-016 through EXP-022) ruled out selected-expert scheduling changes, madvise prefetch of the selected-expert window, and n-gram speculative decoding; the accepted wins so far are the balanced 12-thread default (EXP-013) and the split MTP speculative draft (EXP-024, +13.6% paired).
 
-The next experiment, EXP-025, raises `--spec-draft-n-max` from 2 to 4: acceptance is high enough (0.71 in the lab, up to 0.78 on coding traffic) that longer draft chains may pay for the extra verify work. It is a flags-only change and will be measured against the 21.10 tok/s paired baseline with the same +2% acceptance gate.
+The accepted MTP profile stays at `--spec-draft-n-max 2`. A larger draft limit was already checked outside the recorded benchmark protocol and is not scheduled for retesting; it is not part of the current roadmap.
 
-The broader P1 target remains overlap and reduced idle time across SSD, RAM, CPU, and GPU. Coalesced expert reads, router-stage prefetch, double buffering, explicit H2D timing, `io_uring`, and `O_DIRECT` will be tested as isolated hypotheses rather than introduced together.
+The next priority is the broader P1 target: measure and then reduce idle time across SSD, RAM, CPU, and GPU. Coalesced expert reads, router-stage prefetch, double buffering, explicit H2D timing, `io_uring`, and `O_DIRECT` will be tested as isolated hypotheses rather than introduced together.
 
 This is research software. Node names and evaluation callbacks used by the integration are not stable `llama.cpp` APIs. See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 

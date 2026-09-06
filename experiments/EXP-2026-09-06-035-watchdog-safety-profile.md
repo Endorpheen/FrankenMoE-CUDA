@@ -1,6 +1,6 @@
 # EXP-2026-09-06-035 — Watchdog safety profile (R1)
 
-Status: ACCEPTED (kind=correctness), pending commit approval. Static audit + synthetic tests + lifecycle + model smoke (single request, senior helper in Codex) all done.
+Status: ACCEPTED (kind=correctness), committed in `7e8b819`. Static audit + synthetic tests + lifecycle + model smoke (single request, senior helper in Codex) all done. This experiment is closed and must not be repeated.
 
 ## Hypothesis (one)
 
@@ -10,8 +10,7 @@ arms share one working safety profile.
 
 ## Baseline
 
-- Launcher: `scripts/run_qwen38_server.sh` at root repo HEAD `1cf489a`; the verified candidate
-  fix is now applied to the working script (uncommitted, part of the pending R1 commit).
+- Launcher: `scripts/run_qwen38_server.sh`; the verified fix is committed in `7e8b819`.
 - Internal watchdog: `work/llama.cpp-integration/tools/server/server-swapwatchdog.{h,cpp}`, started
   from `tools/server/server.cpp` only when `params.swap_watchdog` is set (`common/arg.cpp`
   `--swap-watchdog`, default off, env `LLAMA_ARG_SWAP_WATCHDOG`).
@@ -71,7 +70,7 @@ arms share one working safety profile.
 Proc VmSwap burst parity: 255/256 MiB -> no-trip, 257 MiB -> trip, identical in both codebases
 (strict `>` against 262144 KiB).
 
-## Candidate diff (APPLIED to the working launcher, pending commit)
+## Accepted diff (applied and committed in `7e8b819`)
 
 `results/archive/EXP-2026-09-06-035/audit/launcher-swap-watchdog.candidate.patch`
 (`git apply --check` clean; see `apply-check-results.txt`; 1 file, +6/-2):
@@ -98,7 +97,7 @@ and message were wrong).
   `/tmp/exp035-model-smoke-server.log` (sha256 `c1bd4bb2c074f29f10d30afc79e28dcb5568f3d14a595debf5da49603261d353`).
   Limitation: formal VmSwap=0 not reached — ~150 MiB swap predated the request and decreased by
   9 108 KiB during it (no growth, no false trip). Acceptable for the functional gate; NOT a
-  performance baseline (R2 needs its own clean memory control).
+  performance baseline.
 
 ## Verdict
 
@@ -115,10 +114,10 @@ and message were wrong).
   внутренний watchdog нигде не включался — все три исправлены и доказаны; lifecycle корректен;
   включённый watchdog на живой модели активен и не срабатывает ложно.
 - Ограничение: формальный VmSwap=0 не достигнут (~150 MiB swap существовали до запроса). Допустимо
-  для functional gate R1; эти данные НЕ являются performance baseline — в R2 нужен отдельный
-  чистый контроль памяти.
-- Решение: ACCEPTED (kind=correctness), ожидает показа Игорю и approval коммита.
-- Далее: после approval — атомарный коммит R1 (только allowlist-файлы), затем R2/EXP-036 (baseline).
+  для functional gate R1; эти данные НЕ являются performance baseline.
+- Решение: ACCEPTED (kind=correctness), закоммичен в `7e8b819`; R1 закрыт.
+- Далее: R2/EXP-036 отменён как `NOT_RUN_DUPLICATE`; следующий новый эксперимент — R3/EXP-037,
+  offline-анализ сохранённых traces.
 
 ## Artifacts
 

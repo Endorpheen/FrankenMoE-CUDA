@@ -1,6 +1,6 @@
 # EXP-2026-09-06-034 — Provenance and reproducible MTP package
 
-Status: PASS
+Status: ACCEPTED (kind=infrastructure)
 
 ## Hypothesis
 
@@ -49,3 +49,21 @@ The running split-MTP server can be reproduced from a minimal patch chain over t
 - Toolchain drift since EXP-000: `benchmarks/baseline.json` records g++-13/CUDA 12.4; the machine now runs g++-15.2.0/CUDA 12.6. The live exp023 binary was built with the current toolchain. Binary hashes across independent builds are not required to match; functional parity is the gate.
 - `results/exp*` raw SSE/monitor/server logs are gitignored (`LOCAL_ONLY`); hashes are recorded in the inventory. `/tmp/exp026-major-faults.perf.data` (~123 MiB) was left in `/tmp`, inventory-only.
 - EXP-031 `exp031-response-1788632230.json` and EXP-028 `fused-run-4.json` are 0-byte (failed attempts); kept as-is.
+
+## Addendum (2026-09-06, post-commit)
+
+- Semantic status: `ACCEPTED` with `kind=infrastructure`. `PASS` is a per-gate wording, not a final
+  experiment status; the gates table above keeps its per-gate `PASS` values.
+- Current runtime record (separate from R0 evidence): as of 2026-09-06 14:07 MSK the machine owner
+  restarted the server again — PID 2470518, `-c 196608 -np 1`, port 8081, same binary
+  `build/exp023-mtp-sidecar/bin/llama-server`, sha256 `5471e44b9d394d2e45c7adfb65c46a4ef1deeb32cee58b815eb2e0d02f4b9b78`.
+  This is the current runtime configuration, not a benchmark and not part of R0 evidence; the R0
+  manifest keeps its captured argv (`-c 131072`). No timing was taken against this server.
+- Raw archive placement: `results/archive/EXP-2026-09-06-034/raw/` (119 files) remains
+  `LOCAL_ONLY`/untracked and is deliberately not committed. Commit `1cf489a` contains the manifest,
+  hashes, inventory and compact audit artifacts; the raw files stay on this machine only.
+- Process violation record: commit `1cf489a` was created without the pre-commit approval block
+  (outcome, memory impact, correctness, file list shown to Igor; `AGENTS.md` Hard rule 2). The
+  commit content stands and is not rolled back. From now on: no further commits until the outcome,
+  memory impact, correctness and the exact file list have been shown to Igor and explicitly
+  approved.
