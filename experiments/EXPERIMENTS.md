@@ -423,6 +423,7 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Realistic prefill mapping: with top-8 routing over 128 experts, a 512-token batch routes about 32 activation rows per activated expert, i.e. the `Ny=32` regime: about `+180%` kernel speed on `iq2_s` (the dominant prefill cost of the MoE layers) and `+31-35%` on `iq4_nl`.
 - Decision: proceed to an integration experiment for the `iq2_s` `MUL_MAT_ID` path only, gated to multi-token chunks (prefill/batch); decode stays on the plain `vec_dot` path (`Ny=1` fused is `-15%`). The `iq4_nl` fused direction is `CLOSED` (ceiling `1.41x`, decode regression, added complexity for no material gain).
 - Artifacts: `benchmarks/exp021_fused_bench.c`, `benchmarks/exp021_iq2s_grid.h`, `results/exp021-fused-bench.txt`.
+- Independent re-run (2026-09-05, after a stale handoff briefly reopened the experiment): a second standalone prototype built from the ik_llama.cpp GitHub sources reproduced the same shape on a different L3-resident workload: iq2_s fused `0.80-0.83x` at `Ny=1`, `1.36-1.41x` at `Ny=2`, `1.66-2.14x` at `Ny=3-6`, `1.6-1.9x` at `Ny=7-8`; iq4_nl fused `0.19-0.36x` everywhere. Same conclusion on both: reuse pays only at multi-row shapes. The re-run was not committed as a separate experiment; this note is the record.
 
 ## EXP-2026-09-03-022-ngram-simple-spec-decode
 
@@ -519,3 +520,26 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Blocking finding: real in-session eviction of expert pages destabilizes the CUDA driver. Three of four runs that executed a real drop aborted at the same point (~token 215-218 of the first request) with `double free or corruption (out)` inside `cudaGraphExecDestroy` (libcuda heap corruption; core dumps retained). Runs without a real eviction complete normally, and the drop only touches file-backed gguf mappings, so the mechanism is indirect - but the correlation is unambiguous and the scenario cannot be used as a test protocol.
 - Decision: `REJECTED` on two grounds. First, there is no speed signal: kernel readahead already overlaps fault-fill with compute, and post-request warming buys nothing (consistent with EXP-012's independent verdict). Second, the eviction hook is unsafe. The warmer code is removed from the runtime and the integration patch. P1 is closed: with EXP-012, EXP-026 and EXP-027 together, no remaining prefetch/residency lever has an expected positive value - the warm path has zero disk I/O and the cold path is already overlapped by the kernel.
 - Artifacts: `benchmarks/exp027-cache-warm.json`; crash core dumps in `/var/lib/systemd/coredump` (2 files, retained); the warmer implementation lives only in git history of this file's workspace, not in any tracked patch.
+
+
+## Уточнения повторного аудита — 2026-09-06 (без новых запусков)
+
+Актуальная очередь: [../ROADMAP.md](../ROADMAP.md). Полный реестр EXP-000–033, проверка evidence и ограничения: [../docs/AUDIT-2026-09-06.md](../docs/AUDIT-2026-09-06.md). ТЗ исполнителю: [../docs/QWEN-IMPLEMENTATION-TASK.md](../docs/QWEN-IMPLEMENTATION-TASK.md). Старые Next experiment выше — исторические, не текущие поручения.
+
+- EXP-026 выполнен: итог ACCEPTED measurement; старый PLANNED описывает pre-run состояние. 206114 expert faults / 209518 main-shard faults = 98,38%, а не 99,5%/99,9% из разных записей. Доля от всех 216805 faults = 95,07% остаётся верной. Counts не являются временем stalls.
+- EXP-024 исторически ACCEPTED (+13,6%, одна измеренная пара), но это не five-run median. В сохранённом MTP log cumulative graphs reused: 104 после первого запроса, 207 после второго; 311 не следует считать итоговым cumulative count. Split-MTP port есть в локальных исходниках, но не в root integration patch; доставка требует отдельного provenance этапа.
+- EXP-027 REJECTED остаётся в силе; live eviction запрещена. Его широкое «P1 closed» относится к испытанным CPU-decode prefetch/warmer вариантам и не закрывает другой bulk-prefill transfer path EXP-030–032.
+- EXP-028 REJECTED; EXP-029 INCONCLUSIVE для bulk; EXP-030/031/032 ACCEPTED measurement; EXP-033 REJECTED, prefill 3979,34→6502,22 ms (+63,40%). Подробности в отдельных файлах EXP и rejected.
+- У EXP-033 event wait, CPU gather, device scratch/scatter добавлены вместе; event serialization — правдоподобная, но не отдельно измеренная причина. Два больших buffers сами по себе не доказанное исправление.
+- Соседние selected expert ranges уже объединяет server scheduler. Повтор этой оптимизации, CPU fused, ngram, CPU-only MTP, wait-policy и большего draft limit не планируется.
+
+Исторические записи/неудачные эксперименты сохранены. Аудит не меняет код и не создаёт новых performance evidence.
+
+## EXP-2026-09-06-034-provenance
+
+- Status: `PASS` (infrastructure, без performance-заявлений).
+- Гипотеза: живой split-MTP server воспроизводится цепочкой `4aaad5d + expert-tier-integration.patch + integration-drift.patch + mtp-sidecar.patch` без опоры на грязное `work/llama.cpp-integration`.
+- Цепочка применяется чисто; результат идентичен рабочему дереву кроме одной пустой строки `src/llama-context.cpp:487` (нелогическая правка, не доставляется). `drift` закрывает отставание опубликованного патча: уточнение EHS autofit (`common/common.cpp`, `src/llama-expert-hotstore.cpp`) плюс перевод комментариев. `mtp-sidecar` = форк-коммиты `aaff9b3d5`+`c40681659`.
+- Изолированная сборка `build/exp034-mtp-repro` собрана; `--help` побайтово совпадает с живым бинарником (`5471e44b…`). Модель не загружалась.
+- Инструментальный сдвиг окружения зафиксирован: g++-15.2.0/CUDA 12.6 против g++-13/CUDA 12.4 в `baseline.json` (EXP-000). Хэши независимо собранных бинарников не обязаны совпадать; gate — функциональная паритетность.
+- Артефакты: `benchmarks/manifests/exp034-provenance.json`, `results/archive/EXP-2026-09-06-034/` (audit + инвентарь 119 raw-файлов EXP-023–033; 39 gitignored, помечены LOCAL_ONLY), `patches/integration-drift.patch`, `patches/mtp-sidecar.patch`, `patches/README-mtp-sidecar.md`.

@@ -1,0 +1,362 @@
+diff --git a/common/common.cpp b/common/common.cpp
+index 11b9065..3a53669 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -1331,10 +1331,12 @@ common_init_result::common_init_result(common_params & params, bool model_only)
+             has_draft || spec_mtp ? &extra : nullptr,
+             params.verbosity >= LOG_LEVEL_DEBUG ? GGML_LOG_LEVEL_DEBUG : GGML_LOG_LEVEL_ERROR,
+             p_expert_hot_s);
+-        if (params.expert_hot_s == -1) {
+-            // -1 = autofit slots from what the fit leaves on GPU; send all experts
+-            // to CPU so the hot store copy reads host pointers (<=> -cmoe).
+-            params.expert_hot_s = n_expert_hot_s > 0 ? n_expert_hot_s : 0;
++        if (params.expert_hot_s == -1 && n_expert_hot_s >= 0) {
++            // fit produced a slot count; send all experts to CPU so the hot
++            // store copy reads host pointers (<=> -cmoe). If the fit failed
++            // (n_expert_hot_s still -1, e.g. n_gpu_layers is user-set) the -1
++            // is kept and the hot store autofits from free VRAM at allocate.
++            params.expert_hot_s = n_expert_hot_s;
+             cparams.expert_hot_s = params.expert_hot_s;
+             if (params.expert_hot_s > 0) {
+                 for (auto & o : params.tensor_buft_overrides) {
+diff --git a/ggml/include/ggml-cpu.h b/ggml/include/ggml-cpu.h
+index 4bff7ac..feeb932 100644
+--- a/ggml/include/ggml-cpu.h
++++ b/ggml/include/ggml-cpu.h
+@@ -140,14 +140,14 @@ extern "C" {
+ 
+     GGML_BACKEND_API ggml_backend_reg_t ggml_backend_cpu_reg(void);
+ 
+-    // The CPU backend invokes this hook before reading a selected expert in mul_mat_id.
+-    // An external streamer may block the worker until the corresponding weights are ready.
++    // CPU-бэкенд вызывает обработчик перед чтением выбранного эксперта в mul_mat_id.
++    // Внешний стример может заблокировать поток до готовности соответствующих весов.
+     typedef void (*ggml_cpu_expert_ready_hook_t)(const struct ggml_tensor * src0, int expert, void * user_data);
+ 
+-    // Registration is process-wide; NULL disables the hook. Do not change it while a graph runs.
+-
++    // Регистрация действует на весь процесс; NULL отключает обработчик.
++    // Менять обработчик во время исполнения графа нельзя.
+     GGML_BACKEND_API void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data);
+-// Process-wide expert-readiness hook for an external SSD streamer.
++
+     GGML_BACKEND_API void ggml_cpu_fp32_to_fp32(const float *,       float *, int64_t);
+     GGML_BACKEND_API void ggml_cpu_fp32_to_i32 (const float *,     int32_t *, int64_t);
+     GGML_BACKEND_API void ggml_cpu_fp32_to_fp16(const float *, ggml_fp16_t *, int64_t);
+diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+index 8a42404..bda7d7b 100644
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -55,10 +55,10 @@
+ #    include "spacemit/ime.h"
+ #endif
+ 
+-        // Let the external streamer make the expert resident before its rows are read.
++// Процессный обработчик готовности эксперта для внешнего SSD-стримера.
+ static ggml_cpu_expert_ready_hook_t g_expert_ready_hook      = NULL;
+ static void *                       g_expert_ready_hook_data = NULL;
+-        // Called before a dynamic H2D promotion; false leaves the current slot unchanged.
++
+ void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data) {
+     g_expert_ready_hook      = hook;
+     g_expert_ready_hook_data = user_data;
+@@ -1637,6 +1637,7 @@ static void ggml_compute_forward_mul_mat_id(
+                 matrix_row_counts[i02] += 1;
+             }
+         }
++
+     }
+ 
+     // reset current_chunk
+@@ -1654,7 +1655,7 @@ static void ggml_compute_forward_mul_mat_id(
+             continue;
+         }
+ 
+-
++        // Перед чтением строк даём внешнему стримеру дождаться нужного эксперта.
+         if (g_expert_ready_hook) {
+             g_expert_ready_hook(src0, cur_a, g_expert_ready_hook_data);
+         }
+diff --git a/include/llama.h b/include/llama.h
+index ae5d0bf..2947b85 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -421,7 +421,7 @@ extern "C" {
+         float expert_hyst;            // hysteresis ratio for slot swaps
+         int   expert_dwell;           // min updates a resident slot keeps before swap
+         bool  expert_cache_force;      // bypass the CUDA-only hot store guard
+-
++        // Вызывается перед динамическим H2D-промоутом. false оставляет текущий слот без изменений.
+         llama_expert_prepare_callback expert_prepare;
+         void * expert_prepare_user_data;
+ 
+@@ -1595,8 +1595,8 @@ extern "C" {
+         int32_t n_reused;   // number of times a ggml compute graph had been reused
+     };
+ 
+-    // Telemetry for the bounded CUDA expert cache. Counters are cumulative for the
+-    // context; zero values mean that the hot store is disabled.
++    // Телеметрия ограниченного CUDA-кэша экспертов. Счётчики накопительные
++    // для контекста; нулевые значения означают, что hot-store отключён.
+     struct llama_expert_cache_stats {
+         uint64_t h2d_bytes;
+         uint64_t h2d_copies;
+diff --git a/src/llama-expert-hotstore.cpp b/src/llama-expert-hotstore.cpp
+index 67e3000..f563e37 100644
+--- a/src/llama-expert-hotstore.cpp
++++ b/src/llama-expert-hotstore.cpp
+@@ -164,100 +164,133 @@ llama_expert_hotstore::llama_expert_hotstore(
+ }
+ 
+ bool llama_expert_hotstore::allocate(ggml_backend_buffer_type_t gpu_buft, int reserve_mb) {
+-    if (hot_s == -1) {
+-        // autofit: one slot holds one expert slice per layer, so the per-slot
+-        // cost is the sum of every entry's per-expert slice size. The reserve
+-        // stays free on the GPU for processes that start after this server.
+-        size_t slot_bytes = 0;
+-        for (const auto & e : entries) {
+-            slot_bytes += ggml_nbytes(e.src) / (size_t) e.src->ne[2];
+-        }
+-        size_t free_mem = 0, total_mem = 0;
+-        ggml_backend_dev_t dev_probe = ggml_backend_buft_get_device(gpu_buft);
+-        if (dev_probe) {
+-            ggml_backend_dev_memory(dev_probe, &free_mem, &total_mem);
+-        }
+-        const size_t reserve = reserve_mb > 0 ? (size_t) reserve_mb * 1024 * 1024 : 0;
+-        const size_t budget = free_mem > reserve ? free_mem - reserve : 0;
+-        const int fit = slot_bytes > 0 ? (int) (budget / slot_bytes) : 0;
+-        hot_s = std::min(fit > 0 ? fit : 0, n_experts);
+-        LLAMA_LOG("%s: hot store: autofit %d slots from %zu MiB free, %zu MiB reserve, %zu MiB per slot\n",
+-            __func__, hot_s, free_mem / (1024 * 1024), reserve / (1024 * 1024), slot_bytes / (1024 * 1024));
+-    }
+-    if (hot_s <= 0 || entries.empty()) {
++    const bool autofit = hot_s == -1;
++    if (entries.empty()) {
+         return false;
+     }
+-    if (hot_s > n_experts) {
++    if (!autofit && hot_s <= 0) {
++        return false;
++    }
++    if (!autofit && hot_s > n_experts) {
+         throw std::runtime_error(format("%s: hot store S=%d exceeds n_experts=%d",
+             __func__, hot_s, n_experts));
+     }
+ 
+-    // a no_alloc context just for the hot tensor metadata
+-    // (also holds the per-layer LUT/mask tensors created below)
+     cold_bank = getenv("LLAMA_EHS_COLD_BANK") != nullptr;
+-    ggml_init_params params = {
+-        /*.mem_size   =*/ ggml_tensor_overhead() * (2 * entries.size() + 8 * n_layers),
+-        /*.mem_buffer =*/ nullptr,
+-        /*.no_alloc   =*/ true,
++    auto build_layout = [&](int slots) -> size_t {
++        ctx.reset();
++        ggml_init_params params = {
++            /*.mem_size   =*/ ggml_tensor_overhead() * (2 * entries.size() + 8 * n_layers),
++            /*.mem_buffer =*/ nullptr,
++            /*.no_alloc   =*/ true,
++        };
++        ctx = ggml_context_ptr(ggml_init(params));
++        if (!ctx) {
++            return 0;
++        }
++        for (auto & e : entries) {
++            // Each routing lane needs a distinct zero sentinel so MMQ compaction cannot merge
++            // unrelated cold selections. Autofit must price these slots as well as live slots.
++            e.dst = ggml_new_tensor_3d(ctx.get(), e.src->type, e.src->ne[0], e.src->ne[1], slots + n_sent);
++        }
++        luts.assign(n_layers, layer_lut{});
++        for (int il = 0; il < n_layers; il++) {
++            luts[il].hot_lut   = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
++            luts[il].cold_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
++            if (cold_bank) {
++                luts[il].cold_lut = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
++                luts[il].hot_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
++            }
++        }
++        return ggml_backend_alloc_ctx_tensors_from_buft_size(ctx.get(), gpu_buft);
+     };
+-    ctx = ggml_context_ptr(ggml_init(params));
+-    if (!ctx) {
+-        LLAMA_LOG_ERROR("%s: hot store: failed to create ggml context\n", __func__);
+-        return false;
+-    }
+ 
+-    // one hot tensor per model expert tensor, with hot_s expert slots plus
+-    // 1 sentinel slot (index hot_s) that stays zero so cold selections read
+-    // zeros via a valid in-range index (sentinel trick, oldtricks Trick 2).
+-    for (auto & e : entries) {
+-        // hot_s live slots + 8 zero sentinel slots (one per possible expert lane):
+-        // the tier remap sends cold lane j to slot hot_s + j, so every id within a
+-        // token stays DISTINCT and the batched (MMQ) mul_mat_id compaction is safe.
+-        e.dst = ggml_new_tensor_3d(ctx.get(), e.src->type, e.src->ne[0], e.src->ne[1], hot_s + n_sent);
++    size_t free_mem = 0, total_mem = 0;
++    ggml_backend_dev_t dev = ggml_backend_buft_get_device(gpu_buft);
++    if (dev) {
++        ggml_backend_dev_memory(dev, &free_mem, &total_mem);
+     }
+-
+-    // per-layer LUTs and masks for in-graph routing (oldtricks Trick 4).
+-    // hot_lut i32, cold_mask f32, both [n_experts].
+-    luts.assign(n_layers, layer_lut{});
+-    for (int il = 0; il < n_layers; il++) {
+-        luts[il].hot_lut   = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
+-        luts[il].cold_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
+-        if (cold_bank) {
+-            luts[il].cold_lut = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_experts);
+-            luts[il].hot_mask = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, n_experts);
++    const size_t reserve = reserve_mb > 0 ? (size_t) reserve_mb * 1024 * 1024 : 0;
++    // Context construction still has to create CUDA compute/VMM buffers after the hot store.
++    // Keep a mandatory internal margin in addition to the caller's reserve; consuming all memory
++    // reported free here otherwise succeeds at cudaMalloc and aborts on the first graph warm-up.
++    constexpr size_t runtime_headroom = 1024ull * 1024 * 1024;
++    const size_t fixed_reserve = reserve <= SIZE_MAX - runtime_headroom ? reserve + runtime_headroom : SIZE_MAX;
++    const size_t budget = free_mem > fixed_reserve ? free_mem - fixed_reserve : 0;
++
++    if (autofit) {
++        // The CUDA allocator's exact layout includes sentinel slots, per-tensor alignment and
++        // routing LUTs. Binary-search that layout instead of estimating from raw expert bytes.
++        int lo = 0;
++        int hi = n_experts;
++        while (lo < hi) {
++            const int mid = lo + (hi - lo + 1) / 2;
++            const size_t candidate = build_layout(mid);
++            if (candidate > 0 && candidate <= budget) {
++                lo = mid;
++            } else {
++                hi = mid - 1;
++            }
+         }
++        hot_s = lo;
++        const size_t exact_need = hot_s > 0 ? build_layout(hot_s) : 0;
++        LLAMA_LOG("%s: hot store: autofit %d slots from %zu MiB free, %zu MiB caller reserve, %zu MiB runtime headroom, %zu MiB exact allocation\n",
++            __func__, hot_s, free_mem / (1024 * 1024), reserve / (1024 * 1024),
++            runtime_headroom / (1024 * 1024), exact_need / (1024 * 1024));
+     }
+-
+-    // check whether the buffer would fit before committing any VRAM
+-    const size_t need = ggml_backend_alloc_ctx_tensors_from_buft_size(ctx.get(), gpu_buft);
+-    if (need == 0) {
+-        LLAMA_LOG_ERROR("%s: hot store: zero-sized buffer, disabled\n", __func__);
++    if (hot_s <= 0) {
+         ctx.reset();
+         return false;
+     }
+ 
+-    size_t free_mem = 0, total_mem = 0;
+-    ggml_backend_dev_t dev = ggml_backend_buft_get_device(gpu_buft);
+-    if (dev) {
+-        ggml_backend_dev_memory(dev, &free_mem, &total_mem);
+-    }
+-    if (dev && free_mem < need) {
+-        throw std::runtime_error(format("%s: not enough memory to allocate the GPU hot store of %d slots (%zu MiB needed, %zu MiB free on %s, reserve %d MiB)",
+-            __func__, hot_s, need / (1024 * 1024), free_mem / (1024 * 1024),
+-            ggml_backend_dev_name(dev), reserve_mb));
++    size_t need = 0;
++    ggml_backend_buffer_t b = nullptr;
++    while (hot_s > 0) {
++        need = build_layout(hot_s);
++        if (need == 0) {
++            LLAMA_LOG_ERROR("%s: hot store: zero-sized buffer, disabled\n", __func__);
++            ctx.reset();
++            return false;
++        }
++        if (dev) {
++            ggml_backend_dev_memory(dev, &free_mem, &total_mem);
++        }
++        const size_t required = autofit && fixed_reserve <= SIZE_MAX - need ? need + fixed_reserve : need;
++        if (!dev || free_mem >= required) {
++            b = ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), gpu_buft);
++            if (b != nullptr) {
++                break;
++            }
++        }
++        if (!autofit) {
++            throw std::runtime_error(format("%s: unable to allocate hot store buffer of %d slots (%zu MiB needed, %zu MiB free on %s, reserve %d MiB)",
++                __func__, hot_s, need / (1024 * 1024), free_mem / (1024 * 1024),
++                dev ? ggml_backend_dev_name(dev) : "unknown device", reserve_mb));
++        }
++        LLAMA_LOG_WARN("%s: hot store: allocation of %d slots (%zu MiB) failed, retrying with %d\n",
++            __func__, hot_s, need / (1024 * 1024), hot_s - 1);
++        --hot_s;
+     }
+-
+-    ggml_backend_buffer_t b = ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), gpu_buft);
+     if (b == nullptr) {
+-        throw std::runtime_error(format("%s: unable to allocate hot store buffer of %d slots (%zu MiB)", 
+-            __func__, hot_s, need / (1024 * 1024)));
++        LLAMA_LOG_WARN("%s: hot store: no autofit allocation succeeded, disabled\n", __func__);
++        ctx.reset();
++        return false;
++    }
++    if (autofit) {
++        LLAMA_LOG("%s: hot store: autofit allocated %d slots using %zu MiB\n",
++            __func__, hot_s, need / (1024 * 1024));
+     }
+     buf = ggml_backend_buffer_ptr(b);
+     allocated_bytes = ggml_backend_buffer_get_size(b);
+     ggml_backend_buffer_set_usage(buf.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+ 
+-    // One pinned staging slot is sufficient: migrations are serialized and tensor_set
+-    // completes H2D before returning, after which the SSD/RAM entry may be evicted.
++    // Autofit happens after construction, so size the routing state only once the final slot
++    // count is known. Manual sizing reaches the same initialization path for consistency.
++    slot_to_expert.assign(n_layers, std::vector<int>(hot_s, -1));
++    dwell_count.assign(n_layers, std::vector<int>(hot_s, 0));
++
++    // Один закреплённый staging-слот достаточен: миграции сериализованы, а
++    // tensor_set завершает H2D до возврата. SSD/RAM entry после этого можно вытеснять.
+     size_t max_slice = 0;
+     for (const auto & e : entries) {
+         max_slice = std::max(max_slice, ggml_nbytes(e.src) / (size_t) e.src->ne[2]);
+@@ -535,8 +568,8 @@ void llama_expert_hotstore::resync_top_s(const llama_expert_heatmap & heatmap) {
+             if (p < 0) {
+                 break; // no slot free or displaceable under the gate
+             }
+-            // In checked mode, the cold-tier owner first makes the complete expert resident.
+-            // Refusal safely skips the promotion.
++            // В checked-режиме владелец cold-tier сначала делает полный эксперт
++            // резидентным. Отказ означает безопасный пропуск промоута.
+             if (prepare && !prepare(il, e_cold, prepare_user_data)) {
+                 continue;
+             }
+@@ -784,11 +817,11 @@ void llama_expert_hotstore::log() const {
+     LLAMA_LOG("  total bytes/slot across all layers = %zu (%zu MiB)\n",
+         total, total / (1024 * 1024));
+     if (buf) {
+-        LLAMA_LOG("  GPU hot store allocated: %s, %zu bytes (%zu MiB) for %d+1 slots (%d expert + 1 sentinel)\n",
++        LLAMA_LOG("  GPU hot store allocated: %s, %zu bytes (%zu MiB) for %d+%d slots (%d expert + %d sentinels)\n",
+             ggml_backend_buffer_name(buf.get()),
+             ggml_backend_buffer_get_size(buf.get()),
+             ggml_backend_buffer_get_size(buf.get()) / (1024 * 1024),
+-            hot_s, hot_s);
++            hot_s, n_sent, hot_s, n_sent);
+     } else if (hot_s > 0) {
+         LLAMA_LOG("  hot store DISABLED (%d slots requested)\n", hot_s);
+     }
+diff --git a/src/llama-expert-hotstore.h b/src/llama-expert-hotstore.h
+index 24e0992..9cf8a32 100644
+--- a/src/llama-expert-hotstore.h
++++ b/src/llama-expert-hotstore.h
+@@ -92,9 +92,9 @@ struct llama_expert_hotstore {
+ 
+     bool (*prepare)(int32_t layer, int32_t expert, void * user_data) = nullptr;
+     void * prepare_user_data = nullptr;
+-    // Hot-store copy counters. Initial population is included; callers may snapshot
+-    // before and after the phase they need to measure.
+-    // Copy one projection slice through the pinned host staging buffer.
++
++    // Счётчики копирования весов hot-store. Начальное заполнение входит в итог,
++    // а вызывающая сторона может брать снимки до и после интересующей фазы.
+     uint64_t h2d_bytes = 0;
+     uint64_t h2d_copies = 0;
+     uint64_t h2d_time_us = 0;
+@@ -145,6 +145,6 @@ llama_expert_hotstore(const llama_model * model, int n_layers,
+ 
+     void log() const;
+ 
+-
++    // Копирует один projection slice через закреплённый host staging-буфер.
+     void upload(ggml_tensor * dst, const void * src, size_t dst_offset, size_t bytes);
+ };

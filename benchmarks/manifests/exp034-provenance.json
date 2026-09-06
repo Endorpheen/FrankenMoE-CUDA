@@ -1,0 +1,93 @@
+{
+  "experiment": "EXP-2026-09-06-034",
+  "scope": "provenance and reproducible MTP package",
+  "captured_at": "2026-09-06",
+  "identity": {
+    "root_repo_branch": "main",
+    "root_repo_head": "3c02e5de56061c7c30c45ec325a0d8845639c825",
+    "nested_integration_head": "4aaad5d318a790a42c2197975ec8fadbad42602b",
+    "nested_integration_dirty": true,
+    "mtp_fork": "work/llama.cpp-exp023",
+    "mtp_fork_branch": "exp023-mtp-sidecar",
+    "mtp_fork_commits": {
+      "snapshot_base": "1865b000f",
+      "mtp_port": "aaff9b3d5",
+      "draft_kv_fix": "c40681659"
+    },
+    "trees": {
+      "4aaad5d": "c48a66184f37689a0aa31b77ad7983ee4cb77872",
+      "snapshot1865b000f": "2657229db4cb046972cb5eb6d7df5a5bd01675db",
+      "aaff9b3d5": "050bdbc317f1544bea4a53d3deaa5eadf36b11cc",
+      "c40681659": "d116ad8daaf82b293de4a12accea9ee3e36bbc09",
+      "base_plus_integration_patch": "82885497a45adc959cda8458e9a45ade3e52f193"
+    }
+  },
+  "patch_chain": {
+    "apply_order": [
+      "patches/expert-tier-integration.patch",
+      "patches/integration-drift.patch",
+      "patches/mtp-sidecar.patch"
+    ],
+    "base_commit": "4aaad5d318a790a42c2197975ec8fadbad42602b",
+    "apply_method": "git apply (checked with git apply --check on a fresh tree each stage)",
+    "equivalence": "base + chain == work/llama.cpp-integration dirty tree except a single blank line at src/llama-context.cpp:487 (non-functional user edit, intentionally not shipped)",
+    "patches": [
+      {"path": "patches/expert-tier-integration.patch", "bytes": 145386, "sha256": "1359f23095ca56f488b5f6e48012b41dd1ada394c4fb58ba10bdc73c0817a23c"},
+      {"path": "patches/integration-drift.patch", "bytes": 19066, "sha256": "b9d8db5d772bc963a09c04be5b0308b1e3c52824ec61f25d461d5620595a07d8", "note": "EHS autofit refinement in common/common.cpp and src/llama-expert-hotstore.cpp plus comment-only translations; closes the gap between the published patch and the fork snapshot 1865b000f"},
+      {"path": "patches/mtp-sidecar.patch", "bytes": 103391, "sha256": "8873d64da544bb238543de14ad602c575d75350a99ac5cd7c10496630a722d69", "provenance": "fork commits aaff9b3d5 + c40681659 (MTP sidecar port from cafe-llama.cpp, fully-CPU draft KV fix)"}
+    ]
+  },
+  "live_server": {
+    "pid": 2429200,
+    "started_at": "2026-09-06T12:52 (restarted during R0 capture by the machine owner, not by this agent)",
+    "endpoint": "http://127.0.0.1:8081",
+    "serves_agent_session": true,
+    "binary": "build/exp023-mtp-sidecar/bin/llama-server",
+    "binary_sha256": "5471e44b9d394d2e45c7adfb65c46a4ef1deeb32cee58b815eb2e0d02f4b9b78",
+    "argv": ["-m", "/home/end0/AI/FrankenMoE-CUDA/models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf", "--host", "127.0.0.1", "--port", "8081", "-c", "131072", "-np", "1", "-fa", "on", "-t", "12", "-ctk", "q4_0", "-ctv", "q4_0", "--reasoning-effort", "low", "-ehs", "0", "--cpu-moe", "-ot", "per_layer_token_embd.weight=CPU,token_embd.weight=CPU", "-ngl", "99", "-md", "/home/end0/AI/FrankenMoE-CUDA/models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf", "--spec-type", "draft-mtp", "--spec-draft-n-max", "2", "-ngld", "99", "--spec-draft-cpu-moe", "-ctkd", "q4_0", "-ctvd", "q4_0"],
+    "previous_capture_pid": 2418737,
+    "previous_capture_argv_delta": "-c 64000, --jinja present, no explicit -np/-m/-md absolute paths; same binary hash",
+    "build_cache": {"CMAKE_HOME_DIRECTORY": "/home/end0/AI/FrankenMoE-CUDA/work/llama.cpp-exp023", "CMAKE_BUILD_TYPE": "Release", "CMAKE_CUDA_ARCHITECTURES": "89", "GGML_CUDA": "ON", "GGML_OPENMP": "ON", "BUILD_SHARED_LIBS": "ON", "LLAMA_OPENSSL": "ON", "curl": "absent from cache and ldd"},
+    "loaded_libs_sha256_file": "results/archive/EXP-2026-09-06-034/audit/loaded-libs.sha256"
+  },
+  "model": {
+    "shard1_sha256": "268f81fdedf3149a538f252308927a4d5d1f6e062c178568a51e3b519744f8a8",
+    "shard1_verified_against": "benchmarks/baseline.json",
+    "shards_2_3": "size/mtime verified against benchmarks/baseline.json only; full re-hash deferred (heavy I/O, not run)",
+    "mtp_head": "models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf",
+    "mtp_head_sha256": "4563303ab6e7d40f409750fd48af76bf33dd76b0773951cbf484109107de8140"
+  },
+  "reproduction": {
+    "isolated_sources": {
+      "base_plus_integration": "work/llama.cpp-exp034-base (local clone of upstream/llama.cpp-expert-tier detached at 4aaad5d, patch committed as fff6e034a)",
+      "full_chain": "work/llama.cpp-exp034-mtp"
+    },
+    "build_dir": "build/exp034-mtp-repro",
+    "configure": "cmake -S work/llama.cpp-exp034-mtp -B build/exp034-mtp-repro -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89 -DGGML_OPENMP=ON -DLLAMA_OPENSSL=ON",
+    "binary_sha256": "45a7552d8714203c99d0dcddbf1d660eb56b5408136fa32709a3c712705cc166",
+    "help_parity_vs_live": "PASS (llama-server --help byte-identical)",
+    "model_load_verified": false,
+    "model_load_note": "server start with the model is a separately approved block; not run in R0"
+  },
+  "environment": {
+    "kernel": "7.0.0-30-generic",
+    "cpu": "AMD Ryzen 9 5950X 16-Core",
+    "gpu": "NVIDIA GeForce RTX 4070 12282 MiB",
+    "driver": "580.173.02",
+    "cmake": "4.2.3",
+    "compiler": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "cuda": "release 12.6, V12.6.85",
+    "toolchain_drift_note": "benchmarks/baseline.json recorded g++-13 13.4.0 / CUDA 12.4 at EXP-000; machine now has g++-15.2.0 / CUDA 12.6. Cross-build binary hash equality is not expected; flag and functional parity is the gate."
+  },
+  "artifacts": {
+    "audit": "results/archive/EXP-2026-09-06-034/audit/",
+    "raw_archive": "results/archive/EXP-2026-09-06-034/raw/",
+    "inventory": "results/archive/EXP-2026-09-06-034/artifacts-inventory.json",
+    "reference_status_source_paths": 38,
+    "reference_status_counts": {"TRACKED": 21, "LOCAL_ONLY": 12, "UNTRACKED": 5}
+  },
+  "known_local_only": [
+    {"path": "benchmarks/inputs/exp028-prefill.json", "sha256": "9fc8652f5ab616073d95ae301afa80cbefe7e604e6a59532fd5f11d716f14184", "note": "exact-request fixture, read-only per task spec"},
+    {"path": "/tmp/exp026-major-faults.perf.data", "note": "~123 MiB perf trace left in /tmp, inventory-only"}
+  ]
+}
