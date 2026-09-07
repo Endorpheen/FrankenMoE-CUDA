@@ -1,0 +1,70 @@
+{
+  "log_sha256": "3267cbeaeec4f25fd328e88db8b882f73b2b307ad0913d452b6aa56577b55945",
+  "input_records": 17886,
+  "input_bytes_MiB": 22160.56,
+  "slot_bytes_MiB": 16.0,
+  "trailing_pad_bytes": 512,
+  "expert_size_bytes": [
+    524800,
+    704000,
+    921600
+  ],
+  "merge_by_skipped_experts": [
+    {
+      "max_skip": 1,
+      "copies_after": 9434,
+      "copies_reduction_percent": 47.25,
+      "extra_bytes_MiB": 5295.85,
+      "extra_percent": 23.9,
+      "bridges_by_skip": {
+        "1": 8452
+      }
+    },
+    {
+      "max_skip": 2,
+      "copies_after": 5652,
+      "copies_reduction_percent": 68.4,
+      "extra_bytes_MiB": 10138.07,
+      "extra_percent": 45.75,
+      "bridges_by_skip": {
+        "1": 8197,
+        "2": 4037
+      }
+    },
+    {
+      "max_skip": 3,
+      "copies_after": 4154,
+      "copies_reduction_percent": 76.78,
+      "extra_bytes_MiB": 13330.4,
+      "extra_percent": 60.15,
+      "bridges_by_skip": {
+        "1": 7928,
+        "2": 3863,
+        "3": 1941
+      }
+    }
+  ],
+  "merge_by_fixed_byte_gap": [
+    {
+      "gap_KiB": 512,
+      "copies_after": 12316,
+      "copies_reduction_percent": 31.14,
+      "extra_bytes_MiB": 2785.0,
+      "extra_percent": 12.57
+    },
+    {
+      "gap_KiB": 1024,
+      "copies_after": 9434,
+      "copies_reduction_percent": 47.25,
+      "extra_bytes_MiB": 5295.85,
+      "extra_percent": 23.9
+    },
+    {
+      "gap_KiB": 2048,
+      "copies_after": 4576,
+      "copies_reduction_percent": 74.42,
+      "extra_bytes_MiB": 11952.31,
+      "extra_percent": 53.94
+    }
+  ]
+}
