@@ -4,18 +4,90 @@
   "input_bytes_MiB": 22160.56,
   "slot_bytes_MiB": 16.0,
   "trailing_pad_bytes": 512,
-  "expert_size_bytes": [
-    524800,
-    704000,
-    921600
+  "expert_size_source": {
+    "gguf_available": true,
+    "tensors_from_gguf": 144,
+    "gcd_matches_gguf_or_fallback": 144,
+    "note": "nb[2] taken from GGUF n_bytes/ne[2]; log-offset GCD is only an upper bound and is not used when GGUF is present"
+  },
+  "expert_size_by_role": null,
+  "expert_size_table": [
+    {
+      "role": "down",
+      "ggml_dtype": 20,
+      "nb2_bytes": 921600,
+      "tensors": 48
+    },
+    {
+      "role": "gate",
+      "ggml_dtype": 21,
+      "nb2_bytes": 704000,
+      "tensors": 1
+    },
+    {
+      "role": "gate",
+      "ggml_dtype": 22,
+      "nb2_bytes": 524800,
+      "tensors": 47
+    },
+    {
+      "role": "up",
+      "ggml_dtype": 21,
+      "nb2_bytes": 704000,
+      "tensors": 1
+    },
+    {
+      "role": "up",
+      "ggml_dtype": 22,
+      "nb2_bytes": 524800,
+      "tensors": 47
+    }
   ],
-  "merge_by_skipped_experts": [
+  "candidate_byte_gap": [
+    {
+      "gap_KiB": 524288,
+      "copies_after": 12316,
+      "copies_reduction_percent": 31.14,
+      "extra_bytes_MiB": 2785.0,
+      "extra_percent": 12.57,
+      "extra_MiB_per_removed_call": 0.5,
+      "bridges_by_skip": {
+        "1": 5570
+      }
+    },
+    {
+      "gap_KiB": 1048576,
+      "copies_after": 9434,
+      "copies_reduction_percent": 47.25,
+      "extra_bytes_MiB": 5295.85,
+      "extra_percent": 23.9,
+      "extra_MiB_per_removed_call": 0.627,
+      "bridges_by_skip": {
+        "1": 8452
+      }
+    },
+    {
+      "gap_KiB": 2097152,
+      "copies_after": 4576,
+      "copies_reduction_percent": 74.42,
+      "extra_bytes_MiB": 11952.31,
+      "extra_percent": 53.94,
+      "extra_MiB_per_removed_call": 0.898,
+      "bridges_by_skip": {
+        "1": 8049,
+        "2": 3935,
+        "3": 1326
+      }
+    }
+  ],
+  "candidate_max_skip": [
     {
       "max_skip": 1,
       "copies_after": 9434,
       "copies_reduction_percent": 47.25,
       "extra_bytes_MiB": 5295.85,
       "extra_percent": 23.9,
+      "extra_MiB_per_removed_call": 0.627,
       "bridges_by_skip": {
         "1": 8452
       }
@@ -26,6 +98,7 @@
       "copies_reduction_percent": 68.4,
       "extra_bytes_MiB": 10138.07,
       "extra_percent": 45.75,
+      "extra_MiB_per_removed_call": 0.829,
       "bridges_by_skip": {
         "1": 8197,
         "2": 4037
@@ -37,34 +110,12 @@
       "copies_reduction_percent": 76.78,
       "extra_bytes_MiB": 13330.4,
       "extra_percent": 60.15,
+      "extra_MiB_per_removed_call": 0.971,
       "bridges_by_skip": {
         "1": 7928,
         "2": 3863,
         "3": 1941
       }
-    }
-  ],
-  "merge_by_fixed_byte_gap": [
-    {
-      "gap_KiB": 512,
-      "copies_after": 12316,
-      "copies_reduction_percent": 31.14,
-      "extra_bytes_MiB": 2785.0,
-      "extra_percent": 12.57
-    },
-    {
-      "gap_KiB": 1024,
-      "copies_after": 9434,
-      "copies_reduction_percent": 47.25,
-      "extra_bytes_MiB": 5295.85,
-      "extra_percent": 23.9
-    },
-    {
-      "gap_KiB": 2048,
-      "copies_after": 4576,
-      "copies_reduction_percent": 74.42,
-      "extra_bytes_MiB": 11952.31,
-      "extra_percent": 53.94
     }
   ]
 }

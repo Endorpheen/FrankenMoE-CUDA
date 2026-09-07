@@ -609,3 +609,18 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request 
 - Ограничение: формальный A/B не повторялся (принятые R4/R6 численные результаты не пересматриваются); smoke — correctness/delivery-проверка без performance-заявок (записанные wall-тайминги — холодный одиночный прогон с first-touch пейджингом модели, не сравниваются с медианами EXP-040).
 - Артефакты: `experiments/EXP-2026-09-07-041-default-runtime.md`, `benchmarks/exp041-default-runtime.json`, `patches/pinned-ring.patch`, `patches/pinned-ring-default-on.patch`, `results/archive/EXP-2026-09-07-041/tests/` (4×25 MiB `.bin` не коммитятся по политике репозитория; хэш в `log-sched-sha.txt`).
 - Решение: R7 принят (`ACCEPTED`), очередь R0–R7 закрыта; SM-041 закрыл последний пробел — модельное подтверждение доставки. Следующий кандидат по решению Игоря: отложенный coverage-эксперимент (streaming cancellation + корректные decode-зонды).
+
+## EXP-2026-09-07-042-limited-gap-h2d-coalescing
+
+- Status: `PRELIMINARY_ANALYSIS` (offline, только лог EXP-032 + метаданные GGUF; без сервера, модели, profiler, build и без правок рантайма). Бюджет ускорения не установлен, знак эффекта неизвестен.
+- Направление: пункт A7 аудита (docs/AUDIT-2026-09-06.md:107, "limited-gap H2D coalescing"). Не выбрано как приоритетное.
+- Гипотеза: разрешить объединять две H2D-передачи через небольшой промежуток с невыбранным экспертом; прямое непрерывное копирование в прежние offsets (без packing/scatter/remap — контраст отклонённому EXP-033). Ожидаемая польза — к prefill; decode не обещается.
+- Два самостоятельных кандидата порога (оба равноправны, ни один не опровергает другой):
+  - A: байтовый зазор ≤ 512 KiB, span ≤ slot 16 MiB -> 12 316 передач (−31,14%), +2 785 MiB (+12,57%), ≈0,50 MiB/вызов. down-однократные пропуски (зазор 921 088 > 512 KiB) не трогает.
+  - B: пропуск ≤ 1 эксперта любого размера, span ≤ slot -> 9 434 передач (−47,25%), +5 296 MiB (+23,90%), ≈0,63 MiB/вызов.
+- Размеры expert-slice (авторитет = GGUF `n_bytes//ne[2]`, гетерогенная quant-tier модель): down 921 600 (dtype 20, 48 слоёв); gate/up 524 800 (dtype 22, 47 слоёв); gate/up 704 000 (dtype 21, слой blk.2). Предупреждение: НОД offsets журнала — лишь верхняя оценка, точный nb[2] не гарантирует; здесь случайно совпал по всем 144 tensor.
+- Безопасность (условная, по исходникам EXP-041 + lifetime EXP-037): dst — weights-tensor, expert по offset `id*expert_size`, пропуск пишется своими байтами на свой offset; тот же stream; ring-откат при capture сохранён. Инварианты: тот же tensor/offsets, тот же stream+events, merged span ≤ slot, `padding_end` для merged last_id, `last_id < n_expert`.
+- Окупаемость — знак НЕ установлен: EXP-037 дал лишь предсказание pinned submission 5-20 µs/вызов (не измеренная верхняя граница всей экономии); доп. gather и H2D перекрываются и не складываются как обязательная прибавка к wall time; «submission ушёл с критического пути» результатом ring не доказано. Старые pageable-тайминги не переносятся.
+- Недостающие данные (по доставленному EXP-041): (1) фактическая µs/вызов pinned submission+event+bookkeeping; (2) ширина gather-полосы и её доля на критическом пути; (3) GPU H2D idle-headroom после ring; (4) подтверждение 12 316/9 434 на текущем layout.
+- Артефакты: `experiments/EXP-2026-09-07-042-limited-gap-h2d-coalescing.md`, `benchmarks/exp042-limited-gap-h2d-coalescing-offline.json`, `scripts/exp042_limited_gap_calc.py`. Вход: `results/archive/EXP-2026-09-06-034/raw/exp032-h2d-ts/h2d.log` (sha256 3267cbe…).
+- Решение: предварительный анализ закрыт; реализация и модельный A/B отложены до замеров п.1-3; profiler-прогон не назначается автоматически; следующее направление не выбирается в этом коммите.
