@@ -84,7 +84,7 @@ out={"log_sha256":hashlib.sha256(open(LOG,'rb').read()).hexdigest(),
      "expert_size_by_role":collections.Counter((gg[log_to_gguf(t)]["dtype"],esize[t]) if esrc[t]=="gguf" else (None,esize[t]) for t in by) if False else None,
      "expert_size_table":[{"dtype":gg[log_to_gguf(t)]["dtype"],"nb2":esize[t],"layers_role":re.search(r'ffn_(gate|up|down)_exps',log_to_gguf(t)).group(1)} for t in sorted(by)][:0],
      "candidate_byte_gap":[
-        {"gap_KiB":gb, **row(max_gap=gb)} for gb in (524288,1048576,2097152)],
+         {"gap_KiB":gb//1024, **row(max_gap=gb)} for gb in (524288,1048576,2097152)],
      "candidate_max_skip":[
         {"max_skip":ms, **row(max_skip=ms)} for ms in (1,2,3)],
     }

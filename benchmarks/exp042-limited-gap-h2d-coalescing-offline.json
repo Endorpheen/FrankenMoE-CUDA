@@ -45,7 +45,7 @@
   ],
   "candidate_byte_gap": [
     {
-      "gap_KiB": 524288,
+      "gap_KiB": 512,
       "copies_after": 12316,
       "copies_reduction_percent": 31.14,
       "extra_bytes_MiB": 2785.0,
@@ -56,7 +56,7 @@
       }
     },
     {
-      "gap_KiB": 1048576,
+      "gap_KiB": 1024,
       "copies_after": 9434,
       "copies_reduction_percent": 47.25,
       "extra_bytes_MiB": 5295.85,
@@ -67,7 +67,7 @@
       }
     },
     {
-      "gap_KiB": 2097152,
+      "gap_KiB": 2048,
       "copies_after": 4576,
       "copies_reduction_percent": 74.42,
       "extra_bytes_MiB": 11952.31,
