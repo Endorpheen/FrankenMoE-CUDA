@@ -60,20 +60,27 @@ Rules and guarantees:
 ## Interactive server
 
 ```bash
-CTX_SIZE=8192 \
 scripts/run_qwen38_server.sh \
   models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf
 ```
 
+The launcher's daily defaults since EXP-2026-09-07-041: `BUILD_DIR=build/exp041-default-runtime`,
+context `CTX_SIZE=196608`, `-np 1`, KV cache q4_0 (`-ctk/-ctv/-ctkd/-ctvd`), MTP draft on
+(`MTP=1`, `--spec-draft-n-max 2`), pinned upload ring on (`PINNED_RING=1` ->
+`GGML_EXPERT_PINNED_RING=1`), `EHS=0`. Run `CTX_SIZE=8192 ...` or
+`PINNED_RING=0 ...` to override explicitly; `BUILD_DIR=build/expert-tier-franken-cuda` selects
+the older build without the ring.
+
 The default is `THREADS=12`. EXP-013 measured the same warm generation speed as 16 threads within noise (`17.615` versus `17.656 tok/s` median across three interleaved pairs) while leaving four physical CPU cores available to the desktop and other services. Set `THREADS=16` explicitly to restore the previous maximum-CPU profile.
 
-### Which binary is which (three states)
+### Which binary is which (four states)
 
 | State | Binary | Source tree |
 | --- | --- | --- |
 | A: clean public expert-tier | `build/expert-tier-cuda/bin/llama-server` | `upstream/llama.cpp-expert-tier` @ `4aaad5d` |
-| B: expert-tier + our patches | `build/expert-tier-franken-cuda/bin/llama-server` | `work/llama.cpp-integration` (upstream + `patches/expert-tier-integration.patch`) — what `run_qwen38_server.sh` launches since EXP-006 |
+| B: expert-tier + our patches | `build/expert-tier-franken-cuda/bin/llama-server` | `work/llama.cpp-integration` (upstream + `patches/expert-tier-integration.patch`) — the build `run_qwen38_server.sh` launched from EXP-006 until EXP-041 |
 | C: bmoe-cli research engine | `build/franken-cuda/cli/bmoe-cli` | this repository's `runtime/` |
+| D: daily default runtime (EXP-041) | `build/exp041-default-runtime/bin/llama-server` | `work/llama.cpp-exp041`: base `4aaad5d` + `expert-tier-integration` + `integration-drift` + `mtp-sidecar` + `pinned-ring` + `pinned-ring-default-on`; what `run_qwen38_server.sh` launches now |
 
 Provenance is checkable per build via `CMAKE_HOME_DIRECTORY` in the build dir's `CMakeCache.txt` and `ldd` on the binary. EXP-005/006 measured A and B with the interactive profile (`-c 64000 -ctk q4_0 -ctv q4_0 --reasoning-effort low`): warm distinct-prompt speed is 13.5-15.4 tok/s and a repeated prompt peaks at 18.1; a clean empty-page-cache request measured about 12.1 tok/s, and the unpatched loader peaks at 42.7 GiB RSS (29.8 GiB with our patches). Do not mix numbers between A, B, and C.
 

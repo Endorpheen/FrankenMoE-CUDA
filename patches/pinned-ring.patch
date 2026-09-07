@@ -1,0 +1,218 @@
+diff --git a/ggml/src/ggml-backend-impl.h b/ggml/src/ggml-backend-impl.h
+index 40cea02..f925a28 100644
+--- a/ggml/src/ggml-backend-impl.h
++++ b/ggml/src/ggml-backend-impl.h
+@@ -138,6 +138,10 @@ extern "C" {
+ 
+         // (optional) sort/optimize the nodes in the graph
+         void                      (*graph_optimize)    (ggml_backend_t backend, struct ggml_cgraph * cgraph);
++
++        // (optional) copy host data through a backend-internal bounded pinned staging ring;
++        // return false to fall back to set_tensor_async
++        bool (*set_tensor_async_pinned_ring)(ggml_backend_t backend, struct ggml_tensor * tensor, const void * data, size_t offset, size_t size);
+     };
+ 
+     struct ggml_backend {
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index e519bdf..31dbba8 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -1688,12 +1688,26 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+                     }
+ 
+                     // group consecutive experts and copy them together
++                    // optional pinned host ring for bulk-prefill expert copies (opt-in, backend-provided)
++                    static bool expert_ring_enabled = []() {
++                        const char * v = getenv("GGML_EXPERT_PINNED_RING");
++                        return v != nullptr && v[0] != '\0' && strcmp(v, "0") != 0;
++                    }();
++                    const bool use_expert_ring = expert_ring_enabled && ids_tensor->ne[1] >= 8 &&
++                        split_backend->iface.set_tensor_async_pinned_ring != nullptr;
++
+                     auto copy_experts = [&](int32_t first_id, int32_t last_id) {
+                         const size_t expert_offset = first_id * expert_size;
+                         const size_t expert_size_copy =  (last_id - first_id + 1) * expert_size;
+                         const size_t padding = std::min<size_t>(expert_size, 512);
+                         const size_t padding_end = last_id < n_expert - 1 ? padding : 0;
+ 
++                        if (use_expert_ring && split_backend->iface.set_tensor_async_pinned_ring(
++                                split_backend, input_cpy, (const uint8_t *)input->data + expert_offset,
++                                expert_offset, expert_size_copy + padding_end)) {
++                            return;
++                        }
++
+                         ggml_backend_tensor_set_async(split_backend,
+                             input_cpy,
+                             (const uint8_t *)input->data + expert_offset, expert_offset,
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index 14dd109..2506006 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1412,11 +1412,24 @@ struct ggml_cuda_stream_context {
+     }
+ };
+ 
++static constexpr size_t GGML_CUDA_EXPERT_RING_SLOTS      = 2;
++static constexpr size_t GGML_CUDA_EXPERT_RING_SLOT_SIZE  = 16 * 1024 * 1024;
++
+ struct ggml_backend_cuda_context {
+     int device;
+     std::string name;
+     cudaEvent_t copy_event = nullptr;
+ 
++    // pinned host ring for staging MoE expert weights, owned by this context
++    void * expert_ring_slots[GGML_CUDA_EXPERT_RING_SLOTS] = { nullptr };
++    cudaEvent_t expert_ring_events[GGML_CUDA_EXPERT_RING_SLOTS] = { nullptr };
++    bool expert_ring_pending[GGML_CUDA_EXPERT_RING_SLOTS] = { false };
++    size_t expert_ring_next = 0;
++    // 0 = not initialized, 1 = active, -1 = disabled (alloc failed, stay on the pageable path)
++    int expert_ring_state = 0;
++    size_t expert_ring_n_calls = 0;
++    size_t expert_ring_n_chunks = 0;
++
+     cudaStream_t streams[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = { { nullptr } };
+     cublasHandle_t cublas_handles[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = {nullptr};
+     void * cublas_workspaces[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = {nullptr};
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 6ae62db..8ab7464 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -704,6 +704,21 @@ ggml_backend_cuda_context::~ggml_backend_cuda_context() {
+     std::unique_lock<std::mutex> lock(ggml_cuda_lock);
+     ggml_cuda_lock_cv.wait(lock, []{ return ggml_cuda_lock_counter.load(std::memory_order_relaxed) == 0; });
+ 
++    ggml_cuda_set_device(device);
++    if (expert_ring_n_calls > 0) {
++        GGML_LOG_WARN("%s: expert ring staged %zu calls, %zu chunks\n", __func__, expert_ring_n_calls, expert_ring_n_chunks);
++    }
++    for (size_t i = 0; i < GGML_CUDA_EXPERT_RING_SLOTS; ++i) {
++        if (expert_ring_events[i] != nullptr) {
++            // drain any in-flight H2D before freeing the slot
++            CUDA_CHECK(cudaEventSynchronize(expert_ring_events[i]));
++            CUDA_CHECK(cudaEventDestroy(expert_ring_events[i]));
++        }
++        if (expert_ring_slots[i] != nullptr) {
++            CUDA_CHECK(cudaFreeHost(expert_ring_slots[i]));
++        }
++    }
++
+     if (copy_event != nullptr) {
+         CUDA_CHECK(cudaEventDestroy(copy_event));
+     }
+@@ -2445,6 +2460,107 @@ static void ggml_backend_cuda_set_tensor_async(ggml_backend_t backend, ggml_tens
+     CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, cuda_ctx->stream()));
+ }
+ 
++static void ggml_cuda_expert_ring_disable(ggml_backend_cuda_context * cuda_ctx, const char * reason) {
++    for (size_t i = 0; i < GGML_CUDA_EXPERT_RING_SLOTS; ++i) {
++        if (cuda_ctx->expert_ring_events[i] != nullptr) {
++            (void)cudaEventDestroy(cuda_ctx->expert_ring_events[i]);
++            cuda_ctx->expert_ring_events[i] = nullptr;
++        }
++        if (cuda_ctx->expert_ring_slots[i] != nullptr) {
++            (void)cudaFreeHost(cuda_ctx->expert_ring_slots[i]);
++            cuda_ctx->expert_ring_slots[i] = nullptr;
++        }
++    }
++    cuda_ctx->expert_ring_state = -1;
++    (void)cudaGetLastError();
++    GGML_LOG_ERROR("%s: expert ring disabled (%s), staying on the pageable path\n", __func__, reason);
++}
++
++static bool ggml_cuda_expert_ring_env_enabled(void) {
++    const char * v = getenv("GGML_EXPERT_PINNED_RING");
++    return v != nullptr && v[0] != '\0' && strcmp(v, "0") != 0;
++}
++
++// allocates both slots and both events before any staged submission; on failure the ring stays disabled
++static bool ggml_cuda_expert_ring_init(ggml_backend_cuda_context * cuda_ctx) {
++    if (cuda_ctx->expert_ring_state != 0) {
++        return cuda_ctx->expert_ring_state == 1;
++    }
++    if (!ggml_cuda_expert_ring_env_enabled()) {
++        cuda_ctx->expert_ring_state = -1;
++        return false;
++    }
++
++    ggml_cuda_set_device(cuda_ctx->device);
++    if (getenv("GGML_EXPERT_RING_ALLOC_FAIL") != nullptr) {
++        ggml_cuda_expert_ring_disable(cuda_ctx, "fault injection");
++        return false;
++    }
++    for (size_t i = 0; i < GGML_CUDA_EXPERT_RING_SLOTS; ++i) {
++        if (cudaHostAlloc(&cuda_ctx->expert_ring_slots[i], GGML_CUDA_EXPERT_RING_SLOT_SIZE, cudaHostAllocDefault) != cudaSuccess) {
++            ggml_cuda_expert_ring_disable(cuda_ctx, "slot alloc failed");
++            return false;
++        }
++    }
++    for (size_t i = 0; i < GGML_CUDA_EXPERT_RING_SLOTS; ++i) {
++        if (cudaEventCreateWithFlags(&cuda_ctx->expert_ring_events[i], cudaEventDisableTiming) != cudaSuccess) {
++            ggml_cuda_expert_ring_disable(cuda_ctx, "event alloc failed");
++            return false;
++        }
++    }
++    cuda_ctx->expert_ring_state = 1;
++    GGML_LOG_WARN("%s: expert ring enabled: %zu pinned host slots x %.0f MiB\n", __func__,
++                 GGML_CUDA_EXPERT_RING_SLOTS, GGML_CUDA_EXPERT_RING_SLOT_SIZE / 1024.0 / 1024.0);
++    return true;
++}
++
++// stages one host->device copy through the bounded pinned ring: fill a free slot on the CPU
++// while the H2D of the other slot is still in flight; ranges larger than one slot are chunked
++static bool ggml_backend_cuda_set_tensor_async_pinned_ring(ggml_backend_t backend, ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
++    ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
++    ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
++
++    GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
++
++    // host-side slot waits are illegal during capture, and replay must not keep staged pointers
++    cudaStreamCaptureStatus capture_status;
++    if (cudaStreamIsCapturing(cuda_ctx->stream(), &capture_status) != cudaSuccess || capture_status != cudaStreamCaptureStatusNone) {
++        (void)cudaGetLastError();
++        return false;
++    }
++
++    if (!ggml_cuda_expert_ring_init(cuda_ctx)) {
++        return false;
++    }
++
++    const uint8_t * src = (const uint8_t *) data;
++    size_t remaining = size;
++    size_t done = 0;
++    while (remaining > 0) {
++        const size_t chunk = std::min(remaining, GGML_CUDA_EXPERT_RING_SLOT_SIZE);
++        const size_t slot_idx = cuda_ctx->expert_ring_next;
++        cuda_ctx->expert_ring_next = (cuda_ctx->expert_ring_next + 1) % GGML_CUDA_EXPERT_RING_SLOTS;
++
++        // the slot must not be refilled before its in-flight H2D has completed
++        if (cuda_ctx->expert_ring_pending[slot_idx]) {
++            CUDA_CHECK(cudaEventSynchronize(cuda_ctx->expert_ring_events[slot_idx]));
++            cuda_ctx->expert_ring_pending[slot_idx] = false;
++        }
++        memcpy(cuda_ctx->expert_ring_slots[slot_idx], src + done, chunk);
++        CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset + done, cuda_ctx->expert_ring_slots[slot_idx],
++                                   chunk, cudaMemcpyHostToDevice, cuda_ctx->stream()));
++        CUDA_CHECK(cudaEventRecord(cuda_ctx->expert_ring_events[slot_idx], cuda_ctx->stream()));
++        cuda_ctx->expert_ring_pending[slot_idx] = true;
++
++        done      += chunk;
++        remaining -= chunk;
++    }
++
++    cuda_ctx->expert_ring_n_calls++;
++    cuda_ctx->expert_ring_n_chunks += (size + GGML_CUDA_EXPERT_RING_SLOT_SIZE - 1) / GGML_CUDA_EXPERT_RING_SLOT_SIZE;
++    return true;
++}
++
+ static void ggml_backend_cuda_get_tensor_async(ggml_backend_t backend, const ggml_tensor * tensor, void * data, size_t offset, size_t size) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
+     ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
+@@ -4593,6 +4709,8 @@ static const ggml_backend_i ggml_backend_cuda_interface = {
+     /* .event_record            = */ ggml_backend_cuda_event_record,
+     /* .event_wait              = */ ggml_backend_cuda_event_wait,
+     /* .graph_optimize          = */ ggml_backend_cuda_graph_optimize,
++
++    /* .set_tensor_async_pinned_ring = */ ggml_backend_cuda_set_tensor_async_pinned_ring,
+ };
+ 
+ static ggml_guid_t ggml_backend_cuda_guid() {

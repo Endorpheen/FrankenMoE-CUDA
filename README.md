@@ -138,6 +138,27 @@ cmake --build build/expert-tier-franken-cuda \
 
 This produces `build/expert-tier-franken-cuda/bin/llama-server`. Keeping the standalone and server build directories separate prevents accidental comparisons between different implementations.
 
+The daily runtime since EXP-2026-09-07-041 is a reproducible chain over the pinned expert-tier
+base `4aaad5d318a790a42c2197975ec8fadbad42602b` with four patches applied in order plus one
+minimal default-on change:
+
+```bash
+git clone --no-hardlinks upstream/llama.cpp-expert-tier work/llama.cpp-exp041
+git -C work/llama.cpp-exp041 checkout --detach 4aaad5d318a790a42c2197975ec8fadbad42602b
+for p in expert-tier-integration integration-drift mtp-sidecar pinned-ring pinned-ring-default-on; do
+    git -C work/llama.cpp-exp041 apply patches/$p.patch
+done
+cmake -S work/llama.cpp-exp041 -B build/exp041-default-runtime \
+  -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGGML_CUDA=ON \
+  -DCMAKE_CUDA_ARCHITECTURES=89 -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=ON -DLLAMA_BUILD_SERVER=ON
+cmake --build build/exp041-default-runtime -j 10 -- llama-server
+```
+
+`patches/pinned-ring.patch` is the accepted EXP-038 ring (sha256
+`e1e6803cec1e26099ee452fcb3537b7e660132e6e30da69febffca4785dbd7de`);
+`patches/pinned-ring-default-on.patch` only flips the default of `GGML_EXPERT_PINNED_RING` from
+off to on (`0` still disables the ring; allocation failure still falls back to the pageable path).
+
 See [`docs/BUILD.md`](docs/BUILD.md) for configuration variables and verified tool versions.
 
 ## Run the full Qwen model
@@ -166,22 +187,43 @@ scripts/run_qwen38_server.sh \
 
 Then open `http://127.0.0.1:8080`.
 
-Run the same server with the accepted MTP speculative draft (requires the MTP head GGUF at `models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf`; both embedding tables move to the CPU so that the head fits on the GPU). The current daily profile uses a configured context capacity of 196,608 tokens:
+Run the same server with the accepted daily profile: the EXP-041 default runtime (pinned upload
+ring on by default), the MTP speculative draft (requires the MTP head GGUF at
+`models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf`; both embedding tables move to the CPU so
+that the head fits on the GPU), context capacity 196,608 tokens, KV cache q4_0:
 
 ```bash
-build/expert-tier-franken-cuda/bin/llama-server \
+scripts/run_qwen38_server.sh \
+  models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf
+```
+
+The equivalent direct command:
+
+```bash
+build/exp041-default-runtime/bin/llama-server \
   -m models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf \
   --host 127.0.0.1 --port 8081 \
-  -c 196608 -np 1 -fa on --jinja -t 12 -ctk q4_0 -ctv q4_0 \
+  -c 196608 -np 1 -fa on --jinja -t 12 -ctk q4_0 -ctv q4_0 -ctkd q4_0 -ctvd q4_0 \
   --reasoning-effort low -ehs 0 --cpu-moe \
   -ot per_layer_token_embd.weight=CPU,token_embd.weight=CPU -ngl 99 \
   -md models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf \
   --spec-type draft-mtp --spec-draft-n-max 2 -ngld 99 --spec-draft-cpu-moe
 ```
 
+To temporarily run without the pinned upload ring (diagnostics and control runs):
+
+```bash
+PINNED_RING=0 scripts/run_qwen38_server.sh \
+  models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf
+```
+
 Do not replace the split placement with `-ngld 0`: a fully-CPU draft was measured 13.1% slower than no draft at all (EXP-023).
 
-The launcher currently defaults to `THREADS=12` and `EHS=0`. These can be overridden explicitly through environment variables. Do not enable the GPU expert hot store expecting an automatic speedup: the tested one-slot configuration was slower and remains rejected.
+The launcher defaults to `THREADS=12`, `EHS=0`, `PINNED_RING=1`, `MTP=1`, context `196608`,
+`-np 1`, and `BUILD_DIR=build/exp041-default-runtime`. Set
+`BUILD_DIR=build/expert-tier-franken-cuda` to launch the older build without the ring. Do not
+enable the GPU expert hot store expecting an automatic speedup: the tested one-slot configuration
+was slower and remains rejected.
 
 Read [`docs/RUN_QWEN38.md`](docs/RUN_QWEN38.md) before changing memory budgets.
 
@@ -193,7 +235,9 @@ CPU profiling showed that IQ2_S and IQ4_NL vector-dot kernels account for 53.69%
 
 The accepted MTP profile stays at `--spec-draft-n-max 2`. A larger draft limit was already checked outside the recorded benchmark protocol and is not scheduled for retesting; it is not part of the current roadmap.
 
-The next step is R6: broader acceptance coverage for EXP-038 across short, main, and long prompts, repeated requests, cancellation, checkpoint, and shutdown. The pinned ring remains opt-in until that coverage is complete.
+R6 (EXP-040) completed and accepted. The pinned ring is now the default in the daily runtime
+(EXP-2026-09-07-041): `scripts/run_qwen38_server.sh` launches `build/exp041-default-runtime`,
+where the ring is on without any environment variable and `PINNED_RING=0` disables it.
 
 This is research software. Node names and evaluation callbacks used by the integration are not stable `llama.cpp` APIs. See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 

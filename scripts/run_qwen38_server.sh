@@ -3,15 +3,18 @@
 # The standard llama.cpp web UI and OpenAI-compatible API are exposed on the same port.
 # Usage: scripts/run_qwen38_server.sh /path/to/Qwen...-00001-of-00003.gguf
 # Environment: PORT, HOST, CTX_SIZE, EHS (0 = off, -1 = experimental autofit), SWAPS_PER_TOK,
-# VRAM_RESERVE_MB, THREADS, EXTRA_ARGS.
+# VRAM_RESERVE_MB, THREADS, PINNED_RING (0 disables the default-on pinned upload ring),
+# MTP (0 disables the MTP draft), MTP_MODEL, EXTRA_ARGS.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# Default to the patched expert-tier build (state B in docs/RUN_QWEN38.md): identical outputs and
-# speed to the clean fork, minus 12.9 GiB peak RSS (EXP-2026-09-01-006). Build it with
-# scripts/prepare_upstreams.sh, then cmake -S work/llama.cpp-integration -B build/expert-tier-franken-cuda.
-# Set BUILD_DIR=build/expert-tier-cuda to launch the clean public fork instead.
-BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/expert-tier-franken-cuda}"
+# Default to the EXP-041 default runtime: the accepted EXP-038 pinned upload ring is built in and
+# on by default (GGML_EXPERT_PINNED_RING=0 restores the pageable path for diagnostics).
+# Source: work/llama.cpp-exp041 = pinned base 4aaad5d3 + patches/expert-tier-integration.patch +
+# integration-drift.patch + mtp-sidecar.patch + pinned-ring.patch + pinned-ring-default-on.patch.
+# The older build/expert-tier-franken-cuda (ring absent) is kept untouched as a fallback; select
+# it with BUILD_DIR=build/expert-tier-franken-cuda.
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/exp041-default-runtime}"
 SERVER_BIN="${BUILD_DIR}/bin/llama-server"
 [[ -x "${SERVER_BIN}" ]] || { echo "Missing llama-server: ${SERVER_BIN} (see scripts/build.sh)" >&2; exit 2; }
 
@@ -35,9 +38,21 @@ EHS="${EHS:-0}"
 
 PORT="${PORT:-8080}"
 HOST="${HOST:-127.0.0.1}"
-CTX_SIZE="${CTX_SIZE:-8192}"
+# The accepted daily profile (EXP-024/038/040): context capacity 196608, KV cache q4_0, one slot.
+CTX_SIZE="${CTX_SIZE:-196608}"
 # EXP-013 found equivalent warm decode with 12 threads while leaving four physical cores free.
 THREADS="${THREADS:-12}"
+# The pinned upload ring is on by default in the runtime; PINNED_RING=0 restores the pageable path.
+PINNED_RING="${PINNED_RING:-1}"
+export GGML_EXPERT_PINNED_RING="${PINNED_RING}"
+# Accepted MTP draft (EXP-024): head-only sidecar GGUF, experts on CPU. MTP=0 disables it.
+MTP="${MTP:-1}"
+MTP_MODEL="${MTP_MODEL:-${ROOT_DIR}/models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf}"
+MTP_ARGS=()
+if [[ "${MTP}" == 1 ]]; then
+    [[ -s "${MTP_MODEL}" ]] || { echo "Missing MTP head: ${MTP_MODEL} (set MTP=0 to run without draft)" >&2; exit 2; }
+    MTP_ARGS=(-md "${MTP_MODEL}" --spec-type draft-mtp --spec-draft-n-max 2 -ngld 99 --spec-draft-cpu-moe)
+fi
 # Opt-in internal swap watchdog for explicit benchmark profiles; the default profile is unchanged.
 # Units match the external monitor below and the internal defaults in server-swapwatchdog.cpp.
 if [[ "${SWAP_WATCHDOG:-0}" == 1 ]]; then SWAP_WATCHDOG_ARGS="--swap-watchdog"; else SWAP_WATCHDOG_ARGS=""; fi
@@ -54,13 +69,16 @@ echo "timestamp,rss_kib,process_swap_kib,gpu_used_mib,gpu_temp_c,read_bytes,syst
     -m "${MODEL_PATH}" \
     -ngl 99 \
     --cpu-moe \
+    --reasoning-effort low \
     -ehs "${EHS}" \
     --ehs-reserve-mb "${VRAM_RESERVE_MB}" \
-    -ot "per_layer_token_embd.weight=CPU" \
-    -c "${CTX_SIZE}" -fa on --jinja \
+    -ot "per_layer_token_embd.weight=CPU,token_embd.weight=CPU" \
+    -c "${CTX_SIZE}" -np 1 -fa on --jinja \
+    -ctk q4_0 -ctv q4_0 -ctkd q4_0 -ctvd q4_0 \
     -t "${THREADS}" \
     --host "${HOST}" --port "${PORT}" \
     ${SWAP_WATCHDOG_ARGS} \
+    "${MTP_ARGS[@]}" \
     ${EXTRA_ARGS:-} \
     >"${LOG_PATH}" 2>&1 &
 RUN_PID=$!
