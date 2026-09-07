@@ -1,7 +1,7 @@
 # EXP-2026-09-07-041 — Default-on pinned ring as the daily runtime (R7)
 
 Status: `ACCEPTED` (`kind=delivery`, commit approved by Igor 2026-09-07; model-free validation complete;
-model smoke NOT run by the agent — handed to the senior helper in Codex)
+model smoke SM-041 run 2026-09-07 by the senior helper — PASS, delivery confirmed end to end)
 
 ## Hypothesis (one)
 
@@ -68,16 +68,35 @@ libllama-server-impl.so `1b79cc228443809dcea54f9b799160b180841d89626513d5f3ce9e4
    `GGML_EXPERT_PINNED_RING=1`, `PINNED_RING=0` passes `GGML_EXPERT_PINNED_RING=0`. PASS.
 7. `work/llama.cpp-integration`: no file newer than this experiment's artifacts; untouched. PASS.
 
-## Model smoke (NOT run; Igor decides when and who runs it)
+## Model smoke (SM-041, run 2026-09-07 by the senior helper) — PASS
 
-Purpose: confirm the new default-on daily runtime end to end. Planned: 1 server start,
-2 sequential requests (short + long), about 2-3 minutes. Expected: ring activation logged with
-no manual env var; short/long answers match the accepted EXP-040 hashes (short content sha256
-`2f409a00f774aeacfa1d8b92ac8ff58ed19f1a73ad7d184bbb625f477605a5aa`; long: single EOG, empty
-content); staged calls/chunks non-zero; VmSwap=0; no CUDA/OOM; clean SIGINT; no orphans.
-Correctness/delivery smoke only — no performance claims, no A/B repetition.
+One server start, two sequential requests, graceful SIGINT; raw data in
+`results/archive/EXP-2026-09-07-041/smoke/`. Launched as `PORT=8081 scripts/run_qwen38_server.sh …`
+with no manually set `GGML_*` variables. (The first attempt bound-failed because a foreign
+non-llama service holds `0.0.0.0:8080` on this machine; the server self-exited cleanly and was
+relaunched on 8081 — recorded as an environment fact, not a runtime defect.)
+
+- Ring activation without any manual env var: `expert ring enabled: 2 pinned host slots x 16 MiB`
+  (lazy, at the first bulk prefill) and at teardown `expert ring staged 64635 calls, 64635 chunks` —
+  byte-identical counter values to every EXP-040 B run. PASS.
+- Answers identical to the accepted EXP-040 runtime: short content sha256
+  `2f409a00f774aeacfa1d8b92ac8ff58ed19f1a73ad7d184bbb625f477605a5aa` (41 prompt / 104 generated,
+  stop=eos); long content empty (`e3b0c442…`, single EOG; 1124 evaluated / 1 generated). PASS.
+- Memory: VmSwap 0 kB before/after and in every monitor row; VmPin 0 kB (same as the accepted
+  EXP-040 B runs); RSS 5.29 -> 37.2 GiB across the requests (first-touch model paging, expected). PASS.
+- MTP draft active (short request: draft 112, accepted 47) — the accepted profile is live. PASS.
+- No CUDA error / OOM / hang (the only grep hit was the word "headroom"); SIGINT -> server exit 0,
+  launcher exit 0, orphans 0. PASS.
+- Launch-path note: through the launcher, `GGML_EXPERT_PINNED_RING=1` is exported by the launcher's
+  own default (`PINNED_RING=1`), so this proves the daily launch path end to end; the binary default
+  (env fully absent) was already proven model-free (8/8 harness modes above).
+- Recorded wall times (short 21.9 s, long 16.6 s; prompt_ms 10937.411 / 16468.602) are cold
+  single-run values with first-touch model paging — kept for completeness, explicitly NOT
+  performance data; no A/B repetition, no throughput claims.
 
 ## Verdict
 
 ACCEPTED (`kind=delivery`). Commit approved by Igor on 2026-09-07. All model-free gates PASS.
-Model smoke pending — handed to the senior helper in Codex (plan and expected hashes above).
+Model smoke SM-041 PASS (2026-09-07): the default-on daily runtime answers identically to the
+accepted EXP-040 runtime with the ring active, clean memory, and clean shutdown. Delivery fully
+confirmed; R7 closed on model evidence as well.

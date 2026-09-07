@@ -1,0 +1,4 @@
+VmPin:	       0 kB
+VmHWM:	 5719120 kB
+VmRSS:	 5290260 kB
+VmSwap:	       0 kB
