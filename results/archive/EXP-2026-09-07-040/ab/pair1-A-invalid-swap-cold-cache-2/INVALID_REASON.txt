@@ -1,0 +1,4 @@
+Invalid cold-cache preflight. Excluded before formal aggregation.
+
+The control process reached VmSwap=97928 KiB after the long request, violating
+the fixed VmSwap=0 acceptance gate. The server was stopped cleanly with SIGINT.

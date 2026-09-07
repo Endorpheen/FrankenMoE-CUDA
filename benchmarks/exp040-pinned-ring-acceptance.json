@@ -1,0 +1,106 @@
+{
+  "experiment_id": "EXP-2026-09-07-040-pinned-ring-acceptance",
+  "status": "ACCEPTED",
+  "accepted_by": "Igor, 2026-09-07",
+  "kind": "acceptance",
+  "phase": "R6 extended acceptance and delivery prep",
+  "reused_evidence": {
+    "exp038_formal_ab": "median prefill 3990.943->3465.613 ms (+13.163%), 5/5 wins, decode +5.234%",
+    "control_sha256": "5471e44b9d394d2e45c7adfb65c46a4ef1deeb32cee58b815eb2e0d02f4b9b78",
+    "candidate_sha256": "fbbdd956df1d99afae8700139a40639daea5b9d8bb40451f803310650d43d707",
+    "candidate_cuda_library_sha256": "b1b9ca799383167d4cbf547f3968d4e2d7fbecd057230b618132678aa02dbbef",
+    "delivery_patch_sha256": "e1e6803cec1e26099ee452fcb3537b7e660132e6e30da69febffca4785dbd7de"
+  },
+  "modelfree_validation": {
+    "hashes_match_exp038": true,
+    "harness_rerun_candidate_build": "12/12 PASS, sched out sha 39505119b144ea286e865119b397eecff75578881c24c4aa1cec9bd642e91510",
+    "delivery_patch_git_apply_check_on_r0_chain": true,
+    "isolated_delivery_build": "build/exp040-delivery, llama-server sha256 dce19554de0bac0a0ee11f019fd3bb12caef77b4d36b4f2d21147d7e1abee200, libggml-cuda.so.0.22.0 sha256 371c7cf9d59518347dbcd6307580c10e44877e15ced6a4caed287a219fce9690",
+    "delivery_build_tests": "12/12 PASS, sched out sha identical to candidate build",
+    "ring_files_identical_to_exp038_tree": true
+  },
+  "model_runs": {
+    "ab_block": {"server_runs": 10, "requests": 20, "pairs": 5, "order": "A,B B,A A,B B,A A/B", "requests_per_arm": ["request-short", "request-long"]},
+    "session_block": {"server_runs": 3, "requests": 8, "runs": ["S-run sequential session", "P0-run prefill-only probe", "P64-run decode probe"]},
+    "totals": {"server_runs": 13, "requests": 28},
+    "np": 1,
+    "multi_slot_default_tested": false,
+    "invalid_runs_excluded": [
+      "ab/pair1-A-invalid-sandbox-no-cuda (no CUDA under sandbox)",
+      "ab/pair1-A-invalid-swap-cold-cache (VmSwap 54540/57080 kB)",
+      "ab/pair1-A-invalid-swap-cold-cache-2 (VmSwap 97928 kB)"
+    ]
+  },
+  "results": {
+    "short_prompt_ms": {
+      "A": [4754.721, 2298.308, 1966.009, 2018.462, 2016.941],
+      "B": [2043.572, 1896.015, 1692.705, 1703.714, 1742.357],
+      "A_median": 2018.462,
+      "B_median": 1742.357,
+      "median_time_reduction_percent": 13.679,
+      "b_wins": "5/5"
+    },
+    "long_prompt_ms": {
+      "A": [9415.192, 8357.411, 8547.744, 8427.428, 8419.098],
+      "B": [7243.800, 7133.466, 7202.188, 7295.329, 8982.193],
+      "A_median": 8427.428,
+      "B_median": 7243.800,
+      "median_time_reduction_percent": 14.045,
+      "b_wins": "4/5 (pair5 B=8982.193 lost)"
+    },
+    "decode_short_tps": {
+      "A": [13.9038, 16.4177, 16.4682, 15.8465, 16.0924],
+      "B": [15.4679, 15.6159, 16.4619, 16.2361, 15.4823],
+      "A_median": 16.0924,
+      "B_median": 15.6159,
+      "median_of_paired_changes_percent": -0.038,
+      "independent_medians_delta_percent": -2.961,
+      "note": "paired experiment, so the primary decode result is the paired median -0.038%; the independent-median delta -2.961% is recorded for transparency only and was not used to overturn the decision"
+    },
+    "decode_long": "every run of both arms generated 1 token with stop_type=eos (predicted_ms=0.001); the fixed long request emits end-of-generation immediately, so it contributes no decode measurement",
+    "answer_identity": {
+      "short_content_sha256": "2f409a00f774aeacfa1d8b92ac8ff58ed19f1a73ad7d184bbb625f477605a5aa",
+      "short_identical_runs": 10,
+      "long_content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "long_identical_runs": 10
+    },
+    "ring_counters": {
+      "every_B_run": "expert ring staged 64635 calls, 64635 chunks",
+      "every_A_run": "no ring lines (control path)",
+      "S_run_session_total": "91047 calls, 91047 chunks",
+      "P0_run": "51429 calls, 51429 chunks",
+      "P64_run": "51429 calls, 51429 chunks",
+      "probe_equality": "N_d==N_p and M_d==M_p satisfied (coverage weak, see test_gaps)"
+    },
+    "memory": {
+      "vmswap": "0 kB in every before/after snapshot of all 13 valid runs",
+      "rss_after_kb_A": [39607560, 39911248, 39911448, 39911384, 39908176],
+      "rss_after_kb_B": [39940836, 39945680, 39945444, 39945432, 39942304],
+      "additional_rss_growth_MiB": 32.199,
+      "budget": "32 MiB pinned slots + <1 MiB metadata"
+    },
+    "session": {
+      "prefix_cache": "first long request 7672.15 ms / 1124 tokens; cached repeats 257.91 / 254.70 / 251.91 ms for 4 new tokens (1120 cached)",
+      "stream_ttft_s": 0.028556,
+      "checkpoint_and_mtp": "checkpoint save/restore and MTP accept/reject present in verbose log; post-session request normal",
+      "shutdown": "SIGINT exit 0 in all runs; orphan process count 0; no CUDA errors, no OOM, no hang"
+    },
+    "test_gaps": [
+      "streaming cancellation not exercised: the streaming request (S6) finished by end-of-generation in 0.30 s, log shows only 'all tasks already finished, no need to cancel'",
+      "probe requests n_predict=0 and n_predict=64 both generated exactly 1 EOG token, so the probe compared two degenerate decodes"
+    ],
+    "test_gaps_interpretation": "test-request flaws, not pinned-ring regressions; do not cancel ACCEPTED and do not block promoting the runtime; deferred to a separate coverage experiment"
+  },
+  "acceptance_gates": {
+    "deterministic_answers": true,
+    "secondary_prompt_latency_not_worse_percent": 3,
+    "decode_not_worse_percent": 2,
+    "vmswap_zero": true,
+    "no_cuda_error_oom_hang_leak": true,
+    "extra_memory_budget": "32 MiB pinned + <1 MiB metadata",
+    "bulk_stage_nonzero": true,
+    "decode_zero_ring_stages": "N_d==N_p and M_d==M_p"
+  },
+  "verdict": "ACCEPTED",
+  "next": "EXP-2026-09-07-041: promote the accepted pinned-ring patch to default-on via the reproducible root patch chain, new clean build dir build/exp041-default-runtime, daily launcher switched to it; work/llama.cpp-integration untouched; build/expert-tier-franken-cuda never rebuilt in place."
+}

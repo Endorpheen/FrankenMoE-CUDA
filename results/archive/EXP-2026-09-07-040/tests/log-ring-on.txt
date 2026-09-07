@@ -1,0 +1,10 @@
+CHECK PASS destination byte equality (sparse+consecutive+padding+chunked)
+CHECK PASS uncovered expert untouched
+CHECK PASS sentinel guards unchanged
+CHECK PASS flag ON: ring init logged
+CHECK PASS flag ON: all calls staged
+CHECK PASS ring counters (calls/chunks)
+CHECK PASS at least three slot reuse cycles
+CHECK PASS capture guard: ring declined during CUDA graph capture
+VMPIN before_free=0 KiB after_free=0 KiB
+CHECK PASS free leaves no pinned ring memory
