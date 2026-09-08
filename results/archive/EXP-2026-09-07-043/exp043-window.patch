@@ -1,0 +1,106 @@
+diff --git a/tools/server/CMakeLists.txt b/tools/server/CMakeLists.txt
+index 280bd9e19..75370d903 100644
+--- a/tools/server/CMakeLists.txt
++++ b/tools/server/CMakeLists.txt
+@@ -33,6 +33,9 @@ target_include_directories(${TARGET} PRIVATE ../mtmd)
+ target_include_directories(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR})
+ target_link_libraries(${TARGET} PUBLIC llama-common mtmd ${CMAKE_THREAD_LIBS_INIT})
+ 
++# EXP-043 diagnostic prefill window markers in server-context.cpp, gated by GGML_EXPERT_DIAG
++target_include_directories(${TARGET} PRIVATE /usr/local/cuda-12.6/include)
++
+ # llama-server-impl: server logic, reusable by app
+ 
+ set(TARGET llama-server-impl)
+@@ -43,6 +46,8 @@ add_library(${TARGET}
+     server-http.h
+     server-models.cpp
+     server-models.h
++    server-swapwatchdog.cpp
++    server-swapwatchdog.h
+ )
+ set_target_properties(${TARGET} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+ 
+@@ -50,6 +55,10 @@ target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ target_include_directories(${TARGET} PRIVATE ../mtmd ${CMAKE_SOURCE_DIR})
+ target_link_libraries(${TARGET} PUBLIC server-context llama-ui cpp-httplib ${CMAKE_THREAD_LIBS_INIT})
+ 
++# EXP-043: NVTX symbols referenced by server-context.cpp objects land in this shared library
++target_link_libraries(${TARGET} PRIVATE /usr/local/cuda-12.6/lib64/libnvToolsExt.so)
++target_link_options(${TARGET} PRIVATE "-Wl,--no-as-needed")
++
+ if(LLAMA_TOOLS_INSTALL)
+     install(TARGETS ${TARGET} LIBRARY)
+ endif()
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index f5477356d..d2196203c 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -27,6 +27,9 @@
+ #include <utility>
+ #include <fstream>
+ 
++// EXP-043 diagnostic prefill window markers, enabled by GGML_EXPERT_DIAG (same gate as ggml-cuda)
++#include <nvtx3/nvToolsExt.h>
++
+ // fix problem with std::min and std::max
+ #if defined(_WIN32)
+ #define WIN32_LEAN_AND_MEAN
+@@ -294,6 +297,12 @@ struct server_slot {
+     // state
+     slot_state state = SLOT_STATE_IDLE;
+ 
++    // EXP-043: one wide NVTX window ("expert_prefill") per request covering the whole prompt
++    // eval, started before the first expert gather; set by update_slots, closed at the
++    // SLOT_STATE_GENERATING transition or in release() (all abnormal exits)
++    nvtxRangeId_t nvtx_prefill_range = 0;
++    bool nvtx_prefill_on = false;
++
+     server_prompt prompt;
+ 
+     bool prompt_save(server_prompt_cache & prompt_cache) const {
+@@ -551,6 +560,13 @@ struct server_slot {
+ 
+             state = SLOT_STATE_IDLE;
+ 
++            // EXP-043: close the prefill window on every non-normal exit (error, cancel,
++            // embedding/rerank completion); the normal path closes it at SLOT_STATE_GENERATING
++            if (nvtx_prefill_on) {
++                nvtxRangeEnd(nvtx_prefill_range);
++                nvtx_prefill_on = false;
++            }
++
+             // do not keep context of the child slots - the parent's context is enough
+             if (task->is_child()) {
+                 prompt_clear();
+@@ -3115,6 +3131,17 @@ private:
+                     if (slot.state == SLOT_STATE_STARTED) {
+                         slot.stats.update_prompt_start();
+ 
++                        // EXP-043: open the prefill window before any prompt work (cache prep,
++                        // first gather included); survives chunked prefill across update_slots
++                        // iterations because the range is id-based, not stack-based
++                        {
++                            const char * diag_env = getenv("GGML_EXPERT_DIAG");
++                            if (diag_env && strcmp(diag_env, "0") != 0) {
++                                slot.nvtx_prefill_range = nvtxRangeStartA("expert_prefill");
++                                slot.nvtx_prefill_on = true;
++                            }
++                        }
++
+                         slot.state = SLOT_STATE_PROCESSING_PROMPT;
+ 
+                         SLT_TRC(slot, "new prompt, n_ctx_slot = %d, n_keep = %d, task.n_tokens = %d\n",
+@@ -3809,6 +3836,12 @@ private:
+                 // prompt evaluated for next-token prediction
+                 slot.state = SLOT_STATE_GENERATING;
+ 
++                // EXP-043: normal end of the prefill window - the whole prompt is evaluated
++                if (slot.nvtx_prefill_on) {
++                    nvtxRangeEnd(slot.nvtx_prefill_range);
++                    slot.nvtx_prefill_on = false;
++                }
++
+                 if (slot.can_speculate()) {
+                     common_speculative_begin(spec.get(), slot.id, slot.prompt.tokens.get_text_tokens());
+                 }
