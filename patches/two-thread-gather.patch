@@ -1,0 +1,187 @@
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index 25060069c..ebf16aa15 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -4,10 +4,12 @@
+ #include "ggml-impl.h"
+ #include "ggml-cuda.h"
+ 
++#include <atomic>
+ #include <cstdint>
+ #include <cstdlib>
+ #include <memory>
+ #include <mutex>
++#include <thread>
+ 
+ #if defined(GGML_USE_HIP)
+ #define GGML_COMMON_DECL_HIP
+@@ -1437,6 +1439,21 @@ struct ggml_backend_cuda_context {
+ 
+     int curr_stream_no = 0;
+ 
++    // EXP-045: persistent gather helper — at most one chunk job in flight, published by gather_seq.
++    // Kept after the fields mirrored by the model-free harness (see EXP-041 tests) so its
++    // byte-offset mirror of this struct up to streams[]/the ring counters stays valid.
++    std::thread gather_helper;
++    std::atomic<uint64_t> gather_seq{0};    // caller publishes the chunk job (release store)
++    std::atomic<uint64_t> gather_done{0};   // helper finished its half (release store)
++    std::atomic<uint32_t> gather_seq_w{0};  // futex words mirroring the low 32 bits
++    std::atomic<uint32_t> gather_done_w{0};
++    std::atomic<uint32_t> gather_quit{0};   // 1 = the helper must return
++    const uint8_t * gather_src = nullptr;
++    uint8_t * gather_dst = nullptr;
++    size_t gather_head = 0;                 // bytes copied by the calling thread
++    size_t gather_tail = 0;                 // bytes copied by the helper
++    int gather_helper_state = 0;            // 0 = not started, 1 = running, -1 = stay single-thread
++
+ #ifdef USE_CUDA_GRAPH
+     // Map from first_node_ptr to cuda_graph - allows multiple graphs per context
+     // when the computation is split across CPU/GPU (e.g., with --n-cpu-moe)
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index bc9166304..d43f23bff 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -700,10 +700,16 @@ static std::mutex ggml_cuda_lock;
+ static std::condition_variable ggml_cuda_lock_cv;
+ static std::atomic<int> ggml_cuda_lock_counter;
+ 
++// defined next to the expert ring code; the context destructor must join the helper first
++static void ggml_cuda_gather_helper_stop(ggml_backend_cuda_context * cuda_ctx);
++
+ ggml_backend_cuda_context::~ggml_backend_cuda_context() {
+     std::unique_lock<std::mutex> lock(ggml_cuda_lock);
+     ggml_cuda_lock_cv.wait(lock, []{ return ggml_cuda_lock_counter.load(std::memory_order_relaxed) == 0; });
+ 
++    // the gather helper must be joined before the ring slots are released below
++    ggml_cuda_gather_helper_stop(this);
++
+     ggml_cuda_set_device(device);
+     if (expert_ring_n_calls > 0) {
+         GGML_LOG_WARN("%s: expert ring staged %zu calls, %zu chunks\n", __func__, expert_ring_n_calls, expert_ring_n_chunks);
+@@ -2460,7 +2466,88 @@ static void ggml_backend_cuda_set_tensor_async(ggml_backend_t backend, ggml_tens
+     CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, cuda_ctx->stream()));
+ }
+ 
++// --- EXP-045: two-thread CPU gather into the ring slots ----------------------
++// The calling thread and one persistent helper copy two disjoint halves of a large chunk
++// into the pinned slot (the split is rounded down to a cache line); both halves are always
++// complete before the H2D is submitted. Between chunks the helper blocks on a futex, so an
++// idle server pays no CPU for it. Chunks below the threshold keep the single memcpy.
++
++#include <linux/futex.h>
++#include <sys/syscall.h>
++#include <unistd.h>
++
++static constexpr size_t GGML_CUDA_EXPERT_RING_GATHER2T_MIN_CHUNK = 512 * 1024;
++
++static long ggml_cuda_futex_wait(std::atomic<uint32_t> * addr, uint32_t expected) {
++    return syscall(SYS_futex, (int *) addr, FUTEX_WAIT_PRIVATE, (int) expected, nullptr, nullptr, 0);
++}
++
++static long ggml_cuda_futex_wake(std::atomic<uint32_t> * addr) {
++    return syscall(SYS_futex, (int *) addr, FUTEX_WAKE_PRIVATE, 1, nullptr, nullptr, 0);
++}
++
++static void ggml_cuda_gather_helper_run(ggml_backend_cuda_context * cuda_ctx) {
++    uint64_t served = 0;
++    for (;;) {
++        const uint64_t seq = cuda_ctx->gather_seq.load(std::memory_order_acquire);
++        if (seq != served) {
++            const size_t head = cuda_ctx->gather_head;
++            const size_t tail = cuda_ctx->gather_tail;
++            if (tail > 0) {
++                memcpy(cuda_ctx->gather_dst + head, cuda_ctx->gather_src + head, tail);
++            }
++            served = seq;
++            cuda_ctx->gather_done.store(served, std::memory_order_release);
++            cuda_ctx->gather_done_w.store((uint32_t) served, std::memory_order_release);
++            ggml_cuda_futex_wake(&cuda_ctx->gather_done_w);
++            continue;
++        }
++        if (cuda_ctx->gather_quit.load(std::memory_order_acquire) != 0) {
++            return;
++        }
++        (void) ggml_cuda_futex_wait(&cuda_ctx->gather_seq_w, (uint32_t) served);
++    }
++}
++
++// on by default; set GGML_EXPERT_RING_GATHER2T=0 to keep the single-thread memcpy
++static bool ggml_cuda_gather2t_env_enabled(void) {
++    const char * v = getenv("GGML_EXPERT_RING_GATHER2T");
++    return v == nullptr || (v[0] != '\0' && strcmp(v, "0") != 0);
++}
++
++// started lazily on the first chunk large enough to be worth splitting
++static bool ggml_cuda_gather_helper_start(ggml_backend_cuda_context * cuda_ctx) {
++    if (cuda_ctx->gather_helper_state != 0) {
++        return cuda_ctx->gather_helper_state == 1;
++    }
++    if (!ggml_cuda_gather2t_env_enabled()) {
++        cuda_ctx->gather_helper_state = -1;
++        return false;
++    }
++    try {
++        cuda_ctx->gather_helper = std::thread(ggml_cuda_gather_helper_run, cuda_ctx);
++    } catch (...) {
++        cuda_ctx->gather_helper_state = -1;
++        GGML_LOG_WARN("%s: gather helper failed to start, staying on the single-thread memcpy\n", __func__);
++        return false;
++    }
++    cuda_ctx->gather_helper_state = 1;
++    return true;
++}
++
++// idempotent; must run before any ring slot is released
++static void ggml_cuda_gather_helper_stop(ggml_backend_cuda_context * cuda_ctx) {
++    if (cuda_ctx->gather_helper.joinable()) {
++        cuda_ctx->gather_quit.store(1, std::memory_order_release);
++        ggml_cuda_futex_wake(&cuda_ctx->gather_seq_w);
++        cuda_ctx->gather_helper.join();
++        cuda_ctx->gather_helper_state = -1;
++    }
++}
++
+ static void ggml_cuda_expert_ring_disable(ggml_backend_cuda_context * cuda_ctx, const char * reason) {
++    // the helper must be joined before the slots it copies into are released
++    ggml_cuda_gather_helper_stop(cuda_ctx);
+     for (size_t i = 0; i < GGML_CUDA_EXPERT_RING_SLOTS; ++i) {
+         if (cuda_ctx->expert_ring_events[i] != nullptr) {
+             (void)cudaEventDestroy(cuda_ctx->expert_ring_events[i]);
+@@ -2547,7 +2634,36 @@ static bool ggml_backend_cuda_set_tensor_async_pinned_ring(ggml_backend_t backen
+             CUDA_CHECK(cudaEventSynchronize(cuda_ctx->expert_ring_events[slot_idx]));
+             cuda_ctx->expert_ring_pending[slot_idx] = false;
+         }
+-        memcpy(cuda_ctx->expert_ring_slots[slot_idx], src + done, chunk);
++        if (chunk >= GGML_CUDA_EXPERT_RING_GATHER2T_MIN_CHUNK && ggml_cuda_gather_helper_start(cuda_ctx)) {
++            // EXP-045: the helper copies the tail half while this thread copies the head half
++            const size_t head = (chunk / 2) / 64 * 64;
++            cuda_ctx->gather_src = src + done;
++            cuda_ctx->gather_dst = (uint8_t *) cuda_ctx->expert_ring_slots[slot_idx];
++            cuda_ctx->gather_head = head;
++            cuda_ctx->gather_tail = chunk - head;
++            const uint64_t seq = cuda_ctx->gather_seq.load(std::memory_order_relaxed) + 1;
++            cuda_ctx->gather_seq.store(seq, std::memory_order_release);
++            cuda_ctx->gather_seq_w.store((uint32_t) seq, std::memory_order_release);
++            ggml_cuda_futex_wake(&cuda_ctx->gather_seq_w);
++            memcpy(cuda_ctx->expert_ring_slots[slot_idx], src + done, head);
++            // both halves must be in the slot before the H2D leaves the CPU
++            int spins = 0;
++            while (cuda_ctx->gather_done.load(std::memory_order_acquire) != seq) {
++                if (++spins < 20000) {
++#if defined(__x86_64__)
++                    __builtin_ia32_pause();
++#endif
++                    continue;
++                }
++                const uint32_t seen = cuda_ctx->gather_done_w.load(std::memory_order_acquire);
++                if (cuda_ctx->gather_done.load(std::memory_order_acquire) == seq) {
++                    break;
++                }
++                (void) ggml_cuda_futex_wait(&cuda_ctx->gather_done_w, seen);
++            }
++        } else {
++            memcpy(cuda_ctx->expert_ring_slots[slot_idx], src + done, chunk);
++        }
+         CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset + done, cuda_ctx->expert_ring_slots[slot_idx],
+                                    chunk, cudaMemcpyHostToDevice, cuda_ctx->stream()));
+         CUDA_CHECK(cudaEventRecord(cuda_ctx->expert_ring_events[slot_idx], cuda_ctx->stream()));
