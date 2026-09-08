@@ -1,0 +1,9 @@
+CHECK PASS st2_slot_tail_untouched_A
+CHECK PASS st2_slot_tail_untouched_B
+CHECK PASS st3_mode_A_all_checks
+CHECK PASS st3_mode_B_all_checks
+CHECK PASS st4_slot_bytes_B_equals_A
+CHECK PASS st5_source_unchanged
+CHECK PASS st6_device_roundtrip_equals_source
+CHECK PASS st7_helper_stopped_before_munmap
+SELFTEST PASS (8 pass, 0 fail)
