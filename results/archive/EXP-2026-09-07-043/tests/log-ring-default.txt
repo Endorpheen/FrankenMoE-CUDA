@@ -1,0 +1,8 @@
+CHECK PASS destination byte equality (sparse+consecutive+padding+chunked)
+CHECK PASS uncovered expert untouched
+CHECK PASS sentinel guards unchanged
+CHECK PASS flag ON: ring init logged
+CHECK PASS flag ON: all calls staged
+CHECK PASS ring counters (calls/chunks)
+CHECK PASS at least three slot reuse cycles
+CUDA error at begin capture: operation not permitted when stream is capturing

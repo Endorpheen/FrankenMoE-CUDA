@@ -1,0 +1,7 @@
+CHECK PASS destination byte equality (sparse+consecutive+padding+chunked)
+CHECK PASS uncovered expert untouched
+CHECK PASS sentinel guards unchanged
+CHECK PASS flag OFF: every staged call declined, pageable fallback used
+CHECK PASS flag OFF: ring never used
+CHECK PASS flag OFF: no ring init
+CUDA error at begin capture: operation not permitted when stream is capturing
