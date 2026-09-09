@@ -92,3 +92,11 @@
 
 `results/archive/EXP-2026-09-09-049/`: `analysis.sql`, `offline-results.txt` (запросы и вывод по
 трейсу EXP-043, sha256 `f86cd32b…`). Новых бинарников нет; код не менялся.
+
+## Закрытие открытого пункта (2026-09-09, EXP-050)
+
+Открытый пункт разрешён диагностическим запуском EXP-050: «reuse 56/171» — misreading
+кумулятивного счётчика target-контекста (171−56 = 115 reuse из 117 шагов, т.е. 98%);
+блокиратор находился не в target verify, а в драфт-контексте MTP (чередование форм убатчей
+n=3↔n=1 ломает allow_reuse и CUDA-graph warmup). См.
+`experiments/EXP-2026-09-09-050-draft-ubatch-shape-pingpong.md`.
