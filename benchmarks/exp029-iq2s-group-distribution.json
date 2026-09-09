@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-05-029-iq2s-group-distribution",
+  "status": "INCONCLUSIVE",
+  "kind": "measurement_infrastructure",
+  "question": "How many rows are assigned to each IQ2_S MoE matrix in the traced CPU MUL_MAT_ID invocation?",
+  "workload": "One fixed 395-token prompt, Qwen3.8 Flash Next UD-IQ3_XXS with MTP draft, 12 CPU threads, EHS off, CPU MoE. Context reserve was 32K only to fit the tracing build; this does not affect routing for a 395-token prompt.",
+  "trace_scope": "The 94 traced invocations belong to the server's final four-token prompt checkpoint, not to the preceding 391-token bulk prefill. Decode is excluded from the aggregation.",
+  "aggregate": {
+    "operator_invocations": 94,
+    "routed_rows": 3760,
+    "nonempty_expert_groups": 2594,
+    "mean_group_size": 1.449499,
+    "rows_per_token": 10,
+    "checkpoint_tokens": 4,
+    "groups": {
+      "1": 1786,
+      "2": 550,
+      "3_4": 258,
+      "5_8": 0,
+      "9_16": 0,
+      "17_plus": 0
+    },
+    "group_share_pct": {
+      "1": 68.851195,
+      "2": 21.202776,
+      "3_4": 9.946029,
+      "5_plus": 0.0
+    }
+  },
+  "correctness": {
+    "request_completed": true,
+    "prompt_tokens": 395,
+    "prompt_ms": 4087.45,
+    "generated_tokens": 1
+  },
+  "decision_note": "The original aggregation is valid only for the four-token checkpoint tail: this model routes 10 experts per token, so 40 rows means four tokens, not 40 tokens. The primary 391-token prefill was processed separately and was not captured by this CPU IQ2_S trace. Therefore this experiment cannot support a conclusion about bulk-prefill grouping or fused-kernel headroom."
+}

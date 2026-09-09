@@ -1,0 +1,2 @@
+VmRSS:	31390296 kB
+VmSwap:	       0 kB

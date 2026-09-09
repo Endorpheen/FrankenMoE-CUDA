@@ -1,0 +1,26 @@
+{
+  "experiment_id": "EXP-2026-09-05-033-packed-prefill-expert-staging",
+  "status": "REJECTED",
+  "configuration": {
+    "context_tokens": 32000,
+    "threads": 12,
+    "ehs_slots": 0,
+    "prompt_tokens": 395,
+    "predicted_tokens": 16,
+    "temperature": 0
+  },
+  "experimental": {
+    "prefill_ms": 6502.223,
+    "prefill_tok_s": 60.74845479768996,
+    "decode_tok_s": 19.829230665508643,
+    "content_sha256": "24122785e34e88b37d241f7c4f1f303575ab88c7065d05cbc6c0f9a7c60085b7"
+  },
+  "control": {
+    "prefill_ms": 3979.34,
+    "prefill_tok_s": 99.26232579483076,
+    "decode_tok_s": 20.853782335050467,
+    "content_sha256": "24122785e34e88b37d241f7c4f1f303575ab88c7065d05cbc6c0f9a7c60085b7"
+  },
+  "prefill_time_delta_percent": 63.40039160558206,
+  "verdict_reason": "Single pinned staging buffer serializes each packed upload behind a GPU event."
+}

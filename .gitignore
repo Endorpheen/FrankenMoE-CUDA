@@ -17,3 +17,13 @@
 *.perf.data
 __pycache__/
 *.pyc
+
+# LOCAL_ONLY experiment artifacts (raw traces, sched .bin outputs, pid files);
+# their hashes/evidence live in committed logs and SHA256SUMS files
+*.pid
+/results/archive/**/pid.txt
+/results/archive/**/raw/
+/results/archive/**/*.bin
+/results/archive/EXP-2026-09-06-038/tests/test-exp038-ring
+/results/archive/EXP-2026-09-07-040/tests/test-exp038-ring
+/results/archive/EXP-2026-09-07-041/tests/test-exp041-ring
