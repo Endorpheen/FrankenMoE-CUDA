@@ -1,0 +1,22 @@
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -1536,16 +1536,16 @@
+ 
+ //
+ // EXP-2026-09-09-046: fused IQ2_S mul_mat_id path for 2-3-row expert groups
+-// inside an explicitly marked target-verification window. OFF by default.
++// inside an explicitly marked target-verification window. On by default.
+ //
+ 
+-// GGML_CPU_IQ2S_FUSED: unset or "0" -> off; any other value -> on.
++// on by default; set GGML_CPU_IQ2S_FUSED=0 to restore the stock per-row path
+ static int iq2s_fused_mode(void) {
+     static atomic_int mode = -1;
+     int m = atomic_load_explicit(&mode, memory_order_relaxed);
+     if (m < 0) {
+         const char * e = getenv("GGML_CPU_IQ2S_FUSED");
+-        m = (e != NULL && *e != '\0' && strcmp(e, "0") != 0) ? 1 : 0;
++        m = (e == NULL || (*e != '\0' && strcmp(e, "0") != 0)) ? 1 : 0;
+         atomic_store_explicit(&mode, m, memory_order_relaxed);
+     }
+     return m;

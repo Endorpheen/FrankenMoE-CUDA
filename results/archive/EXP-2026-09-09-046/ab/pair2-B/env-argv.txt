@@ -1,0 +1,2 @@
+arm B env: GGML_CPU_IQ2S_FUSED=1
+argv identical to pair 1 (see ../env-argv.txt)

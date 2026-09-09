@@ -8,15 +8,17 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# Default to the EXP-045 default runtime: the accepted EXP-038/041 pinned upload ring plus the
-# EXP-045 two-thread CPU gather (GGML_EXPERT_RING_GATHER2T=0 restores the single-thread memcpy;
-# GGML_EXPERT_PINNED_RING=0 restores the pageable path for diagnostics).
-# Source: work/llama.cpp-exp041 = pinned base 4aaad5d3 + patches/expert-tier-integration.patch +
+# Default to the EXP-046 default runtime: the accepted EXP-038/041 pinned upload ring, the
+# EXP-045 two-thread CPU gather and the accepted EXP-046 fused IQ2_S decode path
+# (GGML_CPU_IQ2S_FUSED=0 restores the stock per-row path; GGML_EXPERT_RING_GATHER2T=0 restores
+# the single-thread memcpy; GGML_EXPERT_PINNED_RING=0 restores the pageable path for diagnostics).
+# Source: work/llama.cpp-exp046-default = pinned base 4aaad5d3 + patches/expert-tier-integration.patch +
 # integration-drift.patch + mtp-sidecar.patch + pinned-ring.patch + pinned-ring-default-on.patch +
-# two-thread-gather.patch.
-# The older build/exp041-default-runtime (single-thread gather) and build/expert-tier-franken-cuda
-# (ring absent) are kept untouched as fallbacks; select them with BUILD_DIR=...
-BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/exp045-default-runtime}"
+# two-thread-gather.patch + iq2s-fused-decode.patch + iq2s-fused-decode-default-on.patch.
+# The older build/exp045-default-runtime (no fused path), build/exp041-default-runtime
+# (single-thread gather) and build/expert-tier-franken-cuda (ring absent) are kept untouched as
+# fallbacks; select them with BUILD_DIR=...
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/exp046-default-runtime}"
 SERVER_BIN="${BUILD_DIR}/bin/llama-server"
 [[ -x "${SERVER_BIN}" ]] || { echo "Missing llama-server: ${SERVER_BIN} (see scripts/build.sh)" >&2; exit 2; }
 
