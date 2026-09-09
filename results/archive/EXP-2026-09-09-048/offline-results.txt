@@ -1,0 +1,33 @@
+W2_len_ms|129.500
+kernels|4559|17.920|3.93
+memset|0|0.000|0.00
+memcpy_kind|1|69|20480292|1.134|16.44
+memcpy_kind|2|98|3420032|0.199|2.03
+memcpy_kind|8|401|35612672|1.047|2.61
+gpu_busy_union|5127|20.301|109.199|50|3.476
+cudaLaunchKernel_v7000|4394|13.530|3.08
+cudaStreamSynchronize_v3020|396|6.405|16.17
+cudaMemcpy2DAsync_v3020|279|1.235|4.43
+cudaMemcpyAsync_v3020|289|1.167|4.04
+cuLaunchKernel|165|0.592|3.59
+cuKernelGetFunction|165|0.078|0.47
+cudaGraphInstantiate_v12000|1|0.033|33.27
+cudaStreamBeginCapture_v10000|1|0.020|20.29
+cudaGraphLaunch_v10000|1|0.013|13.38
+cudaGraphExecUpdate_v10020|1|0.002|2.01
+cudaStreamEndCapture_v10000|1|0.001|1.29
+2|396|6.263|15.8
+void mul_mat_vec_q<(ggml_type)14, (int)4, (bool)0, (bool)0|246|5.762
+void mul_mat_vec_q<(ggml_type)8, (int)4, (bool)0, (bool)0,|242|2.881
+void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0|1|1.103
+void mul_mat_f<float, (int)32, (int)4, (int)8, (bool)0>(co|47|0.780
+void k_bin_bcast<&op_add, float, float, float, const float|615|0.733
+quantize_q8_1(const float *, void *, long, long, long, lon|496|0.538
+void k_argsort_f32_i32<(ggml_sort_order)1>(const float *, |59|0.526
+void concat_non_cont<unsigned int, (int)0>(const char *, c|36|0.500
+void k_bin_bcast<&op_mul, float, float, float, const float|333|0.457
+void gated_delta_net_cuda<(int)128, (bool)0, (bool)1>(cons|35|0.456
+void cutlass::Kernel2<cutlass_80_tensorop_s1688gemm_64x64_|95|0.451
+scale_f32(const float *, float *, float, float, long)|395|0.367
+void k_get_rows_float_vec<float>(const T1 *, const int *, |47|0.340
+void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, |165|0.261
