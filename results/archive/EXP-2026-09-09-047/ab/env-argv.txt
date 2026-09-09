@@ -1,0 +1,30 @@
+# EXP-2026-09-09-047 A/B: one binary (default runtime, fused IQ2_S ON by default),
+# arms differ only in draft thread flags appended in arm B.
+# Baseline argv is byte-identical to EXP-2026-09-09-046 ab/env-argv.txt except the
+# binary path (exp046-cuda-ab -> exp046-default-runtime, the accepted default build).
+binary: ./build/exp046-default-runtime/bin/llama-server
+binary sha256: 3b109f0f80e56e4b6631eba8cee451ea89b0cfe16e17ea0383cc324e5090c2ec
+libggml-cuda.so sha256: 592592566b115f76bb8f311537b928fd5a929906973378d063e3b9384338164d
+libggml-cpu.so sha256: 98f2cd6c53b1f23b62e38797be0fa7a6cc3cd1d33a3041e2349c58f789a18606
+
+arm A argv:
+./build/exp046-default-runtime/bin/llama-server -m models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf -ngl 99 --cpu-moe --reasoning-effort low -ehs 0 --ehs-reserve-mb 2048 -ot "per_layer_token_embd.weight=CPU,token_embd.weight=CPU" -c 196608 -np 1 -fa on --jinja -ctk q4_0 -ctv q4_0 -ctkd q4_0 -ctvd q4_0 -t 12 --host 127.0.0.1 --port 8081 -md models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf --spec-type draft-mtp --spec-draft-n-max 2 -ngld 99 --spec-draft-cpu-moe
+
+arm A env: clean (GGML_CPU_IQ2S_FUSED unset -> default ON, GGML_EXPERT_PINNED_RING unset -> default ON)
+
+arm B argv: arm A argv + --spec-draft-threads 6 --spec-draft-threads-batch 12
+arm B env: clean (identical to arm A)
+
+single changed variable: CPU threads of single-token draft passes 12 -> 6
+(draft batch threads pinned to today's effective 12 via --spec-draft-threads-batch 12;
+ target context untouched: -t 12, fused IQ2_S window unchanged)
+
+requests: warmup results/archive/EXP-2026-09-07-040/ab/request-short.json
+          measured results/archive/EXP-2026-09-09-046/request-decode256.json (sha 5975261b)
+endpoint: POST /completion, temp 0, cache_prompt false, stream false
+telemetry: 0.5 s sampling of /proc/<pid> (VmRSS, VmSwap, Threads, utime+stime)
+order: pair1 A->B, pair2 B->A
+gate: content sha256 identical across arms; acceptance identical to the digit
+      (0.58974 / 138 / 234 measured, 0.41964 warmup); 256/256 stop=limit;
+      VmSwap=0; ring staged 25326/25326; clean SIGINT
+threshold: >=2% median paired decode tok/s improvement
