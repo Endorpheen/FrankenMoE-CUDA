@@ -1,0 +1,2 @@
+gate: mem keys=100 free_before=561119232 free_after=540147712 total=12447973376
+gate: scenario=mem rounds=400 r0=62000.000000

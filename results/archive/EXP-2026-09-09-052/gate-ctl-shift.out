@@ -1,0 +1,2 @@
+gate: shift key1=0x7fbf6dcff300 key2=0x7fbf6dcff470 DIFFER
+gate: scenario=shift rounds=6 r0=231.875000 r1=231.875000 r2=231.875000 r3=231.875000 r4=231.875000 r5=231.875000
