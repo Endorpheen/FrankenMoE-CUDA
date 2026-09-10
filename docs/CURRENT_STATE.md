@@ -1,6 +1,6 @@
 # Current state
 
-> Уточнение 2026-09-06: ниже сохранён исторический снимок, в основном до EXP-016. Актуальное состояние и ограничения provenance описаны в [AUDIT-2026-09-06.md](AUDIT-2026-09-06.md), порядок работы — в [../ROADMAP.md](../ROADMAP.md). Локальный integration tree теперь содержит функциональный MTP port; root integration patch его не воспроизводит. Не выбирать следующий эксперимент по старому тексту ниже.
+> Update 2026-09-06: below is a preserved historical snapshot, mostly from before EXP-016. The current state and provenance limitations are described in [AUDIT-2026-09-06.md](AUDIT-2026-09-06.md), and the order of work in [../ROADMAP.md](../ROADMAP.md). The local integration tree now contains a functional MTP port; the root integration patch does not reproduce it. Do not choose the next experiment from the old text below.
 
 ## Source state
 

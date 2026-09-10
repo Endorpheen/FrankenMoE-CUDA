@@ -38,54 +38,54 @@ index e353d5e..d6130d4 100644
 -- [ ] P11: autotuning profiles and an OpenAI-compatible server.
 -
 -The current critical path is P0 followed by true H2D/compute overlap. UI work, pruning, mixed quantization, and multi-agent throughput remain deferred.
-+# FrankenMoE roadmap — пересмотр 2026-09-06
++# FrankenMoE roadmap — revision of 2026-09-06
 +
-+Аудит: [docs/AUDIT-2026-09-06.md](docs/AUDIT-2026-09-06.md).
-+Последовательное ТЗ: [docs/QWEN-IMPLEMENTATION-TASK.md](docs/QWEN-IMPLEMENTATION-TASK.md).
-+История: [experiments/EXPERIMENTS.md](experiments/EXPERIMENTS.md), отдельные EXP-028–033 и `benchmarks/history.jsonl`. Старые решения сохраняются; позднейшее уточнение имеет приоритет над старым «Next experiment».
++Audit: [docs/AUDIT-2026-09-06.md](docs/AUDIT-2026-09-06.md).
++Sequential task specification: [docs/QWEN-IMPLEMENTATION-TASK.md](docs/QWEN-IMPLEMENTATION-TASK.md).
++History: [experiments/EXPERIMENTS.md](experiments/EXPERIMENTS.md), individual EXP-028–033 cards and `benchmarks/history.jsonl`. Old decisions are preserved; a later clarification takes priority over the old "Next experiment".
 +
-+**Roadmap требует существенного обновления.** Основная цель — patched expert-tier server. `bmoe-cli` остаётся самостоятельной исследовательской веткой. Их baseline, I/O и H2D нельзя смешивать. Ничего из очереди ниже при аудите не реализовано.
++**The roadmap needs a substantial update.** The main goal is the patched expert-tier server. `bmoe-cli` remains a separate research branch. Their baselines, I/O and H2D must not be mixed. None of the queue below was implemented at audit time.
 +
-+## Статусы фаз P0–P11
++## Phase status P0–P11
 +
-+| Фаза | Текущий статус и основание |
++| Phase | Current status and rationale |
 +| --- | --- |
-+| P0 — воспроизводимость | Частично выполнена: EXP-000/004 и серверные измерения. Открыты provenance MTP, сохранность артефактов, единый профиль и корректность async transfer. |
-+| P1 — SSD/RAM/GPU | Старые варианты CPU-decode prefetch закрыты: EXP-001/002/003/012/025/027. Bulk CUDA prefill открыт отдельно по EXP-030/031/032. EXP-033 single-buffer packed staging отклонён. |
-+| P2 — hot cache | Базовые RAM LRU и VRAM banks существуют в bmoe-cli; серверный EHS activation отклонён EXP-010. Новый cache не планируется без reuse/memory evidence. |
-+| P3 — router prefetch | Поздний madvise и warmer отклонены. Router следующего слоя ещё неизвестен. Только доказуемый overlap внутри слоя может стать отдельным экспериментом; предсказание маршрутов отложено. |
-+| P4 — контейнер/чтение | Адресный split-GGUF/O_DIRECT уже есть в bmoe-cli. Переупаковка модели и новый I/O engine отложены. Точное объединение соседних H2D expert ranges уже есть в server scheduler. |
-+| P5 — kernels | EXP-019 micro-tuning закрыт по текущему приоритету, EXP-021 microbench выполнен, EXP-028 CPU fused integration отклонён. Bulk prefill реально CUDA MMQ; повтор CPU fused не запланирован. |
-+| P6 — speculative | EXP-022 ngram и EXP-023 CPU-only draft отклонены; EXP-024 split MTP принят исторически (+13,6%, одна пара). Доставляемость patch и более широкая корректность пока не подтверждены. `n_max=2`; больший лимит не повторять. |
-+| P7 — memory planning | RAM startup gate и EHS safe autofit реализованы EXP-008/009; цельный planner отложен. Открыта проверка действующего watchdog/launch profile. |
-+| P8 — mixed quant | Отложено: нет репрезентативного quality baseline и бюджета качества. |
-+| P9 — REAP | Отложено по той же причине; модель и top-k не менять. |
-+| P10 — batching | Отложено до устойчивого single-request пути и проверки lifetime при нескольких запросах. Aggregate tok/s — отдельная метрика. |
-+| P11 — API/autotuning | OpenAI-compatible server уже работает. Автотюнинг и UI не являются следующим шагом. |
++| P0 — reproducibility | Partially done: EXP-000/004 and server measurements. Open: MTP provenance, artifact preservation, a unified profile and async transfer correctness. |
++| P1 — SSD/RAM/GPU | Old CPU-decode prefetch options are closed: EXP-001/002/003/012/025/027. Bulk CUDA prefill is open separately per EXP-030/031/032. EXP-033 single-buffer packed staging was rejected. |
++| P2 — hot cache | Basic RAM LRU and VRAM banks exist in bmoe-cli; server-side EHS activation was rejected by EXP-010. No new cache is planned without reuse/memory evidence. |
++| P3 — router prefetch | Late madvise and the warmer were rejected. The next layer's router is still unknown. Only provable intra-layer overlap can become a separate experiment; route prediction is deferred. |
++| P4 — container/reads | Addressable split-GGUF/O_DIRECT already exists in bmoe-cli. Model repacking and a new I/O engine are deferred. Exact merging of adjacent H2D expert ranges already exists in the server scheduler. |
++| P5 — kernels | EXP-019 micro-tuning is closed at the current priority, EXP-021 microbench was done, EXP-028 CPU fused integration was rejected. Bulk prefill is actually CUDA MMQ; a CPU fused retry is not planned. |
++| P6 — speculative | EXP-022 ngram and EXP-023 CPU-only draft were rejected; EXP-024 split MTP was accepted historically (+13.6%, one pair). Patch deliverability and broader correctness are not yet confirmed. `n_max=2`; do not retry a larger limit. |
++| P7 — memory planning | The RAM startup gate and EHS safe autofit were implemented in EXP-008/009; a full planner is deferred. Open: validation of the active watchdog/launch profile. |
++| P8 — mixed quant | Deferred: no representative quality baseline or quality budget. |
++| P9 — REAP | Deferred for the same reason; do not change the model or top-k. |
++| P10 — batching | Deferred until the single-request path is stable and lifetime is verified with several requests. Aggregate tok/s is a separate metric. |
++| P11 — API/autotuning | The OpenAI-compatible server already works. Autotuning and UI are not the next step. |
 +
-+## Очередь выполнения
++## Execution queue
 +
-+ID ниже резервируют смысл этапов, дата EXP назначается при старте. Не выдавать их за выполненные опыты.
++The IDs below reserve the meaning of the stages; an EXP date is assigned at start. Do not present them as completed experiments.
 +
-+1. **R0 / EXP-034 — provenance и воспроизводимый пакет**. Зафиксировать состояние root/nested trees, MTP diff, исходники/библиотеки/команды и сохранившиеся данные. В изолированной копии подготовить минимальный воспроизводимый MTP patch; не обновлять upstream и не трогать integration tree. Gate: воспроизводится требуемая конфигурация, отсутствующие данные явно помечены.
-+2. **R1 / EXP-035 — работающий safety profile**. Отдельный correctness этап: единицы внешнего watchdog, включение внутреннего watchdog в явном benchmark profile, корректное завершение monitor. Не провоцировать настоящий swap/OOM. Gate: синтетические пороги/жизненный цикл, затем неизменная inference-конфигурация.
-+3. **R2 / EXP-036 — актуальный baseline и correctness fixtures**. Один выбранный 32K MTP profile, `n_max=2`, EHS=0, 12 threads. Фиксированные запросы, полный prefill без prompt-cache reuse, отдельный warm decode, единые raw artifacts. Это baseline для новой работы, не повтор состязания MTP/no-MTP.
-+4. **R3 / EXP-037 — offline transfer budget и dependency map**. Сначала использовать уже сохранённые EXP-031/032. Разделить GPU H2D duration, host API time, sync и gaps; проверить область запроса и доступность свободных staging slots. Не снимать повторно уже известную атрибуцию 22,16 GiB к экспертам.
-+5. **R4 / EXP-038 — условный bounded pinned ring без packing/scatter**. Только если R3 показывает измеримый host-side submission bottleneck и возможность готовить следующий chunk. Два ограниченных host slots, прямые копии в исходные offsets, прежний CUDA stream. Это гипотеза CPU-staging/H2D overlap; истинный H2D/compute overlap не обещать. При недостаточном ожидаемом эффекте — `NOT_RUN`, перейти к условному R5 либо завершить P1.
-+6. **R5 / EXP-039 — условный transfer/compute overlap внутри слоя**. Только при новой dependency/timeline evidence после R3/R4. Отдельный copy stream, события готовности/последнего потребителя, ограниченная дополнительная память. Не выдавать указатель на scheduler buffer за lifetime guarantee. Если безопасного независимого окна нет — `NOT_RUN`, направление `DEFERRED`.
-+7. **R6 — приёмка конкретного победителя**. Репрезентативный короткий/основной/длинный prompt, decode, повторные запросы, cancellation/checkpoint/shutdown. Только затем patch доставки и предложение изменения default. Нет победителя — сохранить baseline и закончить с отрицательным результатом.
++1. **R0 / EXP-034 — provenance and a reproducible package**. Record the state of the root/nested trees, the MTP diff, sources/libraries/commands and the surviving data. In an isolated copy prepare a minimal reproducible MTP patch; do not update upstream and do not touch the integration tree. Gate: the required configuration is reproducible, missing data is explicitly marked.
++2. **R1 / EXP-035 — a working safety profile**. A separate correctness stage: external watchdog units, enabling the internal watchdog in an explicit benchmark profile, correct monitor termination. Do not provoke real swap/OOM. Gate: synthetic thresholds/lifecycle, then an unchanged inference configuration.
++3. **R2 / EXP-036 — an up-to-date baseline and correctness fixtures**. One chosen 32K MTP profile, `n_max=2`, EHS=0, 12 threads. Fixed requests, full prefill without prompt-cache reuse, a separate warm decode, unified raw artifacts. This is the baseline for new work, not a repeat of the MTP/no-MTP contest.
++4. **R3 / EXP-037 — offline transfer budget and dependency map**. Use the already saved EXP-031/032 first. Split GPU H2D duration, host API time, syncs and gaps; verify the request span and free staging slot availability. Do not re-capture the already known 22.16 GiB expert attribution.
++5. **R4 / EXP-038 — conditional bounded pinned ring without packing/scatter**. Only if R3 shows a measurable host-side submission bottleneck and the possibility of preparing the next chunk. Two bounded host slots, direct copies into the original offsets, the same CUDA stream. This is a CPU-staging/H2D overlap hypothesis; true H2D/compute overlap is not promised. With an insufficient expected effect — `NOT_RUN`, move to conditional R5 or finish P1.
++6. **R5 / EXP-039 — conditional intra-layer transfer/compute overlap**. Only with new dependency/timeline evidence after R3/R4. A separate copy stream, readiness/last-consumer events, bounded extra memory. Do not present a pointer to a scheduler buffer as a lifetime guarantee. If no safe independent window exists — `NOT_RUN`, direction `DEFERRED`.
++7. **R6 — acceptance of the concrete winner**. A representative short/main/long prompt, decode, repeated requests, cancellation/checkpoint/shutdown. Only then the delivery patch and a default-change proposal. No winner — keep the baseline and finish with a negative result.
 +
-+Если R4 принят, сначала R6. R5 начинается отдельным циклом только после handoff и лишь при оставшемся измеренном bottleneck. R4 и R5 не реализуются одновременно.
++If R4 is accepted, R6 comes first. R5 starts as a separate cycle only after the handoff and only with a remaining measured bottleneck. R4 and R5 are not implemented simultaneously.
 +
-+## Правило решения
++## Decision rule
 +
-+Один эксперимент, одна гипотеза, один baseline, одна основная переменная. Performance ACCEPTED требует ≥3% сокращения median prefill time, подтверждения парными результатами вне наблюдаемого шума и отсутствия неприемлемых регрессий. Меньше H2D calls, работающий код или меньше CPU spin сами по себе не являются успехом. Минимум пять последовательных пар для принятия; ранний отказ при явном провале допустим. Correctness/infrastructure принимаются по своим заранее указанным функциональным критериям без заявления ускорения.
++One experiment, one hypothesis, one baseline, one primary variable. Performance ACCEPTED requires a ≥3% median prefill-time reduction, confirmation by paired results outside the observed noise, and no unacceptable regressions. Fewer H2D calls, working code or less CPU spin are not success by themselves. At least five consecutive pairs for acceptance; early rejection on clear failure is allowed. Correctness/infrastructure experiments are accepted by their own pre-declared functional criteria without a speed claim.
 +
-+Плохой результат сохранять в журнале, код не включать. `INCONCLUSIVE`, `BLOCKED`, `NOT_RUN` не превращать в ACCEPTED. Handoff обязателен после каждого этапа, включая отказ и блокировку. Запуски модели и коммиты регулирует [agents.md](agents.md); аудит не является разрешением на запуск.
++Keep a bad result in the journal, do not include the code. `INCONCLUSIVE`, `BLOCKED`, `NOT_RUN` must not turn into ACCEPTED. A handoff is mandatory after every stage, including rejection and blocking. Model runs and commits are governed by [agents.md](agents.md); the audit is not permission to run.
 +
-+## Старый roadmap (исторический снимок до аудита)
++## Old roadmap (historical pre-audit snapshot)
 +
-+P0 был отмечен выполненным; P1: overlap SSD→RAM→GPU, aligned/coalesced reads, pinned RAM, double/triple buffering; P2: hot cache; P3: router prefetch; P4: addressed aligned container; P5: fused dequant+GEMM Ada/decode; P6: MTP/ngram/draft/combined; P7: residency planner; P8: mixed quant; P9: REAP; P10: multi-agent batching; P11: autotuning/API. Все P1–P11 имели незакрытые checkbox. Critical path был сформулирован как P0 → true H2D/compute overlap. Этот порядок заменён очередью R0–R6 выше; экспериментальная история не удалена.
++P0 was marked done; P1: SSD→RAM→GPU overlap, aligned/coalesced reads, pinned RAM, double/triple buffering; P2: hot cache; P3: router prefetch; P4: addressed aligned container; P5: fused dequant+GEMM Ada/decode; P6: MTP/ngram/draft/combined; P7: residency planner; P8: mixed quant; P9: REAP; P10: multi-agent batching; P11: autotuning/API. All of P1–P11 had unchecked boxes. The critical path was formulated as P0 → true H2D/compute overlap. That order is replaced by the R0–R6 queue above; the experimental history is not deleted.
 diff --git a/docs/CURRENT_STATE.md b/docs/CURRENT_STATE.md
 index 576dce6..6309a8d 100644
 --- a/docs/CURRENT_STATE.md
@@ -93,7 +93,7 @@ index 576dce6..6309a8d 100644
 @@ -1,5 +1,7 @@
  # Current state
  
-+> Уточнение 2026-09-06: ниже сохранён исторический снимок, в основном до EXP-016. Актуальное состояние и ограничения provenance описаны в [AUDIT-2026-09-06.md](AUDIT-2026-09-06.md), порядок работы — в [../ROADMAP.md](../ROADMAP.md). Локальный integration tree теперь содержит функциональный MTP port; root integration patch его не воспроизводит. Не выбирать следующий эксперимент по старому тексту ниже.
++> Clarification 2026-09-06: below is a preserved historical snapshot, mostly pre-EXP-016. The current state and provenance limitations are described in [AUDIT-2026-09-06.md](AUDIT-2026-09-06.md), the work order in [../ROADMAP.md](../ROADMAP.md). The local integration tree now contains a functional MTP port; the root integration patch does not reproduce it. Do not choose the next experiment from the old text below.
 +
  ## Source state
  
@@ -116,15 +116,15 @@ index 8da6a11..915e558 100644
  - Artifacts: `benchmarks/exp027-cache-warm.json`; crash core dumps in `/var/lib/systemd/coredump` (2 files, retained); the warmer implementation lives only in git history of this file's workspace, not in any tracked patch.
 +
 +
-+## Уточнения повторного аудита — 2026-09-06 (без новых запусков)
++## Re-audit clarifications — 2026-09-06 (no new runs)
 +
-+Актуальная очередь: [../ROADMAP.md](../ROADMAP.md). Полный реестр EXP-000–033, проверка evidence и ограничения: [../docs/AUDIT-2026-09-06.md](../docs/AUDIT-2026-09-06.md). ТЗ исполнителю: [../docs/QWEN-IMPLEMENTATION-TASK.md](../docs/QWEN-IMPLEMENTATION-TASK.md). Старые Next experiment выше — исторические, не текущие поручения.
++Current queue: [../ROADMAP.md](../ROADMAP.md). Full registry of EXP-000–033, evidence checks and limitations: [../docs/AUDIT-2026-09-06.md](../docs/AUDIT-2026-09-06.md). Task specification for the implementer: [../docs/QWEN-IMPLEMENTATION-TASK.md](../docs/QWEN-IMPLEMENTATION-TASK.md). The old Next experiment entries above are historical, not current assignments.
 +
-+- EXP-026 выполнен: итог ACCEPTED measurement; старый PLANNED описывает pre-run состояние. 206114 expert faults / 209518 main-shard faults = 98,38%, а не 99,5%/99,9% из разных записей. Доля от всех 216805 faults = 95,07% остаётся верной. Counts не являются временем stalls.
-+- EXP-024 исторически ACCEPTED (+13,6%, одна измеренная пара), но это не five-run median. В сохранённом MTP log cumulative graphs reused: 104 после первого запроса, 207 после второго; 311 не следует считать итоговым cumulative count. Split-MTP port есть в локальных исходниках, но не в root integration patch; доставка требует отдельного provenance этапа.
-+- EXP-027 REJECTED остаётся в силе; live eviction запрещена. Его широкое «P1 closed» относится к испытанным CPU-decode prefetch/warmer вариантам и не закрывает другой bulk-prefill transfer path EXP-030–032.
-+- EXP-028 REJECTED; EXP-029 INCONCLUSIVE для bulk; EXP-030/031/032 ACCEPTED measurement; EXP-033 REJECTED, prefill 3979,34→6502,22 ms (+63,40%). Подробности в отдельных файлах EXP и rejected.
-+- У EXP-033 event wait, CPU gather, device scratch/scatter добавлены вместе; event serialization — правдоподобная, но не отдельно измеренная причина. Два больших buffers сами по себе не доказанное исправление.
-+- Соседние selected expert ranges уже объединяет server scheduler. Повтор этой оптимизации, CPU fused, ngram, CPU-only MTP, wait-policy и большего draft limit не планируется.
++- EXP-026 done: final verdict ACCEPTED measurement; the old PLANNED describes the pre-run state. 206114 expert faults / 209518 main-shard faults = 98.38%, not the 99.5%/99.9% from different records. The share of all 216805 faults = 95.07% remains valid. Counts are not stall time.
++- EXP-024 historically ACCEPTED (+13.6%, one measured pair), but this is not a five-run median. In the saved MTP log cumulative graphs reused: 104 after the first request, 207 after the second; 311 must not be taken as the final cumulative count. The split-MTP port exists in local sources but not in the root integration patch; delivery needs a separate provenance stage.
++- EXP-027 REJECTED stands; live eviction is forbidden. Its broad "P1 closed" applies to the tested CPU-decode prefetch/warmer variants and does not close the separate bulk-prefill transfer path of EXP-030–032.
++- EXP-028 REJECTED; EXP-029 INCONCLUSIVE for bulk; EXP-030/031/032 ACCEPTED measurement; EXP-033 REJECTED, prefill 3979.34→6502.22 ms (+63.40%). Details in the individual EXP files and rejected/.
++- In EXP-033 event wait, CPU gather and device scratch/scatter were added together; event serialization is a plausible but not separately measured cause. Two large buffers by themselves are not a proven fix.
++- The server scheduler already merges adjacent selected expert ranges. A repeat of this optimization, CPU fused, ngram, CPU-only MTP, wait-policy and a larger draft limit are not planned.
 +
-+Исторические записи/неудачные эксперименты сохранены. Аудит не меняет код и не создаёт новых performance evidence.
++Historical records/failed experiments are preserved. The audit changes no code and creates no new performance evidence.

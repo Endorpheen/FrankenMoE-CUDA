@@ -1,82 +1,85 @@
-# Решение о checkpoint после полного prefill — 2026-09-08
+# The decision on a checkpoint after a full prefill — 2026-09-08
 
-Статус: решение Игоря зафиксировано. Функциональный компромисс выявлен;
-рекомендация старшего помощника — сохранить текущие checkpoint.
-Игорь одобрил рекомендацию и поручил сохранить последнюю выявленную информацию.
-Перенос checkpoint после полного промпта не принимается к реализации.
-Это решение о функциональности, не результат performance A/B.
+Status: Igor's decision is recorded. A functional compromise has been identified;
+the senior helper's recommendation is to keep the current checkpoints.
+Igor approved the recommendation and instructed to preserve the latest findings.
+Moving the checkpoint to after the full prompt is not accepted for implementation.
+This is a decision about functionality, not the result of a performance A/B.
 
-## Гипотеза и ожидаемая польза
+## Hypothesis and expected benefit
 
-Убрать разбиение промпта 391+4, обработать его цельным GPU-батчем и сохранить
-checkpoint после decode. Возможная польза — сокращение ожидания первого ответа.
-EXP-043 атрибутировал четырёхтокенному CPU-проходу около 129,5 мс,
-checkpoint-save — 16,3 мс. Последние четыре токена всё равно нужно вычислить,
-а сохранение checkpoint остаётся. Эти числа получены под profiler и не являются
-измерением ускорения кандидата.
+Remove the 391+4 prompt split, process it as a single whole GPU batch, and save the
+checkpoint after decode. The possible benefit is a shorter wait for the first response.
+EXP-043 attributed about 129.5 ms to the four-token CPU pass,
+and 16.3 ms to the checkpoint save. The last four tokens still have to be computed,
+and the checkpoint save remains. These numbers were obtained under the profiler and
+are not a measurement of the candidate's speedup.
 
-## Результаты исследования локального агента
+## Results of the local agent's investigation
 
-Автор исследования — локальный агент; Игорь передал его отчёт старшему помощнику
-на проверку. Ниже сохранены выводы отчёта с оговорками старшего помощника.
+The author of the investigation is the local agent; Igor passed its report to the senior
+helper for review. The report's conclusions are preserved below together with the senior
+helper's caveats.
 
-- В EXP-041 checkpoint создаётся до decode завершающего батча. Смещения
-  `{4 + n_ubatch, 4}` дают точки до окончания промпта; ближайшая не включает
-  изменяемый хвост шаблона. Restore проверяет пригодность позиции checkpoint
-  относительно точки расхождения и ограничений SWA/hybrid state.
-- Checkpoint после цельного промпта может оказаться позже точки расхождения
-  при изменении окончания запроса. Тогда он непригоден; если других подходящих
-  точек нет, требуется полный пересчёт промпта. Это условный сценарий,
-  а не обязательный исход любого диалога.
-- По отчёту, raw-completion запрос EXP-043 не содержит `message_delimiters`;
-  checkpoint на границе user-сообщения не служит ему подстраховкой. Для чата
-  наличие и пригодность таких границ нужно проверять отдельно.
-- Удаление глубокого break также теряет запасную точку перед последним ubatch.
-  Потери shallow/deep checkpoint различны; сохранение одного не гарантирует
-  замену другого. Состояние до хвоста нельзя получить простым сохранением
-  только конечного состояния цельного decode.
-- При возможной реализации потребовалось бы сохранять согласованные target,
-  draft и speculative state после соответствующей обработки draft и до
-  сэмплирования. Это требование к реализации, а не пройденный correctness gate.
+- In EXP-041 the checkpoint is created before the decode of the final batch. The offsets
+  `{4 + n_ubatch, 4}` give points before the end of the prompt; the nearest one does not
+  include the mutable tail of the template. Restore checks the usability of the checkpoint
+  position relative to the divergence point and the SWA/hybrid state constraints.
+- A checkpoint after the whole prompt may end up later than the divergence point when the
+  end of the request changes. Then it is unusable; if there are no other suitable points,
+  a full recomputation of the prompt is required. This is a conditional scenario,
+  not a mandatory outcome of every dialogue.
+- According to the report, the EXP-043 raw-completion request contains no
+  `message_delimiters`; a checkpoint at a user-message boundary does not serve as a backup
+  for it. For chat, the presence and usability of such boundaries must be verified
+  separately.
+- Removing the deep break also loses the spare point before the last ubatch.
+  The losses of the shallow/deep checkpoints are different; keeping one does not
+  guarantee a replacement for the other. The state before the tail cannot be obtained by
+  simply saving only the final state of the whole decode.
+- A possible implementation would need to save consistent target, draft, and speculative
+  state after the corresponding draft processing and before sampling. This is an
+  implementation requirement, not a passed correctness gate.
 
-## Первоисточник, указанный локальным агентом
+## The primary source cited by the local agent
 
-Локальный агент сообщил о следующих коммитах MarkShark2/llama.cpp:
+The local agent reported the following MarkShark2/llama.cpp commits:
 
-- `59b26b6170e4638c8bf50346ca349638d2878f08` — удаление deep prompt break
-  по умолчанию, опция `LLAMA_CKPT_DEEP_BREAK=1`.
-- `bc33554dde4d12a2e0c94173aa4d38c628ebed93` — сохранение checkpoint после
-  decode, варианты `LLAMA_CKPT_PROMPT_BREAKS=0|1|2`.
+- `59b26b6170e4638c8bf50346ca349638d2878f08` — removing the deep prompt break
+  by default, option `LLAMA_CKPT_DEEP_BREAK=1`.
+- `bc33554dde4d12a2e0c94173aa4d38c628ebed93` — saving the checkpoint after
+  decode, variants `LLAMA_CKPT_PROMPT_BREAKS=0|1|2`.
 
-По его отчёту, замеры относятся к DeepSeek-V4-Flash, 10-stage RPC-конвейеру
-на 8× BC-250 и shredder x2, промпту 15360 токенов: 180,3→205,4 tok/s
-для deep break и 180,3→239,8 tok/s для отложенного сохранения. Числа приведены
-в сообщениях коммитов; воспроизводимый стенд не представлен в отчёте.
-Старший помощник при сохранении этой записи внешние коммиты не перепроверял.
-Заявленные +13,9%/+33% не переносятся на наш single-GPU runtime:
-дренаж RPC-конвейера и CPU-обработка короткого MoE-батча — разные причины затрат.
+According to its report, the measurements concern DeepSeek-V4-Flash, a 10-stage RPC
+pipeline on 8× BC-250 and shredder x2, a 15360-token prompt: 180.3→205.4 tok/s
+for deep break and 180.3→239.8 tok/s for the deferred save. The numbers are given
+in the commit messages; a reproducible testbed is not presented in the report.
+The senior helper did not re-verify the external commits when preserving this record.
+The claimed +13.9%/+33% do not carry over to our single-GPU runtime:
+RPC-pipeline drain and CPU processing of a short MoE batch are different causes of cost.
 
-## Оговорки старшего помощника
+## The senior helper's caveats
 
-1. Оценка экономии 110–125 мс — сценарная, не доказанная верхняя граница.
-   Приращение unique experts для 395 вместо 391 токена не измерено;
-   масштабирование общего kernel time пропорцией 4/395 не обосновано.
-2. «Ноль переигранных токенов после restore» не подтверждено: требуется
-   согласовать это с `TAG_PROMPT_LOGITS` и необходимостью получить logits.
-   Точное повторение на живом контексте и restore из checkpoint — разные пути.
-3. Полный пересчёт возникает при отсутствии других пригодных checkpoint.
-4. Correctness коротких, многобатчевых запросов и восстановления target/draft
-   не проверялась реализацией. Формулировка «незакрытых фактов нет» не принята.
+1. The 110–125 ms saving estimate is scenario-based, not a proven upper bound.
+   The increment of unique experts for 395 instead of 391 tokens has not been measured;
+   scaling the total kernel time by the 4/395 proportion is not justified.
+2. "Zero replayed tokens after restore" is not confirmed: it must be
+   reconciled with `TAG_PROMPT_LOGITS` and the need to obtain logits.
+   Exact replay on a live context and restore from a checkpoint are different paths.
+3. A full recomputation arises when there are no other usable checkpoints.
+4. The correctness of short, multi-batch requests and of target/draft restoration
+   was not verified by an implementation. The wording "there are no uncovered facts"
+   was not accepted.
 
-## Итог и границы решения
+## The outcome and the boundaries of the decision
 
-Игорь одобрил рекомендацию старшего помощника: сохранить текущие checkpoint.
-Небольшой неподтверждённый выигрыш prefill не оправдывает выявленную потерю
-точек восстановления. Для этого решения дополнительных запусков не требуется.
+Igor approved the senior helper's recommendation: keep the current checkpoints.
+The small unconfirmed prefill gain does not justify the identified loss of
+restore points. No additional runs are required for this decision.
 
-Runtime EXP-041, launcher, offload-порог, разбиение промпта и настройки
-checkpoint не изменяются. Влияние этой записи на RAM/VRAM и корректность
-исполнения — отсутствует. Сервер, модель, сборка и тесты при фиксации не
-запускались. Это отдельный вывод от ранее подготовленного EXP-044 про хвост 32.
-Следующий эксперимент не назначен. Разрешение на коммит этой записи отдельно
-не запрашивалось и коммит при её подготовке не выполнялся.
+The EXP-041 runtime, launcher, offload threshold, prompt split, and checkpoint
+settings are unchanged. This record's impact on RAM/VRAM and execution
+correctness is nil. The server, model, build, and tests were not launched when
+this was recorded. This is a conclusion separate from the earlier prepared EXP-044
+about the tail of 32. The next experiment is not assigned. Permission to commit
+this record was not requested separately, and no commit was made while preparing it.

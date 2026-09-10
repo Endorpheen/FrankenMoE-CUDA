@@ -1,15 +1,15 @@
 --- a/ggml/include/ggml-cpu.h	2026-09-07 19:57:13.144783300 +0300
 +++ b/ggml/include/ggml-cpu.h	2026-09-09 11:29:04.431634930 +0300
 @@ -148,6 +148,16 @@
-     // Менять обработчик во время исполнения графа нельзя.
+     // Do not change it while a graph runs.
      GGML_BACKEND_API void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data);
  
-+    // EXP-046: открытое окно означает, что вызывающий маркурует текущий батч как
-+    // target-verify фазы декодирования; само по себе окно кандидат не включает
-+    // (нужен GGML_CPU_IQ2S_FUSED=1, по умолчанию выключен; "0" тоже выключен).
++    // EXP-046: an open window means the caller marks the current batch as a
++    // target-verify phase of decoding; the window alone does not enable the candidate
++    // (GGML_CPU_IQ2S_FUSED=1 is also required, off by default; "0" also disables it).
 +    GGML_BACKEND_API void ggml_cpu_iq2s_fused_set_window(bool enabled);
 +
-+    // Счётчики диагностики: groups[4], fused_groups[4], tokens[4], calls,
++    // Diagnostics counters: groups[4], fused_groups[4], tokens[4], calls,
 +    // window_opens, fused_dispatches.
 +    GGML_BACKEND_API void ggml_cpu_iq2s_fused_stats_get(uint64_t * out16);
 +    GGML_BACKEND_API void ggml_cpu_iq2s_fused_stats_dump(void);
@@ -268,7 +268,7 @@
 +        // marking a target-decode batch; the guard never infers the phase from
 +        // the batch size alone.
 +
-         // Перед чтением строк даём внешнему стримеру дождаться нужного эксперта.
+         // Let the external streamer make the expert resident before its rows are read.
          if (g_expert_ready_hook) {
              g_expert_ready_hook(src0, cur_a, g_expert_ready_hook_data);
 @@ -1664,6 +1902,52 @@

@@ -1,140 +1,134 @@
-# EXP-2026-09-09-047 — отдельное число CPU-потоков для MTP-draft (A/B)
+# EXP-2026-09-09-047 — a separate CPU thread count for MTP-draft (A/B)
 
-- Status: `REJECTED` (`kind=model-ab`, 2026-09-09; задание старшего помощника;
-  approval Игоря на пары 1–2 (4 прогона) и, после первого доклада, прямое
-  распоряжение «еще по разу AB и BA» на пары 3–4; всего 8 серверных прогонов
-  одним днём, сбалансированный план 2 A→B + 2 B→A).
-- Гипотеза: однотокенный draft-проход split-MTP (1 слой MoE, батч 1 токен,
-  ~2 прохода на verify-шаг) тратит лишнее время на синхронизацию 12 CPU-потоков;
-  снижение числа потоков draft до 6 ускоряет подготовку предложенных токенов,
-  потенциально ≥2% decode. Target-verify остаётся на 12 потоках с принятым
-  fused IQ2_S. Это гипотеза, не обещанный прирост.
+- Status: `REJECTED` (`kind=model-ab`, 2026-09-09; the senior helper's assignment; Igor's
+  approval for pairs 1–2 (4 runs) and, after the first report, his direct instruction
+  «еще по разу AB и BA» ("one more A→B and one more B→A pair") for pairs 3–4; 8 server
+  runs in total within a single day, a balanced plan of 2 A→B + 2 B→A).
+- Hypothesis: the single-token split-MTP draft pass (1 MoE layer, a batch of 1 token,
+  ~2 passes per verify step) spends extra time synchronizing 12 CPU threads; lowering
+  the draft thread count to 6 speeds up the preparation of proposed tokens, potentially
+  ≥2% of decode. Target-verify stays on 12 threads with the accepted fused IQ2_S. This
+  is a hypothesis, not a promised gain.
 
-## Новизна (шаг 1)
+## Novelty (step 1)
 
-По истории не испытывалось: EXP-013 мерил `-t 12` vs `16/24/32` только для
-target-контекста; EXP-022/023/024 — источники и размещение draft (ngram,
-CPU-sidecar, split GPU); EXP-017/018 — процесс-глобальные OMP-политики.
-grep по всем карточкам (включая `experiments/rejected/`) по
-`threads-draft / n_threads_draft` — пусто.
+Not tested before per history: EXP-013 measured `-t 12` vs `16/24/32` only for the
+target context; EXP-022/023/024 — draft sources and placement (ngram, CPU-sidecar,
+split GPU); EXP-017/018 — process-global OMP policies. A grep over all cards (including
+`experiments/rejected/`) for `threads-draft / n_threads_draft` — empty.
 
-## Поддержка runtime (шаг 2)
+## Runtime support (step 2)
 
-Отдельная настройка существует в штатном бинарнике, пересборка не нужна:
+The separate setting exists in the stock binary; no rebuild is needed:
 
-- `common/arg.cpp:4070` — `--spec-draft-threads, -td N` (и `-tbd` для батчевых);
-  пишет только в `params.speculative.draft.cpuparams`.
-- `common/speculative.cpp:2517` — `common_base_params_to_speculative` копирует
-  target-параметры в draft-контекст и переопределяет их только при заданном
-  положительном `-td`; дефолт `common_cpu_params.n_threads = -1`
-  (`common/common.h:69`), поэтому без флага draft наследует 12.
-- `tools/server/server-context.cpp:1104,1128` — target-контекст строится из
-  `params_base` независимо и раньше draft-ветки; `-td` не может задеть target.
-- `src/llama-context.cpp:1444,2557` — `batched = ubatch.n_tokens > 1`:
-  однотокенные draft-проходы берут `n_threads` (`-td`), батчевые —
-  `n_threads_batch` (`-tbd`; при незаданном = `-td`, поэтому в руку B добавлен
-  `-tbd 12`, фиксирующий сегодняшнее эффективное значение).
+- `common/arg.cpp:4070` — `--spec-draft-threads, -td N` (and `-tbd` for the batch ones);
+  writes only to `params.speculative.draft.cpuparams`.
+- `common/speculative.cpp:2517` — `common_base_params_to_speculative` copies the target
+  parameters into the draft context and overrides them only when a positive `-td` is
+  given; the default is `common_cpu_params.n_threads = -1` (`common/common.h:69`), so
+  without the flag draft inherits 12.
+- `tools/server/server-context.cpp:1104,1128` — the target context is built from
+  `params_base` independently and before the draft branch; `-td` cannot affect target.
+- `src/llama-context.cpp:1444,2557` — `batched = ubatch.n_tokens > 1`: single-token
+  draft passes take `n_threads` (`-td`), batch ones `n_threads_batch` (`-tbd`; when
+  unset = `-td`, which is why arm B adds `-tbd 12`, pinning today's effective value).
 
-Нюанс активации: draft-контекст создаётся напрямую через
-`llama_init_from_model` (speculative.cpp:2609/2625) и своего числа потоков в
-лог не выводит; в server.log виден только threadpool target
-(`llama threadpool init, n_threads = 12`). Доказательство прокидки —
-вышеприведённая цепочка кода + отсутствие ошибок парсинга флагов.
+An activation nuance: the draft context is created directly via `llama_init_from_model`
+(speculative.cpp:2609/2625) and does not log its own thread count; server.log shows only
+the target threadpool (`llama threadpool init, n_threads = 12`). The proof of the
+plumbing is the code chain above + the absence of flag parsing errors.
 
-## Оценка доли draft до запуска (шаг 3, offline по сохранённым данным)
+## Pre-launch estimate of the draft share (step 3, offline from saved data)
 
-- Шаг decode (рука B EXP-046): 12224.26 мс / 115 verify-графов = 106.3 мс/шаг;
-  draft-проходов 234/115 ≈ 2.03, каждый 1 токен.
-- Стоимость прохода: ~37 MiB Q4_K_M на top-10 экспертов draft (EXP-024);
-  ориентир полосы — батчевый проход 45.1 мс / 391 строка (EXP-043, атрибуция
-  хвоста, п.6) ≈ 15 ГБ/с эффективных → 1.2–2.5 мс/строку + фиксированные
-  издержки 0.3–1 мс.
-- Доля draft ≈ 3–6% времени шага; потолок полного успеха ≈ +1.5–3% decode,
-  реалистичная оценка ≈ +1% — ниже порога 2%. Риск симметричен (потеря
-  стрим-пропускной на 6 потоках → −1–2%).
+- The decode step (EXP-046 arm B): 12224.26 ms / 115 verify graphs = 106.3 ms/step;
+  draft passes 234/115 ≈ 2.03, each 1 token.
+- Pass cost: ~37 MiB Q4_K_M for the top-10 draft experts (EXP-024); the bandwidth
+  reference — a batch pass of 45.1 ms / 391 rows (EXP-043, tail attribution, item 6)
+  ≈ 15 GB/s effective → 1.2–2.5 ms/row + fixed overhead of 0.3–1 ms.
+- Draft share ≈ 3–6% of step time; the full-success ceiling ≈ +1.5–3% of decode, a
+  realistic estimate ≈ +1% — below the 2% threshold. The risk is symmetric (a loss of
+  streaming throughput on 6 threads → −1–2%).
 
-Выбор одного значения: 6 (не 4) — dot draft bandwidth-bound; 4 ближе к режиму
-потери пропускной, 6 вдвое срезает OMP-команду при запасе по bandwidth.
-Перебор значений не проводился.
+The choice of one value: 6 (not 4) — the dot draft is bandwidth-bound; 4 is closer to
+the throughput-loss regime, 6 halves the OMP team while keeping bandwidth headroom. No
+sweep over values was performed.
 
-## Протокол
+## Protocol
 
-Против EXP-046: один бинарник `build/exp046-default-runtime/bin/llama-server`
-(sha256 `3b109f0f80e56e4b6631eba8cee451ea89b0cfe16e17ea0383cc324e5090c2ec`,
-libggml-cuda `59259256…`, libggml-cpu `98f2cd6c…`); argv пары EXP-046 дословно
-(см. `results/archive/EXP-2026-09-09-047/ab/env-argv.txt`), env чистый
-(fused IQ2_S ON по умолчанию, ring ON по умолчанию). Рука B = тот же argv +
-`--spec-draft-threads 6 --spec-draft-threads-batch 12`. Прогрев
-request-short.json (EXP-040) + измерение request-decode256.json
-(sha `5975261b…`, temp 0, n_predict 256, cache_prompt false), эндпоинт
-`/completion`, порт 8081, телеметрия 0.5 с `/proc/<pid>`. Порядок: пара 1
-A→B, пара 2 B→A (approval); пары 3 A→B и 4 B→A — по прямому распоряжению
-Игоря после первого доклада. Порог ≥2%.
+Against EXP-046: one binary `build/exp046-default-runtime/bin/llama-server` (sha256
+`3b109f0f80e56e4b6631eba8cee451ea89b0cfe16e17ea0383cc324e5090c2ec`, libggml-cuda
+`59259256…`, libggml-cpu `98f2cd6c…`); the argv of the EXP-046 pair verbatim (see
+`results/archive/EXP-2026-09-09-047/ab/env-argv.txt`), clean env (fused IQ2_S ON by
+default, ring ON by default). Arm B = the same argv + `--spec-draft-threads 6
+--spec-draft-threads-batch 12`. Warmup with request-short.json (EXP-040) + measurement
+with request-decode256.json (sha `5975261b…`, temp 0, n_predict 256, cache_prompt
+false), endpoint `/completion`, port 8081, telemetry every 0.5 s from `/proc/<pid>`.
+Order: pair 1 A→B, pair 2 B→A (approval); pairs 3 A→B and 4 B→A — per Igor's direct
+instruction after the first report. Threshold ≥2%.
 
-## Результаты
+## Results
 
-| Рука | Конфиг | decode tok/s | ms/256 | prompt tok/s | warmup tok/s |
+| Arm | Config | decode tok/s | ms/256 | prompt tok/s | warmup tok/s |
 |------|--------|--------------|--------|--------------|--------------|
-| A1 | draft 12 (унаслед.) | 15.90 | 16037.77 | 3.35 — аномалия | 9.02 |
+| A1 | draft 12 (inherited) | 15.90 | 16037.77 | 3.35 — anomaly | 9.02 |
 | B1 | draft 6 | 18.93 | 13472.06 | 34.79 | 16.04 |
 | B2 | draft 6 | 19.97 | 12770.26 | 35.62 | — |
-| A2 | draft 12 (унаслед.) | 20.14 | 12660.65 | 36.36 | — |
-| A3 | draft 12 (унаслед.) | 20.60 | 12381.35 | 37.77 | — |
+| A2 | draft 12 (inherited) | 20.14 | 12660.65 | 36.36 | — |
+| A3 | draft 12 (inherited) | 20.60 | 12381.35 | 37.77 | — |
 | B3 | draft 6 | 20.15 | 12654.15 | 36.02 | — |
 | B4 | draft 6 | 20.12 | 12675.29 | 36.86 | — |
-| A4 | draft 12 (унаслед.) | 20.28 | 12573.07 | 37.01 | — |
+| A4 | draft 12 (inherited) | 20.28 | 12573.07 | 37.01 | — |
 
-- Пара 1 (A→B): +19.1% — НЕинтерпретируема: рука A1 контаминирована
-  холодовой аномалией машины (prompt eval 3.35 tok/s — в ~10 раз ниже нормы,
-  прогрев 9.02 против 16.04 у B1; тот же класс аномалии, что pair1-A EXP-046,
-  где 16.45 было атрибутировано машине). В оценку не входит; B1 18.93
-  записан, но в чистые медианы рук не входит (рука шла сразу после
-  аномальной A1).
-- Чистые пары (одинаковый тёплый статус, подряд):
-  - пара 2 (B→A): B 19.97 → A 20.14, дельта кандидата **−0.85%**;
-  - пара 3 (A→B): A 20.60 → B 20.15, дельта **−2.18%**;
-  - пара 4 (B→A): B 20.12 → A 20.28, дельта **−0.79%**.
-- Медиана чистых пар **−0.85%**; B медленнее в **3/3** чистых пар
-  (односторонний знаковый тест p = 0.125). Независимые медианы чистых рук:
-  A {20.14, 20.60, 20.28} → 20.28; B {19.97, 20.15, 20.12} → 20.12 → **−0.79%**
-  (все четыре руки B: медиана 20.05 → −1.13%). Направление во всех
-  агрегациях против гипотезы, величина на границе/внутри дневного шума.
-- Руки A2–A4 (20.14–20.60) внутри исторического диапазона A EXP-046
-  (19.88–20.56, медиана 20.282 — совпадение до сотых); руки B2–B4
-  (19.97–20.15) ниже исторического B EXP-046 (20.64–20.87); междневное
-  сравнение не используется, вывод по внутри-дневным парам.
-- Порог ≥2% не достигнут; знак систематически отрицательный.
+- Pair 1 (A→B): +19.1% — NOT interpretable: arm A1 was contaminated by a machine cold
+  anomaly (prompt eval 3.35 tok/s — ~10 times below normal, warmup 9.02 vs 16.04 for
+  B1; the same class of anomaly as pair1-A of EXP-046, where 16.45 was attributed to
+  the machine). Not included in the estimate; B1's 18.93 is recorded but does not enter
+  the clean arm medians (the arm ran immediately after the anomalous A1).
+- Clean pairs (the same warm status, consecutive):
+  - pair 2 (B→A): B 19.97 → A 20.14, candidate delta **−0.85%**;
+  - pair 3 (A→B): A 20.60 → B 20.15, delta **−2.18%**;
+  - pair 4 (B→A): B 20.12 → A 20.28, delta **−0.79%**.
+- Median of the clean pairs **−0.85%**; B is slower in **3/3** clean pairs (one-sided
+  sign test p = 0.125). Independent medians of the clean arms: A {20.14, 20.60, 20.28}
+  → 20.28; B {19.97, 20.15, 20.12} → 20.12 → **−0.79%** (all four B arms: median
+  20.05 → −1.13%). The direction is against the hypothesis in all aggregations; the
+  magnitude is on the boundary of / within daily noise.
+- Arms A2–A4 (20.14–20.60) are inside the historical A range of EXP-046 (19.88–20.56,
+  median 20.282 — a match to hundredths); arms B2–B4 (19.97–20.15) are below the
+  historical B of EXP-046 (20.64–20.87); the cross-day comparison is not used, the
+  conclusion is by the intra-day pairs.
+- The ≥2% threshold was not reached; the sign is systematically negative.
 
-## Корректность (все 8 рук)
+## Correctness (all 8 arms)
 
-- 256/256, stop=limit; content sha256 `9270353f0601d5d660a61ee72b94ece46c5d7ed425321da8e88bd09f1abd9757`
-  идентичен во всех руках и совпадает с EXP-046.
-- Draft acceptance идентичен до цифры: измерение 0.58974 (138/234, mean 2.18),
-  прогрев 0.41964 (47/112, mean 1.84); graphs reused 56/171.
-- Ring staged 25326 calls / 25326 chunks в каждом прогоне.
-- VmSwap=0 во всех срезах телеметрии (руки B1/B2/A2/B3/A3/B4/A4);
-  телеметрия A1 по ошибке следила за bash-обёрткой запуска, а не за pid
-  сервера — VmSwap руки A1 телеметрически не подтверждён, косвенно:
-  watchdog-предупреждений в логе нет.
-- Чистые SIGINT (exit 0), сирот и CUDA-ошибок нет; VRAM-профиль неизменен.
+- 256/256, stop=limit; content sha256
+  `9270353f0601d5d660a61ee72b94ece46c5d7ed425321da8e88bd09f1abd9757` identical in all
+  arms and matching EXP-046.
+- Draft acceptance is identical to the digit: measurement 0.58974 (138/234, mean 2.18),
+  warmup 0.41964 (47/112, mean 1.84); graphs reused 56/171.
+- Ring staged 25326 calls / 25326 chunks in every run.
+- VmSwap=0 in all telemetry slices (arms B1/B2/A2/B3/A3/B4/A4); A1's telemetry by
+  mistake monitored the launch bash wrapper instead of the server pid — A1's VmSwap is
+  not confirmed telemetrically, indirectly: no watchdog warnings in the log.
+- Clean SIGINT (exit 0), no orphans and no CUDA errors; the VRAM profile is unchanged.
 
-## Вердикт и последствия
+## Verdict and consequences
 
-`REJECTED`: отдельное снижение числа CPU-потоков draft до 6 не ускоряет, а
-слегка замедляет decode (медиана чистых пар −0.85%, B медленнее в 3/3 чистых
-пар, независимые медианы −0.79%), что согласуется с offline-оценкой (доля
-draft ≈ 3–6% шага, потолок ≈ +1.5–3% при полном halving, реалистично +1%) и
-указывает на небольшую потерю стрим-пропускной на 6 потоках вместо выигрыша
-на синхронизации. Runtime не меняется: флаги `-td/-tbd` остаются доступными
-opt-in CLI-опциями upstream, в лаунчер не добавляются, дефолт (draft наследует
-`-t 12`) сохранён. Изменений кода нет; память не затронута.
+`REJECTED`: separately lowering the draft CPU thread count to 6 does not speed decode
+up but slightly slows it down (clean-pair median −0.85%, B slower in 3/3 clean pairs,
+independent medians −0.79%), which agrees with the offline estimate (draft share ≈
+3–6% of the step, ceiling ≈ +1.5–3% at full halving, realistically +1%) and indicates
+a small loss of streaming throughput on 6 threads instead of a synchronization win.
+The runtime does not change: the `-td/-tbd` flags remain available upstream as opt-in
+CLI options, are not added to the launcher, and the default (draft inherits `-t 12`)
+is preserved. No code changes; memory is not affected.
 
-Гипотеза закрыта: число потоков draft отдельно не настраивать (в сторону
-уменьшения проверено на 6 в 4 парах; перебор 4/8 не проводился — окно
-эффекта уже меньше порога, направление отрицательное).
+The hypothesis is closed: do not tune the draft thread count separately (downward was
+tested at 6 in 4 pairs; a 4/8 sweep was not performed — the effect window is already
+below the threshold, the direction is negative).
 
-## Артефакты
+## Artifacts
 
-`results/archive/EXP-2026-09-09-047/ab/` — env-argv.txt (полный протокол и
-хэши), pair1-A/, pair1-B/, pair2-B/, pair2-A/, pair3-A/, pair3-B/, pair4-B/,
-pair4-A/ (server.log, telemetry.txt, warmup.json, measured.json в каждом).
+`results/archive/EXP-2026-09-09-047/ab/` — env-argv.txt (the full protocol and hashes),
+pair1-A/, pair1-B/, pair2-B/, pair2-A/, pair3-A/, pair3-B/, pair4-B/, pair4-A/
+(server.log, telemetry.txt, warmup.json, measured.json in each).

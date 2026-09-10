@@ -1,185 +1,185 @@
-# Техническое задание локальному Qwen3.8 Flash Next
+# Task specification for the local Qwen3.8 Flash Next
 
-Дата подготовки: 2026-09-06; статус актуализирован после EXP-038. Исполнитель — локальный Qwen. Пользователь — Игорь. Общение и отчёты по-русски; code comments и commit messages по-английски.
+Prepared: 2026-09-06; status updated after EXP-038. The executor is the local Qwen. The user is Igor. Communication and reports in Russian; code comments and commit messages in English.
 
-## 0. Текущая точка продолжения — не повторять закрытые этапы
+## 0. Current continuation point — do not repeat closed stages
 
-- R0/EXP-034: `ACCEPTED`, committed in `1cf489a`. Закрыт; не выполнять снова.
-- R1/EXP-035: `ACCEPTED`, committed in `7e8b819`. Закрыт; не выполнять снова, включая synthetic/lifecycle/model smoke.
-- R2/EXP-036: `NOT_RUN_DUPLICATE`. Не создавать и не запускать: необходимые baseline/transfer measurements уже находятся в EXP-030–033.
-- R3/EXP-037: `ACCEPTED`, committed in `2c76446`. Закрыт; offline trace-анализ не повторять.
-- R4/EXP-038: `ACCEPTED` (`kind=performance`), ожидает отдельного commit approval. Формальный A/B уже выполнен: median prefill `+13,16%`, 5/5 пар, decode `+5,23%`, correctness/memory gates PASS. Не пересобирать и не повторять A/B.
-- R5/EXP-039: `NOT_RUN`/`DEFERRED`. Не начинать.
-- R6: единственный следующий этап после отдельного handoff и согласования запусков с Игорем.
+- R0/EXP-034: `ACCEPTED`, committed in `1cf489a`. Closed; do not run again.
+- R1/EXP-035: `ACCEPTED`, committed in `7e8b819`. Closed; do not run again, including synthetic/lifecycle/model smoke.
+- R2/EXP-036: `NOT_RUN_DUPLICATE`. Do not create or run: the necessary baseline/transfer measurements are already in EXP-030–033.
+- R3/EXP-037: `ACCEPTED`, committed in `2c76446`. Closed; do not repeat the offline trace analysis.
+- R4/EXP-038: `ACCEPTED` (`kind=performance`), awaiting separate commit approval. The formal A/B has already been performed: median prefill `+13.16%`, 5/5 pairs, decode `+5.23%`, correctness/memory gates PASS. Do not rebuild or repeat the A/B.
+- R5/EXP-039: `NOT_RUN`/`DEFERRED`. Do not start.
+- R6: the only next stage, after a separate handoff and agreeing on the runs with Igor.
 
-Разделы R0–R2 ниже сохранены только как историческое описание уже закрытого плана. Они не являются инструкцией к выполнению. При новом handoff всегда продолжать с текущего статуса в этом разделе и `ROADMAP.md`, а не с первого этапа документа.
+The R0–R2 sections below are kept only as a historical description of the already closed plan. They are not an instruction to execute. On a new handoff, always continue from the current status in this section and in `ROADMAP.md`, not from the first stage of the document.
 
-## 1. Цель и порядок чтения
+## 1. Goal and reading order
 
-Уменьшить реальное время обработки prompt в patched expert-tier server при сохранении качества, текущего warm decode и ограничений RAM/VRAM. Воспроизводимость, safety profile, offline transfer-анализ и основной R4 A/B уже закрыты; текущая работа начинается с R6 acceptance coverage. Не ускорять произвольный microbenchmark вместо пользовательского сценария.
+Reduce the real prompt processing time in the patched expert-tier server while preserving quality, the current warm decode, and the RAM/VRAM limits. Reproducibility, safety profile, offline transfer analysis, and the main R4 A/B are already closed; the current work starts with R6 acceptance coverage. Do not speed up an arbitrary microbenchmark in place of the user scenario.
 
-Прочитать в таком порядке:
+Read in this order:
 
-1. `AGENTS.md` — правила пользователя о запуске/коммитах, общении и полный handoff.
-2. `ROADMAP.md` — единственная актуальная очередь; фактическая точка продолжения R6.
-3. `docs/AUDIT-2026-09-06.md` — находки и история 000–033.
-4. Этот документ целиком; затем только записи, относящиеся к текущему этапу.
-5. `experiments/EXP-2026-09-05-030-bulk-prefill-cuda-path.md`, EXP-031/032/033, rejected EXP-033 patch — перед R3/R4.
+1. `AGENTS.md` — the user's rules about runs/commits and communication, and the full handoff.
+2. `ROADMAP.md` — the only current queue; the actual continuation point is R6.
+3. `docs/AUDIT-2026-09-06.md` — findings and the history of 000–033.
+4. This document in full; then only the entries related to the current stage.
+5. `experiments/EXP-2026-09-05-030-bulk-prefill-cuda-path.md`, EXP-031/032/033, rejected EXP-033 patch — before R3/R4.
 
-Не следовать старым «Next experiment», «P1 closed», «P6 closed» в историческом журнале, если они противоречат ROADMAP. Не переписывать отрицательные результаты под новую гипотезу.
+Do not follow old "Next experiment", "P1 closed", "P6 closed" entries in the historical log if they contradict the ROADMAP. Do not rewrite negative results to fit a new hypothesis.
 
-## 2. Неподвижные условия
+## 2. Fixed constraints
 
-- Только один эксперимент за раз, без параллельных моделей, benchmarks и CPU/CUDA builds. Не запускать дочерних агентов для исполнения экспериментов.
-- `work/llama.cpp-integration` и `build/expert-tier-franken-cuda` — пользовательские рабочие пути; не редактировать/пересобирать. Любой кандидат — отдельные `work/llama.cpp-expNNN-*` и `build/expNNN-*`.
-- Не делать `git reset --hard`, `git clean`, force checkout, force push, массовый restore/revert, stash чужих файлов. Не удалять failed attempts. `git add -A` запрещён; stage только явный allowlist после просмотра diff.
-- Не обновлять upstream, CUDA, compiler, model quantization, tokenization, chat template, top-k, EHS, context, batch sizes и thread counts как побочный эффект.
-- EHS=0, OpenMP ON, 12 threads, MTP `--spec-draft-n-max 2`. Не пробовать больший draft limit, CPU-only draft, ngram, 24/32 threads, PASSIVE/SPINCOUNT, старый CPU fused, madvise/warmer или single-buffer packed upload.
-- Не выполнять live eviction/madvise/DONTNEED для работающего CUDA server. Не создавать memory pressure/cgroup swap/OOM для тестирования watchdog. Не менять sysctl самостоятельно.
-- Измерения запускать вручную последовательно; существующие batch benchmark scripts не выполнять. Разрешена offline обработка уже завершённых результатов и согласованная telemetry одного server. Это не разрешение на фоновый нагрузочный процесс.
-- Перед стартом модели/сервера, включая tiny-model gate, сообщить Игорю цель, ожидаемую длительность и точное число запусков/запросов; дождаться явного «да», как требует `AGENTS.md`, Hard rule 1. Можно заранее согласовать целый конечный блок запусков; не спрашивать повторно в пределах неизменного согласованного блока. При расширении блока запросить новое согласование.
-- Перед commit показать outcome, memory impact, correctness и список файлов; commit только после approval по `AGENTS.md`, Hard rule 2. Подготовить reviewable diff до вопроса. Не считать разрешение на аудит разрешением на модель или commit.
-- Применять имеющиеся gitrules skills перед code comments/commit. Не менять языковые правила задним числом в пользовательских файлах.
+- Only one experiment at a time, no parallel models, benchmarks, or CPU/CUDA builds. Do not launch child agents to execute experiments.
+- `work/llama.cpp-integration` and `build/expert-tier-franken-cuda` are the user's working paths; do not edit/rebuild them. Any candidate gets separate `work/llama.cpp-expNNN-*` and `build/expNNN-*`.
+- Do not run `git reset --hard`, `git clean`, force checkout, force push, bulk restore/revert, or stash other people's files. Do not delete failed attempts. `git add -A` is forbidden; stage only an explicit allowlist after reviewing the diff.
+- Do not update upstream, CUDA, compiler, model quantization, tokenization, chat template, top-k, EHS, context, batch sizes, or thread counts as a side effect.
+- EHS=0, OpenMP ON, 12 threads, MTP `--spec-draft-n-max 2`. Do not try a larger draft limit, CPU-only draft, ngram, 24/32 threads, PASSIVE/SPINCOUNT, the old CPU fused, madvise/warmer, or single-buffer packed upload.
+- Do not perform live eviction/madvise/DONTNEED on a running CUDA server. Do not create memory pressure/cgroup swap/OOM to test the watchdog. Do not change sysctl on your own.
+- Run measurements manually and sequentially; do not run the existing batch benchmark scripts. Offline processing of already completed results and agreed telemetry of a single server are allowed. This is not permission for a background load process.
+- Before starting the model/server, including the tiny-model gate, tell Igor the goal, the expected duration, and the exact number of runs/requests; wait for an explicit «да» ("yes") as `AGENTS.md`, Hard rule 1, requires. A whole finite block of runs may be agreed in advance; do not ask again within an unchanged agreed block. When extending the block, request new approval.
+- Before a commit, show the outcome, memory impact, correctness, and the list of files; commit only after approval per `AGENTS.md`, Hard rule 2. Prepare a reviewable diff before asking. Do not treat permission to audit as permission for the model or a commit.
+- Apply the existing gitrules skills before code comments/commits. Do not change language rules retroactively in the user's files.
 
-## 3. Карточка эксперимента и протокол решения
+## 3. Experiment card and decision protocol
 
-До кода создать `experiments/EXP-<дата>-NNN-<name>.md` со статусом `PLANNED`, используя свободный номер не ниже 034. Номера roadmap — резерв смыслов: если заняты новой работой пользователя, сначала переименовать очередь документально.
+Before any code, create `experiments/EXP-<date>-NNN-<name>.md` with status `PLANNED`, using a free number no lower than 034. Roadmap numbers are a reserve of meanings: if they are taken by new user work, rename the queue in the documentation first.
 
-Карточка обязана содержать:
+The card must contain:
 
-- ровно одну проверяемую гипотезу и связь с предыдущим измерением;
+- exactly one testable hypothesis and the link to the previous measurement;
 - baseline source/patch/binary/libs SHA-256, CMake flags, argv/env, request SHA-256;
-- allowlist файлов, фаза inference, условие включения/выключения;
-- единственная основная переменная, метрика, заранее выбранный memory budget;
-- количество warmups/measured runs, контроль cache state, stop/accept/reject criteria;
-- какие результаты приведут к следующему этапу, какие закроют направление.
+- the file allowlist, inference phase, enable/disable condition;
+- the single primary variable, metric, pre-selected memory budget;
+- the number of warmups/measured runs, cache state control, stop/accept/reject criteria;
+- which results lead to the next stage and which close the direction.
 
-Статусы: `ACCEPTED` отдельно с `kind=performance|correctness|infrastructure`; `REJECTED` при отрицательном результате; `INCONCLUSIVE` при шуме/несопоставимости; `BLOCKED` при недоступной зависимости; `NOT_RUN` при провале design gate до запуска. Рабочий код сам по себе не основание ACCEPTED.
+Statuses: `ACCEPTED` separately with `kind=performance|correctness|infrastructure`; `REJECTED` for a negative result; `INCONCLUSIVE` for noise/non-comparability; `BLOCKED` for an unavailable dependency; `NOT_RUN` when a design gate fails before the run. Working code by itself is not grounds for ACCEPTED.
 
-Для performance основной gate — **снижение median prompt_ms ≥3%** относительно свежего A из того же протокола. Использовать пять пар, порядок A/B, B/A, A/B, B/A, A/B; считать `gain_i=100*(A_ms-B_ms)/A_ms`, median gain и median каждого arm. Не смешивать gain latency с gain tok/s. Не менее 4 из 5 пар должны выигрывать, median paired gain ≥3%; bootstrap 95% interval paired gain должен быть выше нуля. При малой выборке interval — вспомогательный, не доказательство широкой обобщаемости. Если естественный разброс сопоставим с эффектом или интервалы не позволяют вывод — INCONCLUSIVE, baseline не менять. Не увеличивать выборку до случайной победы: один заранее согласованный дополнительный блок до суммарных 10 пар допустим, затем остановиться.
+For performance the main gate is **a median prompt_ms reduction of ≥3%** relative to a fresh A from the same protocol. Use five pairs, order A/B, B/A, A/B, B/A, A/B; compute `gain_i=100*(A_ms-B_ms)/A_ms`, the median gain, and the median of each arm. Do not mix gain latency with gain tok/s. At least 4 of 5 pairs must win, median paired gain ≥3%; the bootstrap 95% interval of paired gain must be above zero. With a small sample the interval is auxiliary, not proof of broad generalizability. If the natural spread is comparable to the effect or the intervals do not allow a conclusion — INCONCLUSIVE, do not change the baseline. Do not increase the sample until a random win: one pre-agreed additional block up to 10 total pairs is allowed, then stop.
 
-Границы регрессий для нового transfer-only пути:
+Regression bounds for the new transfer-only path:
 
-- Warm decode median не хуже 2%; ухудшение >2% означает отклонение либо отдельную проверку шума до решения, не waiver.
-- Для secondary prompt lengths median latency не хуже 3%; нулевая терпимость к silent fallback вместо заявленного coverage.
-- VmSwap=0; нет CUDA errors, OOM, watchdog trips, partial copies, hangs, invalid output.
-- Новые buffers имеют жёсткий cap; после request/shutdown нет роста невысвобожденных ресурсов. Для R4 host budget 2×16 MiB = 32 MiB, metadata ≤1 MiB, device staging 0. RSS прирост сверх budget +32 MiB допуска измерений расследовать; для R5 отдельный cap ниже.
-- Согласованный baseline memory envelope остаётся одинаковым для A/B. Исторические 934 MiB headroom — наблюдение, не гарантия. Для новых allocations до performance определить доступный запас; если нехватка, остановиться, а не незаметно урезать context.
-- Early stop: correctness failure/OOM сразу; >10% latency degradation на сопоставимой exploratory pair — REJECTED без обязательных пяти пар. Первый request с cold file cache сам по себе не сопоставим с warm.
+- Warm decode median no worse than 2%; degradation >2% means rejection or a separate noise check before the decision, not a waiver.
+- For secondary prompt lengths, median latency no worse than 3%; zero tolerance for silent fallback instead of the declared coverage.
+- VmSwap=0; no CUDA errors, OOM, watchdog trips, partial copies, hangs, invalid output.
+- New buffers have a hard cap; after request/shutdown there is no growth in unreleased resources. For R4 the host budget is 2×16 MiB = 32 MiB, metadata ≤1 MiB, device staging 0. Investigate RSS growth beyond the budget +32 MiB measurement tolerance; for R5 a separate lower cap.
+- The agreed baseline memory envelope stays the same for A/B. The historical 934 MiB headroom is an observation, not a guarantee. For new allocations, determine the available margin before performance; if there is a shortage, stop rather than quietly cut the context.
+- Early stop: correctness failure/OOM immediately; >10% latency degradation on a comparable exploratory pair — REJECTED without the mandatory five pairs. The first request with a cold file cache is by itself not comparable to warm.
 
-Infrastructure/safety stages не обязаны ускорять модель: принимаются по точным функциональным gates. Изменения throughput не заявлять. Отказ сохраняет таблицу цифр и patch кандидата в rejected, если он полезен; working defaults остаются baseline.
+Infrastructure/safety stages are not required to speed up the model: they are accepted on precise functional gates. Do not claim throughput changes. A rejection keeps the table of numbers and the candidate patch in rejected if it is useful; working defaults remain at the baseline.
 
-## 4. R0 / EXP-034 — CLOSED, не выполнять повторно
+## 4. R0 / EXP-034 — CLOSED, do not run again
 
-Status: `ACCEPTED`, committed in `1cf489a`. Provenance, архив EXP-023–033, воспроизводимый MTP patch chain и isolated build уже проверены. Полная история находится в `experiments/EXP-2026-09-06-034-provenance.md`. Не повторять инвентаризацию, hashing, patch reconstruction или build.
+Status: `ACCEPTED`, committed in `1cf489a`. Provenance, the EXP-023–033 archive, the reproducible MTP patch chain, and the isolated build have already been verified. The full history is in `experiments/EXP-2026-09-06-034-provenance.md`. Do not repeat the inventory, hashing, patch reconstruction, or build.
 
-## 5. R1 / EXP-035 — CLOSED, не выполнять повторно
+## 5. R1 / EXP-035 — CLOSED, do not run again
 
-Status: `ACCEPTED`, committed in `7e8b819`. Units/thresholds watchdog, launcher lifecycle, synthetic boundaries и model smoke уже проверены. Полная история находится в `experiments/EXP-2026-09-06-035-watchdog-safety-profile.md`. Не повторять тесты и не запускать модель.
+Status: `ACCEPTED`, committed in `7e8b819`. Units/thresholds watchdog, launcher lifecycle, synthetic boundaries, and model smoke have already been verified. The full history is in `experiments/EXP-2026-09-06-035-watchdog-safety-profile.md`. Do not repeat the tests and do not launch the model.
 
-## 6. R2 / EXP-036 — NOT_RUN_DUPLICATE, не выполнять
+## 6. R2 / EXP-036 — NOT_RUN_DUPLICATE, do not run
 
-Отменён до запуска: EXP-030/031/032 уже содержат baseline и transfer measurements, EXP-033 — сопоставимый control и отклонённый candidate. Не создавать карточку, fixture, manifest или результаты EXP-036. Будущий performance-кандидат обязан иметь свежий control A внутри собственного A/B, но отдельный baseline experiment для этого не нужен.
+Cancelled before the run: EXP-030/031/032 already contain the baseline and transfer measurements, and EXP-033 a comparable control and a rejected candidate. Do not create an EXP-036 card, fixture, manifest, or results. A future performance candidate must have a fresh control A inside its own A/B, but a separate baseline experiment is not needed for that.
 
-## 7. R3 / EXP-037 — сначала существующие traces и dependency budget
+## 7. R3 / EXP-037 — existing traces and dependency budget first
 
-**Гипотеза:** существенная часть bulk-prefill latency связана с host submission/подготовкой pageable expert ranges, и bounded staging может сократить её без изменения графа. Здесь гипотеза проверяется аналитически, без реализации оптимизации.
+**Hypothesis:** a substantial part of bulk-prefill latency is tied to host submission/preparation of pageable expert ranges, and bounded staging can reduce it without changing the graph. Here the hypothesis is verified analytically, without implementing the optimization.
 
-**Области чтения:** `ggml/src/ggml-backend.cpp::ggml_backend_sched_compute_splits`, ветка `copy_experts`; `ggml/src/ggml-cuda/ggml-cuda.cu::ggml_backend_cuda_set_tensor_async`, `ggml-cuda/common.cuh` (context/pool/stream), scheduler events/allocator. EXP-033 patch читать как rejected evidence, не применять.
+**Reading areas:** `ggml/src/ggml-backend.cpp::ggml_backend_sched_compute_splits`, the `copy_experts` branch; `ggml/src/ggml-cuda/ggml-cuda.cu::ggml_backend_cuda_set_tensor_async`, `ggml-cuda/common.cuh` (context/pool/stream), scheduler events/allocator. Read the EXP-033 patch as rejected evidence, do not apply it.
 
-**Выход:** offline report/JSON и при необходимости маленький parser сохранённых traces. Сначала SQL read-only для EXP-031 SQLite, CUDA API↔activity correlationId. Сверить time origin server log и profiler; нельзя автоматически считать их timestamp одинаковым.
+**Output:** an offline report/JSON and, if needed, a small parser of saved traces. First SQL read-only on the EXP-031 SQLite, CUDA API↔activity correlationId. Cross-check the time origin of the server log and the profiler; their timestamps must not be automatically assumed identical.
 
-Нужна таблица отдельно для in-request bulk, tail и startup:
+A table is needed separately for in-request bulk, tail, and startup:
 
-- number/bytes copies, src memory kind по enum, stream IDs;
-- host cudaMemcpyAsync API durations (sum и union), device copy durations (sum и union), kernel union, copy/kernel intersection;
-- sync API durations, интервалы без CUDA work; не называть их CPU idle без CPU evidence;
+- number/bytes copies, src memory kind by enum, stream IDs;
+- host cudaMemcpyAsync API durations (sum and union), device copy durations (sum and union), kernel union, copy/kernel intersection;
+- sync API durations, intervals without CUDA work; do not call them CPU idle without CPU evidence;
 - sizes p50/p90/max, consecutive range counts, actual selection coverage;
-- места materialization IDs, allocator input reuse wait, copy enqueue, compute enqueue, last destination consumer.
+- IDs materialization locations, allocator input reuse wait, copy enqueue, compute enqueue, last destination consumer.
 
-Проверить, что exact adjacent ranges уже coalesced. Не делать новый «coalescing adjacent IDs» patch. Проверить предыдущие assertions про graph inputs на актуальном source: отследить реальную ветку, не полагаться на название tensor.
+Verify that exact adjacent ranges are already coalesced. Do not make a new "coalescing adjacent IDs" patch. Check the previous assertions about graph inputs against the current source: trace the real branch, do not rely on the tensor name.
 
-Предварительная оценка: суммарный GPU kernel time 0,439 s в 4,016 s request — даже полное скрытие этой суммы само по себе не обещает многократного ускорения. Добавленный CPU memcpy всех 21,64 GiB и memory bandwidth competition могут съесть весь эффект. Предсказать численно saved host critical time и added gather cost диапазоном, явно назвать неизвестные параметры. Cycle shares и timeline span не подставлять вместо wall critical path.
+Preliminary estimate: total GPU kernel time 0.439 s in a 4.016 s request — even fully hiding this sum does not by itself promise a multiple speedup. The added CPU memcpy of all 21.64 GiB and memory bandwidth competition can eat the entire effect. Predict the saved host critical time and the added gather cost numerically as a range, and explicitly name the unknown parameters. Do not substitute cycle shares and timeline span for the wall critical path.
 
-**Gate R4:** доказан pageable/host submission компонент, существует возможность подготовить chunk N+1 до completion N без снятия allocator barriers; ожидаемый net gain хотя бы 5% с запасом относительно порога 3%. Если saved trace не содержит параметра, разрешён только новый небольшой диагностический сигнал по отдельному согласованию: не повторять полную attribution EXP-031/032. Нет положительного бюджета — R4 NOT_RUN. **Gate R5:** карта реального независимого intra-layer window и ownership destination; без неё R5 NOT_RUN. Если оба gate отрицательны — P1 DEFERRED, завершить handoff без нового kernel/cache эксперимента.
+**Gate R4:** a pageable/host submission component is proven, there is a way to prepare chunk N+1 before completion N without removing allocator barriers; expected net gain of at least 5% with margin relative to the 3% threshold. If the saved trace lacks a parameter, only a new small diagnostic signal is allowed by separate agreement: do not repeat the full attribution of EXP-031/032. No positive budget — R4 NOT_RUN. **Gate R5:** a map of the real independent intra-layer window and destination ownership; without it R5 NOT_RUN. If both gates are negative — P1 DEFERRED, finish the handoff without a new kernel/cache experiment.
 
-## 8. R4 / EXP-038 — bounded host pinned ring, прямой upload
+## 8. R4 / EXP-038 — bounded host pinned ring, direct upload
 
-**Новизна:** EXP-033 делал whole-projection pack→device scratch→scatter и ожидал единственный host buffer. Этот опыт использует только два ограниченных host chunks и прямые async writes в прежние destination offsets. Никакого device scratch или scatter; число логических selected ranges не уменьшается как цель эксперимента.
+**Novelty:** EXP-033 did whole-projection pack→device scratch→scatter and expected a single host buffer. This effort uses only two bounded host chunks and direct async writes into the previous destination offsets. No device scratch or scatter; the number of logical selected ranges is not reduced as a goal of the experiment.
 
-**Allowlist isolated source:** `ggml/src/ggml-backend.cpp`, `ggml/src/ggml-cuda/ggml-cuda.cu`, при необходимости внутренний backend интерфейс `ggml/src/ggml-backend-impl.h`, точечный scheduler integration test. Если расширение optional interface нужно, явно инициализировать его во всех используемых backends; это часть совместимости, не разрешение менять их алгоритмы.
+**Allowlist isolated source:** `ggml/src/ggml-backend.cpp`, `ggml/src/ggml-cuda/ggml-cuda.cu`, if needed the internal backend interface `ggml/src/ggml-backend-impl.h`, a targeted scheduler integration test. If extending an optional interface is needed, explicitly initialize it in all backends used; that is part of compatibility, not permission to change their algorithms.
 
-**Baseline:** текущий принятый split-MTP runtime и свежий control A внутри самого EXP-038; отдельного R2 baseline нет. A/B выполняется в одном candidate binary с flag OFF/ON для timing, перед этим OFF должен пройти parity с clean reference. Flag default OFF; значение `0` действительно OFF, проверять значение, а не только наличие env. Название нового flag записать в карточку, например `GGML_EXPERT_PINNED_RING`.
+**Baseline:** the currently accepted split-MTP runtime and a fresh control A inside EXP-038 itself; there is no separate R2 baseline. The A/B runs in one candidate binary with the flag OFF/ON for timing; before that, OFF must pass parity with a clean reference. Flag default OFF; the value `0` really means OFF, check the value, not just the presence of the env. Record the new flag's name in the card, for example `GGML_EXPERT_PINNED_RING`.
 
-Алгоритм маленькими подэтапами, каждый с коротким handoff:
+The algorithm in small sub-steps, each with a short handoff:
 
-1. На CPU построить view списка уже имеющихся `copy_experts` ranges без новых IDs/router passes. Guard только проверенный bulk path (`MUL_MAT_ID`, host weights→CUDA, token dimension ≥32), не draft verify Ny≤3 и не four-token tail. Убедиться в смысле dimension на source/coverage.
-2. В context конкретного backend, без process-global mutable state, создать максимум два pinned host slots по 16 MiB. Инициализировать лениво вне повторяемой timed steady-state части через warmup; capacity не расти. Проверять successful pinned allocation; pageable fallback нельзя считать pinned success.
-3. Chunk range >16 MiB разбивать побайтно с сохранением адресов; сохранять исходные extra padding bytes `min(expert_size,512)` для не последнего expert. Не заполнять padding произвольными нулями вместо исходных bytes. Не делать операций quant/dequant и ID remap.
-4. Для slot: `FREE → CPU_FILL → H2D_IN_FLIGHT → FREE`. Перед overwrite slot ждать только его recorded completion event. После async enqueue на **существующем stream** записать event. CPU может заполнить второй slot, пока DMA читает первый. Source mapping остаётся живым во время CPU copy; pinned slot жив до завершения DMA.
-5. Не удалять scheduler sync/wait и не трогать allocator reuse. Все H2D chunks projection ставятся перед его MMQ consumer на том же stream. Не объявлять это H2D/MMQ overlap: на этом этапе проверяется host-fill/H2D overlap.
-6. При невозможности выделить slots/создать events до submission — отключить candidate path и выполнить обычный путь с понятным reason/counter. При ошибке после частичной submission — корректно дождаться/abort согласно backend contract; не продолжать compute на частично загруженных данных. Unsupported backend/shape остаётся прежним путём.
-7. В shutdown/reset/reallocation drain всех in-flight slot events до free. Нет host buffer reuse между независимыми contexts. Не использовать краткоживущий vector.data() для асинхронных метаданных без lifetime guarantee.
+1. On the CPU, build a view of the list of already existing `copy_experts` ranges without new IDs/router passes. Guard only the verified bulk path (`MUL_MAT_ID`, host weights→CUDA, token dimension ≥32), not draft verify Ny≤3 and not the four-token tail. Verify the meaning of the dimension on source/coverage.
+2. In a specific backend's context, without process-global mutable state, create at most two pinned host slots of 16 MiB each. Initialize lazily outside the repeatable timed steady-state part via warmup; do not grow capacity. Check for successful pinned allocation; a pageable fallback must not be counted as pinned success.
+3. Split a chunk range >16 MiB byte-for-byte while preserving addresses; keep the original extra padding bytes `min(expert_size,512)` for a non-last expert. Do not fill padding with arbitrary zeros instead of the original bytes. Do not do quant/dequant operations or ID remap.
+4. For a slot: `FREE → CPU_FILL → H2D_IN_FLIGHT → FREE`. Before overwriting a slot, wait only for its recorded completion event. After the async enqueue on an **existing stream**, record an event. The CPU can fill the second slot while DMA reads the first. The source mapping stays alive during the CPU copy; the pinned slot lives until the DMA completes.
+5. Do not remove scheduler sync/wait and do not touch allocator reuse. All H2D chunks of the projection are placed before its MMQ consumer on the same stream. Do not call this H2D/MMQ overlap: this stage verifies host-fill/H2D overlap.
+6. If slots cannot be allocated or events created before submission — disable the candidate path and take the regular path with a clear reason/counter. On an error after partial submission — correctly wait/abort per the backend contract; do not continue compute on partially loaded data. Unsupported backend/shape stays on the previous path.
+7. On shutdown/reset/reallocation, drain all in-flight slot events before free. No host buffer reuse between independent contexts. Do not use a short-lived vector.data() for asynchronous metadata without a lifetime guarantee.
 
-Correctness до performance:
+Correctness before performance:
 
-- Test-backend-ops для фактической CUDA build и relevant quantized MUL_MAT_ID shapes; дополнительно scheduler test host weights→CUDA с ≥32 tokens и explicit hit counter нового path.
-- Sparse/adjacent IDs, repeat IDs, expert 0/last, non-contiguous IDs strides, ranges на 16 MiB границе и больше, ≥3 slot cycles. Byte compare destination selected ranges/padding с reference после synchronize; sentinel guards вокруг destination, проверка source не изменён.
-- Flag OFF/no CUDA/alloc failure fallback; cancellation и shutdown с in-flight upload; последовательные requests меняют selected sets и graph shape. Tiny fixture должен активировать ring, не только direct CUDA resident kernel.
-- Одинаковый фиксированный 395+16 request в A/B, nonempty hash и tokens; MTP flags одинаковы. Расхождение — REJECTED/BLOCKED correctness, не «near tie» без исследования.
+- Test-backend-ops for the actual CUDA build and relevant quantized MUL_MAT_ID shapes; additionally a scheduler test host weights→CUDA with ≥32 tokens and an explicit hit counter for the new path.
+- Sparse/adjacent IDs, repeat IDs, expert 0/last, non-contiguous IDs strides, ranges at the 16 MiB boundary and beyond, ≥3 slot cycles. Byte-compare destination selected ranges/padding with the reference after synchronize; sentinel guards around the destination, verify the source is unchanged.
+- Flag OFF/no CUDA/alloc failure fallback; cancellation and shutdown with an in-flight upload; consecutive requests changing selected sets and graph shape. The tiny fixture must activate the ring, not only the direct CUDA resident kernel.
+- The same fixed 395+16 request in A/B, nonempty hash and tokens; MTP flags identical. A discrepancy is REJECTED/BLOCKED correctness, not a "near tie" without investigation.
 
-Затем согласованная exploratory пара с warmups; если gate не провален, пять formal pairs по разделу 3. На каждую leg fresh server, один warmup primary, один measured primary, один warmup decode, один measured decode; это 10 server starts и 40 requests на пять пар. Выполнять вручную, не параллельно. Если общий протокол изменён по времени согласования — заранее одинаково для обеих legs, новый manifest.
+Then an agreed exploratory pair with warmups; if the gate does not fail, five formal pairs per section 3. For each leg a fresh server, one warmup primary, one measured primary, one warmup decode, one measured decode; that is 10 server starts and 40 requests for the five pairs. Run manually, not in parallel. If the overall protocol has changed by the agreement time — apply it identically to both legs in advance, with a new manifest.
 
-Сохранить prompt_ms, decode timings, raw outputs, actual bytes/calls, GPU/RSS peaks, faults/read_bytes, temperatures. Host slot waits/gather counters собирать aggregate в отдельном diagnostic pass либо с одинаковым минимальным overhead, не per-copy printf в timed run. Причинное объяснение проверять отдельно от unprofiled speed.
+Save prompt_ms, decode timings, raw outputs, actual bytes/calls, GPU/RSS peaks, faults/read_bytes, temperatures. Collect host slot waits/gather counters in aggregate in a separate diagnostic pass or with identical minimal overhead, not per-copy printf in a timed run. Verify the causal explanation separately from the unprofiled speed.
 
-**ACCEPTED:** все gates и ≥3% end-to-end latency improvement. **REJECTED:** меньше calls или видимый overlap без gain, memory overrun, regressions. **После принятия:** R6 для данного кандидата. **После отказа:** сохранить patch/reason, вернуться к baseline; R5 только если собственный R3 design gate положителен, не как автоматическая попытка «ещё один buffer».
+**ACCEPTED:** all gates and ≥3% end-to-end latency improvement. **REJECTED:** fewer calls or visible overlap without gain, memory overrun, regressions. **After acceptance:** R6 for this candidate. **After rejection:** save the patch/reason, return to the baseline; R5 only if its own R3 design gate is positive, not as an automatic "one more buffer" attempt.
 
-## 9. R5 / EXP-039 — отдельный intra-layer transfer/compute overlap
+## 9. R5 / EXP-039 — separate intra-layer transfer/compute overlap
 
-Этот этап условный. Не начинать только потому, что R4 готов или отвергнут. Если R3 не доказал окно, завершить `NOT_RUN` с описанием отсутствующей зависимости. Не разрабатывать cross-layer predictor.
+This stage is conditional. Do not start it merely because R4 is done or rejected. If R3 did not prove the window, finish as `NOT_RUN` with a description of the missing dependency. Do not develop a cross-layer predictor.
 
-**Гипотеза:** при уже известных IDs одного слоя можно передавать веса независимой следующей projection, пока GPU вычисляет текущую, и выигрыш превышает цену событий и дополнительной памяти. Доступность IDs не означает, что scheduler destination ещё свободен.
+**Hypothesis:** with one layer's IDs already known, the weights of an independent next projection can be transferred while the GPU computes the current one, and the gain exceeds the price of the events and the extra memory. Availability of IDs does not mean the scheduler destination is free yet.
 
-**Allowlist:** тот же scheduler/CUDA boundary; context-owned stream/events и tests. Не менять MMQ kernel, graph математически, router, CPU scheduler или MTP. R4 может стать новым baseline только после его R6 приёмки; иначе сохраняется последний принятый runtime и для каждого кандидата снимается свежий control A без rejected кода.
+**Allowlist:** the same scheduler/CUDA boundary; context-owned stream/events and tests. Do not change the MMQ kernel, the graph mathematically, the router, the CPU scheduler, or MTP. R4 can become the new baseline only after its R6 acceptance; otherwise the last accepted runtime is kept and a fresh control A is taken for each candidate without rejected code.
 
-Обязательный design document до patch:
+A mandatory design document before the patch:
 
-1. По конкретным node names/source edges показать A compute, B copy и почему A не читает/пишет destination B. Отдельно показать production order gate/up/down; не предполагать фиксированный порядок по имени.
-2. Записать destination lifetime от allocator allocation до last consumer. Нельзя enqueue B в переиспользуемый buffer A. Если без новой выделенной памяти это невозможно, ограничить total дополнительную VRAM **128 MiB**; использовать chunks только если не требуется менять MMQ для их потребления. Если целая необходимая projection не помещается, gate FAIL → NOT_RUN, не увеличивать budget.
-3. Producer pinned slot остаётся жив до `copy_done`. Compute stream ждёт `copy_done` через device event; copy stream ждёт `last_use_done` перед destination overwrite. Host slot и device destination имеют разные lifetimes. Pool allocations с предположением одного stream не использовать на втором без доказанного event-safe ownership.
-4. Проверить CUDA graph capture/replay compatibility; нельзя сохранять в graph указатели на уже освобождённые slots или менять IDs binding между replays. Если корректность требует отключить CUDA graphs, это другая основная переменная — этот кандидат остановить, не подменять эксперимент.
-5. Fallback/reset/cancel/error drain обоих streams до free; backpressure при полном bounded pool; нет global device synchronize на каждом range как скрытого «решения» гонки.
+1. Using concrete node names/source edges, show A compute, B copy, and why A does not read/write B's destination. Show the production order of gate/up/down separately; do not assume a fixed order by name.
+2. Record the destination lifetime from allocator allocation to the last consumer. B must not be enqueued into A's reusable buffer. If that is impossible without newly allocated memory, limit the total additional VRAM to **128 MiB**; use chunks only if MMQ does not need to be changed to consume them. If an entire required projection does not fit, gate FAIL → NOT_RUN, do not increase the budget.
+3. The producer pinned slot stays alive until `copy_done`. The compute stream waits for `copy_done` via a device event; the copy stream waits for `last_use_done` before destination overwrite. The host slot and the device destination have different lifetimes. Do not use pool allocations made with a single-stream assumption on a second stream without proven event-safe ownership.
+4. Check CUDA graph capture/replay compatibility; the graph must not keep pointers to already freed slots or change IDs binding between replays. If correctness requires disabling CUDA graphs, that is a different primary variable — stop this candidate, do not swap the experiment.
+5. Fallback/reset/cancel/error drains both streams before free; backpressure when the bounded pool is full; no global device synchronize on every range as a hidden "solution" to the race.
 
-Сначала focused lifetime/race/byte tests из R4 плюс repeated CUDA graph replay и cancellation. Потом один отдельный diagnostic run доказывает реальное пересечение copy B и compute A на timeline, не только наличие второго stream. Нет overlap — REJECTED design. Потом unprofiled paired benchmark с тем же протоколом/gates. Выигрыш — R6; провал — закрыть эту реализацию и закончить P1 с baseline, не строить третий redesign самостоятельно.
+First the focused lifetime/race/byte tests from R4 plus repeated CUDA graph replay and cancellation. Then one separate diagnostic run proves the actual intersection of copy B and compute A on the timeline, not just the presence of a second stream. No overlap — REJECTED design. Then an unprofiled paired benchmark with the same protocol/gates. A win — R6; a failure — close this implementation and finish P1 with the baseline, do not build a third redesign on your own.
 
-## 10. R6 — принять только подтверждённый результат и доставить patch
+## 10. R6 — accept only a confirmed result and deliver the patch
 
-Это завершение текущего performance эксперимента, не право объединить другие идеи. Primary five pairs уже сделаны, не повторять их без причины.
+This is the completion of the current performance experiment, not a license to combine other ideas. The primary five pairs are already done, do not repeat them without a reason.
 
-1. Пять последовательных пар secondary short/long fixtures и warm decode, если соответствующий five-pair decode ещё не выполнен. Утвердить число запусков заранее. Измерять actual evaluated tokens, TTFT/request wall и памяти; cache policy одинаковая. TTFT streaming измерять отдельно, если primary `/completion` nonstream response не предоставляет её напрямую.
-2. Correctness последовательной сессии: short→long→short, prefix-cache path, MTP rejection/rollback и checkpoint restore, cancellation→next request, clean shutdown. Не выключать checkpoints ради результата. Concurrent aggregate benchmark P10 не запускать. Если новый state не проверен при нескольких slots, candidate остаётся scoped opt-in single-request до соответствующего gate, default multi-slot не менять.
-3. Если secondary regression >порогов — REJECTED общего default. Узкий opt-in допустим только с заранее определённым shape guard и повторной проверкой именно этого guard; не вырезать неудобный prompt из таблицы post hoc.
-4. Подготовить минимальный delivery patch поверх R0 package. Из новой isolated source проверить apply/build и focused correctness; не заменять пользовательский integration tree. Defaults до review сохраняются.
-5. Обновить experiment report, compact JSON, manifest, roadmap status и handoff. ACCEPTED performance требует цифр, memory envelope и correctness, а не только test pass. Для rejected аналогично сохранить before/after и reason, приложить patch по необходимости.
-6. Показать Игорю конкретный diff/list/results для commit approval. При ожидании approval статус реализации `VALIDATED_PENDING_COMMIT`, следующий эксперимент не начинать; не объявлять уже установленный daily default.
+1. Five consecutive pairs of secondary short/long fixtures and warm decode, if the corresponding five-pair decode has not been run yet. Approve the number of runs in advance. Measure actual evaluated tokens, TTFT/request wall, and memory; cache policy identical. Measure streaming TTFT separately if the primary `/completion` nonstream response does not provide it directly.
+2. Correctness of a sequential session: short→long→short, prefix-cache path, MTP rejection/rollback and checkpoint restore, cancellation→next request, clean shutdown. Do not turn off checkpoints for the sake of a result. Do not run the concurrent aggregate benchmark P10. If the new state is not verified with multiple slots, the candidate stays scoped opt-in single-request until the corresponding gate; do not change the default multi-slot behavior.
+3. If the secondary regression exceeds the thresholds — REJECTED for the general default. A narrow opt-in is allowed only with a pre-defined shape guard and a re-check of exactly that guard; do not cut an inconvenient prompt from the table post hoc.
+4. Prepare a minimal delivery patch on top of the R0 package. From the new isolated source, verify apply/build and focused correctness; do not replace the user's integration tree. Defaults stay unchanged until the review.
+5. Update the experiment report, compact JSON, manifest, roadmap status, and handoff. ACCEPTED performance requires numbers, memory envelope, and correctness, not just a test pass. For a rejected result, similarly keep before/after and the reason, attaching the patch as needed.
+6. Show Igor the concrete diff/list/results for commit approval. While waiting for approval the implementation status is `VALIDATED_PENDING_COMMIT`, do not start the next experiment; do not announce an already established daily default.
 
-Если все performance-кандидаты отклонены/NOT_RUN, итог корректен: «baseline сохранён, измеримого улучшения не найдено». Не реализовывать автоматически P2/P4/P5/P8/P9/P10, чтобы обязательно показать изменение.
+If all performance candidates are rejected/NOT_RUN, the outcome is valid: "baseline preserved, no measurable improvement found". Do not automatically implement P2/P4/P5/P8/P9/P10 just to necessarily show a change.
 
-## 11. Формат данных и handoff
+## 11. Data format and handoff
 
-Каждый JSON содержит `experiment_id`, `kind`, `status`, `baseline_id`, source/patch/binary/libs identity, argv/env, model/head/request hashes, attempts и exclusions, все per-run values, medians/paired deltas/spread, memory/correctness, decision и next_id. Для durations единицы ms, byte counters bytes либо явно MiB; counters cumulative переводить в delta окна. Не складывать cumulative `graphs reused` разных request snapshots.
+Each JSON contains `experiment_id`, `kind`, `status`, `baseline_id`, source/patch/binary/libs identity, argv/env, model/head/request hashes, attempts and exclusions, all per-run values, medians/paired deltas/spread, memory/correctness, decision, and next_id. For durations the unit is ms, byte counters in bytes or explicitly MiB; convert cumulative counters into window deltas. Do not add up cumulative `graphs reused` from different request snapshots.
 
-Raw имена уникальны, например `results/archive/EXP-.../pair-01-A-{server.log,response.json,monitor.csv}`. Старые results не перезаписывать. Не делить generated budget на время, если фактический count отличается; у llama timings проверить n vs n−1 convention. «Latency +63,4%» не равно «tok/s −63,4%».
+Raw names are unique, for example `results/archive/EXP-.../pair-01-A-{server.log,response.json,monitor.csv}`. Do not overwrite old results. Do not divide the generated budget by time if the actual count differs; for llama timings check the n vs n−1 convention. "Latency +63.4%" is not equal to "tok/s −63.4%".
 
-После каждого небольшого подэтапа кратко:
+After each small sub-step, briefly:
 
 ```text
-Проверено: <gate/coverage или причина NOT_RUN>
-Изменено: <точные файлы и единственная переменная>
-До → после: <метрики, единицы, n; если без benchmark — «не измерялось»>
-Вывод: <что данные доказывают и чего не доказывают>
-Решение: <ACCEPTED / REJECTED / INCONCLUSIVE / BLOCKED / NOT_RUN>
-Далее: <один конкретный пункт R# и ближайшее действие>
+Verified: <gate/coverage or the reason for NOT_RUN>
+Changed: <exact files and the single variable>
+Before → after: <metrics, units, n; if without a benchmark — "not measured">
+Conclusion: <what the data proves and what it does not prove>
+Decision: <ACCEPTED / REJECTED / INCONCLUSIVE / BLOCKED / NOT_RUN>
+Next: <one concrete R# item and the nearest action>
 ```
 
-После завершения эксперимента обязательно дополнить полным блоком «ПЕРЕДАЧА РАБОТЫ» из `AGENTS.md`: это требование файла, а не замена короткого отчёта. Обновить дату, branch/full SHA, dirty state, обязательные правила, current runtime, baseline, latest verdict/artifacts/hashes, последние commits, следующий experiment, risks, остаток P0–P11, ближайшее действие. Ни один новый этап не начинается из памяти диалога; только из сохранённого handoff и roadmap.
+After completing the experiment, be sure to follow up with the full «ПЕРЕДАЧА РАБОТЫ» (handoff report) block from `AGENTS.md`: this is a requirement of that file, not a replacement for the short report. Update the date, branch/full SHA, dirty state, mandatory rules, current runtime, baseline, latest verdict/artifacts/hashes, recent commits, next experiment, risks, the remaining P0–P11, and the nearest action. No new stage starts from conversation memory; only from the saved handoff and roadmap.

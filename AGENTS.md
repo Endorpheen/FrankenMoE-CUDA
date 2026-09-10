@@ -13,7 +13,11 @@ Non-negotiable. They are also carried verbatim into every handoff report.
    number of runs. Start only after an explicit "yes".
 2. Before every commit, show the results in plain words: outcome, memory
    impact, correctness, and the list of files. Commit only after approval.
-3. Comments and commit messages are in English.
+3. Comments, commit messages, and all repository documentation are in English.
+   Documentation means every tracked text artifact: experiment cards
+   (`experiments/*.md`), `experiments/EXPERIMENTS.md`, `ROADMAP.md`,
+   `docs/*.md`, patch READMEs, and any new notes or summaries. A Russian
+   version of any document is produced only when Igor explicitly asks for it.
 4. One experiment = one atomic commit.
 5. Never touch user changes in `work/llama.cpp-integration`.
 6. No destructive Git.
@@ -37,8 +41,9 @@ text, using simple numbered lists when structure is needed.
 
 All natural-language text visible to Igor must be in Russian. This includes
 reasoning shown by OpenCode, thought summaries, plans, action preambles, progress
-updates, explanations, questions, handoffs, and final answers. Use English only
-where the repository requires it or where translation would damage technical
+updates, explanations, questions, handoffs, and final answers. Chat replies stay
+in Russian even though repository documentation is English (rule 3). Use English
+only where the repository requires it or where translation would damage technical
 accuracy: source code, code comments, commit messages, commands, identifiers,
 paths, option names, and verbatim log excerpts. Before emitting a visible
 natural-language block, check that its explanatory sentences are in Russian.

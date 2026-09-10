@@ -1,313 +1,363 @@
-# EXP-2026-09-07-043 — что ограничивает prefill после pinned ring (ПРОТОКОЛ + STAGE2 РЕЗУЛЬТАТ)
+# EXP-2026-09-07-043 — what limits prefill after the pinned ring (PROTOCOL + STAGE2 RESULT)
 
-Статус: `STAGE2-DONE` (модельный профиль выполнен 2026-09-08, правило 1 согласовано, Igor остановил
-свой сервер; offline-атрибуция хвоста по сохранённой трассе — 2026-09-08, без новых запусков).
-**Диагноз: случай 1 — CPU gather-bound. Оснований переходить к limited-gap A (EXP-042)
-НЕТ** (A добавляет байты в gather и H2D, предсказанная экономия меньше потерь; арифметика ниже,
-обе величины — оценки, A/B не проводился).
-Побочное открытие: хвост 217,774 мс после последнего gather (≈8,5% окна) атрибутирован — это НЕ
-per-token draft: чекпойнт-брейк режет промпт 391+4, чекпойнт-сейв ~112,6 MiB стоит на критическом
-пути, draft идёт одним батчевым проходом (391 строка), а финальные 4 токена ствола считаются с
-CPU-экспертами (batch < 32). Подробности — «Атрибуция хвоста» и таблица диагноза ниже.
+Status: `STAGE2-DONE` (model profile completed 2026-09-08, rule 1 agreed, Igor stopped
+his own server; offline tail attribution from the saved trace — 2026-09-08, no new runs).
+**Diagnosis: case 1 — CPU gather-bound. There are NO grounds to move to limited-gap A
+(EXP-042)** (A adds bytes to gather and H2D, the predicted saving is smaller than the
+losses; arithmetic below, both values are estimates, no A/B was run).
+Side finding: the 217.774 ms tail after the last gather (≈8.5% of the window) has been
+attributed — it is NOT per-token draft: the checkpoint break cuts the prompt into 391+4,
+the ~112.6 MiB checkpoint save sits on the critical path, the draft runs as a single
+batched pass (391 rows), and the final 4 trunk tokens are computed with CPU experts
+(batch < 32). Details — "Tail attribution" and the diagnosis table below.
 
-STAGE1 (без модели, 2026-09-08 ночь): диагностический build собран и проверен безмодельно (harvest
-EXP-041): интервалы `expert_gather/submit/slotwait` видны в общей CUDA/NVTX-трассе, корректность
-харнесса сохранена (ring 9/9, sched sha идентичен), накладной расход примитивов ~38 нс/оп (~2,0 мс
-CPU-side верхняя граница на 395-token prefill, >100× ниже цели 3-5%). Артефакты:
-`results/archive/EXP-2026-09-07-043/` (патч `exp043-diag.patch`, `STAGE1-RESULTS.txt`, логи, probe).
+STAGE1 (model-free, night of 2026-09-08): the diagnostic build was compiled and verified
+model-free (harvest EXP-041): the `expert_gather/submit/slotwait` intervals are visible in
+the shared CUDA/NVTX trace, harness correctness is preserved (ring 9/9, sched sha
+identical), primitive overhead ~38 ns/op (~2.0 ms CPU-side upper bound on a 395-token
+prefill, >100× below the 3-5% target). Artifacts:
+`results/archive/EXP-2026-09-07-043/` (patch `exp043-diag.patch`, `STAGE1-RESULTS.txt`,
+logs, probe).
 
-## Вопрос
+## Question
 
-После принятия pinned ring (EXP-038..041, default-on) часть времени prefill всё ещё уходит на
-обслуживание множества отдельных H2D-передач или на что-то ещё. Различить три ограничения на
-текущем EXP-041 для сохранённого 395-token запроса:
+After the pinned ring was accepted (EXP-038..041, default-on), part of prefill time still
+goes to servicing many separate H2D transfers or to something else. Distinguish among
+three limitations on the current EXP-041 for the saved 395-token request:
 
-1. CPU занят gather-копированием весов в pinned slots.
-2. GPU реально недоедает из-за отставания submission/events/slot (starvation на GPU-timeline).
-3. Передачи упираются в достижимую полосу PCIe этого пути.
+1. The CPU is busy gather-copying weights into pinned slots.
+2. The GPU is genuinely starving because submission/events/slot lag behind (starvation on
+   the GPU timeline).
+3. The transfers hit the achievable PCIe bandwidth of this path.
 
-Логика решения: проверять limited-gap A (EXP-042, ≤512 KiB) только если подтверждён случай 2 —
-то есть GPU-таймлайн показывает недоедание, снимаемое уменьшением числа вызовов. Случаи 1 и 3
-означают лишь «оснований переходить к A пока нет» (A добавляет байты и gather). Иное расположение
-задержки даёт новую цель оптимизации.
+Decision logic: test limited-gap A (EXP-042, ≤512 KiB) only if case 2 is confirmed — that
+is, the GPU timeline shows starvation that is removed by reducing the number of calls.
+Cases 1 and 3 mean only "no grounds to move to A yet" (A adds bytes and gather). A
+different location of the delay yields a new optimization target.
 
-## Инструменты (схема B, доработанная)
+## Tools (scheme B, refined)
 
-A. nsys CUDA tracing (GPU-сторона):
+A. nsys CUDA tracing (GPU side):
    `nsys profile -o exp043prefill -t cuda,nvtx --force-overwrite true bash scripts/run_qwen38_server.sh`
-   затем одиночный сохранённый 395-token запрос (`.../exp032-h2d-ts/request.json`), SIGINT;
-   `nsys export --type sqlite`. Извлечение внутри явного окна запроса (см. ниже): GPU `Memcpy HtoD`
-   (count/bytes/union busy -> полоса), GPU idle-интервалы и их положение, API `cudaMemcpyAsync`/
-   `cudaEventRecord`/`cudaEventSynchronize`/`cudaStreamSynchronize`.
+   then a single saved 395-token request (`.../exp032-h2d-ts/request.json`), SIGINT;
+   `nsys export --type sqlite`. Extraction inside an explicit request window (see below):
+   GPU `Memcpy HtoD` (count/bytes/union busy -> bandwidth), GPU idle intervals and their
+   position, API `cudaMemcpyAsync`/`cudaEventRecord`/`cudaEventSynchronize`/
+   `cudaStreamSynchronize`.
 
-B. Диагностический build `build/exp043-diag` (отдельный каталог; рабочий не трогается) с РАЗМЕТКОЙ
-   ИНТЕРВАЛАМИ, а не только суммами. В `ggml_backend_cuda_set_tensor_async_pinned_ring`:
-   - NVTX-ранж `expert_gather` вокруг `memcpy` в слот;
-   - NVTX-ранж `expert_submit` вокруг `cudaMemcpyAsync`;
-   - NVTX-ранж `expert_slotwait` вокруг `cudaEventSynchronize` при переиспользовании слота;
-   - NVTX-ранж `expert_prefill` (start/end) вокруг всего исследуемого prefill (маркеры окна).
-   Дополнительно дёшево накапливать `gather_ns/submit_ns/slot_wait_ns` и `calls/chunks` для сводки.
-   Ключевое: интервалы gather/submit/slotwait попадают в общую CUDA-трассу и СОПОСТАВЛЯЮТСЯ с
-   GPU-timeline (idle-интервалы GPU против ранжей на CPU-потоке). Это то, что нужно для случаев 1/2.
+B. Diagnostic build `build/exp043-diag` (separate directory; the working one is not
+   touched) with INTERVAL ANNOTATION, not only sums. In
+   `ggml_backend_cuda_set_tensor_async_pinned_ring`:
+   - NVTX range `expert_gather` around the `memcpy` into the slot;
+   - NVTX range `expert_submit` around `cudaMemcpyAsync`;
+   - NVTX range `expert_slotwait` around `cudaEventSynchronize` on slot reuse;
+   - NVTX range `expert_prefill` (start/end) around the entire prefill under study
+     (window markers).
+   Additionally, cheaply accumulate `gather_ns/submit_ns/slot_wait_ns` and `calls/chunks`
+   for the summary.
+   Key point: the gather/submit/slotwait intervals land in the shared CUDA trace and are
+   CORRELATED with the GPU timeline (GPU idle intervals vs ranges on the CPU thread).
+   This is what is needed for cases 1/2.
 
-   Стоимость разметки учитывается: перед модельным прогоном на безмодельном харнессе EXP-041 мерить
-   оверхед NVTX+`clock_gettime` относительно времени gather; если оверхед сопоставим с gather —
-   сужать разметку (например, только gather) либо отказаться от неё в пользу оконного анализа GPU.
+   Annotation cost is accounted for: before the model run, measure the
+   NVTX+`clock_gettime` overhead against gather time on the model-free EXP-041 harness;
+   if the overhead is comparable to gather, narrow the annotation (for example, gather
+   only) or drop it in favor of GPU window analysis.
 
-   Подтверждение реализуемости (offline, выполнено): `nsys profile -t nvtx` пишет NVTX-ранжи в
-   таблицу `NVTX_EVENTS` (тестовый зонд дал 5/5 интервалов). Значит интервальная схема работает на
-   этой машине; сборка `-t cuda,nvtx` обязательна.
+   Feasibility confirmation (offline, done): `nsys profile -t nvtx` writes NVTX ranges
+   into the `NVTX_EVENTS` table (the test probe produced 5/5 intervals). So the interval
+   scheme works on this machine; the `-t cuda,nvtx` profile is mandatory.
 
-C. CPU sampling (`nsys --sample=cpu`, `perf`) НЕ является равноценной заменой интервалам из B:
-   он даёт лишь распределение CPU по символам, без привязки пауз к GPU-timeline. Дополнительно
-   заблокирован в текущем окружении (`perf_event_paranoid=4`). Поэтому C не применяется; схема B
-   покрывает CPU gather интервалами.
+C. CPU sampling (`nsys --sample=cpu`, `perf`) is NOT an equivalent replacement for the
+   intervals from B: it gives only the CPU distribution over symbols, without tying
+   pauses to the GPU timeline. It is also blocked in the current environment
+   (`perf_event_paranoid=4`). Therefore C is not used; scheme B covers CPU gather with
+   intervals.
 
-## Окно исследуемого prefill (явное)
+## The window of the prefill under study (explicit)
 
-- Начало/конец окна задаются NVTX-ранжем `expert_prefill` (или серверными маркерами request
-  start/complete), а НЕ «первой H2D». Окно стартует ДО первого gather, чтобы захватить подготовку
-  и первый gather (отсечка по первой H2D их теряет).
-- Политика prompt cache: `cache_prompt=false`, чтобы повторный запрос реально вычислял промпт
-  (иначе expert-копий будет меньше/не будет — окно неверно). Проверить по серверному логу, что
-  промпт обработан (prompt eval), а не взят из кэша.
-- Число экспертных H2D в окне ≈ 17 886 — контроль соответствия старому workload, а не жёсткое
-  правило; отклонение объясняется (параметры/кэш), а не автоматически «окно неверно».
+- The window start/end is defined by the NVTX range `expert_prefill` (or by server
+  request start/complete markers), NOT by the "first H2D". The window starts BEFORE the
+  first gather, to capture the preparation and the first gather (cutting at the first H2D
+  loses them).
+- Prompt cache policy: `cache_prompt=false`, so that the repeated request actually
+  computes the prompt (otherwise there will be fewer/no expert copies — the window is
+  wrong). Check in the server log that the prompt was processed (prompt eval), not taken
+  from cache.
+- The number of expert H2D copies in the window ≈ 17 886 — a consistency check against
+  the old workload, not a hard rule; a deviation is explained (parameters/cache) rather
+  than automatically meaning "the window is wrong".
 
-## Метрики и пороги
+## Metrics and thresholds
 
-- PCIe: фиксировать ФАКТУАЧЕСКИ согласованные gen/width линка (`nvidia-smi ...pcie.link.*`; сейчас
-  observed gen4 x16) и достижимую полосу пути — пиковую полосу крупных H2D из самой трассы. НЕ
-  использовать жёсткий «80% теоретического». Значение ниже теоретического потолка само по себе НЕ
-  исключает ограничения передачами; насыщение утверждается только если GPU H2D busy занимает окно
-  и добавление байтов линейно удлинит окно (нет idle-запаса).
-- GPU starvation: idle-интервалы GPU внутри окна; сопоставить с ранжами `expert_gather`/
-  `expert_slotwait` на CPU-потоке. Большой `cudaEventSynchronize` сам по себе НЕ доказательство
-  дороговизны обслуживания вызовов: CPU может ждать слота, пока GPU штатно выполняет предыдущие
-  копии/kernels на том же stream. Случай 2 только если GPU idle НЕ объясняется нормальным конвейером
-  и снимается уменьшением числа вызовов.
+- PCIe: record the ACTUALLY negotiated link gen/width (`nvidia-smi ...pcie.link.*`;
+  currently observed gen4 x16) and the achievable path bandwidth — the peak bandwidth of
+  large H2D transfers from the trace itself. Do NOT use a hard "80% of theoretical". A
+  value below the theoretical ceiling by itself does NOT rule out a transfer limitation;
+  saturation is asserted only if GPU H2D busy fills the window and adding bytes linearly
+  lengthens the window (no idle headroom).
+- GPU starvation: GPU idle intervals inside the window; correlate them with the
+  `expert_gather`/`expert_slotwait` ranges on the CPU thread. A large
+  `cudaEventSynchronize` by itself is NOT proof that call servicing is expensive: the CPU
+  may be waiting for a slot while the GPU is routinely executing previous copies/kernels
+  on the same stream. Case 2 only if the GPU idle is NOT explained by the normal pipeline
+  and is removed by reducing the number of calls.
 
-| Наблюдение (в явном окне) | Диагноз | Действие |
+| Observation (in the explicit window) | Diagnosis | Action |
 |---|---|---|
-| GPU H2D busy ≈ окно, полоса близка к достижимой, idle-запаса нет | 3 PCIe | оснований переходить к A пока нет |
-| gather-ранжи на CPU-потоке занимают окно, GPU idle совпадает с gather | 1 gather | оснований переходить к A пока нет |
-| GPU idle не объясняется нормальным конвейером; снимается уменьшением числа вызовов | 2 submission/events/slot | основание проверить limited-gap A |
-| задержка вне H2D (MMQ kernels, dense, router) | прочее | новая цель, A не при чём |
+| GPU H2D busy ≈ window, bandwidth close to achievable, no idle headroom | 3 PCIe | no grounds to move to A yet |
+| gather ranges on the CPU thread fill the window, GPU idle coincides with gather | 1 gather | no grounds to move to A yet |
+| GPU idle not explained by the normal pipeline; removed by reducing the number of calls | 2 submission/events/slot | grounds to test limited-gap A |
+| delay outside H2D (MMQ kernels, dense, router) | other | new target, A is beside the point |
 
-## Правила прогона (будущий запуск, по правилу 1)
+## Run rules (future launch, per rule 1)
 
-- Сначала безмодельная проверка: собрать `build/exp043-diag`, прогнать на безмодельном харнессе
-  EXP-041, убедиться, что NVTX-ранжи gather/submit/slotwait/prefill видны в `NVTX_EVENTS` и что
-  оверхед разметки пренебрежим. Это ДО модельного запуска.
-- Затем ОДИН согласованный модельный профиль: один прогревочный запрос + один исследуемый 395-token
-  запрос (`cache_prompt=false`), строго последовательно.
-- Второй прогон — только при конкретной неопределённости первого (например, окно не изолировался или
-  оверхед съел сигнал). «Максимум три для воспроизводимости» не обоснован и не планируется.
-- Профилируемые wall-тайминги — не performance-заявка. Артефакты в `results/archive/EXP-2026-09-07-043/`:
-  SQL окна (по образцу `EXP-037/analysis.sql`), `offline-results.txt`, логи счётчиков/NVTX, `PROTOCOL.md`.
+- First a model-free check: build `build/exp043-diag`, run it on the model-free EXP-041
+  harness, make sure the gather/submit/slotwait/prefill NVTX ranges are visible in
+  `NVTX_EVENTS` and that the annotation overhead is negligible. This is BEFORE the model
+  run.
+- Then ONE agreed model profile: one warmup request + one 395-token request under study
+  (`cache_prompt=false`), strictly sequential.
+- A second run — only given a specific uncertainty in the first (for example, the window
+  did not isolate or the overhead ate the signal). "At most three for reproducibility" is
+  not justified and is not planned.
+- Profiled wall timings are not a performance claim. Artifacts in
+  `results/archive/EXP-2026-09-07-043/`: window SQL (modeled on `EXP-037/analysis.sql`),
+  `offline-results.txt`, counter/NVTX logs, `PROTOCOL.md`.
 
-## Артефакты пред-флайта (offline, уже выполнено)
+## Pre-flight artifacts (offline, already done)
 
-- Модель-free харнесс EXP-041 под `nsys -t cuda`: видны H2D (`CUPTI_ACTIVITY_KIND_MEMCPY`) и event API
-  (`cudaMemcpyAsync`/`cudaEventRecord`/`cudaEventSynchronize`); CPU-сэмплов нет (`perf_event_paranoid=4`)
-  — отсюда переход к интервальной схеме B.
-- Зонд NVTX под `nsys -t nvtx`: 5/5 интервалов в `NVTX_EVENTS` — интервальная gather-разметка реализуема.
-- Всё это — во временных каталогах, в репозиторий не кладётся.
+- The model-free EXP-041 harness under `nsys -t cuda`: H2D
+  (`CUPTI_ACTIVITY_KIND_MEMCPY`) and event API
+  (`cudaMemcpyAsync`/`cudaEventRecord`/`cudaEventSynchronize`) are visible; there are no
+  CPU samples (`perf_event_paranoid=4`) — hence the move to interval scheme B.
+- NVTX probe under `nsys -t nvtx`: 5/5 intervals in `NVTX_EVENTS` — interval gather
+  annotation is feasible.
+- All of this lives in temporary directories and is not put into the repository.
 
-## Что уже сделано локальным агентом (STAGE1, без модели)
+## What the local agent has already done (STAGE1, model-free)
 
-- Диагн. build `build/exp043-diag` собран; патч `results/archive/EXP-2026-09-07-043/exp043-diag.patch`
-  (3 файла: `common.cuh` — 3 счётчика после `curr_stream_no`; `ggml-cuda.cu` — NVTX-ранжи
-  `expert_gather/submit/slotwait` + счётчики `*_ns` + teardown-лог; `ggml-cuda/CMakeLists.txt` —
-  `libnvToolsExt` через `-Wl,--no-as-needed`). Env-gate: `GGML_EXPERT_DIAG=1` включает.
-- Безмодельная проверка пройдена: ring 9/9 PASS (DIAG=1 и без), sched sha `39505119…e91510` (равен
-  принятому EXP-041). NVTX-ранжи видны в `NVTX_EVENTS` (gather 8 / slotwait 6 / submit 8).
-- Оверхед примитивов измерен (`tests/ovh_probe.c`): ~38 нс/оп, верхняя граница ~2,0 мс CPU-side на
-  395-token prefill. Облегчать схему не нужно.
-- НЕ сделано (намеренно): маркеры окна `expert_prefill` и модельный профиль.
+- The diag. build `build/exp043-diag` is compiled; patch
+  `results/archive/EXP-2026-09-07-043/exp043-diag.patch` (3 files: `common.cuh` — 3
+  counters after `curr_stream_no`; `ggml-cuda.cu` — NVTX ranges
+  `expert_gather/submit/slotwait` + `*_ns` counters + a teardown log;
+  `ggml-cuda/CMakeLists.txt` — `libnvToolsExt` via `-Wl,--no-as-needed`). Env gate:
+  `GGML_EXPERT_DIAG=1` enables it.
+- Model-free check passed: ring 9/9 PASS (with DIAG=1 and without), sched sha
+  `39505119…e91510` (equal to the accepted EXP-041). NVTX ranges visible in
+  `NVTX_EVENTS` (gather 8 / slotwait 6 / submit 8).
+- Primitive overhead measured (`tests/ovh_probe.c`): ~38 ns/op, upper bound ~2.0 ms
+  CPU-side on a 395-token prefill. No need to lighten the scheme.
+- NOT done (deliberately): the `expert_prefill` window markers and the model profile.
 
-## STAGE2 — задание для другого агента (модельный профиль)
+## STAGE2 — assignment for another agent (model profile)
 
-Порядок строгий; модель не трогать без отдельного блока правила 1 (цель/длительность/число запусков)
-и явного «да» от Igor.
+The order is strict; do not touch the model without a separate rule-1 block
+(goal/duration/number of runs) and an explicit «да» ("yes") from Igor.
 
-1. Взять тот же diag-патч на базе принятого EXP-041 (`work/llama.cpp-exp041`), собрать свой
-   `build/exp043-diag` (Release, `GGML_CUDA=ON`, arch 89). Проверить `ldd libggml-cuda.so | grep
-   nvTools` — должен быть `libnvToolsExt.so.1` (иначе NVTX не пишется; см. --no-as-needed в патче).
-2. ДО модели — повторить безмодельную проверку харнессом EXP-041: ring PASS + `NVTX_EVENTS` содержит
-   `expert_gather/submit/slotwait`. Это шлюз перед моделью.
-3. Маркеры окна `expert_prefill` (ещё НЕ в патче). Поставить NVTX range, ограничивающий обработанный
-   промпт ЦЕЛИКОМ, старт ДО первого gather:
-   - предпочтительно на уровне llama-server: обёртка вокруг eval-фазы промпта (prompt eval) — push при
-     входе в оценку промпта, pop по её завершении; тот же `nvtxRangePushA/Pop` API, env-gate по
-     `GGML_EXPERT_DIAG`.
-   - либо на уровне `ggml-backend` sched: `nvtxRangeStart` при первой постановке expert-копий сплита,
-     `nvtxRangeEnd` по завершении последнего слота запроса (следить, чтобы ранж покрывал ВСЕ сплиты
-     одного промпта, а не каждый отдельно).
-   - Проверка корректности окна: в трассе ровно одно широкое окно `expert_prefill` на исследуемый
-     запрос; внутри него ровно один всплеск expert_gather/submit; счётчик H2D-копий в окне ≈ 17 886.
-4. Сервер: запуск с тем же 395-token workload, `cache_prompt=false`; в серверном логу убедиться, что
-   был prompt eval (промпт вычислен), а не попадание в кэш.
-5. Профиль: `nsys profile -t cuda,nvtx -o exp043-model --force-overwrite true <server...>`, затем
-   ОДИН прогревочный + ОДИН исследуемый запрос строго последовательно. Второй прогон — только при
-   конкретной неопределённости первого.
-6. Экспорт/анализ: `nsys export --type sqlite`, затем SQL окна по образцу `EXP-037/analysis.sql`:
-   внутри окна `expert_prefill` сопоставить GPU H2D busy (по `CUPTI_ACTIVITY_KIND_MEMCPY`) с ранжами
-   `expert_gather`/`expert_slotwait` на CPU-потоке и найти GPU idle. Заполнить таблицу диагноза
-   (раздел «Метрики и пороги»).
-7. Артефакты в `results/archive/EXP-2026-09-07-043/`: `analysis.sql`, `offline-results.txt`, логи
-   сервера/NVTX/счётчиков, обновить статус карточки. Бинарники модели/sqlite/nsys-rep в git НЕ класть.
+1. Take the same diag patch based on the accepted EXP-041 (`work/llama.cpp-exp041`),
+   build your own `build/exp043-diag` (Release, `GGML_CUDA=ON`, arch 89). Check
+   `ldd libggml-cuda.so | grep nvTools` — it must show `libnvToolsExt.so.1` (otherwise
+   NVTX is not written; see --no-as-needed in the patch).
+2. BEFORE the model — repeat the model-free check with the EXP-041 harness: ring PASS +
+   `NVTX_EVENTS` contains `expert_gather/submit/slotwait`. This is the gate before the
+   model.
+3. Window markers `expert_prefill` (still NOT in the patch). Place an NVTX range that
+   bounds the processed prompt IN ITS ENTIRETY, starting BEFORE the first gather:
+   - preferably at the llama-server level: a wrapper around the prompt eval phase (prompt
+     eval) — push on entering prompt evaluation, pop when it completes; the same
+     `nvtxRangePushA/Pop` API, env gate on `GGML_EXPERT_DIAG`.
+   - or at the `ggml-backend` sched level: `nvtxRangeStart` at the first enqueue of a
+     split's expert copies, `nvtxRangeEnd` when the request's last slot completes (make
+     sure the range covers ALL splits of one prompt, not each one separately).
+   - Window correctness check: exactly one wide `expert_prefill` window in the trace for
+     the request under study; exactly one burst of expert_gather/submit inside it; the
+     H2D-copy count in the window ≈ 17 886.
+4. Server: launch with the same 395-token workload, `cache_prompt=false`; make sure in
+   the server log that there was a prompt eval (the prompt was computed), not a cache
+   hit.
+5. Profile: `nsys profile -t cuda,nvtx -o exp043-model --force-overwrite true
+   <server...>`, then ONE warmup + ONE request under study, strictly sequential. A second
+   run — only given a specific uncertainty in the first.
+6. Export/analysis: `nsys export --type sqlite`, then window SQL modeled on
+   `EXP-037/analysis.sql`: inside the `expert_prefill` window, correlate GPU H2D busy
+   (from `CUPTI_ACTIVITY_KIND_MEMCPY`) with the `expert_gather`/`expert_slotwait` ranges
+   on the CPU thread and find GPU idle. Fill in the diagnosis table (section "Metrics and
+   thresholds").
+7. Artifacts in `results/archive/EXP-2026-09-07-043/`: `analysis.sql`,
+   `offline-results.txt`, server/NVTX/counter logs, update the card status. Do NOT put
+   model/sqlite/nsys-rep binaries into git.
 
-Критерий ACCEPT/REJECT для limited-gap A (EXP-042): переход к A обоснован ТОЛЬКО если подтверждён
-случай 2 (GPU idle в окне не объясняется нормальным конвейером и снимается уменьшением числа вызовов).
-Иначе — «оснований переходить к A пока нет» (случаи 1/3), и A остаётся припаркованным. Профилируемые
-wall-тайминги performance-заявкой не считать.
+ACCEPT/REJECT criterion for limited-gap A (EXP-042): moving to A is justified ONLY if
+case 2 is confirmed (GPU idle in the window is not explained by the normal pipeline and
+is removed by reducing the number of calls). Otherwise — "no grounds to move to A yet"
+(cases 1/3), and A stays parked. Do not count profiled wall timings as a performance
+claim.
 
-## STAGE2 — результаты модельного профиля (2026-09-08)
+## STAGE2 — model profile results (2026-09-08)
 
-Гейт перед моделью (всё PASS): сборка `build/exp043-diag` чисто; `ldd` показывает `libnvToolsExt.so.1`
-у `libggml-cuda.so`, `libllama-server-impl.so`, `llama-server`; probe с той же схемой линковки, что у
-server-impl (слабые `_impl_init_v3` из header + сильные определения из библиотеки), дал range в
-`NVTX_EVENTS` под nsys; харнесс EXP-041 против diag-сборки — ring 9/9 PASS (default и DIAG=1), sched
-sha `39505119b1…e91510` идентичен принятому; интервалы `expert_gather/submit/slotwait` видны под
-живым nsys. Маркеры окна `expert_prefill` поставлены в `work/llama.cpp-exp043-diag`
-(`server-context.cpp`: push в STARTED-блоке ДО начала prompt-работы, pop на переходе в GENERATING и
-в `release()` для аварийных выходов; id-based, переживает чанкованный prefill) — патч
-`results/archive/EXP-2026-09-07-043/exp043-window.patch` (sha256 `4f88bbf8…da5a`, перегенерирован из
-дерева stage1; CMake-ханки первого варианта на это дерево не применялись). Логи гейта:
-`tests/log-st2-*.txt`.
+Gate before the model (all PASS): the `build/exp043-diag` build is clean; `ldd` shows
+`libnvToolsExt.so.1` on `libggml-cuda.so`, `libllama-server-impl.so`, `llama-server`; a
+probe with the same linking scheme as server-impl (weak `_impl_init_v3` from the header +
+strong definitions from the library) produced a range in `NVTX_EVENTS` under nsys; the
+EXP-041 harness against the diag build — ring 9/9 PASS (default and DIAG=1), sched sha
+`39505119b1…e91510` identical to the accepted one; the `expert_gather/submit/slotwait`
+intervals are visible under live nsys. The `expert_prefill` window markers were placed in
+`work/llama.cpp-exp043-diag` (`server-context.cpp`: push in the STARTED block BEFORE
+prompt work begins, pop on the transition to GENERATING and in `release()` for abnormal
+exits; id-based, survives chunked prefill) — patch
+`results/archive/EXP-2026-09-07-043/exp043-window.patch` (sha256 `4f88bbf8…da5a`,
+regenerated from the stage1 tree; the first variant's CMake hunks were not applied to
+this tree). Gate logs: `tests/log-st2-*.txt`.
 
-Прогон (правило 1: цель/длительность/2 запроса согласованы, явное «да», свой сервер Igor остановил сам;
-порт 8081): 1 запуск `build/exp043-diag/bin/llama-server` (профиль принятого рантайма: PINNED_RING
-default-on, `-np 1`, ctx 196608, KV q4_0, MTP n_max=2, draft CPU-MoE) + `GGML_EXPERT_DIAG=1`, обёрнут в
-`nsys profile -t cuda,nvtx`; строго последовательно 1 прогрев + 1 измеряемый 395-token запрос
-(`results/archive/EXP-2026-09-06-034/raw/exp032-h2d-ts/request.json`, `n_predict=0`, `cache_prompt=false`,
-temp 0); SIGINT по точному pid сервера. Трейс 433 053 события, sqlite-экспорт 22 МБ
-(`profile-binaries-sha256.txt`: nsys-rep `52673442…`, sqlite `f86cd32b…`; сами бинарники в /tmp, в git
-не кладутся). Контроли сошлись: teardown `expert ring staged 35772 calls, 35772 chunks` (ровно 2×17886);
-в измеряемом окне ровно 17886 `expert_gather/submit/slotwait`; H2D в окне 17979 шт / 22208,38 MiB;
-`cache_n=0` (промпт вычислен, не из кэша); ответы прогрева и измерения идентичны (content sha
-`75a11da4…`, по 1 EOG-токену — известное поведение n_predict=0 из EXP-040).
+Run (rule 1: goal/duration/2 requests agreed, an explicit «да» ("yes"), Igor stopped his
+own server himself; port 8081): 1 launch of `build/exp043-diag/bin/llama-server` (profile
+of the accepted runtime: PINNED_RING default-on, `-np 1`, ctx 196608, KV q4_0, MTP
+n_max=2, draft CPU-MoE) + `GGML_EXPERT_DIAG=1`, wrapped in `nsys profile -t cuda,nvtx`;
+strictly sequentially 1 warmup + 1 measured 395-token request
+(`results/archive/EXP-2026-09-06-034/raw/exp032-h2d-ts/request.json`, `n_predict=0`,
+`cache_prompt=false`, temp 0); SIGINT to the exact server pid. Trace of 433 053 events,
+sqlite export 22 MB (`profile-binaries-sha256.txt`: nsys-rep `52673442…`, sqlite
+`f86cd32b…`; the binaries themselves are in /tmp and are not put into git). Controls
+matched: teardown `expert ring staged 35772 calls, 35772 chunks` (exactly 2×17886); in
+the measured window exactly 17886 `expert_gather/submit/slotwait`; H2D in the window
+17979 copies / 22208.38 MiB; `cache_n=0` (the prompt was computed, not from cache); the
+warmup and measured responses are identical (content sha `75a11da4…`, 1 EOG token each —
+the known n_predict=0 behavior from EXP-040).
 
-Окна `expert_prefill`: прогрев 18621,762 мс, измеряемое 2572,660 мс (серверные timings 18622,322 /
-2573,154 мс — совпадение до ~1 мс). Профайлерный wall-time — НЕ performance-заявка (без nsys accepted
-runtime даёт ~1742-3465 мс на этот workload в EXP-040/038); прогрев отражает cold first-touch, объект
-изучения — измеряемое окно. Тепловые окно-сводки: gather 16643,360 / submit 125,147 / slotwait 82,075 мс
-(в холодном прогреве GPU почти не ждёт слоты — gather медленный из-за первых касаний страниц).
+The `expert_prefill` windows: warmup 18621.762 ms, measured 2572.660 ms (server timings
+18622.322 / 2573.154 ms — agreement to ~1 ms). Profiler wall time is NOT a performance
+claim (without nsys the accepted runtime gives ~1742-3465 ms on this workload in
+EXP-040/038); the warmup reflects cold first-touch, the object of study is the measured
+window. Warm window summaries: gather 16643.360 / submit 125.147 / slotwait 82.075 ms
+(in the cold warmup the GPU almost never waits for slots — gather is slow because of
+first page touches).
 
-### Разложение измеряемого окна 2572,660 мс (395 токенов)
+### Decomposition of the measured 2572.660 ms window (395 tokens)
 
-| Компонент | Время | Доля окна |
+| Component | Time | Window share |
 |---|---|---|
-| CPU `expert_gather` (union, сплошной) | 1463,641 мс | 56,9% |
-| CPU `expert_submit` (sum) | 66,701 мс | 2,6% |
-| CPU `expert_slotwait` (sum) | 326,679 мс | 12,7% |
-| GPU H2D busy (union) | 1346,071 мс | 52,3% (достигнуто 16498 MiB/s ≈ 17,3 ГБ/с) |
-| GPU kernels (union) | 420,620 мс | 16,3% |
-| Пересечение H2D ∩ kernels | 0,000 мс | один stream, строго последовательно |
-| GPU busy всего (memcpy+kernel+memset) | 1779,320 мс | 69,2% |
-| **GPU idle** | **793,340 мс** | **30,8%** (1311 пауз >100 мкс, 53 >1 мс, max 47,832 мс) |
+| CPU `expert_gather` (union, contiguous) | 1463.641 ms | 56.9% |
+| CPU `expert_submit` (sum) | 66.701 ms | 2.6% |
+| CPU `expert_slotwait` (sum) | 326.679 ms | 12.7% |
+| GPU H2D busy (union) | 1346.071 ms | 52.3% (achieved 16498 MiB/s ≈ 17.3 GB/s) |
+| GPU kernels (union) | 420.620 ms | 16.3% |
+| H2D ∩ kernels intersection | 0.000 ms | one stream, strictly sequential |
+| GPU busy total (memcpy+kernel+memset) | 1779.320 ms | 69.2% |
+| **GPU idle** | **793.340 ms** | **30.8%** (1311 pauses >100 µs, 53 >1 ms, max 47.832 ms) |
 
-Перекрестная таблица (GPU busy × CPU в gather): оба заняты 967,188 мс (37,6%) — кольцо работает,
-стейджинг перекрывается с H2D; **GPU idle при работающем gather 496,453 мс (19,3%)**; GPU busy без
-gather 812,132 мс (31,6%); оба простаивают 259,416 мс (10,1%). Host-API: `cudaMemcpyAsync` 18450
-вызовов суммарно всего 97,539 мс (mean 5,29 мкс — submission после ring дёшев); `cudaEventSynchronize`
-17886 × mean 17,95 мкс = 321,093 мс; `cudaStreamSynchronize` 1126 × mean 350,7 мкс = 394,856 мс
-(слоевые границы). Гистограммы gather: mean 81,8 мкс, p50 62,5 мкс, p99 362,3 мкс, max 1,369 мс при
-среднем размере передачи 1,24 MiB — p50 ≈ чистому memcpy 1,24 MiB (~20 ГБ/с RAM→pinned), фиксированная
-часть на вызов мала (~15-20 мкс).
+Cross table (GPU busy × CPU in gather): both busy 967.188 ms (37.6%) — the ring works,
+staging overlaps with H2D; **GPU idle while gather is running 496.453 ms (19.3%)**; GPU
+busy without gather 812.132 ms (31.6%); both idle 259.416 ms (10.1%). Host API:
+`cudaMemcpyAsync` 18450 calls totaling 97.539 ms (mean 5.29 µs — submission is cheap after
+the ring); `cudaEventSynchronize` 17886 × mean 17.95 µs = 321.093 ms;
+`cudaStreamSynchronize` 1126 × mean 350.7 µs = 394.856 ms (layer boundaries). Gather
+histograms: mean 81.8 µs, p50 62.5 µs, p99 362.3 µs, max 1.369 ms at an average transfer
+size of 1.24 MiB — p50 ≈ a pure 1.24 MiB memcpy (~20 GB/s RAM→pinned), the fixed per-call
+part is small (~15-20 µs).
 
-Структура окна: фаза стейджинга экспертов (первый gather → конец последнего gather) занимает
-~2354,9 мс; хвост после последнего `expert_gather` — 217,774 мс (в ранней сводке «~259 мс» — граница
-была проведена по концу последнего staging-интервала из analysis.sql; ниже используется точная
-граница SE = конец последнего gather). Хвост — НЕ экспертный путь (после SE ровно 0 gather;
-утверждение ранней сводки про «382 gather / verify-цикл» ошибочно и снято) и НЕ per-token обработка
-draft: см. «Атрибуция хвоста» ниже — это чекпойнт-брейк промпта (391+4), чекпойнт-сейв 112,6 MiB на
-критическом пути, CPU-MoE draft одним батчевым проходом и финальный 4-токенный батч ствола с
-CPU-экспертами.
+Window structure: the expert staging phase (first gather → end of the last gather) takes
+~2354.9 ms; the tail after the last `expert_gather` is 217.774 ms (in the early summary
+"~259 ms" — the boundary was drawn at the end of the last staging interval from
+analysis.sql; below the exact boundary SE = end of the last gather is used). The tail is
+NOT the expert path (after SE exactly 0 gathers; the early summary's claim of "382 gather
+/ verify loop" is wrong and retracted) and NOT per-token draft processing: see "Tail
+attribution" below — it is the prompt checkpoint break (391+4), the 112.6 MiB checkpoint
+save on the critical path, the CPU-MoE draft as a single batched pass, and the final
+4-token trunk batch with CPU experts.
 
-### Таблица диагноза (из раздела «Метрики и пороги»)
+### Diagnosis table (from the section "Metrics and thresholds")
 
-| Наблюдение в окне | Диагноз | Вердикт |
+| Observation in the window | Diagnosis | Verdict |
 |---|---|---|
-| gather занимает 56,9% окна; GPU idle совпадает с gather (496,5 мс) + CPU-труд без gather (259,4 мс); p50 gather ≈ чистый memcpy | **1 — CPU gather-bound** | **подтверждён** |
-| GPU idle 793,3 мс есть, но вызовы не снимают его: submission 66,7 мс суммарно; idle порождён байтовой скоростью CPU-копии и CPU-трудом вне стейджинга, а не числом вызовов | 2 — starvation | НЕ подтверждён |
-| GPU H2D busy 52,3% окна при 17,3 ГБ/с; idle-запас 793 мс | 3 — PCIe | НЕ подтверждён |
-| ~218 мс хвоста — чекпойнт-брейк (391+4), чекпойнт-сейв 112,6 MiB, CPU-MoE draft (батчевый), финальный 4-токенный батч с CPU-экспертами; вне H2D-пути | прочее (побочное) | новый кандидат-цель, не назначается |
+| gather takes 56.9% of the window; GPU idle coincides with gather (496.5 ms) + CPU labor without gather (259.4 ms); p50 gather ≈ pure memcpy | **1 — CPU gather-bound** | **confirmed** |
+| GPU idle of 793.3 ms exists, but calls do not remove it: submission 66.7 ms total; the idle is generated by the byte rate of the CPU copy and CPU labor outside staging, not by the number of calls | 2 — starvation | NOT confirmed |
+| GPU H2D busy 52.3% of the window at 17.3 GB/s; idle headroom 793 ms | 3 — PCIe | NOT confirmed |
+| ~218 ms tail — checkpoint break (391+4), 112.6 MiB checkpoint save, CPU-MoE draft (batched), final 4-token batch with CPU experts; outside the H2D path | other (side finding) | new candidate target, not assigned |
 
-Арифметика против limited-gap A (EXP-042, порог ≤512 KiB: −5570 вызовов, +2785 MiB байт): экономия
-CPU ≈ 5570 × (15-20 мкс фикс. — ЭТО ОЦЕНКА по submit-хвостам, не измеренная величина) ≈ 84-111 мс;
-потери: gather +2785 MiB / ~20 ГБ/с ≈ +139 мс CPU и +2785 MiB / 17,3 ГБ/с ≈ +161 мс GPU H2D.
-2785 MiB = 2,920 ГБ (decimal); в ранней сводке ошибочно стояло «2,785 ГБ». Предсказание
-отрицательное по обеим осям, но это расчёт, а не измеренный A/B — EXP-042 A остаётся припаркованным
-без отрицательного эксперимента.
+Arithmetic against limited-gap A (EXP-042, threshold ≤512 KiB: −5570 calls, +2785 MiB
+bytes): CPU saving ≈ 5570 × (15-20 µs fixed — THIS IS AN ESTIMATE from submit tails, not
+a measured value) ≈ 84-111 ms; losses: gather +2785 MiB / ~20 GB/s ≈ +139 ms CPU and
++2785 MiB / 17.3 GB/s ≈ +161 ms GPU H2D. 2785 MiB = 2.920 GB (decimal); the early
+summary wrongly said "2.785 GB". The prediction is negative on both axes, but this is a
+calculation, not a measured A/B — EXP-042 A stays parked without a negative experiment.
 
-### Атрибуция хвоста 217,774 мс (offline, 2026-09-08 — по сохранённой трассе и исходникам, без запусков)
+### Attribution of the 217.774 ms tail (offline, 2026-09-08 — from the saved trace and sources, without runs)
 
-Граница: SE = конец последнего `expert_gather` = 152762456149, WE = конец окна = 152980230160.
-Все смещения ниже — мс после SE. Уточнение ранней сводки: после SE в трассе НЕТ ни одного
-`expert_gather` (0 интервалов), поэтому «382 gather / первый verify-цикл» из неё ошибочно;
-«последовательная per-token обработка MTP-draft» — тоже: draft-проход ОДИН батчевый (подтверждение
-поправки Igor: батчинг prompt-обработки MTP уже есть в
-`common_speculative_impl_draft_mtp::process()`, speculative.cpp:1520-1636).
+Boundary: SE = end of the last `expert_gather` = 152762456149, WE = end of the window =
+152980230160. All offsets below are ms after SE. A correction to the early summary: after
+SE the trace has NOT A SINGLE `expert_gather` (0 intervals), so its "382 gather / first
+verify loop" is wrong; "sequential per-token MTP-draft processing" is wrong too: the
+draft pass is ONE batched pass (confirming Igor's correction: batching of MTP prompt
+processing already exists in `common_speculative_impl_draft_mtp::process()`,
+speculative.cpp:1520-1636).
 
-| Фаза | Смещение, мс | Длительность | Что происходит | Код |
+| Phase | Offset, ms | Duration | What happens | Code |
 |---|---|---|---|---|
-| конец батча 1 | +0,0…+2,3 | 2,3 | последние слои ствола для 391-токенного батча (финальный expert MMQ + dense-хвост) | конец `llama_decode` батча 1 |
-| host-подготовка | +2,3…+15,0 | 12,7 | возврат decode, bulk-извлечение выходов, `common_speculative_process`: чтение h_nextn ствола, сборка draft-батча | server-context.cpp:3717-3721 → speculative.cpp:1520-1570 |
-| загрузка входов draft | +15,0…+16,1 | 1,1 | pageable H2D ~20,2 MiB, sync-per-copy; большой кусок ровно 16 015 360 B = 391 строка × 40 960 B (ширина h_nextn 10240 float) | graph inputs `llama_decode(ctx_dft)` |
-| **draft-проход (c02)** | +16,2…+24,0 | 7,8 | ОДИН батчевый проход 391 строки: eh_proj (vec 6066 мкс), dense/attention/shexp на GPU; роутер и эксперты на GPU ОТСУТСТВУЮТ | speculative.cpp:1600 |
-| T1 | +24,0…+26,7 | 2,6 | 394 дешёвых `cudaStreamSynchronize` (391 на compute-stream, по 0,72 мкс — no-op ожидания; count совпадает с числом строк draft, точный call site по трассе не разрешим — см. пробелы) | — |
-| CPU-MoE draft | +26,7…+71,8 | 45,1 | чистый CPU, 0 CUDA API: роутер + `MUL_MAT_ID` экспертов draft (`--spec-draft-cpu-moe`) для 391 строки × top-10 | CPU backend |
-| **чекпойнт-сейв** | +71,8…+88,1 | 16,3 | D2H ~112,6 MiB: 36×3 MiB + 36×120 KiB + мелочь. Размер совпадает с логами EXP-040 S-run: `created context checkpoint … size = 112.592 MiB` (37 токенов) / `112.919 MiB` (608) — почти не зависит от длины | server-context.cpp:3606-3608 `create_checkpoint` перед батчем 2 |
-| **батч 2 ствола** | +88,1…+217,6 | 129,5 | ПОСЛЕДНИЕ 4 ТОКЕНА ПРОМПТА отдельным батчем: 48 слоёв × [GPU-кластер роутер+dense 0,5-3,4 мс (34×87 и 11×116 ядер) + 2 малых D2H на слой (48×40 KiB + 48×6 KiB — читбек ids/активаций для CPU-сплита) + CPU `MUL_MAT_ID` экспертов] | server-context.cpp:3537-3551 (checkpoint-брейк), ggml-cuda.cu:5641 (`min_batch_size` = 32) |
-| финал | +217,6…+217,8 | 0,2 | мелкий draft-проход 4 строки (кластеры 39+46 ядер), извлечение logits (1 строка = 993 280 B = 248320 vocab × 4), сэмпл → GENERATING (закрытие окна) | post_decode → SLOT_STATE_GENERATING |
+| end of batch 1 | +0.0…+2.3 | 2.3 | the trunk's last layers for the 391-token batch (final expert MMQ + dense tail) | end of batch 1's `llama_decode` |
+| host preparation | +2.3…+15.0 | 12.7 | decode return, bulk extraction of outputs, `common_speculative_process`: reading the trunk's h_nextn, assembling the draft batch | server-context.cpp:3717-3721 → speculative.cpp:1520-1570 |
+| draft inputs upload | +15.0…+16.1 | 1.1 | pageable H2D ~20.2 MiB, sync-per-copy; the large chunk is exactly 16 015 360 B = 391 rows × 40 960 B (h_nextn width 10240 float) | graph inputs `llama_decode(ctx_dft)` |
+| **draft pass (c02)** | +16.2…+24.0 | 7.8 | ONE batched pass of 391 rows: eh_proj (vec 6066 µs), dense/attention/shexp on GPU; router and experts are ABSENT on GPU | speculative.cpp:1600 |
+| T1 | +24.0…+26.7 | 2.6 | 394 cheap `cudaStreamSynchronize` calls (391 on the compute stream, 0.72 µs each — no-op waits; the count matches the number of draft rows, the exact call site is not resolvable from the trace — see gaps) | — |
+| CPU-MoE draft | +26.7…+71.8 | 45.1 | pure CPU, 0 CUDA API: router + `MUL_MAT_ID` of the draft experts (`--spec-draft-cpu-moe`) for 391 rows × top-10 | CPU backend |
+| **checkpoint save** | +71.8…+88.1 | 16.3 | D2H ~112.6 MiB: 36×3 MiB + 36×120 KiB + small stuff. The size matches the EXP-040 S-run logs: `created context checkpoint … size = 112.592 MiB` (37 tokens) / `112.919 MiB` (608) — almost independent of length | server-context.cpp:3606-3608 `create_checkpoint` before batch 2 |
+| **trunk batch 2** | +88.1…+217.6 | 129.5 | THE LAST 4 PROMPT TOKENS as a separate batch: 48 layers × [GPU cluster router+dense 0.5-3.4 ms (34×87 and 11×116 cores) + 2 small D2H per layer (48×40 KiB + 48×6 KiB — readback of ids/activations for the CPU split) + CPU `MUL_MAT_ID` of experts] | server-context.cpp:3537-3551 (checkpoint break), ggml-cuda.cu:5641 (`min_batch_size` = 32) |
+| finale | +217.6…+217.8 | 0.2 | a small 4-row draft pass (clusters of 39+46 cores), logits extraction (1 row = 993 280 B = 248320 vocab × 4), sample → GENERATING (window close) | post_decode → SLOT_STATE_GENERATING |
 
-Ответы на вопросы задания:
+Answers to the assignment's questions:
 
-1. **Конкретный вызов.** Доминирующая часть хвоста (129,5 мс) — `llama_decode` второго промпт-батча
-   из 4 токенов. Батч существует из-за чекпойнт-логики: `n_ctx_checkpoints = 32` (default,
-   common.h:639), и заполнение промпт-батча обрывается за 4 токена до конца
-   (server-context.cpp:3537-3551, `checkpoint_offsets = {4 + n_ubatch, 4}`), чтобы перед последним
-   батчем создать чекпойнт. Второй по величине кусок — сам `create_checkpoint` (16,3 мс, 112,6 MiB
-   D2H на критическом пути). Третий — CPU-MoE draft (45,1 мс, 391 строка батчем).
-2. **Фактические размеры batch/ubatch.** Промпт 395 = батч 1 из 391 токена (n_batch 2048, один
-   ubatch: 391 < 512) + батч 2 из 4 токенов; draft = 391 строка одним ubatch (upload 16 015 360 B =
-   391×40 960 — ровно один батч) + 4 строки на втором вызове; verify/генерации в окне нет
-   (n_predict=0 → после сэмпла 1 EOG-токен — известное поведение EXP-040).
-3. **Причина последовательности.** (а) op-offload гейт: `MUL_MAT_ID` уходит на CUDA только при
-   batch ≥ 32 (`get_op_batch_size`→`ne[2]`, `GGML_OP_OFFLOAD_MIN_BATCH` default 32,
-   ggml-cuda.cu:5641) — 391-токенный префилл стейджит эксперты на GPU (17886 gather), а 4-токенный
-   батч считает эксперты на CPU с per-layer синхронизациями/читбеками; (б) чекпойнт-брейк
-   искусственно создаёт этот 4-токенный батч и вставляет 112,6 MiB сейв между двумя decode;
-   (в) draft-эксперты на CPU — структурная цена `--spec-draft-cpu-moe` (VRAM, EXP-023/024).
+1. **The specific call.** The dominant part of the tail (129.5 ms) is the `llama_decode`
+   of the second prompt batch of 4 tokens. The batch exists because of checkpoint logic:
+   `n_ctx_checkpoints = 32` (default, common.h:639), and prompt-batch filling is cut off
+   4 tokens before the end (server-context.cpp:3537-3551, `checkpoint_offsets = {4 +
+   n_ubatch, 4}`), so that a checkpoint is created before the last batch. The
+   second-largest piece is `create_checkpoint` itself (16.3 ms, 112.6 MiB D2H on the
+   critical path). The third is the CPU-MoE draft (45.1 ms, 391 rows in one batch).
+2. **Actual batch/ubatch sizes.** Prompt 395 = batch 1 of 391 tokens (n_batch 2048, one
+   ubatch: 391 < 512) + batch 2 of 4 tokens; draft = 391 rows in one ubatch (upload
+   16 015 360 B = 391×40 960 — exactly one batch) + 4 rows on the second call; there is
+   no verify/generation in the window (n_predict=0 → after the sample, 1 EOG token — the
+   known EXP-040 behavior).
+3. **The reason for the sequence.** (a) the op-offload gate: `MUL_MAT_ID` goes to CUDA
+   only at batch ≥ 32 (`get_op_batch_size`→`ne[2]`, `GGML_OP_OFFLOAD_MIN_BATCH` default
+   32, ggml-cuda.cu:5641) — the 391-token prefill stages experts on the GPU (17886
+   gathers), while the 4-token batch computes experts on the CPU with per-layer
+   synchronizations/readbacks; (b) the checkpoint break artificially creates this
+   4-token batch and inserts the 112.6 MiB save between the two decodes; (c) draft
+   experts on the CPU are the structural price of `--spec-draft-cpu-moe` (VRAM,
+   EXP-023/024).
 
-Честные пробелы (ровно недостающие сигналы, если понадобится добить): (1) T1 — точный call site
-391 синка: по трассе неразличимы кандидаты (sched split-handling против иного цикла); снимается
-прогоном с `GGML_SCHED_DEBUG=1` или nsys с host call stacks (`--sample=cpu`), оба требуют
-отдельного модельного запуска по правилу 1. Вклад ≤2,6 мс — не лимитер. (2) Точная разбивка 36×3 MiB
-внутри чекпойнт-сейва по слоям (размер совпадает с известными чекпойнтами побайтово — этого
-достаточно для атрибуции фазы). Верхняя граница всего хвоста — 217,8 мс (~8,5% окна); реалистичная
-устраняемая часть меньше и требует отдельного эксперимента (например, поведение при
-`-ctxcp 0` — но это меняет функциональность чекпойнтов/ctx-shift и не предлагается без решения Igor).
+Honest gaps (exactly the missing signals, if it becomes necessary to close them): (1) T1 —
+the exact call site of the 391 syncs: from the trace the candidates are indistinguishable
+(sched split-handling vs some other loop); resolvable by a run with `GGML_SCHED_DEBUG=1`
+or nsys with host call stacks (`--sample=cpu`), both require a separate model run per
+rule 1. The contribution is ≤2.6 ms — not a limiter. (2) The exact layer-by-layer
+breakdown of the 36×3 MiB inside the checkpoint save (the size matches the known
+checkpoints byte-for-byte — this is enough for phase attribution). The upper bound of the
+whole tail is 217.8 ms (~8.5% of the window); the realistically removable part is smaller
+and requires a separate experiment (for example, behavior at `-ctxcp 0` — but that changes
+checkpoint/ctx-shift functionality and is not proposed without Igor's decision).
 
-Наблюдения-кандидаты для БУДУЩИХ приоритетов (не commitments, назначает Igor): (а) чекпойнт-брейк
-391+4: ~146 мс хвоста (сейв 16,3 + 4-токенный батч 129,5) существуют только потому, что последний
-батч промпта отрезан ради чекпойнта; без брейка весь промпт лёг бы в один 395-токенный батч с
-GPU-экспертами; (б) глубина кольца: `slotwait` 326,7 мс — union ожиданий слота, внутри которых в
-основном лежат `cudaEventSynchronize` 321,1 мс (вложенный вызов — НЕ аддитивная величина, отдельной
-резерв 648 мс не существует); (в) CPU-MoE draft 45,1 мс на 395-токенном префилле; (г)
-CPU-сериализация router/dense/стейджинг в одном потоке (812 мс GPU busy без gather — окно для
-перекрытия).
+Candidate observations for FUTURE priorities (not commitments, Igor assigns them): (a)
+the 391+4 checkpoint break: ~146 ms of tail (save 16.3 + 4-token batch 129.5) exists only
+because the last prompt batch is cut off for the sake of a checkpoint; without the break
+the whole prompt would fit into a single 395-token batch with GPU experts; (b) ring
+depth: `slotwait` 326.7 ms is the union of slot waits, inside which mostly lie the
+321.1 ms of `cudaEventSynchronize` (a nested call — NOT an additive quantity, a separate
+648 ms reserve does not exist); (c) the CPU-MoE draft's 45.1 ms on a 395-token prefill;
+(d) CPU serialization of router/dense/staging in one thread (812 ms GPU busy without
+gather — a window for overlap).
 
-Методические заметки: (1) SIGINT под nsys обязан уходить ТОЧНО в pid сервера — `pgrep -f` по строке
-запуска матчит и сам nsys-процесс; первый SIGINT попал в процесс-обёртку, профиль при этом НЕ
-потерян (nsys-дерево выжило, повторный SIGINT по точному pid корректно финализировал отчёт);
-(2) nvtx3 header эммитит слабые init-стабы — NVTX пишется только при `DT_NEEDED libnvToolsExt.so.1`
-(проверено ldd у всех трёх бинарников); (3) профайлерные wall-тайминги замедлены CUPTI/NVTX и
-performance-заявками не являются.
+Methodological notes: (1) SIGINT under nsys must go EXACTLY to the server pid —
+`pgrep -f` on the launch string also matches the nsys process itself; the first SIGINT
+hit the wrapper process, and the profile was NOT lost (the nsys tree survived, a repeated
+SIGINT to the exact pid finalized the report correctly); (2) the nvtx3 header emits weak
+init stubs — NVTX is written only with `DT_NEEDED libnvToolsExt.so.1` (verified with ldd
+on all three binaries); (3) profiler wall timings are slowed by CUPTI/NVTX and are not
+performance claims.
 
-Артефакты STAGE2 в `results/archive/EXP-2026-09-07-043/`: `analysis.sql` + `analysis-results.txt`
-(SQL окна по образцу EXP-037, границы из NVTX-маркеров), `profile-server-log.txt` (копия лога),
-`measured-response.json`, `warmup-response.json`, `profile-binaries-sha256.txt`, `exp043-window.patch`,
-`tests/log-st2-*.txt`. Бинарники (.nsys-rep/.sqlite/.bin) — LOCAL_ONLY, в git не кладутся.
+STAGE2 artifacts in `results/archive/EXP-2026-09-07-043/`: `analysis.sql` +
+`analysis-results.txt` (window SQL modeled on EXP-037, boundaries from NVTX markers),
+`profile-server-log.txt` (a copy of the log), `measured-response.json`,
+`warmup-response.json`, `profile-binaries-sha256.txt`, `exp043-window.patch`,
+`tests/log-st2-*.txt`. Binaries (.nsys-rep/.sqlite/.bin) — LOCAL_ONLY, not put into git.

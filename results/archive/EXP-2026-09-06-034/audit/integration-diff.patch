@@ -146,12 +146,12 @@ index dc6453c..feeb932 100644
  
      GGML_BACKEND_API ggml_backend_reg_t ggml_backend_cpu_reg(void);
  
-+    // CPU-бэкенд вызывает обработчик перед чтением выбранного эксперта в mul_mat_id.
-+    // Внешний стример может заблокировать поток до готовности соответствующих весов.
++    // The CPU backend invokes this hook before reading a selected expert in mul_mat_id.
++    // An external streamer may block the worker until the corresponding weights are ready.
 +    typedef void (*ggml_cpu_expert_ready_hook_t)(const struct ggml_tensor * src0, int expert, void * user_data);
 +
-+    // Регистрация действует на весь процесс; NULL отключает обработчик.
-+    // Менять обработчик во время исполнения графа нельзя.
++    // Registration is process-wide; NULL disables the hook.
++    // Do not change it while a graph runs.
 +    GGML_BACKEND_API void ggml_cpu_set_expert_ready_hook(ggml_cpu_expert_ready_hook_t hook, void * user_data);
 +
      GGML_BACKEND_API void ggml_cpu_fp32_to_fp32(const float *,       float *, int64_t);
@@ -165,7 +165,7 @@ index 5b6ce3b..bda7d7b 100644
  #    include "spacemit/ime.h"
  #endif
  
-+// Процессный обработчик готовности эксперта для внешнего SSD-стримера.
++// Process-wide expert-readiness hook for an external SSD streamer.
 +static ggml_cpu_expert_ready_hook_t g_expert_ready_hook      = NULL;
 +static void *                       g_expert_ready_hook_data = NULL;
 +
@@ -189,7 +189,7 @@ index 5b6ce3b..bda7d7b 100644
              continue;
          }
  
-+        // Перед чтением строк даём внешнему стримеру дождаться нужного эксперта.
++        // Let the external streamer make the expert resident before its rows are read.
 +        if (g_expert_ready_hook) {
 +            g_expert_ready_hook(src0, cur_a, g_expert_ready_hook_data);
 +        }
@@ -237,7 +237,7 @@ index 9f9ccb1..44cb0a0 100644
          float expert_hyst;            // hysteresis ratio for slot swaps
          int   expert_dwell;           // min updates a resident slot keeps before swap
          bool  expert_cache_force;      // bypass the CUDA-only hot store guard
-+        // Вызывается перед динамическим H2D-промоутом. false оставляет текущий слот без изменений.
++        // Called before a dynamic H2D promotion; false leaves the current slot unchanged.
 +        llama_expert_prepare_callback expert_prepare;
 +        void * expert_prepare_user_data;
  
@@ -247,8 +247,8 @@ index 9f9ccb1..44cb0a0 100644
          int32_t n_reused;   // number of times a ggml compute graph had been reused
      };
  
-+    // Телеметрия ограниченного CUDA-кэша экспертов. Счётчики накопительные
-+    // для контекста; нулевые значения означают, что hot-store отключён.
++    // Telemetry for the bounded CUDA expert cache. Counters are cumulative for the
++    // context; zero values mean that the hot store is disabled.
 +    struct llama_expert_cache_stats {
 +        uint64_t h2d_bytes;
 +        uint64_t h2d_copies;
@@ -651,8 +651,8 @@ index 003ae07..f563e37 100644
 +    slot_to_expert.assign(n_layers, std::vector<int>(hot_s, -1));
 +    dwell_count.assign(n_layers, std::vector<int>(hot_s, 0));
 +
-+    // Один закреплённый staging-слот достаточен: миграции сериализованы, а
-+    // tensor_set завершает H2D до возврата. SSD/RAM entry после этого можно вытеснять.
++    // One pinned staging slot is sufficient: migrations are serialized and tensor_set
++    // completes H2D before returning, after which the SSD/RAM entry may be evicted.
 +    size_t max_slice = 0;
 +    for (const auto & e : entries) {
 +        max_slice = std::max(max_slice, ggml_nbytes(e.src) / (size_t) e.src->ne[2]);
@@ -694,8 +694,8 @@ index 003ae07..f563e37 100644
              if (p < 0) {
                  break; // no slot free or displaceable under the gate
              }
-+            // В checked-режиме владелец cold-tier сначала делает полный эксперт
-+            // резидентным. Отказ означает безопасный пропуск промоута.
++            // In checked mode, the cold-tier owner first makes the complete expert resident.
++            // Refusal safely skips the promotion.
 +            if (prepare && !prepare(il, e_cold, prepare_user_data)) {
 +                continue;
 +            }
@@ -783,8 +783,8 @@ index 69884f6..9cf8a32 100644
 +    bool (*prepare)(int32_t layer, int32_t expert, void * user_data) = nullptr;
 +    void * prepare_user_data = nullptr;
 +
-+    // Счётчики копирования весов hot-store. Начальное заполнение входит в итог,
-+    // а вызывающая сторона может брать снимки до и после интересующей фазы.
++    // Hot-store copy counters. Initial population is included; callers may snapshot
++    // before and after the phase they need to measure.
 +    uint64_t h2d_bytes = 0;
 +    uint64_t h2d_copies = 0;
 +    uint64_t h2d_time_us = 0;
@@ -814,7 +814,7 @@ index 69884f6..9cf8a32 100644
  
      void log() const;
 +
-+    // Копирует один projection slice через закреплённый host staging-буфер.
++    // Copy one projection slice through the pinned host staging buffer.
 +    void upload(ggml_tensor * dst, const void * src, size_t dst_offset, size_t bytes);
  };
 diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp

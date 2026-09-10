@@ -1,8 +1,8 @@
-# MTP sidecar patch — применение
+# MTP sidecar patch — application
 
-`mtp-sidecar.patch` добавляет split-MTP режим (draft-модель только с MTP head, trunk без MTP-весов) к expert-tier базе. Он не самодостаточен: применяется поверх интеграционного патча и его drift-дополнения.
+`mtp-sidecar.patch` adds the split-MTP mode (a draft model consisting of only the MTP head, the trunk without MTP weights) on top of the expert-tier base. It is not self-sufficient: it is applied on top of the integration patch and its drift supplement.
 
-## Порядок
+## Order
 
 ```sh
 git clone <upstream-llama.cpp-expert-tier> work/llama.cpp-expNNN
@@ -12,13 +12,13 @@ git -C work/llama.cpp-expNNN apply ../patches/integration-drift.patch
 git -C work/llama.cpp-expNNN apply ../patches/mtp-sidecar.patch
 ```
 
-Каждый этап проверять `git apply --check`. Эксперименты — только в изолированной копии; рабочие деревья `work/llama.cpp-integration` и `work/llama.cpp-exp023` не изменять.
+Check every step with `git apply --check`. Experiments go only into an isolated copy; never modify the working trees `work/llama.cpp-integration` and `work/llama.cpp-exp023`.
 
-## Происхождение
+## Origin
 
-- `integration-drift.patch` — расхождение опубликованного интеграционного патча с рабочим состоянием на момент форка (уточнение EHS autofit в `common/common.cpp` и `src/llama-expert-hotstore.cpp` плюс перевод комментариев). Без него autofit-пути не совпадают с действующим сервером.
-- `mtp-sidecar.patch` — форк `work/llama.cpp-exp023`, ветка `exp023-mtp-sidecar`, коммиты `aaff9b3d5` (порт MTP sidecar из cafe-llama.cpp) и `c40681659` (полностью CPU draft KV). Пользовательские comment edits не включены.
+- `integration-drift.patch` — the divergence of the published integration patch from the working state at the moment of the fork (an EHS autofit refinement in `common/common.cpp` and `src/llama-expert-hotstore.cpp` plus a comment translation). Without it the autofit paths do not match the live server.
+- `mtp-sidecar.patch` — a fork of `work/llama.cpp-exp023`, branch `exp023-mtp-sidecar`, commits `aaff9b3d5` (the MTP sidecar port from cafe-llama.cpp) and `c40681659` (fully CPU draft KV). The user's comment edits are not included.
 
-## Проверка эквивалентности (EXP-034, PASS)
+## Equivalence check (EXP-034, PASS)
 
-`base + integration + drift + mtp` побайтово совпадает с рабочим деревом `work/llama.cpp-integration`, кроме одной пустой строки в `src/llama-context.cpp:487` (нелогическая правка, намеренно не доставляется). Сборка конфигурацией из `benchmarks/manifests/exp034-provenance.json` проходит; `llama-server --help` идентичен живому бинарнику.
+`base + integration + drift + mtp` matches the working tree `work/llama.cpp-integration` byte-for-byte, except for one empty line in `src/llama-context.cpp:487` (a non-logical edit, deliberately not delivered). A build with the configuration from `benchmarks/manifests/exp034-provenance.json` passes; `llama-server --help` is identical to the live binary.

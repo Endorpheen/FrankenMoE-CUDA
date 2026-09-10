@@ -101,23 +101,24 @@ and message were wrong).
 
 ## Verdict
 
-- Проверено: статический аудит + синтетические границы порога/берста (orig 7/7, fixed 7/7) +
-  lifecycle (оригинал 4/4, исправленный лаунчер 6/6) + модельный smoke на живой модели
-  (один запрос, активация watchdog видна, ложных срабатываний нет).
-- Изменено: `scripts/run_qwen38_server.sh` (исправленный hard-порог 2048, верное KiB->MiB в
-  сообщении, opt-in `SWAP_WATCHDOG=1`), карточка, EXPERIMENTS.md, ROADMAP.md, артефакты в
-  `results/archive/EXP-2026-09-06-035/`. Внутренний C++ watchdog не менялся.
-- До → после: функциональный гейт, не производительность. В smoke VmRSS вырос с 5 608 140 KiB до
-  23 391 028 KiB (загрузка модели+KV); VmSwap 153 608 -> 144 500 KiB (был до запроса, сократился,
-  роста не было).
-- Вывод: внешний hard-pорог был нерабочий (единицы), сообщение VmSwap завышало в 4 раза,
-  внутренний watchdog нигде не включался — все три исправлены и доказаны; lifecycle корректен;
-  включённый watchdog на живой модели активен и не срабатывает ложно.
-- Ограничение: формальный VmSwap=0 не достигнут (~150 MiB swap существовали до запроса). Допустимо
-  для functional gate R1; эти данные НЕ являются performance baseline.
-- Решение: ACCEPTED (kind=correctness), закоммичен в `7e8b819`; R1 закрыт.
-- Далее: R2/EXP-036 отменён как `NOT_RUN_DUPLICATE`; следующий новый эксперимент — R3/EXP-037,
-  offline-анализ сохранённых traces.
+- Verified: static audit + synthetic threshold/burst boundaries (orig 7/7, fixed 7/7) +
+  lifecycle (original 4/4, fixed launcher 6/6) + model smoke on the live model
+  (one request, watchdog activation visible, no false trips).
+- Changed: `scripts/run_qwen38_server.sh` (fixed hard threshold 2048, correct KiB->MiB in
+  the message, opt-in `SWAP_WATCHDOG=1`), the card, EXPERIMENTS.md, ROADMAP.md, artifacts in
+  `results/archive/EXP-2026-09-06-035/`. The internal C++ watchdog was not modified.
+- Before → after: a functional gate, not performance. In the smoke test VmRSS grew from
+  5 608 140 KiB to 23 391 028 KiB (model+KV loading); VmSwap 153 608 -> 144 500 KiB (predated
+  the request, decreased, no growth).
+- Conclusion: the external hard threshold was non-functional (units), the VmSwap message
+  overstated by 4x, the internal watchdog was never enabled anywhere — all three are fixed and
+  proven; the lifecycle is correct; the enabled watchdog on the live model is active and does not
+  trip falsely.
+- Limitation: formal VmSwap=0 was not reached (~150 MiB of swap predated the request). Acceptable
+  for the functional gate R1; these data are NOT a performance baseline.
+- Decision: ACCEPTED (kind=correctness), committed in `7e8b819`; R1 closed.
+- Next: R2/EXP-036 cancelled as `NOT_RUN_DUPLICATE`; the next new experiment is R3/EXP-037,
+  offline analysis of saved traces.
 
 ## Artifacts
 
