@@ -1,0 +1,72 @@
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index df0b9aa..c66fcce 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -6230,6 +6230,47 @@ struct test_top_k : public test_case {
+     }
+ };
+ 
++struct test_top_k_exp053 : public test_top_k {
++    const int pattern;
++
++    test_top_k_exp053(int64_t cols, int64_t rows, int k, int pattern)
++        : test_top_k(GGML_TYPE_F32, {cols, rows, 1, 1}, k, true), pattern(pattern) {}
++
++    std::string vars() override {
++        return test_top_k::vars() + "," + VAR_TO_STR(pattern);
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        test_top_k::initialize_tensors(ctx);
++        std::mt19937 rng(53);
++        std::vector<float> values(ne[0]);
++        for (int64_t row = 0; row < ne[1]; ++row) {
++            for (int64_t col = 0; col < ne[0]; ++col) {
++                switch (pattern) {
++                    case 0: values[col] = float(col - ne[0] / 2); break;
++                    case 1: values[col] = col % 3 == 0 ? -INFINITY : float(col % 17 - 8); break;
++                    case 2: values[col] = col % 2 ? -0.0f : 0.0f; break;
++                    case 3: values[col] = -INFINITY; break;
++                    default: GGML_ABORT("invalid TOP_K test pattern");
++                }
++            }
++            std::shuffle(values.begin(), values.end(), rng);
++            ggml_backend_tensor_set(input, values.data(), row * input->nb[1], values.size() * sizeof(float));
++        }
++    }
++
++    double err(const float * a, const float * b, size_t n) override {
++        for (size_t i = 0; i < n; ++i) {
++            if (!std::isfinite(a[i]) || !std::isfinite(b[i]) ||
++                a[i] < 0 || b[i] < 0 || a[i] >= ne[0] || b[i] >= ne[0] ||
++                a[i] != std::floor(a[i]) || b[i] != std::floor(b[i])) {
++                return 1.0;
++            }
++        }
++        return test_top_k::err(a, b, n);
++    }
++};
++
+ enum MoeGatingFunc {
+     GATING_FUNC_SOFTMAX,
+     GATING_FUNC_SIGMOID,
+@@ -9740,6 +9781,19 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+         test_cases.emplace_back(new test_top_k(GGML_TYPE_F32, {2049, 2, 1, 3}, k));
+     }
+ 
++    // EXP-053: QSA widths, cutoff ties, masked scores, and the radix dispatch boundary.
++    for (int64_t cols : {8191, 8192, 8193, 131072, 196608}) {
++        for (int64_t rows : {1, 2, 3}) {
++            for (int k : {1, 2051, (int) cols}) {
++                for (int pattern : {0, 1, 2, 3}) {
++                    test_cases.emplace_back(new test_top_k_exp053(cols, rows, k, pattern));
++                }
++            }
++        }
++    }
++    test_cases.emplace_back(new test_top_k_exp053(8192, 128, 2051, 1));
++    test_cases.emplace_back(new test_top_k_exp053(131072, 128, 2051, 1));
++
+     // exhaustive top_k tests
+     //for (int i = 1; i < 9999; ++i) {
+     //    test_cases.emplace_back(new test_top_k(GGML_TYPE_F32, {i, 2, 1, 3}, rand() % i + 1));
