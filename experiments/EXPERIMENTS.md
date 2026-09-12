@@ -1,14 +1,35 @@
 # Experiment log
 
+## EXP-2026-09-10-055: alternative MTP draft heads
+
+- Status: `REJECTED` (`kind=model-ab`, closed 2026-09-10). Head comparison only; no target or baseline change.
+- Hypothesis: an alternative Flash-Next MTP head (unsloth self/shared, dzannotti) could decode faster than the current head at equal acceptance, because the draft step is dominated by the shared output projection and the head's own MoE.
+- One variable: the draft-head GGUF. Binary `build/exp046-default-runtime/bin/llama-server`, exact EXP-046 profile, ctx 8192, MTP `--spec-draft-n-max 2`, 59-token prompt, 256 greedy tokens.
+- Results: first sweep (warm) current 20.93 / dzannotti 19.84 / shared-Q4_K_M 20.89 / self-Q8_0 19.38 tok/s. Paired duel, 4 rounds with alternating launch order: current median 20.860 (20.449, 20.949, 20.770, 21.227), dzannotti median 20.839 (20.598, 21.094, 20.674, 21.004) — a tie (0.1%). Acceptance is deterministic: current 0.69811 (148/212), dzannotti 0.70952 (149/210); all emitted answers byte-identical.
+- Memory impact: none — no build, profile or launcher change; head files are gitignored.
+- Verdict: `REJECTED` — no alternative head beats the current one beyond noise. `shared-Q8_0` was excluded (downloaded file corrupted: sha256 `499c1104...` vs published `5ff54097...`). The accepted current head stays; the decode bottleneck is the target forward pass, not the head.
+- Card: `experiments/EXP-2026-09-10-055-mtp-heads.md`.
+
+## EXP-2026-09-10-054: PixelML DFlash prototype on the accepted runtime
+
+- Status: `REJECTED` (`kind=model-ab`). Correctness prototype works; the speed goal fails.
+- Hypothesis: the pinned DFlash skeleton can host the PixelML Qwen3.8-Flash-Next DFlash drafter if the contracted attention tap and the anchor-first layout are corrected.
+- Results: model smoke and A/B, one fixed prompt, temperature 0, 128-token request. At 8192: MTP n_max=2 24.40 tok/s (acceptance 0.813) vs DFlash n_max=2 17.24 (0.372). At 196608 the BF16 draft must stay on CPU (`cudaMalloc failed` for 998.21 MiB); DFlash is 29% (8k) to 47% (192k) slower than native MTP. Longer runs: accepted length ~1.93 vs MTP ~2.45.
+- Memory impact: draft 0.928 GiB BF16; a GPU draft does not fit beside the target at 196608, so 192k requires a CPU draft.
+- Verdict: `REJECTED` — the step cost, not acceptance, binds; DFlash runs at ~42% of MTP speed at 8k. Closing the gap would need a large transfer-path rewrite from a ~50% deficit.
+- Card: `experiments/EXP-2026-09-10-054-dflash-pixelml-prototype.md`.
+
 ## EXP-2026-09-09-053: CUDA radix top-k for long-context decode
 
-- Status: implementation authorized by Igor; independent testing pending. The implementation agent must not run tests, a model or a server.
+- Status: `REJECTED` (`kind=model-ab`, closed 2026-09-10). Model-free correctness passed; the decode A/B is a null effect.
 - Hypothesis: radix selection instead of the older wide-row CUDA argsort fallback can improve sustained QSA decode by >=2% at populated long context. No local speedup is claimed.
 - Candidate source/build: `work/llama.cpp-exp053-radix-topk`, `build/exp053-radix-topk`. Accepted EXP-046 runtime and launcher are untouched.
 - One variable: `GGML_CUDA_TOPK_ARGSORT=1` (control), `=0` or unset (candidate); other accepted features remain unchanged.
 - Runtime delta: top-k only; test cases added to the existing backend operator suite, not executed.
 - [Card](EXP-2026-09-09-053-cuda-radix-topk.md), [tester instructions](../results/archive/EXP-2026-09-09-053/TESTING.md), [future directions](../docs/DECODE-CANDIDATES-2026-09-09.md).
-- Build outcome: clean configure and build EXIT=0 for server and test-backend-ops; 182 additional test cases compiled, NOT RUN. Radix symbols present; accepted binary/launcher hashes unchanged. Exact hashes and full compiler logs are in the artifact directory. Correctness and performance verdicts remain pending.
+- Build outcome: clean configure and build EXIT=0 for server and test-backend-ops; 182 additional test cases compiled. Radix symbols present; accepted binary/launcher hashes unchanged. Exact hashes and full compiler logs are in the artifact directory.
+- Results (2026-09-10, run by OpenCode): model-free correctness `test-backend-ops -o TOP_K` 340/340 FAIL=0 in both arms (control `path=argsort`, candidate `path=radix`), wide rows really selected. Decode A/B with the same binary, MTP n_max=2 and the exact EXP-046 profile: prompt 17899 tokens control 19.441 / candidate 20.215 tok/s (`+3.98%`) but the outputs diverged (control reasoning-only, candidate reasoning+answer), so the pair was not confirmed; prompt 11018 tokens 20.882 / 20.933 tok/s (`+0.24%`), within noise. A ~119k populated-context run was not completed (prefill exceeded the practical budget).
+- Verdict: `REJECTED` as a speed candidate — the only positive pair had divergent outputs, and the clean pair is far below the >=2% target. The implementation is correct and preserved; the result is a null decode effect at the measured contexts, not a correctness failure. The 8192-column threshold is inherited and not tuned for the RTX 4070.
 
 ## 2026-09-08 — checkpoint decision after full prefill
 

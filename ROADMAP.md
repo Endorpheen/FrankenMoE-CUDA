@@ -1,14 +1,15 @@
 # FrankenMoE roadmap — current state 2026-09-09
 
-Current assignment: **EXP-2026-09-09-053 - BUILD READY; independent testing pending**.
-Igor selected CUDA radix TOP_K for populated long-context Flash-Next decode. Clean
-compilation of `llama-server` and `test-backend-ops` completed with EXIT=0 in
-`build/exp053-radix-topk`, sourced from `work/llama.cpp-exp053-radix-topk`.
-Only runtime top-k and test cases changed. Tests/server/model were NOT RUN, per Igor.
-Accepted EXP-046 runtime and launcher remain unchanged. Target: >=2% paired sustained
-decode improvement with correctness; no local performance result is claimed.
-See the [card](experiments/EXP-2026-09-09-053-cuda-radix-topk.md),
-[tester handoff](results/archive/EXP-2026-09-09-053/TESTING.md) and
+Current assignment: **none — decode acceleration direction closed 2026-09-10**.
+Three candidates from `docs/DECODE-CANDIDATES-2026-09-09.md` were tested and all
+rejected: EXP-2026-09-09-053 CUDA radix top-k (`REJECTED`; correctness 340/340 pass,
+clean pair +0.24%, the only positive pair had divergent outputs, the ~119k run was
+not completed), EXP-2026-09-10-054 PixelML DFlash prototype (`REJECTED`; it works but
+runs 29-47% slower than native MTP), and EXP-2026-09-10-055 alternative MTP draft
+heads (`REJECTED`; no head beats the current head beyond noise, paired duel tie
+20.860 vs 20.839 tok/s). The accepted EXP-046 runtime, model and launcher are
+unchanged.
+See the [cards](experiments/EXP-2026-09-10-055-mtp-heads.md) and the
 [three externally implemented directions](docs/DECODE-CANDIDATES-2026-09-09.md).
 Reduced draft vocabulary and hyper-connection kernel fusion remain backlog options,
 not authorized follow-up experiments.
