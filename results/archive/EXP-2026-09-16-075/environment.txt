@@ -1,0 +1,30 @@
+EXP-2026-09-16-075 environment
+date: 2026-09-16T02:27:09+03:00
+
+--- nvidia-smi ---
+name, driver_version, memory.total [MiB]
+NVIDIA GeForce RTX 4070, 580.178.04, 12282 MiB
+--- nvcc ---
+Cuda compilation tools, release 12.6, V12.6.85
+Build cuda_12.6.r12.6/compiler.35059454_0
+--- g++ ---
+g++-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0
+--- uname ---
+Linux end0-B550-AORUS-ELITE-V2 6.8.0-84-generic #84-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  5 22:36:38 UTC 2025 x86_64 GNU/Linux
+--- mem ---
+MemTotal:       63643556 kB
+MemAvailable:   47900200 kB
+SwapTotal:      33554428 kB
+--- memlock ---
+8192
+--- ranges ---
+8b58328ed61b0bfea88021e7f0a895233a9a56f078fc65a9ababe4da6b3f6f79  results/archive/EXP-2026-09-16-070/exp070_ranges.txt
+--- build binaries ---
+4aec1132ec4febae68e050aa93a58397dcb09feec4e640f130d8cedcb32bdafb  build/exp075-pinsrc-overlap/bin/llama-server
+214ac0109c886559d81576d7d1038b7063fb14d56b38a79b6da27c26082e0305  build/exp075-pinsrc-overlap/bin/libggml-cuda.so.0.22.0
+--- harness binaries ---
+4f1911a829db0418230eb221454069e51239cae205f89e4098bfa71e25b511ef  results/archive/EXP-2026-09-16-075/test-exp075-pinsrc
+f0bedac3f03626433b2eb19fd27614b80de0f1e5a022fc107006408777e7f298  results/archive/EXP-2026-09-16-075/test-exp074-pinsrc
+d80963c87658587015061a5f528da8e0ea0d96754032034b0030cd0ebe05dba5  results/archive/EXP-2026-09-16-075/test-exp074-sched
+--- patch ---
+b6139b3544be756119c27e7100621a149f62e689a999faa5e09acf6d0fd8dc54  results/archive/EXP-2026-09-16-075/pinsrc-overlap.patch

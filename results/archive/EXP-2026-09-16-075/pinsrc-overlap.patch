@@ -1,0 +1,208 @@
+--- work/llama.cpp-exp074-pinsrc/ggml/src/ggml-cuda/common.cuh	2026-09-16 01:40:56.928917467 +0300
++++ work/llama.cpp-exp075-pinsrc-overlap/ggml/src/ggml-cuda/common.cuh	2026-09-16 02:17:49.685102151 +0300
+@@ -1465,6 +1465,9 @@
+     size_t expert_pin_n_direct = 0;         // ranges copied straight from the source
+     size_t expert_pin_n_fallback = 0;       // ranges served by the slot ring
+     size_t expert_pin_n_fail = 0;           // register attempts that failed
++    size_t expert_pin_n_split = 0;          // ranges served by split copies plus a partial registration
++    size_t expert_pin_n_sub_direct = 0;     // sub-copies issued from an already registered interval
++    size_t expert_pin_n_sub_reg = 0;        // sub-copies issued after a sub-range was registered
+ 
+ #ifdef USE_CUDA_GRAPH
+     // Map from first_node_ptr to cuda_graph - allows multiple graphs per context
+--- work/llama.cpp-exp074-pinsrc/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-16 01:55:23.928741242 +0300
++++ work/llama.cpp-exp075-pinsrc-overlap/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-16 02:18:23.380621349 +0300
+@@ -2700,9 +2700,10 @@
+     ivs.insert(it, { begin, end });
+ }
+ 
+-// Registers [begin,end) as one read-only interval. A copy from pinned memory must stay inside
+-// one registration: cudaMemcpyAsync rejects a range that starts in a registration and runs past
+-// its end, so a range that would overlap an existing registration falls back instead of splitting.
++// Registers [begin,end) as one read-only interval. A copy from pinned memory must stay inside one
++// registration: cudaMemcpyAsync rejects a range that starts in a registration and runs past its
++// end. The caller passes a range that overlaps no existing registration; EXP-075 splits a partly
++// covered request at these boundaries before calling here.
+ static int ggml_cuda_expert_pin_register_range(ggml_backend_cuda_context * cuda_ctx, uintptr_t begin, uintptr_t end) {
+     if (ggml_cuda_expert_pin_overlaps(cuda_ctx->expert_pin_blacklist, begin, end)) {
+         return GGML_CUDA_EXPERT_PIN_BLACKLIST;
+@@ -2739,24 +2740,25 @@
+     GGML_LOG_WARN("%s: pinned source unavailable (%s), using the pinned slot ring\n", __func__, reason);
+ }
+ 
+-// returns true when the whole range was copied straight from the registered source
+-static bool ggml_cuda_expert_pin_source_try(ggml_backend_cuda_context * cuda_ctx, void * dst,
+-                                            const uint8_t * src, size_t size) {
+-    if (cuda_ctx->expert_pin_state == -1) {
+-        return false;
+-    }
+-    if (cuda_ctx->expert_pin_state == 0) {
+-        if (!ggml_cuda_expert_pin_source_env_enabled()) {
+-            cuda_ctx->expert_pin_state = -1;
+-            return false;
+-        }
+-        cuda_ctx->expert_pin_state = 1;
+-        if (!g_expert_pin_enabled_logged.exchange(true)) {
+-            GGML_LOG_WARN("%s: expert pinned source enabled: direct H2D from the mapped GGUF (budget %.0f MiB)\n",
+-                          __func__, ggml_cuda_expert_pin_budget_bytes() / 1024.0 / 1024.0);
+-        }
+-    }
++// EXP-075: when set (default), a request that only partly overlaps an existing registration is
++// split at the registration boundaries and served from the registered pages. 0 restores the
++// EXP-074 rule: any overlap refuses the whole request and falls back to the ring.
++static bool ggml_cuda_expert_pin_split_enabled(void) {
++    const char * v = getenv("GGML_EXPERT_PIN_OVERLAP_SPLIT");
++    return v == nullptr || (v[0] != '\0' && strcmp(v, "0") != 0);
++}
+ 
++// start of the first registered interval that begins after p, or UINTPTR_MAX
++static uintptr_t ggml_cuda_expert_pin_next_start(const std::vector<std::pair<uintptr_t, uintptr_t>> & ivs, uintptr_t p) {
++    const auto it = std::upper_bound(ivs.begin(), ivs.end(), p,
++        [](uintptr_t b, const std::pair<uintptr_t, uintptr_t> & iv) { return b < iv.first; });
++    return it == ivs.end() ? UINTPTR_MAX : it->first;
++}
++
++// whole-range path: register the page-aligned range, then one copy straight from the source.
++// Refuses on any overlap (EXP-074 behaviour, kept for GGML_EXPERT_PIN_OVERLAP_SPLIT=0).
++static bool ggml_cuda_expert_pin_try_whole(ggml_backend_cuda_context * cuda_ctx, void * dst,
++                                           const uint8_t * src, size_t size) {
+     const size_t page = ggml_cuda_expert_pin_page_size();
+     const uintptr_t begin = (uintptr_t) src & ~(uintptr_t) (page - 1);
+     const uintptr_t end   = ((uintptr_t) src + size + page - 1) & ~(uintptr_t) (page - 1);
+@@ -2784,12 +2786,121 @@
+     return true;
+ }
+ 
++// split path: walk the request and cut it at registration boundaries. A sub-range that is already
++// covered is copied with no registration; an uncovered sub-range is page-aligned, registered, then
++// copied. The plan registers every remainder before the first copy starts, so a refusal falls back
++// without copying. Sub-copy sizes follow the original unaligned request boundaries, so the copies
++// cover [src, src+size) exactly, with no gap and no byte copied twice.
++static bool ggml_cuda_expert_pin_try_split(ggml_backend_cuda_context * cuda_ctx, void * dst,
++                                           const uint8_t * src, size_t size) {
++    struct PinSeg {
++        const uint8_t * host;
++        size_t bytes;
++        bool registered;
++    };
++    std::vector<PinSeg> segs;
++    segs.reserve(8);
++
++    const size_t page = ggml_cuda_expert_pin_page_size();
++    const uintptr_t req_begin = (uintptr_t) src;
++    const uintptr_t req_end   = req_begin + size;
++
++    uintptr_t cur = req_begin;
++    bool any_covered = false;
++    bool any_registered = false;
++
++    while (cur < req_end) {
++        const uintptr_t cover = ggml_cuda_expert_pin_cover_end(cuda_ctx->expert_pin_intervals, cur);
++        if (cover > 0) {
++            const uintptr_t end = std::min<uintptr_t>(cover, req_end);
++            segs.push_back({ (const uint8_t *) cur, (size_t) (end - cur), false });
++            any_covered = true;
++            cur = end;
++            continue;
++        }
++
++        // the run up to the next registered interval is not covered; register it page-aligned
++        const uintptr_t next = ggml_cuda_expert_pin_next_start(cuda_ctx->expert_pin_intervals, cur);
++        const uintptr_t end = (next != UINTPTR_MAX && next < req_end) ? next : req_end;
++        const uintptr_t reg_begin = cur & ~(uintptr_t) (page - 1);
++        const uintptr_t reg_end   = (end + page - 1) & ~(uintptr_t) (page - 1);
++
++        const int rc = ggml_cuda_expert_pin_register_range(cuda_ctx, reg_begin, reg_end);
++        if (rc != GGML_CUDA_EXPERT_PIN_OK) {
++            if (rc == GGML_CUDA_EXPERT_PIN_REGFAIL) {
++                // never retry this interval
++                ggml_cuda_expert_pin_insert(cuda_ctx->expert_pin_blacklist, reg_begin, reg_end);
++                cuda_ctx->expert_pin_n_fail++;
++                ggml_cuda_expert_pin_log_fallback(cuda_ctx, "registration failed");
++            } else if (rc == GGML_CUDA_EXPERT_PIN_BUDGET) {
++                ggml_cuda_expert_pin_log_fallback(cuda_ctx, "budget reached");
++            } else if (rc == GGML_CUDA_EXPERT_PIN_BLACKLIST) {
++                ggml_cuda_expert_pin_log_fallback(cuda_ctx, "range is blacklisted");
++            } else if (rc == GGML_CUDA_EXPERT_PIN_HEADROOM) {
++                ggml_cuda_expert_pin_log_fallback(cuda_ctx, "low memory headroom");
++            } else {
++                ggml_cuda_expert_pin_log_fallback(cuda_ctx, "range overlaps a registered range");
++            }
++            cuda_ctx->expert_pin_n_fallback++;
++            return false;
++        }
++
++        segs.push_back({ (const uint8_t *) cur, (size_t) (end - cur), true });
++        any_registered = true;
++        cur = end;
++    }
++
++    char * dst_bytes = (char *) dst;
++    size_t off = 0;
++    for (const PinSeg & seg : segs) {
++        CUDA_CHECK(cudaMemcpyAsync(dst_bytes + off, seg.host, seg.bytes, cudaMemcpyHostToDevice, cuda_ctx->stream()));
++        off += seg.bytes;
++        if (seg.registered) {
++            cuda_ctx->expert_pin_n_sub_reg++;
++        } else {
++            cuda_ctx->expert_pin_n_sub_direct++;
++        }
++    }
++
++    if (any_registered && any_covered) {
++        cuda_ctx->expert_pin_n_split++;
++    } else {
++        cuda_ctx->expert_pin_n_direct++;
++    }
++    return true;
++}
++
++// returns true when the whole range was copied straight from the registered source
++static bool ggml_cuda_expert_pin_source_try(ggml_backend_cuda_context * cuda_ctx, void * dst,
++                                            const uint8_t * src, size_t size) {
++    if (cuda_ctx->expert_pin_state == -1) {
++        return false;
++    }
++    if (cuda_ctx->expert_pin_state == 0) {
++        if (!ggml_cuda_expert_pin_source_env_enabled()) {
++            cuda_ctx->expert_pin_state = -1;
++            return false;
++        }
++        cuda_ctx->expert_pin_state = 1;
++        if (!g_expert_pin_enabled_logged.exchange(true)) {
++            GGML_LOG_WARN("%s: expert pinned source enabled: direct H2D from the mapped GGUF (budget %.0f MiB)\n",
++                          __func__, ggml_cuda_expert_pin_budget_bytes() / 1024.0 / 1024.0);
++        }
++    }
++
++    if (!ggml_cuda_expert_pin_split_enabled()) {
++        return ggml_cuda_expert_pin_try_whole(cuda_ctx, dst, src, size);
++    }
++    return ggml_cuda_expert_pin_try_split(cuda_ctx, dst, src, size);
++}
++
+ // idempotent; unregisters every pinned source interval while the CUDA context is current
+ static void ggml_cuda_expert_pin_source_release(ggml_backend_cuda_context * cuda_ctx) {
+     if (cuda_ctx->expert_pin_state == 0) {
+         return; // never probed
+     }
+     const size_t n_intervals = cuda_ctx->expert_pin_intervals.size();
++    const size_t bytes_released = cuda_ctx->expert_pin_bytes;
+     if (n_intervals > 0) {
+         // an in-flight H2D may still read the registered pages
+         (void) cudaDeviceSynchronize();
+@@ -2803,9 +2914,11 @@
+         cuda_ctx->expert_pin_bytes = 0;
+         (void) cudaGetLastError();
+     }
+-    GGML_LOG_WARN("%s: expert pinned source: %zu direct ranges, %zu fallback ranges, %zu register failures, %zu intervals released\n",
+-                  __func__, cuda_ctx->expert_pin_n_direct, cuda_ctx->expert_pin_n_fallback,
+-                  cuda_ctx->expert_pin_n_fail, n_intervals);
++    GGML_LOG_WARN("%s: expert pinned source: %zu direct ranges, %zu split ranges, %zu fallback ranges, %zu register failures, %zu intervals released, %zu bytes released, %zu bytes still pinned, %zu covered sub-copies, %zu registered sub-copies\n",
++                  __func__, cuda_ctx->expert_pin_n_direct, cuda_ctx->expert_pin_n_split,
++                  cuda_ctx->expert_pin_n_fallback, cuda_ctx->expert_pin_n_fail, n_intervals,
++                  bytes_released, g_expert_pin_bytes.load(std::memory_order_relaxed),
++                  cuda_ctx->expert_pin_n_sub_direct, cuda_ctx->expert_pin_n_sub_reg);
+ }
+ 
+ // allocates all slots and events before any staged submission; on failure the ring stays disabled

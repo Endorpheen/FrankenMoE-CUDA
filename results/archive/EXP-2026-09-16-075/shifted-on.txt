@@ -1,0 +1,13 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+ggml_cuda_expert_ring_init: expert ring enabled: 3 pinned host slots x 16 MiB
+ggml_cuda_expert_pin_source_try: expert pinned source enabled: direct H2D from the mapped GGUF (budget 24576 MiB)
+CHECK PASS shifted: device image byte-exact over A and B
+CHECK PASS shifted: sentinel guards unchanged
+ggml_cuda_expert_pin_source_release: expert pinned source: 16 direct ranges, 7 split ranges, 0 fallback ranges, 0 register failures, 1 intervals released, 32505856 bytes released, 0 bytes still pinned, 22 covered sub-copies, 15 registered sub-copies
+{"mode":"shifted","split_env":true,"regfail":false,"counters_seen":true,"direct":16,"split":7,"fallback":0,"fail":0,"intervals":1,"bytes_released":32505856,"bytes_still_pinned":0,"sub_direct":22,"sub_reg":15,"swap_before_kib":0,"swap_during_kib":0,"swap_after_free_kib":0,"va_hwm_kib":511796}
+CHECK PASS shifted: release counters captured
+CHECK PASS shifted: VmSwap stays 0
+CHECK PASS shifted: teardown leaves no registered byte
+CHECK PASS shifted: split ON serves B, no fallback
+CHECK PASS shifted: majority of sub-copies are direct (already registered)
