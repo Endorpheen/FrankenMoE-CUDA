@@ -1,0 +1,12 @@
+PROBE rlimit_memlock_cur=8388608 soft_max=8388608
+PROBE cuda init -> OK
+PROBE shard=models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00002-of-00003.gguf size=49567921344 win_start=30358118400
+PROBE map_shared  read_only window       ptr=0x7a447abc2000 size=1048576    flags=9    -> OK
+PROBE map_shared  default    window      ptr=0x7a447abc2000 size=1048576    flags=0    -> invalid argument
+PROBE map_private read_only window       ptr=0x7a38f03c2000 size=1048576    flags=9    -> OK
+PROBE map_private default    window      ptr=0x7a38f03c2000 size=1048576    flags=0    -> invalid argument
+PROBE first_interval start=30358118400 end=30358650880 bytes=532480
+PROBE map_shared  read_only interval     ptr=0x7a447abc2000 size=532480     flags=9    -> OK
+PROBE map_shared  default    interval    ptr=0x7a447abc2000 size=532480     flags=0    -> invalid argument
+PROBE anonymous   read_only 16 MiB       ptr=0x7a31ddc00000 size=16777216   flags=9    -> OK
+PROBE anonymous   default   32 MiB       ptr=0x7a31ddc00000 size=16777216   flags=0    -> OK
