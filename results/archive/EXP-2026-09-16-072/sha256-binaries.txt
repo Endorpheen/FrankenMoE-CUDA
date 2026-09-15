@@ -1,0 +1,6 @@
+38b17c7f6832e554f7176e7d86869172c9fd77f8e001892f1b1590299466d4fd  build/exp072-iq4nl-fused/bin/llama-server
+646755eeb69903795a4b0c5b677d643807b5c9a4867ecda017abf7e22589d033  build/exp072-iq4nl-fused/bin/libggml-cpu.so.0.22.0
+ec7d5bb7f4d07e93c8a271a2ff0cdc647fb7363fed3b5719581a649bed1bc288  build/exp072-iq4nl-fused/bin/test-iq4nl-fused-mmid
+302fa2c5412fc00c22f089e6a37c76cd077e0eb432f45f40ad5e96603d2ed62a  build/exp072-iq4nl-fused/bin/test-iq4nl-fused-mmid-bench
+ec5dd019abbf9549e4cabed2fd60b70903d4578a0211670e5ef43c93d92750af  build/exp072-iq4nl-fused/bin/test-backend-ops
+9bed83ebc97657c24996bf97ba0832525331977821c8552e2799a5b8086292e7  results/archive/EXP-2026-09-16-072/exp071_down_iq4nl_bench_exp072

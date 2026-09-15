@@ -1,0 +1,9 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+case B start
+  caseB: 0/12800 differing floats
+case C start
+case D start
+  caseE: 0/1280 differing floats
+case E done
+IQ2S_FUSED_STATS groups[c1,c2,c3,c4+]=139,8,3,0 fused_groups=0,5,2,0 tokens[c1,c2,c3,c4+]=10,59,81,0 iq2s_groups_seen=150 window_opens=7 fused_dispatches=51
