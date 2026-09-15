@@ -7,7 +7,8 @@ This card is a model-free transfer-path experiment. It starts no model and no
 `llama-server`, and it makes no aggregate or single-response throughput claim. It is
 the written verdict for the candidate tracked as `PRE-PIN` in
 `experiments/HYPOTHESES-2026-09-15-runtime-speed.md`. It is not an accepted runtime
-change; promoting the direction needs a model-level A/B, which this card does not run.
+change; promoting the direction needs a model-level A/B, which was run afterwards and is
+recorded in the Model A/B section at the end of this card.
 
 ## Hypothesis
 
@@ -202,3 +203,154 @@ build/exp070-transfer3/exp070_transfer3 --ranges .../exp070_ranges.txt --shard <
 No repository tree, patch, accepted build or `work/llama.cpp-integration` was modified
 by this experiment. Nothing was committed. The measurement artifacts are appended
 files under `results/archive/EXP-2026-09-16-070/` only.
+
+## Model A/B (2026-09-16)
+
+This section records the live model-level A/B that the model-free part of this card left
+open. It measures the pinned-source direct-DMA direction on the real model and server,
+using the candidate build produced by the EXP-074 integration
+(`results/archive/EXP-2026-09-16-074/REPORT.md`). It is a candidate-build measurement
+only: no default runtime change is proposed, the accepted daily runtime is untouched, and
+promoting the direction is Igor's decision (Hard rule 10).
+
+### Arms and single-variable control
+
+- One binary for both arms: `build/exp074-pinsrc/bin/llama-server`, sha256
+  `9da1c3ef5840234a9d2252d84ba4c62f13e0a0cb3b6570b65ae677d0ff2a8093`, the EXP-074 build.
+- The only variable is the env `GGML_EXPERT_PIN_SOURCE`:
+  - Arm A = `0`: the accepted pinned ring only; the direct-copy branch is off.
+  - Arm B = `1`: pinned-source direct DMA (the default value of the flag in this build).
+- Port 8087, one fresh server per run, 12 CPU threads, EHS off, the accepted MTP profile,
+  `-c 196608`.
+
+### Protocol
+
+- Per run: one warmup `request-short.json`, then `m1` = the 395-token request, then `m2` =
+  the same 395-token request again.
+- For arm B, `m1` pays the one-time registration of the expert ranges it selects; `m2` is
+  steady state, where those ranges are already registered and copied directly.
+- Five pairs, order A/B, B/A, A/B, B/A, A/B to cancel ordering effects.
+- Metrics: `prompt_ms` from the server timing block (`prompt_n = 395` in every measured
+  request), the completion content sha256, and the pin-source activation log line.
+
+### m1: first request (arm B pays the registration)
+
+| pair | A prompt_ms | B prompt_ms | paired gain (A-B)/A |
+| ---: | ---: | ---: | ---: |
+| 1 | 3190.1 | 3760.5 | -17.88 percent |
+| 2 | 2650.6 | 3462.5 | -30.63 percent |
+| 3 | 3120.3 | 3892.5 | -24.75 percent |
+| 4 | 2763.3 | 3708.4 | -34.20 percent |
+| 5 | 3006.2 | 3814.4 | -26.88 percent |
+| median | 3006.2 | 3760.5 | **-26.88 percent** |
+
+Arm B is slower on every pair: **0/5 wins** for B.
+
+### m2: steady state (ranges already registered)
+
+| pair | A prompt_ms | B prompt_ms | paired gain (A-B)/A |
+| ---: | ---: | ---: | ---: |
+| 1 | 2776.0 | 2325.4 | +16.23 percent |
+| 2 | 2827.9 | 2321.2 | +17.92 percent |
+| 3 | 2915.8 | 2393.0 | +17.93 percent |
+| 4 | 2980.2 | 2226.3 | +25.30 percent |
+| 5 | 2917.4 | 2352.1 | +19.38 percent |
+| median | 2915.8 | 2325.4 | **+17.93 percent** |
+
+Arm B is faster on every pair: **5/5 wins** for B, above the >= 3 percent paired-prefill
+bar used across the PRE series.
+
+### Correctness and activation
+
+- The completion content sha256
+  `7dfa7d1eccbcf2b70008864a40d5eb0a0989bfbbf8f8110d371b7c013fbbf2c1` is identical in all
+  20 measured runs (both arms, `m1` and `m2`). The direct path is output-preserving on this
+  workload.
+- Arm B logs
+  `expert pinned source enabled: direct H2D from the mapped GGUF (budget 24576 MiB)`, once
+  per server: the ring/pin path is active, and the ring is bypassed for registered ranges.
+
+### Budget caveat
+
+One 395-token prefill registers about 21.7 GiB of source ranges, close to the default
+24 GiB (`GGML_EXPERT_PIN_SOURCE_BUDGET_MB = 24576`) process-wide cap. The cap is a real
+ceiling, but the probe below shows that the dominant limit is not the byte cap or the
+budget arithmetic: it is the registration overlap rule. A range that is exactly contained
+in an existing registration is a direct hit; a range that only partially overlaps or
+extends past a registered interval is refused and falls back to the ring, even though the
+already-registered pages could serve the copy. The steady-state +17.93 percent therefore
+applies only to the part of the working set that is already pinned and requested again
+exactly, and the sign of the net benefit over a multi-prompt session depends on how much
+the selected expert set repeats exactly, which the A/B above did not characterize (the
+probe below does).
+
+### Caveat probe (2026-09-16)
+
+Same binary (`build/exp074-pinsrc/bin/llama-server`, sha256 `9da1c3ef...`) for both arms,
+port 8087, one fresh server per arm. Per run: warmup `request-short.json`, then `p1` = the
+395-token `request.json`, then `p2` = a different 396-token prompt
+(`results/archive/EXP-2026-09-16-074/ab/request-alt.json`, which selects different
+experts), then `p1` again as `p1b`. Arm V2 = `GGML_EXPERT_PIN_SOURCE=1` (pinsrc), arm
+W2 = `GGML_EXPERT_PIN_SOURCE=0` (ring only). Both arms are single fresh-server runs, so
+these are point measurements, not a paired median.
+
+| request | tokens | V2 pinsrc prompt_ms | W2 ring prompt_ms | V2 content sha256 |
+| --- | ---: | ---: | ---: | --- |
+| `p1` (first, registers its experts) | 395 | 4952.6 | 3119.4 | `7dfa7d1eccbcf2b7...` |
+| `p2` (different prompt, different experts) | 396 | 3926.4 | 3729.8 | `db17abc87bf4...` |
+| `p1b` (same prompt again) | 395 | 2461.9 | 2902.0 | `7dfa7d1eccbcf2b7...` |
+
+Derived paired numbers:
+
+- `p1b` (repeated prompt, third request): pinsrc 2461.9 ms vs ring 2902.0 ms, pinsrc
+  **+15.17 percent** faster. Once the ranges are registered and requested again exactly,
+  the direct path wins.
+- `p2` (novel prompt, different experts): pinsrc 3926.4 ms vs ring 3729.8 ms, pinsrc
+  **-5.27 percent** slower. The novel expert set cannot reuse the registrations made by
+  `p1`, so it falls back to the ring and still pays the registration attempt.
+
+Release counters from the V2 server log (`results/pinsrc-V2.log`):
+`expert pinned source: 44442 direct ranges, 22365 fallback ranges, 0 register failures,
+21963 intervals released`. Over the three requests roughly two thirds of the copies went
+direct and one third fell back.
+
+Fallback reason in the same log (a reason not present in the EXP-074 gate report):
+`pinned source unavailable (range overlaps a registered range), using the pinned slot ring`.
+
+Interpretation: only an exact containment is served directly; a partially overlapping or
+extending range is refused even when the covering registration already holds its pages.
+Over a multi-prompt session the net benefit therefore depends on how much expert ranges
+repeat exactly, not merely on how much they overlap. This is the concrete, actionable
+limitation of the current candidate, and it names the natural next hypothesis: serve
+partially overlapping ranges from the covering registration (split the request across the
+covering interval, or extend the interval), which would extend the direct path to novel
+prompts. That follow-up is recorded as `PRE-PIN2` in
+`experiments/HYPOTHESES-2026-09-15-runtime-speed.md` and is not measured here.
+
+### Verdict
+
+- **CONFIRMED_POST_PIN.** Once the ranges are registered, the pinned-source direct-DMA
+  path cuts `m2` prefill by a median **+17.93 percent** with **5/5** wins, above the
+  >= 3 percent bar, with byte-identical completion content. The steady-state gain is
+  confirmed at the model level.
+- **REJECTED_COLD_START.** The first request that pays the registration is a median
+  **-26.88 percent** regression with **0/5** wins, because the lazy registration sits on
+  the first-request critical path. The cold-start regression is recorded as a real cost of
+  this design, not a noise artifact.
+- **Overlap fallback is why the net sign depends on repetition.** The caveat probe shows
+  the limit is the registration overlap rule, not the byte budget: a novel prompt that
+  only partially overlaps existing registrations falls back to the ring (`p2`,
+  -5.27 percent), while an exactly repeated prompt wins (`p1b`, +15.17 percent). The
+  multi-prompt net sign therefore depends on how much the expert set repeats exactly.
+- **No default runtime change is proposed.** Both statements are true at once: this build
+  is a candidate, not the default. Whether the steady-state win outweighs the cold-start
+  cost, and whether the overlap fallback makes the win workload-dependent, is Igor's
+  decision.
+
+### Evidence
+
+- Raw responses: `results/archive/EXP-2026-09-16-074/ab/`, `A1..A5` and `B1..B5`, each with
+  `-warmup.json`, `-m1.json` and `-m2.json`. Every measured file reports `prompt_n = 395`.
+- Run logs: `results/pinsrc-A1..A5.log`, `results/pinsrc-B1..B5.log`.
+- Implementation and model-free gate for the same binary:
+  `results/archive/EXP-2026-09-16-074/REPORT.md`.
