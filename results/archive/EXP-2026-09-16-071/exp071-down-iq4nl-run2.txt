@@ -1,0 +1,23 @@
+EXP-2026-09-16-071 IQ4_NL down-projection, model-free microbenchmark
+single pinned core (taskset -c 8), -O3 -march=native (AVX2+FMA)
+real decode verify shape: ne00/K=640, ne01/rows=2560, experts=512, top-10, Ny tokens
+PRE-REGISTERED BAR: bit-exact (maxdiff==0) AND >= 1.15x vs stock at Ny=3
+stock = library ggml_vec_dot_iq4_nl_q8_0; fusB = EXP-021 buffer; fusR = register-resident unpack-once/apply-to-all-Ny
+
+=== resident (working set 0.88 MiB, fits L3) ===
+shape K=640 rows=2560 nb=20 | one call = rows*Ny dots, weight bytes/call=921600
+  Ny |   stock ns  inline ns    fusB ns    fusR ns |  inl x fusB x fusR x | stock B/ns fusR B/ns | verdict
+   1 |    79704.1    71111.4    94493.9    78543.5 | 1.121x 0.843x 1.015x |     11.56     11.73 | FAIL (inl 0.0e+00 EXACT, reuse-vs-inl 0.905x)
+   2 |   157558.2   143286.5   148552.0   110901.5 | 1.100x 1.061x 1.421x |      5.85      8.31 | PASS (inl 0.0e+00 EXACT, reuse-vs-inl 1.292x)
+   3 |   236434.1   212846.4   200870.6   145951.4 | 1.111x 1.177x 1.620x |      3.90      6.31 | PASS (inl 0.0e+00 EXACT, reuse-vs-inl 1.458x)
+   4 |   319836.1   287250.6   259000.7   188661.7 | 1.113x 1.235x 1.695x |      2.88      4.88 | PASS (inl 0.0e+00 EXACT, reuse-vs-inl 1.523x)
+   8 |   646889.5   573856.0   475275.5   352619.0 | 1.127x 1.361x 1.835x |      1.42      2.61 | PASS (inl 0.0e+00 EXACT, reuse-vs-inl 1.627x)
+
+=== streaming (working set 112 MiB, above L3) ===
+single-core read-sum ceiling on the same buffer: 21.64 GiB/s (23.233 bytes/ns)
+  Ny |   stock ns  inline ns    fusR ns |  inl x fusR x | stock B/ns fusR B/ns | verdict
+   1 |   821921.3   754665.1   838369.7 | 1.089x 0.980x |     11.21     10.99 | FAIL (maxdiffR 0.0e+00, maxdiffI 0.0e+00, reuse-vs-inl 0.900x)
+   2 |  1696863.5  1439939.6  1133336.4 | 1.178x 1.497x |      5.43      8.13 | PASS (maxdiffR 0.0e+00, maxdiffI 0.0e+00, reuse-vs-inl 1.271x)
+   3 |  2376734.3  2214523.2  1462680.8 | 1.073x 1.625x |      3.88      6.30 | PASS (maxdiffR 0.0e+00, maxdiffI 0.0e+00, reuse-vs-inl 1.514x)
+   4 |  3196294.7  2854994.1  1974245.1 | 1.120x 1.619x |      2.88      4.67 | PASS (maxdiffR 0.0e+00, maxdiffI 0.0e+00, reuse-vs-inl 1.446x)
+   8 |  6351076.2  5730350.3  3544186.8 | 1.108x 1.792x |      1.45      2.60 | PASS (maxdiffR 0.0e+00, maxdiffI 0.0e+00, reuse-vs-inl 1.617x)

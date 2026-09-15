@@ -1,0 +1,2 @@
+{"probe":"pin","ranges":17886,"range_bytes":23237033984,"intervals":17886,"interval_bytes":23311929344,"flags":"read_only"}
+{"probe":"result","registered_intervals":17886,"failed_intervals":0,"registered_bytes":23311929344,"registered_gib":21.7109,"target_gib":21.6412,"complete":true}

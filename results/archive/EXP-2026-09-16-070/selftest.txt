@@ -1,0 +1,6 @@
+CHECK PASS st3_mode_A_all_checks
+CHECK PASS st4_mode_B_matches_A
+CHECK PASS st5_mode_C_matches_A
+CHECK PASS st6_source_unchanged
+CHECK PASS st7_device_roundtrip_equals_source
+SELFTEST PASS (5 pass, 0 fail)
