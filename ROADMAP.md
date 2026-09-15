@@ -32,12 +32,18 @@ EXP-2026-09-15-058 `GGML_OP_OFFLOAD_MIN_BATCH` sweep: the default 32 is optimal,
 EXP-2026-09-15-064 ring depth 4: median -4.6%, 2/5, noise-dominated; the ring saturates
 at 3 slots.
 
-**DEC-1 host serialization: implemented, not yet measured.** The device-to-host async
-readback in the scheduler (`GGML_SCHED_READBACK_ASYNC`, default off) is implemented and
-the model-free gate PASSES (the scheduler sha256 is unchanged with the flag off and on).
-The live decode A/B has not been run and needs a separate approval (gate G4). Tree
+**DEC-1 host serialization: REJECTED (measured null).** The live decode A/B ran on
+2026-09-16 with the single binary `build/exp065-hostser` (sha256 `ddbe62dd…`); the only
+variable was env `GGML_SCHED_READBACK_ASYNC` (A=0 / B=1), 5 pairs order A/B, B/A, A/B,
+B/A, A/B. Median paired decode gain **-0.05%**, B wins 2/5, arm medians A 18.9149 /
+B 18.9597 tok/s (**+0.237%**), content byte-identical (`9270353f…`): inside noise and
+below the 2 percent bar. The device-to-host async readback in the scheduler
+(`GGML_SCHED_READBACK_ASYNC`, default off) was implemented and its model-free gate
+PASSES (the scheduler sha256 is unchanged with the flag off and on), but the design
+note's 1 to 4 percent estimate is not realized at the measured workload. Tree
 `work/llama.cpp-exp065-hostser`, build `build/exp065-hostser`, binary sha256 `ddbe62dd…`.
-Card: `experiments/EXP-2026-09-15-065-host-serialization.md`.
+Card: `experiments/EXP-2026-09-15-065-host-serialization.md`, evidence
+`results/archive/EXP-2026-09-16-065/ab/`.
 
 **Dead knobs closed without runs** (`experiments/designs/exp057/dead-levers.md`):
 `GGML_ET_*` (the ET backend is not built), `GGML_CUDA_PDL` (inert on sm_89), `--poll`

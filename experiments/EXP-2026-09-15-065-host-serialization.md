@@ -1,12 +1,13 @@
 # EXP-2026-09-15-065: decode host-serialization readback (device-to-host, DEC-1)
 
-Status: `IMPLEMENTED` (built + model-free gate PASS; a live decode A/B is not run and requires a separate approval under gate G4).
-Kind: `performance` (candidate; the expected effect is unmeasured).
+Status: `REJECTED` (built + model-free gate PASS; the live decode A/B was run on 2026-09-16 and the candidate was rejected: no measurable effect, inside noise, below the 2 percent bar).
+Kind: `performance` (candidate; measured null in the live decode A/B of 2026-09-16).
 
-This card records the implementation and the model-free gate for DEC-1 in
-`experiments/HYPOTHESES-2026-09-15-runtime-speed.md`. No model and no server was
-started. No performance number is claimed. The build and gate artifacts are under
-`results/archive/EXP-2026-09-16-065/`; the gate ran on 2026-09-16.
+This card records the implementation and the model-free gate for DEC-1, and the
+live decode A/B that followed, in `experiments/HYPOTHESES-2026-09-15-runtime-speed.md`.
+The build and gate artifacts are under `results/archive/EXP-2026-09-16-065/`; the gate
+ran on 2026-09-16, and the live decode A/B ran on the same day with its raw data under
+`results/archive/EXP-2026-09-16-065/ab/`.
 
 ## Hypothesis
 
@@ -132,3 +133,53 @@ The build and the full gate record for the same candidate also live under
 `results/archive/EXP-2026-09-16-065/` (`REPORT.md`, `EXP-065-ggml-backend.patch`,
 `tests/run-model-free-exp065.sh`, `tests/run-model-free-exp065-ring.sh`,
 `tests/log-*.txt`).
+
+## Live decode A/B (2026-09-16)
+
+Verdict: **REJECTED**. No measurable effect: the result is inside noise and far
+below the >= 2 percent acceptance bar.
+
+### Protocol
+
+- One binary used for BOTH arms: `build/exp065-hostser/bin/llama-server`, sha256
+  `ddbe62ddebc474f5e0a503d49219953d1561d48c64abaa8c508da4c906f05b78`.
+- The only variable is the environment variable `GGML_SCHED_READBACK_ASYNC`:
+  arm A = `0` (flag off), arm B = `1` (flag on).
+- Port 8087; one fresh server per run; one warmup `request-short.json` followed by
+  one measured `request-decode256.json`.
+- Five pairs, order A/B, B/A, A/B, B/A, A/B.
+- One warm run was executed first and is excluded from the table below.
+
+### Measured decode256 `predicted_per_second`
+
+| pair | A (flag off) | B (flag on) | paired gain (B vs A) |
+| ---: | ---: | ---: | ---: |
+| 1 | 18.5616 | 18.5519 | -0.052% |
+| 2 | 19.0279 | 18.4201 | -3.194% |
+| 3 | 18.6679 | 18.9597 | +1.563% |
+| 4 | 18.9149 | 19.0439 | +0.682% |
+| 5 | 19.0849 | 19.0666 | -0.096% |
+
+- Paired gains (B vs A, percent): -0.052, -3.194, +1.563, +0.682, -0.096.
+- Median paired gain: **-0.052%**; B wins 2/5.
+- Arm medians: A **18.9149** / B **18.9597**, a difference of **+0.237%**.
+
+### Correctness
+
+The completion content sha256
+`9270353f0601d5d660a61ee72b94ece46c5d7ed425321da8e88bd09f1abd9757` is identical
+in all 10 measured runs.
+
+### Interpretation
+
+The paired median is negative and B wins only 2 of 5 pairs. The arm-median
+difference of +0.237% is positive but negligible, and both readings sit inside
+run-to-run noise and far below the >= 2 percent bar. The design note's own
+estimate (1 to 4 percent, central about 2 percent, and at or below the bar) is not
+realized at the measured workload. No change is delivered; the flag stays default
+off.
+
+### Raw data
+
+`results/archive/EXP-2026-09-16-065/ab/`: `A1..A5` and `B1..B5` decode256 JSON plus
+the paired warmup files, and the excluded `warm-*` run.
