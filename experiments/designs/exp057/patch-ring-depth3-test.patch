@@ -1,0 +1,33 @@
+diff --git results/archive/EXP-2026-09-15-057/tests/test-exp057-ring.cpp results/archive/EXP-2026-09-15-057/tests/test-exp057-ring.cpp
+--- a/results/archive/EXP-2026-09-15-057/tests/test-exp057-ring.cpp
++++ b/results/archive/EXP-2026-09-15-057/tests/test-exp057-ring.cpp
+@@ -54,9 +54,9 @@
+     int device;
+     std::string name;
+     cudaEvent_t copy_event;
+-    void * ring_slots[2];
+-    cudaEvent_t ring_events[2];
+-    bool ring_pending[2];
++    void * ring_slots[3];
++    cudaEvent_t ring_events[3];
++    bool ring_pending[3];
+     size_t ring_next;
+     int ring_state;
+     size_t ring_n_calls;
+@@ -124,6 +124,7 @@
+         { 10 * EXP,              EXP,                    "D sparse single expert 10" },
+         { 11 * EXP,              EXP,                    "E sparse single expert 11" },
+         { 13 * EXP,              EXP,                    "F last expert exact to buffer end" },
++        { 6 * EXP,               6 * EXP + 512,           "G consecutive 6+pad (3-slot wrap)" },
+     };
+ 
+     bool all_staged = true;
+@@ -174,7 +175,7 @@
+         check(log_contains("expert ring enabled"), "flag ON: ring init logged");
+         check(all_staged, "flag ON: all calls staged");
+         check(ctxm->ring_n_calls == want_calls && ctxm->ring_n_chunks == want_chunks, "ring counters (calls/chunks)");
+-        check(ctxm->ring_n_chunks >= 6, "at least three slot reuse cycles");
++        check(ctxm->ring_n_chunks >= 9, "at least three full 3-slot reuse wraps");
+     } else {
+         check(!all_staged && all_fallback, "flag OFF: every staged call declined, pageable fallback used");
+         check(ctxm->ring_n_calls == 0, "flag OFF: ring never used");
