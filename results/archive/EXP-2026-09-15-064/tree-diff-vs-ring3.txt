@@ -1,0 +1,11 @@
+--- work/llama.cpp-exp062-ring3/ggml/src/ggml-cuda/common.cuh	2026-09-15 22:22:59.347934094 +0300
++++ work/llama.cpp-exp064-ring4/ggml/src/ggml-cuda/common.cuh	2026-09-15 23:50:49.598264751 +0300
+@@ -1414,7 +1414,7 @@
+     }
+ };
+ 
+-static constexpr size_t GGML_CUDA_EXPERT_RING_SLOTS      = 3;
++static constexpr size_t GGML_CUDA_EXPERT_RING_SLOTS      = 4;
+ static constexpr size_t GGML_CUDA_EXPERT_RING_SLOT_SIZE  = 16 * 1024 * 1024;
+ 
+ struct ggml_backend_cuda_context {
