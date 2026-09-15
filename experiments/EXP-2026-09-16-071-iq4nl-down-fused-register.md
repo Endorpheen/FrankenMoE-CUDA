@@ -1,6 +1,7 @@
 # EXP-2026-09-16-071: register-resident fused IQ4_NL down projection at the decode verify shape
 
-Status: `MODEL-FREE CONFIRMED` (2026-09-16).
+Status: kernel `MODEL-FREE CONFIRMED` (2026-09-16); the integrated end-to-end decode A/B is
+`REJECTED` (see the Decode A/B section at the end).
 Kind: `microbenchmark`.
 
 This card is a model-free kernel microbenchmark. It starts no model, no
@@ -210,3 +211,71 @@ No tracked file in the repository, and no file of `work/llama.cpp-exp062-ring3` 
 `build/exp062-ring3`, was modified by this experiment. Nothing was committed. The
 harness and its raw output are appended files under
 `results/archive/EXP-2026-09-16-071/` only.
+
+## Decode A/B (2026-09-16)
+
+Status: `REJECTED` at the model level. The kernel result above stands as a documented
+microbenchmark; this section records the end-to-end test of the integrated path.
+
+The fused kernel was then integrated into a candidate server tree and measured live. The
+integration itself is documented in `results/archive/EXP-2026-09-16-072/REPORT.md`; raw A/B
+JSON is in `results/archive/EXP-2026-09-16-072/ab/`.
+
+### Protocol
+
+- One binary for both arms: `build/exp072-iq4nl-fused/bin/llama-server`, sha256
+  `38b17c7f6832e554f7176e7d86869172c9fd77f8e001892f1b1590299466d4fd`.
+- The only variable is the env `GGML_CPU_IQ4NL_FUSED`: arm A sets it to `0` (fused path off),
+  arm B sets it to `1` (fused path on) plus `GGML_CPU_IQ4NL_FUSED_STATS=1` for the counters.
+  Everything else is identical between arms.
+- Port 8087, 12 threads, EHS off, same accepted runtime profile. Each fresh server runs one
+  warmup `request-short.json` and then one measured `request-decode256.json`.
+- Arm order across the 5 pairs: A/B, B/A, A/B, B/A, A/B.
+- One warm run was executed first and excluded from the analysis; it is kept as
+  `warm-decode256.json` (15.3840 tok/s) and is not part of any pair.
+
+### Results
+
+Measured `predicted_per_second` for the decode256 request, one value per fresh server.
+
+| Pair | Arm A (off) | Arm B (on) | Paired gain B vs A |
+| ---: | ---: | ---: | ---: |
+| 1 (A/B) | 18.6129 | 19.1672 | +2.978% |
+| 2 (B/A) | 18.9070 | 18.5676 | -1.795% |
+| 3 (A/B) | 18.6560 | 18.8344 | +0.956% |
+| 4 (B/A) | 18.9287 | 18.4261 | -2.655% |
+| 5 (A/B) | 18.7295 | 19.1649 | +2.325% |
+
+- Median paired gain: **+0.956%**, B wins **3/5**.
+- Arm medians: A **18.7295** tok/s, B **18.8344** tok/s, a **+0.560%** difference.
+- The completion `content` sha256
+  `9270353f0601d5d660a61ee72b94ece46c5d7ed425321da8e88bd09f1abd9757` is identical in all 10
+  measured runs, so the fused path is byte-preserving end to end; the reject is purely about
+  speed.
+
+### Verdict
+
+**REJECTED at the model level.** There is no measurable decode gain: the median paired gain
++0.956% is below the `>= 2%` bar and inside the observed run-to-run spread, which spans about
+-2.7% to +3.0% with alternating signs around zero.
+
+The model-free kernel ratios from EXP-071 and the EXP-072 full-call bench (1.627x at `Ny = 3`
+with full sharing, 1.1485x at 12 threads with full sharing, 1.0519x on the EXP-046-like routing
+mix, 1.0131x on sparse routing) predicted a routing-dependent end-to-end effect of roughly 1 to
+3%. The real decode routing does not provide enough expert sharing for that to clear the bar,
+which is exactly the risk noted in the Caveats above: the realized group-size distribution is
+not the near-full sharing of the model-free cases.
+
+The kernel microbenchmark (1.627x at `Ny = 3`, bit-exact) is unaffected and remains a valid,
+documented result. What is rejected is the claim that integrating it into the decode path
+produces a measurable end-to-end decode speedup. The fused path stays default off in the
+candidate build; the accepted runtime is unchanged.
+
+### Files
+
+| File | sha256 |
+| --- | --- |
+| `results/archive/EXP-2026-09-16-072/REPORT.md` | integration report (this A/B's context) |
+| `results/archive/EXP-2026-09-16-072/ab/A{1..5}-decode256.json` | arm A measured runs |
+| `results/archive/EXP-2026-09-16-072/ab/B{1..5}-decode256.json` | arm B measured runs |
+| `results/archive/EXP-2026-09-16-072/ab/warm-decode256.json` | excluded warm run |
