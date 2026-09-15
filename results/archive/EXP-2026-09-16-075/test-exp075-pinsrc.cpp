@@ -5,6 +5,7 @@
 //              read the device bytes back and hash them (EXP-074 hash-list format)
 //   selftest - synthetic ranges with guards, padding and partial overlaps
 //   shifted  - register range set A, then request a shifted set B that only partly overlaps A
+//   adjacent - two page-adjacent registrations, then a request spanning their merged boundary
 //
 // The release counters are captured through the ggml log callback, so the binary reports the
 // direct/split/fallback split and the teardown result without a model.
@@ -69,7 +70,7 @@ static long proc_status_kib(const char * field) {
 // release counter capture through the ggml log callback
 // ---------------------------------------------------------------------------
 struct PinCounters {
-    unsigned long long direct = 0, split = 0, fallback = 0, fail = 0, intervals = 0;
+    unsigned long long direct = 0, split = 0, fallback = 0, fail = 0, intervals = 0, regions = 0;
     unsigned long long bytes_released = 0, bytes_still = 0, sub_direct = 0, sub_reg = 0;
     bool seen = false;
 };
@@ -85,6 +86,18 @@ static void log_cb(enum ggml_log_level level, const char * text, void * user_dat
         return;
     }
     PinCounters c;
+    // current log: separate physical registration count
+    if (sscanf(p + strlen(key),
+               " %llu direct ranges, %llu split ranges, %llu fallback ranges, %llu register failures,"
+               " %llu intervals released, %llu physical regions released, %llu bytes released,"
+               " %llu bytes still pinned, %llu covered sub-copies, %llu registered sub-copies",
+               &c.direct, &c.split, &c.fallback, &c.fail, &c.intervals, &c.regions,
+               &c.bytes_released, &c.bytes_still, &c.sub_direct, &c.sub_reg) == 10) {
+        c.seen = true;
+        g_pin = c;
+        return;
+    }
+    // pre-fix log: merged intervals only, physical count fell back to the interval count
     if (sscanf(p + strlen(key),
                " %llu direct ranges, %llu split ranges, %llu fallback ranges, %llu register failures,"
                " %llu intervals released, %llu bytes released, %llu bytes still pinned,"
@@ -92,6 +105,7 @@ static void log_cb(enum ggml_log_level level, const char * text, void * user_dat
                &c.direct, &c.split, &c.fallback, &c.fail, &c.intervals,
                &c.bytes_released, &c.bytes_still, &c.sub_direct, &c.sub_reg) == 9) {
         c.seen = true;
+        c.regions = c.intervals;
         g_pin = c;
     }
 }
@@ -367,15 +381,106 @@ static int mode_selftest(void) {
 }
 
 // ---------------------------------------------------------------------------
+// adjacent: two page-adjacent registrations merge logically; a request that spans
+// the hidden physical boundary must be cut there, not copied across it
+// ---------------------------------------------------------------------------
+static int mode_adjacent(void) {
+    const size_t ADJ   = 4 << 20;   // one registration per adjacent block
+    const size_t SPAN  = 1 << 20;   // spanning request starts inside block 1
+    const size_t SPAN_N = 6 << 20;  // [1 MiB, 7 MiB) crosses the shared boundary at 4 MiB
+    const size_t GUARD = 4096;
+    const size_t REGION = 16 << 20;
+    const size_t arena_bytes = 2 * GUARD + REGION;
+
+    void * src_map = mmap(nullptr, 2 * ADJ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (src_map == MAP_FAILED) { fprintf(stderr, "anon mmap failed\n"); return 2; }
+    uint8_t * src = (uint8_t *) src_map;
+    for (size_t i = 0; i < 2 * ADJ; ++i) src[i] = (uint8_t) (i * 53 + (i >> 6) * 29 + 3);
+
+    DeviceArena arena;
+    if (!arena_init(arena, arena_bytes)) return 2;
+
+    std::vector<uint8_t> zero(arena_bytes, 0xA5);
+    ggml_backend_tensor_set(arena.tensor, zero.data(), 0, arena_bytes);
+
+    const bool split_on = getenv("GGML_EXPERT_PIN_OVERLAP_SPLIT") == nullptr ||
+        strcmp(getenv("GGML_EXPERT_PIN_OVERLAP_SPLIT"), "0") != 0;
+
+    std::vector<uint8_t> want(REGION, 0xA5);
+
+    struct Req { size_t src_off; size_t dst_off; size_t size; const char * name; };
+    std::vector<Req> reqs = {
+        { 0,        0,        ADJ, "adjacent A1 (register)" },
+        { ADJ,      ADJ,      ADJ, "adjacent A2 (register)" },
+    };
+    if (split_on) {
+        reqs.push_back({ SPAN, 8 << 20, SPAN_N, "spanning boundary (clamped copies)" });
+    } else {
+        // the spanning request is fully inside the merged interval, and the EXP-074 whole-range
+        // path would issue one copy across the physical end; that latent case is out of scope here
+        printf("ADJACENT note: spanning request skipped with the split disabled (EXP-074 path)\n");
+    }
+
+    const long swap_before = proc_status_kib("VmSwap");
+    bool all_ok = true;
+    for (const Req & r : reqs) {
+        const bool handled = call_ring(arena, src + r.src_off, GUARD + r.dst_off, r.size);
+        ggml_backend_synchronize(arena.backend);
+        if (!handled) { all_ok = false; printf("ADJACENT refused %s\n", r.name); }
+        memcpy(want.data() + r.dst_off, src + r.src_off, r.size);
+    }
+
+    std::vector<uint8_t> got(REGION);
+    ggml_backend_tensor_get(arena.tensor, got.data(), GUARD, REGION);
+    check(all_ok && got == want, "adjacent: device image byte-exact over the adjacent blocks");
+
+    std::vector<uint8_t> g(2 * GUARD, 0xA5);
+    ggml_backend_tensor_get(arena.tensor, g.data(), 0, GUARD);
+    ggml_backend_tensor_get(arena.tensor, g.data() + GUARD, GUARD + REGION, GUARD);
+    check(memcmp(g.data(), std::vector<uint8_t>(2 * GUARD, 0xA5).data(), 2 * GUARD) == 0, "adjacent: sentinel guards unchanged");
+
+    arena_free(arena);
+    const long swap_free = proc_status_kib("VmSwap");
+
+    printf("{\"mode\":\"adjacent\",\"split_env\":%s,\"counters_seen\":%s,\"direct\":%llu,\"split\":%llu,"
+           "\"fallback\":%llu,\"fail\":%llu,\"intervals\":%llu,\"regions\":%llu,\"bytes_released\":%llu,"
+           "\"bytes_still_pinned\":%llu,\"sub_direct\":%llu,\"sub_reg\":%llu,"
+           "\"swap_before_kib\":%ld,\"swap_after_free_kib\":%ld}\n",
+           split_on ? "true" : "false", g_pin.seen ? "true" : "false",
+           g_pin.direct, g_pin.split, g_pin.fallback, g_pin.fail, g_pin.intervals, g_pin.regions,
+           g_pin.bytes_released, g_pin.bytes_still, g_pin.sub_direct, g_pin.sub_reg,
+           swap_before, swap_free);
+    fflush(stdout);
+
+    check(g_pin.seen, "adjacent: release counters captured");
+    check(swap_before == 0 && swap_free == 0, "adjacent: VmSwap stays 0");
+    if (split_on) {
+        check(g_pin.fallback == 0 && g_pin.direct == 3 && g_pin.split == 0,
+              "adjacent: spanning request served, no fallback");
+        check(g_pin.regions == 2 && g_pin.intervals == 1 && g_pin.sub_direct == 2,
+              "adjacent: two physical regions, copies clamped at the shared boundary");
+        check(g_pin.bytes_still == 0, "adjacent: teardown leaves no registered byte");
+    } else {
+        check(g_pin.regions == 2 && g_pin.bytes_still == 0,
+              "adjacent: two physical regions released");
+    }
+
+    munmap(src_map, 2 * ADJ);
+    return checks_fail == 0 ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
 // shifted: register set A, then request a shifted set B that partly overlaps A
 // ---------------------------------------------------------------------------
 static int mode_shifted(void) {
     const size_t E    = 4 << 20;   // expert spacing
     const size_t BLK  = 3 << 20;   // registered block per expert
     const size_t NK   = 8;         // experts in set A
+    const size_t ADJ  = 4 << 20;   // page-adjacent registration block
+    const size_t TAIL = NK * E;    // first page-adjacent block
     const size_t GUARD = 4096;
-    const size_t REGION = 64 << 20;
-    const size_t SRC_BYTES = NK * E + E;
+    const size_t REGION = 96 << 20;
+    const size_t SRC_BYTES = NK * E + 3 * E;
     const size_t arena_bytes = 2 * GUARD + REGION;
 
     void * src_map = mmap(nullptr, SRC_BYTES, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -397,14 +502,19 @@ static int mode_shifted(void) {
     for (size_t k = 0; k < NK; ++k) {
         reqs.push_back({ src, k * E, k * BLK, BLK, "A expert" });
     }
+    // set A adjacent: two page-adjacent registrations that merge into one logical interval
+    reqs.push_back({ src, TAIL, TAIL, ADJ, "A adjacent 1" });
+    reqs.push_back({ src, TAIL + ADJ, TAIL + ADJ, ADJ, "A adjacent 2" });
     // set B fully contained: inside each registered expert
     for (size_t k = 0; k < NK; ++k) {
-        reqs.push_back({ src, k * E + BLK / 2, 24 * (1 << 20) + k * (1 << 20), 1 << 20, "B contained" });
+        reqs.push_back({ src, k * E + BLK / 2, 32 * (1 << 20) + k * (1 << 20), 1 << 20, "B contained" });
     }
     // set B shifted: starts inside an expert, crosses its end, ends inside the next expert
     for (size_t k = 0; k + 1 < NK; ++k) {
-        reqs.push_back({ src, k * E + 2 * (1 << 20), 33 * (1 << 20) + k * BLK, BLK, "B shifted" });
+        reqs.push_back({ src, k * E + 2 * (1 << 20), 40 * (1 << 20) + k * BLK, BLK, "B shifted" });
     }
+    // set B spanning: crosses the hidden boundary shared by the two adjacent registrations
+    reqs.push_back({ src, TAIL + (1 << 20), 64 * (1 << 20), 8 << 20, "B spanning" });
 
     const long swap_before = proc_status_kib("VmSwap");
     bool all_ok = true;
@@ -435,12 +545,12 @@ static int mode_shifted(void) {
     const bool regfail = getenv("GGML_EXPERT_PIN_REGISTER_FAIL") != nullptr;
 
     printf("{\"mode\":\"shifted\",\"split_env\":%s,\"regfail\":%s,\"counters_seen\":%s,\"direct\":%llu,\"split\":%llu,"
-           "\"fallback\":%llu,\"fail\":%llu,\"intervals\":%llu,\"bytes_released\":%llu,"
+           "\"fallback\":%llu,\"fail\":%llu,\"intervals\":%llu,\"regions\":%llu,\"bytes_released\":%llu,"
            "\"bytes_still_pinned\":%llu,\"sub_direct\":%llu,\"sub_reg\":%llu,"
            "\"swap_before_kib\":%ld,\"swap_during_kib\":%ld,\"swap_after_free_kib\":%ld,\"va_hwm_kib\":%ld}\n",
            split_on ? "true" : "false", regfail ? "true" : "false", g_pin.seen ? "true" : "false",
-           g_pin.direct, g_pin.split, g_pin.fallback, g_pin.fail, g_pin.intervals, g_pin.bytes_released,
-           g_pin.bytes_still, g_pin.sub_direct, g_pin.sub_reg,
+           g_pin.direct, g_pin.split, g_pin.fallback, g_pin.fail, g_pin.intervals, g_pin.regions,
+           g_pin.bytes_released, g_pin.bytes_still, g_pin.sub_direct, g_pin.sub_reg,
            swap_before, swap_during, swap_free, hwm);
     fflush(stdout);
 
@@ -450,16 +560,17 @@ static int mode_shifted(void) {
     if (regfail) {
         // the first attempt per A interval fails and blacklists it; later requests overlap the
         // blacklist and fall back without a new register attempt
-        check(g_pin.direct == 0 && g_pin.split == 0 && g_pin.fallback == 2 * NK + (NK - 1) &&
+        check(g_pin.direct == 0 && g_pin.split == 0 && g_pin.fallback == 3 * NK + 2 &&
               g_pin.fail >= 1,
               "shifted: register-fail forces fallback end to end");
     } else if (split_on) {
-        check(g_pin.fallback == 0 && g_pin.direct == 16 && g_pin.split == NK - 1,
+        check(g_pin.fallback == 0 && g_pin.direct == 2 * NK + 2 && g_pin.split == NK,
               "shifted: split ON serves B, no fallback");
-        check(g_pin.sub_direct > g_pin.sub_reg && g_pin.sub_direct > 0,
-              "shifted: majority of sub-copies are direct (already registered)");
+        check(g_pin.sub_direct == NK + 2 * (NK - 1) + 2 && g_pin.sub_reg == 2 * NK + 2 &&
+              g_pin.regions == 2 * NK + 2,
+              "shifted: clamped copies at every physical boundary");
     } else {
-        check(g_pin.split == 0 && g_pin.fallback == NK - 1 && g_pin.direct == 16,
+        check(g_pin.split == 0 && g_pin.fallback == NK && g_pin.direct == 2 * NK + 2,
               "shifted: split OFF refuses B, falls back to the ring");
     }
 
@@ -470,12 +581,13 @@ static int mode_shifted(void) {
 int main(int argc, char ** argv) {
     ggml_log_set(log_cb, nullptr);
     if (argc < 2) {
-        fprintf(stderr, "usage: %s runtime|selftest|shifted ...\n", argv[0]);
+        fprintf(stderr, "usage: %s runtime|selftest|shifted|adjacent ...\n", argv[0]);
         return 1;
     }
     if (!strcmp(argv[1], "runtime"))  return mode_runtime(argc - 1, argv + 1);
     if (!strcmp(argv[1], "selftest")) return mode_selftest();
     if (!strcmp(argv[1], "shifted"))  return mode_shifted();
+    if (!strcmp(argv[1], "adjacent")) return mode_adjacent();
     fprintf(stderr, "unknown mode %s\n", argv[1]);
     return 1;
 }
