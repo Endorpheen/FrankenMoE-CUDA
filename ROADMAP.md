@@ -1,4 +1,52 @@
-# FrankenMoE roadmap — current state 2026-09-09
+# FrankenMoE roadmap — current state 2026-09-15
+
+**Runtime-speed hypothesis series (2026-09-15): CLOSED.** The series tracked in
+`experiments/HYPOTHESES-2026-09-15-runtime-speed.md` is finished. One candidate was
+accepted and delivered as default-on, five were rejected with numbers, one is
+implemented but waits on an unrun live A/B, and the remainder stay gated or parked.
+Cards: `experiments/EXP-2026-09-15-05*.md` (057 to 061) and
+`experiments/EXP-2026-09-15-06*.md` (062, 064, 065); design notes:
+`experiments/designs/exp057/`.
+
+**EXP-2026-09-15-062: ACCEPTED and delivered** (`kind=performance`). The pinned host
+upload ring depth went from 2 to 3 slots (`GGML_CUDA_EXPERT_RING_SLOTS` 2 -> 3). Five
+clean paired A/B runs on the 395-token request: median paired prefill gain **+11.537%**,
+the candidate won 5/5, the arm medians control 3039.2 ms against candidate 2708.1 ms
+(**-10.891%**), the decode medians 21.94 against 22.43 tok/s; the completion content
+sha256 `7dfa7d1e…` is identical, VmSwap 0, and the ring costs +16 MiB pinned (48 MiB
+total). Mechanism: the saved ~336 ms matches the EXP-043 slot-wait union of 326.679 ms.
+Model-free gates PASS (the depth-3 and depth-2 harnesses; the scheduler sha256
+`39505119…` in all modes). Card: `experiments/EXP-2026-09-15-062-ring-depth3.md`.
+Delivery as default-on per Hard rule 10: patch `patches/ring-depth-3.patch` (sha256
+`3da9825d…`), delivery build `build/exp063-default-runtime` (llama-server sha256
+`9bb4c503…`), and the `scripts/run_qwen38_server.sh` default `BUILD_DIR` switched to it
+(launcher sha256 `95188e5b…`). Model smoke PASS: the ring activation logs 3 pinned host
+slots, the short and 395-token answers are byte-identical to the references
+(`2f409a00…`, `7dfa7d1e…`), ring teardown 31092/31092, clean SIGINT.
+
+**Rejected with numbers.** EXP-2026-09-15-057 CPU affinity: no gain, jitter unchanged.
+EXP-2026-09-15-058 `GGML_OP_OFFLOAD_MIN_BATCH` sweep: the default 32 is optimal, 4 is
+19.8% slower, 4096/8192 are far slower and change the output hash. EXP-2026-09-15-059
+`GGML_CUDA_GRAPH_OPT=1`: 3.0% and 7.9% slower. EXP-2026-09-15-060 `-b 512 -ub 256`:
++57% slower and the output changed. EXP-2026-09-15-061 `-tb 16`: no reproducible gain.
+EXP-2026-09-15-064 ring depth 4: median -4.6%, 2/5, noise-dominated; the ring saturates
+at 3 slots.
+
+**DEC-1 host serialization: implemented, not yet measured.** The device-to-host async
+readback in the scheduler (`GGML_SCHED_READBACK_ASYNC`, default off) is implemented and
+the model-free gate PASSES (the scheduler sha256 is unchanged with the flag off and on).
+The live decode A/B has not been run and needs a separate approval (gate G4). Tree
+`work/llama.cpp-exp065-hostser`, build `build/exp065-hostser`, binary sha256 `ddbe62dd…`.
+Card: `experiments/EXP-2026-09-15-065-host-serialization.md`.
+
+**Dead knobs closed without runs** (`experiments/designs/exp057/dead-levers.md`):
+`GGML_ET_*` (the ET backend is not built), `GGML_CUDA_PDL` (inert on sm_89), `--poll`
+(a no-op under OpenMP), `--spec-draft-cpu-mask` (no threadpool attached to the draft
+context).
+
+**Still gated or parked.** DEC-2 and DEC-5 (the IQ4_NL down-projection and the
+verify-shape kernel, gate G1), DEC-6 (the reduced-vocabulary MTP head, gate G2). DEC-7
+(the CUDA-graph L1 extension) is parked: EXP-052 rejected the L2-only variant.
 
 Current assignment: **none — decode acceleration direction closed 2026-09-10**.
 Three candidates from `docs/DECODE-CANDIDATES-2026-09-09.md` were tested and all
