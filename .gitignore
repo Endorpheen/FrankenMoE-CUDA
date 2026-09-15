@@ -27,6 +27,8 @@ __pycache__/
 /results/archive/EXP-2026-09-06-038/tests/test-exp038-ring
 /results/archive/EXP-2026-09-07-040/tests/test-exp038-ring
 /results/archive/EXP-2026-09-07-041/tests/test-exp041-ring
+/results/archive/EXP-2026-09-15-062/tests/test-exp062-ring
+/results/archive/EXP-2026-09-15-064/tests/test-exp064-ring
 
 # LOCAL_ONLY MultiAgentZone: Oh My OpenAgent sandbox (backups, scripts, test repo)
 /MultiAgentZone/
