@@ -1,0 +1,35 @@
+--- a/ggml/src/ggml-backend.cpp	2026-09-07 19:57:13.144783300 +0300
++++ b/ggml/src/ggml-backend.cpp	2026-09-16 00:09:00.510795879 +0300
+@@ -1743,13 +1743,27 @@
+                     // try async copy, but if not possible, we can still use a sync copy without synchronizing the dst backend, since we handle the synchronization here with multiple copies and events
+                     // TODO: add public function to facilitate this, since applications do not have direct access to the backend interface
+                     if (!split_backend->iface.cpy_tensor_async || !split_backend->iface.cpy_tensor_async(input_backend, split_backend, input, input_cpy)) {
+-                        ggml_backend_synchronize(input_backend);
+-                        if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
+-                            ggml_backend_event_synchronize(sched->events[split_backend_id][sched->cur_copy]);
++                        // EXP-065: device -> host readback on the source stream, then a single wait
++                        static const bool readback_async = []() {
++                            const char * v = getenv("GGML_SCHED_READBACK_ASYNC");
++                            return v != nullptr && strcmp(v, "0") != 0;
++                        }();
++                        const bool d2h_async = readback_async &&
++                            !ggml_backend_buffer_is_host(input->buffer) &&
++                            ggml_backend_buffer_is_host(input_cpy->buffer) &&
++                            input_backend->iface.get_tensor_async != nullptr;
++                        if (d2h_async) {
++                            ggml_backend_tensor_get_async(input_backend, input, input_cpy->data, 0, ggml_nbytes(input));
++                            ggml_backend_synchronize(input_backend);
+                         } else {
+-                            ggml_backend_synchronize(split_backend);
++                            ggml_backend_synchronize(input_backend);
++                            if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
++                                ggml_backend_event_synchronize(sched->events[split_backend_id][sched->cur_copy]);
++                            } else {
++                                ggml_backend_synchronize(split_backend);
++                            }
++                            ggml_backend_tensor_copy(input, input_cpy);
+                         }
+-                        ggml_backend_tensor_copy(input, input_cpy);
+                     }
+                 }
+             }
