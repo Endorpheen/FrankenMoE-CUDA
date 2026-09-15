@@ -8,17 +8,20 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# Default to the EXP-046 default runtime: the accepted EXP-038/041 pinned upload ring, the
-# EXP-045 two-thread CPU gather and the accepted EXP-046 fused IQ2_S decode path
+# Default to the EXP-063 default runtime: the accepted EXP-038/041 pinned upload ring, the
+# EXP-045 two-thread CPU gather, the accepted EXP-046 fused IQ2_S decode path and the accepted
+# EXP-062 pinned ring depth 3
 # (GGML_CPU_IQ2S_FUSED=0 restores the stock per-row path; GGML_EXPERT_RING_GATHER2T=0 restores
 # the single-thread memcpy; GGML_EXPERT_PINNED_RING=0 restores the pageable path for diagnostics).
-# Source: work/llama.cpp-exp046-default = pinned base 4aaad5d3 + patches/expert-tier-integration.patch +
-# integration-drift.patch + mtp-sidecar.patch + pinned-ring.patch + pinned-ring-default-on.patch +
-# two-thread-gather.patch + iq2s-fused-decode.patch + iq2s-fused-decode-default-on.patch.
-# The older build/exp045-default-runtime (no fused path), build/exp041-default-runtime
-# (single-thread gather) and build/expert-tier-franken-cuda (ring absent) are kept untouched as
-# fallbacks; select them with BUILD_DIR=...
-BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/exp046-default-runtime}"
+# Source: work/llama.cpp-exp062-ring3 = work/llama.cpp-exp046-default (pinned base 4aaad5d3 +
+# patches/expert-tier-integration.patch + integration-drift.patch + mtp-sidecar.patch +
+# pinned-ring.patch + pinned-ring-default-on.patch + two-thread-gather.patch +
+# iq2s-fused-decode.patch + iq2s-fused-decode-default-on.patch) + patches/ring-depth-3.patch
+# (EXP-2026-09-15-062: GGML_CUDA_EXPERT_RING_SLOTS 2 -> 3, prefill median +11.5 percent, 5/5 pairs).
+# The older build/exp046-default-runtime (ring depth 2), build/exp045-default-runtime (no fused
+# path), build/exp041-default-runtime (single-thread gather) and build/expert-tier-franken-cuda
+# (ring absent) are kept untouched as fallbacks; select them with BUILD_DIR=...
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/exp063-default-runtime}"
 SERVER_BIN="${BUILD_DIR}/bin/llama-server"
 [[ -x "${SERVER_BIN}" ]] || { echo "Missing llama-server: ${SERVER_BIN} (see scripts/build.sh)" >&2; exit 2; }
 
