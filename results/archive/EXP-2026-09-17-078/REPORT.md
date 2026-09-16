@@ -293,3 +293,49 @@ Live A/B of `build/exp078-pin-idlefast` against the accepted ring arm, cache-bal
 1 and 2 as the decision points and the session total as the verdict. If prompts 1 and 2 are neutral
 while prompts 3+ keep the EXP-076 win, the fast idle-gated worker with the bounded yield becomes the
 candidate default.
+
+## Live A/B attempt on 2026-09-17 (INVALID)
+
+A balanced 8-run session A/B of `PRE-PIN3c` was attempted on 2026-09-17 and is INVALID. The run used
+`build/exp078-pin-idlefast`, one binary for both arms, the only variable env `GGML_EXPERT_PIN_SOURCE`
+(A=0 ring only, B=1 idle-gated unthrottled worker), 12 prompts per run with a 4 second pause between
+prompts, and the order A1 B1 B2 A2 A3 B3 B4 A4. Every single run had non-zero process swap, including
+the ring-only arms that pin nothing, so the batch violates the project requirement that process swap
+stays at zero and is discarded.
+
+Max process swap per run:
+
+| run | arm | max process swap (KiB) |
+| --- | --- | ---: |
+| A1 | ring only (A=0) | 456960 |
+| A2 | ring only (A=0) | 1659648 |
+| A3 | ring only (A=0) | 823040 |
+| A4 | ring only (A=0) | 873984 |
+| B1 | pin (B=1) | 752128 |
+| B2 | pin (B=1) | 675584 |
+| B3 | pin (B=1) | 2023680 |
+| B4 | pin (B=1) | 805376 |
+
+Max RSS across the batch was 39.6 to 45.4 GiB. One async run (B2) stopped answering in the middle:
+requests 10 to 12 got no response and the process was gone before it could be interrupted.
+
+Root cause is environmental, not the candidate. At the time the machine had 24.9 to 25.5 GiB of
+system swap already in use, held by desktop applications (gnome-shell 5.35 GiB, Telegram 1.89 GiB,
+several opencode sessions, ghostty, chrome), leaving about 44 GiB MemAvailable while one server run
+needs about 45 GiB resident before any pinning. The kernel evicted server pages, which violates the
+zero-swap requirement and contaminates every latency.
+
+The batch is quarantined in `results/archive/EXP-2026-09-17-078-long/ab-invalid-swap/`, alongside an
+`INVALID.md` that already records these facts.
+
+RAM-bound conclusion. The binding constraint on the pinned-source direction is SYSTEM RAM, not the
+algorithm. Pinning 24 GiB plus the about 45 GiB resident footprint of the server cannot guarantee
+zero swap on a 60 GiB machine that is also running a desktop. The earlier gain measured for the
+aggressive EXP-076 build (+15.0 percent median on prompts 3 to 12) was produced while the machine
+was also drifting into swap, which is not an acceptable operating point.
+
+Reduced-budget next step. The next measurement must use a reduced pin budget of 8 to 12 GiB after
+memory is freed, and every run must be gated on process swap staying at zero. This is tracked as
+`PRE-PIN3d` in `experiments/HYPOTHESES-2026-09-15-runtime-speed.md`. The mechanism itself is not in
+question: it stays verified model-free in this report (sections 4 and 5), with the pin rate, the
+drain time, the bounded yield and the identical gate hashes recorded above.
