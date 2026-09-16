@@ -1,0 +1,9 @@
+{"mode":"async-pass","iter":1,"pass":1,"ranges":17886,"trace_direct":0,"trace_ring":17886}
+CHECK FAIL async: background worker reported its queue drained
+{"mode":"async-pass","iter":1,"pass":2,"ranges":17886,"trace_direct":51,"trace_ring":17835}
+CHECK PASS async: pass 1 and pass 2 hash lists are identical
+CHECK PASS async: release counters captured
+CHECK PASS async: teardown leaves no registered byte
+CHECK PASS async: pinned bytes released on teardown
+CHECK PASS async: VmSwap stays 0
+{"mode":"async-iter","iter":1,"ranges":17886,"iterations":1,"passes":2,"wait_drain":true,"pass_refused":0,"pin_before_kib":0,"pin_after_free_kib":0,"swap_during_kib":0,"swap_after_free_kib":0,"counters_seen":true,"direct":51,"split":0,"fallback":35721,"fail":0,"intervals":51,"regions":51,"bytes_released":64786432,"bytes_still_pinned":0,"sub_direct":51,"sub_reg":0,"queued":17886,"worker_registered":51,"dropped":17836,"dedup":0,"batches":1,"joined":1,"saturated":1}

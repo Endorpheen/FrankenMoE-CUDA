@@ -1,0 +1,160 @@
+--- work/llama.cpp-exp077-pin-async2/ggml/src/ggml-cuda/common.cuh	2026-09-16 16:43:22.178609858 +0300
++++ work/llama.cpp-exp078-pin-idlefast/ggml/src/ggml-cuda/common.cuh	2026-09-16 18:08:31.262719257 +0300
+@@ -1502,6 +1502,12 @@
+     bool   expert_pin_idle_waiting = false;     // worker is in the idle wait: skip enqueue wakeups
+     size_t expert_pin_n_idle_defer = 0;         // times the idle gate held a ready batch back
+ 
++    // EXP-078 bounded yield. A batch closes at the next range boundary after a request enqueues
++    // again, so the worker stops competing with a starting request. Guarded by g_expert_pin_mutex.
++    size_t expert_pin_n_yield = 0;              // batches the bounded yield closed early
++    size_t expert_pin_yield_bytes_max = 0;      // most bytes a yielded batch pinned after a resume
++    size_t expert_pin_yield_bytes_total = 0;    // sum of the above over all yields
++
+ #ifdef USE_CUDA_GRAPH
+     // Map from first_node_ptr to cuda_graph - allows multiple graphs per context
+     // when the computation is split across CPU/GPU (e.g., with --n-cpu-moe)
+--- work/llama.cpp-exp077-pin-async2/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-16 16:44:51.768717527 +0300
++++ work/llama.cpp-exp078-pin-idlefast/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-16 18:09:11.823314493 +0300
+@@ -2793,17 +2793,18 @@
+     return it == ivs.end() ? UINTPTR_MAX : it->first;
+ }
+ 
+-// EXP-077 worker tuning. Bounded batches with a short sleep keep the worker from fighting the
+-// decode thread for NVMe and CPU; the queue bound caps memory if the worker falls behind. The
+-// batch cap and the sleep are env-overridable so a live A/B can sweep them without a rebuild.
+-// Defaults: 4 MiB per batch and 100 ms between batches.
++// EXP-078 worker tuning. With the idle gate on, the worker only runs while the request stream is
++// quiet, so the throttle is removed: a 64 MiB batch cap and no inter-batch sleep run the worker at
++// full speed during a quiet window. The batch cap and the sleep stay env-overridable so a live A/B
++// can restore the EXP-077 settings (4 MiB and 100 ms) without a rebuild.
++// Defaults: 64 MiB per batch and 0 ms between batches.
+ static constexpr size_t GGML_CUDA_EXPERT_PIN_QUEUE_MAX = 65536;
+ 
+ static size_t ggml_cuda_expert_pin_batch_bytes(void) {
+     static const size_t v = []() {
+         const char * e = getenv("GGML_EXPERT_PIN_BATCH_MB");
+         const long long mb = e != nullptr ? atoll(e) : 0;
+-        return (size_t) (mb > 0 ? mb : 4) << 20;
++        return (size_t) (mb > 0 ? mb : 64) << 20;
+     }();
+     return v;
+ }
+@@ -2811,8 +2812,8 @@
+ static unsigned ggml_cuda_expert_pin_batch_sleep_ms(void) {
+     static const unsigned v = []() {
+         const char * e = getenv("GGML_EXPERT_PIN_BATCH_SLEEP_MS");
+-        const long long ms = e != nullptr ? atoll(e) : 100;
+-        return (unsigned) (ms >= 0 ? ms : 100);
++        const long long ms = e != nullptr ? atoll(e) : 0;
++        return (unsigned) (ms >= 0 ? ms : 0);
+     }();
+     return v;
+ }
+@@ -2911,13 +2912,15 @@
+ }
+ 
+ // The worker waits for queued work, for the first request to return and for the request stream to
+-// go idle, pins one bounded batch, then sleeps briefly so the decode thread keeps the NVMe and CPU.
++// go idle, then pins one bounded batch. A resume closes the batch at the next range boundary; the
++// inter-batch sleep is 0 by default, so a quiet window is used at full speed.
+ static void ggml_cuda_expert_pin_worker_run(ggml_backend_cuda_context * cuda_ctx) {
+     ggml_cuda_set_device(cuda_ctx->device);
+     for (;;) {
+         bool first_batch = false;
+         double first_batch_ms = 0.0;
+         size_t first_defer = 0;
++        size_t enqueue_seq0 = 0;  // enqueue sequence at batch start: any change is a resume
+         {
+             std::unique_lock<std::mutex> lock(g_expert_pin_mutex);
+             // Two conditions must hold before a batch starts:
+@@ -2956,6 +2959,7 @@
+                     break;
+                 }
+             }
++            enqueue_seq0 = cuda_ctx->expert_pin_n_queued;
+             if (cuda_ctx->expert_pin_first_batch == std::chrono::steady_clock::time_point{}) {
+                 cuda_ctx->expert_pin_first_batch = std::chrono::steady_clock::now();
+                 first_batch = true;
+@@ -2969,6 +2973,12 @@
+                           __func__, first_batch_ms, ggml_cuda_expert_pin_idle_ms(), first_defer);
+         }
+ 
++        // EXP-078 bounded yield. `enqueue_seq0` is the enqueue stream at the moment the idle gate
++        // opened. If the request thread enqueues during the batch, the stream resumed: close the
++        // batch at the next range boundary so at most the one registration already in flight keeps
++        // competing with the starting request. Bytes pinned by that registration are counted.
++        size_t yield_bytes = 0;
++        bool yielded = false;
+         size_t batch_bytes = 0;
+         bool quit = false;
+         while (batch_bytes < ggml_cuda_expert_pin_batch_bytes()) {
+@@ -2983,6 +2993,10 @@
+                 if (cuda_ctx->expert_pin_saturated || cuda_ctx->expert_pin_queue.empty()) {
+                     break;
+                 }
++                if (cuda_ctx->expert_pin_n_queued != enqueue_seq0) {
++                    yielded = true;
++                    break;
++                }
+                 begin = cuda_ctx->expert_pin_queue.front().first;
+                 end   = cuda_ctx->expert_pin_queue.front().second;
+                 cuda_ctx->expert_pin_queue.pop_front();
+@@ -2990,6 +3004,20 @@
+             }
+             ggml_cuda_expert_pin_worker_pin(cuda_ctx, begin, end);
+             batch_bytes += (size_t) (end - begin);
++            std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++            if (cuda_ctx->expert_pin_n_queued != enqueue_seq0) {
++                yield_bytes = (size_t) (end - begin);
++                yielded = true;
++                break;
++            }
++        }
++        if (yielded) {
++            std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++            cuda_ctx->expert_pin_n_yield++;
++            cuda_ctx->expert_pin_yield_bytes_total += yield_bytes;
++            if (yield_bytes > cuda_ctx->expert_pin_yield_bytes_max) {
++                cuda_ctx->expert_pin_yield_bytes_max = yield_bytes;
++            }
+         }
+         if (quit) {
+             break;
+@@ -3294,6 +3322,9 @@
+     size_t n_batches = 0;
+     size_t n_idle_defer = 0;
+     unsigned long long first_batch_ms = 0;
++    size_t n_yield = 0;
++    size_t yield_bytes_max = 0;
++    size_t yield_bytes_total = 0;
+     bool   joined = false;
+     bool   saturated = false;
+     {
+@@ -3311,6 +3342,9 @@
+             first_batch_ms = (unsigned long long) std::chrono::duration_cast<std::chrono::milliseconds>(
+                 cuda_ctx->expert_pin_first_batch - cuda_ctx->expert_pin_first_enqueue).count();
+         }
++        n_yield = cuda_ctx->expert_pin_n_yield;
++        yield_bytes_max = cuda_ctx->expert_pin_yield_bytes_max;
++        yield_bytes_total = cuda_ctx->expert_pin_yield_bytes_total;
+         joined = cuda_ctx->expert_pin_worker_joined;
+         saturated = cuda_ctx->expert_pin_saturated;
+     }
+@@ -3330,14 +3364,15 @@
+         cuda_ctx->expert_pin_bytes = 0;
+         (void) cudaGetLastError();
+     }
+-    GGML_LOG_WARN("%s: expert pinned source: %zu direct ranges, %zu split ranges, %zu fallback ranges, %zu register failures, %zu intervals released, %zu physical regions released, %zu bytes released, %zu bytes still pinned, %zu covered sub-copies, %zu registered sub-copies, %zu queued ranges, %zu worker registered ranges, %zu dropped ranges, %zu dedup skipped ranges, %zu worker batches, %d worker joined, %d saturated, %zu idle deferrals, %llu first batch delay ms\n",
++    GGML_LOG_WARN("%s: expert pinned source: %zu direct ranges, %zu split ranges, %zu fallback ranges, %zu register failures, %zu intervals released, %zu physical regions released, %zu bytes released, %zu bytes still pinned, %zu covered sub-copies, %zu registered sub-copies, %zu queued ranges, %zu worker registered ranges, %zu dropped ranges, %zu dedup skipped ranges, %zu worker batches, %d worker joined, %d saturated, %zu idle deferrals, %llu first batch delay ms, %zu yield events, %zu yield bytes max, %zu yield bytes total\n",
+                   __func__, cuda_ctx->expert_pin_n_direct, cuda_ctx->expert_pin_n_split,
+                   cuda_ctx->expert_pin_n_fallback, cuda_ctx->expert_pin_n_fail, n_intervals,
+                   n_regions, bytes_released, g_expert_pin_bytes.load(std::memory_order_relaxed),
+                   cuda_ctx->expert_pin_n_sub_direct, cuda_ctx->expert_pin_n_sub_reg,
+                   n_queued, n_worker_registered, n_dropped, n_dedup, n_batches,
+                   joined ? 1 : 0, saturated ? 1 : 0,
+-                  n_idle_defer, first_batch_ms);
++                  n_idle_defer, first_batch_ms,
++                  n_yield, yield_bytes_max, yield_bytes_total);
+ }
+ 
+ // allocates all slots and events before any staged submission; on failure the ring stays disabled

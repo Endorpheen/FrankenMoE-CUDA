@@ -1,0 +1,15 @@
+CHECK PASS yield: worker stayed idle during the phase A stream
+CHECK PASS yield: worker opened its first batch in the quiet window
+CHECK PASS yield: queue still had work when the resume started
+CHECK PASS yield: worker closed the yielded batch while the resume stream was active
+CHECK PASS yield: worker drained the queue after the resume stream went quiet
+CHECK PASS yield: post-drain pass served every range directly
+CHECK PASS yield: collected hash lists for both passes
+CHECK PASS yield: pass 1 and pass 2 hash lists are identical
+CHECK PASS yield: release counters captured
+CHECK PASS yield: teardown leaves no registered byte
+CHECK PASS yield: worker joined before unregister
+CHECK PASS yield: the bounded yield closed at least one batch
+CHECK PASS yield: bytes pinned after a resume fit in one in-flight range
+CHECK PASS yield: VmSwap stays 0
+{"mode":"yield","ranges":1100,"first_ranges":800,"resume_ranges":300,"phase_a_ms":1430.8,"phase_b_ms":630.5,"resume_after_batch":0,"ring_during_overlap":1,"direct_during_overlap":0,"ring_phase_b":300,"direct_phase_b":0,"yield_events":1,"yield_bytes_max":1576960,"yield_bytes_total":1576960,"worker_registered":1100,"queued":1100,"batches":27,"bytes_released":1756311552,"bytes_still_pinned":0,"joined":1,"swap_during_kib":0,"swap_after_free_kib":0}
