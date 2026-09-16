@@ -1,8 +1,10 @@
 # EXP-2026-09-16-076 - asynchronous pinned-source registration: implementation and model-free gate
 
-Status: `MODEL-FREE DONE` - implementation in an isolated tree, build, full model-free gate PASS
-including a concurrency stress. No model and no server were run, so no throughput claim is made.
-Committed: no.
+Status: `MODEL-FREE DONE` and `LIVE A/B DONE` - implementation in an isolated tree, build, full
+model-free gate PASS including a concurrency stress, and a live model A/B recorded in section
+`## Live A/B (2026-09-16)`. The session verdict is positive (every measured request after the
+first is faster than the ring arm) while the first request after a fresh start remains a
+one-time cost. Committed: yes.
 Hypothesis: `PRE-PIN3`.
 Base: `results/archive/EXP-2026-09-16-075/REPORT.md` (EXP-075 pinned-source overlap split).
 Isolated tree: `work/llama.cpp-exp076-pin-async`
@@ -213,13 +215,19 @@ Gate files in `results/archive/EXP-2026-09-16-076/`:
 
 ## 7. Not covered
 
-- No model and no server were run; no prefill or decode claim is made. The expected benefit is the
-  removal of the first-request synchronous registration cost measured at -43.17 percent in EXP-075;
-  a live A/B is needed before any claim and is a separate step with Igor's approval.
+- The live A/B in `## Live A/B (2026-09-16)` covered five pairs and four measured points per arm.
+  It did NOT measure a long session, so the break-even point beyond those four points is
+  extrapolated from the measured savings, not measured directly.
+- The first request is still a regression in the measured build, and worse than the synchronous
+  EXP-075 build (-56.16 percent against -43.17 percent), because the worker is released inside the
+  first prefill and competes with it for NVMe and CPU. The idle-gated worker start that should make
+  it neutral was specified (`PRE-PIN3b`) but not implemented or measured.
+- No decode measurement was taken in this A/B; only prefill `prompt_ms` was recorded.
 - The worker competes with the decode thread by design; the throttling constants (64 MiB, 20 ms)
   were chosen to bound the interference, not measured against a model.
 - The multi-iteration stress exercises a fresh context per iteration; a single long-lived server
-  session (one context, many prompts) is only covered by the single-context logic, not by a model.
+  session (one context, many prompts) is only covered by the single-context logic, and the live A/B
+  is the only model-level evidence for it.
 
 ## Build note: copied build dirs carry the old RUNPATH
 
@@ -304,3 +312,41 @@ ldd       build/<new>/bin/llama-server | grep ggml-cuda
 `build/<new>/bin`. If either points at the old build, relink the affected targets as above before
 trusting any live result. The same check applies to every executable and shared library in
 `build/<new>/bin/`, not only `llama-server`.
+
+## Live A/B (2026-09-16)
+
+The live A/B ran after the relink above; the first attempt is quarantined in
+`ab-invalid-runpath/` because the executable still loaded the EXP-075 library. Raw data for the
+valid run: `ab/`. Summary card: `experiments/EXP-2026-09-16-076-pin-async.md`.
+
+Protocol: one binary (`build/exp076-pin-async`) for both arms, the only variable is
+`GGML_EXPERT_PIN_SOURCE` (A = `0` ring, B = `1` async on), port 8087, one fresh server per run,
+accepted MTP profile, `-c 196608`. Per run: `warm`, `p1` (395 prompt tokens), `p1b` (`p1` again),
+`p2` (a different 396-token prompt, partly overlapping expert set), `p2b` (`p2` again). Between
+`p1`/`p1b` and `p2`/`p2b` arm B waits for the worker to report the queue drained; arm A waits the
+same length of time. Five pairs, order A/B, B/A, A/B, B/A, A/B.
+
+| point | arm A median ms | arm B median ms | median paired gain | B wins |
+| --- | ---: | ---: | ---: | ---: |
+| `p1` first request | 3016.7 | 4923.7 | -56.16% | 0/5 |
+| `p1b` repeat prompt | 2867.4 | 2119.3 | +27.97% | 5/5 |
+| `p2` novel, first touch | 3491.7 | 3076.8 | +9.59% | 5/5 |
+| `p2b` novel, warm | 3243.4 | 2603.7 | +20.50% | 4/4 |
+
+Content was byte-identical in both arms at every point; no run crashed; `VmSwap` stayed 0. Arm B
+release counters: 42852 direct ranges, 0 split ranges, 41784 fallback ranges, 17955 intervals,
+28967 physical regions, 25 768 853 504 bytes. The zero in the split column proves that with async
+on, no registration happened on the request thread.
+
+Reading the first request: `p1` is a one-time per-process cost, the price of pinning about
+21.7 GiB that the process has not pinned yet. It is the largest single number in the table and it
+is larger than the `-43.17%` of the synchronous EXP-075 build because the worker is released while
+the first prefill is still issuing copies, so the two compete for NVMe and CPU. The cost is repaid
+by the following requests: the extra paid on `p1` is 1907 ms, while `p1b`, `p2` and `p2b` save
+748 ms, 415 ms and 640 ms (1803 ms total), so break-even arrives on the third or fourth request and
+every request after that is pure gain. On a long-lived server the first request is therefore an
+amortized startup cost, not a per-request regression. This run measured five pairs and did not
+measure a long session, so the break-even beyond the four measured points is extrapolated.
+
+Open follow-up: make the first request neutral by starting the worker only after the request
+stream goes quiet (idle gate) and by shrinking the batches. Tracked as `PRE-PIN3b`.
