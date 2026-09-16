@@ -220,3 +220,87 @@ Gate files in `results/archive/EXP-2026-09-16-076/`:
   were chosen to bound the interference, not measured against a model.
 - The multi-iteration stress exercises a fresh context per iteration; a single long-lived server
   session (one context, many prompts) is only covered by the single-context logic, not by a model.
+
+## Build note: copied build dirs carry the old RUNPATH
+
+A build directory created with `cp -a build/<old> build/<new>` keeps the `DT_RUNPATH` baked into
+every copied executable and shared library. `DT_RUNPATH` is a per-object property, so a copied
+`llama-server` still names the OLD `bin` directory in its search path, and the loader resolves
+`libggml-cuda.so.0.22.0` (and the other shared libraries) from the OLD build even when the process
+is launched from the NEW build directory or with `BUILD_DIR=build/<new>`.
+
+### Defect found in `build/exp076-pin-async`
+
+`build/exp076-pin-async/bin/llama-server` was copied from `build/exp075-pinsrc-overlap` and never
+relinked. Its `DT_RUNPATH` still named the EXP-075 `bin`:
+
+```
+readelf -d build/exp076-pin-async/bin/llama-server | grep RUNPATH
+  RUNPATH [/home/end0/AI/FrankenMoE-CUDA/build/exp075-pinsrc-overlap/bin:]
+
+ldd build/exp076-pin-async/bin/llama-server | grep ggml-cuda
+  libggml-cuda.so.0 => /home/end0/AI/FrankenMoE-CUDA/build/exp075-pinsrc-overlap/bin/libggml-cuda.so.0
+```
+
+Consequence: a live run started with `BUILD_DIR=build/exp076-pin-async` loaded the EXP-075
+`libggml-cuda.so.0.22.0` (sha256 `27137a1a...`) and never executed the EXP-076 async code. The
+release-counter field set and the startup log line were the EXP-075 format, lacking the
+`, async on` / `, async off` suffix emitted only by the EXP-076 library. The affected run is archived
+with a full analysis in `ab-invalid-runpath/INVALID.md` and must not be used as EXP-076 evidence.
+
+Every earlier build (`exp062-ring3`, `exp063-default-runtime`, `exp074-pinsrc`,
+`exp075-pinsrc-overlap`) has a correct self-referential RUNPATH; only `exp076` was broken.
+
+### Fix
+
+The affected targets were relinked from the existing CMake object files, using the `link.txt`
+command CMake already generated for each target (run with the target binary directory as cwd). The
+generated link commands already carried
+`-Wl,-rpath,/home/end0/AI/FrankenMoE-CUDA/build/exp076-pin-async/bin:`, so relinking only rewrote
+the dynamic link metadata; no source and no object code changed.
+
+Targets relinked: `libggml-cpu.so.0.22.0` (`ggml/src`, `ggml-cpu`), `libggml.so.0.22.0`
+(`ggml/src`, `ggml`), `libllama.so.0.3.0` (`src`, `llama`), `libllama-common.so.0.3.0` (`common`,
+`llama-common`), `libmtmd.so.0.3.0` (`tools/mtmd`, `mtmd`), `libllama-server-impl.so`
+(`tools/server`, `llama-server-impl`), `llama-server` (`tools/server`, `llama-server`).
+
+Example relink for one target (equivalent for every target above, from `build/exp076-pin-async`):
+
+```
+cd build/exp076-pin-async/<target binary dir>
+sh -c "$(cat CMakeFiles/<target>.dir/link.txt)"
+```
+
+`libggml-cuda.so.0.22.0` was not relinked and its sha256 is unchanged:
+
+- before `8ecc3a7102aa1c6aea97830eae8d2b198e85bfad7bd94fef13e14a124038d30f`
+- after  `8ecc3a7102aa1c6aea97830eae8d2b198e85bfad7bd94fef13e14a124038d30f`
+
+`llama-server` `.text`, `.rodata` and `.data` are byte-identical to the pre-relink copy; only the
+dynamic link metadata changed. Its sha256 moved from `4aec1132...` (pre-relink, line 194 above) to
+`8117c2e6aeb8a183a580acd5aecbd13540796f843aa78eab009c35398838b6e2` (relinked).
+
+After the fix every entry under `build/exp076-pin-async/bin/` resolves `libggml-cuda.so.0` from
+`build/exp076-pin-async/bin`. The relinked `llama-server`:
+
+```
+ldd build/exp076-pin-async/bin/llama-server | grep ggml-cuda
+  libggml-cuda.so.0 => /home/end0/AI/FrankenMoE-CUDA/build/exp076-pin-async/bin/libggml-cuda.so.0
+```
+
+The async code is now reachable: `strings build/exp076-pin-async/bin/libggml-cuda.so.0.22.0 | grep -c "async %s"` is `1`.
+
+### Required check for every future copied build directory
+
+After `cp -a build/<old> build/<new>` and the CMake reconfigure, verify that the new build resolves
+its own libraries before running anything:
+
+```
+readelf -d build/<new>/bin/llama-server | grep RUNPATH
+ldd       build/<new>/bin/llama-server | grep ggml-cuda
+```
+
+`RUNPATH` must name `build/<new>/bin`, and the `ldd` line must resolve `libggml-cuda.so.0` inside
+`build/<new>/bin`. If either points at the old build, relink the affected targets as above before
+trusting any live result. The same check applies to every executable and shared library in
+`build/<new>/bin/`, not only `llama-server`.
