@@ -1,15 +1,14 @@
 # EXP-2026-09-16-075: pinned-source overlap split, serve a partly overlapping request from the registered pages
 
-Status: `MODEL-FREE DONE` (2026-09-16).
-Kind: `prototype-offline` (no model, no server; no server throughput claim is made).
+Status: `MODEL-FREE DONE - BUGFIX`; live A/B done on the fixed build (2026-09-16).
+Kind: `prototype-offline` model-free gate plus a live candidate A/B.
 
-This card is a model-free experiment on the expert-transfer path. It starts no model and
-no `llama-server`, and it makes no aggregate or single-response throughput claim. It is
-the written verdict for the candidate tracked as `PRE-PIN2` in
-`experiments/HYPOTHESES-2026-09-15-runtime-speed.md`. It is not an accepted runtime
-change: the candidate lives in an isolated tree only, and promoting the direction needs a
-live model A/B, which has not been run and is not authorized by this card. The full
-implementation and measurement record is in
+This card is the written verdict for the candidate tracked as `PRE-PIN2` in
+`experiments/HYPOTHESES-2026-09-15-runtime-speed.md`. The model-free gate starts no model
+and no `llama-server` and makes no throughput claim; the live A/B section below runs a
+candidate `llama-server` binary but only reports prefill latency, not aggregate throughput.
+It is not an accepted runtime change: the candidate lives in an isolated tree only, and
+promotion is a separate decision. The full implementation and measurement record is in
 `results/archive/EXP-2026-09-16-075/REPORT.md`; this card summarizes it and does not
 duplicate every table.
 
@@ -167,6 +166,122 @@ and the source mapping are unchanged, `VmPin` returns to its start value and `Vm
 0. Teardown: `bytes still pinned` was 0 after every backend free, i.e. the context destructor
 released every interval registered by the split path. `VmSwap` stayed 0 in every run.
 
+## Live A/B (2026-09-16, fixed build)
+
+This is the live model A/B the model-free card deferred. It runs on the fixed build only: the
+first live attempt (`results/archive/EXP-2026-09-16-075/ab/`) aborted on the second, partly
+overlapping prompt in all five runs (`cudaMemcpyAsync`, `invalid argument`), and the physical
+registration boundary bug behind it was found and fixed before this run
+(`results/archive/EXP-2026-09-16-075/REPORT.md`, section `## BUGFIX`). The fixed build links
+the fixed `libggml-cuda.so.0.22.0`; the model-free tables above are the pre-fix record. Raw
+data for this section is `results/archive/EXP-2026-09-16-075/ab2/`. This is a candidate A/B
+only: no default runtime change is proposed, and the promotion decision is Igor's.
+
+### Protocol
+
+- One binary for both arms: `build/exp075-pinsrc-overlap/bin/llama-server`, sha256
+  `4aec1132ec4febae68e050aa93a58397dcb09feec4e640f130d8cedcb32bdafb`, linked against the fixed
+  `libggml-cuda.so.0.22.0`, sha256
+  `27137a1a3ea0308c7712a3c15b944438e8c5ff2741d681f2ec685bd331ecd45a`.
+- The only variable is `GGML_EXPERT_PIN_SOURCE`: arm A = `0` (ring only, today's default
+  behaviour), arm B = `1` (pinned-source direct DMA, with `GGML_EXPERT_PIN_OVERLAP_SPLIT` at
+  its default ON in this build).
+- Port 8087, one fresh server per run, the accepted MTP profile, `-c 196608`, EHS off,
+  12 threads.
+- Per run, in order: `warm` (`request-short.json`), then `p1` = `request.json` (395 prompt
+  tokens), `p2` = `results/archive/EXP-2026-09-16-074/ab/request-alt.json` (396 prompt tokens,
+  an expert set that only partly overlaps `p1`), `p2b` = the `p2` prompt again, `p1b` = the
+  `p1` prompt again.
+- Five pairs, run order A/B, B/A, A/B, B/A, A/B (tag order A1 B1 B2 A2 A3 B3 B4 A4 A5 B5).
+  Every one of the 50 requests returned HTTP 200 and no run crashed.
+- Raw data: `results/archive/EXP-2026-09-16-075/ab2/` (`A1..A5`, `B1..B5`, each with
+  `-warm.json`, `-p1.json`, `-p2.json`, `-p2b.json`, `-p1b.json`); run logs
+  `results/e075b-<tag>.log`; monitor CSVs `results/e075b-<tag>-mon.csv`.
+
+### prompt_ms per point
+
+Pair `i` couples `A{i}` with `B{i}` regardless of the run order. The paired gain is
+`(A - B) / A` in percent, so a positive value means arm B is faster; the median is over the
+five pairs.
+
+| point | request | prompt tokens | arm A median ms | arm B median ms | median paired gain | B wins |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `p1` | `request.json` | 395 | 2824.3 | 4149.6 | -43.17% | 0/5 |
+| `p2` | `request-alt.json` | 396 | 3458.2 | 2906.8 | +16.85% | 5/5 |
+| `p2b` | `p2` again | 396 | 3470.0 | 2652.7 | +23.60% | 5/5 |
+| `p1b` | `p1` again | 395 | 2729.8 | 1648.5 | +39.14% | 5/5 |
+
+Per-run values, `pair 1` is the first A/B couple (tags A1 and B1), and so on:
+
+| point | arm | pair 1 | pair 2 | pair 3 | pair 4 | pair 5 | median |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `p1` | A | 2682.8 | 2934.4 | 2721.5 | 3003.1 | 2824.3 | 2824.3 |
+| `p1` | B | 4093.7 | 4201.3 | 4213.4 | 4149.6 | 4008.2 | 4149.6 |
+| `p2` | A | 3433.2 | 3458.2 | 3719.1 | 3502.2 | 3349.1 | 3458.2 |
+| `p2` | B | 3016.6 | 2722.5 | 2906.8 | 2912.2 | 2902.3 | 2906.8 |
+| `p2b` | A | 3470.0 | 3527.9 | 3386.9 | 3367.7 | 3528.3 | 3470.0 |
+| `p2b` | B | 2613.6 | 2695.2 | 2694.4 | 2652.7 | 2456.0 | 2652.7 |
+| `p1b` | A | 2687.2 | 2770.4 | 2729.8 | 2855.3 | 2548.8 | 2729.8 |
+| `p1b` | B | 1704.1 | 1648.5 | 1661.3 | 1638.7 | 1633.3 | 1648.5 |
+
+### Content identity
+
+All 40 measured responses returned the same content in both arms for a given prompt. Hashing
+the completion text (not the timing fields) gives two distinct outputs:
+
+- `p1` and `p1b` both hash to
+  `7dfa7d1eccbcf2b70008864a40d5eb0a0989bfbbf8f8110d371b7c013fbbf2c1`, the same in arm A and
+  arm B;
+- `p2` and `p2b` both hash to
+  `db17abc87bf4ca6a42e6e0f5bde4ed950d7389eea0820f9a3b1e819502a3474a`, the same in arm A and
+  arm B.
+
+The split path changes the timing and not the output.
+
+### Release counters (arm B)
+
+Identical in all five arm B runs. Arm A released nothing (`0 direct / 0 split / 0 fallback`,
+0 bytes released, 0 bytes still pinned). Swap stayed 0 in every run of both arms.
+
+| counter | arm B value (all 5 runs) |
+| --- | ---: |
+| direct ranges | 62742 |
+| split ranges | 7442 |
+| fallback ranges | 14452 |
+| register failures | 0 |
+| intervals released | 17955 |
+| physical regions released | 28968 |
+| bytes released | 25 769 775 104 (24.0 GiB) |
+| bytes still pinned | 0 |
+
+### Interpretation
+
+- The split removes the EXP-074 overlap fallback, so a novel prompt is now served by the
+  direct path. In the EXP-074 caveat probe the partly overlapping `p2` prompt was -5.27%; in
+  this run the same class of prompt is +16.85% on first touch (`p2`) and +23.60% warm
+  (`p2b`), 5/5 in both cases and byte-identical.
+- The repeated prompt is +39.14% (`p1b`, 5/5), on top of the steady-state direct-path result
+  already seen in EXP-074.
+- The one remaining cost is the first request after a fresh server start: `p1` is -43.17%,
+  0/5. That is the one-time registration of about 21.7 GiB of source ranges, and it is
+  amortized over the session (the same registration makes `p2`, `p2b` and `p1b` fast).
+  Hiding it is a separate follow-up, tracked as `PRE-PIN3` in
+  `experiments/HYPOTHESES-2026-09-15-runtime-speed.md`.
+- The budget cap is now the binding limit. The 24 GiB (`24576 MiB`) budget was fully consumed
+  (released bytes reached the cap) and 14452 of the 84436 copied ranges fell back to the
+  ring, so raising the budget is a separate, safety-gated question.
+- This is a candidate build, not the default runtime.
+
+### Verdict
+
+- `CONFIRMED_SPLIT`: the novel prompt is now served directly, 5/5 on `p2`, `p2b` and `p1b`,
+  byte-identical.
+- `COLD_START_COST`: the first request after a fresh server start is -43.17%, 0/5, and it is
+  amortized over the session.
+
+No default runtime change is proposed and no promotion is implied. The decision is Igor's, and
+promotion would be a separate experiment.
+
 ## Safety notes
 
 - The split path reuses the EXP-074 budget (24 GiB process-wide cap) and the 8 GiB
@@ -211,9 +326,10 @@ Environment: NVIDIA GeForce RTX 4070 12 GiB, driver 580.178.04, CUDA 12.6 nvcc, 
 
 ## Not covered
 
-- No model and no server were run; no prefill or decode claim is made. The live A/B of this
-  candidate against the accepted runtime is the next step and needs Igor's approval; it is a
-  separate experiment, not authorized here.
+- The model-free gate runs no model and no server and makes no prefill or decode claim. The
+  live A/B of this candidate on the fixed build is reported in the `Live A/B` section above;
+  it is a candidate A/B only, no default runtime change is proposed, and promotion needs
+  Igor's decision.
 - No throughput number is produced here. The expected benefit is bounded by the EXP-074
   caveat probe: the split path should remove the `range overlaps a registered range`
   fallback for novel prompts, but that must be measured with the model.
