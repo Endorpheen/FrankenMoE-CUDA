@@ -1,0 +1,36 @@
+2026-09-16T17:32:40+03:00
+--- nvidia-smi ---
+NVIDIA GeForce RTX 4070, 580.178.04, 12282 MiB
+--- nvcc ---
+Cuda compilation tools, release 12.6, V12.6.85
+Build cuda_12.6.r12.6/compiler.35059454_0
+--- g++ ---
+g++-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0
+--- uname ---
+Linux end0-B550-AORUS-ELITE-V2 6.8.0-84-generic #84-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  5 22:36:38 UTC 2025 x86_64 GNU/Linux
+--- mem ---
+MemTotal:       63643556 kB
+MemAvailable:   44514036 kB
+SwapTotal:      33554428 kB
+--- ranges ---
+8b58328ed61b0bfea88021e7f0a895233a9a56f078fc65a9ababe4da6b3f6f79  results/archive/EXP-2026-09-16-070/exp070_ranges.txt
+--- build binaries ---
+025705256503cd47cae78f9f431c29b7ba4205cea86c91b969ec92453958044c  build/exp077-pin-async2/bin/llama-server
+5edac915efe5cafd52ecaf63b2c467a4eff9d47e9e8cc25fbb292722ac50d5d5  build/exp077-pin-async2/bin/libggml-cuda.so.0.22.0
+--- reference builds (must be untouched) ---
+8ecc3a7102aa1c6aea97830eae8d2b198e85bfad7bd94fef13e14a124038d30f  build/exp076-pin-async/bin/libggml-cuda.so.0.22.0
+27137a1a3ea0308c7712a3c15b944438e8c5ff2741d681f2ec685bd331ecd45a  build/exp075-pinsrc-overlap/bin/libggml-cuda.so.0.22.0
+36dba1b2c98bacb96e752e0c72fd5ce43e504a5b24585c88c9456494b772403f  build/exp074-pinsrc/bin/libggml-cuda.so.0.22.0
+--- harness ---
+73a185b47f673bdc48e24742685d72894c61ddc16ede64df927a80cdaea14ab8  results/archive/EXP-2026-09-17-077/test-exp077-pinsrc
+ff5904db8e0a7919448890fe961b1b08082ce742d1d6f1c389035786c93222c4  results/archive/EXP-2026-09-17-077/test-exp074-sched
+--- harness sources ---
+241a5919eb4559bfb3f1b2381641e49e3fd4d188ce1c6b71cfa4235db9a695d3  results/archive/EXP-2026-09-17-077/test-exp077-pinsrc.cpp
+7d3b549680601a33af4a3dc8555fab0beb9569396a8c0784d74f551d1a2e1aa3  results/archive/EXP-2026-09-17-077/test-exp074-sched.cpp
+--- patch ---
+0e46ddf45aa105e54225c3c10ca6435abb0e8b81326ab44e522083f45c79f46b  results/archive/EXP-2026-09-17-077/pinsrc-idlegate.patch
+--- async marker ---
+exp077 lib: 1  exp076 lib: 1
+--- baseline anchors ---
+5bbf98f3f18049105f5fe7e758a6bda033c67d2fc1accf3bf5b7b528e90dcde8  results/archive/EXP-2026-09-17-077/baseline-rev-hash.txt
+39505119b144ea286e865119b397eecff75578881c24c4aa1cec9bd642e91510  results/archive/EXP-2026-09-17-077/baseline-sched.bin
