@@ -1,0 +1,200 @@
+{
+  "upstream_commit": "839a572a4cdecdb80d211297b8e7d7323a6e99d2",
+  "source_patch": "patches/ornith-upstream-839a.patch",
+  "patch_sha256": "ebfefe46760d488d0b81f20d299ccd1226ac15a4f9efd1501d70ec4ed9c97fae",
+  "reconstructed_source_tree": "e834c1099432ce3cd0187447320a86a2d90a8a36",
+  "source_files": [
+    "common/arg.cpp",
+    "common/common.cpp",
+    "common/common.h",
+    "common/fit.cpp",
+    "common/fit.h",
+    "common/speculative.cpp",
+    "ggml/include/ggml-cpu.h",
+    "ggml/include/ggml.h",
+    "ggml/src/ggml-cpu/CMakeLists.txt",
+    "ggml/src/ggml-cpu/ggml-cpu-iq2s-grid.h",
+    "ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c",
+    "ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.h",
+    "ggml/src/ggml-cpu/ggml-cpu.c",
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml.c",
+    "include/llama.h",
+    "src/CMakeLists.txt",
+    "src/llama-arch.cpp",
+    "src/llama-arch.h",
+    "src/llama-context.cpp",
+    "src/llama-context.h",
+    "src/llama-cparams.h",
+    "src/llama-expert-heatmap.cpp",
+    "src/llama-expert-heatmap.h",
+    "src/llama-expert-hotstore.cpp",
+    "src/llama-expert-hotstore.h",
+    "src/llama-expert-tier.cpp",
+    "src/llama-expert-tier.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-model-loader.cpp",
+    "src/llama-model-loader.h",
+    "src/llama-model.cpp",
+    "src/llama.cpp",
+    "tests/CMakeLists.txt",
+    "tests/test-iq2s-fused-mmid-bench.cpp",
+    "tests/test-iq2s-fused-mmid.cpp",
+    "tools/server/CMakeLists.txt",
+    "tools/server/server-context.cpp",
+    "tools/server/server-swapwatchdog.cpp",
+    "tools/server/server-swapwatchdog.h",
+    "tools/server/server.cpp"
+  ],
+  "correctness": [
+    {
+      "name": "fused-off",
+      "returncode": 0,
+      "counts": [],
+      "passed": true
+    },
+    {
+      "name": "fused-on",
+      "returncode": 0,
+      "counts": [],
+      "passed": true
+    },
+    {
+      "name": "matmul-cpu",
+      "returncode": 0,
+      "counts": [
+        [
+          "340",
+          "340"
+        ]
+      ],
+      "passed": true
+    },
+    {
+      "name": "matmul-cuda",
+      "returncode": 0,
+      "counts": [
+        [
+          "337",
+          "337"
+        ]
+      ],
+      "passed": true
+    }
+  ],
+  "measurements": [
+    {
+      "stage": "extra2",
+      "label": "run1",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 1199.8545879351927,
+      "decode_tps": 17.907110969945336,
+      "ram_gib": 31.433704376220703,
+      "vram_mib": 8268.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.1171875
+    },
+    {
+      "stage": "extra2",
+      "label": "run2",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 1198.518530439547,
+      "decode_tps": 18.066700131390963,
+      "ram_gib": 31.440692901611328,
+      "vram_mib": 8268.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.0
+    },
+    {
+      "stage": "ported-fixed",
+      "label": "run1",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 1169.9288859754918,
+      "decode_tps": 17.418432554189767,
+      "ram_gib": 31.434539794921875,
+      "vram_mib": 8268.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.0
+    },
+    {
+      "stage": "ported-fixed",
+      "label": "run2",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 1166.5215159995148,
+      "decode_tps": 17.564099146653408,
+      "ram_gib": 31.44095230102539,
+      "vram_mib": 8268.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.0
+    },
+    {
+      "stage": "ported-fixed",
+      "label": "run1",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 846.2628949980099,
+      "decode_tps": 17.48327501918361,
+      "ram_gib": 30.993648529052734,
+      "vram_mib": 7230.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.0
+    },
+    {
+      "stage": "ported-fixed",
+      "label": "run2",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 848.1304066760453,
+      "decode_tps": 17.543507209899875,
+      "ram_gib": 31.001216888427734,
+      "vram_mib": 7230.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.0
+    },
+    {
+      "stage": "ported-fixed",
+      "label": "run1",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 327.93773282298025,
+      "decode_tps": 19.847436259958453,
+      "ram_gib": 30.694660186767578,
+      "vram_mib": 8428.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.0
+    },
+    {
+      "stage": "ported-fixed",
+      "label": "run2",
+      "prompt_tokens": 8192,
+      "decode_tokens": 256,
+      "prefill_tps": 326.80257430430186,
+      "decode_tps": 19.54136493138835,
+      "ram_gib": 30.698875427246094,
+      "vram_mib": 8428.0,
+      "swap_out_mib": 0.0,
+      "model_swap_kib": 0,
+      "read_mib": 0.0
+    }
+  ],
+  "gpu_compute_buffer_mib": {
+    "official_u4096": 1810.03,
+    "ported_before_fix_u4096": 2160.03,
+    "ported_fixed_u4096": 1810.03
+  },
+  "scope": "Existing measurements only; no new model or benchmark runs during publication. Port tested with EHS disabled. Production exp063 and integration remain unchanged."
+}

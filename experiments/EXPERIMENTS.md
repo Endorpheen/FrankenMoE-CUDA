@@ -1,5 +1,16 @@
 # Experiment log
 
+## EXP-2026-10-21-079: port to upstream 839a572a
+
+- Status: `ACCEPTED` as an isolated source/build port; production EXP-063 remains unchanged.
+- Deliverable: `patches/ornith-upstream-839a.patch`, pinned to `839a572a4cdecdb80d211297b8e7d7323a6e99d2`; exact source reconstruction verified with a temporary Git index.
+- Correctness: fused off/on ALL PASS, CPU MUL_MAT_ID 340/340, CUDA 337/337.
+- Memory fix: conditional routing-ID retention removes 350 MiB of unnecessary CUDA compute reservation at ubatch 4096.
+- Ornith 8k/256, two warmed repeats: port ub4096 1166.52-1169.93 pp / 17.42-17.56 tg; clean current upstream 1198.52-1199.85 pp / 17.91-18.07 tg. No speed advantage over clean upstream is claimed.
+- Scope: EHS-off Ornith model checks; no claim of new Qwen/Next or sidecar coverage. No new benchmark runs during publication.
+- [Reproduction and limits](EXP-2026-10-21-079-ornith-upstream-port.md); aggregate evidence in `results/ornith-upstream-839a-validation.json`.
+
+
 ## EXP-2026-09-15-056: coverage — real mid-stream cancellation and a real decode probe
 
 - Status: `ACCEPTED` (`kind=correctness`, coverage; 2026-09-15, runs executed by OpenCode on the accepted EXP-046 default runtime). Commit pending Igor's approval. No performance claim.
