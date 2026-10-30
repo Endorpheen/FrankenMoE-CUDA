@@ -2,6 +2,8 @@
 
 ## Current Flint/Apex series
 
+EXP092 twelve-worker qualification is REJECTED for the current Apex/all-CPU/poll0 combination: fresh warm-decode gain1.386% is below5%, and repeat TTFT rises21.05%. Earlier reused-control gain5.28% is retained as a diagnostic, not selected for acceptance. EXP0908-thread profile remains working. Current priority is Apex/Flint; legacy Qwen bundles are preserved.
+
 The new>=5% goal above EXP090 remains active. EXP091 pinned small-batch MoE offload is REJECTED: cold-tail CPU->CUDA placement changes top5/selected outputs, even though kernels/weights are unchanged. EXP090 is restored; no new default is promoted. A different next direction is CPU worker utilization with the numerical placement preserved, after checking historical combinations.
 
 EXP090 delivers the requested correction to EXP089: remove the raw MemFree veto that treated reclaimable file cache as unavailable. Use the isolated exp090-mmap-available runtime for manual restart. Available-memory headroom, resident pages and ownership checks remain. Only libllama changes; no new model/performance runs are claimed. Prior EXP089 measurements and builds stay preserved.

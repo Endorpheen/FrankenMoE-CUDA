@@ -1,0 +1,10 @@
+{
+  "source_experiment": "EXP091",
+  "runtime": "EXP090",
+  "cold_sse_sha256": "c3185a590451b7e79f800f8a86acc9d5835fcb54c7c2b3498ba1aab9023f3da0",
+  "repeat_sse_sha256": "ba764b6d8d5274d474be58c4f91b1d0bfa4906c74fb8883fcf17e568a230c5fd",
+  "reuse_scope": "Numerical and diagnostic screen only; not fresh formal-pair acceptance",
+  "primary": "warm repeated-request single-response decode",
+  "reference_repeat_decode_tps": 27.65243459001673,
+  "reference_repeat_system_swapout_pages": 0
+}

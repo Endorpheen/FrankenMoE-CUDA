@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-092: twelve physical decode workers
+
+- Status: `REJECTED` (`kind=model-profile-qualification`), compared against EXP090 with all CPU experts/poll0; exact prior combination absent in33 audited Apex profiles.
+- Initial reused-control warm decode+5.2819% was not accepted. An announced fresh B-A diagnostic gives28.71499 ->29.11302tok/s (+1.38612%), repeat TTFT163.405 ->197.804ms (+21.0514%). Cold decode+0.85371%, cold TTFT+0.81509%.
+- Exact256 selected IDs/ordered top5/probabilities per arm, delta0; fresh process swap/system swap-out/major faults0. Observed VRAM4428MiB both, repeat RSS+28KiB. This is qualification, not formal statistics or a universal verdict on12 threads.
+- Two starts/four requests, no formal series; EXP0908-thread profile restored on8081, nine hashes verified. No code/binary/default change.
+- [Card](EXP-2026-10-30-092-cpu-twelve-workers.md); audit, both comparisons and limits in `results/exp092-cpu-twelve-workers/`.
+
 ## EXP-2026-10-30-091: pinned MoE small-batch offload
 
 - Status: `REJECTED` (`kind=model-correctness-qualification`). New>=5% goal above EXP090 remains active.
