@@ -1,0 +1,33 @@
+{
+  "original_082_unchanged": {
+    "libggml-base.so.0.27.0": true,
+    "libllama-server-impl.so": true,
+    "libggml.so.0.27.0": true,
+    "libmtmd.so.0.7.0": true,
+    "libllama-common.so.0.7.0": true,
+    "llama-server": true,
+    "libllama.so.0.7.0": true,
+    "libggml-cuda.so.0.27.0": true,
+    "libggml-cpu.so.0.27.0": true,
+    "test-prefix-checkpoint-state": true
+  },
+  "copied_math_libraries_identical": {
+    "libggml-base.so.0.27.0": true,
+    "libggml.so.0.27.0": true,
+    "libmtmd.so.0.7.0": true,
+    "libllama-common.so.0.7.0": true,
+    "libllama.so.0.7.0": true,
+    "libggml-cuda.so.0.27.0": true,
+    "libggml-cpu.so.0.27.0": true
+  },
+  "final_runtime_sha256": {
+    "llama-server": "4e7f7e2f7cc6bb865c6b2fd4865527279fe610a47b96687b41fa318fc4b8789a",
+    "libllama-server-impl.so": "8a963ce35bc919880354b226f5737c6c5d3f2dc47184c291badfe8470a209168"
+  },
+  "source_sha256": {
+    "tools/server/server-context.cpp": "849097e9b33bc47dd140a3d61b83c9df6e86d1f3abb7601efd083047592c8899",
+    "tools/server/server-prefix-checkpoints.h": "87dfb6fd449c9da2fb3d024fbc56cd8f48dcccdc10e1f74c6b50fee0c7cf80bb",
+    "tests/test-prefix-checkpoints.cpp": "3322e787b21287fc3bf61472eb66514430604056c0e06c512a4324d572220205",
+    "tests/test-prefix-checkpoint-state.cpp": "5f23513d62c4b1a51d6fa8610090f38771b64bcaab54ce66c7f70663a0ad3c87"
+  }
+}

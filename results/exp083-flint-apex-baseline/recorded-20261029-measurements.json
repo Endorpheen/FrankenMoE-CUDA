@@ -1,0 +1,235 @@
+{
+  "units": {
+    "ttft": "client seconds to first nonempty SSE content",
+    "throughput": "single-response tokens/second"
+  },
+  "apex_ab": {
+    "apex-a-cold32": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 20776.459,
+        "prompt_per_token_ms": 0.6340472106933593,
+        "prompt_per_second": 1577.169622600271,
+        "predicted_n": 128,
+        "predicted_ms": 3962.419,
+        "predicted_per_token_ms": 31.200149606299213,
+        "predicted_per_second": 32.05112836375961
+      },
+      "ttft_s": 20.785464,
+      "truncated": false
+    },
+    "apex-a-branch32": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 20655.167,
+        "prompt_per_token_ms": 0.6303456726074219,
+        "prompt_per_second": 1586.431133672267,
+        "predicted_n": 128,
+        "predicted_ms": 3969.784,
+        "predicted_per_token_ms": 31.258141732283466,
+        "predicted_per_second": 31.991665037694744
+      },
+      "ttft_s": 20.661875,
+      "truncated": false
+    },
+    "apex-a-cold64": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 65536,
+        "prompt_ms": 44592.898,
+        "prompt_per_token_ms": 0.6804336242675781,
+        "prompt_per_second": 1469.6510641672132,
+        "predicted_n": 128,
+        "predicted_ms": 4349.79,
+        "predicted_per_token_ms": 34.25031496062992,
+        "predicted_per_second": 29.19681180010989
+      },
+      "ttft_s": 44.607078,
+      "truncated": false
+    },
+    "apex-a-branch64": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 65536,
+        "prompt_ms": 44408.63,
+        "prompt_per_token_ms": 0.6776219177246093,
+        "prompt_per_second": 1475.7491955955409,
+        "predicted_n": 128,
+        "predicted_ms": 4325.458,
+        "predicted_per_token_ms": 34.058724409448814,
+        "predicted_per_second": 29.361052633039094
+      },
+      "ttft_s": 44.420706,
+      "truncated": false
+    },
+    "apex-b-cold32": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 20666.14,
+        "prompt_per_token_ms": 0.6306805419921875,
+        "prompt_per_second": 1585.5887940370094,
+        "predicted_n": 128,
+        "predicted_ms": 4030.121,
+        "predicted_per_token_ms": 31.733236220472442,
+        "predicted_per_second": 31.51270147968262
+      },
+      "ttft_s": 20.673978,
+      "truncated": false
+    },
+    "apex-b-branch32": {
+      "timings": {
+        "cache_n": 24576,
+        "prompt_n": 8192,
+        "prompt_ms": 5709.278,
+        "prompt_per_token_ms": 0.696933349609375,
+        "prompt_per_second": 1434.8574373151912,
+        "predicted_n": 128,
+        "predicted_ms": 3936.79,
+        "predicted_per_token_ms": 30.998346456692914,
+        "predicted_per_second": 32.259785256516096
+      },
+      "ttft_s": 5.715552,
+      "truncated": false
+    },
+    "apex-b-cold64": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 65536,
+        "prompt_ms": 44915.386,
+        "prompt_per_token_ms": 0.6853544006347656,
+        "prompt_per_second": 1459.099115835273,
+        "predicted_n": 128,
+        "predicted_ms": 4434.826,
+        "predicted_per_token_ms": 34.91988976377953,
+        "predicted_per_second": 28.636974708816084
+      },
+      "ttft_s": 44.928633,
+      "truncated": false
+    },
+    "apex-b-branch64": {
+      "timings": {
+        "cache_n": 49152,
+        "prompt_n": 16384,
+        "prompt_ms": 12770.296,
+        "prompt_per_token_ms": 0.77943701171875,
+        "prompt_per_second": 1282.9773092182045,
+        "predicted_n": 128,
+        "predicted_ms": 4277.717,
+        "predicted_per_token_ms": 33.682811023622044,
+        "predicted_per_second": 29.688733499668167
+      },
+      "ttft_s": 12.78384,
+      "truncated": false
+    }
+  },
+  "state_roundtrip": {
+    "apex": {
+      "prefix_tokens": 24576,
+      "full_state_bytes": 208012276,
+      "partial_state_bytes": 65864428,
+      "full_before": "374b988515ab6c42831780fd08976a4f97e86e2e8a9b4ebebfd84e0fad023625",
+      "full_after": "374b988515ab6c42831780fd08976a4f97e86e2e8a9b4ebebfd84e0fad023625",
+      "partial_before": "427992ae6f1a907405fdb517a6fc81b826e5c21bac73e167ee3cb7a8e4ec0687",
+      "partial_after": "427992ae6f1a907405fdb517a6fc81b826e5c21bac73e167ee3cb7a8e4ec0687",
+      "full_match": true,
+      "partial_match": true
+    },
+    "flint": {
+      "prefix_tokens": 24576,
+      "full_state_bytes": 208825244,
+      "partial_state_bytes": 10349108,
+      "full_before": "d3ca24859b29163ba68c3968b6c1e2712e0115a065141b97d561922378cfdccb",
+      "full_after": "d3ca24859b29163ba68c3968b6c1e2712e0115a065141b97d561922378cfdccb",
+      "partial_before": "5f2c8adb3a53b742125d19311b1ec5b15ae6e4c98086a544e252ddadbee1b643",
+      "partial_after": "5f2c8adb3a53b742125d19311b1ec5b15ae6e4c98086a544e252ddadbee1b643",
+      "full_match": true,
+      "partial_match": true
+    }
+  },
+  "full_window": {
+    "cache_n": 0,
+    "prompt_n": 261632,
+    "prompt_ms": 269765.237,
+    "prompt_per_token_ms": 1.0310865528681508,
+    "prompt_per_second": 969.8506853942785,
+    "predicted_n": 128,
+    "predicted_ms": 5975.34,
+    "predicted_per_token_ms": 47.04992125984252,
+    "predicted_per_second": 21.254020691709595
+  },
+  "flint_regression": {
+    "cold32": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 26627.789,
+        "prompt_per_token_ms": 0.8126156311035156,
+        "prompt_per_second": 1230.5940985186564,
+        "predicted_n": 128,
+        "predicted_ms": 4561.692,
+        "predicted_per_token_ms": 35.91883464566929,
+        "predicted_per_second": 27.840546884796254
+      },
+      "ttft_s": 26.641049
+    },
+    "branch32": {
+      "timings": {
+        "cache_n": 24576,
+        "prompt_n": 8192,
+        "prompt_ms": 7381.722,
+        "prompt_per_token_ms": 0.901089111328125,
+        "prompt_per_second": 1109.7681543683168,
+        "predicted_n": 128,
+        "predicted_ms": 4378.806,
+        "predicted_per_token_ms": 34.4787874015748,
+        "predicted_per_second": 29.0033401799486
+      },
+      "ttft_s": 7.393439
+    },
+    "early32": {
+      "timings": {
+        "cache_n": 4096,
+        "prompt_n": 12288,
+        "prompt_ms": 9658.667,
+        "prompt_per_token_ms": 0.7860243326822917,
+        "prompt_per_second": 1272.2252459889135,
+        "predicted_n": 128,
+        "predicted_ms": 4225.726,
+        "predicted_per_token_ms": 33.27343307086614,
+        "predicted_per_second": 30.0540072877418
+      },
+      "ttft_s": 9.664811
+    }
+  },
+  "restore_events": {
+    "apex-b": [
+      {
+        "tokens": 24576,
+        "size_mib": 62.813,
+        "restore_call_ms": 7.145
+      },
+      {
+        "tokens": 49152,
+        "size_mib": 62.813,
+        "restore_call_ms": 7.239
+      }
+    ],
+    "flint-final": [
+      {
+        "tokens": 24576,
+        "size_mib": 9.87,
+        "restore_call_ms": 2.516
+      },
+      {
+        "tokens": 4096,
+        "size_mib": 9.87,
+        "restore_call_ms": 2.429
+      }
+    ]
+  },
+  "max_recurrent_checkpoints": 32,
+  "max_recurrent_payload_bytes": 2107661696
+}

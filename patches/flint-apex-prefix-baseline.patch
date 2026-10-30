@@ -1,0 +1,611 @@
+--- a/common/jinja/lexer.cpp
++++ b/common/jinja/lexer.cpp
+@@ -1,7 +1,9 @@
+ #include "lexer.h"
+ #include "runtime.h"
++#include "unicode.h"
+ 
+ #include <cctype>
++#include <charconv>
+ #include <functional>
+ #include <map>
+ #include <string>
+@@ -75,6 +77,24 @@
+                 }
+                 // add escaped char
+                 char escaped_char = src[pos++];
++                if (escaped_char == 'x') {
++                    if (pos + 1 >= src.size()) {
++                        throw lexer_exception("incomplete hexadecimal escape", source, pos);
++                    }
++
++                    unsigned int value = 0;
++                    const char * first = &src[pos];
++                    const char * last  = first + 2;
++
++                    auto [ptr, ec] = std::from_chars(first, last, value, 16);
++                    if (ec != std::errc{} || ptr != last) {
++                        throw lexer_exception("invalid hexadecimal escape", source, pos);
++                    }
++
++                    str += common_unicode_cpt_to_utf8(value);
++                    pos += 2;
++                    continue;
++                }
+                 if (escape_chars.find(escaped_char) == escape_chars.end()) {
+                     throw lexer_exception(std::string("unknown escape character \\") + escaped_char, source, pos);
+                 }
+--- a/tests/test-jinja.cpp
++++ b/tests/test-jinja.cpp
+@@ -25,6 +25,7 @@
+ static void test_set_statement(testing & t);
+ static void test_filters(testing & t);
+ static void test_literals(testing & t);
++static void test_hexadecimal_escapes(testing & t);
+ static void test_comments(testing & t);
+ static void test_macros(testing & t);
+ static void test_namespace(testing & t);
+@@ -65,6 +66,7 @@
+     t.test("set statement", test_set_statement);
+     t.test("filters", test_filters);
+     t.test("literals", test_literals);
++    t.test("hexadecimal escapes", test_hexadecimal_escapes);
+     t.test("comments", test_comments);
+     t.test("macros", test_macros);
+     t.test("namespace", test_namespace);
+@@ -1169,6 +1171,54 @@
+         json::object(),
+         "true"
+     );
++}
++
++static void test_hexadecimal_escapes(testing & t) {
++    test_template(t, "remove NUL from message content",
++        R"({{ message.content | replace("\x00", "") }})",
++        {{"message", {{"content", std::string("\0a\0b\0", 5)}}}},
++        "ab"
++    );
++
++    test_template(t, "non-ASCII hex escape produces UTF-8",
++        R"({{ '\xE9' }})",
++        json::object(),
++        "\xc3\xa9"
++    );
++
++    test_template(t, "consume exactly two hex digits",
++        R"({{ '\x414' }})",
++        json::object(),
++        "A4"
++    );
++
++    test_template(t, "escaped backslashes remain literal",
++        R"({{ '\\xE9' }})",
++        json::object(),
++        R"(\xE9)"
++    );
++
++    if (!g_python_mode) {
++        const char * invalid_templates[] = {
++            R"({{ '\x' }})",
++            R"({{ '\x0' }})",
++            R"({{ '\xG1' }})",
++            R"({{ '\x1G' }})",
++            R"({{ '\x)",
++            R"({{ '\x0)",
++        };
++        for (const auto * tmpl : invalid_templates) {
++            t.test("reject " + json(tmpl).dump(), [&](testing & t) {
++                bool rejected = false;
++                try {
++                    jinja::lexer().tokenize(tmpl);
++                } catch (const jinja::lexer_exception &) {
++                    rejected = true;
++                }
++                t.assert_true("malformed hex escape must raise a lexer error", rejected);
++            });
++        }
++    }
+ }
+ 
+ static void test_comments(testing & t) {
+--- /dev/null
++++ b/tests/test-prefix-checkpoint-state.cpp
+@@ -0,0 +1,89 @@
++#include "common.h"
++#include "arg.h"
++#include "llama.h"
++#include "ggml-backend.h"
++#include "nlohmann/json.hpp"
++#include <openssl/evp.h>
++
++#include <algorithm>
++#include <cstdlib>
++#include <fstream>
++#include <iostream>
++#include <stdexcept>
++#include <vector>
++
++static void require(bool ok, const char * message) {
++    if (!ok) { throw std::runtime_error(message); }
++}
++
++static std::vector<uint8_t> state(llama_context * ctx, llama_state_seq_flags flags) {
++    std::vector<uint8_t> result(llama_state_seq_get_size_ext(ctx, 0, flags));
++    require(llama_state_seq_get_data_ext(ctx, result.data(), result.size(), 0, flags) == result.size(), "state read failed");
++    return result;
++}
++
++static std::string digest(const std::vector<uint8_t> & bytes) {
++    unsigned char hash[EVP_MAX_MD_SIZE];
++    unsigned int n = 0;
++    require(EVP_Digest(bytes.data(), bytes.size(), hash, &n, EVP_sha256(), nullptr) == 1, "SHA-256 failed");
++    const char hex[] = "0123456789abcdef";
++    std::string result;
++    for (unsigned int i = 0; i < n; ++i) { result += hex[hash[i] >> 4]; result += hex[hash[i] & 15]; }
++    return result;
++}
++
++int main(int argc, char ** argv) {
++    try {
++        common_init();
++        common_params params;
++        require(common_params_parse(argc, argv, params, LLAMA_EXAMPLE_SERVER), "invalid parameters");
++        params.n_outputs_max = 1;
++        params.n_outputs_max_per_seq = 1;
++        llama_backend_init();
++        auto init = common_init_from_params(params);
++        auto * ctx = init->context();
++        require(ctx != nullptr, "context initialization failed");
++        const char * request_path = std::getenv("GGML_PREFIX_TEST_REQUEST");
++        std::ifstream file(request_path ? request_path : "results/exp082-ram-kv/request-32-cold.json");
++        require(file.good(), "request file could not be opened");
++        auto input = nlohmann::ordered_json::parse(file)["prompt"].get<std::vector<llama_token>>();
++        std::vector<int8_t> outputs(params.n_batch, 0);
++        auto prefill = [&](size_t first, size_t end) {
++            for (size_t i = first; i < end; i += params.n_batch) {
++                const auto count = std::min<size_t>(params.n_batch, end - i);
++                auto batch = llama_batch_get_one(input.data() + i, count);
++                batch.logits = outputs.data();
++                require(llama_decode(ctx, batch) == 0, "prefill failed");
++                std::cout << "prefilled through " << i + count << std::endl;
++            }
++        };
++        constexpr size_t prefix = 24576;
++        prefill(0, prefix);
++        auto partial = state(ctx, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
++        const auto partial_before = digest(partial);
++        std::string full_before;
++        size_t full_bytes = 0;
++        {
++            auto full = state(ctx, LLAMA_STATE_SEQ_FLAGS_NONE);
++            full_bytes = full.size();
++            full_before = digest(full);
++        }
++        prefill(prefix, input.size());
++        require(llama_state_seq_set_data_ext(ctx, partial.data(), partial.size(), 0, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY) == partial.size(), "partial restore failed");
++        require(llama_memory_seq_rm(llama_get_memory(ctx), 0, prefix, -1), "sequence rewind failed");
++        const auto partial_after = digest(state(ctx, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY));
++        const auto full_after = digest(state(ctx, LLAMA_STATE_SEQ_FLAGS_NONE));
++        nlohmann::ordered_json result = {{"prefix_tokens", prefix}, {"full_state_bytes", full_bytes},
++                {"partial_state_bytes", partial.size()}, {"full_before", full_before}, {"full_after", full_after},
++                {"partial_before", partial_before}, {"partial_after", partial_after},
++                {"full_match", full_before == full_after}, {"partial_match", partial_before == partial_after}};
++        std::cout << result.dump() << std::endl;
++        require(full_before == full_after && partial_before == partial_after, "KV roundtrip mismatch");
++        init.reset();
++        llama_backend_free();
++        return 0;
++    } catch (const std::exception & e) {
++        std::cerr << "FAIL: " << e.what() << std::endl;
++        return 1;
++    }
++}
+--- /dev/null
++++ b/tests/test-prefix-checkpoints.cpp
+@@ -0,0 +1,121 @@
++#include "../tools/server/server-prefix-checkpoints.h"
++
++#include <cassert>
++#include <iostream>
++
++using policy = server_prefix_checkpoint_policy;
++
++int main() {
++    policy p;
++    assert(policy::supports("flint", true, 1, false, false, false));
++    assert(!policy::supports("flint", true, 1, true, false, false));
++    assert(!policy::supports("flint", true, 2, false, false, false));
++    assert(!policy::supports("flint", true, 1, false, true, false));
++    assert(!policy::supports("flint", true, 1, false, false, true));
++    assert(!policy::supports("deepseek", true, 1, false, false, false));
++    assert(!policy::supports("flint", false, 1, false, false, false));
++    assert(policy::supports("qwen35moe", false, 1, false, false, false, true));
++    assert(!policy::supports("qwen35moe", false, 1, false, false, false, false));
++    assert(!policy::supports("qwen35moe", false, 2, false, false, false, true));
++    assert(!policy::supports("qwen35moe", false, 1, true, false, false, true));
++    assert(!policy::supports("qwen35moe", false, 1, false, true, false, true));
++    assert(!policy::supports("qwen35moe", false, 1, false, false, true, true));
++    assert(!policy::supports("qwen35", false, 1, false, false, false, true));
++    assert(!policy::supports("qwen35moe", true, 1, false, false, false, true));
++    policy::point recurrent{24576, policy::stored_min(24575, 24575, 0), 24575};
++    assert(recurrent.pos_min == 24575);
++    assert(policy::usable(recurrent, 24576, 24576, 24576, true));
++    assert(!policy::usable(recurrent, 24575, 24575, 24575, true));
++    assert(!policy::usable(recurrent, 24576, 24575, 24576, true));
++    assert(policy::resume(recurrent, 24576) == 24576);
++    assert(!policy::usable(recurrent, 24576, 24576, 24575, true));
++    unsetenv("GGML_RECURRENT_PREFIX_CHECKPOINTS");
++    unsetenv("GGML_RECURRENT_PREFIX_CHECKPOINT_MIB");
++    assert(policy::from_environment(true).limit_bytes == (2048ull << 20));
++    setenv("GGML_RECURRENT_PREFIX_CHECKPOINTS", "0", 1);
++    assert(!policy::from_environment(true).enabled);
++    unsetenv("GGML_RECURRENT_PREFIX_CHECKPOINTS");
++    for (const char * invalid : {"-1", "2049", "9999999999999999999999999", "4x", ""}) {
++        setenv("GGML_RECURRENT_PREFIX_CHECKPOINT_MIB", invalid, 1);
++        assert(!policy::from_environment(true).enabled);
++    }
++    unsetenv("GGML_RECURRENT_PREFIX_CHECKPOINT_MIB");
++    auto recurrent_policy = policy::from_environment(true);
++    std::vector<policy::point> recurrent_points;
++    constexpr size_t recurrent_bytes = 63ull << 20;
++    for (int64_t n = 4096; n < 262144; n += 4096) {
++        while (recurrent_points.size() >= 32 || !recurrent_policy.fits(recurrent_points.size() * recurrent_bytes, recurrent_bytes)) {
++            const auto victim = policy::victim(recurrent_points, 4096);
++            assert(victim < recurrent_points.size());
++            recurrent_points.erase(recurrent_points.begin() + victim);
++        }
++        recurrent_points.push_back({n, n - 1, n - 1});
++        assert(recurrent_points.size() * recurrent_bytes <= recurrent_policy.limit_bytes);
++    }
++    assert(recurrent_points.front().n_tokens == 4096);
++    assert(recurrent_points.back().n_tokens == 258048);
++    assert(recurrent_points.size() == 32);
++    setenv("GGML_RECURRENT_PREFIX_CHECKPOINT_MIB", "512", 1);
++    assert(policy::from_environment(true).limit_bytes == (512ull << 20));
++    setenv("GGML_RECURRENT_PREFIX_CHECKPOINT_MIB", "0", 1);
++    assert(!policy::from_environment(true).enabled);
++    unsetenv("GGML_RECURRENT_PREFIX_CHECKPOINT_MIB");
++
++    assert(!p.periodic(0, -1, 4096));
++    assert(p.periodic(4096, -1, 4096));
++    assert(p.periodic(4160, 64, 4096));
++    assert(!p.periodic(4160, 4160, 4096));
++    assert(!p.periodic(4096, 8192, 4096));
++    p.enabled = false;
++    assert(!p.periodic(8192, 4096, 4096));
++    p.enabled = true;
++
++    assert(p.fits(0, p.limit_bytes));
++    assert(!p.fits(1, p.limit_bytes));
++    assert(!p.fits(0, std::numeric_limits<size_t>::max()));
++
++    policy::point first{4096, policy::stored_min(2304, 4095, 513), 4095};
++    assert(first.pos_min == 3583);
++    assert(policy::usable(first, 5120, 5120, 4609));
++    assert(!policy::usable(first, 3000, 3000, 2489));
++    assert(policy::resume(first, 5120) == 4096);
++    assert(policy::resume(first, 4095) == 4095);
++    assert(policy::stored_min(4000, 4095, 513) == 4000);
++
++    // A 48K branch resumes at 48K, without replaying a token that is already complete.
++    policy::point middle{49152, policy::stored_min(47360, 49151, 513), 49151};
++    assert(policy::usable(middle, 49152, 49152, 48641));
++    assert(policy::resume(middle, 49152) == 49152);
++    assert(65536 - policy::resume(middle, 49152) == 16384);
++
++    std::vector<policy::point> points{{64, 0, 63}};
++    constexpr size_t state_bytes = 10348900;
++    size_t peak = state_bytes;
++    for (int64_t n = 4160; n < 131072; n += 4096) {
++        while (!p.fits(points.size() * state_bytes, state_bytes)) {
++            const auto index = policy::victim(points, 4096);
++            assert(index < points.size());
++            points.erase(points.begin() + index);
++        }
++        points.push_back({n, n - 513, n - 1});
++        peak = std::max(peak, points.size() * state_bytes);
++    }
++    assert(peak <= p.limit_bytes);
++    assert(points.front().n_tokens == 64);
++    assert(points[1].n_tokens == 4160);
++    assert(points.back().n_tokens == 127040);
++
++    setenv("GGML_SWA_PREFIX_CHECKPOINTS", "0", 1);
++    assert(!policy::from_environment().enabled);
++    unsetenv("GGML_SWA_PREFIX_CHECKPOINTS");
++    for (const char * invalid : {"-1", "513", "9999999999999999999999999", "4x", ""}) {
++        setenv("GGML_SWA_PREFIX_CHECKPOINT_MIB", invalid, 1);
++        assert(!policy::from_environment().enabled);
++    }
++    setenv("GGML_SWA_PREFIX_CHECKPOINT_MIB", "64", 1);
++    assert(policy::from_environment().limit_bytes == (64ull << 20));
++    setenv("GGML_SWA_PREFIX_CHECKPOINT_MIB", "0", 1);
++    assert(!policy::from_environment().enabled);
++    unsetenv("GGML_SWA_PREFIX_CHECKPOINT_MIB");
++    std::cout << "PASS: SWA and recurrent bounds, prefix rejection, 262K budget, eviction, disable and unsupported modes\n";
++}
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -1,4 +1,5 @@
+ #include "server-context.h"
++#include "server-prefix-checkpoints.h"
+ #include <atomic>
+ #include <thread>
+ #include "base64.hpp"
+@@ -1092,6 +1093,9 @@
+     int n_empty_consecutive = 0;
+ 
+     std::unique_ptr<server_prompt_cache> prompt_cache;
++    server_prefix_checkpoint_policy prefix_policy = server_prefix_checkpoint_policy::from_environment();
++    bool prefix_supported = false;
++    bool prefix_recurrent = false;
+ 
+     server_metrics metrics;
+ 
+@@ -1414,6 +1418,13 @@
+         }
+ 
+         n_swa = params_base.swa_full ? 0 : llama_model_n_swa(model_tgt);
++        char architecture[32] = {};
++        llama_model_meta_val_str(model_tgt, "general.architecture", architecture, sizeof(architecture));
++        prefix_recurrent = std::strcmp(architecture, "qwen35moe") == 0 && llama_model_is_hybrid(model_tgt);
++        prefix_policy = server_prefix_checkpoint_policy::from_environment(prefix_recurrent);
++        prefix_supported = server_prefix_checkpoint_policy::supports(architecture, n_swa > 0,
++                params_base.n_parallel, false, mctx != nullptr,
++                !params_base.lora_adapters.empty() || !params_base.control_vectors.empty(), prefix_recurrent);
+ 
+         // Necessary similarity of prompt for slot selection
+         slot_prompt_similarity = params_base.slot_prompt_similarity;
+@@ -1584,6 +1595,11 @@
+             SRV_TRC("%s", "prompt cache is disabled - use `--cache-ram N` to enable it\n");
+         }
+         SRV_TRC("%s", "for more info see https://github.com/ggml-org/llama.cpp/pull/16391\n");
++
++        SRV_INF("RAM-only prefix checkpoints (%s): %s, budget %.1f MiB\n",
++                prefix_recurrent ? "recurrent" : "SWA",
++                prefix_checkpoints_enabled() ? "enabled" : "disabled",
++                prefix_policy.limit_bytes / (1024.0 * 1024.0));
+ 
+         if (params_base.n_ctx_checkpoints > 0) {
+             SRV_TRC("context checkpoints enabled, max = %d, min spacing = %d\n",
+@@ -2664,9 +2680,40 @@
+         return true;
+     }
+ 
++    bool prefix_checkpoints_enabled() const {
++        return prefix_policy.enabled && prefix_supported && !spec && !ctx_dft && params_base.n_ctx_checkpoints > 0;
++    }
++
++    void evict_prefix_checkpoint(server_slot & slot) {
++        std::vector<server_prefix_checkpoint_policy::point> points;
++        for (const auto & c : slot.prompt.checkpoints) { points.push_back({c.n_tokens, c.pos_min, c.pos_max}); }
++        auto it = slot.prompt.checkpoints.begin();
++        std::advance(it, server_prefix_checkpoint_policy::victim(points, llama_n_batch(ctx_tgt)));
++        SLT_TRC(slot, "evicting RAM SWA checkpoint at %" PRId64 " tokens, %.2f MiB\n",
++                it->n_tokens, it->size() / (1024.0 * 1024.0));
++        slot.prompt.checkpoints.erase(it);
++    }
++
++    void reserve_prefix_checkpoint(server_slot & slot, size_t incoming) {
++        auto used = [&]() {
++            size_t total = 0;
++            for (const auto & c : slot.prompt.checkpoints) { total += c.size(); }
++            return total;
++        };
++        while (!slot.prompt.checkpoints.empty() && !prefix_policy.fits(used(), incoming)) {
++            evict_prefix_checkpoint(slot);
++        }
++    }
++
+     // n_tokens_cur: the number of tokens added to the batch for the current slot
+     void create_checkpoint(server_slot & slot, const int64_t n_tokens_cur, llama_pos pos_min, llama_pos pos_max) {
+         const int id_task = slot.task->id;
++        const bool bounded = prefix_checkpoints_enabled();
++        const size_t incoming = bounded ? llama_state_seq_get_size_ext(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY) : 0;
++        if (bounded && !prefix_policy.fits(0, incoming)) {
++            SLT_WRN(slot, "%s", "SWA checkpoint exceeds RAM budget, skipping\n");
++            return;
++        }
+ 
+         // evict checkpoints within min-step of a previous checkpoint, unless they were
+         // created by the current task
+@@ -2688,6 +2735,7 @@
+         }
+ 
+         while (slot.prompt.checkpoints.size() >= (size_t) params_base.n_ctx_checkpoints) {
++            if (bounded) { evict_prefix_checkpoint(slot); continue; }
+             // make room for the new checkpoint, if needed
+             const auto & cur = slot.prompt.checkpoints.front();
+ 
+@@ -2710,6 +2758,7 @@
+             }
+         }
+ 
++        if (bounded) { reserve_prefix_checkpoint(slot, incoming); }
+         auto & cur = slot.prompt.checkpoints.emplace_back();
+ 
+         cur.id_task = id_task;
+@@ -2717,9 +2766,23 @@
+         // [TAG_CHECKPOINTS_FIX_POS_MIN]
+         // TODO: here we incorrectly deterimne that the saved checkpoint data covers the [pos_min, pos_max] range
+         //       this is not true for SWA models: https://github.com/ggml-org/llama.cpp/pull/24411#issuecomment-4677983225
++        if (bounded) {
++            pos_min = server_prefix_checkpoint_policy::stored_min(pos_min, pos_max, n_swa);
++        }
+         cur.update_pos(slot.prompt.n_tokens() - n_tokens_cur, pos_min, pos_max);
+ 
+-        cur.update_tgt(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
++        try {
++            cur.update_tgt(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
++        } catch (const std::bad_alloc &) {
++            if (!bounded) { throw; }
++            slot.prompt.checkpoints.pop_back();
++            SLT_WRN(slot, "%s", "RAM SWA checkpoint allocation failed, skipping\n");
++            return;
++        }
++        if (bounded && prefix_recurrent) {
++            SLT_INF(slot, "RAM recurrent prefix saved: tokens = %" PRId64 ", size = %.3f MiB, retained = %zu\n",
++                    cur.n_tokens, cur.size() / (1024.0 * 1024.0), slot.prompt.checkpoints.size());
++        }
+         cur.update_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
+         // stash the draft's speculative state with the checkpoint
+         common_speculative_get_state(spec.get(), slot.id, cur.data_spec);
+@@ -4124,6 +4187,11 @@
+                                         [&](const auto & cur) {
+                                             // guarantee that a checkpoint will result in at least one token being processed [TAG_PROMPT_LOGITS]
+                                             SLT_TRC(slot, "checking checkpoint with [%d, %d] against %d...\n", cur.pos_min, cur.pos_max, pos_min_thold);
++                                            if (prefix_checkpoints_enabled()) {
++                                                const auto min_saved = server_prefix_checkpoint_policy::stored_min(cur.pos_min, cur.pos_max, n_swa);
++                                                return server_prefix_checkpoint_policy::usable(
++                                                        {cur.n_tokens, min_saved, cur.pos_max}, n_prefix, pos_next, pos_min_thold, prefix_recurrent);
++                                            }
+                                             // workaround for [TAG_CHECKPOINTS_FIX_POS_MIN]
+                                             if (cur.pos_max > pos_next) {
+                                                 return false;
+@@ -4133,6 +4201,7 @@
+                                     );
+ 
+                                     bool do_reset = it == slot.prompt.checkpoints.rend();
++                                    const int64_t prefix_restore_start = ggml_time_us();
+ 
+                                     if (!do_reset) {
+                                         // restore the context checkpoint
+@@ -4148,10 +4217,20 @@
+                                     }
+ 
+                                     if (!do_reset) {
++                                        if (prefix_checkpoints_enabled()) {
++                                            SLT_INF(slot, "RAM prefix restored: tokens = %" PRId64 ", size = %.3f MiB, restore_call_ms = %.3f\n",
++                                                    it->n_tokens, it->size() / (1024.0 * 1024.0),
++                                                    (ggml_time_us() - prefix_restore_start) / 1000.0);
++                                        }
+                                         // restore the draft's speculative state
+                                         common_speculative_set_state(spec.get(), slot.id, it->data_spec);
+ 
+-                                        pos_next = std::min(pos_next, std::max(it->pos_min + 1, it->pos_max));
++                                        if (prefix_checkpoints_enabled()) {
++                                            pos_next = server_prefix_checkpoint_policy::resume(
++                                                    {it->n_tokens, it->pos_min, it->pos_max}, pos_next);
++                                        } else {
++                                            pos_next = std::min(pos_next, std::max(it->pos_min + 1, it->pos_max));
++                                        }
+                                         n_past   = std::min(slot.prompt.tokens.size_up_to_pos(pos_next), (size_t) it->n_tokens);
+                                         SLT_TRC(slot, "restored context checkpoint (pos_min = %d, pos_max = %d, n_tokens = %" PRId64 ", n_past = %d, size = %.3f MiB)\n", it->pos_min, it->pos_max, it->n_tokens, n_past, (float) it->size() / 1024 / 1024);
+                                     }
+@@ -4407,6 +4486,9 @@
+ 
+                     const bool is_user_start = spans.is_user_start(n_tokens_start);
+                     const bool is_last_user_message = n_tokens_start == last_user_pos;
++                    const auto previous_checkpoint = slot.prompt.checkpoints.empty() ? -1 : slot.prompt.checkpoints.back().n_tokens;
++                    const bool periodic_prefix = prefix_checkpoints_enabled() && slot.task->params.cache_prompt &&
++                            prefix_policy.periodic(n_tokens_start, previous_checkpoint, n_batch);
+ 
+                     // entire prompt has been processed
+                     if (slot.prompt.n_tokens() == slot.task->n_tokens()) {
+@@ -4424,7 +4506,7 @@
+                     } else {
+                         // skip ordinary mid-prompt checkpoints, unless the batch starts a user
+                         // message or we are near the end of the prompt
+-                        if (!is_user_start && !near_prompt_end) {
++                        if (!is_user_start && !near_prompt_end && !periodic_prefix) {
+                             do_checkpoint = false;
+                         }
+                     }
+@@ -4444,7 +4526,7 @@
+                     // no need to create checkpoints that are too close together, unless it's the last user message
+                     do_checkpoint = do_checkpoint && (
+                             slot.prompt.checkpoints.empty() ||
+-                            is_last_user_message || near_prompt_end ||
++                            is_last_user_message || near_prompt_end || periodic_prefix ||
+                             n_tokens_start > slot.prompt.checkpoints.back().n_tokens + params_base.checkpoint_min_step);
+                     SLT_DBG(slot, "main/do_checkpoint = %s, pos_min = %d, pos_max = %d\n", do_checkpoint ? "yes" : "no", pos_min, pos_max);
+ 
+--- /dev/null
++++ b/tools/server/server-prefix-checkpoints.h
+@@ -0,0 +1,86 @@
++#pragma once
++
++#include <algorithm>
++#include <cerrno>
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++#include <limits>
++#include <string>
++#include <vector>
++
++struct server_prefix_checkpoint_policy {
++    struct point {
++        int64_t n_tokens;
++        int64_t pos_min;
++        int64_t pos_max;
++    };
++
++    bool enabled = true;
++    size_t limit_bytes = 256ull << 20;
++
++    static server_prefix_checkpoint_policy from_environment(bool recurrent = false) {
++        server_prefix_checkpoint_policy result;
++        if (recurrent) { result.limit_bytes = 2048ull << 20; }
++        const char * flag = std::getenv(recurrent ? "GGML_RECURRENT_PREFIX_CHECKPOINTS" : "GGML_SWA_PREFIX_CHECKPOINTS");
++        if (flag && std::strcmp(flag, "0") == 0) { result.enabled = false; }
++        const char * value = std::getenv(recurrent ? "GGML_RECURRENT_PREFIX_CHECKPOINT_MIB" : "GGML_SWA_PREFIX_CHECKPOINT_MIB");
++        if (value) {
++            char * end = nullptr;
++            errno = 0;
++            const auto mib = std::strtoull(value, &end, 10);
++            if (errno || value == end || *end || *value == '-' || mib > (recurrent ? 2048ull : 512ull)) {
++                result.enabled = false;
++            } else {
++                result.limit_bytes = static_cast<size_t>(mib) << 20;
++                result.enabled = result.enabled && mib > 0;
++            }
++        }
++        return result;
++    }
++
++    static bool supports(const std::string & architecture, bool has_swa, int slots,
++                         bool speculative, bool multimodal, bool adapters, bool hybrid = false) {
++        const bool supported = (architecture == "flint" && has_swa) || (architecture == "qwen35moe" && hybrid && !has_swa);
++        return supported && slots == 1 &&
++                !speculative && !multimodal && !adapters;
++    }
++
++    bool fits(size_t used, size_t incoming) const {
++        return incoming <= limit_bytes && used <= limit_bytes - incoming;
++    }
++
++    bool periodic(int64_t start, int64_t previous, int64_t batch) const {
++        return enabled && batch > 0 && start >= batch &&
++                (previous < 0 || (start >= previous && start - previous >= batch));
++    }
++
++    // Preserve the first full-batch anchor and distribute the remaining points across history.
++    static size_t victim(const std::vector<point> & points, int64_t batch) {
++        size_t seed = 0;
++        while (seed < points.size() && points[seed].n_tokens < batch) { ++seed; }
++        size_t result = points.size();
++        int64_t span = std::numeric_limits<int64_t>::max();
++        for (size_t i = 1; i + 1 < points.size(); ++i) {
++            if (i == seed) { continue; }
++            const auto width = points[i + 1].n_tokens - points[i - 1].n_tokens;
++            if (width < span) { span = width; result = i; }
++        }
++        return result < points.size() ? result : 0;
++    }
++
++    static int64_t stored_min(int64_t raw_min, int64_t end, int64_t window) {
++        if (window <= 0) { return raw_min; }
++        return std::max(raw_min, std::max<int64_t>(0, end - window + 1));
++    }
++
++    static bool usable(const point & checkpoint, int64_t prefix, int64_t pos_next, int64_t threshold, bool recurrent = false) {
++        const bool before_next = recurrent ? checkpoint.pos_max < pos_next : checkpoint.pos_max <= pos_next;
++        return checkpoint.n_tokens <= prefix && before_next &&
++                (checkpoint.pos_min < threshold || checkpoint.pos_min == 0);
++    }
++
++    static int64_t resume(const point & checkpoint, int64_t pos_next) {
++        return std::min(pos_next, checkpoint.pos_max + 1);
++    }
++};

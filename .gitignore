@@ -32,3 +32,6 @@ __pycache__/
 
 # LOCAL_ONLY MultiAgentZone: Oh My OpenAgent sandbox (backups, scripts, test repo)
 /MultiAgentZone/
+
+# Private project instructions loaded by Codex.
+/AGENTS.override.md

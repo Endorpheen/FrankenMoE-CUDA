@@ -1,5 +1,14 @@
 # Experiment log
 
+## EXP-2026-10-30-083: preserve the unified Flint/Apex prefix baseline
+
+- Status: `ACCEPTED` (`kind=source-preservation`); no performance acceptance or production promotion.
+- Deliverable: `patches/flint-apex-prefix-baseline.patch`, directly against upstream `1b44e30775dcb2f93952116b05f89e5bd797fb00`; includes the Jinja prerequisite, Flint SWA and Apex recurrent prefix recovery.
+- Exact reconstruction: six changed/new files, all 3742 files present in the source snapshot match; reconstructed Git tree `011028fe59a59ee2f2af070be02ebf319438337d`.
+- Runtime identity includes shared libraries: executable matches EXP-082, server implementation SHA-256 `8a963ce35bc919880354b226f5737c6c5d3f2dc47184c291badfe8470a209168` identifies the unified runtime.
+- Current-source model-free policy test PASS, including recurrent bounds/eviction at 262K. No new model launch or performance measurement during preservation. Existing budgets remain 2048 MiB recurrent / 256 MiB SWA.
+- [Source, build recipe, historical evidence and limits](EXP-2026-10-30-083-flint-apex-prefix-baseline.md); manifests and recorded data in `results/exp083-flint-apex-baseline/`.
+
 ## EXP-2026-10-21-079: port to upstream 839a572a
 
 - Status: `ACCEPTED` as an isolated source/build port; production EXP-063 remains unchanged.
