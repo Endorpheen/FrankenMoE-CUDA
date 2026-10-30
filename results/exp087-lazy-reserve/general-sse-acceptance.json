@@ -1,0 +1,24 @@
+{
+  "accepted": true,
+  "defaults_pair_correct": true,
+  "max_probability_delta": 0,
+  "independent_cases": [
+    "valid-32768-24576",
+    "valid-32768-32767",
+    "valid-16384-5120",
+    "valid-261632-0",
+    "predicted-0",
+    "predicted-1",
+    "predicted-127",
+    "predicted-128",
+    "predicted-129",
+    "wrong-total",
+    "negative-cache",
+    "zero-prompt",
+    "truncated",
+    "missing-final",
+    "missing-probability"
+  ],
+  "other_functions_unchanged": true,
+  "sha256": "1f4bb23afa9aa0a4424c1d015a2217c1ceda7d00d72c1e213659e1e2d87703bf"
+}

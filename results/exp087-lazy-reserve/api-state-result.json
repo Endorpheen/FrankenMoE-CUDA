@@ -1,0 +1,102 @@
+{
+  "control": {
+    "after_reserve": {
+      "CPU_Mapped": {
+        "compute": 0,
+        "context": 0,
+        "model": 19789578240
+      },
+      "CUDA0": {
+        "compute": 3475013760,
+        "context": 1575813120,
+        "model": 1366190592
+      },
+      "CUDA_Host": {
+        "compute": 2282176576,
+        "context": 0,
+        "model": 0
+      }
+    },
+    "before": {
+      "CPU_Mapped": {
+        "compute": 0,
+        "context": 0,
+        "model": 19789578240
+      },
+      "CUDA0": {
+        "compute": 3475013760,
+        "context": 1575813120,
+        "model": 1366190592
+      },
+      "CUDA_Host": {
+        "compute": 2282176576,
+        "context": 0,
+        "model": 0
+      }
+    },
+    "no_alloc": false,
+    "reserve_returned_graph": true,
+    "roundtrip": {
+      "full_after": "d422f36d68d9284ff92ea744cd7cabcb5d43cfc2ceb8b1d89d0bee3934035d66",
+      "full_before": "d422f36d68d9284ff92ea744cd7cabcb5d43cfc2ceb8b1d89d0bee3934035d66",
+      "full_bytes": 208012276,
+      "full_match": true,
+      "partial_after": "dd7a2555e8e5efb3a0844d90cd9b53e9b0135a6bf84d8a817fce48804903a599",
+      "partial_before": "dd7a2555e8e5efb3a0844d90cd9b53e9b0135a6bf84d8a817fce48804903a599",
+      "partial_bytes": 65864428,
+      "partial_match": true,
+      "prefix_tokens": 24576
+    }
+  },
+  "candidate": {
+    "after_reserve": {
+      "CPU_Mapped": {
+        "compute": 0,
+        "context": 0,
+        "model": 19789578240
+      },
+      "CUDA0": {
+        "compute": 3475013760,
+        "context": 1575813120,
+        "model": 1366190592
+      },
+      "CUDA_Host": {
+        "compute": 2282176576,
+        "context": 0,
+        "model": 0
+      }
+    },
+    "before": {
+      "CPU_Mapped": {
+        "compute": 0,
+        "context": 0,
+        "model": 19789578240
+      },
+      "CUDA0": {
+        "compute": 5415168,
+        "context": 1575813120,
+        "model": 1366190592
+      },
+      "CUDA_Host": {
+        "compute": 3736576,
+        "context": 0,
+        "model": 0
+      }
+    },
+    "no_alloc": false,
+    "reserve_returned_graph": true,
+    "roundtrip": {
+      "full_after": "d422f36d68d9284ff92ea744cd7cabcb5d43cfc2ceb8b1d89d0bee3934035d66",
+      "full_before": "d422f36d68d9284ff92ea744cd7cabcb5d43cfc2ceb8b1d89d0bee3934035d66",
+      "full_bytes": 208012276,
+      "full_match": true,
+      "partial_after": "dd7a2555e8e5efb3a0844d90cd9b53e9b0135a6bf84d8a817fce48804903a599",
+      "partial_before": "dd7a2555e8e5efb3a0844d90cd9b53e9b0135a6bf84d8a817fce48804903a599",
+      "partial_bytes": 65864428,
+      "partial_match": true,
+      "prefix_tokens": 24576
+    }
+  },
+  "explicit_reserve_allocations_identical": true,
+  "state_roundtrip_identical_across_runtimes": true
+}

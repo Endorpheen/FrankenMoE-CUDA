@@ -1,0 +1,2 @@
+PASS: exact/default, NULL reset, bounds, reuse, alias minimum, multichunk, overflow, OOM retry/recovery
+ggml_gallocr_reserve_n_impl: failed to allocate growth-test buffer of size 3072

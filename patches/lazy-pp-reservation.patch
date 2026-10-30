@@ -1,0 +1,283 @@
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -15,6 +15,7 @@
+ #include "llama.h"
+ 
+ #include <cinttypes>
++#include <cstdlib>
+ #include <cmath>
+ #include <cstring>
+ #include <limits>
+@@ -704,6 +705,32 @@
+     return (int) users.size();
+ }
+ 
++// lazy worst-case PP reservation: the scheduler only splits the first and last
++// PP graph here instead of reserving a dedicated worst-case compute buffer;
++// the scheduler allocates and grows compute buffers for the real graphs later
++// in ggml_backend_sched_alloc_graph/alloc_splits
++static bool llama_lazy_pp_reserving_enabled(
++        const llama_cparams         &cparams,
++        const llama_hparams         &hparams,
++        const std::vector<ggml_backend_t> &backends) {
++    if (hparams.no_alloc) return false;
++    if (cparams.training) return false;
++    if (cparams.pipeline_parallel) return false;
++    if (!cparams.causal_attn) return false;
++    if (!cparams.flash_attn) return false;
++    if (cparams.ctx_type != LLAMA_CONTEXT_TYPE_DEFAULT) return false;
++    if (cparams.n_seq_max != 1) return false;
++
++    if (backends.size() != 2) return false;
++    if (ggml_backend_dev_type(ggml_backend_get_device(backends[0])) != GGML_BACKEND_DEVICE_TYPE_GPU) return false;
++    if (ggml_backend_dev_type(ggml_backend_get_device(backends[1])) != GGML_BACKEND_DEVICE_TYPE_CPU) return false;
++
++    // GGML_LAZY_PP_RESERVE=0 disables the mode, any other value leaves the
++    // default behavior untouched
++    const char *env = getenv("GGML_LAZY_PP_RESERVE");
++    return env == nullptr || atoi(env) != 0;
++}
++
+ void llama_context::sched_new(size_t max_nodes, bool parallel) {
+     sched.reset(ggml_backend_sched_new(
+             backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, parallel, cparams.op_offload));
+@@ -756,6 +783,16 @@
+ 
+     resolve_fused_ops(mctx.get(), n_seqs);
+ 
++    // lazy worst-case PP reservation: only split the graph here and leave the
++    // buffer allocation to the scheduler growing buffers for the real graphs
++    // (ggml_backend_sched_alloc_graph/alloc_splits), not reserving a dedicated
++    // worst-case buffer here
++    const bool lazy_pp = this->memory && llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs);
++
++    if (lazy_pp) {
++        LLAMA_LOG_INFO("%s: lazy worst-case PP reservation\n", __func__);
++    }
++
+     // reserve worst-case graph
+     int n_splits_pp        = -1;
+     int n_nodes_pp         = -1;
+@@ -769,10 +806,13 @@
+ 
+     const uint32_t n_outputs_pp = std::min(n_tokens, cparams.n_outputs_max);
+ 
++    std::vector<size_t> buffer_growth_limits(lazy_pp ? backend_ptrs.size() : 0);
++
+     // reserve pp (prompt processing) graph first so that buffers are only allocated once
+     {
+         auto * gf = graph_reserve(n_tokens, n_seqs, n_outputs_pp, mctx.get(),
+-                model.hparams.no_alloc, model.hparams.no_alloc ? backend_buf_exp_size.data() : nullptr);
++                model.hparams.no_alloc || lazy_pp, model.hparams.no_alloc ? backend_buf_exp_size.data() :
++                (lazy_pp ? buffer_growth_limits.data() : nullptr));
+         if (!gf) {
+             if (cparams.pipeline_parallel) {
+                 LLAMA_LOG_WARN("%s: compute buffer allocation failed, retrying without pipeline parallelism\n", __func__);
+@@ -791,6 +831,17 @@
+         n_input_tensors_pp = this->n_input_tensors;
+ 
+         graph_has_logits = get_gf_res_reserve()->get_logits() != nullptr;
++    }
++
++    // The fresh scheduler has no physical buffers during the initial size query.
++    // Bound host headroom by the original worst-case plan; keep GPU allocation exact.
++    if (lazy_pp) {
++        for (size_t i = 0; i < backend_ptrs.size(); ++i) {
++            if (!ggml_backend_buft_is_host(backend_buft[i])) {
++                buffer_growth_limits[i] = 0;
++            }
++        }
++        ggml_backend_sched_set_buffer_growth_limits(sched.get(), buffer_growth_limits.data());
+     }
+ 
+     // reserve with tg (token generation) graph to get the number of splits and nodes
+@@ -821,10 +872,10 @@
+                 // [TAG_RESERVE_DIAG_DECAY]
+                 // the `inp_diag_decay` tensor size scales with `n_seq_tokens^2` which
+                 // makes `n_seqs == 1` use more memory for the compute graph compared to `n_seqs > 1`
+-                gf = graph_reserve(n_tokens, 1,      n_outputs_pp, mctx.get(), model.hparams.no_alloc);
++                gf = graph_reserve(n_tokens, 1,      n_outputs_pp, mctx.get(), model.hparams.no_alloc || lazy_pp);
+                 break;
+             default:
+-                gf = graph_reserve(n_tokens, n_seqs, n_outputs_pp, mctx.get(), model.hparams.no_alloc);
++                gf = graph_reserve(n_tokens, n_seqs, n_outputs_pp, mctx.get(), model.hparams.no_alloc || lazy_pp);
+         };
+ 
+         if (!gf) {
+@@ -997,7 +1048,11 @@
+ 
+         const uint32_t n_outputs_max = std::min(n_tokens, cparams.n_outputs_max);
+ 
+-        auto * gf = graph_reserve(n_tokens, n_seqs, n_outputs_max, mctx.get());
++        // only split the graph here, the eager worst-case PP reservation was
++        // dropped: the scheduler allocates buffers for the real graphs later
++        const bool lazy_pp = llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs);
++
++        auto * gf = graph_reserve(n_tokens, n_seqs, n_outputs_max, mctx.get(), lazy_pp);
+         if (!gf) {
+             LLAMA_LOG_ERROR("%s: failed to reserve graph after the memory update\n", __func__);
+         }
+@@ -1552,6 +1607,13 @@
+             LLAMA_LOG_ERROR("%s: failed to allocate graph\n", __func__);
+             ret = GGML_STATUS_ALLOC_FAILED;
+             return nullptr;
++        }
++
++        // record the compute-buffer reserve per backend (worst-case estimate is kept even with no_alloc)
++        if (memory && llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs)) {
++            for (size_t i = 0; i < backend_ptrs.size(); ++i) {
++                backend_buf_exp_size[i] = ggml_backend_sched_get_buffer_size(sched.get(), backend_ptrs[i]);
++            }
+         }
+ 
+         gf_res_prev_active = res;
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -2155,6 +2155,10 @@
+     sched->callback_copy_user_data = user_data;
+ }
+ 
++void ggml_backend_sched_set_buffer_growth_limits(ggml_backend_sched_t sched, const size_t * limits) {
++    ggml_gallocr_set_buffer_growth_limits(sched->galloc, limits);
++}
++
+ void ggml_backend_sched_set_realloc_callback(ggml_backend_sched_t sched, ggml_backend_sched_realloc_callback callback, void * user_data) {
+     GGML_ASSERT(sched);
+     sched->callback_realloc = callback;
+--- a/ggml/src/ggml-alloc.c
++++ b/ggml/src/ggml-alloc.c
+@@ -421,7 +421,22 @@
+     return size;
+ }
+ 
+-static struct vbuffer * ggml_vbuffer_alloc(ggml_backend_buffer_type_t buft, const struct ggml_dyn_tallocr * talloc, enum ggml_backend_buffer_usage usage) {
++// when the limit is above the single chunk size, the first chunk of a compute
++// buffer may grow beyond the chunk size requested by the tallocr (up to
++// min(4 * chunk_size, growth_limit, backend max) for a one-chunk buffer); a
++// limit of 0 means no growth at all
++static size_t ggml_vbuffer_alloc_grow_size(ggml_backend_buffer_type_t buft, size_t chunk_size, size_t growth_limit) {
++    if (growth_limit == 0) {
++        return chunk_size;
++    }
++    // grow up to 4x the chunk size, but never overflow chunk_size * 4
++    size_t grow_size = chunk_size > (SIZE_MAX - 3) / 4 ? SIZE_MAX : 4 * chunk_size;
++    grow_size = growth_limit < grow_size ? growth_limit : grow_size;
++    grow_size = ggml_backend_buft_get_max_size(buft) < grow_size ? ggml_backend_buft_get_max_size(buft) : grow_size;
++    return grow_size > chunk_size ? grow_size : chunk_size;
++}
++
++static struct vbuffer * ggml_vbuffer_alloc(ggml_backend_buffer_type_t buft, const struct ggml_dyn_tallocr * talloc, enum ggml_backend_buffer_usage usage, size_t growth_limit) {
+     struct vbuffer * buf = (struct vbuffer *)calloc(1, sizeof(struct vbuffer));
+     if (buf == NULL) {
+         return NULL;
+@@ -429,7 +444,15 @@
+ 
+     for (int n = 0; n < talloc->n_chunks; n++) {
+         size_t chunk_size = talloc->chunks[n]->max_size;
+-        buf->chunks[n] = ggml_backend_buft_alloc_buffer(buft, chunk_size);
++        size_t allocation_size = chunk_size;
++        if (usage == GGML_BACKEND_BUFFER_USAGE_COMPUTE && talloc->n_chunks == 1 && growth_limit > chunk_size) {
++            allocation_size = ggml_vbuffer_alloc_grow_size(buft, chunk_size, growth_limit);
++        }
++        buf->chunks[n] = ggml_backend_buft_alloc_buffer(buft, allocation_size);
++        if (buf->chunks[n] == NULL && allocation_size > chunk_size) {
++            // the backend rejected the larger size: fall back to the exact size once
++            buf->chunks[n] = ggml_backend_buft_alloc_buffer(buft, chunk_size);
++        }
+         if (buf->chunks[n] == NULL) {
+             ggml_vbuffer_free(buf);
+             return NULL;
+@@ -484,6 +507,8 @@
+     struct vbuffer ** buffers; // [n_buffers]
+     struct ggml_dyn_tallocr ** buf_tallocs; // [n_buffers]
+     int n_buffers;
++    size_t * buffer_growth_limits; // [n_buffers], best effort only
++
+ 
+     struct ggml_hash_set hash_set;
+     struct hash_node * hash_values; // [hash_set.size]
+@@ -507,6 +532,9 @@
+ 
+     galloc->buf_tallocs = calloc(n_bufs, sizeof(struct ggml_dyn_tallocr *));
+     GGML_ASSERT(galloc->buf_tallocs != NULL);
++
++    galloc->buffer_growth_limits = calloc(n_bufs, sizeof(size_t));
++    GGML_ASSERT(galloc->buffer_growth_limits != NULL);
+ 
+     for (int i = 0; i < n_bufs; i++) {
+         galloc->bufts[i] = bufts[i];
+@@ -533,6 +561,32 @@
+ 
+ ggml_gallocr_t ggml_gallocr_new(ggml_backend_buffer_type_t buft) {
+     return ggml_gallocr_new_n(&buft, 1);
++}
++
++// best effort only: the allocator does not guarantee that any of the buffers
++// stays within its limit, it only records the values here. When a buffer type
++// is shared between several indices, the limit applies to all of them and is
++// the minimum of what was requested for that buffer type; a limit of 0 means
++// no headroom at all for that (group of) buffer(s).
++void ggml_gallocr_set_buffer_growth_limits(ggml_gallocr_t galloc, const size_t * limits) {
++    if (galloc == NULL) {
++        return;
++    }
++    if (limits == NULL) {
++        for (int i = 0; i < galloc->n_buffers; i++) {
++            galloc->buffer_growth_limits[i] = 0;
++        }
++        return;
++    }
++    for (int i = 0; i < galloc->n_buffers; i++) {
++        size_t limit = limits[i];
++        for (int j = 0; j < galloc->n_buffers; j++) {
++            if (galloc->buf_tallocs[j] == galloc->buf_tallocs[i]) {
++                limit = limits[j] < limit ? limits[j] : limit;
++            }
++        }
++        galloc->buffer_growth_limits[i] = limit;
++    }
+ }
+ 
+ void ggml_gallocr_free(ggml_gallocr_t galloc) {
+@@ -574,6 +628,7 @@
+     free(galloc->bufts);
+     free(galloc->buffers);
+     free(galloc->buf_tallocs);
++    free(galloc->buffer_growth_limits);
+     free(galloc->node_allocs);
+     free(galloc->leaf_allocs);
+     free(galloc);
+@@ -936,7 +991,7 @@
+             if (no_alloc) {
+                 galloc->buffers[i] = NULL;
+             } else {
+-                galloc->buffers[i] = ggml_vbuffer_alloc(galloc->bufts[i], galloc->buf_tallocs[i], GGML_BACKEND_BUFFER_USAGE_COMPUTE);
++                galloc->buffers[i] = ggml_vbuffer_alloc(galloc->bufts[i], galloc->buf_tallocs[i], GGML_BACKEND_BUFFER_USAGE_COMPUTE, galloc->buffer_growth_limits[i]);
+                 if (galloc->buffers[i] == NULL) {
+                     GGML_LOG_ERROR("%s: failed to allocate %s buffer of size %zu\n", __func__, ggml_backend_buft_name(galloc->bufts[i]), new_size);
+                     return false;
+--- a/ggml/include/ggml-alloc.h
++++ b/ggml/include/ggml-alloc.h
+@@ -49,6 +49,10 @@
+ GGML_API ggml_gallocr_t ggml_gallocr_new_n(ggml_backend_buffer_type_t * bufts, int n_bufs);
+ GGML_API void           ggml_gallocr_free(ggml_gallocr_t galloc);
+ 
++// Optional per-buffer caps for physical allocation headroom; zero or NULL keeps exact allocation.
++// Shared allocators use the smallest limit, including zero. Required sizes are never clamped.
++GGML_API void ggml_gallocr_set_buffer_growth_limits(ggml_gallocr_t galloc, const size_t * limits);
++
+ // pre-allocate buffers from a measure graph - does not allocate or modify the graph
+ // call with a worst-case graph to avoid buffer reallocations
+ // not strictly required for single buffer usage: ggml_gallocr_alloc_graph will reallocate the buffers automatically if needed
+--- a/ggml/include/ggml-backend.h
++++ b/ggml/include/ggml-backend.h
+@@ -378,6 +378,9 @@
+     // Set a callback to be called when the compute buffers of a graph are being reallocated
+     GGML_API void                 ggml_backend_sched_set_realloc_callback(ggml_backend_sched_t sched, ggml_backend_sched_realloc_callback callback, void * user_data);
+ 
++    // Optional per-backend physical compute-buffer headroom limits; zero or NULL keeps exact allocation.
++    GGML_API void ggml_backend_sched_set_buffer_growth_limits(ggml_backend_sched_t sched, const size_t * limits);
++
+     //
+     // Meta backend
+     //

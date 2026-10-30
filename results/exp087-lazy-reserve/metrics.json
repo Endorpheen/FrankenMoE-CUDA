@@ -1,0 +1,58 @@
+{
+  "pairs": 5,
+  "all_correct": true,
+  "max_probability_delta": 0.0,
+  "all_resource_gates": true,
+  "median_vram_reduction_percent": 30.855715178013742,
+  "median_prefill_elapsed_change_percent": 1.164687902937378,
+  "median_decode_change_percent": 3.4047607501252353,
+  "median_rss_reduction_percent": 6.616309072356064,
+  "arms": {
+    "A": {
+      "peak_vram_mib": {
+        "median": 6404,
+        "min": 6404,
+        "max": 6404
+      },
+      "prefill_ms": {
+        "median": 21975.031,
+        "min": 21742.154,
+        "max": 22163.156
+      },
+      "decode_tps": {
+        "median": 29.3030286179838,
+        "min": 28.890202217766614,
+        "max": 30.955292514108425
+      },
+      "rss_after_kib": {
+        "median": 23782432,
+        "min": 23782352,
+        "max": 23782452
+      }
+    },
+    "B": {
+      "peak_vram_mib": {
+        "median": 4428,
+        "min": 4428,
+        "max": 4428
+      },
+      "prefill_ms": {
+        "median": 22083.785,
+        "min": 22010.256,
+        "max": 22509.992
+      },
+      "decode_tps": {
+        "median": 30.746771286389222,
+        "min": 29.672439630603826,
+        "max": 31.223547570303996
+      },
+      "rss_after_kib": {
+        "median": 22208912,
+        "min": 22208868,
+        "max": 22208924
+      }
+    }
+  },
+  "validation_status": "ACCEPTED: all pre-stated primary, allocator, API/no-alloc/state, cache, capacity, Flint and disable gates passed",
+  "block_elapsed_seconds": 1041.953492556
+}

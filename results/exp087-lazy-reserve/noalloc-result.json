@@ -1,0 +1,35 @@
+{
+  "control": {
+    "before": {
+      "CUDA0": {
+        "compute": 3475013760,
+        "context": 1575813120,
+        "model": 1366190592
+      },
+      "CUDA_Host": {
+        "compute": 2282176576,
+        "context": 0,
+        "model": 19789578240
+      }
+    },
+    "no_alloc": true
+  },
+  "candidate": {
+    "before": {
+      "CUDA0": {
+        "compute": 3475013760,
+        "context": 1575813120,
+        "model": 1366190592
+      },
+      "CUDA_Host": {
+        "compute": 2282176576,
+        "context": 0,
+        "model": 19789578240
+      }
+    },
+    "no_alloc": true
+  },
+  "identical": true,
+  "load_mode": "none as in common/fit.cpp",
+  "discarded_attempt": "metaA used mmap, rejected by original runtime assertion"
+}

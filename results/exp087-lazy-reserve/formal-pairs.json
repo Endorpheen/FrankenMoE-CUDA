@@ -1,0 +1,154 @@
+{
+  "pairs": [
+    {
+      "pair": 1,
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "comparison": "identical ids; max probability delta 0",
+      "arms": {
+        "A": {
+          "pid": 2438023,
+          "peak_vram_mib": 6404,
+          "prefill_ms": 22163.156,
+          "decode_tps": 29.27791891630204,
+          "rss_after_kib": 23782452,
+          "resource_gate": true,
+          "swapout_delta": 0
+        },
+        "B": {
+          "pid": 2439812,
+          "peak_vram_mib": 4428,
+          "prefill_ms": 22509.992,
+          "decode_tps": 31.197408109508306,
+          "rss_after_kib": 22208868,
+          "resource_gate": true,
+          "swapout_delta": 0
+        }
+      },
+      "resource_gate": true,
+      "vram_reduction_percent": 30.855715178013742,
+      "prefill_elapsed_change_percent": 1.5649215301286379,
+      "decode_change_percent": 6.556098466880744
+    },
+    {
+      "pair": 2,
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "comparison": "identical ids; max probability delta 0",
+      "arms": {
+        "A": {
+          "pid": 2442264,
+          "peak_vram_mib": 6404,
+          "prefill_ms": 21742.154,
+          "decode_tps": 28.890202217766614,
+          "rss_after_kib": 23782420,
+          "resource_gate": true,
+          "swapout_delta": 0
+        },
+        "B": {
+          "pid": 2441080,
+          "peak_vram_mib": 4428,
+          "prefill_ms": 22190.941,
+          "decode_tps": 29.672439630603826,
+          "rss_after_kib": 22208912,
+          "resource_gate": true,
+          "swapout_delta": 0
+        }
+      },
+      "resource_gate": true,
+      "vram_reduction_percent": 30.855715178013742,
+      "prefill_elapsed_change_percent": 2.0641331121102446,
+      "decode_change_percent": 2.7076217983554196
+    },
+    {
+      "pair": 3,
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "comparison": "identical ids; max probability delta 0",
+      "arms": {
+        "A": {
+          "pid": 2443248,
+          "peak_vram_mib": 6404,
+          "prefill_ms": 21829.539,
+          "decode_tps": 30.955292514108425,
+          "rss_after_kib": 23782352,
+          "resource_gate": true,
+          "swapout_delta": 0
+        },
+        "B": {
+          "pid": 2443945,
+          "peak_vram_mib": 4428,
+          "prefill_ms": 22083.785,
+          "decode_tps": 30.746771286389222,
+          "rss_after_kib": 22208916,
+          "resource_gate": true,
+          "swapout_delta": 0
+        }
+      },
+      "resource_gate": true,
+      "vram_reduction_percent": 30.855715178013742,
+      "prefill_elapsed_change_percent": 1.164687902937378,
+      "decode_change_percent": -0.6736206017893931
+    },
+    {
+      "pair": 4,
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "comparison": "identical ids; max probability delta 0",
+      "arms": {
+        "A": {
+          "pid": 2445858,
+          "peak_vram_mib": 6404,
+          "prefill_ms": 21975.031,
+          "decode_tps": 29.340113132703948,
+          "rss_after_kib": 23782444,
+          "resource_gate": true,
+          "swapout_delta": 0
+        },
+        "B": {
+          "pid": 2444850,
+          "peak_vram_mib": 4428,
+          "prefill_ms": 22010.256,
+          "decode_tps": 30.33907378868859,
+          "rss_after_kib": 22208924,
+          "resource_gate": true,
+          "swapout_delta": 0
+        }
+      },
+      "resource_gate": true,
+      "vram_reduction_percent": 30.855715178013742,
+      "prefill_elapsed_change_percent": 0.16029556454324467,
+      "decode_change_percent": 3.4047607501252353
+    },
+    {
+      "pair": 5,
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "comparison": "identical ids; max probability delta 0",
+      "arms": {
+        "A": {
+          "pid": 2446684,
+          "peak_vram_mib": 6404,
+          "prefill_ms": 21987.018,
+          "decode_tps": 29.3030286179838,
+          "rss_after_kib": 23782432,
+          "resource_gate": true,
+          "swapout_delta": 0
+        },
+        "B": {
+          "pid": 2447517,
+          "peak_vram_mib": 4428,
+          "prefill_ms": 22011.706,
+          "decode_tps": 31.223547570303996,
+          "rss_after_kib": 22208880,
+          "resource_gate": true,
+          "swapout_delta": 0
+        }
+      },
+      "resource_gate": true,
+      "vram_reduction_percent": 30.855715178013742,
+      "prefill_elapsed_change_percent": 0.11228443984536707,
+      "decode_change_percent": 6.553994733300494
+    }
+  ]
+}

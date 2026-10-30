@@ -2,9 +2,9 @@
 
 ## Current Flint/Apex series
 
-EXP-083 preserved the unified reference; EXP-084 diagnosed the cold-prefill critical path; EXP-085 rejected bounded pinned staging on the representative transfer gate. EXP-086 rejects batch6144 at context262144 because two startups fail the same 4370.05 MiB compute allocation. No new >=5% model gain is accepted. Earlier accepted builds and patches remain available and unchanged.
+EXP-087 is the accepted Flint/Apex baseline: lazy prompt compute reservation with bounded host growth saves1976 MiB of sampled model-process request-window VRAM (6404 ->4428 MiB, -30.8557%) in all five matched Apex32K pairs at configured context262144. Median paired prefill elapsed+1.1647%, single-response decode+3.4048%, RSS-6.6163%. Selected tokens and ordered top5 probabilities match exactly. Full-context261632, prefix-cache branches, Flint compatibility, allocator failure/recovery, no-alloc/API/state and disable gates PASS. This is a measured memory improvement over our previous EXP-083 build, not a30% speedup or a comparison with current official upstream. Details: `results/exp087-lazy-reserve/` and the EXP-087 card.
 
-Next candidate EXP-087 is a source/API feasibility investigation of eager maximum-shape graph reservation versus bounded lazy reservation. Establish the actual allocation cause and existing resize/failure contract first; do not remove causal masking or move checkpoints. Then, only if safe, test an isolated implementation with identical model math, full context capacity, older modes preserved, and model-level correctness/memory/performance gates.
+EXP-083 remains the immutable reference; EXP-084 is diagnostic; EXP-085 pinned staging and EXP-086 batch6144 remain REJECTED. Earlier accepted builds/patches are preserved. The requested >=5% improvement goal is met by EXP-087 memory reduction; no next experiment is scheduled automatically. Larger actual graphs grow buffers and may retain them, so the32K saving is not universal across context lengths. Installed Desktop/runtime profiles remain unchanged; recorded new launch profiles identify the accepted runtime explicitly.
 
 ## Archived runtime-speed series
 

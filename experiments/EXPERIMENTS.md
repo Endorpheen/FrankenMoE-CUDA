@@ -1,5 +1,15 @@
 # Experiment log
 
+## EXP-2026-10-30-087: lazy prompt compute reservation
+
+- Status: `ACCEPTED` (`kind=model-memory-ab`); new Flint/Apex baseline, compared against our preserved EXP-083 build.
+- Five balanced serial pairs: sampled model-process request-window VRAM6404 ->4428 MiB in every pair, -1976 MiB/-30.8557%. Median paired RSS-6.6163%, prefill elapsed+1.1647%, single-response decode+3.4048%; no aggregate-throughput claim.
+- All640 generated IDs per arm, ordered top5 IDs and probabilities match exactly, delta0. Every primary request: process swap0, swap-out delta0, major-fault delta0.
+- Default-on lazy prompt reservation keeps configured capacity and math; bounded host headroom avoids repeated pin/unpin costs. Disable with `GGML_LAZY_PP_RESERVE=0`. Only libllama and libggml-base change; prior kernels, server/cache implementation and old accepted builds remain preserved.
+- Allocator13-case OOM/bounds/recovery gate, no-alloc estimates, public physical reserve, state roundtrips, native prefix branches, cold261632 at context262144, Flint compatibility and disable checks PASS. Flint checks are functional, not speed evidence.
+- New runtime active on8081; temporary wire recorder removed; installed Desktop/runtime profiles unchanged. Savings depend on actual graph size and may decrease after longer requests.
+- [Card, original protocol and qualification history](EXP-2026-10-30-087-compute-reservation-feasibility.md); metrics, manifests, probes and launch profiles in `results/exp087-lazy-reserve/`; source patch `patches/lazy-pp-reservation.patch`.
+
 ## EXP-2026-10-30-086: Apex batch 6144 qualification
 
 - Status: `REJECTED` (`kind=model-profile-ab`), before candidate inference; no accepted speedup.
