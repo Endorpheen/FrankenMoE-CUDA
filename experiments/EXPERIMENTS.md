@@ -1,5 +1,12 @@
 # Experiment log
 
+## EXP-2026-10-30-101: lazy physical KV mapping
+
+- Status: `MEASURED_APEX_CANDIDATE`, preserved for requested manual use; broad compatibility pending. Author five loaded pairs: VRAM4428 ->3188MiB (-28.0036%); contaminated timings are not clean speed acceptance.
+- Independent Codex A-B/four requests: exact256 IDs/top5/probabilities per arm, delta0; every request swap/swap-out/major faults0. Cold single-response decode29.71974 ->28.88707tok/s, repeat28.06800 ->28.11341tok/s; sampled block peaks4428 ->3188MiB.
+- Author branch24576/full261632 correctness retained; no independent Flint/disable/failure matrix claim. Default-on supported VMM path, disable GGML_KV_LAZY_VMM=0; mapping failures abort; larger contexts grow mappings.
+- Original EXP090 service restored. No launcher/profile switch. [Card](EXP-2026-10-30-101-kv-lazy-vmm.md); patch `patches/kv-lazy-vmm.patch`; curated evidence `results/exp101-kv-lazy/`.
+
 ## EXP-2026-10-30-100: host state-transfer batching
 
 - Status: `REJECTED` (`kind=real-model-qualification`); unchanged independent DeepSeek patch, only libllama changes, no EXP096 pinning.

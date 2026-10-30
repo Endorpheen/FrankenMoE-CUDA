@@ -2,6 +2,8 @@
 
 ## Current Flint/Apex series
 
+EXP101 lazy physical KV mapping is preserved as a measured Apex candidate for manual launch: author five loaded pairs and an independent clean Codex qualification observe4428 ->3188MiB (-1240MiB/-28.0036%) at32K with context262144. Independent output is exact, resource gates clean, decode remains around28–30tok/s. Broad compatibility/failure-mode validation remains incomplete; no universal default claim or installed-profile switch. EXP090 stays the active service until the user's manual restart. EXP102 geometry requires manual correction/audit; EXP107 is deferred architectural work. The next ten-experiment assignment is prepared separately.
+
 EXP100 host state-transfer batching is REJECTED after direct real-Apex qualification: exact numerical output and clean candidate resources, but repeat TTFT186.377 ->195.786ms gives no>=5% gain. No formal series or default promotion. All four prepared runtime patches096/097/099/100 were built unchanged and screened on real Apex;098 supplied no runtime patch (reported ALREADY_PRESENT). EXP090 remains working. Next: the requested seven-experiment implementation/build/real-model assignment for the user's OpenCode agent; no overlapping GPU owners.
 
 EXP099 alternative sm89 wide-GQA FA dispatch is REJECTED at the original numerical gate after one real Apex cold32K request: top5 divergence3, selected-ID divergence64, shared-history common-top5 probability delta0.19108. No semantic-quality conclusion. Swap-out1504 pages also prevents speed acceptance. EXP090 restored. Next prepared candidate: EXP100 state-transfer batching; seven subsequent experiments will be handed to the user's OpenCode agent after these remaining screens.

@@ -1,0 +1,24 @@
+{
+  "source_base_commit": "1b44e30775dcb2f93952116b05f89e5bd797fb00",
+  "reference_project_commit": "b5cc6c8f737e007b42e7dc8a8d16a4c70b61e95d",
+  "prerequisite_patches": [
+    "flint-apex-prefix-baseline.patch",
+    "lazy-pp-reservation.patch",
+    "mmap-expert-registration.patch",
+    "mmap-expert-available-memory.patch"
+  ],
+  "feature_patch": "patches/kv-lazy-vmm.patch",
+  "feature_patch_sha256": "ac1a915ea358796a3efaaf5a801b8decc391410602855e7d321f462380e2e380",
+  "overlay_source_sha256": {
+    "src/llama-kv-cache.cpp": "ef034e60060a823709a6013fce75e379f713413efb9f40f7b96f982ae72115d4",
+    "src/llama-kv-cache.h": "433314683cc4d3cfddc76b79a8fc1addd1cd3d4492ad401c4aa5ce0b87229e70",
+    "ggml/src/ggml-cuda/ggml-cuda.cu": "92aeb2d95f6f12e7a56c55ddba2a14d07a9fcb8accfe35571024f5f1f1a60350"
+  },
+  "build_directory": "/home/end0/AI/LlamaServer/exp101-kv-lazy",
+  "runtime_directory": "/home/end0/AI/LlamaServer/exp101-kv-lazy/run",
+  "changed_runtime_files": [
+    "libllama.so.0.7.0",
+    "libggml-cuda.so.0.27.0"
+  ],
+  "source_patch_dry_run_pass": true
+}

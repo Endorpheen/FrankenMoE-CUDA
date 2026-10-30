@@ -1,0 +1,6 @@
+File ggml/src/ggml-cuda/ggml-cuda.cu is read-only; trying to patch anyway
+checking file ggml/src/ggml-cuda/ggml-cuda.cu
+File src/llama-kv-cache.cpp is read-only; trying to patch anyway
+checking file src/llama-kv-cache.cpp
+File src/llama-kv-cache.h is read-only; trying to patch anyway
+checking file src/llama-kv-cache.h
