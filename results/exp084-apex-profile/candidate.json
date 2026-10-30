@@ -1,0 +1,14 @@
+{
+  "cold_h2d_share": 0.5409190643811482,
+  "cold_pageable_h2d_byte_share": 0.9847757804727851,
+  "estimated_ttft_time_reduction_if_h2d_10pct_faster": 0.05409190643811483,
+  "candidate": "Bounded pinned staging in llama_context::sched_copy_experts, preserving selected experts, offsets, byte counts including padding, and native failure fallback.",
+  "memory_budget_proposal_mib": 32,
+  "status": "PROPOSED; not implemented or benchmarked",
+  "unknowns": [
+    "CPU gather cost and RAM-bandwidth contention",
+    "Actual upload-range geometry and extra chunk submissions",
+    "Asynchronous buffer lifetime and stream dependencies",
+    "Generalization beyond the captured all-CPU-MoE 32K workload"
+  ]
+}

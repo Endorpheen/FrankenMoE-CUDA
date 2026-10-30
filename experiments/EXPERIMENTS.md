@@ -1,5 +1,14 @@
 # Experiment log
 
+## EXP-2026-10-30-084: Apex critical-path diagnosis
+
+- Status: `ACCEPTED` (`kind=diagnostic`), no runtime change or accepted speedup. One profiled server start, three manual serial 32K/128 requests; original 8081 working command restored.
+- Actual working profile: all CPU MoE, context 262144, batch/ubatch 4096, threads 8/16; distinct from the earlier five-GPU-expert-layer profile.
+- Client TTFT cold/branch/repeat: 21.874 / 5.754 / 0.171 s. Cold H2D: 124.022 GiB, 11.832 s, 54.09% of TTFT; 98.48% of H2D bytes from pageable RAM, zero observed kernel/copy overlap.
+- Selected next direction: bounded pinned staging in `llama_context::sched_copy_experts`; a 10% H2D reduction would conditionally save 5.41% cold TTFT. Requires a gather+upload gate; not implemented or measured.
+- Request-window process swap 0 and unchanged global pswpout; earlier preparation swap-out increased, so no whole-session zero-swap claim. Profiler driver-compatibility/scheduling/NVTX warnings retained.
+- Apex implemented the interval-union helper; parent reviewed and accepted it unchanged. [Report and limits](EXP-2026-10-30-084-apex-critical-path-profile.md); data and offline analyzer in `results/exp084-apex-profile/`.
+
 ## EXP-2026-10-30-083: preserve the unified Flint/Apex prefix baseline
 
 - Status: `ACCEPTED` (`kind=source-preservation`); no performance acceptance or production promotion.
