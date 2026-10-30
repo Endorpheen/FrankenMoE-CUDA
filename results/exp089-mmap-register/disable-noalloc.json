@@ -1,0 +1,63 @@
+{
+  "disable_physical_probe": {
+    "buffers": {
+      "CPU_Mapped": {
+        "logical_bytes": 19789578240,
+        "pinned_logical_bytes": 0,
+        "pinned_tensors": 0,
+        "tensors": 121
+      }
+    },
+    "host_logical_bytes": 19789578240,
+    "host_tensors": 121,
+    "inference_requests": 0,
+    "load_and_context_seconds": 2.077967599,
+    "pinned_logical_bytes": 0,
+    "pinned_tensors": 0,
+    "status": {
+      "VmHWM": "\t21533724 kB",
+      "VmRSS": "\t20662116 kB",
+      "VmSwap": "\t       0 kB"
+    },
+    "warmup": false
+  },
+  "disable_generation": [
+    true,
+    0.0,
+    "identical ids; max probability delta 0"
+  ],
+  "disable_request_resource": {
+    "pid": 2697912,
+    "request_begin_wall_ns": 1793381637719859000,
+    "request_end_wall_ns": 1793381666232921000,
+    "request_seconds": 28.513062,
+    "before_slack_seconds": 0.100016763,
+    "after_slack_seconds": 0.087653139,
+    "sample_count": 286,
+    "peak_process_swap_kib": 367084,
+    "peak_rss_kib": 21848164,
+    "system_swapout_pages": 166723,
+    "system_swapin_pages": 11707,
+    "major_faults": 2651,
+    "minor_faults": 345324,
+    "resource_gate": false
+  },
+  "metadata": {
+    "before": {
+      "CUDA0": {
+        "compute": 3475013760,
+        "context": 1575813120,
+        "model": 1366190592
+      },
+      "CUDA_Host": {
+        "compute": 2282176576,
+        "context": 0,
+        "model": 19789578240
+      }
+    },
+    "no_alloc": true
+  },
+  "metadata_identical_to_exp087": true,
+  "passed_functional": true,
+  "performance_acceptance_sample": false
+}

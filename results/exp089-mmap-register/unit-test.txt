@@ -1,0 +1,2 @@
+PASS: merging, alignment overflow, budget boundaries, all partial failures, idempotent cleanup, exception cleanup
+Compiler: g++-13 -std=c++17 -Wall -Wextra -Wpedantic -fsanitize=address,undefined -g

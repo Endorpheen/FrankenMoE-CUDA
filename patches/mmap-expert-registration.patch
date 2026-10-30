@@ -1,0 +1,269 @@
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -5,6 +5,7 @@
+ #include "llama-hparams.h"
+ #include "llama-impl.h"
+ #include "llama-mmap.h"
++#include "llama-mmap-expert-pin.h"
+ #include "llama-cparams.h"
+ #include "llama-model-loader.h"
+ 
+@@ -33,6 +34,12 @@
+ #include <cmath>
+ #include <functional>
+ #include <map>
++#include <fstream>
++#include <mutex>
++#if defined(__linux__)
++#include <sys/mman.h>
++#include <unistd.h>
++#endif
+ #include <numeric>
+ #include <regex>
+ #include <sstream>
+@@ -1268,6 +1275,12 @@
+     // contexts where the model tensors metadata is stored as well as the corresponding buffers:
+     std::vector<std::pair<ggml_context_ptr, std::vector<ggml_backend_buffer_ptr>>> ctxs_bufs;
+ 
++    // Reverse destruction order releases registrations before buffers/mmaps.
++    llama_mmap_expert_pin::owner expert_pin;
++    std::mutex expert_pin_mutex;
++    bool regular_mmap = false;
++
++
+     buft_list_t cpu_buft_list;
+     std::map<ggml_backend_dev_t, buft_list_t> gpu_buft_list;
+ 
+@@ -1284,6 +1297,90 @@
+ 
+     std::vector<float> tensor_split_owned;
+ };
++
++void llama_model::pin_mmap_experts(ggml_backend_reg_t reg) const {
++#if defined(__linux__)
++    const char * enabled = std::getenv("GGML_MMAP_EXPERT_PIN");
++    if ((enabled && std::atoi(enabled) == 0) || hparams.no_alloc ||
++        hparams.n_expert <= 1 || !pimpl->regular_mmap) {
++        return;
++    }
++    std::lock_guard<std::mutex> lock(pimpl->expert_pin_mutex);
++    if (pimpl->expert_pin.owned) { return; }
++    try {
++        using namespace llama_mmap_expert_pin;
++        auto register_host = reinterpret_cast<owner::register_fn>(
++            ggml_backend_reg_get_proc_address(reg, "ggml_backend_register_host_buffer"));
++        auto unregister_host = reinterpret_cast<owner::unregister_fn>(
++            ggml_backend_reg_get_proc_address(reg, "ggml_backend_unregister_host_buffer"));
++        if (!register_host || !unregister_host) { return; }
++        const long page_long = sysconf(_SC_PAGESIZE);
++        if (page_long <= 0) { return; }
++        const uintptr_t page = static_cast<uintptr_t>(page_long);
++        std::vector<span> ranges;
++        for (const auto & entry : tensors_by_name) {
++            const auto * tensor = entry.second;
++            if (!tensor->data || !tensor->buffer || tensor->ne[2] != hparams.n_expert ||
++                !ggml_backend_buffer_is_host(tensor->buffer)) { continue; }
++            const size_t bytes = ggml_nbytes(tensor);
++            const uintptr_t begin = reinterpret_cast<uintptr_t>(tensor->data);
++            if (!bytes || begin > UINTPTR_MAX - bytes) { return; }
++            bool owned_mapping = false;
++            for (const auto & mapping : pimpl->mappings) {
++                const uintptr_t base = reinterpret_cast<uintptr_t>(mapping->addr());
++                if (begin >= base && begin - base <= mapping->size() &&
++                    bytes <= mapping->size() - (begin - base)) {
++                    owned_mapping = true;
++                    break;
++                }
++            }
++            if (!owned_mapping) { return; }
++            ranges.push_back({begin, begin + bytes});
++        }
++        ranges = merge_pages(std::move(ranges), page);
++        uint64_t bytes = 0;
++        for (const auto & range : ranges) {
++            if (range.end - range.begin > UINT64_MAX - bytes) { return; }
++            bytes += range.end - range.begin;
++        }
++        uint64_t total = 0, available = 0, free = 0;
++        std::ifstream meminfo("/proc/meminfo");
++        for (std::string line; std::getline(meminfo, line);) {
++            std::istringstream row(line);
++            std::string key, unit;
++            uint64_t kib = 0;
++            if (!(row >> key >> kib >> unit) || unit != "kB" || kib > UINT64_MAX / 1024) { continue; }
++            if (key == "MemTotal:") { total = kib * 1024; }
++            if (key == "MemAvailable:") { available = kib * 1024; }
++            if (key == "MemFree:") { free = kib * 1024; }
++        }
++        if (!fits_budget(bytes, total, available, free)) {
++            LLAMA_LOG_INFO("%s: keep pageable weights: insufficient host headroom\n", __func__);
++            return;
++        }
++        // Inspect residency only; never fault in an evicted model to pin it.
++        std::vector<unsigned char> residency;
++        for (const auto & range : ranges) {
++            residency.resize((range.end - range.begin) / page);
++            if (mincore(reinterpret_cast<void *>(range.begin), range.end - range.begin, residency.data()) != 0 ||
++                std::any_of(residency.begin(), residency.end(), [](unsigned char value) { return !(value & 1); })) {
++                LLAMA_LOG_INFO("%s: keep pageable weights: pages not resident\n", __func__);
++                return;
++            }
++        }
++        if (!pimpl->expert_pin.acquire(std::move(ranges), register_host, unregister_host)) {
++            LLAMA_LOG_INFO("%s: registration failed; rolled back to pageable weights\n", __func__);
++            return;
++        }
++        LLAMA_LOG_INFO("%s: registered %zu mapped expert ranges (%.2f MiB), no weight copy\n",
++                       __func__, pimpl->expert_pin.owned, bytes / (1024.0 * 1024.0));
++    } catch (const std::exception & error) {
++        LLAMA_LOG_WARN("%s: keep pageable weights: %s\n", __func__, error.what());
++    }
++#else
++    GGML_UNUSED(reg);
++#endif
++}
+ 
+ bool llama_prec_policy::apply(ggml_tensor * res) const {
+     if (!res || !res->src[0]) {
+@@ -2040,6 +2137,8 @@
+             pimpl->mappings.emplace_back(std::move(mapping));
+         }
+     }
++
++    pimpl->regular_mmap = ml.use_mmap && !ml.lazy.any();
+ 
+     load_tensors_hadamard();
+ 
+--- a/src/llama-model.h
++++ b/src/llama-model.h
+@@ -889,6 +889,8 @@
+ 
+     bool has_tensor_overrides() const;
+ 
++    void pin_mmap_experts(ggml_backend_reg_t reg) const;
++
+     const struct ggml_tensor * get_tensor(const char * name) const;
+ 
+     float get_rope_freq_base (const llama_cparams & cparams, int il) const;
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -559,6 +559,22 @@
+             if (ggml_is_quantized(params.type_v)) {
+                 throw std::runtime_error("quantized V cache was requested, but this requires Flash Attention");
+             }
++        }
++    }
++
++    // Keep the same tensor buffers and compute graphs; only resident, mapped
++    // expert pages in the verified single-GPU/CPU inference path are pinned.
++    if (!hparams.no_alloc && !cparams.training && cparams.causal_attn &&
++        cparams.flash_attn && cparams.ctx_type == LLAMA_CONTEXT_TYPE_DEFAULT &&
++        cparams.n_seq_max == 1 && !cparams.pipeline_parallel &&
++        cparams.op_offload && cparams.moe_cache_size == 0 && backend_ptrs.size() == 2 &&
++        ggml_backend_dev_type(ggml_backend_get_device(backend_ptrs[0])) == GGML_BACKEND_DEVICE_TYPE_GPU &&
++        ggml_backend_dev_type(ggml_backend_get_device(backend_ptrs[1])) == GGML_BACKEND_DEVICE_TYPE_CPU) {
++        auto * device = ggml_backend_get_device(backend_ptrs[0]);
++        ggml_backend_dev_props props;
++        ggml_backend_dev_get_props(device, &props);
++        if (props.caps.host_buffer) {
++            model.pin_mmap_experts(ggml_backend_dev_backend_reg(device));
+         }
+     }
+ 
+--- /dev/null
++++ b/src/llama-mmap-expert-pin.h
+@@ -0,0 +1,81 @@
++#pragma once
++
++#include <algorithm>
++#include <cstdint>
++#include <cstddef>
++#include <stdexcept>
++#include <vector>
++
++namespace llama_mmap_expert_pin {
++struct span {
++    uintptr_t begin;
++    uintptr_t end;
++};
++
++inline std::vector<span> merge_pages(std::vector<span> ranges, uintptr_t page) {
++    if (!page || (page & (page - 1))) {
++        throw std::runtime_error("invalid page size");
++    }
++    for (auto & range : ranges) {
++        if (range.end <= range.begin || range.end > UINTPTR_MAX - (page - 1)) {
++            throw std::runtime_error("invalid weight interval");
++        }
++        range.begin &= ~(page - 1);
++        range.end = (range.end + page - 1) & ~(page - 1);
++    }
++    std::sort(ranges.begin(), ranges.end(), [](const span & a, const span & b) {
++        return a.begin < b.begin;
++    });
++    std::vector<span> result;
++    result.reserve(ranges.size());
++    for (const auto & range : ranges) {
++        if (!result.empty() && range.begin <= result.back().end) {
++            result.back().end = std::max(result.back().end, range.end);
++        } else {
++            result.push_back(range);
++        }
++    }
++    return result;
++}
++
++inline bool fits_budget(uint64_t bytes, uint64_t total, uint64_t available, uint64_t free) {
++    constexpr uint64_t headroom = UINT64_C(8) << 30;
++    return bytes > 0 && bytes <= total / 2 && available >= bytes &&
++           available - bytes >= headroom && free >= headroom;
++}
++
++// Storage is allocated before registration. Cleanup never allocates and owns
++// only successful calls, including rollback after a later range fails.
++struct owner {
++    using register_fn = bool (*)(void *, size_t);
++    using unregister_fn = void (*)(void *);
++    std::vector<span> ranges;
++    unregister_fn unregister = nullptr;
++    size_t owned = 0;
++
++    owner() = default;
++    owner(const owner &) = delete;
++    owner & operator=(const owner &) = delete;
++    ~owner() { release(); }
++
++    void release() noexcept {
++        while (owned) {
++            unregister(reinterpret_cast<void *>(ranges[--owned].begin));
++        }
++    }
++
++    bool acquire(std::vector<span> input, register_fn reg, unregister_fn unreg) {
++        if (owned || !reg || !unreg) { return false; }
++        ranges = std::move(input);
++        unregister = unreg;
++        for (const auto & range : ranges) {
++            if (!reg(reinterpret_cast<void *>(range.begin), range.end - range.begin)) {
++                release();
++                return false;
++            }
++            ++owned;
++        }
++        return owned > 0;
++    }
++};
++} // namespace llama_mmap_expert_pin
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -163,7 +163,9 @@
+ }
+ 
+ static bool ggml_cuda_register_host_enabled() {
+-    static const bool enabled = ggml_cuda_env_flag("GGML_CUDA_REGISTER_HOST");
++    static const bool enabled = ggml_cuda_env_set("GGML_CUDA_REGISTER_HOST")
++        ? ggml_cuda_env_flag("GGML_CUDA_REGISTER_HOST")
++        : !ggml_cuda_pinned_memory_disabled();
+     return enabled;
+ }
+ 

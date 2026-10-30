@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-089: resident mmap expert registration
+
+- Status: `ACCEPTED` (`kind=model-prefill-ab`), new >=5% goal above EXP087 achieved. Original load-mode none path rejected for request-window swap-out; accepted refinement pins existing mapped expert pages without a second copy.
+- Five balanced serial pairs: client TTFT median23.512496 ->14.522125s, median paired-37.97135%; prefill1394.259 ->2257.972tok/s, median paired+61.25485%,5/5 wins. Single-response decode median paired-1.12915%; primary RAM increase several MiB. Startup-loaded median+1.45672s. Qualification32K VRAM4428MiB in both; no new formal-pair VRAM peak claim.
+- All640 selected IDs/ordered top5/probabilities per arm exactly equal, delta0; primary process swap/system swap-out/major faults0. Apex native cache/capacity261632, Flint compatibility, disable/no-alloc and ASan/UBSan ownership/budget checks pass. Functional-only swapped/major-fault observations are retained, not promoted as timings.
+- Default on only within supported resident mmap/host-budget modes, otherwise old pageable fallback; `GGML_MMAP_EXPERT_PIN=0` disables. Old builds preserved; installed Desktop/runtime profiles untouched. Only libllama/libggml-cuda change against EXP087; exact patch replay/runtime hashes checked.
+- [Card and hypothesis](EXP-2026-10-30-089-cpu-weight-host-residency.md); source patch `patches/mmap-expert-registration.patch`; numbers, limits and launch profiles in `results/exp089-mmap-register/`. No next experiment automatically scheduled.
+
 ## EXP-2026-10-30-088: additional near-tail checkpoint
 
 - Status: `REJECTED` (`kind=model-correctness-qualification`), compared against EXP-087. The new >=5% goal remains active.

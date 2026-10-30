@@ -1,0 +1,42 @@
+[
+  {
+    "step": "cold",
+    "comparison": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "tokens": 128,
+    "reference_sha256": "61c421d552d759e8e251ed4d8824559000074b0725f53461061ba5baf059c219"
+  },
+  {
+    "step": "branch",
+    "comparison": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "tokens": 128,
+    "reference_sha256": "97a39650b74028d836d568d743be68c0244a291871e5f53af136b84778963c91"
+  },
+  {
+    "step": "repeat",
+    "comparison": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "tokens": 128,
+    "reference_sha256": "84660d4794345a7b94392f4a01bbc38657c7fd62eabf8f89b69d8bae1cb2c06b"
+  },
+  {
+    "step": "early",
+    "comparison": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "tokens": 4,
+    "reference_sha256": "c6ee851736f908d386eccef4c4c5494e4ff32d8ea794076a2a2056b37137d07c"
+  }
+]
