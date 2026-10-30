@@ -5,15 +5,138 @@ FrankenMoE-CUDA is an experimental project for running Mixture-of-Experts models
 The repository currently contains two distinct runtime paths:
 
 - a standalone research runtime derived from [BigMoeOnEdge](https://github.com/Helldez/BigMoeOnEdge), available as `bmoe-cli`;
-- the current interactive server: the public [`expert-tier`](https://github.com/01554/llama.cpp/tree/expert-tier) branch of `llama.cpp` plus the memory-safety, startup, and measurement patches maintained in this repository.
+- an interactive `llama.cpp` server: the current Apex/Flint bundle uses the pinned upstream revision documented below; the preserved Qwen lineage uses the public [`expert-tier`](https://github.com/01554/llama.cpp/tree/expert-tier) branch with this repository's patches.
 
-The public `expert-tier` fork supplies the fast CPU-MoE execution path used by the interactive server. FrankenMoE does not claim that upstream performance as an original speedup. The current work starts from that faster implementation and improves its memory control, safety, reproducibility, and throughput.
+The public `expert-tier` fork supplies the fast CPU-MoE execution path used by the earlier Qwen server. FrankenMoE retains upstream attribution: improvements are measured against explicitly identified controls, with separate results for the newer Apex/Flint bundle.
 
 The standalone streaming path is:
 
 ```text
 NVMe GGUF -> bounded RAM LRU -> pinned staging -> bounded VRAM hot store -> CUDA
 ```
+
+## Latest validated results — October 30, 2026
+
+The current accepted Apex/Flint runtime bundle is **EXP090**, retaining the
+EXP087 memory optimization and EXP089 prefill optimization. The measurements
+below use **Apex-35B-V1.0 Q4_K_M** on a Ryzen 9 5950X, 64 GB RAM and an RTX 4070
+12 GB: configured context 262,144, actual prompt 32,768 tokens, CPU MoE,
+batch/ubatch 4,096, Q4_0 KV, Flash Attention, one slot, no speculation and EHS off.
+Each experiment uses five balanced serial control/candidate pairs.
+
+
+### Models and validation scope
+
+| Model / exact quantization | Maintained runtime | Validated scope |
+| --- | --- | --- |
+| **Apex-35B-V1.0 Q4_K_M** (`Apex-35B-V1.0-Q4_K_M.gguf`, hybrid `qwen35moe`) | EXP090 | EXP087 VRAM −30.86% and EXP089 prefill +61.25% on the 32K workload below; prefix/branch/restore and near-capacity correctness checks |
+| **Flint INT4 Q4_1** (`flint-int4-q4_1.gguf`, `flint` with SWA) | EXP090-compatible bundle | Same generic optimizations retained; cold32K, shared-prefix branch, repeat and early-branch functional checks pass; **no paired Flint speedup or 30% memory claim** |
+| **Qwen3.8-Flash-Next UD-IQ3_XXS**, three shards / 81.96 GB | Preserved EXP063 Qwen lineage | Earlier CPU-MoE, split MTP and pinned-upload-ring results; EXP062 three-slot ring improves prefill by median paired 11.537% over two slots; separate workload and build |
+
+The latest registration/reservation changes are not a tested migration of the
+older Qwen profile into EXP090. Models, quantizations and unsupported modes
+outside this matrix have no claimed performance result.
+
+### Exact Apex measurement conditions
+
+- Hardware: Ryzen 9 5950X, 64 GB installed DDR4 (about 60.7 GiB usable), RTX 4070
+  12 GB / `sm_89`, Linux desktop with concurrent desktop GPU allocations. VRAM
+  figures refer to the model process, not total GPU occupancy or startup peak.
+- Placement: `-ngl all --cpu-moe -fit off --load-mode mmap`; all 40 MoE expert
+  layers on CPU, GPU attention/dense work, resident file-backed expert pages.
+  This differs from the older Apex profile with five expert layers on GPU.
+- Capacity and batching: `-c 262144 -b 4096 -ub 4096 -np 1 -fa on
+  -ctk q4_0 -ctv q4_0`; no reduction of configured context, KV precision or
+  router top-k for these gains.
+- CPU: `-t 8 -tb 16 --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1
+  --cpu-strict-batch 1 --poll 0`. No competing model, build or benchmark in the
+  measurement windows.
+- Prefix policy: `--cache-ram 0 --ctx-checkpoints 32`, existing bounded recurrent
+  prefix checkpoints retained; each measured arm begins with an empty prefix
+  cache. `--spec-type none`; EHS off; Jinja enabled in the server profile.
+- Request: native streaming `/completion`, identical list of 32,768 input token
+  IDs, `n_predict=128`, `seed=123`, temperature 1.0, top-p 0.95, top-k 20,
+  min-p 0, `cache_prompt=true`, `ignore_eos=false`, returned tokens and top-5
+  probabilities. This is an inference benchmark, not an agent-task benchmark.
+- Cache/ordering: warm model-file cache, fresh server for each arm with normal
+  startup warmup; five manual serial pairs ordered AB, BA, AB, BA, AB. Cold
+  here means an empty prompt cache, **not** a cold SSD/page-cache start.
+  Qualification, profiled runs and other functional requests are excluded.
+- Metrics: client TTFT ends at the first generated token; prefill throughput
+  counts actually computed input tokens; decode is one response. Startup is
+  reported separately. EXP087 VRAM is a 100 ms NVML-backed sampled request-window
+  process peak; EXP089 VRAM is a separate qualification observation. Request
+  resource samples check process swap, system swap-out and major faults.
+- Model identity: SHA-256
+  `c3b92d94cd03a7730ad45cc45de8c753e369e0228b2f5d83d819ce2ea6ab3355`.
+  Source base: upstream llama.cpp
+  `1b44e30775dcb2f93952116b05f89e5bd797fb00`, followed in order by
+  `flint-apex-prefix-baseline.patch`, `lazy-pp-reservation.patch`,
+  `mmap-expert-registration.patch`, `mmap-expert-available-memory.patch`.
+  Use the linked source provenance and nine-file runtime manifests rather than
+  the executable version string alone.
+
+Flint compatibility uses context 131,072, batch/ubatch 4,096, CPU MoE, threads
+8/16, Q4_0 KV, one slot, mmap, FA and no speculation; its profile also sets
+`--reasoning-budget 4096`. File faults during those model-switching checks mean
+their timings are not accepted performance samples. Exact per-model commands
+are in the EXP090 launch profiles linked below.
+
+| Accepted improvement | Control | Candidate | Median paired change |
+| --- | ---: | ---: | ---: |
+| EXP087: sampled request-window process VRAM peak | 6,404 MiB (EXP083) | **4,428 MiB** | **−30.86% / −1,976 MiB** |
+| EXP089: prefill throughput | 1,394.259 tok/s (EXP087) | **2,257.972 tok/s** | **+61.25%** |
+| EXP089: client time to first generated token | 23.512496 s (EXP087) | **14.522125 s** | **−37.97%** |
+
+These compare successive preserved versions of **our fork**, not current stock
+llama.cpp or every model. Percentages are medians of paired changes; they need
+not equal the ratio of the displayed arm medians. EXP087 also reduced RSS by
+6.62%, with prefill elapsed +1.16% and single-response decode +3.40%. EXP089's
+single-response decode change was −1.13%; startup took about 1.46 s longer.
+The memory and prefill improvements coexist; their percentages are different
+metrics and must not be added.
+
+**Why it works:** EXP087 stops physically allocating prompt compute buffers for
+the worst-case full context at startup. It keeps the configured capacity and
+allocates for the graph actually needed, with bounded host-buffer headroom.
+EXP089 registers already resident mmap expert-weight pages for direct GPU
+transfers, avoiding pageable staging without making another weight copy or
+changing the model's arithmetic. EXP090 removes an overly restrictive raw-free-RAM
+veto while retaining available-memory, residency, capacity and cleanup checks.
+
+**Correctness and limits:** each accepted five-pair experiment matched all 640
+output token IDs per arm, ordered top-5 IDs and probabilities exactly (maximum
+delta 0). Primary request windows had process swap 0, no system swap-out growth
+and no major faults. Apex prefix/branch/restore and near-capacity checks, plus
+Flint functional compatibility checks, passed. These checks establish the tested
+paths; they are not an all-model performance or semantic-quality benchmark.
+Larger graphs can grow and retain buffers, so 30.86% is a 32K-workload result.
+Resident mmap registration has supported-mode and host-memory gates with the old
+path as fallback. EXP089 qualification observed 4,428 MiB after both variants;
+it did not collect another five-pair VRAM-peak series.
+
+Local Apex assisted with implementation and diagnostic tooling; the accepted
+results come from the recorded correctness gates and paired measurements.
+
+**Use the right bundle:** the local EXP090 installation is
+`/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin`. Keep its executable
+and shared libraries together and set `LD_LIBRARY_PATH` to that same directory.
+The legacy Qwen launcher `scripts/run_qwen38_server.sh` still defaults to
+`build/exp063-default-runtime`; it does **not** select EXP090 automatically.
+The old Qwen builds remain preserved. Experimental successors are not accepted
+baselines until their own checks and measurements pass.
+
+Source patches, exact runtime hashes, launch profiles, raw-evidence hashes and
+measurement details:
+
+- [EXP087 memory results and checks](results/exp087-lazy-reserve/README.md)
+- [EXP089 prefill results and limits](results/exp089-mmap-register/README.md)
+- [EXP090 delivery and activation](results/exp090-mmap-available/README.md)
+- [Current runtime manifest](results/exp090-mmap-available/runtime-manifest.json)
+- [Current launch profiles](results/exp090-mmap-available/launch-profiles.json)
+
+The following Qwen and standalone sections preserve earlier results; they are
+separate workloads and are not the latest Apex benchmark or launch profile.
 
 ## What has been demonstrated
 
@@ -27,9 +150,9 @@ Qwen3.8-Flash-Next `UD-IQ3_XXS` was run end to end from three GGUF shards totali
 
 The model produced coherent text and code while the complete model remained non-resident. Process swap stayed at zero in the recorded runs.
 
-### Current interactive server
+### Earlier Qwen interactive server
 
-The current validated profile runs the 81.96 GB model with a configured context capacity of **196,608 tokens** on the 12 GB RTX 4070. This is the server configuration used for the latest measurements; it is not a claim that a full 196,608-token prompt has already been benchmarked end to end.
+The earlier validated Qwen profile runs the 81.96 GB model with a configured context capacity of **196,608 tokens** on the 12 GB RTX 4070. This was the server configuration used for these measurements; it is not a claim that a full 196,608-token prompt has already been benchmarked end to end.
 
 | Current server result | Control | FrankenMoE candidate | Result |
 | --- | ---: | ---: | ---: |
@@ -62,7 +185,7 @@ These figures belong to the standalone `bmoe-cli` streaming runtime. They must n
 
 ### Server history and attribution
 
-The current daily-use server is the public `expert-tier` fork with the FrankenMoE integration patch applied. On the verified warm 256-token workload, the accepted 12-thread profile measured **17.615 tok/s median**, compared with **17.656 tok/s** at 16 threads. The `-0.23%` difference is inside observed run-to-run noise, while mean occupied CPU cores fell from 15.93 to 11.95.
+The earlier Qwen daily-use server is the public `expert-tier` fork with the FrankenMoE integration patch applied. On the verified warm 256-token workload, the accepted 12-thread profile measured **17.615 tok/s median**, compared with **17.656 tok/s** at 16 threads. The `-0.23%` difference is inside observed run-to-run noise, while mean occupied CPU cores fell from 15.93 to 11.95.
 
 On top of that floor, EXP-2026-09-03-024 added a head-only MTP speculative draft (stock MTP head as a sidecar GGUF, dense part on GPU and experts on CPU via `--spec-draft-cpu-moe`). In the paired same-binary test the warm 256-token greedy workload rose from 18.58 to **21.10 tok/s (+13.6%)** at draft acceptance 0.71 and mean accepted chain 2.42, with 934 MiB of VRAM to spare at `-c 32000`. A fully-CPU draft placement was tested first and rejected (`-13.1%`, EXP-023) because draft and verify serialize on the same CPU threads.
 
@@ -95,7 +218,7 @@ Machine-readable results are in [`results/`](results/). Hardware, prompts, cache
 
 The small-model gate compares the streamed and resident greedy byte streams. It also exercises split GGUF indexing, RAM eviction, VRAM slot replacement, overlap, and clean shutdown.
 
-## Patched server properties
+## Legacy Qwen server properties
 
 - Uses the public `expert-tier` CPU-MoE implementation as its execution base.
 - Avoids faulting an entire large GGUF shard into process RSS during startup.
@@ -119,7 +242,10 @@ scripts/test_small.sh
 
 These commands build and test the standalone runtime at `build/franken-cuda/cli/bmoe-cli`.
 
-Build the patched interactive server separately:
+The following server recipes document historical Qwen builds. For the current
+Apex/Flint bundle, use the EXP090 delivery and launch profiles linked above.
+
+Build the legacy patched interactive server separately:
 
 ```bash
 scripts/prepare_upstreams.sh
@@ -138,7 +264,7 @@ cmake --build build/expert-tier-franken-cuda \
 
 This produces `build/expert-tier-franken-cuda/bin/llama-server`. Keeping the standalone and server build directories separate prevents accidental comparisons between different implementations.
 
-The daily runtime since EXP-2026-09-07-041 is a reproducible chain over the pinned expert-tier
+The historical EXP-2026-09-07-041 runtime is a reproducible chain over the pinned expert-tier
 base `4aaad5d318a790a42c2197975ec8fadbad42602b` with four patches applied in order plus one
 minimal default-on change:
 
@@ -187,7 +313,7 @@ scripts/run_qwen38_server.sh \
 
 Then open `http://127.0.0.1:8080`.
 
-Run the same server with the accepted daily profile: the EXP-041 default runtime (pinned upload
+The preserved EXP041 direct-command example below uses its historical profile (pinned upload
 ring on by default), the MTP speculative draft (requires the MTP head GGUF at
 `models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf`; both embedding tables move to the CPU so
 that the head fits on the GPU), context capacity 196,608 tokens, KV cache q4_0:
@@ -220,7 +346,7 @@ PINNED_RING=0 scripts/run_qwen38_server.sh \
 Do not replace the split placement with `-ngld 0`: a fully-CPU draft was measured 13.1% slower than no draft at all (EXP-023).
 
 The launcher defaults to `THREADS=12`, `EHS=0`, `PINNED_RING=1`, `MTP=1`, context `196608`,
-`-np 1`, and `BUILD_DIR=build/exp041-default-runtime`. Set
+`-np 1`, and `BUILD_DIR=build/exp063-default-runtime` (accepted three-slot ring). Set
 `BUILD_DIR=build/expert-tier-franken-cuda` to launch the older build without the ring. Do not
 enable the GPU expert hot store expecting an automatic speedup: the tested one-slot configuration
 was slower and remains rejected.
@@ -235,9 +361,13 @@ CPU profiling showed that IQ2_S and IQ4_NL vector-dot kernels account for 53.69%
 
 The accepted MTP profile stays at `--spec-draft-n-max 2`. A larger draft limit was already checked outside the recorded benchmark protocol and is not scheduled for retesting; it is not part of the current roadmap.
 
-R6 (EXP-040) completed and accepted. The pinned ring is now the default in the daily runtime
-(EXP-2026-09-07-041): `scripts/run_qwen38_server.sh` launches `build/exp041-default-runtime`,
-where the ring is on without any environment variable and `PINNED_RING=0` disables it.
+The later Qwen EXP062/063 delivery increased the default pinned ring to three
+slots: five paired runs reduced prefill time by a median paired 11.537% above
+the two-slot control, at an additional 16 MiB pinned-host cost. The legacy
+`scripts/run_qwen38_server.sh` selects `build/exp063-default-runtime`, with the
+ring on by default and `PINNED_RING=0` available to disable it. See the
+[EXP062 report](experiments/EXP-2026-09-15-062-ring-depth3.md). The newer Apex/Flint
+EXP090 bundle and its independent measurements are documented at the top.
 
 This is research software. Node names and evaluation callbacks used by the integration are not stable `llama.cpp` APIs. See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
