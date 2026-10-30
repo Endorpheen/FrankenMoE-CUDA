@@ -1,0 +1,37 @@
+{
+  "experiment": "EXP-2026-10-30-096",
+  "status": "READY_FOR_REVIEW",
+  "base": {
+    "composite": "/home/end0/AI/LlamaServer/exp090-mmap-available/source over /home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/source",
+    "read_rule": "exp090 source first, prefix source otherwise"
+  },
+  "candidate_patch": "candidate.patch",
+  "tests_patch": "tests.patch",
+  "changed_files": [
+    { "path": "common/checkpoint-buffer.h", "kind": "new", "functions": ["common_checkpoint_buffer", "resize", "capacity_for", "release", "copy_from", "pinned_host_buffer_type"] },
+    { "path": "common/common.h", "kind": "modified", "functions": ["common_prompt_checkpoint"] },
+    { "path": "common/common.cpp", "kind": "modified", "functions": ["common_prompt_checkpoint::size", "common_prompt_checkpoint::capacity", "clear", "clear_tgt", "clear_dft"] },
+    { "path": "tools/server/server-task.h", "kind": "modified", "functions": ["server_prompt_data", "server_prompt_cache_state::size"] },
+    { "path": "tools/server/server-task.cpp", "kind": "modified", "functions": ["server_prompt_cache::alloc", "server_prompt_cache::load"] },
+    { "path": "tools/server/server-context.cpp", "kind": "modified", "functions": ["reserve_prefix_checkpoint/used", "create_checkpoint", "ckpt_write_buf", "ckpt_read_buf"] }
+  ],
+  "read_source_sha256": {
+    "llama.cpp-flint-apex-prefix/source/common/common.h": "8a7f061798220ab82cefa378f7f2c4e0c854da3275a96258afd6255c54683fd9",
+    "llama.cpp-flint-apex-prefix/source/common/common.cpp": "b5ad4e435394d2563803b7a7650f0475c5b5bcc52ff8d4db700e32de237d0bd2",
+    "llama.cpp-flint-apex-prefix/source/tools/server/server-task.h": "68c28c4c7b4226cc4b6c4ce53a9979bfe3f43c468558b394b6e108553748e417",
+    "llama.cpp-flint-apex-prefix/source/tools/server/server-task.cpp": "d7901c9609a6fe8c859a3777d45a37148e335bb73984313ba08a339d558382ef",
+    "llama.cpp-flint-apex-prefix/source/tools/server/server-context.cpp": "849097e9b33bc47dd140a3d61b83c9df6e86d1f3abb7601efd083047592c8899",
+    "llama.cpp-flint-apex-prefix/source/tools/server/server-prefix-checkpoints.h": "87dfb6fd449c9da2fb3d024fbc56cd8f48dcccdc10e1f74c6b50fee0c7cf80bb",
+    "exp090-mmap-available/source/src/llama-memory-recurrent.cpp": "51172be188d0eece2267c9105dc5a8d2c3ef7ebd58e88a6f562ac6ee36326f98"
+  },
+  "dependencies": {
+    "requires_other_candidates": false,
+    "notes": "Independent of EXP097/098/099/100 and of the Codex directions EXP093/094/095. Does not touch the KV allocator or the recurrent transfer batching."
+  },
+  "not_modified": [
+    "working source tree",
+    "accepted builds and launchers",
+    "ROADMAP.md", "experiments/EXPERIMENTS.md", "AGENTS.md", "CLAUDE.md",
+    "work/llama.cpp-integration"
+  ]
+}

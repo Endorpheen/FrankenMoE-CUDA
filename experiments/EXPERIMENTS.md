@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-096: pinned checkpoint storage
+
+- Status: `REJECTED` (`kind=real-model-qualification`); unchanged DeepSeek patch built and tested directly on Apex against fresh EXP090.
+- Repeat client TTFT186.377 ->185.485ms, only0.4786% improvement; observed single-response decode-6.0287%. VRAM4428MiB both, repeat sampled peak RSS+72KiB. Single qualification comparison, not formal statistics or a causal slowdown claim.
+- All256 IDs per arm/ordered top5/probabilities exact, delta0. Candidate windows/control repeat: process swap/system swap-out/major faults0. Control cold has152 swap-out pages, excluded from clean speed evidence.
+- Two test starts/four requests; stop without five pairs or promotion. EXP090 restored, nine hashes/120 registered ranges verified. Further serialization/capacity/Flint and ownership tests remain unrun, not implicitly passed.
+- [Card](EXP-2026-10-30-096-checkpoint-pinned.md); evidence and unchanged rejected patch in `results/exp096-checkpoint-pinned/`.
+
 ## EXP-2026-10-30-093: CUDA temporary-pool retention
 
 - Status: `REJECTED` (`kind=diagnostic-upper-bound`) for pool-only >=5% saving on the fixed32K Apex workload above EXP090.

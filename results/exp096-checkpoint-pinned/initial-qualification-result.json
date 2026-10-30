@@ -1,0 +1,52 @@
+{
+  "cold": {
+    "numerical": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "client_ttft_seconds": 14.92012799999793,
+    "resources": {
+      "pid": 2787231,
+      "request_begin_wall_ns": 1793387704581111000,
+      "request_end_wall_ns": 1793387724243212000,
+      "request_seconds": 19.662101,
+      "before_slack_seconds": 0.097062465,
+      "after_slack_seconds": 0.066843972,
+      "sample_count": 198,
+      "peak_process_swap_kib": 0,
+      "peak_rss_kib": 22206592,
+      "system_swapout_pages": 0,
+      "system_swapin_pages": 5433,
+      "major_faults": 0,
+      "minor_faults": 340734,
+      "resource_gate": true
+    },
+    "earlier_control_ttft_seconds": 14.333422999989125
+  },
+  "repeat": {
+    "numerical": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "client_ttft_seconds": 0.1854849999945145,
+    "resources": {
+      "pid": 2787231,
+      "request_begin_wall_ns": 1793387743838891000,
+      "request_end_wall_ns": 1793387748766915000,
+      "request_seconds": 4.928024,
+      "before_slack_seconds": 0.034216798,
+      "after_slack_seconds": 0.081094611,
+      "sample_count": 51,
+      "peak_process_swap_kib": 0,
+      "peak_rss_kib": 22209856,
+      "system_swapout_pages": 0,
+      "system_swapin_pages": 80,
+      "major_faults": 0,
+      "minor_faults": 16897,
+      "resource_gate": true
+    },
+    "earlier_control_ttft_seconds": 0.16340499999932945
+  }
+}

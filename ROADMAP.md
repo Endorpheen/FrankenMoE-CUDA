@@ -2,6 +2,8 @@
 
 ## Current Flint/Apex series
 
+EXP096 pinned checkpoint storage is REJECTED after direct real-Apex qualification: repeat client TTFT186.377 ->185.485ms, only0.4786%, below the new>=5% goal. Numerical output exact; observed VRAM unchanged4428MiB. No formal series or default promotion. EXP090 restored. Next prepared independent candidate: EXP097 bounded CPU Q4_K/Q6_K expert prefetch; EXP098 is reported ALREADY_PRESENT, EXP099/100 await real-model screens. Goal remains active.
+
 EXP093 temporary-pool retention is REJECTED for the fixed32K pool-only >=5% goal: the entire mapped pool is74MiB, just1.6712% of observed4428MiB process VRAM; pool plus4MiB cuBLAS workspace is1.7615%. No unsafe trimming is implemented. Diagnostic cold/repeat numerical outputs are exact; EXP090 is restored with all nine hashes checked. The new>=5% goal remains active. Next: audit bounded H2D coalescing against prior EXP042/043 and current pinned-mmap geometry before deciding whether a new probe is justified.
 
 EXP092 twelve-worker qualification is REJECTED for the current Apex/all-CPU/poll0 combination: fresh warm-decode gain1.386% is below5%, and repeat TTFT rises21.05%. Earlier reused-control gain5.28% is retained as a diagnostic, not selected for acceptance. EXP0908-thread profile remains working. Current priority is Apex/Flint; legacy Qwen bundles are preserved.

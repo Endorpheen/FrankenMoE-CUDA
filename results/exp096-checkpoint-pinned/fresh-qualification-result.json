@@ -1,0 +1,148 @@
+{
+  "cold": {
+    "numerical": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "arms": {
+      "qA": {
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 14359.791,
+          "prompt_per_token_ms": 0.43822604370117185,
+          "prompt_per_second": 2281.9273623132817,
+          "predicted_n": 128,
+          "predicted_ms": 4318.115,
+          "predicted_per_token_ms": 34.00090551181102,
+          "predicted_per_second": 29.410981412028164
+        },
+        "ttft_seconds": 14.369707000005292,
+        "resources": {
+          "pid": 2789436,
+          "request_begin_wall_ns": 1793387902174284000,
+          "request_end_wall_ns": 1793387920862618000,
+          "request_seconds": 18.688334,
+          "before_slack_seconds": 0.082997259,
+          "after_slack_seconds": 0.044329133,
+          "sample_count": 188,
+          "peak_process_swap_kib": 0,
+          "peak_rss_kib": 22206524,
+          "system_swapout_pages": 152,
+          "system_swapin_pages": 394,
+          "major_faults": 0,
+          "minor_faults": 340721,
+          "resource_gate": false
+        }
+      },
+      "qB": {
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 14909.85,
+          "prompt_per_token_ms": 0.45501251220703126,
+          "prompt_per_second": 2197.7417613188595,
+          "predicted_n": 128,
+          "predicted_ms": 4740.223,
+          "predicted_per_token_ms": 37.3245905511811,
+          "predicted_per_second": 26.791988478179192
+        },
+        "ttft_seconds": 14.92012799999793,
+        "resources": {
+          "pid": 2787231,
+          "request_begin_wall_ns": 1793387704581111000,
+          "request_end_wall_ns": 1793387724243212000,
+          "request_seconds": 19.662101,
+          "before_slack_seconds": 0.097062465,
+          "after_slack_seconds": 0.066843972,
+          "sample_count": 198,
+          "peak_process_swap_kib": 0,
+          "peak_rss_kib": 22206592,
+          "system_swapout_pages": 0,
+          "system_swapin_pages": 5433,
+          "major_faults": 0,
+          "minor_faults": 340734,
+          "resource_gate": true
+        }
+      }
+    },
+    "ttft_reduction_percent": -3.8304260483003283,
+    "decode_gain_percent": -8.904813127989964
+  },
+  "repeat": {
+    "numerical": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "arms": {
+      "qA": {
+        "timings": {
+          "cache_n": 32764,
+          "prompt_n": 4,
+          "prompt_ms": 178.378,
+          "prompt_per_token_ms": 44.5945,
+          "prompt_per_second": 22.424289990918165,
+          "predicted_n": 128,
+          "predicted_ms": 4454.79,
+          "predicted_per_token_ms": 35.077086614173226,
+          "predicted_per_second": 28.508639015531596
+        },
+        "ttft_seconds": 0.18637699999089818,
+        "resources": {
+          "pid": 2789436,
+          "request_begin_wall_ns": 1793387926176846000,
+          "request_end_wall_ns": 1793387930819919000,
+          "request_seconds": 4.643073,
+          "before_slack_seconds": 0.044842392,
+          "after_slack_seconds": 0.054187432,
+          "sample_count": 48,
+          "peak_process_swap_kib": 0,
+          "peak_rss_kib": 22209784,
+          "system_swapout_pages": 0,
+          "system_swapin_pages": 31,
+          "major_faults": 0,
+          "minor_faults": 16896,
+          "resource_gate": true
+        }
+      },
+      "qB": {
+        "timings": {
+          "cache_n": 32764,
+          "prompt_n": 4,
+          "prompt_ms": 176.833,
+          "prompt_per_token_ms": 44.20825,
+          "prompt_per_second": 22.620212290692347,
+          "predicted_n": 128,
+          "predicted_ms": 4740.585,
+          "predicted_per_token_ms": 37.32744094488189,
+          "predicted_per_second": 26.789942591473416
+        },
+        "ttft_seconds": 0.1854849999945145,
+        "resources": {
+          "pid": 2787231,
+          "request_begin_wall_ns": 1793387743838891000,
+          "request_end_wall_ns": 1793387748766915000,
+          "request_seconds": 4.928024,
+          "before_slack_seconds": 0.034216798,
+          "after_slack_seconds": 0.081094611,
+          "sample_count": 51,
+          "peak_process_swap_kib": 0,
+          "peak_rss_kib": 22209856,
+          "system_swapout_pages": 0,
+          "system_swapin_pages": 80,
+          "major_faults": 0,
+          "minor_faults": 16897,
+          "resource_gate": true
+        }
+      }
+    },
+    "ttft_reduction_percent": 0.4785998253149404,
+    "decode_gain_percent": -6.0286863330158535
+  },
+  "control_runtime_verified": true,
+  "model_starts": 2,
+  "completion_requests": 4,
+  "verdict": "REJECTED_QUALIFICATION_NO_5PERCENT_GAIN"
+}
