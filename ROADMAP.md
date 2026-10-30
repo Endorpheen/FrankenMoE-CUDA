@@ -2,6 +2,8 @@
 
 ## Current Flint/Apex series
 
+EXP100 host state-transfer batching is REJECTED after direct real-Apex qualification: exact numerical output and clean candidate resources, but repeat TTFT186.377 ->195.786ms gives no>=5% gain. No formal series or default promotion. All four prepared runtime patches096/097/099/100 were built unchanged and screened on real Apex;098 supplied no runtime patch (reported ALREADY_PRESENT). EXP090 remains working. Next: the requested seven-experiment implementation/build/real-model assignment for the user's OpenCode agent; no overlapping GPU owners.
+
 EXP099 alternative sm89 wide-GQA FA dispatch is REJECTED at the original numerical gate after one real Apex cold32K request: top5 divergence3, selected-ID divergence64, shared-history common-top5 probability delta0.19108. No semantic-quality conclusion. Swap-out1504 pages also prevents speed acceptance. EXP090 restored. Next prepared candidate: EXP100 state-transfer batching; seven subsequent experiments will be handed to the user's OpenCode agent after these remaining screens.
 
 EXP097 CPU Q4_K/Q6_K prefetch is REJECTED at real-model qualification: exact output, unchanged4428MiB VRAM, no>=5% improvement established. Repeat has10 swap-out pages and is not clean timing evidence; no causal slowdown claim or formal series. EXP090 restored. Next: prepared independent EXP099 FA dispatch, then EXP100 state-transfer batching. EXP098 has no candidate because the requested placement is reported already present.

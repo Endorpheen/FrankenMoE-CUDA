@@ -1,0 +1,76 @@
+{
+  "cold": {
+    "numerical": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "resources": {
+      "pid": 2801366,
+      "request_begin_wall_ns": 1793388844899867000,
+      "request_end_wall_ns": 1793388863425691000,
+      "request_seconds": 18.525824,
+      "before_slack_seconds": 0.087286058,
+      "after_slack_seconds": 0.095464648,
+      "sample_count": 187,
+      "peak_process_swap_kib": 0,
+      "peak_rss_kib": 22206976,
+      "system_swapout_pages": 0,
+      "system_swapin_pages": 40,
+      "major_faults": 0,
+      "minor_faults": 340673,
+      "resource_gate": true
+    },
+    "candidate_ttft_seconds": 14.28777799999807,
+    "control_ttft_seconds": 14.369707000005292,
+    "ttft_reduction_percent": 0.5701508040991454,
+    "candidate_timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 14278.108,
+      "prompt_per_token_ms": 0.4357332763671875,
+      "prompt_per_second": 2294.9819401842315,
+      "predicted_n": 128,
+      "predicted_ms": 4237.288,
+      "predicted_per_token_ms": 33.36447244094488,
+      "predicted_per_second": 29.972000959104033
+    }
+  },
+  "repeat": {
+    "numerical": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "resources": {
+      "pid": 2801366,
+      "request_begin_wall_ns": 1793388893842861000,
+      "request_end_wall_ns": 1793388898445034000,
+      "request_seconds": 4.602173,
+      "before_slack_seconds": 0.085334841,
+      "after_slack_seconds": 0.049377544,
+      "sample_count": 48,
+      "peak_process_swap_kib": 0,
+      "peak_rss_kib": 22210240,
+      "system_swapout_pages": 0,
+      "system_swapin_pages": 1,
+      "major_faults": 0,
+      "minor_faults": 16897,
+      "resource_gate": true
+    },
+    "candidate_ttft_seconds": 0.19578599999658763,
+    "control_ttft_seconds": 0.18637699999089818,
+    "ttft_reduction_percent": -5.048369705569322,
+    "candidate_timings": {
+      "cache_n": 32764,
+      "prompt_n": 4,
+      "prompt_ms": 187.561,
+      "prompt_per_token_ms": 46.89025,
+      "prompt_per_second": 21.326395146112464,
+      "predicted_n": 128,
+      "predicted_ms": 4404.736,
+      "predicted_per_token_ms": 34.68296062992126,
+      "predicted_per_second": 28.83260199930257
+    }
+  }
+}

@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-100: host state-transfer batching
+
+- Status: `REJECTED` (`kind=real-model-qualification`); unchanged independent DeepSeek patch, only libllama changes, no EXP096 pinning.
+- One candidate start/two real-Apex requests, fresh EXP096 control reused. Repeat TTFT186.377 ->195.786ms, no>=5% gain; single qualification observations, not formal or causal regression results.
+- All256 selected IDs/ordered top5/probabilities per arm exact, delta0. Candidate swap/swap-out/major faults0; observed VRAM4428MiB. Reused control cold has152 swap-out pages and is not clean speed evidence.
+- No formal series or additional state/compatibility gates after this stop. EXP090 restored, health/nine hashes/120 ranges verified.
+- [Card](EXP-2026-10-30-100-state-transfer-batch.md); unchanged rejected patch, commands and evidence in `results/exp100-state-transfer-batch/`.
+
 ## EXP-2026-10-30-099: sm89 wide-GQA Flash Attention dispatch
 
 - Status: `REJECTED` (`kind=real-model-numerical-qualification`); unchanged DeepSeek patch, only CUDA library changed, accepted mmap registration retained.

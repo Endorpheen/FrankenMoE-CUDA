@@ -1,0 +1,273 @@
+diff -Naur a/src/llama-context.cpp b/src/llama-context.cpp
+--- a/src/llama-context.cpp	2026-10-30 21:55:42.642069658 +0300
++++ b/src/llama-context.cpp	2026-10-30 21:55:59.347349131 +0300
+@@ -2952,6 +2952,55 @@
+ // state save/load
+ //
+ 
++// batch the host-side state transfers: issue every copy for one backend and
++// synchronize that backend once, instead of synchronizing after each tensor.
++// The public state calls stay synchronous: the io object synchronizes every
++// backend before it is destroyed.
++static bool llama_state_transfer_batch_enabled() {
++    static const bool enabled = []() {
++        const char * flag = std::getenv("GGML_STATE_TRANSFER_BATCH");
++        return !(flag != nullptr && std::strcmp(flag, "0") == 0);
++    }();
++    return enabled;
++}
++
++typedef ggml_backend_t (*llama_io_backend_lookup_t)(void * user_data, const ggml_tensor * tensor);
++
++ggml_backend_t llama_context::backend_for_tensor(const ggml_tensor * tensor) const {
++    GGML_ASSERT(tensor != nullptr);
++
++    ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
++    if (buf != nullptr) {
++        ggml_backend_buffer_type_t buft = ggml_backend_buffer_get_type(buf);
++        for (const auto & backend_ptr : backends) {
++            ggml_backend_t backend = backend_ptr.get();
++            if (backend != nullptr && ggml_backend_get_default_buffer_type(backend) == buft) {
++                return backend;
++            }
++        }
++    }
++
++    // host buffers, split buffers and any other buffer type without an exact
++    // backend match are served by the CPU backend, whose async path falls back
++    // to a synchronous buffer copy
++    if (backend_cpu != nullptr) {
++        return backend_cpu;
++    }
++
++    for (auto it = backends.rbegin(); it != backends.rend(); ++it) {
++        if (it->get() != nullptr) {
++            return it->get();
++        }
++    }
++
++    return nullptr;
++}
++
++ggml_backend_t llama_context::backend_for_tensor_cb(void * user_data, const ggml_tensor * tensor) {
++    const auto * ctx = static_cast<const llama_context *>(user_data);
++    return ctx->backend_for_tensor(tensor);
++}
++
+ class llama_io_write_dummy : public llama_io_write_i {
+ public:
+     llama_io_write_dummy(bool skip_tensors) : skip_tensors(skip_tensors) {}
+@@ -2981,13 +3030,13 @@
+ class llama_io_write_host : public llama_io_write_i {
+ public:
+     llama_io_write_host(
+-            uint8_t * p, size_t len) : ptr(p), buf_size(len) {}
++            uint8_t * p, size_t len,
++            llama_io_backend_lookup_t lookup = nullptr, void * lookup_ctx = nullptr) :
++        ptr(p), buf_size(len), lookup(lookup), lookup_ctx(lookup_ctx) {}
+ 
+     ~llama_io_write_host() {
+         // TODO: add backend support to batch tensor_get? or some other way to speed this up
+-        for (const auto & winfo : winfos) {
+-            ggml_backend_tensor_get(winfo.tensor, winfo.ptr, winfo.offset, winfo.size);
+-        }
++        flush();
+     }
+ 
+     void write(const void * src, size_t size) override {
+@@ -3018,10 +3067,59 @@
+     }
+ 
+ private:
++    void flush() {
++        if (winfos.empty()) {
++            return;
++        }
++
++        if (lookup == nullptr || !llama_state_transfer_batch_enabled()) {
++            for (const auto & winfo : winfos) {
++                ggml_backend_tensor_get(winfo.tensor, winfo.ptr, winfo.offset, winfo.size);
++            }
++            return;
++        }
++
++        // collect the distinct backends in first-use order; copies on one
++        // backend are issued in graph order and are ordered by its stream
++        std::vector<ggml_backend_t> backends_used;
++        for (const auto & winfo : winfos) {
++            ggml_backend_t backend = lookup(lookup_ctx, winfo.tensor);
++            if (backend == nullptr) {
++                continue;
++            }
++            bool seen = false;
++            for (ggml_backend_t cur : backends_used) {
++                if (cur == backend) {
++                    seen = true;
++                    break;
++                }
++            }
++            if (!seen) {
++                backends_used.push_back(backend);
++            }
++        }
++
++        for (const auto & winfo : winfos) {
++            ggml_backend_t backend = lookup(lookup_ctx, winfo.tensor);
++            if (backend == nullptr) {
++                ggml_backend_tensor_get(winfo.tensor, winfo.ptr, winfo.offset, winfo.size);
++                continue;
++            }
++            ggml_backend_tensor_get_async(backend, winfo.tensor, winfo.ptr, winfo.offset, winfo.size);
++        }
++
++        for (ggml_backend_t backend : backends_used) {
++            ggml_backend_synchronize(backend);
++        }
++    }
++
+     uint8_t * ptr;
+     size_t buf_size = 0;
+     size_t size_written = 0;
+ 
++    const llama_io_backend_lookup_t lookup;
++    void * const lookup_ctx;
++
+     struct write_info {
+         ggml_tensor * tensor;
+         uint8_t * ptr;
+@@ -3033,13 +3131,13 @@
+ 
+ class llama_io_read_host : public llama_io_read_i {
+ public:
+-    llama_io_read_host(const uint8_t * p, size_t len) : ptr(p), buf_size(len) {}
++    llama_io_read_host(const uint8_t * p, size_t len,
++            llama_io_backend_lookup_t lookup = nullptr, void * lookup_ctx = nullptr) :
++        ptr(p), buf_size(len), lookup(lookup), lookup_ctx(lookup_ctx) {}
+ 
+     ~llama_io_read_host() {
+         // flush the reads
+-        for (const auto & rinfo : rinfos) {
+-            ggml_backend_tensor_set(rinfo.tensor, rinfo.ptr, rinfo.offset, rinfo.size);
+-        }
++        flush();
+     }
+ 
+     void read(void * dst, size_t size) override {
+@@ -3074,10 +3172,57 @@
+     }
+ 
+ private:
++    void flush() {
++        if (rinfos.empty()) {
++            return;
++        }
++
++        if (lookup == nullptr || !llama_state_transfer_batch_enabled()) {
++            for (const auto & rinfo : rinfos) {
++                ggml_backend_tensor_set(rinfo.tensor, rinfo.ptr, rinfo.offset, rinfo.size);
++            }
++            return;
++        }
++
++        std::vector<ggml_backend_t> backends_used;
++        for (const auto & rinfo : rinfos) {
++            ggml_backend_t backend = lookup(lookup_ctx, rinfo.tensor);
++            if (backend == nullptr) {
++                continue;
++            }
++            bool seen = false;
++            for (ggml_backend_t cur : backends_used) {
++                if (cur == backend) {
++                    seen = true;
++                    break;
++                }
++            }
++            if (!seen) {
++                backends_used.push_back(backend);
++            }
++        }
++
++        for (const auto & rinfo : rinfos) {
++            ggml_backend_t backend = lookup(lookup_ctx, rinfo.tensor);
++            if (backend == nullptr) {
++                ggml_backend_tensor_set(rinfo.tensor, rinfo.ptr, rinfo.offset, rinfo.size);
++                continue;
++            }
++            ggml_backend_tensor_set_async(backend, rinfo.tensor, rinfo.ptr, rinfo.offset, rinfo.size);
++        }
++
++        for (ggml_backend_t backend : backends_used) {
++            ggml_backend_synchronize(backend);
++        }
++    }
++
+     const uint8_t * ptr;
+     size_t buf_size = 0;
+     size_t size_read = 0;
+ 
++    const llama_io_backend_lookup_t lookup;
++    void * const lookup_ctx;
++
+     struct read_info {
+         ggml_tensor * tensor;
+         const uint8_t * ptr;
+@@ -3455,7 +3600,7 @@
+ }
+ 
+ size_t llama_context::state_get_data(uint8_t * dst, size_t size) {
+-    llama_io_write_host io(dst, size);
++    llama_io_write_host io(dst, size, backend_for_tensor_cb, this);
+     try {
+         return state_write_data(io);
+     } catch (const std::exception & err) {
+@@ -3465,7 +3610,7 @@
+ }
+ 
+ size_t llama_context::state_set_data(const uint8_t * src, size_t size) {
+-    llama_io_read_host io(src, size);
++    llama_io_read_host io(src, size, backend_for_tensor_cb, this);
+     try {
+         return state_read_data(io);
+     } catch (const std::exception & err) {
+@@ -3495,7 +3640,7 @@
+     if (flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
+         io = std::make_unique<llama_io_write_device>(dst, size, mem_storage[seq_id]);
+     } else {
+-        io = std::make_unique<llama_io_write_host>(dst, size);
++        io = std::make_unique<llama_io_write_host>(dst, size, backend_for_tensor_cb, this);
+     }
+ 
+     try {
+@@ -3513,7 +3658,7 @@
+     std::unique_ptr<llama_io_read_i> io;
+     if (flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
+         // create a temporary io to read the magic and the src seq_id
+-        io = std::make_unique<llama_io_read_host>(src, size);
++        io = std::make_unique<llama_io_read_host>(src, size, backend_for_tensor_cb, this);
+ 
+         uint32_t magic_read;
+         io->read(&magic_read, sizeof(magic_read));
+@@ -3528,7 +3673,7 @@
+ 
+         io = std::make_unique<llama_io_read_device>(src, size, mem_storage[seq_id_read]);
+     } else {
+-        io = std::make_unique<llama_io_read_host>(src, size);
++        io = std::make_unique<llama_io_read_host>(src, size, backend_for_tensor_cb, this);
+     }
+ 
+     try {
+diff -Naur a/src/llama-context.h b/src/llama-context.h
+--- a/src/llama-context.h	2026-10-30 21:55:42.641875261 +0300
++++ b/src/llama-context.h	2026-10-30 21:55:46.625180930 +0300
+@@ -290,6 +290,11 @@
+     size_t state_write_data(llama_io_write_i & io);
+     size_t state_read_data (llama_io_read_i  & io);
+ 
++    // backend that owns the tensor's buffer, used to batch state transfers;
++    // falls back to the CPU backend, which serves any buffer synchronously
++    ggml_backend_t backend_for_tensor(const ggml_tensor * tensor) const;
++    static ggml_backend_t backend_for_tensor_cb(void * user_data, const ggml_tensor * tensor);
++
+     size_t state_seq_write_data(llama_io_write_i & io, llama_seq_id seq_id, llama_state_seq_flags flags);
+     size_t state_seq_read_data (llama_io_read_i  & io, llama_seq_id seq_id, llama_state_seq_flags flags);
+ 
