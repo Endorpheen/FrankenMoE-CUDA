@@ -1,0 +1,204 @@
+{
+  "status": "REJECTED",
+  "reference": "EXP087",
+  "reference_project_commit": "c3c52dcc8f15a6c960d2777b98e2f8a50620c54d",
+  "new_goal": "at least5% improvement beyond EXP087 remains unmet",
+  "model_starts": 3,
+  "generation_requests": 7,
+  "variants": {
+    "tail1": {
+      "verdict": "REJECTED",
+      "reason": "numerical correctness gate failed",
+      "cases": [
+        {
+          "case": "cold",
+          "correct": false,
+          "maximum_matched_position_probability_delta": 0.10392761153143248,
+          "first_selected_id_mismatch_zero_based": 65,
+          "selected_id_mismatch_count": 63,
+          "first_ordered_top5_mismatch_zero_based": 3,
+          "arms": {
+            "A": {
+              "timings": {
+                "cache_n": 0,
+                "prompt_n": 32768,
+                "prompt_ms": 23173.625,
+                "prompt_per_token_ms": 0.7072029113769531,
+                "prompt_per_second": 1414.0213281262643,
+                "predicted_n": 128,
+                "predicted_ms": 4557.985,
+                "predicted_per_token_ms": 35.88964566929133,
+                "predicted_per_second": 27.86318954538025
+              },
+              "client_ttft_s": 23.18304199999693
+            },
+            "B": {
+              "timings": {
+                "cache_n": 0,
+                "prompt_n": 32768,
+                "prompt_ms": 23431.776,
+                "prompt_per_token_ms": 0.7150810546875,
+                "prompt_per_second": 1398.4428666439965,
+                "predicted_n": 128,
+                "predicted_ms": 4528.757,
+                "predicted_per_token_ms": 35.65950393700787,
+                "predicted_per_second": 28.043014893490646
+              },
+              "client_ttft_s": 23.44112199999654
+            }
+          }
+        },
+        {
+          "case": "repeat",
+          "correct": false,
+          "maximum_matched_position_probability_delta": 0.10392761153143248,
+          "first_selected_id_mismatch_zero_based": 65,
+          "selected_id_mismatch_count": 63,
+          "first_ordered_top5_mismatch_zero_based": 3,
+          "arms": {
+            "A": {
+              "timings": {
+                "cache_n": 32764,
+                "prompt_n": 4,
+                "prompt_ms": 156.756,
+                "prompt_per_token_ms": 39.189,
+                "prompt_per_second": 25.517364566587563,
+                "predicted_n": 128,
+                "predicted_ms": 4322.958,
+                "predicted_per_token_ms": 34.03903937007874,
+                "predicted_per_second": 29.378032356548456
+              },
+              "client_ttft_s": 0.164812000002712
+            },
+            "B": {
+              "timings": {
+                "cache_n": 32767,
+                "prompt_n": 1,
+                "prompt_ms": 51.753,
+                "prompt_per_token_ms": 51.753,
+                "prompt_per_second": 19.32255134968021,
+                "predicted_n": 128,
+                "predicted_ms": 4469.182,
+                "predicted_per_token_ms": 35.1904094488189,
+                "predicted_per_second": 28.41683332654611
+              },
+              "client_ttft_s": 0.06001500000274973
+            }
+          }
+        }
+      ],
+      "diagnostic_repeat_ttft_time_reduction_percent": 63.585782587577256,
+      "performance_accepted": false
+    },
+    "tail2": {
+      "verdict": "REJECTED",
+      "reason": "numerical correctness gate failed",
+      "cases": [
+        {
+          "case": "cold",
+          "correct": false,
+          "maximum_matched_position_probability_delta": 0.06392007959691526,
+          "first_selected_id_mismatch_zero_based": 35,
+          "selected_id_mismatch_count": 92,
+          "first_ordered_top5_mismatch_zero_based": 0,
+          "arms": {
+            "A": {
+              "timings": {
+                "cache_n": 0,
+                "prompt_n": 32768,
+                "prompt_ms": 23173.625,
+                "prompt_per_token_ms": 0.7072029113769531,
+                "prompt_per_second": 1414.0213281262643,
+                "predicted_n": 128,
+                "predicted_ms": 4557.985,
+                "predicted_per_token_ms": 35.88964566929133,
+                "predicted_per_second": 27.86318954538025
+              },
+              "client_ttft_s": 23.18304199999693
+            },
+            "B": {
+              "timings": {
+                "cache_n": 0,
+                "prompt_n": 32768,
+                "prompt_ms": 23275.549,
+                "prompt_per_token_ms": 0.7103133850097656,
+                "prompt_per_second": 1407.829306195957,
+                "predicted_n": 128,
+                "predicted_ms": 4559.678,
+                "predicted_per_token_ms": 35.902976377952754,
+                "predicted_per_second": 27.85284399468559
+              },
+              "client_ttft_s": 23.286488999998255
+            }
+          }
+        },
+        {
+          "case": "repeat",
+          "correct": false,
+          "maximum_matched_position_probability_delta": 0.06392007959691526,
+          "first_selected_id_mismatch_zero_based": 35,
+          "selected_id_mismatch_count": 92,
+          "first_ordered_top5_mismatch_zero_based": 0,
+          "arms": {
+            "A": {
+              "timings": {
+                "cache_n": 32764,
+                "prompt_n": 4,
+                "prompt_ms": 156.756,
+                "prompt_per_token_ms": 39.189,
+                "prompt_per_second": 25.517364566587563,
+                "predicted_n": 128,
+                "predicted_ms": 4322.958,
+                "predicted_per_token_ms": 34.03903937007874,
+                "predicted_per_second": 29.378032356548456
+              },
+              "client_ttft_s": 0.164812000002712
+            },
+            "B": {
+              "timings": {
+                "cache_n": 32766,
+                "prompt_n": 2,
+                "prompt_ms": 124.4,
+                "prompt_per_token_ms": 62.2,
+                "prompt_per_second": 16.077170418006432,
+                "predicted_n": 128,
+                "predicted_ms": 4344.171,
+                "predicted_per_token_ms": 34.20607086614174,
+                "predicted_per_second": 29.234576631536832
+              },
+              "client_ttft_s": 0.13449599999876227
+            }
+          }
+        }
+      ],
+      "diagnostic_repeat_ttft_time_reduction_percent": 18.394291679884283,
+      "performance_accepted": false
+    }
+  },
+  "resources": {
+    "qA": {
+      "process_swap_after_kib": 0,
+      "system_swapout_delta_pages": 1,
+      "request_window_major_faults": 3,
+      "rss_after_kib": 22213956
+    },
+    "qB": {
+      "process_swap_after_kib": 0,
+      "system_swapout_delta_pages": 0,
+      "request_window_major_faults": 0,
+      "rss_after_kib": 22269872
+    },
+    "qB2": {
+      "process_swap_after_kib": 0,
+      "system_swapout_delta_pages": 0,
+      "request_window_major_faults": 0,
+      "rss_after_kib": 22269584
+    }
+  },
+  "additional_snapshot_bytes": 65864428,
+  "memory_scope": "one extra partial snapshot planned/observed; process RSS is not a matched memory acceptance series, VRAM peak not separately sampled",
+  "working_baseline_restored": true,
+  "runtime_unchanged": true,
+  "model_starts_scope": "qualification test processes only",
+  "baseline_service_restore_starts": 1
+}

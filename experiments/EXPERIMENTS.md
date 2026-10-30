@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-088: additional near-tail checkpoint
+
+- Status: `REJECTED` (`kind=model-correctness-qualification`), compared against EXP-087. The new >=5% goal remains active.
+- Tail1 (3+1) and tail2 (2+2) reduce repeated input from4 tokens to1/2, but both fail selected-ID/ordered-top5/probability equality. First selected-ID divergences are65/35 zero-based; maximum matched-position probability deltas0.10393/0.06392.
+- Diagnostic repeat TTFT164.812 ->60.015/134.496ms is not accepted performance. No five-pair series after the gate failed. Three manual starts/seven requests; one extra snapshot would cost~62.8MiB.
+- Old/new model-free policy checks PASS; complete untouched control relinking is bit-identical. Candidate code is isolated and not shipped. Working EXP-087 restored on8081, all runtime hashes unchanged; installed profiles untouched.
+- [Card and stop condition](EXP-2026-10-30-088-near-tail-checkpoint.md); exact evidence and limits in `results/exp088-near-tail-checkpoint/`. Do not retry arbitrary tail lengths or relax the gate.
+
 ## EXP-2026-10-30-087: lazy prompt compute reservation
 
 - Status: `ACCEPTED` (`kind=model-memory-ab`); new Flint/Apex baseline, compared against our preserved EXP-083 build.
