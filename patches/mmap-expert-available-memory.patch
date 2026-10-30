@@ -1,0 +1,38 @@
+--- a/src/llama-mmap-expert-pin.h
++++ b/src/llama-mmap-expert-pin.h
+@@ -38,10 +38,10 @@
+     return result;
+ }
+ 
+-inline bool fits_budget(uint64_t bytes, uint64_t total, uint64_t available, uint64_t free) {
++inline bool fits_budget(uint64_t bytes, uint64_t total, uint64_t available) {
+     constexpr uint64_t headroom = UINT64_C(8) << 30;
+     return bytes > 0 && bytes <= total / 2 && available >= bytes &&
+-           available - bytes >= headroom && free >= headroom;
++           available - bytes >= headroom;
+ }
+ 
+ // Storage is allocated before registration. Cleanup never allocates and owns
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -1343,7 +1343,7 @@
+             if (range.end - range.begin > UINT64_MAX - bytes) { return; }
+             bytes += range.end - range.begin;
+         }
+-        uint64_t total = 0, available = 0, free = 0;
++        uint64_t total = 0, available = 0;
+         std::ifstream meminfo("/proc/meminfo");
+         for (std::string line; std::getline(meminfo, line);) {
+             std::istringstream row(line);
+@@ -1352,9 +1352,8 @@
+             if (!(row >> key >> kib >> unit) || unit != "kB" || kib > UINT64_MAX / 1024) { continue; }
+             if (key == "MemTotal:") { total = kib * 1024; }
+             if (key == "MemAvailable:") { available = kib * 1024; }
+-            if (key == "MemFree:") { free = kib * 1024; }
+-        }
+-        if (!fits_budget(bytes, total, available, free)) {
++        }
++        if (!fits_budget(bytes, total, available)) {
+             LLAMA_LOG_INFO("%s: keep pageable weights: insufficient host headroom\n", __func__);
+             return;
+         }

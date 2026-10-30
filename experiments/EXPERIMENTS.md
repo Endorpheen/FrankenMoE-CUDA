@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-090: remove the raw-free-memory veto
+
+- Status: `DELIVERED` (`kind=delivery-fix`), explicitly requested after EXP089 fell back despite substantial reclaimable file cache.
+- MemFree>=8GiB removed; retain MemAvailable>=registered pages+8GiB, union<=half physical RAM and existing residency/mode/rollback checks. No tensor, arithmetic, batching, kernel or cache changes.
+- Separate build `LlamaServer/exp090-mmap-available`; only libllama changes. Compile/link, existing ASan/UBSan tests and exact patch replay PASS. EXP089 and the running server are untouched; manual restart required. No model runs or new performance claim.
+- Subsequent user manual launch confirms120 ranges/18600.47MiB registered without copying, lazy reservation active and service ready on8081. Activation evidence only; no new performance measurement.
+- [Card](EXP-2026-10-30-090-mmap-available-memory.md), patch `patches/mmap-expert-available-memory.patch`, evidence/profiles `results/exp090-mmap-available/`.
+
 ## EXP-2026-10-30-089: resident mmap expert registration
 
 - Status: `ACCEPTED` (`kind=model-prefill-ab`), new >=5% goal above EXP087 achieved. Original load-mode none path rejected for request-window swap-out; accepted refinement pins existing mapped expert pages without a second copy.
