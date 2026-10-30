@@ -1,0 +1,27 @@
+{
+  "experiment": "EXP-2026-10-30-097",
+  "status": "READY_FOR_REVIEW",
+  "base": {
+    "composite": "/home/end0/AI/LlamaServer/exp090-mmap-available/source over /home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/source",
+    "read_rule": "exp090 source first, prefix source otherwise"
+  },
+  "candidate_patch": "candidate.patch",
+  "tests_patch": "tests.patch",
+  "changed_files": [
+    { "path": "ggml/src/ggml-cpu/ggml-cpu.c", "kind": "modified", "functions": ["ggml_cpu_moe_prefetch_enabled", "ggml_cpu_moe_prefetch_row", "ggml_compute_forward_mul_mat_id_one_chunk"] }
+  ],
+  "read_source_sha256": {
+    "llama.cpp-flint-apex-prefix/source/ggml/src/ggml-cpu/ggml-cpu.c": "c6ab617afac0eca67c9c9079e75582c791c51f376bb6932502098f8c18a1937d",
+    "llama.cpp-flint-apex-prefix/source/ggml/src/ggml-cpu/arch/x86/quants.c": "777d0a4c1caf0e5b2589e8e77eb376a10691155deb5589d981838f9fef286c52"
+  },
+  "dependencies": {
+    "requires_other_candidates": false,
+    "notes": "Touches only the CPU MUL_MAT_ID loop. Compatible with EXP096/098/099/100 and with the Codex EXP093/094/095 directions; no shared symbols."
+  },
+  "not_modified": [
+    "working source tree",
+    "accepted builds and launchers",
+    "ROADMAP.md", "experiments/EXPERIMENTS.md", "AGENTS.md", "CLAUDE.md",
+    "work/llama.cpp-integration"
+  ]
+}

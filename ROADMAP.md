@@ -2,6 +2,8 @@
 
 ## Current Flint/Apex series
 
+EXP097 CPU Q4_K/Q6_K prefetch is REJECTED at real-model qualification: exact output, unchanged4428MiB VRAM, no>=5% improvement established. Repeat has10 swap-out pages and is not clean timing evidence; no causal slowdown claim or formal series. EXP090 restored. Next: prepared independent EXP099 FA dispatch, then EXP100 state-transfer batching. EXP098 has no candidate because the requested placement is reported already present.
+
 EXP096 pinned checkpoint storage is REJECTED after direct real-Apex qualification: repeat client TTFT186.377 ->185.485ms, only0.4786%, below the new>=5% goal. Numerical output exact; observed VRAM unchanged4428MiB. No formal series or default promotion. EXP090 restored. Next prepared independent candidate: EXP097 bounded CPU Q4_K/Q6_K expert prefetch; EXP098 is reported ALREADY_PRESENT, EXP099/100 await real-model screens. Goal remains active.
 
 EXP093 temporary-pool retention is REJECTED for the fixed32K pool-only >=5% goal: the entire mapped pool is74MiB, just1.6712% of observed4428MiB process VRAM; pool plus4MiB cuBLAS workspace is1.7615%. No unsafe trimming is implemented. Diagnostic cold/repeat numerical outputs are exact; EXP090 is restored with all nine hashes checked. The new>=5% goal remains active. Next: audit bounded H2D coalescing against prior EXP042/043 and current pinned-mmap geometry before deciding whether a new probe is justified.

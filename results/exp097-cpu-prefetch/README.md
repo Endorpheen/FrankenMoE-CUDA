@@ -1,0 +1,15 @@
+# EXP-2026-10-30-097: bounded CPU expert prefetch — REJECTED
+
+The unchanged independent DeepSeek patch was compiled and screened directly on real Apex. Only libggml-cpu differs from EXP090; the other eight runtime hashes match. The single changed C translation unit uses the preserved compiler flags; original remaining objects are reused. Commands and runtime hashes are included. No candidate code review, cosmetic rewrite, synthetic test or sanitizer run preceded this requested real-model-first screen.
+
+## Qualification and limits
+
+Reference: EXP090, project f2f4eef5cab408b30aa2312c5fec897ee16d1410. Candidate GGML_CPU_MOE_PREFETCH=1, one fresh startup and two requests: cold32768 then identical repeat, up to128 outputs, seed123, normal sampling/EOS, top5. Reuse the already collected fresh EXP090 control from EXP096 rather than launch duplicate control requests. Placement/context/batching/threads/KV/checkpoints/sampling remain the accepted Apex profile (context262144, all40 CPU expert layers,4096/4096,8/16, existing masks/poll0, Q4_0 KV, FA, mmap, one slot, speculation/EHS off).
+
+Cold single-response decode29.41098 ->29.34245tok/s (-0.2330%); candidate client TTFT14.400337s. Repeat decode28.50864 ->26.57359tok/s (-6.7876% observed), candidate repeat TTFT183.929ms. These are diagnostic observations, not five-pair statistics or a demonstrated causal regression: the reused control cold has152 system swap-out pages and candidate repeat has10 pages. Neither contaminated timing is clean performance evidence. No>=5% improvement is established.
+
+All256 selected IDs per arm/ordered top5/probabilities match exactly (delta0), cache counts0/32764. Candidate process swap and major faults remain0 in both requests; cold system swap-out0, repeat10. Observed post-request VRAM4428MiB, unchanged; candidate repeat peak RSS22208032KiB. Actual prefetch effectiveness was not separately instrumented, so passing output equality alone is not a mechanism success claim.
+
+Reject at the qualification/resource gate without formal pairs, same-binary disable A/B, tuning distances, model-free tests or promotion. This rejects the present candidate under the measured conditions; it does not prove prefetch cannot help another kernel/workload. No rejected patch is installed as a default. Working EXP090 restored on8081: health OK, nine mapped hashes match,120 expert ranges registered. The urgent disk cleanup interrupted reporting only after requests and candidate shutdown; it did not overlap either measurement window.
+
+Artifacts: unchanged rejected patch, metadata, exact compile/link commands, numerical/resource observations and local raw-evidence hashes. Build/source retained separately at /home/end0/AI/LlamaServer/exp097-cpu-prefetch. Prompts, model weights and process environment are not published. Retry requires a meaningful mechanism/workload or controlled-resource condition change; do not repeat this same screen or select a favorable historical control to claim a win. The new>=5% goal remains active.

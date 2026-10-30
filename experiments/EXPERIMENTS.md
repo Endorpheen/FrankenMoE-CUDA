@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-097: bounded CPU expert prefetch
+
+- Status: `REJECTED` (`kind=real-model-qualification`); unchanged DeepSeek patch, only CPU library changed; one candidate start/two real-Apex requests, fresh EXP096 control reused.
+- All256 IDs per arm/ordered top5/probabilities exact, delta0. Observed VRAM4428MiB. No>=5% gain established; cold decode-0.2330%, repeat-6.7876% observations are not formal or causal regression results.
+- Candidate process swap/major faults0; candidate repeat has10 system swap-out pages, reused control cold152. Contaminated timings are not clean speed evidence. Stop qualification without formal pairs, retuning or promotion.
+- EXP090 restored; health/nine hashes/120 expert registrations verified. Emergency disk cleanup followed the completed measurements.
+- [Card](EXP-2026-10-30-097-cpu-prefetch.md); unchanged rejected patch, exact commands and evidence in `results/exp097-cpu-prefetch/`.
+
 ## EXP-2026-10-30-096: pinned checkpoint storage
 
 - Status: `REJECTED` (`kind=real-model-qualification`); unchanged DeepSeek patch built and tested directly on Apex against fresh EXP090.

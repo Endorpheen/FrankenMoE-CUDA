@@ -1,0 +1,62 @@
+{
+  "qB-console.log": {
+    "sha256": "a38f04d9836073c73c69c4d237208143dcf7c31c94d44cd50dd945e04de18fe3",
+    "bytes": 39888
+  },
+  "qB-resources.jsonl": {
+    "sha256": "59973d3f9172006cc2150b2fe0085933a40e09fa932ed769b09c9690c760f7e8",
+    "bytes": 116974
+  },
+  "qB-start.json": {
+    "sha256": "d42ccd7540aecb8dd075e6ea7134bee1181ef81182580df79b0cb6a92e4d029e",
+    "bytes": 1265
+  },
+  "qB-stop.json": {
+    "sha256": "8e31562c6794c7b15e1b7f9dd426c4490d89442959e001da60ed8d0288d4fd22",
+    "bytes": 72
+  },
+  "qB-vram-after.txt": {
+    "sha256": "33e475cae8b9f610b463ba684ec1dadcdf0ccb435ec33b7a02b0c21f835b2773",
+    "bytes": 86
+  },
+  "qB.log": {
+    "sha256": "a38f04d9836073c73c69c4d237208143dcf7c31c94d44cd50dd945e04de18fe3",
+    "bytes": 39888
+  },
+  "qBcold.sse": {
+    "sha256": "de8f32a90b7f09f146697a551ed401984a2187e821308047c0dcf7300c56cbf4",
+    "bytes": 184898
+  },
+  "qBcold.trace": {
+    "sha256": "383f4cab43244ebf4ee31a597a9172c2f94f762fff8e9ea14b966cb38a29c1a9",
+    "bytes": 394243
+  },
+  "qBrepeat.sse": {
+    "sha256": "c42b9b73f6bcfe176246d943f5a154ff7df220356de293b71b78c0655c5e4d72",
+    "bytes": 184886
+  },
+  "qBrepeat.trace": {
+    "sha256": "3376541786fbd225adbcb8a53a2724170fe902607d7b538ebefb07b749889363",
+    "bytes": 394231
+  },
+  "qualification-result.json": {
+    "sha256": "1f8bdfcf1eb9b6434dc54c1c30825fdfb62b384d2d46887b496c4498310815d1",
+    "bytes": 2962
+  },
+  "restored-console.log": {
+    "sha256": "a011bd0e8db6e83685bdb4c9b75093ea6f15c5f2f24fc7243d754fb0a39422a2",
+    "bytes": 29087
+  },
+  "restored-runtime.json": {
+    "sha256": "c00b7061e316021a92a55ffe8e67007292249e489d371f6b0656ec366da246f3",
+    "bytes": 1490
+  },
+  "restored-server.log": {
+    "sha256": "a011bd0e8db6e83685bdb4c9b75093ea6f15c5f2f24fc7243d754fb0a39422a2",
+    "bytes": 29087
+  },
+  "working-server-stopped.json": {
+    "sha256": "801eb49e0262eae06ead3605766222431e7082ff5e6c240cc5c666700f3505fe",
+    "bytes": 73
+  }
+}
