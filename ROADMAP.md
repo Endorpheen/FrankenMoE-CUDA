@@ -2,6 +2,8 @@
 
 ## Current Flint/Apex series
 
+EXP099 alternative sm89 wide-GQA FA dispatch is REJECTED at the original numerical gate after one real Apex cold32K request: top5 divergence3, selected-ID divergence64, shared-history common-top5 probability delta0.19108. No semantic-quality conclusion. Swap-out1504 pages also prevents speed acceptance. EXP090 restored. Next prepared candidate: EXP100 state-transfer batching; seven subsequent experiments will be handed to the user's OpenCode agent after these remaining screens.
+
 EXP097 CPU Q4_K/Q6_K prefetch is REJECTED at real-model qualification: exact output, unchanged4428MiB VRAM, no>=5% improvement established. Repeat has10 swap-out pages and is not clean timing evidence; no causal slowdown claim or formal series. EXP090 restored. Next: prepared independent EXP099 FA dispatch, then EXP100 state-transfer batching. EXP098 has no candidate because the requested placement is reported already present.
 
 EXP096 pinned checkpoint storage is REJECTED after direct real-Apex qualification: repeat client TTFT186.377 ->185.485ms, only0.4786%, below the new>=5% goal. Numerical output exact; observed VRAM unchanged4428MiB. No formal series or default promotion. EXP090 restored. Next prepared independent candidate: EXP097 bounded CPU Q4_K/Q6_K expert prefetch; EXP098 is reported ALREADY_PRESENT, EXP099/100 await real-model screens. Goal remains active.

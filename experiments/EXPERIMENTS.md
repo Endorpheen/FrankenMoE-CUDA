@@ -1,5 +1,12 @@
 # Experiment log
 
+## EXP-2026-10-30-099: sm89 wide-GQA Flash Attention dispatch
+
+- Status: `REJECTED` (`kind=real-model-numerical-qualification`); unchanged DeepSeek patch, only CUDA library changed, accepted mmap registration retained.
+- One real-Apex cold32K request: first ordered-top5 divergence3, first selected-ID divergence64; common-top5 probability delta0.1910838462 on shared history. No semantic-quality verdict.
+- Process swap/major faults0, system swap-out1504 pages; observed VRAM4428MiB. Timings are not accepted speed evidence. Repeat/formal pairs skipped at the fixed numerical/resource gates.
+- EXP090 restored and verified. [Card](EXP-2026-10-30-099-sm89-wide-gqa.md); unchanged rejected patch, commands and raw hashes in `results/exp099-sm89-wide-gqa/`.
+
 ## EXP-2026-10-30-097: bounded CPU expert prefetch
 
 - Status: `REJECTED` (`kind=real-model-qualification`); unchanged DeepSeek patch, only CPU library changed; one candidate start/two real-Apex requests, fresh EXP096 control reused.

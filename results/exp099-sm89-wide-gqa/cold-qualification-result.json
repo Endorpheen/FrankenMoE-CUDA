@@ -1,0 +1,35 @@
+{
+  "numerical": [
+    false,
+    0.0387564242456272,
+    "token id mismatch at position 3: control id 22903 vs candidate id 22903"
+  ],
+  "resources": {
+    "pid": 2797506,
+    "request_begin_wall_ns": 1793388512832658000,
+    "request_end_wall_ns": 1793388531899755000,
+    "request_seconds": 19.067097,
+    "before_slack_seconds": 0.092151102,
+    "after_slack_seconds": 0.058628572,
+    "sample_count": 192,
+    "peak_process_swap_kib": 0,
+    "peak_rss_kib": 22206480,
+    "system_swapout_pages": 1504,
+    "system_swapin_pages": 64,
+    "major_faults": 0,
+    "minor_faults": 340693,
+    "resource_gate": false
+  },
+  "candidate_ttft_seconds": 14.822050000002491,
+  "candidate_timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 14812.541,
+    "prompt_per_token_ms": 0.4520428771972656,
+    "prompt_per_second": 2212.179530844843,
+    "predicted_n": 128,
+    "predicted_ms": 4243.696,
+    "predicted_per_token_ms": 33.414929133858266,
+    "predicted_per_second": 29.926743103181753
+  }
+}

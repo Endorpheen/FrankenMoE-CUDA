@@ -1,0 +1,18 @@
+{
+  "pid": 2798421,
+  "health": {
+    "status": "ok"
+  },
+  "mapped_hashes": {
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libggml-base.so.0.27.0": "3cfabdfe4cfb0d9fc06509d8fe99ad50ac99a5d71f0e7cb6f574941d7d57a00e",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libggml-cpu.so.0.27.0": "b4ec8b3a9eae589809414811927445939a4d63a08c94209b916de38398c4696f",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libggml-cuda.so.0.27.0": "211d644e714d6d913abb980f07cc2c727688a14622c77b0e04e54aba487dbb1e",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libggml.so.0.27.0": "1e52e0dc14ed0c0a21f753031685ffa716107a9d586bdfbf7771b23d1887ceec",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libllama-common.so.0.7.0": "69edbc5fc5e2a646b427ca0d025beb4d862c6fd4a452d9c6be92da13378e82ed",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libllama-server-impl.so": "8a963ce35bc919880354b226f5737c6c5d3f2dc47184c291badfe8470a209168",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libllama.so.0.7.0": "19c3c8a9acf7c67e20a087bc35dbc4ab0393202108fbd31eabc17608c1306d4b",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/libmtmd.so.0.7.0": "099bdb69066ce52d71b3c1c7fa37ad2bbe70ef8271bc0a097e22a79e0c4eb0cd",
+    "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/llama-server": "4e7f7e2f7cc6bb865c6b2fd4865527279fe610a47b96687b41fa318fc4b8789a"
+  },
+  "registered_120": true
+}
