@@ -1,5 +1,14 @@
 # Experiment log
 
+## EXP-2026-10-30-086: Apex batch 6144 qualification
+
+- Status: `REJECTED` (`kind=model-profile-ab`), before candidate inference; no accepted speedup.
+- Control 4096: 32768-token prefill 22.208 s / 1475.500 tok/s, single-response decode 30.412 tok/s, client TTFT 22.218 s; one qualification request only, not a median baseline.
+- Candidate 6144: failed CUDA compute-buffer allocation of 4582326400 bytes (4370.05 MiB), exit 1. Confirmed on a second start after the preceding server had fully exited. No context/KV reduction or old-feature removal; no formal pairs after this gate failed.
+- Control VmSwap 0, global pswpout unchanged, major faults 0; original runtime hashes unchanged. Official upstream helper server restored on 8081.
+- Apex's SSE comparator and paired-statistics code accepted without parent rewrite after independent checks; the fresh official-server ordinary task completed. No claim that the separate premature-EOS issue is fixed.
+- [Card and retry condition](EXP-2026-10-30-086-apex-batch6144.md); artifacts in `results/exp086-batch6144/`.
+
 ## EXP-2026-10-30-085: bounded pinned-transfer feasibility
 
 - Status: `REJECTED` (`kind=model-free-feasibility`); no engine change, model A/B or production promotion.

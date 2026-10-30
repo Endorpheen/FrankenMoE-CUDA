@@ -1,0 +1,26 @@
+{
+  "sse_helper": {
+    "module": "summarize_pairs.py",
+    "independent_cases": 5,
+    "parent_code_edits": false
+  },
+  "paired_stats": {
+    "module": "paired_stats.py",
+    "unittest_cases": 6,
+    "historical_dataset": "EXP085 5 real transfer pairs",
+    "independent_median_paired_reduction_pct": -2.7981379511963667,
+    "independent_wins": 1,
+    "parent_code_edits": false
+  },
+  "helper_observation": {
+    "upstream_commit": "fb5997274ec0d0b4d8fe067eb55f87c0ad405478",
+    "fresh_history": true,
+    "goal_mode": false,
+    "output_budget": 65536,
+    "model_rounds": 45,
+    "tool_calls": 45,
+    "completed_normally": true,
+    "limits": "One completed ordinary assignment does not establish that premature EOS is fixed."
+  },
+  "instruction_error": "Parent appended a sentence period after the unittest command, making it a real positional dot argument. Exact command reproduced exit5 and zero tests. Helper diagnosed it and provided working commands; independent correct command ran six tests."
+}

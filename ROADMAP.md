@@ -1,4 +1,12 @@
-# FrankenMoE roadmap — current state 2026-09-15
+# FrankenMoE roadmap — current state 2026-10-30
+
+## Current Flint/Apex series
+
+EXP-083 preserved the unified reference; EXP-084 diagnosed the cold-prefill critical path; EXP-085 rejected bounded pinned staging on the representative transfer gate. EXP-086 rejects batch6144 at context262144 because two startups fail the same 4370.05 MiB compute allocation. No new >=5% model gain is accepted. Earlier accepted builds and patches remain available and unchanged.
+
+Next candidate EXP-087 is a source/API feasibility investigation of eager maximum-shape graph reservation versus bounded lazy reservation. Establish the actual allocation cause and existing resize/failure contract first; do not remove causal masking or move checkpoints. Then, only if safe, test an isolated implementation with identical model math, full context capacity, older modes preserved, and model-level correctness/memory/performance gates.
+
+## Archived runtime-speed series
 
 **Runtime-speed hypothesis series (2026-09-15): CLOSED.** The series tracked in
 `experiments/HYPOTHESES-2026-09-15-runtime-speed.md` is finished. One candidate was
