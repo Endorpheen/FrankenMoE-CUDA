@@ -1,0 +1,444 @@
+--- a/ggml/include/ggml-backend.h
++++ b/ggml/include/ggml-backend.h
+@@ -373,6 +373,9 @@
+     GGML_API void                 ggml_backend_sched_set_eval_callback(ggml_backend_sched_t sched, ggml_backend_sched_eval_callback callback, void * user_data);
+ 
+     // Set a callback to be called when the inputs weights of a split are being copied
++    // Enable bounded expert upload overlap in explicitly supported contexts.
++    GGML_API void ggml_backend_sched_set_expert_pipeline(ggml_backend_sched_t sched, bool enabled);
++
+     GGML_API void                 ggml_backend_sched_set_copy_callback(ggml_backend_sched_t sched, ggml_backend_sched_copy_callback callback, void * user_data);
+ 
+     // Set a callback to be called when the compute buffers of a graph are being reallocated
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -11,6 +11,7 @@
+ #include "ggml-backend.h"
+ #include "ggml-backend-impl.h"
+ #include "ggml-alloc.h"
++#include "ggml-expert-pipeline.h"
+ #include "ggml-impl.h"
+ 
+ #include <assert.h>
+@@ -966,6 +967,9 @@
+     ggml_backend_sched_eval_callback callback_eval;
+     void * callback_eval_user_data;
+ 
++    bool expert_pipeline_enabled;
++    ggml_expert_pipeline_fn expert_pipeline[GGML_SCHED_MAX_BACKENDS];
++
+     ggml_backend_sched_copy_callback callback_copy;
+     void * callback_copy_user_data;
+ 
+@@ -1752,7 +1756,75 @@
+     }
+ }
+ 
+-static bool ggml_backend_sched_alloc_splits(ggml_backend_sched_t sched) {
++static bool ggml_backend_sched_prepare_expert_pipeline(ggml_backend_sched_t sched) {
++    if (getenv("GGML_EXPERT_OVERLAP_DIAG")) {
++        fprintf(stderr, "EXPERT_DIAG scheduler enabled=%d eval=%d copy=%d copies=%d splits=%d\n",
++            sched->expert_pipeline_enabled, !!sched->callback_eval, !!sched->callback_copy, sched->n_copies, sched->n_splits);
++    }
++    if (!sched->expert_pipeline_enabled || sched->callback_eval || !sched->callback_copy || sched->n_copies != 1) {
++        return false;
++    }
++    struct candidate {
++        int backend;
++        struct ggml_tensor * src;
++        struct ggml_tensor * dst;
++    };
++    std::vector<candidate> candidates;
++    size_t sizes[GGML_SCHED_MAX_BACKENDS] = {};
++    for (int b = 0; b < sched->n_backends; ++b) {
++        sched->expert_pipeline[b] = (ggml_expert_pipeline_fn) ggml_backend_reg_get_proc_address(
++            ggml_backend_dev_backend_reg(ggml_backend_get_device(sched->backends[b])),
++            "ggml_backend_expert_pipeline_v1");
++    }
++    for (int i = 0; i < sched->n_splits; ++i) {
++        auto & split = sched->splits[i];
++        auto fn = sched->expert_pipeline[split.backend_id];
++        if (!fn || split.graph.n_nodes == 0) {
++            continue;
++        }
++        auto * node = split.graph.nodes[0];
++        if (node->op != GGML_OP_MUL_MAT_ID || !node->src[2] || node->src[2]->ne[1] < 32) {
++            continue;
++        }
++        for (int j = 0; j < split.n_inputs; ++j) {
++            auto * src = split.inputs[j];
++            auto * dst = tensor_copy(src, split.backend_id, sched->cur_copy);
++            if (dst != node->src[0] || !src->buffer ||
++                ggml_backend_buffer_get_usage(src->buffer) != GGML_BACKEND_BUFFER_USAGE_WEIGHTS ||
++                !ggml_backend_buffer_is_host(src->buffer)) {
++                continue;
++            }
++            size_t size = 0;
++            if (fn(sched->backends[split.backend_id], GGML_EXPERT_QUERY, src, dst, &size)) {
++                sizes[split.backend_id] = std::max(sizes[split.backend_id], size);
++                candidates.push_back({split.backend_id, src, dst});
++            }
++        }
++    }
++    if (getenv("GGML_EXPERT_OVERLAP_DIAG")) {
++        fprintf(stderr, "EXPERT_DIAG candidates=%zu bytes=%zu fn0=%d\n", candidates.size(), sizes[0], !!sched->expert_pipeline[0]);
++    }
++    bool ready[GGML_SCHED_MAX_BACKENDS] = {};
++    for (int b = 0; b < sched->n_backends; ++b) {
++        if (sched->expert_pipeline[b]) {
++            ready[b] = sched->expert_pipeline[b](sched->backends[b], GGML_EXPERT_RESERVE,
++                nullptr, nullptr, &sizes[b]);
++        }
++    }
++    size_t slots[GGML_SCHED_MAX_BACKENDS] = {};
++    bool changed = false;
++    for (auto & c : candidates) {
++        if (ready[c.backend]) {
++            const bool bound = sched->expert_pipeline[c.backend](sched->backends[c.backend],
++                GGML_EXPERT_BIND, c.src, c.dst, &slots[c.backend]);
++            GGML_ASSERT(bound);
++            changed = true;
++        }
++    }
++    return changed;
++}
++
++static bool ggml_backend_sched_alloc_splits(ggml_backend_sched_t sched, bool expert_plan_changed = false) {
+     bool backend_ids_changed = false;
+     for (int i = 0; i < sched->graph.n_nodes; i++) {
+         if (sched->node_backend_ids[i] != sched->prev_node_backend_ids[i] &&
+@@ -1772,7 +1844,7 @@
+     }
+ 
+     // allocate graph
+-    if (backend_ids_changed || !ggml_gallocr_alloc_graph(sched->galloc, &sched->graph)) {
++    if (expert_plan_changed || backend_ids_changed || !ggml_gallocr_alloc_graph(sched->galloc, &sched->graph)) {
+ #ifndef NDEBUG
+         GGML_LOG_DEBUG("%s: failed to allocate graph, reserving (backend_ids_changed = %d)\n", __func__, backend_ids_changed);
+ #endif
+@@ -1835,6 +1907,19 @@
+         }
+         ggml_backend_tensor_copy(input, input_cpy);
+         return;
++    }
++
++    // Ring slots have their own read/write events and do not alias graph arenas.
++    auto pipeline = sched->expert_pipeline[split_backend_id];
++    if (pipeline && sched->callback_copy && ggml_backend_sched_is_host_weight(input) &&
++        pipeline(split_backend, GGML_EXPERT_BEGIN, input, input_cpy, nullptr)) {
++        const bool copied = sched->callback_copy(split_backend, input, input_cpy,
++            &split->graph, sched->callback_copy_user_data);
++        pipeline(split_backend, copied ? GGML_EXPERT_END : GGML_EXPERT_CANCEL,
++            input, input_cpy, nullptr);
++        if (copied) {
++            return;
++        }
+     }
+ 
+     // wait for the split backend to finish using the input before overwriting it
+@@ -2100,7 +2185,8 @@
+ 
+     ggml_backend_sched_split_graph(sched, graph);
+ 
+-    if (!ggml_backend_sched_alloc_splits(sched)) {
++    const bool expert_plan_changed = ggml_backend_sched_prepare_expert_pipeline(sched);
++    if (!ggml_backend_sched_alloc_splits(sched, expert_plan_changed)) {
+         return false;
+     }
+ 
+@@ -2147,6 +2233,11 @@
+     GGML_ASSERT(sched);
+     sched->callback_eval = callback;
+     sched->callback_eval_user_data = user_data;
++}
++
++void ggml_backend_sched_set_expert_pipeline(ggml_backend_sched_t sched, bool enabled) {
++    GGML_ASSERT(sched && sched->is_reset && !sched->is_alloc);
++    sched->expert_pipeline_enabled = enabled;
+ }
+ 
+ void ggml_backend_sched_set_copy_callback(ggml_backend_sched_t sched, ggml_backend_sched_copy_callback callback, void * user_data) {
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -752,6 +752,15 @@
+             backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, parallel, cparams.op_offload));
+ 
+     ggml_backend_sched_set_copy_callback(sched.get(), sched_copy_experts, this);
++    if (getenv("GGML_EXPERT_OVERLAP_DIAG")) {
++        fprintf(stderr, "EXPERT_DIAG context lazy=%d parallel=%d cache=%zu seq=%u flash=%d backends=%zu\n",
++            llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs), parallel,
++            (size_t) cparams.moe_cache_size, cparams.n_seq_max, cparams.flash_attn, backend_ptrs.size());
++    }
++    ggml_backend_sched_set_expert_pipeline(sched.get(),
++        model.arch == LLM_ARCH_QWEN35MOE &&
++        llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs) &&
++        !parallel && cparams.moe_cache_size == 0);
+     ggml_backend_sched_set_realloc_callback(sched.get(), sched_graph_realloc, this);
+ }
+ 
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -1,6 +1,9 @@
+ #include "ggml-cuda.h"
+ #include "ggml-impl.h"
+ #include "ggml-backend-impl.h"
++#include "ggml-expert-pipeline.h"
++#include <memory>
++#include <unordered_map>
+ 
+ #include "ggml-cuda/allreduce.cuh"
+ #include "ggml-cuda/common.cuh"
+@@ -3000,9 +3003,196 @@
+     return cuda_ctx->name.c_str();
+ }
+ 
++struct ggml_cuda_expert_pipeline {
++    struct slot {
++        ggml_backend_buffer_t buffer = nullptr;
++        cudaEvent_t ready = nullptr;
++        cudaEvent_t read_done = nullptr;
++        bool read_recorded = false;
++    } slots[2];
++    cudaStream_t upload = nullptr;
++    size_t capacity = 0;
++    std::unordered_map<const ggml_tensor *, unsigned> bindings;
++    const ggml_tensor * uploading = nullptr;
++    unsigned pending_reads = 0;
++    unsigned long long uploads = 0;
++
++    void release() {
++        if (upload) {
++            CUDA_CHECK(cudaStreamSynchronize(upload));
++        }
++        for (auto & s : slots) {
++            if (s.read_recorded) {
++                CUDA_CHECK(cudaEventSynchronize(s.read_done));
++            }
++            ggml_backend_buffer_free(s.buffer);
++            s.buffer = nullptr;
++            if (s.ready) {
++                CUDA_CHECK(cudaEventDestroy(s.ready));
++                CUDA_CHECK(cudaEventDestroy(s.read_done));
++            }
++            s.ready = nullptr;
++            s.read_done = nullptr;
++            s.read_recorded = false;
++        }
++        capacity = 0;
++        bindings.clear();
++        uploading = nullptr;
++        pending_reads = 0;
++    }
++
++    ~ggml_cuda_expert_pipeline() {
++        release();
++        if (upload) {
++            CUDA_CHECK(cudaStreamDestroy(upload));
++        }
++    }
++};
++
++static std::mutex ggml_cuda_expert_pipeline_mutex;
++static std::unordered_map<ggml_backend_cuda_context *, std::unique_ptr<ggml_cuda_expert_pipeline>> ggml_cuda_expert_pipelines;
++
++static ggml_cuda_expert_pipeline * ggml_cuda_expert_pipeline_get(ggml_backend_cuda_context * ctx, bool create = false) {
++    std::lock_guard<std::mutex> lock(ggml_cuda_expert_pipeline_mutex);
++    auto it = ggml_cuda_expert_pipelines.find(ctx);
++    if (it != ggml_cuda_expert_pipelines.end()) {
++        return it->second.get();
++    }
++    if (!create) {
++        return nullptr;
++    }
++    auto state = std::make_unique<ggml_cuda_expert_pipeline>();
++    auto * result = state.get();
++    ggml_cuda_expert_pipelines.emplace(ctx, std::move(state));
++    return result;
++}
++
++static bool ggml_backend_cuda_expert_pipeline(ggml_backend_t backend,
++        enum ggml_expert_pipeline_phase phase, const ggml_tensor * src,
++        ggml_tensor * dst, size_t * value) {
++    const char * env = getenv("GGML_EXPERT_OVERLAP");
++    if (env && atoi(env) == 0) {
++        return false;
++    }
++    auto * ctx = (ggml_backend_cuda_context *) backend->context;
++    ggml_cuda_set_device(ctx->device);
++    if (phase == GGML_EXPERT_QUERY) {
++        if (!src || !dst || dst->data || dst->view_src || !src->data || !ggml_is_contiguous(src) ||
++            (src->type != GGML_TYPE_Q4_K && src->type != GGML_TYPE_Q6_K)) {
++            return false;
++        }
++        cudaPointerAttributes attributes = {};
++        cudaError_t err = cudaPointerGetAttributes(&attributes, src->data);
++        if (err != cudaSuccess) {
++            if (err == cudaErrorInvalidValue) {
++                cudaGetLastError();
++                return false;
++            }
++            CUDA_CHECK(err);
++        }
++        if (attributes.type != cudaMemoryTypeHost) {
++            return false;
++        }
++        *value = ggml_backend_buft_get_alloc_size(ggml_backend_cuda_buffer_type(ctx->device), dst);
++        return *value <= 256ULL*1024*1024;
++    }
++    auto * state = ggml_cuda_expert_pipeline_get(ctx, phase == GGML_EXPERT_RESERVE && *value > 0);
++    if (!state) {
++        return false;
++    }
++    if (phase == GGML_EXPERT_RESERVE) {
++        GGML_ASSERT(!state->uploading && !state->pending_reads);
++        CUDA_CHECK(cudaStreamSynchronize(ctx->stream()));
++        if (state->upload) {
++            CUDA_CHECK(cudaStreamSynchronize(state->upload));
++        }
++        state->bindings.clear();
++        if (*value == 0 || *value > 256ULL*1024*1024) {
++            state->release();
++            return false;
++        }
++        if (state->capacity < *value) {
++            state->release();
++            if (!state->upload) {
++                CUDA_CHECK(cudaStreamCreateWithFlags(&state->upload, cudaStreamNonBlocking));
++            }
++            for (auto & slot : state->slots) {
++                slot.buffer = ggml_backend_buft_alloc_buffer(ggml_backend_cuda_buffer_type(ctx->device), *value);
++                if (!slot.buffer) {
++                    state->release();
++                    GGML_LOG_WARN("expert overlap: staging allocation failed, using original path\n");
++                    return false;
++                }
++                ggml_backend_buffer_set_usage(slot.buffer, GGML_BACKEND_BUFFER_USAGE_COMPUTE);
++                CUDA_CHECK(cudaEventCreateWithFlags(&slot.ready, cudaEventDisableTiming));
++                CUDA_CHECK(cudaEventCreateWithFlags(&slot.read_done, cudaEventDisableTiming));
++            }
++            state->capacity = *value;
++            GGML_LOG_INFO("expert overlap: two staging slots, total %.2f MiB\n", 2.0*state->capacity/(1024*1024));
++        }
++        return true;
++    }
++    if (phase == GGML_EXPERT_BIND) {
++        if (!state->capacity || !dst || dst->data || dst->view_src ||
++            ggml_backend_buffer_get_alloc_size(state->slots[0].buffer, dst) > state->capacity) {
++            return false;
++        }
++        unsigned slot_id = (*value)++ % 2;
++        auto & slot = state->slots[slot_id];
++        if (ggml_backend_tensor_alloc(slot.buffer, dst, ggml_backend_buffer_get_base(slot.buffer)) != GGML_STATUS_SUCCESS) {
++            return false;
++        }
++        state->bindings.emplace(dst, slot_id);
++        return true;
++    }
++    auto it = state->bindings.find(dst);
++    if (it == state->bindings.end()) {
++        return false;
++    }
++    auto & slot = state->slots[it->second];
++    if (phase == GGML_EXPERT_BEGIN) {
++        GGML_ASSERT(!state->uploading && !state->pending_reads);
++        if (slot.read_recorded) {
++            CUDA_CHECK(cudaStreamWaitEvent(state->upload, slot.read_done, 0));
++        }
++        size_t bytes = ggml_nbytes(dst);
++        size_t padded = ggml_backend_buffer_get_alloc_size(slot.buffer, dst);
++        if (padded > bytes) {
++            CUDA_CHECK(cudaMemsetAsync((char *) dst->data + bytes, 0, padded - bytes, state->upload));
++        }
++        state->uploading = dst;
++        state->pending_reads = 1U << it->second;
++        return true;
++    }
++    if (phase == GGML_EXPERT_END) {
++        GGML_ASSERT(state->uploading == dst);
++        CUDA_CHECK(cudaEventRecord(slot.ready, state->upload));
++        CUDA_CHECK(cudaStreamWaitEvent(ctx->stream(), slot.ready, 0));
++        state->uploading = nullptr;
++        ++state->uploads;
++        return true;
++    }
++    if (phase == GGML_EXPERT_CANCEL) {
++        CUDA_CHECK(cudaStreamSynchronize(state->upload));
++        state->uploading = nullptr;
++        return true;
++    }
++    return false;
++}
++
+ static void ggml_backend_cuda_free(ggml_backend_t backend) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
+ 
++    ggml_cuda_set_device(cuda_ctx->device);
++    CUDA_CHECK(cudaStreamSynchronize(cuda_ctx->stream()));
++    {
++        std::lock_guard<std::mutex> lock(ggml_cuda_expert_pipeline_mutex);
++        auto it = ggml_cuda_expert_pipelines.find(cuda_ctx);
++        if (it != ggml_cuda_expert_pipelines.end()) {
++            GGML_LOG_INFO("expert overlap: completed %llu uploads\n", it->second->uploads);
++            ggml_cuda_expert_pipelines.erase(it);
++        }
++    }
+     delete cuda_ctx;
+     delete backend;
+ }
+@@ -3013,7 +3203,9 @@
+ 
+     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
+ 
+-    CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, cuda_ctx->stream()));
++    auto * pipeline = ggml_cuda_expert_pipeline_get(cuda_ctx);
++    cudaStream_t stream = pipeline && pipeline->uploading == tensor ? pipeline->upload : cuda_ctx->stream();
++    CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, stream));
+ }
+ 
+ static void ggml_backend_cuda_get_tensor_async(ggml_backend_t backend, const ggml_tensor * tensor, void * data, size_t offset, size_t size) {
+@@ -5269,6 +5461,17 @@
+     }
+ 
+     ggml_cuda_graph_evaluate_and_capture(cuda_ctx, cgraph, use_cuda_graph, cuda_graph_update_required, graph_key);
++
++    // Events remain outside capture, and cover all kernels in this split.
++    if (auto * pipeline = ggml_cuda_expert_pipeline_get(cuda_ctx)) {
++        for (unsigned i = 0; i < 2; ++i) {
++            if (pipeline->pending_reads & (1U << i)) {
++                CUDA_CHECK(cudaEventRecord(pipeline->slots[i].read_done, cuda_ctx->stream()));
++                pipeline->slots[i].read_recorded = true;
++            }
++        }
++        pipeline->pending_reads = 0;
++    }
+ 
+     return GGML_STATUS_SUCCESS;
+ }
+@@ -6574,6 +6777,9 @@
+ 
+ static void * ggml_backend_cuda_reg_get_proc_address(ggml_backend_reg_t reg, const char * name) {
+     GGML_UNUSED(reg);
++    if (strcmp(name, "ggml_backend_expert_pipeline_v1") == 0) {
++        return (void *) ggml_backend_cuda_expert_pipeline;
++    }
+     if (strcmp(name, "ggml_backend_comm_init") == 0) {
+         return (void *)ggml_backend_cuda_comm_init;
+     }
+--- /dev/null
++++ b/ggml/src/ggml-expert-pipeline.h
+@@ -0,0 +1,15 @@
++#pragma once
++#include "ggml-backend.h"
++
++enum ggml_expert_pipeline_phase {
++    GGML_EXPERT_QUERY,
++    GGML_EXPERT_RESERVE,
++    GGML_EXPERT_BIND,
++    GGML_EXPERT_BEGIN,
++    GGML_EXPERT_END,
++    GGML_EXPERT_CANCEL,
++};
++
++typedef bool (*ggml_expert_pipeline_fn)(ggml_backend_t backend,
++    enum ggml_expert_pipeline_phase phase, const struct ggml_tensor * src,
++    struct ggml_tensor * dst, size_t * value);

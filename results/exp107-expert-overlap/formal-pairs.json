@@ -1,0 +1,214 @@
+{
+  "pairs": [
+    {
+      "pair": 1,
+      "cold": {
+        "A_prompt_ms": 14377.599,
+        "B_prompt_ms": 12978.12,
+        "prefill_tps_gain_pct": 10.783372322031237,
+        "A_decode_tps": 29.256268789089948,
+        "B_decode_tps": 29.978955717305528,
+        "decode_gain_pct": 2.470195134675146,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 176.963,
+        "B_prompt_ms": 223.302,
+        "prefill_tps_gain_pct": -20.751717405128478,
+        "A_decode_tps": 29.214979693288722,
+        "B_decode_tps": 27.15469280131232,
+        "decode_gain_pct": -7.052159247092316,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3188,
+      "A_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      },
+      "B_vram_peak_mib": 3348,
+      "B_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      }
+    },
+    {
+      "pair": 2,
+      "cold": {
+        "A_prompt_ms": 14300.36,
+        "B_prompt_ms": 12928.798,
+        "prefill_tps_gain_pct": 10.608580936913082,
+        "A_decode_tps": 29.644561705155187,
+        "B_decode_tps": 29.519636485433924,
+        "decode_gain_pct": -0.4214102436857381,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 208.472,
+        "B_prompt_ms": 159.092,
+        "prefill_tps_gain_pct": 31.038644306439032,
+        "A_decode_tps": 26.959773894532518,
+        "B_decode_tps": 29.773040347861638,
+        "decode_gain_pct": 10.435052105164932,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3188,
+      "A_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      },
+      "B_vram_peak_mib": 3348,
+      "B_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      }
+    },
+    {
+      "pair": 3,
+      "cold": {
+        "A_prompt_ms": 14598.731,
+        "B_prompt_ms": 13348.788,
+        "prefill_tps_gain_pct": 9.363719013291693,
+        "A_decode_tps": 28.950124861660576,
+        "B_decode_tps": 25.876226064490893,
+        "decode_gain_pct": -10.617912053431343,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 171.904,
+        "B_prompt_ms": 184.675,
+        "prefill_tps_gain_pct": -6.915391904697454,
+        "A_decode_tps": 27.0497248489209,
+        "B_decode_tps": 24.80436291165721,
+        "decode_gain_pct": -8.300867937860978,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3188,
+      "A_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      },
+      "B_vram_peak_mib": 3348,
+      "B_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      }
+    },
+    {
+      "pair": 4,
+      "cold": {
+        "A_prompt_ms": 14288.222,
+        "B_prompt_ms": 13094.528,
+        "prefill_tps_gain_pct": 9.115975772475338,
+        "A_decode_tps": 29.44053024481308,
+        "B_decode_tps": 28.884919297355008,
+        "decode_gain_pct": -1.88723145554065,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 176.794,
+        "B_prompt_ms": 161.998,
+        "prefill_tps_gain_pct": 9.133446091927077,
+        "A_decode_tps": 29.176005285681338,
+        "B_decode_tps": 29.72347571814375,
+        "decode_gain_pct": 1.8764406816552448,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3188,
+      "A_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      },
+      "B_vram_peak_mib": 3348,
+      "B_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      }
+    },
+    {
+      "pair": 5,
+      "cold": {
+        "A_prompt_ms": 14219.708,
+        "B_prompt_ms": 12845.093,
+        "prefill_tps_gain_pct": 10.701479545535397,
+        "A_decode_tps": 29.74992726494161,
+        "B_decode_tps": 29.67242576519812,
+        "decode_gain_pct": -0.26050987974959305,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 161.418,
+        "B_prompt_ms": 171.347,
+        "prefill_tps_gain_pct": -5.79467396569534,
+        "A_decode_tps": 28.36335195860112,
+        "B_decode_tps": 29.061405835209932,
+        "decode_gain_pct": 2.461112063298043,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3188,
+      "A_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      },
+      "B_vram_peak_mib": 3348,
+      "B_resources": {
+        "process_swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0
+      }
+    }
+  ],
+  "medians": {
+    "prefill_tps_gain_pct": 10.608580936913082,
+    "cold_decode_gain_pct": -0.4214102436857381,
+    "repeat_decode_gain_pct": 1.8764406816552448
+  }
+}

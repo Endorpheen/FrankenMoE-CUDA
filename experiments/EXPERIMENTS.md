@@ -1,5 +1,18 @@
 # Experiment log
 
+## EXP-2026-10-30-107: bounded expert H2D/compute overlap
+
+- Status: ACCEPTED for measured Apex prefill; separate candidate based on EXP101.
+- Five manual pairs: prefill +10.609%, cold decode -0.421%, repeat +1.876%
+  (median paired changes); all1280 IDs/top5/probabilities exact, resource gates0.
+- Peak3188->3348MiB (+5.019%); retained3188->2928MiB (-8.156%).
+  Same bytes/copies; CUDA trace overlap0->1.415233s. Igor accepted the tradeoff.
+- Default-on for verified qwen35moe single-GPU prefill; other architectures keep
+  the original path. GGML_EXPERT_OVERLAP=0 disables. Flint three cases exact,
+  peak2536MiB; no Flint speed claim. Slot reallocation/capture/replay gates pass.
+- [Card](EXP-2026-10-30-107-h2d-compute-overlap.md),
+  [evidence and limitations](../results/exp107-expert-overlap/README.md).
+
 ## EXP-2026-10-30-101: lazy physical KV mapping
 
 - Status: `MEASURED_APEX_CANDIDATE`, preserved for requested manual use; broad compatibility pending. Author five loaded pairs: VRAM4428 ->3188MiB (-28.0036%); contaminated timings are not clean speed acceptance.

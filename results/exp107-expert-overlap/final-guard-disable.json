@@ -1,0 +1,42 @@
+{
+  "Bfinal": {
+    "cold": {
+      "correctness": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "prompt_ms": 13114.702,
+      "decode_tps": 29.9601365049873
+    },
+    "repeat": {
+      "correctness": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "prompt_ms": 177.039,
+      "decode_tps": 29.170255526844674
+    }
+  },
+  "Dfinal": {
+    "cold": {
+      "correctness": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "prompt_ms": 14722.172,
+      "decode_tps": 29.06514368365223
+    },
+    "repeat": {
+      "correctness": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "prompt_ms": 166.321,
+      "decode_tps": 28.359355461073996
+    }
+  }
+}
