@@ -1,0 +1,78 @@
+{
+  "verdict": "REJECTED_FOR_32K_POOL_ONLY_GAIN",
+  "pool_count": 1,
+  "pool_reports": 266,
+  "physical_pool_max_bytes": 77594624,
+  "physical_pool_max_mib": 74.0,
+  "cublas_workspace_max_bytes": 4194304,
+  "cublas_workspace_max_mib": 4.0,
+  "baseline_observed_vram_mib": 4428,
+  "required_5percent_mib": 221.4,
+  "impossible_total_pool_removal_upper_percent": 1.6711833785004517,
+  "pool_plus_cublas_removal_upper_percent": 1.7615176151761518,
+  "max_host_alloc_peak_bytes": 75779712,
+  "granularities_bytes": [
+    2097152
+  ],
+  "graph_counts": [
+    41,
+    119,
+    160,
+    199
+  ],
+  "host_live_values": [
+    0
+  ],
+  "cases": {
+    "cold": {
+      "numerical": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "resource": {
+        "pid": 2759633,
+        "request_begin_wall_ns": 1793386546932748000,
+        "request_end_wall_ns": 1793386572048374000,
+        "request_seconds": 25.115626,
+        "before_slack_seconds": 0.060284707,
+        "after_slack_seconds": 0.092151674,
+        "sample_count": 250,
+        "peak_process_swap_kib": 0,
+        "peak_rss_kib": 22203752,
+        "system_swapout_pages": 0,
+        "system_swapin_pages": 1234,
+        "major_faults": 242,
+        "minor_faults": 340749,
+        "resource_gate": true
+      }
+    },
+    "repeat": {
+      "numerical": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "resource": {
+        "pid": 2759633,
+        "request_begin_wall_ns": 1793386572281241000,
+        "request_end_wall_ns": 1793386579086494000,
+        "request_seconds": 6.805253,
+        "before_slack_seconds": 0.03891529,
+        "after_slack_seconds": 0.068589001,
+        "sample_count": 69,
+        "peak_process_swap_kib": 0,
+        "peak_rss_kib": 22206388,
+        "system_swapout_pages": 0,
+        "system_swapin_pages": 49,
+        "major_faults": 1,
+        "minor_faults": 16741,
+        "resource_gate": true
+      }
+    }
+  },
+  "model_starts": 1,
+  "completion_requests": 2,
+  "allocator_policy_changed": false,
+  "scope": "Diagnostic logging is not performance timing; host_peak0 on graph replay does not establish zero device requirement. Entire mapped pool is an upper bound on reclaimable pool bytes."
+}

@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-093: CUDA temporary-pool retention
+
+- Status: `REJECTED` (`kind=diagnostic-upper-bound`) for pool-only >=5% saving on the fixed32K Apex workload above EXP090.
+- One VMM pool,266 reports: mapped maximum74MiB, cuBLAS workspace4MiB. Against observed4428MiB VRAM,5% requires221.4MiB. Impossible total-pool removal upper bound1.6712%, including all workspace1.7615%.
+- Both cold/repeat numerical outputs exact, delta0; process swap/system swap-out0, major faults242/1. Instrumented/faulted timings are not performance evidence. Host live0 does not permit unmapping captured graph pointers.
+- One diagnostic start/two requests; no trimming implementation or formal A/B. EXP090 restored on8081, nine hashes/120 registered ranges verified. No default change.
+- [Card](EXP-2026-10-30-093-cuda-pool-retention.md); diagnostic patch, counters and provenance in `results/exp093-cuda-pool/`.
+
 ## EXP-2026-10-30-092: twelve physical decode workers
 
 - Status: `REJECTED` (`kind=model-profile-qualification`), compared against EXP090 with all CPU experts/poll0; exact prior combination absent in33 audited Apex profiles.

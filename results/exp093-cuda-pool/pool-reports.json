@@ -1,0 +1,4516 @@
+{
+  "pool": [
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "2097152",
+      "live": "0",
+      "host_peak": "9216",
+      "granularity": "2097152",
+      "graphs": "199"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "2097152",
+      "live": "0",
+      "host_peak": "9216",
+      "granularity": "2097152",
+      "graphs": "199"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75779712",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75779712",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75779712",
+      "granularity": "2097152",
+      "graphs": "119"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75779712",
+      "granularity": "2097152",
+      "graphs": "119"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75779712",
+      "granularity": "2097152",
+      "graphs": "119"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75779712",
+      "granularity": "2097152",
+      "graphs": "119"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75779712",
+      "granularity": "2097152",
+      "graphs": "119"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "75705728",
+      "granularity": "2097152",
+      "graphs": "119"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "3061760",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "181632",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "181632",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "3061760",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "181632",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "181632",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "160"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "kind": "vmm",
+      "mapped": "77594624",
+      "live": "0",
+      "host_peak": "0",
+      "granularity": "2097152",
+      "graphs": "41"
+    }
+  ],
+  "cublas": [
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "pp",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    },
+    {
+      "phase": "tg",
+      "device": "0",
+      "stream": "0",
+      "bytes": "4194304"
+    }
+  ]
+}

@@ -2,9 +2,11 @@
 
 ## Current Flint/Apex series
 
+EXP093 temporary-pool retention is REJECTED for the fixed32K pool-only >=5% goal: the entire mapped pool is74MiB, just1.6712% of observed4428MiB process VRAM; pool plus4MiB cuBLAS workspace is1.7615%. No unsafe trimming is implemented. Diagnostic cold/repeat numerical outputs are exact; EXP090 is restored with all nine hashes checked. The new>=5% goal remains active. Next: audit bounded H2D coalescing against prior EXP042/043 and current pinned-mmap geometry before deciding whether a new probe is justified.
+
 EXP092 twelve-worker qualification is REJECTED for the current Apex/all-CPU/poll0 combination: fresh warm-decode gain1.386% is below5%, and repeat TTFT rises21.05%. Earlier reused-control gain5.28% is retained as a diagnostic, not selected for acceptance. EXP0908-thread profile remains working. Current priority is Apex/Flint; legacy Qwen bundles are preserved.
 
-The new>=5% goal above EXP090 remains active. EXP091 pinned small-batch MoE offload is REJECTED: cold-tail CPU->CUDA placement changes top5/selected outputs, even though kernels/weights are unchanged. EXP090 is restored; no new default is promoted. A different next direction is CPU worker utilization with the numerical placement preserved, after checking historical combinations.
+The new>=5% goal above EXP090 remains active. EXP091 pinned small-batch MoE offload is REJECTED: cold-tail CPU->CUDA placement changes top5/selected outputs, even though kernels/weights are unchanged. EXP090 is restored; no new default is promoted. CPU worker qualification then closed as EXP092; preserve numerical placement in subsequent directions.
 
 EXP090 delivers the requested correction to EXP089: remove the raw MemFree veto that treated reclaimable file cache as unavailable. Use the isolated exp090-mmap-available runtime for manual restart. Available-memory headroom, resident pages and ownership checks remain. Only libllama changes; no new model/performance runs are claimed. Prior EXP089 measurements and builds stay preserved.
 
