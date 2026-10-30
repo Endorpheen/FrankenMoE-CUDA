@@ -1,5 +1,14 @@
 # Experiment log
 
+## EXP-2026-10-30-085: bounded pinned-transfer feasibility
+
+- Status: `REJECTED` (`kind=model-free-feasibility`); no engine change, model A/B or production promotion.
+- Correctness: 60 byte/guard cases PASS, including chunk boundaries, reuse, partial-allocation fallback and capture refusal.
+- Five manual paired runs on EXP-084's pageable H2D size/order geometry: 1/5 ring wins; median paired time reduction -2.798% (slower), below the required +5% / 4-of-5 gate. Arm medians: direct 13.355 s, ring 13.604 s.
+- Same 131140214784 bytes; 32 MiB pinned budget. All timed windows: process swap 0, major faults 0, unchanged system pswpout. Working 8081 Apex restored; reference runtime hashes unchanged.
+- Apex implemented the extractor and corrected a substantial trace-order bug after review; parent verified every extracted row and accepted the corrected code. The result does not invalidate the older accepted Qwen ring.
+- [Scope, readings, compatibility and retry conditions](EXP-2026-10-30-085-pinned-transfer-feasibility.md); artifacts in `results/exp085-pinned-feasibility/`.
+
 ## EXP-2026-10-30-084: Apex critical-path diagnosis
 
 - Status: `ACCEPTED` (`kind=diagnostic`), no runtime change or accepted speedup. One profiled server start, three manual serial 32K/128 requests; original 8081 working command restored.
