@@ -1,5 +1,13 @@
 # Experiment log
 
+## EXP-2026-10-30-091: pinned MoE small-batch offload
+
+- Status: `REJECTED` (`kind=model-correctness-qualification`). New>=5% goal above EXP090 remains active.
+- Two serial starts/three requests. Candidate cold fails ordered-top5 at position0 and selected IDs at65; shared-history common-ID probability delta0.2053055685. Control cold/repeat/accepted EXP089 results match exactly.
+- Existing recurrent checkpointing splits the cold tail at32764+4; the narrow CUDA offload changes that4-token arithmetic route. Identical weights/device kernels do not imply identical computation.
+- Candidate repeat and formal pairs skipped. Cold TTFT14.529798/14.389025s is not accepted performance; cold swap-out1/4 pages also fails resource gates. EXP090 restored on8081; no rejected feature patch promoted or defaults changed.
+- [Card](EXP-2026-10-30-091-pinned-moe-small-batch.md); evidence and limits in `results/exp091-pinned-moe-tail/`.
+
 ## EXP-2026-10-30-090: remove the raw-free-memory veto
 
 - Status: `DELIVERED` (`kind=delivery-fix`), explicitly requested after EXP089 fell back despite substantial reclaimable file cache.

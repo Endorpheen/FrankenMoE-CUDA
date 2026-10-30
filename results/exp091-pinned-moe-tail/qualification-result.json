@@ -1,0 +1,147 @@
+{
+  "verdict": "REJECTED",
+  "reason": "Cold-request numerical gate failed; candidate repeat and formal pairs skipped",
+  "cold_correct": false,
+  "max_probability_delta_on_corresponding_ids": 0.07188945683447523,
+  "first_selected_id_divergence_zero_based": 65,
+  "first_ordered_top5_divergence_zero_based": 0,
+  "first_control_top5": [
+    198,
+    271,
+    220,
+    256,
+    695
+  ],
+  "first_candidate_top5": [
+    198,
+    271,
+    220,
+    256,
+    2228
+  ],
+  "model_starts": 2,
+  "completion_requests": 3,
+  "arms": {
+    "control": {
+      "cold": {
+        "client_ttft_s": 14.529798000003211,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 14519.825,
+          "prompt_per_token_ms": 0.44310989379882815,
+          "prompt_per_second": 2256.776510736183,
+          "predicted_n": 128,
+          "predicted_ms": 4557.324,
+          "predicted_per_token_ms": 35.88444094488189,
+          "predicted_per_second": 27.86723085740667
+        },
+        "resource": {
+          "pid": 2724222,
+          "request_begin_wall_ns": 1793383674586251000,
+          "request_end_wall_ns": 1793383693673887000,
+          "request_seconds": 19.087636,
+          "before_slack_seconds": 0.089858504,
+          "after_slack_seconds": 0.010797521,
+          "sample_count": 192,
+          "peak_process_swap_kib": 0,
+          "peak_rss_kib": 22206244,
+          "system_swapout_pages": 1,
+          "system_swapin_pages": 79,
+          "major_faults": 0,
+          "minor_faults": 340830,
+          "resource_gate": false
+        }
+      },
+      "repeat": {
+        "client_ttft_s": 0.1849930000025779,
+        "timings": {
+          "cache_n": 32764,
+          "prompt_n": 4,
+          "prompt_ms": 175.937,
+          "prompt_per_token_ms": 43.98425,
+          "prompt_per_second": 22.735410970972563,
+          "predicted_n": 128,
+          "predicted_ms": 4592.724,
+          "predicted_per_token_ms": 36.16318110236221,
+          "predicted_per_second": 27.65243459001673
+        },
+        "resource": {
+          "pid": 2724222,
+          "request_begin_wall_ns": 1793383696710035000,
+          "request_end_wall_ns": 1793383701489118000,
+          "request_seconds": 4.779083,
+          "before_slack_seconds": 0.014646169,
+          "after_slack_seconds": 0.040707647,
+          "sample_count": 49,
+          "peak_process_swap_kib": 0,
+          "peak_rss_kib": 22209504,
+          "system_swapout_pages": 0,
+          "system_swapin_pages": 25,
+          "major_faults": 0,
+          "minor_faults": 16912,
+          "resource_gate": true
+        }
+      }
+    },
+    "candidate": {
+      "cold": {
+        "client_ttft_s": 14.389024999996764,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 14379.669,
+          "prompt_per_token_ms": 0.4388326721191406,
+          "prompt_per_second": 2278.772898040977,
+          "predicted_n": 128,
+          "predicted_ms": 4444.59,
+          "predicted_per_token_ms": 34.996771653543306,
+          "predicted_per_second": 28.57406419939747
+        },
+        "resource": {
+          "pid": 2724986,
+          "request_begin_wall_ns": 1793383742382199000,
+          "request_end_wall_ns": 1793383761216799000,
+          "request_seconds": 18.8346,
+          "before_slack_seconds": 0.083635416,
+          "after_slack_seconds": 0.098027095,
+          "sample_count": 190,
+          "peak_process_swap_kib": 0,
+          "peak_rss_kib": 22211968,
+          "system_swapout_pages": 4,
+          "system_swapin_pages": 682,
+          "major_faults": 0,
+          "minor_faults": 341668,
+          "resource_gate": false
+        }
+      }
+    }
+  },
+  "candidate_policy_log": [
+    "0.03.528.516 I pin_mmap_experts: registered 120 mapped expert ranges (18600.47 MiB), no weight copy",
+    "0.23.747.223 I CUDA: pinned MoE small-batch offload active (4..31 tokens)"
+  ],
+  "max_probability_delta_shared_input_prefix": 0.20530556847788933,
+  "legacy_max_delta_scope": "Legacy whole-stream corresponding-ID comparison may include positions after selected histories diverged; use shared_input_prefix for numerical error magnitude.",
+  "control_cold_vs_repeat": [
+    true,
+    0.0,
+    "identical ids; max probability delta 0"
+  ],
+  "control_vs_accepted_exp089_cold": [
+    true,
+    0.0,
+    "identical ids; max probability delta 0"
+  ],
+  "cold_shape_evidence": {
+    "checkpoint_tokens": 32764,
+    "remaining_tail_tokens": 4,
+    "candidate_log": "qB.log: checkpoint32764 at23.745310s; small-batch offload active at23.747223s before first output",
+    "interpretation": "Existing near-tail checkpoint splits even cold prefill into32764+4; the new predicate changes that4-token CPU tail to CUDA."
+  },
+  "observed_post_request_vram_mib": {
+    "control": 4428,
+    "candidate": 4428
+  },
+  "vram_scope": "Point observations from nvidia-smi after qualification responses; not a sampled peak"
+}

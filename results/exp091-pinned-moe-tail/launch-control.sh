@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'Runtime: %s\n' /home/end0/AI/LlamaServer/exp090-mmap-available/build/bin
+exec env -u GGML_OP_OFFLOAD_MIN_BATCH -u GGML_CUDA_PINNED_MOE_TAIL LD_LIBRARY_PATH=/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin /home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/llama-server -m /run/media/end0/CAE3-E74B/AI/Models/GGUF/Apex-35B-V1.0-Q4_K_M.gguf --alias Apex-35B-V1.0 -c 262144 -ngl all -fit off --cpu-moe -fa on -ctk q4_0 -ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1 --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap --spec-type none --jinja --temp 1 --top-p 0.95 --top-k 20 --min-p 0 --host 127.0.0.1 --port 8081 -lv 4

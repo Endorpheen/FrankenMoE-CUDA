@@ -2,6 +2,8 @@
 
 ## Current Flint/Apex series
 
+The new>=5% goal above EXP090 remains active. EXP091 pinned small-batch MoE offload is REJECTED: cold-tail CPU->CUDA placement changes top5/selected outputs, even though kernels/weights are unchanged. EXP090 is restored; no new default is promoted. A different next direction is CPU worker utilization with the numerical placement preserved, after checking historical combinations.
+
 EXP090 delivers the requested correction to EXP089: remove the raw MemFree veto that treated reclaimable file cache as unavailable. Use the isolated exp090-mmap-available runtime for manual restart. Available-memory headroom, resident pages and ownership checks remain. Only libllama changes; no new model/performance runs are claimed. Prior EXP089 measurements and builds stay preserved.
 
 EXP089 is the new accepted baseline above EXP087: resident mmap expert registration. Five balanced manual32K Apex pairs show median paired prefill throughput+61.25485%, client TTFT-37.97135%,5/5 wins; single-response decode-1.12915%. All640 IDs/ordered top5/probabilities match exactly, and primary process swap/system swap-out/major faults are0. Primary RAM increase is several MiB; qualification observes4428MiB VRAM after both requests. Startup-loaded median rises about1.457s. This completes the new >=5% goal; no next optimization experiment is scheduled automatically.
