@@ -1,5 +1,19 @@
 # Experiment log
 
+## EXP-2026-10-31-117: routing-aware GPU MoE launch bounds
+
+- Status: REJECTED for promotion against accepted EXP107.
+- Final cache-safe v4 cold screen13019.648ms versus fixed control13024.3755ms:
+  observed+0.03631%, below the2% early continuation gate. Exact128 IDs/top5/
+  probabilities, clean request windows, peak/retained3348/2928MiB unchanged.
+- Superseded v2's+2.3117% five-pair result is not transferred: a fixed-UID
+  routing-growth test exposed stale CUDA graph geometry. Final code preserves
+  same-bucket reuse and invalidates changed grids; Q4_K/Q6_K exact, memcheck0.
+- Corrected prototype, negative-control test and all excluded/superseded evidence
+  preserved. Production EXP107 restored; installed defaults/old builds untouched.
+- [Card](EXP-2026-10-31-117-moe-dispatch-prefill.md),
+  [report and evidence](../results/exp117-expert-bound/README.md).
+
 ## EXP-2026-10-30-107: bounded expert H2D/compute overlap
 
 - Status: ACCEPTED for measured Apex prefill; separate candidate based on EXP101.

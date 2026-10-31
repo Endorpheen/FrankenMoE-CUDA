@@ -1,0 +1,246 @@
+{
+  "order": [
+    "B1",
+    "A1",
+    "A2",
+    "B2",
+    "B3",
+    "A3",
+    "A4",
+    "B4",
+    "B5",
+    "A5"
+  ],
+  "pairs": [
+    {
+      "pair": 1,
+      "cold": {
+        "A_prompt_ms": 12920.039,
+        "B_prompt_ms": 12835.185,
+        "prefill_tps_gain_pct": 0.6611046120488462,
+        "A_decode_tps": 29.297221931300555,
+        "B_decode_tps": 29.48063250116704,
+        "decode_gain_pct": 0.6260339983653385,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 166.832,
+        "B_prompt_ms": 167.665,
+        "prefill_tps_gain_pct": -0.4968240240956656,
+        "A_decode_tps": 28.37960922842323,
+        "B_decode_tps": 29.49836748601673,
+        "decode_gain_pct": 3.9421200221214425,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mode_mib": 2928,
+      "A_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22213564
+      },
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mode_mib": 2928,
+      "B_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22215092
+      }
+    },
+    {
+      "pair": 2,
+      "cold": {
+        "A_prompt_ms": 13000.698,
+        "B_prompt_ms": 12839.798,
+        "prefill_tps_gain_pct": 1.2531349792263002,
+        "A_decode_tps": 28.16494723729589,
+        "B_decode_tps": 27.292629206422752,
+        "decode_gain_pct": -3.0971761584485336,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 164.314,
+        "B_prompt_ms": 160.185,
+        "prefill_tps_gain_pct": 2.57764459843306,
+        "A_decode_tps": 28.042884857681255,
+        "B_decode_tps": 28.042123243586026,
+        "decode_gain_pct": -0.0027158906763524726,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mode_mib": 2928,
+      "A_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22213512
+      },
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mode_mib": 2928,
+      "B_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22215552
+      }
+    },
+    {
+      "pair": 3,
+      "cold": {
+        "A_prompt_ms": 12978.021,
+        "B_prompt_ms": 12558.156,
+        "prefill_tps_gain_pct": 3.343365060921366,
+        "A_decode_tps": 29.118856523139744,
+        "B_decode_tps": 29.633376795619302,
+        "decode_gain_pct": 1.766965924883368,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 206.373,
+        "B_prompt_ms": 179.035,
+        "prefill_tps_gain_pct": 15.26964001452229,
+        "A_decode_tps": 29.379214876338956,
+        "B_decode_tps": 30.361427694738076,
+        "decode_gain_pct": 3.3432235086382933,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mode_mib": 2928,
+      "A_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 3555,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22211068
+      },
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mode_mib": 2928,
+      "B_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 2912,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22211892
+      }
+    },
+    {
+      "pair": 4,
+      "cold": {
+        "A_prompt_ms": 12964.833,
+        "B_prompt_ms": 12601.361,
+        "prefill_tps_gain_pct": 2.8843868531343464,
+        "A_decode_tps": 29.52546990250318,
+        "B_decode_tps": 29.888773753043886,
+        "decode_gain_pct": 1.2304760999245046,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 175.756,
+        "B_prompt_ms": 213.39,
+        "prefill_tps_gain_pct": -17.636252870331315,
+        "A_decode_tps": 29.324321453673573,
+        "B_decode_tps": 28.37530383359292,
+        "decode_gain_pct": -3.2362816018775,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mode_mib": 2928,
+      "A_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 616,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22210628
+      },
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mode_mib": 2928,
+      "B_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22206696
+      }
+    },
+    {
+      "pair": 5,
+      "cold": {
+        "A_prompt_ms": 13121.972,
+        "B_prompt_ms": 12607.052,
+        "prefill_tps_gain_pct": 4.084380710097801,
+        "A_decode_tps": 27.678252303615174,
+        "B_decode_tps": 29.30698443129912,
+        "decode_gain_pct": 5.884519404685129,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "repeat": {
+        "A_prompt_ms": 164.792,
+        "B_prompt_ms": 166.39,
+        "prefill_tps_gain_pct": -0.9603942544623933,
+        "A_decode_tps": 27.968652206065983,
+        "B_decode_tps": 27.40447275520685,
+        "decode_gain_pct": -2.0171849780332707,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mode_mib": 2928,
+      "A_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 4,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22213876
+      },
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mode_mib": 2928,
+      "B_resources": {
+        "swap_max_kib": 0,
+        "system_swapout_pages": 0,
+        "major_faults_block": 0,
+        "rss_peak_kib": 22212812
+      }
+    }
+  ],
+  "medians": {
+    "prefill_gain_pct": 2.8843868531343464,
+    "cold_decode_gain_pct": 1.2304760999245046,
+    "repeat_decode_gain_pct": -0.0027158906763524726
+  }
+}

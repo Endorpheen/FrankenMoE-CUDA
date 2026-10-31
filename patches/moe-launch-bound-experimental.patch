@@ -1,0 +1,208 @@
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -1,6 +1,7 @@
+ #include "llama-context.h"
+ 
+ #include "ggml.h"
++#include "llama-moe-bound.h"
+ #include "llama-arch.h"
+ #include "llama-graph.h"
+ #include "llama-impl.h"
+@@ -2860,13 +2861,14 @@
+     if (ggml_graph_n_nodes(graph) == 0) {
+         return false;
+     }
+-    const ggml_tensor * node = ggml_graph_node(graph, 0);
++    ggml_tensor * node = ggml_graph_node(graph, 0);
+     if (node->op != GGML_OP_MUL_MAT_ID || node->src[0] != dst) {
+         return false;
+     }
+ 
+     const ggml_tensor * ids = node->src[2];
+     if (ggml_nelements(ids) == 0) {
++        ggml_moe_set_launch_bound(graph, node, 0, 0);
+         return true;
+     }
+ 
+@@ -2874,10 +2876,12 @@
+     const size_t  expert_size = src->nb[2];
+ 
+     if (ids != st.ids || (int64_t) st.used.size() != n_expert) {
+-        st.ids_data.resize(ggml_nbytes(ids)/sizeof(int32_t));
++        // The trailing host-only word caches a bound; it is never included in D2H.
++        st.ids_data.resize(ggml_nbytes(ids)/sizeof(int32_t) + 1);
+         ggml_backend_tensor_get_async(backend, ids, st.ids_data.data(), 0, ggml_nbytes(ids));
+         ggml_backend_synchronize(backend);
+ 
++        st.ids_data.back() = 0;
+         st.used.assign(n_expert, false);
+         for (int64_t i1 = 0; i1 < ids->ne[1]; i1++) {
+             for (int64_t i0 = 0; i0 < ids->ne[0]; i0++) {
+@@ -2889,6 +2893,49 @@
+ 
+         st.ids = ids;
+     }
++
++    // MUL_MAT_ID op_params[4] is a private CUDA launch bound, not an average.
++    int32_t launch_bound = 0;
++    static const bool expert_bound_enabled = []() {
++        const char * env = getenv("GGML_MOE_EXPERT_BOUND");
++        return !env || atoi(env) != 0;
++    }();
++    int granularity = 0;
++    if (expert_bound_enabled && lctx->model.arch == LLM_ARCH_QWEN35MOE &&
++        llama_lazy_pp_reserving_enabled(lctx->cparams, lctx->model.hparams, lctx->backend_ptrs) &&
++        !lctx->moe_cache && ids->ne[1] > 128 &&
++        (src->type == GGML_TYPE_Q4_K || src->type == GGML_TYPE_Q6_K)) {
++        auto get_granularity = (int (*)(ggml_backend_t, const ggml_tensor *)) ggml_backend_reg_get_proc_address(
++            ggml_backend_dev_backend_reg(ggml_backend_get_device(backend)),
++            "ggml_backend_moe_launch_bound_granularity_v1");
++        if (get_granularity) {
++            granularity = get_granularity(backend, node);
++        }
++    }
++    if (granularity > 0) {
++        if (st.ids_data.back() == 0) {
++            std::vector<int32_t> counts(n_expert, 0);
++            int32_t maximum = 0;
++            for (int64_t i1 = 0; i1 < ids->ne[1]; ++i1) {
++                for (int64_t i0 = 0; i0 < ids->ne[0]; ++i0) {
++                    const int32_t id = st.ids_data[i1*ids->nb[1]/sizeof(int32_t) + i0*ids->nb[0]/sizeof(int32_t)];
++                    GGML_ASSERT(id >= 0 && id < n_expert);
++                    maximum = std::max(maximum, ++counts[id]);
++                }
++            }
++            st.ids_data.back() = maximum;
++        }
++        const int32_t maximum = st.ids_data.back();
++        if (maximum > 0 && maximum <= ids->ne[1]) {
++            launch_bound = maximum;
++        }
++        if (getenv("GGML_MOE_EXPERT_BOUND_DIAG")) {
++            fprintf(stderr, "MOE_BOUND host %s tokens=%lld experts=%lld maximum=%d\n",
++                src->name, (long long) ids->ne[1], (long long) n_expert, launch_bound);
++        }
++    }
++
++    ggml_moe_set_launch_bound(graph, node, launch_bound, granularity);
+ 
+     // group consecutive experts and copy them together
+     for (int64_t first = 0; first < n_expert; ) {
+--- /dev/null
++++ b/src/llama-moe-bound.h
+@@ -0,0 +1,25 @@
++#pragma once
++#include "../ggml/src/ggml-impl.h"
++
++static inline int32_t ggml_moe_launch_bound_value(const struct ggml_tensor * node, int32_t bound, int granularity) {
++    GGML_ASSERT(node->op == GGML_OP_MUL_MAT_ID);
++    if (bound <= 0 || granularity <= 0 || !node->src[2]) {
++        return 0;
++    }
++    const int64_t tokens = node->src[2]->ne[1];
++    const int64_t rounded = ((int64_t) bound + granularity - 1) / granularity * granularity;
++    if (bound > tokens || rounded > INT32_MAX) {
++        return 0;
++    }
++    return (int32_t) (rounded < tokens ? rounded : tokens);
++}
++
++static inline void ggml_moe_set_launch_bound(struct ggml_cgraph * graph, struct ggml_tensor * node,
++        int32_t bound, int granularity) {
++    const int32_t next = ggml_moe_launch_bound_value(node, bound, granularity);
++    if (node->op_params[4] != next) {
++        node->op_params[4] = next;
++        // Cache identity follows the effective tile grid, not irrelevant raw-count changes.
++        graph->uid = 0;
++    }
++}
+--- a/ggml/src/ggml-cuda/mmq.cu
++++ b/ggml/src/ggml-cuda/mmq.cu
+@@ -340,6 +340,29 @@
+                                          ne11 * ne10_padded * sizeof(block_q8_1) / (QK8_1 * sizeof(int));
+     const int64_t s13 = ne12*s12;
+ 
++    int64_t ncols_max = ne12;
++    const int32_t expert_bound = ggml_get_op_params_i32(dst, 4);
++    if (cc == GGML_CUDA_CC_ADA_LOVELACE &&
++        (src0->type == GGML_TYPE_Q4_K || src0->type == GGML_TYPE_Q6_K) &&
++        expert_bound > 0 && expert_bound <= ne12) {
++        const auto config = ggml_cuda_mmq_get_config(src0->type, J_best, fallback, cc, prec_src1);
++        const int64_t rows = (ne01 + config.I - 1) / config.I;
++        const int64_t old_tiles = rows * ((ne12 + config.J - 1) / config.J) * ne02;
++        const int64_t new_tiles = rows * ((expert_bound + config.J - 1) / config.J) * ne02;
++        const int64_t nsm = ggml_cuda_info().devices[id].nsm;
++        const auto tiled_efficiency = [nsm](int64_t tiles) {
++            return 100 * tiles / (nsm * ((tiles + nsm - 1) / nsm));
++        };
++        // Keep whole-K tiles on both paths; never change reduction/fixup order.
++        if (!config.stream_k || (tiled_efficiency(old_tiles) >= 90 && tiled_efficiency(new_tiles) >= 90)) {
++            ncols_max = expert_bound;
++        }
++    }
++    if (getenv("GGML_MOE_EXPERT_BOUND_DIAG")) {
++        fprintf(stderr, "MOE_BOUND cuda %s tokens=%lld maximum=%lld J=%d\n",
++            src0->name, (long long) ne12, (long long) ncols_max, J_best);
++    }
++
+     // Note that ne02 is used instead of ne12 because the number of y channels determines the z dimension of the CUDA grid.
+     const mmq_args args = {
+         src0_d, src0->type, (const int *) src1_q8_1.get(), ids_dst.get(), expert_bounds.get(), dst_d,
+@@ -347,7 +370,7 @@
+         ne00, ne01, ne_get_rows, s01, ne_get_rows, s1,
+         ne02, ne02, s02, s12, s2,
+         ne03, ne13, s03, s13, s3,
+-        ne12, J_best};
++        ncols_max, J_best};
+ 
+     ggml_cuda_mul_mat_q_switch_type(ctx, args, stream, prec_src1);
+ }
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -6775,8 +6775,46 @@
+     GGML_UNUSED(reg);
+ }
+ 
++static bool ggml_backend_cuda_moe_launch_bound_supported(ggml_backend_t backend) {
++    if (!ggml_backend_is_cuda(backend)) {
++        return false;
++    }
++    auto * ctx = (ggml_backend_cuda_context *) backend->context;
++    return ggml_cuda_info().devices[ctx->device].cc == GGML_CUDA_CC_ADA_LOVELACE;
++}
++
++static int ggml_backend_cuda_moe_launch_bound_granularity(ggml_backend_t backend, const ggml_tensor * node) {
++    if (!ggml_backend_cuda_moe_launch_bound_supported(backend) || !node ||
++        node->op != GGML_OP_MUL_MAT_ID || !node->src[0] || !node->src[2]) {
++        return 0;
++    }
++    const auto * weights = node->src[0];
++    const int64_t tokens = node->src[2]->ne[1];
++    if ((weights->type != GGML_TYPE_Q4_K && weights->type != GGML_TYPE_Q6_K) || tokens <= 128) {
++        return 0;
++    }
++    // A strict improvement over J=120 proves that the existing selector picks J=128.
++    if ((tokens + 127)/128 >= (tokens + 119)/120) {
++        return 0;
++    }
++    auto * ctx = (ggml_backend_cuda_context *) backend->context;
++    const auto & device = ggml_cuda_info().devices[ctx->device];
++    const auto config = ggml_cuda_mmq_get_config(weights->type, 128,
++        ggml_cuda_mmq_needs_fallback(weights->ne[1]), device.cc, GGML_PREC_Q8);
++    if (config.type == GGML_TYPE_COUNT || mmq_get_nbytes_shared(config, device.cc) > device.smpbo) {
++        return 0;
++    }
++    return 128;
++}
++
+ static void * ggml_backend_cuda_reg_get_proc_address(ggml_backend_reg_t reg, const char * name) {
+     GGML_UNUSED(reg);
++    if (strcmp(name, "ggml_backend_moe_launch_bound_granularity_v1") == 0) {
++        return (void *) ggml_backend_cuda_moe_launch_bound_granularity;
++    }
++    if (strcmp(name, "ggml_backend_moe_launch_bound_supported_v1") == 0) {
++        return (void *) ggml_backend_cuda_moe_launch_bound_supported;
++    }
+     if (strcmp(name, "ggml_backend_expert_pipeline_v1") == 0) {
+         return (void *) ggml_backend_cuda_expert_pipeline;
+     }

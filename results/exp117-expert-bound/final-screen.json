@@ -1,0 +1,32 @@
+{
+  "correctness": [
+    true,
+    0.0,
+    "identical ids; max probability delta 0"
+  ],
+  "prompt_ms": 13019.648,
+  "decode_tps": 28.269809735276603,
+  "fixed_control_prompt_ms": 13024.3755,
+  "observed_prefill_gain_pct": 0.03631050547603376,
+  "resource_gates": {
+    "A1v3": {
+      "covered": true,
+      "swapout_pages": 0,
+      "major_faults": 0,
+      "process_swap_max_kib": 0
+    },
+    "A2v3": {
+      "covered": true,
+      "swapout_pages": 0,
+      "major_faults": 0,
+      "process_swap_max_kib": 0
+    },
+    "BscreenV4final": {
+      "covered": true,
+      "swapout_pages": 0,
+      "major_faults": 0,
+      "process_swap_max_kib": 0
+    }
+  },
+  "qualified_to_continue": false
+}
