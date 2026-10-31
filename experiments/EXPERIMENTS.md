@@ -1,5 +1,19 @@
 # Experiment log
 
+## EXP-2026-10-31-132: native one-token speculation
+
+- Status: REJECTED for promotion against EXP107; no engine/runtime changes.
+- Clean code screen: control28.8954tok/s, MTP19.3578, map-k27.5772,
+  map-k4v27.0720, mod27.9262, simple1/1 20.6157. Single observations only.
+- All selected IDs match; MTP/simple1 fail strict top5/probability gate.
+  MTP peak/retained3762/3342MiB versus3348/2928MiB; ngram unchanged.
+- Six long-request windows contaminated by system swap-out; initial code
+  control has2 major faults. End control/all candidate code windows clean.
+- Five native methods screened,16 manual requests including controls and
+  inactive-simple replacement. EXP107 restored; no positive speed claim.
+- [Card](EXP-2026-10-31-132-speculative-one-token.md),
+  [report](../results/exp132-spec-one-token/README.md).
+
 ## EXP-2026-10-31-117: routing-aware GPU MoE launch bounds
 
 - Status: REJECTED for promotion against accepted EXP107.

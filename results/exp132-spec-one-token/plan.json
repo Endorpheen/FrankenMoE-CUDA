@@ -1,0 +1,27 @@
+{
+  "reference_commit": "d73f7d59bd0b50a4f0310759be25af61961cbfd1",
+  "reference_manifest": "results/exp107-expert-overlap/runtime-manifest.json",
+  "hypothesis": "One-token speculative verification can amortize CPU expert weight reads enough to exceed draft and recurrent rollback costs. No new weights or arithmetic changes.",
+  "fixed_profiles": [
+    "none",
+    "draft-mtp",
+    "ngram-simple",
+    "ngram-map-k",
+    "ngram-map-k4v",
+    "ngram-mod"
+  ],
+  "draft_limit": 1,
+  "workloads": [
+    "32768-token frozen prompt / 128 greedy output",
+    "repeated Python source / 256 greedy output"
+  ],
+  "protocol": "Manual sequential requests, fresh process per profile, fixed EXP107 full-context placement. One diagnostic screen per profile; no performance promotion from single observations. Verify greedy token IDs and target top5 probability deltas <=0.001; report failures without relaxing tolerance. Separate matched-prefix regression and temperature1 stochastic check only for eligible candidates.",
+  "stop": "Stop a failing profile without a tuning sweep. No downloads or baseline change. Restore accepted EXP107.",
+  "excluded": {
+    "ngram-cache": "Native implementation fixes draft length at 8; no one-token CLI setting.",
+    "draft-simple": "No compatible small draft selected; no unapproved weights download.",
+    "eagle/dflash/dspark": "No verified target-specific Apex drafter."
+  },
+  "status": "REJECTED_FOR_PROMOTION",
+  "protocol_amendment": "After discovering native ngram-simple refuses size_m < size_n, add exactly one valid key1/value1 diagnostic (S2). Add end control A2 to check drift. No broad sweep."
+}

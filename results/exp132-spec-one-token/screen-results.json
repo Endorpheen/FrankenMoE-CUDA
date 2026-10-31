@@ -1,0 +1,702 @@
+{
+  "status": "REJECTED_FOR_PROMOTION",
+  "scope": "One-token native speculation diagnostic screen; not a five-pair acceptance benchmark",
+  "requests": {
+    "A1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 13193.642,
+        "prompt_per_token_ms": 0.40263800048828124,
+        "prompt_per_second": 2483.620519641203,
+        "predicted_n": 128,
+        "predicted_ms": 4519.703,
+        "predicted_per_token_ms": 35.5882125984252,
+        "predicted_per_second": 28.099191473422035
+      },
+      "client_total_s": 17.723204,
+      "client_ttft_s": 13.203439,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 149,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21824472,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "5fcba86dbabe312dd46c0e82e1cdfda4527468300a9999634a4c1a5642e88d79",
+      "observed_decode_delta_vs_control_range_pct": [
+        0.0,
+        1.4337225255730113
+      ]
+    },
+    "A1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 986.488,
+        "prompt_per_token_ms": 1.1757902264600715,
+        "prompt_per_second": 850.4918458207296,
+        "predicted_n": 256,
+        "predicted_ms": 8762.032,
+        "predicted_per_token_ms": 34.360909803921565,
+        "predicted_per_second": 29.102838245740262
+      },
+      "client_total_s": 9.751687,
+      "client_ttft_s": 1.187295,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 2,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21824472,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "4de77738883b6c4deff655894c43823e29c490d0d3c00e652d72de5bf4b90b72",
+      "observed_decode_delta_vs_control_range_pct": [
+        0.0,
+        0.7178700100616053
+      ]
+    },
+    "M1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 15921.078,
+        "prompt_per_token_ms": 0.48587274169921874,
+        "prompt_per_second": 2058.152092465096,
+        "predicted_n": 128,
+        "predicted_ms": 7843.732,
+        "predicted_per_token_ms": 61.761669291338585,
+        "predicted_per_second": 16.191272215827873,
+        "draft_n": 74,
+        "draft_n_accepted": 53
+      },
+      "client_total_s": 23.777181,
+      "client_ttft_s": 15.930888,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 1031,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3740,
+      "sampled_vram_end_mib": 3340,
+      "rss_peak_kib": 22717276,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 1.520735537447646e-07,
+        "description": "identical ids; max probability delta 1.521e-07",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "a8fbfe8d153c65292ea3acc59b4d87839d2fff47d763d11073b45486a9664b25",
+      "observed_decode_delta_vs_control_range_pct": [
+        -42.37815621441426,
+        -41.552018860409824
+      ]
+    },
+    "M1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 1003.479,
+        "prompt_per_token_ms": 1.1960417163289632,
+        "prompt_per_second": 836.0912385809768,
+        "predicted_n": 256,
+        "predicted_ms": 13172.989,
+        "predicted_per_token_ms": 51.658780392156864,
+        "predicted_per_second": 19.357793436250496,
+        "draft_n": 127,
+        "draft_n_accepted": 127
+      },
+      "client_total_s": 14.180797,
+      "client_ttft_s": 1.31912,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3762,
+      "sampled_vram_end_mib": 3342,
+      "rss_peak_kib": 22717276,
+      "correctness_vs_A1": {
+        "gate_passed": false,
+        "maximum_probability_delta": 0.0038993959897367647,
+        "description": "Selected IDs match; ordered top5 or probability gate failed",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": false,
+        "first_ordered_top5_mismatch": 185
+      },
+      "response_sha256": "11a9dbc133fa7772a64d5cc24aad5878796f7fcc46007eb75184b67aae888fe4",
+      "observed_decode_delta_vs_control_range_pct": [
+        -33.484860573405186,
+        -33.00736833531099
+      ]
+    },
+    "S1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 13110.282,
+        "prompt_per_token_ms": 0.4000940551757812,
+        "prompt_per_second": 2499.4122933434996,
+        "predicted_n": 128,
+        "predicted_ms": 4497.017,
+        "predicted_per_token_ms": 35.40958267716535,
+        "predicted_per_second": 28.240942829435603
+      },
+      "client_total_s": 17.617652,
+      "client_ttft_s": 13.11959,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 89,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21824760,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "836403181723b49b86e3d81c5e185b1440e0e668e44a229f2a9292a763d01590",
+      "observed_decode_delta_vs_control_range_pct": [
+        0.5044677393925889,
+        1.9454229325795325
+      ]
+    },
+    "S1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 989.558,
+        "prompt_per_token_ms": 1.1794493444576877,
+        "prompt_per_second": 847.8532839914386,
+        "predicted_n": 256,
+        "predicted_ms": 8871.53,
+        "predicted_per_token_ms": 34.7903137254902,
+        "predicted_per_second": 28.74363272175149
+      },
+      "client_total_s": 9.864502,
+      "client_ttft_s": 1.191303,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21824760,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "8c12fefb977c131dfe1bef59ad0ef2e9bd377d99dc0b3e085238160c5fd9713e",
+      "observed_decode_delta_vs_control_range_pct": [
+        -1.2342628610848672,
+        -0.5252532539483101
+      ]
+    },
+    "K1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 13250.252,
+        "prompt_per_token_ms": 0.4043656005859375,
+        "prompt_per_second": 2473.0095699311983,
+        "predicted_n": 128,
+        "predicted_ms": 4627.827,
+        "predicted_per_token_ms": 36.439582677165355,
+        "predicted_per_second": 27.44268530349125
+      },
+      "client_total_s": 17.888736,
+      "client_ttft_s": 13.259451,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 210,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21826244,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "69007cc0a7a7431b5dc179a066207893fd60574cd198deb468e1e339e13df8da",
+      "observed_decode_delta_vs_control_range_pct": [
+        -2.3363881147674626,
+        -0.936162911880678
+      ]
+    },
+    "K1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 995.046,
+        "prompt_per_token_ms": 1.1859904648390942,
+        "prompt_per_second": 843.1770993501807,
+        "predicted_n": 256,
+        "predicted_ms": 9246.758,
+        "predicted_per_token_ms": 36.261796078431374,
+        "predicted_per_second": 27.57723301507404,
+        "draft_n": 75,
+        "draft_n_accepted": 71
+      },
+      "client_total_s": 10.246884,
+      "client_ttft_s": 1.167389,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21840648,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "7731cefc099bbdec0d5ff6975787b3bbc6e22bd665ad241464204369cee66ee5",
+      "observed_decode_delta_vs_control_range_pct": [
+        -5.2421183727313085,
+        -4.5618799583594605
+      ]
+    },
+    "V1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 13170.36,
+        "prompt_per_token_ms": 0.401927490234375,
+        "prompt_per_second": 2488.010957938887,
+        "predicted_n": 128,
+        "predicted_ms": 4448.855,
+        "predicted_per_token_ms": 35.03035433070866,
+        "predicted_per_second": 28.546670997368988
+      },
+      "client_total_s": 17.629303,
+      "client_ttft_s": 13.179681,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 496,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21825832,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "0d2097cb156768c49c733ad0ccc0c3b4162f87f62536c19afcf168fdc8ec259f",
+      "observed_decode_delta_vs_control_range_pct": [
+        1.5924996431666338,
+        3.0490541948434036
+      ]
+    },
+    "V1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 991.331,
+        "prompt_per_token_ms": 1.1815625744934446,
+        "prompt_per_second": 846.3368945387564,
+        "predicted_n": 256,
+        "predicted_ms": 9419.329,
+        "predicted_per_token_ms": 36.938545098039214,
+        "predicted_per_second": 27.07199207077277,
+        "draft_n": 74,
+        "draft_n_accepted": 71
+      },
+      "client_total_s": 10.414565,
+      "client_ttft_s": 1.174401,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21837596,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "15e0506cdb5716cd6eeb96a1b69aac6817f2c667a53b5f13d1f0d2ad2891a64b",
+      "observed_decode_delta_vs_control_range_pct": [
+        -6.978172224369716,
+        -6.310396419957309
+      ]
+    },
+    "N1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 13222.457,
+        "prompt_per_token_ms": 0.40351736450195314,
+        "prompt_per_second": 2478.208097027655,
+        "predicted_n": 128,
+        "predicted_ms": 4942.444,
+        "predicted_per_token_ms": 38.916881889763786,
+        "predicted_per_second": 25.69578937060288,
+        "draft_n": 2,
+        "draft_n_accepted": 0
+      },
+      "client_total_s": 18.175266,
+      "client_ttft_s": 13.232457,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 779,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21905976,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "824716d48c3e39bc28a9beb053b8e9acca12f9a2b05773856d179bc7d7e2bf9d",
+      "observed_decode_delta_vs_control_range_pct": [
+        -8.553278499463024,
+        -7.242186254411798
+      ]
+    },
+    "N1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 1079.876,
+        "prompt_per_token_ms": 1.287098927294398,
+        "prompt_per_second": 776.9410561953409,
+        "predicted_n": 256,
+        "predicted_ms": 9131.226,
+        "predicted_per_token_ms": 35.80872941176471,
+        "predicted_per_second": 27.926151428077674,
+        "draft_n": 64,
+        "draft_n_accepted": 60
+      },
+      "client_total_s": 10.214619,
+      "client_ttft_s": 1.273084,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21905336,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "ddbf4a482c8ed66e839a685cca0c0cea49aeac1b1419e6efb422d67a9d6f88ac",
+      "observed_decode_delta_vs_control_range_pct": [
+        -4.043202960916769,
+        -3.354357892357507
+      ]
+    },
+    "S2-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 13114.311,
+        "prompt_per_token_ms": 0.40021701049804687,
+        "prompt_per_second": 2498.644419825029,
+        "predicted_n": 128,
+        "predicted_ms": 7578.373,
+        "predicted_per_token_ms": 59.67222834645669,
+        "predicted_per_second": 16.758214461072317,
+        "draft_n": 43,
+        "draft_n_accepted": 12
+      },
+      "client_total_s": 20.702205,
+      "client_ttft_s": 13.125113,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21889364,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "023c095c0c43944ffd03474e2e2b737332149fddfdcde685eb05d4b1b518e1e9",
+      "observed_decode_delta_vs_control_range_pct": [
+        -40.360510098935485,
+        -39.505445298087075
+      ]
+    },
+    "S2-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 1037.56,
+        "prompt_per_token_ms": 1.236662693682956,
+        "prompt_per_second": 808.6279347700374,
+        "predicted_n": 256,
+        "predicted_ms": 12369.193,
+        "predicted_per_token_ms": 48.50663921568627,
+        "predicted_per_second": 20.615734591577638,
+        "draft_n": 127,
+        "draft_n_accepted": 72
+      },
+      "client_total_s": 13.410544,
+      "client_ttft_s": 1.386265,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21889364,
+      "correctness_vs_A1": {
+        "gate_passed": false,
+        "maximum_probability_delta": 0.0038993959897367647,
+        "description": "Selected IDs match; ordered top5 or probability gate failed",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": false,
+        "first_ordered_top5_mismatch": 185
+      },
+      "response_sha256": "17b9aa694f57e8dec710a18c3e8715f701b7b92e4297dfe72532042bb7499ab6",
+      "observed_decode_delta_vs_control_range_pct": [
+        -29.162460315721507,
+        -28.65393886246258
+      ]
+    },
+    "A2-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 13051.59,
+        "prompt_per_token_ms": 0.39830291748046875,
+        "prompt_per_second": 2510.6519588801057,
+        "predicted_n": 128,
+        "predicted_ms": 4584.503,
+        "predicted_per_token_ms": 36.09844881889764,
+        "predicted_per_second": 27.702021353241562
+      },
+      "client_total_s": 17.647419,
+      "client_ttft_s": 13.062413,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21820924,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 128,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "ed943de521a5c0b318f9aa27a35cbea8e9ccb5a19f7d3ed909fc051e5cb28b81",
+      "observed_decode_delta_vs_control_range_pct": [
+        -1.4134574674724787,
+        0.0
+      ]
+    },
+    "A2-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 1031.167,
+        "prompt_per_token_ms": 1.2290429082240761,
+        "prompt_per_second": 813.6412433679511,
+        "predicted_n": 256,
+        "predicted_ms": 8824.932,
+        "predicted_per_token_ms": 34.607576470588235,
+        "predicted_per_second": 28.895406786137276
+      },
+      "client_total_s": 9.859593,
+      "client_ttft_s": 1.240674,
+      "resource_gates": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "sampled_vram_peak_mib": 3348,
+      "sampled_vram_end_mib": 2928,
+      "rss_peak_kib": 21820924,
+      "correctness_vs_A1": {
+        "gate_passed": true,
+        "maximum_probability_delta": 0.0,
+        "description": "identical ids; max probability delta 0",
+        "token_ids_exact": true,
+        "compared_tokens": 256,
+        "ordered_top5_exact": true,
+        "first_ordered_top5_mismatch": null
+      },
+      "response_sha256": "211acabb87fc5a34f8bdfeabc4cccaa8c7ec76181a8f489519a7f819f0ec7ef9",
+      "observed_decode_delta_vs_control_range_pct": [
+        -0.7127533673914055,
+        0.0
+      ]
+    }
+  },
+  "control_drift": {
+    "long": {
+      "range_tps": [
+        27.702021353241562,
+        28.099191473422035
+      ],
+      "last_vs_first_pct": -1.4134574674724787
+    },
+    "code": {
+      "range_tps": [
+        28.895406786137276,
+        29.102838245740262
+      ],
+      "last_vs_first_pct": -0.7127533673914055
+    }
+  },
+  "qualification_notes": {
+    "long": "A1/M1/S1/K1/V1/N1 full request windows contain system swap-out and are excluded from clean full-request performance claims. S2/A2 clean.",
+    "code": "A1 contains 2 major faults. Use resource-clean A2 as the diagnostic performance control. All candidate code requests fully covered and resource-clean.",
+    "correctness": "All selected token IDs match both controls. M1-code and S2-code fail strict ordered-top5/probability gates; tolerance0.001 unchanged.",
+    "scope": "No five-pair acceptance, quality/stochastic/prefix-session expansion: no candidate qualifies."
+  },
+  "qualified_code_screen": {
+    "M1": {
+      "decode_tps": 19.357793436250496,
+      "observed_delta_vs_A2_pct": -33.00736833531099,
+      "drafted": 127,
+      "accepted": 127,
+      "eligible_for_acceptance": false,
+      "reason": "Strict top5/probability gate failed"
+    },
+    "S1": {
+      "decode_tps": 28.74363272175149,
+      "observed_delta_vs_A2_pct": -0.5252532539483101,
+      "drafted": 0,
+      "accepted": 0,
+      "eligible_for_acceptance": false,
+      "reason": "No drafts actually generated"
+    },
+    "K1": {
+      "decode_tps": 27.57723301507404,
+      "observed_delta_vs_A2_pct": -4.5618799583594605,
+      "drafted": 75,
+      "accepted": 71,
+      "eligible_for_acceptance": false,
+      "reason": "Observed slower than clean control"
+    },
+    "V1": {
+      "decode_tps": 27.07199207077277,
+      "observed_delta_vs_A2_pct": -6.310396419957309,
+      "drafted": 74,
+      "accepted": 71,
+      "eligible_for_acceptance": false,
+      "reason": "Observed slower than clean control"
+    },
+    "N1": {
+      "decode_tps": 27.926151428077674,
+      "observed_delta_vs_A2_pct": -3.354357892357507,
+      "drafted": 64,
+      "accepted": 60,
+      "eligible_for_acceptance": false,
+      "reason": "Observed slower than clean control"
+    },
+    "S2": {
+      "decode_tps": 20.615734591577638,
+      "observed_delta_vs_A2_pct": -28.65393886246258,
+      "drafted": 127,
+      "accepted": 72,
+      "eligible_for_acceptance": false,
+      "reason": "Strict top5/probability gate failed"
+    }
+  }
+}
