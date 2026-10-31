@@ -1,0 +1,9 @@
+{
+  "status": "FEASIBILITY_CONFIRMED_NO_PROMOTION",
+  "goal": "Establish a constrained Goose-to-C-to-CUDA device function path and compare CUDA call overhead from AOT Goose and C++; no production integration.",
+  "compiler": "aardappel/goose v2026.3 /8511ae3; archive SHA25606ac30284338269d3996d457412bf4f2b47c1f9a5601de65b6317187fe78d5c9",
+  "kernel": "FP32 SiLU-gate, pure scalar function written in Goose; restricted generated-C device translation; native CUDA math/order reference.",
+  "scope": "The generated device function must not call Goose runtime, allocate, use TLS, or retain CPU pointers. This is a custom restricted path, not an upstream CUDA backend. C ABI bridge launches/owns CUDA resources.",
+  "protocol": "Build/check first, then correctness over representative dimensions/tails/extremes and CUDA memcheck; sequential native and Goose host launch loops with identical shared CUDA bridge and paired order. No model requests or speedup claims for full Apex.",
+  "acceptance": "Record toolchain/build success, actual device execution and max errors. Report both host enqueue/full synchronized time and GPU event time. Any launch overhead claim is local to the fixed probe. No default switch."
+}

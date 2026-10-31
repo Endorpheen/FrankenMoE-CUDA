@@ -1,0 +1,54 @@
+{
+  "source/feature_probe.goose": {
+    "sha256": "71d908d7f8006f4027aeba05fc443970b5780451a57cd93ee6f2016d8490de3c",
+    "bytes": 538
+  },
+  "source/emit_cuda.py": {
+    "sha256": "5bdafe2e44aa4a92dceb09990eb5803f7a774e5d9a40a836987eb171913e3032",
+    "bytes": 1365
+  },
+  "source/silu_gate.goose": {
+    "sha256": "9a4f1e04d86daeae7840a7686502753664d9a714029a3d113ef9b63888dfe120",
+    "bytes": 159
+  },
+  "source/feature_driver.c": {
+    "sha256": "255818fd59261f60d148804b5ec398e91155b1625fe15b4998dafbf4bbfd2a31",
+    "bytes": 237
+  },
+  "source/launch_loop.goose": {
+    "sha256": "ebd2d6389fd60517de402832e27eeb1c0c439c0055843e41e1fb28ba81daa27b",
+    "bytes": 148
+  },
+  "source/probe.cu": {
+    "sha256": "47803d2d95c26c6eec09f40aeb6fb0bd532a98c9f644f12e7098dae7d3b5fa94",
+    "bytes": 4597
+  },
+  "build/silu_gate.c": {
+    "sha256": "a66ef1450641811504ced2f8f2f2e5df7406e5855e76444cc00767c4a07dc979",
+    "bytes": 157452
+  },
+  "build/launch_loop.c": {
+    "sha256": "977ad7fbfa1ddc264d1720e2f52adc4121ebf85ee489b033f10c051162e111a3",
+    "bytes": 157220
+  },
+  "build/feature_probe.c": {
+    "sha256": "3fd76a36dc7e03722dc8979d4cb094437575d5fb48bebbdb97d5c2346e60747f",
+    "bytes": 162273
+  },
+  "build/probe": {
+    "sha256": "4d8d5734d8bd0154bae9edaf083cd1aa30dac92b87b5e2767536dc54beab6b8b",
+    "bytes": 1024144
+  },
+  "build/probe-v1": {
+    "sha256": "2e2f95109b95015ec13c08b33b48ec22b98a7e9ef1abd42dbf65188822b42ab5",
+    "bytes": 1024144
+  },
+  "build/feature_driver": {
+    "sha256": "11fcec2ddd35d8ea420011293b8e4390802bedc1c9697ef3da8a9270f8bec5d3",
+    "bytes": 18464
+  },
+  "toolchain/goose-v2026.3-linux-x64.tar.gz": {
+    "sha256": "06ac30284338269d3996d457412bf4f2b47c1f9a5601de65b6317187fe78d5c9",
+    "bytes": 11313561
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "input_generated_c_sha256": "a66ef1450641811504ced2f8f2f2e5df7406e5855e76444cc00767c4a07dc979",
+  "device_cuh_sha256": "bb3182c3f6dc47074b578cfba57fb8d2f8e6c1f76bb4f43fc1e99cb4da9e3bf9",
+  "transform": "Retain generated scalar arithmetic verbatim; add CUDA device/inline qualifiers; omit unreachable host diagnostic tail after unconditional return. No Goose runtime or host export wrapper on device.",
+  "scope": "Pinned pure-f32 scalar function only; not a general Goose CUDA compiler."
+}

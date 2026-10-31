@@ -1,5 +1,17 @@
 # Experiment log
 
+## EXP-2026-10-31-134: restricted Goose-to-C-to-CUDA path
+
+- Status: FEASIBILITY_CONFIRMED, no baseline promotion/model speed claim.
+- Real Goose scalar SiLU emitted to C, restricted device adaptation, NVCCsm89.
+  AOT Goose/C++ host loops use the identical CUDA C ABI bridge.
+- Six GPU correctness sizes exact, memcheck0; both kernels have identical
+  160-instruction disassembly.40 serial timing blocks, five pairs/case.
+- Empty-launch host enqueue1.66036us C++ /1.62352us Goose; observed-37ns
+  separation is not a demonstrated systematic penalty. EXP107 unchanged.
+- [Card](EXP-2026-10-31-134-goose-cuda-path.md),
+  [report](../results/exp134-goose-cuda/README.md).
+
 ## EXP-2026-10-31-132: native one-token speculation
 
 - Status: REJECTED for promotion against EXP107; no engine/runtime changes.
