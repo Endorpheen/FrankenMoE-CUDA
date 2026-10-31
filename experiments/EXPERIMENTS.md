@@ -1,5 +1,18 @@
 # Experiment log
 
+## EXP-2026-10-31-133: CPU MoE attribution and reuse bound
+
+- Status: DIAGNOSTIC_COMPLETE, no promotion. Four serial ordinary/MTP1
+  requests, full resource coverage/gates0, exact vs corresponding controls.
+- CPU Q4_K/Q6_K expert nodes dominate observed CPU work. Existing barrier
+  timing is attribution only; initialization/warmup included in counters.
+- MTP two-token routes:46566 pairs/397488 rows. Paired rows23.43%; maximum
+  weight-processing instances removed11.72%, not an achieved speedup.
+- Existing16-row tiles already reuse L1 weight lines. EXP107 restored,
+  all nine mapped hashes match. No production changes.
+- [Card](EXP-2026-10-31-133-cpu-verify-attribution.md),
+  [report](../results/exp133-cpu-verify-profile/README.md).
+
 ## EXP-2026-10-31-134: restricted Goose-to-C-to-CUDA path
 
 - Status: FEASIBILITY_CONFIRMED, no baseline promotion/model speed claim.

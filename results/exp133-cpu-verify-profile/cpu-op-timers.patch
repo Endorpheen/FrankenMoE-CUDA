@@ -1,0 +1,82 @@
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -1473,6 +1473,7 @@
+ 
+ // ggml_compute_forward_mul_mat_id
+ 
++static uint64_t exp133_routes[5][4];
+ #define MMID_MATRIX_ROW(row_id, i1) matrix_rows[(row_id)*ids->ne[0]*ids->ne[1] + (i1)]
+ 
+ struct mmid_row_mapping {
+@@ -1657,6 +1658,17 @@
+                 MMID_MATRIX_ROW(i02, matrix_row_counts[i02]) = (struct mmid_row_mapping) {id, iid1};
+                 matrix_row_counts[i02] += 1;
+             }
++        }
++    }
++
++    if (ith == 0 && getenv("GGML_CPU_OP_DIAG")) {
++        const int b = ids->ne[1] <= 1 ? 0 : ids->ne[1] == 2 ? 1 : ids->ne[1] <= 8 ? 2 : ids->ne[1] <= 32 ? 3 : 4;
++        exp133_routes[b][0]++;
++        for (int e = 0; e < n_as; ++e) {
++            const int64_t c = matrix_row_counts[e];
++            exp133_routes[b][1] += c > 0;
++            exp133_routes[b][2] += c;
++            exp133_routes[b][3] += c / 2;
+         }
+     }
+ 
+@@ -3098,6 +3110,28 @@
+     return 0;
+ }
+ 
++
++struct exp133_stat { uint64_t calls; uint64_t us; };
++static struct exp133_stat exp133_stats[GGML_OP_COUNT][GGML_TYPE_COUNT][5];
++static bool exp133_enabled(void) {
++    const char * e = getenv("GGML_CPU_OP_DIAG");
++    return e && atoi(e) != 0;
++}
++static int exp133_bucket(const struct ggml_tensor * node) {
++    int64_t n = node->op == GGML_OP_MUL_MAT_ID ? node->src[1]->ne[2] : node->ne[1];
++    return n <= 1 ? 0 : n == 2 ? 1 : n <= 8 ? 2 : n <= 32 ? 3 : 4;
++}
++__attribute__((destructor)) static void exp133_flush(void) {
++    if (!exp133_enabled()) return;
++    for (int b = 0; b < 5; ++b) fprintf(stderr, "EXP133_ROUTES bucket=%d calls=%" PRIu64 " used=%" PRIu64 " rows=%" PRIu64 " pairs=%" PRIu64 "\n", b, exp133_routes[b][0], exp133_routes[b][1], exp133_routes[b][2], exp133_routes[b][3]);
++    for (int op = 0; op < GGML_OP_COUNT; ++op)
++    for (int type = 0; type < GGML_TYPE_COUNT; ++type)
++    for (int b = 0; b < 5; ++b) {
++        struct exp133_stat * s = &exp133_stats[op][type][b];
++        if (s->calls) fprintf(stderr, "EXP133_STAT op=%s type=%s bucket=%d calls=%" PRIu64 " us=%" PRIu64 "\n", ggml_op_name(op), ggml_type_name(type), b, s->calls, s->us);
++    }
++}
++
+ static thread_ret_t ggml_graph_compute_thread(void * data) {
+     struct ggml_compute_state * state = (struct ggml_compute_state *) data;
+     struct ggml_threadpool    * tp    = state->threadpool;
+@@ -3138,6 +3172,12 @@
+             continue;
+         }
+ 
++        const bool exp133_active = state->ith == 0 && exp133_enabled();
++        const int64_t exp133_begin = exp133_active ? ggml_time_us() : 0;
++        const int exp133_type = node->src[0] ? node->src[0]->type : node->type;
++        const int exp133_op = node->op;
++        const int exp133_b = exp133_active ? exp133_bucket(node) : 0;
++
+         // TODO: move fused-op detection into ggml_graph_plan so fusion decisions are made once at planning time
+         // Try fused ops, fall back to normal compute
+         const int n_fused = ggml_cpu_try_fuse_ops(cgraph, node_n, &params, cplan);
+@@ -3155,6 +3195,11 @@
+ 
+         if (node_n + 1 < cgraph->n_nodes) {
+             ggml_barrier(state->threadpool);
++        }
++        if (exp133_active) {
++            struct exp133_stat * q = &exp133_stats[exp133_op][exp133_type][exp133_b];
++            q->calls++;
++            q->us += ggml_time_us() - exp133_begin;
+         }
+     }
+ 

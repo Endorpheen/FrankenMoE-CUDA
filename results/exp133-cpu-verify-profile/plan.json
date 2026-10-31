@@ -1,0 +1,11 @@
+{
+  "status": "DIAGNOSTIC_COMPLETE",
+  "reference_commit": "ff619f2278c33ece70cea8f9690ba6edb5125302",
+  "runtime_reference": "results/exp107-expert-overlap/runtime-manifest.json",
+  "hypothesis": "The one-token speculative slowdown may include serial per-token Q4_K/Q6_K expert dot products with no cross-token reuse. Measure per-node CPU elapsed time grouped by op, weight type and token batch before designing a multi-row kernel.",
+  "mechanism": "Diagnostic-only timers in a separate CPU library. No arithmetic, placement, or tensor scheduling changes; existing graph barriers retained.",
+  "workload": "Same fixed 32K/128 and code839/256 greedy fixtures as EXP132; plain and MTP1 profiles only; four manual requests, two serial processes.",
+  "gates": "Selected IDs exact and top5/probability tolerance0.001 relative to corresponding EXP132 profile. Record resource contamination. Diagnostic timing is attribution, not acceptance A/B.",
+  "stop": "Finish four requests, restore EXP107. No unmeasured kernel rewrite or broad parameter sweep.",
+  "routing_probe": "Count used expert/projection rows and potential adjacent row pairs from the existing matrix_row_counts, without new route downloads."
+}
