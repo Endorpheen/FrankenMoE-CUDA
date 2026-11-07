@@ -215,3 +215,25 @@ are objectives to validate, not established advantages.
 
 This note does not change the current Goose migration GOAL, its sequence, or
 priorities. No implementation, model conversion, or benchmark is scheduled.
+
+
+## Long-term research idea: GooseMP
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-07. Investigate GooseMP,
+our own OpenMP runtime implementation written in Fried Goose, after the full
+functional migration of FrankenMoE is complete.
+
+First measure the OpenMP runtime overhead in the completed FrankenMoE runtime.
+Then experimentally evaluate replacing OpenMP entirely with GooseMP, improving
+scheduling, synchronization, and thread management. The target is faster real
+Apex prefill/decode than the OpenMP baseline while preserving correctness;
+compare under reproducible, matched hardware and inference settings. A gain
+in an isolated scheduling operation is not proof of faster inference.
+
+If results are successful, consider OpenMP ABI compatibility and reuse in other
+projects. Building a systems-level multithreading library is also a substantial
+compiler capability test, including concurrency, synchronization, and resource
+lifetime management. ABI compatibility and performance gains remain hypotheses.
+
+This note schedules no implementation or experiment now and does not change the
+current Goose migration GOAL, task count, sequence, or priorities.

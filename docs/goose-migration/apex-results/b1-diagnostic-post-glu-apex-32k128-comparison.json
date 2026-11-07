@@ -1,0 +1,56 @@
+{
+  "experiment": "EXP-2026-11-07-144",
+  "purpose": "One owner-requested post-GLU diagnostic,not B1 acceptance",
+  "source_checkpoint": "9c0a69848e3d1dc034f2e005d9e2f4c8bd59b9bb",
+  "cpu_sha256": "506015599d0aa6baf4753effdd6cf6388f9b24e6b4b1041473b5b0e3465f1f25",
+  "completion_requests": 1,
+  "comparisons": {
+    "original": {
+      "exact": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      },
+      "first_token_divergence_index": null,
+      "matching_token_positions": 128,
+      "max_shared_top5_logprob_delta_before_divergence": 0.0,
+      "prefill_delta_percent": -8.009302768199111,
+      "decode_delta_percent": -3.215271532334363
+    },
+    "previous_b1": {
+      "exact": {
+        "content": false,
+        "tokens": false,
+        "completion_probabilities": false
+      },
+      "first_token_divergence_index": 5,
+      "matching_token_positions": 9,
+      "max_shared_top5_logprob_delta_before_divergence": 1.8503448963165283,
+      "prefill_delta_percent": 0.6568246425618041,
+      "decode_delta_percent": 1.2729830540420872
+    }
+  },
+  "identical_request_bytes": true,
+  "same_workload_argv": true,
+  "sixth_token_ids": {
+    "original": 38778,
+    "previous_b1": 5194,
+    "post_glu_b1": 38778
+  },
+  "liveness_process_counters": [
+    "FG143_CONTROL plans=5346 task_queries=0 dispatches=170378 jobs=5346 worker_jobs=42706",
+    "FG143_EXECUTOR worker_graphs=42706 worker_steps=170410 worker_fusions=0",
+    "FG143_CPU op=40 calls=138 values=67377152",
+    "FG143_CPU op=100 calls=42560 values=187105280",
+    "FG_SELFHOST_GRAPH enabled=1 walks=12 nodes=51876 leafs=9912 alloc_requests=141360 release_requests=17640 checks=0,0,0,0",
+    "FG_SELFHOST_LIFETIME enabled=1 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0",
+    "FG_SELFHOST_COALESCE enabled=1 calls=17628 shadow_checks=0 digest=10572808032351027271",
+    "FG_SELFHOST_ALLOC enabled=1 calls=17652 reuse_hits=14176 shadow_checks=0 digest=14202186473766031291"
+  ],
+  "liveness_scope": "Process totals include normal startup warmup and one request. Stateful Goose CPU path and lifetime transitions not witnessed; no every-module execution claim.",
+  "control_role": "Historical original and previous B1; no fresh paired native run or repeated series.",
+  "quality_scope": "Exact equivalence for this one fixed request only; not general quality/operator/type coverage.",
+  "performance_scope": "Uncontrolled external load; no speed acceptance or manual optimization.",
+  "production_changed": false,
+  "qwen_run": false
+}

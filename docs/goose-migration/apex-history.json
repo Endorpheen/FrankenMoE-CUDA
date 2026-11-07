@@ -90,6 +90,29 @@
       "raw_summary": "apex-results/b1-diagnostic-254-apex-32k128-summary.json",
       "liveness": "apex-results/b1-diagnostic-254-apex-32k128-liveness.json",
       "no_b1_acceptance": true
+    },
+    {
+      "stage": "B1 post-GLU diagnostic (EXP144)",
+      "role": "diagnostic",
+      "checkpoint": "9c0a69848e3d1dc034f2e005d9e2f4c8bd59b9bb",
+      "prefill": 2638.151316752945,
+      "decode": 27.078394724531705,
+      "rss_mib": 21313.88671875,
+      "anon_mib": 696.1171875,
+      "file_mib": 19963.953125,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        8.265625,
+        4.4033203125,
+        3.3525390625
+      ],
+      "correctness": "Exact text,all128token IDs and all saved top5/logprobs vs original; sixth-token divergence absent",
+      "status": "Owner-requested one-off post-GLU diagnostic,not B1 acceptance; historical controls,uncontrolled external load; no retry/tuning",
+      "raw_summary": "apex-results/b1-diagnostic-post-glu-apex-32k128-summary.json",
+      "comparison": "apex-results/b1-diagnostic-post-glu-apex-32k128-comparison.json",
+      "no_b1_acceptance": true
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",

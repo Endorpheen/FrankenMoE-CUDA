@@ -372,7 +372,7 @@
         "ggml/src/ggml-threading.*"
       ],
       "acceptance": "Goose owns partitioning,job queues,claims,barrier state,cancellation; only primitive OS atomics/thread waits imported;1/2/8/16thread deterministic outputs and termination.",
-      "evidence": "EXP143 Goose active OpenMP graph-job lifecycle and worker publication/barrier/result policy;326graph/status cases include1/2/8/16thread persistent pool,cancellation/recovery. Physical allocation/init,OS placement,expert chunk claims and non-OpenMP implementation remain native/incomplete.",
+      "evidence": "EXP143 Goose active OpenMP graph-job lifecycle and worker publication/barrier/result policy;326graph/status cases include1/2/8/16thread persistent pool,cancellation/recovery. Physical allocation/init,OS placement,expert chunk claims and non-OpenMP implementation remain native/incomplete. EXP144 actual fixed Apex request witnesses OpenMP job/controller execution with exact original response; no full non-OpenMP/expert-work-queue closure claim.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 58,
@@ -450,7 +450,7 @@
         "ggml/src/ggml-cpu/ops.cpp"
       ],
       "acceptance": "Every binary/unary/GLU variant,type,stride and special-value contract implemented; NaN payload discrepancy resolved or explicit compatibility contract agreed.",
-      "evidence": "EXP138 plus EXP143 scalar binary/unary/all7GLU subset. Actual Apex executes Goose GLU, but diagnostic response/logprobs differ from original C++; numerical/model equivalence and strict NaN payload gate remain open. Follow-up66-case functional suite covers wide2048-column GLU layouts and real Apex embedding on1/8/16threads:within prior tolerance,not universal bit equality; does not resolve model probability drift. EXP143 follow-up ports original AVX2 SWIGLU numerical contract into Goose:9/9wide cases byte-exact; GLU signed-zero selection corrected.326general and66Apex-contract cases pass scoped sanitizers. No new model request; full probability equivalence/NaN/type closure remain open.",
+      "evidence": "EXP138 plus EXP143 selected scalar/binary/unary/GLU. Original AVX2 SWIGLU math now Goose,9/9wide cases byte-exact;signed-zero clamp/OAI selection fixed. EXP144 one fixed Apex32768/128 request exactly matches original text/IDs/all saved top5. Full type/stride/NaN payload/ISA closure remains incomplete.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -685,7 +685,7 @@
         "ggml/src/ggml-cpu/ggml-cpu.c"
       ],
       "acceptance": "Entire operation dispatch,n_tasks/workspace planning,graph reuse,threadpool job lifecycle and abort status execute Goose; all operator entries traced.",
-      "evidence": "EXP143 Goose operation dispatch (96leaves),task-count/scratch policy and active OpenMP job lifecycle:960planning cases exact vs previous B1 and rollback;326graph/status cases pass;scoped sanitizers pass. Native backend scratch providers,pool physical initialization and OS/non-OpenMP paths remain; whole-model equivalence open.",
+      "evidence": "EXP143 Goose operation dispatch (96leaves),task-count/scratch policy and active OpenMP job lifecycle:960planning cases exact vs previous B1 and rollback;326graph/status cases pass;scoped sanitizers pass. Native backend scratch providers,pool physical initialization and OS/non-OpenMP paths remain; whole-model equivalence open. EXP144 actual Apex witnesses5346Goose plans/jobs,42706worker graphs and170378dispatches;one32768/128 response matches original text/IDs/top5 exactly. Provider/physical ownership/source closure still incomplete.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -3044,6 +3044,10 @@
     {
       "checkpoint": "EXP143 CPU control/job and numerical-contract checkpoint",
       "event": "Goose owns shared CPU plan/dispatch and active OpenMP graph-job policy.326/326graph/status,960/960planning/rollback and66/66Apex operator contracts pass with scoped sanitizers. SWIGLU9/9wide configurations now byte-exact after matching AVX2 math; GLU signed-zero difference repaired. Full Apex response equivalence remains open,no repeated model request/performance tuning. B1 is incomplete; residual source remains visible."
+    },
+    {
+      "checkpoint": "EXP144 post-GLU Apex diagnostic on9c0a698",
+      "event": "Exactly one owner-requested32768/128 request completes:pp2638.151,tg27.078,RSS21313.887MiB,VRAM3348MiB. All128tokens,text and all saved top5/logprobs exactly equal original C++; prior divergence at token index5 absent. Goose control/job/executor/GLU/GET_ROWS witnessed. Historical-control speed deltas remain preliminary,not B1 acceptance. No repeated series,optimization,Qwen or production change; continue B1 backend API/registry ownership."
     }
   ],
   "batches": [
