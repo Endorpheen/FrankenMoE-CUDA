@@ -1,0 +1,37 @@
+[
+  {
+    "label": "compile-lifecycle-fixture",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O2",
+      "-fno-strict-aliasing",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/source/expert-cache",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/ggml-cpu",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/source/expert-cache/lifecycle-fixture.cpp",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/build/lifecycle.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/cache-goose.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/budget-services.o",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run",
+      "-lggml-cpu",
+      "-lggml",
+      "-lggml-base",
+      "-l:libllama.so.0",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/build/lifecycle-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "lifecycle-local-functional",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/build/lifecycle-fixture"
+    ],
+    "exit_code": 0
+  }
+]

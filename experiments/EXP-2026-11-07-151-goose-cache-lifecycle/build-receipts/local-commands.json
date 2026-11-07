@@ -1,0 +1,64 @@
+[
+  {
+    "label": "emit-lifecycle",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/generated/cache-lifecycle.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/source/expert-cache/lifecycle.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-lifecycle",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-O2",
+      "-fPIC",
+      "-fno-strict-aliasing",
+      "-Werror=implicit-function-declaration",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/source/expert-cache/lifecycle-unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/build/lifecycle.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-cache-adapter",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-DGGML_BACKEND_SHARED",
+      "-DGGML_SHARED",
+      "-DGGML_USE_CPU",
+      "-DGGML_USE_CUDA",
+      "-DLLAMA_BUILD",
+      "-DLLAMA_SHARED",
+      "-Dllama_EXPORTS",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src/.",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src/../include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include",
+      "-O3",
+      "-DNDEBUG",
+      "-fPIC",
+      "-Wmissing-declarations",
+      "-Wmissing-noreturn",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wcast-qual",
+      "-Wno-unused-function",
+      "-Wno-array-bounds",
+      "-Wextra-semi",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/build/cache-cpp.o",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/source/expert-cache/llama-moe-cache.cpp"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,293 @@
+{"status":"PASS_LOCAL_NATIVE_GOOSE_CACHE_LIFECYCLE","cases":8397,"real_ggml_resources":true,"fake_model_metadata":true,"gpu_primitives":"CPU substitute;not CUDA or Apex"}
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 208 experts copied from the cache, 0.10 MiB
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 208 experts copied from the cache, 0.10 MiB
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 208 experts copied from the cache, 0.10 MiB
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 208 experts copied from the cache, 0.10 MiB
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    16 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 21, misses = 24, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+llama_moe_cache: ubatch <= 8: hits = 21, misses = 24, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 21, misses = 24, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+llama_moe_cache: ubatch <= 8: hits = 21, misses = 24, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 312 experts copied from the cache, 0.15 MiB
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  3 layers, f32:    24 slots (100.0%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+llama_moe_cache: ubatch <= 8: hits = 15, misses = 30, hit rate = 33.33%, uploaded = 0.04 MiB
+llama_moe_cache: large batches: 432 experts copied from the cache, 0.21 MiB
+llama_moe_cache: ubatch <= 8: hits = 15, misses = 30, hit rate = 33.33%, uploaded = 0.04 MiB
+llama_moe_cache: large batches: 432 experts copied from the cache, 0.21 MiB
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+llama_moe_cache: ubatch <= 8: hits = 15, misses = 30, hit rate = 33.33%, uploaded = 0.04 MiB
+llama_moe_cache: large batches: 432 experts copied from the cache, 0.21 MiB
+llama_moe_cache: ubatch <= 8: hits = 15, misses = 30, hit rate = 33.33%, uploaded = 0.04 MiB
+llama_moe_cache: large batches: 432 experts copied from the cache, 0.21 MiB
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.04 MiB of host experts
+impl:  3 layers, f32:    20 slots (83.3%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 248 experts copied from the cache, 0.12 MiB
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 248 experts copied from the cache, 0.12 MiB
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 248 experts copied from the cache, 0.12 MiB
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 248 experts copied from the cache, 0.12 MiB
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 372 experts copied from the cache, 0.18 MiB
+llama_moe_cache: ubatch <= 8: hits = 14, misses = 16, hit rate = 46.67%, uploaded = 0.02 MiB
+llama_moe_cache: large batches: 372 experts copied from the cache, 0.18 MiB
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     6 slots (75.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     6 slots (75.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 12, misses = 18, hit rate = 40.00%, uploaded = 0.03 MiB
+llama_moe_cache: large batches: 324 experts copied from the cache, 0.16 MiB
+llama_moe_cache: ubatch <= 8: hits = 12, misses = 18, hit rate = 40.00%, uploaded = 0.03 MiB
+llama_moe_cache: large batches: 324 experts copied from the cache, 0.16 MiB
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     6 slots (75.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     6 slots (75.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    15 slots (93.8%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    15 slots (93.8%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 19, misses = 26, hit rate = 42.22%, uploaded = 0.03 MiB
+llama_moe_cache: large batches: 326 experts copied from the cache, 0.16 MiB
+llama_moe_cache: ubatch <= 8: hits = 19, misses = 26, hit rate = 42.22%, uploaded = 0.03 MiB
+llama_moe_cache: large batches: 326 experts copied from the cache, 0.16 MiB
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 11, misses = 34, hit rate = 24.44%, uploaded = 0.03 MiB
+llama_moe_cache: large batches: 280 experts copied from the cache, 0.14 MiB
+llama_moe_cache: ubatch <= 8: hits = 11, misses = 34, hit rate = 24.44%, uploaded = 0.03 MiB
+llama_moe_cache: large batches: 280 experts copied from the cache, 0.14 MiB
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    15 slots (93.8%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.02 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:    15 slots (93.8%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 11, misses = 34, hit rate = 24.44%, uploaded = 0.05 MiB
+llama_moe_cache: large batches: 420 experts copied from the cache, 0.21 MiB
+llama_moe_cache: ubatch <= 8: hits = 11, misses = 34, hit rate = 24.44%, uploaded = 0.05 MiB
+llama_moe_cache: large batches: 420 experts copied from the cache, 0.21 MiB
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     6 slots (37.5%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     6 slots (37.5%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+llama_moe_cache: ubatch <= 8: hits = 7, misses = 38, hit rate = 15.56%, uploaded = 0.06 MiB
+llama_moe_cache: large batches: 354 experts copied from the cache, 0.17 MiB
+llama_moe_cache: ubatch <= 8: hits = 7, misses = 38, hit rate = 15.56%, uploaded = 0.06 MiB
+llama_moe_cache: large batches: 354 experts copied from the cache, 0.17 MiB
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     9 slots (56.2%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     6 slots (37.5%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.02 MiB of host experts
+impl:  2 layers, f32:     6 slots (37.5%)
+impl:        CPU MoE cache size =     0.01 MiB for 0.01 MiB of host experts
+impl:  1 layers, f32:     8 slots (100.0%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.05 MiB of host experts
+impl:  2 layers, q4_K:     8 slots (50.0%)
+impl:        CPU MoE cache size =     0.03 MiB for 0.05 MiB of host experts
+impl:  2 layers, q4_K:     8 slots (50.0%)
+llama_moe_cache: ubatch <= 8: hits = 4, misses = 26, hit rate = 13.33%, uploaded = 0.09 MiB
+llama_moe_cache: large batches: 204 experts copied from the cache, 0.22 MiB
+llama_moe_cache: ubatch <= 8: hits = 4, misses = 26, hit rate = 13.33%, uploaded = 0.09 MiB
+llama_moe_cache: large batches: 204 experts copied from the cache, 0.22 MiB
+FG150_CACHE mode=0 calls=358
+FG150_CACHE mode=4 calls=378
+FG150_CACHE mode=6 calls=5031
+FG150_CACHE mode=7 calls=1016
+FG150_CACHE mode=8 calls=230
+FG151_LIFECYCLE mode=0 calls=230
+FG151_LIFECYCLE mode=1 calls=33
+FG151_LIFECYCLE mode=2 calls=197
+FG151_LIFECYCLE mode=3 calls=7632
+FG151_LIFECYCLE mode=4 calls=378
+FG151_LIFECYCLE mode=6 calls=33
+FG150_REGISTRY mode=0 calls=1
+FG150_REGISTRY mode=1 calls=49
+FG150_REGISTRY mode=2 calls=49
+FG147_BACKEND mode=0 calls=49
+FG147_BACKEND mode=1 calls=49
+FG147_BACKEND mode=16 calls=508
+FG143_CONTROL plans=0 task_queries=0 dispatches=0 jobs=0 worker_jobs=0
+FG143_EXECUTOR worker_graphs=0 worker_steps=0 worker_fusions=0
+FG150_EXPERT scratch_calls=0 enabled=1
+FG147_BACKEND mode=19 calls=61401
+FG147_BACKEND mode=20 calls=8193
+FG147_BACKEND mode=21 calls=8193
+FG147_BACKEND mode=23 calls=12850
+FG147_BACKEND mode=24 calls=756
+FG147_BACKEND mode=26 calls=7782
+FG147_BACKEND mode=28 calls=20616
+FG147_BACKEND mode=29 calls=12684

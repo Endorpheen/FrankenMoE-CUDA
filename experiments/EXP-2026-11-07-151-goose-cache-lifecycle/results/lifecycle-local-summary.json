@@ -1,0 +1,7 @@
+{
+  "status": "PASS_LOCAL_NATIVE_GOOSE_CACHE_LIFECYCLE",
+  "cases": 8397,
+  "real_ggml_resources": true,
+  "fake_model_metadata": true,
+  "gpu_primitives": "CPU substitute;not CUDA or Apex"
+}

@@ -390,7 +390,7 @@
         "src/llama-moe-cache.cpp"
       ],
       "acceptance": "Expert scratch/resident/staging lifecycles and scatter owned by Goose; allocation failure,resize,empty/overlapping routes and cancellations checked.",
-      "evidence": "EXP145 moves backend graph scratch growth/reuse/failure policy into Goose,with real API/Apex and allocation-policy tests. This does not yet replace complete expert residency/staging/bank ownership. EXP150 moves all local expert tiled scratch queries to shared Goose policy,complete SLRU/eligibility/read-span/upload-grouping and bank budget/slot planning to Goose.30296native differential cases and scoped sanitizers pass. Cache constructor/tensor allocation/full upload-copy/resource lifecycle and remaining expert staging ownership are not complete;no full closure. Fixed Apex has no model-cache allocations,so only workspace execution is claimed at real inference.",
+      "evidence": "EXP145 moves backend graph scratch growth/reuse/failure policy into Goose,with real API/Apex and allocation-policy tests. This does not yet replace complete expert residency/staging/bank ownership. EXP150 moves all local expert tiled scratch queries to shared Goose policy,complete SLRU/eligibility/read-span/upload-grouping and bank budget/slot planning to Goose.30296native differential cases and scoped sanitizers pass. Cache constructor/tensor allocation/full upload-copy/resource lifecycle and remaining expert staging ownership are not complete;no full closure. Fixed Apex has no model-cache allocations,so only workspace execution is claimed at real inference. EXP151 real Goose cache constructor/grouping/context/bank/buffer ownership and cleanup,download/sync/SLRU/upload/readback control,backend lookup and memory accounting locally match unchanged native controller on real GGML resources with synthetic metadata. Fault/release balance covered;metadata-only native failure assumptions explicit. Actual adapter compiles and only changed llama DSO relinked with qualified dependencies. No model/performance/sanitizer campaign;shared whole-cycle gate pending. Wider expert staging/source closure still incomplete.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 58,
@@ -3072,6 +3072,10 @@
     {
       "checkpoint": "EXP150 common expert policy and CPU registry",
       "event": "Close P2-14 functional CPU registry/device/buffer contract and expand P1-10 with SLRU/cache grouping/budget and shared expert scratch.30296new cache/budget cases,210registry policy and5compiled HBM-stub API cases;corrected actual326/66/960/174GGML corpus,rollback,scoped sanitizers and one exact128token/top5Apex. Model2656.285pp/28.079tg,RSS21312.090/VRAM3348MiB;single sample,stable C++ parity unproven.14/160DONE,146left,8.75percent;stage1/13has2/5done,0fullstages. Group unchanged13stages into3large delivery cycles (45/54/49requirements at regroup),allow fourth only for real dependencies;cycle1has2/45closed. No false cache/HBM model-execution,hardware,speed or full-expert closure. Final typed fill-ABI correction checked locally;recorded earlier model keeps its original llama hash. Planned extra model request not launched;next exact whole-candidate model gate deferred to large-cycle end per owner."
+    },
+    {
+      "checkpoint": "EXP151 local cache lifecycle ownership",
+      "event": "Whole cache construction,resource lifetime/failure cleanup and transfer orchestration now actual self-hosted Goose. Actual native/Goose controller comparison with real GGML buffers/copies and synthetic model metadata passes;new actual adapter compiles and only changed llama relinked with qualified DSOs. No model,broad build,sanitizer campaign,microbench or new requirement closure. Preserve original ledger and shared large-cycle gate;do not count local module evidence as full Apex/CUDA acceptance."
     }
   ],
   "batches": [
@@ -3902,5 +3906,14 @@
       }
     ],
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
+  },
+  "work_in_progress_batch": {
+    "experiment": "EXP151",
+    "root": "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107",
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/source/expert-cache",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/variants/cpu-backend/run",
+    "status": "Whole expert-cache controller port locally checked and linked;no whole-cycle/model/performance acceptance. Continue first delivery cycle.",
+    "previous_checkpoint": "EXP150",
+    "next": "Continue common expert work distribution/residency/source ownership and remaining CPU MoE math/providers in coherent groups;no repeated full suites or model loads before cycle-end gate."
   }
 }

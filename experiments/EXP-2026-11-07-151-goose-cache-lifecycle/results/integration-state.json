@@ -1,0 +1,12 @@
+{
+  "status": "LOCAL_CONTROLLER_LINKED_WHOLE_CYCLE_GATE_PENDING",
+  "source": "Actual expert-cache source object and self-hosted Goose lifecycle object linked;all other qualified runtime objects reused unchanged",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/variants/cpu-backend/run/libllama-control.so.0.7.0",
+  "sha256": "a29e4b51d00e8b8eeb898240c0b4e52c922a2b0cf8a778e9317e9c7c2099e422",
+  "original_cpp_controller_preserved": "GGML_GOOSE_EXPERT_LIFECYCLE=0;GGML_GOOSE_EXPERT_CACHE=0 additionally restores old SLRU/budget helpers",
+  "model_requests": 0,
+  "broad_build": false,
+  "sanitizer_campaign": false,
+  "whole_runtime_performance": "Not measured;end-of-cycle shared gate pending",
+  "production_changed": false
+}

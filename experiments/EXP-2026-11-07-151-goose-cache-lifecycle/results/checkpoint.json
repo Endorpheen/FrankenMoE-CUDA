@@ -1,0 +1,67 @@
+{
+  "status": "LOCAL_FUNCTIONAL_CACHE_SUBSYSTEM_PORT_INTEGRATED_CYCLE_GATE_PENDING",
+  "parent": "EXP150 over87c7974;documentation-only8722579 retained",
+  "producer": {
+    "stage": "Self-hosted EXP301 key-final Stage3",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp301-function-state/key-final-bootstrap-v1/stage3",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/compiler/stage3-f849233b999c",
+    "sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+    "bootstrap_status": "PASS_CURRENT_VARDEF_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "source_commit": "d030e5338af11b88480ab6b0b5b6f99ed7155c40",
+    "scope": "Latest completed fixed-C bootstrap checkpoint; SH03.FN-STATE parent task still open; compiler sources unchanged"
+  },
+  "actual_goose": "Construction/grouping/budget delegation/tensor/context/buffer lifetime,partial/OOM cleanup,download/sync/SLRU/upload sequencing,cache read spans,backend selection and aggregate memory accounting. Existing actual Goose SLRU/budget reused. No default call to original constructor/copy executor.",
+  "abi_boundary": [
+    "C++ containers and opaque record getters/setters are temporary ABI storage,not final unavoidable dependencies.",
+    "GGML tensor/view/context/allocation/copy APIs remain shared lower-level imports assigned their original GGML/memory/backend requirements.",
+    "OS/vendor asynchronous operations,logging and model metadata are explicit imports. Fixture uses CPU primitives behind a simulated GPU identity,not CUDA hardware or loaded model."
+  ],
+  "local_evidence": {
+    "status": "PASS_LOCAL_NATIVE_GOOSE_CACHE_LIFECYCLE",
+    "cases": 8397,
+    "real_ggml_resources": true,
+    "fake_model_metadata": true,
+    "gpu_primitives": "CPU substitute;not CUDA or Apex"
+  },
+  "source_sha256": {
+    "source/expert-cache/native-budget-reference.inc": "ae3172e16539686366edce134a16f7c7467cf5e2a93662336df47066beedbcab",
+    "source/expert-cache/fixture.cpp": "51ea501a716dd4e2d1eae16168242c67214a1f35e75076e14cd5bb6e91d9a201",
+    "source/expert-cache/kernel.goose": "557cabfdcbd41cfe2353727cc4b9bdcbd5d85457ae2b66145bfd9a7aa1742583",
+    "source/expert-cache/unit.c": "dafebd84763333ecece2557c08db59e288a48097ae9013ee946c960d7688ad98",
+    "source/expert-cache/budget-fixture.inc": "4778904b59b419716917f7b92ee7ad775f45f1614794c354861634c6ec85503b",
+    "source/expert-cache/services.cpp": "8488c74a71ddfc9b7b2bebcfefbde3cb82305edd8b04c1bc4a8e6cda02fcf979",
+    "source/expert-cache/budget.h": "22e8f0baea5dd30b7def37891f4d43fede720f37302114bc301930458a43e8d1",
+    "source/expert-cache/bridge.h": "c5951e850ba7a2624542e1c58e1c1b227406cd1d299bdcd5c5089246c5ba9adb",
+    "source/expert-cache/budget-services.cpp": "4fa48a46a9c67923dc6a130f6929eb1c271dfe9410e575b90d8b9121a2d4391b",
+    "source/expert-cache/lifecycle-unit.c": "4160bcfbdc5cb8c6ab0ca73b4ab3becab6db803f8a49f8894d2a7d6e1d3faf47",
+    "source/expert-cache/lifecycle.goose": "33bddf326d8c85cf75d964d192cab94ea5f87bc41fa44ee4af07f8d9542177c2",
+    "source/expert-cache/llama-moe-cache.cpp": "e1684c4b6ca49673407512d174198eb39aa96f6b18ead41510bb24221cf9db78",
+    "source/expert-cache/lifecycle-adapters.inc": "e05d96884cec8153d9f5f8c283b4380f1f240acbf5106c893259a332402e11f7",
+    "source/expert-cache/lifecycle-fixture.cpp": "5a1b51aadec836c7619173f17eff7cda1e35041f3a51bf3ad423503bc6520287",
+    "source/expert-cache/lifecycle-bridge.h": "aae85568e7531cbf8a2322372f46cb8149d3d9ea3ccbcf9b738f65b6f751cf30"
+  },
+  "generated_sha256": "882544f56de3545ae97a114079e80778006a57174da6b151cace15d6abb142b1",
+  "integration": {
+    "status": "LOCAL_CONTROLLER_LINKED_WHOLE_CYCLE_GATE_PENDING",
+    "source": "Actual expert-cache source object and self-hosted Goose lifecycle object linked;all other qualified runtime objects reused unchanged",
+    "library": "/home/end0/AI/LlamaServer/franken-goose-exp151-cache-lifecycle-20261107/variants/cpu-backend/run/libllama-control.so.0.7.0",
+    "sha256": "a29e4b51d00e8b8eeb898240c0b4e52c922a2b0cf8a778e9317e9c7c2099e422",
+    "original_cpp_controller_preserved": "GGML_GOOSE_EXPERT_LIFECYCLE=0;GGML_GOOSE_EXPERT_CACHE=0 additionally restores old SLRU/budget helpers",
+    "model_requests": 0,
+    "broad_build": false,
+    "sanitizer_campaign": false,
+    "whole_runtime_performance": "Not measured;end-of-cycle shared gate pending",
+    "production_changed": false
+  },
+  "limitations": [
+    "No Apex/Qwen or whole-runtime performance run;the next exact-model gate is shared at large-cycle end.",
+    "No broad rebuild or sanitizer campaign. New module compiled;only changed llama library relinked,other qualified objects reused.",
+    "Fault injection wraps local allocator API returns,not actual OS OOM. Metadata-only dummy-buffer failure is checked on Goose;original native path assumes success and is not claimed to handle that case.",
+    "Synthetic model metadata tests actual controller bodies and ABI/GGML services;it does not qualify model loader or actual GPU async races.",
+    "P1-10 remains IN_PROGRESS pending wider expert-residency/source and end-of-cycle integration closure."
+  ],
+  "rollback": "GGML_GOOSE_EXPERT_LIFECYCLE=0 restores previous constructor/copy/cleanup controller;GGML_GOOSE_EXPERT_CACHE=0 also restores prior SLRU/budget policies. Unchanged EXP149 full-model-qualified runtime remains outside candidate.",
+  "production_changed": false,
+  "compiler_changed": false,
+  "ownership_order": "Temporary view context is released before referenced bank contexts;each buffer before its metadata owner. Local tracked GGML fixture asserts no live temporary view references a freed parent context."
+}

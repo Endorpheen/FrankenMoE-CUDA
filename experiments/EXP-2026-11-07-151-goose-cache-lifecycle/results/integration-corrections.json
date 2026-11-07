@@ -1,0 +1,18 @@
+{
+  "application_not_compiler_findings": [
+    {
+      "observed": "Invalid conversion from const ggml_tensor* to ggml_tensor* when calling ggml_view_3d",
+      "fix": "View service receives mutable bank/destination tensor metadata;correct opaque ABI cast,then changed object recompiles."
+    },
+    {
+      "observed": "Strong link check exposed missing fg150_budget_get/put providers",
+      "fix": "Use most recent successful inherited link receipt and explicitly retain budget-services.o;do not select first obsolete successful label."
+    },
+    {
+      "observed": "Strong link check exposed unresolved ggml_backend_sched_set_expert_pipeline",
+      "fix": "Link to exact qualified candidate GGML DSOs rather than historicalexp087paths. Changed library relinks with-zdefs."
+    }
+  ],
+  "scope": "Only the changed object/library was rebuilt/relinked. Intermediate same-target linker logs were overwritten;these observations summarize the actual errors,not a claim that complete failed raw logs remain.",
+  "no_broad_retest": true
+}
