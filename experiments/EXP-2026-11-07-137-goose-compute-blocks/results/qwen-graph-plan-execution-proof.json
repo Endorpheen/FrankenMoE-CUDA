@@ -1,0 +1,19 @@
+{
+  "status": "PASS_TWO_REQUESTS_REAL_QWEN",
+  "comparison": {
+    "32x4": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "128x16": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    }
+  },
+  "coverage": "Goose allocation graph traversal, reusable block selection and free-list coalescing; CPU/CUDA math kernels not ported in this Qwen variant",
+  "performance": "Preliminary cold/warm and paging differences; no performance acceptance",
+  "metadata_correction": "Earlier Qwen summaries with concurrent_download=true are stale hardcoded metadata. Download verification was already complete. Other competing load remains uncontrolled.",
+  "future_policy": "Apex is primary development and measurement target. Qwen only at major milestones or model-specific changes."
+}

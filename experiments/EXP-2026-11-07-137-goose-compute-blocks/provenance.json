@@ -1,0 +1,253 @@
+{
+  "status": "Experimental isolated checkpoint, no production promotion",
+  "previous_checkpoint_commit": "64f892849588d4a0bff2eb16cff46a7f5523e36f",
+  "producer": {
+    "stage": "self-hosted EXP299 v2 bound Stage3",
+    "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "receipt": "bootstrap-exp299-v2-receipt.json",
+    "applies_to": "new generation only"
+  },
+  "files": [
+    {
+      "path": "source/rms-block/kernel.goose",
+      "source_sha256": "a88f6f52828a046bb398c13c55294755f993eac6cddb5a30ce6cf88d6425619b",
+      "snapshot_sha256": "a88f6f52828a046bb398c13c55294755f993eac6cddb5a30ce6cf88d6425619b"
+    },
+    {
+      "path": "source/rms-block/kernel-v1-rejected.goose",
+      "source_sha256": "b94a24c79da0cb5a095df1bb4425ece0bc7be24ce5dde8410cfa20c1c4fa929a",
+      "snapshot_sha256": "b94a24c79da0cb5a095df1bb4425ece0bc7be24ce5dde8410cfa20c1c4fa929a"
+    },
+    {
+      "path": "source/rms-block/norm-goose-block.cu",
+      "source_sha256": "6cda67e5551b69905ee9d5e6c7d7e1ec9d5436168dfc71a0da3e8e44dc479d58",
+      "snapshot_sha256": "c08ac237d5c5c6668a312e23d0d305801fe5b55304d9dff4c587202536c5a0a9",
+      "adaptation": "Only generated-header include path made relative."
+    },
+    {
+      "path": "source/rms-block/fixture.cu",
+      "source_sha256": "06946ca1d4b72ab737a6285f3ce2cc4b5da24a4e47eb6cc396fb921926e0d602",
+      "snapshot_sha256": "06946ca1d4b72ab737a6285f3ce2cc4b5da24a4e47eb6cc396fb921926e0d602"
+    },
+    {
+      "path": "source/rms-block/fg_rms_integrate.py",
+      "source_sha256": "a616b1e538d6d3c1bae523661216ad0c6d63c3f2017074b3b24396cc630541c2",
+      "snapshot_sha256": "a616b1e538d6d3c1bae523661216ad0c6d63c3f2017074b3b24396cc630541c2"
+    },
+    {
+      "path": "source/rms-block/generation-manifest.json",
+      "source_sha256": "621a1f6d0e7c7a110a7e64424ab2e7c0844a1818ef6fb91dd27704c3789d2548",
+      "snapshot_sha256": "621a1f6d0e7c7a110a7e64424ab2e7c0844a1818ef6fb91dd27704c3789d2548"
+    },
+    {
+      "path": "source/rms-block/cuda-resource-usage.txt",
+      "source_sha256": "48508b913ef84f328fff8e26ab99f5a5a51709563eef1543d3862deef4d9ab1e",
+      "snapshot_sha256": "9b23f40e1e8b5c87c3d11db573ffb290c20ba5ce3f31a3b5c20a2f29336070d4",
+      "adaptation": "Trailing whitespace removed from cuobjdump text output."
+    },
+    {
+      "path": "source/q8k-quant/kernel.goose",
+      "source_sha256": "98cb07400b19e12886ce28f72abc0a893080e080107f6da35e8c4b218d2a0061",
+      "snapshot_sha256": "98cb07400b19e12886ce28f72abc0a893080e080107f6da35e8c4b218d2a0061"
+    },
+    {
+      "path": "source/q8k-quant/unit.c",
+      "source_sha256": "d0c4ae00bb75cb5152c400e3137196b5818bae2da86fccb0b46778979fdeb596",
+      "snapshot_sha256": "d0c4ae00bb75cb5152c400e3137196b5818bae2da86fccb0b46778979fdeb596"
+    },
+    {
+      "path": "source/q8k-quant/hook.c",
+      "source_sha256": "c2d3c1cfd11881d76c04b7e3b369c3c537c1b06499a54dbd9dbca220bd3fc97d",
+      "snapshot_sha256": "c2d3c1cfd11881d76c04b7e3b369c3c537c1b06499a54dbd9dbca220bd3fc97d"
+    },
+    {
+      "path": "source/q8k-quant/benchmark.c",
+      "source_sha256": "2dac7bde8a3ac1f605b9d36dcca424b2215db7be5e3af077448f93ebcb340ba6",
+      "snapshot_sha256": "2dac7bde8a3ac1f605b9d36dcca424b2215db7be5e3af077448f93ebcb340ba6"
+    },
+    {
+      "path": "source/q8k-quant/fg_q8k_build.py",
+      "source_sha256": "3ffade8aed367104277c11c6f6ca1b142d32e798d38876ab445673355d0642aa",
+      "snapshot_sha256": "3ffade8aed367104277c11c6f6ca1b142d32e798d38876ab445673355d0642aa"
+    },
+    {
+      "path": "source/q8k-quant/fg_q8k_check.py",
+      "source_sha256": "6b57500603714084d4411f8e2ab9feaf73b1bb47b99ec707d4f4a3d8ab75e172",
+      "snapshot_sha256": "6b57500603714084d4411f8e2ab9feaf73b1bb47b99ec707d4f4a3d8ab75e172"
+    },
+    {
+      "path": "source/q8k-quant/contraction-diagnostic.json",
+      "source_sha256": "e2bc8f6c25d33b832981dbe4c2743e11d5b673e7b44e4b26a2a2808179a88cab",
+      "snapshot_sha256": "e2bc8f6c25d33b832981dbe4c2743e11d5b673e7b44e4b26a2a2808179a88cab"
+    },
+    {
+      "path": "source/q8k-quant/build-commands-v1-rejected.json",
+      "source_sha256": "5a9aceea0c203f523c3ef3f31d06707da3c80f2bf30b5725603cc74f2b710136",
+      "snapshot_sha256": "5a9aceea0c203f523c3ef3f31d06707da3c80f2bf30b5725603cc74f2b710136"
+    },
+    {
+      "path": "source/q8k-quant/manifest.json",
+      "source_sha256": "5524b6f35a8a45ac5d95ddb3481aa6867ea5862b013055a873a9ed3c2fde7738",
+      "snapshot_sha256": "5524b6f35a8a45ac5d95ddb3481aa6867ea5862b013055a873a9ed3c2fde7738"
+    },
+    {
+      "path": "source/q8k-fixed/kernel.goose",
+      "source_sha256": "3fb6f9b07484d678b1aed5453bc5947698b818d4d06ef27f99a1179ac4f5ccec",
+      "snapshot_sha256": "3fb6f9b07484d678b1aed5453bc5947698b818d4d06ef27f99a1179ac4f5ccec"
+    },
+    {
+      "path": "source/q8k-fixed/unit.c",
+      "source_sha256": "5f94e22a359e9965ad879e6cbc1c852776fa86c29cb89123b4020b06758181e1",
+      "snapshot_sha256": "5f94e22a359e9965ad879e6cbc1c852776fa86c29cb89123b4020b06758181e1"
+    },
+    {
+      "path": "source/q8k-fixed/hook.c",
+      "source_sha256": "e1b8c1aca046957e1ce73fb7dc39dc57abbe08dde1e877a56e8621a985fae991",
+      "snapshot_sha256": "e1b8c1aca046957e1ce73fb7dc39dc57abbe08dde1e877a56e8621a985fae991"
+    },
+    {
+      "path": "source/q8k-fixed/benchmark.c",
+      "source_sha256": "2dac7bde8a3ac1f605b9d36dcca424b2215db7be5e3af077448f93ebcb340ba6",
+      "snapshot_sha256": "2dac7bde8a3ac1f605b9d36dcca424b2215db7be5e3af077448f93ebcb340ba6"
+    },
+    {
+      "path": "source/q8k-fixed/benchmark-same-flags.c",
+      "source_sha256": "1437187b3676772ed8dcfbc322f2c4844b52d881dc32df2e7613c0047081a806",
+      "snapshot_sha256": "1437187b3676772ed8dcfbc322f2c4844b52d881dc32df2e7613c0047081a806"
+    },
+    {
+      "path": "source/q8k-fixed/native-same-flags.c",
+      "source_sha256": "36ce867c697175a939c3e14a3ff07aa95a2423064b939935ef109ea378e5399d",
+      "snapshot_sha256": "36ce867c697175a939c3e14a3ff07aa95a2423064b939935ef109ea378e5399d"
+    },
+    {
+      "path": "source/q8k-fixed/fg_q8kv2_build.py",
+      "source_sha256": "f9f4ac6ada01ff2bf8f8fcc96e66fe07a5412d0aedc5de5417727991cf09eef9",
+      "snapshot_sha256": "f9f4ac6ada01ff2bf8f8fcc96e66fe07a5412d0aedc5de5417727991cf09eef9"
+    },
+    {
+      "path": "source/q8k-fixed/fg_q8kv2_check.py",
+      "source_sha256": "fed57dec86bf0a7ddc0d1dfa9c136b1d028a5fd98aec5d59a8e42ffe07676653",
+      "snapshot_sha256": "fed57dec86bf0a7ddc0d1dfa9c136b1d028a5fd98aec5d59a8e42ffe07676653"
+    },
+    {
+      "path": "source/q8k-fixed/fg_q8k_sameflags_check.py",
+      "source_sha256": "382b9726041ef156155bb174cc1934b3a66645ca9daa9334a84aa2b8b9a4808f",
+      "snapshot_sha256": "382b9726041ef156155bb174cc1934b3a66645ca9daa9334a84aa2b8b9a4808f"
+    },
+    {
+      "path": "source/q8k-fixed/manifest.json",
+      "source_sha256": "6fdf49f1da29f3dcb73521cd9c0feaa8b13c9f45f3bcd3f1fae03f36765d48e1",
+      "snapshot_sha256": "6fdf49f1da29f3dcb73521cd9c0feaa8b13c9f45f3bcd3f1fae03f36765d48e1"
+    },
+    {
+      "path": "generated/rms-block.c",
+      "source_sha256": "6f2df2faf76ae4734d654e1ea8f70ecf49b3a05ea08923c06c2fde2d08191593",
+      "snapshot_sha256": "6f2df2faf76ae4734d654e1ea8f70ecf49b3a05ea08923c06c2fde2d08191593"
+    },
+    {
+      "path": "generated/rms-block-v1-rejected.c",
+      "source_sha256": "b3a0d7a551fd6acdf72a5e4b1d54f5f4d5a0bada8cdf7cd4b8653bd51fb805a7",
+      "snapshot_sha256": "b3a0d7a551fd6acdf72a5e4b1d54f5f4d5a0bada8cdf7cd4b8653bd51fb805a7"
+    },
+    {
+      "path": "generated/goose_rms_block.cuh",
+      "source_sha256": "8626f27b0fb67300a146e728f7d88d5478cb5f2241d92de5e524333b08fa9f65",
+      "snapshot_sha256": "8626f27b0fb67300a146e728f7d88d5478cb5f2241d92de5e524333b08fa9f65"
+    },
+    {
+      "path": "generated/q8k-quant.c",
+      "source_sha256": "c319384ebfa0a49f11752880747f7e665efebeddbd04be4a5be9f773b1cf77c9",
+      "snapshot_sha256": "c319384ebfa0a49f11752880747f7e665efebeddbd04be4a5be9f773b1cf77c9"
+    },
+    {
+      "path": "generated/q8k-fixed.c",
+      "source_sha256": "fcff88a7d899f88a997bc99ac88e00286be2f2a52b5b25de0d9897d313fb84c4",
+      "snapshot_sha256": "fcff88a7d899f88a997bc99ac88e00286be2f2a52b5b25de0d9897d313fb84c4"
+    },
+    {
+      "path": "results/rms-block-stage-summary.json",
+      "source_sha256": "984ab8ba7fff103e0775499ea6c07c4ae6332a3f254e89b66905ba304829fe67",
+      "snapshot_sha256": "984ab8ba7fff103e0775499ea6c07c4ae6332a3f254e89b66905ba304829fe67"
+    },
+    {
+      "path": "results/apex-rms-block-execution-proof.json",
+      "source_sha256": "9eeda8daac3f887b6ffe298bd026f60513fba1504fb36068d38a932d45329d56",
+      "snapshot_sha256": "9eeda8daac3f887b6ffe298bd026f60513fba1504fb36068d38a932d45329d56"
+    },
+    {
+      "path": "results/rms-block-fixture.jsonl",
+      "source_sha256": "cab26173e1f80d36c43528da7e89d14e71adc31536c8a71a74f95723b7b02637",
+      "snapshot_sha256": "cab26173e1f80d36c43528da7e89d14e71adc31536c8a71a74f95723b7b02637"
+    },
+    {
+      "path": "results/rms-block-fixture-v1-rejected.stderr",
+      "source_sha256": "a7410921fcb322ce99ef61dc8ad3261d04516f9a88f3843e39a504b274349064",
+      "snapshot_sha256": "a7410921fcb322ce99ef61dc8ad3261d04516f9a88f3843e39a504b274349064"
+    },
+    {
+      "path": "results/q8k-quant-stage-summary.json",
+      "source_sha256": "896f1fc8848564bc37ac3d653fdcc05ee3f89e0f3ec228f79c5b3470726e86fb",
+      "snapshot_sha256": "896f1fc8848564bc37ac3d653fdcc05ee3f89e0f3ec228f79c5b3470726e86fb"
+    },
+    {
+      "path": "results/apex-q8k-execution-proof.json",
+      "source_sha256": "d9b9923d205b9386c9d442d0de2ebc9290ded33c5228d49ac810c4ebf026f776",
+      "snapshot_sha256": "d9b9923d205b9386c9d442d0de2ebc9290ded33c5228d49ac810c4ebf026f776"
+    },
+    {
+      "path": "results/q8k-quant-correctness.json",
+      "source_sha256": "e27594f95609eef421de5d0a3e1208d8abb2f1e76ec8c7e61e50b9f36b42b1a9",
+      "snapshot_sha256": "e27594f95609eef421de5d0a3e1208d8abb2f1e76ec8c7e61e50b9f36b42b1a9"
+    },
+    {
+      "path": "results/q8kv2-quant-correctness.json",
+      "source_sha256": "e27594f95609eef421de5d0a3e1208d8abb2f1e76ec8c7e61e50b9f36b42b1a9",
+      "snapshot_sha256": "e27594f95609eef421de5d0a3e1208d8abb2f1e76ec8c7e61e50b9f36b42b1a9"
+    },
+    {
+      "path": "results/q8kv2-sameflags-correctness.json",
+      "source_sha256": "e27594f95609eef421de5d0a3e1208d8abb2f1e76ec8c7e61e50b9f36b42b1a9",
+      "snapshot_sha256": "e27594f95609eef421de5d0a3e1208d8abb2f1e76ec8c7e61e50b9f36b42b1a9"
+    },
+    {
+      "path": "results/q8k-quant-bench.jsonl",
+      "source_sha256": "72311aef7b9ed4518bcb48bdf0c72b9d5a496729a33e8605ce2fc5eec8a7ea86",
+      "snapshot_sha256": "72311aef7b9ed4518bcb48bdf0c72b9d5a496729a33e8605ce2fc5eec8a7ea86"
+    },
+    {
+      "path": "results/q8kv2-quant-bench.jsonl",
+      "source_sha256": "aa6ee9061546226f47b5160ecfd7f6150304b2525359c1def57a207f0f80cbe4",
+      "snapshot_sha256": "aa6ee9061546226f47b5160ecfd7f6150304b2525359c1def57a207f0f80cbe4"
+    },
+    {
+      "path": "results/q8kv2-sameflags-bench.jsonl",
+      "source_sha256": "f21ebcc78181334ccd608a4eab389ef10aa5193abde18efdea003588eee32482",
+      "snapshot_sha256": "f21ebcc78181334ccd608a4eab389ef10aa5193abde18efdea003588eee32482"
+    },
+    {
+      "path": "results/reference-integrity-stage-i.json",
+      "source_sha256": "ecdb95dcaa62476b199ad4a12a6f43997d4a8b926a6659c2b1108dd304e4e93f",
+      "snapshot_sha256": "ecdb95dcaa62476b199ad4a12a6f43997d4a8b926a6659c2b1108dd304e4e93f"
+    },
+    {
+      "path": "results/qwen-graph-plan-execution-proof.json",
+      "source_sha256": "64b3d13231982d6ddf6e13b51d4cb69b10b0314fbd6efa0a4d942a5306af6e30",
+      "snapshot_sha256": "64b3d13231982d6ddf6e13b51d4cb69b10b0314fbd6efa0a4d942a5306af6e30"
+    },
+    {
+      "path": "compiler/current-producer.json",
+      "source_sha256": "12a63effb3edb3f50f29438e846fd9a10c4bb3b093a6ae339f150ce7f93aefd9",
+      "snapshot_sha256": "12a63effb3edb3f50f29438e846fd9a10c4bb3b093a6ae339f150ce7f93aefd9"
+    },
+    {
+      "path": "compiler/bootstrap-exp299-v2-receipt.json",
+      "source_sha256": "6fc48d99fe4c118596c857c6459ea684fe8b66f6d8f4d474a5c7c246843e28dd",
+      "snapshot_sha256": "6fc48d99fe4c118596c857c6459ea684fe8b66f6d8f4d474a5c7c246843e28dd"
+    }
+  ],
+  "original_runtime_integrity": "results/reference-integrity-stage-i.json",
+  "native_sameflags_source": "Exact original nearest_int and quantize_row_q8_K_ref bodies with control entrypoint renamed; native source not used for Goose execution.",
+  "qwen_coverage": "Earlier allocation graph and allocator blocks only, not the new CPU/CUDA compute pair.",
+  "excluded": "Model files, runtime binaries, compiler sources, private instructions and unrelated user work"
+}

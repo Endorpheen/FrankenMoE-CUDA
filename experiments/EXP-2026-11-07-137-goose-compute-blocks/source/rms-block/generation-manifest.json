@@ -1,0 +1,15 @@
+{
+  "producer": {
+    "stage": "self-hosted EXP299 v2 bound Stage3",
+    "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "receipt": "bootstrap-exp299-v2-receipt.json",
+    "applies_to": "new generation only"
+  },
+  "sha256": {
+    "source/rms-block/kernel.goose": "a88f6f52828a046bb398c13c55294755f993eac6cddb5a30ce6cf88d6425619b",
+    "generated/rms-block.c": "6f2df2faf76ae4734d654e1ea8f70ecf49b3a05ea08923c06c2fde2d08191593",
+    "generated/goose_rms_block.cuh": "8626f27b0fb67300a146e728f7d88d5478cb5f2241d92de5e524333b08fa9f65",
+    "source/rms-block/norm-goose-block.cu": "6cda67e5551b69905ee9d5e6c7d7e1ec9d5436168dfc71a0da3e8e44dc479d58"
+  },
+  "adaptations": "Extract reachable emitted C bodies unchanged; add device forceinline qualifiers; trap for failure, CUDA load4/store4/shuffle/barrier/rsqrt intrinsics; preserve native launch and outer row/channel/sample address computation. No original C++ computational function called by Goose."
+}

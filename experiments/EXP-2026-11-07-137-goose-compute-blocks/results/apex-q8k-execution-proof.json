@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "comparison": {
+    "q8k-trace-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8k-trace-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-trace-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-trace-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-off-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-trace-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    }
+  },
+  "witness": {
+    "q8k-trace-on": {
+      "calls": 581120,
+      "blocks": 217344,
+      "shadow_checks": 65,
+      "enabled": 1
+    },
+    "q8kv2-trace-on": {
+      "calls": 581120,
+      "blocks": 217344,
+      "shadow_checks": 65,
+      "nonempty_calls": 217344,
+      "enabled": 1
+    },
+    "q8kv2-trace-off": {
+      "calls": 0,
+      "blocks": 0,
+      "shadow_checks": 0,
+      "nonempty_calls": 0,
+      "enabled": 0
+    }
+  }
+}

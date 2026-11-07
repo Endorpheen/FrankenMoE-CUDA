@@ -1,0 +1,239 @@
+{
+  "status": "PASS_REAL_CPU_CUDA_COMBINATION_PERFORMANCE_PRELIMINARY",
+  "scope": "Complete CPU Q8_K activation quantizer plus prior full Goose CUDA RMSNorm and graph/free-list components. Not a complete CPU/CUDA backend.",
+  "producer": {
+    "stage": "self-hosted EXP299 v2 bound Stage3",
+    "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "receipt": "bootstrap-exp299-v2-receipt.json",
+    "applies_to": "new generation only"
+  },
+  "standalone_v1": {
+    "status": "PASS",
+    "single_cases": 126,
+    "eight_thread_cases": 256,
+    "full_block_bytes_equal": true,
+    "input_unchanged": true,
+    "canaries_unchanged": true,
+    "zero_blocks_preserve_original_unwritten_bsums": true
+  },
+  "standalone_v2": {
+    "status": "PASS",
+    "single_cases": 126,
+    "eight_thread_cases": 256,
+    "full_block_bytes_equal": true,
+    "input_unchanged": true,
+    "canaries_unchanged": true,
+    "zero_blocks_preserve_original_unwritten_bsums": true
+  },
+  "sameflags_control": {
+    "status": "PASS",
+    "single_cases": 126,
+    "eight_thread_cases": 256,
+    "full_block_bytes_equal": true,
+    "input_unchanged": true,
+    "canaries_unchanged": true,
+    "zero_blocks_preserve_original_unwritten_bsums": true
+  },
+  "comparison": {
+    "q8k-trace-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8k-trace-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-trace-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-trace-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-perf-off-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "q8kv2-trace-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    }
+  },
+  "witness": {
+    "q8k-trace-on": {
+      "calls": 581120,
+      "blocks": 217344,
+      "shadow_checks": 65,
+      "enabled": 1
+    },
+    "q8kv2-trace-on": {
+      "calls": 581120,
+      "blocks": 217344,
+      "shadow_checks": 65,
+      "nonempty_calls": 217344,
+      "enabled": 1
+    },
+    "q8kv2-trace-off": {
+      "calls": 0,
+      "blocks": 0,
+      "shadow_checks": 0,
+      "nonempty_calls": 0,
+      "enabled": 0
+    }
+  },
+  "micro_ns": {
+    "v1": {
+      "256": {
+        "native_ns": 204.787667,
+        "goose_ns": 305.603685
+      },
+      "1024": {
+        "native_ns": 823.462654,
+        "goose_ns": 1207.31335
+      },
+      "4096": {
+        "native_ns": 3326.42801,
+        "goose_ns": 4886.89767
+      },
+      "16384": {
+        "native_ns": 13529.5127,
+        "goose_ns": 19612.9666
+      }
+    },
+    "v2": {
+      "256": {
+        "native_ns": 216.430014,
+        "goose_ns": 170.129662
+      },
+      "1024": {
+        "native_ns": 816.767996,
+        "goose_ns": 643.23536
+      },
+      "4096": {
+        "native_ns": 3583.04963,
+        "goose_ns": 2571.202
+      },
+      "16384": {
+        "native_ns": 14167.4467,
+        "goose_ns": 10346.914
+      }
+    },
+    "sameflags": {
+      "256": {
+        "native_ns": 216.053023,
+        "goose_ns": 169.909326,
+        "native_same_flags_ns": 155.656016
+      },
+      "1024": {
+        "native_ns": 832.231327,
+        "goose_ns": 653.525349,
+        "native_same_flags_ns": 519.37
+      },
+      "4096": {
+        "native_ns": 3383.68498,
+        "goose_ns": 2559.64231,
+        "native_same_flags_ns": 2262.68735
+      },
+      "16384": {
+        "native_ns": 14899.469,
+        "goose_ns": 9958.26566,
+        "native_same_flags_ns": 7983.31597
+      }
+    }
+  },
+  "perf": {
+    "goose": {
+      "name": "q8kv2-perf-on-32k128",
+      "wall_seconds": 15.817236801958643,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 11388.589,
+        "prompt_per_token_ms": 0.3475521545410156,
+        "prompt_per_second": 2877.266007228815,
+        "predicted_n": 128,
+        "predicted_ms": 4404.905,
+        "predicted_per_token_ms": 34.684291338582675,
+        "predicted_per_second": 28.831495798433792
+      },
+      "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "sampled_rss_peak_mib": 21319.15625,
+      "process_hwm_mib": 21319.15625,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 711.3515625,
+      "sampled_file_peak_mib": 19961.72265625,
+      "sampled_gpu_peak_mib": 3348,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        3.8662109375,
+        3.9384765625,
+        3.47216796875
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "native": {
+      "name": "q8kv2-perf-off-32k128",
+      "wall_seconds": 15.889584532938898,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 11404.133,
+        "prompt_per_token_ms": 0.3480265197753906,
+        "prompt_per_second": 2873.344251597206,
+        "predicted_n": 128,
+        "predicted_ms": 4462.118,
+        "predicted_per_token_ms": 35.134787401574805,
+        "predicted_per_second": 28.461820149086147
+      },
+      "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "sampled_rss_peak_mib": 21326.96875,
+      "process_hwm_mib": 21326.96875,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 711.37109375,
+      "sampled_file_peak_mib": 19961.78125,
+      "sampled_gpu_peak_mib": 3348,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        4.0068359375,
+        3.91552734375,
+        3.50048828125
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  },
+  "rollback": "GGML_GOOSE_Q8K=0 independently selects immutable native quantizer; live trace-off calls=0. Goose RMSNorm kept enabled for both Q8_K timing runs.",
+  "selection": "v2 fixed 256-float borrowed input blocks; full algorithm remains Goose, only float bit copy uses primitive C bridge. v1 flat slice retained.",
+  "limitations": [
+    "All timing preliminary; uncontrolled competing load. One model timing pair does not establish end-to-end speedup.",
+    "Original Q8_K reference uses generic SSE; same-flags rebuilt native C is faster than Goose. No language-superiority claim.",
+    "Initial -march=native default FMA contraction differed by one quant byte at deterministic case n=16384/pattern16, offset7542; objdump confirmed native MULPS+ADDPS versus Goose VFMADD. -ffp-contract=off restores all bytes.",
+    "Qwen not reloaded for these iterations per owner priority."
+  ],
+  "production_changed": false
+}

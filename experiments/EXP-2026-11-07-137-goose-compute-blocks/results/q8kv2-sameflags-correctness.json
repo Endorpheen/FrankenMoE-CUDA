@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "single_cases": 126,
+  "eight_thread_cases": 256,
+  "full_block_bytes_equal": true,
+  "input_unchanged": true,
+  "canaries_unchanged": true,
+  "zero_blocks_preserve_original_unwritten_bsums": true
+}
