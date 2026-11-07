@@ -1,0 +1,7 @@
+{
+  "failure": "Native segfault at first new quant case; candidate220cases completed.",
+  "cause": "Manually constructing quant->F32 DUP with src1NULL is not the native conversion contract. Native dup_from_q reads its destination backing tensor from src1.",
+  "correction": "Use public ggml_cpy(ctx,quantized_input,F32_target) for both arms; preserve failed fixture/logs.",
+  "not_a_compiler_defect": true,
+  "tolerance_unchanged": true
+}

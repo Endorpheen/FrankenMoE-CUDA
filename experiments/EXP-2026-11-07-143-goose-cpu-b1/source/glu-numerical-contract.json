@@ -1,0 +1,17 @@
+{
+  "status": "PASS_SELECTED_NUMERICAL_CONTRACTS_MODEL_GATE_OPEN",
+  "purpose": "Preserve original AVX2 F32 SWIGLU numerical contract,not manual speed tuning",
+  "native_source": "ggml/src/ggml-cpu/vec.h AVX2 ggml_v_expf/ggml_v_silu;vec.cpp ggml_vec_swiglu_f32",
+  "native_vec_sha256": "d969d24adcf494eaac83a865ae1c46aab744ce71d2fd8028286071c4c651a6be",
+  "method": "Same FMA polynomial/float-bit exponent construction for full8lane chunks,scalar expf tail; all arithmetic Goose. Metadata selects pinned AVX2/FMA contract.",
+  "scope": "SWIGLU finite F32 precision compatibility. Other activations,NaN payloads,ISA modes and whole Apex probability drift remain open.",
+  "no_model_run": true,
+  "no_microbenchmarks": true,
+  "compiler_changed": false,
+  "production_changed": false,
+  "swiglu_wide_byte_exact": "9/9",
+  "signed_zero": "Use comparison/select semantics matching native std::min/std::clamp in GLU,avoiding optimizer-dependent fminf/fmaxf zero signs.",
+  "apex_contract_cases": 66,
+  "apex_contract_byte_exact": 39,
+  "instrumented_output_equals_release": true
+}

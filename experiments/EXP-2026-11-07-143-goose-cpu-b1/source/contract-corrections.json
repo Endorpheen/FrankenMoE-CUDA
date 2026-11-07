@@ -1,0 +1,12 @@
+{
+  "source": "Apex preserved ops.cpp/vec.h",
+  "changes": [
+    "SiLU backward:src0 gradient,src1 activation,not reversed.",
+    "Default native GGML_GELU_FP16:half-round input and generated formula result with F32clamps; no native GELU callback/table computation.",
+    "SWIGLU_CLAMP limit is op_params f32 slot3,not alpha slot2.",
+    "Full PAD honors per-axis left/right and circular mode.",
+    "Initial manual PAD fixture enlarged shape but left right-pad params0; native read beyond logical input rows. Preserved invalid fixture/logs; corrected both arms to declared rightpad3/2. This is a fixture defect,not a Goose compiler defect."
+  ],
+  "tolerance_unchanged": true,
+  "original_runtime_unchanged": true
+}

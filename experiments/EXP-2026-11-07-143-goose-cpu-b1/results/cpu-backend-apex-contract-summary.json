@@ -1,0 +1,615 @@
+{
+  "status": "PASS_SELECTED_APEX_CONTRACTS_NOT_FULL_MODEL_EQUIVALENCE",
+  "runs": {
+    "native": {
+      "exit_code": 0,
+      "cases": 66
+    },
+    "candidate": {
+      "exit_code": 0,
+      "cases": 66
+    }
+  },
+  "checks": [
+    {
+      "name": "apex-real-embedding-q4k-t1",
+      "type": 0,
+      "bytes": 2408448,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout0-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout1-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout2-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout0-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout1-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout2-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout0-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout1-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout2-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout0-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout1-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout2-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout0-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout1-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout2-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout0-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout1-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout2-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout0-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout1-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout2-wide-values-t1",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 1,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-real-embedding-q4k-t8",
+      "type": 0,
+      "bytes": 2408448,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout0-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout1-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout2-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout0-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout1-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout2-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout0-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout1-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout2-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout0-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout1-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout2-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout0-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout1-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout2-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout0-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout1-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout2-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout0-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout1-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout2-wide-values-t8",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 8,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-real-embedding-q4k-t16",
+      "type": 0,
+      "bytes": 2408448,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout0-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout1-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op0-layout2-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout0-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout1-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op1-layout2-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout0-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout1-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op2-layout2-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout0-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout1-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op3-layout2-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout0-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout1-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op4-layout2-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout0-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout1-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op5-layout2-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": false,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout0-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout1-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    },
+    {
+      "name": "apex-glu-op6-layout2-wide-values-t16",
+      "type": 0,
+      "bytes": 196608,
+      "threads": 16,
+      "exact": true,
+      "violations": 0,
+      "examples": []
+    }
+  ],
+  "embedding_rows": 147,
+  "input_sha256": "52479c2d93703957a8c273b947bd096369b5f7f85687757a58631c5d228401b3",
+  "scope": "Actual Apex embedding rows selected by preserved prompt/responses plus wide-range2048-column GLU layouts,1/8/16threads. Functional outputs only; no operation timings or model reruns.",
+  "tolerance": "Unchanged abs2e-5+rel2e-5; exact equality also recorded",
+  "whole_model_equivalence": "OPEN: no repeated Apex inference in this gate",
+  "model_weight_bytes_local_only": true
+}

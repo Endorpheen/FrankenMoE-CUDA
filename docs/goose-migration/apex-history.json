@@ -67,6 +67,29 @@
       "correctness": "exact text/IDs/top5",
       "status": "preliminary single pair; uncontrolled external load",
       "raw_summary": "apex-results/plan-apex-exp141-32k128-summary.json"
+    },
+    {
+      "stage": "B1 intermediate diagnostic (254-case candidate)",
+      "role": "diagnostic",
+      "checkpoint": "71b539406937b7d8628e64ca91880f9378238c30 + uncommitted EXP143 B1 sources",
+      "prefill": 2620.9363608688955,
+      "decode": 26.73802420738601,
+      "rss_mib": 21313.5546875,
+      "anon_mib": 695.58984375,
+      "file_mib": 19964.1484375,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 11,
+      "loadavg": [
+        3.09130859375,
+        3.1376953125,
+        2.81689453125
+      ],
+      "correctness": "NOT equivalent: first token divergence at index5; text/IDs/top5 differ; pre-divergence top5 logprobs already differ",
+      "status": "Owner-requested one-off diagnostic,not B1 acceptance; historical C++ control,uncontrolled external load; no retry/tuning",
+      "raw_summary": "apex-results/b1-diagnostic-254-apex-32k128-summary.json",
+      "liveness": "apex-results/b1-diagnostic-254-apex-32k128-liveness.json",
+      "no_b1_acceptance": true
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",

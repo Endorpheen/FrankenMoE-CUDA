@@ -1,0 +1,28 @@
+{
+  "traces": [
+    "FG143_EXECUTOR worker_graphs=42706 worker_steps=170410 worker_fusions=0",
+    "FG143_CPU op=40 calls=138 values=67377152",
+    "FG143_CPU op=100 calls=42560 values=187105280",
+    "FG_SELFHOST_GRAPH enabled=1 walks=12 nodes=51876 leafs=9912 alloc_requests=141360 release_requests=17640 checks=0,0,0,0",
+    "FG_SELFHOST_LIFETIME enabled=1 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0",
+    "FG_SELFHOST_COALESCE enabled=1 calls=17628 shadow_checks=0 digest=10572808032351027271",
+    "FG_SELFHOST_ALLOC enabled=1 calls=17652 reuse_hits=14176 shadow_checks=0 digest=14202186473766031291"
+  ],
+  "cpu_operations": [
+    {
+      "op": 40,
+      "name": "OP_GET_ROWS",
+      "worker_calls": 138,
+      "reported_values": 67377152
+    },
+    {
+      "op": 100,
+      "name": "OP_GLU",
+      "worker_calls": 42560,
+      "reported_values": 187105280
+    }
+  ],
+  "stateful_model_execution": "No FG143_STATE trace: GDN/SSM Goose model execution is not proved by this GPU-placement profile; covered only by GGML fixtures.",
+  "warmup_scope": "Process counters include normal loader warmup plus the sole measured request; not per-request deltas.",
+  "native_fallback": "Original native paths remain in the candidate; no full CPU/B1 closure claim."
+}

@@ -1,0 +1,11 @@
+{
+  "status": "PASS_CURRENT_SCOPED_COMPOSITE_ASAN_UBSAN_LSAN",
+  "exit_code": 0,
+  "cases": 254,
+  "bytes_equal_release_candidate": true,
+  "instrumented": "New common Goose unit,modified CPU executor/core,new metadata/service bridge and composite fixture",
+  "uninstrumented": "Preserved native/earlier Goose objects,base and other runtime modules; no TSan,CUDAsafety,whole CPU/type/model coverage or safety-superiority claim",
+  "production_changed": false,
+  "compiler_changed": false,
+  "model_loaded": false
+}

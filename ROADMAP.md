@@ -185,3 +185,33 @@ Keep a bad result in the journal, do not include the code. Do not turn `INCONCLU
 ## Old roadmap (a historical snapshot before the audit)
 
 P0 was marked done; P1: SSD→RAM→GPU overlap, aligned/coalesced reads, pinned RAM, double/triple buffering; P2: hot cache; P3: router prefetch; P4: addressed aligned container; P5: fused dequant+GEMM Ada/decode; P6: MTP/ngram/draft/combined; P7: residency planner; P8: mixed quant; P9: REAP; P10: multi-agent batching; P11: autotuning/API. All P1–P11 had unchecked boxes. The critical path was formulated as P0 → a true H2D/compute overlap. This order was replaced by the R0–R7 queue above; the experimental history was not deleted.
+
+## Long-term research idea: GOQ (Goose Optimized Quantization)
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-07. GOQ is the proposed
+name for a future family of our own quantization formats; an example name is
+`Q4_GOQ_M`. These names describe a research idea, not implemented formats.
+
+The goals are smaller model files, lower RAM/VRAM use, faster end-to-end
+inference, and minimal quality loss relative to existing formats. Start with
+optimization for our architecture. Explore adaptive layer/expert precision in
+MoE models, jointly developing quantization algorithms and CPU/CUDA kernels
+with Fried Goose.
+
+Design philosophy: **Hardware-First Quantization Design**. First investigate
+which operations are most efficient on the target CPU/GPU; then design the bit
+layout, block structure, and quantization scales around those operations.
+Start with our architecture. The objective is the largest practical gain in
+end-to-end prefill/decode while minimizing quality loss, model size, and
+RAM/VRAM use. Validate the hardware-first design experimentally against
+existing quantization formats; do not assume an advantage from format design
+or isolated kernel efficiency alone.
+
+When this research is scheduled, compare against the strongest then-available
+formats under reproducible conditions, including matched model-size or quality
+budgets. Measure quality, model size, total prefill/decode speed, RAM and VRAM;
+distinguish quantization improvements from runtime/kernel improvements. These
+are objectives to validate, not established advantages.
+
+This note does not change the current Goose migration GOAL, its sequence, or
+priorities. No implementation, model conversion, or benchmark is scheduled.
