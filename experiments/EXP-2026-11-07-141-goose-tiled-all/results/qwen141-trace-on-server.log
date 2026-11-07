@@ -1,0 +1,35 @@
+0.00.022.240 I srv  llama_server: initializing ...
+0.00.022.303 I RAM headroom: 45725 MiB available, 8 GiB required
+0.00.022.327 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.023.074 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.027.756 I srv    load_model: loading model '/home/end0/AI/LocalAI/Models/Qwen3.8-Flash-Next-GGUF/UD-IQ2_XS/Qwen3.8-Flash-Next-UD-IQ2_XS-00001-of-00003.gguf'
+0.00.464.783 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+0.04.165.158 I cmn          init: llama threadpool init, n_threads = 12
+0.05.144.088 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+0.05.150.359 I srv  llama_server: model loaded
+0.05.150.365 I srv  llama_server: listening on http://127.0.0.1:8081
+0.19.042.296 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.19.042.340 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.19.265.227 W ggml_cuda_expert_ring_init: expert ring enabled: 3 pinned host slots x 16 MiB
+0.44.300.504 I slot print_timing: id  0 | task 0 | prompt eval time =   21729.09 ms /   512 tokens (   42.44 ms per token,    23.56 tokens per second)
+0.44.300.509 I slot print_timing: id  0 | task 0 |        eval time =    3527.69 ms /    16 tokens (  235.18 ms per token,     4.25 tokens per second)
+0.44.300.510 I slot print_timing: id  0 | task 0 |       total time =   25256.78 ms /   528 tokens
+0.44.300.515 I slot print_timing: id  0 | task 0 |    graphs reused =         14
+0.44.300.515 I slot print_timing: id  0 | task 0 |   graph reallocs =          0    /     0        (same size) / (changed size)
+0.44.300.559 I slot      release: id  0 | task 0 | stop processing: n_tokens = 527, truncated = 0
+0.52.068.848 I srv    operator(): operator(): cleaning up before exit...
+0.52.089.542 W ~ggml_backend_cuda_context: expert ring staged 17526 calls, 17526 chunks
+FG141_BRIDGE dense=0 moe=0 native_dense_fallback=0 native_moe_fallback=0 enabled=1
+FG139_ACT kind=0 calls=101760 blocks=163200 enabled=1
+FG139_ACT kind=1 calls=20352 blocks=16320 enabled=1
+FG139_MATH component=cpu mode=3 kind=0 calls=57848 rows=10009600 dot_blocks=100096000
+FG139_MATH component=cpu mode=3 kind=1 calls=2248 rows=435200 dot_blocks=8704000
+FG139_MATH component=cpu mode=3 kind=2 calls=60992 rows=10444800 dot_blocks=208896000
+FG139_MATH component=cpu mode=3 kind=3 calls=32736 rows=1740800 dot_blocks=17408000
+FG139_MATH component=cpu mode=3 kind=4 calls=165952 rows=8704000 dot_blocks=87040000
+FG140_CONTROL entries=28272 quant_blocks=179520 grouped_routes=24480 chunks=319776 fused_chunks=0 tiled_delegations=0 layout_bytes=10077546640 enabled=1 apex_q4_calls=0 apex_q6_calls=0
+FG139_MATH component=base mode=2 kind=2 calls=8464 rows=8464 dot_blocks=42320
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=16428 shadow_checks=0 digest=4089676820402346643
+FG_SELFHOST_ALLOC enabled=0 calls=16446 reuse_hits=12796 shadow_checks=0 digest=10620259003471602339

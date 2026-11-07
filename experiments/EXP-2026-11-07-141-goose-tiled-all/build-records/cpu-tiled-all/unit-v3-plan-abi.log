@@ -1,0 +1,3 @@
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:26:1: error: static assertion failed: "Plan ABI"
+   26 | _Static_assert(sizeof(gg_type_1)==sizeof(struct fg141_plan),"Plan ABI");
+      | ^~~~~~~~~~~~~~

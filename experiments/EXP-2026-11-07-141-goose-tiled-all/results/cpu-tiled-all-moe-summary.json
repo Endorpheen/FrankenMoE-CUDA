@@ -1,0 +1,15 @@
+{
+  "status": "PASS_FULL_13_FORMAT_TILED_MOE_DRIVER_NATIVE",
+  "serial_cases": 169,
+  "parallel_eight_thread_cases": 13,
+  "output_values_compared": 1609436,
+  "native_exact_outputs": true,
+  "inputs_plan_canaries_preserved": true,
+  "disabled_or_small_batch_fallback_cases": 26,
+  "workspace_layout_cases": 1024,
+  "coverage": "Narrow/standard, L1-clamped extent, odd K extents,0/1/7/8/15/16/17/63/64/255/256/257/273routes,64-row groups, output tails, broadcast input slots, strided Q8 and destination, full scatter and multi-thread disjoint row ownership",
+  "producer_sha256": "0424b7bce8ddfbf308d2208612cef01de1780ada26337ff0f556a6786f9ea364",
+  "kernel_sha256": "317ec22ace25d50217fabe0f6db9a8a4b91cfd73ece879e1ddf58cbcd142853a",
+  "scope": "Complete MoE tiled computation validated against native private driver. Dense source compiled but real GGML/dense/native integration, sanitizers, models and timing still pending.",
+  "production_changed": false
+}

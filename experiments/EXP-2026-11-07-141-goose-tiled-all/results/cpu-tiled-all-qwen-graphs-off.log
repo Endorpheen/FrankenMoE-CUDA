@@ -1,0 +1,11 @@
+{"graphs":104,"values":4946253,"dense":52,"moe":52,"formats":13}
+FG141_BRIDGE dense=0 moe=0 native_dense_fallback=156 native_moe_fallback=624 enabled=0
+FG139_ACT kind=0 calls=0 blocks=0 enabled=1
+FG139_ACT kind=1 calls=16835 blocks=195949 enabled=1
+FG139_MATH component=cpu mode=0 kind=3 calls=7224 rows=7224 dot_blocks=72240
+FG139_MATH component=cpu mode=0 kind=4 calls=7224 rows=7224 dot_blocks=72240
+FG140_CONTROL entries=156 quant_blocks=115856 grouped_routes=16328 chunks=0 fused_chunks=0 tiled_delegations=624 layout_bytes=116392080 enabled=1 apex_q4_calls=0 apex_q6_calls=0
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=0 shadow_checks=0 digest=0
+FG_SELFHOST_ALLOC enabled=0 calls=0 reuse_hits=0 shadow_checks=0 digest=0

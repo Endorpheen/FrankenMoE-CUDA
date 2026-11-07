@@ -1,0 +1,11 @@
+{
+  "hypothesis": "Increase GCC inline budget to remove fixed-array aggregate ABI/helper cost in complete tiled module; unchanged emitted C and FP/check semantics.",
+  "flags": [
+    "--param=max-inline-insns-auto=2000",
+    "--param=max-inline-insns-single=4000",
+    "--param=inline-unit-growth=500"
+  ],
+  "source_changed": false,
+  "compiler_source_changed": false,
+  "production_changed": false
+}

@@ -1,0 +1,49 @@
+{
+  "name": "qwen141-goose-512x16",
+  "wall_seconds": 25.269053668016568,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 512,
+    "prompt_ms": 21729.089,
+    "prompt_per_token_ms": 42.439626953125,
+    "prompt_per_second": 23.562883837421808,
+    "predicted_n": 16,
+    "predicted_ms": 3527.691,
+    "predicted_per_token_ms": 235.1794,
+    "predicted_per_second": 4.2520730982390464
+  },
+  "content_sha256": "c26825947a82434151375be611c6ce7d3d5f278f47800521969e28a54f9c780e",
+  "tokens": [
+    6951,
+    271,
+    248068,
+    198,
+    760,
+    1156,
+    682,
+    3766,
+    264,
+    328,
+    7686,
+    1433,
+    1,
+    421,
+    369,
+    15327
+  ],
+  "sampled_rss_peak_mib": 20859.51171875,
+  "process_hwm_mib": 20902.03125,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 614.50390625,
+  "sampled_file_peak_mib": 19943.6640625,
+  "sampled_gpu_peak_mib": 6206,
+  "system_swapout_pages_delta": 4081,
+  "loadavg": [
+    5.20068359375,
+    3.55859375,
+    3.525390625
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

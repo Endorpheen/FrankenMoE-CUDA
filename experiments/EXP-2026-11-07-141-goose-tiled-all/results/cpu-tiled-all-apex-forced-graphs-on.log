@@ -1,0 +1,87 @@
+{"graphs":104,"values":4946253,"dense":52,"moe":52,"formats":13}
+FG141_BRIDGE dense=156 moe=624 native_dense_fallback=0 native_moe_fallback=0 enabled=1
+FG141_TILED stage=0 kind=0 units=59875
+FG141_TILED stage=0 kind=1 units=59875
+FG141_TILED stage=0 kind=2 units=59875
+FG141_TILED stage=0 kind=3 units=59875
+FG141_TILED stage=0 kind=4 units=59875
+FG141_TILED stage=0 kind=5 units=59875
+FG141_TILED stage=0 kind=6 units=59875
+FG141_TILED stage=0 kind=7 units=59875
+FG141_TILED stage=0 kind=8 units=59875
+FG141_TILED stage=0 kind=9 units=59875
+FG141_TILED stage=0 kind=10 units=59875
+FG141_TILED stage=0 kind=11 units=59875
+FG141_TILED stage=0 kind=12 units=59875
+FG141_TILED stage=1 kind=0 units=26488
+FG141_TILED stage=1 kind=1 units=26488
+FG141_TILED stage=1 kind=2 units=26488
+FG141_TILED stage=1 kind=3 units=26488
+FG141_TILED stage=1 kind=4 units=26488
+FG141_TILED stage=1 kind=5 units=26488
+FG141_TILED stage=1 kind=6 units=26488
+FG141_TILED stage=1 kind=7 units=26488
+FG141_TILED stage=1 kind=8 units=26488
+FG141_TILED stage=1 kind=9 units=26488
+FG141_TILED stage=1 kind=10 units=26488
+FG141_TILED stage=1 kind=11 units=26488
+FG141_TILED stage=1 kind=12 units=26488
+FG141_TILED stage=2 kind=0 units=105258
+FG141_TILED stage=2 kind=1 units=105258
+FG141_TILED stage=2 kind=2 units=105258
+FG141_TILED stage=2 kind=3 units=105258
+FG141_TILED stage=2 kind=4 units=105258
+FG141_TILED stage=2 kind=5 units=105258
+FG141_TILED stage=2 kind=6 units=105258
+FG141_TILED stage=2 kind=7 units=105258
+FG141_TILED stage=2 kind=8 units=105258
+FG141_TILED stage=2 kind=9 units=105258
+FG141_TILED stage=2 kind=10 units=105258
+FG141_TILED stage=2 kind=11 units=105258
+FG141_TILED stage=2 kind=12 units=105258
+FG141_TILED stage=3 kind=0 units=178
+FG141_TILED stage=3 kind=1 units=178
+FG141_TILED stage=3 kind=2 units=178
+FG141_TILED stage=3 kind=3 units=178
+FG141_TILED stage=3 kind=4 units=178
+FG141_TILED stage=3 kind=5 units=178
+FG141_TILED stage=3 kind=6 units=178
+FG141_TILED stage=3 kind=7 units=178
+FG141_TILED stage=3 kind=8 units=178
+FG141_TILED stage=3 kind=9 units=178
+FG141_TILED stage=3 kind=10 units=178
+FG141_TILED stage=3 kind=11 units=178
+FG141_TILED stage=3 kind=12 units=178
+FG141_TILED stage=4 kind=0 units=48
+FG141_TILED stage=4 kind=1 units=48
+FG141_TILED stage=4 kind=2 units=48
+FG141_TILED stage=4 kind=3 units=48
+FG141_TILED stage=4 kind=4 units=48
+FG141_TILED stage=4 kind=5 units=48
+FG141_TILED stage=4 kind=6 units=48
+FG141_TILED stage=4 kind=7 units=48
+FG141_TILED stage=4 kind=8 units=48
+FG141_TILED stage=4 kind=9 units=48
+FG141_TILED stage=4 kind=10 units=48
+FG141_TILED stage=4 kind=11 units=48
+FG141_TILED stage=4 kind=12 units=48
+FG141_TILED stage=5 kind=0 units=12
+FG141_TILED stage=5 kind=1 units=12
+FG141_TILED stage=5 kind=2 units=12
+FG141_TILED stage=5 kind=3 units=12
+FG141_TILED stage=5 kind=4 units=12
+FG141_TILED stage=5 kind=5 units=12
+FG141_TILED stage=5 kind=6 units=12
+FG141_TILED stage=5 kind=7 units=12
+FG141_TILED stage=5 kind=8 units=12
+FG141_TILED stage=5 kind=9 units=12
+FG141_TILED stage=5 kind=10 units=12
+FG141_TILED stage=5 kind=11 units=12
+FG141_TILED stage=5 kind=12 units=12
+FG139_ACT kind=0 calls=0 blocks=0 enabled=1
+FG139_ACT kind=1 calls=11674 blocks=121264 enabled=1
+FG140_CONTROL entries=156 quant_blocks=115856 grouped_routes=16328 chunks=0 fused_chunks=0 tiled_delegations=624 layout_bytes=116392016 enabled=1 apex_q4_calls=0 apex_q6_calls=0
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=0 shadow_checks=0 digest=0
+FG_SELFHOST_ALLOC enabled=0 calls=0 reuse_hits=0 shadow_checks=0 digest=0

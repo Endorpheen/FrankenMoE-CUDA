@@ -1,0 +1,425 @@
+{
+  "status": "PASS_REAL_GGML_ALL_13_DENSE_MOE_TILED",
+  "profile": "apex",
+  "runs": {
+    "native": {
+      "graphs": 104,
+      "values": 4946253,
+      "dense": 52,
+      "moe": 52,
+      "formats": 13
+    },
+    "off": {
+      "graphs": 104,
+      "values": 4946253,
+      "dense": 52,
+      "moe": 52,
+      "formats": 13
+    },
+    "on": {
+      "graphs": 104,
+      "values": 4946253,
+      "dense": 52,
+      "moe": 52,
+      "formats": 13
+    }
+  },
+  "all_bytes_equal_original_and_previous": true,
+  "sha256": "20057a4c970b9225e2a2e41a4bd904a0da9d6f0583c3ee51461f1f9bfcf5a8e2",
+  "bytes_compared": 19785844,
+  "path_witness": [
+    {
+      "stage": 0,
+      "kind": 0,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 1,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 2,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 3,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 4,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 5,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 6,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 7,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 8,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 9,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 10,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 11,
+      "units": 49555
+    },
+    {
+      "stage": 0,
+      "kind": 12,
+      "units": 49555
+    },
+    {
+      "stage": 1,
+      "kind": 0,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 1,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 2,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 3,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 4,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 5,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 6,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 7,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 8,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 9,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 10,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 11,
+      "units": 25768
+    },
+    {
+      "stage": 1,
+      "kind": 12,
+      "units": 25768
+    },
+    {
+      "stage": 2,
+      "kind": 0,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 1,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 2,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 3,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 4,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 5,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 6,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 7,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 8,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 9,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 10,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 11,
+      "units": 100218
+    },
+    {
+      "stage": 2,
+      "kind": 12,
+      "units": 100218
+    },
+    {
+      "stage": 3,
+      "kind": 0,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 1,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 2,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 3,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 4,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 5,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 6,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 7,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 8,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 9,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 10,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 11,
+      "units": 106
+    },
+    {
+      "stage": 3,
+      "kind": 12,
+      "units": 106
+    },
+    {
+      "stage": 4,
+      "kind": 0,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 1,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 2,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 3,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 4,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 5,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 6,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 7,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 8,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 9,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 10,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 11,
+      "units": 48
+    },
+    {
+      "stage": 4,
+      "kind": 12,
+      "units": 48
+    },
+    {
+      "stage": 5,
+      "kind": 0,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 1,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 2,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 3,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 4,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 5,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 6,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 7,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 8,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 9,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 10,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 11,
+      "units": 4
+    },
+    {
+      "stage": 5,
+      "kind": 12,
+      "units": 4
+    }
+  ],
+  "scope": "104 graphs,13types, dense2D/4D/broadcast and MoE, F32/Q8_K, padded weights/input rows, zero inputs, narrow/standard and K/window tails; all13new unpack/micro/window/dense/MoE paths execute Goose.",
+  "real_model": "pending",
+  "production_changed": false
+}

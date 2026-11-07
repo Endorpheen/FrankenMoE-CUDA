@@ -1,0 +1,15 @@
+{
+  "status": "PASS_ALL_13_Q8_GATHER_AND_SEVEN_NATIVE_SIMD_MICROS",
+  "gather_cases": 403,
+  "gather_blocks": 24960,
+  "micro_cases": 390,
+  "micro_slabs": 2275,
+  "eight_thread_micro_cases": 104,
+  "all_workspace_bytes_equal_native_after_each_micro": true,
+  "inputs_canaries_unchanged": true,
+  "coverage": "SUBBLK16/32, bias0/4/32/128, act-bias and IQ4 sign trick, with/without mins, nonzero initial accumulator, -128 activations, offset 16x16 windows and multi-slab accumulation",
+  "kernel_sha256": "317ec22ace25d50217fabe0f6db9a8a4b91cfd73ece879e1ddf58cbcd142853a",
+  "producer_sha256": "0424b7bce8ddfbf308d2208612cef01de1780ada26337ff0f556a6786f9ea364",
+  "scope": "Full unpack/repack and micro compute verified; driver/inference/sanitizers/performance pending",
+  "production_changed": false
+}

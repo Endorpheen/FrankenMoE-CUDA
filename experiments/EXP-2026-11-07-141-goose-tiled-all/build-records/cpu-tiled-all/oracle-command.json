@@ -1,0 +1,21 @@
+[
+  "/usr/bin/g++-13",
+  "-O3",
+  "-march=native",
+  "-fPIC",
+  "-std=c++17",
+  "-I/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src",
+  "-I/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu",
+  "-I/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include",
+  "-shared",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/oracle.cpp",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o",
+  "-L/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/bin",
+  "-lggml-cpu",
+  "-lggml-base",
+  "-lm",
+  "-lpthread",
+  "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/bin",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-tiled-all/build/libnative-tiled-oracle.so"
+]

@@ -1,0 +1,49 @@
+{
+  "name": "qwen141-native-512x16",
+  "wall_seconds": 27.439834543969482,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 512,
+    "prompt_ms": 24112.121,
+    "prompt_per_token_ms": 47.093986328125,
+    "prompt_per_second": 21.23413365418994,
+    "predicted_n": 16,
+    "predicted_ms": 3319.441,
+    "predicted_per_token_ms": 221.29606666666666,
+    "predicted_per_second": 4.5188331408812505
+  },
+  "content_sha256": "c26825947a82434151375be611c6ce7d3d5f278f47800521969e28a54f9c780e",
+  "tokens": [
+    6951,
+    271,
+    248068,
+    198,
+    760,
+    1156,
+    682,
+    3766,
+    264,
+    328,
+    7686,
+    1433,
+    1,
+    421,
+    369,
+    15327
+  ],
+  "sampled_rss_peak_mib": 19167.30078125,
+  "process_hwm_mib": 19286.4609375,
+  "process_swap_peak_kib": 1440,
+  "sampled_anon_peak_mib": 614.2578125,
+  "sampled_file_peak_mib": 18493.55078125,
+  "sampled_gpu_peak_mib": 6206,
+  "system_swapout_pages_delta": 62485,
+  "loadavg": [
+    4.0732421875,
+    3.18603515625,
+    3.421875
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}
