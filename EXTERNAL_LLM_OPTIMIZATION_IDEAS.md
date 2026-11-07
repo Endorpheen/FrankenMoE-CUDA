@@ -23,6 +23,18 @@ Reviewed: 2026-11-07. [The Ultimate MoE Training Handbook][HF], especially Syste
 
 The handbook illustrates some mechanisms with simulations. Those illustrations are not hardware measurements. Top-K quality claims above belong to Chen/Yao; LExI's results belong to its authors. The permutation result is a handbook training observation. No external speed multiplier is transferred to Apex, Qwen, FrankenMoE, or Fried Goose here.
 
+## TQLLM: unreviewed engineering lead
+
+Added: 2026-11-07. Repository: [turbo-tan/tqllm](https://github.com/turbo-tan/tqllm).
+
+Status: **saved for future review; not downloaded or investigated**. Version, architecture, supported models, performance claims and licensing have not been checked.
+
+Future scope: download and pin the source revision; study its architecture, prefill paths, long-context handling, Flash-Next-related paths and memory management. These are requested review topics, not verified project capabilities.
+
+Potential benefit — **H**: reusable implementation or design ideas for the shared FrankenMoE runtime. No useful mechanism or speed/memory improvement has been established. Any later reuse requires checking compatibility, ownership, correctness and license terms.
+
+This entry does not authorize implementation, cloning, benchmarking or a change to the current migration task or priorities.
+
 ## How to extend this file
 
 Append a dated source entry with a stable ID, primary link, version/commit, mechanism, author-reported evidence, hardware/workload/baseline, possible benefit, and limitations. Label local extrapolation H. Keep contradictory and negative findings. Separate mathematical work reduction, weight size, peak RAM/VRAM, prefill, decode, latency, and aggregate throughput. Do not add unrelated measurements or implementation changes while collecting references.
