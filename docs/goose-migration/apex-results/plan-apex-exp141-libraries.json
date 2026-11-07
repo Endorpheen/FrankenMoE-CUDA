@@ -1,0 +1,16 @@
+{
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/graph-plan/run/libggml-base.so.0.27.0": "ea6836c45e2447f5452e50a1ad7b877a491b817dcf1c97770977da4240b4a380",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libggml-base-control.so.0.27.0": "aa5274b5b7645223d61949b792b58747aa07ed8c28eb5397b72962cc70952686",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libllama-control.so.0.7.0": "ae8c25117528bc7500e05a03746440fa3fa5ae003d9a40a7f9c4e0b4177e12ce",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libllama-server-impl.so": "8a963ce35bc919880354b226f5737c6c5d3f2dc47184c291badfe8470a209168",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libggml-cuda.so.0.27.0": "0fdae13ecdfba971bc29d22a9cbb070d1d62afb9bf39527e14378d0fb1aca0a8",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libmtmd.so.0.7.0": "099bdb69066ce52d71b3c1c7fa37ad2bbe70ef8271bc0a097e22a79e0c4eb0cd",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libllama-common.so.0.7.0": "69edbc5fc5e2a646b427ca0d025beb4d862c6fd4a452d9c6be92da13378e82ed",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libllama.so.0.7.0": "40aad919b4490a5a466d257c6270a4588439735271fd798d614c60753e22678a",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/libggml.so.0.27.0": "1e52e0dc14ed0c0a21f753031685ffa716107a9d586bdfbf7771b23d1887ceec",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/tiled-all-apex-perf/run/libggml-cpu.so.0.27.0": "53d1b7ea2fbdbd496a5bc0e037bf5b5b904db7a27e59ab80edaac7d48583330a",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/run/llama-server": "4e7f7e2f7cc6bb865c6b2fd4865527279fe610a47b96687b41fa318fc4b8789a",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-silu.so": "443c9635d5a9a972d2aca771d35df67d0f6225f47dcaabd0634039e446312430",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-scale.so": "971da5caca652aae06fb51a01012a15ed375d499408d1047d9a173df43c987d4",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-rms-block.so": "66ec2bcd087c0d5f532c02a1c30a46d68cd2cadd029b6505bfae4b9eab77f174"
+}
