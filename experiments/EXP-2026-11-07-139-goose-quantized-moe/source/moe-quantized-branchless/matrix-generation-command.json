@@ -1,0 +1,6 @@
+[
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-7ab1a1ca1cdb",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/generated/moe-matrix-branchless.c",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-quantized-branchless/matrix.goose"
+]

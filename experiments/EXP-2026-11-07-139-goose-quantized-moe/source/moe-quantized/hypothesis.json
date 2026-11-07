@@ -1,0 +1,15 @@
+{
+  "experiment": "EXP-2026-11-07-139",
+  "scope": "Whole remaining raw Qwen MoE quantized computation family: Q2_0, Q5_0, IQ4_NL, IQ2_XXS, IQ2_S; Q8_0 plus existing Q8_K activation packing; matrix rows and preserved IQ2_S 2/3-activation fused chunks. No original math wrapper.",
+  "selection_evidence": "All three GGUF header inventories, no weight payload loaded. IQ2_S80/IQ4_NL24/Q2_023/IQ2_XXS16/Q5_01 expert tensors. Native quant/common source files identical across Apex and Qwen baselines; CPU controllers differ.",
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "working_runtime_changed": false,
+  "compiler_changed": false,
+  "gates": [
+    "Exact native block/dot/matrix and multithread controls",
+    "Scoped sanitizers",
+    "Apex regression and live new common quantizer witness",
+    "Qwen at coherent major module integration, not after each small function",
+    "Operation/model timing and RAM/VRAM; keep unresolved regressions and fallback"
+  ]
+}

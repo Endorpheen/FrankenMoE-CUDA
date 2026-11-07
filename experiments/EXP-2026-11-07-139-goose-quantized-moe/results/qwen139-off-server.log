@@ -1,0 +1,35 @@
+0.00.022.391 I srv  llama_server: initializing ...
+0.00.022.446 I RAM headroom: 45058 MiB available, 8 GiB required
+0.00.022.466 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.023.007 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.026.910 I srv    load_model: loading model '/home/end0/AI/LocalAI/Models/Qwen3.8-Flash-Next-GGUF/UD-IQ2_XS/Qwen3.8-Flash-Next-UD-IQ2_XS-00001-of-00003.gguf'
+0.00.597.761 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+0.02.970.823 I cmn          init: llama threadpool init, n_threads = 12
+0.03.340.517 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+0.03.345.717 I srv  llama_server: model loaded
+0.03.345.728 I srv  llama_server: listening on http://127.0.0.1:8081
+0.18.528.357 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.18.528.388 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.18.695.037 W ggml_cuda_expert_ring_init: expert ring enabled: 3 pinned host slots x 16 MiB
+0.20.521.079 I slot print_timing: id  0 | task 0 | prompt eval time =    1643.00 ms /    32 tokens (   51.34 ms per token,    19.48 tokens per second)
+0.20.521.084 I slot print_timing: id  0 | task 0 |        eval time =     348.15 ms /     4 tokens (  116.05 ms per token,     8.62 tokens per second)
+0.20.521.085 I slot print_timing: id  0 | task 0 |       total time =    1991.15 ms /    36 tokens
+0.20.521.091 I slot print_timing: id  0 | task 0 |    graphs reused =          2
+0.20.521.091 I slot print_timing: id  0 | task 0 |   graph reallocs =          0    /     0        (same size) / (changed size)
+0.20.521.122 I slot      release: id  0 | task 0 | stop processing: n_tokens = 35, truncated = 0
+0.30.475.376 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.250 (> 0.100 thold), f_keep = 0.914
+0.30.475.417 I slot launch_slot_: id  0 | task 5 | processing task, is_child = 0
+0.34.771.750 I slot print_timing: id  0 | task 5 | prompt eval time =    3457.34 ms /   128 tokens (   27.01 ms per token,    37.02 tokens per second)
+0.34.771.756 I slot print_timing: id  0 | task 5 |        eval time =     837.86 ms /    16 tokens (   55.86 ms per token,    17.90 tokens per second)
+0.34.771.757 I slot print_timing: id  0 | task 5 |       total time =    4295.20 ms /   144 tokens
+0.34.771.758 I slot print_timing: id  0 | task 5 |    graphs reused =         16
+0.34.771.758 I slot print_timing: id  0 | task 5 |   graph reallocs =          0    /     0        (same size) / (changed size)
+0.34.771.775 I slot      release: id  0 | task 5 | stop processing: n_tokens = 143, truncated = 0
+0.48.309.043 I srv    operator(): operator(): cleaning up before exit...
+0.48.327.976 W ~ggml_backend_cuda_context: expert ring staged 28791 calls, 28791 chunks
+FG139_ACT kind=0 calls=0 blocks=0 enabled=0
+FG139_ACT kind=1 calls=0 blocks=0 enabled=0
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=21904 shadow_checks=0 digest=14479332474592123897
+FG_SELFHOST_ALLOC enabled=0 calls=21928 reuse_hits=17290 shadow_checks=0 digest=12421362780733978466

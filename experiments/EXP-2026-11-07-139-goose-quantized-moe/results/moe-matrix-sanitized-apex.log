@@ -1,0 +1,1 @@
+{"status":"PASS_ALL_FIVE_MATRIX_DEQUANT_ROUTED_FUSED_CANARIES","cases":982,"matrix_rows":7060,"dequant_values":913408,"concurrent_threads":8}

@@ -1,0 +1,6 @@
+{
+  "change": "Replace prior Q8_K-only Goose object with v8 common Q8_0/Q8_K quant module; original CPU native quantizers retained for GGML_GOOSE_MOE_QUANT=0",
+  "sha256": "2b4d99585ff36ce397574ea157a483b2ace03a15f83c2c9ed3d65ed93b1e67ad",
+  "trace_enabled": true,
+  "production_changed": false
+}

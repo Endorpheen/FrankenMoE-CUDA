@@ -1,0 +1,7 @@
+{
+  "experiment": "EXP-2026-11-07-139",
+  "candidate": "branchless Goose math",
+  "hypothesis": "Remove per-byte conditional sign control flow; expose constant-bit Q2 unpack and single palette duplication. Preserve exact arithmetic and all validation.",
+  "evidence": "Counter-free first module matrix ratios8x..106x; native disassembly identifies scalar branch loop in signed_product. No compiler edit.",
+  "control": "Retain canonical source and all before results; repeat both numerical references and sanitizers before model test."
+}

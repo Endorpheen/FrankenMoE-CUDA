@@ -1,0 +1,336 @@
+{
+  "status": "PASS_REAL_QWEN_FIVE_FORMAT_COMPUTE_WITH_DECODE_REGRESSION_OPEN",
+  "checks": [
+    {
+      "shape": "32x4",
+      "identical_payload": true,
+      "content_tokens_top5_equal": true,
+      "runs": {
+        "native": {
+          "name": "qwen139-native-32x4",
+          "wall_seconds": 42.183996304054745,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32,
+            "prompt_ms": 41589.014,
+            "prompt_per_token_ms": 1299.6566875,
+            "prompt_per_second": 0.7694339663835261,
+            "predicted_n": 4,
+            "predicted_ms": 562.715,
+            "predicted_per_token_ms": 187.5716666666667,
+            "predicted_per_second": 5.3312955936841915
+          },
+          "content_sha256": "688f6ce92ab06ee74fd34c8db23df3b2fa8492ceeeb6ece7982cee726db5f2c8",
+          "tokens": [
+            321,
+            2426,
+            279,
+            1785
+          ],
+          "sampled_rss_peak_mib": 14663.67578125,
+          "process_hwm_mib": 14782.28515625,
+          "process_swap_peak_kib": 255196,
+          "sampled_anon_peak_mib": 573.0859375,
+          "sampled_file_peak_mib": 14193.00390625,
+          "sampled_gpu_peak_mib": 6176,
+          "system_swapout_pages_delta": 266554,
+          "loadavg": [
+            3.9052734375,
+            3.58544921875,
+            2.85302734375
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        },
+        "off": {
+          "name": "qwen139-off-32x4",
+          "wall_seconds": 2.0002681489568204,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32,
+            "prompt_ms": 1642.999,
+            "prompt_per_token_ms": 51.34371875,
+            "prompt_per_second": 19.476579109299518,
+            "predicted_n": 4,
+            "predicted_ms": 348.154,
+            "predicted_per_token_ms": 116.05133333333333,
+            "predicted_per_second": 8.616876439736439
+          },
+          "content_sha256": "688f6ce92ab06ee74fd34c8db23df3b2fa8492ceeeb6ece7982cee726db5f2c8",
+          "tokens": [
+            321,
+            2426,
+            279,
+            1785
+          ],
+          "sampled_rss_peak_mib": 13848.203125,
+          "process_hwm_mib": 13848.203125,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 575.71484375,
+          "sampled_file_peak_mib": 12971.14453125,
+          "sampled_gpu_peak_mib": 6172,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            3.4248046875,
+            3.490234375,
+            2.86865234375
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        },
+        "on": {
+          "name": "qwen139-on-32x4",
+          "wall_seconds": 2.2003057589754462,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32,
+            "prompt_ms": 1201.535,
+            "prompt_per_token_ms": 37.54796875,
+            "prompt_per_second": 26.632599133608256,
+            "predicted_n": 4,
+            "predicted_ms": 990.527,
+            "predicted_per_token_ms": 330.1756666666667,
+            "predicted_per_second": 3.0286907878331437
+          },
+          "content_sha256": "688f6ce92ab06ee74fd34c8db23df3b2fa8492ceeeb6ece7982cee726db5f2c8",
+          "tokens": [
+            321,
+            2426,
+            279,
+            1785
+          ],
+          "sampled_rss_peak_mib": 15431.7265625,
+          "process_hwm_mib": 15431.7265625,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 612.62109375,
+          "sampled_file_peak_mib": 14517.76171875,
+          "sampled_gpu_peak_mib": 6196,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            2.625,
+            3.2587890625,
+            2.82080078125
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        }
+      }
+    },
+    {
+      "shape": "128x16",
+      "identical_payload": true,
+      "content_tokens_top5_equal": true,
+      "runs": {
+        "native": {
+          "name": "qwen139-native-128x16",
+          "wall_seconds": 16.88976998999715,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 128,
+            "prompt_ms": 14375.206,
+            "prompt_per_token_ms": 112.306296875,
+            "prompt_per_second": 8.904220224739737,
+            "predicted_n": 16,
+            "predicted_ms": 2501.428,
+            "predicted_per_token_ms": 166.76186666666666,
+            "predicted_per_second": 5.996574756499087
+          },
+          "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+          "tokens": [
+            271,
+            248068,
+            198,
+            760,
+            1156,
+            369,
+            9859,
+            728,
+            310,
+            8290,
+            264,
+            328,
+            7686,
+            1433,
+            1,
+            421
+          ],
+          "sampled_rss_peak_mib": 20334.58984375,
+          "process_hwm_mib": 20334.58984375,
+          "process_swap_peak_kib": 505316,
+          "sampled_anon_peak_mib": 131.24609375,
+          "sampled_file_peak_mib": 20087.921875,
+          "sampled_gpu_peak_mib": 6198,
+          "system_swapout_pages_delta": 98240,
+          "loadavg": [
+            3.732421875,
+            3.5576171875,
+            2.8623046875
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        },
+        "off": {
+          "name": "qwen139-off-128x16",
+          "wall_seconds": 4.304845224949531,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 128,
+            "prompt_ms": 3457.342,
+            "prompt_per_token_ms": 27.010484375,
+            "prompt_per_second": 37.022660760780965,
+            "predicted_n": 16,
+            "predicted_ms": 837.86,
+            "predicted_per_token_ms": 55.85733333333334,
+            "predicted_per_second": 17.902752249779198
+          },
+          "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+          "tokens": [
+            271,
+            248068,
+            198,
+            760,
+            1156,
+            369,
+            9859,
+            728,
+            310,
+            8290,
+            264,
+            328,
+            7686,
+            1433,
+            1,
+            421
+          ],
+          "sampled_rss_peak_mib": 22654.21484375,
+          "process_hwm_mib": 22654.21484375,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 621.91796875,
+          "sampled_file_peak_mib": 21730.953125,
+          "sampled_gpu_peak_mib": 6198,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            3.17626953125,
+            3.4326171875,
+            2.85986328125
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        },
+        "on": {
+          "name": "qwen139-on-128x16",
+          "wall_seconds": 6.278267529909499,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 128,
+            "prompt_ms": 1674.282,
+            "prompt_per_token_ms": 13.080328125,
+            "prompt_per_second": 76.45068154588057,
+            "predicted_n": 16,
+            "predicted_ms": 4593.974,
+            "predicted_per_token_ms": 306.2649333333333,
+            "predicted_per_second": 3.2651469076664346
+          },
+          "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+          "tokens": [
+            271,
+            248068,
+            198,
+            760,
+            1156,
+            369,
+            9859,
+            728,
+            310,
+            8290,
+            264,
+            328,
+            7686,
+            1433,
+            1,
+            421
+          ],
+          "sampled_rss_peak_mib": 23325.81640625,
+          "process_hwm_mib": 23325.81640625,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 619.69921875,
+          "sampled_file_peak_mib": 22404.7734375,
+          "sampled_gpu_peak_mib": 6198,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            3.88525390625,
+            3.49462890625,
+            2.904296875
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        }
+      }
+    }
+  ],
+  "witness": {
+    "off": [],
+    "on": [
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 0,
+        "calls": 66128,
+        "rows": 11776000,
+        "dot_blocks": 117760000
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 1,
+        "calls": 2608,
+        "rows": 512000,
+        "dot_blocks": 10240000
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 2,
+        "calls": 69792,
+        "rows": 12313600,
+        "dot_blocks": 246272000
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 3,
+        "calls": 38496,
+        "rows": 2048000,
+        "dot_blocks": 20480000
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 4,
+        "calls": 195072,
+        "rows": 10252800,
+        "dot_blocks": 102528000
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 2,
+        "calls": 2880,
+        "rows": 2880,
+        "dot_blocks": 14400
+      }
+    ]
+  },
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "goose_sha256": "cc844feecdf492fd9ca08e744cf0d3be5b452a103bc68817443262cda3b60fdc",
+  "fused_model_witness": false,
+  "fused_coverage": "24 legal verification-window dispatches in separate real GGML fixture; ordinary model requests use spec none",
+  "performance": "Preliminary: native cold/swap and uncontrolled activity. Goose decode3.265 versusoff17.903 warrants operation profiling; not accepted. Faster prefill is not accepted as acceleration. Counters enabled in new module.",
+  "production_changed": false
+}

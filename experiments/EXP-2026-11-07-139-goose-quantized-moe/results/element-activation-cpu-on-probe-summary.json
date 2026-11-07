@@ -1,0 +1,37 @@
+{
+  "name": "element-activation-cpu-on-probe",
+  "wall_seconds": 1.721356351976283,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 1424.949,
+    "prompt_per_token_ms": 11.1324140625,
+    "prompt_per_second": 89.8277762923445,
+    "predicted_n": 4,
+    "predicted_ms": 287.369,
+    "predicted_per_token_ms": 95.78966666666668,
+    "predicted_per_second": 10.43953940752134
+  },
+  "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+  "tokens": [
+    58558,
+    13,
+    198,
+    760
+  ],
+  "sampled_rss_peak_mib": 20675.37890625,
+  "process_hwm_mib": 20946.87890625,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 424.63671875,
+  "sampled_file_peak_mib": 20250.7421875,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    3.9384765625,
+    3.9443359375,
+    2.75
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

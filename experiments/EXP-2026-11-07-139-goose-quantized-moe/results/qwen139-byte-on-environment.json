@@ -1,0 +1,9 @@
+{
+  "LD_LIBRARY_PATH": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized-byte/run",
+  "LD_PRELOAD": null,
+  "GGML_GOOSE_GRAPH_PLAN": "0",
+  "GGML_GOOSE_ALLOC_VERIFY": "0",
+  "GGML_GOOSE_MOE_MATH": "1",
+  "GGML_GOOSE_MOE_QUANT": "1",
+  "pid": 3573289
+}

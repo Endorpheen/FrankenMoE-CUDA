@@ -1,0 +1,67 @@
+{
+  "cpu": 0,
+  "rounds": 5,
+  "counter_free": true,
+  "cases": [
+    {
+      "kind": 0,
+      "values": 32,
+      "iters": 262144,
+      "native_us": 0.005152,
+      "goose_us": 0.085308,
+      "ratio": 16.558766
+    },
+    {
+      "kind": 0,
+      "values": 256,
+      "iters": 65536,
+      "native_us": 0.037372,
+      "goose_us": 0.689541,
+      "ratio": 18.450517
+    },
+    {
+      "kind": 0,
+      "values": 2560,
+      "iters": 8192,
+      "native_us": 0.373273,
+      "goose_us": 7.050826,
+      "ratio": 18.889202
+    },
+    {
+      "kind": 0,
+      "values": 4096,
+      "iters": 4096,
+      "native_us": 0.601748,
+      "goose_us": 11.229372,
+      "ratio": 18.66126
+    },
+    {
+      "kind": 1,
+      "values": 256,
+      "iters": 16384,
+      "native_us": 0.206216,
+      "goose_us": 0.161127,
+      "ratio": 0.781354
+    },
+    {
+      "kind": 1,
+      "values": 2560,
+      "iters": 1024,
+      "native_us": 2.05899,
+      "goose_us": 1.59941,
+      "ratio": 0.776794
+    },
+    {
+      "kind": 1,
+      "values": 4096,
+      "iters": 1024,
+      "native_us": 3.283932,
+      "goose_us": 2.56163,
+      "ratio": 0.78005
+    }
+  ],
+  "preliminary": true,
+  "controlled_quiet_run": false,
+  "native_baseline": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/bin",
+  "scope": "Counter-free complete Q8_0/Q8_K packing versus original Qwen-native CPU implementation; same prepared input and exact outputs. Q8_0 native is AVX2; no identical-build C superiority claim."
+}

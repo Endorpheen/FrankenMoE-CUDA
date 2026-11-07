@@ -1,0 +1,21 @@
+{
+  "status": "PASS_REAL_QWEN_FIVE_FORMAT_COMPUTE_WITH_DECODE_REGRESSION_OPEN",
+  "source_cpu_sha256": "f4a804f212e7e99bf5ec9c1a9ab4bf4ad864324ec8c9e6bc551f5ee5f52d7807",
+  "native_controller_copy_sha256": "7510b2362f1d2e633d89642c70f3cdfdbb28295efbc5958d87cb5f47ebf0f1f7",
+  "cpu_sha256": "db6bc7deb05b744122eb2f0dd09be71157db59fc6d1125e4f4a86f314bbe6059",
+  "base_sha256": "32e0d95ef0ede5dff45a4affbecdde7ea346c3bf7636ce4e844d53b3f9c46a06",
+  "preserved": [
+    "Original explicit target-verification IQ2S fused window/guard",
+    "Native tiled/repack dispatch",
+    "Cold mask/chunk/thread scheduling and expert-ready hook",
+    "Existing Qwen-native Goose graph/allocator objects",
+    "CUDA ring and shared MTP libraries unchanged"
+  ],
+  "new_compute": "Goose five-family dot/matrix/dequant/routed/fused math plus common Q8 packing",
+  "working_runtime_changed": false,
+  "empty_native_chunks": "Goose accepts reversed/clipped empty worker spans and touches no data",
+  "graph_report": "results/moe-qwen-graphs-summary.json",
+  "goose_sha256": "cc844feecdf492fd9ca08e744cf0d3be5b452a103bc68817443262cda3b60fdc",
+  "emitted_c_sha256": "45acb3911876ba62d7d632a4f9a7fe8a855997d7c2549031e1e1bab4bedb4d7f",
+  "model_report": "results/moe-qwen-model-stage-summary.json"
+}

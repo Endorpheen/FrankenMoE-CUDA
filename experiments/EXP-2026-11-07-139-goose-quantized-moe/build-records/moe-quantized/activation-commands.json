@@ -1,0 +1,30 @@
+[
+  [
+    "/usr/bin/gcc-13",
+    "-O3",
+    "-march=native",
+    "-fPIC",
+    "-fno-strict-aliasing",
+    "-ffp-contract=off",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+    "-DFG139_QUANT_TRACE=1",
+    "-c",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-quantized/activation-unit.c",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-quantized/build/activation.o"
+  ],
+  [
+    "/usr/bin/gcc-13",
+    "-shared",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-quantized/build/activation.o",
+    "-L/home/end0/AI/LlamaServer/franken-goose-live-20261107/run",
+    "-lggml-cpu",
+    "-lggml-base",
+    "-lm",
+    "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-live-20261107/run",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-quantized/build/libgoose-moe-activation.so"
+  ]
+]

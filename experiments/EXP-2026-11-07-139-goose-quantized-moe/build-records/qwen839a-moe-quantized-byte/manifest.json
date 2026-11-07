@@ -1,0 +1,12 @@
+{
+  "status": "PASS_REAL_QWEN_BYTE_OPTIMIZATION_CORRECTNESS_PERFORMANCE_REJECTED",
+  "goose_sha256": "5d21a0664888a524352cc7c58129593be7deeef0a8116323001d7f3cab7493ad",
+  "emitted_c_sha256": "4cfebcc561a3824463ac18fb5cedc86c3754f760d2d41ddc2ae9f16052a9c2d9",
+  "cpu_sha256": "0639bbee5d7942a9d090ec2640060ac45ab4fd2f3c153ab582dbbc894c06dd31",
+  "base_sha256": "71e22cede278e5b7c19de57921fc3cda765e172c6317997be5075465d733258e",
+  "parent": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized",
+  "changed": "Only new Goose math objects; reuse exact native/fallback/activation/controller/allocator/CUDA objects",
+  "production_changed": false,
+  "model_report": "results/moe-qwen-byte-model-stage-summary.json",
+  "graph_report": "results/moe-qwen-byte-graphs-summary.json"
+}

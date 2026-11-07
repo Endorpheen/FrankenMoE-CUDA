@@ -1,0 +1,11 @@
+{
+  "hypothesis": "Increase host GCC inline budget to eliminate fixed-array aggregate call/stack traffic while retaining unchanged emitted Goose C, checks and FP flags.",
+  "flags": [
+    "--param=max-inline-insns-auto=2000",
+    "--param=max-inline-insns-single=4000",
+    "--param=inline-unit-growth=500"
+  ],
+  "compiler_source_changed": false,
+  "baseline": "moe-quantized-branchless-perf",
+  "production_changed": false
+}

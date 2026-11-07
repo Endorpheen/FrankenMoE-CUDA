@@ -1,0 +1,23 @@
+{
+  "status": "PASS_ALL_FIVE_SCOPED_ASAN_UBSAN_LSAN",
+  "runs": {
+    "apex": {
+      "status": "PASS_ALL_FIVE_MATRIX_DEQUANT_ROUTED_FUSED_CANARIES",
+      "cases": 982,
+      "matrix_rows": 7060,
+      "dequant_values": 913408,
+      "concurrent_threads": 8
+    },
+    "qwen": {
+      "status": "PASS_ALL_FIVE_MATRIX_DEQUANT_ROUTED_FUSED_CANARIES",
+      "cases": 982,
+      "matrix_rows": 7060,
+      "dequant_values": 913408,
+      "concurrent_threads": 8
+    }
+  },
+  "instrumented": "Whole new Goose matrix/dequant/routed/fused math and C fixture",
+  "uninstrumented": "Inherited native reference and backend libraries",
+  "compiler_source_changed": false,
+  "limitations": "Not full backend ownership audit or TSan. Native precision policy pinned per reference."
+}

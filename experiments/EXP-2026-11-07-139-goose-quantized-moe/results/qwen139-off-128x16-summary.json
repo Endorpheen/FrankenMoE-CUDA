@@ -1,0 +1,49 @@
+{
+  "name": "qwen139-off-128x16",
+  "wall_seconds": 4.304845224949531,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 3457.342,
+    "prompt_per_token_ms": 27.010484375,
+    "prompt_per_second": 37.022660760780965,
+    "predicted_n": 16,
+    "predicted_ms": 837.86,
+    "predicted_per_token_ms": 55.85733333333334,
+    "predicted_per_second": 17.902752249779198
+  },
+  "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+  "tokens": [
+    271,
+    248068,
+    198,
+    760,
+    1156,
+    369,
+    9859,
+    728,
+    310,
+    8290,
+    264,
+    328,
+    7686,
+    1433,
+    1,
+    421
+  ],
+  "sampled_rss_peak_mib": 22654.21484375,
+  "process_hwm_mib": 22654.21484375,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 621.91796875,
+  "sampled_file_peak_mib": 21730.953125,
+  "sampled_gpu_peak_mib": 6198,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    3.17626953125,
+    3.4326171875,
+    2.85986328125
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}
