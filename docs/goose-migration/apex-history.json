@@ -289,6 +289,28 @@
       "status": "One request per distinct OMP/pthread path,uncontrolled external load;not paired stable speed acceptance",
       "raw_summary": "apex-results/audit-exp149-pthread-apex-32k128-summary.json",
       "comparison": null
+    },
+    {
+      "stage": "EXP150 CPU registry/shared expert policy",
+      "role": "candidate",
+      "checkpoint": "EXP150 over2a0c4b7,self-hosted f849233b999c",
+      "prefill": 2656.28514857906,
+      "decode": 28.079000599829357,
+      "rss_mib": 21312.08984375,
+      "anon_mib": 696.2890625,
+      "file_mib": 19961.984375,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        3.6474609375,
+        2.62841796875,
+        2.2109375
+      ],
+      "correctness": "Exact text/all128IDs/top5 vs original;new registry modes0-9 and127680scratch queries traced. Cache/HBM absent from this profile and checked separately.",
+      "status": "One diagnostic under external load,saved C++ comparison,not fresh repeated paired/stable no-regression acceptance",
+      "raw_summary": "apex-results/audit-exp150-omp-apex-32k128-summary.json",
+      "comparison": null
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",

@@ -1,0 +1,27 @@
+{
+  "status": "PASS_EXP150_FUNCTIONAL_AND_ROLLBACK",
+  "checks": {
+    "composite": {
+      "cases": 326,
+      "byte_exact": 284,
+      "violations": 0
+    },
+    "apex-contract": {
+      "cases": 66,
+      "byte_exact": 39,
+      "violations": 0
+    },
+    "planning": {
+      "cases": 960,
+      "exact": true,
+      "rollback": true
+    },
+    "backend-buffer": {
+      "cases": 174,
+      "exact": true,
+      "rollback": true
+    }
+  },
+  "model_loaded": false,
+  "scope": "Actual EXP150 DSO aliases fixed and verified. New changed core/control/registry and fixture units instrumented in sanitized variant;unchanged qualified EXP149 base/numerical objects reused. New model cache/budget units instrumented in its separate30296case corpus;vendor/other inherited objects not fully instrumented."
+}

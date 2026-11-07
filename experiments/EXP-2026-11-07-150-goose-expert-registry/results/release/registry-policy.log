@@ -1,0 +1,13 @@
+{"status":"PASS_REGISTRY_AND_HBM_POLICY","cases":210,"hardware_hbm":false}
+FG150_REGISTRY mode=0 calls=21
+FG150_REGISTRY mode=1 calls=1
+FG150_REGISTRY mode=2 calls=1
+FG150_REGISTRY mode=3 calls=1
+FG150_REGISTRY mode=4 calls=1
+FG150_REGISTRY mode=5 calls=1
+FG150_REGISTRY mode=6 calls=1
+FG150_REGISTRY mode=7 calls=1
+FG150_REGISTRY mode=8 calls=1
+FG150_REGISTRY mode=9 calls=1
+FG150_REGISTRY mode=10 calls=180
+FG150_REGISTRY mode=11 calls=60

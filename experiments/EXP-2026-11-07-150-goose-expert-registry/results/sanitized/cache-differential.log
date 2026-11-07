@@ -1,0 +1,7 @@
+{"status":"PASS_EXPERT_CACHE_NATIVE_DIFFERENTIAL","cases":30296}
+FG150_CACHE mode=0 calls=60
+FG150_CACHE mode=4 calls=7200
+FG150_CACHE mode=5 calls=96
+FG150_CACHE mode=6 calls=1000
+FG150_CACHE mode=7 calls=20000
+FG150_CACHE mode=8 calls=2000

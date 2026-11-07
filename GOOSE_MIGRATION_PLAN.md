@@ -4,9 +4,9 @@ Updated: 2026-11-07. Source/experiment checkpoint: `fe9d550cca21d5d64244b1f7f85f
 
 **One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**
 
-**Functional tasks: 160 total; 13 DONE; 4 PARTIAL; 12 IN_PROGRESS; 0 BLOCKED; 131 TODO. Remaining: 147.**
+**Functional tasks: 160 total; 14 DONE; 4 PARTIAL; 12 IN_PROGRESS; 0 BLOCKED; 130 TODO. Remaining: 146.**
 
-**Current Apex/common milestone: 136 tasks; 11 DONE; 125 remaining (including 4 partial).**
+**Current Apex/common milestone: 136 tasks; 12 DONE; 124 remaining (including 4 partial).**
 
 Task count is not code coverage, effort percentage, speed or a completion-date estimate. A bounded completed module does not complete its parent subsystem. Archived history is not proof that all modules run together.
 
@@ -16,7 +16,7 @@ This supersedes the legacy B0-B8 grouping as the current remaining-work schedule
 
 | Stage | Remaining-scope group | Requirements | DONE | Left | Gate |
 |---|---|---:|---:|---:|---|
-|1/13|CPU execution control,expert orchestration and buffer ownership|5|1|4|IN_PROGRESS|
+|1/13|CPU execution control,expert orchestration and buffer ownership|5|2|3|IN_PROGRESS|
 |2/13|Complete CPU math,quantized/repacked MoE and native CPU removal|19|0|19|QUEUED / retain existing partial work|
 |3/13|Complete CUDA compute operators|15|0|15|QUEUED / retain existing partial work|
 |4/13|CUDA host ownership,device abstraction and CUDA native removal|6|0|6|QUEUED / retain existing partial work|
@@ -30,7 +30,7 @@ This supersedes the legacy B0-B8 grouping as the current remaining-work schedule
 |12/13|Remaining models,tokenizers,platforms and device compatibility|12|0|12|QUEUED / retain existing partial work|
 |13/13|Final universal closure and genuine100percent completion|4|0|4|QUEUED / retain existing partial work|
 
-Current stage: **1/13**. Completed groups: **0/13**. Original requirements: **13/160 DONE; 147remaining; 8.12%** by requirement count,not code or effort.
+Current stage: **1/13**. Completed groups: **0/13**. Original requirements: **14/160 DONE; 146remaining; 8.75%** by requirement count,not code or effort.
 
 Per-component source ownership,correctness,memory safety,liveness and rollback remain mandatory. Share code generation/build/integration and full-system model samples across coherent groups. Keep critical synchronization/allocator/deletion subgates separate internally. Record objective blockers rather than relabeling partial work as full completion. Qwen waits until stage10fullApex. Final100%requires all contracts,source/import closure and no-worse-than-C++ real-system performance evidence.
 
@@ -48,26 +48,39 @@ Per-component source ownership,correctness,memory safety,liveness and rollback r
 12. Remaining models,tokenizers,platforms and device compatibility: `P1-11, P3-18, P5-03, P6-05, P6-06, P10-03, P10-04, P10-10, C2-01, C2-02, C2-03, C2-04`. Complete every retained architecture/tool/backend/ISA/multi-GPU contract. Hardware/compiler limitations remain explicit,not silently dropped.
 13. Final universal closure and genuine100percent completion: `F1-01, F1-02, F1-03, F1-04`. Final source/import/ABI/model/runtime audit and unavoidable-dependency report only after every prior requirement is proved. Final whole-system performance must be no worse than comparable C++ controls;otherwise completion remains unproven.
 
+## Large delivery cycles over the unchanged13logical stages
+
+Owner requested larger delivery batches;these group all existing13logical stages and unchanged original contracts. They are not new goals,40-50automatic completions,or a promise to suppress necessary critical internal gates. Share expensive integration/model gates where safe;separate ownership/concurrency/hardware dependencies when required.
+
+Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient.
+
+| Cycle | Existing stages | Requirement scope | DONE | Left |
+|---|---|---:|---:|---:|
+|1/3|1,2,3,4|45|2|43|
+|2/3|5,6,7,8|54|0|54|
+|3/3|9,10,11,12,13|49|0|49|
+
+Target3large delivery cycles,with a fourth only for a real dependency. Internal critical correctness/ownership/hardware gates remain separate where required;they are not per-function experiments. Expensive builds/model reloads are shared where safe. A partial checkpoint does not complete a cycle or count its unfinished requirements.
+
 ## Active isolated candidate
 
-- experiment: `EXP149`
-- root: `/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107`
-- source: `/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/source/cpu-backend`
-- run: `/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/run`
-- status: `P2-15functional control closed;stage1 still incomplete;OpenMP primary,pthread checked alternative;speed parity/3000/30unproven`
-- next_batch: `Finish stage1P1-08/P1-09/P1-10/P2-14coherently;do not call stage1complete before all5original contracts DONE`
-- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107`
-- preserved_exp146: `/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/reference-exp146`
+- experiment: `EXP150`
+- root: `/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107`
+- source: `/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source`
+- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run`
+- status: `P2-14 CPU functional ownership complete;P1-10 partial. Typed fill-ABI local correction passed;post-correction whole-candidate Apex intentionally deferred to large-cycle end. CPU DSO matches recorded model gate. No production or speed acceptance.`
+- next_batch: `Continue remaining expert execution/work distribution/cache resource lifecycle within first large CPU/CUDA delivery cycle;no per-function experiment/reload.`
+- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107`
 
 ## Authoritative execution policy
 
 1. Follow the current13-stage campaign and its dependency gates;P0-P11/B0-B8remain source/history classifications. Finish full shared/Apex closure before Qwen/MTP(stage11),other compatibility(stage12),and final universal closure(stage13). No separate Apex/Qwen runtimes or parallel projects.
 2. The only current real-model development,debug and measurement target is Apex. Qwen source differences are a read-only future reference; do not build,develop,test,benchmark or tune Qwen now. Historical Qwen evidence remains explicitly historical.
 3. Transfer whole coherent modules. For every step require source/producer provenance,correctness,actual Goose liveness and rollback. Calling original native computation from a Goose wrapper does not count. Native arithmetic/policy hidden inside ABI glue does not count.
-4. After each major subsystem record one full-system fixed-profile Apex sample: prefill,decode,RAM/VRAM and correctness,compared with previous measured stage and frozen original C++. No microbenchmarks,no per-kernel tuning,no repeated optimization series. Record noise and regressions in local ignored COMPILER_FEEDBACK.md,then continue functional work.
+4. At the end of a large delivery cycle record one combined full-system fixed-profile Apex sample: prefill,decode,RAM/VRAM and correctness,compared with previous measured stage and frozen original C++. No microbenchmarks,no per-kernel tuning,no repeated optimization series. Record noise and regressions in local ignored COMPILER_FEEDBACK.md,then continue functional work.
 5. Preserve production/default executable,libraries,profiles and compiler source. Use isolated candidate directories. Select latest completed self-hosted Goose producer with receipts at each new stage; do not modify the compiler or interrupt its developer.
 6. Keep one canonical common Goose implementation. New architecture-specific code requires a concrete differing semantic contract; prefer metadata/adapters,not copied backends. Preserve Apex correctness and the fixed-profile history during later compatibility extension.
-7. Each completed stage updates tasks.json,evidence,history and this rendered plan before starting the next. Stable task IDs; append discovered missing scope and explain count changes; never erase unfinished work to improve the percentage.
+7. Update tasks.json,evidence and this plan at meaningful checkpoints;close delivery cycles with the shared integration/model evidence. Stable task IDs; append discovered missing scope and explain count changes; never erase unfinished work to improve the percentage.
 8. Source deletion applies only to the isolated candidate after a verified Goose replacement. Historical native controls/test oracles stay outside candidate links. Production promotion requires separate owner agreement.
 
 ## Audit and actual source boundaries
@@ -112,7 +125,7 @@ The160tasks are a requirements ledger,not160development cycles. The following fo
 | Batch | Requirements | DONE | Remaining | Integrated scope |
 |---|---:|---:|---:|---|
 |B0|4|4|0|Source audit,immutable reference and fixed Apex history initialization|
-|B1|28|5|23|Complete shared CPU MoE and GGML CPU backend|
+|B1|28|6|22|Complete shared CPU MoE and GGML CPU backend|
 |B2|19|0|19|Complete CUDA computation,host backend and GPU ownership|
 |B3|34|2|32|Unified GGML core,scheduler,memory,KV and Apex model runtime|
 |B4|24|0|24|GGUF,loading,text/tokenizer,common layer and full server/API|
@@ -129,7 +142,7 @@ B0 is audit/reference initialization. B1-B5 are the5large Apex/common implementa
 |---|---:|---:|---:|---:|---|
 |P0|6|4|2|2|Inventory, provenance and migration contracts|
 |P1|12|5|0|7|Complete CPU MoE subsystem|
-|P2|18|1|1|17|Complete GGML CPU backend|
+|P2|18|2|1|16|Complete GGML CPU backend|
 |P3|20|0|1|20|Complete CUDA backend|
 |P4|16|2|0|14|GGML core,allocator,ownership and scheduler|
 |P5|10|0|0|10|KV-cache,recurrent memory and sessions|
@@ -165,6 +178,7 @@ Model Apex-35B-V1.0 Q4_K_M; context262144; actual input32768/output128; CPU MoE 
 |EXP148 common CPU quantization/type traits batch|2680.11|27.88|-6.55%/-0.36%|+0.55%/+0.50%|21312.62|696.17|3348.00|0.00|Exact text/all128tokens/top5 vs fresh C++ and EXP147;172640new-module Q8_K blocks witnessed; One request after combined three-component batch;uncontrolled load,no speed parity claim or tuning|
 |EXP149 CPU job/pool omp|2646.56|28.46|-7.72%/+1.73%|-1.25%/+2.10%|21311.80|695.55|3348.00|0.00|Exact text,all128IDs and saved top5 vs original C++;Goose pool/job/executor traced; One request per distinct OMP/pthread path,uncontrolled external load;not paired stable speed acceptance|
 |EXP149 CPU job/pool pthread|2669.81|26.42|-6.91%/-5.55%|+0.88%/-7.16%|21313.31|697.43|3348.00|0.00|Exact text,all128IDs and saved top5 vs original C++;Goose pool/job/executor traced; One request per distinct OMP/pthread path,uncontrolled external load;not paired stable speed acceptance|
+|EXP150 CPU registry/shared expert policy|2656.29|28.08|-7.38%/+0.36%|-0.51%/+6.26%|21312.09|696.29|3348.00|0.00|Exact text/all128IDs/top5 vs original;new registry modes0-9 and127680scratch queries traced. Cache/HBM absent from this profile and checked separately.; One diagnostic under external load,saved C++ comparison,not fresh repeated paired/stable no-regression acceptance|
 
 RAM columns separate total process RSS,file-backed model pages and anonymous allocation where raw samples permit; RSS is not a pure ownership/allocation metric. VRAM is process memory,not total desktop GPU usage. Record process swap/system swapout,external load,cold/warm conditions and library/preload hashes. Liveness counters identify actual executed Goose paths; no claim that every implementation is exercised by Apex.
 
@@ -197,7 +211,7 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 |P1-07 / **TODO**|Replace repacked expert matrices and all packing layouts|ggml/src/ggml-cpu/repack.cpp; ggml/src/ggml-cpu/arch/*/repack.cpp; ggml/src/ggml-cpu/traits.cpp|Each registered pack/trait layout round-trips and matmul matches native; raw/repack/fused dispatch liveness and tails covered.|
 |P1-08 / **TODO**|Replace fused and cold expert execution orchestration|ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c; ggml/src/ggml-cpu/ggml-cpu.c|Complete stock/cold/fused paths execute Goose; masks,bank remapping,shared experts,ready hooks and fallback tested; no hidden original executor.|
 |P1-09 / **IN_PROGRESS**|Move expert work distribution and synchronization ownership to Goose|ggml/src/ggml-cpu/ggml-cpu.c; ggml/src/ggml-threading.*|Goose owns partitioning,job queues,claims,barrier state,cancellation; only primitive OS atomics/thread waits imported;1/2/8/16thread deterministic outputs and termination. Evidence: EXP143 Goose active OpenMP graph-job lifecycle and worker publication/barrier/result policy;326graph/status cases include1/2/8/16thread persistent pool,cancellation/recovery. Physical allocation/init,OS placement,expert chunk claims and non-OpenMP implementation remain native/incomplete. EXP144 actual fixed Apex request witnesses OpenMP job/controller execution with exact original response; no full non-OpenMP/expert-work-queue closure claim.|
-|P1-10 / **TODO**|Move MoE buffers, residency and output assembly ownership to Goose|ggml/src/ggml-cpu/ggml-cpu.c; src/llama-expert-*.cpp; src/llama-moe-cache.cpp|Expert scratch/resident/staging lifecycles and scatter owned by Goose; allocation failure,resize,empty/overlapping routes and cancellations checked. Evidence: EXP145 moves backend graph scratch growth/reuse/failure policy into Goose,with real API/Apex and allocation-policy tests. This does not yet replace complete expert residency/staging/bank ownership.|
+|P1-10 / **IN_PROGRESS**|Move MoE buffers, residency and output assembly ownership to Goose|ggml/src/ggml-cpu/ggml-cpu.c; src/llama-expert-*.cpp; src/llama-moe-cache.cpp|Expert scratch/resident/staging lifecycles and scatter owned by Goose; allocation failure,resize,empty/overlapping routes and cancellations checked. Evidence: EXP145 moves backend graph scratch growth/reuse/failure policy into Goose,with real API/Apex and allocation-policy tests. This does not yet replace complete expert residency/staging/bank ownership. EXP150 moves all local expert tiled scratch queries to shared Goose policy,complete SLRU/eligibility/read-span/upload-grouping and bank budget/slot planning to Goose.30296native differential cases and scoped sanitizers pass. Cache constructor/tensor allocation/full upload-copy/resource lifecycle and remaining expert staging ownership are not complete;no full closure. Fixed Apex has no model-cache allocations,so only workspace execution is claimed at real inference.|
 |P1-12 / **TODO**|Close CPU MoE subsystem with native compute disabled|ggml/src/ggml-cpu/**; src/llama-expert-*|All supported MoE formats/modes pass graph corpus and real Apex milestone; replaced native symbols unavailable in candidate link; rollback preserved externally. Depends: P1-06,P1-07,P1-08,P1-09,P1-10.|
 
 #### P2 — Complete GGML CPU backend
@@ -217,7 +231,7 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 |P2-11 / **TODO**|Port convolution,image and relative-position operations|ggml/src/ggml-cpu/ops.cpp|All registered1D/2D/3Dconv/im2col/col2im,pooling/upscale,window partition and relative-position modes have differential fixtures.|
 |P2-12 / **TODO**|Port training,custom and miscellaneous CPU operators|ggml/src/ggml-cpu/ops.cpp; ggml/src/ggml-opt.cpp|Every residual GGML op enum has Goose support/identical unsupported error; loss/backward/AdamW/SGD/custom-callback contracts checked.|
 |P2-13 / **IN_PROGRESS**|Port remaining quantization/serialization math and type traits|ggml/src/ggml-quants.c; ggml/src/ggml-cpu/quants.c; ggml/src/ggml-cpu/traits.cpp|Every non-removed type registry entry has Goose quant/dequant/traits where native supports it; IQ calibration/tables and Q8_1 included; exact size/layout preserved. Evidence: EXP143 actual GGML CPY covers23 native-supported public dequant types. Q8_1/Q8_K have no native public to_float trait; no fabricated oracle. Remaining quantizers/calibration/traits incomplete. EXP148 combines nine CPU encoders and actual from_float trait dispatch:Q1_0,Q2_0,Q4_0,Q4_1,Q5_0,Q5_1,Q8_1 plus existing Goose Q8_0/Q8_K.893native-byte/canary/concurrency+rollback cases and841Q8special contracts pass release and scoped ASan/UBSan/LSan;all prior326/66/960/174gates preserved;Apex32K/128 exact with172640Q8_K blocks.Compact nonfinite fallback,full float-domain/other formats/ISA/serialization remain unclosed.|
-|P2-14 / **IN_PROGRESS**|Port CPU backend device/buffer/capability registry|ggml/src/ggml-cpu/ggml-cpu.cpp; ggml/src/ggml-cpu/hbm.cpp; ggml/src/ggml-cpu/traits.cpp|Backend API,buffer alignment/copy,capability predicates and device initialization owned by Goose; OS/HBM primitive imports audited. Evidence: EXP145 backend API/graph scratch policy preserved. EXP146 audit rejects assert-only physical-buffer migration and fixture-only sanitizer claims,finds missing fg146 C prototypes and incorrect history. EXP147 actually moves alignment,allocation/free ownership,span/offset validation,memset/copy dispatch and borrowed-pointer validation to Goose;native C++ adapters only marshal ABI or invoke explicit system primitives. Shared request ABI header and implicit-declaration errors prevent pointer truncation.326/66/960 common cases,174backend-buffer records/rollback,148memory-policy and9graph-allocation contracts pass release and rebuilt base/CPU ASan/UBSan/LSan. Three fresh Apex32768/128 arms match all text/IDs/top5;Goose set/clear/from_ptr witnessed. HBM inactive,CPU description,ABI storage,native extra providers and other CPU scope remain incomplete. Speed parity is unproven;no production promotion.|
+|P2-14 / **DONE**|Port CPU backend device/buffer/capability registry|ggml/src/ggml-cpu/ggml-cpu.cpp; ggml/src/ggml-cpu/hbm.cpp; ggml/src/ggml-cpu/traits.cpp|Backend API,buffer alignment/copy,capability predicates and device initialization owned by Goose; OS/HBM primitive imports audited. Evidence: EXP150 common CPU backend/device/buffer/capability/registry functional ownership closed:inherited real Goose API/buffer/traits plus complete registry/device initialization/properties/brand sequencing and HBM allocation/error/wrapper cleanup.210registry/OS/HBM-policy cases and5compiled HBM API/stub cases;30296cache/budget cases,actual326/66/960/174GGML corpus,component disable rollback and scoped ASan/UBSan/LSan pass. Fixed Apex32K/128 exact text/allIDs/top5;registry0-9 and127680workspace calls witnessed;RSS21312.090MiB/VRAM3348MiB. HBM actual hardware and other OS execution unqualified;architecture/provider math/ABI storage/native removal remain explicitly assigned P1-07/P2-03/P2-13/P2-16/P2-18/P10-10. Early copied-library alias gate invalidated and corrected before model.2656.285pp/28.079tg diagnostic vs saved C++2918.900/29.589;not paired speed/no-regression acceptance.|
 |P2-15 / **DONE**|Port CPU graph executor,task planning and abort paths|ggml/src/ggml-cpu/ggml-cpu.c|Entire operation dispatch,n_tasks/workspace planning,graph reuse,threadpool job lifecycle and abort status execute Goose; all operator entries traced. Evidence: EXP149 original P2-15 acceptance closed:all101dispatcher entries/96callbacks checked with independent unchanged-native-switch oracle;960task/workspace cases exact;Goose owns graph-wide planning/tiled sizing,executor reuse/abort,OMP+pthreads job lifecycle,physical pool init/cleanup,masks,barrier/chunk/readiness/poll/pause/kickoff/NUMA/priority policy.326/66/174actual GGML/common cases pass both implementations;78OMP/81pthread real lifecycle/graph failure cases,494policy boundary cases,release+ASan/UBSan/LSan,and scoped new-control pthread TSan pass. Exactly one Apex32768/128 per mode,text/allIDs/top5 exact vs C++;new pool/job paths witnessed. Complete source boundary audit maps numerical/provider/ABI/topology adapters to other open requirements;not fullCPU/native-free/safety-superiority/speed acceptance. P1-09/P2-14 and other stage1requirements remain open. C++2918.900/29.589;OMP2646.558/28.462;pthread2669.811/26.424tok/s are preliminary single samples,not stable performance parity.|
 |P2-16 / **TODO**|Close CPU architecture support and residual source inventory|ggml/src/ggml-cpu/**; ggml/src/ggml-blas/**|All CPU audit rows assigned and zero owned native executable logic remains in candidate; hardware-unavailable variants stay explicitly incomplete.|
 |P2-17 / **TODO**|Run CPU-only functional milestone across model families|tests/test-backend-ops.cpp; src/models/**|Full supported operator/type matrix plus Apex and tiny representative dense,recurrent,vision graph fixtures pass; witnesses prove Goose, not fallback.|
@@ -457,7 +471,7 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 1. Select the next large batch and pin producer/source/control once; record its requirement IDs/dependencies. Keep shared interfaces; do not spawn another development stream.
 2. Implement the complete coherent Goose module with typed ownership and explicit primitive imports. Generate C/CUDA through the qualified self-hosted compiler. No compiler edits,no native-computation wrapper counted as migration.
 3. Compile isolated candidate. Run suitable differential correctness/error fixtures and scoped sanitizer checks. Preserve failed sources/logs; distinguish native-control defects from new defects.
-4. Run real Apex using the one fixed profile. Check text/IDs/probabilities or a predeclared numerical contract and actual Goose path witnesses. Record one full-system prefill/decode/RAM/VRAM row,plus exact configuration/library hashes. Do not run Qwen now.
+4. At the large delivery-cycle end,run one combined real Apex gate using the fixed profile. Earlier model runs require a concrete correctness boundary that cannot be checked locally. Check text/IDs/probabilities or a predeclared numerical contract and actual Goose path witnesses. Record one full-system prefill/decode/RAM/VRAM row,plus exact configuration/library hashes. Do not run Qwen now.
 5. Compare new row to original and previous stage,record any regression in private ignored COMPILER_FEEDBACK.md,and continue. Do not tune local loops or repeat benchmarks to rescue a number.
 6. Check disable/rollback path and unchanged working runtime. Save source/emitted code/tests/receipts/results as one coherent stage. Update task status/evidence/history and regenerate this file. Never mark a whole parent subsystem DONE from one leaf.
 7. Remove replaced native code only from candidate once functional closure is proven. The final link/import/source audit must reject hidden owned native services. Generated C/CUDA and OS/vendor primitive calls remain explicitly declared.
@@ -503,3 +517,4 @@ The generator verifies stable unique IDs,valid statuses,completion evidence and 
 - EXP148 common CPU quantization/type traits batch: Three coherent components integrated once:nine-format encoder module,shared Q8 activation reuse and real CPU trait/MoE adapters. Latest completed self-hosted EXP301 Stage3 pinned;five inherited generated C units and four previous common output corpora byte-identical.893trait/canary/concurrent+rollback cases,841Q8special and326/66/960/174common gates pass release/sanitized. One Apex32768/128:pp2680.113,tg27.876,RSS21312.617MiB,VRAM3348MiB;all128tokens/text/top5 exact,172640Q8_K blocks. No requirements closed;P2-13 float-domain/format/ISA closure and P1-06 raw arithmetic remain open. Adopt owner instruction:target10-15related requirements per shared cycle where safe,no agents,no scope reduction.
 - Owner13-stage campaign regroup: Regroup all148remaining original requirements exactly once into13dependency-checked groups. Prior12DONE retained;denominator160unchanged. Stage1CPU control/ownership5requirements;stage2fullCPU math/removal19;subsequentCUDA,GGML,KV/model,GGUF,server,infrastructure,Apexclosure,Qwen,othercompatibility and final universal audit. Group sizes differ because critical closure dependencies cannot be moved earlier. Current EXP149 targets entire P2-15 within stage1;an experiment/module alone is not a completed stage. Final100percent remains unproven until all original contracts and actual system performance/safety gates pass.
 - EXP149 entire CPU graph/job/pool control contract: Close original P2-15 after complete default-path source audit,all101dispatcher entries versus independent native oracle,960planning cases,OMP+pthreads real lifecycle and injected failures,494mask/NUMA/priority/wrap cases,shared actual GGML corpus,ASan/UBSan/LSan and scoped pthread TSan. Two fixed Apex requests:OMP2646.558/28.462,pthread2669.811/26.424tok/s,text/all128IDs/top5 exact;memory/trace preserved. Counts13DONE/160,147left,stage1of13has1/5closed. Other kernel/provider/ABI/memory/architecture requirements remain open. Record owner intermediate >3000pp/>30tg target with repeated paired fresh-C++ confirmation;not reached and no stability/parity claim.
+- EXP150 common expert policy and CPU registry: Close P2-14 functional CPU registry/device/buffer contract and expand P1-10 with SLRU/cache grouping/budget and shared expert scratch.30296new cache/budget cases,210registry policy and5compiled HBM-stub API cases;corrected actual326/66/960/174GGML corpus,rollback,scoped sanitizers and one exact128token/top5Apex. Model2656.285pp/28.079tg,RSS21312.090/VRAM3348MiB;single sample,stable C++ parity unproven.14/160DONE,146left,8.75percent;stage1/13has2/5done,0fullstages. Group unchanged13stages into3large delivery cycles (45/54/49requirements at regroup),allow fourth only for real dependencies;cycle1has2/45closed. No false cache/HBM model-execution,hardware,speed or full-expert closure. Final typed fill-ABI correction checked locally;recorded earlier model keeps its original llama hash. Planned extra model request not launched;next exact whole-candidate model gate deferred to large-cycle end per owner.

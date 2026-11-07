@@ -1,0 +1,155 @@
+[
+  {
+    "label": "compile-composite",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/composite-fixture.c",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run",
+      "-lggml-cpu",
+      "-lggml-base",
+      "-lm",
+      "-lpthread",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/composite-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "composite-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/composite-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/composite-native.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "composite-candidate",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/composite-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/composite-candidate.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "compile-apex-contract",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/apex-contract-fixture.c",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run",
+      "-lggml-cpu",
+      "-lggml-base",
+      "-lm",
+      "-lpthread",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/apex-contract-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "apex-contract-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/apex-contract-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/apex-embedding-selected-rows.local.bin",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/apex-contract-native.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "apex-contract-candidate",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/apex-contract-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/apex-embedding-selected-rows.local.bin",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/apex-contract-candidate.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "compile-planning",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/control/planner-fixture.c",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run",
+      "-lggml-cpu",
+      "-lggml-base",
+      "-lm",
+      "-lpthread",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/control-planner-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "planning-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/control-planner-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/planning-native.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "planning-candidate",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/control-planner-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/planning-candidate.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "planning-rollback",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/control-planner-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/planning-rollback.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "compile-backend-buffer",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/fixture.c",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run",
+      "-lggml-cpu",
+      "-lggml-base",
+      "-lm",
+      "-lpthread",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/backend-buffer-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "backend-buffer-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/backend-buffer-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/backend-buffer-native.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "backend-buffer-candidate",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/backend-buffer-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/backend-buffer-candidate.bin"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "backend-buffer-rollback",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/build/backend-buffer-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/results/release/backend-buffer-rollback.bin"
+    ],
+    "exit_code": 0
+  }
+]

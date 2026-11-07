@@ -1,0 +1,3 @@
+# EXP150: shared expert policy and CPU registry batch
+
+Extend the existing universal runtime without changing production or compiler sources. One coherent implementation/build/functional gate/Apex gate for CPU device/registry lifecycle, MoE workspace policy and model cache SLRU residency policy. Goose must own decisions and state transitions; native ABI storage, OS discovery, provider math and allocation/copy primitives remain explicit. Preserve per-component disable rollback and check boundary/failure/reuse behavior. Cold/fused Qwen-only implementation remains deferred, not falsely accepted from Apex. Do not mark requirements complete without original full scope evidence.

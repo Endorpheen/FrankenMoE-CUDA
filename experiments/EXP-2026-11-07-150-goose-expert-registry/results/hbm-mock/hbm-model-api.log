@@ -1,0 +1,12 @@
+{"status":"PASS_COMPILED_HBM_GOOSE_WITH_ALLOCATOR_STUB","cases":5,"hardware_hbm":false}
+failed to allocate HBM buffer of size 512
+FG150_REGISTRY mode=10 calls=5
+FG150_REGISTRY mode=11 calls=4
+FG143_CONTROL plans=0 task_queries=0 dispatches=0 jobs=0 worker_jobs=0
+FG143_EXECUTOR worker_graphs=0 worker_steps=0 worker_fusions=0
+FG150_EXPERT scratch_calls=0 enabled=1
+FG147_BACKEND mode=19 calls=4
+FG147_BACKEND mode=26 calls=4
+FG147_BACKEND mode=27 calls=4
+FG147_BACKEND mode=28 calls=5
+FG147_BACKEND mode=29 calls=1

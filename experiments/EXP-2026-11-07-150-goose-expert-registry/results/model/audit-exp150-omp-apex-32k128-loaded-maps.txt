@@ -1,0 +1,263 @@
+200000000-200200000 ---p 00000000 00:00 0 
+200200000-200400000 rw-s 00000000 00:07 1447                             /dev/nvidia0
+200400000-203400000 rw-s 00000000 00:07 1446                             /dev/nvidiactl
+203400000-206000000 ---p 00000000 00:00 0 
+206000000-206200000 rw-s 00000000 00:07 1446                             /dev/nvidiactl
+206200000-206400000 rw-s 00000000 00:07 1446                             /dev/nvidiactl
+206400000-206600000 rw-s 206400000 00:07 1448                            /dev/nvidia-uvm
+206600000-300200000 ---p 00000000 00:00 0 
+302000000-b5c000000 ---p 00000000 00:00 0 
+10000000000-10004000000 ---p 00000000 00:00 0 
+648791e3b000-648791e3c000 r--p 00000000 103:02 30936001                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/llama-server
+648791e3c000-648791e3d000 r-xp 00001000 103:02 30936001                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/llama-server
+648791e3d000-648791e3e000 r--p 00002000 103:02 30936001                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/llama-server
+648791e3e000-648791e3f000 r--p 00002000 103:02 30936001                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/llama-server
+648791e3f000-648791e40000 rw-p 00003000 103:02 30936001                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/llama-server
+6487c41c5000-6487d12e5000 rw-p 00000000 00:00 0                          [heap]
+7bf29496f000-7bf35a000000 rw-p 00000000 00:00 0 
+7bf35a000000-7bf3ab800000 ---p 00000000 00:00 0 
+7bf3ab800000-7bf3aba00000 rw-s 00000000 00:01 2706545                    /dev/zero (deleted)
+7bf3aba00000-7bf3ac000000 ---p 00000000 00:00 0 
+7bf3ac000000-7bf3ac021000 rw-p 00000000 00:00 0 
+7bf3ac021000-7bf3b0000000 ---p 00000000 00:00 0 
+7bf3b4000000-7bf3b4021000 rw-p 00000000 00:00 0 
+7bf3b4021000-7bf3b8000000 ---p 00000000 00:00 0 
+7bf3baffa000-7bf3be000000 rw-p 00000000 00:00 0 
+7bf3be000000-7bf3c5c00000 ---p 00000000 00:00 0 
+7bf3c5c00000-7bf3c5e00000 rw-s 00000000 00:01 2677685                    /dev/zero (deleted)
+7bf3c5e00000-7bf3c6000000 ---p 00000000 00:00 0 
+7bf3c6244000-7bf3c7246000 rw-p 00000000 00:00 0 
+7bf3c7246000-7bf3cb457000 rw-p 00000000 00:00 0 
+7bf3cb457000-7bf89f5a0000 r--s 19857000 103:02 18088020                  /home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
+7bf89f7ff000-7bf8a0000000 rw-p 00000000 00:00 0 
+7bf8a0000000-7bf8a0021000 rw-p 00000000 00:00 0 
+7bf8a0021000-7bf8a4000000 ---p 00000000 00:00 0 
+7bf8a4000000-7bf8a4021000 rw-p 00000000 00:00 0 
+7bf8a4021000-7bf8a8000000 ---p 00000000 00:00 0 
+7bf8a8000000-7bf8a8021000 rw-p 00000000 00:00 0 
+7bf8a8021000-7bf8ac000000 ---p 00000000 00:00 0 
+7bf8ac56b000-7bf8ba000000 rw-p 00000000 00:00 0 
+7bf8ba000000-7bf8be000000 ---p 00000000 00:00 0 
+7bf8be78f000-7bf8bff92000 rw-p 00000000 00:00 0 
+7bf8bff92000-7bf8bff93000 r--s 50e392000 103:02 18088020                 /home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
+7bf8c0000000-7bf8c0021000 rw-p 00000000 00:00 0 
+7bf8c0021000-7bf8cac00000 ---p 00000000 00:00 0 
+7bf8cac00000-7bf8caf91000 rw-s 00000000 00:01 2706546                    /dev/zero (deleted)
+7bf8caf91000-7bf8ce400000 ---p 00000000 00:00 0 
+7bf8ce400000-7bf8ce600000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8ce600000-7bf8ce800000 rw-s 00000000 00:01 2692595                    /dev/zero (deleted)
+7bf8ce800000-7bf8cea00000 rw-s 00000000 00:01 2692596                    /dev/zero (deleted)
+7bf8cea00000-7bf8cf000000 ---p 00000000 00:00 0 
+7bf8cf000000-7bf8cf200000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8cf200000-7bf8cf400000 ---p 00000000 00:00 0 
+7bf8cf400000-7bf8cf600000 rw-s 00000000 00:01 2693693                    /dev/zero (deleted)
+7bf8cf600000-7bf8cfa63000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8cfa63000-7bf8d0000000 ---p 00000000 00:00 0 
+7bf8d0000000-7bf8d0021000 rw-p 00000000 00:00 0 
+7bf8d0021000-7bf8d4000000 ---p 00000000 00:00 0 
+7bf8d4461000-7bf8d6465000 rw-p 00000000 00:00 0 
+7bf8d6465000-7bf8d6ddf000 rw-p 00000000 00:00 0 
+7bf8d6ddf000-7bf8d6de0000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de0000-7bf8d6de1000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de1000-7bf8d6de2000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de2000-7bf8d6de3000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de3000-7bf8d6de4000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de4000-7bf8d6de5000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de5000-7bf8d6de6000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de6000-7bf8d6de7000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de7000-7bf8d6de8000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de8000-7bf8d6de9000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6de9000-7bf8d6dea000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6dea000-7bf8d6deb000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6deb000-7bf8d6dec000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6dec000-7bf8d6ded000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6ded000-7bf8d6dee000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6dee000-7bf8d6def000 rw-s 00000000 00:07 1446                       /dev/nvidiactl
+7bf8d6def000-7bf8d8000000 ---p 00000000 00:00 0 
+7bf8d8000000-7bf8d8021000 rw-p 00000000 00:00 0 
+7bf8d8021000-7bf8dc000000 ---p 00000000 00:00 0 
+7bf8dc0a5000-7bf8dc8b5000 rw-p 00000000 00:00 0 
+7bf8dc8b5000-7bf8dd8b7000 rw-p 00000000 00:00 0 
+7bf8ddfe0000-7bf8de7e1000 rw-p 00000000 00:00 0 
+7bf8de7e1000-7bf8ee000000 rw-p 00000000 00:00 0 
+7bf8ee000000-7bf8f4000000 ---p 00000000 00:00 0 
+7bf8f4000000-7bf8f4021000 rw-p 00000000 00:00 0 
+7bf8f4021000-7bf8f8000000 ---p 00000000 00:00 0 
+7bf8f8548000-7bf8f8748000 rw-s 00000000 00:01 2692597                    /dev/zero (deleted)
+7bf8f8748000-7bf8f8f49000 rw-p 00000000 00:00 0 
+7bf8f8f49000-7bf8fa16a000 ---p 00000000 00:00 0 
+7bf8fa16a000-7bf8fa3fd000 rw-p 00000000 00:00 0 
+7bf8fa3fd000-7bf8fbc00000 rw-p 00000000 00:00 0 
+7bf8fbc00000-7bf915469000 r-xp 00000000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7bf915469000-7bf915669000 ---p 19869000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7bf915669000-7bf9158a7000 r--p 19869000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7bf9158a7000-7bf91925b000 rw-p 19aa7000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7bf91925b000-7bf91d42c000 rw-p 00000000 00:00 0 
+7bf91d600000-7bf91d61a000 r--p 00000000 103:02 30936006                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cpu.so.0.27.0
+7bf91d61a000-7bf91d779000 r-xp 0001a000 103:02 30936006                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cpu.so.0.27.0
+7bf91d779000-7bf91d7c0000 r--p 00179000 103:02 30936006                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cpu.so.0.27.0
+7bf91d7c0000-7bf91d7c2000 r--p 001bf000 103:02 30936006                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cpu.so.0.27.0
+7bf91d7c2000-7bf91d7c4000 rw-p 001c1000 103:02 30936006                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cpu.so.0.27.0
+7bf91d7c4000-7bf91da8a000 rw-p 00000000 00:00 0 
+7bf91dc00000-7bf91dd66000 r--p 00000000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7bf91dd66000-7bf91ecea000 r-xp 00166000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7bf91ecea000-7bf923695000 r--p 010ea000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7bf923695000-7bf923696000 ---p 05a95000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7bf923696000-7bf9237cb000 r--p 05a95000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7bf9237cb000-7bf9237d4000 rw-p 05bca000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7bf9237d4000-7bf92384c000 rw-p 00000000 00:00 0 
+7bf923a00000-7bf92a128000 r-xp 00000000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7bf92a128000-7bf92a328000 ---p 06728000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7bf92a328000-7bf92a334000 r--p 06728000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7bf92a334000-7bf92a33b000 rw-p 06734000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7bf92a33b000-7bf92a347000 rw-p 00000000 00:00 0 
+7bf92a400000-7bf92a4a9000 r-xp 00000000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7bf92a4a9000-7bf92a6a9000 ---p 000a9000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7bf92a6a9000-7bf92a6ae000 r--p 000a9000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7bf92a6ae000-7bf92a6af000 rw-p 000ae000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7bf92a6af000-7bf92a6b1000 rw-p 00000000 00:00 0 
+7bf92a800000-7bf92a8e4000 r--p 00000000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7bf92a8e4000-7bf92ac78000 r-xp 000e4000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7bf92ac78000-7bf92ad97000 r--p 00478000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7bf92ad97000-7bf92ae14000 r--p 00597000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7bf92ae14000-7bf92ae17000 rw-p 00614000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7bf92ae17000-7bf92ae1a000 rw-p 00000000 00:00 0 
+7bf92af3f000-7bf92b000000 rw-p 00000000 00:00 0 
+7bf92b000000-7bf92b0ba000 r--p 00000000 103:02 30935994                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama.so.0
+7bf92b0ba000-7bf92b3aa000 r-xp 000ba000 103:02 30935994                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama.so.0
+7bf92b3aa000-7bf92b449000 r--p 003aa000 103:02 30935994                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama.so.0
+7bf92b449000-7bf92b454000 r--p 00449000 103:02 30935994                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama.so.0
+7bf92b454000-7bf92b45a000 rw-p 00454000 103:02 30935994                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama.so.0
+7bf92b45a000-7bf92b48b000 rw-p 00000000 00:00 0 
+7bf92b53d000-7bf92b541000 r--p 00000000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7bf92b541000-7bf92b5f1000 r-xp 00004000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7bf92b5f1000-7bf92b5fe000 r--p 000b4000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7bf92b5fe000-7bf92b5ff000 r--p 000c1000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7bf92b5ff000-7bf92b600000 rw-p 000c2000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7bf92b600000-7bf92b6ba000 r--p 00000000 103:02 30935993                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-common.so.0
+7bf92b6ba000-7bf92ba2a000 r-xp 000ba000 103:02 30935993                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-common.so.0
+7bf92ba2a000-7bf92bae7000 r--p 0042a000 103:02 30935993                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-common.so.0
+7bf92bae7000-7bf92baee000 r--p 004e6000 103:02 30935993                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-common.so.0
+7bf92baee000-7bf92baf4000 rw-p 004ed000 103:02 30935993                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-common.so.0
+7bf92baf4000-7bf92bb14000 rw-p 00000000 00:00 0 
+7bf92bba1000-7bf92bbac000 r--p 00000000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7bf92bbac000-7bf92bbee000 r-xp 0000b000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7bf92bbee000-7bf92bbfe000 r--p 0004d000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7bf92bbfe000-7bf92bbff000 r--p 0005c000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7bf92bbff000-7bf92bc00000 rw-p 0005d000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7bf92bc00000-7bf92bc3c000 r--p 00000000 103:02 30936004                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cuda.so.0
+7bf92bc3c000-7bf92cc30000 r-xp 0003c000 103:02 30936004                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cuda.so.0
+7bf92cc30000-7bf938484000 r--p 01030000 103:02 30936004                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cuda.so.0
+7bf938484000-7bf938486000 r--p 0c884000 103:02 30936004                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cuda.so.0
+7bf938486000-7bf93848b000 rw-p 0c886000 103:02 30936004                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cuda.so.0
+7bf93848b000-7bf938497000 rw-p 00000000 00:00 0 
+7bf9384d1000-7bf9384da000 rw-p 00000000 00:00 0 
+7bf9384da000-7bf9384ec000 r--p 00000000 103:02 62272892                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7bf9384ec000-7bf93858c000 r-xp 00012000 103:02 62272892                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7bf93858c000-7bf9385fe000 r--p 000b2000 103:02 62272892                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7bf9385fe000-7bf9385ff000 r--p 00123000 103:02 62272892                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7bf9385ff000-7bf938600000 rw-p 00124000 103:02 62272892                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7bf938600000-7bf938628000 r--p 00000000 103:02 62272886                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7bf938628000-7bf9387c0000 r-xp 00028000 103:02 62272886                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7bf9387c0000-7bf93880e000 r--p 001c0000 103:02 62272886                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7bf93880e000-7bf938812000 r--p 0020e000 103:02 62272886                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7bf938812000-7bf938814000 rw-p 00212000 103:02 62272886                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7bf938814000-7bf938821000 rw-p 00000000 00:00 0 
+7bf938828000-7bf93882d000 rw-p 00000000 00:00 0 
+7bf93882d000-7bf938855000 r--p 00000000 103:02 30936007                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libmtmd.so.0
+7bf938855000-7bf9389c1000 r-xp 00028000 103:02 30936007                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libmtmd.so.0
+7bf9389c1000-7bf9389fa000 r--p 00194000 103:02 30936007                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libmtmd.so.0
+7bf9389fa000-7bf9389fd000 r--p 001cc000 103:02 30936007                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libmtmd.so.0
+7bf9389fd000-7bf9389ff000 rw-p 001cf000 103:02 30936007                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libmtmd.so.0
+7bf9389ff000-7bf938a00000 rw-p 00000000 00:00 0 
+7bf938a00000-7bf938aa3000 r--p 00000000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7bf938aa3000-7bf938bfe000 r-xp 000a3000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7bf938bfe000-7bf938c8a000 r--p 001fe000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7bf938c8a000-7bf938c99000 r--p 0028a000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7bf938c99000-7bf938c9c000 rw-p 00299000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7bf938c9c000-7bf938ca0000 rw-p 00000000 00:00 0 
+7bf938ca3000-7bf938cd1000 rw-p 00000000 00:00 0 
+7bf938cd1000-7bf938cd4000 r--p 00000000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7bf938cd4000-7bf938ce7000 r-xp 00003000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7bf938ce7000-7bf938ced000 r--p 00016000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7bf938ced000-7bf938cee000 r--p 0001c000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7bf938cee000-7bf938cef000 rw-p 0001d000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7bf938cef000-7bf938d11000 r--p 00000000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7bf938d11000-7bf938dc4000 r-xp 00022000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7bf938dc4000-7bf938df2000 r--p 000d5000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7bf938df2000-7bf938dfc000 r--p 00102000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7bf938dfc000-7bf938e00000 rw-p 0010c000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7bf938e00000-7bf938e90000 r--p 00000000 103:02 30935990                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-server-impl.so
+7bf938e90000-7bf9390ea000 r-xp 00090000 103:02 30935990                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-server-impl.so
+7bf9390ea000-7bf939468000 r--p 002ea000 103:02 30935990                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-server-impl.so
+7bf939468000-7bf93946d000 r--p 00668000 103:02 30935990                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-server-impl.so
+7bf93946d000-7bf939472000 rw-p 0066d000 103:02 30935990                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libllama-server-impl.so
+7bf939472000-7bf939475000 rw-p 00000000 00:00 0 
+7bf939477000-7bf93947f000 rw-p 00000000 00:00 0 
+7bf93947f000-7bf939480000 r--p 00000000 103:02 62272903                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7bf939480000-7bf939481000 r-xp 00001000 103:02 62272903                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7bf939481000-7bf939482000 r--p 00002000 103:02 62272903                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7bf939482000-7bf939483000 r--p 00002000 103:02 62272903                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7bf939483000-7bf939484000 rw-p 00003000 103:02 62272903                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7bf939484000-7bf939485000 r--p 00000000 103:02 62272901                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7bf939485000-7bf939486000 r-xp 00001000 103:02 62272901                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7bf939486000-7bf939487000 r--p 00002000 103:02 62272901                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7bf939487000-7bf939488000 r--p 00002000 103:02 62272901                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7bf939488000-7bf939489000 rw-p 00003000 103:02 62272901                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7bf939489000-7bf93948b000 rw-p 00000000 00:00 0 
+7bf93948b000-7bf93948c000 r--p 00000000 103:02 62272890                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7bf93948c000-7bf93948d000 r-xp 00001000 103:02 62272890                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7bf93948d000-7bf93948e000 r--p 00002000 103:02 62272890                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7bf93948e000-7bf93948f000 r--p 00002000 103:02 62272890                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7bf93948f000-7bf939490000 rw-p 00003000 103:02 62272890                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7bf939490000-7bf939494000 rw-p 00000000 00:00 0 
+7bf939494000-7bf939497000 r--p 00000000 103:02 30936010                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml.so.0
+7bf939497000-7bf93949d000 r-xp 00003000 103:02 30936010                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml.so.0
+7bf93949d000-7bf93949f000 r--p 00009000 103:02 30936010                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml.so.0
+7bf93949f000-7bf9394a0000 r--p 0000a000 103:02 30936010                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml.so.0
+7bf9394a0000-7bf9394a1000 rw-p 0000b000 103:02 30936010                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml.so.0
+7bf9394a1000-7bf9394a3000 rw-p 00000000 00:00 0 
+7bf9394a3000-7bf9394b2000 r--p 00000000 103:02 30935986                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-base.so.0.27.0
+7bf9394b2000-7bf93954a000 r-xp 0000f000 103:02 30935986                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-base.so.0.27.0
+7bf93954a000-7bf93956e000 r--p 000a7000 103:02 30935986                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-base.so.0.27.0
+7bf93956e000-7bf939570000 r--p 000cb000 103:02 30935986                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-base.so.0.27.0
+7bf939570000-7bf939571000 rw-p 000cd000 103:02 30935986                  /home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-base.so.0.27.0
+7bf939571000-7bf9395a1000 rw-p 00000000 00:00 0 
+7bf9395a1000-7bf9395a5000 r--p 00000000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7bf9395a5000-7bf9395c9000 r-xp 00004000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7bf9395c9000-7bf9395cd000 r--p 00028000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7bf9395cd000-7bf9395ce000 r--p 0002c000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7bf9395ce000-7bf9395cf000 rw-p 0002d000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7bf9395cf000-7bf9395d1000 rw-p 00000000 00:00 0 
+7bf9395d4000-7bf9395d5000 r--s 00000000 00:07 1446                       /dev/nvidiactl
+7bf9395d5000-7bf9395e5000 -w-s 00000000 00:07 1447                       /dev/nvidia0
+7bf9395e5000-7bf939606000 rw-p 00000000 00:00 0 
+7bf939606000-7bf939610000 r--p 00000000 103:02 30714159                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-rms-block.so
+7bf939610000-7bf9396ae000 r-xp 0000a000 103:02 30714159                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-rms-block.so
+7bf9396ae000-7bf93977e000 r--p 000a8000 103:02 30714159                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-rms-block.so
+7bf93977e000-7bf939783000 r--p 00178000 103:02 30714159                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-rms-block.so
+7bf939783000-7bf939784000 rw-p 0017d000 103:02 30714159                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-rms-block.so
+7bf939784000-7bf939786000 rw-p 00000000 00:00 0 
+7bf939786000-7bf939790000 r--p 00000000 103:02 30706910                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-scale.so
+7bf939790000-7bf93980c000 r-xp 0000a000 103:02 30706910                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-scale.so
+7bf93980c000-7bf939847000 r--p 00086000 103:02 30706910                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-scale.so
+7bf939847000-7bf93984c000 r--p 000c1000 103:02 30706910                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-scale.so
+7bf93984c000-7bf93984d000 rw-p 000c6000 103:02 30706910                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-scale.so
+7bf93984d000-7bf93984f000 rw-p 00000000 00:00 0 
+7bf93984f000-7bf93985a000 r--p 00000000 103:02 30706760                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-silu.so
+7bf93985a000-7bf939904000 r-xp 0000b000 103:02 30706760                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-silu.so
+7bf939904000-7bf939a32000 r--p 000b5000 103:02 30706760                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-silu.so
+7bf939a32000-7bf939a37000 r--p 001e3000 103:02 30706760                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-silu.so
+7bf939a37000-7bf939a38000 rw-p 001e8000 103:02 30706760                  /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-silu.so
+7bf939a38000-7bf939a3c000 rw-p 00000000 00:00 0 
+7bf939a3c000-7bf939a40000 r--p 00000000 00:00 0                          [vvar]
+7bf939a40000-7bf939a42000 r--p 00000000 00:00 0                          [vvar_vclock]
+7bf939a42000-7bf939a44000 r-xp 00000000 00:00 0                          [vdso]
+7bf939a44000-7bf939a45000 r--p 00000000 103:02 62272879                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7bf939a45000-7bf939a74000 r-xp 00001000 103:02 62272879                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7bf939a74000-7bf939a7f000 r--p 00030000 103:02 62272879                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7bf939a7f000-7bf939a81000 r--p 0003b000 103:02 62272879                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7bf939a81000-7bf939a82000 rw-p 0003d000 103:02 62272879                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7bf939a82000-7bf939a83000 rw-p 00000000 00:00 0 
+7ffc9c70c000-7ffc9c73c000 rw-p 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
