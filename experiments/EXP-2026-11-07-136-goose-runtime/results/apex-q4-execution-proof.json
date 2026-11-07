@@ -1,0 +1,10 @@
+{
+  "status": "PASS_FULL_Q4_BLOCK_EXECUTES_IN_APEX",
+  "sampled_completed_calls": 6240,
+  "sampling_interval_per_thread": 4096,
+  "fallback_calls": 0,
+  "result": "text, ids and probabilities exactly equal original on 512/32",
+  "performance_status": "PRELIMINARY_MICROKERNEL_PARITY; long inference pending",
+  "compiler": "latest available selfhosted Stage3 EXP298-v3",
+  "working_runtime_modified": false
+}

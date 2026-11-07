@@ -1,0 +1,43 @@
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -1480,6 +1480,22 @@
+     int32_t i2;
+ };
+ 
++
++__attribute__((visibility("hidden"))) void fg_selfhost_q4_tile(int,int,float*,const void*,const void*);
++static bool fg_tile_enabled = true;
++#ifdef FG_Q4_TILE_TRACE
++static atomic_uint_fast64_t fg_tile_calls = 0;
++static atomic_uint_fast64_t fg_tile_rows = 0;
++#endif
++__attribute__((constructor)) static void fg_tile_config(void) {
++ const char *value=getenv("GGML_GOOSE_Q4_TILE");if(value&&atoi(value)==0)fg_tile_enabled=false;
++}
++#ifdef FG_Q4_TILE_TRACE
++__attribute__((destructor)) static void fg_tile_report(void) {
++ fprintf(stderr,"FG_SELFHOST_Q4_TILES=%llu ROWS=%llu\n",(unsigned long long)atomic_load(&fg_tile_calls),(unsigned long long)atomic_load(&fg_tile_rows));
++}
++#endif
++
+ static void ggml_compute_forward_mul_mat_id_one_chunk(
+     struct ggml_tensor * dst,
+     const struct ggml_tensor * src0,
+@@ -1533,8 +1549,17 @@
+ 
+                 float * dst_col = (float *) ((char *) dst->data + (i1*nb1 + i2*nb2));
+ 
++                if (fg_tile_enabled && type==GGML_TYPE_Q4_K && ne00>0 && ne00%256==0 && nb01==(size_t)(ne00/256)*144) {
++                    const int rows=(int)(MIN(iir0+blck_0,ir0_end)-iir0);
++                    fg_selfhost_q4_tile((int)ne00,rows,tmp,src0_cur+iir0*nb01,src1_col);
++#ifdef FG_Q4_TILE_TRACE
++                    atomic_fetch_add_explicit(&fg_tile_calls,1,memory_order_relaxed);
++                    atomic_fetch_add_explicit(&fg_tile_rows,(uint64_t)rows,memory_order_relaxed);
++#endif
++                } else {
+                 for (int64_t ir0 = iir0; ir0 < iir0 + blck_0 && ir0 < ir0_end; ++ir0) {
+                     vec_dot(ne00, &tmp[ir0 - iir0], 0, src0_cur + ir0*nb01, 0, src1_col, 0, 1);
++                }
+                 }
+ 
+                 memcpy(&dst_col[iir0], tmp, (MIN(iir0 + blck_0, ir0_end) - iir0)*sizeof(float));

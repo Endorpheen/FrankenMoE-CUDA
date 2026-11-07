@@ -1,0 +1,14 @@
+{
+  "source_sha256": "50b7e19159eb5e888eb09469b656ba39ecf6d90e9e2714fbcef6a8b0abafb19c",
+  "generated_c_sha256": "fde6a1cf834ae57d4c948fe431316797b29242ff899d36895c2ee59fae9d7e31",
+  "status": "PASS",
+  "direct_cases": 9,
+  "single_thread_release_calls": 15011,
+  "eight_thread_release_calls": 8233,
+  "valid_lifecycle_sequences": 17,
+  "guards_intact": true,
+  "capacity_256_insert": true,
+  "prefix_suffix_bridge_insert": true,
+  "reachable_global_stack_use": false,
+  "producer": "selfhosted EXP299 stage3 04ac2b86d276"
+}

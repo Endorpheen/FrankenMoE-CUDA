@@ -1,0 +1,22 @@
+{
+  "status": "PASS_LIVE_APEX_AND_ROLLBACK",
+  "producer_sha256": "04ac2b86d276a2a81533329124cf7fd3f4b17a03c5a64ff4df7cb0fcd5ddf095",
+  "on": {
+    "enabled": 1,
+    "calls": 23582,
+    "shadow_checks": 23582,
+    "digest": 6317366255972546015
+  },
+  "off": {
+    "enabled": 0,
+    "calls": 23582,
+    "shadow_checks": 0,
+    "digest": 6317366255972546015
+  },
+  "all_text_tokens_probabilities_equal_original_and_control": true,
+  "borrowed_slice_mutation_shadow_checked": true,
+  "copy_primitive": "standard memmove via bounded adapter; all coalescing decisions and field updates in Goose",
+  "source_sha256": "50b7e19159eb5e888eb09469b656ba39ecf6d90e9e2714fbcef6a8b0abafb19c",
+  "generated_c_sha256": "fde6a1cf834ae57d4c948fe431316797b29242ff899d36895c2ee59fae9d7e31",
+  "production_unchanged": true
+}

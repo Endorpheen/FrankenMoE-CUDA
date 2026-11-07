@@ -1,0 +1,15 @@
+{"status":"PASS","single_graph_cases":200,"eight_thread_graph_cases":128,"ordered_service_events_checked":84962,"all_final_state_bytes_equal":true,"mock_services_not_physical_allocator":true}
+{"pass":0,"goose":0,"ns_graph":7762.230,"events":52939,"preliminary":true}
+{"pass":0,"goose":1,"ns_graph":12063.080,"events":52939,"preliminary":true}
+{"pass":1,"goose":1,"ns_graph":11049.090,"events":52939,"preliminary":true}
+{"pass":1,"goose":0,"ns_graph":6356.440,"events":52939,"preliminary":true}
+{"pass":2,"goose":0,"ns_graph":6047.000,"events":52939,"preliminary":true}
+{"pass":2,"goose":1,"ns_graph":10765.280,"events":52939,"preliminary":true}
+{"pass":3,"goose":1,"ns_graph":10727.720,"events":52939,"preliminary":true}
+{"pass":3,"goose":0,"ns_graph":5965.040,"events":52939,"preliminary":true}
+{"pass":4,"goose":0,"ns_graph":6058.210,"events":52939,"preliminary":true}
+{"pass":4,"goose":1,"ns_graph":10756.510,"events":52939,"preliminary":true}
+{"pass":5,"goose":1,"ns_graph":13301.960,"events":52939,"preliminary":true}
+{"pass":5,"goose":0,"ns_graph":7703.900,"events":52939,"preliminary":true}
+{"pass":6,"goose":0,"ns_graph":7160.430,"events":52939,"preliminary":true}
+{"pass":6,"goose":1,"ns_graph":13185.310,"events":52939,"preliminary":true}

@@ -1,0 +1,710 @@
+{
+  "status": "PRELIMINARY_COMPARISON_NUMERICAL_DIVERGENCE_UNRESOLVED",
+  "upstream_provenance": {
+    "tag": "b12179",
+    "commit": "669204ee2b9004845b34f26466a91d003edc98aa",
+    "published": "2026-11-06T20:43:24Z",
+    "release": "https://github.com/ggml-org/llama.cpp/releases/tag/b12179",
+    "asset": "https://github.com/ggml-org/llama.cpp/releases/download/b12179/llama-b12179-bin-ubuntu-cuda-12.8-x64.tar.gz",
+    "bytes": 188169554,
+    "sha256": "9a5b9bf36ff80ea58bf9d5ea11fb2462d61430ec9f9a752230eb4bcf8ee68c3d",
+    "official_prebuilt": true,
+    "production_unchanged": true
+  },
+  "profile_arguments_identical_except_executable": true,
+  "all_30_flags_verified": true,
+  "512_request_identical": true,
+  "request32k_identical": true,
+  "goose": {
+    "name": "coalesce-perf-v3-on-32k128",
+    "wall_seconds": 15.820247521041892,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 11241.122,
+      "prompt_per_token_ms": 0.34305181884765623,
+      "prompt_per_second": 2915.011508637661,
+      "predicted_n": 128,
+      "predicted_ms": 4556.877,
+      "predicted_per_token_ms": 35.88092125984252,
+      "predicted_per_second": 27.869964451531168
+    },
+    "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+    "tokens": [
+      11,
+      198,
+      248069,
+      271,
+      2,
+      38778,
+      30260,
+      35059,
+      271,
+      550,
+      3437,
+      279,
+      1433,
+      4774,
+      271,
+      760,
+      1433,
+      369,
+      264,
+      3074,
+      1500,
+      11,
+      11173,
+      16757,
+      220,
+      16,
+      11,
+      18,
+      15,
+      15,
+      2942,
+      25,
+      271,
+      29,
+      328,
+      760,
+      6951,
+      26817,
+      948,
+      66710,
+      12131,
+      7888,
+      6672,
+      13,
+      78503,
+      27224,
+      11,
+      6420,
+      37972,
+      11,
+      1716,
+      58558,
+      1149,
+      271,
+      3733,
+      513,
+      874,
+      47149,
+      11,
+      30494,
+      11,
+      466,
+      4880,
+      20934,
+      13,
+      561,
+      1500,
+      369,
+      264,
+      14648,
+      49800,
+      11,
+      524,
+      795,
+      13,
+      1049,
+      10426,
+      586,
+      279,
+      1785,
+      64234,
+      777,
+      66710,
+      1056,
+      3348,
+      880,
+      694,
+      1503,
+      524,
+      1910,
+      539,
+      1204,
+      1691,
+      11,
+      364,
+      1204,
+      1248,
+      11,
+      466,
+      494,
+      1092,
+      2450,
+      13,
+      271,
+      550,
+      38778,
+      14832,
+      271,
+      16,
+      13,
+      2972,
+      1743,
+      63471,
+      6951,
+      6310,
+      159029,
+      8618,
+      10458,
+      11039,
+      66710,
+      1973,
+      25720,
+      1070,
+      13,
+      10560,
+      2414,
+      4203,
+      11
+    ],
+    "sampled_rss_peak_mib": 21324.33203125,
+    "process_hwm_mib": 21324.33203125,
+    "process_swap_peak_kib": 0,
+    "sampled_anon_peak_mib": 708.5703125,
+    "sampled_file_peak_mib": 19961.9453125,
+    "sampled_gpu_peak_mib": 3348,
+    "system_swapout_pages_delta": 0,
+    "loadavg": [
+      4.89404296875,
+      4.8310546875,
+      4.1787109375
+    ],
+    "preliminary": true,
+    "concurrent_download": true
+  },
+  "upstream": {
+    "name": "upstream-b12179-32k128",
+    "wall_seconds": 21.799757995991968,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 17378.764,
+      "prompt_per_token_ms": 0.5303577880859375,
+      "prompt_per_second": 1885.5195916119237,
+      "predicted_n": 128,
+      "predicted_ms": 4396.168,
+      "predicted_per_token_ms": 34.61549606299212,
+      "predicted_per_second": 28.88879587859245
+    },
+    "content_sha256": "53e8208105b9886af54e10c3cd1afc5d34691d4a02869d02f7720582a3dcb9ff",
+    "tokens": [
+      11,
+      1716,
+      58558,
+      13,
+      198,
+      760,
+      6951,
+      26817,
+      948,
+      66710,
+      12131,
+      7888,
+      6672,
+      13,
+      198,
+      1919,
+      369,
+      264,
+      2393,
+      1433,
+      421,
+      7701,
+      310,
+      381,
+      38495,
+      279,
+      1788,
+      11316,
+      888,
+      321,
+      888,
+      13,
+      561,
+      1156,
+      6587,
+      728,
+      310,
+      8290,
+      424,
+      11,
+      10033,
+      8390,
+      14832,
+      11,
+      321,
+      28647,
+      264,
+      5902,
+      3019,
+      13,
+      561,
+      1433,
+      2144,
+      369,
+      1066,
+      799,
+      11316,
+      11173,
+      1599,
+      2942,
+      25,
+      328,
+      760,
+      6951,
+      26817,
+      948,
+      66710,
+      12131,
+      7888,
+      6672,
+      13,
+      78503,
+      27224,
+      11,
+      6420,
+      37972,
+      11,
+      1716,
+      58558,
+      1149,
+      271,
+      9764,
+      728,
+      1698,
+      16757,
+      1204,
+      1599,
+      2942,
+      424,
+      42151,
+      13,
+      1049,
+      579,
+      264,
+      1546,
+      1248,
+      1433,
+      13,
+      561,
+      7359,
+      2640,
+      328,
+      5439,
+      425,
+      411,
+      2393,
+      1433,
+      13,
+      79091,
+      279,
+      8390,
+      14832,
+      321,
+      28647,
+      264,
+      5902,
+      3019,
+      1149,
+      271,
+      1919,
+      5686,
+      1040,
+      264,
+      1228,
+      314,
+      3315,
+      353,
+      3172
+    ],
+    "sampled_rss_peak_mib": 22831.46484375,
+    "process_hwm_mib": 22831.46484375,
+    "process_swap_peak_kib": 0,
+    "sampled_anon_peak_mib": 730.32421875,
+    "sampled_file_peak_mib": 19912.94921875,
+    "sampled_gpu_peak_mib": 6410,
+    "system_swapout_pages_delta": 0,
+    "loadavg": [
+      4.48095703125,
+      3.95068359375,
+      3.96630859375
+    ],
+    "preliminary": true,
+    "concurrent_download": true
+  },
+  "first_token_controls": {
+    "original-sanity": {
+      "token": 1433,
+      "probabilities": {
+        "id": 1433,
+        "token": " log",
+        "bytes": [
+          32,
+          108,
+          111,
+          103
+        ],
+        "logprob": -0.006670380476862192,
+        "top_logprobs": [
+          {
+            "id": 1433,
+            "token": " log",
+            "bytes": [
+              32,
+              108,
+              111,
+              103
+            ],
+            "logprob": -0.006670380476862192
+          },
+          {
+            "id": 271,
+            "token": "\n\n",
+            "bytes": [
+              10,
+              10
+            ],
+            "logprob": -5.916841983795166
+          },
+          {
+            "id": 6951,
+            "token": " queue",
+            "bytes": [
+              32,
+              113,
+              117,
+              101,
+              117,
+              101
+            ],
+            "logprob": -6.9798150062561035
+          },
+          {
+            "id": 198,
+            "token": "\n",
+            "bytes": [
+              10
+            ],
+            "logprob": -7.124255657196045
+          },
+          {
+            "id": 2743,
+            "token": " Log",
+            "bytes": [
+              32,
+              76,
+              111,
+              103
+            ],
+            "logprob": -7.963472843170166
+          }
+        ]
+      },
+      "content": " log is a repeated line, repeated 25 times.\n\n# Assessing the Service Log\n\n## What the log shows\n\nThe log contains a single line"
+    },
+    "native-control-first-token": {
+      "token": 1433,
+      "probabilities": {
+        "id": 1433,
+        "token": " log",
+        "bytes": [
+          32,
+          108,
+          111,
+          103
+        ],
+        "logprob": -0.006670380476862192,
+        "top_logprobs": [
+          {
+            "id": 1433,
+            "token": " log",
+            "bytes": [
+              32,
+              108,
+              111,
+              103
+            ],
+            "logprob": -0.006670380476862192
+          },
+          {
+            "id": 271,
+            "token": "\n\n",
+            "bytes": [
+              10,
+              10
+            ],
+            "logprob": -5.916841983795166
+          },
+          {
+            "id": 6951,
+            "token": " queue",
+            "bytes": [
+              32,
+              113,
+              117,
+              101,
+              117,
+              101
+            ],
+            "logprob": -6.9798150062561035
+          },
+          {
+            "id": 198,
+            "token": "\n",
+            "bytes": [
+              10
+            ],
+            "logprob": -7.124255657196045
+          },
+          {
+            "id": 2743,
+            "token": " Log",
+            "bytes": [
+              32,
+              76,
+              111,
+              103
+            ],
+            "logprob": -7.963472843170166
+          }
+        ]
+      },
+      "content": " log"
+    },
+    "native-control-cpu-first-token": {
+      "token": 1433,
+      "probabilities": {
+        "id": 1433,
+        "token": " log",
+        "bytes": [
+          32,
+          108,
+          111,
+          103
+        ],
+        "logprob": -0.004848413169384003,
+        "top_logprobs": [
+          {
+            "id": 1433,
+            "token": " log",
+            "bytes": [
+              32,
+              108,
+              111,
+              103
+            ],
+            "logprob": -0.004848413169384003
+          },
+          {
+            "id": 1879,
+            "token": " input",
+            "bytes": [
+              32,
+              105,
+              110,
+              112,
+              117,
+              116
+            ],
+            "logprob": -6.467131614685059
+          },
+          {
+            "id": 271,
+            "token": "\n\n",
+            "bytes": [
+              10,
+              10
+            ],
+            "logprob": -6.590364456176758
+          },
+          {
+            "id": 198,
+            "token": "\n",
+            "bytes": [
+              10
+            ],
+            "logprob": -7.731561660766602
+          },
+          {
+            "id": 411,
+            "token": " this",
+            "bytes": [
+              32,
+              116,
+              104,
+              105,
+              115
+            ],
+            "logprob": -8.392938613891602
+          }
+        ]
+      },
+      "content": " log"
+    },
+    "upstream-b12179-warmup": {
+      "token": 18922,
+      "probabilities": {
+        "id": 18922,
+        "token": " identical",
+        "bytes": [
+          32,
+          105,
+          100,
+          101,
+          110,
+          116,
+          105,
+          99,
+          97,
+          108
+        ],
+        "logprob": -0.10235647857189178,
+        "top_logprobs": [
+          {
+            "id": 18922,
+            "token": " identical",
+            "bytes": [
+              32,
+              105,
+              100,
+              101,
+              110,
+              116,
+              105,
+              99,
+              97,
+              108
+            ],
+            "logprob": -0.10235647857189178
+          },
+          {
+            "id": 1788,
+            "token": " same",
+            "bytes": [
+              32,
+              115,
+              97,
+              109,
+              101
+            ],
+            "logprob": -3.065891742706299
+          },
+          {
+            "id": 220,
+            "token": " ",
+            "bytes": [
+              32
+            ],
+            "logprob": -4.052333354949951
+          },
+          {
+            "id": 271,
+            "token": "\n\n",
+            "bytes": [
+              10,
+              10
+            ],
+            "logprob": -4.907874584197998
+          },
+          {
+            "id": 17,
+            "token": "2",
+            "bytes": [
+              50
+            ],
+            "logprob": -5.571396350860596
+          }
+        ]
+      },
+      "content": " identical lines are repeated 24 times.\n\n# Assessing the Service Log\n\n## What the log shows\n\nThe log contains a single line, repeated "
+    },
+    "upstream-b12179-cpu-first-token": {
+      "token": 18922,
+      "probabilities": {
+        "id": 18922,
+        "token": " identical",
+        "bytes": [
+          32,
+          105,
+          100,
+          101,
+          110,
+          116,
+          105,
+          99,
+          97,
+          108
+        ],
+        "logprob": -0.19216883182525635,
+        "top_logprobs": [
+          {
+            "id": 18922,
+            "token": " identical",
+            "bytes": [
+              32,
+              105,
+              100,
+              101,
+              110,
+              116,
+              105,
+              99,
+              97,
+              108
+            ],
+            "logprob": -0.19216883182525635
+          },
+          {
+            "id": 220,
+            "token": " ",
+            "bytes": [
+              32
+            ],
+            "logprob": -3.082366466522217
+          },
+          {
+            "id": 1788,
+            "token": " same",
+            "bytes": [
+              32,
+              115,
+              97,
+              109,
+              101
+            ],
+            "logprob": -3.498232364654541
+          },
+          {
+            "id": 271,
+            "token": "\n\n",
+            "bytes": [
+              10,
+              10
+            ],
+            "logprob": -3.975529193878174
+          },
+          {
+            "id": 198,
+            "token": "\n",
+            "bytes": [
+              10
+            ],
+            "logprob": -3.9948878288269043
+          }
+        ]
+      },
+      "content": " identical"
+    }
+  },
+  "conclusion": "Goose variants match unchanged original; old native without EXP107 also matches original first-token probabilities. Old/new native first tokens differ on both CPU and CUDA. Root cause not established; no correctness or speed superiority claimed. Different generated decode paths limit throughput interpretation.",
+  "source_review": {
+    "qwen35moe": "layer-aware build_rope refactor, actual utility/cause unproven",
+    "delta_net": "conv state store moved to common helper, semantics not yet qualified",
+    "cuda_mrope": "actual ROPE+VIEW+SET_ROWS fusion with F32/F16 destination; no quantized destination branch in reviewed mrope implementation; do not assume benefit for current Q4 KV",
+    "source_pin": "669204ee2b9004845b34f26466a91d003edc98aa"
+  },
+  "production_unchanged": true
+}

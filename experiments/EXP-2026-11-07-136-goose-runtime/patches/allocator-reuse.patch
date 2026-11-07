@@ -1,0 +1,90 @@
+--- a/ggml/src/ggml-alloc.c
++++ b/ggml/src/ggml-alloc.c
+@@ -9,6 +9,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdatomic.h>
+ 
+ #define MAX(a, b) ((a) > (b) ? (a) : (b))
+ #define MAX_FREE_BLOCKS 256
+@@ -199,6 +200,39 @@
+ }
+ #endif
+ 
++
++_Static_assert(sizeof(struct free_block) == 16, "Goose free-block ABI");
++_Static_assert(offsetof(struct free_block, size) == 8, "Goose block size offset");
++__attribute__((visibility("hidden"))) int64_t fg_selfhost_choose_reuse(const void *, int, size_t, size_t *);
++static bool fg_alloc_enabled = true;
++static bool fg_alloc_verify = false;
++static int64_t fg_native_choose_reuse(const struct free_block *blocks, int count, size_t requested, size_t *available) {
++    int64_t index = -1;
++    size_t best_size = SIZE_MAX;
++    *available = 0;
++    for (int i = 0; i < count - 1; ++i) {
++        *available = MAX(*available, blocks[i].size);
++        if (blocks[i].size >= requested && blocks[i].size <= best_size) {
++            index = i;
++            best_size = blocks[i].size;
++        }
++    }
++    return index;
++}
++__attribute__((constructor)) static void fg_alloc_config(void) {
++    const char *on = getenv("GGML_GOOSE_ALLOC");
++    const char *verify = getenv("GGML_GOOSE_ALLOC_VERIFY");
++    if (on && atoi(on) == 0) fg_alloc_enabled = false;
++    fg_alloc_verify = verify && atoi(verify) != 0;
++}
++#ifdef FG_ALLOC_TRACE
++static atomic_uint_fast64_t fg_alloc_calls, fg_alloc_hits, fg_alloc_checks, fg_alloc_digest;
++__attribute__((destructor)) static void fg_alloc_report(void) {
++    fprintf(stderr, "FG_SELFHOST_ALLOC enabled=%d calls=%llu reuse_hits=%llu shadow_checks=%llu digest=%llu\n", fg_alloc_enabled,
++        (unsigned long long)atomic_load(&fg_alloc_calls), (unsigned long long)atomic_load(&fg_alloc_hits),
++        (unsigned long long)atomic_load(&fg_alloc_checks), (unsigned long long)atomic_load(&fg_alloc_digest));
++}
++#endif
+ static struct buffer_address ggml_dyn_tallocr_alloc(struct ggml_dyn_tallocr * alloc, size_t size, const struct ggml_tensor * tensor) {
+     size = aligned_offset(NULL, size, alloc->alignment);
+ 
+@@ -211,16 +245,29 @@
+     // find the best fitting free block besides the last block, within any chunk
+     for (int c = 0; c < alloc->n_chunks; ++c) {
+         struct tallocr_chunk * chunk = alloc->chunks[c];
+-        size_t best_fit_size = SIZE_MAX;
+-        for (int i = 0; i < chunk->n_free_blocks - 1; i++) {
+-            struct free_block * block = &chunk->free_blocks[i];
+-            max_avail = MAX(max_avail, block->size);
+-            if (block->size >= size && block->size <= best_fit_size) {
+-                best_fit_chunk = c;
+-                best_fit_block = i;
+-                best_fit_size = block->size;
+-            }
+-        }
++        size_t available;
++        int64_t choice = fg_alloc_enabled ? fg_selfhost_choose_reuse(chunk->free_blocks, chunk->n_free_blocks, size, &available)
++            : fg_native_choose_reuse(chunk->free_blocks, chunk->n_free_blocks, size, &available);
++        if (fg_alloc_enabled && fg_alloc_verify) {
++            size_t expected_available;
++            int64_t expected = fg_native_choose_reuse(chunk->free_blocks, chunk->n_free_blocks, size, &expected_available);
++            GGML_ASSERT(choice == expected && available == expected_available);
++#ifdef FG_ALLOC_TRACE
++            atomic_fetch_add_explicit(&fg_alloc_checks, 1, memory_order_relaxed);
++#endif
++        }
++        max_avail = MAX(max_avail, available);
++        if (choice >= 0) {
++            best_fit_chunk = c;
++            best_fit_block = (int)choice;
++        }
++#ifdef FG_ALLOC_TRACE
++        atomic_fetch_add_explicit(&fg_alloc_calls, 1, memory_order_relaxed);
++        atomic_fetch_add_explicit(&fg_alloc_hits, choice >= 0, memory_order_relaxed);
++        uint64_t fingerprint = size * UINT64_C(11400714819323198485) ^ available ^ (uint64_t)(choice + 1)
++            ^ ((uint64_t)chunk->n_free_blocks << 32) ^ ((uint64_t)c << 48);
++        atomic_fetch_add_explicit(&fg_alloc_digest, fingerprint, memory_order_relaxed);
++#endif
+     }
+ 
+     if (best_fit_block == -1) {

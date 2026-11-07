@@ -1,0 +1,355 @@
+--- a/ggml/src/ggml-alloc.c
++++ b/ggml/src/ggml-alloc.c
+@@ -9,6 +9,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdatomic.h>
+ 
+ #define MAX(a, b) ((a) > (b) ? (a) : (b))
+ #define MAX_FREE_BLOCKS 256
+@@ -199,6 +200,39 @@
+ }
+ #endif
+ 
++
++_Static_assert(sizeof(struct free_block) == 16, "Goose free-block ABI");
++_Static_assert(offsetof(struct free_block, size) == 8, "Goose block size offset");
++__attribute__((visibility("hidden"))) int64_t fg_selfhost_choose_reuse(const void *, int, size_t, size_t *);
++static bool fg_alloc_enabled = true;
++static bool fg_alloc_verify = false;
++static int64_t fg_native_choose_reuse(const struct free_block *blocks, int count, size_t requested, size_t *available) {
++    int64_t index = -1;
++    size_t best_size = SIZE_MAX;
++    *available = 0;
++    for (int i = 0; i < count - 1; ++i) {
++        *available = MAX(*available, blocks[i].size);
++        if (blocks[i].size >= requested && blocks[i].size <= best_size) {
++            index = i;
++            best_size = blocks[i].size;
++        }
++    }
++    return index;
++}
++__attribute__((constructor)) static void fg_alloc_config(void) {
++    const char *on = getenv("GGML_GOOSE_ALLOC");
++    const char *verify = getenv("GGML_GOOSE_ALLOC_VERIFY");
++    if (on && atoi(on) == 0) fg_alloc_enabled = false;
++    fg_alloc_verify = verify && atoi(verify) != 0;
++}
++#ifdef FG_ALLOC_TRACE
++static atomic_uint_fast64_t fg_alloc_calls, fg_alloc_hits, fg_alloc_checks, fg_alloc_digest;
++__attribute__((destructor)) static void fg_alloc_report(void) {
++    fprintf(stderr, "FG_SELFHOST_ALLOC enabled=%d calls=%llu reuse_hits=%llu shadow_checks=%llu digest=%llu\n", fg_alloc_enabled,
++        (unsigned long long)atomic_load(&fg_alloc_calls), (unsigned long long)atomic_load(&fg_alloc_hits),
++        (unsigned long long)atomic_load(&fg_alloc_checks), (unsigned long long)atomic_load(&fg_alloc_digest));
++}
++#endif
+ static struct buffer_address ggml_dyn_tallocr_alloc(struct ggml_dyn_tallocr * alloc, size_t size, const struct ggml_tensor * tensor) {
+     size = aligned_offset(NULL, size, alloc->alignment);
+ 
+@@ -211,16 +245,29 @@
+     // find the best fitting free block besides the last block, within any chunk
+     for (int c = 0; c < alloc->n_chunks; ++c) {
+         struct tallocr_chunk * chunk = alloc->chunks[c];
+-        size_t best_fit_size = SIZE_MAX;
+-        for (int i = 0; i < chunk->n_free_blocks - 1; i++) {
+-            struct free_block * block = &chunk->free_blocks[i];
+-            max_avail = MAX(max_avail, block->size);
+-            if (block->size >= size && block->size <= best_fit_size) {
+-                best_fit_chunk = c;
+-                best_fit_block = i;
+-                best_fit_size = block->size;
+-            }
+-        }
++        size_t available;
++        int64_t choice = fg_alloc_enabled ? fg_selfhost_choose_reuse(chunk->free_blocks, chunk->n_free_blocks, size, &available)
++            : fg_native_choose_reuse(chunk->free_blocks, chunk->n_free_blocks, size, &available);
++        if (fg_alloc_enabled && fg_alloc_verify) {
++            size_t expected_available;
++            int64_t expected = fg_native_choose_reuse(chunk->free_blocks, chunk->n_free_blocks, size, &expected_available);
++            GGML_ASSERT(choice == expected && available == expected_available);
++#ifdef FG_ALLOC_TRACE
++            atomic_fetch_add_explicit(&fg_alloc_checks, 1, memory_order_relaxed);
++#endif
++        }
++        max_avail = MAX(max_avail, available);
++        if (choice >= 0) {
++            best_fit_chunk = c;
++            best_fit_block = (int)choice;
++        }
++#ifdef FG_ALLOC_TRACE
++        atomic_fetch_add_explicit(&fg_alloc_calls, 1, memory_order_relaxed);
++        atomic_fetch_add_explicit(&fg_alloc_hits, choice >= 0, memory_order_relaxed);
++        uint64_t fingerprint = size * UINT64_C(11400714819323198485) ^ available ^ (uint64_t)(choice + 1)
++            ^ ((uint64_t)chunk->n_free_blocks << 32) ^ ((uint64_t)c << 48);
++        atomic_fetch_add_explicit(&fg_alloc_digest, fingerprint, memory_order_relaxed);
++#endif
+     }
+ 
+     if (best_fit_block == -1) {
+@@ -309,7 +356,7 @@
+ }
+ 
+ // this is a very naive implementation, but for our case the number of free blocks should be very small
+-static void ggml_dyn_tallocr_free_bytes(struct ggml_dyn_tallocr * alloc, struct buffer_address addr, size_t size) {
++static void fg_native_free_bytes(struct ggml_dyn_tallocr * alloc, struct buffer_address addr, size_t size) {
+     size = aligned_offset(NULL, size, alloc->alignment);
+ 
+     struct tallocr_chunk * chunk = alloc->chunks[addr.chunk];
+@@ -349,6 +396,53 @@
+     ggml_dyn_tallocr_insert_block(chunk, addr.offset, size);
+ }
+ 
++__attribute__((visibility("hidden"))) int fg_selfhost_release_block(void *, int, size_t, size_t);
++static bool fg_coalesce_enabled = true;
++__attribute__((constructor)) static void fg_coalesce_config(void) {
++    const char *on = getenv("GGML_GOOSE_COALESCE");
++    if (on && atoi(on) == 0) fg_coalesce_enabled = false;
++}
++#ifdef FG_COALESCE_TRACE
++static atomic_uint_fast64_t fg_coalesce_calls, fg_coalesce_checks, fg_coalesce_digest;
++__attribute__((destructor)) static void fg_coalesce_report(void) {
++    fprintf(stderr, "FG_SELFHOST_COALESCE enabled=%d calls=%llu shadow_checks=%llu digest=%llu\n", fg_coalesce_enabled,
++        (unsigned long long)atomic_load(&fg_coalesce_calls), (unsigned long long)atomic_load(&fg_coalesce_checks),
++        (unsigned long long)atomic_load(&fg_coalesce_digest));
++}
++#endif
++__attribute__((noinline)) static void fg_checked_release(struct ggml_dyn_tallocr *alloc, struct buffer_address addr, size_t size) {
++    struct tallocr_chunk *chunk = alloc->chunks[addr.chunk];
++    struct tallocr_chunk expected = *chunk;
++    struct ggml_dyn_tallocr reference = *alloc;
++    reference.chunks[addr.chunk] = &expected;
++    fg_native_free_bytes(&reference, addr, size);
++    chunk->n_free_blocks = fg_selfhost_release_block(chunk->free_blocks, chunk->n_free_blocks, addr.offset, size);
++    GGML_ASSERT(chunk->n_free_blocks == expected.n_free_blocks);
++    GGML_ASSERT(memcmp(chunk->free_blocks, expected.free_blocks, (size_t)chunk->n_free_blocks * sizeof(struct free_block)) == 0);
++#ifdef FG_COALESCE_TRACE
++    atomic_fetch_add_explicit(&fg_coalesce_checks, 1, memory_order_relaxed);
++#endif
++}
++static void ggml_dyn_tallocr_free_bytes(struct ggml_dyn_tallocr *alloc, struct buffer_address addr, size_t size) {
++    size = aligned_offset(NULL, size, alloc->alignment);
++    struct tallocr_chunk *chunk = alloc->chunks[addr.chunk];
++    if (!fg_coalesce_enabled) {
++        fg_native_free_bytes(alloc, addr, size);
++    } else if (fg_alloc_verify) {
++        fg_checked_release(alloc, addr, size);
++    } else {
++        chunk->n_free_blocks = fg_selfhost_release_block(chunk->free_blocks, chunk->n_free_blocks, addr.offset, size);
++    }
++#ifdef FG_COALESCE_TRACE
++    uint64_t fingerprint = addr.offset ^ size * UINT64_C(11400714819323198485) ^ (uint64_t)chunk->n_free_blocks;
++    for (int i = 0; i < chunk->n_free_blocks; ++i) {
++        fingerprint = (fingerprint ^ chunk->free_blocks[i].offset ^ chunk->free_blocks[i].size) * UINT64_C(1099511628211);
++    }
++    atomic_fetch_add_explicit(&fg_coalesce_calls, 1, memory_order_relaxed);
++    atomic_fetch_add_explicit(&fg_coalesce_digest, fingerprint, memory_order_relaxed);
++#endif
++}
++
+ static void ggml_dyn_tallocr_reset(struct ggml_dyn_tallocr * alloc) {
+     for (int i = 0; i < GGML_VBUFFER_MAX_CHUNKS; i++) {
+         free(alloc->chunks[i]);
+@@ -487,6 +581,86 @@
+     bool allocated;
+ };
+ 
++
++_Static_assert(sizeof(struct hash_node) == 40, "Goose tensor lifetime ABI size");
++_Static_assert(offsetof(struct hash_node, n_children) == 0, "children ABI offset");
++_Static_assert(offsetof(struct hash_node, n_views) == 4, "views ABI offset");
++_Static_assert(offsetof(struct hash_node, addr) + offsetof(struct buffer_address, offset) == 24, "buffer address ABI offset");
++_Static_assert(offsetof(struct hash_node, allocated) == 32, "owner allocation flag ABI offset");
++__attribute__((visibility("hidden"))) int fg_selfhost_parent_done(void *, bool);
++__attribute__((visibility("hidden"))) bool fg_selfhost_view_done(void *);
++static bool fg_lifetime_enabled = true;
++__attribute__((constructor)) static void fg_lifetime_config(void) {
++    const char *on = getenv("GGML_GOOSE_LIFETIME");
++    if (on && atoi(on) == 0) fg_lifetime_enabled = false;
++}
++static int fg_native_parent_done(struct hash_node *state, bool is_view) {
++    state->n_children -= 1;
++    if (state->n_children == 0 && state->n_views == 0) {
++        if (is_view) return 2;
++        if (state->allocated) return 1;
++    }
++    return 0;
++}
++static bool fg_native_view_done(struct hash_node *state) {
++    state->n_views -= 1;
++    return state->n_views == 0 && state->n_children == 0 && state->allocated;
++}
++static bool fg_life_fields_equal(const struct hash_node *a, const struct hash_node *b) {
++    return a->n_children == b->n_children && a->n_views == b->n_views && a->buffer_id == b->buffer_id
++        && a->addr.chunk == b->addr.chunk && a->addr.offset == b->addr.offset && a->allocated == b->allocated;
++}
++#ifdef FG_LIFETIME_TRACE
++static atomic_uint_fast64_t fg_life_parent_calls, fg_life_view_calls, fg_life_checks, fg_life_parent_release, fg_life_owner_release, fg_life_digest;
++__attribute__((destructor)) static void fg_lifetime_report(void) {
++    fprintf(stderr, "FG_SELFHOST_LIFETIME enabled=%d parents=%llu views=%llu shadow_checks=%llu parent_release_requests=%llu owner_release_requests=%llu digest=%llu\n", fg_lifetime_enabled,
++        (unsigned long long)atomic_load(&fg_life_parent_calls), (unsigned long long)atomic_load(&fg_life_view_calls),
++        (unsigned long long)atomic_load(&fg_life_checks), (unsigned long long)atomic_load(&fg_life_parent_release),
++        (unsigned long long)atomic_load(&fg_life_owner_release), (unsigned long long)atomic_load(&fg_life_digest));
++}
++static void fg_life_observe(const struct hash_node *state, int action, bool owner) {
++    uint64_t code = ((uint64_t)(uint32_t)state->n_children << 32) ^ (uint32_t)state->n_views
++        ^ ((uint64_t)state->allocated << 40) ^ ((uint64_t)action << 48) ^ ((uint64_t)owner << 56);
++    atomic_fetch_add_explicit(&fg_life_digest, code * UINT64_C(11400714819323198485), memory_order_relaxed);
++    atomic_fetch_add_explicit(owner ? &fg_life_view_calls : &fg_life_parent_calls, 1, memory_order_relaxed);
++    if (!owner && action == 1) atomic_fetch_add_explicit(&fg_life_parent_release, 1, memory_order_relaxed);
++    if (owner && action) atomic_fetch_add_explicit(&fg_life_owner_release, 1, memory_order_relaxed);
++}
++#endif
++__attribute__((noinline)) static int fg_life_checked_parent(struct hash_node *state, bool is_view) {
++    struct hash_node expected = *state;
++    int action = fg_selfhost_parent_done(state, is_view);
++    int native_action = fg_native_parent_done(&expected, is_view);
++    GGML_ASSERT(action == native_action && fg_life_fields_equal(state, &expected));
++#ifdef FG_LIFETIME_TRACE
++    atomic_fetch_add_explicit(&fg_life_checks, 1, memory_order_relaxed);
++#endif
++    return action;
++}
++__attribute__((noinline)) static bool fg_life_checked_view(struct hash_node *state) {
++    struct hash_node expected = *state;
++    bool action = fg_selfhost_view_done(state);
++    bool native_action = fg_native_view_done(&expected);
++    GGML_ASSERT(action == native_action && fg_life_fields_equal(state, &expected));
++#ifdef FG_LIFETIME_TRACE
++    atomic_fetch_add_explicit(&fg_life_checks, 1, memory_order_relaxed);
++#endif
++    return action;
++}
++static int fg_life_take_parent(struct hash_node *state, bool is_view) {
++    int action = fg_alloc_verify ? fg_life_checked_parent(state, is_view) : fg_selfhost_parent_done(state, is_view);
++#ifdef FG_LIFETIME_TRACE
++    fg_life_observe(state, action, false);
++#endif
++    return action;
++}
++static bool fg_life_take_view(struct hash_node *state) {
++    bool action = fg_alloc_verify ? fg_life_checked_view(state) : fg_selfhost_view_done(state);
++#ifdef FG_LIFETIME_TRACE
++    fg_life_observe(state, action, true);
++#endif
++    return action;
++}
+ struct tensor_alloc {
+     int buffer_id;
+     struct buffer_address addr;
+@@ -770,7 +944,7 @@
+     return node_buffer_ids ? node_buffer_ids[i] : 0;
+ }
+ 
+-static void ggml_gallocr_alloc_graph_impl(ggml_gallocr_t galloc, struct ggml_cgraph * graph, const int * node_buffer_ids, const int * leaf_buffer_ids) {
++static void fg_native_gallocr_alloc_graph_impl(ggml_gallocr_t galloc, struct ggml_cgraph * graph, const int * node_buffer_ids, const int * leaf_buffer_ids) {
+     // clear hash tables
+     ggml_hash_set_reset(&galloc->hash_set);
+     memset(galloc->hash_values, 0, sizeof(struct hash_node) * galloc->hash_set.size);
+@@ -852,6 +1026,17 @@
+                 continue;
+             }
+             struct hash_node * p_hn = ggml_gallocr_hash_get(galloc, parent);
++            if (fg_lifetime_enabled) {
++                int action = fg_life_take_parent(p_hn, ggml_impl_is_view(parent));
++                if (action == 2) {
++                    struct ggml_tensor *owner = parent->view_src;
++                    struct hash_node *owner_hn = ggml_gallocr_hash_get(galloc, owner);
++                    if (fg_life_take_view(owner_hn)) ggml_gallocr_free_node(galloc, owner);
++                } else if (action == 1) {
++                    ggml_gallocr_free_node(galloc, parent);
++                }
++                continue;
++            }
+             p_hn->n_children -= 1;
+ 
+             AT_PRINTF("parent %s: %d children, %d views, allocated: %d\n",
+@@ -877,6 +1062,87 @@
+     }
+ }
+ 
++
++__attribute__((visibility("hidden"))) void fg_selfhost_graph_plan(void *, const void *, int, const void *, int, const int *, const int *, int, unsigned, int, bool);
++static bool fg_graph_enabled = true;
++__attribute__((constructor)) static void fg_graph_config(void) {
++    const char *on = getenv("GGML_GOOSE_GRAPH_PLAN");
++    if (on && atoi(on) == 0) fg_graph_enabled = false;
++}
++#ifdef FG_GRAPH_TRACE
++static atomic_uint_fast64_t fg_graph_walks, fg_graph_nodes, fg_graph_leafs, fg_graph_allocs, fg_graph_releases, fg_graph_checks[4];
++__attribute__((destructor)) static void fg_graph_report(void) {
++    fprintf(stderr, "FG_SELFHOST_GRAPH enabled=%d walks=%llu nodes=%llu leafs=%llu alloc_requests=%llu release_requests=%llu checks=%llu,%llu,%llu,%llu\n", fg_graph_enabled,
++        (unsigned long long)atomic_load(&fg_graph_walks), (unsigned long long)atomic_load(&fg_graph_nodes),
++        (unsigned long long)atomic_load(&fg_graph_leafs), (unsigned long long)atomic_load(&fg_graph_allocs),
++        (unsigned long long)atomic_load(&fg_graph_releases), (unsigned long long)atomic_load(&fg_graph_checks[0]),
++        (unsigned long long)atomic_load(&fg_graph_checks[1]), (unsigned long long)atomic_load(&fg_graph_checks[2]),
++        (unsigned long long)atomic_load(&fg_graph_checks[3]));
++}
++#endif
++__attribute__((visibility("hidden"))) void *fg_graph_hash(uint64_t allocator, uint64_t tensor) {
++    return ggml_gallocr_hash_get((ggml_gallocr_t)(uintptr_t)allocator, (const struct ggml_tensor *)(uintptr_t)tensor);
++}
++__attribute__((visibility("hidden"))) uint64_t fg_graph_source(uint64_t tensor, int64_t index) {
++    GGML_ASSERT(index >= 0 && index < GGML_MAX_SRC);
++    return (uintptr_t)((const struct ggml_tensor *)(uintptr_t)tensor)->src[index];
++}
++__attribute__((visibility("hidden"))) uint64_t fg_graph_owner(uint64_t tensor) {
++    return (uintptr_t)((const struct ggml_tensor *)(uintptr_t)tensor)->view_src;
++}
++__attribute__((visibility("hidden"))) bool fg_graph_is_view(uint64_t tensor) {
++    return ggml_impl_is_view((const struct ggml_tensor *)(uintptr_t)tensor);
++}
++__attribute__((visibility("hidden"))) uint32_t fg_graph_flags(uint64_t tensor) {
++    return ((const struct ggml_tensor *)(uintptr_t)tensor)->flags;
++}
++__attribute__((visibility("hidden"))) int32_t fg_graph_op(uint64_t tensor) {
++    return ((const struct ggml_tensor *)(uintptr_t)tensor)->op;
++}
++__attribute__((visibility("hidden"))) void fg_graph_allocate(uint64_t allocator, uint64_t tensor, int32_t buffer_id) {
++#ifdef FG_GRAPH_TRACE
++    atomic_fetch_add_explicit(&fg_graph_allocs, 1, memory_order_relaxed);
++#endif
++    ggml_gallocr_allocate_node((ggml_gallocr_t)(uintptr_t)allocator, (struct ggml_tensor *)(uintptr_t)tensor, buffer_id);
++}
++__attribute__((visibility("hidden"))) void fg_graph_release(uint64_t allocator, uint64_t tensor) {
++#ifdef FG_GRAPH_TRACE
++    atomic_fetch_add_explicit(&fg_graph_releases, 1, memory_order_relaxed);
++#endif
++    ggml_gallocr_free_node((ggml_gallocr_t)(uintptr_t)allocator, (struct ggml_tensor *)(uintptr_t)tensor);
++}
++__attribute__((visibility("hidden"))) void fg_graph_verify(const void *pointer, int32_t children, int32_t views, bool allocated, int32_t kind, int32_t action, bool is_view) {
++    const struct hash_node *state = pointer;
++    struct hash_node expected = *state;
++    expected.n_children = children;
++    expected.n_views = views;
++    expected.allocated = allocated;
++    int native_action = 0;
++    if (kind == 0) expected.n_views += 1;
++    else if (kind == 1) expected.n_children += 1;
++    else if (kind == 2) native_action = fg_native_parent_done(&expected, is_view);
++    else if (kind == 3) native_action = fg_native_view_done(&expected);
++    else GGML_ABORT("invalid graph transition kind");
++    GGML_ASSERT(native_action == action && fg_life_fields_equal(state, &expected));
++#ifdef FG_GRAPH_TRACE
++    atomic_fetch_add_explicit(&fg_graph_checks[kind], 1, memory_order_relaxed);
++#endif
++}
++static void ggml_gallocr_alloc_graph_impl(ggml_gallocr_t galloc, struct ggml_cgraph *graph, const int *node_buffer_ids, const int *leaf_buffer_ids) {
++    if (!fg_graph_enabled) {
++        fg_native_gallocr_alloc_graph_impl(galloc, graph, node_buffer_ids, leaf_buffer_ids);
++        return;
++    }
++    ggml_hash_set_reset(&galloc->hash_set);
++    memset(galloc->hash_values, 0, sizeof(struct hash_node) * galloc->hash_set.size);
++#ifdef FG_GRAPH_TRACE
++    atomic_fetch_add_explicit(&fg_graph_walks, 1, memory_order_relaxed);
++    atomic_fetch_add_explicit(&fg_graph_nodes, (uint64_t)graph->n_nodes, memory_order_relaxed);
++    atomic_fetch_add_explicit(&fg_graph_leafs, (uint64_t)graph->n_leafs, memory_order_relaxed);
++#endif
++    fg_selfhost_graph_plan(galloc, graph->nodes, graph->n_nodes, graph->leafs, graph->n_leafs,
++        node_buffer_ids, leaf_buffer_ids, GGML_MAX_SRC, GGML_TENSOR_FLAG_INPUT, GGML_OP_NONE, fg_alloc_verify);
++}
+ static bool ggml_gallocr_reserve_n_impl(
+         ggml_gallocr_t galloc, struct ggml_cgraph * graph, const int * node_buffer_ids, const int * leaf_buffer_ids, bool no_alloc) {
+     size_t min_hash_size = graph->n_nodes + graph->n_leafs;

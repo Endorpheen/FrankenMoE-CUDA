@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "cases": 10245,
+  "eight_thread_calls": 2048,
+  "max_blocks": 256,
+  "unsigned_64_edges": true,
+  "last_block_excluded": true,
+  "tie_selects_last": true,
+  "borrowed_blocks_unchanged": true,
+  "reachable_global_runtime_stack_use": false
+}
