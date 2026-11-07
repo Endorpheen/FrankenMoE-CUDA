@@ -233,7 +233,7 @@
         "ggml/src/ggml-cpu/arch/*/quants.c"
       ],
       "acceptance": "Whole row quantizers match native bytes and are witnessed in actual Apex/Qwen inference.",
-      "evidence": "EXP137 Q8_K; EXP139 common Q8_0/Q8_K exact and model traces; Q8_0 performance deferred",
+      "evidence": "EXP137 Q8_K; EXP139 common Q8_0/Q8_K exact and model traces; Q8_0 performance deferred EXP148 routes shared MoE Q8_K/Q8_0 through the same checked encoder module;new default-on flag has explicit disable rollback,841retained activation cases pass.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 58,
@@ -651,7 +651,7 @@
         "ggml/src/ggml-cpu/traits.cpp"
       ],
       "acceptance": "Every non-removed type registry entry has Goose quant/dequant/traits where native supports it; IQ calibration/tables and Q8_1 included; exact size/layout preserved.",
-      "evidence": "EXP143 actual GGML CPY covers23 native-supported public dequant types. Q8_1/Q8_K have no native public to_float trait; no fabricated oracle. Remaining quantizers/calibration/traits incomplete.",
+      "evidence": "EXP143 actual GGML CPY covers23 native-supported public dequant types. Q8_1/Q8_K have no native public to_float trait; no fabricated oracle. Remaining quantizers/calibration/traits incomplete. EXP148 combines nine CPU encoders and actual from_float trait dispatch:Q1_0,Q2_0,Q4_0,Q4_1,Q5_0,Q5_1,Q8_1 plus existing Goose Q8_0/Q8_K.893native-byte/canary/concurrency+rollback cases and841Q8special contracts pass release and scoped ASan/UBSan/LSan;all prior326/66/960/174gates preserved;Apex32K/128 exact with172640Q8_K blocks.Compact nonfinite fallback,full float-domain/other formats/ISA/serialization remain unclosed.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -3056,6 +3056,10 @@
     {
       "checkpoint": "EXP147 independent EXP146 audit and real Goose buffer policy",
       "event": "Preserved original EXP146;fixed missing 64-bit fg146 C prototypes,assert-only allocation/free/copy hooks,invalid tensor-range fixture,fixture-only sanitizer coverage and wrong canonical EXP146 metrics. Full new base/CPU units instrumented;326/66/960/174 plus148/9memory contracts pass. Fresh C++2918.900/29.589,EXP1462648.645/28.608,EXP1472665.514/27.738tok/s;all128tokens/text/top5 exact,RSS21311.895MiB/VRAM3348for fixed candidate. Preliminary external-load samples,no parity claim/tuning;B1 remains open. Next coherent work:P1-06/P2-13 remaining raw quantized CPU math/type traits."
+    },
+    {
+      "checkpoint": "EXP148 common CPU quantization/type traits batch",
+      "event": "Three coherent components integrated once:nine-format encoder module,shared Q8 activation reuse and real CPU trait/MoE adapters. Latest completed self-hosted EXP301 Stage3 pinned;five inherited generated C units and four previous common output corpora byte-identical.893trait/canary/concurrent+rollback cases,841Q8special and326/66/960/174common gates pass release/sanitized. One Apex32768/128:pp2680.113,tg27.876,RSS21312.617MiB,VRAM3348MiB;all128tokens/text/top5 exact,172640Q8_K blocks. No requirements closed;P2-13 float-domain/format/ISA closure and P1-06 raw arithmetic remain open. Adopt owner instruction:target10-15related requirements per shared cycle where safe,no agents,no scope reduction."
     }
   ],
   "batches": [
@@ -3330,13 +3334,37 @@
     "unverified_completion_forbidden": true
   },
   "active_candidate": {
-    "experiment": "EXP147",
-    "root": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107",
-    "source": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/source/cpu-backend",
-    "run": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/run",
-    "status": "Functional/scoped memory pass; speed parity unproven; production unchanged",
-    "next_batch": "P1-06/P2-13 remaining raw quantized CPU math and type traits",
-    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-live-20261107",
+    "experiment": "EXP148",
+    "root": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107",
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/source/cpu-backend",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/run",
+    "status": "Selected functional/safety pass;full CPU and speed parity remain open",
+    "next_batch": "Remaining common CPU quantized raw/repacked/dense math,conversion/type traits and expert workspace ownership;target10-15related requirements where safe",
+    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107",
     "preserved_exp146": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/reference-exp146"
+  },
+  "batch_execution_policy": {
+    "preferred_requirements_per_batch": [
+      10,
+      15
+    ],
+    "permission": "Direct Igor instruction2026-11-07;optimize existing GOAL only",
+    "method": "Coherent implementation/codegen/build and common integration/model gate;retain per-component correctness and rollback;isolate critical failures and continue independent work;no subagents",
+    "counts": "Only entire original acceptance contracts count DONE,never format/function totals",
+    "next_requirement_group": [
+      "P1-06",
+      "P1-07",
+      "P1-08",
+      "P1-09",
+      "P1-10",
+      "P2-02",
+      "P2-03",
+      "P2-04",
+      "P2-13",
+      "P2-14",
+      "P2-15",
+      "P2-16"
+    ],
+    "gate": "Do not close deletion/whole-backend/architecture tasks before all prerequisites are proved;separate high-risk/critical dependency gates."
   }
 }

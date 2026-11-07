@@ -1,0 +1,47 @@
+{
+  "status": "COMPLETED_SINGLE_DIAGNOSTIC_NOT_B1_ACCEPTANCE",
+  "name": "audit-exp148-apex-32k128",
+  "wall_seconds": 16.79982871504035,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 12226.348,
+    "prompt_per_token_ms": 0.3731185302734375,
+    "prompt_per_second": 2680.1134729683795,
+    "predicted_n": 128,
+    "predicted_ms": 4555.813,
+    "predicted_per_token_ms": 35.872543307086616,
+    "predicted_per_second": 27.876473419782595
+  },
+  "exact": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "matching_token_positions": 128,
+  "sampled_rss_peak_mib": 21312.6171875,
+  "process_hwm_mib": 21312.6171875,
+  "sampled_anon_peak_mib": 696.171875,
+  "sampled_file_peak_mib": 19962.62890625,
+  "process_swap_peak_kib": 0,
+  "sampled_gpu_peak_mib": 3348,
+  "system_swapout_pages_delta": 0,
+  "loadavg_start": [
+    1.1162109375,
+    1.6044921875,
+    5.22119140625
+  ],
+  "loadavg_end": [
+    2.1123046875,
+    1.7900390625,
+    5.22265625
+  ],
+  "preliminary": true,
+  "controlled_quiet_run": false,
+  "baseline": "Saved original C++ measurement, identical request and workload argv",
+  "quality_scope": "One fixed-prompt response equivalence only; not a general quality benchmark",
+  "no_optimization": true,
+  "no_microbenchmarks": true,
+  "no_repeated_series": true,
+  "no_b1_acceptance": true
+}

@@ -1,0 +1,11 @@
+FG148_QUANT kind=0 calls=202 values=112384
+FG148_QUANT kind=1 calls=202 values=56192
+FG148_QUANT kind=2 calls=202 values=28096
+FG148_QUANT kind=3 calls=202 values=28096
+FG148_QUANT kind=4 calls=202 values=28096
+FG148_QUANT kind=5 calls=202 values=28096
+FG148_QUANT kind=6 calls=202 values=28096
+FG148_QUANT kind=8 calls=186 values=830
+FG148_QUANT kind=9 calls=186 values=830
+FG143_CONTROL plans=0 task_queries=0 dispatches=0 jobs=0 worker_jobs=0
+FG143_EXECUTOR worker_graphs=0 worker_steps=0 worker_fusions=0

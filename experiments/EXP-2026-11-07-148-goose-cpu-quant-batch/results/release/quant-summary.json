@@ -1,0 +1,84 @@
+{
+  "status": "PASS_NINE_QUANT_FORMATS_TRAITS_ROLLBACK_AND_Q8_SPECIALS",
+  "records": [
+    {
+      "label": "quant-traits",
+      "arm": "candidate",
+      "compile": [
+        "/usr/bin/gcc-13",
+        "-O2",
+        "-march=native",
+        "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+        "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+        "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/source/cpu-backend/quant/fixture.c",
+        "-L/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/run",
+        "-lggml-cpu",
+        "-lggml-base",
+        "-lm",
+        "-lpthread",
+        "-o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/build/quant-traits"
+      ],
+      "exit_code": 0,
+      "result": {
+        "status": "PASS_NINE_FORMATS_NATIVE_BYTES_CANARIES_AND_CONCURRENT",
+        "cases": 893,
+        "threads": 8
+      }
+    },
+    {
+      "label": "quant-traits",
+      "arm": "rollback",
+      "compile": [
+        "/usr/bin/gcc-13",
+        "-O2",
+        "-march=native",
+        "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+        "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+        "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/source/cpu-backend/quant/fixture.c",
+        "-L/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/run",
+        "-lggml-cpu",
+        "-lggml-base",
+        "-lm",
+        "-lpthread",
+        "-o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/build/quant-traits"
+      ],
+      "exit_code": 0,
+      "result": {
+        "status": "PASS_NINE_FORMATS_NATIVE_BYTES_CANARIES_AND_CONCURRENT",
+        "cases": 893,
+        "threads": 8
+      }
+    },
+    {
+      "label": "activation-contract",
+      "arm": "candidate",
+      "compile": [
+        "/usr/bin/gcc-13",
+        "-O2",
+        "-march=native",
+        "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+        "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+        "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/source/cpu-backend/quant/activation-contract.c",
+        "-L/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/run",
+        "-lggml-cpu",
+        "-lggml-base",
+        "-lm",
+        "-lpthread",
+        "-o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/build/activation-contract"
+      ],
+      "exit_code": 0,
+      "result": {
+        "status": "PASS_NATIVE_QUANT_BYTES_AND_CANARIES",
+        "q8_0_cases": 587,
+        "q8_K_cases": 254,
+        "q8_0_values": 736960,
+        "q8_K_values": 699904,
+        "concurrent_threads": 8
+      }
+    }
+  ],
+  "scope": "Bit-exact C++ valid finite corpus,8threads,canaries plus retained Q8_0 NaN/Inf/subnormal corpus;compact nonfinite uses explicit native fallback;not whole type family closure"
+}

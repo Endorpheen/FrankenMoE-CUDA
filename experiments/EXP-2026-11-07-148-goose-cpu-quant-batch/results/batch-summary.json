@@ -1,0 +1,38 @@
+{
+  "experiment": "EXP148",
+  "parent_commit": "e7190ece4a12541cbb5e7a8600f30accab2a347a",
+  "status": "PASS_SELECTED_QUANTIZATION_TRAITS_AND_FIXED_APEX_NOT_FULL_B1",
+  "producer": {
+    "stage": "Self-hosted EXP301 key-final Stage3",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp301-function-state/key-final-bootstrap-v1/stage3",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/compiler/stage3-f849233b999c",
+    "sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+    "bootstrap_status": "PASS_CURRENT_VARDEF_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "source_commit": "d030e5338af11b88480ab6b0b5b6f99ed7155c40",
+    "scope": "Latest completed fixed-C bootstrap checkpoint; SH03.FN-STATE parent task still open; compiler sources unchanged"
+  },
+  "components": [
+    "Common Q8_0/Q8_K activation module reuse",
+    "Q1_0/Q2_0/Q4_0/Q4_1/Q5_0/Q5_1/Q8_1 encoders",
+    "Actual CPU from_float type-trait and MoE dispatch adapters"
+  ],
+  "formats": 9,
+  "quant_trait_cases": 893,
+  "q8_special_contract_cases": 841,
+  "old_common_c_identical": {
+    "cpu-backend.c": true,
+    "cpu-backend-api.c": true,
+    "cpu-stateful.c": true,
+    "cpu-executor.c": true,
+    "cpu-control.c": true
+  },
+  "old_common_outputs_byte_exact": true,
+  "apex_exact_previous_and_original": true,
+  "model_q8k_calls": 456800,
+  "model_q8k_blocks": 172640,
+  "counter_scope": "Calls include zero-length blocks and startup warmup; values label represents blocks for kind9,not tokens",
+  "requirements_closed": 0,
+  "production_changed": false,
+  "compiler_changed": false,
+  "residuals": "Compact nonfinite inputs explicitly fall back to retained native functions; full extreme finite/subnormal/overflow domains and other formats/ISA/dot arithmetic are unclosed. Do not claim complete P2-13 or P1-06."
+}

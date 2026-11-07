@@ -223,6 +223,28 @@
       "status": "One sequential fixed-profile request per arm; uncontrolled load; speed parity unproven; no tuning/repeat series",
       "raw_summary": "apex-results/audit-exp147-apex-32k128-summary.json",
       "comparison": null
+    },
+    {
+      "stage": "EXP148 common CPU quantization/type traits batch",
+      "role": "candidate",
+      "checkpoint": "EXP148 over e7190ec;self-hosted EXP301 f849233b999c",
+      "prefill": 2680.1134729683795,
+      "decode": 27.876473419782595,
+      "rss_mib": 21312.6171875,
+      "anon_mib": 696.171875,
+      "file_mib": 19962.62890625,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        2.1123046875,
+        1.7900390625,
+        5.22265625
+      ],
+      "correctness": "Exact text/all128tokens/top5 vs fresh C++ and EXP147;172640new-module Q8_K blocks witnessed",
+      "status": "One request after combined three-component batch;uncontrolled load,no speed parity claim or tuning",
+      "raw_summary": "apex-results/audit-exp148-apex-32k128-summary.json",
+      "comparison": null
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",
