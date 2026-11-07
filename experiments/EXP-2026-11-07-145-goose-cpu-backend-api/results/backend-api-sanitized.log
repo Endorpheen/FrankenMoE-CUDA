@@ -1,0 +1,28 @@
+FG145_BACKEND mode=0 calls=4
+FG145_BACKEND mode=1 calls=4
+FG145_BACKEND mode=2 calls=4
+FG145_BACKEND mode=3 calls=4
+FG145_BACKEND mode=4 calls=8
+FG145_BACKEND mode=5 calls=24
+FG145_BACKEND mode=6 calls=4
+FG145_BACKEND mode=7 calls=32
+FG145_BACKEND mode=8 calls=32
+FG145_BACKEND mode=9 calls=28
+FG145_BACKEND mode=10 calls=28281
+FG145_BACKEND mode=11 calls=2
+FG145_BACKEND mode=13 calls=1
+FG145_BACKEND mode=14 calls=1
+FG145_BACKEND mode=15 calls=23
+FG145_BACKEND mode=16 calls=1
+FG145_BACKEND mode=17 calls=1
+FG145_BACKEND mode=18 calls=1
+FG143_CONTROL plans=28 task_queries=0 dispatches=58 jobs=32 worker_jobs=85
+FG143_EXECUTOR worker_graphs=85 worker_steps=112 worker_fusions=27
+FG143_NATIVE op=46 calls=9 enabled=1
+FG143_CPU op=25 calls=27 values=5184
+FG143_CPU op=32 calls=4 values=384
+FG143_CPU op=46 calls=45 values=34560
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=0 shadow_checks=0 digest=0
+FG_SELFHOST_ALLOC enabled=0 calls=0 reuse_hits=0 shadow_checks=0 digest=0

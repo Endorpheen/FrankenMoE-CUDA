@@ -113,6 +113,28 @@
       "raw_summary": "apex-results/b1-diagnostic-post-glu-apex-32k128-summary.json",
       "comparison": "apex-results/b1-diagnostic-post-glu-apex-32k128-comparison.json",
       "no_b1_acceptance": true
+    },
+    {
+      "stage": "B1 backend API (EXP145)",
+      "role": "candidate",
+      "checkpoint": "EXP145 source snapshot; compiler454151b3449b",
+      "prefill": 2608.115243545337,
+      "decode": 26.460946351785573,
+      "rss_mib": 21313.453125,
+      "anon_mib": 695.5703125,
+      "file_mib": 19964.06640625,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        2.68017578125,
+        3.24462890625,
+        3.08984375
+      ],
+      "correctness": "Exact text,all128tokens and saved top5 vs original and previous B1; new backend API witnessed",
+      "status": "One fixed-profile major-module check; historical controls/uncontrolled load; not full B1 or speed acceptance",
+      "raw_summary": "apex-results/b1-backend-api-apex-32k128-summary.json",
+      "comparison": "apex-results/b1-backend-api-apex-32k128-comparison.json"
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",

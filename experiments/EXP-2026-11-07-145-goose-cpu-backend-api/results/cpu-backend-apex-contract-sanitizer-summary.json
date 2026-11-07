@@ -1,0 +1,7 @@
+{
+  "status": "PASS_SCOPED_APEX_CONTRACT_ASAN_UBSAN_LSAN",
+  "exit_code": 0,
+  "cases": 66,
+  "bytes_equal_release_candidate": true,
+  "scope": "Selected real embedding and wide GLU functional graphs; no full-model inference or whole-backend safety claim"
+}

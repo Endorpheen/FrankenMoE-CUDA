@@ -390,7 +390,7 @@
         "src/llama-moe-cache.cpp"
       ],
       "acceptance": "Expert scratch/resident/staging lifecycles and scatter owned by Goose; allocation failure,resize,empty/overlapping routes and cancellations checked.",
-      "evidence": "",
+      "evidence": "EXP145 moves backend graph scratch growth/reuse/failure policy into Goose,with real API/Apex and allocation-policy tests. This does not yet replace complete expert residency/staging/bank ownership.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 58,
@@ -662,14 +662,14 @@
       "id": "P2-14",
       "phase": "P2",
       "title": "Port CPU backend device/buffer/capability registry",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cpu/ggml-cpu.cpp",
         "ggml/src/ggml-cpu/hbm.cpp",
         "ggml/src/ggml-cpu/traits.cpp"
       ],
       "acceptance": "Backend API,buffer alignment/copy,capability predicates and device initialization owned by Goose; OS/HBM primitive imports audited.",
-      "evidence": "",
+      "evidence": "EXP145 real Goose CPU backend context/plan/workspace lifecycle,capability and feature/procedure/extra-buffer registration.167API records and28280capability queries exact vs prior B1 and rollback;9allocation-policy failure/recovery contracts;scoped sanitizers;actual Apex32768/128 text/IDs/top5 exact. Physical alignment/copy/HBM,ABI storage,CPU description/native extra providers remain incomplete.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -3048,6 +3048,10 @@
     {
       "checkpoint": "EXP144 post-GLU Apex diagnostic on9c0a698",
       "event": "Exactly one owner-requested32768/128 request completes:pp2638.151,tg27.078,RSS21313.887MiB,VRAM3348MiB. All128tokens,text and all saved top5/logprobs exactly equal original C++; prior divergence at token index5 absent. Goose control/job/executor/GLU/GET_ROWS witnessed. Historical-control speed deltas remain preliminary,not B1 acceptance. No repeated series,optimization,Qwen or production change; continue B1 backend API/registry ownership."
+    },
+    {
+      "checkpoint": "EXP145 Goose CPU backend API",
+      "event": "19backend API paths route policy to Goose,not original C++ methods.167API records/28280capability queries and rollback exact;9allocation failure/recovery policy cases;326/66/960common cases preserved;scoped ASan/UBSan/leak checks pass. One fixed Apex32768/128 gives2608.115pp/26.461tg,RSS21313.453MiB,VRAM3348MiB,text/IDs/top5 exact;5346backend graph calls witnessed. Previous-stage pp-1.139%,tg-2.280%preliminary;no tuning or repeat series. B1 remains incomplete; refresh private manual-handoff kit next."
     }
   ],
   "batches": [

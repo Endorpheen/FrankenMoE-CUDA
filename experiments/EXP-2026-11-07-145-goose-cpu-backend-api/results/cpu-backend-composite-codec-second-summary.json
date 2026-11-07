@@ -1,0 +1,14 @@
+{
+  "status": "FAIL_COMPOSITE_PROCESS",
+  "runs": {
+    "native": {
+      "exit_code": -11,
+      "cases": 100
+    },
+    "candidate": {
+      "exit_code": 0,
+      "cases": 220
+    }
+  },
+  "scope": "Inspect retained logs; do not report full batch correctness."
+}

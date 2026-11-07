@@ -1,0 +1,16 @@
+[
+  "/usr/bin/gcc-13",
+  "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+  "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+  "-O3",
+  "-march=native",
+  "-fPIC",
+  "-shared",
+  "-fno-strict-aliasing",
+  "-ffp-contract=off",
+  "-DFG143_TRACE=1",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-backend/unit.c",
+  "-lm",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/libgoose-cpu-backend.so"
+]

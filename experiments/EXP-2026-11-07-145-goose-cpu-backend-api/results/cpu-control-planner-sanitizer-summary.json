@@ -1,0 +1,7 @@
+{
+  "status": "PASS_SCOPED_PLANNER_ASAN_UBSAN_LSAN",
+  "exit_code": 0,
+  "cases": 960,
+  "bytes_equal_previous_b1": true,
+  "scope": "Instrumented new Goose CPU control and modified core/metadata primitives,other retained objects uninstrumented; no whole-backend or model equivalence claim"
+}

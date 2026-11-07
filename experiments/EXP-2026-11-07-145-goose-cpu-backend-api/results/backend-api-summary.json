@@ -1,0 +1,29 @@
+{
+  "status": "PASS_SELECTED_BACKEND_API_AND_ROLLBACK",
+  "runs": {
+    "previous-b1": {
+      "exit_code": 0,
+      "records": 167
+    },
+    "goose-api": {
+      "exit_code": 0,
+      "records": 167
+    },
+    "rollback": {
+      "exit_code": 0,
+      "records": 167
+    }
+  },
+  "exact": {
+    "goose-api": true,
+    "rollback": true
+  },
+  "mismatches": [],
+  "types": 35,
+  "capability_queries": 28280,
+  "source_sha256": "ac39ea00b51761cf87727eb4cc1aaa352ecfe12784e3629356f82fab9fbe0176",
+  "scope": "Actual backend/device/registry API,capability matrix,buffer wrappers,context/pool changes,work growth/reuse,planned/direct compute,abort and recovery;1/2/8/16workers. Not full type/operator/physical ownership/model coverage.",
+  "model_loaded": false,
+  "microbenchmarks": false,
+  "production_changed": false
+}
