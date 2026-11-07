@@ -1,0 +1,32 @@
+{
+  "status": "PASS_EXP147_FUNCTIONAL_AND_ROLLBACK",
+  "checks": {
+    "composite": {
+      "cases": 326,
+      "byte_exact_cases": 284,
+      "violations": 0,
+      "reference": "Original C++"
+    },
+    "apex-contract": {
+      "cases": 66,
+      "byte_exact_cases": 39,
+      "violations": 0,
+      "reference": "Original C++"
+    },
+    "planning": {
+      "cases": 960,
+      "byte_exact_cases": 0,
+      "violations": 0,
+      "reference": "Planning control",
+      "rollback_exact": true
+    },
+    "backend-buffer": {
+      "cases": 174,
+      "byte_exact_cases": 174,
+      "violations": 0,
+      "reference": "Previous B1 API control",
+      "rollback_exact": true
+    }
+  },
+  "no_repeated_model_runs": true
+}

@@ -1,0 +1,14 @@
+{
+  "classification": "Integration script errors,not compiler defects",
+  "failures": [
+    {
+      "symptom": "Definition search matched2entries for ggml_backend_cpu_get_extra_buffer_types",
+      "cause": "Call in for-loop accepted as declaration"
+    },
+    {
+      "symptom": "Definition search matched2entries for ggml_backend_cpu_is_extra_buffer_type",
+      "cause": "Continued call line accepted as declaration"
+    }
+  ],
+  "fix": "Require a top-level return-type identifier; exclude call/assignment prefixes. Failures stopped before compiler generation or runtime."
+}

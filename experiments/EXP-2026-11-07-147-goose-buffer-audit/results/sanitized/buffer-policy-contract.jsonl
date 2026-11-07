@@ -1,0 +1,1 @@
+{"status":"PASS_REAL_GOOSE_BUFFER_POLICY","cases":148,"allocs":1,"frees":1,"scope":"Actual generated Goose with mock system primitives and real high-address buffers; not OS OOM"}

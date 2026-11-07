@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "/usr/bin/gcc-13",
+    "-O3",
+    "-march=native",
+    "-fPIC",
+    "-fno-strict-aliasing",
+    "-ffp-contract=off",
+    "-c",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-backend/backend/unit.c",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/backend-goose.o"
+  ],
+  "cwd": "/home/end0/AI/LlamaServer/franken-goose-live-20261107"
+}

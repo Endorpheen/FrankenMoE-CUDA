@@ -135,6 +135,94 @@
       "status": "One fixed-profile major-module check; historical controls/uncontrolled load; not full B1 or speed acceptance",
       "raw_summary": "apex-results/b1-backend-api-apex-32k128-summary.json",
       "comparison": "apex-results/b1-backend-api-apex-32k128-comparison.json"
+    },
+    {
+      "stage": "EXP146 B1 backend buffer/traits",
+      "role": "candidate",
+      "checkpoint": "Uncommitted EXP146 snapshot over 2adb0ab; independently audited EXP147",
+      "prefill": 2149.1075871407443,
+      "decode": 18.480210750069556,
+      "rss_mib": 21318.6328125,
+      "anon_mib": 700.61328125,
+      "file_mib": 19964.203125,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        33.275390625,
+        27.3115234375,
+        24.71142578125
+      ],
+      "correctness": "Saved response independently equals original text/all128tokens/top5; assert-only buffer hooks are not migration",
+      "status": "Historical high-load EXP146; canonical metrics corrected by EXP147 audit; buffer migration and DSO sanitizer claims rejected",
+      "raw_summary": "apex-results/b1-backend-buffer-apex-32k128-summary.json",
+      "comparison": null
+    },
+    {
+      "stage": "EXP147 audit: fresh C++",
+      "role": "reference",
+      "checkpoint": "EXP147 audit over 2adb0ab; compiler454151b3449b",
+      "prefill": 2918.9004774123264,
+      "decode": 29.589286721120274,
+      "rss_mib": 21309.15234375,
+      "anon_mib": 693.51953125,
+      "file_mib": 19961.81640625,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        3.5087890625,
+        5.515625,
+        13.4130859375
+      ],
+      "correctness": "Exact text/all128tokens/saved top5 across all three fresh arms",
+      "status": "One sequential fixed-profile request per arm; uncontrolled load; speed parity unproven; no tuning/repeat series",
+      "raw_summary": "apex-results/audit-cpp-apex-32k128-summary.json",
+      "comparison": null
+    },
+    {
+      "stage": "EXP147 audit: preserved EXP146",
+      "role": "candidate",
+      "checkpoint": "EXP147 audit over 2adb0ab; compiler454151b3449b",
+      "prefill": 2648.6451882406877,
+      "decode": 28.607649910843243,
+      "rss_mib": 21311.75390625,
+      "anon_mib": 695.59765625,
+      "file_mib": 19962.33984375,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        3.650390625,
+        5.32861328125,
+        13.09716796875
+      ],
+      "correctness": "Exact text/all128tokens/saved top5 across all three fresh arms",
+      "status": "One sequential fixed-profile request per arm; uncontrolled load; speed parity unproven; no tuning/repeat series",
+      "raw_summary": "apex-results/audit-exp146-apex-32k128-summary.json",
+      "comparison": null
+    },
+    {
+      "stage": "EXP147 real Goose buffer policy",
+      "role": "candidate",
+      "checkpoint": "EXP147 audit over 2adb0ab; compiler454151b3449b",
+      "prefill": 2665.513519704529,
+      "decode": 27.737827298171815,
+      "rss_mib": 21311.89453125,
+      "anon_mib": 695.61328125,
+      "file_mib": 19962.46484375,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        4.1953125,
+        5.27099609375,
+        12.82861328125
+      ],
+      "correctness": "Exact text/all128tokens/saved top5 across all three fresh arms",
+      "status": "One sequential fixed-profile request per arm; uncontrolled load; speed parity unproven; no tuning/repeat series",
+      "raw_summary": "apex-results/audit-exp147-apex-32k128-summary.json",
+      "comparison": null
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",

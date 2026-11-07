@@ -669,7 +669,7 @@
         "ggml/src/ggml-cpu/traits.cpp"
       ],
       "acceptance": "Backend API,buffer alignment/copy,capability predicates and device initialization owned by Goose; OS/HBM primitive imports audited.",
-      "evidence": "EXP145 real Goose CPU backend context/plan/workspace lifecycle,capability and feature/procedure/extra-buffer registration.167API records and28280capability queries exact vs prior B1 and rollback;9allocation-policy failure/recovery contracts;scoped sanitizers;actual Apex32768/128 text/IDs/top5 exact. Physical alignment/copy/HBM,ABI storage,CPU description/native extra providers remain incomplete.",
+      "evidence": "EXP145 backend API/graph scratch policy preserved. EXP146 audit rejects assert-only physical-buffer migration and fixture-only sanitizer claims,finds missing fg146 C prototypes and incorrect history. EXP147 actually moves alignment,allocation/free ownership,span/offset validation,memset/copy dispatch and borrowed-pointer validation to Goose;native C++ adapters only marshal ABI or invoke explicit system primitives. Shared request ABI header and implicit-declaration errors prevent pointer truncation.326/66/960 common cases,174backend-buffer records/rollback,148memory-policy and9graph-allocation contracts pass release and rebuilt base/CPU ASan/UBSan/LSan. Three fresh Apex32768/128 arms match all text/IDs/top5;Goose set/clear/from_ptr witnessed. HBM inactive,CPU description,ABI storage,native extra providers and other CPU scope remain incomplete. Speed parity is unproven;no production promotion.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -3052,6 +3052,10 @@
     {
       "checkpoint": "EXP145 Goose CPU backend API",
       "event": "19backend API paths route policy to Goose,not original C++ methods.167API records/28280capability queries and rollback exact;9allocation failure/recovery policy cases;326/66/960common cases preserved;scoped ASan/UBSan/leak checks pass. One fixed Apex32768/128 gives2608.115pp/26.461tg,RSS21313.453MiB,VRAM3348MiB,text/IDs/top5 exact;5346backend graph calls witnessed. Previous-stage pp-1.139%,tg-2.280%preliminary;no tuning or repeat series. B1 remains incomplete; refresh private manual-handoff kit next."
+    },
+    {
+      "checkpoint": "EXP147 independent EXP146 audit and real Goose buffer policy",
+      "event": "Preserved original EXP146;fixed missing 64-bit fg146 C prototypes,assert-only allocation/free/copy hooks,invalid tensor-range fixture,fixture-only sanitizer coverage and wrong canonical EXP146 metrics. Full new base/CPU units instrumented;326/66/960/174 plus148/9memory contracts pass. Fresh C++2918.900/29.589,EXP1462648.645/28.608,EXP1472665.514/27.738tok/s;all128tokens/text/top5 exact,RSS21311.895MiB/VRAM3348for fixed candidate. Preliminary external-load samples,no parity claim/tuning;B1 remains open. Next coherent work:P1-06/P2-13 remaining raw quantized CPU math/type traits."
     }
   ],
   "batches": [
@@ -3324,5 +3328,15 @@
     "manual_per_module_tuning": false,
     "qwen_now": "none; compatibility only after full Apex",
     "unverified_completion_forbidden": true
+  },
+  "active_candidate": {
+    "experiment": "EXP147",
+    "root": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107",
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/source/cpu-backend",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/run",
+    "status": "Functional/scoped memory pass; speed parity unproven; production unchanged",
+    "next_batch": "P1-06/P2-13 remaining raw quantized CPU math and type traits",
+    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-live-20261107",
+    "preserved_exp146": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/reference-exp146"
   }
 }

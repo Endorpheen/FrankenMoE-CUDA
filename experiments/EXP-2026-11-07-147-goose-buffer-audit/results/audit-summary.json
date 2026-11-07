@@ -1,0 +1,108 @@
+{
+  "experiment": "EXP147",
+  "parent": "EXP146",
+  "status": "FUNCTIONAL_AND_SCOPED_MEMORY_PASS_SPEED_PARITY_UNPROVEN",
+  "compiler_sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+  "cpu_sha256": "d2715f048e6435cf61c304fe57344934727fb96e402a6ff0db9dfbcd8a45f7d5",
+  "base_sha256": "af97fc9ac456c627fa50f43ac1624d88015ac85b52c38208504d7962facbc1ef",
+  "exact_three_arm_text_tokens_top5": true,
+  "release": {
+    "composite": {
+      "cases": 326,
+      "byte_exact_cases": 284,
+      "violations": 0,
+      "reference": "Original C++"
+    },
+    "apex-contract": {
+      "cases": 66,
+      "byte_exact_cases": 39,
+      "violations": 0,
+      "reference": "Original C++"
+    },
+    "planning": {
+      "cases": 960,
+      "byte_exact_cases": 0,
+      "violations": 0,
+      "reference": "Planning control",
+      "rollback_exact": true
+    },
+    "backend-buffer": {
+      "cases": 174,
+      "byte_exact_cases": 174,
+      "violations": 0,
+      "reference": "Previous B1 API control",
+      "rollback_exact": true
+    }
+  },
+  "sanitized": {
+    "status": "PASS_EXP147_SCOPED_SANITIZED",
+    "checks": {
+      "composite": {
+        "cases": 326,
+        "byte_exact": 284,
+        "violations": 0
+      },
+      "apex-contract": {
+        "cases": 66,
+        "byte_exact": 39,
+        "violations": 0
+      },
+      "planning": {
+        "cases": 960,
+        "exact": true,
+        "rollback": true
+      },
+      "backend-buffer": {
+        "cases": 174,
+        "exact": true,
+        "rollback": true
+      }
+    },
+    "model_loaded": false,
+    "scope": "Rebuilt base/CPU units and fixtures instrumented; inherited objects/vendor libraries not fully instrumented"
+  },
+  "memory_policy_cases": 148,
+  "graph_allocation_failure_cases": 9,
+  "deltas_percent": {
+    "cpp": {
+      "prompt_per_second": -8.680904322316296,
+      "predicted_per_second": -6.257195181480746
+    },
+    "exp146": {
+      "prompt_per_second": 0.6368664077292197,
+      "predicted_per_second": -3.0405245288664395
+    }
+  },
+  "new_model_trace": [
+    "FG147_BACKEND mode=0 calls=1",
+    "FG147_BACKEND mode=1 calls=1",
+    "FG147_BACKEND mode=5 calls=5346",
+    "FG147_BACKEND mode=6 calls=138",
+    "FG147_BACKEND mode=7 calls=138",
+    "FG147_BACKEND mode=8 calls=1",
+    "FG147_BACKEND mode=10 calls=4421",
+    "FG147_BACKEND mode=11 calls=5582",
+    "FG147_BACKEND mode=13 calls=1",
+    "FG147_BACKEND mode=14 calls=1",
+    "FG147_BACKEND mode=15 calls=155",
+    "FG147_BACKEND mode=16 calls=1",
+    "FG147_BACKEND mode=17 calls=2",
+    "FG147_BACKEND mode=30 calls=170378",
+    "FG147_BACKEND mode=31 calls=21108",
+    "FG143_CONTROL plans=5346 task_queries=0 dispatches=170378 jobs=5346 worker_jobs=42706",
+    "FG143_EXECUTOR worker_graphs=42706 worker_steps=170410 worker_fusions=0",
+    "FG143_CPU op=40 calls=138 values=67377152",
+    "FG143_CPU op=100 calls=42560 values=187105280",
+    "FG147_BACKEND mode=19 calls=10561",
+    "FG147_BACKEND mode=23 calls=276",
+    "FG147_BACKEND mode=26 calls=1",
+    "FG147_BACKEND mode=27 calls=124",
+    "FG147_BACKEND mode=28 calls=1",
+    "FG147_BACKEND mode=29 calls=28319"
+  ],
+  "model_requests": 3,
+  "performance_scope": "One request per original C++/preserved EXP146/fixed EXP147; uncontrolled external load; no speed acceptance or tuning; no process swap/system swapout during requests",
+  "production_changed": false,
+  "compiler_changed": false,
+  "requirements_closed": 0
+}

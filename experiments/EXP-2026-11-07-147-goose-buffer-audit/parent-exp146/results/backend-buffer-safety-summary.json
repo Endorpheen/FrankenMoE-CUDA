@@ -1,0 +1,22 @@
+{
+  "status": "PASS_SCOPED_BACKEND_ASAN_UBSAN_LSAN_AND_ALLOCATION_POLICY",
+  "checks": {
+    "api": {
+      "exit_code": 0,
+      "records": 174,
+      "bytes_equal_release": true
+    },
+    "release": {
+      "exit_code": 0,
+      "cases": 9
+    },
+    "sanitized": {
+      "exit_code": 0,
+      "cases": 9
+    }
+  },
+  "scope": "Sanitized buffer fixture and Goose policy against candidate libs; allocation mock provider, not OS OOM.",
+  "production_changed": false,
+  "compiler_changed": false,
+  "model_loaded": false
+}

@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "/usr/bin/g++-13",
+    "-fPIC",
+    "-O3",
+    "-DNDEBUG",
+    "-shared",
+    "-Wl,-Bsymbolic",
+    "-Wl,-soname,libggml-base.so.0",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/run/libggml-base.so.0.27.0",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-ggml.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-ggmlcpp.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-ggmlalloc.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/backend-base.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-backendmeta.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-opt.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-threading.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-quants.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/base-gguf.o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/backend-base-goose.o",
+    "-lm",
+    "/usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so",
+    "/usr/lib/x86_64-linux-gnu/libpthread.a"
+  ],
+  "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-base.dir"
+}
