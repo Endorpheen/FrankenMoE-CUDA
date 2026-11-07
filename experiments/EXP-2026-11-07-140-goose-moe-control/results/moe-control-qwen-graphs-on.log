@@ -1,0 +1,20 @@
+{"graph_cases":290,"values":335780,"actual_ggml_compute":true,"coverage":"stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"}
+IQ2S_FUSED_STATS groups[c1,c2,c3,c4+]=12,12,12,36 fused_groups=0,12,12,0 tokens[c1,c2,c3,c4+]=12,12,12,36 iq2s_groups_seen=72 window_opens=6 fused_dispatches=24
+FG139_ACT kind=0 calls=21483 blocks=117180 enabled=1
+FG139_ACT kind=1 calls=14322 blocks=39060 enabled=1
+FG139_MATH component=cpu mode=1 kind=4 calls=24 rows=60 dot_blocks=600
+FG139_MATH component=cpu mode=3 kind=0 calls=666 rows=42966 dot_blocks=429660
+FG139_MATH component=cpu mode=3 kind=1 calls=666 rows=42966 dot_blocks=859320
+FG139_MATH component=cpu mode=3 kind=2 calls=666 rows=42966 dot_blocks=859320
+FG139_MATH component=cpu mode=3 kind=3 calls=642 rows=42006 dot_blocks=420060
+FG139_MATH component=cpu mode=3 kind=4 calls=618 rows=41946 dot_blocks=419460
+FG140_CONTROL entries=990 quant_blocks=156240 grouped_routes=16740 chunks=3258 fused_chunks=24 tiled_delegations=48 layout_bytes=34937392 enabled=1 apex_q4_calls=0 apex_q6_calls=0
+FG139_MATH component=base mode=2 kind=0 calls=16 rows=16 dot_blocks=76
+FG139_MATH component=base mode=2 kind=1 calls=16 rows=16 dot_blocks=116
+FG139_MATH component=base mode=2 kind=2 calls=16 rows=16 dot_blocks=116
+FG139_MATH component=base mode=2 kind=3 calls=16 rows=16 dot_blocks=76
+FG139_MATH component=base mode=2 kind=4 calls=16 rows=16 dot_blocks=76
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=0 shadow_checks=0 digest=0
+FG_SELFHOST_ALLOC enabled=0 calls=0 reuse_hits=0 shadow_checks=0 digest=0

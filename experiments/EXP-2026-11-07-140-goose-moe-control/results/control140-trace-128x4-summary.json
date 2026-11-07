@@ -1,0 +1,37 @@
+{
+  "name": "control140-trace-128x4",
+  "wall_seconds": 3.7820722910109907,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 3450.533,
+    "prompt_per_token_ms": 26.9572890625,
+    "prompt_per_second": 37.095718255701364,
+    "predicted_n": 4,
+    "predicted_ms": 319.81,
+    "predicted_per_token_ms": 106.60333333333334,
+    "predicted_per_second": 9.380569713267253
+  },
+  "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+  "tokens": [
+    58558,
+    13,
+    198,
+    760
+  ],
+  "sampled_rss_peak_mib": 16511.17578125,
+  "process_hwm_mib": 16511.17578125,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 424.80859375,
+  "sampled_file_peak_mib": 16086.3671875,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    4.44482421875,
+    3.67822265625,
+    3.23974609375
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

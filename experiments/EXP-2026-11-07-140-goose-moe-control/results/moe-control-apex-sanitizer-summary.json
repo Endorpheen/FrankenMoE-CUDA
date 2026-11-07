@@ -1,0 +1,21 @@
+{
+  "status": "PASS_SCOPED_ASAN_UBSAN_LSAN_COMMON_MOE_APEX",
+  "runs": {
+    "off": {
+      "graph_cases": 114,
+      "values": 2171536,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 114,
+      "values": 2171536,
+      "actual_ggml_compute": true
+    }
+  },
+  "all_bytes_equal_original": true,
+  "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+  "instrumented": "New Goose controller and modified native CPU core including bridge/barrier/task code plus C graph fixture",
+  "uninstrumented": "Previously tested Goose math/tiled/elementwise/quant objects and inherited base/other CPU objects",
+  "not_claimed": "No full backend safety audit, no TSan or general race-free/superiority proof",
+  "production_changed": false
+}

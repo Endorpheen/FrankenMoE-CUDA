@@ -1,0 +1,14 @@
+[
+  "/usr/bin/gcc-13",
+  "-O3",
+  "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/operation-benchmark.c",
+  "-L/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-control-apex-perf/run",
+  "-lggml-cpu",
+  "-lggml-base",
+  "-lm",
+  "-lpthread",
+  "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-control-apex-perf/run",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-control-apex-perf/build/operation-benchmark"
+]

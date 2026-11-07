@@ -1,0 +1,89 @@
+In file included from /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:5:
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c: In function ‘gg_function_17’:
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:991:3: warning: implicit declaration of function ‘fg140_matrix’; did you mean ‘fg140_entry’? [-Wimplicit-function-declaration]
+  991 |   fg140_matrix(t67, t68, t69, t70, t71, t72);
+      |   ^~~~~~~~~~~~
+      |   fg140_entry
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c: In function ‘gg_function_6’:
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1640:3: warning: implicit declaration of function ‘fg140_witness’ [-Wimplicit-function-declaration]
+ 1640 |   fg140_witness(t35, t36, t37);
+      |   ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1726:3: warning: implicit declaration of function ‘fg140_quantize’ [-Wimplicit-function-declaration]
+ 1726 |   fg140_quantize(t95, t96, t97, t102);
+      |   ^~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1917:3: warning: implicit declaration of function ‘fg140_reset’ [-Wimplicit-function-declaration]
+ 1917 |   fg140_reset(t189, t190, t191);
+      |   ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1925:3: warning: implicit declaration of function ‘fg140_barrier’ [-Wimplicit-function-declaration]
+ 1925 |   fg140_barrier(t194);
+      |   ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1962:3: warning: implicit declaration of function ‘fg140_iq_stats’ [-Wimplicit-function-declaration]
+ 1962 |   fg140_iq_stats(t213, t214);
+      |   ^~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:2008:3: warning: implicit declaration of function ‘fg140_ready’ [-Wimplicit-function-declaration]
+ 2008 |   fg140_ready(t236, t237);
+      |   ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:2115:3: warning: implicit declaration of function ‘fg140_chunk’ [-Wimplicit-function-declaration]
+ 2115 |   fg140_chunk(t294, t295, t296, t301, t302, t303, t304);
+      |   ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:2130:10: warning: implicit declaration of function ‘fg140_claim’ [-Wimplicit-function-declaration]
+ 2130 |   t313 = fg140_claim(t311, t312);
+      |          ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:2147:10: warning: implicit declaration of function ‘fg140_tiled’ [-Wimplicit-function-declaration]
+ 2147 |   t320 = fg140_tiled(t317, t318, t319);
+      |          ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c: At top level:
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:70:6: warning: conflicting types for ‘fg140_quantize’; have ‘void(int64_t,  int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int,  long int)’}
+   70 | void fg140_quantize(int64_t c,int64_t a,int64_t b,int64_t n){callbacks.quantize(c,a,b,n);}
+      |      ^~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1726:3: note: previous implicit declaration of ‘fg140_quantize’ with type ‘void(int64_t,  int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int,  long int)’}
+ 1726 |   fg140_quantize(t95, t96, t97, t102);
+      |   ^~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:71:6: warning: conflicting types for ‘fg140_reset’; have ‘void(int64_t,  int64_t,  int32_t)’ {aka ‘void(long int,  long int,  int)’}
+   71 | void fg140_reset(int64_t c,int64_t e,int32_t n){callbacks.reset(c,e,n);}
+      |      ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1917:3: note: previous implicit declaration of ‘fg140_reset’ with type ‘void(int64_t,  int64_t,  int32_t)’ {aka ‘void(long int,  long int,  int)’}
+ 1917 |   fg140_reset(t189, t190, t191);
+      |   ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:72:6: warning: conflicting types for ‘fg140_barrier’; have ‘void(int64_t)’ {aka ‘void(long int)’}
+   72 | void fg140_barrier(int64_t c){callbacks.barrier(c);}
+      |      ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1925:3: note: previous implicit declaration of ‘fg140_barrier’ with type ‘void(int64_t)’ {aka ‘void(long int)’}
+ 1925 |   fg140_barrier(t194);
+      |   ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:73:6: warning: conflicting types for ‘fg140_ready’; have ‘void(int64_t,  int64_t)’ {aka ‘void(long int,  long int)’}
+   73 | void fg140_ready(int64_t c,int64_t e){callbacks.ready(c,e);}
+      |      ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:2008:3: note: previous implicit declaration of ‘fg140_ready’ with type ‘void(int64_t,  int64_t)’ {aka ‘void(long int,  long int)’}
+ 2008 |   fg140_ready(t236, t237);
+      |   ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:74:9: error: conflicting types for ‘fg140_tiled’; have ‘uint8_t(int64_t,  int64_t,  int64_t)’ {aka ‘unsigned char(long int,  long int,  long int)’}
+   74 | uint8_t fg140_tiled(int64_t c,int64_t e,int64_t n){return callbacks.tiled(c,e,n);}
+      |         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:2147:10: note: previous implicit declaration of ‘fg140_tiled’ with type ‘int()’
+ 2147 |   t320 = fg140_tiled(t317, t318, t319);
+      |          ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:75:6: warning: conflicting types for ‘fg140_chunk’; have ‘void(int64_t,  int64_t,  int64_t,  int64_t,  int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int,  long int,  long int,  long int,  long int)’}
+   75 | void fg140_chunk(int64_t c,int64_t e,int64_t a,int64_t b,int64_t x,int64_t y,int64_t f){callbacks.chunk(c,e,a,b,x,y,f);}
+      |      ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:2115:3: note: previous implicit declaration of ‘fg140_chunk’ with type ‘void(int64_t,  int64_t,  int64_t,  int64_t,  int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int,  long int,  long int,  long int,  long int)’}
+ 2115 |   fg140_chunk(t294, t295, t296, t301, t302, t303, t304);
+      |   ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:76:6: warning: conflicting types for ‘fg140_matrix’; have ‘void(int64_t,  int64_t,  int64_t,  int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int,  long int,  long int,  long int)’}
+   76 | void fg140_matrix(int64_t c,int64_t w,int64_t y,int64_t o,int64_t n,int64_t r){callbacks.matrix(c,w,y,o,n,r);}
+      |      ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:991:3: note: previous implicit declaration of ‘fg140_matrix’ with type ‘void(int64_t,  int64_t,  int64_t,  int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int,  long int,  long int,  long int)’}
+  991 |   fg140_matrix(t67, t68, t69, t70, t71, t72);
+      |   ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:78:6: warning: conflicting types for ‘fg140_iq_stats’; have ‘void(int64_t,  int64_t)’ {aka ‘void(long int,  long int)’}
+   78 | void fg140_iq_stats(int64_t c,int64_t i){callbacks.stats(c,i);}
+      |      ^~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1962:3: note: previous implicit declaration of ‘fg140_iq_stats’ with type ‘void(int64_t,  int64_t)’ {aka ‘void(long int,  long int)’}
+ 1962 |   fg140_iq_stats(t213, t214);
+      |   ^~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c:79:6: warning: conflicting types for ‘fg140_witness’; have ‘void(int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int)’}
+   79 | void fg140_witness(int64_t c,int64_t k,int64_t v){callbacks.witness(c,k,v);}
+      |      ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/../../generated/moe-control.c:1640:3: note: previous implicit declaration of ‘fg140_witness’ with type ‘void(int64_t,  int64_t,  int64_t)’ {aka ‘void(long int,  long int,  long int)’}
+ 1640 |   fg140_witness(t35, t36, t37);
+      |   ^~~~~~~~~~~~~

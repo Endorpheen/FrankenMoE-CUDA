@@ -1,0 +1,8 @@
+{
+  "status": "PASS_LIVE_APEX_COMMON_CPU_MOE_CONTROL",
+  "change": "Omit new controller witnesses via no-op diagnostic primitive and core counters; use same previously compiled counter-free common activation object. Mathematical/generated Goose control statements unchanged.",
+  "cpu_sha256": "cb34d0cd337cebd33081166c669d3b10961ad739a0d31dc5ff45e2a8c781cb29",
+  "production_changed": false,
+  "graph_report": "results/moe-control-apex-expanded-summary.json",
+  "model_report": "results/moe-control-apex-model-stage-summary.json"
+}

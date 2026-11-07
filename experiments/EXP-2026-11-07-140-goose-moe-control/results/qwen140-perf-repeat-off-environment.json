@@ -1,0 +1,12 @@
+{
+  "LD_LIBRARY_PATH": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-control-qwen-perf/run",
+  "GGML_GOOSE_ALLOC": "0",
+  "GGML_GOOSE_COALESCE": "0",
+  "GGML_GOOSE_LIFETIME": "0",
+  "GGML_GOOSE_GRAPH_PLAN": "0",
+  "GGML_GOOSE_ALLOC_VERIFY": "0",
+  "GGML_GOOSE_MOE_MATH": "1",
+  "GGML_GOOSE_MOE_QUANT": "1",
+  "GGML_GOOSE_MOE_CONTROL": "0",
+  "GGML_CPU_IQ2S_FUSED": "1"
+}

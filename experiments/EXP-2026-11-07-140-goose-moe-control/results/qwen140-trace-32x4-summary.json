@@ -1,0 +1,37 @@
+{
+  "name": "qwen140-trace-32x4",
+  "wall_seconds": 12.527051423094235,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32,
+    "prompt_ms": 11748.802,
+    "prompt_per_token_ms": 367.1500625,
+    "prompt_per_second": 2.723681954977197,
+    "predicted_n": 4,
+    "predicted_ms": 765.824,
+    "predicted_per_token_ms": 255.27466666666666,
+    "predicted_per_second": 3.917349155941835
+  },
+  "content_sha256": "688f6ce92ab06ee74fd34c8db23df3b2fa8492ceeeb6ece7982cee726db5f2c8",
+  "tokens": [
+    321,
+    2426,
+    279,
+    1785
+  ],
+  "sampled_rss_peak_mib": 12232.15625,
+  "process_hwm_mib": 12232.15625,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 585.5546875,
+  "sampled_file_peak_mib": 11345.2578125,
+  "sampled_gpu_peak_mib": 6172,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    1.87548828125,
+    2.3232421875,
+    2.8984375
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

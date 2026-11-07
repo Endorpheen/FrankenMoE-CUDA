@@ -1,0 +1,2 @@
+{"graph_cases":412,"values":389732,"actual_ggml_compute":true,"coverage":"stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"}
+IQ2S_FUSED_STATS groups[c1,c2,c3,c4+]=12,20,20,44 fused_groups=0,16,16,0 tokens[c1,c2,c3,c4+]=12,20,20,44 iq2s_groups_seen=96 window_opens=12 fused_dispatches=60

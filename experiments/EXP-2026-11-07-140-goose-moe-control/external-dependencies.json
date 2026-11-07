@@ -1,0 +1,1838 @@
+[
+  {
+    "path": "/home/end0/AI/LlamaServer/exp107-expert-overlap/build/bin/libggml-base.so.0.27.0",
+    "sha256": "04667991ee03405ee9d9cb4ba4c9b0566894704e7d922f9d9845bf183357db68"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-moe-tiled/bridge.h",
+    "sha256": "df9fc8f8bfa446014d7ad93edf040b104b73da25c97eabc7b64dc1d46bca13c3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-moe/bridge.h",
+    "sha256": "a7407f8b1c341c96141ac75aa88fee7a7594d85de1b049621f43cddad9db8be8"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-alloc.h",
+    "sha256": "5e41931dc4306cfb665a5314d85b662246cf45a8ede4291caa750abcfa40cfb5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-backend.h",
+    "sha256": "8a8cab1a5a83c5e8f3448c04cecfef252fe3ad98eda2b77bd9ab723c479fc04a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-blas.h",
+    "sha256": "e76cb8594dc9866d99e7d63191b9fff6ab8b50244b4a28ce3af0f962964a6b5b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-cann.h",
+    "sha256": "2cdb134f27fe5c4ec19d52f1eb58f5355aa42b8f54bf385f0e487501c5df7362"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-cpp.h",
+    "sha256": "bc15ba002c68685df23faae42df0d2b3d58032011f88b649021ab92485862c72"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-cpu.h",
+    "sha256": "316279e004cdeb8e6ef78599acb602bf79a8abdf897fed9fd1914808c1518c6e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-cuda.h",
+    "sha256": "9cbfcea49f6da4d07f41dc22fa8dbf870825faaa2a68e34e65fe30ea6c41e042"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-et.h",
+    "sha256": "33118c0642b8059a99ea930fd4e4a045e78ccb41760b173ede221f1297c35977"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-hexagon.h",
+    "sha256": "b2c12bac390f14707b16bdd27c8c75ce4f075ed509c729ee28fd4f03b17e7375"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-metal.h",
+    "sha256": "322f36cd30f3e9e7aad7b5b9bc63078012fd0b7706ac4e24f5721b604f3d8980"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-opencl.h",
+    "sha256": "8e443e1aa9c8bc6e0cf116c4cc3f42f4858938fa15e65b06bc07b26686e1233a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-openvino.h",
+    "sha256": "c2e3f301e28ad815b4285888aad6130808a77e6acb4e8b558de63a648cf9743e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-opt.h",
+    "sha256": "3586de1bc8a934b5c72339e2b6937b0641e8f149b512231e666f67de0736eea2"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-rpc.h",
+    "sha256": "a0bff02aa0a3c246683a0918ead7fdcc9cbbee38926bac47ea01cc7b68fbd66a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-sycl.h",
+    "sha256": "728e4f15d0853d63feb95dd596821c750181c26995fff57fe035e964e70fd85f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-virtgpu.h",
+    "sha256": "ed231e7db3f0f58b84073f5ee67f9ec9d63046d1a7ed091c36a6cfe9f685a463"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-vulkan.h",
+    "sha256": "7eae5dad2cc7bb4d3eca828539f441816d5fd59fdc7b224d49aa229fc7b7248c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-webgpu.h",
+    "sha256": "a91d855313a9e85e75ba597ff869a267247dea936a2c0faef03aeb7f1ea6e79c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-zdnn.h",
+    "sha256": "13e42214e6743abeb250b1ec9aa4be386a9f778d644001dbbb51e3f778bd84a9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml-zendnn.h",
+    "sha256": "2cb034b842438281616ce647232d922fb224450323f0d422d2af567c334aa8ff"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/ggml.h",
+    "sha256": "475beaa7e959be8c383279d9ce9d5191f37426e6b338270cfb12b26a798129d3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include/gguf.h",
+    "sha256": "e56714aab702e5ce62ee587a409643c08f7e93e8fbb77f48ef7cc85075f96fa4"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-backend-dl.h",
+    "sha256": "225bd83a197c4e8b5f985717176824d1144e2b74a79f04838f51b84115c14dc5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-backend-impl.h",
+    "sha256": "4e861c8e23d3d7b0d99d8e0836e68564af58f8597d75d7bbb732857d7a632fa7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cann/acl_tensor.h",
+    "sha256": "b13bc74c216d416f1e3819c16270673658c99a437d838ca4b233c5c6f1906b3c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cann/aclnn_ops.h",
+    "sha256": "c4c8b4d6f88f03f67e04e57b180ad487eaea84724610cad418335afade70b525"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cann/common.h",
+    "sha256": "62d6e79993222918dcd89e0f25b8f1366b7062e1e6ba82cab131ab1dc2868bb3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-common.h",
+    "sha256": "0061131b615c5721fc88a78feeb22c1f8c450f1c2646a317d80796a653bf595c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/amx/amx.h",
+    "sha256": "9d098ceee6a8114d4a660ff269064a27aa25b8a4f205d1e6984d17bec5104f0d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/amx/common.h",
+    "sha256": "c694f6bb066a820b717f986914b0d112dca0d8d3a1e239e958fce30c864751c3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/amx/mmq.h",
+    "sha256": "bd33d0713b12daf9eedea1619dd715619baaa36b98c44ec754d532909d80933a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/arch-fallback.h",
+    "sha256": "92bb73c53e12b10a19facaea987335802dbf9333ec3e8cc7f9cf900c58475afb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/binary-ops.h",
+    "sha256": "5915519c4e2227db28239b2a5d3b8a5f9022730cc0ddb7880b24748ee78cd1f9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/common.h",
+    "sha256": "db7c19747a28c819d18922aa43b91b224df3730e424e6d8a4cf4fd16bfb1db14"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/ggml-cpu-impl.h",
+    "sha256": "fd3e46b3e95c8aadda96f17ed13a4a2e83d122d7108c5b56951c80cc29224950"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/hbm.h",
+    "sha256": "340c84ac6a1c83d2218a15d6d71c1efb6ba1a5517162c2fde4baa0a9204af26b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/kleidiai/kernels.h",
+    "sha256": "9ea873a5776e31b2c9da115ef08bda5d756b87262f5e9a126e977c106b67e908"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/kleidiai/kleidiai.h",
+    "sha256": "bea31f009d2c471a7f6cd7a0ecf31ecaf08691914305a9ef7f986740e39f0910"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/llamafile/sgemm.h",
+    "sha256": "6ec12aa9244a8ffb13ae56b2e391f905b1d152ae25ff45da6a66e18daf650b3b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/ops.h",
+    "sha256": "2727d0414c23f1d06ade33d277c3ca1f0726c7902642c0e36d839c20781b1694"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/quants.h",
+    "sha256": "918d6755b3e601ec7bb83c7dbf1d73304490651ccbb4072b0d31a2b45df751da"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/repack.h",
+    "sha256": "d392cb13586c8c9177f6a0f75a75936882d09b9a70e6d989cedb3dd79f3c752a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/simd-gemm.h",
+    "sha256": "e82a07445059ec4a4c7d8dd75a2663d459025274d817be3f83c1f5989a79208d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/simd-mappings.h",
+    "sha256": "da1ce4e4a16589171519532c070923458f358a6ef8fc9ed5f3bcbc059501c3ae"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/ime.h",
+    "sha256": "2007cbf6ea43a0d97f46e046f1449ab752ff35cc42caa09a22195dbe06656143"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/ime_env.h",
+    "sha256": "2d8b0529166cefb919715e87ca2ed56ef6f0739a6ba008a4e98b2db9545c8295"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/ime_kernels.h",
+    "sha256": "b6fa08ff9966173b082b0570fd444db63aa4f748556ef390fb9df8ef4fe2dbd3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/repack.h",
+    "sha256": "70f7c5aae3b7972841bbb68e05acb84f299c08af61ea8608ab233fc432db8920"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/rvv_kernels.h",
+    "sha256": "666e988d3700b733dad9a406b1575f521f75186fad942a27edd0792f2b4165e7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/spine_barrier.h",
+    "sha256": "ddba450200089601aac492a45d6be7881eeef02cd0a4abedf69db5c4b9dfe134"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/spine_mem_pool.h",
+    "sha256": "8f441ca61472aef8ee16f88fe0f640c188ff036e4c80bb5657b1c0a4c204d889"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/spacemit/spine_tcm.h",
+    "sha256": "8bfe1bfa04a24f88d79610e209047de81f867d12c7dce8bf16402fcb3f67b0c8"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled-kernel.h",
+    "sha256": "0d729f5a6b4cd1584bd181fbc882e39f64fd41bf66ac1a9c009025d2b09ff23e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.h",
+    "sha256": "684aaa5320e20eadfc799c8ce04c52bf7c0d32b323f395de59ce469bda254a72"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/traits.h",
+    "sha256": "26e1b41879091a663325848aa82a4023b459fd1e688b3b0e2a9bde3e72a3a764"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/unary-ops.h",
+    "sha256": "280b7979055079d43bdde7790a7290bf04f75640481c59abc2364c46d6ac6d8e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/vec.h",
+    "sha256": "d969d24adcf494eaac83a865ae1c46aab744ce71d2fd8028286071c4c651a6be"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cuda/vendors/cuda.h",
+    "sha256": "e7847065d5d741f892d2f1f7aaaa8f418a41e3b983d1e6f09010055d4d1c38d1"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cuda/vendors/hip.h",
+    "sha256": "db9b1142727f3eaf037d888da133029cd21d9fbe15cfc707be7b9633ae080323"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cuda/vendors/musa.h",
+    "sha256": "9a23998d5cfe132573736b8b17946932299f949fb5056fa749e6a7fdbc369880"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/et-kernels/src/block_ops.h",
+    "sha256": "32bc4e4ed9a97c527677fea7774883088e78a62e67ff65331775c7a4fba6f077"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/et-kernels/src/ggml_tensor.h",
+    "sha256": "02fe081c2410348889e48755994c4ebf94ddaa9913cf71904c93e3ea79c9ee81"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/et-kernels/src/math_fp.h",
+    "sha256": "08a0c3ae382e3956dacca5eb45cd8a411c6c3581a2b645720d46e0278a7985c6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/et-kernels/src/platform.h",
+    "sha256": "663912cff6f5428300ea87fd6e281680ddc72bec2fdc4bcce7646d69afb07c28"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/et-kernels/src/quants.h",
+    "sha256": "2e19788441a10e836190daeb11ec32a3cac1f13d73ecbdb3f84fbcce39dfd9e9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/et-kernels/src/tensor.h",
+    "sha256": "d7d582321a0a2a4e259f9a9eca0eb59e94b04ea50af3f956d7e16cde4a836fc4"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/ggml-et-common.h",
+    "sha256": "c2caa74a7c76b86a7994e87228bdfc15fef443229ecc491b37e03beb9fcee415"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/ggml-et-cpu-compare.h",
+    "sha256": "7859f7696ef6af9d7137eb734c49a6ed45da1b13452c6b22e743db72897a06d6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/ggml-et-kernels.h",
+    "sha256": "8d2f2aa8d69f235ddcda9e61d515434007b5143498f4dcae25285cac8d8783b0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/ggml-et-memops.h",
+    "sha256": "cde00b9ccd118b9b7729c909fd81c719a7d74f153a353327d639e8193f682f43"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/ggml-et-ops.h",
+    "sha256": "3bb1a384d1335083ff2591592afd34f1f4702eeae11d4005136e1d0794d82328"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-et/ggml-et-uberkernel-common.h",
+    "sha256": "25af32624a0afe6c7f9fabb0615294d44d27cafc3d58b954bd04e2ddfa3ce19e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-expert-pipeline.h",
+    "sha256": "e0d9569bcfe0f4bbabc77b08bb6ea56434c126235faffeb12cf994e3e9f07c14"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-feats.h",
+    "sha256": "4490179fd8c6df80fe29fc602ed7236eb828c51e9c379efb0dd510cb5cb81fec"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp-drv.h",
+    "sha256": "c89560619f6c52de53417d5da794ae319668fff1a3f11230da13e3ae6944ae79"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp-opnode.h",
+    "sha256": "f305d07cb0aa11ef0c0c089ad3f96f75828318d5e3d01bc3a1aaf4f9bb51b8f7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp-repack.h",
+    "sha256": "a68fabaa9e8f1f9cae0a8f1a9a0f239ff4a123c97756590497f038df6697a53b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/allreduce-ops.h",
+    "sha256": "5027b9a8b7403df303dedf82dd350a7781a8326786c759a8d04de5b49bdb02e6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/argsort-ops.h",
+    "sha256": "b19937091118e803985ca5ea2214fd47ed945e22fbd543521ff44c9b665c8a41"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/binary-ops.h",
+    "sha256": "e67e0f85243b52916e17c994017839dfe19324848ab233242cc5efd430eb8237"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/concat-ops.h",
+    "sha256": "483045fd780950ede8a131ad0e71115a236dee4f85cbb1481143d860ebaa8a73"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/cpy-ops.h",
+    "sha256": "fb36d1ebef170680be94fffb6ba77565a56eeebe15dd27d1318d177c2fb9ed66"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/dma-copy.h",
+    "sha256": "38a8dbbcb38ac5fa881fedf804a95a04baa589c340e0b6a1ffa12cc0d6bb57ed"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/dma-queue.h",
+    "sha256": "afac99a3f72be3fbef00d325784d764523d4524a0612bd5786fb99a4e4bf441e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/flash-attn-ops.h",
+    "sha256": "47c22c7a7b2455b8b979a0b8080cc5d691ffcf01cf92316ab736b6a920b02aea"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/gated-delta-net-ops.h",
+    "sha256": "a15d08b2a865bf21b5691b4b0db0a886ef779de6b09e0ad6ed29d699129fc108"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/gather-rows.h",
+    "sha256": "225f49c90decde7641ee2f15401ae5eff11ee7d7b20b9411542cf52b121a59da"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/get-rows-ops.h",
+    "sha256": "0c2c034cccdc6f60901e6785f9a6d6448332b9d8ecd0f38d6b7e0ea6e43a2557"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hex-bitmap.h",
+    "sha256": "9beef7d2d017c601977e0d8e202870ca5b751b070de298767c24c4191ce0d186"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hex-common.h",
+    "sha256": "ac2410e11869cb83c5d158066b52617db5870cb900932a4cdd976ad6163cdd1e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hex-dump.h",
+    "sha256": "c041593d6d656d1a240cabd2d4745769adfcc11c04c0dd2e82d3a6e78fd3d154"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hex-fastdiv.h",
+    "sha256": "de933ab1cca4da4b285a38027899d2ed867646d7ccfa6f932620eab2065ca51d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hex-profile.h",
+    "sha256": "28021274dbdf7d95de621ef0c303d68a406b1a0843d01c4aa7087f66518f0831"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hex-utils.h",
+    "sha256": "70d99086fe61af2f37168243d56c6c96b2102a63d9557489ed8cf2ef4dd68d16"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hmx-fa-kernels.h",
+    "sha256": "5bb7f8c851f194cfd5bd5c3851654f213f18f081a900a8015931c7aca6d994e0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hmx-mm-kernels-tiled.h",
+    "sha256": "55e39f66cff4bde164e3ed3f8038aaea9f4b56d83c58546cfd8558111a5beb53"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hmx-queue.h",
+    "sha256": "75e4e5a19cdcc7b1746e8aabb4de390d368159bb98d85703f1f6c8f6881b8442"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hmx-utils.h",
+    "sha256": "2b5581df0a39096b6042f735f0f04ea5694446b6f1663d191cb8bd04b735540a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/htp-ctx.h",
+    "sha256": "601c81fb1f48c1e75b9e0dda74294d01fe0934c4dc6de2dda529f9f93c736d35"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/htp-dcache.h",
+    "sha256": "0dbd02f7294b8f48f3ec62fc88a5dbebd4ca10b957c444c8fcff8319f9262817"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/htp-fence.h",
+    "sha256": "b8d7cdf00362fcf9d933fa1c4124010a2a2adf8dd7f70eb2735dda6fdba0a60e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/htp-ops.h",
+    "sha256": "cf4fc438d913e28da7dff59573189bf804068d1837139609c9bcadd80b0f8991"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/htp-tensor.h",
+    "sha256": "50d5d40f1fae236b205307551717238f4858c25e8316e97be706eb2a494f2ef6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/htp-vtcm.h",
+    "sha256": "ab67516a9d376b0c7e7478d344e41844e681a428f44feadbb190f8d6ccab3c7d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-arith.h",
+    "sha256": "4bb5807a1ef059acb21b464576591498535b94d3004ac5e69fbb65f953b24907"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-base.h",
+    "sha256": "6a24b9b801e342da011712dddddd3b52b5b0802da0cf41b27a8e4096b8586899"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-copy.h",
+    "sha256": "54925fe32260ce49f2706e307627d0cd306dd9f30832bfa6dddbe4ed92ce1376"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-div.h",
+    "sha256": "79e54faff577699b0272bcf5772669b3c5323d0749ed6c6051d207fd80ce6f0b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-dump.h",
+    "sha256": "6e1013808fc4f8e9e810f1bbe615c85d3166c6e922d65b9c8da80fab15c885f3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-erf.h",
+    "sha256": "c4f101b36a047643e6110ddb7fa389d4805261a1f04ef0cd0f5ed587da4fc57d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-exp.h",
+    "sha256": "b2705680210bb161beba46cfe7d11f9b252a4ebf1f2ce505f07dc4ee89b4ea09"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-fa-kernels.h",
+    "sha256": "12bc86e269d39f9809b0530c0e8da29912cdb383f8e1fce5563cc5ffcabee81f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-flash-attn.h",
+    "sha256": "91d074063e5497ea1b31fc3c88d54e6ba2d47045094decb35800bdab44364b50"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-floor.h",
+    "sha256": "f23c2407f8b8e3007c2a4535595ac1966576eb9fb067d6443b6d7e3048e919a5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-inverse.h",
+    "sha256": "7e2a59f619f0aec2dc966823e8128a70e15cb6f056582b2ae87ba6fab64eed92"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-log.h",
+    "sha256": "6ec9f06f78911603222e5501bf0d03f752ff1850989e15614abb5ebec6607789"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-float.h",
+    "sha256": "29911901849ebdcf218106f8256d9ccfc26988cb0484c0a81363462cdaa74034"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h",
+    "sha256": "422a54da49a2f2820e94e3f6ed44e824513140ca28eb134b1fcb75e427e7e2ba"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-norm.h",
+    "sha256": "5d8f149009b8dcfad1213baf11ab5a3a3ed477fa4b921f06764f42b45b163cba"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-pow.h",
+    "sha256": "590f8534add5ebb374a52704d629c28323dca6e533c7b68c8c5ba68e37bb6dbc"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-quant.h",
+    "sha256": "fe3f9942c9a6b9b33bd4f2ce0368bcc2db24198aec9aa88d32ccfe706e457279"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-reduce.h",
+    "sha256": "14e6a408445a805f4cdd3eef7b61374ea97687336df34d666ef36d2ca5273ba6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-repl.h",
+    "sha256": "bdc510fd038f3e8c1361cac0d257d1cc0344b9bd8f4dfd5cf42dee3441f6a69f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-scale.h",
+    "sha256": "9d47ee79ed66ef43a52d862124848dc7924aa35a33bb6cebc051ac973c567f2a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-sigmoid.h",
+    "sha256": "108996468561009328ac22c9535110f6fc2274e016be53c2ab5855d5f23c3346"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-sin-cos.h",
+    "sha256": "89da34a9af819470e0155729c57f124b33532f1dd68b761f049c5a8172bbabc6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-sqrt.h",
+    "sha256": "2b43b43a78b54c4ed24f31fa7ac8ab2f1342859828d809154521da55690e8b4c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-types.h",
+    "sha256": "0f749cd2da86b6571b9d15b11468443cd164a524ad1e743efb64d0165795e867"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/hvx-utils.h",
+    "sha256": "71452784a2a61585666913f1ca6815fc847ae33aa4949f834621c2d26f95e73d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/im2col-ops.h",
+    "sha256": "7551ccf403ebb03e1761afdb7a18df42a8528bbf876dfde4489bcb5e7c6372f7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/matmul-ops.h",
+    "sha256": "80cd94fdacbfdafb190a671f7d25fcb9813823dcc8d26fda756c93ceb6f0105e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/pool-ops.h",
+    "sha256": "ccbcb4914595c8488100fbf1f560560282db60ccccf0200dcae6f6bb9607daf0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/rope-ops.h",
+    "sha256": "8ce8e273dfabe0f8024058f2d68ddbb1665455f3bc4306700d8d304d7b6fc804"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/set-rows-ops.h",
+    "sha256": "dc5eee5f32e6c8a700e548936492d370dc33d5be990720fea423ed458207feec"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/softmax-ops.h",
+    "sha256": "41198ca0626ed3adeb9d7abcf3d88625626c8a0d1a52bd22b6af49f44bc642ae"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/ssm-conv.h",
+    "sha256": "ad8180d27d9833e64a600add1a4a413cb02c46f711e0e85900a99b5f80f6c6f5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/unary-ops.h",
+    "sha256": "a958f610447728a096fa1be540b3bb9de4fe019932bc2dfb6e655d55622e315c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/htp/work-queue.h",
+    "sha256": "966ab07319214aa2a1f46672db99959e4e0a7fb59001883282c102dfe617a6a4"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-hexagon/libdl.h",
+    "sha256": "af1f5aa8d4b3f38cfc450991aaed0eff430f0bdb2106b0a9644bfed559ee3bd3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-impl.h",
+    "sha256": "43564db0238aebb7ed68501e346c194866b5dac218d1d37b26baff9f458c00d3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/ggml-metal-common.h",
+    "sha256": "59f371d72b118b536fbe787ea109ffe26771bfb351224430db93a1549b91ec90"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/ggml-metal-context.h",
+    "sha256": "9f2d9d91ecc54470a6b0d19109a55871cc362212bfe79ba7ea8d4a7798068b98"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/ggml-metal-device.h",
+    "sha256": "469e1e86973affe144fb78541b20e19498e6323015e8d0ff2a86473ae6be6c1e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/ggml-metal-fusion.h",
+    "sha256": "53d5276565dbf7566fc76b3be23336914a5aad439f0dd94d65e550fc5ba7fc5e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/ggml-metal-impl.h",
+    "sha256": "9594522f86ac135e8faa32d124d24d809f1c012b38a825ce7b3680a0962504d9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/ggml-metal-ops.h",
+    "sha256": "8ebc69c74a1361592e37b17c3b3bcf7a7112000c92ecde006a4cad0ff368dce3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/ggml-metal-tuning.h",
+    "sha256": "6697fdbbe65efdbae9a17b21652a993ce89de4f46dc76d0336387c599d216b61"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/kernels/common.h",
+    "sha256": "525d4d7f9dbdaef3702195be92235ba2cc7cc86d5c97101d374a52b06117215e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/kernels/dequantize.h",
+    "sha256": "b64da60146cad11863bae09873e542dce76897c787849d47abaa2a5837d5bf8f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-metal/kernels/quantize.h",
+    "sha256": "0bdfe2ad67ec2840642e961d59497b00c1d1ad9606608b8f29bdbcaa63b20ece"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-opencl/cl-program-cache.h",
+    "sha256": "2f026bcac4d361b6b168db4b37220eb844a9a51569353c3e0edf462176df0968"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-opencl/fa_tune.h",
+    "sha256": "d728c2c80e33a220ef008f472694b54e6145c09e7ea2fe6c7492540d4c7a3458"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-opencl/libdl.h",
+    "sha256": "af1f5aa8d4b3f38cfc450991aaed0eff430f0bdb2106b0a9644bfed559ee3bd3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/ggml-decoder.h",
+    "sha256": "238800bc875d54a1ecafbd9aa75980d085ca70ca04c6e81812e1a65d2fa475a0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/ggml-openvino-extra.h",
+    "sha256": "cfc59eb824b03a8720a9eb5bf7a2866b90314f88bde196b58a9c2a8b0eafd65f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/ggml-quants.h",
+    "sha256": "4ba77cbb70bc68b7bc578373eb8ee57bec2b8da00273ae6586603e3b9c648b44"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/model-cache.h",
+    "sha256": "988af351285bbfc4e00de24a47012458dea8680be2d2f1ec17a6efda2ec7ac35"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/decoder.h",
+    "sha256": "2d9040795b477fa55a76865fee15dfc0de7f5db705b4ba8a1500b1ab6755e48e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/frontend.h",
+    "sha256": "f3d3179b4e9cf4ca9ec4b43903faab18cb9a484ed5a093e120d83caf9c3dfac3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/input_model.h",
+    "sha256": "2109ae368b4a30c55697f2cd33ae358f2664209e268643e9023199b28f74adb3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/node_context.h",
+    "sha256": "3a6e52a3ff56fbe51e1ef3647a2d258ffb43480525823c6c36215d8822dff1ca"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/op_table.h",
+    "sha256": "1c8374f1d3fc68c9719607975a131e908e121defcbd68a2ae66a4f7743eacec9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/align_eltwise_ranks.h",
+    "sha256": "067be080229760a8d5f02cf02deaebc4e8cb4ded5650e8c4981e5bffb837d30e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/fuse_argsort_topk.h",
+    "sha256": "1bb872fe44f206d1dd2b0f5bf8ac96d26c62c732308933129fbbcebab0b2a048"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/fuse_moe_compressed.h",
+    "sha256": "192874982ebee5623c6d1a220984967c89ec100588786c82791a551ae76f4bfa"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/fuse_moe_router.h",
+    "sha256": "77a94145e94a03ee2806828e05bc2aad2c30ac25f9d832f33dd75396102d9e60"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/fuse_to_conv.h",
+    "sha256": "32756898d52216e6f44bdebe4dc3ef0e7a44e01a43bff79320709f26f1c40530"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/fuse_to_sdpa.h",
+    "sha256": "fec577bebf66a545fe7980ffa4ecc1cda6a510a7eb5ece96d49f2114e57058dd"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/kv_state_seq_axis.h",
+    "sha256": "5146b3245a1479992cb4e00548e9c6871a097b30b4a6e2c9d6a631fcc3d7f2e5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/mark_decompression_convert_constant_folding.h",
+    "sha256": "cb814172e46b77f4623323793d9904e10085ba0da1fff2134f60c01463a58e76"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/mark_dequantization_subgraph.h",
+    "sha256": "1d5a639ef7ab457dca3d9e0180010dcd96ca0f5224ad58d6583c3ec419c89ae7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/pass/squeeze_matmul.h",
+    "sha256": "1f1231d5b0f7ee1b6943c5d5b4737718bac6e23d190180561a3727ab096483ce"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/translate_session.h",
+    "sha256": "3b87de253c9b80b95e71170ce8fecaba0a075f6b8c387bde3bf5b68d4b52076e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/openvino/utils.h",
+    "sha256": "8fe1d36443bc2144907d18db6e779d462179d05feb0898d4b188bcab74d31fcb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-openvino/utils.h",
+    "sha256": "27a481dc60b73925d12d34655193495268ff311402041a15f2e85cc4e42edade"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-quants.h",
+    "sha256": "28ae5fca1f3be636b36cd6c4fa2ca74fd42d229bfbd5352eaf66f3727bb8a6da"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-rpc/log.h",
+    "sha256": "a295b4ba734c10d036d10c733f7c785bfee6296184197e45cb9697045d8d8664"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-rpc/transport-apple.h",
+    "sha256": "86d3dae32a15b11c2801392a9afb9b41310e0882baf0ea504356325ac796c880"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-rpc/transport.h",
+    "sha256": "5859ae198de5c8df1d7184eb7eca13adab5cf2d5548910052756ad6d0ef53cc7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-threading.h",
+    "sha256": "9652729043ed91482392c1aa08af5d813190d0ace2e7982d2539d28240ab8d8b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/backend-convert.h",
+    "sha256": "d47d401c50d23213c0324f1c817d638db18edc1e764567f82460b388bb300dfa"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/backend-dispatched.gen.h",
+    "sha256": "9af36c113e30138f4602d637006909bd36cbe770d60bf81707155c1ad1d71430"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/backend-dispatched.h",
+    "sha256": "7fef6172479e4866080ebde8e00d264864d624e562af941cdba1d933c728cc93"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/backend-virgl-apir.h",
+    "sha256": "6e9310e25ee042972b8f7e8aca706a60d601f3492bcfac60fc74c510afa7aaad"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/shared/api_remoting.h",
+    "sha256": "d054f83d123232eb7e481306d6c33075b4d0ee6e3e01dd4ae60697f33e4dfbdb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/shared/apir_backend.gen.h",
+    "sha256": "b2e18db18cd1659984000b59c3ec1c338663c10f2204593a5bc28b06881adc30"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/shared/apir_backend.h",
+    "sha256": "7854872f2894168ac32ee9a71ca7ca7dd37f421da788a904f3f68a7d36c9f86f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/shared/apir_cs.h",
+    "sha256": "d90fa4465ec56a6f1b23b0abbdf964248b978a4c0b6f2052cf1c2d8c33c10bf3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/shared/apir_cs_ggml.h",
+    "sha256": "f0c51bf29e16103962d0b360e2779b05883e0abf580b7be9633f4d80ad8605e5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/backend/shared/apir_cs_rpc.h",
+    "sha256": "12517bb1933db877980ec609e8ec3f8696f0067131ee33d3722fd2c16a99c876"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/ggml-remoting.h",
+    "sha256": "76df1e18509f11042704dc56a8de10389542f966bed525189dbf7190c9ff036d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/include/apir_hw.h",
+    "sha256": "0ade652ebe4d78bcf614d88a2410771e5dd2e963a9af4ec34883cd53e58257b3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/virtgpu-apir.h",
+    "sha256": "3e15ab4312f8a431614759277ed02fe76a585c9e702f5665cb1c63869e7c5e02"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/virtgpu-forward-impl.h",
+    "sha256": "c722d7a175b34b51ceea44ae794c9a153a3dd9ba08310aba877244906fb31c37"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/virtgpu-forward.gen.h",
+    "sha256": "cc43b58e0c6cd03dd176f630e71c385fcb2536e03f7db5afd7ea4f196dede05b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/virtgpu-shm.h",
+    "sha256": "4838c87d54176ef86ee110f9990d3944d09e41a43fbe6cde310be6862b4a25eb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/virtgpu-utils.h",
+    "sha256": "1c39e03921c76206d94b79cce24dae0b2972df11b9812c6b77af71487798f074"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-virtgpu/virtgpu.h",
+    "sha256": "c99aaadf795201fb0e77386833d1d4a22d983d239a8ac99507002e4d14c55268"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-vulkan/ggml-vulkan-common.h",
+    "sha256": "940a65a1f313bb8bd92404e1ba8066197c4fd41488af7c153d2fac686e1c0f0a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-vulkan/ggml-vulkan-push-constants.h",
+    "sha256": "2b5771f0881b657400a861187f201bcc12f040d25547ffd90504235072408381"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-vulkan/ggml-vulkan-types.h",
+    "sha256": "046e3dc29a1cd62ab0857f5aa7cc726ac4bce7c4d6e2bd03a0557a919884073a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-quantized/matrix-bridge.h",
+    "sha256": "0c34fd1c715256d547b1da9f261937262837e0ec78ba98e88303c051237f4eb9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-q6-efficient/build/goose-q6.o",
+    "sha256": "10a1d2e9669c435d6c879ee6d8033d57386fe1b5f7f7bab7ad23d83d4fc45f9c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled-register-perf/build/goose-tiled.o",
+    "sha256": "c4e918d9a309ec9e271eb3ada1e321664b31a30266685897c924c03c5e1d00a3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe/build/goose-controller.o",
+    "sha256": "9fd5ffcb97f75f9857a58aaaae41646fa3b5c90cd1db872b559f795e30b3bb17"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe/build/goose-q4.o",
+    "sha256": "d50d9cb5ed93f70f94a05d3e50bed706e8f075b97e96a8f901b0f092f65dfd8d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/elementwise-vector-perf/build/goose-element.o",
+    "sha256": "0a500f3086323c8ebe5c3bdd5ec3d506e039f32f925ffb33345e4d59e9d1d784"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/elementwise-vector/build/bridge.o",
+    "sha256": "7614367a24a5d9ee0cc1d98cefb94f67d1ccd405ffe7960a341f556ca6983625"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/elementwise-vector/build/native-binary-ops.o",
+    "sha256": "9f7dd26892255b4da7427e8dc8d72ed07bf8ca4caa4e8f2f35a856503bdc0653"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/elementwise-vector/build/native-unary-ops.o",
+    "sha256": "c6c43ac7b20d72dae817d0992cee5f033464bd3465458acd6f42188b14024fd0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/graph-plan/run/libggml-base.so.0.27.0",
+    "sha256": "ea6836c45e2447f5452e50a1ad7b877a491b817dcf1c97770977da4240b4a380"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-quantized/build/activation.o",
+    "sha256": "6baf22f458689c3c619d15ff3511643c677a44b7567877497a1581b64daab4d6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized-byte/build/math-cpu.o",
+    "sha256": "4c639ea1d35c5511589c202e26d9b3a8682acb4da48b18f55c7b0df8e357e760"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized-byte/run/libggml-base.so.0.27.0",
+    "sha256": "71e22cede278e5b7c19de57921fc3cda765e172c6317997be5075465d733258e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized/build/activation.o",
+    "sha256": "3d1899c7d847045b5e6e626c75a38b8f1bfdee8bf0569dd2e08b7c189fa47b85"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized/build/cpu-bridge.o",
+    "sha256": "2cbddb926af3864d2677ac8859870e3c687a6b090ad338631dbec888fd8ffee1"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized/build/native-arch-renamed.o",
+    "sha256": "cf8a603769d89fb10f83a1f91a74457ce8683300ed2a40eeb4c9626a5cce0724"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o",
+    "sha256": "de23d11305ce2fca3755026ed7844cf38f9f6ffedd853e9106dd72346e419d40"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o",
+    "sha256": "6f8c15a7879a78c42dad2d47284a8f21882f036e62bb669663482b2fb6d0002e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o",
+    "sha256": "00ddcc92a775fe18a6de3c9743927562103d1e3d88be9f726e41d989d94eb23f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o",
+    "sha256": "6d2b1ac627a7fb3eac58866d0d5dea1dbeda14589b89ccc1aa9237e2746f19e8"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o",
+    "sha256": "5ebc2ca65a58f633fcfac7da8d8dec883a06352e07c438733f17fc2447e58526"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o",
+    "sha256": "1bbebdaff335347d4e2d03b13d868a5ae88e3b9bff76bdb85f6ca63e23239be8"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o",
+    "sha256": "367f1c7629bb31b112943cde6f8be1ab60f46b260d1b5bbedb5b5d0586d7a75d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o",
+    "sha256": "996a9ef2ff6da3578820cb881fb7e23fdf7e2c1e45b009996f8f04b7f0c66491"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o",
+    "sha256": "350cc4ad40cdf32534a65f0983b310986ca542643af0285c83119f115c5d8a92"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o",
+    "sha256": "5f1de6d6b20d98ca4f62a081e1cc6871fe6fbf267ab89552bc0c39a887313c7e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o",
+    "sha256": "7a21648ae408275eed1f90c25c0c5040e7f9b940f3ef6dfcc6d45f3f284f66fb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o",
+    "sha256": "529a8c39d33566ba302a2120c28511c8002f47471e8d61123b184fc95afed618"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o",
+    "sha256": "8e2e16a642d0168e4109e877739e9e68da51f3273a1cb6f6a7a0ff6195919d21"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o",
+    "sha256": "5641f3f100397eef0330a56e9efdf600d8ca8ef54018dbe9ddf7b3cf19ac5ff7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o",
+    "sha256": "f515c305e3abec435ab00ca070b6ae091d5dd69b084eeb55ae8d7db11808f271"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-alloc.h",
+    "sha256": "d114067f9099c4a0e2bbc0625c676d4894d9cf0ea27168ee072c7de0e71bb51d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-backend.h",
+    "sha256": "0e5e8e1f16d11ebbf501e38bc6705d79eee819b5f0b17476533f2100ed9674e2"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-blas.h",
+    "sha256": "e76cb8594dc9866d99e7d63191b9fff6ab8b50244b4a28ce3af0f962964a6b5b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-cann.h",
+    "sha256": "2cdb134f27fe5c4ec19d52f1eb58f5355aa42b8f54bf385f0e487501c5df7362"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-cpp.h",
+    "sha256": "bc15ba002c68685df23faae42df0d2b3d58032011f88b649021ab92485862c72"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-cpu.h",
+    "sha256": "313cdbf467aab41575fe1d210d3b3758c3643128bc3dbaebdf195b9c2dd7ab98"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-cuda.h",
+    "sha256": "9cbfcea49f6da4d07f41dc22fa8dbf870825faaa2a68e34e65fe30ea6c41e042"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-et.h",
+    "sha256": "33118c0642b8059a99ea930fd4e4a045e78ccb41760b173ede221f1297c35977"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-hexagon.h",
+    "sha256": "b2c12bac390f14707b16bdd27c8c75ce4f075ed509c729ee28fd4f03b17e7375"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-metal.h",
+    "sha256": "322f36cd30f3e9e7aad7b5b9bc63078012fd0b7706ac4e24f5721b604f3d8980"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-opencl.h",
+    "sha256": "8e443e1aa9c8bc6e0cf116c4cc3f42f4858938fa15e65b06bc07b26686e1233a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-openvino.h",
+    "sha256": "c2e3f301e28ad815b4285888aad6130808a77e6acb4e8b558de63a648cf9743e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-opt.h",
+    "sha256": "3586de1bc8a934b5c72339e2b6937b0641e8f149b512231e666f67de0736eea2"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-rpc.h",
+    "sha256": "a0bff02aa0a3c246683a0918ead7fdcc9cbbee38926bac47ea01cc7b68fbd66a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-sycl.h",
+    "sha256": "728e4f15d0853d63feb95dd596821c750181c26995fff57fe035e964e70fd85f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-virtgpu.h",
+    "sha256": "ed231e7db3f0f58b84073f5ee67f9ec9d63046d1a7ed091c36a6cfe9f685a463"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-vulkan.h",
+    "sha256": "7eae5dad2cc7bb4d3eca828539f441816d5fd59fdc7b224d49aa229fc7b7248c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-webgpu.h",
+    "sha256": "a91d855313a9e85e75ba597ff869a267247dea936a2c0faef03aeb7f1ea6e79c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-zdnn.h",
+    "sha256": "13e42214e6743abeb250b1ec9aa4be386a9f778d644001dbbb51e3f778bd84a9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml-zendnn.h",
+    "sha256": "2cb034b842438281616ce647232d922fb224450323f0d422d2af567c334aa8ff"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/ggml.h",
+    "sha256": "76b746daa0bf027135cc0f635e50e896ba50afd29d76df0e25b30e69b1c14952"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include/gguf.h",
+    "sha256": "e56714aab702e5ce62ee587a409643c08f7e93e8fbb77f48ef7cc85075f96fa4"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-backend-dl.h",
+    "sha256": "225bd83a197c4e8b5f985717176824d1144e2b74a79f04838f51b84115c14dc5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-backend-impl.h",
+    "sha256": "4e861c8e23d3d7b0d99d8e0836e68564af58f8597d75d7bbb732857d7a632fa7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cann/acl_tensor.h",
+    "sha256": "b13bc74c216d416f1e3819c16270673658c99a437d838ca4b233c5c6f1906b3c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cann/aclnn_ops.h",
+    "sha256": "c4c8b4d6f88f03f67e04e57b180ad487eaea84724610cad418335afade70b525"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cann/common.h",
+    "sha256": "62d6e79993222918dcd89e0f25b8f1366b7062e1e6ba82cab131ab1dc2868bb3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-common.h",
+    "sha256": "0061131b615c5721fc88a78feeb22c1f8c450f1c2646a317d80796a653bf595c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/amx/amx.h",
+    "sha256": "9d098ceee6a8114d4a660ff269064a27aa25b8a4f205d1e6984d17bec5104f0d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/amx/common.h",
+    "sha256": "c694f6bb066a820b717f986914b0d112dca0d8d3a1e239e958fce30c864751c3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/amx/mmq.h",
+    "sha256": "bd33d0713b12daf9eedea1619dd715619baaa36b98c44ec754d532909d80933a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/arch-fallback.h",
+    "sha256": "92bb73c53e12b10a19facaea987335802dbf9333ec3e8cc7f9cf900c58475afb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/binary-ops.h",
+    "sha256": "5915519c4e2227db28239b2a5d3b8a5f9022730cc0ddb7880b24748ee78cd1f9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/common.h",
+    "sha256": "db7c19747a28c819d18922aa43b91b224df3730e424e6d8a4cf4fd16bfb1db14"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/ggml-cpu-impl.h",
+    "sha256": "fd3e46b3e95c8aadda96f17ed13a4a2e83d122d7108c5b56951c80cc29224950"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/ggml-cpu-iq2s-grid.h",
+    "sha256": "4a222724122a0f42e8c5953e5de5423e65a15c459d82ceb80ff97c42200789bf"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c",
+    "sha256": "9f37d7c3af1f10dd58aa3c5fe058a54056672029ade9d6d1399a572971830d65"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.h",
+    "sha256": "1c1bfe3f95691d016f9b03aa3acb9f1afff7d4f2bd47881c29698d3f779b78d0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/hbm.h",
+    "sha256": "340c84ac6a1c83d2218a15d6d71c1efb6ba1a5517162c2fde4baa0a9204af26b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/kleidiai/kernels.h",
+    "sha256": "9ea873a5776e31b2c9da115ef08bda5d756b87262f5e9a126e977c106b67e908"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/kleidiai/kleidiai.h",
+    "sha256": "bea31f009d2c471a7f6cd7a0ecf31ecaf08691914305a9ef7f986740e39f0910"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/llamafile/sgemm.h",
+    "sha256": "6ec12aa9244a8ffb13ae56b2e391f905b1d152ae25ff45da6a66e18daf650b3b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/ops.h",
+    "sha256": "2727d0414c23f1d06ade33d277c3ca1f0726c7902642c0e36d839c20781b1694"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/quants.h",
+    "sha256": "918d6755b3e601ec7bb83c7dbf1d73304490651ccbb4072b0d31a2b45df751da"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/repack.h",
+    "sha256": "d392cb13586c8c9177f6a0f75a75936882d09b9a70e6d989cedb3dd79f3c752a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/simd-gemm.h",
+    "sha256": "e82a07445059ec4a4c7d8dd75a2663d459025274d817be3f83c1f5989a79208d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/simd-mappings.h",
+    "sha256": "da1ce4e4a16589171519532c070923458f358a6ef8fc9ed5f3bcbc059501c3ae"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/ime.h",
+    "sha256": "2007cbf6ea43a0d97f46e046f1449ab752ff35cc42caa09a22195dbe06656143"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/ime_env.h",
+    "sha256": "2d8b0529166cefb919715e87ca2ed56ef6f0739a6ba008a4e98b2db9545c8295"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/ime_kernels.h",
+    "sha256": "b6fa08ff9966173b082b0570fd444db63aa4f748556ef390fb9df8ef4fe2dbd3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/repack.h",
+    "sha256": "70f7c5aae3b7972841bbb68e05acb84f299c08af61ea8608ab233fc432db8920"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/rvv_kernels.h",
+    "sha256": "666e988d3700b733dad9a406b1575f521f75186fad942a27edd0792f2b4165e7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/spine_barrier.h",
+    "sha256": "ddba450200089601aac492a45d6be7881eeef02cd0a4abedf69db5c4b9dfe134"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/spine_mem_pool.h",
+    "sha256": "8f441ca61472aef8ee16f88fe0f640c188ff036e4c80bb5657b1c0a4c204d889"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/spacemit/spine_tcm.h",
+    "sha256": "8bfe1bfa04a24f88d79610e209047de81f867d12c7dce8bf16402fcb3f67b0c8"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled-kernel.h",
+    "sha256": "0d729f5a6b4cd1584bd181fbc882e39f64fd41bf66ac1a9c009025d2b09ff23e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.h",
+    "sha256": "684aaa5320e20eadfc799c8ce04c52bf7c0d32b323f395de59ce469bda254a72"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/traits.h",
+    "sha256": "26e1b41879091a663325848aa82a4023b459fd1e688b3b0e2a9bde3e72a3a764"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/unary-ops.h",
+    "sha256": "280b7979055079d43bdde7790a7290bf04f75640481c59abc2364c46d6ac6d8e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/vec.h",
+    "sha256": "52f6d46c766cd9d9c2c1ab8b65a7b2c2858cde6bdc0143ec5a19c6f827a3bd92"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cuda/vendors/cuda.h",
+    "sha256": "e7847065d5d741f892d2f1f7aaaa8f418a41e3b983d1e6f09010055d4d1c38d1"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cuda/vendors/hip.h",
+    "sha256": "db9b1142727f3eaf037d888da133029cd21d9fbe15cfc707be7b9633ae080323"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cuda/vendors/musa.h",
+    "sha256": "9a23998d5cfe132573736b8b17946932299f949fb5056fa749e6a7fdbc369880"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/et-kernels/src/block_ops.h",
+    "sha256": "32bc4e4ed9a97c527677fea7774883088e78a62e67ff65331775c7a4fba6f077"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/et-kernels/src/ggml_tensor.h",
+    "sha256": "02fe081c2410348889e48755994c4ebf94ddaa9913cf71904c93e3ea79c9ee81"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/et-kernels/src/math_fp.h",
+    "sha256": "08a0c3ae382e3956dacca5eb45cd8a411c6c3581a2b645720d46e0278a7985c6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/et-kernels/src/platform.h",
+    "sha256": "663912cff6f5428300ea87fd6e281680ddc72bec2fdc4bcce7646d69afb07c28"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/et-kernels/src/quants.h",
+    "sha256": "2e19788441a10e836190daeb11ec32a3cac1f13d73ecbdb3f84fbcce39dfd9e9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/et-kernels/src/tensor.h",
+    "sha256": "d7d582321a0a2a4e259f9a9eca0eb59e94b04ea50af3f956d7e16cde4a836fc4"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/ggml-et-common.h",
+    "sha256": "c2caa74a7c76b86a7994e87228bdfc15fef443229ecc491b37e03beb9fcee415"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/ggml-et-cpu-compare.h",
+    "sha256": "7859f7696ef6af9d7137eb734c49a6ed45da1b13452c6b22e743db72897a06d6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/ggml-et-kernels.h",
+    "sha256": "8d2f2aa8d69f235ddcda9e61d515434007b5143498f4dcae25285cac8d8783b0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/ggml-et-memops.h",
+    "sha256": "cde00b9ccd118b9b7729c909fd81c719a7d74f153a353327d639e8193f682f43"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/ggml-et-ops.h",
+    "sha256": "3bb1a384d1335083ff2591592afd34f1f4702eeae11d4005136e1d0794d82328"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-et/ggml-et-uberkernel-common.h",
+    "sha256": "25af32624a0afe6c7f9fabb0615294d44d27cafc3d58b954bd04e2ddfa3ce19e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-feats.h",
+    "sha256": "4490179fd8c6df80fe29fc602ed7236eb828c51e9c379efb0dd510cb5cb81fec"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp-drv.h",
+    "sha256": "c89560619f6c52de53417d5da794ae319668fff1a3f11230da13e3ae6944ae79"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp-opnode.h",
+    "sha256": "f305d07cb0aa11ef0c0c089ad3f96f75828318d5e3d01bc3a1aaf4f9bb51b8f7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp-repack.h",
+    "sha256": "a68fabaa9e8f1f9cae0a8f1a9a0f239ff4a123c97756590497f038df6697a53b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/allreduce-ops.h",
+    "sha256": "5027b9a8b7403df303dedf82dd350a7781a8326786c759a8d04de5b49bdb02e6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/argsort-ops.h",
+    "sha256": "b19937091118e803985ca5ea2214fd47ed945e22fbd543521ff44c9b665c8a41"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/binary-ops.h",
+    "sha256": "e67e0f85243b52916e17c994017839dfe19324848ab233242cc5efd430eb8237"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/concat-ops.h",
+    "sha256": "483045fd780950ede8a131ad0e71115a236dee4f85cbb1481143d860ebaa8a73"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/cpy-ops.h",
+    "sha256": "fb36d1ebef170680be94fffb6ba77565a56eeebe15dd27d1318d177c2fb9ed66"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/dma-copy.h",
+    "sha256": "38a8dbbcb38ac5fa881fedf804a95a04baa589c340e0b6a1ffa12cc0d6bb57ed"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/dma-queue.h",
+    "sha256": "afac99a3f72be3fbef00d325784d764523d4524a0612bd5786fb99a4e4bf441e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/flash-attn-ops.h",
+    "sha256": "47c22c7a7b2455b8b979a0b8080cc5d691ffcf01cf92316ab736b6a920b02aea"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/gated-delta-net-ops.h",
+    "sha256": "a15d08b2a865bf21b5691b4b0db0a886ef779de6b09e0ad6ed29d699129fc108"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/gather-rows.h",
+    "sha256": "225f49c90decde7641ee2f15401ae5eff11ee7d7b20b9411542cf52b121a59da"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/get-rows-ops.h",
+    "sha256": "0c2c034cccdc6f60901e6785f9a6d6448332b9d8ecd0f38d6b7e0ea6e43a2557"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hex-bitmap.h",
+    "sha256": "9beef7d2d017c601977e0d8e202870ca5b751b070de298767c24c4191ce0d186"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hex-common.h",
+    "sha256": "ac2410e11869cb83c5d158066b52617db5870cb900932a4cdd976ad6163cdd1e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hex-dump.h",
+    "sha256": "c041593d6d656d1a240cabd2d4745769adfcc11c04c0dd2e82d3a6e78fd3d154"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hex-fastdiv.h",
+    "sha256": "de933ab1cca4da4b285a38027899d2ed867646d7ccfa6f932620eab2065ca51d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hex-profile.h",
+    "sha256": "28021274dbdf7d95de621ef0c303d68a406b1a0843d01c4aa7087f66518f0831"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hex-utils.h",
+    "sha256": "70d99086fe61af2f37168243d56c6c96b2102a63d9557489ed8cf2ef4dd68d16"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hmx-fa-kernels.h",
+    "sha256": "5bb7f8c851f194cfd5bd5c3851654f213f18f081a900a8015931c7aca6d994e0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hmx-mm-kernels-tiled.h",
+    "sha256": "55e39f66cff4bde164e3ed3f8038aaea9f4b56d83c58546cfd8558111a5beb53"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hmx-queue.h",
+    "sha256": "75e4e5a19cdcc7b1746e8aabb4de390d368159bb98d85703f1f6c8f6881b8442"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hmx-utils.h",
+    "sha256": "2b5581df0a39096b6042f735f0f04ea5694446b6f1663d191cb8bd04b735540a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/htp-ctx.h",
+    "sha256": "601c81fb1f48c1e75b9e0dda74294d01fe0934c4dc6de2dda529f9f93c736d35"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/htp-dcache.h",
+    "sha256": "0dbd02f7294b8f48f3ec62fc88a5dbebd4ca10b957c444c8fcff8319f9262817"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/htp-fence.h",
+    "sha256": "b8d7cdf00362fcf9d933fa1c4124010a2a2adf8dd7f70eb2735dda6fdba0a60e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/htp-ops.h",
+    "sha256": "cf4fc438d913e28da7dff59573189bf804068d1837139609c9bcadd80b0f8991"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/htp-tensor.h",
+    "sha256": "50d5d40f1fae236b205307551717238f4858c25e8316e97be706eb2a494f2ef6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/htp-vtcm.h",
+    "sha256": "ab67516a9d376b0c7e7478d344e41844e681a428f44feadbb190f8d6ccab3c7d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-arith.h",
+    "sha256": "4bb5807a1ef059acb21b464576591498535b94d3004ac5e69fbb65f953b24907"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-base.h",
+    "sha256": "6a24b9b801e342da011712dddddd3b52b5b0802da0cf41b27a8e4096b8586899"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-copy.h",
+    "sha256": "54925fe32260ce49f2706e307627d0cd306dd9f30832bfa6dddbe4ed92ce1376"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-div.h",
+    "sha256": "79e54faff577699b0272bcf5772669b3c5323d0749ed6c6051d207fd80ce6f0b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-dump.h",
+    "sha256": "6e1013808fc4f8e9e810f1bbe615c85d3166c6e922d65b9c8da80fab15c885f3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-erf.h",
+    "sha256": "c4f101b36a047643e6110ddb7fa389d4805261a1f04ef0cd0f5ed587da4fc57d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-exp.h",
+    "sha256": "b2705680210bb161beba46cfe7d11f9b252a4ebf1f2ce505f07dc4ee89b4ea09"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-fa-kernels.h",
+    "sha256": "12bc86e269d39f9809b0530c0e8da29912cdb383f8e1fce5563cc5ffcabee81f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-flash-attn.h",
+    "sha256": "91d074063e5497ea1b31fc3c88d54e6ba2d47045094decb35800bdab44364b50"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-floor.h",
+    "sha256": "f23c2407f8b8e3007c2a4535595ac1966576eb9fb067d6443b6d7e3048e919a5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-inverse.h",
+    "sha256": "7e2a59f619f0aec2dc966823e8128a70e15cb6f056582b2ae87ba6fab64eed92"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-log.h",
+    "sha256": "6ec9f06f78911603222e5501bf0d03f752ff1850989e15614abb5ebec6607789"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-float.h",
+    "sha256": "29911901849ebdcf218106f8256d9ccfc26988cb0484c0a81363462cdaa74034"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h",
+    "sha256": "422a54da49a2f2820e94e3f6ed44e824513140ca28eb134b1fcb75e427e7e2ba"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-norm.h",
+    "sha256": "5d8f149009b8dcfad1213baf11ab5a3a3ed477fa4b921f06764f42b45b163cba"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-pow.h",
+    "sha256": "590f8534add5ebb374a52704d629c28323dca6e533c7b68c8c5ba68e37bb6dbc"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-quant.h",
+    "sha256": "fe3f9942c9a6b9b33bd4f2ce0368bcc2db24198aec9aa88d32ccfe706e457279"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-reduce.h",
+    "sha256": "14e6a408445a805f4cdd3eef7b61374ea97687336df34d666ef36d2ca5273ba6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-repl.h",
+    "sha256": "bdc510fd038f3e8c1361cac0d257d1cc0344b9bd8f4dfd5cf42dee3441f6a69f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-scale.h",
+    "sha256": "9d47ee79ed66ef43a52d862124848dc7924aa35a33bb6cebc051ac973c567f2a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-sigmoid.h",
+    "sha256": "108996468561009328ac22c9535110f6fc2274e016be53c2ab5855d5f23c3346"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-sin-cos.h",
+    "sha256": "89da34a9af819470e0155729c57f124b33532f1dd68b761f049c5a8172bbabc6"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-sqrt.h",
+    "sha256": "2b43b43a78b54c4ed24f31fa7ac8ab2f1342859828d809154521da55690e8b4c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-types.h",
+    "sha256": "0f749cd2da86b6571b9d15b11468443cd164a524ad1e743efb64d0165795e867"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/hvx-utils.h",
+    "sha256": "71452784a2a61585666913f1ca6815fc847ae33aa4949f834621c2d26f95e73d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/im2col-ops.h",
+    "sha256": "7551ccf403ebb03e1761afdb7a18df42a8528bbf876dfde4489bcb5e7c6372f7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/matmul-ops.h",
+    "sha256": "80cd94fdacbfdafb190a671f7d25fcb9813823dcc8d26fda756c93ceb6f0105e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/pool-ops.h",
+    "sha256": "ccbcb4914595c8488100fbf1f560560282db60ccccf0200dcae6f6bb9607daf0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/rope-ops.h",
+    "sha256": "8ce8e273dfabe0f8024058f2d68ddbb1665455f3bc4306700d8d304d7b6fc804"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/set-rows-ops.h",
+    "sha256": "dc5eee5f32e6c8a700e548936492d370dc33d5be990720fea423ed458207feec"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/softmax-ops.h",
+    "sha256": "41198ca0626ed3adeb9d7abcf3d88625626c8a0d1a52bd22b6af49f44bc642ae"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/ssm-conv.h",
+    "sha256": "ad8180d27d9833e64a600add1a4a413cb02c46f711e0e85900a99b5f80f6c6f5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/unary-ops.h",
+    "sha256": "a958f610447728a096fa1be540b3bb9de4fe019932bc2dfb6e655d55622e315c"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/htp/work-queue.h",
+    "sha256": "966ab07319214aa2a1f46672db99959e4e0a7fb59001883282c102dfe617a6a4"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-hexagon/libdl.h",
+    "sha256": "af1f5aa8d4b3f38cfc450991aaed0eff430f0bdb2106b0a9644bfed559ee3bd3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-impl.h",
+    "sha256": "43564db0238aebb7ed68501e346c194866b5dac218d1d37b26baff9f458c00d3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/ggml-metal-common.h",
+    "sha256": "59f371d72b118b536fbe787ea109ffe26771bfb351224430db93a1549b91ec90"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/ggml-metal-context.h",
+    "sha256": "9f2d9d91ecc54470a6b0d19109a55871cc362212bfe79ba7ea8d4a7798068b98"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/ggml-metal-device.h",
+    "sha256": "469e1e86973affe144fb78541b20e19498e6323015e8d0ff2a86473ae6be6c1e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/ggml-metal-fusion.h",
+    "sha256": "53d5276565dbf7566fc76b3be23336914a5aad439f0dd94d65e550fc5ba7fc5e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/ggml-metal-impl.h",
+    "sha256": "9594522f86ac135e8faa32d124d24d809f1c012b38a825ce7b3680a0962504d9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/ggml-metal-ops.h",
+    "sha256": "8ebc69c74a1361592e37b17c3b3bcf7a7112000c92ecde006a4cad0ff368dce3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/ggml-metal-tuning.h",
+    "sha256": "6697fdbbe65efdbae9a17b21652a993ce89de4f46dc76d0336387c599d216b61"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/kernels/common.h",
+    "sha256": "525d4d7f9dbdaef3702195be92235ba2cc7cc86d5c97101d374a52b06117215e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/kernels/dequantize.h",
+    "sha256": "b64da60146cad11863bae09873e542dce76897c787849d47abaa2a5837d5bf8f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-metal/kernels/quantize.h",
+    "sha256": "0bdfe2ad67ec2840642e961d59497b00c1d1ad9606608b8f29bdbcaa63b20ece"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-opencl/cl-program-cache.h",
+    "sha256": "2f026bcac4d361b6b168db4b37220eb844a9a51569353c3e0edf462176df0968"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-opencl/fa_tune.h",
+    "sha256": "d728c2c80e33a220ef008f472694b54e6145c09e7ea2fe6c7492540d4c7a3458"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-opencl/libdl.h",
+    "sha256": "af1f5aa8d4b3f38cfc450991aaed0eff430f0bdb2106b0a9644bfed559ee3bd3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/ggml-decoder.h",
+    "sha256": "238800bc875d54a1ecafbd9aa75980d085ca70ca04c6e81812e1a65d2fa475a0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/ggml-openvino-extra.h",
+    "sha256": "cfc59eb824b03a8720a9eb5bf7a2866b90314f88bde196b58a9c2a8b0eafd65f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/ggml-quants.h",
+    "sha256": "4ba77cbb70bc68b7bc578373eb8ee57bec2b8da00273ae6586603e3b9c648b44"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/model-cache.h",
+    "sha256": "988af351285bbfc4e00de24a47012458dea8680be2d2f1ec17a6efda2ec7ac35"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/decoder.h",
+    "sha256": "2d9040795b477fa55a76865fee15dfc0de7f5db705b4ba8a1500b1ab6755e48e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/frontend.h",
+    "sha256": "f3d3179b4e9cf4ca9ec4b43903faab18cb9a484ed5a093e120d83caf9c3dfac3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/input_model.h",
+    "sha256": "2109ae368b4a30c55697f2cd33ae358f2664209e268643e9023199b28f74adb3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/node_context.h",
+    "sha256": "3a6e52a3ff56fbe51e1ef3647a2d258ffb43480525823c6c36215d8822dff1ca"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/op_table.h",
+    "sha256": "1c8374f1d3fc68c9719607975a131e908e121defcbd68a2ae66a4f7743eacec9"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/align_eltwise_ranks.h",
+    "sha256": "067be080229760a8d5f02cf02deaebc4e8cb4ded5650e8c4981e5bffb837d30e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/fuse_argsort_topk.h",
+    "sha256": "1bb872fe44f206d1dd2b0f5bf8ac96d26c62c732308933129fbbcebab0b2a048"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/fuse_moe_compressed.h",
+    "sha256": "192874982ebee5623c6d1a220984967c89ec100588786c82791a551ae76f4bfa"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/fuse_moe_router.h",
+    "sha256": "77a94145e94a03ee2806828e05bc2aad2c30ac25f9d832f33dd75396102d9e60"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/fuse_to_conv.h",
+    "sha256": "32756898d52216e6f44bdebe4dc3ef0e7a44e01a43bff79320709f26f1c40530"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/fuse_to_sdpa.h",
+    "sha256": "fec577bebf66a545fe7980ffa4ecc1cda6a510a7eb5ece96d49f2114e57058dd"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/kv_state_seq_axis.h",
+    "sha256": "5146b3245a1479992cb4e00548e9c6871a097b30b4a6e2c9d6a631fcc3d7f2e5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/mark_decompression_convert_constant_folding.h",
+    "sha256": "cb814172e46b77f4623323793d9904e10085ba0da1fff2134f60c01463a58e76"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/mark_dequantization_subgraph.h",
+    "sha256": "1d5a639ef7ab457dca3d9e0180010dcd96ca0f5224ad58d6583c3ec419c89ae7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/pass/squeeze_matmul.h",
+    "sha256": "1f1231d5b0f7ee1b6943c5d5b4737718bac6e23d190180561a3727ab096483ce"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/translate_session.h",
+    "sha256": "3b87de253c9b80b95e71170ce8fecaba0a075f6b8c387bde3bf5b68d4b52076e"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/openvino/utils.h",
+    "sha256": "8fe1d36443bc2144907d18db6e779d462179d05feb0898d4b188bcab74d31fcb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-openvino/utils.h",
+    "sha256": "27a481dc60b73925d12d34655193495268ff311402041a15f2e85cc4e42edade"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-quants.h",
+    "sha256": "28ae5fca1f3be636b36cd6c4fa2ca74fd42d229bfbd5352eaf66f3727bb8a6da"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-rpc/log.h",
+    "sha256": "a295b4ba734c10d036d10c733f7c785bfee6296184197e45cb9697045d8d8664"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-rpc/transport-apple.h",
+    "sha256": "86d3dae32a15b11c2801392a9afb9b41310e0882baf0ea504356325ac796c880"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-rpc/transport.h",
+    "sha256": "5859ae198de5c8df1d7184eb7eca13adab5cf2d5548910052756ad6d0ef53cc7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-threading.h",
+    "sha256": "9652729043ed91482392c1aa08af5d813190d0ace2e7982d2539d28240ab8d8b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/backend-convert.h",
+    "sha256": "d47d401c50d23213c0324f1c817d638db18edc1e764567f82460b388bb300dfa"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/backend-dispatched.gen.h",
+    "sha256": "9af36c113e30138f4602d637006909bd36cbe770d60bf81707155c1ad1d71430"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/backend-dispatched.h",
+    "sha256": "7fef6172479e4866080ebde8e00d264864d624e562af941cdba1d933c728cc93"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/backend-virgl-apir.h",
+    "sha256": "6e9310e25ee042972b8f7e8aca706a60d601f3492bcfac60fc74c510afa7aaad"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/shared/api_remoting.h",
+    "sha256": "d054f83d123232eb7e481306d6c33075b4d0ee6e3e01dd4ae60697f33e4dfbdb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/shared/apir_backend.gen.h",
+    "sha256": "b2e18db18cd1659984000b59c3ec1c338663c10f2204593a5bc28b06881adc30"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/shared/apir_backend.h",
+    "sha256": "7854872f2894168ac32ee9a71ca7ca7dd37f421da788a904f3f68a7d36c9f86f"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/shared/apir_cs.h",
+    "sha256": "d90fa4465ec56a6f1b23b0abbdf964248b978a4c0b6f2052cf1c2d8c33c10bf3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/shared/apir_cs_ggml.h",
+    "sha256": "f0c51bf29e16103962d0b360e2779b05883e0abf580b7be9633f4d80ad8605e5"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/backend/shared/apir_cs_rpc.h",
+    "sha256": "12517bb1933db877980ec609e8ec3f8696f0067131ee33d3722fd2c16a99c876"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/ggml-remoting.h",
+    "sha256": "76df1e18509f11042704dc56a8de10389542f966bed525189dbf7190c9ff036d"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/include/apir_hw.h",
+    "sha256": "0ade652ebe4d78bcf614d88a2410771e5dd2e963a9af4ec34883cd53e58257b3"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/virtgpu-apir.h",
+    "sha256": "3e15ab4312f8a431614759277ed02fe76a585c9e702f5665cb1c63869e7c5e02"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/virtgpu-forward-impl.h",
+    "sha256": "c722d7a175b34b51ceea44ae794c9a153a3dd9ba08310aba877244906fb31c37"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/virtgpu-forward.gen.h",
+    "sha256": "cc43b58e0c6cd03dd176f630e71c385fcb2536e03f7db5afd7ea4f196dede05b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/virtgpu-shm.h",
+    "sha256": "4838c87d54176ef86ee110f9990d3944d09e41a43fbe6cde310be6862b4a25eb"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/virtgpu-utils.h",
+    "sha256": "1c39e03921c76206d94b79cce24dae0b2972df11b9812c6b77af71487798f074"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-virtgpu/virtgpu.h",
+    "sha256": "c99aaadf795201fb0e77386833d1d4a22d983d239a8ac99507002e4d14c55268"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-vulkan/ggml-vulkan-common.h",
+    "sha256": "940a65a1f313bb8bd92404e1ba8066197c4fd41488af7c153d2fac686e1c0f0a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-vulkan/ggml-vulkan-push-constants.h",
+    "sha256": "2b5771f0881b657400a861187f201bcc12f040d25547ffd90504235072408381"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-vulkan/ggml-vulkan-types.h",
+    "sha256": "046e3dc29a1cd62ab0857f5aa7cc726ac4bce7c4d6e2bd03a0557a919884073a"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o",
+    "sha256": "1b4afe87385e02fd72fd476fda52535f87c95edd7e48d5862341e8c926cf5cf0"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o",
+    "sha256": "4c59a93ef2ee7ca4054222a9c86dcb4b04182a7e87f3254a0498c2f2d7b45372"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o",
+    "sha256": "c89c9026e51dd83e3af434b406add07d2c687dba27f3e62536d5434747de1b62"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o",
+    "sha256": "29ac31c4ef1e0b156bb89eadaf238340b9e280aaf28c430598e8761b9b19da95"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o",
+    "sha256": "86aaa1d92048775eb615086ce3e13a308c5aea8fcdd8d27f9dd1ecf74f58b658"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o",
+    "sha256": "0239984bac15efe6c6fb12a7058c8e69d7fd2bd41ad62279ebf1ee4582f95923"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o",
+    "sha256": "2cd67c97b2c4685a5f64157b3049211d01230e993ad837ed116a7a4f6057d5d7"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o",
+    "sha256": "f810a8f21f25e920133f81133025710fe5c42cc206169c097c929933c5cdfe13"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o",
+    "sha256": "63df7739e416088d364a134e03d5b0fb8948182075e96fc97b8ff2381bb8cb32"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o",
+    "sha256": "25d8ce2cfafbddf05f03ec2fc107f195792f8f179b59cca20a868678713cca5b"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o",
+    "sha256": "095edc34ac33567bec62811c6e331d7db35c7b14398a78c265219a616066f242"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o",
+    "sha256": "47b7add07bb47079efff505828fedd47672c786dda4839c706a051be2a392d60"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o",
+    "sha256": "a4c6da2ddedd1fb7315b76d680304f80c25f34bf802105f9aa49d762aa70b0f8"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o",
+    "sha256": "c2acc83c6ac01ccc6ba1553b9229e71cb4b98374ddf93812459fb111d5d9f6c7"
+  },
+  {
+    "path": "/usr/bin/x86_64-linux-gnu-g++-13",
+    "sha256": "d255fa40289dde1dcea3b820339e992d2a6889548b20e422d8c150cfb0230de7"
+  },
+  {
+    "path": "/usr/bin/x86_64-linux-gnu-g++-15",
+    "sha256": "e6718f7e0c7d057c3ff77b550c603da9bc4030e3ede3c053705acce1293dbe4d"
+  },
+  {
+    "path": "/usr/bin/x86_64-linux-gnu-gcc-13",
+    "sha256": "64f2fc42063e1eaa600a9dfd9f218df3ad67e724a6a16ea262db8f088d536df1"
+  },
+  {
+    "path": "/usr/bin/x86_64-linux-gnu-gcc-15",
+    "sha256": "b5f1b773a7c733738352000c92a077dc5852a1a2fc6d836b1e411be1e9ec5f88"
+  },
+  {
+    "path": "/usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so",
+    "sha256": "645478cbe100d1465b9d45f7047bca3965358f4d399937e544f55ac7a924d5a3"
+  },
+  {
+    "path": "/usr/lib/gcc/x86_64-linux-gnu/15/libgomp.so",
+    "sha256": "645478cbe100d1465b9d45f7047bca3965358f4d399937e544f55ac7a924d5a3"
+  },
+  {
+    "path": "/usr/lib/x86_64-linux-gnu/libpthread.a",
+    "sha256": "f0a17a43c74d2fe5474fa2fd29c8f14799e777d7d75a2cc4d11c20a6e7b161c5"
+  }
+]

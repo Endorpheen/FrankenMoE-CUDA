@@ -1,0 +1,197 @@
+{
+  "status": "PASS_REAL_GGML_QWEN_COMMON_CONTROLLER_ALL_FIVE_COLD_BANK_FUSED",
+  "runs": {
+    "native": {
+      "graph_cases": 290,
+      "values": 335780,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    },
+    "off": {
+      "graph_cases": 290,
+      "values": 335780,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    },
+    "on": {
+      "graph_cases": 290,
+      "values": 335780,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    }
+  },
+  "control_witness": {
+    "native": {},
+    "off": {
+      "entries": 0,
+      "quant_blocks": 0,
+      "grouped_routes": 0,
+      "chunks": 0,
+      "fused_chunks": 0,
+      "tiled_delegations": 0,
+      "layout_bytes": 0,
+      "enabled": 0,
+      "apex_q4_calls": 0,
+      "apex_q6_calls": 0
+    },
+    "on": {
+      "entries": 990,
+      "quant_blocks": 156240,
+      "grouped_routes": 16740,
+      "chunks": 3258,
+      "fused_chunks": 24,
+      "tiled_delegations": 48,
+      "layout_bytes": 34937392,
+      "enabled": 1,
+      "apex_q4_calls": 0,
+      "apex_q6_calls": 0
+    }
+  },
+  "math_witness": {
+    "native": [],
+    "off": [
+      {
+        "component": "cpu",
+        "mode": 1,
+        "kind": 4,
+        "calls": 24
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 0,
+        "calls": 666
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 1,
+        "calls": 666
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 2,
+        "calls": 666
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 3,
+        "calls": 642
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 4,
+        "calls": 618
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 0,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 1,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 2,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 3,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 4,
+        "calls": 16
+      }
+    ],
+    "on": [
+      {
+        "component": "cpu",
+        "mode": 1,
+        "kind": 4,
+        "calls": 24
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 0,
+        "calls": 666
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 1,
+        "calls": 666
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 2,
+        "calls": 666
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 3,
+        "calls": 642
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 4,
+        "calls": 618
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 0,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 1,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 2,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 3,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 4,
+        "calls": 16
+      }
+    ]
+  },
+  "native_fused_stats_identical": "IQ2S_FUSED_STATS groups[c1,c2,c3,c4+]=12,12,12,36 fused_groups=0,12,12,0 tokens[c1,c2,c3,c4+]=12,12,12,36 iq2s_groups_seen=72 window_opens=6 fused_dispatches=24",
+  "all_bytes_equal_original_and_previous": true,
+  "output_sha256": "9c31c19c0ab2723ada2df5ce0f8c6c71d8b5466909d5435cd8f02b211f75527f",
+  "bytes_compared": 1345440,
+  "preserved": "Same EXP139 math/common quant, native fallback/tiled/window/ready hook; real IDs and bank slots separated",
+  "real_model": "pending",
+  "production_changed": false,
+  "compiler_changed": false
+}

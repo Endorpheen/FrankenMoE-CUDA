@@ -1,0 +1,17 @@
+FG139_ACT kind=0 calls=2260629 blocks=12334980 enabled=1
+FG139_ACT kind=1 calls=1570762 blocks=4286980 enabled=1
+FG139_MATH component=cpu mode=1 kind=4 calls=4120 rows=34608 dot_blocks=346080
+FG139_MATH component=cpu mode=3 kind=0 calls=76632 rows=4711014 dot_blocks=47110140
+FG139_MATH component=cpu mode=3 kind=1 calls=79207 rows=4803302 dot_blocks=96066040
+FG139_MATH component=cpu mode=3 kind=2 calls=76941 rows=4757158 dot_blocks=95143160
+FG139_MATH component=cpu mode=3 kind=3 calls=74160 rows=4612134 dot_blocks=46121340
+FG139_MATH component=cpu mode=3 kind=4 calls=85387 rows=4839970 dot_blocks=48399700
+FG139_MATH component=base mode=2 kind=0 calls=1648 rows=1648 dot_blocks=7828
+FG139_MATH component=base mode=2 kind=1 calls=1648 rows=1648 dot_blocks=11948
+FG139_MATH component=base mode=2 kind=2 calls=1648 rows=1648 dot_blocks=11948
+FG139_MATH component=base mode=2 kind=3 calls=1648 rows=1648 dot_blocks=7828
+FG139_MATH component=base mode=2 kind=4 calls=1648 rows=1648 dot_blocks=7828
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=0 shadow_checks=0 digest=0
+FG_SELFHOST_ALLOC enabled=0 calls=0 reuse_hits=0 shadow_checks=0 digest=0
