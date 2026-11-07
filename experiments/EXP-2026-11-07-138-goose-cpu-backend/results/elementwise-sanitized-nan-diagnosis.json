@@ -1,0 +1,369 @@
+{
+  "status": "DIAGNOSIS_ONLY_NOT_EXACT_PASS",
+  "counts": [
+    {
+      "mode": 0,
+      "op": 22,
+      "format": 0,
+      "classification": "OTHER_MISMATCH",
+      "values": 1560
+    },
+    {
+      "mode": 0,
+      "op": 22,
+      "format": 1,
+      "classification": "OTHER_MISMATCH",
+      "values": 1
+    },
+    {
+      "mode": 0,
+      "op": 22,
+      "format": 3,
+      "classification": "OTHER_MISMATCH",
+      "values": 1248
+    },
+    {
+      "mode": 0,
+      "op": 22,
+      "format": 4,
+      "classification": "OTHER_MISMATCH",
+      "values": 1091
+    },
+    {
+      "mode": 1,
+      "op": 0,
+      "format": 0,
+      "classification": "both_nan_different_bits",
+      "values": 2
+    },
+    {
+      "mode": 1,
+      "op": 0,
+      "format": 5,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    },
+    {
+      "mode": 1,
+      "op": 0,
+      "format": 6,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    },
+    {
+      "mode": 1,
+      "op": 2,
+      "format": 0,
+      "classification": "both_nan_different_bits",
+      "values": 2
+    },
+    {
+      "mode": 1,
+      "op": 2,
+      "format": 5,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    },
+    {
+      "mode": 1,
+      "op": 2,
+      "format": 6,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    }
+  ],
+  "total_changed_values": 4056,
+  "non_nan_mismatches": 3900,
+  "examples": [
+    {
+      "case": {
+        "case": 880,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 0,
+        "width": 1,
+        "threads": 2,
+        "inplace": 0,
+        "bytes": 48
+      },
+      "byte_in_tensor": 0,
+      "kind": 0,
+      "expected": "0x435cc6c6",
+      "actual": "0x435cc6c7",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 880,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 0,
+        "width": 1,
+        "threads": 2,
+        "inplace": 0,
+        "bytes": 48
+      },
+      "byte_in_tensor": 12,
+      "kind": 0,
+      "expected": "0x41433532",
+      "actual": "0x41433533",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 880,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 0,
+        "width": 1,
+        "threads": 2,
+        "inplace": 0,
+        "bytes": 48
+      },
+      "byte_in_tensor": 24,
+      "kind": 0,
+      "expected": "0x41194167",
+      "actual": "0x41194168",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 880,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 0,
+        "width": 1,
+        "threads": 2,
+        "inplace": 0,
+        "bytes": 48
+      },
+      "byte_in_tensor": 32,
+      "kind": 0,
+      "expected": "0x40eb5e0e",
+      "actual": "0x40eb5e0d",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 880,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 0,
+        "width": 1,
+        "threads": 2,
+        "inplace": 0,
+        "bytes": 48
+      },
+      "byte_in_tensor": 36,
+      "kind": 0,
+      "expected": "0x431a1a54",
+      "actual": "0x431a1a53",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 880,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 0,
+        "width": 1,
+        "threads": 2,
+        "inplace": 0,
+        "bytes": 48
+      },
+      "byte_in_tensor": 40,
+      "kind": 0,
+      "expected": "0x4171f3d9",
+      "actual": "0x4171f3da",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 0,
+      "kind": 0,
+      "expected": "0x40ed2ba5",
+      "actual": "0x40ed2ba4",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 8,
+      "kind": 0,
+      "expected": "0x42cd6ee7",
+      "actual": "0x42cd6ee6",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 16,
+      "kind": 0,
+      "expected": "0x415d50ef",
+      "actual": "0x415d50ee",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 44,
+      "kind": 0,
+      "expected": "0x3de8faae",
+      "actual": "0x3de8fab0",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 60,
+      "kind": 0,
+      "expected": "0x409dbd34",
+      "actual": "0x409dbd35",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 72,
+      "kind": 0,
+      "expected": "0x4378e19c",
+      "actual": "0x4378e19b",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 92,
+      "kind": 0,
+      "expected": "0x40e26c8f",
+      "actual": "0x40e26c90",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 100,
+      "kind": 0,
+      "expected": "0x43d080a9",
+      "actual": "0x43d080aa",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 112,
+      "kind": 0,
+      "expected": "0x43bed306",
+      "actual": "0x43bed305",
+      "classification": "OTHER_MISMATCH"
+    },
+    {
+      "case": {
+        "case": 881,
+        "mode": 0,
+        "op": 22,
+        "format": 0,
+        "profile": 1,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 336
+      },
+      "byte_in_tensor": 116,
+      "kind": 0,
+      "expected": "0x435e323d",
+      "actual": "0x435e323e",
+      "classification": "OTHER_MISMATCH"
+    }
+  ],
+  "original_exact_failure_preserved": true,
+  "producer_sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f"
+}

@@ -1,0 +1,52 @@
+{
+  "status": "PASS_REAL_GGML_CPU_MOE_58_GRAPHS",
+  "all_output_bytes_equal": true,
+  "bytes_compared": 1346320,
+  "output_sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+  "runs": {
+    "off": {
+      "graphs": {
+        "graph_cases": 58,
+        "values": 336464,
+        "actual_ggml_compute": true
+      },
+      "counters": {
+        "entries": 0,
+        "quant_calls": 0,
+        "blocks": 0,
+        "q4_tiles": 0,
+        "q6_tiles": 0,
+        "native_tiled_delegations": 0,
+        "claims": 0,
+        "mapping_checks": 0,
+        "enabled": 0
+      }
+    },
+    "on": {
+      "graphs": {
+        "graph_cases": 58,
+        "values": 336464,
+        "actual_ggml_compute": true
+      },
+      "counters": {
+        "entries": 218,
+        "quant_calls": 34802,
+        "blocks": 34786,
+        "q4_tiles": 3112,
+        "q6_tiles": 3112,
+        "native_tiled_delegations": 1122,
+        "claims": 1040,
+        "mapping_checks": 9808,
+        "enabled": 1
+      }
+    }
+  },
+  "coverage": "Q4_K/Q6_K, widths256/512/2048, source broadcast1/2/4, tokens1/7/128, threads1/2/8 plus dynamic work claims. Existing profitable native tiled path explicitly delegated.",
+  "not_yet_verified": "Noncontiguous/prequantized source variants and actual Apex.",
+  "producer": {
+    "stage": "self-hosted EXP299 v2 bound Stage3",
+    "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "receipt": "bootstrap-exp299-v2-receipt.json",
+    "applies_to": "new generation only"
+  }
+}

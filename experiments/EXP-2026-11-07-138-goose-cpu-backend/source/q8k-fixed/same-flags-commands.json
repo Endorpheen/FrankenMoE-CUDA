@@ -1,0 +1,9 @@
+{
+  "note": "Build and execute only after current model requests complete. Frozen runtime native reference remains unchanged.",
+  "flags": [
+    "-O3",
+    "-march=native",
+    "-ffp-contract=off",
+    "-fPIC"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "scope": "Full binary/unary modules plus checked F32x8 binary path for aligned logical row/block offsets and contiguous/broadcast inputs. Arbitrary layouts and F16/BF16 remain in Goose scalar path, not native fallback.",
+  "producer_sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f",
+  "compiler_change": false,
+  "evidence": "Scalar counter-free large F32 ADD42.6us versus native4.2us; DIV46.05us versus native6.2us. All ordinary values exact; NaN payload limitation retained."
+}

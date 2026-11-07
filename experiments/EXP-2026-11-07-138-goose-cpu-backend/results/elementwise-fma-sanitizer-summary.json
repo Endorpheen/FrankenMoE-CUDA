@@ -1,0 +1,34 @@
+{
+  "status": "PASS_SCOPED_ASAN_UBSAN_LSAN_WITH_RECORDED_NAN_VARIATION",
+  "runs": {
+    "off": {
+      "graph_cases": 1144,
+      "values": 1019304,
+      "actual_ggml_compute": true,
+      "input_preserved_when_out_of_place": true,
+      "canaries_preserved": true
+    },
+    "on": {
+      "graph_cases": 1144,
+      "values": 1019304,
+      "actual_ggml_compute": true,
+      "input_preserved_when_out_of_place": true,
+      "canaries_preserved": true
+    }
+  },
+  "comparison": {
+    "off": {
+      "changed_nan_payloads": 0,
+      "other_mismatches": 0,
+      "examples": []
+    },
+    "on": {
+      "changed_nan_payloads": 156,
+      "other_mismatches": 0,
+      "examples": []
+    }
+  },
+  "instrumented": "New entire Goose binary/unary modules and new C++ metadata bridge, plus fixture",
+  "uninstrumented": "Inherited CPU core/other compute modules, native rollback objects and base library",
+  "limitations": "Not TSan or complete backend ownership/security audit. Strict NaN payload equality remains unqualified."
+}

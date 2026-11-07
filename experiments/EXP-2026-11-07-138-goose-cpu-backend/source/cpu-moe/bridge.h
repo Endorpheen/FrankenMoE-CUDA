@@ -1,0 +1,48 @@
+#pragma once
+#include <stdint.h>
+struct fg_moe_plan {
+int64_t context;
+int64_t ith;
+int64_t nth;
+int64_t experts;
+int64_t ids_per_token;
+int64_t tokens;
+int64_t need_quant;
+int64_t block_size;
+int64_t block_bytes;
+int64_t ne00;
+int64_t ne01;
+int64_t ne10;
+int64_t ne11;
+int64_t ne12;
+int64_t ne13;
+int64_t nb01;
+int64_t nb02;
+int64_t nb10;
+int64_t nb11;
+int64_t nb12;
+int64_t nb13;
+int64_t dst_nb1;
+int64_t dst_nb2;
+int64_t row_size;
+int64_t source_contiguous;
+int64_t x_base;
+int64_t y_base;
+int64_t w_base;
+int64_t dst_base;
+int64_t disable_chunking;
+int64_t weight_row_bytes;
+};
+struct mmid_row_mapping;
+void fg_selfhost_cpu_moe(const struct fg_moe_plan*,int64_t*,struct mmid_row_mapping*,int64_t);
+void fg_selfhost_quant_q8k(const float*,void*,int64_t);
+void fg_selfhost_q4_tile(int,int,float*,const void*,const void*);
+void fg_selfhost_q6_tile(int,int,float*,const void*,const void*);
+void fg_moe_begin(int64_t);
+void fg_moe_quant(int64_t,int64_t,int64_t,int64_t);
+int32_t fg_moe_read_id(int64_t,int64_t,int64_t);
+void fg_moe_reset(int64_t,int64_t,int32_t);
+void fg_moe_barrier(int64_t);
+uint8_t fg_moe_try_tiled(int64_t,int64_t,int64_t);
+void fg_moe_matrix(int64_t,int64_t,int64_t,int64_t,int64_t,int64_t);
+int32_t fg_moe_claim(int64_t,int64_t);

@@ -1,0 +1,17 @@
+{
+  "status": "PASS_ASAN_UBSAN_LSAN_Q6_EFFICIENT",
+  "runs": {
+    "off": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    }
+  },
+  "all_bytes_equal_native": true,
+  "scope": "New Goose units/controller and modified ggml-cpu.c; inherited tiled/repack/base objects uninstrumented. No full security or race-free claim."
+}

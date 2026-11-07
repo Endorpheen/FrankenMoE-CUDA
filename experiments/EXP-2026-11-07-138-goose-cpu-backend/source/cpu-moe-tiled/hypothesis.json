@@ -1,0 +1,24 @@
+{
+  "target": "Complete Q4_K/Q6_K CPU MoE tiled fast path in Goose, including unpack, activation bias, weight correction, 16x16 SIMD compute, K accumulation, narrow/standard windows, worker partition and scattered writeback.",
+  "native_sources": {
+    "tiled.cpp": "a5d92ce8f617696778e225de6658180649143fec3792c5cfef84170641f2d06e",
+    "tiled-kernel.cpp": "1d311e25a1da81029ff3644505e1c63b5f65711ad44edb10ac20d1349f8ba5f1",
+    "tiled-kernel.h": "0d729f5a6b4cd1584bd181fbc882e39f64fd41bf66ac1a9c009025d2b09ff23e"
+  },
+  "producer": {
+    "stage": "self-hosted EXP299 v4 shared Stage3",
+    "sha256": "2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b",
+    "receipt": "receipt-2fa443c95afc.json",
+    "applies_to": "new generation only; existing successful artifacts keep recorded producers"
+  },
+  "invariants": [
+    "threshold8 unless forced",
+    "64 weight rows per worker group",
+    "256 activation rows per window",
+    "16x16 microtiles",
+    "512KiB borrowed per-thread workspace",
+    "native original retained behind disable flag"
+  ],
+  "validation": "Real GGML graphs including tails and narrow paths, ASan/UBSan/LSan, actual Apex CPU-tiled execution and unchanged normal profile; all performance preliminary until quiet pairs",
+  "production_changed": false
+}

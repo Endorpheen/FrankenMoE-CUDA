@@ -1,5 +1,11 @@
 # Experiment log
 
+## EXP-2026-11-07-138: Whole Goose CPU compute modules
+
+- Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
+- Production verdict: REJECTED for promotion; controlled performance and strict NaN payload compatibility remain open. Research continues, working runtime unchanged.
+- [Sources, negative results, tests and local reproduction](EXP-2026-11-07-138-goose-cpu-backend/README.md).
+
 ## EXP-2026-10-31-133: CPU MoE attribution and reuse bound
 
 - Status: DIAGNOSTIC_COMPLETE, no promotion. Four serial ordinary/MTP1

@@ -1,0 +1,6 @@
+[
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/fgoose-selfhosted",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/generated/cpu-moe.c",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-moe/kernel.goose"
+]

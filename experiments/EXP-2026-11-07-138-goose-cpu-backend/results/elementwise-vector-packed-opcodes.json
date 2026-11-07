@@ -1,0 +1,10 @@
+{
+  "object_sha256": "0a500f3086323c8ebe5c3bdd5ec3d506e039f32f925ffb33345e4d59e9d1d784",
+  "packed_fp_opcode_occurrences": {
+    "vaddps": 1,
+    "vsubps": 2,
+    "vmulps": 1,
+    "vdivps": 2
+  },
+  "scope": "Whole generated elementwise object; occurrence counts alone do not attribute performance or prove coverage"
+}

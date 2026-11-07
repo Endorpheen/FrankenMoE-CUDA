@@ -1,0 +1,6 @@
+[
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-81d6d066a675",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/generated/elementwise-fma.c",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/elementwise-fma/kernel.goose"
+]

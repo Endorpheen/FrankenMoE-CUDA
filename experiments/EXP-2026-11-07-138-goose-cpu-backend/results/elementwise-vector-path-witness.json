@@ -1,0 +1,11 @@
+{
+  "graph_cases": 1225,
+  "vector_calls": 196,
+  "vector_values": 396416,
+  "expected_from_corpus_guards": {
+    "calls": 196,
+    "values": 396416
+  },
+  "canonical_byte_equal": true,
+  "trace_is_separate_from_timed_library": true
+}

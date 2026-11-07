@@ -1,0 +1,219 @@
+{
+  "status": "PASS_REAL_APEX_COMPLETE_Q4_Q6_TILED",
+  "cases": {
+    "probe": {
+      "equal": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      },
+      "request_equal": true,
+      "runs": {
+        "off": {
+          "name": "moe-cpu-tiled-pure-off-probe",
+          "wall_seconds": 1.602382285054773,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 128,
+            "prompt_ms": 1302.225,
+            "prompt_per_token_ms": 10.1736328125,
+            "prompt_per_second": 98.29330568834112,
+            "predicted_n": 4,
+            "predicted_ms": 290.077,
+            "predicted_per_token_ms": 96.69233333333334,
+            "predicted_per_second": 10.342081585234265
+          },
+          "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+          "tokens": [
+            58558,
+            13,
+            198,
+            760
+          ],
+          "sampled_rss_peak_mib": 20669.62890625,
+          "process_hwm_mib": 20946.4609375,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 418.9921875,
+          "sampled_file_peak_mib": 20250.63671875,
+          "sampled_gpu_peak_mib": 0,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            1.392578125,
+            1.474609375,
+            1.8623046875
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        },
+        "on": {
+          "name": "moe-cpu-tiled-pure-on-probe",
+          "wall_seconds": 2.043135017971508,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 128,
+            "prompt_ms": 1769.215,
+            "prompt_per_token_ms": 13.8219921875,
+            "prompt_per_second": 72.34847093202353,
+            "predicted_n": 4,
+            "predicted_ms": 264.88,
+            "predicted_per_token_ms": 88.29333333333334,
+            "predicted_per_second": 11.325883418906676
+          },
+          "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+          "tokens": [
+            58558,
+            13,
+            198,
+            760
+          ],
+          "sampled_rss_peak_mib": 20669.62109375,
+          "process_hwm_mib": 20947.95703125,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 418.97265625,
+          "sampled_file_peak_mib": 20250.6484375,
+          "sampled_gpu_peak_mib": 0,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            6.34619140625,
+            2.9599609375,
+            2.3515625
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        }
+      }
+    },
+    "2048": {
+      "equal": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      },
+      "request_equal": true,
+      "runs": {
+        "off": {
+          "name": "moe-cpu-tiled-pure-off-2048",
+          "wall_seconds": 19.228590645012446,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 2048,
+            "prompt_ms": 17706.209,
+            "prompt_per_token_ms": 8.64560986328125,
+            "prompt_per_second": 115.66564022823859,
+            "predicted_n": 16,
+            "predicted_ms": 1517.721,
+            "predicted_per_token_ms": 101.1814,
+            "predicted_per_second": 9.88323940961481
+          },
+          "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+          "tokens": [
+            13,
+            198,
+            760,
+            18922,
+            11173,
+            1500,
+            369,
+            264,
+            1777,
+            314,
+            264,
+            10548,
+            21979,
+            6136,
+            25,
+            279
+          ],
+          "sampled_rss_peak_mib": 21038.65625,
+          "process_hwm_mib": 21038.65625,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 787.89453125,
+          "sampled_file_peak_mib": 20250.76171875,
+          "sampled_gpu_peak_mib": 0,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            6.33203125,
+            2.60107421875,
+            2.2197265625
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        },
+        "on": {
+          "name": "moe-cpu-tiled-pure-on-2048",
+          "wall_seconds": 26.29538148001302,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 2048,
+            "prompt_ms": 24755.87,
+            "prompt_per_token_ms": 12.0878271484375,
+            "prompt_per_second": 82.72785404027408,
+            "predicted_n": 16,
+            "predicted_ms": 1529.36,
+            "predicted_per_token_ms": 101.95733333333332,
+            "predicted_per_second": 9.808024271590732
+          },
+          "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+          "tokens": [
+            13,
+            198,
+            760,
+            18922,
+            11173,
+            1500,
+            369,
+            264,
+            1777,
+            314,
+            264,
+            10548,
+            21979,
+            6136,
+            25,
+            279
+          ],
+          "sampled_rss_peak_mib": 21036.89453125,
+          "process_hwm_mib": 21036.89453125,
+          "process_swap_peak_kib": 0,
+          "sampled_anon_peak_mib": 786.12109375,
+          "sampled_file_peak_mib": 20250.7734375,
+          "sampled_gpu_peak_mib": 0,
+          "system_swapout_pages_delta": 0,
+          "loadavg": [
+            8.2294921875,
+            3.76611328125,
+            2.64208984375
+          ],
+          "preliminary": true,
+          "concurrent_download": false,
+          "controlled_quiet_run": false
+        }
+      }
+    }
+  },
+  "witness": {
+    "off": {
+      "q4_microtiles": 0,
+      "q6_microtiles": 0,
+      "native_tiled_delegations": 313008
+    },
+    "on": {
+      "q4_microtiles": 28507136,
+      "q6_microtiles": 5521408,
+      "native_tiled_delegations": 0
+    }
+  },
+  "trace_enabled": true,
+  "preliminary": true,
+  "performance_acceptance": false,
+  "profile": "CPU only, ngl0, no repack, no op/KV offload, legacy Goose graph/allocation disabled, identical Goose MoE controller in both arms",
+  "producer_sha256": "2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b",
+  "limitations": [
+    "Not the optimized CPU/GPU production profile",
+    "Other quantization formats and CPU repack remain native",
+    "Mixed CPU/CUDA placement failure remains undiagnosed; original failed profile preserved"
+  ]
+}

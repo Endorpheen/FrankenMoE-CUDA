@@ -1,0 +1,6 @@
+{
+  "scope": "Replace entire binary-ops.cpp and unary-ops.cpp implementation for all existing supported types with Goose arithmetic, conversions, broadcast/row addressing and worker ranges. Keep native objects for rollback only.",
+  "producer_sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f",
+  "production_change": false,
+  "performance": "Unmeasured; exact correctness and real Apex gates before claims"
+}

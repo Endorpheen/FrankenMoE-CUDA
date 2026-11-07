@@ -1,0 +1,6 @@
+{
+  "hypothesis": "Use eight explicit SIMD accumulators instead of an indexed aggregate and write the FMA epilogue in the microtile, allowing register residency and avoiding aggregate ABI calls. Retain all bounds and exact arithmetic.",
+  "baseline": "cpu-moe-tiled-shaped",
+  "production_change": false,
+  "producer_sha256": "2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b"
+}

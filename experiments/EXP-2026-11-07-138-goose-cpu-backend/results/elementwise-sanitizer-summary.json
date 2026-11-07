@@ -1,0 +1,163 @@
+{
+  "status": "SANITIZERS_PASS_NUMERICAL_COMPARISON_PENDING",
+  "runs": {
+    "off": {
+      "graph_cases": 1144,
+      "values": 1019304,
+      "actual_ggml_compute": true,
+      "input_preserved_when_out_of_place": true,
+      "canaries_preserved": true
+    },
+    "on": {
+      "graph_cases": 1144,
+      "values": 1019304,
+      "actual_ggml_compute": true,
+      "input_preserved_when_out_of_place": true,
+      "canaries_preserved": true
+    }
+  },
+  "comparison": {
+    "off": {
+      "changed_nan_payloads": 0,
+      "other_mismatches": 0,
+      "examples": []
+    },
+    "on": {
+      "changed_nan_payloads": 156,
+      "other_mismatches": 3900,
+      "examples": [
+        {
+          "case": {
+            "case": 880,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 0,
+            "width": 1,
+            "threads": 2,
+            "inplace": 0,
+            "bytes": 48
+          },
+          "byte": 0,
+          "expected": "0x435cc6c6",
+          "actual": "0x435cc6c7"
+        },
+        {
+          "case": {
+            "case": 880,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 0,
+            "width": 1,
+            "threads": 2,
+            "inplace": 0,
+            "bytes": 48
+          },
+          "byte": 12,
+          "expected": "0x41433532",
+          "actual": "0x41433533"
+        },
+        {
+          "case": {
+            "case": 880,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 0,
+            "width": 1,
+            "threads": 2,
+            "inplace": 0,
+            "bytes": 48
+          },
+          "byte": 24,
+          "expected": "0x41194167",
+          "actual": "0x41194168"
+        },
+        {
+          "case": {
+            "case": 880,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 0,
+            "width": 1,
+            "threads": 2,
+            "inplace": 0,
+            "bytes": 48
+          },
+          "byte": 32,
+          "expected": "0x40eb5e0e",
+          "actual": "0x40eb5e0d"
+        },
+        {
+          "case": {
+            "case": 880,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 0,
+            "width": 1,
+            "threads": 2,
+            "inplace": 0,
+            "bytes": 48
+          },
+          "byte": 36,
+          "expected": "0x431a1a54",
+          "actual": "0x431a1a53"
+        },
+        {
+          "case": {
+            "case": 880,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 0,
+            "width": 1,
+            "threads": 2,
+            "inplace": 0,
+            "bytes": 48
+          },
+          "byte": 40,
+          "expected": "0x4171f3d9",
+          "actual": "0x4171f3da"
+        },
+        {
+          "case": {
+            "case": 881,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 1,
+            "width": 7,
+            "threads": 8,
+            "inplace": 0,
+            "bytes": 336
+          },
+          "byte": 0,
+          "expected": "0x40ed2ba5",
+          "actual": "0x40ed2ba4"
+        },
+        {
+          "case": {
+            "case": 881,
+            "mode": 0,
+            "op": 22,
+            "format": 0,
+            "profile": 1,
+            "width": 7,
+            "threads": 8,
+            "inplace": 0,
+            "bytes": 336
+          },
+          "byte": 8,
+          "expected": "0x42cd6ee7",
+          "actual": "0x42cd6ee6"
+        }
+      ]
+    }
+  },
+  "instrumented": "New entire Goose binary/unary modules and new C++ metadata bridge, plus fixture",
+  "uninstrumented": "Inherited CPU core/other compute modules, native rollback objects and base library",
+  "limitations": "Not TSan or complete backend ownership/security audit. Strict NaN payload equality remains unqualified."
+}

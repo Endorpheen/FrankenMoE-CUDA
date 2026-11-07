@@ -1,0 +1,16 @@
+{
+  "target": "Whole CPU MoE compute path: Q8_K activation quantization, Q4_K/Q6_K math, expert row grouping and thread work management; then CUDA expansion.",
+  "baseline": "Exact frozen EXP107 CPU source and objects, existing optimized tiled prefill must remain available.",
+  "apex_expert_tensors": {
+    "Q4_K": 102,
+    "Q6_K": 21
+  },
+  "scope_gates": "Record native tiled delegation explicitly until that math path is ported; never claim full CPU replacement from Q4 fallback alone. Preserve original full MoE operation behind disable flag.",
+  "producer": {
+    "stage": "self-hosted EXP299 v2 bound Stage3",
+    "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "receipt": "bootstrap-exp299-v2-receipt.json",
+    "applies_to": "new generation only"
+  },
+  "production_changed": false
+}

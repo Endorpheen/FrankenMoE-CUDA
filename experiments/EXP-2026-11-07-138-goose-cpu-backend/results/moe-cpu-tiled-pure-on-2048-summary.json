@@ -1,0 +1,49 @@
+{
+  "name": "moe-cpu-tiled-pure-on-2048",
+  "wall_seconds": 26.29538148001302,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 2048,
+    "prompt_ms": 24755.87,
+    "prompt_per_token_ms": 12.0878271484375,
+    "prompt_per_second": 82.72785404027408,
+    "predicted_n": 16,
+    "predicted_ms": 1529.36,
+    "predicted_per_token_ms": 101.95733333333332,
+    "predicted_per_second": 9.808024271590732
+  },
+  "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+  "tokens": [
+    13,
+    198,
+    760,
+    18922,
+    11173,
+    1500,
+    369,
+    264,
+    1777,
+    314,
+    264,
+    10548,
+    21979,
+    6136,
+    25,
+    279
+  ],
+  "sampled_rss_peak_mib": 21036.89453125,
+  "process_hwm_mib": 21036.89453125,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 786.12109375,
+  "sampled_file_peak_mib": 20250.7734375,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    8.2294921875,
+    3.76611328125,
+    2.64208984375
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

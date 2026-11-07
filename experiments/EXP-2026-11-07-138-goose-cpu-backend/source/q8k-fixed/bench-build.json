@@ -1,0 +1,15 @@
+[
+  "/usr/bin/gcc",
+  "-O3",
+  "-march=native",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/q8k-fixed/benchmark.c",
+  "-L/home/end0/AI/LlamaServer/franken-goose-live-20261107/build",
+  "-L/home/end0/AI/LlamaServer/franken-goose-live-20261107/run",
+  "-lgoose-q8kv2-quant",
+  "-lggml-cpu",
+  "-lggml-base",
+  "-lm",
+  "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-live-20261107/build:/home/end0/AI/LlamaServer/franken-goose-live-20261107/run",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/build/q8kv2-quant-bench"
+]

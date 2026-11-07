@@ -1,0 +1,13 @@
+[
+  "/usr/bin/gcc",
+  "-O3",
+  "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-moe-tiled/fixture-expanded.c",
+  "-L/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run",
+  "-lggml-cpu",
+  "-lggml-base",
+  "-lm",
+  "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/build/tiled-expanded-fixture"
+]

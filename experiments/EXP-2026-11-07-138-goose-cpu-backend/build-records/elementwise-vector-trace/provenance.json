@@ -1,0 +1,6 @@
+{
+  "canonical_goose_sha256": "d2ff24be97ab3ebf53190a769291aa29ffae3ac13f6f3fe2a2c721255eec86b9",
+  "instrumented_goose_sha256": "f1f59f344757e9171dcad66eb2514fad17ba3af5ca1adc2bc08d11d299aaf3a4",
+  "difference": "Only post-compute vector_witness calls plus primitive declaration; math and selection unchanged",
+  "binary_sha256": "594a30796b438fb32f1aec74d502063af7b2474a184becc8ccc711064c46221d"
+}

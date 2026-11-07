@@ -1,0 +1,21 @@
+{
+  "self_hosted_only": true,
+  "producers": [
+    {
+      "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+      "local_frozen_binary": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-5b95595ede45",
+      "included": false
+    },
+    {
+      "sha256": "2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b",
+      "local_frozen_binary": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-2fa443c95afc",
+      "included": false
+    },
+    {
+      "sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f",
+      "local_frozen_binary": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-81d6d066a675",
+      "included": false
+    }
+  ],
+  "compiler_sources_changed": false
+}

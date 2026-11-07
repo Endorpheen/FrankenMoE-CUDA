@@ -1,0 +1,23 @@
+{
+  "status": "PASS_58_REAL_GGML_GRAPHS_Q6_EFFICIENT",
+  "runs": {
+    "off": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    }
+  },
+  "all_bytes_equal_native": true,
+  "output_sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+  "source_producer": {
+    "path": "/home/end0/AI/Fried-Goose/.cache/exp299-vardef-state/bootstrap-current-v4-shared/stage3",
+    "sha256": "2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b",
+    "status": "PASS_CURRENT_VARDEF_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C"
+  },
+  "change": "Hoist two Q6 scales outside fixed SIMD lane loop; controller, Q4/Q8, native fallback and parameters unchanged"
+}
