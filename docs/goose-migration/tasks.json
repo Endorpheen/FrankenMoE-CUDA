@@ -680,12 +680,12 @@
       "id": "P2-15",
       "phase": "P2",
       "title": "Port CPU graph executor,task planning and abort paths",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cpu/ggml-cpu.c"
       ],
       "acceptance": "Entire operation dispatch,n_tasks/workspace planning,graph reuse,threadpool job lifecycle and abort status execute Goose; all operator entries traced.",
-      "evidence": "EXP143 Goose operation dispatch (96leaves),task-count/scratch policy and active OpenMP job lifecycle:960planning cases exact vs previous B1 and rollback;326graph/status cases pass;scoped sanitizers pass. Native backend scratch providers,pool physical initialization and OS/non-OpenMP paths remain; whole-model equivalence open. EXP144 actual Apex witnesses5346Goose plans/jobs,42706worker graphs and170378dispatches;one32768/128 response matches original text/IDs/top5 exactly. Provider/physical ownership/source closure still incomplete.",
+      "evidence": "EXP149 original P2-15 acceptance closed:all101dispatcher entries/96callbacks checked with independent unchanged-native-switch oracle;960task/workspace cases exact;Goose owns graph-wide planning/tiled sizing,executor reuse/abort,OMP+pthreads job lifecycle,physical pool init/cleanup,masks,barrier/chunk/readiness/poll/pause/kickoff/NUMA/priority policy.326/66/174actual GGML/common cases pass both implementations;78OMP/81pthread real lifecycle/graph failure cases,494policy boundary cases,release+ASan/UBSan/LSan,and scoped new-control pthread TSan pass. Exactly one Apex32768/128 per mode,text/allIDs/top5 exact vs C++;new pool/job paths witnessed. Complete source boundary audit maps numerical/provider/ABI/topology adapters to other open requirements;not fullCPU/native-free/safety-superiority/speed acceptance. P1-09/P2-14 and other stage1requirements remain open. C++2918.900/29.589;OMP2646.558/28.462;pthread2669.811/26.424tok/s are preliminary single samples,not stable performance parity.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -3060,6 +3060,14 @@
     {
       "checkpoint": "EXP148 common CPU quantization/type traits batch",
       "event": "Three coherent components integrated once:nine-format encoder module,shared Q8 activation reuse and real CPU trait/MoE adapters. Latest completed self-hosted EXP301 Stage3 pinned;five inherited generated C units and four previous common output corpora byte-identical.893trait/canary/concurrent+rollback cases,841Q8special and326/66/960/174common gates pass release/sanitized. One Apex32768/128:pp2680.113,tg27.876,RSS21312.617MiB,VRAM3348MiB;all128tokens/text/top5 exact,172640Q8_K blocks. No requirements closed;P2-13 float-domain/format/ISA closure and P1-06 raw arithmetic remain open. Adopt owner instruction:target10-15related requirements per shared cycle where safe,no agents,no scope reduction."
+    },
+    {
+      "checkpoint": "Owner13-stage campaign regroup",
+      "event": "Regroup all148remaining original requirements exactly once into13dependency-checked groups. Prior12DONE retained;denominator160unchanged. Stage1CPU control/ownership5requirements;stage2fullCPU math/removal19;subsequentCUDA,GGML,KV/model,GGUF,server,infrastructure,Apexclosure,Qwen,othercompatibility and final universal audit. Group sizes differ because critical closure dependencies cannot be moved earlier. Current EXP149 targets entire P2-15 within stage1;an experiment/module alone is not a completed stage. Final100percent remains unproven until all original contracts and actual system performance/safety gates pass."
+    },
+    {
+      "checkpoint": "EXP149 entire CPU graph/job/pool control contract",
+      "event": "Close original P2-15 after complete default-path source audit,all101dispatcher entries versus independent native oracle,960planning cases,OMP+pthreads real lifecycle and injected failures,494mask/NUMA/priority/wrap cases,shared actual GGML corpus,ASan/UBSan/LSan and scoped pthread TSan. Two fixed Apex requests:OMP2646.558/28.462,pthread2669.811/26.424tok/s,text/all128IDs/top5 exact;memory/trace preserved. Counts13DONE/160,147left,stage1of13has1/5closed. Other kernel/provider/ABI/memory/architecture requirements remain open. Record owner intermediate >3000pp/>30tg target with repeated paired fresh-C++ confirmation;not reached and no stability/parity claim."
     }
   ],
   "batches": [
@@ -3334,13 +3342,13 @@
     "unverified_completion_forbidden": true
   },
   "active_candidate": {
-    "experiment": "EXP148",
-    "root": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107",
-    "source": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/source/cpu-backend",
-    "run": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/variants/cpu-backend/run",
-    "status": "Selected functional/safety pass;full CPU and speed parity remain open",
-    "next_batch": "Remaining common CPU quantized raw/repacked/dense math,conversion/type traits and expert workspace ownership;target10-15related requirements where safe",
-    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107",
+    "experiment": "EXP149",
+    "root": "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107",
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/source/cpu-backend",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/run",
+    "status": "P2-15functional control closed;stage1 still incomplete;OpenMP primary,pthread checked alternative;speed parity/3000/30unproven",
+    "next_batch": "Finish stage1P1-08/P1-09/P1-10/P2-14coherently;do not call stage1complete before all5original contracts DONE",
+    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107",
     "preserved_exp146": "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/reference-exp146"
   },
   "batch_execution_policy": {
@@ -3366,5 +3374,337 @@
       "P2-16"
     ],
     "gate": "Do not close deletion/whole-backend/architecture tasks before all prerequisites are proved;separate high-risk/critical dependency gates."
+  },
+  "campaign_13": {
+    "schema": 1,
+    "baseline_commit": "3e901fe70b6b926f12259d5b735e80fe00fdb90c",
+    "baseline_done_ids": [
+      "P0-01",
+      "P0-02",
+      "P0-03",
+      "P0-06",
+      "P1-01",
+      "P1-02",
+      "P1-03",
+      "P1-04",
+      "P1-05",
+      "P4-01",
+      "P4-02",
+      "C1-01"
+    ],
+    "remaining_at_regroup": 148,
+    "target_stages": 13,
+    "current_stage": 1,
+    "prior_completed_requirements": 12,
+    "scope": "All160original requirements unchanged;13logical remaining implementation groups,not13experiment numbers or a guarantee regardless of objective obstacles. Unequal counts reflect dependency/complexity;no requirement deleted or weakened.",
+    "report": "After a completed group report stageX/13,whole original requirements DONE/160,remaining and percentage;also show group closure. Percent is ledger count,not code or time.",
+    "performance": "Measure real whole-runtime Apex after major groups;retain C++ controls. Do not claim no-regression or stage/final performance acceptance from a noisy single response. Final100percent requires actual scope and no-worse-performance evidence.",
+    "stages": [
+      {
+        "number": 1,
+        "title": "CPU execution control,expert orchestration and buffer ownership",
+        "requirement_ids": [
+          "P1-08",
+          "P1-09",
+          "P1-10",
+          "P2-14",
+          "P2-15"
+        ],
+        "depends_on_stages": [],
+        "rationale": "Current pool/job work belongs here. Keep critical synchronization/OOM gates separate internally;math remains an explicit callable provider until stage2. Do not bundle deletion/CPU closure before math.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 2,
+        "title": "Complete CPU math,quantized/repacked MoE and native CPU removal",
+        "requirement_ids": [
+          "P1-06",
+          "P1-07",
+          "P1-12",
+          "P2-01",
+          "P2-02",
+          "P2-03",
+          "P2-04",
+          "P2-05",
+          "P2-06",
+          "P2-07",
+          "P2-08",
+          "P2-09",
+          "P2-10",
+          "P2-11",
+          "P2-12",
+          "P2-13",
+          "P2-16",
+          "P2-17",
+          "P2-18"
+        ],
+        "depends_on_stages": [
+          1
+        ],
+        "rationale": "One large coherent compute closure,including all operator/type/precision/ISA source inventory and CPU-only Apex. Final removal depends on all compute and prior control gates;not nineteen independent benchmark cycles.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 3,
+        "title": "Complete CUDA compute operators",
+        "requirement_ids": [
+          "P3-01",
+          "P3-02",
+          "P3-03",
+          "P3-04",
+          "P3-05",
+          "P3-06",
+          "P3-07",
+          "P3-08",
+          "P3-09",
+          "P3-10",
+          "P3-11",
+          "P3-12",
+          "P3-13",
+          "P3-14",
+          "P3-15"
+        ],
+        "depends_on_stages": [
+          2
+        ],
+        "rationale": "Elementwise,quantization,GEMV/GEMM,attention,recurrent/image/training share codegen and one integrated GPU gate. Preserve per-component memory/error guards.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 4,
+        "title": "CUDA host ownership,device abstraction and CUDA native removal",
+        "requirement_ids": [
+          "P3-16",
+          "P3-17",
+          "P3-19",
+          "P3-20",
+          "P4-07",
+          "P4-08"
+        ],
+        "depends_on_stages": [
+          3
+        ],
+        "rationale": "GPU lifetime/transfers/registry form one host subsystem. Close CUDA only after stage3 and actual async/failure validation.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 5,
+        "title": "GGML tensor,graph,allocator and unified scheduler",
+        "requirement_ids": [
+          "P4-03",
+          "P4-04",
+          "P4-05",
+          "P4-06",
+          "P4-09",
+          "P4-10",
+          "P4-11",
+          "P4-12",
+          "P4-13",
+          "P4-14",
+          "P4-15",
+          "P4-16"
+        ],
+        "depends_on_stages": [
+          4
+        ],
+        "rationale": "Tensor/graph invariants,allocator reuse and cross-device schedule have critical internal dependency gates;one common lifecycle integration,not independent architecture rewrites.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 6,
+        "title": "KV,recurrent/session memory and complete shared Apex model runtime",
+        "requirement_ids": [
+          "P5-01",
+          "P5-02",
+          "P5-04",
+          "P5-05",
+          "P5-06",
+          "P5-07",
+          "P5-08",
+          "P5-09",
+          "P5-10",
+          "P6-01",
+          "P6-02",
+          "P6-03",
+          "P6-04",
+          "P6-07",
+          "P6-08",
+          "P6-09",
+          "P6-10",
+          "P6-12"
+        ],
+        "depends_on_stages": [
+          5
+        ],
+        "rationale": "Memory/context/graph-builder/batching/sampling share the same model lifecycle. Preserve source coverage of each component and complete compatibility later.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 7,
+        "title": "GGUF,model loader,tokenizer and common text infrastructure",
+        "requirement_ids": [
+          "P7-01",
+          "P7-02",
+          "P7-03",
+          "P7-04",
+          "P7-05",
+          "P7-06",
+          "P7-07",
+          "P7-08",
+          "P7-09",
+          "P7-10",
+          "P7-11",
+          "P7-12"
+        ],
+        "depends_on_stages": [
+          6
+        ],
+        "rationale": "Use one parser/loader/tokenizer ownership contract and combined malformed-input/text/model gate.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 8,
+        "title": "Complete server,API,queues and application lifecycle",
+        "requirement_ids": [
+          "P8-01",
+          "P8-02",
+          "P8-03",
+          "P8-04",
+          "P8-05",
+          "P8-06",
+          "P8-07",
+          "P8-08",
+          "P8-09",
+          "P8-10",
+          "P8-11",
+          "P8-12"
+        ],
+        "depends_on_stages": [
+          7
+        ],
+        "rationale": "HTTP/SSE/slots/model management/concurrency share one server integration. Keep parsing and long-session safety subgates;remove native server only after all pass.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 9,
+        "title": "Standalone engine,tools,build,FFI and maintained infrastructure",
+        "requirement_ids": [
+          "P9-01",
+          "P9-02",
+          "P9-03",
+          "P9-04",
+          "P9-05",
+          "P9-06",
+          "P9-07",
+          "P9-08",
+          "P10-01",
+          "P10-02",
+          "P10-05",
+          "P10-06",
+          "P10-07",
+          "P10-08",
+          "P10-09",
+          "P10-11"
+        ],
+        "depends_on_stages": [
+          8
+        ],
+        "rationale": "Standalone streaming/cache and build/tool infrastructure use one canonical shared runtime;no per-tool model reload. Final residual inventory is stage10.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 10,
+        "title": "Full native-free Apex integration,inventory and rollback closure",
+        "requirement_ids": [
+          "P0-04",
+          "P0-05",
+          "P10-12",
+          "P11-01",
+          "P11-02",
+          "P11-03",
+          "P11-04",
+          "P11-05",
+          "P11-06",
+          "P11-07",
+          "P11-08"
+        ],
+        "depends_on_stages": [
+          9
+        ],
+        "rationale": "This is the actual full-Apex milestone:all prior group contracts,owned source removal,clean reproducible build,failure recovery and explicit external dependency report. No Qwen work before this gate.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 11,
+        "title": "Qwen extension in the same universal Goose runtime",
+        "requirement_ids": [
+          "P6-11",
+          "C1-02",
+          "C1-03",
+          "C1-04",
+          "C1-05",
+          "C1-06"
+        ],
+        "depends_on_stages": [
+          10
+        ],
+        "rationale": "Only after full functional Apex. Reuse shared components,include deferred MTP,protect Apex;no separate runtime branch.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 12,
+        "title": "Remaining models,tokenizers,platforms and device compatibility",
+        "requirement_ids": [
+          "P1-11",
+          "P3-18",
+          "P5-03",
+          "P6-05",
+          "P6-06",
+          "P10-03",
+          "P10-04",
+          "P10-10",
+          "C2-01",
+          "C2-02",
+          "C2-03",
+          "C2-04"
+        ],
+        "depends_on_stages": [
+          11
+        ],
+        "rationale": "Complete every retained architecture/tool/backend/ISA/multi-GPU contract. Hardware/compiler limitations remain explicit,not silently dropped.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      },
+      {
+        "number": 13,
+        "title": "Final universal closure and genuine100percent completion",
+        "requirement_ids": [
+          "F1-01",
+          "F1-02",
+          "F1-03",
+          "F1-04"
+        ],
+        "depends_on_stages": [
+          12
+        ],
+        "rationale": "Final source/import/ABI/model/runtime audit and unavoidable-dependency report only after every prior requirement is proved. Final whole-system performance must be no worse than comparable C++ controls;otherwise completion remains unproven.",
+        "completion": "Every listed original requirement DONE with source/link ownership,correctness,scoped memory safety,actual Goose liveness,rollback and one shared fixed-profile Apex gate. No module/format count substitutes for original requirements. No production change."
+      }
+    ]
+  },
+  "performance_milestones": {
+    "near_term": {
+      "prefill_tokens_per_second_strictly_above": 3000,
+      "decode_tokens_per_second_strictly_above": 30,
+      "status": "NOT_ACHIEVED",
+      "role": "Intermediate target only;full GOAL/campaign unchanged"
+    },
+    "confirmation": {
+      "method": "Repeated paired measurements versus a freshly rebuilt isolated C++ control with identical effective source lineage/workload/settings,hashes and comparable load;alternate order to expose drift",
+      "minimum_pairs_for_a_stability_claim": 3,
+      "report": "All raw pairs,median/range,load,RAM/VRAM,token/top5 equivalence. Do not infer stable >3000/>30 from one sample or throughput aggregate. No correctness/safety relaxation.",
+      "timing": "Use when substantiating optimization/performance claims. Current sub-target diagnostics do not require extra repeated model reloads just to confirm that the target is unmet.",
+      "production": "Fresh controls/candidates only under LlamaServer;production unchanged"
+    },
+    "final_goal": "No worse than matched C++ and complete functional/source/safety acceptance;intermediate throughput target does not replace original requirements."
   }
 }

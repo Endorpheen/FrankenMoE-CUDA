@@ -1,0 +1,1 @@
+{"status":"PASS_GOOSE_MASK_NUMA_PRIORITY_GRAPH_GENERATION_POLICY","cases":494,"scope":"Actual Goose policy with mock OS metadata/primitives;not a multi-NUMA hardware benchmark"}

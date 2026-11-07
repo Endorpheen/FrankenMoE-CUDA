@@ -245,6 +245,50 @@
       "status": "One request after combined three-component batch;uncontrolled load,no speed parity claim or tuning",
       "raw_summary": "apex-results/audit-exp148-apex-32k128-summary.json",
       "comparison": null
+    },
+    {
+      "stage": "EXP149 CPU job/pool omp",
+      "role": "candidate",
+      "checkpoint": "EXP149 over3e901fe;self-hostedf849233b999c",
+      "prefill": 2646.5577384595526,
+      "decode": 28.462062535857715,
+      "rss_mib": 21311.796875,
+      "anon_mib": 695.5546875,
+      "file_mib": 19962.42578125,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        2.5693359375,
+        1.61279296875,
+        1.81396484375
+      ],
+      "correctness": "Exact text,all128IDs and saved top5 vs original C++;Goose pool/job/executor traced",
+      "status": "One request per distinct OMP/pthread path,uncontrolled external load;not paired stable speed acceptance",
+      "raw_summary": "apex-results/audit-exp149-omp-apex-32k128-summary.json",
+      "comparison": null
+    },
+    {
+      "stage": "EXP149 CPU job/pool pthread",
+      "role": "candidate",
+      "checkpoint": "EXP149 over3e901fe;self-hostedf849233b999c",
+      "prefill": 2669.811429902051,
+      "decode": 26.424290039665564,
+      "rss_mib": 21313.3125,
+      "anon_mib": 697.43359375,
+      "file_mib": 19962.0625,
+      "vram_mib": 3348,
+      "swap_kib": 0,
+      "system_swapout_pages": 0,
+      "loadavg": [
+        3.60302734375,
+        2.375,
+        2.07421875
+      ],
+      "correctness": "Exact text,all128IDs and saved top5 vs original C++;Goose pool/job/executor traced",
+      "status": "One request per distinct OMP/pthread path,uncontrolled external load;not paired stable speed acceptance",
+      "raw_summary": "apex-results/audit-exp149-pthread-apex-32k128-summary.json",
+      "comparison": null
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",

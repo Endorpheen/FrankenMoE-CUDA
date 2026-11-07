@@ -1,0 +1,152 @@
+{
+  "status": "PASS_P2_15_DEFAULT_PATH_OWNERSHIP_AUDIT",
+  "requirement": "P2-15",
+  "criterion": "Entire operation dispatch,n_tasks/workspace planning,graph reuse,threadpool job lifecycle and abort status execute Goose;all operator entries traced.",
+  "entrypoints": [
+    {
+      "entry": "ggml_barrier",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_threadpool_chunk_set",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_threadpool_chunk_add",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_thread_cpumask_is_valid",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_thread_cpumask_next",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_threadpool_new_impl",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_threadpool_free",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_threadpool_pause",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_threadpool_resume",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_graph_compute_thread_ready",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_graph_compute_poll_for_work",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_graph_compute_check_for_work",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_graph_compute_secondary_thread",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_graph_compute_kickoff",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "set_numa_thread_affinity",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "clear_numa_thread_affinity",
+      "default": "Dominant default-on Goose pool entry;original body retained only for explicit disable rollback"
+    },
+    {
+      "entry": "ggml_graph_plan",
+      "default": "Dominant existing default-on Goose control/executor entry"
+    },
+    {
+      "entry": "ggml_get_n_tasks",
+      "default": "Dominant existing default-on Goose control/executor entry"
+    },
+    {
+      "entry": "ggml_compute_forward",
+      "default": "Dominant existing default-on Goose control/executor entry"
+    },
+    {
+      "entry": "ggml_graph_compute_thread",
+      "default": "Dominant existing default-on Goose control/executor entry"
+    },
+    {
+      "entry": "ggml_graph_compute",
+      "default": "Dominant existing default-on Goose control/executor entry"
+    }
+  ],
+  "ownership": {
+    "graph_planning": "control/kernel.goose owns traversal,task policy,checked sizing/max/alignment and tiled eligibility/size arithmetic",
+    "dispatch": "control/kernel.goose routes all101entries,96leaf callbacks;oracle derives from unchanged native switch,not Goose implementation",
+    "executor": "executor/kernel.goose owns graph loop,fusion choice,abort publication and per-node barriers",
+    "jobs": "control/kernel.goose owns existing/disposable pool/reset/team selection,status and allocation failure;both OMP and pthread paths",
+    "pool": "pool/kernel.goose owns allocation/free order,failure/partial-worker cleanup,masks,pause/resume,readiness/poll/wait/worker loop,kickoff/chunk/barrier state and NUMA/priority decisions"
+  },
+  "explicit_boundaries": [
+    {
+      "boundary": "Numerical compute callbacks and kernel-specific scratch/provider callbacks",
+      "classification": "Data/compute provider interface,not original graph planner or job implementation",
+      "remaining_requirements": [
+        "P1-06",
+        "P1-07",
+        "P1-08",
+        "P1-09",
+        "P1-10",
+        "P2-01",
+        "P2-13",
+        "P2-14"
+      ],
+      "note": "No claim that all numerical/provider code is already Goose;in particular MoE-local sizing still queries ggml_tiled_wdata_size and extra buffer work_size callbacks. Generic graph planning no longer calls original tiled helper."
+    },
+    {
+      "boundary": "C ABI records,parameter constructors,hardware/NUMA topology discovery and native system allocator adapters",
+      "classification": "Explicit temporary ABI/configuration/resource inputs;does not count as full native-free core",
+      "remaining_requirements": [
+        "P2-14",
+        "P4-03",
+        "P4-05",
+        "P10-08"
+      ],
+      "note": "Do not describe owned GGML adapters as unavoidable final dependencies;only eventual OS/libc/CUDA/OpenMP primitives may remain justified."
+    },
+    {
+      "boundary": "OpenMP parallel/barrier and pthread/atomic/mutex/condition/affinity syscalls",
+      "classification": "Primitive execution imports;Goose owns scheduling/lifetime/decisions",
+      "remaining_requirements": [
+        "P10-07"
+      ],
+      "note": "System library internals not part of scoped instrumentation;GooseMP is a future idea,not this task."
+    },
+    {
+      "boundary": "Original native control bodies",
+      "classification": "Explicit disable rollback;not invoked by default controller;removal belongs separate closure task",
+      "remaining_requirements": [
+        "P2-18"
+      ]
+    },
+    {
+      "boundary": "Uncompiled non-Linux/alternate hardware execution",
+      "classification": "Cross-platform qualification remains explicit",
+      "remaining_requirements": [
+        "P1-11",
+        "P10-10"
+      ],
+      "note": "Actual Linux OMP/pthread and mock NUMA/priority gates are not proof of all hardware/OS configurations."
+    }
+  ],
+  "limits": "This audit proves the existing control requirement,not full CPU/backend/memory migration,not every kernel numerical contract,and not original-C++ speed parity. P1-09/P2-14 and remaining stage1requirements stay open.",
+  "production_changed": false
+}
