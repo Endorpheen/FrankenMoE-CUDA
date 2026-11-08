@@ -1,8 +1,8 @@
 {
-  "status": "FUNCTIONAL_EXACT_SPEED_REGRESSION_REDUCED_NOT_ACTIVATED",
+  "status": "ACCEPTED_AS_COMPONENT_OF_FINAL_APEX_Q4_PATH",
   "base_commit": "c46b72b",
   "base_source_sha256": "059a9b36b129fbb4f8d46147f265601e0f2b1664e8e053957bba3acd6ca706e0",
-  "source_sha256": "87336e583b3a8f71646f7b0257e9fa2b20c00c96c3db90463038029eba590764",
+  "source_sha256": "448cb76b88057a5027420a90acf7d9c9170ba997e6f3ce56372f924d2890ffc5",
   "specializations": [
     1,
     2
@@ -69,6 +69,12 @@
       "copies": 1
     },
     {
+      "variable": "k0",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
+    },
+    {
       "variable": "j",
       "bound": "ncols",
       "step": 1,
@@ -79,6 +85,12 @@
       "bound": "ncols",
       "step": 1,
       "copies": 1
+    },
+    {
+      "variable": "iq",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
     },
     {
       "variable": "j",
@@ -207,6 +219,12 @@
       "copies": 2
     },
     {
+      "variable": "k0",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
+    },
+    {
       "variable": "j",
       "bound": "ncols",
       "step": 1,
@@ -217,6 +235,12 @@
       "bound": "ncols",
       "step": 1,
       "copies": 2
+    },
+    {
+      "variable": "iq",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
     },
     {
       "variable": "j",
@@ -263,6 +287,6 @@
   ],
   "numerical_order_changed": false,
   "production_changed": false,
-  "apex_summary": "apex-static-index-summary.json",
-  "codegen_static_report": "codegen-static-report.json"
+  "final_qualification": "qualification.json",
+  "paired_results": "paired-component-results.json"
 }

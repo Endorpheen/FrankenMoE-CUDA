@@ -4,7 +4,7 @@
   "modules": [
     {
       "module": "vector-device",
-      "generated_c_sha256": "a207ae6eb7028447a40382e49169d2665b699f996050d57273a717086e473eac",
+      "generated_c_sha256": "de93b7612cb47ba59bac5e79dbcb6838ca6741bbee7a190ccdaded41f8b2a880",
       "function_count": 13
     },
     {
@@ -19,13 +19,13 @@
     },
     {
       "module": "mma-iter-device",
-      "generated_c_sha256": "c4d99dd74717ee2b69faa411faae3e2a69fc918bca4dbb3bff2cf9673f8c9c0b",
-      "function_count": 6
+      "generated_c_sha256": "bf5be07252b0ee8a9b78de2e755b4336870a9bb3986955817222ad46fa815a75",
+      "function_count": 9
     },
     {
       "module": "mma-process-device",
-      "generated_c_sha256": "cc9e529d59972beea66f9cba37110353e3e8089847dc799b1e4eed2c9cee1e5c",
-      "function_count": 5
+      "generated_c_sha256": "c3d665beba19178532f1d0d9267caf5ba2ada2c374294672028696aeca4e252d",
+      "function_count": 7
     },
     {
       "module": "mma-entry-device",
@@ -38,8 +38,18 @@
       "function_count": 6
     },
     {
+      "module": "value-prefill-device",
+      "generated_c_sha256": "270fba551090802adaae3c77af17863380c8ec945f6ef2e720ca868d0560438e",
+      "function_count": 12
+    },
+    {
+      "module": "value-prefill-device",
+      "generated_c_sha256": "270fba551090802adaae3c77af17863380c8ec945f6ef2e720ca868d0560438e",
+      "function_count": 12
+    },
+    {
       "module": "host",
-      "generated_c_sha256": "221df2bc988452dfa4d24b439a4fcf1e2dbefebfd5df0bf82e0a98f3e149af1c",
+      "generated_c_sha256": "a4eb9d66ef99f3e90057d380f957f9525cb7134c80ef9a77fe004bbc4d60b27d",
       "function_count": 45
     }
   ]

@@ -1,0 +1,29 @@
+{
+  "status": "ACCEPTED_AS_COMPONENT_OF_FINAL_APEX_Q4_PATH",
+  "base_commit": "107e17d",
+  "modules": [
+    {
+      "module": "mma-iter-device.goose",
+      "base_sha256": "7359b7816a795fcf638c836f3f5f1e870fc6c2ab693cc2edea040d0451585a87",
+      "candidate_sha256": "3e71c34065a0e2287f04abc994d34007f6cb80c28f92d744318ad7210456ff4c",
+      "transform_sha256": "5beb8d451d7b13246ce0c510a35df5353bbecc169cf02fd9a9e871e4a300d474",
+      "provider": "deepseek/deepseek-v4.1-flash",
+      "parent_review": "Full source review;iter compound lexer/final induction values/typed lexical bindings fixed;process substantive first draft reworked,second draft parsed and emits current compiler",
+      "status": "SOURCE_EMITTED_PENDING_CUDA_AND_APEX"
+    },
+    {
+      "module": "mma-process-device.goose",
+      "base_sha256": "ffdceae6dc0af968cf59dc8437436672867375c956ba37c100f5c4d26429556f",
+      "candidate_sha256": "98c6d25cee835fe3b7ddba0b3988b6ed60db5446ebe6e8db709e825fd29e38c7",
+      "transform_sha256": "fa7652d7c5362e22f2c733f798418b8a5382e5bd3b81e02fd12c17031ecadbe2",
+      "provider": "deepseek/deepseek-v4.1-flash",
+      "parent_review": "Full source review;iter compound lexer/final induction values/typed lexical bindings fixed;process substantive first draft reworked,second draft parsed and emits current compiler",
+      "status": "SOURCE_EMITTED_PENDING_CUDA_AND_APEX"
+    }
+  ],
+  "compiler_changed": false,
+  "production_changed": false,
+  "active_runtime": "EXP172",
+  "final_qualification": "qualification.json",
+  "paired_results": "paired-component-results.json"
+}

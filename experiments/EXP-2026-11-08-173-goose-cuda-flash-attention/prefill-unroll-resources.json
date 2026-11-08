@@ -1,0 +1,30 @@
+{
+  "object_sha256": "ba6177d26fbe7240067ca7655e4b29776c648c49e6526347dd7ac8dea47965f6",
+  "resource_kind": "Actual cubin resources;STACK does not prove spills;not a timing",
+  "kernels": [
+    {
+      "symbol": "_Z18flash_attn_ext_f16ILi256ELi256ELi8ELi8ELb0ELb0ELb0EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:243 STACK:16 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z18flash_attn_ext_f16ILi256ELi256ELi4ELi8ELb0ELb0ELb0EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:231 STACK:16 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi8EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:688 SHARED:0 LOCAL:0 CONSTANT[2]:16 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi4EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:544 SHARED:0 LOCAL:0 CONSTANT[2]:16 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi2EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi1EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    }
+  ]
+}

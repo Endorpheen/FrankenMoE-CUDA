@@ -24,7 +24,6 @@ int64_t fg175h_nel(int64_t);
 int64_t fg175h_nrows(int64_t);
 void fg175h_setdev(int64_t);
 int64_t fg175h_occ(int64_t);
-int64_t fg175h_reference_occ(int64_t);
 int64_t fg175h_setattr(int64_t);
 int64_t fg175h_memo(int64_t,int64_t);
 void fg175h_memo_set(int64_t,int64_t,int64_t);

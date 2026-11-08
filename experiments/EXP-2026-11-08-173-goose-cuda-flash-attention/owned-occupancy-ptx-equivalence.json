@@ -1,0 +1,30 @@
+{
+  "status": "ALL_TARGET_KERNEL_PTX_IDENTICAL",
+  "normalization": "Only compiler basic-block ordinal prefixes and optional source .loc lines removed;math/control/memory instructions and operands unchanged",
+  "kernels": [
+    {
+      "symbol": "_Z13fg175m_kernelILi8EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "normalized_ptx_equal": true,
+      "before_sha256": "76223acc4d7e26136e9dbed8207f7f88d411aa07431188bf04ce5b278190f73d",
+      "after_sha256": "76223acc4d7e26136e9dbed8207f7f88d411aa07431188bf04ce5b278190f73d"
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi4EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "normalized_ptx_equal": true,
+      "before_sha256": "0af692e908227a8ae76c4e26133968c6d40fd44cfb9db31bee80566e74954d9d",
+      "after_sha256": "0af692e908227a8ae76c4e26133968c6d40fd44cfb9db31bee80566e74954d9d"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi2EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "normalized_ptx_equal": true,
+      "before_sha256": "5586ca6d65ea76a9a38ab2cc9f69f9304917648f1eed362e551491ea9531f9a0",
+      "after_sha256": "5586ca6d65ea76a9a38ab2cc9f69f9304917648f1eed362e551491ea9531f9a0"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi1EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "normalized_ptx_equal": true,
+      "before_sha256": "c6a93f42a8aa74594c4008f089727401d2355ddf78e820ff5b49cd474e7f1761",
+      "after_sha256": "c6a93f42a8aa74594c4008f089727401d2355ddf78e820ff5b49cd474e7f1761"
+    }
+  ]
+}

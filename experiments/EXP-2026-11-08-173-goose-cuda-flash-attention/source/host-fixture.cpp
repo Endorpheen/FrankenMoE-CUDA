@@ -78,7 +78,6 @@ extern "C" int64_t fg175h_nel(int64_t t) { const FT *x = (const FT *)(intptr_t)t
 extern "C" int64_t fg175h_nrows(int64_t t) { const FT *x = (const FT *)(intptr_t)t; return x->ne[1]*x->ne[2]*x->ne[3]; }
 extern "C" void fg175h_setdev(int64_t d) { req(d >= 0 && d < 2, "setdev range"); rec(E_SETDEV, d); }
 extern "C" int64_t fg175h_occ(int64_t) { req(plan[3][9] > 0 && plan[3][6] > 0, "occ plan fields"); rec(E_OCC, 0); return 2; }
-extern "C" int64_t fg175h_reference_occ(int64_t p){return fg175h_occ(p);}
 extern "C" int64_t fg175h_setattr(int64_t) { req(plan[3][9] > 0 && plan[3][34] > 0, "setattr plan fields"); nsetattr++; rec(E_SETATTR, (int64_t)plan[3][34]); return 0; }
 extern "C" int64_t fg175h_memo(int64_t d, int64_t inst) { for (int i = 0; i < nmemo; i++) if (md[i] == d && mi[i] == inst) return mv[i]; return 0; }
 extern "C" void fg175h_memo_set(int64_t d, int64_t inst, int64_t v) { req(nmemo < 16, "memo map full"); md[nmemo] = d; mi[nmemo] = inst; mv[nmemo] = v; nmemo++; }

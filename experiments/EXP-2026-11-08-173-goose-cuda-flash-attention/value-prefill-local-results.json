@@ -1,0 +1,92 @@
+{
+  "status": "PASS_WHOLE_FA_AND_LONG_RANDOM_NATIVE_BITWISE_ROLLBACK",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/run/libggml-cuda-fa-6545dc984351.so.0.27.0",
+  "library_sha256": "5dd9899803932e5a7cb4523fe377d30b395842ef37cbc8934d99f281e7b2c7f8",
+  "runs": [
+    {
+      "label": "full-fixture-link",
+      "argv": [
+        "/usr/bin/g++-13",
+        "-o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/full-fixture-value-prefill",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/full-fixture.o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/cuda-runtime.o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/host.o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/native-fattn-host.o",
+        "-L/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/run",
+        "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/run",
+        "-lggml-cuda",
+        "-lggml-base",
+        "-lggml",
+        "-lcudart",
+        "-lcublas",
+        "-ldl",
+        "-lpthread"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "full-fixture-goose",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/full-fixture-value-prefill"
+      ],
+      "exit_code": 0,
+      "stdout": "WITNESS hostf vec7 features3 prefill1ec\nPASS cases=8 checks=110 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG175FA_CUDA host=0xf,cuda_status=0,vector=0x7,features=0x3,prefill=0x1ec\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    },
+    {
+      "label": "full-fixture-original-rollback",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/full-fixture-value-prefill"
+      ],
+      "exit_code": 0,
+      "stdout": "WITNESS host0 vec0 features0 prefill0\nPASS cases=8 checks=108 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    },
+    {
+      "label": "long-random-fixture-link",
+      "argv": [
+        "/usr/bin/g++-13",
+        "-o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/long-random-fixture-value-prefill",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/long-random-fixture.o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/cuda-runtime.o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/host.o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/native-fattn-host.o",
+        "-L/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/run",
+        "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/run",
+        "-lggml-cuda",
+        "-lggml-base",
+        "-lggml",
+        "-lcudart",
+        "-lcublas",
+        "-ldl",
+        "-lpthread"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "long-random-fixture-goose",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/long-random-fixture-value-prefill"
+      ],
+      "exit_code": 0,
+      "stdout": "WITNESS hostf vec7 features3 prefill1ec\nPASS cases=8 checks=110 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG175FA_CUDA host=0xf,cuda_status=0,vector=0x7,features=0x3,prefill=0x1ec\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    },
+    {
+      "label": "long-random-fixture-original-rollback",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/long-random-fixture-value-prefill"
+      ],
+      "exit_code": 0,
+      "stdout": "WITNESS host0 vec0 features0 prefill0\nPASS cases=8 checks=108 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    }
+  ],
+  "production_changed": false
+}

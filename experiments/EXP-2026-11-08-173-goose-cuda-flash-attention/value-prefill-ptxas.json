@@ -1,0 +1,32 @@
+{
+  "kind": "Static ptxas from actual embeddedPTX;no timing",
+  "status": "PASS_ASSEMBLY",
+  "functions": [
+    {
+      "symbol": "_Z18flash_attn_ext_f16ILi256ELi256ELi8ELi8ELb0ELb0ELb0EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "stack_bytes": 16,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    {
+      "symbol": "_Z18flash_attn_ext_f16ILi256ELi256ELi4ELi8ELb0ELb0ELb0EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "stack_bytes": 16,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi8EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "stack_bytes": 648,
+      "spill_store_bytes": 792,
+      "spill_load_bytes": 1276
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi4EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "stack_bytes": 680,
+      "spill_store_bytes": 720,
+      "spill_load_bytes": 1100
+    }
+  ],
+  "variant": "Large state POD passed/returned across Goose function ABI,not final inline variant",
+  "object_sha256": "b8e8801653f93e6d3b6c3ef69651506563a7b9ee36d0d2d23ed95ead132954cf"
+}

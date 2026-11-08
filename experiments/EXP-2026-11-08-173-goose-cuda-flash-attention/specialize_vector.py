@@ -18,7 +18,7 @@ def endbrace(s,begin):
  return i
 stats=[]
 def unroll(s,cols):
- pattern=r'while\s+(j|h|i0|iv|kk|w)\s*<\s*(ncols|2|4|64|128|256)\s*\{'
+ pattern=r'while\s+(j|h|i0|iv|kk|w|iq|k0)\s*<\s*(ncols|2|4|32|64|128|256)\s*\{'
  while True:
   matches=list(re.finditer(pattern,s))
   if not matches:return s

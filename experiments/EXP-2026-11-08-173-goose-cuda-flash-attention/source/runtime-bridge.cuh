@@ -32,8 +32,6 @@ extern "C" int64_t fg175h_nel(int64_t t){return ggml_nelements(&fg175_t(t));}
 extern "C" int64_t fg175h_nrows(int64_t t){return ggml_nrows(&fg175_t(t));}
 extern "C" void fg175h_setdev(int64_t d){ggml_cuda_set_device(d);}
 extern "C" int64_t fg175h_occ(int64_t p){auto&x=fg175_p(p);int n=0;CUDA_CHECK(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&n,fg175_kernel(x),x.v[3][6],x.v[3][9]));return n;}
-// These original functions are never launched on the enabled path; only their SDK resource metadata is queried.
-extern "C" int64_t fg175h_reference_occ(int64_t pp){auto&p=fg175_p(pp);const fattn_kernel_t ref[]={fg175v_native_flash_attn_ext_vec<256,1,GGML_TYPE_Q4_0,GGML_TYPE_Q4_0,false>,fg175v_native_flash_attn_ext_vec<256,2,GGML_TYPE_Q4_0,GGML_TYPE_Q4_0,false>,flash_attn_ext_f16<256,256,4,8,false,false,false>,flash_attn_ext_f16<256,256,8,8,false,false,false>};const auto id=p.v[3][36];GGML_ASSERT(id<4);int n=0;CUDA_CHECK(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&n,ref[id],p.v[3][6],id<2?0:p.v[3][9]));return n;}
 extern "C" int64_t fg175h_setattr(int64_t p){auto&x=fg175_p(p);return cudaFuncSetAttribute(fg175_kernel(x),cudaFuncAttributeMaxDynamicSharedMemorySize,x.v[3][9]);}
 extern "C" int64_t fg175h_memo(int64_t d,int64_t i){GGML_ASSERT(d>=0&&d<GGML_CUDA_MAX_DEVICES&&i>=1&&i<=2);return fg175fa_init[d][i].load(std::memory_order_relaxed);}
 extern "C" void fg175h_memo_set(int64_t d,int64_t i,int64_t v){GGML_ASSERT(d>=0&&d<GGML_CUDA_MAX_DEVICES&&i>=1&&i<=2);fg175fa_init[d][i].store(v,std::memory_order_relaxed);}

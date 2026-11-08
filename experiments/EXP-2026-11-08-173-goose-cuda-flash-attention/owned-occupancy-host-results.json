@@ -1,0 +1,11 @@
+{
+  "status": "PASS27MOCKED_HOST_CASES",
+  "argv": [
+    "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/host-owned-occ-fixture"
+  ],
+  "stdout": "PASS host cases=27 checks=17406 locked_once_pairs=7; mocked SDK only; concurrency not claimed\n",
+  "stderr": "",
+  "binary_sha256": "b4557cdbfe4dab4b0710dea347bbf730f13b603fa96b7b5d1a28a35a016b5f5b",
+  "host_object_sha256": "fcea866e0d5444085f3c16a71e7c82b470d919aba961f99a9327ace49a161c2b",
+  "concurrency_claim": false
+}

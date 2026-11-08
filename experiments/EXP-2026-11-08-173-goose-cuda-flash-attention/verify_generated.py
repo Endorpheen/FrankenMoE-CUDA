@@ -1,7 +1,7 @@
 from pathlib import Path
 import re,subprocess,hashlib,json
 F=Path(__file__).resolve().parents[2];E=Path(__file__).resolve().parent;S=E/'source';B=F/'runtime/exp173/build/source-verify';B.mkdir(parents=True,exist_ok=True);C=F/'runtime/compiler/stage3-f849233b999c';H=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest();assert H(C)=='f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a'
-modules=[('vector-device','vector-functions-generated.cuh','fg175vd_'),('loaders-device','loaders-functions-generated.cuh','fg175ld_'),('staging-device','staging-functions-generated.cuh','fg175qd_'),('mma-iter-device','mma-iter-functions-generated.cuh','fg175mi_'),('mma-process-device','mma-process-functions-generated.cuh','fg175mp_'),('mma-entry-device','mma-entry-device-functions-generated.cuh','fg175me_'),('mask-fixups-device','mask-fixups-device-functions-generated.cuh','fg175fx_'),('host','host-qualified.c','fg175hh_')]
+modules=[('vector-device','vector-functions-generated.cuh','fg175vd_'),('loaders-device','loaders-functions-generated.cuh','fg175ld_'),('staging-device','staging-functions-generated.cuh','fg175qd_'),('mma-iter-device','mma-iter-functions-generated.cuh','fg175mi_'),('mma-process-device','mma-process-functions-generated.cuh','fg175mp_'),('mma-entry-device','mma-entry-device-functions-generated.cuh','fg175me_'),('mask-fixups-device','mask-fixups-device-functions-generated.cuh','fg175fx_'),('value-prefill-device','value-prefill-functions-generated.cuh','fg175cv_'),('value-prefill-device','value-prefill-functions-generated.cuh','fg175cv_'),('host','host-qualified.c','fg175hh_')]
 def bodies(text):
  found={}
  for m in re.finditer(r'(?m)^static [^\n{]+? (gg_function_\d+)\([^;{}]*\)\s*\{',text):

@@ -1,0 +1,168 @@
+{
+  "requests": [
+    {
+      "label": "apex-32k128",
+      "phase": "FAILED",
+      "complete_request": false,
+      "exit_code": -6,
+      "profiled": false
+    },
+    {
+      "label": "apex-32k128-exp172-decode-control",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2627.5177638900095,
+      "decode": 26.404693299091782
+    },
+    {
+      "label": "apex-32k128-exp172-profile-control",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": true,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2530.1925526877003,
+      "decode": 24.304429243012713
+    },
+    {
+      "label": "apex-32k128-inline-value-profile",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": true,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2328.7710466556573,
+      "decode": 23.393200278213303
+    },
+    {
+      "label": "apex-32k128-inline-value-reverse-pair-goose",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2569.8382644117946,
+      "decode": 26.214630116729417
+    },
+    {
+      "label": "apex-32k128-inline-value-reverse-pair-native-rollback",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2584.1841275354172,
+      "decode": 26.14481882772808
+    },
+    {
+      "label": "apex-32k128-inline-value-same-dso-goose",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2585.1790379280824,
+      "decode": 26.175140129746254
+    },
+    {
+      "label": "apex-32k128-inline-value-same-dso-native-rollback",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2583.3720494880363,
+      "decode": 25.507734467296075
+    },
+    {
+      "label": "apex-32k128-owned-occupancy",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2533.002154845217,
+      "decode": 25.522138747188546
+    },
+    {
+      "label": "apex-32k128-post-decode-unroll",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2154.5328990690628,
+      "decode": 26.12334497296337
+    },
+    {
+      "label": "apex-32k128-post-metadata-fix",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": false,
+      "top5_equal": false,
+      "content_equal": false,
+      "prefill": 2148.4901198500543,
+      "decode": 23.19873681964681
+    },
+    {
+      "label": "apex-32k128-post-partition-fix",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2167.8188717471303,
+      "decode": 22.63920347082163
+    },
+    {
+      "label": "apex-32k128-post-prefill-unroll",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2169.2707779935263,
+      "decode": 26.950803112711654
+    },
+    {
+      "label": "apex-32k128-post-static-index-fix",
+      "phase": "COMPLETE_DIAGNOSTIC",
+      "complete_request": true,
+      "exit_code": 0,
+      "profiled": false,
+      "tokens_equal": true,
+      "top5_equal": true,
+      "content_equal": true,
+      "prefill": 2162.7094324504756,
+      "decode": 25.314356469193424
+    }
+  ],
+  "variant_withheld_before_apex": "Large-POD return variant was GPU-exact but exposed new actual spills;retained locally without another full-model request."
+}

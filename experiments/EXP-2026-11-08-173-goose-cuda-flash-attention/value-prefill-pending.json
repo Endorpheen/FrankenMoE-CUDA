@@ -1,0 +1,376 @@
+{
+  "status": "ACCEPTED_AS_COMPONENT_OF_FINAL_APEX_Q4_PATH",
+  "hypothesis": "Keep scalar-field state inside one Goose process block;inline actual Goose iteration source without copying/returning large state PODs across a function ABI. Same math/order/barriers/partition.",
+  "query_bytes": 256,
+  "accumulator_bytes": 272,
+  "private_state_raw_load_store_calls_remaining": 0,
+  "rewritten_effects": {
+    "ldu": 392,
+    "stu": 264,
+    "gstore": 20,
+    "stu32": 384,
+    "iterate": 4,
+    "gload": 20,
+    "ldu32": 256
+  },
+  "raw_adapters": [
+    {
+      "original": "fg176i_bits",
+      "symbol": "fg175c_fg176i_bits",
+      "goose_name": "bits",
+      "params": "v:f32",
+      "result": "u32"
+    },
+    {
+      "original": "fg176i_frombits",
+      "symbol": "fg175c_fg176i_frombits",
+      "goose_name": "frombits",
+      "params": "v:u32",
+      "result": "f32"
+    },
+    {
+      "original": "fg176i_ldu",
+      "symbol": "fg175c_fg176i_ldu",
+      "goose_name": "ldu",
+      "params": "a:u64",
+      "result": "u32"
+    },
+    {
+      "original": "fg176i_stu",
+      "symbol": "fg175c_fg176i_stu",
+      "goose_name": "stu",
+      "params": "a:u64,v:u32",
+      "result": "void"
+    },
+    {
+      "original": "fg176i_ldm4",
+      "symbol": "fg175c_fg176i_ldm4",
+      "goose_name": "ldm4",
+      "params": "a:u64",
+      "result": "U4"
+    },
+    {
+      "original": "fg176i_ldm4t",
+      "symbol": "fg175c_fg176i_ldm4t",
+      "goose_name": "ldm4t",
+      "params": "a:u64",
+      "result": "U4"
+    },
+    {
+      "original": "fg176i_mma_f32",
+      "symbol": "fg175c_fg176i_mma_f32",
+      "goose_name": "mma_f32",
+      "params": "d:F4,a0:u32,a1:u32,a2:u32,a3:u32,b0:u32,b1:u32",
+      "result": "F4"
+    },
+    {
+      "original": "fg176i_mma_f16",
+      "symbol": "fg175c_fg176i_mma_f16",
+      "goose_name": "mma_f16",
+      "params": "d:U2,a0:u32,a1:u32,a2:u32,a3:u32,b0:u32,b1:u32",
+      "result": "U2"
+    },
+    {
+      "original": "fg176i_hlo",
+      "symbol": "fg175c_fg176i_hlo",
+      "goose_name": "hlo",
+      "params": "w:u32",
+      "result": "f32"
+    },
+    {
+      "original": "fg176i_hhi",
+      "symbol": "fg175c_fg176i_hhi",
+      "goose_name": "hhi",
+      "params": "w:u32",
+      "result": "f32"
+    },
+    {
+      "original": "fg176i_h2",
+      "symbol": "fg175c_fg176i_h2",
+      "goose_name": "h2",
+      "params": "a:f32,b:f32",
+      "result": "u32"
+    },
+    {
+      "original": "fg176i_mulh2",
+      "symbol": "fg175c_fg176i_mulh2",
+      "goose_name": "mulh2",
+      "params": "w:u32,s:u32",
+      "result": "u32"
+    },
+    {
+      "original": "fg176i_expf",
+      "symbol": "fg175c_fg176i_expf",
+      "goose_name": "expf",
+      "params": "x:f32",
+      "result": "f32"
+    },
+    {
+      "original": "fg176i_fmaf",
+      "symbol": "fg175c_fg176i_fmaf",
+      "goose_name": "fmaf",
+      "params": "a:f32,b:f32,c:f32",
+      "result": "f32"
+    },
+    {
+      "original": "fg176i_shflx",
+      "symbol": "fg175c_fg176i_shflx",
+      "goose_name": "shflx",
+      "params": "x:f32,off:i32",
+      "result": "f32"
+    },
+    {
+      "original": "fg176i_cpwait",
+      "symbol": "fg175c_fg176i_cpwait",
+      "goose_name": "cpwait",
+      "params": "",
+      "result": "void"
+    },
+    {
+      "original": "fg176i_barrier",
+      "symbol": "fg175c_fg176i_barrier",
+      "goose_name": "barrier",
+      "params": "",
+      "result": "void"
+    },
+    {
+      "original": "fg175p_gload",
+      "symbol": "fg175c_fg175p_gload",
+      "goose_name": "gload",
+      "params": "p:u64,i:u64",
+      "result": "f32"
+    },
+    {
+      "original": "fg175p_gstore",
+      "symbol": "fg175c_fg175p_gstore",
+      "goose_name": "gstore",
+      "params": "p:u64,i:u64,v:f32",
+      "result": "void"
+    },
+    {
+      "original": "fg175p_ldu32",
+      "symbol": "fg175c_fg175p_ldu32",
+      "goose_name": "ldu32",
+      "params": "p:u64,i:u64",
+      "result": "u32"
+    },
+    {
+      "original": "fg175p_stu32",
+      "symbol": "fg175c_fg175p_stu32",
+      "goose_name": "stu32",
+      "params": "p:u64,i:u64,v:u32",
+      "result": "void"
+    },
+    {
+      "original": "fg175p_smld",
+      "symbol": "fg175c_fg175p_smld",
+      "goose_name": "smld",
+      "params": "p:u64,i:u64",
+      "result": "u32"
+    },
+    {
+      "original": "fg175p_smst",
+      "symbol": "fg175c_fg175p_smst",
+      "goose_name": "smst",
+      "params": "p:u64,i:u64,v:u32",
+      "result": "void"
+    },
+    {
+      "original": "fg175p_smldf",
+      "symbol": "fg175c_fg175p_smldf",
+      "goose_name": "smldf",
+      "params": "p:u64,i:u64",
+      "result": "f32"
+    },
+    {
+      "original": "fg175p_smstf",
+      "symbol": "fg175c_fg175p_smstf",
+      "goose_name": "smstf",
+      "params": "p:u64,i:u64,v:f32",
+      "result": "void"
+    },
+    {
+      "original": "fg175p_h2mul",
+      "symbol": "fg175c_fg175p_h2mul",
+      "goose_name": "h2mul",
+      "params": "a:u32,b:u32",
+      "result": "u32"
+    },
+    {
+      "original": "fg175p_h2pack",
+      "symbol": "fg175c_fg175p_h2pack",
+      "goose_name": "h2pack",
+      "params": "x:f32,y:f32",
+      "result": "u32"
+    }
+  ],
+  "compiler_changed": false,
+  "production_changed": false,
+  "active_runtime": "EXP172",
+  "entry": "fg175cv_gg_function_1",
+  "pod_fields": {
+    "U4": [
+      "f132",
+      "f133",
+      "f134",
+      "f135"
+    ],
+    "U2": [
+      "f140",
+      "f141"
+    ],
+    "F4": [
+      "f136",
+      "f137",
+      "f138",
+      "f139"
+    ],
+    "QueryRegs": [
+      "f0",
+      "f1",
+      "f2",
+      "f3",
+      "f4",
+      "f5",
+      "f6",
+      "f7",
+      "f8",
+      "f9",
+      "f10",
+      "f11",
+      "f12",
+      "f13",
+      "f14",
+      "f15",
+      "f16",
+      "f17",
+      "f18",
+      "f19",
+      "f20",
+      "f21",
+      "f22",
+      "f23",
+      "f24",
+      "f25",
+      "f26",
+      "f27",
+      "f28",
+      "f29",
+      "f30",
+      "f31",
+      "f32",
+      "f33",
+      "f34",
+      "f35",
+      "f36",
+      "f37",
+      "f38",
+      "f39",
+      "f40",
+      "f41",
+      "f42",
+      "f43",
+      "f44",
+      "f45",
+      "f46",
+      "f47",
+      "f48",
+      "f49",
+      "f50",
+      "f51",
+      "f52",
+      "f53",
+      "f54",
+      "f55",
+      "f56",
+      "f57",
+      "f58",
+      "f59",
+      "f60",
+      "f61",
+      "f62",
+      "f63"
+    ],
+    "Accumulator": [
+      "f64",
+      "f65",
+      "f66",
+      "f67",
+      "f68",
+      "f69",
+      "f70",
+      "f71",
+      "f72",
+      "f73",
+      "f74",
+      "f75",
+      "f76",
+      "f77",
+      "f78",
+      "f79",
+      "f80",
+      "f81",
+      "f82",
+      "f83",
+      "f84",
+      "f85",
+      "f86",
+      "f87",
+      "f88",
+      "f89",
+      "f90",
+      "f91",
+      "f92",
+      "f93",
+      "f94",
+      "f95",
+      "f96",
+      "f97",
+      "f98",
+      "f99",
+      "f100",
+      "f101",
+      "f102",
+      "f103",
+      "f104",
+      "f105",
+      "f106",
+      "f107",
+      "f108",
+      "f109",
+      "f110",
+      "f111",
+      "f112",
+      "f113",
+      "f114",
+      "f115",
+      "f116",
+      "f117",
+      "f118",
+      "f119",
+      "f120",
+      "f121",
+      "f122",
+      "f123",
+      "f124",
+      "f125",
+      "f126",
+      "f127",
+      "f128",
+      "f129",
+      "f130",
+      "f131"
+    ]
+  },
+  "legacy_private_state_allocations_removed": true,
+  "by_value_call_variant": {
+    "source_sha256": "3d24c676fe5391f60ef3e88b26f8a8e27bfc318112feef22e175b7a502bc567c",
+    "library": "runtime/exp173/run/libggml-cuda-fa-6545dc984351.so.0.27.0",
+    "gpu_correctness": "PASS whole API and long-random corpus/default+rollback",
+    "apex": "NOT_RUN:actual ptxas exposes significant spill traffic;withheld before promotion",
+    "ptxas": "value-prefill-ptxas.json"
+  },
+  "state_crosses_function_boundary": false,
+  "final_qualification": "qualification.json",
+  "paired_results": "paired-component-results.json"
+}

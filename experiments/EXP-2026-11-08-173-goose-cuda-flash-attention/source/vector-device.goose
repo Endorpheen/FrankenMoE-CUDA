@@ -254,7 +254,9 @@ kmaxn[j]=kmax[j];
 j=(1 as i32);
 
   var iq:i32=0;
-  while iq<32{
+  if true {
+let iq:i32=0;
+
    let i_kq=ty*32+iq;
    j=0;
    if true {
@@ -272,8 +274,692 @@ let j:i32=0;
 }
 j=(1 as i32);
 
-   iq+=1;
-  }
+
+}
+if true {
+let iq:i32=1;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=2;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=3;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=4;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=5;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=6;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=7;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=8;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=9;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=10;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=11;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=12;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=13;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=14;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=15;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=16;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=17;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=18;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=19;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=20;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=21;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=22;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=23;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=24;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=25;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=26;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=27;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=28;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=29;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=30;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iq:i32=31;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(1 as i32);
+
+
+}
+iq=(32 as i32);
+
   j=0;
   if true {
 let j:i32=0;
@@ -291,7 +977,9 @@ j=(1 as i32);
 
   syncwarp();
   var k0:i32=0;
-  while k0<32{
+  if true {
+let k0:i32=0;
+
    let k=ty*32+k0;
    j=0;if true {
 let j:i32=0;
@@ -338,8 +1026,1591 @@ j=(1 as i32);
 }
 iv=(128 as i32);
 
-   k0+=1;
-  }
+
+}
+if true {
+let k0:i32=1;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=2;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=3;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=4;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=5;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=6;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=7;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=8;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=9;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=10;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=11;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=12;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=13;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=14;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=15;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=16;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=17;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=18;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=19;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=20;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=21;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=22;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=23;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=24;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=25;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=26;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=27;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=28;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=29;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=30;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=31;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+k0=(32 as i32);
+
   syncwarp();
   k0v+=((gy*128) as i64);
   kbase+=(((gy*128) as i64)*nb11) as u64;
@@ -689,7 +2960,9 @@ kmaxn[j]=kmax[j];
 j=(2 as i32);
 
   var iq:i32=0;
-  while iq<32{
+  if true {
+let iq:i32=0;
+
    let i_kq=ty*32+iq;
    j=0;
    if true {
@@ -720,8 +2993,1095 @@ let j:i32=1;
 }
 j=(2 as i32);
 
-   iq+=1;
-  }
+
+}
+if true {
+let iq:i32=1;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=2;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=3;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=4;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=5;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=6;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=7;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=8;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=9;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=10;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=11;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=12;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=13;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=14;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=15;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=16;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=17;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=18;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=19;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=20;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=21;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=22;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=23;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=24;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=25;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=26;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=27;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=28;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=29;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=30;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iq:i32=31;
+
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+
+}
+iq=(32 as i32);
+
   j=0;
   if true {
 let j:i32=0;
@@ -751,7 +4111,9 @@ j=(2 as i32);
 
   syncwarp();
   var k0:i32=0;
-  while k0<32{
+  if true {
+let k0:i32=0;
+
    let k=ty*32+k0;
    j=0;if true {
 let j:i32=0;
@@ -820,8 +4182,2273 @@ j=(2 as i32);
 }
 iv=(128 as i32);
 
-   k0+=1;
-  }
+
+}
+if true {
+let k0:i32=1;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=2;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=3;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=4;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=5;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=6;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=7;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=8;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=9;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=10;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=11;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=12;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=13;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=14;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=15;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=16;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=17;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=18;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=19;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=20;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=21;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=22;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=23;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=24;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=25;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=26;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=27;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=28;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=29;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=30;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+if true {
+let k0:i32=31;
+
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+
+}
+k0=(32 as i32);
+
   syncwarp();
   k0v+=((gy*128) as i64);
   kbase+=(((gy*128) as i64)*nb11) as u64;

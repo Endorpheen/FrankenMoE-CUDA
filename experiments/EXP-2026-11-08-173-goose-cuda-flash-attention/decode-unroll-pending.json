@@ -1,0 +1,9 @@
+{
+  "status": "ACCEPTED_AS_COMPONENT_OF_FINAL_APEX_Q4_PATH",
+  "hypothesis": "Native FlashAttention explicitly unrolls 32step KQ and VKQ loops. Current Goose preserved those runtime loops while eliminating private-array addressing. Expand both fixed32 loops in Goose source;preserve dynamic outer KV loop and all arithmetic/barriers/partition.",
+  "base_commit": "107e17d",
+  "active_runtime": "EXP172",
+  "acceptance": "128token/text/top5 equality and restore decode to at least active EXP172 range;one system gate after correctness. No compiler or production change.",
+  "final_qualification": "qualification.json",
+  "paired_results": "paired-component-results.json"
+}

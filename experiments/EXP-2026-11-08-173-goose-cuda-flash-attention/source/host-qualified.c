@@ -4732,7 +4732,7 @@ label2:;
   t923 = fg175hh_gg_function_26(t921, t922, base + 0);
   fg175h_put(t918, t919, t920, t923);
   t924 = ((int64_t)(v3));
-  t925 = fg175h_reference_occ(t924);
+  t925 = fg175h_occ(t924);
   v55 = ((int64_t)(t925));
   t926 = ((int64_t)(v55));
   t927 = ((int64_t)(((int64_t)UINT64_C(0))));

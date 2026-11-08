@@ -311,6 +311,20 @@
       "status": "One diagnostic under external load,saved C++ comparison,not fresh repeated paired/stable no-regression acceptance",
       "raw_summary": "apex-results/audit-exp150-omp-apex-32k128-summary.json",
       "comparison": null
+    },
+    {
+      "stage": "EXP173 final owned-occupancy Apex FA",
+      "role": "candidate",
+      "checkpoint": "EXP173 coherent inline scalar-field Goose state;producerf849",
+      "prefill": 2533.002154845217,
+      "decode": 25.522138747188546,
+      "rss_mib": 21309.69921875,
+      "vram_mib": 3246,
+      "swap_kib": 0,
+      "correctness": "Exact128IDs/text/fullsavedtop5,127graphs;FAhostf/vector7/prefill1dc,status0,7zeroownedheaps",
+      "status": "Experimental scope accepted;paired FA component parity from identicalPTX variant;lastsampleunpaired;not fullfreshCpp/sustained3000/30",
+      "raw_summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/apex-summary.json",
+      "comparison": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/paired-component-results.json"
     }
   ],
   "liveness_scope": "This combined profile witnesses actual graph/allocation/coalescing Goose counters. Lifetime enabled but reports0transitions; do not claim lifetime execution in this combined request. Earlier Apex trace/graph tests prove selected CPU/tiled/CUDA modules; counter-free combined timing alone is not proof every migrated path executed.",

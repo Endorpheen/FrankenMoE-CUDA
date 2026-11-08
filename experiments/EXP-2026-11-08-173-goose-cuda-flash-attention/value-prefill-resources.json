@@ -1,0 +1,30 @@
+{
+  "object_sha256": "b8e8801653f93e6d3b6c3ef69651506563a7b9ee36d0d2d23ed95ead132954cf",
+  "resource_kind": "Actual cubin resources;stack bytes are not necessarily spills",
+  "kernels": [
+    {
+      "symbol": "_Z18flash_attn_ext_f16ILi256ELi256ELi8ELi8ELb0ELb0ELb0EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:243 STACK:16 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z18flash_attn_ext_f16ILi256ELi256ELi4ELi8ELb0ELb0ELb0EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:231 STACK:16 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi8EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:648 SHARED:0 LOCAL:0 CONSTANT[2]:16 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi4EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:680 SHARED:0 LOCAL:0 CONSTANT[2]:16 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi2EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi1EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    }
+  ]
+}

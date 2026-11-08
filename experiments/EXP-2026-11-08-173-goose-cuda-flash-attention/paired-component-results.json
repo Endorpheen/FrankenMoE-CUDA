@@ -1,0 +1,86 @@
+{
+  "status": "TWO_OPPOSITE_ORDER_PAIRS_SUPPORT_PRELIMINARY_FA_COMPONENT_PARITY",
+  "scheme": [
+    "C++ FA rollback -> Goose FA",
+    "Goose FA -> C++ FA rollback"
+  ],
+  "sample_count": 4,
+  "control_scope": "Same full experimental CUDA DSO and all other Goose modules;only GGML_GOOSE_CUDA_FA changes. This is not a freshly rebuilt wholly-C++ runtime.",
+  "samples": [
+    {
+      "label": "inline-value-same-dso-native-rollback",
+      "mode": "native-rollback",
+      "library_sha256": "d456dcb75b2a7dec7b827b9386b174bed930ac04b940d259399b5c0909d43fea",
+      "prefill": 2583.3720494880363,
+      "decode": 25.507734467296075,
+      "rss_peak_mib": 21332.14453125,
+      "vram_peak_mib": 3246,
+      "swap_peak_kib": 0,
+      "exact128_text_top5": true,
+      "raw_receipt": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/results/apex-32k128-inline-value-same-dso-native-rollback"
+    },
+    {
+      "label": "inline-value-same-dso-goose",
+      "mode": "goose",
+      "library_sha256": "d456dcb75b2a7dec7b827b9386b174bed930ac04b940d259399b5c0909d43fea",
+      "prefill": 2585.1790379280824,
+      "decode": 26.175140129746254,
+      "rss_peak_mib": 21310.7109375,
+      "vram_peak_mib": 3246,
+      "swap_peak_kib": 0,
+      "exact128_text_top5": true,
+      "raw_receipt": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/results/apex-32k128-inline-value-same-dso-goose"
+    },
+    {
+      "label": "inline-value-reverse-pair-goose",
+      "mode": "goose",
+      "library_sha256": "d456dcb75b2a7dec7b827b9386b174bed930ac04b940d259399b5c0909d43fea",
+      "prefill": 2569.8382644117946,
+      "decode": 26.214630116729417,
+      "rss_peak_mib": 21310.80078125,
+      "vram_peak_mib": 3246,
+      "swap_peak_kib": 0,
+      "exact128_text_top5": true,
+      "raw_receipt": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/results/apex-32k128-inline-value-reverse-pair-goose"
+    },
+    {
+      "label": "inline-value-reverse-pair-native-rollback",
+      "mode": "native-rollback",
+      "library_sha256": "d456dcb75b2a7dec7b827b9386b174bed930ac04b940d259399b5c0909d43fea",
+      "prefill": 2584.1841275354172,
+      "decode": 26.14481882772808,
+      "rss_peak_mib": 21332.0859375,
+      "vram_peak_mib": 3246,
+      "swap_peak_kib": 0,
+      "exact128_text_top5": true,
+      "raw_receipt": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/results/apex-32k128-inline-value-reverse-pair-native-rollback"
+    }
+  ],
+  "means": {
+    "goose": {
+      "prefill": 2577.5086511699383,
+      "decode": 26.194885123237835,
+      "rss_peak_mib": 21310.755859375,
+      "vram_peak_mib": 3246
+    },
+    "native-rollback": {
+      "prefill": 2583.7780885117268,
+      "decode": 25.826276647512078,
+      "rss_peak_mib": 21332.115234375,
+      "vram_peak_mib": 3246
+    }
+  },
+  "delta_percent": {
+    "prefill": -0.24264612234558003,
+    "decode": 1.4272613925603084
+  },
+  "external_load": "Uncontrolled user applications/parallel compiler work;no unrelated process was interrupted. Low-rate GPU board telemetry is saved with each raw receipt.",
+  "final_owned_occupancy_artifact": {
+    "library_sha256": "ac81971a46be2a8529f0bdd2781232f5c172b91830c409b4b0947348c4a39e3d",
+    "paired_artifact_same": false,
+    "all_four_target_kernel_normalized_ptx_identical": true,
+    "actual_sdk_default_and_rollback_tests": true,
+    "final_exact_model_receipt": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/results/apex-32k128-owned-occupancy"
+  },
+  "interpretation": "No material FA component throughput regression in these two pairs. Samples do not establish sustained3000/30 or statistical full-runtime parity. Do not retroactively declare the historical18percent entirely false:code changed between observations."
+}

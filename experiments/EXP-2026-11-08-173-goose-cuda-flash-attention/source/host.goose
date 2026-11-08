@@ -18,8 +18,6 @@ extern "fg175h_dev" fn dev(d:i64,k:i64)->i64;extern "fg175h_carch" fn carch(d:i6
 extern "fg175h_blck" fn blck(ty:i64)->i64;extern "fg175h_tsize" fn tsize(ty:i64)->i64;
 extern "fg175h_nel" fn nel(t:i64)->i64;extern "fg175h_nrows" fn nrows(t:i64)->i64;
 extern "fg175h_setdev" fn setdev(d:i64);extern "fg175h_occ" fn occ(p:i64)->i64;
-// Preserve the original numerical work partition using SDK resource metadata only.
-extern "fg175h_reference_occ" fn reference_occ(p:i64)->i64;
 extern "fg175h_setattr" fn setattr(p:i64)->i64;extern "fg175h_memo" fn memo(d:i64,inst:i64)->i64;
 extern "fg175h_memo_set" fn memo_set(d:i64,inst:i64,v:i64);extern "fg175h_pool" fn pool(p:i64,slot:i64)->i64;
 extern "fg175h_conv" fn conv(p:i64,which:i64)->i64;extern "fg175h_launch" fn launch(p:i64)->i64;
@@ -424,7 +422,7 @@ fn launch_fattn(packet:i64,d:i64,dst:i64,p:i64,c1:u64,c2:u64,dv:u64,needk:bool,n
  put(p,3,20,if scan{1 as u64}else{0 as u64});
  let cc=dev(d,0);let nsm=itg(dev(d,1));
  put(p,3,30,ws);put(p,3,9,smem);put(p,3,7,nwarps);put(p,3,8,nfa);put(p,3,6,mul(ws,nwarps));
- let mbps=reference_occ(p);ensure(mbps>0,23);
+ let mbps=occ(p);ensure(mbps>0,23);
  var pb=itg(mbps);
  let ntkv=cld(nkv,nfa);
  var gx:u64=0;var gy:u64=0;var gz:u64=0;var dse:u64=0;var dme:u64=0;
