@@ -1,0 +1,72 @@
+{
+  "status": "FUNCTIONAL_APEX_PATH_PASS_TWO_PAIRS_BOTH_ORDERS",
+  "component": "CUDA CPY scalar element walk and branch selection in Goose; all other EXP176 modules identical",
+  "scope": "F32->F32 (Apex). Quantized/different-type/transposed copies stay native.",
+  "mechanism": "same DSO, GGML_GOOSE_CUDA_CPY=0 selects the private-renamed native ggml_cuda_cpy/ggml_cuda_dup",
+  "pairs": {
+    "forward": {
+      "native": {
+        "prefill": 2624.591819824591,
+        "decode": 26.1603990882174,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2599.5472370608104,
+        "decode": 26.67517471714338,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": -0.9542277231304583,
+        "decode": 1.9677667270673858
+      }
+    },
+    "reverse": {
+      "native": {
+        "prefill": 2624.591819824591,
+        "decode": 26.1603990882174,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2597.5240763244656,
+        "decode": 27.139901061170132,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": -1.0313124995540945,
+        "decode": 3.744216476398858
+      }
+    },
+    "goose_mean": {
+      "prefill": 2598.535656692638,
+      "decode": 26.907537889156757
+    },
+    "mean_delta_pct": {
+      "prefill": -0.9927701113422764,
+      "decode": 2.855991601733122
+    }
+  },
+  "correctness": "all 128 token ids, text and every returned top-5 probability equal to the saved wholly-C++ oracle in all three runs; sha256 e68df05b",
+  "witnesses": {
+    "cpy": "FG177C_CUDA_CPY host=0x7 (routes 0 memcpy, 1 memcpy2d, 2 scalar all exercised)"
+  },
+  "local_gates": {
+    "goose": "18 checks/0 failures/6 cases",
+    "native": "18/0/6",
+    "byte_identical": "6 of 6",
+    "memcheck": "0 errors",
+    "racecheck": "0 hazards",
+    "exports": "only the two diagnostics added"
+  },
+  "route3_note": "contiguous element kernel is unreachable for same-type copies and serves only different-type copies, which are out of this F32->F32 scope",
+  "limits": "preliminary pairs, uncontrolled external load; other P3-03 scope (SET, PAD, ROLL, quantized/different-type CPY, transposed tile) remains native; P3-03 in progress",
+  "production_changed": false,
+  "active_runtime_changed": false
+}

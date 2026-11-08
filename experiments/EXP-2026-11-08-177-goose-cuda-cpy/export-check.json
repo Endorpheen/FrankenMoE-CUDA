@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "added": [
+    "fg177c_cuda_device_read",
+    "fg177c_cuda_host_seen"
+  ],
+  "removed": []
+}
