@@ -1,0 +1,17 @@
+{
+  "status": "REVIEWED_PARENT_CORRECTED_PENDING_EXECUTION",
+  "host": [
+    "Use actual retained fg176rh_run bool/implicit frame ABI and typed launch status",
+    "Repair overlapping canonical destination planes",
+    "Use canonical bool/noop/fatal and broadcast contract",
+    "Separate synthetic maximum-count pointer spans;correct n01 expectation",
+    "Add actual alignment/destination-overlap/broadcast rejection probes"
+  ],
+  "gpu": [
+    "Call same public operator with env=0 for native control;do not expose private original symbol",
+    "Actually execute rollback candidate instead of skipping it",
+    "Reset captured destination after warmup before graph replay",
+    "Check actual host/device route witnesses and zero invalid indices",
+    "Add multi-block Apex D256 long-row scatter case"
+  ]
+}

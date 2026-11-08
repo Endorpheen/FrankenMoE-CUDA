@@ -806,7 +806,7 @@
       "id": "P3-03",
       "phase": "P3",
       "title": "Port CUDA copy,gather,scatter and tensor transformations",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/cpy*",
         "ggml/src/ggml-cuda/getrows*",
@@ -816,7 +816,7 @@
         "ggml/src/ggml-cuda/roll*"
       ],
       "acceptance": "All dtype/stride/tail variants match native and Compute Sanitizer bounds checks; asynchronous copies preserve order.",
-      "evidence": "",
+      "evidence": "EXP174 actual Apex SET_ROWS F32/Q4_0 I32/I64 host/device Goose:source/ABI/native-bitwise guards/graph/rollback/invalid-index gates pass;same-DSO Apex pair2665.309/28.002 native vs2663.005/27.857 Goose,exact128/text/top5,7zeroheaps,actualQ4/I64witness8. Separate checkpoint,not production/active promotion. Other copy/gather/scatter variants and full task remain open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,

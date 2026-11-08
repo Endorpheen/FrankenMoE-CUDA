@@ -1,0 +1,90 @@
+{
+  "id": "fg176r-apex-cache-setrows",
+  "version": 1,
+  "kind": "device-goose",
+  "target": "CUDA",
+  "source_provenance": {
+    "native_kernels": "ggml-cuda/set-rows.cu: k_set_rows_quant<idx_t, block_q4_0, 32, quantize_f32_q4_0_block> and k_set_rows with src_t=dst_t=f32",
+    "native_quantizer": "ggml-cuda/cpy-utils.cuh: quantize_f32_q4_0_block",
+    "block_type": "ggml-common.h: block_q4_0 = { ggml_half d; uint8_t qs[16]; }, QK4_0=32, sizeof=18",
+    "dispatch": "inputs/set-rows.cu: CUDA_SET_ROWS_BLOCK_SIZE=256, grid=ceil(ne_total/256) x 1 x 1, shmem=0",
+    "host_counterpart": "apex-cache-setrows-host: inputs/host-host.goose and inputs/host-contract.json, unchanged by this module"
+  },
+  "exports": [
+    {
+      "name": "fg176r_set_rows_q4_0",
+      "maps_to": "k_set_rows_quant<idx_t, block_q4_0, 32, quantize_f32_q4_0_block>",
+      "threads": "one thread per 32-element source block: i = nt*bx + tx, return when i >= ne_total",
+      "signature": "fn fg176r_set_rows_q4_0(src0:u64,src1:u64,dst:u64,ne_total:i64,ne00:i64,ne01:i64,ne02:i64,ne11:i64,ne12:i64,s01:i64,s02:i64,s03:i64,s10:i64,s11:i64,s12:i64,s1:i64,s2:i64,s3:i64,dst_rows:i64,has_cap:bool,explicittype:bool,bx:i32,tx:i32,nt:i32)"
+    },
+    {
+      "name": "fg176r_set_rows_f32",
+      "maps_to": "k_set_rows<src_t, idx_t, dst_t> with src_t=dst_t=f32",
+      "threads": "one thread per element: i = nt*bx + tx, return when i >= ne_total",
+      "signature": "fn fg176r_set_rows_f32(src0:u64,src1:u64,dst:u64,ne_total:i64,ne00:i64,ne01:i64,ne02:i64,ne11:i64,ne12:i64,s01:i64,s02:i64,s03:i64,s10:i64,s11:i64,s12:i64,s1:i64,s2:i64,s3:i64,dst_rows:i64,has_cap:bool,explicittype:bool,bx:i32,tx:i32,nt:i32)"
+    }
+  ],
+  "raw_abi": {
+    "pointer_convention": "every u64 is a global byte address; all pointer additions below are byte offsets scaled exactly as the native pointer arithmetic",
+    "src0": "F32 source base; element e of a row is ld_f32(src0, base_byte + 4*e)",
+    "src1": "row-index base; element e is at byte 4*e (explicittype=false, I32) or 8*e (explicittype=true, I64)",
+    "dst_q4_0": "Q4_0 base; block b is 18 bytes at byte 18*b, half d first then qs[0..15]",
+    "dst_f32": "F32 destination base; element e is at byte 4*e",
+    "strides": {
+      "s01_s02_s03": "src0 strides in FLOAT ELEMENTS (nb01..nb03 / 4)",
+      "s10_s11_s12": "src1 strides in IDX ELEMENTS (nb10..nb12 / sizeof(idx_t))",
+      "s1_s2_s3_q4_0": "dst strides in BYTES (nb1..nb3); the body divides the row sum by 18 before adding the block column, as native /sizeof(block_q4_0)",
+      "s1_s2_s3_f32": "dst strides in FLOAT ELEMENTS (nb1..nb3 / 4)"
+    },
+    "ne_total": "(ne00*ne01*ne02*ne03)/32 for Q4_0 (native GGML_ASSERT(ne00 % qk == 0)); ne00*ne01*ne02*ne03 for F32",
+    "explicittype": "false selects GGML_TYPE_I32 src1, true selects GGML_TYPE_I64",
+    "dst_rows_has_cap": "dst_rows is the destination dim-1 capacity (dst ne[1]); has_cap=true enables the negative and >= dst_rows guard, has_cap=false is native behaviour. Both are adapter-supplied: the host plan carries dst_rows at key7 index 14 (d1) and has no cap flag, so the adapter must pass has_cap=false for native parity"
+  },
+  "index_decode": "tmp=base; i00=tmp%ne00; tmp=tmp/ne00; i01=tmp%ne01; tmp=tmp/ne01; i02=tmp%ne02; i03=tmp/ne02; i12=i03%ne12; i11=i02%ne11; i10=i01; exact / and - replace fast_div_modulo/fastmodulo and agree for any positive divisor <= UINT32_MAX. base=(i*32) for Q4_0 and i for F32. All decode arithmetic is 64-bit; the native uint32_t cast is bit-identical inside the host-enforced bounds (0 <= i < ne_total, ne_total*32 <= 2^32 for Q4_0, ne_total <= 2^32 for F32, ne00/ne01/ne02/ne11/ne12 <= UINT32_MAX)",
+  "row_index": "pdl_sync(); dst_row = ld_i32/ld_i64(src1, sizeof(idx_t)*(i10*s10+i11*s11+i12*s12)); the F32 path calls pdl_lc() immediately after the load as k_set_rows does, the quant path never calls pdl_lc, matching k_set_rows_quant",
+  "q4_0_quantization": {
+    "absmax": "amax=0.0f; vmax=0.0f; for j in 0..31 { v=src[j]; a=fabs(v); if (amax < a) { amax=a; vmax=v; } } - strict less-than keeps the first maximum and its sign, so an all-zero block yields +0.0 and a signed or tied maximum keeps the native sign",
+    "scale": "d = vmax / -8.0f; id = (d != 0.0f) ? 1.0f/d : 0.0f; d is stored as a round-to-nearest half. No fused multiply-add and no reassociation: d, id and each x = src*id keep the native step order",
+    "packing": "for j in 0..15: x0=src[j]*id; x1=src[16+j]*id; q0=min(15,(int8_t)(x0+8.5f)); q1=min(15,(int8_t)(x1+8.5f)); qs[j]=(uint8_t)q0 | (uint8_t)(q1<<4). Low nibble is element j, high nibble is element 16+j",
+    "or_encoding": "the nibble byte is a real bitwise OR of two u32 values already masked to 8 bits: (q0 & 255) | (((q1 & 255) << 4) & 255). No arithmetic OR emulation such as a+b-(a&b) remains on this path",
+    "trunc_clamp": "i8trunc is the hardware float-to-int8 conversion, truncating toward zero and saturating to [-128,127] as the native (int8_t) cast does; min(15,..) clips the top and &255 reproduces the native uint8 wrap for negative values",
+    "layout": "18 bytes: half d at bytes 0..1, qs[0..15] at bytes 2..17"
+  },
+  "grid_mapping": "native 1-D launch: blockDim.x=nt (CUDA_SET_ROWS_BLOCK_SIZE=256), blockIdx.x=bx, threadIdx.x=tx, i=nt*bx+tx; gridDim.y and gridDim.z are unused so only bx, tx, nt cross the ABI. The host counterpart computes gx=ceil(nt/256), gy=gz=1, shmem=0",
+  "state": "none: pure function of the arguments; no globals, no shared memory, no heap, no fixed arrays, no host synchronization, no stream or launch-policy state",
+  "counterpart_abi": {
+    "plan_keys": "key4 holds s01..s03 in float elements, key5 holds s10..s12 in idx elements, key6 holds s1..s3 in bytes for Q4_0 or float elements for F32, key7 index 0 holds ne_total, indices 1..4 hold ne11..ne13, key10 kind (0 F32, 1 Q4_0), key11 idx kind (0 I32, 1 I64), key14 holds dst ne1, key19 and key20 hold the checked source spans",
+    "fastdiv_words": "the plan also stores fastdiv magic (mp,L,d) for ne00, ne01, ne02, ne11 and ne12. This module derives the same residues with exact / and - so those words are unused here; that is redundant metadata, not an ABI change, and no dimension or stride meaning differs",
+    "has_cap": "the plan carries no capability flag; the adapter chooses has_cap and forwards dst ne1 as dst_rows when bounds checking is requested"
+  },
+  "discovered_incompatibilities": [],
+  "caller_conditions": [
+    "src0 must be GGML_TYPE_F32; dst must be GGML_TYPE_Q4_0 for fg176r_set_rows_q4_0 or GGML_TYPE_F32 for fg176r_set_rows_f32; src1 must be I32 when explicittype=false and I64 when true",
+    "ne00..ne03 and ne11/ne12 positive and <= UINT32_MAX; ne00 % 32 == 0 on the Q4_0 path, which native asserts and the host counterpart enforces",
+    "strides are whole-element and nonnegative; Q4_0 dst byte strides are divisible by 18 and F32 dst element strides are divisible by 4",
+    "every src0/src1/dst byte range touched must stay inside the caller-provided storage; the host counterpart validates those spans and that destination does not alias src1 before any SDK effect",
+    "ne_total and the launch shape come from the caller: gx=ceil(ne_total/nt) blocks with nt=256, gy=gz=1",
+    "when has_cap=true dst_rows must be the destination dim-1 capacity; when has_cap=false every src1 value must already index a valid destination row"
+  ],
+  "unsupported": [
+    "src0 types other than F32 (the native F16 specializations are out of scope)",
+    "dst types other than Q4_0 and F32 (F16, BF16, Q4_1, Q5_0, Q5_1, Q8_0, IQ4_NL and all *_K types)",
+    "src1 types other than I32 and I64",
+    "aliasing dst over src0, or overlapping destination rows between threads",
+    "layouts not expressible by the native strides above",
+    "input sizes outside the host-enforced bounds quoted under index_decode",
+    "NaN and infinity are outside the claimed domain; they follow native undefined float-to-int conversion behaviour",
+    "any memory-safety claim when has_cap=false or when the caller passes out-of-span pointers"
+  ],
+  "fidelity_notes": [
+    "absmax uses strict less-than so the first maximum and its sign are preserved, including signed zero",
+    "d = vmax/-8 and id = 1/d keep native signed-zero and float step order; there is no fused multiply-add",
+    "the half scale is a round-to-nearest half store, matching ggml_cuda_cast<half> for finite values",
+    "nibble packing uses a real bitwise OR of 8-bit-masked values; the previous arithmetic OR identity was removed",
+    "decode, row-index load and address sums use 64-bit arithmetic; the native uint32_t narrowing is proven non-truncating inside the host bounds instead of being reproduced",
+    "the plain path calls pdl_sync before the src1 load and pdl_lc after it; the quant path calls only pdl_sync, mirroring native",
+    "no original quantize_f32_q4_0_block, ggml_cuda_cast, fast_div_modulo or other native numerical function is called",
+    "no GPU, inference or performance acceptance is claimed; the parent owns the Apex gate"
+  ],
+  "verification_owner": "parent harness compiles this module, links the native-prefixed oracle, runs bit-exact GPU and rollback cases, and owns the real Apex gate"
+}

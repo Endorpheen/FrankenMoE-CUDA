@@ -1,0 +1,26 @@
+{
+  "completion_probabilities_equal": true,
+  "status": "RESPONSE_RECEIVED",
+  "wall_seconds": 16.84652396501042,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 12294.259,
+    "prompt_per_token_ms": 0.3751910095214844,
+    "prompt_per_second": 2665.309068240713,
+    "predicted_n": 128,
+    "predicted_ms": 4535.409,
+    "predicted_per_token_ms": 35.711881889763774,
+    "predicted_per_second": 28.001884725280565
+  },
+  "tokens_equal": true,
+  "token_count": 128,
+  "first_different_token_index": null,
+  "content_equal": true,
+  "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+  "reference": "Saved wholly-C++ correctness oracle;performance paired only for SET_ROWS in same DSO",
+  "preliminary": true,
+  "source_closure_complete": false,
+  "concurrent_load": "No build or helper task started during measurement;other host activity uncontrolled;telemetry saved",
+  "production_changed": false
+}

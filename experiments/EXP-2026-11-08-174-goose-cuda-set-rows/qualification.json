@@ -1,0 +1,30 @@
+{
+  "status": "FUNCTIONAL_ACTIVE_APEX_SET_ROWS_PATH_PASS",
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp174/run/libggml-cuda-setrows-213dc8b83fe8.so.0.27.0",
+  "sha256": "0b187bc1cca2b4077a076845fcfc099dc68183dbc55b3b3011d765fe18a47117",
+  "gates": [
+    "source-verification.json",
+    "local-gates.json",
+    "export-check.json",
+    "apex-summary.json"
+  ],
+  "scope": "Actual F32->Q4_0/F32 SET_ROWS host/device arithmetic,validation,fastdiv,routing;native other dtypes and rollback explicitly retained",
+  "excluded": [
+    "all other CUDA copy/gather/scatter variants",
+    "all Apex migration",
+    "general storage-capacity or duplicate-index ownership proof",
+    "whole-program sanitizer certification",
+    "sustained >3000/30 performance"
+  ],
+  "production_changed": false,
+  "active_runtime_changed": false
+}

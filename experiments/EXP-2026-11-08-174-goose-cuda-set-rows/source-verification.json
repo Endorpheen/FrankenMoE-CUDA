@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "compiler_sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+  "modules": [
+    {
+      "module": "host",
+      "source_sha256": "719ea28325ae1e051aaed7b0c919b55c482b9b7ccc99febed75d3d707e103727",
+      "generated_sha256": "2ec5e51a7f40b8053a0613afb08f344d534566ff92f4e956ea69c60716a5fc44"
+    },
+    {
+      "module": "device",
+      "source_sha256": "6a0a20c5d8c4b419fa2a8f179cd24dd65d7805fbd18246edb576c0b123664565",
+      "generated_sha256": "9cc693b281928d613ddc06e572831136a6a105e13e29375b35380f24a0aefdc9"
+    }
+  ],
+  "mechanical_device_bodies_exact": true,
+  "complete_qualified_host_c_exact": true
+}
