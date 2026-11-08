@@ -111,17 +111,29 @@ fn fg180q_mmq(x:u64,ids:u64,y:u64,
   if scatter!=0{
    base=(bx as i64)*s02;
   }else{
-   let i2:i64=(bz as i64)%ne2;
-   let i3:i64=(bz as i64)/ne2;
+   // ne2 is 1 for the Apex projectile shapes and small otherwise. Specialising the
+   // trivial case removes two int64 divisions from the hot path; the general case
+   // keeps the exact quotient/remainder.
+   let bzi:i32=bz;
+   let ne2i:i32=ne2 as i32;
+   var i2:i64=0;
+   var i3:i64=0;
+   if ne2i==1{
+    i2=0;i3=bzi as i64;
+   }else{
+    i2=(bzi%ne2i) as i64;
+    i3=(bzi/ne2i) as i64;
+   }
    var i01:i64=bx as i64;
    if ids!=0{
     i01=ld_i32_ro(ids,((bx as i64)*(4 as i64)) as u64);
    }
    base=i3*s03+i2*s02+i01*s01;
   }
-  let kb32:i32=((i0/(128 as i64)) as i32);
+  // i0 >= 0, so >> 7 is the exact quotient and & 127 the exact remainder.
+  let kb32:i32=((i0>>(7 as i64)) as i32);
   let k_block:i64=kb32 as i64;
-  let iqs:i64=i0-(k_block*(128 as i64));
+  let iqs:i64=i0&(127 as i64);
   var xi0:f32=0.0;var xi1:f32=0.0;var xi2:f32=0.0;var xi3:f32=0.0;
   if i0<ne00{
    let o:i64=base+i0;
@@ -163,7 +175,7 @@ fn fg180q_mmq(x:u64,ids:u64,y:u64,
     ib=k_block*ne1+ii;
    }else{
     // gx*gy*nt/128 fits in 32 bits for every supported launch; compute it there.
-    let bpc32:i32=((gx*gyv*nt)/(128 as i32));
+    let bpc32:i32=((gx*gyv*nt)>>(7 as i32));
     let blocks_per_channel:i64=bpc32 as i64;
     let ib0:i64=(bz as i64)*blocks_per_channel;
     ib=ib0+k_block*ne1+(bx as i64);
@@ -173,15 +185,15 @@ fn fg180q_mmq(x:u64,ids:u64,y:u64,
    // qs starts at byte 16; four int8 values are written as one word at qs+iqs.
    st_i32(y,(yb+(16 as i64)+iqs) as u64,qword);
    if ds==2{
-    if iqs%16==0&&iqs<96{
-     st_f32(y,(yb+(4 as i64)+((2 as i64)+iqs/16)*2) as u64,sum);
-     if iqs%64==0{st_f32(y,(yb+(4 as i64)+(iqs/64)*2) as u64,d);}
+    if (iqs&(15 as i64))==0&&iqs<96{
+     st_f32(y,(yb+(4 as i64)+((2 as i64)+(iqs>>(4 as i64)))*2) as u64,sum);
+     if (iqs&(63 as i64))==0{st_f32(y,(yb+(4 as i64)+(iqs>>(6 as i64))*2) as u64,d);}
     }
-   }else{if iqs%32==0{
+   }else{if (iqs&(31 as i64))==0{
     if ds==1{
-     st_half2(y,(yb+(iqs/32)*(4 as i64)) as u64,d,sum);
+     st_half2(y,(yb+(iqs>>(5 as i64))*(4 as i64)) as u64,d,sum);
     }else{
-     st_f32(y,(yb+(iqs/32)*(4 as i64)) as u64,d);
+     st_f32(y,(yb+(iqs>>(5 as i64))*(4 as i64)) as u64,d);
     }
    }}
    slot+=1;

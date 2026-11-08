@@ -51,7 +51,7 @@ Instruction counts from the SASS of the DS4-direct kernel:
 
 | | instructions |
 |---|---:|
-| Goose | 824 |
+| Goose (before the division fixes) | 824 |
 | native | 160 |
 
 The Goose body is about five times longer. The instruction mix explains it:
@@ -72,7 +72,15 @@ Four changes were tried and none recovered the gap:
    about 2055 ns against 1810 ns;
 5. computing the hot index chain (`k_block`, `iqs`, `blocks_per_channel`) in 32-bit
    where the native code does the equivalent, keeping 64-bit only for the final byte
-   offset — still about 2035-2079 ns against 1812-1848 ns.
+   offset — still about 2035-2079 ns against 1812-1848 ns;
+6. removing the emitted int64 divisions from the hot path: `/128` and `%128` became
+   a shift and a mask, the `%32 /32` and `%16 /16 /64` index tests became masks and
+   shifts, and the `ne2 == 1` case (every Apex launch) got its own branch. This did
+   help: 2065 -> ~2007 ns median over five alternating series.
+
+After all six, five alternating series each give Goose 1974.6/1977.2/2007.6/2014.7/
+2187.1 ns and native 1782.8/1792.5/1801.7/1828.3/1860.0 ns, so the regression is
++11.4% at the median — down from +13.5% but still far outside noise.
 
 So register pressure is part of it but not the whole story: the remaining cost is
 the emitted integer address arithmetic (`i0`/`k_block`/`iqs`/`ib` chains built from
