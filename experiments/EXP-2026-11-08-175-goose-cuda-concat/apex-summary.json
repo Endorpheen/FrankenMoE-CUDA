@@ -1,0 +1,47 @@
+{
+  "status": "FUNCTIONAL_APEX_PATH_PASS_ONE_PAIR_NO_REGRESSION",
+  "component": "CUDA CONCAT device arithmetic+host planning in Goose;all other EXP174 modules identical",
+  "mechanism": "same DSO,GGML_GOOSE_CUDA_CONCAT=0 selects the private-renamed native op",
+  "runs": {
+    "goose": {
+      "prefill": 2172.2491197445697,
+      "decode": 19.19030221855004,
+      "tokens_equal": true,
+      "content_equal": true,
+      "probs_equal": true
+    },
+    "native-rollback": {
+      "prefill": 2198.147191606684,
+      "decode": 18.98943604215894,
+      "tokens_equal": true,
+      "content_equal": true,
+      "probs_equal": true
+    }
+  },
+  "deltas_pct": {
+    "prefill": -1.1781773286612625,
+    "decode": 1.057778524570998
+  },
+  "correctness": "all 128 token ids, response text and every returned top-5 probability equal to the saved wholly-C++ oracle in both arms;content sha256 e68df05b",
+  "goose_witness": "FG175C_CUDA_CONCAT host=0x100,cuda_status=0,paths=0x11,guards=0",
+  "witnesses": "29 pre-existing FG* modules identical between arms; only FG175C_CUDA_CONCAT is new",
+  "local_gates": {
+    "float_fixture": "32/32 both arms",
+    "typed_fixture": "28/28 both arms",
+    "quant_fixture": "16/16 both arms",
+    "byte_equal_vs_native": "4/4 quantized cases"
+  },
+  "memory": {
+    "rss_peak_mib": 21311.6,
+    "swap_kib": 0,
+    "vram_mib": 3278
+  },
+  "limits": "preliminary single pair under uncontrolled external load;not stable performance acceptance;other P3-03 scope (COPY/GET_ROWS/PAD/ROLL/SET) and full source closure remain open",
+  "production_changed": false,
+  "active_runtime_changed": false,
+  "defects_found_and_fixed": [
+    "host accessor type confusion: fg175cn_ti dereferenced the packet instead of the tensor address; fixed to dereference the tensor directly",
+    "plan arena overlap: memcpy sizes were written into the slots holding the src0/src1/dst pointers; moved to their own row",
+    "fixture-only: a dim=2 quantized case declared an inconsistent src1 plane count, so both arms failed it identically until the case was corrected; the strict reference check was restored, not weakened"
+  ]
+}

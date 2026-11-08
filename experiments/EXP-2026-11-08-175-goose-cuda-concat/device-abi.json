@@ -1,0 +1,38 @@
+{
+  "entries": [
+    "fg175cd_gg_function_1",
+    "fg175cd_gg_function_17",
+    "fg175cd_gg_function_18",
+    "fg175cd_gg_function_19",
+    "fg175cd_gg_function_21",
+    "fg175cd_gg_function_22",
+    "fg175cd_gg_function_23"
+  ],
+  "cont_entries": [
+    "fg175cd_gg_function_1",
+    "fg175cd_gg_function_17",
+    "fg175cd_gg_function_18"
+  ],
+  "nc_entries": [
+    "fg175cd_gg_function_19",
+    "fg175cd_gg_function_21",
+    "fg175cd_gg_function_22",
+    "fg175cd_gg_function_23"
+  ],
+  "cont_params": 14,
+  "nc_params": 26,
+  "routes": {
+    "0": "concat_non_cont Goose kernel (grid=dst.ne1,ne2,ne3 block=64)",
+    "1": "concat_cont Goose kernel, one launch per i3 slice",
+    "2": "dim==3 contiguous transport: two cudaMemcpyAsync on the same stream"
+  },
+  "producer": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true
+  }
+}

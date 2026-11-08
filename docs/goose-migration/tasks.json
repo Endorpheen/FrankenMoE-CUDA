@@ -816,7 +816,7 @@
         "ggml/src/ggml-cuda/roll*"
       ],
       "acceptance": "All dtype/stride/tail variants match native and Compute Sanitizer bounds checks; asynchronous copies preserve order.",
-      "evidence": "EXP174 actual Apex SET_ROWS F32/Q4_0 I32/I64 host/device Goose:source/ABI/native-bitwise guards/graph/rollback/invalid-index gates pass;same-DSO Apex pair2665.309/28.002 native vs2663.005/27.857 Goose,exact128/text/top5,7zeroheaps,actualQ4/I64witness8. Separate checkpoint,not production/active promotion. Other copy/gather/scatter variants and full task remain open.",
+      "evidence": "EXP175 actual Apex CUDA CONCAT is Goose:host type/alignment/contiguity asserts,width selection,per-i3 slice advance and grid/block planning,and both device kernels (concat_cont dim0..2 and concat_non_cont dim0..3) over the native copy widths1/2/4/8 and the quantized byte view.76 local checks per arm(32 route/branch,28 typed,16 quantized)pass in both arms and quantized destinations are byte-identical to native in4/4 cases. Same-DSO Apex32768/128 pair: native2198.147pp/18.989tg vs Goose2172.249pp/19.190tg (-1.178%/+1.058%),exact128IDs/text/all savedtop5,all29 previous FG witnesses identical,FG175C only addition,RSS21311.6MiB,swap0,VRAM3278MiB. Rollback GGML_GOOSE_CUDA_CONCAT=0 keeps the private-renamed native op in the same DSO;EXP174 runtime remains the previous checkpoint.Separate checkpoint,not production or active promotion. COPY/DUP/CONT,GET_ROWS(+BACK),SET,PAD,PAD_REFLECT_1D,ROLL and dim3-quantized/non-contiguous branches remain native.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3122,6 +3122,14 @@
       "checkpoint": "EXP173 actual Apex Q4 FA functional/source path and preliminary component parity",
       "event": "Owned Goose numerical/host path,scalar-field state,2opposite-order sameDSO pairs and explicit failure/history/profile separation. No original numeric FA template/occupancy dependency in replacement. New fullStage3EXP303 snapshot871 qualifies9byte-identical C modules and CF012probe,selectedfornextwork;f849rollback retained. Production unchanged. No fullApex/universal requirement/cycle claimedDONE.",
       "evidence": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/qualification.json"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-03",
+      "experiment": "EXP175",
+      "change": "CUDA CONCAT device kernels and host planning moved to Goose",
+      "status": "IN_PROGRESS",
+      "evidence": "experiments/EXP-2026-11-08-175-goose-cuda-concat/apex-summary.json"
     }
   ],
   "batches": [
