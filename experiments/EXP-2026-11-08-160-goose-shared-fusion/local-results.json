@@ -1,0 +1,9 @@
+{
+  "status": "PASS_SHARED_FUSION_PARAMETERS_AND_COMPOSITION",
+  "goose": "PASS shared fusion/params decisions=714 checks=1655 core_modes=0x3fe7f exact_parameter_bits=1 native_oracle=EXP159\n",
+  "fusion_rollback": "PASS shared fusion/params decisions=714 checks=1655 core_modes=0x0 exact_parameter_bits=1 native_oracle=EXP159\n",
+  "all_rollback": "PASS shared fusion/params decisions=714 checks=1655 core_modes=0x0 exact_parameter_bits=1 native_oracle=EXP159\n",
+  "model_runs": 0,
+  "production_changed": false,
+  "errors": "PASS shared malformed-input cases=15 rejection_before_mutation=10 zero_NULL_copy=1 negative_fusion_indices=3 full_absent_hash=1 borrowed_chain=64 cycle_rejected=1\n"
+}

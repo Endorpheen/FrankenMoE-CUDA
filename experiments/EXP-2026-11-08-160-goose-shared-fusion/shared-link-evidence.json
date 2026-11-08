@@ -1,0 +1,14 @@
+{
+  "libraries": {
+    "cpu": [
+      "U fg160_fusion_enabled",
+      "U fg160_query"
+    ],
+    "cuda": [
+      "U fg160_fusion_enabled",
+      "U fg160_query"
+    ]
+  },
+  "oracle_isolation": "Fixture asserts fg160_query absent in native EXP159 namespace,present in candidate namespace;DT_RPATH pins each probe dependency before LD_LIBRARY_PATH",
+  "production_changed": false
+}

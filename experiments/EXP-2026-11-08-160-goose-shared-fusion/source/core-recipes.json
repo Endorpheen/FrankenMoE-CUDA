@@ -1,0 +1,94 @@
+{
+  "ggml_node_list_find_tensor": [
+    7,
+    [
+      "cgraph",
+      "idxs",
+      "count",
+      "tensor"
+    ],
+    "int"
+  ],
+  "ggml_is_constant": [
+    8,
+    [
+      "tensor"
+    ],
+    "bool"
+  ],
+  "ggml_can_fuse_subgraph_ext": [
+    4,
+    [
+      "cgraph",
+      "node_idxs",
+      "count",
+      "ops",
+      "outputs",
+      "num_outputs"
+    ],
+    "bool"
+  ],
+  "ggml_rope_set_offset": [
+    14,
+    [
+      "a",
+      "n_offs"
+    ],
+    "ptr"
+  ],
+  "ggml_swiglu_oai": [
+    15,
+    [
+      "ctx",
+      "a",
+      "b",
+      "fg160_float_bits(alpha)",
+      "fg160_float_bits(limit)",
+      "0",
+      "0"
+    ],
+    "ptr"
+  ],
+  "ggml_swiglu_clamp": [
+    15,
+    [
+      "ctx",
+      "a",
+      "b",
+      "0",
+      "fg160_float_bits(limit)",
+      "0",
+      "1"
+    ],
+    "ptr"
+  ],
+  "ggml_argsort_top_k": [
+    16,
+    [
+      "ctx",
+      "a",
+      "k"
+    ],
+    "ptr"
+  ],
+  "ggml_pad_ext": [
+    17,
+    [
+      "ctx",
+      "a",
+      "fg_pad",
+      "0"
+    ],
+    "ptr"
+  ],
+  "ggml_pad_ext_circular": [
+    17,
+    [
+      "ctx",
+      "a",
+      "fg_pad",
+      "1"
+    ],
+    "ptr"
+  ]
+}

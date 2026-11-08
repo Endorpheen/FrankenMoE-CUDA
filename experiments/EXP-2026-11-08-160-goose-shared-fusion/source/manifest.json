@@ -1,0 +1,100 @@
+{
+  "status": "ACCEPTED_BOUNDED_FUNCTIONAL_SHARED_FUSION_NOT_FINAL_PERFORMANCE",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entry": "fg160_gg_function_1",
+  "libraries": {
+    "base": {
+      "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run/libggml-base-shared-70f7b64fec7d.so.0.27.0",
+      "sha256": "05f642d618fc0acff4d6402fe4bbf5d74ad9ebbd4893308e26edf20bfc7d1103"
+    },
+    "cpu": {
+      "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run/libggml-cpu-shared-dd5a40e47065.so.0.27.0",
+      "sha256": "63ad4984881220e55e41463981faa3bba5d4a0d7218880e9b205c8c8c460a9a7"
+    },
+    "cuda": {
+      "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run/libggml-cuda-shared-96c6f96ceea7.so.0.27.0",
+      "sha256": "852ab06f91beb65d0218a9c970b521e557ee4ba51401ea2f79c6a057d8fd3353"
+    }
+  },
+  "baseline_libraries": {
+    "base": {
+      "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp159/run/libggml-base-graph-24bb5792b817.so.0.27.0",
+      "sha256": "35fc332e506623a9a2c72dd98ab04d5ae624a7e885ae090de2da05127ed4c815"
+    },
+    "cpu": {
+      "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cpu.so.0.27.0",
+      "sha256": "ab6f61ea793d607830c0f13d2f08e2c7de1d41bbf8766ebd6dd56543e29cc274"
+    },
+    "cuda": {
+      "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run/libggml-cuda.so",
+      "sha256": "0fdae13ecdfba971bc29d22a9cbb070d1d62afb9bf39527e14378d0fb1aca0a8"
+    }
+  },
+  "source_pins": {
+    "shared-core": {
+      "original": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-159-goose-graph-lifecycle/source/ggml-graph-lifecycle.c",
+      "sha256": "e52da0b0d9379aed0f39ee412322d44f8c16ea8f5b0f4f5109f13ad8f7ef71da"
+    },
+    "shared-scheduler": {
+      "original": "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/source/cpu-backend/backend/ggml-backend-buffer.cpp",
+      "sha256": "5ee5249be82be39b23404d14b4641acde641acf3530777fcbe0b6871e5699d1f"
+    },
+    "shared-meta": {
+      "original": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-backend-meta.cpp",
+      "sha256": "e75a4795d3b5ff719f698b101f5b4bc2b582ef0c9894d363a92b622b45877bce"
+    },
+    "shared-cpu": {
+      "original": "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/ggml-cpu-integrated.c",
+      "sha256": "bbbc044d215c0ab9fa00c22e8d229cd77024ffdf154d4a23a536c33cbce34ad3"
+    },
+    "shared-cuda": {
+      "original": "/home/end0/AI/LlamaServer/exp107-expert-overlap/source/ggml/src/ggml-cuda/ggml-cuda.cu",
+      "sha256": "8b1877ad82d96804a1b173b3a7de986fa381382cd400bfc1bfd90fc5d0d2944a"
+    }
+  },
+  "header_fusion": [
+    "ggml_node_get_use_count",
+    "ggml_node_has_n_uses",
+    "ggml_can_fuse_ext",
+    "ggml_can_fuse",
+    "ggml_can_fuse_subgraph",
+    "ggml_set_op_params",
+    "ggml_get_op_params_i32",
+    "ggml_get_op_params_f32",
+    "ggml_set_op_params_i32",
+    "ggml_set_op_params_f32"
+  ],
+  "core_helpers": [
+    "ggml_node_list_find_tensor",
+    "ggml_is_constant",
+    "ggml_can_fuse_subgraph_ext",
+    "ggml_rope_set_offset",
+    "ggml_swiglu_oai",
+    "ggml_swiglu_clamp",
+    "ggml_argsort_top_k",
+    "ggml_pad_ext",
+    "ggml_pad_ext_circular"
+  ],
+  "roles": [
+    "core",
+    "cpu",
+    "cuda",
+    "scheduler",
+    "meta"
+  ],
+  "rollback": [
+    "GGML_GOOSE_FUSION=0",
+    "GGML_GOOSE_GRAPH_LIFECYCLE=0",
+    "previous EXP159 runtime"
+  ],
+  "production_changed": false,
+  "apex_caller_modes": {
+    "core": "0x11410",
+    "cpu": "0x400",
+    "cuda": "0xc28",
+    "scheduler": "0x100000000000"
+  },
+  "meta_exercised_by_apex": false,
+  "numerical_leaf_objects_unchanged": true,
+  "full_migration": false
+}

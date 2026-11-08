@@ -1,0 +1,94 @@
+{
+  "ggml_node_get_use_count": [
+    0,
+    [
+      "cgraph",
+      "node_idx"
+    ],
+    "int32_t"
+  ],
+  "ggml_node_has_n_uses": [
+    1,
+    [
+      "cgraph",
+      "node_idx",
+      "n_uses"
+    ],
+    "bool"
+  ],
+  "ggml_can_fuse_ext": [
+    2,
+    [
+      "cgraph",
+      "node_idxs",
+      "ops",
+      "num_ops"
+    ],
+    "bool"
+  ],
+  "ggml_can_fuse": [
+    3,
+    [
+      "cgraph",
+      "node_idx",
+      "ops",
+      "num_ops"
+    ],
+    "bool"
+  ],
+  "ggml_can_fuse_subgraph": [
+    5,
+    [
+      "cgraph",
+      "node_idx",
+      "count",
+      "ops",
+      "outputs",
+      "num_outputs"
+    ],
+    "bool"
+  ],
+  "ggml_set_op_params": [
+    9,
+    [
+      "tensor",
+      "params",
+      "params_size"
+    ],
+    "void"
+  ],
+  "ggml_get_op_params_i32": [
+    10,
+    [
+      "tensor",
+      "i"
+    ],
+    "int32_t"
+  ],
+  "ggml_get_op_params_f32": [
+    11,
+    [
+      "tensor",
+      "i"
+    ],
+    "float"
+  ],
+  "ggml_set_op_params_i32": [
+    12,
+    [
+      "tensor",
+      "i",
+      "value"
+    ],
+    "void"
+  ],
+  "ggml_set_op_params_f32": [
+    13,
+    [
+      "tensor",
+      "i",
+      "fg160_float_bits(value)"
+    ],
+    "void"
+  ]
+}

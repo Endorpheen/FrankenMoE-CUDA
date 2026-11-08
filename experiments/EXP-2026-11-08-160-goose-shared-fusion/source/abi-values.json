@@ -1,0 +1,14 @@
+{
+  "flag_output": 2,
+  "flag_param": 4,
+  "flag_compute": 16,
+  "max_src": 10,
+  "usage_weights": 1,
+  "param_bytes": 64,
+  "op_rope": 48,
+  "op_rope_back": 49,
+  "op_pad": 64,
+  "glu_oai": 3,
+  "glu_clamp": 6,
+  "rope_vision": 24
+}
