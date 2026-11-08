@@ -1,0 +1,91 @@
+{
+  "module": "host/host.goose",
+  "role": "EXP168 host validation/launch worker",
+  "abi": "plan.h frozen; all 11 extern imports and their signatures unchanged from inputs/host.goose; no heap or runtime allocations added; build/link/execution left to parent",
+  "issues": [
+    {
+      "id": "H1",
+      "kind": "native-parity validation gap",
+      "severity": "medium",
+      "location": "run(), mode 5",
+      "native_reference": "ggml_cuda_op_rms_norm_fused_add asserts mul_tensor->type == GGML_TYPE_F32",
+      "description": "The intermediate mul node (packet arg second) was never type-checked in mode 5. It is correctly used only structurally (other(second,node), other(third,second)) and its data is rightly not required (fused intermediate may have data=NULL), but native still asserts its type metadata, which the host skipped."
+    },
+    {
+      "id": "H2",
+      "kind": "contract gap",
+      "severity": "medium",
+      "location": "run(), modes 3/4/5",
+      "native_reference": "CONTRACT: 'Validate intermediate/root types and shapes without touching absent intermediate storage.'",
+      "description": "Shapes of fused intermediate nodes were never validated: dims of the rms_norm node (node) were not compared with X dims for modes 3/4/5, and dims of the mode-5 mul node were not compared with X dims. ti(...,3,i)/ti(...,2,...) read only ne/type metadata and never touch absent storage, so the required validation was safely expressible but missing."
+    },
+    {
+      "id": "H3",
+      "kind": "unchecked extent arithmetic",
+      "severity": "medium",
+      "location": "copy_tensor()",
+      "native_reference": "CONTRACT: 'all pointer arithmetic must remain in checked address span'; tensor ti key 9 is 'ggml_nbytes(t) checked span (must call)'.",
+      "description": "The required span call ti(t,9,0) was executed but its value was discarded, and extent accumulation was incomplete: nothing verified that the projected byte extent 4+sum((ne[i]-1)*nb[i]) (exactly ggml_nbytes for F32 with nb0==4) fits the span, nor that the accumulation itself cannot wrap u64 before the device computes row*stride style offsets. Corrupt or wrapped geometry would have launched."
+    }
+  ],
+  "fixes": [
+    "H1: added ensure(ti(second,2,0)==f32_type(),23) for mode 5 before any launch effect.",
+    "H2: added dims(node)==dims(X) check (fail code 22) for modes 3/4/5 and dims(second)==dims(X) (fail code 24) plus F32 type (fail code 23) for the mode-5 mul node, reading only ti type/ne metadata so absent intermediate storage is never touched or required.",
+    "H3: copy_tensor now accumulates ext = 4 + sum((ne[i]-1)*nb[i]) using the existing overflow-checked mul() plus a new checked add() (overflow fail code 26), then requires ext <= ti(t,9,0) with a positive span (fail code 25). For any consistent F32 tensor this is an identity (ggml_nbytes == 4 + sum((ne[i]-1)*nb[i])), so valid native configurations are never rejected; it rejects only corrupt metadata or spans whose u64 offset arithmetic could wrap on the device. ti(t,9,0) is still called exactly once per projected tensor."
+  ],
+  "intentional_safety_repairs": [
+    "Kept from the supplied draft (native is looser; contract mandates stricter): mode 1 requires contiguous X and D although native group_norm flat-indexes without any assert; dims(D)==dims(X) enforced for every mode including the mode-4 scale tensor and the mode-3/5 fused outputs although native never checks destination shape (strided-reference semantics require it); mode 6 requires dims(grad)==dims(X); null or unrelated M/A operands are rejected before any stream/kernel effect although native silently falls back to unfused RMS when mul_t==nullptr; all dims bounded to (0,INT32_MAX] and every product guarded via mul()/ensure because native int truncation would be UB.",
+    "New in this revision: intermediate-node type/shape validation (fail codes 22-24) and checked-extent-versus-span verification (fail codes 25/26) as described in fixes.",
+    "No native-valid configuration is rejected by the new checks: dims equalities hold for any well-formed fused graph, and the extent check is a mathematical identity for consistent F32 tensors."
+  ],
+  "remaining_contract_questions": [
+    "Assumes ti(t,9,0) returns ggml_nbytes(t) as i64 (parallel to key 1 returning the data pointer). If the bridge instead returns only a status code, fail-code-25 comparison must be dropped; everything else is unaffected.",
+    "iv14 shared bytes for mode 6 kept at 256 when bs>32 per CONTRACT ('shared bytes256 for norm/back/group') and because device block_pair writes 2 floats per warp into the dynamic buffer, while native rms_norm_back passes 0 dynamic shared bytes (uses static __shared__ float[32] x2).",
+    "Mode 1 with groups>channels: native launches groups*samples blocks and excess blocks idle; host preserves this native behavior (no artificial reject) since size/total/groups are guarded and overall work is not silently zero.",
+    "Mode 4 scale value (float op_params[0] of second) is forwarded unconstrained (zero/negative allowed per contract tests); only bias op_params[1]!=0 is rejected; eps keeps the native eps>=0 assert, so NaN eps is rejected.",
+    "Data NaN/Inf policy: the host never inspects tensor contents; the special NaN comparison policy for exact-value testing is a parent fixture concern per contract."
+  ],
+  "coverage": {
+    "mode_0_norm": "X=src0, D=node, eps op_params[0], grid [rows,min(channels,65535),min(samples,65535)], bs 32/1024 by cols, shared 256 when bs>32, dims X==D enforced",
+    "mode_1_group_norm": "groups op_params[0] (int), eps op_params[1], contiguous X/D required, size=n*rows*ceil(channels/groups), total=n*rows*channels*samples, ng=groups*samples all mul-guarded and <=INT32_MAX, grid [ng,1,1], bs 32/1024 by group size, shared 256 when bs>32, iv15/16/17 set",
+    "mode_2_rms_norm": "plain RMS: vector policy below, scalar bs 256/1024, shared 128 when bs>32, iv6/iv7 written",
+    "mode_3_rms_norm_fused": "M=other(second,node) with null/unrelated rejection (codes 20/8/7), D=second, iv8, per-dim magic for M (flat words 0..11), vec additionally requires M.ncols==ncols and 16B alignment, intermediate node type and shape validated (10/22)",
+    "mode_4_rms_norm_scale_fused": "second.src0==node and float op_params[1]==0 enforced (11), D=second, fv1=scale (zero/negative allowed), iv10, no M/A, vec identical to native do_scale path, intermediate node shape validated",
+    "mode_5_rms_norm_fused_add": "M from second via other(second,node), A=other(third,second), D=third, iv8/iv9, magic for M and A (words 0..11 and 12..23), vec requires both ncols equality and alignment, mul-node F32 type and shape validated (23/24), node shape validated (22)",
+    "mode_6_rms_norm_back": "grad=node.src[0] (contiguous enforced), X=node.src[1], dims X==D and grad==X, nr=rows*channels*samples mul-guarded <=INT32_MAX, grid [nr,1,1], bs 32/1024 by cols, shared 256 when bs>32",
+    "mode_7_l2_norm": "same grid/bs as norm, shared 128 when bs>32; scale=rsqrt(max(sum,eps*eps)) lives on device",
+    "vector_policy": "vec = ncols%4==0 && data pointers and nb[1..3] of X and D 16-byte aligned; M/A additionally require ncols==X.ncols and 16-byte alignment; n4=ncols/4 thresholds 32/128/256/512/1024 -> bs 32/128/256/512/1024 vpt1, n4<=4096 -> bs1024 vpt4, n4>4096 -> scalar bs1024; exact match with rms_norm_f32_dispatch and ggml_cuda_is_aligned",
+    "plan_writes": "key0 ptrs X/D/M/A/Grad; key1 dims [which*4+i]; key2 strides in float elements; iv0..17 all written per contract (15/16/17 group-only, 6/7 RMS-only, 8/9/10 fusion flags); fv0 eps, fv1 output scale; key4 magic flat three words per dimension matching init_fastdiv_values and device modulo coefficient keys",
+    "validation_order": "all rejections happen before launch(packet); no stream or kernel effects on failure; no silent zero-work launches (grids >= 1x1x1 for all modes)",
+    "syntax": "only constructs demonstrably present in input Goose files (let/var, while, if-else expressions, as-casts including call-result and parenthesized-arith casts, u64/i64/f32/bool literals, extern fn declarations)"
+  },
+  "error_codes": {
+    "1": "u64 multiply overflow (mul)",
+    "2": "divide by zero (ceil)",
+    "3": "magic divisor outside (0,2^32-1]",
+    "4": "magic multiplier mp exceeds uint32",
+    "5": "tensor projection: null handle / non-F32 / null data / nb0 != 4",
+    "6": "tensor projection: dim not in (0,INT32_MAX] or negative stride or stride not whole floats",
+    "7": "fused operand tensor handle null",
+    "8": "fused operand does not reference the required node (unrelated input)",
+    "9": "invalid packet args (mode range, null node, null ctx)",
+    "10": "rms/intermediate node not F32",
+    "11": "mode 4: scale tensor null / src0 != node / bias op_params[1] != 0",
+    "12": "dims(X) != dims(D)",
+    "13": "mode 6 grad not contiguous",
+    "14": "dims(grad) != dims(X)",
+    "15": "eps < 0 (NaN eps also rejected)",
+    "16": "mode 1 X/D not contiguous",
+    "17": "group count <= 0",
+    "18": "mode 1 size/total/groups exceed INT32_MAX or overflow",
+    "19": "mode 6 rows*channels*samples exceeds INT32_MAX or overflow",
+    "20": "mode 3 mul operand null",
+    "21": "mode 5 add operand null",
+    "22": "NEW: dims(rms node) != dims(X) for modes 3/4/5",
+    "23": "NEW: mode 5 mul node not F32",
+    "24": "NEW: dims(mode 5 mul node) != dims(X)",
+    "25": "NEW: projected byte extent 4+sum((ne[i]-1)*nb[i]) exceeds checked span from ti(t,9,0), or span non-positive",
+    "26": "NEW: u64 add overflow during extent accumulation"
+  },
+  "tests_run": "none"
+}

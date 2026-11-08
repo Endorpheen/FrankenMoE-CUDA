@@ -1,0 +1,69 @@
+{
+  "status": "PASS_GPU_CORPUS_AND_REAL_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "device": "fg168d_gg_function_1",
+    "host": "fg168h_gg_function_1"
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp168/run/libggml-cuda-normalization-8d9a9338cfdc.so.0.27.0",
+  "sha256": "3833fce54ad64872b46e05325ebbe37009d4bc85a3fdef2c554f801eacaf3a48",
+  "public_entrypoints": [
+    {
+      "name": "ggml_cuda_op_norm",
+      "mode": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_group_norm",
+      "mode": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_rms_norm",
+      "mode": 2,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_rms_norm_fused",
+      "mode": 3,
+      "args": 2
+    },
+    {
+      "name": "ggml_cuda_op_rms_norm_scale_fused",
+      "mode": 4,
+      "args": 2
+    },
+    {
+      "name": "ggml_cuda_op_rms_norm_fused_add",
+      "mode": 5,
+      "args": 3
+    },
+    {
+      "name": "ggml_cuda_op_rms_norm_back",
+      "mode": 6,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_l2_norm",
+      "mode": 7,
+      "args": 1
+    }
+  ],
+  "native_prefixed_functions": [
+    "ggml_cuda_op_group_norm",
+    "ggml_cuda_op_l2_norm",
+    "ggml_cuda_op_norm",
+    "ggml_cuda_op_rms_norm",
+    "ggml_cuda_op_rms_norm_back",
+    "ggml_cuda_op_rms_norm_fused",
+    "ggml_cuda_op_rms_norm_fused_add",
+    "ggml_cuda_op_rms_norm_scale_fused"
+  ],
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/norm.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_NORM=0 or immutable EXP167 runtime",
+  "production_changed": false,
+  "cuda_object_sha256": "0774574ce912b5e1069363d3495519bbb66222bd50ea31f871811b291fcc50fa",
+  "host_object_sha256": "06ac4b2d67abbbc8cb82199574f309bca3be5b24206318156f76d41b1dd65c71"
+}

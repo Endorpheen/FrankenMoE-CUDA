@@ -1,0 +1,37 @@
+{
+  "status": "FIXED_BEFORE_MODEL",
+  "findings": [
+    {
+      "area": "Goose host",
+      "origin": "GLM review",
+      "fix": "Validate F32/shape metadata of absent fused intermediate nodes;checked u64 projected-byte extent accumulation against span. Parent24 preflight+GPU+realApex verified."
+    },
+    {
+      "area": "Goose device",
+      "origin": "Codex audit",
+      "fix": "Use i64 scalar column loops so the final block-stride increment cannot wrap signed i32."
+    },
+    {
+      "area": "GLM fixture compile",
+      "fix": "Remove stray declaration using Case before definition;const-cast read-only tensor metadata into the native non-const src ABI."
+    },
+    {
+      "area": "GLM fixture numerical oracle",
+      "fix": "Use compile-time mul/add/scale specialization like native. Initial runtime-flag reference differed1ULP despite candidate matching native;no tolerance relaxation."
+    },
+    {
+      "area": "GLM fixture rollback",
+      "fix": "Exclude corrected strided-output/source cases from old-native fallback parity;those remain strict independent-reference cases in default Goose testing."
+    },
+    {
+      "area": "GLM fixture stream ordering",
+      "fix": "Default-stream cudaMemset/pageable H2D must finish before nonblocking compute. Added fixture-only default-stream synchronization;runtime untouched. Before fix,native-vs-native and legacy-Goose differences reproduced only in sequences;isolated case,one memcheck and one racecheck passed because of instrumentation ordering. After fix,default/rollback/legacy all pass normally."
+    },
+    {
+      "area": "GLM response protocol",
+      "fix": "Retain both raw responses;recover strict owned files from prose and split/escaped JSON. Minor syntax/transport recovery only;no new model generation. Explicit recovery receipts remain local."
+    }
+  ],
+  "focused_sanitizer_scope": "One local rollback memcheck:0errors;one local legacy racecheck:0hazards. Both ran to investigate reproduced numerical sequence failures,not a full runtime/security audit.",
+  "model_requests": 1
+}

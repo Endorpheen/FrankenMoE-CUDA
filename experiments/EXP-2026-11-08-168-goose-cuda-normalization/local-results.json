@@ -1,0 +1,188 @@
+{
+  "status": "PASS_GPU_NORMALIZATION_NATIVE_REFERENCE_ROLLBACK_PREFLIGHT",
+  "runs": [
+    {
+      "label": "fixture-build",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-168-goose-cuda-normalization/source/fixture.cu(429): warning #177-D: variable \"nrows\" was declared but never referenced\n      const int nrows = gridDim.x;\n                ^\n\nRemark: The warnings can be suppressed with \"-diag-suppress <warning-number>\"\n\n/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-168-goose-cuda-normalization/source/fixture.cu(460): warning #177-D: variable \"nrows\" was declared but never referenced\n      const int nrows = gridDim.x;\n                ^\n\n/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-168-goose-cuda-normalization/source/fixture.cu(496): warning #177-D: variable \"nrows\" was declared but never referenced\n      const int nrows = gridDim.x;\n                ^\n\n"
+    },
+    {
+      "label": "fixture-link",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "faults-build",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-168-goose-cuda-normalization/source/faults.cu(102): warning #177-D: variable \"p4\" was declared but never referenced\n      void * p4 = base + 12288;\n             ^\n\nRemark: The warnings can be suppressed with \"-diag-suppress <warning-number>\"\n\n"
+    },
+    {
+      "label": "faults-link",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "preflight-build",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "preflight-link",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "gpu-parity",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS cases=99 native_bitexact=95 independent_ref=12 nan_policy=2 native_info_divergent=2 values=232515 checks=655 rollback=0 legacy_rms_off=0\\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nINFO native divergence m6_xpad_strided_source first at [0,1,0,0] got 3f122204 want 3f83c4f9\nINFO native divergence m6_xdpad_strided first at [0,1,0,0] got 3f122204 want 3f83c4f9\nFG168_CUDA_NORM host=0xff,cuda_status=0,modes=0xff,vectors=0x3,fusions=0x7\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x407\n"
+    },
+    {
+      "label": "gpu-rollback",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS cases=87 native_bitexact=87 independent_ref=0 nan_policy=2 native_info_divergent=0 values=229443 checks=569 rollback=1 legacy_rms_off=0\\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x403\n"
+    },
+    {
+      "label": "gpu-legacy-rms-rollback",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS cases=93 native_bitexact=90 independent_ref=6 nan_policy=2 native_info_divergent=2 values=230979 checks=612 rollback=0 legacy_rms_off=1\\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nINFO native divergence m6_xpad_strided_source first at [0,1,0,0] got 3f122204 want 3f83c4f9\nINFO native divergence m6_xdpad_strided first at [0,1,0,0] got 3f122204 want 3f83c4f9\nFG168_CUDA_NORM host=0xc3,cuda_status=0,modes=0xc3,vectors=0x1,fusions=0x0\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x407\n"
+    },
+    {
+      "label": "preflight-run",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS normalization preflight_cases=24 no_stream_or_kernel_effect_before_rejection=1\n",
+      "stderr": "FG157_CONTEXT_CORE goose_modes=0x4000000,live_context_heaps=0\n"
+    },
+    {
+      "label": "fault-0",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\n"
+    },
+    {
+      "label": "fault-1",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-2",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-3",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-4",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-5",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-6",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-7",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-8",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-9",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-10",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-11",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-12",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-13",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-14",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fault-15",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "production_changed": false
+}

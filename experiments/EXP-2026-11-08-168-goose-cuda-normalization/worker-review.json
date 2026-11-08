@@ -1,0 +1,89 @@
+{
+  "model": "z-ai/glm-5.3-flash",
+  "parallel": 2,
+  "checkpoint": "d3c028f23acc4a7afc1006303a2fd5310db88f56",
+  "host": "Targeted host fixes retained;strict-C,preflight,GPU and Apex verified",
+  "fixtures": "All4returned test files retained,with explicit Codex compile/oracle/rollback/stream corrections;not blindly accepted",
+  "factory": "/home/end0/AI/LlamaServer/franken-goose-glm53-trial-exp168-20261108",
+  "raw_results_published": false,
+  "production_or_compiler_shared": false,
+  "weights_or_credentials_shared": false,
+  "next_jobs": [
+    "row-reductions",
+    "argmax"
+  ],
+  "scale_above_two": false,
+  "gate": "Functional correctness and one preliminary Apex sample passed;stable fresh-C++ performance remains unproven",
+  "local_recovery_receipts": {
+    "norm-host": {
+      "status": "RETURNED",
+      "applied": [
+        "host/host.goose",
+        "host/review.json"
+      ],
+      "review": {
+        "errors": [],
+        "checks": [
+          {
+            "argv": [
+              "python3",
+              "checks/artifacts.py",
+              "host"
+            ],
+            "exit_code": 0
+          }
+        ],
+        "changed_paths": [
+          "host/host.goose",
+          "host/review.json"
+        ]
+      },
+      "observed_models": [
+        "z-ai/glm-5.3-flash"
+      ],
+      "recovered_at": 1794130266.7120807,
+      "format_repair": "Removed prose before JSON and appended one missing final root brace;no source-content changes",
+      "original_result_preserved": "attempt-1-result.json"
+    },
+    "norm-fixtures": {
+      "status": "RETURNED",
+      "applied": [
+        "tests/fixture.cu",
+        "tests/fixture-api.h",
+        "tests/faults.cu",
+        "tests/cases.json"
+      ],
+      "review": {
+        "errors": [],
+        "checks": [
+          {
+            "argv": [
+              "python3",
+              "checks/artifacts.py",
+              "tests"
+            ],
+            "exit_code": 0
+          }
+        ],
+        "changed_paths": [
+          "tests/cases.json",
+          "tests/faults.cu",
+          "tests/fixture-api.h",
+          "tests/fixture.cu"
+        ]
+      },
+      "observed_models": [
+        "z-ai/glm-5.3-flash"
+      ],
+      "recovered_at": 1794130778.0167441,
+      "format_repair": "Recovered first complete file from message7;decoded its partial fixture string;spliced message9 continuation after removing prose/fence and one transport escape layer;decoded complete trailing faults/cases objects. No arithmetic/source edits during format recovery.",
+      "source_sha256": {
+        "fixture.cu": "d57b3c0bfd06ea9fa201585eea92f8e8c64db6bcc023a81013b0d2b073348f3e",
+        "fixture-api.h": "061156253d0f3a0286686e490ba4ac638e530ad15e5a77c020cc24240fc7f3e4",
+        "faults.cu": "a63d945a38820c440d0f6c8ff408482ec346ce4d745f817eb1390f28ab9fce6a",
+        "cases.json": "d02cd305bee079b7da940f9818e8b86a7a9f57abfe9f96f7f99ba9c115f56f5b"
+      },
+      "original_result_preserved": "attempt-1-result.json"
+    }
+  }
+}

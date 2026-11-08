@@ -1,0 +1,32 @@
+{
+  "failures_before_final_gate": [
+    {
+      "label": "initial-default-reference",
+      "case": "m5_dpad16B",
+      "candidate_bits": "c099a26f",
+      "reference_bits": "c099a26e",
+      "native_comparison_before_reference": "PASS",
+      "cause": "Runtime flags in reference blocked native constexpr fusion rounding;fixed reference specialization,no candidate math change."
+    },
+    {
+      "label": "rollback-sequence",
+      "case": "grid_clamp_samples_m2",
+      "candidate_bits": "a9cc9e32",
+      "native_bits": "3f7ffffe",
+      "normal_full_sequence": "FAIL",
+      "isolated_case": "PASS",
+      "memcheck": "PASS,0errors",
+      "cause": "Test default-stream initialization raced nonblocking compute;fixed fixture stream ordering."
+    },
+    {
+      "label": "legacy-sequence",
+      "case": "unary_m7_cols2052",
+      "candidate_bits": "3d1d91a2",
+      "native_bits": "3d186e89",
+      "racecheck": "PASS,0hazards",
+      "cause": "Same test initialization ordering defect;normal final legacy suite passes after fixture correction."
+    }
+  ],
+  "final_results": "local-results.json",
+  "diagnostic_note": "No Apex request was made until the corrected local default/rollback/legacy suites all passed. No runtime synchronization change or comparison tolerance was used to mask the test defect."
+}

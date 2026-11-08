@@ -1,12 +1,12 @@
 # FrankenMoE -> Fried Goose: complete migration plan
 
-Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified solo EXP155..163;current checkpoint recorded in Git and runtime/active.json.
+Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified EXP155..168;current checkpoint recorded in Git and runtime/active.json.
 
 **One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**
 
-**Functional tasks: 160 total; 14 DONE; 4 PARTIAL; 19 IN_PROGRESS; 0 BLOCKED; 123 TODO. Remaining: 146.**
+**Functional tasks: 160 total; 17 DONE; 3 PARTIAL; 23 IN_PROGRESS; 0 BLOCKED; 117 TODO. Remaining: 143.**
 
-**Current Apex/common milestone: 136 tasks; 12 DONE; 124 remaining (including 4 partial).**
+**Current Apex/common milestone: 136 tasks; 15 DONE; 121 remaining (including 3 partial).**
 
 Task count is not code coverage, effort percentage, speed or a completion-date estimate. A bounded completed module does not complete its parent subsystem. Archived history is not proof that all modules run together.
 
@@ -18,7 +18,7 @@ This supersedes the legacy B0-B8 grouping as the current remaining-work schedule
 |---|---|---:|---:|---:|---|
 |1/13|CPU execution control,expert orchestration and buffer ownership|5|2|3|IN_PROGRESS|
 |2/13|Complete CPU math,quantized/repacked MoE and native CPU removal|19|0|19|QUEUED / retain existing partial work|
-|3/13|Complete CUDA compute operators|15|0|15|QUEUED / retain existing partial work|
+|3/13|Complete CUDA compute operators|15|1|14|QUEUED / retain existing partial work|
 |4/13|CUDA host ownership,device abstraction and CUDA native removal|6|0|6|QUEUED / retain existing partial work|
 |5/13|GGML tensor,graph,allocator and unified scheduler|12|2|10|QUEUED / retain existing partial work|
 |6/13|KV,recurrent/session memory and complete shared Apex model runtime|18|0|18|QUEUED / retain existing partial work|
@@ -30,7 +30,7 @@ This supersedes the legacy B0-B8 grouping as the current remaining-work schedule
 |12/13|Remaining models,tokenizers,platforms and device compatibility|12|0|12|QUEUED / retain existing partial work|
 |13/13|Final universal closure and genuine100percent completion|4|0|4|QUEUED / retain existing partial work|
 
-Current stage: **1/13**. Completed groups: **0/13**. Original requirements: **16/160 DONE; 144remaining; 10.00%** by requirement count,not code or effort.
+Current stage: **1/13**. Completed groups: **0/13**. Original requirements: **17/160 DONE; 143remaining; 10.62%** by requirement count,not code or effort.
 
 Per-component source ownership,correctness,memory safety,liveness and rollback remain mandatory. Share code generation/build/integration and full-system model samples across coherent groups. Keep critical synchronization/allocator/deletion subgates separate internally. Record objective blockers rather than relabeling partial work as full completion. Qwen waits until stage10fullApex. Final100%requires all contracts,source/import closure and no-worse-than-C++ real-system performance evidence.
 
@@ -56,7 +56,7 @@ Current owner rule:after each significant change,perform scoped correctness chec
 
 | Cycle | Existing stages | Requirement scope | DONE | Left |
 |---|---|---:|---:|---:|
-|1/3|1,2,3,4|45|2|43|
+|1/3|1,2,3,4|45|3|42|
 |2/3|5,6,7,8|54|2|52|
 |3/3|9,10,11,12,13|49|0|49|
 
@@ -243,10 +243,10 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 
 | ID / status | Concrete transfer | Source anchors | Completion criterion and evidence |
 |---|---|---|---|
-|P3-01 / **PARTIAL**|Finish complete CUDA normalization/elementwise module|ggml/src/ggml-cuda/norm.cu; ggml/src/ggml-cuda/unary.cu; ggml/src/ggml-cuda/scale.cu; source/rms-block/**|Allnorm/unary/scale variants and launch policy use Goose logic; shape,type,aliasing and tail cases exact/declared tolerance. Evidence: EXP136/137 actual SiLU/scale leaves and full RMS row; other operations/launch control native|
-|P3-02 / **TODO**|Port CUDA primitive math,reductions and conversions|ggml/src/ggml-cuda/common.cuh; ggml/src/ggml-cuda/convert.cu; ggml/src/ggml-cuda/reduce_rows.cuh; ggml/src/ggml-cuda/mma.cuh|Goose-owned device math/conversion/warp/block helpers; generated device code provenance; rounding,half,bfloat,warp boundaries checked.|
+|P3-01 / **DONE**|Finish complete CUDA normalization/elementwise module|ggml/src/ggml-cuda/norm.cu; ggml/src/ggml-cuda/unary.cu; ggml/src/ggml-cuda/scale.cu; source/rms-block/**|All norm/unary/scale variants and launch policy execute Goose. Joint EXP166/168:40activation/GLU/scale/clamp and8normalization paths;native/reference/rollback/preflight and exact Apex gate pass. Final native-source removal and stable fresh-C++ performance are separate open requirements.|
+|P3-02 / **IN_PROGRESS**|Port CUDA primitive math,reductions and conversions|ggml/src/ggml-cuda/common.cuh; ggml/src/ggml-cuda/convert.cu; ggml/src/ggml-cuda/reduce_rows.cuh; ggml/src/ggml-cuda/mma.cuh|Goose-owned device math/conversion/warp/block helpers; generated device code provenance; rounding,half,bfloat,warp boundaries checked.|
 |P3-03 / **TODO**|Port CUDA copy,gather,scatter and tensor transformations|ggml/src/ggml-cuda/cpy*; ggml/src/ggml-cuda/getrows*; ggml/src/ggml-cuda/set*; ggml/src/ggml-cuda/pad*; ggml/src/ggml-cuda/concat*; ggml/src/ggml-cuda/roll*|All dtype/stride/tail variants match native and Compute Sanitizer bounds checks; asynchronous copies preserve order.|
-|P3-04 / **TODO**|Port CUDA binary,broadcast and activation families|ggml/src/ggml-cuda/binbcast*; ggml/src/ggml-cuda/unary*; ggml/src/ggml-cuda/clamp*; ggml/src/ggml-cuda/snake*; ggml/src/ggml-cuda/softcap*; ggml/src/ggml-cuda/acc*; ggml/src/ggml-cuda/add-id*|Complete registered binary/unary/GLU type/mode matrix; all actual kernels generated from Goose, no original arithmetic callback.|
+|P3-04 / **IN_PROGRESS**|Port CUDA binary,broadcast and activation families|ggml/src/ggml-cuda/binbcast*; ggml/src/ggml-cuda/unary*; ggml/src/ggml-cuda/clamp*; ggml/src/ggml-cuda/snake*; ggml/src/ggml-cuda/softcap*; ggml/src/ggml-cuda/acc*; ggml/src/ggml-cuda/add-id*|Complete registered binary/unary/GLU type/mode matrix; all actual kernels generated from Goose, no original arithmetic callback.|
 |P3-05 / **TODO**|Port CUDA reductions,sort,top-k and expert routing|ggml/src/ggml-cuda/sum*; ggml/src/ggml-cuda/mean*; ggml/src/ggml-cuda/arg*; ggml/src/ggml-cuda/top*; ggml/src/ggml-cuda/cumsum*; ggml/src/ggml-cuda/count*|Every reduction/sort/topk MoE mode,tie/index rule and partial block checked; routing witnesses on real model.|
 |P3-06 / **TODO**|Port CUDA softmax,RoPE,masks and position encodings|ggml/src/ggml-cuda/softmax*; ggml/src/ggml-cuda/rope*; ggml/src/ggml-cuda/diag*; ggml/src/ggml-cuda/tsembd*; ggml/src/ggml-cuda/arange*|All position/mask/scaling/attention-shape variants differential; valid finite tolerance fixed before candidate test.|
 |P3-07 / **TODO**|Port CUDA dequantization and activation quantization|ggml/src/ggml-cuda/dequantize.cuh; ggml/src/ggml-cuda/quantize*; ggml/src/ggml-cuda/vecdotq.cuh|Every supported type and packed block path mapped to Goose with byte/ULP fixtures and malformed-size rejection.|
@@ -275,13 +275,13 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 |P4-06 / **IN_PROGRESS**|Port graph allocator reservation,reuse and realloc|ggml/src/ggml-alloc.c|Goose owns gallocr reservation,multi-buffer planning,views,inplace reuse and growth; native allocation state unavailable in candidate; exact event/order corpus. Evidence:EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.|
 |P4-07 / **IN_PROGRESS**|Port backend buffer,device,event and copy abstraction|ggml/src/ggml-backend.cpp; ggml/src/ggml-backend-impl.h|Every backend public/vtable lifecycle,view,multi-buffer,async copy/event/sync contract implemented; typed ownership explicit. Evidence:EXP162 transfers30common backend buffer/type/default bulk/multi/view/tensor-binding bodies to Goose with an explicit C/CPP ABI. Native-success/event parity,243callback contracts,12bulk+3multi OOM sites,2bad_alloc callbacks and128threaded bulk lifecycles pass. Corrects independently reproduced native stale metadata in5of6provider failures via snapshots/rollback. One Apex2639.393/27.387,exact text/all128IDs/all probabilities,127graph reuses,actual internal bulk-plan witness/zero buffer heaps. Provider-specific/meta and broader copy/event/device/scheduler/source closure remain open. Evidence:EXP163 transfers48generic backend/stream/I-O/copy/event/device/registration-interface bodies to Goose,with typed C/CPP ABI and unchanged provider/kernel objects.37native case groups/264ordered callback events/1091checks cover all48entry modes and rollback;11bounds/staging/callback-error cases and128threaded transfer/event lifecycles pass. One Apex2631.942/26.956,exact text/all128IDs/all probabilities,127graph reuses,actual shared-control witness and0staging/buffer/context heaps. Decode-1.57percent single sample;no stable speed claim. Actual scheduler/global registry/provider implementations and full source closure remain open.|
 |P4-08 / **IN_PROGRESS**|Port backend registration,dynamic loading and feature discovery|ggml/src/ggml-backend-reg.cpp; ggml/src/ggml-backend-dl.cpp; ggml/src/ggml-feats.h|Registry/device enumeration,plugin ABI,error behavior and capability queries Goose; dlopen/OS imports only. Evidence:EXP163 transfers48generic backend/stream/I-O/copy/event/device/registration-interface bodies to Goose,with typed C/CPP ABI and unchanged provider/kernel objects.37native case groups/264ordered callback events/1091checks cover all48entry modes and rollback;11bounds/staging/callback-error cases and128threaded transfer/event lifecycles pass. One Apex2631.942/26.956,exact text/all128IDs/all probabilities,127graph reuses,actual shared-control witness and0staging/buffer/context heaps. Decode-1.57percent single sample;no stable speed claim. Actual scheduler/global registry/provider implementations and full source closure remain open.|
-|P4-09 / **TODO**|Port graph backend placement and splitting|ggml/src/ggml-backend.cpp|Goose owns node/leaf assignments,split boundaries,buffer compatibility,offload and fallback policy; placement traces match source contracts.|
-|P4-10 / **TODO**|Port cross-device copy planning and asynchronous dependencies|ggml/src/ggml-backend.cpp|Goose owns split inputs,copy slots,events,waits and lifetime edges; multi-stream/multi-sequence cancellation/failure fixtures pass.|
-|P4-11 / **TODO**|Port unified CPU/GPU scheduler execution and graph reuse|ggml/src/ggml-backend.cpp|Reserve/compute/recompute/synchronize/reset/eval callback/reallocation paths execute Goose; graph reuse and cold/warm/abort traces checked.|
+|P4-09 / **DONE**|Port graph backend placement and splitting|ggml/src/ggml-backend.cpp|Goose owns node/leaf assignments,split boundaries,buffer compatibility,offload and fallback policy; placement traces match source contracts.|
+|P4-10 / **IN_PROGRESS**|Port cross-device copy planning and asynchronous dependencies|ggml/src/ggml-backend.cpp|Goose owns split inputs,copy slots,events,waits and lifetime edges; multi-stream/multi-sequence cancellation/failure fixtures pass.|
+|P4-11 / **DONE**|Port unified CPU/GPU scheduler execution and graph reuse|ggml/src/ggml-backend.cpp|Reserve/compute/recompute/synchronize/reset/eval callback/reallocation paths execute Goose; graph reuse and cold/warm/abort traces checked.|
 |P4-12 / **TODO**|Port meta backend,backend optimization and threading services|ggml/src/ggml-backend-meta.cpp; ggml/src/ggml-opt.cpp; ggml/src/ggml-threading.cpp|All meta/planner/optimizer helpers Goose; OS primitive boundary minimal; callback reentrancy and thread lifetimes checked.|
 |P4-13 / **TODO**|Unify allocation and scheduler interfaces across both lineages|ggml/src/ggml-alloc.c; ggml/src/ggml-backend.cpp; source/*/bridge.h|Single Goose ownership model serves Apex; no duplicated hidden native policy; complete borrowed/owned lifetime table.|
 |P4-14 / **TODO**|Check full graph/allocator lifecycle under failures|tests/test-backend-ops.cpp; tests/test-alloc.cpp; ggml/src/ggml-alloc.c|Allocation failure injection,invalid-size/view/copy,abort/reset/reuse and concurrent independent contexts pass scoped sanitizers; no new leaks.|
-|P4-15 / **TODO**|Run unified scheduler actual model milestone|src/llama-context.cpp; ggml/src/ggml-backend.cpp|Apex and Qwen real prefill/decode,prefix reuse,branch/restore/cancel match reference with Goose scheduler and allocator witnesses.|
+|P4-15 / **IN_PROGRESS**|Run unified scheduler actual model milestone|src/llama-context.cpp; ggml/src/ggml-backend.cpp|Apex and Qwen real prefill/decode,prefix reuse,branch/restore/cancel match reference with Goose scheduler and allocator witnesses.|
 |P4-16 / **TODO**|Remove owned GGML core/native scheduler implementation|ggml/src/ggml*.c; ggml/src/ggml*.cpp|Candidate GGML core link contains only Goose-generated logic plus declared primitives; all API symbols and original rollback retained externally.|
 
 #### P5 — KV-cache,recurrent memory and sessions
@@ -599,3 +599,7 @@ EXP167 transfers the whole active CUDA binbcast module:add/sub/mul/div/repeat/re
 ### EXP168: intermediate normalization source checkpoint (2026-11-08)
 
 The eight-entry host/device normalization drafts,typed POD plan/host FFI,native oracle and accepted Goose RMS reference are pinned before the authorized two-worker GLM-5.3 Flash trial. Current self-hosted code generation passes for both modules;host generated C passes strict FFI syntax checking;emitted compute bodies make no VM allocation calls. Missing fused multiply/add operands fail explicitly. This is SOURCE_CHECKPOINT_ONLY: no CUDA build,GPU correctness gate,Apex measurement,requirement closure or runtime promotion. Verified EXP167 remains the active rollback runtime. Workers receive sanitized source-only snapshots with disjoint host-plan and GPU-fixture ownership;Codex owns integration/review and real acceptance gates. See `experiments/EXP-2026-11-08-168-goose-cuda-normalization/`. No production/compiler changes.
+
+### EXP168: complete active CUDA normalization and retained GLM work (2026-11-08)
+
+EXP168 transfers all8normalization public entrypoints,host validation/launch policy,outer indexing,warp/block reductions and device arithmetic to current self-hosted Goose;EXP166 already owns all40unary/GLU/scale/clamp entries.99GPUcases/95native-exact/12independent-reference/2NaN-policy cases pass;87native rollback and93legacy-RMS rollback cases pass;24preflight cases reject before stream/kernel effects and15additional malformed cases reject. Recovered GLM host/test code retained with Codex fixes,including fixture stream-order race. One Apex2648.029prefill/27.539decode,RSS21328.535MiB/VRAM3246MiB,swap0,exact text/all128IDs/full saved probabilities,127graph reuses. Actual host/device mask0x18,vector2,fusions5,cuda_status0;all superseded preloads removed only from new candidate. Single preliminary sample +0.472percent prefill/+3.658percent decode vs EXP167;stable speed parity with fresh C++ remains unproven. P3-01 functional normalization/unary/scale contract is DONE using joint EXP166/168 evidence;P3-02/P3-04 and broader CUDA/native-removal requirements remain open. No campaign/cycle or full-Apex closure. Production/compiler untouched;exactly2GLM workers now prepare independent reductions/argmax modules. See `experiments/EXP-2026-11-08-168-goose-cuda-normalization/`.
