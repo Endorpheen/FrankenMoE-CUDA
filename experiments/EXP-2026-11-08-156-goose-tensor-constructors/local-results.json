@@ -1,0 +1,7 @@
+{
+  "status": "PASS_INDEPENDENT_NATIVE_CONSTRUCTOR_CORPUS",
+  "goose": "PASS independent constructors formats=35 tensors=2800 checks=429444 cross_context_borrow_modes=2 fatal_native_pairs=10 extra_overflow_guards=4 Goose_modes=0x7fff\n",
+  "rollback": "PASS independent constructors formats=35 tensors=2800 checks=429432 cross_context_borrow_modes=2 fatal_native_pairs=10 extra_overflow_guards=0 Goose_modes=0x0\n",
+  "model_runs": 0,
+  "production_changed": false
+}
