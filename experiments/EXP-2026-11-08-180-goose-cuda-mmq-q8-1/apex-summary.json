@@ -1,0 +1,77 @@
+{
+  "status": "FUNCTIONAL_APEX_PATH_PASS_DECODE_SPREAD_UNRESOLVED",
+  "component": "CUDA MMQ Q8_1 quantization (DS4 layout, direct and scatter) in Goose; all other EXP179 modules identical",
+  "scope": "layout DS4 only (Q4_0/Q4_1/Q5_1). D4 and D2S6 and the FP4 scatter stay native and the host refuses them.",
+  "mechanism": "same DSO, GGML_GOOSE_CUDA_MMQ_Q8_1=0 selects the private-renamed native entry points",
+  "pairs": {
+    "forward": {
+      "native": {
+        "prefill": 2612.357772473906,
+        "decode": 27.41309132682168,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2624.3450449910033,
+        "decode": 27.454485003582054,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": 0.4588679484642409,
+        "decode": 0.1509996675197096
+      }
+    },
+    "reverse": {
+      "native": {
+        "prefill": 2612.357772473906,
+        "decode": 27.41309132682168,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2630.93346029814,
+        "decode": 26.049791201693274,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": 0.7110698243542072,
+        "decode": -4.973171791809252
+      }
+    },
+    "goose_mean": {
+      "prefill": 2627.6392526445716,
+      "decode": 26.752138102637666
+    },
+    "mean_delta_pct": {
+      "prefill": 0.584968886409224,
+      "decode": -2.4110860621447645
+    }
+  },
+  "correctness": "all 128 token ids, text and every returned top-5 probability equal to the saved wholly-C++ oracle in all three runs; sha256 e68df05b",
+  "witnesses": {
+    "mmq_q8_1": "FG180Q_CUDA_MMQ_Q8_1 host=0x23,cuda_status=0,paths=0x3,guards=0 (both direct and scatter executed)",
+    "retained": "FG179W host=0x1; FG178Q host=0x1"
+  },
+  "local_gates": {
+    "goose": "8 checks/0 failures",
+    "native": "8/0",
+    "byte_identical": "4 of 4 block_q8_1_mmq arrays (direct 128/512/2048 and scatter)",
+    "memcheck": "0 errors",
+    "exports": "only the two diagnostics added"
+  },
+  "defects_fixed": [
+    "the host overwrote slot 1 with the launch geometry while the device scalars also lived there (inputs moved to slot 6)",
+    "n_expert_used was read after the slot-2 clear, so scatter saw 0 and wrote nothing",
+    "the fixture first used Q8_0, which maps to layout D4 and was correctly refused; DS4 needs Q4_0/Q4_1/Q5_1"
+  ],
+  "performance_note": "prefill is +0.46%/+0.71% across both pairs; decode is +0.15% in the forward pair and -4.97% in the reverse pair, so the decode delta is not stable and no decode claim is made.",
+  "limits": "preliminary pairs, uncontrolled external load; D4/D2S6 layouts and FP4 scatter remain native",
+  "production_changed": false,
+  "active_runtime_changed": false
+}

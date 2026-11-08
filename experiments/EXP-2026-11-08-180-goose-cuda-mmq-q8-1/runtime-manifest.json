@@ -1,0 +1,24 @@
+{
+  "status": "LINKED_PENDING_HOST_GPU_APEX",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp180/run/libggml-cuda-mmqq-f78e0ba665fa.so.0.27.0",
+  "sha256": "954e0712e63ff3da5dec2e79ad8d42af83df93d3b2f096e69bb73e54b9a8c03a",
+  "base_library_sha256": "ba1dd71e4885af6c0ee34b5c8cc3595df7989d783078d9121a1ecf488797e424",
+  "original_object": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp178/build/native-quantize.o",
+  "original_object_sha256": "46a0119b0a9adaa5c966e528d952fefbe4ed4eb0c9d9c05f94419bbf60086953",
+  "private_symbol_rename": {
+    "_Z22quantize_mmq_q8_1_cudaPKfPKiPv9ggml_typellllllllP11CUstream_st": "_Z36fg180q_native_quantize_mmq_q8_1_cudaPKfPKiPv9ggml_typellllllllP11CUstream_st",
+    "_Z30quantize_scatter_mmq_q8_1_cudaPKfPKiPv9ggml_typellllliP11CUstream_st": "_Z44fg180q_native_quantize_scatter_mmq_q8_1_cudaPKfPKiPv9ggml_typellllliP11CUstream_st"
+  },
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true
+  },
+  "production_changed": false,
+  "active_runtime_changed": false,
+  "numerical_original_callback_on_enabled_supported_path": false
+}
