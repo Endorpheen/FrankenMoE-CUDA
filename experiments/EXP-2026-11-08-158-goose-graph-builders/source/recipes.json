@@ -1,0 +1,798 @@
+{
+  "ggml_dup_impl": {
+    "mode": 0,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_DUP",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_sqr_impl": {
+    "mode": 0,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_SQR",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_sqrt_impl": {
+    "mode": 0,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_SQRT",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_log_impl": {
+    "mode": 0,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_LOG",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_sin_impl": {
+    "mode": 0,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_SIN",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_cos_impl": {
+    "mode": 0,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_COS",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_add_impl": {
+    "mode": 1,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_ADD",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_sub_impl": {
+    "mode": 1,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_SUB",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_mul_impl": {
+    "mode": 1,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_MUL",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_div_impl": {
+    "mode": 1,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_DIV",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_add1_impl": {
+    "mode": 2,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_ADD1",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_add_id": {
+    "mode": 6,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "ids",
+    "op": "GGML_OP_ADD_ID",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_add_cast_impl": {
+    "mode": 7,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [
+      "type"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_unary_impl": {
+    "mode": 3,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "op",
+    "ip": "inplace",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_scale_impl": {
+    "mode": 4,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_SCALE",
+    "ip": "inplace",
+    "extra": [
+      "fg158_bits(s)",
+      "fg158_bits(b)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_fill_impl": {
+    "mode": 5,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_FILL",
+    "ip": "inplace",
+    "extra": [
+      "fg158_bits(c)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_norm_impl": {
+    "mode": 8,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_NORM",
+    "ip": "inplace",
+    "extra": [
+      "fg158_bits(eps)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_rms_norm_impl": {
+    "mode": 8,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_RMS_NORM",
+    "ip": "inplace",
+    "extra": [
+      "fg158_bits(eps)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_l2_norm_impl": {
+    "mode": 8,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_L2_NORM",
+    "ip": "inplace",
+    "extra": [
+      "fg158_bits(eps)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_rms_norm_back": {
+    "mode": 8,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_RMS_NORM_BACK",
+    "ip": "0",
+    "extra": [
+      "fg158_bits(eps)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_silu_back": {
+    "mode": 0,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_SILU_BACK",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_group_norm_impl": {
+    "mode": 9,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_GROUP_NORM",
+    "ip": "inplace",
+    "extra": [
+      "n_groups",
+      "fg158_bits(eps)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_clamp_impl": {
+    "mode": 9,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_CLAMP",
+    "ip": "inplace",
+    "extra": [
+      "fg158_bits(min)",
+      "fg158_bits(max)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_glu_impl": {
+    "mode": 10,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "op",
+    "ip": "swapped",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_mul_mat": {
+    "mode": 11,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_MUL_MAT",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_mul_mat_id": {
+    "mode": 12,
+    "c": "ctx",
+    "a": "as",
+    "b": "b",
+    "d": "ids",
+    "op": "GGML_OP_MUL_MAT_ID",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_out_prod": {
+    "mode": 13,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_OUT_PROD",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_sum": {
+    "mode": 14,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_SUM",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_sum_rows": {
+    "mode": 14,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_SUM_ROWS",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_mean": {
+    "mode": 14,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_MEAN",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_argmax": {
+    "mode": 14,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_ARGMAX",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_cumsum": {
+    "mode": 14,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "GGML_OP_CUMSUM",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_count_equal": {
+    "mode": 14,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_COUNT_EQUAL",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_repeat": {
+    "mode": 15,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_REPEAT",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_repeat_back": {
+    "mode": 15,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_REPEAT_BACK",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_repeat_4d": {
+    "mode": 16,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [
+      "ne0",
+      "ne1",
+      "ne2",
+      "ne3"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_concat": {
+    "mode": 17,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "dim",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_get_rows": {
+    "mode": 18,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_set_rows": {
+    "mode": 19,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "c",
+    "op": "0",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_soft_max_impl": {
+    "mode": 20,
+    "c": "ctx",
+    "a": "a",
+    "b": "mask",
+    "d": "0",
+    "op": "0",
+    "ip": "inplace",
+    "extra": [
+      "fg158_bits(scale)",
+      "fg158_bits(max_bias)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_cpy_impl": {
+    "mode": 21,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_cast": {
+    "mode": 22,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "type",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_cont_impl": {
+    "mode": 23,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_cont_4d": {
+    "mode": 24,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [
+      "ne0",
+      "ne1",
+      "ne2",
+      "ne3"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_rope_impl": {
+    "mode": 25,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "c",
+    "op": "mode",
+    "ip": "inplace",
+    "extra": [
+      "n_dims",
+      "n_ctx_orig",
+      "fg158_bits(freq_base)",
+      "fg158_bits(freq_scale)",
+      "fg158_bits(ext_factor)",
+      "fg158_bits(attn_factor)",
+      "fg158_bits(beta_fast)",
+      "fg158_bits(beta_slow)",
+      "sections"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_flash_attn_ext": {
+    "mode": 26,
+    "c": "ctx",
+    "a": "q",
+    "b": "k",
+    "d": "v",
+    "op": "0",
+    "ip": "0",
+    "extra": [
+      "mask",
+      "fg158_bits(scale)",
+      "fg158_bits(max_bias)",
+      "fg158_bits(logit_softcap)"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_ssm_conv": {
+    "mode": 27,
+    "c": "ctx",
+    "a": "sx",
+    "b": "c",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_gated_delta_net": {
+    "mode": 28,
+    "c": "ctx",
+    "a": "q",
+    "b": "k",
+    "d": "v",
+    "op": "0",
+    "ip": "0",
+    "extra": [
+      "g",
+      "beta",
+      "state",
+      "K"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_argsort": {
+    "mode": 29,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "order",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_top_k": {
+    "mode": 30,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "k",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_tri": {
+    "mode": 31,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "type",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_acc_impl": {
+    "mode": 32,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_ACC",
+    "ip": "inplace",
+    "extra": [
+      "nb1",
+      "nb2",
+      "nb3",
+      "offset"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_set_impl": {
+    "mode": 32,
+    "c": "ctx",
+    "a": "a",
+    "b": "b",
+    "d": "0",
+    "op": "GGML_OP_SET",
+    "ip": "inplace",
+    "extra": [
+      "nb1",
+      "nb2",
+      "nb3",
+      "offset"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_diag": {
+    "mode": 33,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [],
+    "kind": "ptr"
+  },
+  "ggml_diag_mask_inf_impl": {
+    "mode": 34,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "n_past",
+    "ip": "inplace",
+    "extra": [
+      "GGML_OP_DIAG_MASK_INF"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_diag_mask_zero_impl": {
+    "mode": 34,
+    "c": "ctx",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "n_past",
+    "ip": "inplace",
+    "extra": [
+      "GGML_OP_DIAG_MASK_ZERO"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_mul_mat_set_prec": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "0",
+    "ip": "0",
+    "extra": [
+      "prec"
+    ],
+    "kind": "void"
+  },
+  "ggml_mul_mat_set_hint": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "1",
+    "ip": "0",
+    "extra": [
+      "hint"
+    ],
+    "kind": "void"
+  },
+  "ggml_prec_set_acc": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "2",
+    "ip": "0",
+    "extra": [
+      "prec"
+    ],
+    "kind": "bool"
+  },
+  "ggml_prec_set_src": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "3",
+    "ip": "0",
+    "extra": [
+      "prec",
+      "idx"
+    ],
+    "kind": "bool"
+  },
+  "ggml_flash_attn_ext_set_prec": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "4",
+    "ip": "0",
+    "extra": [
+      "prec"
+    ],
+    "kind": "void"
+  },
+  "ggml_flash_attn_ext_get_prec": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "5",
+    "ip": "0",
+    "extra": [],
+    "kind": "enum ggml_prec"
+  },
+  "ggml_flash_attn_ext_set_n_kv_max": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "0",
+    "d": "0",
+    "op": "6",
+    "ip": "0",
+    "extra": [
+      "n_kv_max"
+    ],
+    "kind": "void"
+  },
+  "ggml_soft_max_add_sinks": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "sinks",
+    "d": "0",
+    "op": "7",
+    "ip": "0",
+    "extra": [],
+    "kind": "void"
+  },
+  "ggml_flash_attn_ext_add_sinks": {
+    "mode": 35,
+    "c": "0",
+    "a": "a",
+    "b": "sinks",
+    "d": "0",
+    "op": "8",
+    "ip": "0",
+    "extra": [],
+    "kind": "void"
+  }
+}

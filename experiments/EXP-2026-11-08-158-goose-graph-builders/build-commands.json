@@ -1,0 +1,174 @@
+[
+  {
+    "label": "builders-selfhosted-emit",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-158-goose-graph-builders/source/builders-generated.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-158-goose-graph-builders/source/builders.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build",
+    "exit_code": 0
+  },
+  {
+    "label": "builders-core-build",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-157-goose-context-core/source",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-156-goose-tensor-constructors/source",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-155-goose-tensor-geometry/source",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-DGGML_BUILD",
+      "-DGGML_SCHED_MAX_COPIES=4",
+      "-DGGML_SHARED",
+      "-DGGML_USE_OPENMP",
+      "-D_GNU_SOURCE",
+      "-D_XOPEN_SOURCE=600",
+      "-Dggml_base_EXPORTS",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/.",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include",
+      "-O3",
+      "-DNDEBUG",
+      "-std=gnu11",
+      "-fPIC",
+      "-fvisibility=hidden",
+      "-Wshadow",
+      "-Wstrict-prototypes",
+      "-Wpointer-arith",
+      "-Wmissing-prototypes",
+      "-Werror=implicit-int",
+      "-Werror=implicit-function-declaration",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wcast-qual",
+      "-Wno-unused-function",
+      "-Wdouble-promotion",
+      "-fopenmp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build/ggml-builders.o",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-158-goose-graph-builders/source/ggml-graph-builders.c",
+      "-Werror=implicit-function-declaration"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "unchanged-exp157-link-integrity",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-fPIC",
+      "-O3",
+      "-DNDEBUG",
+      "-shared",
+      "-Wl,-Bsymbolic",
+      "-Wl,-soname,libggml-base.so.0",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build/unchanged-exp157.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp157/build/ggml-context-core.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-ggmlcpp.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-ggmlalloc.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/backend-base.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-backendmeta.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-opt.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-threading.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-quants.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-gguf.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/backend-base-goose.o",
+      "-lm",
+      "/usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so",
+      "/usr/lib/x86_64-linux-gnu/libpthread.a",
+      "-Wl,-z,defs"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-base.dir",
+    "exit_code": 0
+  },
+  {
+    "label": "builders-base-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-fPIC",
+      "-O3",
+      "-DNDEBUG",
+      "-shared",
+      "-Wl,-Bsymbolic",
+      "-Wl,-soname,libggml-base.so.0",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/run/libggml-base-builders-be698c014910.so.0.27.0",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build/ggml-builders.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-ggmlcpp.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-ggmlalloc.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/backend-base.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-backendmeta.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-opt.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-threading.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-quants.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/base-gguf.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp149-cpu-control-20261107/variants/cpu-backend/build/backend-base-goose.o",
+      "-lm",
+      "/usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so",
+      "/usr/lib/x86_64-linux-gnu/libpthread.a",
+      "-Wl,-z,defs"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml-base.dir",
+    "exit_code": 0
+  },
+  {
+    "label": "builders-fixture-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-158-goose-graph-builders/source/fixture.cpp",
+      "-ldl",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build/builders-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build",
+    "exit_code": 0
+  },
+  {
+    "label": "builders-independent-corpus",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build/builders-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp157/run/libggml-base-context-core-7ff4d5311bbd.so.0.27.0",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/run/libggml-base-builders-be698c014910.so.0.27.0"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build",
+    "exit_code": 0
+  },
+  {
+    "label": "builders-explicit-native-rollback",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build/builders-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp157/run/libggml-base-context-core-7ff4d5311bbd.so.0.27.0",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/run/libggml-base-builders-be698c014910.so.0.27.0"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build",
+    "exit_code": 0
+  },
+  {
+    "label": "inherited-exp156-constructors",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp156/build/constructors-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp155/run/libggml-base-geometry-exp150base.so.0.27.0",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/run/libggml-base-builders-be698c014910.so.0.27.0"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build",
+    "exit_code": 0
+  },
+  {
+    "label": "inherited-exp157-context-core",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp157/build/core-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp156/run/libggml-base-constructors-15f74d875e56.so.0.27.0",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/run/libggml-base-builders-be698c014910.so.0.27.0"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/build",
+    "exit_code": 0
+  }
+]

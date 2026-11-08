@@ -1,0 +1,3 @@
+# EXP158: shared Apex graph-operation construction in Goose
+
+Continue solo from verified EXP157. Transfer common arithmetic/unary/normalization/MoE,copy/layout,row routing,attention/RoPE and recurrent graph-node creation decisions in one coherent module. Preserve all kernel implementations and inherited Goose modules. Every shape,validation,parameter layout and source-link decision belongs to Goose;C imports are typed storage,bit casts,formatting and accepted constructor/geometry calls. Preserve explicit default-on rollback and the actual public ABI. Verify against independent EXP157 constructor/parameter/error behavior,then one unchanged real Apex32K/128 gate. Do not claim numerical kernels or full model runtime migrated by graph builders.

@@ -1,0 +1,11 @@
+{
+  "status": "PASS_GRAPH_BUILDER_PARITY_AND_ROLLBACK",
+  "goose": "PASS independent graph-builders cases=16 tensors=558 checks=10408 native_error_pairs=8 Goose_modes=0xfffffffff live_context_heaps=0\n",
+  "rollback": "PASS independent graph-builders cases=16 tensors=558 checks=10408 native_error_pairs=8 Goose_modes=0x0 live_context_heaps=0\n",
+  "model_runs": 0,
+  "production_changed": false,
+  "inherited": {
+    "inherited-exp156-constructors": "PASS independent constructors formats=35 tensors=2800 checks=429444 cross_context_borrow_modes=2 fatal_native_pairs=10 extra_overflow_guards=4 Goose_modes=0x7fff\n",
+    "inherited-exp157-context-core": "PASS independent context/core checks=4500 types=43 ops=101 unary=22 GLU=7 Goose_modes=0xd77f3ff live_context_heaps=0\n"
+  }
+}

@@ -1,0 +1,19 @@
+from pathlib import Path
+import hashlib,json,re,subprocess,os
+F=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');E=F/'experiments/EXP-2026-11-08-158-goose-graph-builders';S=E/'source';P=F/'experiments/EXP-2026-11-08-157-goose-context-core';B=F/'runtime/exp158/build';R=F/'runtime/exp158/run';B.mkdir(parents=True,exist_ok=True);R.mkdir(parents=True,exist_ok=True);C=F/'runtime/compiler/stage3-f849233b999c';assert hashlib.sha256(C.read_bytes()).hexdigest()=='f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a';rows=[]
+def run(label,args,cwd=B):
+ args=list(map(str,args));p=subprocess.run(args,cwd=cwd,capture_output=True,text=True,timeout=240);rows.append(dict(label=label,argv=args,cwd=str(cwd),exit_code=p.returncode));(B/'commands.json').write_text(json.dumps(rows,indent=2)+'\n');(B/(label+'.stdout')).write_text(p.stdout);(B/(label+'.stderr')).write_text(p.stderr);print(label,p.returncode,flush=True)
+ if p.returncode:print((p.stdout+p.stderr)[-6000:]);raise SystemExit(p.returncode)
+run('builders-selfhosted-emit',[C,'-o',S/'builders-generated.c',S/'builders.goose']);g=(S/'builders-generated.c').read_text();main=g[g.rfind('static void gg_function_0('):];entry=re.search(r'(gg_function_\d+)\(t\d+, base',main);assert entry,main[-1500:];entry='fg158_'+entry[1];(S/'builders-qualified.c').write_text(re.sub(r'\b(gg_|ggf_|gs_)',lambda m:'fg158_'+m[1],g));h=(S/'builders.h').read_text();h=re.sub(r'(?m)^#define FG158_ENTRY .*$', '#define FG158_ENTRY '+entry,h);(S/'builders.h').write_text(h)
+s=(P/'source/ggml-context-core.c').read_text();s=s.replace('// ggml_dup\n','#include "builders.h"\n\n// ggml_dup\n',1);recipes=json.loads((S/'recipes.json').read_text())
+for name,r in recipes.items():
+ pat=r'(?m)^[A-Za-z_][\w ]*?\s+(?:\*\s*)?'+re.escape(name)+r'\s*\([^;{}]*\)\s*\{';m=re.search(pat,s);assert m,name;args=[str(r['mode']),r['c'],r['a'],r['b'],r['d'],r['op'],r['ip']]+['FG158_ARG('+x+')' for x in r['extra']];call='FG158_CALL('+','.join(args)+')';kind=r['kind'];code=(call+';return;') if kind=='void' else 'return '+(('(void *)(intptr_t)' if kind=='ptr' else '('+kind+')')+call)+';';s=s[:m.end()]+'\n    if(fg158_enabled){'+code+'}\n'+s[m.end():]
+(S/'ggml-graph-builders.c').write_text(s)
+prior=json.loads((P/'build-commands.json').read_text());r=next(x for x in prior if x['label']=='context-core-build');cmd=r['argv'].copy();old=cmd[cmd.index('-o')+1];obj=B/'ggml-builders.o';cmd.insert(1,'-I'+str(P/'source'));cmd[cmd.index('-c')+1]=str(S/'ggml-graph-builders.c');cmd[cmd.index('-o')+1]=str(obj);run('builders-core-build',cmd,Path(r['cwd']));r=next(x for x in prior if x['label']=='context-core-link');cmd=r['argv'].copy();ref=B/'unchanged-exp157.so';cmd[cmd.index('-o')+1]=str(ref);run('unchanged-exp157-link-integrity',cmd,Path(r['cwd']));baseline=Path(json.loads((P/'source/manifest.json').read_text())['library']);assert hashlib.sha256(ref.read_bytes()).digest()==hashlib.sha256(baseline.read_bytes()).digest();cmd=[str(obj) if x==old else x for x in cmd];assert str(obj) in cmd;out=R/('libggml-base-builders-'+hashlib.sha256(obj.read_bytes()).hexdigest()[:12]+'.so.0.27.0');assert not out.exists();cmd[cmd.index('-o')+1]=str(out);run('builders-base-link',cmd,Path(r['cwd']))
+for f in (F/'runtime/exp157/run').iterdir():
+ if f.is_file() or f.is_symlink():
+  p=R/f.name
+  if p.is_symlink():p.unlink()
+  elif p.exists():raise RuntimeError(str(p))
+  p.symlink_to(out if f.name.startswith('libggml-base') else f.resolve())
+(S/'manifest.json').write_text(json.dumps(dict(status='LINKED_PENDING_CORRECTNESS',compiler_sha256=hashlib.sha256(C.read_bytes()).hexdigest(),entry=entry,library=str(out),sha256=hashlib.sha256(out.read_bytes()).hexdigest(),rollback='GGML_GOOSE_GRAPH_BUILDERS=0',redirected_native_bodies=list(recipes),production_changed=False),indent=2)+'\n');print('LINKED_GRAPH_BUILDERS',out)
