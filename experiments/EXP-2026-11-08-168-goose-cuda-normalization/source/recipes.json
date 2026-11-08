@@ -1,0 +1,42 @@
+[
+  {
+    "name": "ggml_cuda_op_norm",
+    "mode": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_group_norm",
+    "mode": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_rms_norm",
+    "mode": 2,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_rms_norm_fused",
+    "mode": 3,
+    "args": 2
+  },
+  {
+    "name": "ggml_cuda_op_rms_norm_scale_fused",
+    "mode": 4,
+    "args": 2
+  },
+  {
+    "name": "ggml_cuda_op_rms_norm_fused_add",
+    "mode": 5,
+    "args": 3
+  },
+  {
+    "name": "ggml_cuda_op_rms_norm_back",
+    "mode": 6,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_l2_norm",
+    "mode": 7,
+    "args": 1
+  }
+]
