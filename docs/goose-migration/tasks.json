@@ -961,14 +961,14 @@
       "id": "P3-11",
       "phase": "P3",
       "title": "Port CUDA MoE expert matrix,weighted reduction and fused path",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/mmid*",
         "ggml/src/ggml-cuda/moe-weighted-reduction*",
         "ggml/src/ggml-cuda/topk-moe*"
       ],
       "acceptance": "All expert grouping,weighted gather/scatter/fusion and ready/stream ordering owned by Goose; masks and cold experts tested.",
-      "evidence": "",
+      "evidence": "EXP179 transfers the complete CUDA MoE weighted reduction (moe_weighted_reduction_f32 plus launch_moe_weighted_reduction and the host assert set):token/column decode,optional expert_scale selection with the 1.0f literal path,row arithmetic,native multiply-add order and store.12 checks/6 cases pass in both arms,destinations identical float-by-float with0 differing of65536 sampled,memcheck0 errors. Two opposite-order Apex32K/128 pairs:forward native2622.83pp/27.090tg vs Goose2619.78/27.121(-0.116%/+0.113%),reverse Goose2581.01/26.900(-1.594%/-0.703%),mean -0.855%/-0.295%,all128IDs/text/top5 exact. Witness host=0x1 paths=0x1,with Q8_1,CPY and GET_ROWS still active in the same pass. The host reference is a tolerance gate (<=1.7e-7 operand-scaled) because native is compiled with -fmad=true;bit-exactness is established by the direct Goose-vs-native float comparison. Expert grouping/weighted gather/fusion beyond this operator and the MMQ/MUL_MAT families remain native.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3154,6 +3154,14 @@
       "change": "CUDA Q8_1 activation quantization moved to Goose",
       "status": "IN_PROGRESS",
       "evidence": "experiments/EXP-2026-11-08-178-goose-cuda-quantize/apex-summary.json"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-11",
+      "experiment": "EXP179",
+      "change": "CUDA MoE weighted reduction moved to Goose",
+      "status": "IN_PROGRESS",
+      "evidence": "experiments/EXP-2026-11-08-179-goose-cuda-moe-weighted/apex-summary.json"
     }
   ],
   "batches": [

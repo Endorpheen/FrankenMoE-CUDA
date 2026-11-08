@@ -1,0 +1,23 @@
+{
+  "status": "LINKED_PENDING_HOST_GPU_APEX",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp179/run/libggml-cuda-moew-88c5d0f51bbd.so.0.27.0",
+  "sha256": "ba1dd71e4885af6c0ee34b5c8cc3595df7989d783078d9121a1ecf488797e424",
+  "base_library_sha256": "3dc0336b609f6293a1520c63cbb08ee098c807c547bf09c1989fcea771f71d22",
+  "original_object": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/moe-weighted-reduction.cu.o",
+  "original_object_sha256": "f090e410bc87ddefb91488831717238bf467c99d13bef335159914988f5eddfe",
+  "private_symbol_rename": {
+    "_Z35ggml_cuda_op_moe_weighted_reductionR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_": "_Z49fg179w_native_ggml_cuda_op_moe_weighted_reductionR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_"
+  },
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true
+  },
+  "production_changed": false,
+  "active_runtime_changed": false,
+  "numerical_original_callback_on_enabled_supported_path": false
+}
