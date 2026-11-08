@@ -4,7 +4,7 @@
   "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
   "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
   "active_workstream": "APEX_COMMON",
-  "next_task": "P4-05",
+  "next_task": "P4-07",
   "execution_order": [
     "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",
     "QWEN_COMPATIBILITY: C1 and deferred shared MTP task; only after all APEX_COMMON tasks DONE",
@@ -1165,7 +1165,7 @@
         "source/allocator-coalesce/**"
       ],
       "acceptance": "Bounded selected metadata policy exactly matches reference and executes in real inference.",
-      "evidence": "EXP136 native service boundary retained; this does NOT mean physical allocator complete",
+      "evidence": "EXP136 native service boundary retained; this does NOT mean physical allocator complete Active-lineage clarification:historical EXP136allocator components were absent from the reproduced EXP160allocator object;EXP161now supplies their behavior within the actual release Goose allocator,with exact native/event/Apex checks.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1183,7 +1183,7 @@
         "source/graph-plan/**"
       ],
       "acceptance": "Selected dependency/view/refcount/release traversal state transitions exact and real inference witness.",
-      "evidence": "EXP136 graph/lifetime evidence; full tensor ownership/scheduler still native",
+      "evidence": "EXP136 graph/lifetime evidence; full tensor ownership/scheduler still native Active-lineage clarification:historical EXP136allocator components were absent from the reproduced EXP160allocator object;EXP161now supplies their behavior within the actual release Goose allocator,with exact native/event/Apex checks.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1229,12 +1229,12 @@
       "id": "P4-05",
       "phase": "P4",
       "title": "Port full tensor allocator and physical buffer ownership",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-alloc.c"
       ],
       "acceptance": "Goose owns tallocr/dyn_tallocr/free blocks/chunks and object lifecycle; only malloc/mmap/device alloc primitives imported; failure/overflow/double-free guards.",
-      "evidence": "",
+      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1245,12 +1245,12 @@
       "id": "P4-06",
       "phase": "P4",
       "title": "Port graph allocator reservation,reuse and realloc",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-alloc.c"
       ],
       "acceptance": "Goose owns gallocr reservation,multi-buffer planning,views,inplace reuse and growth; native allocation state unavailable in candidate; exact event/order corpus.",
-      "evidence": "",
+      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -3080,6 +3080,10 @@
     {
       "checkpoint": "EXP160 shared Goose CPU/CUDA-host fusion/parameter control",
       "event": "EXP160 shared Goose fusion/params/hash policy integrated in core,scheduler,meta,CPU core and exact active CUDA-host lineage.714native predicate comparisons/1655checks,two rollback modes and15malformed-input cases pass. One Apex2636.702/27.185,exact text/all128IDs/full probabilities,127graph reuses,core/CPU/CUDA/scheduler witnesses,meta not exercised. Decode-2.44percent single sample vs EXP159;stable performance unproven. Other leaf header copies,numerical kernels,device/launch and full subsystem/source closure remain open.No full requirement newly DONE."
+    },
+    {
+      "checkpoint": "EXP161 release GGML allocator module",
+      "event": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.No full universal requirement newlyDONE."
     }
   ],
   "batches": [
@@ -3912,10 +3916,10 @@
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
   },
   "active_checkpoint": {
-    "experiment": "EXP160",
+    "experiment": "EXP161",
     "branch": "codex/apex-exp150-restored-20261108",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run",
+    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp161/run",
     "solo": true,
     "production_changed": false
   }

@@ -1,0 +1,8 @@
+{
+  "exports": [
+    "fg161_allocator_heap_live",
+    "fg161_allocator_seen"
+  ],
+  "mutating_test_hooks": false,
+  "sha256": "7ddf029dfb6a9b24f914bc33831d9016711c9940794d7c589df654a45a3ba7cb"
+}
