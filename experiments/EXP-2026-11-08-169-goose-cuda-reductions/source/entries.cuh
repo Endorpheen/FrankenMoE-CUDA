@@ -1,0 +1,6 @@
+#define FG169_FINISH_MEAN fg169r_gg_function_1
+#define FG169_ROW_SUM fg169r_gg_function_4
+#define FG169_ROW_MEAN fg169r_gg_function_11
+#define FG169_ROW_SUM_STRIDED fg169r_gg_function_12
+#define FG169_ROW_MEAN_STRIDED fg169r_gg_function_14
+#define FG169_ARGMAX fg169a_gg_function_1

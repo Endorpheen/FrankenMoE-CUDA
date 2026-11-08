@@ -1,0 +1,29 @@
+{
+  "status": "LOCAL_MODULES_VERIFIED_APEX_PATH_NOT_YET_PROVEN",
+  "retained_workers": [
+    "row-reductions",
+    "argmax"
+  ],
+  "fixed_before_gpu": [
+    {
+      "source": "GLM row-device.goose",
+      "issue": "Raw pointers are byte addresses,but contiguous row base added row*ncols and strided base added bytes/4.",
+      "fix": "Multiply contiguous element offset by4;add strided byte offset directly. Retain all accumulation/reduction logic."
+    },
+    {
+      "source": "Host integration",
+      "issue": "Global native sum accepts physically dense permuted source layouts.",
+      "fix": "Require contiguous-row shape only for row reductions;global sum validates contiguous allocation and sums physical storage."
+    },
+    {
+      "source": "Parent integration",
+      "issue": "Worker deferred device-wide CUB path.",
+      "fix": "Goose owns CUB selection,query/pool temp acquire/launch/release and mean postdivision;CUB sum itself remains explicit NVIDIA external primitive,no original FrankenMoE numerical callback on default path."
+    }
+  ],
+  "local_evidence": "326native bit-exact cases/15977360values,5028independent checks,8CUDA graph capture/replay cases;all repeated in rollback.24preflight failures before stream/kernel/pool effects. Actual local hostmask3f/devicemask10f/CUBmask32,live_temp0.",
+  "apex_evidence": "Exact saved128tokens/text/fullprobabilities and127graph reuses,but no new-module witness;compatibility only. Do not claim Apex coverage/performance benefit.",
+  "priority_correction": "Complete fused topk-MoE routing before promoting EXP169. Preserve current modules as verified common backend code;do not force Apex through slower standalone operators. Two workers now audit actual Apex CUDA path and prepare true topk API tests.",
+  "production_changed": false,
+  "compiler_changed": false
+}
