@@ -1,0 +1,22 @@
+{
+  "libllama.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/run/libllama-exp150-restored.so.0.7.0",
+    "sha256": "926fde348bbce3741a9b899165534793d96c3bb134f21daeb9cb62c54b3f22af"
+  },
+  "libggml.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run/libggml-registry-4d6a42acb184.so.0.27.0",
+    "sha256": "9a9ea86ac80e725bbfcd89b8a7843a99591eeeaa054639bc76c871fecceccdf8"
+  },
+  "libggml-base.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run/libggml-base-scheduler-bafe3955c9ea.so.0.27.0",
+    "sha256": "e213fa19e1697a37daaf22dd294a0659d95ebd4d57df65b5b4a72bebc3c3d118"
+  },
+  "libggml-cpu.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run/libggml-cpu-shared-dd5a40e47065.so.0.27.0",
+    "sha256": "63ad4984881220e55e41463981faa3bba5d4a0d7218880e9b205c8c8c460a9a7"
+  },
+  "libggml-cuda.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp169/run/libggml-cuda-routing-66fe617fef4c.so.0.27.0",
+    "sha256": "26bd426d10e14e512ad1812d390180272ff9007adbeb033c0c3c236060a41d7b"
+  }
+}

@@ -1,4 +1,16 @@
 {
-  "status": "PASS",
+  "status": "PASS_ACTUAL_DYNAMIC_SYMBOL_INSPECTION",
+  "library_sha256": "26bd426d10e14e512ad1812d390180272ff9007adbeb033c0c3c236060a41d7b",
+  "public_diagnostic_symbols": [
+    "fg168_cuda_device_read",
+    "fg168_cuda_host_seen",
+    "fg169_cuda_cub_seen",
+    "fg169_cuda_device_read",
+    "fg169_cuda_host_seen",
+    "fg169_cuda_live_temp",
+    "fg169t_cuda_device_read",
+    "fg169t_cuda_host_seen"
+  ],
+  "internal_ffi_hidden": true,
   "native_oracles_hidden": true
 }

@@ -1,0 +1,48 @@
+{
+  "status": "PASS_GPU_TOPK_NATIVE_REFERENCE_ROLLBACK",
+  "runs": [
+    {
+      "label": "topk-fixture-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "topk-fixture-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "topk-gpu-parity",
+      "exit_code": 0,
+      "stdout": "PASS cases=1436 native_paired=1436 nan_policy=104 oracle_rows=2496 eligibility=16 checks=14549299 repaired_cases=16 native_invalid_rows=68 rollback=0 host=3 device=[4095,127] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG169T_CUDA_TOPK host=0x3,cuda_status=0,experts=0xfff,flags=0x7f\nFG160_SHARED caller=core modes=0x400\nFG157_CONTEXT_CORE goose_modes=0x4201000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x404\n"
+    },
+    {
+      "label": "topk-gpu-rollback",
+      "exit_code": 0,
+      "stdout": "PASS cases=1436 native_paired=1436 nan_policy=104 oracle_rows=2496 eligibility=16 checks=14549747 repaired_cases=0 native_invalid_rows=68 rollback=1 host=0 device=[0,0] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG160_SHARED caller=core modes=0x400\nFG157_CONTEXT_CORE goose_modes=0x4201000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x400\n"
+    },
+    {
+      "label": "topk-preflight-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "topk-preflight-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "topk-preflight-run",
+      "exit_code": 0,
+      "stdout": "PASS topk preflight_cases=30 no_stream_or_kernel_before_rejection=1\n",
+      "stderr": "FG157_CONTEXT_CORE goose_modes=0x4000000,live_context_heaps=0\n"
+    }
+  ],
+  "production_changed": false
+}

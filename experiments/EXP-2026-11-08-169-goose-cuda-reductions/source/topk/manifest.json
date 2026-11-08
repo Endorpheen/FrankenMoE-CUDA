@@ -1,0 +1,22 @@
+{
+  "status": "LINKED_PENDING_GPU_AND_REAL_APEX_LIVENESS",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "1": "fg169t1_gg_function_1",
+    "2": "fg169t2_gg_function_1",
+    "4": "fg169t4_gg_function_1",
+    "8": "fg169t8_gg_function_1",
+    "9": "fg169t9_gg_function_1",
+    "16": "fg169t16_gg_function_1",
+    "18": "fg169t18_gg_function_1",
+    "host": "fg169th_gg_function_1"
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp169/run/libggml-cuda-routing-66fe617fef4c.so.0.27.0",
+  "sha256": "26bd426d10e14e512ad1812d390180272ff9007adbeb033c0c3c236060a41d7b",
+  "base_reductions_library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp169/run/libggml-cuda-reductions-11995566adba.so.0.27.0",
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/topk-moe.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_TOPK_MOE=0 or immutable EXP168 profile",
+  "production_changed": false
+}

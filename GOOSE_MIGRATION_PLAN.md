@@ -4,7 +4,7 @@ Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified 
 
 **One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**
 
-**Functional tasks: 160 total; 17 DONE; 3 PARTIAL; 23 IN_PROGRESS; 0 BLOCKED; 117 TODO. Remaining: 143.**
+**Functional tasks: 160 total; 17 DONE; 3 PARTIAL; 24 IN_PROGRESS; 0 BLOCKED; 116 TODO. Remaining: 143.**
 
 **Current Apex/common milestone: 136 tasks; 15 DONE; 121 remaining (including 3 partial).**
 
@@ -607,3 +607,12 @@ EXP168 transfers all8normalization public entrypoints,host validation/launch pol
 ### EXP169 intermediate compatibility checkpoint, not Apex acceptance (2026-11-08)
 
 Local CUDA row-sum/mean/argmax/global-sum and raw helpers now use Goose compute/control with explicit external NVIDIA CUB.326native GPU cases,5028independent checks,8CUDA graph cases,rollback and24before-stream/pool rejection cases pass. Corrected GLM byte/element row-base bugs before GPU integration. One fixed Apex2656.553prefill/28.438decode response remains exact128tokens/full probabilities,but no FG169 execution witness:the new standalone operators are bypassed in this profile. This proves compatibility only,does not advance actual Apex coverage or close a requirement. Accepted runtime remains EXP168. Preserve useful code;next integrate actual fused topk-MoE without disabling/decomposing fusion,then a new executable-change gate. Static Apex path audit and true topk-API fixture assigned to exactly2GLM workers;production/compiler untouched. See `experiments/EXP-2026-11-08-169-goose-cuda-reductions/`.
+
+
+### EXP169: actual fused Apex MoE routing and shared reductions (2026-11-08)
+
+Four CUDA reduction source units/two raw helpers and fused topk-MoE now use current self-hosted Goose arithmetic/control.326reduction GPU cases/5028independent checks/8capture cases and1436routing cases/2496independent oracle rows pass with original rollback.24reduction+30routing invalid-input cases reject before stream/kernel/pool effects.16small-expert NaN cases repair68original invalid-ID rows,explicitly distinguished from native parity. NVIDIA CUB is an explicit external primitive for large/device-wide sums;not all computation is claimed Goose.
+
+The first compatibility-only request remains archived;the subsequent single gate after actual routing integration gives2645.921prefill/28.038decode,exact text/all128IDs/full saved probabilities,127graph reuses,RSS21329.273MiB/VRAM3246MiB,swap0 and zero owned heaps. Real FG169T host3/E256mask0x100/softmax+norm flags9/status0 proves new numerical code executes inside Apex;standalone reductions remain local-GPU-only coverage. Changes vs EXP168:-0.080percent/+1.812percent,one preliminary sample;C++ archive2918.900/29.589 is not a fresh paired comparison. No stable speed-parity claim.
+
+EXP168 internal FFI visibility receipt was found inaccurate and corrected without modifying its immutable binary. New combined CUDA export map hides those internals and private native oracles,confirmed by nm. P3-05 advances TODO->IN_PROGRESS;sort/cumsum/count and other CUDA/provider/model/KV/loading/server/source closure remain. No complete Apex batch/campaign or universal requirement newly DONE. Source checkpoint7959318 remains rollback history;whole-stage rollback is immutable EXP168;per-module default-on fallbacks are GGML_GOOSE_CUDA_REDUCTIONS=0 and GGML_GOOSE_CUDA_TOPK_MOE=0. Exactly2authorized GLM workers;production/compiler unchanged. See `experiments/EXP-2026-11-08-169-goose-cuda-reductions/`.

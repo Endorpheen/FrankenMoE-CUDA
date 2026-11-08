@@ -1,0 +1,39 @@
+{
+  "protocol": "device cases: run the unchanged native-prefixed oracle and the generated Goose module on identical filled buffers with guard bytes around every allocation; require bitwise-identical ids and weights and untouched guards; NaN words compared bitwise, no tolerances. policy cases: require the exact fail code and that launch never happens.",
+  "device_cases": [
+    {"id": "softmax_top8_norm_common", "n_experts": 256, "n_used": 8, "rows": 3, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": 1e-06, "scale": 1.0, "focus": "primary Apex path: softmax + strict top-k + normalized weights"},
+    {"id": "softmax_top4_scale", "n_experts": 64, "n_used": 4, "rows": 2, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 2.5, "focus": "scale without norm"},
+    {"id": "softmax_top8_norm_scale", "n_experts": 128, "n_used": 8, "rows": 2, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": 0.001, "scale": 0.7, "focus": "norm clamp and scale compose in native order"},
+    {"id": "sigmoid_top6", "n_experts": 128, "n_used": 6, "rows": 2, "variant": "sigmoid", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.0, "focus": "sigmoid routing, raw selected scores as weights"},
+    {"id": "sqrt_softplus_top6", "n_experts": 128, "n_used": 6, "rows": 2, "variant": "sqrt_softplus", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.0, "focus": "sqrt(softplus) branch including the x>20 fast path"},
+    {"id": "delayed_softmax_top8", "n_experts": 256, "n_used": 8, "rows": 2, "variant": "delayed", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.0, "focus": "raw-logit selection then softmax over selected k with limit-tail slots zeroed"},
+    {"id": "delayed_softmax_scale", "n_experts": 64, "n_used": 4, "rows": 2, "variant": "delayed", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.25, "focus": "delayed softmax then scale at store"},
+    {"id": "bias_selection_norm", "n_experts": 64, "n_used": 8, "rows": 2, "variant": "softmax", "bias": true, "groups": 0, "group_used": 0, "clamp": 0.5, "scale": 1.0, "focus": "selection on wt+bias, stored weights from wt, denominator clamp active"},
+    {"id": "bias_delayed", "n_experts": 32, "n_used": 4, "rows": 1, "variant": "delayed", "bias": true, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.0, "focus": "bias selection with delayed softmax over selected raw logits"},
+    {"id": "groups_256_8_4", "n_experts": 256, "n_used": 8, "rows": 2, "variant": "softmax", "bias": false, "groups": 8, "group_used": 4, "clamp": 1e-06, "scale": 1.0, "focus": "top-2 group scores, rank with lower-index ties, ballot keep mask"},
+    {"id": "groups_bias_256_8_4", "n_experts": 256, "n_used": 8, "rows": 1, "variant": "softmax", "bias": true, "groups": 8, "group_used": 4, "clamp": null, "scale": 1.0, "focus": "group mask applied to selection view only; wt value array unmasked"},
+    {"id": "groups_tail_288_7_6", "n_experts": 288, "n_used": 6, "rows": 1, "variant": "softmax", "bias": false, "groups": 7, "group_used": 6, "clamp": null, "scale": 1.0, "focus": "n_experts%n_groups!=0: expert 287 (gidx 7>=7) never selectable; group scores over experts 0..286"},
+    {"id": "ties_all_equal", "n_experts": 32, "n_used": 8, "rows": 1, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": 1e-06, "scale": 1.0, "logits": "all 0.5", "focus": "ids exactly 0..7 ascending, equal weights"},
+    {"id": "nan_row_sanitize", "n_experts": 32, "n_used": 4, "rows": 2, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": 1e-06, "scale": 1.0, "logits": "row 1 all NaN, row 0 ordinary", "focus": "NaN sanitized to -FLT_MAX before selection: ids 0..3, equal weights; no cross-row contamination"},
+    {"id": "all_inf_delayed", "n_experts": 32, "n_used": 4, "rows": 1, "variant": "delayed", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.0, "logits": "all -inf", "focus": "ids 0..3, weights NaN bitwise vs oracle (native-identical, not a defect)"},
+    {"id": "tail_experts6", "n_experts": 6, "n_used": 3, "rows": 2, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": 1e-06, "scale": 1.0, "focus": "lanes 6..31 hold -INF, excluded from selection, zero contribution to softmax denominator"},
+    {"id": "ept18_576", "n_experts": 576, "n_used": 8, "rows": 1, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": 1e-06, "scale": 1.0, "focus": "MAX_EPT=18 bound, ceiling for ept specialization"},
+    {"id": "single_expert", "n_experts": 1, "n_used": 1, "rows": 2, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.0, "focus": "minimal instantiation, weight exactly 1.0"},
+    {"id": "alias_weights_logits", "n_experts": 64, "n_used": 4, "rows": 2, "variant": "softmax", "bias": false, "groups": 0, "group_used": 0, "clamp": null, "scale": 1.0, "alias": "weights buffer overlaps logits buffer", "focus": "block barrier makes alias result byte-identical to non-alias run"}
+  ],
+  "policy_cases": [
+    {"id": "reject_unsupported_n_experts", "n_experts": 100, "fail": 7},
+    {"id": "reject_n_used_zero", "weights_ne1": 0, "fail": 4},
+    {"id": "reject_n_used_gt_experts", "n_experts": 32, "weights_ne1": 33, "fail": 8},
+    {"id": "reject_ids_type", "ids_type": "F32", "fail": 5},
+    {"id": "reject_ids_row_stride", "n_experts": 64, "ids_nb1": 4, "fail": 6},
+    {"id": "reject_logits_noncontiguous", "fail": 3},
+    {"id": "reject_norm_delayed", "variant": "delayed", "clamp": 1e-06, "fail": 11},
+    {"id": "reject_sigmoid_softplus", "flags": 3, "fail": 10},
+    {"id": "reject_groups_gt32", "n_experts": 256, "groups": 64, "group_used": 4, "fail": 12},
+    {"id": "reject_groups_gt_experts", "n_experts": 16, "groups": 17, "group_used": 1, "fail": 12},
+    {"id": "reject_group_used_zero", "n_experts": 256, "groups": 8, "group_used": 0, "fail": 12},
+    {"id": "reject_bias_type", "bias_type": "I32", "fail": 13}
+  ],
+  "defects": "none known: no native case was identified as incorrect; all device cases compare against the unchanged oracle"
+}

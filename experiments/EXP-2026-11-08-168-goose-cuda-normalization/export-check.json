@@ -1,6 +1,7 @@
 {
-  "status": "PASS",
+  "status": "PARTIAL_HISTORICAL_RECEIPT_CORRECTED_BY_EXP169",
   "private_native_oracles_hidden": true,
   "previous_private_oracles_still_hidden": true,
-  "mutable_control_exports": false
+  "mutable_control_exports": true,
+  "correction": "Original receipt did not actually inspect internal fg168_* FFI visibility. EXP168 exports its internal effect helpers. EXP169 explicitly hides them via a verified version map;the immutable EXP168 binary is not changed."
 }

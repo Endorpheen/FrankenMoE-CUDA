@@ -271,4 +271,3 @@ void fg169_native_ggml_cuda_op_sum(ggml_backend_cuda_context & ctx, ggml_tensor 
 
     fg169_native_sum_f32_cuda(pool, src0_d, dst_d, ne, stream);
 }
-

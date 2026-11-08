@@ -849,7 +849,7 @@
       "id": "P3-05",
       "phase": "P3",
       "title": "Port CUDA reductions,sort,top-k and expert routing",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/sum*",
         "ggml/src/ggml-cuda/mean*",
@@ -859,7 +859,7 @@
         "ggml/src/ggml-cuda/count*"
       ],
       "acceptance": "Every reduction/sort/topk MoE mode,tie/index rule and partial block checked; routing witnesses on real model.",
-      "evidence": "",
+      "evidence": "EXP169:four CUDA reductions TUs/two raw helpers and actual fused topk-MoE eligibility/host/device computation in current self-hosted Goose.326reduction GPU cases/5028independent checks/8capture cases,1436topk cases/2496oracle rows,rollback,24+30before-stream failures pass.16small-expert NaN cases repair68native invalid-ID rows. Actual Apex32K/128 exact text/all128IDs/full probabilities,FG169T host3/E256/softmax+norm,cuda_status0;2645.921/28.038,RSS21329.273MiB/VRAM3246MiB,zero owned heaps.Standalone reductions not exercised by fused model. NVIDIA CUB remains explicit external arithmetic primitive.Standalone sort/argsort/top-k,cumsum,count and native-source closure remain open;not full requirement DONE.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,

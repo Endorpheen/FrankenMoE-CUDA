@@ -1,0 +1,56 @@
+{
+  "module": "topk-moe",
+  "job": "fg171t",
+  "source": "topk-moe/inputs/topk-moe.cu + topk-moe.cuh; native warp algorithm and order preserved; original topk/softmax/sort functions are not called and no serial full sort substitutes the warp logic",
+  "status": "source-only migration; no build, GPU execution or native comparison was run by this worker; parent owns bridge, builds and gates",
+  "entry": {
+    "device": "topk_row(p:i64,row:u64,lane:i32) in device.goose; one warp per row; lane=threadIdx.x; row=blockIdx.x*rows_per_block+threadIdx.y",
+    "launch": "grid.x=ceil(n_rows/8), block=(32,8)=256 threads, dynamic shared memory 0 bytes, warp width 32",
+    "platform": "platform may clamp row to n_rows-1 instead of early return (duplicate identical last-row stores, native-identical); HIP<6.3 group-mask gating is a parent bridge concern",
+    "dummy_main": "fn main() calls topk_row(0,0,0); parent never executes dummy mains"
+  },
+  "packet": {
+    "args": {"0": "mode==0", "1": "ctx handle nonzero", "2": "node = weights destination tensor", "3": "0", "4": "0"},
+    "node_src": {"0": "logits F32 contiguous [n_experts, n_rows]", "1": "ids I32", "2": "clamp tensor or null (presence enables with_norm)", "3": "scale tensor or null", "4": "bias F32 [>=n_experts] or null"},
+    "node_op_params_int": {"0": "flags bit0 sigmoid bit1 sqrt_softplus bit2 delayed_softmax", "1": "n_groups (0 disables group masking)", "2": "n_group_used"},
+    "op_param_floats": {"clamp": "tf(clamp,0) clamp_val", "scale": "tf(scale,0) scale_val, default 1.0"}
+  },
+  "plan": {
+    "ptrs": {"0": "logits", "1": "weights", "2": "ids", "3": "bias or 0", "4": "unused 0"},
+    "iv": {"0": "n_experts", "1": "n_rows", "2": "n_expert_used", "3": "flags bit0 sigmoid bit1 sqrt_softplus bit2 with_norm bit3 delayed_softmax bit4 has_bias", "4": "n_groups", "5": "n_group_used", "6": "experts_per_thread ept", "7": "rows_per_block 8", "8": "grid.x", "9": "block.x 32", "10": "block.y 8", "11": "shared bytes 0", "12": "MAX_EPT 18"},
+    "fv": {"0": "clamp_val (read only when with_norm)", "1": "scale_val"},
+    "unused": "dims/strides/magic keys unused; row addressing is contiguous",
+    "zero_init": "plan arrives zero-initialized"
+  },
+  "device_externs": {
+    "fg171t_di": "get(p,k,i)->u64 plan iv read",
+    "fg171t_df": "fl(p,i)->f32 plan fv read",
+    "fg171t_load": "load(p:u64,i:u64)->f32 raw F32 load by element index",
+    "fg171t_store": "store(p:u64,i:u64,v:f32) raw F32 store",
+    "fg171t_storei": "storei(p:u64,i:u64,v:i32) raw I32 store (ids)",
+    "fg171t_exp": "expf ISA", "fg171t_sqrt": "sqrtf ISA", "fg171t_log": "logf ISA",
+    "fg171t_shuffle": "f32 shfl_xor width 32", "fg171t_shufflei": "f32 shfl_idx width 32", "fg171t_ishuffle": "i32 shfl_xor width 32",
+    "fg171t_ballot": "ballot(bool)->u64, full-warp mask 0xffffffff",
+    "fg171t_barrier": "__syncthreads", "fg171t_sync": "PDL grid dependency sync", "fg171t_lc": "PDL launch completion trigger"
+  },
+  "host_externs": "fg171t_arg, fg171t_plan_ptr, fg171t_hget/hput/hfloat, fg171t_ti (keys: 0 src,1 data ptr,2 type,3 ne,4 nb bytes,8 op_params int32,9 checked ggml_nbytes span, must call), fg171t_tf, fg171t_contiguous, fg171t_f32_type, fg171t_i32_type (only ABI addition vs fg168 set, needed for the native ids GGML_TYPE_I32 assert), fg171t_launch, fg171t_fail",
+  "storage_bounds": {
+    "fixed_arrays": "wt, sel, outw are f32[18]; MAX_EPT=18 covers the largest supported n_experts=576; every loop is bounded by runtime ept = n_experts>32 ? n_experts/32 : 1; parent may clone device.goose with ept constant-folded per n_experts for performance",
+    "supported_n_experts": [1, 2, 4, 8, 16, 32, 64, 128, 256, 288, 512, 576],
+    "addressing": "logits[expert + n_experts*row] F32; weights[idx + n_expert_used*row] F32; ids[k + n_experts*row] I32 (native stride quirk: full n_experts row stride, only first n_expert_used entries written); bias[expert] F32",
+    "required_spans": "logits n_experts*n_rows F32; weights n_expert_used*n_rows F32; ids n_experts*n_rows I32; bias n_experts F32; every tensor span checked host-side via ti(t,9,0)",
+    "offset_math": "all element offsets computed in u64; dimensions bounded to INT32_MAX by policy"
+  },
+  "native_contract": {
+    "order": "per row: guard, -INF slot init, PDL sync, coalesced logits load, block barrier, transform, NaN sanitize, bias selection view, optional group mask, PDL launch-completion, k=0..n_expert_used-1 selection rounds (ascending k, ids written per round), optional norm, optional delayed softmax, ascending scaled store",
+    "tie": "strict > local scan (first slot = lowest expert of the thread wins), xor reduction accepts only val>max or (val==max && expert<max); initial max_expert=lane is unguarded like native; lowest expert index wins every tie; the selected comparison slot is set to -INF before the next round",
+    "nan": "NaN in wt is sanitized to exactly -FLT_MAX before selection on every path, so selection never compares NaN; an all-NaN or all -INF row deterministically selects experts 0..k-1; delayed softmax over an all -INF selection produces NaN weights (native-identical; compare bitwise, never with tolerances)",
+    "tail": "n_experts<32: lanes>=n_experts load -INF, are excluded from selection by the range guard, and contribute exp(-INF)=0 to softmax sums; sigmoid/sqrt-softplus map out-of-range slots to 0.0 but the guard still excludes them; k tail: outw slots >= n_expert_used stay 0, are zeroed by the delayed softmax, and are never stored",
+    "groups": "n_per_group=n_experts/n_groups; group(expert)=idx/n_per_group; group score=top1+top2 from the selection array via full-warp top-2 shuffle reduce; rank counts strictly greater scores plus lower-index ties; ballot keeps group g when lane g has rank<n_group_used; experts with idx>=n_groups*n_per_group are always -INF (native tail semantics, visible when n_experts%n_groups!=0); policy rejects n_groups>32, n_groups>n_experts (n_per_group==0 is native UB) and n_group_used<1",
+    "alias": "weights and ids may alias logits: one block barrier after all row loads protects them; bias must not alias outputs (native has no protection)",
+    "inf_rep": "-INFINITY is derived as -(FLT_MAX*2) with FLT_MAX built from exact f32 steps ((8192*8192) squared twice, times 2^24-1); no bitcasts, no fragile literals",
+    "softmax_note": "pre-top-k softmax runs over all ept slots without limit (out-of-range -INF slots become exactly 0); delayed softmax runs over output weights with limit n_expert_used and zeroes inactive slots; local max uses native std::max semantics (strict update), warp max uses fmaxf NaN rules"
+  },
+  "policy_fail_codes": {"1": "packet/mode/ctx/node/plan invalid", "2": "logits missing/wrong type/data", "3": "logits dims/strides/contiguity invalid", "4": "weights (node) invalid", "5": "ids missing or not I32", "6": "ids nb[1] != 4*n_experts", "7": "n_experts not in supported instantiation set", "8": "n_expert_used > n_experts (duplicate-id input rejected; native would emit duplicates)", "9": "config flags word invalid", "10": "sigmoid and sqrt_softplus both set", "11": "with_norm with delayed_softmax (native GGML_ASSERT)", "12": "group config invalid (negative, >32, >n_experts, or n_group_used<1)", "13": "bias tensor invalid or too small"},
+  "variant_coverage": "softmax, sigmoid, sqrt-softplus, delayed softmax, bias selection, group masking, normalization with clamp, and scaling are all implemented; no variant tagged not-migrated; combinations allowed except with_norm+delayed"
+}
