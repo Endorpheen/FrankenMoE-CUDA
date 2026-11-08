@@ -1,0 +1,37 @@
+{
+  "status": "PREPARED_AND_LOCAL_QUALIFIED_REVIEW_ONLY",
+  "baseline_commit": "d6c1226cacd634f47f7f12327d91abfe8fc8b5b2",
+  "autonomous_agent_started": false,
+  "production_changed": false,
+  "active_runtime_changed": false,
+  "fault_injection_report": "/home/end0/AI/LlamaServer/franken-goose-deepseek-autonomy-20261108/results/safety-selftest.json",
+  "fault_cases_passed": 26,
+  "local_pipeline": {
+    "status": "LOCAL_PASS",
+    "accepted": false,
+    "commit": "86d83a12924f30716310c93e3e11dd88f045d23c",
+    "prior_failure": "8f95e8ab15cd2f54fea4526b011f9599c6456a68",
+    "reason": "Controller configuration fixed before delivery;source unchanged;earlier successful gates reused,not rerun"
+  },
+  "apex_oracle_parser": {
+    "status": "PASS",
+    "checks": [
+      "native-rollback actual raw128/top5/text PASS",
+      "goose actual raw128/top5/text PASS",
+      "sixth token mutation rejected",
+      "probability substitution rejected"
+    ],
+    "new_model_runs": 0,
+    "sandbox_full_apex_runner_reexecuted": false
+  },
+  "integration_limit": "Full Apex sandbox adapter was not rerun during handoff. First significant new candidate must pass its own gate. New subsystem without a sealed independent recipe remains draft-only. No promotion function exists.",
+  "hard_limits_not_claimed": [
+    "hostile host owner/kernel escape",
+    "aggregate cgroup/disk/VRAM quotas",
+    "GPU-driver isolation",
+    "credential-hiding network proxy",
+    "formal proof against deliberately forged inference",
+    "universal future CPU/CUDA safety coverage"
+  ],
+  "safety_boundary": "readonly/absent host sources,test/reference/ledger paths;private writable copy;host-only checkpoint controller;isolated build/test namespaces;no automatic trust,push,merge or runtime promotion"
+}
