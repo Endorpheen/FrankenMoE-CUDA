@@ -1,0 +1,46 @@
+{
+  "status": "PASS_CURRENT_SELFHOSTED_C_AND_MECHANICAL_COMPUTE_HEADERS",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "modules": [
+    {
+      "module": "vector-device",
+      "generated_c_sha256": "ebab95cdc9906cb52fdab3658a404999753e84deb3ef511156dfa7b148eedb93",
+      "function_count": 11
+    },
+    {
+      "module": "loaders-device",
+      "generated_c_sha256": "860e1628dad44594b51955e87dd991418aa4cc0abcbfbe87672b33e37ec08742",
+      "function_count": 2
+    },
+    {
+      "module": "staging-device",
+      "generated_c_sha256": "110aaa48d2245d6103b18ae2ed9bf919e988e879659519a557f57e277a296c35",
+      "function_count": 3
+    },
+    {
+      "module": "mma-iter-device",
+      "generated_c_sha256": "c4d99dd74717ee2b69faa411faae3e2a69fc918bca4dbb3bff2cf9673f8c9c0b",
+      "function_count": 6
+    },
+    {
+      "module": "mma-process-device",
+      "generated_c_sha256": "cc9e529d59972beea66f9cba37110353e3e8089847dc799b1e4eed2c9cee1e5c",
+      "function_count": 5
+    },
+    {
+      "module": "mma-entry-device",
+      "generated_c_sha256": "b76ea08d6fb72ee3ad3da6739baf412082e4fb946c9eeb993977834420b36903",
+      "function_count": 4
+    },
+    {
+      "module": "mask-fixups-device",
+      "generated_c_sha256": "d5b561bbcbc65dca7daad534ef59d285c661a110c0997c9b89925fa06966a4b7",
+      "function_count": 6
+    },
+    {
+      "module": "host",
+      "generated_c_sha256": "221df2bc988452dfa4d24b439a4fcf1e2dbefebfd5df0bf82e0a98f3e149af1c",
+      "function_count": 45
+    }
+  ]
+}

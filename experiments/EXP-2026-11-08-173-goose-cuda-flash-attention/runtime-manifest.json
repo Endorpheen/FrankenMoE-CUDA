@@ -1,0 +1,18 @@
+{
+  "status": "LINKED_PENDING_JOINT_FA_CORRECTNESS_AND_APEX",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/run/libggml-cuda-fa-1687c6fe0c20.so.0.27.0",
+  "sha256": "f91976b34b4a07694e437447be280f77d46a07a5b9444620059e1bd75b6c3471",
+  "previous_sha256": "64e6f9912c688eac7d0c2bde416b5fa0a7b63de6d78fd08a4dc42472052998d3",
+  "original_fattn_object": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fattn.cu.o",
+  "original_fattn_object_sha256": "d8dfafe9bf3ed2bdc423cc69192d4836dc68a10c927a436bb62a550d3e31cb07",
+  "private_original_fattn_object_sha256": "1e9e8d3094f79c676019fd9fba524cb699b5cae37634a3f862938d95d0967e31",
+  "symbol_renames": {
+    "_Z24ggml_cuda_flash_attn_extR25ggml_backend_cuda_contextP11ggml_tensor": "_Z37fg175_native_ggml_cuda_flash_attn_extR25ggml_backend_cuda_contextP11ggml_tensor",
+    "_Z34ggml_cuda_flash_attn_ext_supportediPK11ggml_tensor": "_Z47fg175_native_ggml_cuda_flash_attn_ext_supportediPK11ggml_tensor",
+    "_Z39ggml_cuda_flash_attn_ext_get_alloc_sizeiPK11ggml_tensor": "_Z52fg175_native_ggml_cuda_flash_attn_ext_get_alloc_sizeiPK11ggml_tensor"
+  },
+  "numerical_original_callbacks_on_active_path": false,
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "production_changed": false,
+  "active_runtime_changed": false
+}

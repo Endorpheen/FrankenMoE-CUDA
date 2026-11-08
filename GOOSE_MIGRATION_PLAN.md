@@ -4,7 +4,7 @@ Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified 
 
 **One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**
 
-**Functional tasks: 160 total; 17 DONE; 3 PARTIAL; 26 IN_PROGRESS; 0 BLOCKED; 114 TODO. Remaining: 143.**
+**Functional tasks: 160 total; 17 DONE; 3 PARTIAL; 27 IN_PROGRESS; 0 BLOCKED; 113 TODO. Remaining: 143.**
 
 **Current Apex/common milestone: 136 tasks; 15 DONE; 121 remaining (including 3 partial).**
 
@@ -646,3 +646,10 @@ P3-13 remains IN_PROGRESS with EXP170+172 actual Apex convolution/GDN evidence;o
 No runtime is activated: EXP172 remains the rollback and active candidate. The current full self-hosted compiler emits actual Goose decode, Q4-F16 staging, async tile loaders and prefill TensorCore-iteration logic. Parent corrected byte/bit/host-planning and CUDA adapter issues. Decode12cases/one graph replay/witnesses, loaders4native+independent-byte cases, staging6native-bitwise cases, and MMA-iteration4complete-state native-bitwise cases pass. A concrete illegal shared access justified a local memcheck; fixed adapter passes with zero errors. Vector few-ULP failure was traced to the original NVCC first-product/rescale FMA contraction, explicitly reproduced in Goose without relaxing equality.
 
 Full prefill process/output/sinks, stream-K mask/fixup and host bounds/ownership/once-cache still require joint integration and tests. No EXP173 model request, system speed/RAM/VRAM result, new universal requirement DONE or Apex batch closure. Preserve the existing performance history; no repeated model/microbenchmark series. The next gate is one coherent FlashAttention runtime, then one actual Apex32K/128 check with execution witnesses. Production/compiler unchanged. See `experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/`.
+
+
+### EXP173: complete active FlashAttention functional gate; speed qualification fails (2026-11-08)
+
+Actual vector decode/Q4 staging/async loaders/TensorCore prefill/process/stream-K/mask/fixups and host planning now execute Goose. Current full self-hosted emission is verified against mechanical compute bodies. OrdinaryAPI8default+8rollback and randomized-longKV8default+8rollback pass;host27mocked cases include real reserve metadata. Actual Apex2167.819pp/22.639tg,exact text/all128IDs/all saved top5probabilities,127graph reuses and FA device witnesses. A failed planning startup and an earlier token19divergence are preserved,not hidden. Occupancy changed the numerical partition(native2blocks/SM vsGoose6/4forvector);querying original SDK resource metadata preserves the partition and exact result without invoking original arithmetic. This temporary native-artifact dependency remains a source-closure item.
+
+The preliminary system slowdown versus EXP172 is material(-16.74percent prefill/-17.38percent decode);no activation or speed acceptance. EXP172 stays active. Increased local storage/dynamic-loop lowering are performance hypotheses,not a proven sole compiler cause. No microbenchmarks or repeated statistical model series. Continue efficient Goose implementation and whole-system checks;do not close a universal requirement or Apex batch from functional evidence alone. Two authorized external Command Code workers now use DeepSeek V4.1 Flash;their drafts remain isolated/unintegrated. Production/compiler unchanged.

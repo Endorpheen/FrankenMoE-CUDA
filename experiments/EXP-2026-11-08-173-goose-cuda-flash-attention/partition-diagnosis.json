@@ -1,0 +1,34 @@
+{
+  "status": "REPRODUCED_PENDING_FIXED_GPU_GATE",
+  "apex_first_token_difference": 19,
+  "first_logprob_difference": 2,
+  "reference_occupancy_blocks": [
+    2,
+    2,
+    2,
+    2
+  ],
+  "goose_actual_occupancy_blocks": [
+    6,
+    4,
+    2,
+    2
+  ],
+  "registers_original": [
+    255,
+    255,
+    231,
+    243
+  ],
+  "registers_goose": [
+    79,
+    110,
+    234,
+    254
+  ],
+  "synthetic_reproduction": "long-random-before-partition-fix.json",
+  "fix": "Goose host planning uses unchanged native kernel SDK occupancy metadata; only Goose kernels execute actual inference arithmetic",
+  "temporary_dependency": "Original resource metadata is retained until a canonical Goose numerical-partition contract replaces it before native-source closure",
+  "compiler_changed": false,
+  "production_changed": false
+}

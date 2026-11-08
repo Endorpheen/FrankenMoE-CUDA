@@ -979,13 +979,13 @@
       "id": "P3-12",
       "phase": "P3",
       "title": "Port complete CUDA Flash Attention",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/fattn*",
         "ggml/src/ggml-cuda/template-instances/**"
       ],
       "acceptance": "Tile/vector/MMA paths,all supported cache types,mask/alibi/heads/tails and dispatch covered; actual Apex attention witnesses.",
-      "evidence": "",
+      "evidence": " EXP173 active Apex FA numerical/host modules now Goose and one corrected fullApex32768/128 matches all IDs/text/saved top5,127graphs,witnesses. Real speed2167.819/22.639 remains materially below EXP172;not activated. Original SDK occupancy metadata retained temporarily for exact partition;native deletion and performance qualification remain open. Local ordinary and long-random corpus/default+rollback pass. See EXP173 qualification;no whole task DONE.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3391,13 +3391,13 @@
     "unverified_completion_forbidden": true
   },
   "active_candidate": {
-    "experiment": "EXP168",
+    "experiment": "EXP172",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-168-goose-cuda-normalization/source",
-    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp168/run",
-    "status": "PASS_GPU_NORMALIZATION_AND_REAL_APEX;full Apex incomplete",
-    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp167/run",
-    "next_batch": "Row reductions/argmax,remaining routing,matrix/attention/recurrent,CPU/model/KV residuals"
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-172-goose-cuda-gdn/source",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp172/run",
+    "status": "FUNCTIONAL_EXACT_GDN_AND_PREVIOUS_MODULES;stable C++ speed parity remains unproven;EXP173 not activated",
+    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp171/run",
+    "next_batch": "Remove EXP173 FlashAttention system slowdown and temporary native resource-metadata dependency;then continue remaining Apex cache/CPU/CUDA/runtime closure"
   },
   "batch_execution_policy": {
     "preferred_requirements_per_batch": [
@@ -3949,12 +3949,20 @@
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
   },
   "active_checkpoint": {
-    "experiment": "EXP168",
+    "experiment": "EXP172",
     "branch": "codex/apex-exp150-restored-20261108",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp168/run",
+    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp172/run",
     "solo": false,
     "authorized_external_workers": 2,
-    "production_changed": false
+    "production_changed": false,
+    "external_model": "deepseek/deepseek-v4.1-flash"
+  },
+  "candidate_under_review": {
+    "experiment": "EXP173",
+    "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/apex-summary.json",
+    "status": "FUNCTIONAL_EXACT_BUT_MATERIAL_SPEED_REGRESSION",
+    "activated": false,
+    "temporary_original_occupancy_metadata_dependency": true
   }
 }

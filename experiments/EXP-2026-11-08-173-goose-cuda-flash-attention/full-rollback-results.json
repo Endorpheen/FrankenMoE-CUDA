@@ -1,0 +1,31 @@
+{
+  "status": "PASS_DEFAULT_AND_ORIGINAL_ROLLBACK",
+  "cases_per_mode": 8,
+  "captures_per_mode": 1,
+  "runs": [
+    {
+      "label": "full-fixture-rollback-capable-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "full-fixture-rollback-capable-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "full-api-default-with-witness",
+      "exit_code": 0,
+      "stdout": "WITNESS hostf vec7 features3 prefill1ec\nPASS cases=8 checks=110 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG175FA_CUDA host=0xf,cuda_status=0,vector=0x7,features=0x3,prefill=0x1ec\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    },
+    {
+      "label": "full-api-original-rollback",
+      "exit_code": 0,
+      "stdout": "WITNESS host0 vec0 features0 prefill0\nPASS cases=8 checks=108 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    }
+  ]
+}

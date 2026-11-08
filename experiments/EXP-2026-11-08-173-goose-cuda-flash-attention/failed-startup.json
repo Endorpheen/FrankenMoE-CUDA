@@ -1,0 +1,15 @@
+{
+  "pid": 1545597,
+  "started": 1794147547.3381007,
+  "phase": "FAILED",
+  "model": "Apex-35B-V1.0-Q4_K_M",
+  "input_tokens": 32768,
+  "output_tokens": 128,
+  "preliminary": true,
+  "not_acceptance": "EXP173 coherent FlashAttention vector decode,TensorCore prefill,codecs,masks,stream-K fixups and host launch/buffer policy in Goose;inherited EXP155..172 preserved;new FA host/device witnesses required;full migration incomplete",
+  "production_changed": false,
+  "error": "[Errno 104] Connection reset by peer",
+  "updated": 1794147556.6981158,
+  "exit_code": -6,
+  "finished": 1794147556.762021
+}

@@ -1,0 +1,26 @@
+{
+  "completion_probabilities_equal": false,
+  "status": "RESPONSE_RECEIVED",
+  "wall_seconds": 20.744729278958403,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 15251.641,
+    "prompt_per_token_ms": 0.4654431457519531,
+    "prompt_per_second": 2148.4901198500543,
+    "predicted_n": 128,
+    "predicted_ms": 5474.436,
+    "predicted_per_token_ms": 43.10579527559055,
+    "predicted_per_second": 23.19873681964681
+  },
+  "tokens_equal": false,
+  "token_count": 128,
+  "first_different_token_index": 19,
+  "content_equal": false,
+  "content_sha256": "fff44bfd762fd9f70a9d9f508388434ad6028a4d20e10cbbf92c204c596e0823",
+  "reference": "Saved same-profile C++ control;not a fresh paired performance acceptance",
+  "preliminary": true,
+  "source_closure_complete": false,
+  "concurrent_load": "Two authorized external DeepSeek V4.1 Flash CLI workers may run;no local build or other model launched by this diagnostic;external host load uncontrolled",
+  "production_changed": false
+}

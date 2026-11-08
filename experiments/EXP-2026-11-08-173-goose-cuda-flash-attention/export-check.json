@@ -1,0 +1,10 @@
+{
+  "status": "PASS_ACTUAL_DYNAMIC_SYMBOL_CHECK",
+  "library_sha256": "f91976b34b4a07694e437447be280f77d46a07a5b9444620059e1bd75b6c3471",
+  "public_diagnostics": [
+    "fg175fa_cuda_device_read",
+    "fg175fa_cuda_host_seen"
+  ],
+  "private_host_ffi_hidden": true,
+  "native_oracles_hidden": true
+}
