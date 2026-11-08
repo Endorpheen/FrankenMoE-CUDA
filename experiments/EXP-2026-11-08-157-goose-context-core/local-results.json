@@ -1,0 +1,10 @@
+{
+  "status": "PASS_CONTEXT_REGISTRY_LIFETIME_AND_CONCURRENCY",
+  "goose": "PASS independent context/core checks=4500 types=43 ops=101 unary=22 GLU=7 Goose_modes=0xd77f3ff live_context_heaps=0\n",
+  "rollback": "PASS independent context/core checks=4500 types=43 ops=101 unary=22 GLU=7 Goose_modes=0x0 live_context_heaps=0\n",
+  "concurrency": "PASS concurrent independent contexts threads=8 cycles=256 live_context_heaps=0\n",
+  "model_runs": 0,
+  "production_changed": false,
+  "allocation_failures": "PASS allocation failures=8 zero-size=3 aligned-refusal=1 descriptor_heaps=0 borrowed_frees=0\n",
+  "failure_injection_scope": "Same production Goose and C projections;only OS allocation primitive returns are injected in a separate non-active DSO"
+}
