@@ -1,0 +1,12 @@
+{
+  "status": "PASS_BACKEND_BUFFERS_BULK_OWNERSHIP_AND_ROLLBACK",
+  "inherited": "PASS independent allocator dynamic_ops=10800 graph_cases=12 event_records=495 checks=17578 Goose_modes=0x1b180700f8c live_allocator_heaps=0\n",
+  "rollback": "PASS independent allocator dynamic_ops=10800 graph_cases=12 event_records=495 checks=17578 Goose_modes=0x1b180700f8c live_allocator_heaps=0\n",
+  "bulk": "PASS backend buffers bulk_success=12 provider_failures=6 native_stale_metadata_cases=5 borrowed_rollback=1 nested_multi=1 duplicate_rejected=1 checks=593 event_records=491\n",
+  "model_runs": 0,
+  "production_changed": false,
+  "exception_scope": "bad_alloc callbacks pass in primary namespace as in actual server;independent loader namespaces are retained for ordinary native parity",
+  "oom": "PASS backend buffer OOM bulk_sites=12 multi_sites=3 provider_descriptor_cleanup=1 tensor_snapshots_restored=1 caller_children_preserved=1 bad_alloc_callbacks=2 live_heaps=0\n",
+  "contracts": "PASS backend optional/custom callbacks,copies,dummy buffers and101operator predicates checks=243 heap_live=0\n",
+  "concurrency": "PASS independent backend buffer threads=8 bulk_lifecycles=128 borrowed_views=128 backend_live=0 heap_live=0\n"
+}

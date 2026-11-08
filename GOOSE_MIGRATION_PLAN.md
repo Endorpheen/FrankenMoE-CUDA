@@ -1,10 +1,10 @@
 # FrankenMoE -> Fried Goose: complete migration plan
 
-Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified solo EXP155..161;current checkpoint recorded in Git and runtime/active.json.
+Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified solo EXP155..162;current checkpoint recorded in Git and runtime/active.json.
 
 **One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**
 
-**Functional tasks: 160 total; 14 DONE; 4 PARTIAL; 17 IN_PROGRESS; 0 BLOCKED; 125 TODO. Remaining: 146.**
+**Functional tasks: 160 total; 14 DONE; 4 PARTIAL; 18 IN_PROGRESS; 0 BLOCKED; 124 TODO. Remaining: 146.**
 
 **Current Apex/common milestone: 136 tasks; 12 DONE; 124 remaining (including 4 partial).**
 
@@ -64,15 +64,15 @@ Target3large delivery cycles,with a fourth only for a real dependency. Internal 
 
 ## Active isolated candidate
 
-- experiment: `EXP161`,solo continuation from restored EXP150 and verified EXP155..160.
+- experiment: `EXP162`,solo continuation from restored EXP150 and verified EXP155..161.
 - root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108`
 - branch: `codex/apex-exp150-restored-20261108`
-- source: `experiments/EXP-2026-11-08-161-goose-allocator/source`
-- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp161/run`
-- status:Entire release GGML allocator module policy now Goose. Exact native free-list/state/backend-event parity,OOM/independent-thread checks and one exact Apex pass. Historical allocator components were absent in the reproduced active object;new real allocator witness replaces env-only assumptions.
-- next_batch:Backend bulk tensor-buffer grouping/planning/ownership currently imported through alloc_buffer_n/get_alloc_size_n;remaining provider/debug/source closure retained in the original scope.
-- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run`
-- rollback: `GGML_GOOSE_ALLOCATOR=0` or previous immutable EXP160 runtime. No production/compiler changes,no auxiliary agents;EXP153 remains quarantined.
+- source: `experiments/EXP-2026-11-08-162-goose-backend-buffers/source`
+- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp162/run`
+- status:Common backend buffer/bulk plan/multi ownership/view binding now Goose. Actual default-plan witness and exact Apex pass. Native init-failure stale metadata corrected transactionally. Scoped native/rollback/OOM/callback/thread checks pass;full source/runtime and stable performance still unproven.
+- next_batch:Generic stream/tensor I/O/copy/event/device API control,then remaining scheduler/KV/model/numerical/source closure. Preserve provider-specific boundaries explicitly.
+- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp161/run`
+- rollback: `GGML_GOOSE_BACKEND_BUFFERS=0` or previous immutable EXP161 runtime. Production/compiler untouched,no agents;EXP153 remains quarantined.
 
 ## Authoritative execution policy
 
@@ -273,7 +273,7 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 |P4-04 / **IN_PROGRESS**|Port graph construction,hashing,traversal and differentiation|ggml/src/ggml.c; ggml/src/ggml-opt.cpp|All graph expansion/copy/export/gradient/optimizer entrypoints mapped; cycles,shared views,empty graphs and malformed dimensions tested. Evidence:EXP159 transfers core hash/bitset policy,checked graph layout,iterative forward traversal/order/select,copy/dup/borrowed views/clear and lookups.93393candidate/92907rollback checks,12000depth,9error cleanup and256threaded independent graph lifecycles pass. Final Apex2635.438/27.865,exact text/all128IDs/full probabilities,127graph reuses,Goose witness and0graph heaps. Final C bridge uses memcpy after pre-commit aliasing correction. Other-TU inlines,core fusion,training/autodiff/optimizer/export and final source closure remain unclosed. EXP160 shared Goose fusion/params/hash policy integrated in core,scheduler,meta,CPU core and exact active CUDA-host lineage.714native predicate comparisons/1655checks,two rollback modes and15malformed-input cases pass. One Apex2636.702/27.185,exact text/all128IDs/full probabilities,127graph reuses,core/CPU/CUDA/scheduler witnesses,meta not exercised. Decode-2.44percent single sample vs EXP159;stable performance unproven. Other leaf header copies,numerical kernels,device/launch and full subsystem/source closure remain open.|
 |P4-05 / **IN_PROGRESS**|Port full tensor allocator and physical buffer ownership|ggml/src/ggml-alloc.c|Goose owns tallocr/dyn_tallocr/free blocks/chunks and object lifecycle; only malloc/mmap/device alloc primitives imported; failure/overflow/double-free guards. Evidence:EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.|
 |P4-06 / **IN_PROGRESS**|Port graph allocator reservation,reuse and realloc|ggml/src/ggml-alloc.c|Goose owns gallocr reservation,multi-buffer planning,views,inplace reuse and growth; native allocation state unavailable in candidate; exact event/order corpus. Evidence:EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.|
-|P4-07 / **TODO**|Port backend buffer,device,event and copy abstraction|ggml/src/ggml-backend.cpp; ggml/src/ggml-backend-impl.h|Every backend public/vtable lifecycle,view,multi-buffer,async copy/event/sync contract implemented; typed ownership explicit.|
+|P4-07 / **IN_PROGRESS**|Port backend buffer,device,event and copy abstraction|ggml/src/ggml-backend.cpp; ggml/src/ggml-backend-impl.h|Every backend public/vtable lifecycle,view,multi-buffer,async copy/event/sync contract implemented; typed ownership explicit. Evidence:EXP162 transfers30common backend buffer/type/default bulk/multi/view/tensor-binding bodies to Goose with an explicit C/CPP ABI. Native-success/event parity,243callback contracts,12bulk+3multi OOM sites,2bad_alloc callbacks and128threaded bulk lifecycles pass. Corrects independently reproduced native stale metadata in5of6provider failures via snapshots/rollback. One Apex2639.393/27.387,exact text/all128IDs/all probabilities,127graph reuses,actual internal bulk-plan witness/zero buffer heaps. Provider-specific/meta and broader copy/event/device/scheduler/source closure remain open.|
 |P4-08 / **TODO**|Port backend registration,dynamic loading and feature discovery|ggml/src/ggml-backend-reg.cpp; ggml/src/ggml-backend-dl.cpp; ggml/src/ggml-feats.h|Registry/device enumeration,plugin ABI,error behavior and capability queries Goose; dlopen/OS imports only.|
 |P4-09 / **TODO**|Port graph backend placement and splitting|ggml/src/ggml-backend.cpp|Goose owns node/leaf assignments,split boundaries,buffer compatibility,offload and fallback policy; placement traces match source contracts.|
 |P4-10 / **TODO**|Port cross-device copy planning and asynchronous dependencies|ggml/src/ggml-backend.cpp|Goose owns split inputs,copy slots,events,waits and lifetime edges; multi-stream/multi-sequence cancellation/failure fixtures pass.|
@@ -564,3 +564,8 @@ One Goose service replaces selected fusion and parameter/header copies in core,s
 ### EXP161: actual release allocator module (2026-11-08)
 
 Active EXP160allocator object reproduces SHA9246ec1bc84e9f0e5d65ba52f7f3b3c7e2af5c013ac19b258a02ac9da67a3149from clean native source;historical Goose136selector/coalescing/lifetime code was not active. EXP161uses those verified designs and transfers42release bodies to current self-hosted Goose,including chunk/free-list,physical vbuffer ownership,gallocr reserve/reuse/alias/lifetime and collection.10800dynamic operations,12graphs,495backend event records/17576checks,rollback,7creationOOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. Native-valid zero-length marker overlap false-positive found/fixed before model. One Apex2633.888/27.425,RSS21315.945MiB/VRAM3246MiB,swap0,exact text/all128IDs/all probabilities,127graph reuses,allocator mask0xb18070000c/zero outstanding heaps. -0.107%/+0.881%vs EXP160,single-sample,no stable speed-parity claim. See `experiments/EXP-2026-11-08-161-goose-allocator/`. P4-05/P4-06 nowIN_PROGRESS;backend bulk planning/provider/debug/source closure remain,no new full universal requirementDONE. Next:P4-07actual backend bulk grouping/ownership. Production/compiler untouched,solo.
+
+
+### EXP162: backend buffer/bulk ownership and failed-init rollback (2026-11-08)
+
+30common buffer/type/default bulk/multi/view/tensor-binding bodies now actual Goose in one C unit with typed C++ effects. Native-success/event/allocator parity remains exact.243callback contracts,12bulk+3multi OOM sites,2bad_alloc callbacks and128threaded bulk lifecycles pass. Native5of6provider failures leave stale tensor metadata;new code restores complete snapshots after cleanup and preserves borrowed/caller-owned resources. Independent parity uses separate loader namespaces;C++ exception callback tests use primary like real server. One Apex2639.393/27.387,RSS21315.066MiB/VRAM3246MiB,swap0,exact text/all128IDs/all probabilities,127graph reuses,internal plan bit40and zero buffer/allocator/context heaps. +0.209%/-0.140%vs EXP161,single-sample,no stable acceleration claim. See `experiments/EXP-2026-11-08-162-goose-backend-buffers/`. P4-07nowIN_PROGRESS;common bulk import gap from EXP161closed,provider/meta/broader event/device/scheduler and strict source contracts remain. No new full universal requirementDONE. Next:generic stream/tensor-copy/event/device control. Solo,no production/compiler changes.

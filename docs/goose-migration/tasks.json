@@ -1234,7 +1234,7 @@
         "ggml/src/ggml-alloc.c"
       ],
       "acceptance": "Goose owns tallocr/dyn_tallocr/free blocks/chunks and object lifecycle; only malloc/mmap/device alloc primitives imported; failure/overflow/double-free guards.",
-      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.",
+      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open. EXP162now supplies the previously native common backend bulk planner/ownership/view-binding boundary;provider/debug/strict-source closure and other original contracts remain open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1250,7 +1250,7 @@
         "ggml/src/ggml-alloc.c"
       ],
       "acceptance": "Goose owns gallocr reservation,multi-buffer planning,views,inplace reuse and growth; native allocation state unavailable in candidate; exact event/order corpus.",
-      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.",
+      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open. EXP162now supplies the previously native common backend bulk planner/ownership/view-binding boundary;provider/debug/strict-source closure and other original contracts remain open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1261,13 +1261,13 @@
       "id": "P4-07",
       "phase": "P4",
       "title": "Port backend buffer,device,event and copy abstraction",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-backend.cpp",
         "ggml/src/ggml-backend-impl.h"
       ],
       "acceptance": "Every backend public/vtable lifecycle,view,multi-buffer,async copy/event/sync contract implemented; typed ownership explicit.",
-      "evidence": "",
+      "evidence": "EXP162 transfers30common backend buffer/type/default bulk/multi/view/tensor-binding bodies to Goose with an explicit C/CPP ABI. Native-success/event parity,243callback contracts,12bulk+3multi OOM sites,2bad_alloc callbacks and128threaded bulk lifecycles pass. Corrects independently reproduced native stale metadata in5of6provider failures via snapshots/rollback. One Apex2639.393/27.387,exact text/all128IDs/all probabilities,127graph reuses,actual internal bulk-plan witness/zero buffer heaps. Provider-specific/meta and broader copy/event/device/scheduler/source closure remain open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -3084,6 +3084,10 @@
     {
       "checkpoint": "EXP161 release GGML allocator module",
       "event": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open.No full universal requirement newlyDONE."
+    },
+    {
+      "checkpoint": "EXP162 common backend buffer/bulk ownership",
+      "event": "EXP162 transfers30common backend buffer/type/default bulk/multi/view/tensor-binding bodies to Goose with an explicit C/CPP ABI. Native-success/event parity,243callback contracts,12bulk+3multi OOM sites,2bad_alloc callbacks and128threaded bulk lifecycles pass. Corrects independently reproduced native stale metadata in5of6provider failures via snapshots/rollback. One Apex2639.393/27.387,exact text/all128IDs/all probabilities,127graph reuses,actual internal bulk-plan witness/zero buffer heaps. Provider-specific/meta and broader copy/event/device/scheduler/source closure remain open.No full universal requirement newlyDONE."
     }
   ],
   "batches": [
@@ -3916,10 +3920,10 @@
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
   },
   "active_checkpoint": {
-    "experiment": "EXP161",
+    "experiment": "EXP162",
     "branch": "codex/apex-exp150-restored-20261108",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp161/run",
+    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp162/run",
     "solo": true,
     "production_changed": false
   }
