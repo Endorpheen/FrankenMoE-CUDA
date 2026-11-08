@@ -1,0 +1,11 @@
+{
+  "status": "PASS_SHARED_STREAM_COPY_EVENT_DEVICE_NATIVE_PARITY",
+  "goose": "PASS shared stream control cases=37 callback_events=264 checks=1091 mode_mask=0xcffffffffffff payloads_exact=1 heap_live=0\n",
+  "rollback": "PASS shared stream control cases=37 callback_events=264 checks=1091 mode_mask=0x0 payloads_exact=1 heap_live=0\n",
+  "model_runs": 0,
+  "production_changed": false,
+  "failure_checks": "PASS stream rejection cases=11 full_2D_preflight=1 before_payload_mutation=1 staging_OOM=1 callback_bad_alloc=2 zero_unbound_memset=1 staging_buffer_context_heaps=0\n",
+  "concurrency": "PASS independent stream threads=8 transfer_event_lifecycles=128 staged_copies=128 data_exact=1 owner_heaps=0\n",
+  "exception_namespace": "Primary matches actual server;success parity remains independent namespaces",
+  "distinct_source_destination_payloads": true
+}
