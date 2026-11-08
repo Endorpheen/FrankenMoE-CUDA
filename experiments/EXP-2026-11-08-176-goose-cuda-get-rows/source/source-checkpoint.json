@@ -1,0 +1,16 @@
+{
+  "status": "SOURCE_PENDING_ABI_CUDA_APEX",
+  "base_commit": "d486843",
+  "stage": "EXP176",
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c"
+  },
+  "production_changed": false,
+  "active_runtime_changed": false,
+  "scope": "GET_ROWS float fast paths only: k_get_rows_float_vec (same type, 16B) and k_get_rows_float (F32->F32 element path). Quantized kq dequantizing path and GET_ROWS_BACK remain native.",
+  "fast_div_provenance": "init_fastdiv_values <mp,L,divisor> and fastdiv (umulhi+n)>>L reused exactly from the native header"
+}
