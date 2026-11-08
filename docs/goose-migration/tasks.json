@@ -4,7 +4,7 @@
   "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
   "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
   "active_workstream": "APEX_COMMON",
-  "next_task": "P3-13",
+  "next_task": "P3-12",
   "execution_order": [
     "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",
     "QWEN_COMPATIBILITY: C1 and deferred shared MTP task; only after all APEX_COMMON tasks DONE",
@@ -1007,7 +1007,7 @@
         "ggml/src/ggml-cuda/dsv4*"
       ],
       "acceptance": "Multi-step stateful outputs match for each registered path; state ownership and concurrent stream ordering checked.",
-      "evidence": "EXP170 transfers full active CUDA SSM convolution host/device TU:serial/tiled,six d_conv sizes,fused SiLU/bias,checked shape/stride/span/alias and bounded ragged loads.160GPU cases/156native pairs/4candidate-only bounded tails/2934272independent fp64 references,156rollback,2capture executions per mode and26before-stream rejections pass. One real Apex2650.059/27.985,exact text/all128IDs/full probabilities,127graph reuses,host2/device7/size2 proving actual d_conv4 serial+tiled fusion,cuda_status0,zero owned heaps. Other recurrence/GDN-MMA/scan/sparse/source closure remains open;not full requirement DONE.",
+      "evidence": "EXP170 transfers full active CUDA SSM convolution host/device TU:serial/tiled,six d_conv sizes,fused SiLU/bias,checked shape/stride/span/alias and bounded ragged loads.160GPU cases/156native pairs/4candidate-only bounded tails/2934272independent fp64 references,156rollback,2capture executions per mode and26before-stream rejections pass. One real Apex2650.059/27.985,exact text/all128IDs/full probabilities,127graph reuses,host2/device7/size2 proving actual d_conv4 serial+tiled fusion,cuda_status0,zero owned heaps. Other recurrence/GDN-MMA/scan/sparse/source closure remains open;not full requirement DONE. EXP172 replaces scalar+MMA GDN host/device units together with real Goose computation/state/cache/once/error policy.25GPU native-bitwise/rollback cases/9966684checks,32before-stream refusals,18host-policy cases and16thread once check pass. One Apex2603.792/27.402,exact128IDs/text/full probabilities,127graph reuses,FG174S host2/modes1/size8 plusFG174M host8/path4/partial1,status0,zero prior owned heaps. -1.32/-2.23percent vs EXP171 preliminary;stable/fresh-C++ parity unproven. Source byte offsets,statebase,ldmatrix/BF16ABI and FMA rounding fixed before model. V32blocks1 only compile/host qualified;rawcache capacity caller-owned and original MMA K>1 final-slot behavior preserved. Other recurrence/native closure remains open;no whole requirement DONE.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,

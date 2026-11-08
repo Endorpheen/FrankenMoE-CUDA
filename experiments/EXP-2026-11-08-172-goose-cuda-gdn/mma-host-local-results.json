@@ -1,0 +1,7 @@
+{
+  "status": "PASS_HOST_POLICY_ONCE_FAULTS",
+  "exit_code": 0,
+  "stdout": "PASS MMA host cases=18 checks=486 concurrent_threads=16 init_exactly_once=1\n",
+  "stderr": "",
+  "scope": "Actual emitted Goose host policy with typed mock SDK/storage effects;not GPU/performance or original-host binary differential"
+}

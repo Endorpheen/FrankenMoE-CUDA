@@ -1,0 +1,24 @@
+{
+  "status": "PASS_SCALAR_COMPONENT_ONLY_NOT_RUNTIME_ACCEPTANCE",
+  "runs": [
+    {
+      "label": "scalar-component-gpu-parity",
+      "exit_code": 0,
+      "stdout": "PASS captures=1 cases=19 native_paired=19 fused=4 checks=769528 rollback=0 host=3 device=[7,15] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG174S_CUDA_GDN host=0x3,cuda_status=0,modes=0x7,sizes=0xf\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x88404\n"
+    },
+    {
+      "label": "scalar-component-gpu-rollback",
+      "exit_code": 0,
+      "stdout": "PASS captures=1 cases=19 native_paired=19 fused=4 checks=769528 rollback=1 host=0 device=[0,0] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x88404\n"
+    }
+  ],
+  "producer_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "scalar-device": "fg174sd_gg_function_1",
+    "scalar-host": "fg174sh_gg_function_1"
+  },
+  "excluded": "Three native MMA-eligible test cases;test-only adapter returnsfalse;never link this adapter into Apex/runtime candidate. Full MMA integration/GPU/model gate pending.",
+  "production_changed": false
+}
