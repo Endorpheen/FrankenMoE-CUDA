@@ -4,8 +4,8 @@
   "modules": [
     {
       "module": "vector-device",
-      "generated_c_sha256": "ebab95cdc9906cb52fdab3658a404999753e84deb3ef511156dfa7b148eedb93",
-      "function_count": 11
+      "generated_c_sha256": "a207ae6eb7028447a40382e49169d2665b699f996050d57273a717086e473eac",
+      "function_count": 13
     },
     {
       "module": "loaders-device",

@@ -61,7 +61,9 @@ fn q4_word(base:u64,byte:i32,sh:i32)->i32{let lo=ld_u16(base,byte as u64);let hi
 fn vec_dot_kq4(kb:u64, tx:i32, u0:i32, u1:i32, d0x:f32, d0y:f32, d1x:f32, d1y:f32)->f32{
  var sum:f32=0.0;
  var h:i32=0;
- while h<2{
+ if true {
+let h:i32=0;
+
   let kk=h*32+tx;
   let b=kb+((((kk/8) as i64)*18) as u64);
   let iq4=kk%4;
@@ -72,8 +74,25 @@ fn vec_dot_kq4(kb:u64, tx:i32, u0:i32, u1:i32, d0x:f32, d0y:f32, d1x:f32, d1y:f3
   let qx=if h==0{d0x}else{d1x};
   let qy=if h==0{d0y}else{d1y};
   sum+=d4*((sumi as f32)*qx-qy);
-  h+=1;
- }
+
+}
+if true {
+let h:i32=1;
+
+  let kk=h*32+tx;
+  let b=kb+((((kk/8) as i64)*18) as u64);
+  let iq4=kk%4;
+  let sh=(kk%8)/4;
+  let v=q4_word(b,2+4*iq4,sh);
+  let sumi=dp4a(v,if h==0{u0}else{u1},0);
+  let d4=h2f(ld_u16(b,0));
+  let qx=if h==0{d0x}else{d1x};
+  let qy=if h==0{d0y}else{d1y};
+  sum+=d4*((sumi as f32)*qx-qy);
+
+}
+h=(2 as i32);
+
  return sum;
 }
 // dequantize_V_q4_0<float,4>: ib=i0/QK4_0 (QK4_0=32), iqs=i0%(QK4_0/2) bytes, shift=(i0%QK4_0)/(QK4_0/2).
@@ -111,7 +130,7 @@ fn quant_q8(xb:u64, scale:f32, yq:i64, yds:i64, tx:i32, smem:u64){
 }
 // flash_attn_ext_vec<256,Q4_0,Q4_0,false>: block dim (32,4,1), lane=tx, warp=ty.
 // ncols is the runtime cols_per_block (1 or 2); D/4=64 i32 per row; D/QK8_1=8 ds pairs.
-fn fattn_vec(
+fn fattn_vec_1(
  q_p:u64, k_p:u64, v_p:u64, mask_p:u64, sinks_p:u64, kv_max_p:u64, dst_p:u64, dst_meta_p:u64,
  scale:f32, max_bias:f32, m0:f32, m1:f32, n_head_log2:i32, logit_softcap:f32,
  ne00:i32, ne01_z:i32, ne02:i32, ne03:i32,
@@ -121,8 +140,10 @@ fn fattn_vec(
  nb21:i64, nb22:i64, nb23:i64,
  ne31:i32, ne32:i32, ne33:i32,
  nb31:i64, nb32:i64, nb33:i64,
- ncols:i32,
+ unused_ncols:i32,
  bx:i32, by:i32, bz:i32, gx:i32, gy:i32, tx:i32, ty:i32, smem:u64){
+ let ncols:i32=1;
+
  lc();
  let ic0=bx*ncols;
  let sequence=bz/ne02;
@@ -141,7 +162,12 @@ fn fattn_vec(
  var kqk:f32[2]=default<f32[2]>();
  var vkqscale:f32[2]=default<f32[2]>();
  var j:i32=0;
- while j<ncols{kmax[j]=negmax();ksum[j]=0.0;j+=1;}
+ if true {
+let j:i32=0;
+kmax[j]=negmax();ksum[j]=0.0;
+}
+j=(1 as i32);
+
  // Q -> q8_1 in the shared KQ buffer: source j0-loop with break; nwarps=4>=ncols so warp ty
  // owns column ty exactly when ty<ncols.
  pdl_sync();
@@ -150,12 +176,30 @@ fn fattn_vec(
   let colw=jq*256;
   if ncols>1 && ic0+jq>=ne01_z{
    var i0:i32=0;
-   while i0<64{sm_st_i32(smem,((colw+i0+tx)) as u64,0);i0+=32;}
+   if true {
+let i0:i32=0;
+sm_st_i32(smem,((colw+i0+tx)) as u64,0);
+}
+if true {
+let i0:i32=32;
+sm_st_i32(smem,((colw+i0+tx)) as u64,0);
+}
+i0=(64 as i32);
+
    if tx<8{sm_st_f32(smem,((colw+64+2*tx)) as u64,0.0);sm_st_f32(smem,((colw+64+2*tx+1)) as u64,0.0);}
   }else{
    let xb=qb+((nb01*(jq as i64))) as u64;
    var i0:i32=0;
-   while i0<64{quant_q8(xb+((i0*16) as u64),scale,(colw+i0) as i64,(colw+64+2*(i0/8)) as i64,tx,smem);i0+=32;}
+   if true {
+let i0:i32=0;
+quant_q8(xb+((i0*16) as u64),scale,(colw+i0) as i64,(colw+64+2*(i0/8)) as i64,tx,smem);
+}
+if true {
+let i0:i32=32;
+quant_q8(xb+((i0*16) as u64),scale,(colw+i0) as i64,(colw+64+2*(i0/8)) as i64,tx,smem);
+}
+i0=(64 as i32);
+
   }
  }
  barrier();
@@ -163,18 +207,36 @@ fn fattn_vec(
  var qdx:f32[4]=default<f32[4]>();
  var qdy:f32[4]=default<f32[4]>();
  j=0;
- while j<ncols{
+ if true {
+let j:i32=0;
+
   var i0:i32=0;
-  while i0<64{
+  if true {
+let i0:i32=0;
+
    let i=i0+tx;
    qi32[j*2+i0/32]=sm_i32(smem,((j*256+i)) as u64);
    let dw=((j*256+64+2*(i/8))) as u64;
    qdx[j*2+i0/32]=sm_f32(smem,dw);
    qdy[j*2+i0/32]=sm_f32(smem,dw+1);
-   i0+=32;
-  }
-  j+=1;
- }
+
+}
+if true {
+let i0:i32=32;
+
+   let i=i0+tx;
+   qi32[j*2+i0/32]=sm_i32(smem,((j*256+i)) as u64);
+   let dw=((j*256+64+2*(i/8))) as u64;
+   qdx[j*2+i0/32]=sm_f32(smem,dw);
+   qdy[j*2+i0/32]=sm_f32(smem,dw+1);
+
+}
+i0=(64 as i32);
+
+
+}
+j=(1 as i32);
+
  barrier();
  var kvlim:i32=ne11;
  if kv_max_p!=0{kvlim=ld_i32(kv_max_p,(((sequence*gx+bx)*4)) as u64);}
@@ -185,12 +247,19 @@ fn fattn_vec(
  while k0v<(kvlim as i64){
   var kreg:f32[2]=default<f32[2]>();
   var kmaxn:f32[2]=default<f32[2]>();
-  j=0;while j<ncols{kmaxn[j]=kmax[j];j+=1;}
+  j=0;if true {
+let j:i32=0;
+kmaxn[j]=kmax[j];
+}
+j=(1 as i32);
+
   var iq:i32=0;
   while iq<32{
    let i_kq=ty*32+iq;
    j=0;
-   while j<ncols{
+   if true {
+let j:i32=0;
+
     var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
     sum=wr_sum(sum);
     // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
@@ -199,12 +268,16 @@ fn fattn_vec(
     }
     kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
     if tx==iq{kreg[j]=sum;}
-    j+=1;
-   }
+
+}
+j=(1 as i32);
+
    iq+=1;
   }
   j=0;
-  while j<ncols{
+  if true {
+let j:i32=0;
+
    // nthreads_KQ==WARP_SIZE: source KQ_max_new shfl loop is a no-op here.
    let ksc=expf(kmax[j]-kmaxn[j]);
    kmax[j]=kmaxn[j];
@@ -212,26 +285,59 @@ fn fattn_vec(
    ksum[j]=ksum[j]*ksc+kreg[j];
    sm_st_f32(smem,((j*128+tid)) as u64,kreg[j]);
    vkqscale[j]=ksc;
-   j+=1;
-  }
+
+}
+j=(1 as i32);
+
   syncwarp();
   var k0:i32=0;
   while k0<32{
    let k=ty*32+k0;
-   j=0;while j<ncols{kqk[j]=sm_f32(smem,((j*128+k)) as u64);j+=1;}
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(1 as i32);
+
    var iv:i32=0;
-   while iv<128{
+   if true {
+let iv:i32=0;
+
     let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
     j=0;
-    while j<ncols{
+    if true {
+let j:i32=0;
+
      vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
      vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
      vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
      vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
-     j+=1;
-    }
-    iv+=64;
-   }
+
+}
+j=(1 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(1 as i32);
+
+
+}
+iv=(128 as i32);
+
    k0+=1;
   }
   syncwarp();
@@ -242,48 +348,109 @@ fn fattn_vec(
  }
  if sinks_p!=0 && by==0{
   let sink=ld_f32(sinks_p,((head*4)) as u64);
-  let js=ty;
-  if !(4>ncols && js>=ncols){
+  if ty==(0 as i32) {
+let js:i32=0;
+
    let kmaxn_j=fmaxf(sink,kmax[js]);
    let ksc=expf(kmax[js]-kmaxn_j);
    kmax[js]=kmaxn_j;
    ksum[js]=ksum[js]*ksc+if tx==0{expf(sink-kmax[js])}else{0.0};
    var kk:i32=0;
-   while kk<4{vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);kk+=1;}
+   if true {
+let kk:i32=0;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=1;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=2;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=3;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+kk=(4 as i32);
+
+
   }
  }
  j=0;
- while j<ncols{
+ if true {
+let j:i32=0;
+
   if ty==0{sm_st_f32(smem,((1024+j*32+tx)) as u64,negmax());sm_st_f32(smem,((1088+j*32+tx)) as u64,0.0);}
-  j+=1;
- }
+
+}
+j=(1 as i32);
+
  barrier();
  j=0;
- while j<ncols{
+ if true {
+let j:i32=0;
+
   if tx==0{sm_st_f32(smem,((1024+j*32+ty)) as u64,kmax[j]);}
-  j+=1;
- }
+
+}
+j=(1 as i32);
+
  barrier();
  // Effective columns after the source break (ncols>1 && ic0+j>=ne01.z); ic0<ne01_z holds.
  var jc=ncols;
  if ncols>1 && ic0+ncols>ne01_z{jc=ne01_z-ic0;}
  j=0;
- while j<jc{
+
+ if (0 as i32)<jc {
+let j:i32=0;
+
   var kmaxn2=sm_f32(smem,((1024+j*32+tx)) as u64);
   kmaxn2=wr_max(kmaxn2);
   let ksc2=expf(kmax[j]-kmaxn2);
   kmax[j]=kmaxn2;
   var kk:i32=0;
-  while kk<4{vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);kk+=1;}
+  if true {
+let kk:i32=0;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=1;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=2;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=3;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+kk=(4 as i32);
+
   var iv:i32=0;
-  while iv<128{
+  if true {
+let iv:i32=0;
+
    let ivk=iv+tx*2;
    sm_st_f32(smem,((ty*256+2*ivk)) as u64,vkqx[j*4+iv/32]);
    sm_st_f32(smem,((ty*256+2*ivk+1)) as u64,vkqy[j*4+iv/32]);
    sm_st_f32(smem,((ty*256+2*ivk+2)) as u64,vkqx[j*4+iv/32+1]);
    sm_st_f32(smem,((ty*256+2*ivk+3)) as u64,vkqy[j*4+iv/32+1]);
-   iv+=64;
-  }
+
+}
+if true {
+let iv:i32=64;
+
+   let ivk=iv+tx*2;
+   sm_st_f32(smem,((ty*256+2*ivk)) as u64,vkqx[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+1)) as u64,vkqy[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+2)) as u64,vkqx[j*4+iv/32+1]);
+   sm_st_f32(smem,((ty*256+2*ivk+3)) as u64,vkqy[j*4+iv/32+1]);
+
+}
+iv=(128 as i32);
+
   ksum[j]*=ksc2;
   ksum[j]=wr_sum(ksum[j]);
   if tx==0{sm_st_f32(smem,((1088+j*32+ty)) as u64,ksum[j]);}
@@ -291,24 +458,738 @@ fn fattn_vec(
   ksum[j]=sm_f32(smem,((1088+j*32+tx)) as u64);
   ksum[j]=wr_sum(ksum[j]);
   var i0:i32=0;
-  while i0<256{
+  if true {
+let i0:i32=0;
+
    var dv:f32=0.0;
    var w:i32=0;
-   while w<4{dv+=sm_f32(smem,((w*256+i0+tid)) as u64);w+=1;}
+   if true {
+let w:i32=0;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=1;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=2;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=3;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+w=(4 as i32);
+
    if gy==1{dv/=ksum[j];}
    let didx=((((((sequence as i64)*(ne01_z as i64))+((ic0+j) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64))+((by as i64));
    st_f32(dst_p,(((didx*256)+((i0+tid) as i64))*4) as u64,dv);
-   i0+=128;
-  }
+
+}
+if true {
+let i0:i32=128;
+
+   var dv:f32=0.0;
+   var w:i32=0;
+   if true {
+let w:i32=0;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=1;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=2;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=3;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+w=(4 as i32);
+
+   if gy==1{dv/=ksum[j];}
+   let didx=((((((sequence as i64)*(ne01_z as i64))+((ic0+j) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64))+((by as i64));
+   st_f32(dst_p,(((didx*256)+((i0+tid) as i64))*4) as u64,dv);
+
+}
+i0=(256 as i32);
+
   if j<jc-1{barrier();}
-  j+=1;
+
  }
- if gy!=1 && tid<ncols && (ncols==1 || ic0+tid<ne01_z){
+ j=(1 as i32);
+
+ if gy!=1 && tid==(0 as i32) && (1==1 || ic0+(0 as i32)<ne01_z) {
+let tid:i32=0;
+
   let midx=(((((sequence as i64)*(ne01_z as i64))+((ic0+tid) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64)+((by as i64));
   st_f32(dst_meta_p,(midx*8) as u64,kmax[tid]);
   st_f32(dst_meta_p,((midx*8)+4) as u64,ksum[tid]);
- }
+
+ }}
+fn fattn_vec_2(
+ q_p:u64, k_p:u64, v_p:u64, mask_p:u64, sinks_p:u64, kv_max_p:u64, dst_p:u64, dst_meta_p:u64,
+ scale:f32, max_bias:f32, m0:f32, m1:f32, n_head_log2:i32, logit_softcap:f32,
+ ne00:i32, ne01_z:i32, ne02:i32, ne03:i32,
+ nb01:i64, nb02:i64, nb03:i64,
+ ne10:i32, ne11:i32, ne12:i32, ne13:i32,
+ nb11:i64, nb12:i64, nb13:i64,
+ nb21:i64, nb22:i64, nb23:i64,
+ ne31:i32, ne32:i32, ne33:i32,
+ nb31:i64, nb32:i64, nb33:i64,
+ unused_ncols:i32,
+ bx:i32, by:i32, bz:i32, gx:i32, gy:i32, tx:i32, ty:i32, smem:u64){
+ let ncols:i32=2;
+
+ lc();
+ let ic0=bx*ncols;
+ let sequence=bz/ne02;
+ let head=bz-sequence*ne02;
+ let gqa_ratio=ne02/ne12;
+ let qb=q_p+((nb03*(sequence as i64))+(nb02*(head as i64))+(nb01*(ic0 as i64))) as u64;
+ let kb0=k_p+((nb13*(sequence as i64))+(nb12*((head/gqa_ratio) as i64))) as u64;
+ let vb0=v_p+((nb23*(sequence as i64))+(nb22*((head/gqa_ratio) as i64))) as u64;
+ let maskb0=if mask_p!=0{mask_p+((nb33*((sequence%ne33) as i64))+(nb31*(ic0 as i64))) as u64}else{0 as u64};
+ let slope=alibi_slope(max_bias,head,n_head_log2,m0,m1);
+ let tid=32*ty+tx;
+ var kmax:f32[2]=default<f32[2]>();
+ var ksum:f32[2]=default<f32[2]>();
+ var vkqx:f32[8]=default<f32[8]>();
+ var vkqy:f32[8]=default<f32[8]>();
+ var kqk:f32[2]=default<f32[2]>();
+ var vkqscale:f32[2]=default<f32[2]>();
+ var j:i32=0;
+ if true {
+let j:i32=0;
+kmax[j]=negmax();ksum[j]=0.0;
 }
+if true {
+let j:i32=1;
+kmax[j]=negmax();ksum[j]=0.0;
+}
+j=(2 as i32);
+
+ // Q -> q8_1 in the shared KQ buffer: source j0-loop with break; nwarps=4>=ncols so warp ty
+ // owns column ty exactly when ty<ncols.
+ pdl_sync();
+ let jq=ty;
+ if !(4>ncols && jq>=ncols){
+  let colw=jq*256;
+  if ncols>1 && ic0+jq>=ne01_z{
+   var i0:i32=0;
+   if true {
+let i0:i32=0;
+sm_st_i32(smem,((colw+i0+tx)) as u64,0);
+}
+if true {
+let i0:i32=32;
+sm_st_i32(smem,((colw+i0+tx)) as u64,0);
+}
+i0=(64 as i32);
+
+   if tx<8{sm_st_f32(smem,((colw+64+2*tx)) as u64,0.0);sm_st_f32(smem,((colw+64+2*tx+1)) as u64,0.0);}
+  }else{
+   let xb=qb+((nb01*(jq as i64))) as u64;
+   var i0:i32=0;
+   if true {
+let i0:i32=0;
+quant_q8(xb+((i0*16) as u64),scale,(colw+i0) as i64,(colw+64+2*(i0/8)) as i64,tx,smem);
+}
+if true {
+let i0:i32=32;
+quant_q8(xb+((i0*16) as u64),scale,(colw+i0) as i64,(colw+64+2*(i0/8)) as i64,tx,smem);
+}
+i0=(64 as i32);
+
+  }
+ }
+ barrier();
+ var qi32:i32[4]=default<i32[4]>();
+ var qdx:f32[4]=default<f32[4]>();
+ var qdy:f32[4]=default<f32[4]>();
+ j=0;
+ if true {
+let j:i32=0;
+
+  var i0:i32=0;
+  if true {
+let i0:i32=0;
+
+   let i=i0+tx;
+   qi32[j*2+i0/32]=sm_i32(smem,((j*256+i)) as u64);
+   let dw=((j*256+64+2*(i/8))) as u64;
+   qdx[j*2+i0/32]=sm_f32(smem,dw);
+   qdy[j*2+i0/32]=sm_f32(smem,dw+1);
+
+}
+if true {
+let i0:i32=32;
+
+   let i=i0+tx;
+   qi32[j*2+i0/32]=sm_i32(smem,((j*256+i)) as u64);
+   let dw=((j*256+64+2*(i/8))) as u64;
+   qdx[j*2+i0/32]=sm_f32(smem,dw);
+   qdy[j*2+i0/32]=sm_f32(smem,dw+1);
+
+}
+i0=(64 as i32);
+
+
+}
+if true {
+let j:i32=1;
+
+  var i0:i32=0;
+  if true {
+let i0:i32=0;
+
+   let i=i0+tx;
+   qi32[j*2+i0/32]=sm_i32(smem,((j*256+i)) as u64);
+   let dw=((j*256+64+2*(i/8))) as u64;
+   qdx[j*2+i0/32]=sm_f32(smem,dw);
+   qdy[j*2+i0/32]=sm_f32(smem,dw+1);
+
+}
+if true {
+let i0:i32=32;
+
+   let i=i0+tx;
+   qi32[j*2+i0/32]=sm_i32(smem,((j*256+i)) as u64);
+   let dw=((j*256+64+2*(i/8))) as u64;
+   qdx[j*2+i0/32]=sm_f32(smem,dw);
+   qdy[j*2+i0/32]=sm_f32(smem,dw+1);
+
+}
+i0=(64 as i32);
+
+
+}
+j=(2 as i32);
+
+ barrier();
+ var kvlim:i32=ne11;
+ if kv_max_p!=0{kvlim=ld_i32(kv_max_p,(((sequence*gx+bx)*4)) as u64);}
+ var kbase=kb0+((nb11*((by*128) as i64))) as u64;
+ var vbase=vb0+((nb21*((by*128) as i64))) as u64;
+ var maskb=maskb0+(((by*128)*2) as u64);
+ var k0v:i64=(by*128) as i64;
+ while k0v<(kvlim as i64){
+  var kreg:f32[2]=default<f32[2]>();
+  var kmaxn:f32[2]=default<f32[2]>();
+  j=0;if true {
+let j:i32=0;
+kmaxn[j]=kmax[j];
+}
+if true {
+let j:i32=1;
+kmaxn[j]=kmax[j];
+}
+j=(2 as i32);
+
+  var iq:i32=0;
+  while iq<32{
+   let i_kq=ty*32+iq;
+   j=0;
+   if true {
+let j:i32=0;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+if true {
+let j:i32=1;
+
+    var sum=vec_dot_kq4(kbase+((nb11*(i_kq as i64))) as u64,tx,qi32[j*2],qi32[j*2+1],qdx[j*2],qdy[j*2],qdx[j*2+1],qdy[j*2+1]);
+    sum=wr_sum(sum);
+    // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
+    if mask_p!=0 && (ncols==1 || ic0+j<ne01_z){
+     sum+=slope*h2f(ld_u16(maskb,(((j*ne11+i_kq)*2)) as u64));
+    }
+    kmaxn[j]=fmaxf(kmaxn[j],sum+(3.0 as f32)*(0.6931 as f32));
+    if tx==iq{kreg[j]=sum;}
+
+}
+j=(2 as i32);
+
+   iq+=1;
+  }
+  j=0;
+  if true {
+let j:i32=0;
+
+   // nthreads_KQ==WARP_SIZE: source KQ_max_new shfl loop is a no-op here.
+   let ksc=expf(kmax[j]-kmaxn[j]);
+   kmax[j]=kmaxn[j];
+   kreg[j]=expf(kreg[j]-kmax[j]);
+   ksum[j]=ksum[j]*ksc+kreg[j];
+   sm_st_f32(smem,((j*128+tid)) as u64,kreg[j]);
+   vkqscale[j]=ksc;
+
+}
+if true {
+let j:i32=1;
+
+   // nthreads_KQ==WARP_SIZE: source KQ_max_new shfl loop is a no-op here.
+   let ksc=expf(kmax[j]-kmaxn[j]);
+   kmax[j]=kmaxn[j];
+   kreg[j]=expf(kreg[j]-kmax[j]);
+   ksum[j]=ksum[j]*ksc+kreg[j];
+   sm_st_f32(smem,((j*128+tid)) as u64,kreg[j]);
+   vkqscale[j]=ksc;
+
+}
+j=(2 as i32);
+
+  syncwarp();
+  var k0:i32=0;
+  while k0<32{
+   let k=ty*32+k0;
+   j=0;if true {
+let j:i32=0;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+if true {
+let j:i32=1;
+kqk[j]=sm_f32(smem,((j*128+k)) as u64);
+}
+j=(2 as i32);
+
+   var iv:i32=0;
+   if true {
+let iv:i32=0;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+if true {
+let iv:i32=64;
+
+    let v4=dequant_v4(vbase+((nb21*(k as i64))) as u64,((2*iv+tx*4)) as i64);
+    j=0;
+    if true {
+let j:i32=0;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+if true {
+let j:i32=1;
+
+     vkqx[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32],mul_rn(v4.v0,kqk[j]))}else{fma_rn(v4.v0,kqk[j],vkqx[j*4+iv/32])};
+     vkqy[j*4+iv/32]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32],mul_rn(v4.v1,kqk[j]))}else{fma_rn(v4.v1,kqk[j],vkqy[j*4+iv/32])};
+     vkqx[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqx[j*4+iv/32+1],mul_rn(v4.v2,kqk[j]))}else{fma_rn(v4.v2,kqk[j],vkqx[j*4+iv/32+1])};
+     vkqy[j*4+iv/32+1]=if k0==0{fma_rn(vkqscale[j],vkqy[j*4+iv/32+1],mul_rn(v4.v3,kqk[j]))}else{fma_rn(v4.v3,kqk[j],vkqy[j*4+iv/32+1])};
+
+}
+j=(2 as i32);
+
+
+}
+iv=(128 as i32);
+
+   k0+=1;
+  }
+  syncwarp();
+  k0v+=((gy*128) as i64);
+  kbase+=(((gy*128) as i64)*nb11) as u64;
+  vbase+=(((gy*128) as i64)*nb21) as u64;
+  maskb+=(((gy*128)*2) as u64);
+ }
+ if sinks_p!=0 && by==0{
+  let sink=ld_f32(sinks_p,((head*4)) as u64);
+  if ty==(0 as i32) {
+let js:i32=0;
+
+   let kmaxn_j=fmaxf(sink,kmax[js]);
+   let ksc=expf(kmax[js]-kmaxn_j);
+   kmax[js]=kmaxn_j;
+   ksum[js]=ksum[js]*ksc+if tx==0{expf(sink-kmax[js])}else{0.0};
+   var kk:i32=0;
+   if true {
+let kk:i32=0;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=1;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=2;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=3;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+kk=(4 as i32);
+
+
+  }  if ty==(1 as i32) {
+let js:i32=1;
+
+   let kmaxn_j=fmaxf(sink,kmax[js]);
+   let ksc=expf(kmax[js]-kmaxn_j);
+   kmax[js]=kmaxn_j;
+   ksum[js]=ksum[js]*ksc+if tx==0{expf(sink-kmax[js])}else{0.0};
+   var kk:i32=0;
+   if true {
+let kk:i32=0;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=1;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=2;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+if true {
+let kk:i32=3;
+vkqx[js*4+kk]=mul_rn(vkqx[js*4+kk],ksc);vkqy[js*4+kk]=mul_rn(vkqy[js*4+kk],ksc);
+}
+kk=(4 as i32);
+
+
+  }
+ }
+ j=0;
+ if true {
+let j:i32=0;
+
+  if ty==0{sm_st_f32(smem,((1024+j*32+tx)) as u64,negmax());sm_st_f32(smem,((1088+j*32+tx)) as u64,0.0);}
+
+}
+if true {
+let j:i32=1;
+
+  if ty==0{sm_st_f32(smem,((1024+j*32+tx)) as u64,negmax());sm_st_f32(smem,((1088+j*32+tx)) as u64,0.0);}
+
+}
+j=(2 as i32);
+
+ barrier();
+ j=0;
+ if true {
+let j:i32=0;
+
+  if tx==0{sm_st_f32(smem,((1024+j*32+ty)) as u64,kmax[j]);}
+
+}
+if true {
+let j:i32=1;
+
+  if tx==0{sm_st_f32(smem,((1024+j*32+ty)) as u64,kmax[j]);}
+
+}
+j=(2 as i32);
+
+ barrier();
+ // Effective columns after the source break (ncols>1 && ic0+j>=ne01.z); ic0<ne01_z holds.
+ var jc=ncols;
+ if ncols>1 && ic0+ncols>ne01_z{jc=ne01_z-ic0;}
+ j=0;
+
+ if (0 as i32)<jc {
+let j:i32=0;
+
+  var kmaxn2=sm_f32(smem,((1024+j*32+tx)) as u64);
+  kmaxn2=wr_max(kmaxn2);
+  let ksc2=expf(kmax[j]-kmaxn2);
+  kmax[j]=kmaxn2;
+  var kk:i32=0;
+  if true {
+let kk:i32=0;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=1;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=2;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=3;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+kk=(4 as i32);
+
+  var iv:i32=0;
+  if true {
+let iv:i32=0;
+
+   let ivk=iv+tx*2;
+   sm_st_f32(smem,((ty*256+2*ivk)) as u64,vkqx[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+1)) as u64,vkqy[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+2)) as u64,vkqx[j*4+iv/32+1]);
+   sm_st_f32(smem,((ty*256+2*ivk+3)) as u64,vkqy[j*4+iv/32+1]);
+
+}
+if true {
+let iv:i32=64;
+
+   let ivk=iv+tx*2;
+   sm_st_f32(smem,((ty*256+2*ivk)) as u64,vkqx[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+1)) as u64,vkqy[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+2)) as u64,vkqx[j*4+iv/32+1]);
+   sm_st_f32(smem,((ty*256+2*ivk+3)) as u64,vkqy[j*4+iv/32+1]);
+
+}
+iv=(128 as i32);
+
+  ksum[j]*=ksc2;
+  ksum[j]=wr_sum(ksum[j]);
+  if tx==0{sm_st_f32(smem,((1088+j*32+ty)) as u64,ksum[j]);}
+  barrier();
+  ksum[j]=sm_f32(smem,((1088+j*32+tx)) as u64);
+  ksum[j]=wr_sum(ksum[j]);
+  var i0:i32=0;
+  if true {
+let i0:i32=0;
+
+   var dv:f32=0.0;
+   var w:i32=0;
+   if true {
+let w:i32=0;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=1;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=2;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=3;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+w=(4 as i32);
+
+   if gy==1{dv/=ksum[j];}
+   let didx=((((((sequence as i64)*(ne01_z as i64))+((ic0+j) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64))+((by as i64));
+   st_f32(dst_p,(((didx*256)+((i0+tid) as i64))*4) as u64,dv);
+
+}
+if true {
+let i0:i32=128;
+
+   var dv:f32=0.0;
+   var w:i32=0;
+   if true {
+let w:i32=0;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=1;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=2;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=3;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+w=(4 as i32);
+
+   if gy==1{dv/=ksum[j];}
+   let didx=((((((sequence as i64)*(ne01_z as i64))+((ic0+j) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64))+((by as i64));
+   st_f32(dst_p,(((didx*256)+((i0+tid) as i64))*4) as u64,dv);
+
+}
+i0=(256 as i32);
+
+  if j<jc-1{barrier();}
+
+ }
+ if (1 as i32)<jc {
+let j:i32=1;
+
+  var kmaxn2=sm_f32(smem,((1024+j*32+tx)) as u64);
+  kmaxn2=wr_max(kmaxn2);
+  let ksc2=expf(kmax[j]-kmaxn2);
+  kmax[j]=kmaxn2;
+  var kk:i32=0;
+  if true {
+let kk:i32=0;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=1;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=2;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+if true {
+let kk:i32=3;
+vkqx[j*4+kk]=mul_rn(vkqx[j*4+kk],ksc2);vkqy[j*4+kk]=mul_rn(vkqy[j*4+kk],ksc2);
+}
+kk=(4 as i32);
+
+  var iv:i32=0;
+  if true {
+let iv:i32=0;
+
+   let ivk=iv+tx*2;
+   sm_st_f32(smem,((ty*256+2*ivk)) as u64,vkqx[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+1)) as u64,vkqy[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+2)) as u64,vkqx[j*4+iv/32+1]);
+   sm_st_f32(smem,((ty*256+2*ivk+3)) as u64,vkqy[j*4+iv/32+1]);
+
+}
+if true {
+let iv:i32=64;
+
+   let ivk=iv+tx*2;
+   sm_st_f32(smem,((ty*256+2*ivk)) as u64,vkqx[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+1)) as u64,vkqy[j*4+iv/32]);
+   sm_st_f32(smem,((ty*256+2*ivk+2)) as u64,vkqx[j*4+iv/32+1]);
+   sm_st_f32(smem,((ty*256+2*ivk+3)) as u64,vkqy[j*4+iv/32+1]);
+
+}
+iv=(128 as i32);
+
+  ksum[j]*=ksc2;
+  ksum[j]=wr_sum(ksum[j]);
+  if tx==0{sm_st_f32(smem,((1088+j*32+ty)) as u64,ksum[j]);}
+  barrier();
+  ksum[j]=sm_f32(smem,((1088+j*32+tx)) as u64);
+  ksum[j]=wr_sum(ksum[j]);
+  var i0:i32=0;
+  if true {
+let i0:i32=0;
+
+   var dv:f32=0.0;
+   var w:i32=0;
+   if true {
+let w:i32=0;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=1;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=2;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=3;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+w=(4 as i32);
+
+   if gy==1{dv/=ksum[j];}
+   let didx=((((((sequence as i64)*(ne01_z as i64))+((ic0+j) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64))+((by as i64));
+   st_f32(dst_p,(((didx*256)+((i0+tid) as i64))*4) as u64,dv);
+
+}
+if true {
+let i0:i32=128;
+
+   var dv:f32=0.0;
+   var w:i32=0;
+   if true {
+let w:i32=0;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=1;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=2;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+if true {
+let w:i32=3;
+dv+=sm_f32(smem,((w*256+i0+tid)) as u64);
+}
+w=(4 as i32);
+
+   if gy==1{dv/=ksum[j];}
+   let didx=((((((sequence as i64)*(ne01_z as i64))+((ic0+j) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64))+((by as i64));
+   st_f32(dst_p,(((didx*256)+((i0+tid) as i64))*4) as u64,dv);
+
+}
+i0=(256 as i32);
+
+  if j<jc-1{barrier();}
+
+ }
+ j=(2 as i32);
+
+ if gy!=1 && tid==(0 as i32) && (2==1 || ic0+(0 as i32)<ne01_z) {
+let tid:i32=0;
+
+  let midx=(((((sequence as i64)*(ne01_z as i64))+((ic0+tid) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64)+((by as i64));
+  st_f32(dst_meta_p,(midx*8) as u64,kmax[tid]);
+  st_f32(dst_meta_p,((midx*8)+4) as u64,ksum[tid]);
+
+ }
+ if gy!=1 && tid==(1 as i32) && (2==1 || ic0+(1 as i32)<ne01_z) {
+let tid:i32=1;
+
+  let midx=(((((sequence as i64)*(ne01_z as i64))+((ic0+tid) as i64))*(ne02 as i64))+((head as i64)))*(gy as i64)+((by as i64));
+  st_f32(dst_meta_p,(midx*8) as u64,kmax[tid]);
+  st_f32(dst_meta_p,((midx*8)+4) as u64,ksum[tid]);
+
+ }}
+fn fattn_vec(
+ q_p:u64, k_p:u64, v_p:u64, mask_p:u64, sinks_p:u64, kv_max_p:u64, dst_p:u64, dst_meta_p:u64,
+ scale:f32, max_bias:f32, m0:f32, m1:f32, n_head_log2:i32, logit_softcap:f32,
+ ne00:i32, ne01_z:i32, ne02:i32, ne03:i32,
+ nb01:i64, nb02:i64, nb03:i64,
+ ne10:i32, ne11:i32, ne12:i32, ne13:i32,
+ nb11:i64, nb12:i64, nb13:i64,
+ nb21:i64, nb22:i64, nb23:i64,
+ ne31:i32, ne32:i32, ne33:i32,
+ nb31:i64, nb32:i64, nb33:i64,
+ ncols:i32,
+ bx:i32, by:i32, bz:i32, gx:i32, gy:i32, tx:i32, ty:i32, smem:u64){
+ if ncols==1 {fattn_vec_1(q_p,k_p,v_p,mask_p,sinks_p,kv_max_p,dst_p,dst_meta_p,scale,max_bias,m0,m1,n_head_log2,logit_softcap,ne00,ne01_z,ne02,ne03,nb01,nb02,nb03,ne10,ne11,ne12,ne13,nb11,nb12,nb13,nb21,nb22,nb23,ne31,ne32,ne33,nb31,nb32,nb33,ncols,bx,by,bz,gx,gy,tx,ty,smem);} else {fattn_vec_2(q_p,k_p,v_p,mask_p,sinks_p,kv_max_p,dst_p,dst_meta_p,scale,max_bias,m0,m1,n_head_log2,logit_softcap,ne00,ne01_z,ne02,ne03,nb01,nb02,nb03,ne10,ne11,ne12,ne13,nb11,nb12,nb13,nb21,nb22,nb23,ne31,ne32,ne33,nb31,nb32,nb33,ncols,bx,by,bz,gx,gy,tx,ty,smem);}
+}
+
 // flash_attn_combine_results<256>: block (256,1,1), grid (Q->ne[1],Q->ne[2],Q->ne[3]),
 // dynamic shared = parallel_blocks float2 (pb*8 bytes at smem). Parent launches it when
 // the vec kernel ran with gridDim.y>1 (dst/dst_meta partition outputs).

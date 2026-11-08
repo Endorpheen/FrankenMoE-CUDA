@@ -3,7 +3,7 @@
 static __device__ __forceinline__ uint32_t fg176i_bits(float v){return __float_as_uint(v);}
 static __device__ __forceinline__ float fg176i_frombits(uint32_t v){return __uint_as_float(v);}
 static_assert(sizeof(fg175i_U2)==8&&sizeof(fg175i_U4)==16&&sizeof(fg175i_F4)==16,"Goose MMA POD widths");
-static __device__ __forceinline__ void fg175l_cp16(uint64_t d,uint64_t s){unsigned p=__cvta_generic_to_shared((void*)(uintptr_t)d);asm volatile("cp.async.cg.shared.global.L2::64B [%0], [%1], 16;"::"r"(p),"l"(s):"memory");}
+static __device__ __forceinline__ void fg175l_cp16(uint64_t d,uint64_t s){unsigned p=__cvta_generic_to_shared((void*)(uintptr_t)d);asm volatile("cp.async.cg.shared.global.L2::64B [%0], [%1], 16;"::"r"(p),"l"(s));}
 #include "loaders-functions-generated.cuh"
 static __device__ __forceinline__ void fg175l_load_kv(uint64_t s,uint64_t d,int64_t stride,int64_t row,int32_t x,int32_t y){FG175L_KV(s,d,stride,row,x,y,1);}
 static __device__ __forceinline__ void fg175l_load_mask(uint64_t s,uint64_t d,int64_t stride,int64_t row,int64_t query,int64_t nq,int32_t n,int32_t x,int32_t y){FG175L_MASK(s,d,stride,row,query,nq,n,x,y,1);}

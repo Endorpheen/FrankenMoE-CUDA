@@ -985,7 +985,7 @@
         "ggml/src/ggml-cuda/template-instances/**"
       ],
       "acceptance": "Tile/vector/MMA paths,all supported cache types,mask/alibi/heads/tails and dispatch covered; actual Apex attention witnesses.",
-      "evidence": " EXP173 active Apex FA numerical/host modules now Goose and one corrected fullApex32768/128 matches all IDs/text/saved top5,127graphs,witnesses. Real speed2167.819/22.639 remains materially below EXP172;not activated. Original SDK occupancy metadata retained temporarily for exact partition;native deletion and performance qualification remain open. Local ordinary and long-random corpus/default+rollback pass. See EXP173 qualification;no whole task DONE.",
+      "evidence": " EXP173 active Apex FA numerical/host modules now Goose and one corrected fullApex32768/128 matches all IDs/text/saved top5,127graphs,witnesses. Real speed2167.819/22.639 remains materially below EXP172;not activated. Original SDK occupancy metadata retained temporarily for exact partition;native deletion and performance qualification remain open. Local ordinary and long-random corpus/default+rollback pass. See EXP173 qualification;no whole task DONE. New static-index diagnostic2162.709pp/25.314tg remains exact128/text/top5/127graphs,still below activeEXP172. ActualPTX/SASS/ptxas shows0spill bytes for nativeANDGoose;528Bprefill state matches explicit pointer-passed buffers,so compiler fault unproven. Vector stack80/80->0/0B. No source/performance closure or activation.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3960,9 +3960,11 @@
   },
   "candidate_under_review": {
     "experiment": "EXP173",
-    "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/apex-summary.json",
-    "status": "FUNCTIONAL_EXACT_BUT_MATERIAL_SPEED_REGRESSION",
+    "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/apex-static-index-summary.json",
+    "status": "FUNCTIONAL_EXACT_SPEED_REGRESSION_REDUCED_NOT_ACTIVATED",
     "activated": false,
-    "temporary_original_occupancy_metadata_dependency": true
+    "temporary_original_occupancy_metadata_dependency": true,
+    "previous_summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/apex-summary.json",
+    "codegen_audit": "experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/codegen-static-report.json"
   }
 }
