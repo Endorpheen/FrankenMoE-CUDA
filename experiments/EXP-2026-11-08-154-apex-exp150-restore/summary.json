@@ -1,0 +1,32 @@
+{
+  "status": "PASS_RESTORED_EXP150_EXACT_MODEL_CORRECTNESS",
+  "wall_seconds": 17.09218546410557,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 12453.776,
+    "prompt_per_token_ms": 0.38005908203125,
+    "prompt_per_second": 2631.169855632541,
+    "predicted_n": 128,
+    "predicted_ms": 4619.541,
+    "predicted_per_token_ms": 36.37433858267717,
+    "predicted_per_second": 27.491908828171457
+  },
+  "tokens_equal": true,
+  "token_count": 128,
+  "first_different_token_index": null,
+  "content_equal": true,
+  "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+  "reference": "Saved same-profile C++ control;not a fresh paired performance acceptance",
+  "preliminary": true,
+  "source_closure_complete": false,
+  "concurrent_load": "Dedicated DeepSeek slots verified all idle before this request;other desktop load uncontrolled",
+  "production_changed": false,
+  "completion_probabilities_equal": true,
+  "sampled_rss_peak_mib": 21315.60546875,
+  "sampled_vram_peak_mib": 3246,
+  "process_swap_peak_kib": 0,
+  "restore_commit": "87c79741a0c1ec9261fa22f074e0ac3b19b89a65",
+  "deepseek_used": false,
+  "graphs_reused": 127
+}

@@ -1,0 +1,14 @@
+{
+  "status": "PASS_RESTORED_AND_REMEASURED",
+  "commit": "87c79741a0c1ec9261fa22f074e0ac3b19b89a65",
+  "branch": "codex/apex-exp150-restored-20261108",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/run/libllama-exp150-restored.so.0.7.0",
+  "sha256": "926fde348bbce3741a9b899165534793d96c3bb134f21daeb9cb62c54b3f22af",
+  "expected_measured_sha256": "926fde348bbce3741a9b899165534793d96c3bb134f21daeb9cb62c54b3f22af",
+  "binary_hash_matches_measured": true,
+  "source": "Committed preserved pre-typed-fill source corresponding to last completed EXP150 model receipt;optional expert cache remains disabled by unchanged profile",
+  "quarantined_previous_candidate": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107",
+  "production_changed": false,
+  "deepseek_used": false,
+  "measurement": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/results/restore-exp150-32k128/summary.json"
+}
