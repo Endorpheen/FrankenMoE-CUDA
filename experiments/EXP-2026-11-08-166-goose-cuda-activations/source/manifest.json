@@ -1,0 +1,346 @@
+{
+  "status": "PASS_GPU_CORPUS_AND_REAL_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "device": "fg166d_gg_function_1",
+    "host": "fg166h_gg_function_1"
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run/libggml-cuda-activations-ecdf67c48b3c.so.0.27.0",
+  "sha256": "276d4e0279da778decaf6818e32ab3b8b6153c836055f4ce63261fcd9853a9eb",
+  "public_entrypoints": [
+    {
+      "name": "ggml_cuda_op_abs",
+      "mode": 0,
+      "op": 0,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_sgn",
+      "mode": 0,
+      "op": 1,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_neg",
+      "mode": 0,
+      "op": 2,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_step",
+      "mode": 0,
+      "op": 3,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_gelu",
+      "mode": 0,
+      "op": 4,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_gelu_erf",
+      "mode": 0,
+      "op": 5,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_gelu_quick",
+      "mode": 0,
+      "op": 6,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_silu",
+      "mode": 0,
+      "op": 7,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_tanh",
+      "mode": 0,
+      "op": 8,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_relu",
+      "mode": 0,
+      "op": 9,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_sigmoid",
+      "mode": 0,
+      "op": 10,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_hardsigmoid",
+      "mode": 0,
+      "op": 11,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_hardswish",
+      "mode": 0,
+      "op": 12,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_exp",
+      "mode": 0,
+      "op": 13,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_sqr",
+      "mode": 0,
+      "op": 14,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_sqrt",
+      "mode": 0,
+      "op": 15,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_sin",
+      "mode": 0,
+      "op": 16,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_cos",
+      "mode": 0,
+      "op": 17,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_log",
+      "mode": 0,
+      "op": 18,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_elu",
+      "mode": 0,
+      "op": 19,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_floor",
+      "mode": 0,
+      "op": 20,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_ceil",
+      "mode": 0,
+      "op": 21,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_round",
+      "mode": 0,
+      "op": 22,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_trunc",
+      "mode": 0,
+      "op": 23,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_expm1",
+      "mode": 0,
+      "op": 24,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_softplus",
+      "mode": 0,
+      "op": 25,
+      "style": 0,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_reglu",
+      "mode": 2,
+      "op": 9,
+      "style": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_geglu",
+      "mode": 2,
+      "op": 4,
+      "style": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_swiglu",
+      "mode": 2,
+      "op": 7,
+      "style": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_geglu_erf",
+      "mode": 2,
+      "op": 5,
+      "style": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_geglu_quick",
+      "mode": 2,
+      "op": 6,
+      "style": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_swiglu_oai",
+      "mode": 3,
+      "op": 0,
+      "style": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_swiglu_clamp",
+      "mode": 4,
+      "op": 0,
+      "style": 1,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_xielu",
+      "mode": 5,
+      "op": 0,
+      "style": 2,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_silu_back",
+      "mode": 6,
+      "op": 0,
+      "style": 3,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_leaky_relu",
+      "mode": 9,
+      "op": 0,
+      "style": 4,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_scale",
+      "mode": 7,
+      "op": 0,
+      "style": 5,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_clamp",
+      "mode": 8,
+      "op": 0,
+      "style": 6,
+      "args": 1
+    },
+    {
+      "name": "ggml_cuda_op_unary_mul",
+      "mode": 2,
+      "op": 0,
+      "style": 7,
+      "args": 2
+    },
+    {
+      "name": "ggml_cuda_op_relu_sqr",
+      "mode": 0,
+      "op": 26,
+      "style": 8,
+      "args": 2
+    }
+  ],
+  "native_prefixed_functions": [
+    "ggml_cuda_op_abs",
+    "ggml_cuda_op_ceil",
+    "ggml_cuda_op_cos",
+    "ggml_cuda_op_elu",
+    "ggml_cuda_op_exp",
+    "ggml_cuda_op_expm1",
+    "ggml_cuda_op_floor",
+    "ggml_cuda_op_geglu",
+    "ggml_cuda_op_geglu_erf",
+    "ggml_cuda_op_geglu_quick",
+    "ggml_cuda_op_gelu",
+    "ggml_cuda_op_gelu_erf",
+    "ggml_cuda_op_gelu_quick",
+    "ggml_cuda_op_hardsigmoid",
+    "ggml_cuda_op_hardswish",
+    "ggml_cuda_op_leaky_relu",
+    "ggml_cuda_op_log",
+    "ggml_cuda_op_neg",
+    "ggml_cuda_op_reglu",
+    "ggml_cuda_op_relu",
+    "ggml_cuda_op_relu_sqr",
+    "ggml_cuda_op_round",
+    "ggml_cuda_op_sgn",
+    "ggml_cuda_op_sigmoid",
+    "ggml_cuda_op_silu",
+    "ggml_cuda_op_silu_back",
+    "ggml_cuda_op_sin",
+    "ggml_cuda_op_softplus",
+    "ggml_cuda_op_sqr",
+    "ggml_cuda_op_sqrt",
+    "ggml_cuda_op_step",
+    "ggml_cuda_op_swiglu",
+    "ggml_cuda_op_swiglu_clamp",
+    "ggml_cuda_op_swiglu_oai",
+    "ggml_cuda_op_tanh",
+    "ggml_cuda_op_trunc",
+    "ggml_cuda_op_unary",
+    "ggml_cuda_op_unary_gated",
+    "ggml_cuda_op_unary_mul",
+    "ggml_cuda_op_unary_mul_impl",
+    "ggml_cuda_op_xielu",
+    "ggml_cuda_op_scale",
+    "ggml_cuda_op_clamp"
+  ],
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/clamp.cu.o",
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/scale.cu.o",
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/unary.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_ACTIVATIONS=0 with legacy SiLU/scale preloads or immutable EXP165 runtime",
+  "production_changed": false,
+  "cuda_object_sha256": "20e11e9ebba4a324b0d7611cd7a53f2fea2c9aa80b36f523bfa5b8792849886c",
+  "host_object_sha256": "9551ebd6d6be3672f126746423d402917b3eae4b2c5fc90bf3875ed0e686188a"
+}

@@ -1,0 +1,21 @@
+{
+  "status": "PASS_GPU_NATIVE_BIT_EXACT_ROLLBACK_AND_HOST_PREFLIGHT",
+  "runs": [
+    {
+      "label": "parity",
+      "exit_code": 0,
+      "stdout": "PASS actual_GPU_cases=896 values=1059072 checks=58252 bit_exact=1 all40host/all10device_modes=1 rollback=0\n"
+    },
+    {
+      "label": "rollback",
+      "exit_code": 0,
+      "stdout": "PASS actual_GPU_cases=896 values=1059072 checks=58252 bit_exact=1 all40host/all10device_modes=1 rollback=1\n"
+    },
+    {
+      "label": "host-preflight",
+      "exit_code": 0,
+      "stdout": "PASS CUDA host rejection_cases=8 no_stream_or_kernel_effect_before_rejection=1\n"
+    }
+  ],
+  "production_changed": false
+}

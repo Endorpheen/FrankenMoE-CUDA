@@ -64,15 +64,15 @@ Target3large delivery cycles,with a fourth only for a real dependency. Internal 
 
 ## Active isolated candidate
 
-- experiment: `EXP165`,solo continuation from verified EXP164 and restored EXP150 lineage.
+- experiment: `EXP166`,solo continuation from verified EXP165/restored EXP150 lineage.
 - root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108`
 - branch: `codex/apex-exp150-restored-20261108`
-- source: `experiments/EXP-2026-11-08-165-goose-registry-loader/source`
-- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run`
-- status:Actual Linux registry/loader/state/device discovery is Goose;native/rollback/plugin/failure/thread checks and one exact Apex pass. P4-08 remains IN_PROGRESS for other-platform feature scope. Full Apex/math/CUDA/model/source migration remains incomplete.
-- next_batch:Actual Apex CPU/CUDA provider execution residuals and model/KV ownership;prioritize active paths,not unused training/architecture utilities.
-- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run`
-- rollback: `GGML_GOOSE_REGISTRY=0` or immutable EXP164 runtime. Production/compiler untouched,no agents;EXP153 quarantined.
+- source: `experiments/EXP-2026-11-08-166-goose-cuda-activations/source`
+- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run`
+- status:Actual CUDA activations/GLU/scale/clamp and host planning are Goose. GPU corpus/rollback/preflight and actual Apex exact. Initial decode concern did not reproduce in one sequential pair. Full Apex/CPU/CUDA/model/source closure remains incomplete.
+- next_batch:Actual Apex CUDA binary/broadcast,normalization/row routing and reductions;then remaining matrix/attention/recurrent and model/KV scope.
+- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run`
+- rollback: `GGML_GOOSE_CUDA_ACTIVATIONS=0` with former SiLU/scale preloads,or immutable EXP165 runtime. Experimental default removes only replaced SiLU/scale preload libraries;RMS remains. Production/compiler untouched,no agents;EXP153 quarantined.
 
 ## Authoritative execution policy
 
@@ -584,3 +584,8 @@ EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted
 ### EXP165: actual Linux registry,device discovery and loader (2026-11-08)
 
 EXP165 transfers16public Linux registry/loader APIs plus registration/device tables,dedup/unload,name/type/init selection,score/init/API checks,search/path/variant/fallback and load-all order to self-hosted Goose.48native registration scenarios,8real synthetic plugins,best/fallback/default search/load-all,345callback events/684checks and rollback pass;4threads128registrations and6bounds/NULL/OOM cases verify releasable partial ownership. Reentrant count callbacks required publishing the backend first and querying count each native loop iteration;fixed before model. One Apex2633.578prefill/27.399decode,RSS21316.629MiB/VRAM3246MiB,exact text/all128IDs/all saved probabilities,127graph reuses,new registry witness andzero owned metadata/handles. Dynamic paths are local-plugin tested,not executed by this directly linked Apex profile. Other-platform feature detection/provider internals/native-source removal remain separate. Small single-sample speed changes are not stable acceleration or fresh-C++ parity evidence. One model request. P4-08 remains IN_PROGRESS for explicit non-Linux/architecture-feature scope;no universal requirement/campaign/cycle falsely closed. See `experiments/EXP-2026-11-08-165-goose-registry-loader/`. Next:active Apex provider/math and model/KV residuals. Production/compiler untouched,solo.
+
+
+### EXP166: actual CUDA activation/GLU/scale/clamp compute (2026-11-08)
+
+EXP166 transfers40CUDA activation/GLU/scale/clamp public paths,including device arithmetic/indexing and host validation/pointer/launch planning,to self-hosted Goose.896real GPU cases/1059072values/58252checks and native rollback are bit-exact across types/strides/packed-swapped/fused/inplace/specials;8host rejection cases stop before stream/kernel effects. xIELU1ULP from opposite NVCC FMA contraction fixed in Goose before model;device exit witness moved before CUDA teardown. Initial Apex2642.061/26.286was4.06percent below saved EXP165 decode;one unchanged sequential EXP1652638.737/26.943->EXP1662631.509/27.171pair did not reproduce the drop. All3responses exact text/all128IDs/full probabilities/127graph reuses. Actual host/device witness,cuda_status0;only superseded SiLU/scale preloads removed,RMS retained. Stable speed parity unproven;other CUDA/inline/provider/model/KV/source scope remains. P3-01/P3-02 remainIN_PROGRESS for broader CUDA coverage. Raw model logs/responses stay local. See `experiments/EXP-2026-11-08-166-goose-cuda-activations/`. No production/compiler changes,auxiliary agents,Qwen,microbenchmark or performance-tuning series.

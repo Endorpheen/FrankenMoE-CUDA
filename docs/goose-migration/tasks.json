@@ -4,7 +4,7 @@
   "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
   "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
   "active_workstream": "APEX_COMMON",
-  "next_task": "P2-13",
+  "next_task": "P3-01",
   "execution_order": [
     "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",
     "QWEN_COMPATIBILITY: C1 and deferred shared MTP task; only after all APEX_COMMON tasks DONE",
@@ -764,7 +764,7 @@
       "id": "P3-01",
       "phase": "P3",
       "title": "Finish complete CUDA normalization/elementwise module",
-      "status": "PARTIAL",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/norm.cu",
         "ggml/src/ggml-cuda/unary.cu",
@@ -772,7 +772,7 @@
         "source/rms-block/**"
       ],
       "acceptance": "Allnorm/unary/scale variants and launch policy use Goose logic; shape,type,aliasing and tail cases exact/declared tolerance.",
-      "evidence": "EXP136/137 actual SiLU/scale leaves and full RMS row; other operations/launch control native",
+      "evidence": "EXP136/137 actual SiLU/scale leaves and full RMS row; other operations/launch control native EXP166 transfers40CUDA activation/GLU/scale/clamp public paths,including device arithmetic/indexing and host validation/pointer/launch planning,to self-hosted Goose.896real GPU cases/1059072values/58252checks and native rollback are bit-exact across types/strides/packed-swapped/fused/inplace/specials;8host rejection cases stop before stream/kernel effects. xIELU1ULP from opposite NVCC FMA contraction fixed in Goose before model;device exit witness moved before CUDA teardown. Initial Apex2642.061/26.286was4.06percent below saved EXP165 decode;one unchanged sequential EXP1652638.737/26.943->EXP1662631.509/27.171pair did not reproduce the drop. All3responses exact text/all128IDs/full probabilities/127graph reuses. Actual host/device witness,cuda_status0;only superseded SiLU/scale preloads removed,RMS retained. Stable speed parity unproven;other CUDA/inline/provider/model/KV/source scope remains. ",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -783,7 +783,7 @@
       "id": "P3-02",
       "phase": "P3",
       "title": "Port CUDA primitive math,reductions and conversions",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/common.cuh",
         "ggml/src/ggml-cuda/convert.cu",
@@ -791,7 +791,7 @@
         "ggml/src/ggml-cuda/mma.cuh"
       ],
       "acceptance": "Goose-owned device math/conversion/warp/block helpers; generated device code provenance; rounding,half,bfloat,warp boundaries checked.",
-      "evidence": "",
+      "evidence": "EXP166 transfers40CUDA activation/GLU/scale/clamp public paths,including device arithmetic/indexing and host validation/pointer/launch planning,to self-hosted Goose.896real GPU cases/1059072values/58252checks and native rollback are bit-exact across types/strides/packed-swapped/fused/inplace/specials;8host rejection cases stop before stream/kernel effects. xIELU1ULP from opposite NVCC FMA contraction fixed in Goose before model;device exit witness moved before CUDA teardown. Initial Apex2642.061/26.286was4.06percent below saved EXP165 decode;one unchanged sequential EXP1652638.737/26.943->EXP1662631.509/27.171pair did not reproduce the drop. All3responses exact text/all128IDs/full probabilities/127graph reuses. Actual host/device witness,cuda_status0;only superseded SiLU/scale preloads removed,RMS retained. Stable speed parity unproven;other CUDA/inline/provider/model/KV/source scope remains. Only scalar math/storage/PDL primitive boundary addressed;other reductions/conversions/MMA and warp/block scope stays open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3101,6 +3101,10 @@
     {
       "checkpoint": "EXP165 actual Linux registry/loader",
       "event": "EXP165 transfers16public Linux registry/loader APIs plus registration/device tables,dedup/unload,name/type/init selection,score/init/API checks,search/path/variant/fallback and load-all order to self-hosted Goose.48native registration scenarios,8real synthetic plugins,best/fallback/default search/load-all,345callback events/684checks and rollback pass;4threads128registrations and6bounds/NULL/OOM cases verify releasable partial ownership. Reentrant count callbacks required publishing the backend first and querying count each native loop iteration;fixed before model. One Apex2633.578prefill/27.399decode,RSS21316.629MiB/VRAM3246MiB,exact text/all128IDs/all saved probabilities,127graph reuses,new registry witness andzero owned metadata/handles. Dynamic paths are local-plugin tested,not executed by this directly linked Apex profile. Other-platform feature detection/provider internals/native-source removal remain separate. Universal P4-08 stays IN_PROGRESS for retained platform/feature scope;no false campaign/cycle closure."
+    },
+    {
+      "checkpoint": "EXP166 CUDA activation execution",
+      "event": "EXP166 transfers40CUDA activation/GLU/scale/clamp public paths,including device arithmetic/indexing and host validation/pointer/launch planning,to self-hosted Goose.896real GPU cases/1059072values/58252checks and native rollback are bit-exact across types/strides/packed-swapped/fused/inplace/specials;8host rejection cases stop before stream/kernel effects. xIELU1ULP from opposite NVCC FMA contraction fixed in Goose before model;device exit witness moved before CUDA teardown. Initial Apex2642.061/26.286was4.06percent below saved EXP165 decode;one unchanged sequential EXP1652638.737/26.943->EXP1662631.509/27.171pair did not reproduce the drop. All3responses exact text/all128IDs/full probabilities/127graph reuses. Actual host/device witness,cuda_status0;only superseded SiLU/scale preloads removed,RMS retained. Stable speed parity unproven;other CUDA/inline/provider/model/KV/source scope remains. No full universal requirement/campaign/cycle falsely closed."
     }
   ],
   "batches": [
@@ -3375,13 +3379,13 @@
     "unverified_completion_forbidden": true
   },
   "active_candidate": {
-    "experiment": "EXP165",
+    "experiment": "EXP166",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source",
-    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
-    "status": "PASS_LOCAL_AND_FIXED_APEX_LINUX_REGISTRY;full Apex migration incomplete",
-    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run",
-    "next_batch": "Actual Apex CPU/CUDA provider execution residuals and model/KV ownership;prioritize active path,not unused training/architecture helpers"
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-166-goose-cuda-activations/source",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run",
+    "status": "PASS_GPU_NATIVE_AND_REAL_APEX_ACTIVATIONS;full Apex incomplete",
+    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+    "next_batch": "Actual Apex CUDA binary/broadcast,normalization/row routing and reduction modules;then matrix/attention/recurrent and model/KV residuals"
   },
   "batch_execution_policy": {
     "preferred_requirements_per_batch": [
@@ -3933,10 +3937,10 @@
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
   },
   "active_checkpoint": {
-    "experiment": "EXP165",
+    "experiment": "EXP166",
     "branch": "codex/apex-exp150-restored-20261108",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run",
     "solo": true,
     "production_changed": false
   }
