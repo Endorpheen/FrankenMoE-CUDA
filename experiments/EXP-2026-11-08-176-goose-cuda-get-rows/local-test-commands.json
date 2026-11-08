@@ -109,6 +109,36 @@
       "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp176/build/gpu-fixture"
     ],
     "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp176/build",
-    "exit_code": 1
+    "exit_code": 0
+  },
+  {
+    "label": "gpu-fixture-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp176/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp176/build",
+    "exit_code": 0
+  },
+  {
+    "label": "base-exports",
+    "argv": [
+      "nm",
+      "-D",
+      "--defined-only",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp175/run/libggml-cuda.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp176/build",
+    "exit_code": 0
+  },
+  {
+    "label": "candidate-exports",
+    "argv": [
+      "nm",
+      "-D",
+      "--defined-only",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp176/run/libggml-cuda.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp176/build",
+    "exit_code": 0
   }
 ]

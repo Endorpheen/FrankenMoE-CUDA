@@ -31,3 +31,13 @@ back=dict(env);back['GGML_GOOSE_CUDA_GET_ROWS']='0'
 run('gpu-fixture-native',[B/'gpu-fixture'],env2=back)
 
 print('EXP176_LOCAL_GATES_PASS')
+
+# Export surface must differ from the base by exactly the two diagnostics.
+base=run('base-exports',['nm','-D','--defined-only',F/'runtime/exp175/run/libggml-cuda.so']).stdout
+new=run('candidate-exports',['nm','-D','--defined-only',R/'libggml-cuda.so']).stdout
+names=lambda s:{x.split()[-1] for x in s.splitlines() if x.strip()}
+added=names(new)-names(base);removed=names(base)-names(new)
+assert added=={'fg176g_cuda_host_seen','fg176g_cuda_device_read'} and not removed,(added,removed)
+import json as _j
+(E/'export-check.json').write_text(_j.dumps(dict(status='PASS',added=sorted(added),removed=sorted(removed)),indent=2)+'\n')
+print('EXP176_LOCAL_GATES_PASS')

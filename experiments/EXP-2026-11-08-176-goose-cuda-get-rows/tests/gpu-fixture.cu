@@ -32,25 +32,34 @@ struct Case {
     const char * name;
 };
 
-// ggml GET_ROWS invariants, as asserted by the CPU reference
-// ggml_compute_forward_get_rows_f32:
-//   dst->ne[0] == src0->ne[0]
-//   dst->ne[2] == src0->ne[2] == src1->ne[1]
-//   dst->ne[1] == src1->ne[0]
-//   dst->ne[3] == src0->ne[3], src1->ne[3] == 1
-// Every case below satisfies them; the earlier cases did not, which is why the
-// unchanged native arm failed them too.
+// ggml GET_ROWS invariants, from ggml_get_rows itself:
+//   GGML_ASSERT(a->ne[2] == b->ne[1])
+//   GGML_ASSERT(a->ne[3] == b->ne[2])
+//   GGML_ASSERT(b->ne[3] == 1)
+//   result = new_tensor_4d(type, a->ne[0], b->ne[0], b->ne[1], b->ne[2])
+// so dst->ne = { src0->ne[0], src1->ne[0], src1->ne[1], src1->ne[2] } and in
+// particular src0->ne[3] must equal src1->ne[2]. Every case below satisfies all
+// three asserts; the earlier multi-plane cases set src0->ne[3] = 1 while
+// src1->ne[2] was 2 or 3, which is why the unchanged native arm failed them too.
 static const Case CASES[] = {
     // enough blocks, aligned -> vector path. ne02=1 therefore ne11=1.
     {256, 8, 1, 1, 32, 1, 1, 0, "vec-basic"},
-    {1024, 4, 2, 1, 16, 2, 2, 0, "vec-planes"},
+    {1024, 4, 2, 2, 16, 2, 2, 0, "vec-planes"},
     // too few blocks -> scalar path
     {64, 2, 1, 1, 8, 1, 1, 0, "scalar-few-blocks"},
     // ne00 odd: native asserts ne00%2==0 for the quantized path only, the float
     // path allows any ne00; 255 keeps VEC==4 rejected -> scalar path.
     {254, 4, 1, 1, 16, 1, 1, 0, "scalar-odd-row"},
-    // larger multi-plane selection, ne02==ne11
-    {512, 6, 3, 1, 16, 3, 3, 0, "vec-multiplane"},
+    // larger multi-plane selection, ne02==ne11 and ne03==ne12
+    {512, 6, 3, 3, 16, 3, 3, 0, "vec-multiplane"},
+    // single row request: exercises the z-loop upper bound 1
+    {256, 8, 1, 1, 1, 1, 1, 0, "vec-single-idx"},
+    // duplicated indices, as a real router produces
+    {128, 4, 1, 1, 64, 1, 1, 0, "vec-dup-idx"},
+    // wide row beyond one 64-vector block in y
+    {4096, 2, 1, 1, 8, 1, 1, 0, "vec-wide-row"},
+    // deep outer dims
+    {256, 2, 4, 4, 8, 4, 4, 0, "vec-deep-outer"},
 };
 
 int main(int argc, char ** argv) {
@@ -75,6 +84,7 @@ int main(int argc, char ** argv) {
         std::uniform_int_distribution<int32_t> di(0, (int32_t)ne01 - 1);
         std::vector<int32_t> idx(ns1);
         for (auto & v : idx) v = di(rng);
+        if (std::strstr(c.name, "dup-idx")) for (auto & v : idx) v = 0;
 
         // Independent reference: dst[i00, i10, i11, i12] = src0[i00, idx[i10,i11,i12], i11, i12].
         for (int64_t i12 = 0; i12 < ne12; ++i12)
