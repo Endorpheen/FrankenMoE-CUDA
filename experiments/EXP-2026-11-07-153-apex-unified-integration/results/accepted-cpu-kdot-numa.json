@@ -1,0 +1,15 @@
+{
+  "status": "ACCEPTED_COMPOSED_KDOT_NUMA_CPU_BOUNDARY",
+  "source": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/cpu-kdot-numa",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libggml-cpu-kdot-numa-7dffb0007d9d.so.0.27.0",
+  "sha256": "cdf43e3c673baa46881e41176d759ce379fb8c52203c260040a0acd40aa78dd2",
+  "normal_backend_cases": 18,
+  "bit_exact_native_differential": true,
+  "rollback": [
+    "GGML_GOOSE_CPU_KDOT=0",
+    "GGML_GOOSE_CPU_NUMA=0"
+  ],
+  "production_changed": false,
+  "model_loads": 0,
+  "pending": "Active Q4_Kx8 repack closure and full Batch A Apex gate"
+}

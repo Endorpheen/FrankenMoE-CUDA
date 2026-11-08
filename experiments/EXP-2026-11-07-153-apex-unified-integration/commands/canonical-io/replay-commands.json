@@ -1,0 +1,156 @@
+[
+  {
+    "label": "io-fixed-emit",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io/generated.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io/canonical-io.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  },
+  {
+    "label": "io-build-unit",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-Werror=implicit-function-declaration",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io/unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  },
+  {
+    "label": "io-build-abi",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-Werror=implicit-function-declaration",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io/abi.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/abi.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  },
+  {
+    "label": "io-build-set-abi",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-Werror=implicit-function-declaration",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io/set-abi.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/set-abi.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  },
+  {
+    "label": "io-build-real-effects",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-x",
+      "c++",
+      "-std=c++17",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io/services.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/real-effects.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  },
+  {
+    "label": "io-real-fixture-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O1",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io/real-fixture.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/real-fixture.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  },
+  {
+    "label": "io-fixed-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/real-fixture.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/abi.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/set-abi.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/real-effects.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/libfgc-apex-storage.a",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run",
+      "-Wl,--gc-sections",
+      "-lggml-cpu",
+      "-lggml-base",
+      "-lm",
+      "-lpthread",
+      "-ldl",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/real-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  },
+  {
+    "label": "io-fixed-real-device-boundary",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/real-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+    "exit_code": 0
+  }
+]

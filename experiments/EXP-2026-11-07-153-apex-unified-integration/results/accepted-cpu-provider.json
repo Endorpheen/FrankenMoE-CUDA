@@ -1,0 +1,13 @@
+{
+  "status": "ACCEPTED_CPU_PROVIDER_LOCAL_COHORT",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libggml-cpu-provider-94beea144f35.so.0.27.0",
+  "sha256": "11138a0e4289abea5d1c805bf5d87c4428a94db8035b5ea800b1ea6fda65f7e6",
+  "source_worker": 6,
+  "normal_backend_cases": 107,
+  "source_routing": "actual changed core,bridge,Goose control objects;no preload/interposition",
+  "minor_parent_fix": "Goose workspace passes actual worker count instead of op n_tasks;no global thread counter or private layout read",
+  "model_requests": 0,
+  "production_changed": false,
+  "rollback": "GGML_GOOSE_CPU_PROVIDER=0",
+  "pending": "APX013 whole closure and Batch A Apex gate"
+}

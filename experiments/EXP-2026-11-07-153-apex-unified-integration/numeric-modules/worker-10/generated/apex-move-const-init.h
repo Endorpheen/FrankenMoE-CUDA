@@ -1,0 +1,43 @@
+/* Generated constant initialization for the host generated TU. */
+#pragma once
+static void fg153_am_init_globals(void) {
+    gg_globals.v0 = (int64_t) UINT64_C(0);
+    gg_globals.v1 = (int64_t) UINT64_C(1);
+    gg_globals.v2 = (int64_t) UINT64_C(2);
+    gg_globals.v3 = (int64_t) UINT64_C(26);
+    gg_globals.v4 = (int64_t) UINT64_C(27);
+    gg_globals.v5 = (int64_t) UINT64_C(0);
+    gg_globals.v6 = (int64_t) UINT64_C(1);
+    gg_globals.v7 = (int64_t) UINT64_C(2);
+    gg_globals.v8 = (int64_t) UINT64_C(3);
+    gg_globals.v9 = (int64_t) UINT64_C(4);
+    gg_globals.v10 = (int64_t) UINT64_C(5);
+    gg_globals.v11 = (int64_t) UINT64_C(6);
+    gg_globals.v12 = (int64_t) UINT64_C(7);
+    gg_globals.v13 = (int64_t) UINT64_C(8);
+    gg_globals.v14 = (int64_t) UINT64_C(9);
+    gg_globals.v15 = (int64_t) UINT64_C(10);
+    gg_globals.v16 = (int64_t) UINT64_C(11);
+    gg_globals.v17 = (int64_t) UINT64_C(12);
+    gg_globals.v18 = (int64_t) UINT64_C(13);
+    gg_globals.v19 = (int64_t) UINT64_C(14);
+    gg_globals.v20 = (int64_t) UINT64_C(15);
+    gg_globals.v21 = (int64_t) UINT64_C(16);
+    gg_globals.v22 = (int64_t) UINT64_C(17);
+    gg_globals.v23 = (int64_t) UINT64_C(18);
+    gg_globals.v24 = (int64_t) UINT64_C(19);
+    gg_globals.v25 = (int64_t) UINT64_C(20);
+    gg_globals.v26 = (int64_t) UINT64_C(21);
+    gg_globals.v27 = (int64_t) UINT64_C(22);
+    gg_globals.v28 = (int64_t) UINT64_C(23);
+    gg_globals.v29 = (int64_t) UINT64_C(24);
+    gg_globals.v30 = (int64_t) UINT64_C(25);
+    gg_globals.v31 = (int64_t) UINT64_C(26);
+    gg_globals.v32 = (int64_t) UINT64_C(27);
+    gg_globals.v33 = (int64_t) UINT64_C(28);
+    gg_globals.v34 = (int64_t) UINT64_C(29);
+    gg_globals.v35 = (int64_t) UINT64_C(30);
+    gg_globals.v36 = (int64_t) UINT64_C(31);
+    gg_globals.v37 = (int64_t) UINT64_C(32);
+    gg_globals.v38 = (int64_t) UINT64_C(18);
+}

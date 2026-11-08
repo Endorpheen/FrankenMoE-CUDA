@@ -1,0 +1,662 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "scope": "One universal runtime: active milestone is Apex-35B-V1.0 Q4_K_M standard hybrid CPU-MoE/CUDA text-server path only; other compatibility remains universal backlog.",
+  "count_rule": "Target-scoped work units,not original160task closures or code/effort percent. DONE inherited units retain bounded historical evidence; combined artifact qualification remains open.",
+  "tasks": [
+    {
+      "id": "APX-001",
+      "title": "Immutable native controls and rollback",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P0-01"
+      ],
+      "acceptance": "Frozen executable/library/model hashes and commands; production hashes unchanged.",
+      "evidence": "EXP141/results/reference-integrity-exp141.json; EXP136..141",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-002",
+      "title": "Effective-source provenance inventory",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P0-02"
+      ],
+      "acceptance": "Hash/line inventory for both lineages, active translation units, operation/type/model registries and every file assigned to a subsystem.",
+      "evidence": "docs/goose-migration/source-audit.json",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-003",
+      "title": "Qualified self-hosted producer",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P0-03"
+      ],
+      "acceptance": "Pin latest completed self-hosted producer/receipt at stage entry; generated-C provenance recorded; compiler source untouched.",
+      "evidence": "EXP141/compiler/producer-receipt.json; revalidate at every subsequent stage",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-004",
+      "title": "Experimental isolation and disable switches",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P0-06"
+      ],
+      "acceptance": "All migrated modules can be disabled and replayed from pinned sources without replacing production.",
+      "evidence": "EXP141 snapshot rebuild:8objects,104graphs per backend; previous snapshots retained",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-005",
+      "title": "CPU activation Q8_K/Q8_0 quantization",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P1-01"
+      ],
+      "acceptance": "Whole row quantizers match native bytes and are witnessed in actual Apex/Qwen inference.",
+      "evidence": "EXP137 Q8_K; EXP139 common Q8_0/Q8_K exact and model traces; Q8_0 performance deferred EXP148 routes shared MoE Q8_K/Q8_0 through the same checked encoder module;new default-on flag has explicit disable rollback,841retained activation cases pass.",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-006",
+      "title": "CPU Q4_K/Q6_K raw and routed expert arithmetic",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P1-02"
+      ],
+      "acceptance": "Dot/matrix/routed outputs match preserved precision contracts; actual Apex executes Goose.",
+      "evidence": "EXP137..138 CPU MoE and Apex traces",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-007",
+      "title": "CPU Apex Q4_K/Q6_K tiled-prefill computation",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P1-04"
+      ],
+      "acceptance": "All13unpack/gather/micro/dense/MoE stages exact, Apex execution witnessed, Qwen integration checked, original fallback retained.",
+      "evidence": "EXP141:104graphs/backend; actual Apex new-path execution; Qwen profile selects raw path",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-008",
+      "title": "Expert grouping and checked workspace policy",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P1-05"
+      ],
+      "acceptance": "Grouping,strided IDs,cold masks,bank maps,quant partitions,fused windows and tile/chunk policy exact in both lineages.",
+      "evidence": "EXP140: Apex114/Qwen412graphs; exact actual models; native OS/compute services remain",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-009",
+      "title": "CPU backend/device/buffer/capability policy",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P2-14"
+      ],
+      "acceptance": "Backend API,buffer alignment/copy,capability predicates and device initialization owned by Goose; OS/HBM primitive imports audited.",
+      "evidence": "EXP150 common CPU backend/device/buffer/capability/registry functional ownership closed:inherited real Goose API/buffer/traits plus complete registry/device initialization/properties/brand sequencing and HBM allocation/error/wrapper cleanup.210registry/OS/HBM-policy cases and5compiled HBM API/stub cases;30296cache/budget cases,actual326/66/960/174GGML corpus,component disable rollback and scoped ASan/UBSan/LSan pass. Fixed Apex32K/128 exact text/allIDs/top5;registry0-9 and127680workspace calls witnessed;RSS21312.090MiB/VRAM3348MiB. HBM actual hardware and other OS execution unqualified;architecture/provider math/ABI storage/native removal remain explicitly assigned P1-07/P2-03/P2-13/P2-16/P2-18/P10-10. Early copied-library alias gate invalidated and corrected before model.2656.285pp/28.079tg diagnostic vs saved C++2918.900/29.589;not paired speed/no-regression acceptance.",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-010",
+      "title": "CPU graph/job/threadpool execution control",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P2-15"
+      ],
+      "acceptance": "Entire operation dispatch,n_tasks/workspace planning,graph reuse,threadpool job lifecycle and abort status execute Goose; all operator entries traced.",
+      "evidence": "EXP149 original P2-15 acceptance closed:all101dispatcher entries/96callbacks checked with independent unchanged-native-switch oracle;960task/workspace cases exact;Goose owns graph-wide planning/tiled sizing,executor reuse/abort,OMP+pthreads job lifecycle,physical pool init/cleanup,masks,barrier/chunk/readiness/poll/pause/kickoff/NUMA/priority policy.326/66/174actual GGML/common cases pass both implementations;78OMP/81pthread real lifecycle/graph failure cases,494policy boundary cases,release+ASan/UBSan/LSan,and scoped new-control pthread TSan pass. Exactly one Apex32768/128 per mode,text/allIDs/top5 exact vs C++;new pool/job paths witnessed. Complete source boundary audit maps numerical/provider/ABI/topology adapters to other open requirements;not fullCPU/native-free/safety-superiority/speed acceptance. P1-09/P2-14 and other stage1requirements remain open. C++2918.900/29.589;OMP2646.558/28.462;pthread2669.811/26.424tok/s are preliminary single samples,not stable performance parity.",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-011",
+      "title": "Allocation reuse/coalescing metadata policy only",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P4-01"
+      ],
+      "acceptance": "Bounded selected metadata policy exactly matches reference and executes in real inference.",
+      "evidence": "EXP136 native service boundary retained; this does NOT mean physical allocator complete",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-012",
+      "title": "Tensor dependency/view lifetime policy only",
+      "status": "DONE",
+      "batch": "INHERITED",
+      "original_requirements": [
+        "P4-02"
+      ],
+      "acceptance": "Selected dependency/view/refcount/release traversal state transitions exact and real inference witness.",
+      "evidence": "EXP136 graph/lifetime evidence; full tensor ownership/scheduler still native",
+      "boundary": "Inherited bounded evidence; not qualification of the current combined artifact or its remaining native providers."
+    },
+    {
+      "id": "APX-013",
+      "title": "Complete active CPU numerical/operator providers",
+      "status": "IN_PROGRESS",
+      "batch": "A",
+      "original_requirements": [
+        "P1-06",
+        "P1-07",
+        "P1-08",
+        "P1-09",
+        "P1-12",
+        "P2-01",
+        "P2-02",
+        "P2-03",
+        "P2-04",
+        "P2-05",
+        "P2-06",
+        "P2-07",
+        "P2-08",
+        "P2-09",
+        "P2-10",
+        "P2-11",
+        "P2-12",
+        "P2-13",
+        "P2-16",
+        "P2-17",
+        "P2-18"
+      ],
+      "acceptance": "Embedding/GetRows,GLU and every CPU numerical fallback reached by Apex use Goose; precision,alias/stride and provider dispatch checked. Other formats/ISAs remain universal backlog.",
+      "evidence": "",
+      "depends_on": [],
+      "current_evidence": [
+        "EXP153: integrated inherited CPU provider DSO; remaining-path source review in progress; whole Apex liveness gate pending"
+      ],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/accepted-cpu-provider.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/accepted-cpu-kdot-numa.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/accepted-cpu-repack.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/repack-control-linked.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-014",
+      "title": "GGML contexts,tensor objects,shape,strides and views",
+      "status": "IN_PROGRESS",
+      "batch": "A",
+      "original_requirements": [
+        "P4-03",
+        "P4-04",
+        "P4-05"
+      ],
+      "acceptance": "Own context/object/tensor creation,iteration,reset/free,shape/type/stride/view helpers and graph node construction in Goose; checked overflow and view bounds; no native algorithm hidden in field adapters.",
+      "evidence": "",
+      "depends_on": [],
+      "current_evidence": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cohort-integration-summary.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/model-cohort-integration.json",
+        "graph traversal/storage extension under review"
+      ]
+    },
+    {
+      "id": "APX-015",
+      "title": "Physical tensor,buffer and graph allocator",
+      "status": "IN_PROGRESS",
+      "batch": "A",
+      "original_requirements": [
+        "P4-06",
+        "P4-09",
+        "P4-10",
+        "P4-11"
+      ],
+      "acceptance": "Goose owns reservations,allocation/free/reuse and ownership,including partial initialization/OOM; native OS allocation only remains as primitive.",
+      "evidence": "",
+      "depends_on": [],
+      "current_evidence": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cohort-integration-summary.json",
+        "physical buffer/chunk/graph allocation integrated; ownership residuals and shared Apex gate remain",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/buffer-lifecycle-summary.json"
+      ]
+    },
+    {
+      "id": "APX-016",
+      "title": "CPU/GPU graph scheduler",
+      "status": "IN_PROGRESS",
+      "batch": "A",
+      "original_requirements": [
+        "P4-12",
+        "P4-13",
+        "P4-14",
+        "P4-15",
+        "P4-16"
+      ],
+      "acceptance": "Goose owns placement,splits,copies,events,buffer reuse,execution and cancellation; cross-device lifetime and failure checks.",
+      "evidence": "",
+      "depends_on": [],
+      "current_evidence": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cohort-integration-summary.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/scheduler/local-verification.json",
+        "actual CUDA scheduler execution and shared Apex gate remain"
+      ]
+    },
+    {
+      "id": "APX-017",
+      "title": "Hybrid KV and recurrent state",
+      "status": "IN_PROGRESS",
+      "batch": "A",
+      "original_requirements": [
+        "P5-01",
+        "P5-02",
+        "P5-04",
+        "P5-05",
+        "P5-06",
+        "P5-07",
+        "P5-08",
+        "P5-09",
+        "P5-10"
+      ],
+      "acceptance": "Attention KV plus conv/GDN state,lazy reservation,position management,prefix/checkpoint restore and cleanup execute Goose for Apex.",
+      "evidence": "",
+      "depends_on": [],
+      "current_evidence": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/hybrid-memory-summary.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/free-recurrent-generation-review.json",
+        "Goose hybrid policy integrated; child KV/recurrent modules still under review",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/hybrid-inputs-summary.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/recurrent-actual-summary.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/recurrent-hybrid-summary.json"
+      ],
+      "active_fork_dependency": "Preserve EXP101 lazy-VMM allocation/range/state IO and actual class ABI before shared KV replacement.",
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/accepted-kv-state.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-018",
+      "title": "Complete Apex model graph builder",
+      "status": "IN_PROGRESS",
+      "batch": "A",
+      "original_requirements": [
+        "P6-01",
+        "P6-02",
+        "P6-03",
+        "P6-04",
+        "P6-07"
+      ],
+      "acceptance": "Metadata/tensor bindings and all40main-layer branches:10attention,30recurrent,routed/shared FFN,embedding/output head; no MTP needed with specnone.",
+      "evidence": "",
+      "depends_on": [],
+      "current_evidence": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/model-cohort-integration.json",
+        "main-layer model module linked with common Goose GGML; hybrid graph input/native owner boundaries remain",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/hybrid-inputs-summary.json"
+      ],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/accepted-graph-metadata.json"
+      ],
+      "component_evidence_boundary": "Local source/ABI/correctness evidence only;whole active Apex path and final batch gate remain unqualified."
+    },
+    {
+      "id": "APX-019",
+      "title": "Batch,ubatch,prefill/decode and output orchestration",
+      "status": "IN_PROGRESS",
+      "batch": "A",
+      "original_requirements": [
+        "P6-08",
+        "P6-09",
+        "P6-10",
+        "P6-12"
+      ],
+      "acceptance": "Goose owns context lifecycle,batching,graph execution,logits/output extraction,abort/error propagation for normal variable Apex inputs.",
+      "evidence": "",
+      "depends_on": [],
+      "current_evidence": [
+        "EXP153 DeepSeek workers implement active EXP107 context/decode and batch allocator; no acceptance claimed"
+      ],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/canonical-storage-composed.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/device-io-fixed-summary.json",
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/accepted-context-io.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-020",
+      "title": "Apex CUDA elementwise,norm,activation,reduction and RoPE",
+      "status": "IN_PROGRESS",
+      "batch": "B",
+      "original_requirements": [
+        "P3-01",
+        "P3-02",
+        "P3-03",
+        "P3-06",
+        "P3-07",
+        "P3-08"
+      ],
+      "acceptance": "Every active dtype/shape/stride of binary/GLU/RMS/softmax/topK/RoPE and related numerical operations executes Goose-generated device code; native leaves cannot masquerade as completed module.",
+      "evidence": "",
+      "depends_on": [],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cuda-numeric-linked.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-021",
+      "title": "CUDA movement,indexing,conversions and cache writes",
+      "status": "IN_PROGRESS",
+      "batch": "B",
+      "original_requirements": [
+        "P3-04",
+        "P3-05",
+        "P3-14"
+      ],
+      "acceptance": "Copy/contiguous/views/GetRows/SetRows/gather/scatter and actual internal formats checked for bounds,alias and async lifetime.",
+      "evidence": "",
+      "depends_on": [],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cuda-numeric-linked.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-022",
+      "title": "CUDA matrix paths for prefill and decode",
+      "status": "IN_PROGRESS",
+      "batch": "B",
+      "original_requirements": [
+        "P3-09",
+        "P3-10",
+        "P3-11"
+      ],
+      "acceptance": "Apex dense Q4_K/Q6_K and actual internal activation formats,GEMV/GEMM/quantization and vendor-dispatch decisions owned by Goose; vendor primitives explicitly declared.",
+      "evidence": "",
+      "depends_on": [],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cuda-numeric-linked.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-023",
+      "title": "Apex Flash Attention",
+      "status": "IN_PROGRESS",
+      "batch": "B",
+      "original_requirements": [
+        "P3-12"
+      ],
+      "acceptance": "Actual head geometry,Q4_0KV and required sequence sizes have Goose FA implementation with mask/position/numerical checks.",
+      "evidence": "",
+      "depends_on": [],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cuda-numeric-linked.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-024",
+      "title": "CUDA conv,GDN and recurrent updates",
+      "status": "IN_PROGRESS",
+      "batch": "B",
+      "original_requirements": [
+        "P3-13"
+      ],
+      "acceptance": "SSM-conv,gated-delta and recurrent prefill/decode operations execute Goose; persistent state agrees with native multi-step oracle.",
+      "evidence": "",
+      "depends_on": [],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/cuda-numeric-linked.json"
+      ],
+      "component_evidence_boundary": "Joined experimental shared cohort and bounded local/device evidence;full Apex,all active-source/import closure and final correctness/performance gate remain pending."
+    },
+    {
+      "id": "APX-025",
+      "title": "CUDA backend and resource ownership",
+      "status": "TODO",
+      "batch": "B",
+      "original_requirements": [
+        "P3-16",
+        "P3-17",
+        "P3-19",
+        "P3-20",
+        "P4-07",
+        "P4-08"
+      ],
+      "acceptance": "Device/backend,streams/events,pinned/VMM/pools,transfers and cleanup owned by Goose; asynchronous/error-path evidence and rollback.",
+      "evidence": "",
+      "depends_on": []
+    },
+    {
+      "id": "APX-026",
+      "title": "GGUF parser and complete Apex model loader",
+      "status": "TODO",
+      "batch": "C",
+      "original_requirements": [
+        "P7-01",
+        "P7-02",
+        "P7-03",
+        "P7-04",
+        "P7-05"
+      ],
+      "acceptance": "Goose parsing,validation,mmap,weight/type/tensor binding,resident expert registration and cleanup; malformed/truncated input checks.",
+      "evidence": "",
+      "depends_on": []
+    },
+    {
+      "id": "APX-027",
+      "title": "Apex tokenizer,Unicode and detokenization",
+      "status": "TODO",
+      "batch": "C",
+      "original_requirements": [
+        "P7-06",
+        "P7-07",
+        "P7-08"
+      ],
+      "acceptance": "GPT2/qwen35 BPE and required Unicode/special-token handling agree with native token corpus including adversarial text.",
+      "evidence": "",
+      "depends_on": []
+    },
+    {
+      "id": "APX-028",
+      "title": "Sampling,RNG and chat-template processing",
+      "status": "TODO",
+      "batch": "C",
+      "original_requirements": [
+        "P7-09",
+        "P7-10",
+        "P7-11",
+        "P7-12"
+      ],
+      "acceptance": "Sampling/token acceptance,Jinja/chat/reasoning and required text parsing owned by Goose; deterministic profile parity and malformed input handling.",
+      "evidence": "",
+      "depends_on": []
+    },
+    {
+      "id": "APX-029",
+      "title": "Normal text server and startup path",
+      "status": "TODO",
+      "batch": "C",
+      "original_requirements": [
+        "P8-01",
+        "P8-02",
+        "P8-03",
+        "P8-04",
+        "P8-05",
+        "P8-06",
+        "P8-07",
+        "P8-08",
+        "P8-09",
+        "P8-10",
+        "P8-11",
+        "P8-12",
+        "P9-01",
+        "P9-02"
+      ],
+      "acceptance": "CLI/config,startup,HTTP completion/chat,SSE,request queue/slot,errors/cancel/shutdown all needed by Apex implemented in Goose; optional unrelated tools/UI/modes deferred explicitly.",
+      "evidence": "",
+      "depends_on": []
+    },
+    {
+      "id": "APX-030",
+      "title": "Canonical Goose integration and native replacement",
+      "status": "TODO",
+      "batch": "C",
+      "original_requirements": [
+        "P10-01",
+        "P10-02",
+        "P10-05",
+        "P10-06",
+        "P10-07",
+        "P10-08",
+        "P10-09",
+        "P10-11"
+      ],
+      "acceptance": "Reproducible one-runtime build/link/source ownership; remove owned replaced native algorithms and C++ storage/containers in active path; imports limited to declared external primitives.",
+      "evidence": "",
+      "depends_on": [],
+      "exp153_component_receipts": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/canonical-storage-composed.json"
+      ],
+      "component_evidence_boundary": "Local source/ABI/correctness evidence only;whole active Apex path and final batch gate remain unqualified."
+    },
+    {
+      "id": "APX-031",
+      "title": "Active source/import/liveness closure",
+      "status": "TODO",
+      "batch": "C",
+      "original_requirements": [
+        "P0-04",
+        "P0-05",
+        "P10-12",
+        "P11-01",
+        "P11-02",
+        "P11-03",
+        "P11-04",
+        "P11-05",
+        "P11-06"
+      ],
+      "acceptance": "Inventory every reachable owned implementation and actual Goose witnesses; no native fallback silently counted; source/build/model/compiler hashes,dependency report and reproducible rollback.",
+      "evidence": "",
+      "depends_on": []
+    },
+    {
+      "id": "APX-032",
+      "title": "Full Apex functional closure and performance-phase handover",
+      "status": "TODO",
+      "batch": "C",
+      "original_requirements": [
+        "P11-07",
+        "P11-08"
+      ],
+      "acceptance": "All prior targets complete in one artifact; differential local corpus plus one shared Apex32K/128 integration gate with IDs/top5,text,state,actual execution and RAM/VRAM. Cover variable requests and error contracts locally; no canned graph/output. Then start fresh-C++ paired full-system optimization.",
+      "evidence": "",
+      "depends_on": []
+    }
+  ],
+  "batches": [
+    {
+      "id": "A",
+      "scope": [
+        "APX-013",
+        "APX-014",
+        "APX-015",
+        "APX-016",
+        "APX-017",
+        "APX-018",
+        "APX-019"
+      ],
+      "title": "CPU/GGML/memory/Apex runtime"
+    },
+    {
+      "id": "B",
+      "scope": [
+        "APX-020",
+        "APX-021",
+        "APX-022",
+        "APX-023",
+        "APX-024",
+        "APX-025"
+      ],
+      "title": "Required CUDA computation and resource ownership"
+    },
+    {
+      "id": "C",
+      "scope": [
+        "APX-026",
+        "APX-027",
+        "APX-028",
+        "APX-029",
+        "APX-030",
+        "APX-031",
+        "APX-032"
+      ],
+      "title": "Loading,text/server,native-free integration and Apex closure"
+    }
+  ],
+  "performance_phase": {
+    "after": "APX-032",
+    "target_prefill_gt": 3000,
+    "target_decode_gt": 30,
+    "method": "Fresh native C++ control,same model/profile,input tokens and sampling; paired repeats only here to establish stability; correctness and RAM/VRAM retained."
+  },
+  "deferred": [
+    "Qwen/other model architectures",
+    "MTP/NextN layer40 and speculative decoding",
+    "EHS and optional GPU MoE cache (size0)",
+    "Non-Apex quantization/ISA/training/vision/tool paths",
+    "EXP152 extra raw quant families;local unintegrated sources preserved",
+    "Universal CLI/tool/platform compatibility beyond active Apex text-server path"
+  ],
+  "history": [
+    {
+      "event": "Owner prioritizes complete Apex execution path before performance optimization. Universal160task ledger remains unchanged; bounded inherited results mapped explicitly. Three batches are a delivery target,not a guaranteed cycle count."
+    },
+    {
+      "date": "2026-11-08",
+      "event": "EXP153 shared-cohort acceptance checkpoint",
+      "evidence": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/results/current-cohort-checkpoint.json",
+      "status": "All APX-013..019 remain IN_PROGRESS;partial local evidence is not batch closure",
+      "apex_model_runs": 0
+    }
+  ],
+  "reporting": "Finish all items1..7 of batchA before closing/advancing. Internal partial work is not batch progress acceptance. Only after full batch closure show the ordered remaining list,removing the entire verified batch. No intermediate partial-list reports.",
+  "batch_end_model_gate_authorization": {
+    "authorized_by_owner": true,
+    "scope": "One paired Apex/native-C++ fixed-profile benchmark at the end of each fully completed batch;no repeated permission request. Announce purpose,duration and two arms before launch.",
+    "intermediate_model_runs": false,
+    "repeat_performance_series_before_full_functional_apex": false
+  },
+  "delegation": {
+    "active_workers": 8,
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "scaling": "8 then12 then16 and further+4 after two normal completed cycles at each level;no fixed cap",
+    "pending_generated_code_queue": "not a scaling blocker",
+    "codex_subagents": false,
+    "source_authorization": "Owner permanently authorizes necessary project source/header snapshots for future OpenCode tasks,excluding credentials,weights,private instructions",
+    "local_checks": "Each worker can run its own scoped bubblewrap compiler/CPU fixtures;only assigned directory writable,no network/production access",
+    "provider_overload": "persistent observer lowers active request limit and resumes the same saved sessions after cooldown",
+    "acceptance": "Real local compilation,ABI/ownership correctness and Codex review;unreviewed output or partial PASS never closes requirements",
+    "permanent_acceptance_from_workers": 16,
+    "after16_scaling": "20 then24 only while integration keeps up and provider/quality remain stable",
+    "own_new_subsystem_development_after16": false,
+    "workers": 16,
+    "source": "Explicit user request: sixteen immediately;preserve unfinished jobs",
+    "mode": "Codex permanent acceptance/integration;no Codex subagents",
+    "runtime_control": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/helpers/omo5/control",
+    "memory_recovery": "Saved unfinished sessions resumed after RAM/Gnome shutdown;server detached under user systemd,checks memory-isolated"
+  },
+  "checkpoint_updated_at": 1794098762.0087206,
+  "integration_strategy": "Integrate all already-prepared Apex subsystems into one candidate without a separate Batch A acceptance barrier;one shared full Apex gate after integration."
+}

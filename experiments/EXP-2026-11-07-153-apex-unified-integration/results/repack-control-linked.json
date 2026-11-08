@@ -1,0 +1,20 @@
+{
+  "status": "ACCEPTED_SOURCE_LINKED_REPACK_CONTROL_MM_AND_MMID",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libggml-cpu-control-final-2740c549b3aa.so.0.27.0",
+  "sha256": "e62df864e4e316934927fc4e2510603bdf94495cad4b8afa805bc59993fb96a8",
+  "normal_backend_cases": 9,
+  "bit_exact": true,
+  "parent_fixes": [
+    "MUL_MAT_ID activation quantizer uses input K,not output width",
+    "tail activation quantization reuses existing Goose Q8_K",
+    "typed row mapping bounds",
+    "hooks restricted to active Q4_K provider;other formats preserved",
+    "Tail GEMV loop moved from C++ chunk callback into Goose"
+  ],
+  "pending": "Whole CPU/import closure and Batch A Apex gate",
+  "production_changed": false,
+  "model_loads": 0,
+  "mmid_native_differential": "t1 fcd3357607bb19d3\nt4 fcd3357607bb19d3\nt8 fcd3357607bb19d3\n",
+  "mmid_witness": true,
+  "remaining_native_chunk_loop": false
+}

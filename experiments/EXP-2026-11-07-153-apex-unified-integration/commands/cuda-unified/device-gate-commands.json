@@ -1,0 +1,46 @@
+[
+  {
+    "label": "cuda-joined-fixture-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/cuda-unified/joined-device-fixture.cpp",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/run",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/run",
+      "-lggml-cuda",
+      "-lggml",
+      "-lggml-base",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/joined-device-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified",
+    "exit_code": 0
+  },
+  {
+    "label": "cuda-joined-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/joined-device-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/device-native.bin"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified",
+    "exit_code": 0
+  },
+  {
+    "label": "cuda-joined-goose-trace",
+    "argv": [
+      "/usr/local/bin/nsys",
+      "profile",
+      "--trace=cuda",
+      "--sample=none",
+      "--cpuctxsw=none",
+      "--force-overwrite=true",
+      "--output=/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/joined-device-trace",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/joined-device-fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/device-goose.bin"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified",
+    "exit_code": 0
+  }
+]

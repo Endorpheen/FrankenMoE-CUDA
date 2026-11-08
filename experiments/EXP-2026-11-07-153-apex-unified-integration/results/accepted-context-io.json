@@ -1,0 +1,12 @@
+{
+  "status": "PASS_CONTEXT_AND_CANONICAL_IO_SHARED_COHORT",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libllama-apex-context-io-7b2f269acb4e.so.0.7.0",
+  "sha256": "3892726fc4be2ce6ff4f01ae399c31b3bd78e1639811dd825987560bacd87f0d",
+  "previous_library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libllama-apex-kv-state-270d3bc2082f.so.0.7.0",
+  "host_state_equal": true,
+  "stdout": "CTX seq=1 ctx=256 batch=32 ubatch=16 seqmax=1 threads=2/4\nSTATE bytes=13 hash=bb1c9c15c2c43474\nCTX seq=4 ctx=1024 batch=32 ubatch=16 seqmax=4 threads=2/4\nSTATE bytes=13 hash=bb1c9c15c2c43474\n",
+  "device_io_fixture": "context-io-real.json",
+  "production_changed": false,
+  "model_loads": 0,
+  "pending": "Combined CUDA/loader/vocab/server integration and full Apex inference"
+}

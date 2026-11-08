@@ -1,0 +1,18 @@
+{
+  "status": "PASS_MODEL_BATCH_REAL_GOOSE_STORAGE",
+  "source": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+  "archive": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/libfgc-apex-storage.a",
+  "fixes": [
+    "Distinct i64 bridge exports preserve typed foundation ABI",
+    "UBATCH destructor frees all fourteen owned vectors",
+    "Goose kind IDs match published schema",
+    "ALLOW_MIXED stored under published key6"
+  ],
+  "negative_result": "Initial combined corpus found leaked UBATCH vectors;fixed in Goose,not hidden in primitive",
+  "stdout": "canonical entries=47\nOK canonical context/batch/ubatch storage\n",
+  "foundation_ownership": "zero live allocations and bytes after full composed corpus",
+  "full_runtime_activated": false,
+  "model_loads": 0,
+  "production_changed": false,
+  "remaining": "Actual canonical public-runtime adapters and other schema integrations"
+}

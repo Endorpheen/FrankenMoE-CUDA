@@ -1,0 +1,393 @@
+[
+  {
+    "label": "emit-vector",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/generated/fgc-vector.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-vector.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "emit-record",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/generated/fgc-record.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-record.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "emit-map",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/generated/fgc-map.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-map.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "emit-set",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/generated/fgc-set.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-set.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "emit-model",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/model/gen/canonical-model.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/model/canonical-model.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "ownership-context-emit",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/context/canonical-context.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/context/canonical-context.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-foundation-fgc-vector-unit",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-vector-unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-vector-unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-foundation-fgc-record-unit",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-record-unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-record-unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-foundation-fgc-map-unit",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-map-unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-map-unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-foundation-fgc-set-unit",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/fgc-set-unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-set-unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-foundation-canonical-storage-services",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/foundation/canonical-storage-services.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-canonical-storage-services.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-canonical-storage-composed-storage-i64-bridge",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/storage-i64-bridge.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/canonical-storage-composed-storage-i64-bridge.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-canonical-storage-composed-raw-effects",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/raw-effects.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/canonical-storage-composed-raw-effects.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-model-unit-model",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/model/unit-model.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/model-unit-model.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-model-canonical-model-bridge",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/model/canonical-model-bridge.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/model-canonical-model-bridge.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "ownership-context-build",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/context/goose_unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/context-goose_unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "compile-context-canonical-abi",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-fPIC",
+      "-fexceptions",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Werror=implicit-function-declaration",
+      "-Werror=incompatible-pointer-types",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+      "-DW8_WITNESS",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/context/canonical-abi.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/context-canonical-abi.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "ownership-context-archive",
+    "argv": [
+      "/usr/bin/ar",
+      "rcs",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/libfgc-apex-storage.a",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-vector-unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-record-unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-map-unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-fgc-set-unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/foundation-canonical-storage-services.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/canonical-storage-composed-storage-i64-bridge.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/canonical-storage-composed-raw-effects.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/model-unit-model.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/model-canonical-model-bridge.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/context-goose_unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/context-canonical-abi.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "ownership-fixture-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O1",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/context",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed/composed-fixture.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/fixture.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "ownership-fixture-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-Wl,--gc-sections",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/fixture.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/libfgc-apex-storage.a",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run",
+      "-lllama",
+      "-lggml",
+      "-lggml-base",
+      "-lggml-cpu",
+      "-lm",
+      "-lpthread",
+      "-ldl",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/composed-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  },
+  {
+    "label": "ownership-composed-boundary",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/composed-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-storage-composed",
+    "exit_code": 0
+  }
+]

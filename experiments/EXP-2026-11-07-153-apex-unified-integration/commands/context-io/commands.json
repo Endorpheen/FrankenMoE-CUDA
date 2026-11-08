@@ -1,0 +1,141 @@
+[
+  {
+    "label": "ctxio-emit",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io/generated.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io/fgcio-context.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+    "exit_code": 0
+  },
+  {
+    "label": "ctxio-build-unit",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-g",
+      "-fPIC",
+      "-fno-strict-aliasing",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io/unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+    "exit_code": 0
+  },
+  {
+    "label": "ctxio-build-abi",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=c11",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-g",
+      "-fPIC",
+      "-fno-strict-aliasing",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io/abi_context.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/abi.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+    "exit_code": 0
+  },
+  {
+    "label": "ctxio-build-adapter",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-g",
+      "-fPIC",
+      "-fno-strict-aliasing",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io/fgcio-context-adapter.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/adapter.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+    "exit_code": 0
+  },
+  {
+    "label": "ctxio-build-fixture",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-D_GNU_SOURCE",
+      "-O2",
+      "-g",
+      "-fPIC",
+      "-fno-strict-aliasing",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io/fixture.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/fixture.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+    "exit_code": 0
+  },
+  {
+    "label": "ctxio-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/abi.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/adapter.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/fixture.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/unit.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/abi.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/set-abi.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-io/real-effects.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/canonical-storage-composed/libfgc-apex-storage.a",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run",
+      "-lllama",
+      "-lggml",
+      "-lggml-cpu",
+      "-lggml-base",
+      "-lm",
+      "-lpthread",
+      "-ldl"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+    "exit_code": 0
+  },
+  {
+    "label": "ctxio-real-device",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/context-io/fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+    "exit_code": 0
+  }
+]

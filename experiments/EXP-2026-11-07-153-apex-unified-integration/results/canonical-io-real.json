@@ -1,0 +1,19 @@
+{
+  "status": "PASS_CANONICAL_IO_REAL_GGML_AND_GOOSE_STORAGE",
+  "source": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/canonical-io",
+  "stdout": "PASS real GGML canonical device IO repeated/split/geometry-change and zero owned allocations\n",
+  "fixes": [
+    "writer queued entry records freed after flush",
+    "reader temporary buft vector freed",
+    "typed i64 foundation ABI bridges",
+    "cached buffer read from group field instead of group record cast",
+    "old buffer freed on replacement",
+    "pending versus committed geometry distinct",
+    "read arena sized from actual read chunks instead of previous writer count",
+    "real ggml tensor prototypes;no phantom overload",
+    "no shared generated stack reset"
+  ],
+  "model_loads": 0,
+  "production_changed": false,
+  "remaining": "normal context/shared runtime canonical IO adapters and complete failure/OOM closure"
+}

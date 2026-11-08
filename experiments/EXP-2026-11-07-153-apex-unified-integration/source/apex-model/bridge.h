@@ -1,0 +1,101 @@
+#pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+int64_t fg153_am_get(int64_t e,int64_t k,int64_t i);
+float fg153_am_fget(int64_t e,int64_t k,int64_t i);
+int64_t fg153_am_wt(int64_t e,int64_t il,int64_t k);
+void fg153_am_put(int64_t e,int64_t k,int64_t i,int64_t v);
+int64_t fg153_am_service(int64_t e,int64_t k,int64_t a,int64_t b,int64_t c);
+void fg153_am_observe(int64_t e,int64_t t,int64_t k,int64_t il);
+void fg153_am_fused(int64_t e,int64_t k,int64_t t,int64_t il);
+int64_t fg153_am_ne(int64_t t,int64_t i);
+int64_t fg153_am_nb(int64_t t,int64_t i);
+int64_t fg153_am_src(int64_t t,int64_t i);
+int64_t fg153_am_typ(int64_t t);
+int64_t fg153_am_elem(int64_t t);
+int64_t fg153_am_row(int64_t t,int64_t n);
+float fg153_am_adapter_scale(int64_t e,int64_t w,int64_t i,int64_t id);
+float fg153_am_layer_float(int64_t e,int64_t k,int64_t il);
+int64_t fg153_am_layer_int(int64_t e,int64_t k,int64_t il);
+void fg153_am_putin(int64_t e,int64_t inp,int64_t k,int64_t t);
+int64_t fg153_am_select_input(int64_t e,int64_t a,int64_t b,int64_t c,int64_t n,int64_t idx);
+void fg153_am_input_scale(int64_t e,int64_t inp,float s);
+float fg153_am_fsqrt(float n);
+float fg153_am_infinity(void);
+int64_t fg153_am_p_add(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_argsort_top_k(int64_t a0,int64_t a1,int64_t a2);
+void fg153_am_p_build_forward_expand(int64_t a0,int64_t a1);
+void fg153_am_p_build_forward_order(int64_t a0,int64_t a1);
+int64_t fg153_am_p_cast(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_clamp(int64_t a0,int64_t a1,float a2,float a3);
+int64_t fg153_am_p_concat(int64_t a0,int64_t a1,int64_t a2,int64_t a3);
+int64_t fg153_am_p_cont(int64_t a0,int64_t a1);
+int64_t fg153_am_p_cont_2d(int64_t a0,int64_t a1,int64_t a2,int64_t a3);
+int64_t fg153_am_p_cont_4d(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5);
+int64_t fg153_am_p_cpy(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_cumsum(int64_t a0,int64_t a1);
+int64_t fg153_am_p_diag(int64_t a0,int64_t a1);
+int64_t fg153_am_p_div(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_dup(int64_t a0,int64_t a1);
+int64_t fg153_am_p_exp(int64_t a0,int64_t a1);
+int64_t fg153_am_p_fill(int64_t a0,int64_t a1,float a2);
+int64_t fg153_am_p_flash_attn_ext(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,float a5,float a6,float a7);
+void fg153_am_p_flash_attn_ext_add_sinks(int64_t a0,int64_t a1);
+void fg153_am_p_flash_attn_ext_set_n_kv_max(int64_t a0,int64_t a1);
+int64_t fg153_am_p_gated_delta_net(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5,int64_t a6,int64_t a7);
+int64_t fg153_am_p_get_rows(int64_t a0,int64_t a1,int64_t a2);
+bool fg153_am_p_is_contiguous(int64_t a0);
+int64_t fg153_am_p_mul(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_mul_mat(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_mul_mat_id(int64_t a0,int64_t a1,int64_t a2,int64_t a3);
+int64_t fg153_am_p_neg(int64_t a0,int64_t a1);
+int64_t fg153_am_p_nelements(int64_t a0);
+int64_t fg153_am_p_new_tensor_1d(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_new_tensor_2d(int64_t a0,int64_t a1,int64_t a2,int64_t a3);
+int64_t fg153_am_p_pad(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5);
+int64_t fg153_am_p_permute(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5);
+bool fg153_am_p_prec_set_acc(int64_t a0,int64_t a1);
+int64_t fg153_am_p_repeat(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_repeat_4d(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5);
+int64_t fg153_am_p_reshape_1d(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_reshape_2d(int64_t a0,int64_t a1,int64_t a2,int64_t a3);
+int64_t fg153_am_p_reshape_3d(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4);
+int64_t fg153_am_p_reshape_4d(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5);
+int64_t fg153_am_p_rms_norm(int64_t a0,int64_t a1,float a2);
+int64_t fg153_am_p_rope_multi(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5,int64_t a6,int64_t a7,float a8,float a9,float a10,float a11,float a12,float a13);
+int64_t fg153_am_p_scale(int64_t a0,int64_t a1,float a2);
+int64_t fg153_am_p_scale_inplace(int64_t a0,int64_t a1,float a2);
+int64_t fg153_am_p_set_inplace(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5,int64_t a6);
+void fg153_am_p_set_input(int64_t a0);
+int64_t fg153_am_p_set_rows(int64_t a0,int64_t a1,int64_t a2,int64_t a3);
+int64_t fg153_am_p_sigmoid(int64_t a0,int64_t a1);
+int64_t fg153_am_p_silu(int64_t a0,int64_t a1);
+int64_t fg153_am_p_soft_max(int64_t a0,int64_t a1);
+void fg153_am_p_soft_max_add_sinks(int64_t a0,int64_t a1);
+int64_t fg153_am_p_soft_max_ext(int64_t a0,int64_t a1,int64_t a2,float a3,float a4);
+int64_t fg153_am_p_softplus(int64_t a0,int64_t a1);
+int64_t fg153_am_p_solve_tri(int64_t a0,int64_t a1,int64_t a2,bool a3,bool a4,bool a5);
+int64_t fg153_am_p_ssm_conv(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_sub(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_sum_rows(int64_t a0,int64_t a1);
+int64_t fg153_am_p_swiglu_split(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_tanh(int64_t a0,int64_t a1);
+int64_t fg153_am_p_transpose(int64_t a0,int64_t a1);
+int64_t fg153_am_p_tri(int64_t a0,int64_t a1,int64_t a2);
+int64_t fg153_am_p_view_1d(int64_t a0,int64_t a1,int64_t a2,int64_t a3);
+int64_t fg153_am_p_view_2d(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5);
+int64_t fg153_am_p_view_3d(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5,int64_t a6,int64_t a7);
+int64_t fg153_am_p_view_4d(int64_t a0,int64_t a1,int64_t a2,int64_t a3,int64_t a4,int64_t a5,int64_t a6,int64_t a7,int64_t a8,int64_t a9);
+int64_t fg153_apex_probe(int64_t,int64_t);
+uint64_t fg153_apex_counts(int64_t);
+int64_t fg153_am_lget(int64_t,int64_t);
+int64_t fg153_am_bind(int64_t,int64_t,int64_t,int64_t,int64_t,int64_t,int64_t,int64_t);
+void fg153_am_recurrent(int64_t,int64_t,bool);
+void fg153_apex_bind(int64_t,int64_t);
+int64_t fg153_apex_build(int64_t owner);
+#ifdef __cplusplus
+}
+#endif

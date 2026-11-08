@@ -1,0 +1,136 @@
+{
+  "strategy": "Integrate all prepared Apex blocks into one common candidate;no separate Batch A acceptance barrier",
+  "llama": {
+    "status": "PASS_CONTEXT_AND_CANONICAL_IO_SHARED_COHORT",
+    "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libllama-apex-context-io-7b2f269acb4e.so.0.7.0",
+    "sha256": "3892726fc4be2ce6ff4f01ae399c31b3bd78e1639811dd825987560bacd87f0d",
+    "previous_library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libllama-apex-kv-state-270d3bc2082f.so.0.7.0",
+    "host_state_equal": true,
+    "stdout": "CTX seq=1 ctx=256 batch=32 ubatch=16 seqmax=1 threads=2/4\nSTATE bytes=13 hash=bb1c9c15c2c43474\nCTX seq=4 ctx=1024 batch=32 ubatch=16 seqmax=4 threads=2/4\nSTATE bytes=13 hash=bb1c9c15c2c43474\n",
+    "device_io_fixture": "context-io-real.json",
+    "production_changed": false,
+    "model_loads": 0,
+    "pending": "Combined CUDA/loader/vocab/server integration and full Apex inference"
+  },
+  "ggml_cpu": {
+    "status": "ACCEPTED_SOURCE_LINKED_REPACK_CONTROL_MM_AND_MMID",
+    "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libggml-cpu-control-final-2740c549b3aa.so.0.27.0",
+    "sha256": "e62df864e4e316934927fc4e2510603bdf94495cad4b8afa805bc59993fb96a8",
+    "normal_backend_cases": 9,
+    "bit_exact": true,
+    "parent_fixes": [
+      "MUL_MAT_ID activation quantizer uses input K,not output width",
+      "tail activation quantization reuses existing Goose Q8_K",
+      "typed row mapping bounds",
+      "hooks restricted to active Q4_K provider;other formats preserved",
+      "Tail GEMV loop moved from C++ chunk callback into Goose"
+    ],
+    "pending": "Whole CPU/import closure and Batch A Apex gate",
+    "production_changed": false,
+    "model_loads": 0,
+    "mmid_native_differential": "t1 fcd3357607bb19d3\nt4 fcd3357607bb19d3\nt8 fcd3357607bb19d3\n",
+    "mmid_witness": true,
+    "remaining_native_chunk_loop": false
+  },
+  "kv_state": {
+    "status": "ACCEPTED_PUBLIC_GOOSE_KV_STATE_WITH_LAZY_RANGE",
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/kv-active",
+    "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libllama-apex-kv-state-270d3bc2082f.so.0.7.0",
+    "sha256": "5c4290ea7a261227dc10ee608410a746d21e714929f32ac82dd6459d3b67e6ca",
+    "stdout": "active_oom_rollback OK\nactive_filter_layers OK\nactive_cpu_buffer OK\nactive_q4_type OK\nactive_lazy_flag_cpu OK\nactive_n_rot OK\nactive_hadamard_goose_fill OK\nactive_allocr_init OK\nactive_init_batch_status OK\nactive_init_batch_apply OK\nactive_init_batch_next_end OK\nactive_cells_equal OK\nactive_state_bytes_equal OK\nactive_state_cross_roundtrip OK\nactive_factory_apply OK\nactive_factory_cells OK\nactive_witness OK\nactive_reuse_rotation OK\nactive_reuse_rotation OK\nGoose public state route witnessed OK\nACTIVE PASS\n",
+    "typed_boundary": "Strict integer/pointer C ABI adapters",
+    "lazy_range": "Raw per-tensor state read/write prepares exact buffer range",
+    "model_loads": 0,
+    "production_changed": false,
+    "pending": "Canonical memory storage integration and full Batch A Apex gate"
+  },
+  "production_changed": false,
+  "ggml_cuda": {
+    "status": "PASS_REAL_GPU_JOINED_CHAIN_BIT_EXACT",
+    "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libggml-cuda-goose-typed-1fdfbf5b41b1.so.0.27.0",
+    "sha256": "b58b2e0ca1d9cc3d85c26510cafd2be22c5e3dffd9c885069987a511d2b9d142",
+    "modified_native_tus": [
+      "unary.cu",
+      "binbcast.cu",
+      "norm.cu",
+      "softmax.cu",
+      "rope.cu",
+      "cpy.cu",
+      "getrows.cu",
+      "set-rows.cu",
+      "convert.cu",
+      "mmvq.cu",
+      "mmq.cu",
+      "quantize.cu",
+      "gated_delta_net.cu",
+      "ssm-conv.cu",
+      "argsort.cu",
+      "top-k.cu",
+      "moe-weighted-reduction.cu",
+      "template-instances/fattn-vec-instance-q4_0-q4_0.cu"
+    ],
+    "new_goose_device_units": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_bin_bcast.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_bin_bcast_unravel.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_glu.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_group_norm.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_l2_norm.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_norm.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_rms_norm.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_rope_multi_f32.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_rope_multi_f32_f16.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_soft_max.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_unary.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-move.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-matrix.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-matrix-closure.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-fa-q4.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-gdn.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-conv.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-moe-sort.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-moe-reduce.o"
+    ],
+    "control": "Original lazy-VMM backend retained until critical worker14 repair passes",
+    "model_loads": 0,
+    "production_changed": false,
+    "dynamic_symbols_resolve": true,
+    "fixes": [
+      "SSM conv bridge call passes matching six strides;native unused nb0 removed",
+      "Required movement validation/flag host ABI linked",
+      "Movement disable gate uses atomic cached flag"
+    ],
+    "critical_failure": "Initial real GPU joined graph exposed F16/Q4 movement divergence;not qualified",
+    "q4_fix": "Distinct scalar/block byte strides and advanced source block address",
+    "stages": [
+      {
+        "stage": "conv",
+        "max_abs_diff": 0.0
+      },
+      {
+        "stage": "norm",
+        "max_abs_diff": 0.0
+      },
+      {
+        "stage": "silu",
+        "max_abs_diff": 0.0
+      },
+      {
+        "stage": "mul",
+        "max_abs_diff": 0.0
+      },
+      {
+        "stage": "F16-roundtrip",
+        "max_abs_diff": 0.0
+      },
+      {
+        "stage": "Q4-roundtrip",
+        "max_abs_diff": 0.0
+      }
+    ],
+    "primitive_change": "Aligned typed scalar access replaces byte-wise builtin memcpy lowering;all arithmetic remains Goose",
+    "functional_scope": "One joined real CUDA SSM-conv/RMS/native-fused-GLU/F16/Q4 graph;not full Apex",
+    "liveness_evidence": "Initial Nsight activity records Goose SSM/RMS/movement kernels;final corrected binary executed same graph with exact output",
+    "not_qualified": "Full Apex,all CUDA operations,resource-control update,normal loader/vocab/server and native-free closure remain pending"
+  },
+  "updated_at": 1794098762.0079014
+}

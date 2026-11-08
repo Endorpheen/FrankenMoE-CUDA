@@ -1,0 +1,87 @@
+{
+  "status": "PASS_REAL_GPU_JOINED_CHAIN_BIT_EXACT",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libggml-cuda-goose-typed-1fdfbf5b41b1.so.0.27.0",
+  "sha256": "b58b2e0ca1d9cc3d85c26510cafd2be22c5e3dffd9c885069987a511d2b9d142",
+  "modified_native_tus": [
+    "unary.cu",
+    "binbcast.cu",
+    "norm.cu",
+    "softmax.cu",
+    "rope.cu",
+    "cpy.cu",
+    "getrows.cu",
+    "set-rows.cu",
+    "convert.cu",
+    "mmvq.cu",
+    "mmq.cu",
+    "quantize.cu",
+    "gated_delta_net.cu",
+    "ssm-conv.cu",
+    "argsort.cu",
+    "top-k.cu",
+    "moe-weighted-reduction.cu",
+    "template-instances/fattn-vec-instance-q4_0-q4_0.cu"
+  ],
+  "new_goose_device_units": [
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_bin_bcast.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_bin_bcast_unravel.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_glu.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_group_norm.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_l2_norm.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_norm.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_rms_norm.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_rope_multi_f32.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_rope_multi_f32_f16.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_soft_max.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/element-k_unary.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-move.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-matrix.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-matrix-closure.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-fa-q4.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-gdn.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-conv.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-moe-sort.o",
+    "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/build/cuda-unified/goose-moe-reduce.o"
+  ],
+  "control": "Original lazy-VMM backend retained until critical worker14 repair passes",
+  "model_loads": 0,
+  "production_changed": false,
+  "dynamic_symbols_resolve": true,
+  "fixes": [
+    "SSM conv bridge call passes matching six strides;native unused nb0 removed",
+    "Required movement validation/flag host ABI linked",
+    "Movement disable gate uses atomic cached flag"
+  ],
+  "critical_failure": "Initial real GPU joined graph exposed F16/Q4 movement divergence;not qualified",
+  "q4_fix": "Distinct scalar/block byte strides and advanced source block address",
+  "stages": [
+    {
+      "stage": "conv",
+      "max_abs_diff": 0.0
+    },
+    {
+      "stage": "norm",
+      "max_abs_diff": 0.0
+    },
+    {
+      "stage": "silu",
+      "max_abs_diff": 0.0
+    },
+    {
+      "stage": "mul",
+      "max_abs_diff": 0.0
+    },
+    {
+      "stage": "F16-roundtrip",
+      "max_abs_diff": 0.0
+    },
+    {
+      "stage": "Q4-roundtrip",
+      "max_abs_diff": 0.0
+    }
+  ],
+  "primitive_change": "Aligned typed scalar access replaces byte-wise builtin memcpy lowering;all arithmetic remains Goose",
+  "functional_scope": "One joined real CUDA SSM-conv/RMS/native-fused-GLU/F16/Q4 graph;not full Apex",
+  "liveness_evidence": "Initial Nsight activity records Goose SSM/RMS/movement kernels;final corrected binary executed same graph with exact output",
+  "not_qualified": "Full Apex,all CUDA operations,resource-control update,normal loader/vocab/server and native-free closure remain pending"
+}

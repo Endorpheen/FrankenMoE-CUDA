@@ -1,0 +1,15 @@
+{
+  "status": "PASS_CONTEXT_CANONICAL_IO_REAL_BACKEND",
+  "stdout": "FG153_TRACE case=ctxA field=round1 got=1 want=1 PASS\nFG153_TRACE case=ctxB field=round1 got=1 want=1 PASS\nFG153_TRACE case=ctxA field=repeat-rebind got=1 want=1 PASS\nFG153_TRACE case=ctxA field=geometry-change got=1 want=1 PASS\nFG153_TRACE case=ctxB field=repeat-rebind got=1 want=1 PASS\nFG153_TRACE case=ctxB field=after-drop-other got=1 want=1 PASS\nFG153_TRACE case=cache field=live_allocs got=0 want=0 PASS\nFG153_TRACE case=cache field=live_bytes got=0 want=0 PASS\nFG153_RESULT failures=0\n",
+  "source": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/context-io",
+  "fixes": [
+    "Exact ON_DEVICE metadata length in read fixture",
+    "Allocation-free typed canonical map lookup",
+    "Registry allocation/insert rollback",
+    "Persistent writer ledger reservation before publication",
+    "Context-key isolation",
+    "No shared generated stack reset"
+  ],
+  "model_loads": 0,
+  "production_changed": false
+}

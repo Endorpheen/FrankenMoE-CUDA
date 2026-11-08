@@ -1,0 +1,44 @@
+[
+  {
+    "stage": "conv",
+    "max_abs_diff": 0.0,
+    "index": 0,
+    "native": 0.484375,
+    "goose": 0.484375
+  },
+  {
+    "stage": "norm",
+    "max_abs_diff": 0.0,
+    "index": 0,
+    "native": 2.7342944145202637,
+    "goose": 2.7342944145202637
+  },
+  {
+    "stage": "silu",
+    "max_abs_diff": 0.0,
+    "index": 0,
+    "native": 0.0,
+    "goose": 0.0
+  },
+  {
+    "stage": "mul",
+    "max_abs_diff": 0.0,
+    "index": 0,
+    "native": 7.020458221435547,
+    "goose": 7.020458221435547
+  },
+  {
+    "stage": "F16-roundtrip",
+    "max_abs_diff": 1.421875,
+    "index": 787,
+    "native": 11.5078125,
+    "goose": 10.0859375
+  },
+  {
+    "stage": "Q4-roundtrip",
+    "max_abs_diff": 12.3515625,
+    "index": 596,
+    "native": 12.3515625,
+    "goose": 0.0
+  }
+]

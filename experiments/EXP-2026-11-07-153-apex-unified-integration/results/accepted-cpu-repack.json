@@ -1,0 +1,15 @@
+{
+  "status": "ACCEPTED_SOURCE_LINKED_Q4K_REPACK_NUMERICS",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libggml-cpu-repack-74a5a9b4b6d4.so.0.27.0",
+  "sha256": "b125402c43693ccb920d4554536d1fcdf836272161229533c28a555e59fa2f1b",
+  "normal_backend_cases": 9,
+  "bit_exact": true,
+  "source": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/cpu-repack",
+  "default_on": true,
+  "rollback": "GGML_GOOSE_CPU_REPACK=0",
+  "provider_control_disabled_for_test": false,
+  "preload": false,
+  "production_changed": false,
+  "model_loads": 0,
+  "remaining": "Repack provider/traits control closure and full Batch A Apex gate"
+}

@@ -1,0 +1,12 @@
+{
+  "status": "ACCEPTED_PUBLIC_GOOSE_KV_STATE_WITH_LAZY_RANGE",
+  "source": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/source/kv-active",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp153-apex-core-20261107/variants/cpu-backend/run/libllama-apex-kv-state-270d3bc2082f.so.0.7.0",
+  "sha256": "5c4290ea7a261227dc10ee608410a746d21e714929f32ac82dd6459d3b67e6ca",
+  "stdout": "active_oom_rollback OK\nactive_filter_layers OK\nactive_cpu_buffer OK\nactive_q4_type OK\nactive_lazy_flag_cpu OK\nactive_n_rot OK\nactive_hadamard_goose_fill OK\nactive_allocr_init OK\nactive_init_batch_status OK\nactive_init_batch_apply OK\nactive_init_batch_next_end OK\nactive_cells_equal OK\nactive_state_bytes_equal OK\nactive_state_cross_roundtrip OK\nactive_factory_apply OK\nactive_factory_cells OK\nactive_witness OK\nactive_reuse_rotation OK\nactive_reuse_rotation OK\nGoose public state route witnessed OK\nACTIVE PASS\n",
+  "typed_boundary": "Strict integer/pointer C ABI adapters",
+  "lazy_range": "Raw per-tensor state read/write prepares exact buffer range",
+  "model_loads": 0,
+  "production_changed": false,
+  "pending": "Canonical memory storage integration and full Batch A Apex gate"
+}
