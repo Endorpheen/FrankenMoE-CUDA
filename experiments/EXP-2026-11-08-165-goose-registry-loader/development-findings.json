@@ -1,0 +1,18 @@
+{
+  "fixed_before_model": [
+    "Do not cache dev_count or call it before publishing backend;preserve native repeated callbacks and reentrant lookup contract"
+  ],
+  "compiler_adaptations": [
+    "copy is a builtin name;use raw_copy foreign alias",
+    "Explicit terminal return required after while true in current producer"
+  ],
+  "qualifications": [
+    "Only Linux registry/loader policy ported;other-platform feature detection deferred",
+    "Directory/path error diagnostics differ;selection/public results preserved",
+    "Score/init C++ exceptions fail closed at typed effect boundary;not a successful plugin",
+    "Original process-exit handle retention preserved;explicit unload closes the owned reference",
+    "No dynamic-load witness claimed in fixed Apex profile",
+    "No full sanitizer/microbenchmark/fresh-C++ series"
+  ],
+  "production_changed": false
+}

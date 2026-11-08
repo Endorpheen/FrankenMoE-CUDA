@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "new_exports": [
+    "fg165_registry_handles_live",
+    "fg165_registry_heap_live",
+    "fg165_registry_seen"
+  ],
+  "mutable_test_hooks_in_production": false
+}

@@ -4,7 +4,7 @@
   "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
   "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
   "active_workstream": "APEX_COMMON",
-  "next_task": "P4-08",
+  "next_task": "P2-13",
   "execution_order": [
     "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",
     "QWEN_COMPATIBILITY: C1 and deferred shared MTP task; only after all APEX_COMMON tasks DONE",
@@ -1285,12 +1285,13 @@
         "ggml/src/ggml-feats.h"
       ],
       "acceptance": "Registry/device enumeration,plugin ABI,error behavior and capability queries Goose; dlopen/OS imports only.",
-      "evidence": "EXP163 transfers48generic backend/stream/I-O/copy/event/device/registration-interface bodies to Goose,with typed C/CPP ABI and unchanged provider/kernel objects.37native case groups/264ordered callback events/1091checks cover all48entry modes and rollback;11bounds/staging/callback-error cases and128threaded transfer/event lifecycles pass. One Apex2631.942/26.956,exact text/all128IDs/all probabilities,127graph reuses,actual shared-control witness and0staging/buffer/context heaps. Decode-1.57percent single sample;no stable speed claim. Actual scheduler/global registry/provider implementations and full source closure remain open.Registration interface forwarding is migrated;global registry state,dynamic loader and compatibility discovery policy remain native.",
+      "evidence": "EXP163 transfers48generic backend/stream/I-O/copy/event/device/registration-interface bodies to Goose,with typed C/CPP ABI and unchanged provider/kernel objects.37native case groups/264ordered callback events/1091checks cover all48entry modes and rollback;11bounds/staging/callback-error cases and128threaded transfer/event lifecycles pass. One Apex2631.942/26.956,exact text/all128IDs/all probabilities,127graph reuses,actual shared-control witness and0staging/buffer/context heaps. Decode-1.57percent single sample;no stable speed claim. Actual scheduler/global registry/provider implementations and full source closure remain open.Registration interface forwarding is migrated;global registry state,dynamic loader and compatibility discovery policy remain native. EXP165 transfers16public Linux registry/loader APIs plus registration/device tables,dedup/unload,name/type/init selection,score/init/API checks,search/path/variant/fallback and load-all order to self-hosted Goose.48native registration scenarios,8real synthetic plugins,best/fallback/default search/load-all,345callback events/684checks and rollback pass;4threads128registrations and6bounds/NULL/OOM cases verify releasable partial ownership. Reentrant count callbacks required publishing the backend first and querying count each native loop iteration;fixed before model. One Apex2633.578prefill/27.399decode,RSS21316.629MiB/VRAM3246MiB,exact text/all128IDs/all saved probabilities,127graph reuses,new registry witness andzero owned metadata/handles. Dynamic paths are local-plugin tested,not executed by this directly linked Apex profile. Other-platform feature detection/provider internals/native-source removal remain separate. ",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B3"
+      "batch": "B3",
+      "apex_linux_registry_loader": "FUNCTIONALLY_VERIFIED_EXP165"
     },
     {
       "id": "P4-09",
@@ -3096,6 +3097,10 @@
     {
       "checkpoint": "EXP164 actual shared scheduler",
       "event": "EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted Goose:placement/compatibility/offload,splits/parallel copies,ordered allocator deps,reserve/reuse,compute/eval/event/expert orchestration and owned lifecycle.44native placement/reuse cases,2wide72input graphs,compute failure,10expert phase routes,12constructor OOM sites and32threaded independent lifecycles pass with rollback. One Apex2626.103prefill/27.267decode,RSS21315.086MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,new scheduler witness/zero heaps. Small single-sample speed variation;stable C++ parity unproven. P4-09/P4-11 functional contracts DONE;P4-10/P4-15 partial;no full campaign/delivery cycle closed."
+    },
+    {
+      "checkpoint": "EXP165 actual Linux registry/loader",
+      "event": "EXP165 transfers16public Linux registry/loader APIs plus registration/device tables,dedup/unload,name/type/init selection,score/init/API checks,search/path/variant/fallback and load-all order to self-hosted Goose.48native registration scenarios,8real synthetic plugins,best/fallback/default search/load-all,345callback events/684checks and rollback pass;4threads128registrations and6bounds/NULL/OOM cases verify releasable partial ownership. Reentrant count callbacks required publishing the backend first and querying count each native loop iteration;fixed before model. One Apex2633.578prefill/27.399decode,RSS21316.629MiB/VRAM3246MiB,exact text/all128IDs/all saved probabilities,127graph reuses,new registry witness andzero owned metadata/handles. Dynamic paths are local-plugin tested,not executed by this directly linked Apex profile. Other-platform feature detection/provider internals/native-source removal remain separate. Universal P4-08 stays IN_PROGRESS for retained platform/feature scope;no false campaign/cycle closure."
     }
   ],
   "batches": [
@@ -3370,13 +3375,13 @@
     "unverified_completion_forbidden": true
   },
   "active_candidate": {
-    "experiment": "EXP164",
+    "experiment": "EXP165",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-164-goose-scheduler/source",
-    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run",
-    "status": "PASS_LOCAL_AND_ONE_FIXED_APEX_SHARED_SCHEDULER;functional placement/reuse tasks closed;full Apex source/compute migration not complete",
-    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp163/run",
-    "next_batch": "Actual global backend registry/dynamic loader and remaining common backend helpers;then provider/model/KV source closure per retained Apex plan."
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+    "status": "PASS_LOCAL_AND_FIXED_APEX_LINUX_REGISTRY;full Apex migration incomplete",
+    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run",
+    "next_batch": "Actual Apex CPU/CUDA provider execution residuals and model/KV ownership;prioritize active path,not unused training/architecture helpers"
   },
   "batch_execution_policy": {
     "preferred_requirements_per_batch": [
@@ -3928,10 +3933,10 @@
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
   },
   "active_checkpoint": {
-    "experiment": "EXP164",
+    "experiment": "EXP165",
     "branch": "codex/apex-exp150-restored-20261108",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run",
+    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
     "solo": true,
     "production_changed": false
   }

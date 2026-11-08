@@ -64,15 +64,15 @@ Target3large delivery cycles,with a fourth only for a real dependency. Internal 
 
 ## Active isolated candidate
 
-- experiment: `EXP164`,solo continuation from restored EXP150 and verified EXP155..163.
+- experiment: `EXP165`,solo continuation from verified EXP164 and restored EXP150 lineage.
 - root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108`
 - branch: `codex/apex-exp150-restored-20261108`
-- source: `experiments/EXP-2026-11-08-164-goose-scheduler/source`
-- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run`
-- status:Actual shared placement/split/copy/reserve/compute/owned lifecycle is Goose;local parity/rollback/failure/thread/expert paths and one exact Apex gate pass. Functional placement/reuse requirements P4-09/P4-11 closed;actual multi-stream cancellation and branch/restore compatibility still open. Full Apex/CPU/CUDA/source closure is not complete.
-- next_batch:Actual global registry/dynamic loader and remaining common backend helpers;then remaining provider/model/KV scope per retained Apex plan.
-- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp163/run`
-- rollback: `GGML_GOOSE_SCHEDULER=0` or previous immutable EXP163 runtime. Production/compiler untouched,no agents;EXP153 quarantined.
+- source: `experiments/EXP-2026-11-08-165-goose-registry-loader/source`
+- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run`
+- status:Actual Linux registry/loader/state/device discovery is Goose;native/rollback/plugin/failure/thread checks and one exact Apex pass. P4-08 remains IN_PROGRESS for other-platform feature scope. Full Apex/math/CUDA/model/source migration remains incomplete.
+- next_batch:Actual Apex CPU/CUDA provider execution residuals and model/KV ownership;prioritize active paths,not unused training/architecture utilities.
+- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run`
+- rollback: `GGML_GOOSE_REGISTRY=0` or immutable EXP164 runtime. Production/compiler untouched,no agents;EXP153 quarantined.
 
 ## Authoritative execution policy
 
@@ -579,3 +579,8 @@ Active EXP160allocator object reproduces SHA9246ec1bc84e9f0e5d65ba52f7f3b3c7e2af
 ### EXP164: actual shared scheduler (2026-11-08)
 
 EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted Goose:placement/compatibility/offload,splits/parallel copies,ordered allocator deps,reserve/reuse,compute/eval/event/expert orchestration and owned lifecycle.44native placement/reuse cases,2wide72input graphs,compute failure,10expert phase routes,12constructor OOM sites and32threaded independent lifecycles pass with rollback. One Apex2626.103prefill/27.267decode,RSS21315.086MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,new scheduler witness/zero heaps. Small single-sample speed variation;stable C++ parity unproven. P4-09/P4-11 close their functional placement and reserve/compute/reuse contracts. P4-10/P4-15 remain partial for real asynchronous cancellation and branch/restore/future compatibility. This does not close a campaign stage or delivery cycle. Default-off fallback remains original native scheduler,strict native-source removal remains P4-16. See `experiments/EXP-2026-11-08-164-goose-scheduler/`. Latest owner per-significant-change correctness/system-speed gate retained. Next:global registry/dynamic loading and residual common backend helpers. Production/compiler untouched,no agents.
+
+
+### EXP165: actual Linux registry,device discovery and loader (2026-11-08)
+
+EXP165 transfers16public Linux registry/loader APIs plus registration/device tables,dedup/unload,name/type/init selection,score/init/API checks,search/path/variant/fallback and load-all order to self-hosted Goose.48native registration scenarios,8real synthetic plugins,best/fallback/default search/load-all,345callback events/684checks and rollback pass;4threads128registrations and6bounds/NULL/OOM cases verify releasable partial ownership. Reentrant count callbacks required publishing the backend first and querying count each native loop iteration;fixed before model. One Apex2633.578prefill/27.399decode,RSS21316.629MiB/VRAM3246MiB,exact text/all128IDs/all saved probabilities,127graph reuses,new registry witness andzero owned metadata/handles. Dynamic paths are local-plugin tested,not executed by this directly linked Apex profile. Other-platform feature detection/provider internals/native-source removal remain separate. Small single-sample speed changes are not stable acceleration or fresh-C++ parity evidence. One model request. P4-08 remains IN_PROGRESS for explicit non-Linux/architecture-feature scope;no universal requirement/campaign/cycle falsely closed. See `experiments/EXP-2026-11-08-165-goose-registry-loader/`. Next:active Apex provider/math and model/KV residuals. Production/compiler untouched,solo.

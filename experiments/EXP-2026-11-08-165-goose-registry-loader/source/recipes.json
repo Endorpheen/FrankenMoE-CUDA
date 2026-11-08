@@ -1,0 +1,108 @@
+{
+  "ggml_backend_register": {
+    "mode": 0,
+    "args": [
+      "reg"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_device_register": {
+    "mode": 1,
+    "args": [
+      "device"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_reg_count": {
+    "mode": 2,
+    "args": [],
+    "kind": "size_t"
+  },
+  "ggml_backend_reg_get": {
+    "mode": 3,
+    "args": [
+      "index"
+    ],
+    "kind": "ggml_backend_reg_t"
+  },
+  "ggml_backend_reg_by_name": {
+    "mode": 4,
+    "args": [
+      "name"
+    ],
+    "kind": "ggml_backend_reg_t"
+  },
+  "ggml_backend_dev_count": {
+    "mode": 5,
+    "args": [],
+    "kind": "size_t"
+  },
+  "ggml_backend_dev_get": {
+    "mode": 6,
+    "args": [
+      "index"
+    ],
+    "kind": "ggml_backend_dev_t"
+  },
+  "ggml_backend_dev_by_name": {
+    "mode": 7,
+    "args": [
+      "name"
+    ],
+    "kind": "ggml_backend_dev_t"
+  },
+  "ggml_backend_dev_by_type": {
+    "mode": 8,
+    "args": [
+      "type"
+    ],
+    "kind": "ggml_backend_dev_t"
+  },
+  "ggml_backend_init_by_name": {
+    "mode": 9,
+    "args": [
+      "name",
+      "params"
+    ],
+    "kind": "ggml_backend_t"
+  },
+  "ggml_backend_init_by_type": {
+    "mode": 10,
+    "args": [
+      "type",
+      "params"
+    ],
+    "kind": "ggml_backend_t"
+  },
+  "ggml_backend_init_best": {
+    "mode": 11,
+    "args": [],
+    "kind": "ggml_backend_t"
+  },
+  "ggml_backend_load": {
+    "mode": 12,
+    "args": [
+      "path"
+    ],
+    "kind": "ggml_backend_reg_t"
+  },
+  "ggml_backend_unload": {
+    "mode": 13,
+    "args": [
+      "reg"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_load_all": {
+    "mode": 14,
+    "args": [],
+    "kind": "void"
+  },
+  "ggml_backend_load_all_from_path": {
+    "mode": 15,
+    "args": [
+      "dir_path"
+    ],
+    "kind": "void"
+  }
+}

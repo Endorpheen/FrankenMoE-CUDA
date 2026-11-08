@@ -1,0 +1,784 @@
+[
+  {
+    "label": "registry-selfhosted-emit",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/registry-generated.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/registry.goose"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-backend-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-DGGML_BACKEND_SHARED",
+      "-DGGML_BUILD",
+      "-DGGML_SCHED_MAX_COPIES=4",
+      "-DGGML_SHARED",
+      "-DGGML_USE_CPU",
+      "-DGGML_USE_CUDA",
+      "-D_GNU_SOURCE",
+      "-D_XOPEN_SOURCE=600",
+      "-Dggml_EXPORTS",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include",
+      "-O3",
+      "-DNDEBUG",
+      "-std=gnu++17",
+      "-fPIC",
+      "-fvisibility=hidden",
+      "-Wmissing-declarations",
+      "-Wmissing-noreturn",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wcast-qual",
+      "-Wno-unused-function",
+      "-Wno-array-bounds",
+      "-Wextra-semi",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/registry.o",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/backend-registry.cpp"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-goose-C-build",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-std=gnu11",
+      "-O3",
+      "-DNDEBUG",
+      "-fPIC",
+      "-fvisibility=hidden",
+      "-Werror=implicit-int",
+      "-Werror=implicit-function-declaration",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/registry-unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/registry-goose.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "unchanged-exp164-registry-link-integrity",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-O3",
+      "-DNDEBUG",
+      "-shared",
+      "-Wl,-soname,libggml.so.0",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/unchanged-exp164.so",
+      "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o",
+      "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/bin:",
+      "-ldl",
+      "bin/libggml-cpu.so.0.27.0",
+      "bin/libggml-cuda.so.0.27.0",
+      "bin/libggml-base.so.0.27.0"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-O3",
+      "-DNDEBUG",
+      "-shared",
+      "-Wl,-soname,libggml.so.0",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run/libggml-registry-4d6a42acb184.so.0.27.0",
+      "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/registry.o",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/bin:",
+      "-ldl",
+      "bin/libggml-cpu.so.0.27.0",
+      "bin/libggml-cuda.so.0.27.0",
+      "bin/libggml-base.so.0.27.0",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/registry-goose.o",
+      "-Wl,-z,defs",
+      "-Wl,-Bsymbolic"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-native-probe-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-DFG165_TESTING",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-DGGML_BACKEND_SHARED",
+      "-DGGML_BUILD",
+      "-DGGML_SCHED_MAX_COPIES=4",
+      "-DGGML_SHARED",
+      "-DGGML_USE_CPU",
+      "-DGGML_USE_CUDA",
+      "-D_GNU_SOURCE",
+      "-D_XOPEN_SOURCE=600",
+      "-Dggml_EXPORTS",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include",
+      "-O3",
+      "-DNDEBUG",
+      "-std=gnu++17",
+      "-fPIC",
+      "-fvisibility=hidden",
+      "-Wmissing-declarations",
+      "-Wmissing-noreturn",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wcast-qual",
+      "-Wno-unused-function",
+      "-Wno-array-bounds",
+      "-Wextra-semi",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-native.o",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/probe-native.cpp"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-native-probe-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-shared",
+      "-Wl,-Bsymbolic",
+      "-Wl,-z,defs",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-native.o",
+      "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-Wl,--disable-new-dtags,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-lggml-base",
+      "-ldl"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-candidate-probe-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-DFG165_TESTING",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-DGGML_BACKEND_SHARED",
+      "-DGGML_BUILD",
+      "-DGGML_SCHED_MAX_COPIES=4",
+      "-DGGML_SHARED",
+      "-DGGML_USE_CPU",
+      "-DGGML_USE_CUDA",
+      "-D_GNU_SOURCE",
+      "-D_XOPEN_SOURCE=600",
+      "-Dggml_EXPORTS",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include",
+      "-O3",
+      "-DNDEBUG",
+      "-std=gnu++17",
+      "-fPIC",
+      "-fvisibility=hidden",
+      "-Wmissing-declarations",
+      "-Wmissing-noreturn",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wcast-qual",
+      "-Wno-unused-function",
+      "-Wno-array-bounds",
+      "-Wextra-semi",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-candidate.o",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/probe-candidate.cpp"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-candidate-probe-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-shared",
+      "-Wl,-Bsymbolic",
+      "-Wl,-z,defs",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-candidate.o",
+      "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/registry-goose.o",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-Wl,--disable-new-dtags,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-lggml-base",
+      "-ldl"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-zero",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=0",
+      "-DPLUGIN_NAME=\"zero\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/zero.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-low",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=3",
+      "-DPLUGIN_NAME=\"low\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/low.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-high",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=9",
+      "-DPLUGIN_NAME=\"high\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/high.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-negative",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=-1",
+      "-DPLUGIN_NAME=\"negative\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/negative.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-base",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=1",
+      "-DPLUGIN_NAME=\"base\"",
+      "-DPLUGIN_NO_SCORE",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/base.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-missing",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=8",
+      "-DPLUGIN_NAME=\"missing\"",
+      "-DPLUGIN_NO_INIT",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/missing.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-null",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=8",
+      "-DPLUGIN_NAME=\"null\"",
+      "-DPLUGIN_NULL",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/null.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-abi",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=8",
+      "-DPLUGIN_NAME=\"abi\"",
+      "-DPLUGIN_API=999",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/abi.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-fixture-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/fixture.cpp",
+      "-ldl",
+      "-lpthread",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-parity",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-rollback",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-threads",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins",
+      "threads"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-native-probe-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-DFG165_TESTING",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-DGGML_BACKEND_SHARED",
+      "-DGGML_BUILD",
+      "-DGGML_SCHED_MAX_COPIES=4",
+      "-DGGML_SHARED",
+      "-DGGML_USE_CPU",
+      "-DGGML_USE_CUDA",
+      "-D_GNU_SOURCE",
+      "-D_XOPEN_SOURCE=600",
+      "-Dggml_EXPORTS",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include",
+      "-O3",
+      "-DNDEBUG",
+      "-std=gnu++17",
+      "-fPIC",
+      "-fvisibility=hidden",
+      "-Wmissing-declarations",
+      "-Wmissing-noreturn",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wcast-qual",
+      "-Wno-unused-function",
+      "-Wno-array-bounds",
+      "-Wextra-semi",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-native.o",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/probe-native.cpp"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-native-probe-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-shared",
+      "-Wl,-Bsymbolic",
+      "-Wl,-z,defs",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-native.o",
+      "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-Wl,--disable-new-dtags,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-lggml-base",
+      "-ldl"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-candidate-probe-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-DFG165_TESTING",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-DGGML_BACKEND_SHARED",
+      "-DGGML_BUILD",
+      "-DGGML_SCHED_MAX_COPIES=4",
+      "-DGGML_SHARED",
+      "-DGGML_USE_CPU",
+      "-DGGML_USE_CUDA",
+      "-D_GNU_SOURCE",
+      "-D_XOPEN_SOURCE=600",
+      "-Dggml_EXPORTS",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include",
+      "-O3",
+      "-DNDEBUG",
+      "-std=gnu++17",
+      "-fPIC",
+      "-fvisibility=hidden",
+      "-Wmissing-declarations",
+      "-Wmissing-noreturn",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wcast-qual",
+      "-Wno-unused-function",
+      "-Wno-array-bounds",
+      "-Wextra-semi",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-candidate.o",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/probe-candidate.cpp"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-candidate-probe-link",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-shared",
+      "-Wl,-Bsymbolic",
+      "-Wl,-z,defs",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/probe-candidate.o",
+      "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/registry-goose.o",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-Wl,--disable-new-dtags,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
+      "-lggml-base",
+      "-ldl"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-zero",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=0",
+      "-DPLUGIN_NAME=\"zero\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/zero.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-low",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=3",
+      "-DPLUGIN_NAME=\"low\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/low.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-high",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=9",
+      "-DPLUGIN_NAME=\"high\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/high.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-negative",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=-1",
+      "-DPLUGIN_NAME=\"negative\"",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/negative.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-base",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=1",
+      "-DPLUGIN_NAME=\"base\"",
+      "-DPLUGIN_NO_SCORE",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/base.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-missing",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=8",
+      "-DPLUGIN_NAME=\"missing\"",
+      "-DPLUGIN_NO_INIT",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/missing.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-null",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=8",
+      "-DPLUGIN_NAME=\"null\"",
+      "-DPLUGIN_NULL",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/null.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "plugin-abi",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-shared",
+      "-fPIC",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "-DPLUGIN_SCORE=8",
+      "-DPLUGIN_NAME=\"abi\"",
+      "-DPLUGIN_API=999",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/plugin.cpp",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins/abi.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-fixture-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/fixture.cpp",
+      "-ldl",
+      "-lpthread",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-parity",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-rollback",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-threads",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/fixture",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-native.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/plugins",
+      "threads"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-fault-fixture-build",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-std=c++17",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-165-goose-registry-loader/source/faults.cpp",
+      "-ldl",
+      "-lpthread",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/faults"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  },
+  {
+    "label": "registry-bounds-OOM",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/faults",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build/libregistry-candidate.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/build",
+    "exit_code": 0
+  }
+]

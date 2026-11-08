@@ -1,0 +1,22 @@
+{
+  "status": "PASS_REGISTRY_LOADER_NATIVE_PARITY_ROLLBACK_THREADS",
+  "runs": [
+    {
+      "label": "parity",
+      "stdout": "PASS registry48 plugin8 best/fallback/load_all callback_events=345 checks=684 rollback=0\n",
+      "exit_code": 0
+    },
+    {
+      "label": "rollback",
+      "stdout": "PASS registry48 plugin8 best/fallback/load_all callback_events=345 checks=684 rollback=1\n",
+      "exit_code": 0
+    },
+    {
+      "label": "threads",
+      "stdout": "PASS threads=4 concurrent_registrations=128 checks=128\n",
+      "exit_code": 0
+    }
+  ],
+  "production_changed": false,
+  "failure_checks": "PASS rejection_cases=6 bounds/null/OOM=1 partial_owned_state_releasable=1 heaps_and_handles=0\n"
+}
