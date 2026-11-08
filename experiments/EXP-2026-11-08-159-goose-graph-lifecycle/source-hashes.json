@@ -1,0 +1,18 @@
+{
+  "source/faults.cpp": "f404bc44be151c006f2b3c95c1c6692b5570084affa85f22a7866ea2c5fdfba2",
+  "source/ggml-graph-lifecycle.c": "e52da0b0d9379aed0f39ee412322d44f8c16ea8f5b0f4f5109f13ad8f7ef71da",
+  "source/fixture.cpp": "f7cdd1606cc5be7214e94a2f5885f93c424014cb39562be86dac36c4e50e3b95",
+  "source/graph.h": "9156d89f82b61e1226dc6b90299806b4e042915f764d4efea9327986a1b4e5e2",
+  "source/graph.goose": "305f393e01ffbf87a6a941d7bdad8b8a2de105c1e7b4a4f3c0e6d9a4197da861",
+  "source/aliasing-fix.patch": "077252995e726a4b1f93252109c9373d8f4ce31fb7bcb99513151f3ff00d2ad9",
+  "source/concurrency.cpp": "44dec3cf8ea6c72524a1e11433619f6740c6c9f329387ff0d3e52ce042cc0441",
+  "source/test-exports.h": "52f050dbad58870a505886a0b91374f1f37d2f1be8e34ba40ecf983f3f024906",
+  "source/native-probe.c": "3263664610ada63ecdb8b606d7717d88bde802d8b2c46e7cc880a78a94c08c47",
+  "source/header-recipes.json": "55a12386fb47619848e1b0562f3fc6e59007ebeece3548b1c4ebe3d1608a4e34",
+  "source/graph-qualified.c": "288f1c51faa30e05acf416abd6d81781a72fe47b3d62d9ad12398c666ce45c0d",
+  "source/manifest.json": "7a5ae284f50171148170284ca4e495e941ca5bbeb127a80160017d29c3d445ff",
+  "source/recipes.json": "b3b38a8c6d7ffb3536e984f8dd2fb07a8bb0480914dcf899504136b994808708",
+  "source/graph-generated.c": "846766e47114569f4e2d4b7d20f31d828eafd37525fe593c87b7aecf4472b665",
+  "source/candidate-probe.c": "3aa97e7257fbffb664346aef3a078c94ae149a86acaaa8b0a35495dd265e7025",
+  "source/ggml-impl-graph.h": "0b1cf4d7988c1fb293975a996d7c7f9d82879c550d81e1ba9f08817c586ee579"
+}

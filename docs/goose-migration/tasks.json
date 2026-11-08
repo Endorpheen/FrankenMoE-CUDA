@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "date": "2026-11-07",
+  "date": "2026-11-08",
   "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
   "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
   "active_workstream": "APEX_COMMON",
-  "next_task": "P1-06",
+  "next_task": "P4-03",
   "execution_order": [
     "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",
     "QWEN_COMPATIBILITY: C1 and deferred shared MTP task; only after all APEX_COMMON tasks DONE",
@@ -1194,14 +1194,14 @@
       "id": "P4-03",
       "phase": "P4",
       "title": "Port GGML tensor/context/object/type core",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml.c",
         "ggml/include/ggml.h",
         "ggml/src/ggml.cpp"
       ],
       "acceptance": "All public tensor/context constructors,shape/stride/view/alias invariants,type/operation tables and errors handled by Goose; ABI preserved.",
-      "evidence": "",
+      "evidence": "EXP155..158 transfer shared geometry,tensor/arena/view constructors,context lifecycle/type registries/core metadata and65common graph-builder/settings bodies. Independent native/rollback/canary/failure corpora and exact real Apex text/all128IDs/full probabilities pass. Remaining public core/fusion/parameter helpers and source closure stay open. See experiments/EXP-2026-11-08-155..158 documentation.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1212,13 +1212,13 @@
       "id": "P4-04",
       "phase": "P4",
       "title": "Port graph construction,hashing,traversal and differentiation",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml.c",
         "ggml/src/ggml-opt.cpp"
       ],
       "acceptance": "All graph expansion/copy/export/gradient/optimizer entrypoints mapped; cycles,shared views,empty graphs and malformed dimensions tested.",
-      "evidence": "",
+      "evidence": "EXP159 transfers core hash/bitset policy,checked graph layout,iterative forward traversal/order/select,copy/dup/borrowed views/clear and lookups.93393candidate/92907rollback checks,12000depth,9error cleanup and256threaded independent graph lifecycles pass. Final Apex2635.438/27.865,exact text/all128IDs/full probabilities,127graph reuses,Goose witness and0graph heaps. Final C bridge uses memcpy after pre-commit aliasing correction. Other-TU inlines,core fusion,training/autodiff/optimizer/export and final source closure remain unclosed.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -3072,6 +3072,10 @@
     {
       "checkpoint": "EXP150 common expert policy and CPU registry",
       "event": "Close P2-14 functional CPU registry/device/buffer contract and expand P1-10 with SLRU/cache grouping/budget and shared expert scratch.30296new cache/budget cases,210registry policy and5compiled HBM-stub API cases;corrected actual326/66/960/174GGML corpus,rollback,scoped sanitizers and one exact128token/top5Apex. Model2656.285pp/28.079tg,RSS21312.090/VRAM3348MiB;single sample,stable C++ parity unproven.14/160DONE,146left,8.75percent;stage1/13has2/5done,0fullstages. Group unchanged13stages into3large delivery cycles (45/54/49requirements at regroup),allow fourth only for real dependencies;cycle1has2/45closed. No false cache/HBM model-execution,hardware,speed or full-expert closure. Final typed fill-ABI correction checked locally;recorded earlier model keeps its original llama hash. Planned extra model request not launched;next exact whole-candidate model gate deferred to large-cycle end per owner."
+    },
+    {
+      "checkpoint": "EXP159 solo inference graph/hash/traversal/lifecycle after verified EXP155..158",
+      "event": "EXP159 transfers core hash/bitset policy,checked graph layout,iterative forward traversal/order/select,copy/dup/borrowed views/clear and lookups.93393candidate/92907rollback checks,12000depth,9error cleanup and256threaded independent graph lifecycles pass. Final Apex2635.438/27.865,exact text/all128IDs/full probabilities,127graph reuses,Goose witness and0graph heaps. Final C bridge uses memcpy after pre-commit aliasing correction. Other-TU inlines,core fusion,training/autodiff/optimizer/export and final source closure remain unclosed.No whole requirement newly DONE;production unchanged,no helper agents."
     }
   ],
   "batches": [
@@ -3902,5 +3906,13 @@
       }
     ],
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
+  },
+  "active_checkpoint": {
+    "experiment": "EXP159",
+    "branch": "codex/apex-exp150-restored-20261108",
+    "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
+    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp159/run",
+    "solo": true,
+    "production_changed": false
   }
 }

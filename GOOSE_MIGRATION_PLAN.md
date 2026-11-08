@@ -1,10 +1,10 @@
 # FrankenMoE -> Fried Goose: complete migration plan
 
-Updated: 2026-11-07. Source/experiment checkpoint: `fe9d550cca21d5d64244b1f7f85f92681f84f479`.
+Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified solo EXP155..159;current checkpoint recorded in Git and runtime/active.json.
 
 **One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**
 
-**Functional tasks: 160 total; 14 DONE; 4 PARTIAL; 12 IN_PROGRESS; 0 BLOCKED; 130 TODO. Remaining: 146.**
+**Functional tasks: 160 total; 14 DONE; 4 PARTIAL; 14 IN_PROGRESS; 0 BLOCKED; 128 TODO. Remaining: 146.**
 
 **Current Apex/common milestone: 136 tasks; 12 DONE; 124 remaining (including 4 partial).**
 
@@ -64,15 +64,15 @@ Target3large delivery cycles,with a fourth only for a real dependency. Internal 
 
 ## Active isolated candidate
 
-- experiment: `EXP158`,solo continuation from restored measured EXP150,then EXP155/156/157.
+- experiment: `EXP159`,solo continuation from restored measured EXP150,then EXP155/156/157/158.
 - root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108`
 - branch: `codex/apex-exp150-restored-20261108`
-- source: `experiments/EXP-2026-11-08-158-goose-graph-builders/source`
-- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/run`
-- status:65native graph-builder/settings bodies route to actual Goose;independent constructor/alias/error and real Apex gates pass. Full P4-03/Apex/native-source closure remains open. No production promotion or stable C++ speed-parity claim.
-- next_batch:Graph/hash/traversal/lifecycle APIs and remaining model-used operation parameter helpers/source closure. After each significant change,scoped tests and one fixed Apex32K/128 gate;regression follow-up only for an observed concern.
-- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp157/run`
-- rollback: `GGML_GOOSE_GRAPH_BUILDERS=0` or previous immutable runtime. EXP153 stays quarantined;no auxiliary agents.
+- source: `experiments/EXP-2026-11-08-159-goose-graph-lifecycle/source`
+- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp159/run`
+- status:Core hash/iterative traversal/graph lifecycle now actual Goose;independent native/rollback/deep/failure/thread checks and exact Apex pass. Corrected pointer storage bridge before acceptance. P4-03/P4-04 and full Apex/native-source closure remain open.
+- next_batch:Core fusion predicates and remaining model-used operation parameter helpers/source closure,then allocator/scheduler/backend/model/runtime scope. Per significant change:scoped correctness and one fixed Apex32K/128 gate;retest only after a concrete fix/observed concern.
+- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp158/run`
+- rollback: `GGML_GOOSE_GRAPH_LIFECYCLE=0` or previous immutable runtime. EXP153 remains quarantined;solo,no production promotion.
 
 ## Authoritative execution policy
 
@@ -270,7 +270,7 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 |P4-01 / **DONE**|Port allocation reuse/free-list/coalescing policy|ggml/src/ggml-alloc.c; source/allocator-reuse/**; source/allocator-coalesce/**|Bounded selected metadata policy exactly matches reference and executes in real inference. Evidence: EXP136 native service boundary retained; this does NOT mean physical allocator complete|
 |P4-02 / **DONE**|Port tensor dependency/view lifetime and allocation-graph policy|ggml/src/ggml-alloc.c; source/tensor-lifetime/**; source/graph-plan/**|Selected dependency/view/refcount/release traversal state transitions exact and real inference witness. Evidence: EXP136 graph/lifetime evidence; full tensor ownership/scheduler still native|
 |P4-03 / **IN_PROGRESS**|Port GGML tensor/context/object/type core|ggml/src/ggml.c; ggml/include/ggml.h; ggml/src/ggml.cpp|All public tensor/context constructors,shape/stride/view/alias invariants,type/operation tables and errors handled by Goose; ABI preserved. Evidence:EXP155 geometry and EXP156 arena/tensor/view/reshape/permute/traversal execute actual Goose. Independent native/rollback35-format corpus,canaries,cross-context borrowed payloads and failure transactions pass. Fixed Apex2639.870/27.247,exact text/all128IDs/all saved top5,127graph reuses. EXP157 adds actual Goose context init/reset/free,owned/borrowed allocation/error policy,active type/op/status registries and core flags/names/accessors.4500native/rollback checks,256threaded context cycles,allocation failure cleanup and inherited429444constructor checks pass. One Apex2638.849/27.574,exact text/all128IDs/all saved probabilities,127graph reuses;live context heaps0. EXP158 transfers65common arithmetic/MoE/attention/recurrent graph-builder/settings bodies with10408independent checks/all36modes,rollback and exact real Apex. Sequential EXP157->EXP158 follow-up gives2612.899/27.668->2634.815/28.055;initial candidate2639.982/26.596retained. Remaining graph/hash/traversal/lifecycle,additional parameter helpers and source closure stay open.|
-|P4-04 / **TODO**|Port graph construction,hashing,traversal and differentiation|ggml/src/ggml.c; ggml/src/ggml-opt.cpp|All graph expansion/copy/export/gradient/optimizer entrypoints mapped; cycles,shared views,empty graphs and malformed dimensions tested.|
+|P4-04 / **IN_PROGRESS**|Port graph construction,hashing,traversal and differentiation|ggml/src/ggml.c; ggml/src/ggml-opt.cpp|All graph expansion/copy/export/gradient/optimizer entrypoints mapped; cycles,shared views,empty graphs and malformed dimensions tested. Evidence:EXP159 transfers core hash/bitset policy,checked graph layout,iterative forward traversal/order/select,copy/dup/borrowed views/clear and lookups.93393candidate/92907rollback checks,12000depth,9error cleanup and256threaded independent graph lifecycles pass. Final Apex2635.438/27.865,exact text/all128IDs/full probabilities,127graph reuses,Goose witness and0graph heaps. Final C bridge uses memcpy after pre-commit aliasing correction. Other-TU inlines,core fusion,training/autodiff/optimizer/export and final source closure remain unclosed.|
 |P4-05 / **TODO**|Port full tensor allocator and physical buffer ownership|ggml/src/ggml-alloc.c|Goose owns tallocr/dyn_tallocr/free blocks/chunks and object lifecycle; only malloc/mmap/device alloc primitives imported; failure/overflow/double-free guards.|
 |P4-06 / **TODO**|Port graph allocator reservation,reuse and realloc|ggml/src/ggml-alloc.c|Goose owns gallocr reservation,multi-buffer planning,views,inplace reuse and growth; native allocation state unavailable in candidate; exact event/order corpus.|
 |P4-07 / **TODO**|Port backend buffer,device,event and copy abstraction|ggml/src/ggml-backend.cpp; ggml/src/ggml-backend-impl.h|Every backend public/vtable lifecycle,view,multi-buffer,async copy/event/sync contract implemented; typed ownership explicit.|
@@ -549,3 +549,8 @@ Goose owns context creation/reset/free,owned/borrowed Linux allocation/error cle
 ### EXP158: solo common graph-operation construction (2026-11-08)
 
 65native bodies route to36Goose policies for common arithmetic/unary/norm/GLU,MoE/matrix,reduction/repeat/concat,row routing,copy/cast/layout,softmax,RoPE,Flash Attention,SSM-conv/gated-delta,sorting/tri/acc/set and precision/sink metadata. Actual result shapes/validation/params/edges owned by Goose;only typed effects and accepted Goose geometry/constructors imported.10408independent checks/558paired nodes/all36modes plus rollback,8native error pairs and inherited429444/4500gates pass. First Apex2639.982/26.596was3.55percent below the previous decode sample;one justified sequential EXP157->EXP158 follow-up without edits gives2612.899/27.668->2634.815/28.055. All3responses exactly match original text/all128IDs/all saved probabilities and127graph reuses;new Goose mask0x83f3e5f1b,live context heaps0. Initial decrease did not reproduce;no stable acceleration/fresh-C++ parity claim. See `experiments/EXP-2026-11-08-158-goose-graph-builders/`. P4-03 stays IN_PROGRESS,no full requirement newly DONE. Graph/hash/traversal/lifecycle and residual operation helpers remain;full numerical/runtime scope is unchanged. Solo,production/compiler untouched.
+
+
+### EXP159: solo hash,iterative traversal and graph lifecycle (2026-11-08)
+
+22core bodies/9core-header helpers route to31Goose policies for hash/bitset,checked graph layout,forward order/select,copy/rehash/dup/view/clear and metadata access. Explicit iterative DFS preserves native ordering,compute upgrades,shared/self-referencing nodes and use counts without recursive generated-C stack growth.93393candidate/92907rollback checks,12000depth,9error cleanup cases and256independent threaded graph lifecycles pass. Pre-commit C bridge aliasing risk corrected using memcpy;final corpus and model rerun on corrected artifact. Final Apex2635.438/27.865,exact text/all128IDs/full probabilities,127graph reuses,Goose mask0x50dc22e and0graph/context heaps. +0.024%/-0.678% vs latest EXP158;small uncontrolled variation,no stable acceleration/fresh-C++ parity claim. Two model requests total:early pre-fix diagnostic and final gate after the concrete fix,both retained. See `experiments/EXP-2026-11-08-159-goose-graph-lifecycle/`. Synchronize tasks.json P4-03 with verified EXP155..158 and move P4-04 toIN_PROGRESS;no new full requirement DONE. Other-TU inlines,fusion,autodiff/training/export and remaining runtime scope stay open. Production/compiler untouched,no agents.

@@ -1,0 +1,10 @@
+{
+  "status": "PASS_INFERENCE_GRAPH_HASH_TRAVERSAL_LIFECYCLE",
+  "goose": "PASS independent graph lifecycle pairs=192 hash_insertions=387 checks=93393 depth=12000 Goose_modes=0x7fffffff live_graph_heaps=0\n",
+  "rollback": "PASS independent graph lifecycle pairs=180 hash_insertions=387 checks=92907 depth=12000 Goose_modes=0x0 live_graph_heaps=0\n",
+  "model_runs": 0,
+  "production_changed": false,
+  "test_probe_scope": "Wrappers expose unchanged EXP158 private algorithms only in a separate oracle DSO;candidate probe delegates actual production Goose algorithms;no test exports in production image",
+  "failure_cleanup": "PASS graph allocation/error cleanup cases=9 hash_oom=2 scratch_oom=1 capacity_index_slice_cycle_size_full_hash=6 live_graph_heaps=0\n",
+  "concurrent_graphs": "PASS concurrent independent inference graphs threads=8 cycles=256 expand_clear_reuse=512 live_graph_heaps=0\n"
+}

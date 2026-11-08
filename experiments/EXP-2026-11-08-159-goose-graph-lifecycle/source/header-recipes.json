@@ -1,0 +1,83 @@
+{
+  "ggml_bitset_size": [
+    4,
+    [
+      "n",
+      "0",
+      "0"
+    ],
+    "size_t"
+  ],
+  "ggml_bitset_get": [
+    5,
+    [
+      "bitset",
+      "i",
+      "0"
+    ],
+    "bool"
+  ],
+  "ggml_bitset_set": [
+    6,
+    [
+      "bitset",
+      "i",
+      "0"
+    ],
+    "void"
+  ],
+  "ggml_bitset_clear": [
+    7,
+    [
+      "bitset",
+      "i",
+      "0"
+    ],
+    "void"
+  ],
+  "ggml_hash": [
+    8,
+    [
+      "p",
+      "0",
+      "0"
+    ],
+    "size_t"
+  ],
+  "ggml_hash_find": [
+    9,
+    [
+      "hash_set",
+      "key",
+      "0"
+    ],
+    "size_t"
+  ],
+  "ggml_hash_contains": [
+    10,
+    [
+      "hash_set",
+      "key",
+      "0"
+    ],
+    "bool"
+  ],
+  "ggml_hash_insert": [
+    11,
+    [
+      "hash_set",
+      "key",
+      "0"
+    ],
+    "size_t"
+  ],
+  "ggml_hash_find_or_insert": [
+    12,
+    [
+      "hash_set",
+      "key",
+      "0"
+    ],
+    "size_t"
+  ]
+}
