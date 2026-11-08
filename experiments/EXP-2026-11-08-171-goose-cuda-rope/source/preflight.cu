@@ -1,0 +1,12 @@
+#include "rope.cuh"
+#include <sys/wait.h>
+#include <unistd.h>
+#include <cstring>
+#include <cstdio>
+static ggml_backend_cuda_context*active;
+static void reject(const char*){_exit(active->streams[0][0]==nullptr?81:82);}
+static void shape(ggml_tensor&t,ggml_type type,int64_t a,int64_t b,int64_t c,uint64_t data){memset(&t,0,sizeof t);t.type=type;t.ne[0]=a;t.ne[1]=b;t.ne[2]=c;t.ne[3]=1;size_t es=ggml_type_size(type);t.nb[0]=es;t.nb[1]=a*es;t.nb[2]=a*b*es;t.nb[3]=a*b*c*es;t.data=(void*)(uintptr_t)data;}
+static void fl(ggml_tensor&t,int i,float f){memcpy(t.op_params+i,&f,4);}
+int main(){for(int test=0;test<30;test++){pid_t pid=fork();if(pid<0)return 2;if(pid==0){ggml_backend_cuda_context ctx(0);active=&ctx;ggml_set_abort_callback(reject);ggml_tensor x,d,pos,ff;shape(x,GGML_TYPE_F32,256,2,3,0x1000000);shape(d,GGML_TYPE_F32,256,2,3,0x2000000);shape(pos,GGML_TYPE_I32,12,1,1,0x3000000);shape(ff,GGML_TYPE_F32,32,1,1,0x4000000);d.src[0]=&x;d.src[1]=&pos;d.op_params[1]=64;d.op_params[2]=40;d.op_params[4]=40960;d.op_params[11]=11;d.op_params[12]=11;d.op_params[13]=10;fl(d,5,1e7f);fl(d,6,1);fl(d,7,0);fl(d,8,1);fl(d,9,32);fl(d,10,1);ggml_tensor*dst=&d;switch(test){
+case 0:dst=nullptr;break;case 1:d.src[0]=nullptr;break;case 2:d.src[1]=nullptr;break;case 3:d.type=GGML_TYPE_I32;break;case 4:x.type=GGML_TYPE_I32;break;case 5:x.nb[0]=8;break;case 6:d.nb[0]=8;break;case 7:x.data=nullptr;break;case 8:d.data=nullptr;break;case 9:pos.data=nullptr;break;case 10:pos.type=GGML_TYPE_F32;break;case 11:pos.ne[0]=11;break;case 12:d.op_params[1]=0;break;case 13:d.op_params[1]=63;break;case 14:d.op_params[15]=1;break;case 15:d.op_params[15]=200;break;case 16:d.op_params[11]=d.op_params[12]=d.op_params[13]=0;break;case 17:d.op_params[11]=-1;break;case 18:fl(d,5,0);break;case 19:fl(d,6,0);break;case 20:fl(d,9,0);break;case 21:d.src[2]=&ff;ff.data=nullptr;break;case 22:d.src[2]=&ff;ff.ne[0]=31;break;case 23:x.data=(void*)(uintptr_t)(UINT64_MAX-16);break;case 24:d.data=(char*)x.data+4;break;case 25:d.data=pos.data;break;case 26:d.data=x.data;d.nb[1]+=4;break;case 27:d.nb[1]=4;break;case 28:d.ne[0]=255;break;case 29:x.nb[1]=(size_t)INT64_MAX;break;
+}ggml_cuda_op_rope(ctx,dst);_exit(86);}int st=0;if(waitpid(pid,&st,0)!=pid||!WIFEXITED(st)||WEXITSTATUS(st)!=81){fprintf(stderr,"FAIL RoPE preflight case=%d status=%d\n",test,st);return 3;}}puts("PASS RoPE preflight_cases=30 no_stream_or_kernel_before_rejection=1");}

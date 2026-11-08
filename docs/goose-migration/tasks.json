@@ -4,7 +4,7 @@
   "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
   "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
   "active_workstream": "APEX_COMMON",
-  "next_task": "P3-05",
+  "next_task": "P3-13",
   "execution_order": [
     "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",
     "QWEN_COMPATIBILITY: C1 and deferred shared MTP task; only after all APEX_COMMON tasks DONE",
@@ -870,7 +870,7 @@
       "id": "P3-06",
       "phase": "P3",
       "title": "Port CUDA softmax,RoPE,masks and position encodings",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/softmax*",
         "ggml/src/ggml-cuda/rope*",
@@ -879,7 +879,7 @@
         "ggml/src/ggml-cuda/arange*"
       ],
       "acceptance": "All position/mask/scaling/attention-shape variants differential; valid finite tolerance fixed before candidate test.",
-      "evidence": "",
+      "evidence": "EXP171 normal/NeoX/MRoPE/IMRoPE forward/back numerical/host logic in full self-hosted Goose.68GPU/native-bitwise/rollback cases,14464independent identity/sincos pairs,YaRN/F16/offset/strided/inplace/partial coverage,1capture per mode and30before-stream failures pass. One actual Apex2638.584/28.026,exact text/all128IDs/full probabilities,127graph reuses,FG171R host1/modes8/variants50/status0,zero owned heaps. Source pointer/YaRN bound/test indexing bugs corrected before acceptance. Vision/set-rows/RMS fusion still native;softmax/masks/position/native-removal scope remains;not full requirement DONE.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,

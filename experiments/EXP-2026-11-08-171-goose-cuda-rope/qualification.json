@@ -1,0 +1,48 @@
+{
+  "status": "PASS_SCOPED_GPU_NATIVE_REFERENCE_ROLLBACK_PREFLIGHT_REAL_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "device": "fg171rd_gg_function_1",
+    "host": "fg171rh_gg_function_1"
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp171/run/libggml-cuda-rope-4ff60bd7bea9.so.0.27.0",
+  "sha256": "ac247dfc4c3c58cbf4ebd40a2b7de19cad910e040999949ad4ebe0931e6aa8b5",
+  "previous_library_sha256": "02bd6343887edb8049c20700cd81b43dfbe9bbdd26b49200e47af650101df2a3",
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/rope.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_ROPE=0 or immutable EXP170",
+  "explicit_native_remaining": "Vision,set-rows fusion,RMS+mul+rope fusion not ported;not used/claimed as Goose here",
+  "production_changed": false,
+  "producer": "Full self-hosted Stage3 f849233b999c;latest completed full producer;EXP302 parser observer is not a replacement producer",
+  "local_results": "local-results.json",
+  "apex_summary": "apex-summary.json",
+  "source_sha256": {
+    "cuda-bridge.cuh": "ed3bb4431551d1e6a441ae18ae9e099c01021ae6a2fcb792e11d1dc205b092fa",
+    "cuda-rope.cu": "f3c8c78911864fd07b669b62f82381c02c2c085f60183c975bf9fd5c7dc94b64",
+    "device-generated.c": "55cc493971babbdbfe85b3ad23245de1d9f49e128f13def1a77eb68e71d02112",
+    "device-generated.cuh": "acecebff91bd94d53578d50ab0d5cd2e20aca708a6396f2d1ef6ac1ba9a9e520",
+    "device.goose": "f53c4fa7cd75b9f9d2e1cee6fb5b694f16909b892922a1ce47efaaab4f035230",
+    "fixture.cu": "125778c8a054998b4ae5d80682a8f3b9802623de5800817b9d2ae608d53c3da2",
+    "host-ffi.h": "309bc11eacb33078eacdbee6c53e6e51ceaea3fbdaa100e64ad2d423a740055d",
+    "host-generated.c": "7b6675b43e90a2f68f3d1b1dccf80b659df6ac8dea69abc1a0fd2f98c5cd4650",
+    "host-qualified.c": "af3b631e78a14994b91292a4981aef9c3ff748fd35fccbcd7e8da632e861d160",
+    "host-unit.c": "1ff00e0cd9430698fa04a3c9e1423cc79405cae0a829299d04a3b0161f12886b",
+    "host.goose": "1687f6ef14eaedb777063985a5e7dc29fba0742870597c93f6ae9b893450bb84",
+    "manifest.json": "6f2fc293b07cb2a1061c166889242c7a1e2b1e8b3682005ead9d600bdf3b1c17",
+    "native-prefixed.cuh": "c6d9b35a6915043c3379c069f34a771c4f2de62424898fb7b1e47c530041cb9c",
+    "native-rope.cu": "cfd572d0aab0789f77613bc82978e4f3b82d102c5a97042e7439e1a02d1f7a0e",
+    "native-rope.cuh": "182542526249adc83170a534a427730aeeae54d4c863af7d7a6698a762ccdaa7",
+    "plan.h": "1351a7d8b938439e05ce0c8b47381ae3d1695b0d8fc70cc0529456eb4d4df47d",
+    "preflight.cu": "be295fce4366ad4a090426f412a5e8c19d380c46e559d98f1662aa1d288df7de",
+    "projection.cuh": "b1341f0799a307dfb6b5d1889218b12fe631b1462ff5c1c0a65ff94ff37413b4",
+    "visibility.map": "4d713b28b584ed79c5fb6b7fd9d2a3f42c407bc58c4914f6ac60c4964d918210",
+    "worker-cases.json": "4d6db2e470dbaa03379941a23f9b963812f7be69e8a596d54d872178abf89347",
+    "worker-contract.json": "abc281a941bef332cda4801de63822f4abc8a252d074068c275ece1f7609a143",
+    "worker-device.goose": "6efe27406d96ebab284727152c4c0007f7c41d45841d04540a7af4cd08448df4",
+    "worker-fixture.cu": "452cbb79758036df5c91e109807dca38a6367af974a26d5067d73ceffcb941bc",
+    "worker-policy.goose": "a089082a61459fb10a10f4e57f80dabe4d2d54ae0cdd1b547b823970ce905bc1"
+  },
+  "external_scalar_primitives": "CUDA sinf/cosf/logf/powf,F16 conversion,load/store,PDL/launch;host libm logf/powf/floorf/ceilf. Rotation,indexing/positions,YaRN bounds/mixing and host validation are Goose.",
+  "safety_scope": "Checked tensor-declared spans/wrap/alias and nonoverlapping output coordinates;not provenance checking arbitrary forged GPU pointers or a whole-runtime sanitizer audit."
+}
