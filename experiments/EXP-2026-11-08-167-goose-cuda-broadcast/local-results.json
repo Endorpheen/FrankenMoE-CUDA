@@ -1,0 +1,24 @@
+{
+  "status": "PASS_GPU_BROADCAST_NATIVE_TYPED_REFERENCE_ROLLBACK",
+  "runs": [
+    {
+      "label": "gpu-parity",
+      "exit_code": 0,
+      "stdout": "PASS cases=1692 native_exact=1080 corrected_typed=396 padded_native_defects=216 values=34282156 checks=111498 all8host/all3device_paths=1 rollback=0\n"
+    },
+    {
+      "label": "gpu-rollback",
+      "exit_code": 0,
+      "stdout": "PASS cases=1074 native_exact=1074 corrected_typed=0 padded_native_defects=0 values=34093984 checks=71106 all8host/all3device_paths=1 rollback=1\n"
+    },
+    {
+      "label": "native-mixed-type-rejection",
+      "exit_code": 81,
+      "expected_exit_code": 81,
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\n"
+    }
+  ],
+  "production_changed": false,
+  "fastdiv": "PASS real_GPU_uint32_division cases=1792 host_magic_exact=1 goose_exact=1 reproduced_native_overflow_or_shift_mismatches=245\n",
+  "preflight": "PASS broadcast preflight_cases=12 no_stream_or_kernel_effect_before_rejection=1\n"
+}

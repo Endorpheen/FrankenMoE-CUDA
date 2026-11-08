@@ -1,0 +1,5 @@
+{
+  "entry": "fg167d_gg_function_1",
+  "functions": 5,
+  "transformation": "Select emitted scalar functions and checked divide/modulo helpers;qualify names and add CUDA device/forceinline. Map terminal fatal effect to trap;no emitted arithmetic edits."
+}

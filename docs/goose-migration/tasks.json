@@ -791,7 +791,7 @@
         "ggml/src/ggml-cuda/mma.cuh"
       ],
       "acceptance": "Goose-owned device math/conversion/warp/block helpers; generated device code provenance; rounding,half,bfloat,warp boundaries checked.",
-      "evidence": "EXP166 transfers40CUDA activation/GLU/scale/clamp public paths,including device arithmetic/indexing and host validation/pointer/launch planning,to self-hosted Goose.896real GPU cases/1059072values/58252checks and native rollback are bit-exact across types/strides/packed-swapped/fused/inplace/specials;8host rejection cases stop before stream/kernel effects. xIELU1ULP from opposite NVCC FMA contraction fixed in Goose before model;device exit witness moved before CUDA teardown. Initial Apex2642.061/26.286was4.06percent below saved EXP165 decode;one unchanged sequential EXP1652638.737/26.943->EXP1662631.509/27.171pair did not reproduce the drop. All3responses exact text/all128IDs/full probabilities/127graph reuses. Actual host/device witness,cuda_status0;only superseded SiLU/scale preloads removed,RMS retained. Stable speed parity unproven;other CUDA/inline/provider/model/KV/source scope remains. Only scalar math/storage/PDL primitive boundary addressed;other reductions/conversions/MMA and warp/block scope stays open.",
+      "evidence": "EXP166 transfers40CUDA activation/GLU/scale/clamp public paths,including device arithmetic/indexing and host validation/pointer/launch planning,to self-hosted Goose.896real GPU cases/1059072values/58252checks and native rollback are bit-exact across types/strides/packed-swapped/fused/inplace/specials;8host rejection cases stop before stream/kernel effects. xIELU1ULP from opposite NVCC FMA contraction fixed in Goose before model;device exit witness moved before CUDA teardown. Initial Apex2642.061/26.286was4.06percent below saved EXP165 decode;one unchanged sequential EXP1652638.737/26.943->EXP1662631.509/27.171pair did not reproduce the drop. All3responses exact text/all128IDs/full probabilities/127graph reuses. Actual host/device witness,cuda_status0;only superseded SiLU/scale preloads removed,RMS retained. Stable speed parity unproven;other CUDA/inline/provider/model/KV/source scope remains. Only scalar math/storage/PDL primitive boundary addressed;other reductions/conversions/MMA and warp/block scope stays open. EXP167 transfers the whole active CUDA binbcast module:add/sub/mul/div/repeat/repeat-back,fused add/mul2..8,host collapse/type/stride/grid planning,Goose fast-div metadata and real device arithmetic/indexing.1692GPUcases/34282156values/111498checks include1080native-exact,396repaired-type and216padded-native-defect cases;1074native-compatible rollback cases pass. Independent typed GPU reference confirms corrected F16 pointer selection/padded destinations.1792full-uint32fast-div cases match CPU division and native host coefficients;245native overflow/shift discrepancies repaired.12host preflight cases reject before stream/kernel effects. One Apex2635.581prefill/26.567decode,RSS21328.164MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,actual add/mul/fused-add device witness,cuda_status0. Decode-2.223percent single uncontrolled sample vs latest EXP166 retained;stable speed parity unproven. Other CUDA/provider/model/KV/source scope remains. Full warp/block/MMA/conversion scope still open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -823,7 +823,7 @@
       "id": "P3-04",
       "phase": "P3",
       "title": "Port CUDA binary,broadcast and activation families",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/binbcast*",
         "ggml/src/ggml-cuda/unary*",
@@ -834,7 +834,7 @@
         "ggml/src/ggml-cuda/add-id*"
       ],
       "acceptance": "Complete registered binary/unary/GLU type/mode matrix; all actual kernels generated from Goose, no original arithmetic callback.",
-      "evidence": "",
+      "evidence": "EXP166 activation/GLU/scale/clamp device+host family qualified;EXP167 transfers the whole active CUDA binbcast module:add/sub/mul/div/repeat/repeat-back,fused add/mul2..8,host collapse/type/stride/grid planning,Goose fast-div metadata and real device arithmetic/indexing.1692GPUcases/34282156values/111498checks include1080native-exact,396repaired-type and216padded-native-defect cases;1074native-compatible rollback cases pass. Independent typed GPU reference confirms corrected F16 pointer selection/padded destinations.1792full-uint32fast-div cases match CPU division and native host coefficients;245native overflow/shift discrepancies repaired.12host preflight cases reject before stream/kernel effects. One Apex2635.581prefill/26.567decode,RSS21328.164MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,actual add/mul/fused-add device witness,cuda_status0. Decode-2.223percent single uncontrolled sample vs latest EXP166 retained;stable speed parity unproven. Other CUDA/provider/model/KV/source scope remains. Snake/softcap/acc/add-id/inline residual families remain,not silently removed.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3105,6 +3105,10 @@
     {
       "checkpoint": "EXP166 CUDA activation execution",
       "event": "EXP166 transfers40CUDA activation/GLU/scale/clamp public paths,including device arithmetic/indexing and host validation/pointer/launch planning,to self-hosted Goose.896real GPU cases/1059072values/58252checks and native rollback are bit-exact across types/strides/packed-swapped/fused/inplace/specials;8host rejection cases stop before stream/kernel effects. xIELU1ULP from opposite NVCC FMA contraction fixed in Goose before model;device exit witness moved before CUDA teardown. Initial Apex2642.061/26.286was4.06percent below saved EXP165 decode;one unchanged sequential EXP1652638.737/26.943->EXP1662631.509/27.171pair did not reproduce the drop. All3responses exact text/all128IDs/full probabilities/127graph reuses. Actual host/device witness,cuda_status0;only superseded SiLU/scale preloads removed,RMS retained. Stable speed parity unproven;other CUDA/inline/provider/model/KV/source scope remains. No full universal requirement/campaign/cycle falsely closed."
+    },
+    {
+      "checkpoint": "EXP167 full active CUDA broadcast/repeat",
+      "event": "EXP167 transfers the whole active CUDA binbcast module:add/sub/mul/div/repeat/repeat-back,fused add/mul2..8,host collapse/type/stride/grid planning,Goose fast-div metadata and real device arithmetic/indexing.1692GPUcases/34282156values/111498checks include1080native-exact,396repaired-type and216padded-native-defect cases;1074native-compatible rollback cases pass. Independent typed GPU reference confirms corrected F16 pointer selection/padded destinations.1792full-uint32fast-div cases match CPU division and native host coefficients;245native overflow/shift discrepancies repaired.12host preflight cases reject before stream/kernel effects. One Apex2635.581prefill/26.567decode,RSS21328.164MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,actual add/mul/fused-add device witness,cuda_status0. Decode-2.223percent single uncontrolled sample vs latest EXP166 retained;stable speed parity unproven. Other CUDA/provider/model/KV/source scope remains. P3-04 stays IN_PROGRESS for retained broader registered-family scope;no full campaign/cycle falsely closed."
     }
   ],
   "batches": [
@@ -3379,13 +3383,13 @@
     "unverified_completion_forbidden": true
   },
   "active_candidate": {
-    "experiment": "EXP166",
+    "experiment": "EXP167",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-166-goose-cuda-activations/source",
-    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run",
-    "status": "PASS_GPU_NATIVE_AND_REAL_APEX_ACTIVATIONS;full Apex incomplete",
-    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run",
-    "next_batch": "Actual Apex CUDA binary/broadcast,normalization/row routing and reduction modules;then matrix/attention/recurrent and model/KV residuals"
+    "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-167-goose-cuda-broadcast/source",
+    "run": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp167/run",
+    "status": "PASS_GPU_NATIVE_TYPED_REFERENCE_AND_REAL_APEX_BROADCAST;full Apex incomplete",
+    "previous_runtime_root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run",
+    "next_batch": "Actual Apex normalization,row routing/reductions,then matrix/attention/recurrent and model/KV residuals"
   },
   "batch_execution_policy": {
     "preferred_requirements_per_batch": [
@@ -3937,10 +3941,10 @@
     "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
   },
   "active_checkpoint": {
-    "experiment": "EXP166",
+    "experiment": "EXP167",
     "branch": "codex/apex-exp150-restored-20261108",
     "root": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108",
-    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run",
+    "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp167/run",
     "solo": true,
     "production_changed": false
   }
