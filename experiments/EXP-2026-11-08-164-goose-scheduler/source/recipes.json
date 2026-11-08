@@ -1,0 +1,300 @@
+{
+  "ggml_backend_sched_new": {
+    "mode": 0,
+    "args": [
+      "backends",
+      "bufts",
+      "n_backends",
+      "graph_size",
+      "parallel",
+      "op_offload"
+    ],
+    "kind": "ggml_backend_sched_t"
+  },
+  "ggml_backend_sched_free": {
+    "mode": 1,
+    "args": [
+      "sched"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_reset": {
+    "mode": 2,
+    "args": [
+      "sched"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_reserve_size": {
+    "mode": 3,
+    "args": [
+      "sched",
+      "measure_graph",
+      "sizes"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_reserve": {
+    "mode": 4,
+    "args": [
+      "sched",
+      "measure_graph"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_sched_alloc_graph": {
+    "mode": 5,
+    "args": [
+      "sched",
+      "graph"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_sched_graph_compute": {
+    "mode": 6,
+    "args": [
+      "sched",
+      "graph"
+    ],
+    "kind": "enum ggml_status"
+  },
+  "ggml_backend_sched_graph_compute_async": {
+    "mode": 7,
+    "args": [
+      "sched",
+      "graph"
+    ],
+    "kind": "enum ggml_status"
+  },
+  "ggml_backend_sched_synchronize": {
+    "mode": 8,
+    "args": [
+      "sched"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_split_graph": {
+    "mode": 9,
+    "args": [
+      "sched",
+      "graph"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_backend_id": {
+    "mode": 10,
+    "args": [
+      "sched",
+      "backend"
+    ],
+    "kind": "int"
+  },
+  "ggml_backend_sched_backend_from_buffer": {
+    "mode": 11,
+    "args": [
+      "sched",
+      "tensor",
+      "op"
+    ],
+    "kind": "int"
+  },
+  "ggml_backend_sched_backend_id_from_cur": {
+    "mode": 12,
+    "args": [
+      "sched",
+      "tensor"
+    ],
+    "kind": "int"
+  },
+  "ggml_backend_sched_buffer_supported": {
+    "mode": 13,
+    "args": [
+      "sched",
+      "t",
+      "backend_id"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_sched_set_if_supported": {
+    "mode": 14,
+    "args": [
+      "sched",
+      "node",
+      "cur_backend_id",
+      "node_backend_id"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_split_inputs_grow": {
+    "mode": 15,
+    "args": [
+      "split"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_graph_inputs_grow": {
+    "mode": 16,
+    "args": [
+      "sched"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_prepare_expert_pipeline": {
+    "mode": 17,
+    "args": [
+      "sched"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_sched_alloc_splits": {
+    "mode": 18,
+    "args": [
+      "sched",
+      "expert_plan_changed"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_sched_is_host_weight": {
+    "mode": 19,
+    "args": [
+      "t"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_sched_copy_input": {
+    "mode": 20,
+    "args": [
+      "sched",
+      "split",
+      "input"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_compute_splits": {
+    "mode": 21,
+    "args": [
+      "sched"
+    ],
+    "kind": "enum ggml_status"
+  },
+  "ggml_backend_sched_set_eval_callback": {
+    "mode": 22,
+    "args": [
+      "sched",
+      "callback",
+      "user_data"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_set_expert_pipeline": {
+    "mode": 23,
+    "args": [
+      "sched",
+      "enabled"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_set_copy_callback": {
+    "mode": 24,
+    "args": [
+      "sched",
+      "callback",
+      "user_data"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_set_realloc_callback": {
+    "mode": 25,
+    "args": [
+      "sched",
+      "callback",
+      "user_data"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_set_buffer_growth_limits": {
+    "mode": 26,
+    "args": [
+      "sched",
+      "limits"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_get_n_splits": {
+    "mode": 27,
+    "args": [
+      "sched"
+    ],
+    "kind": "int"
+  },
+  "ggml_backend_sched_get_n_copies": {
+    "mode": 28,
+    "args": [
+      "sched"
+    ],
+    "kind": "int"
+  },
+  "ggml_backend_sched_get_n_backends": {
+    "mode": 29,
+    "args": [
+      "sched"
+    ],
+    "kind": "int"
+  },
+  "ggml_backend_sched_get_backend": {
+    "mode": 30,
+    "args": [
+      "sched",
+      "i"
+    ],
+    "kind": "ggml_backend_t"
+  },
+  "ggml_backend_sched_get_buffer_type": {
+    "mode": 31,
+    "args": [
+      "sched",
+      "backend"
+    ],
+    "kind": "ggml_backend_buffer_type_t"
+  },
+  "ggml_backend_sched_get_buffer_size": {
+    "mode": 32,
+    "args": [
+      "sched",
+      "backend"
+    ],
+    "kind": "size_t"
+  },
+  "ggml_backend_sched_set_tensor_backend": {
+    "mode": 33,
+    "args": [
+      "sched",
+      "node",
+      "backend"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_sched_get_tensor_backend": {
+    "mode": 34,
+    "args": [
+      "sched",
+      "node"
+    ],
+    "kind": "ggml_backend_t"
+  },
+  "ggml_is_view_op": {
+    "mode": 35,
+    "args": [
+      "op"
+    ],
+    "kind": "bool"
+  },
+  "ggml_dup_tensor_layout": {
+    "mode": 36,
+    "args": [
+      "ctx",
+      "tensor"
+    ],
+    "kind": "struct ggml_tensor *"
+  }
+}

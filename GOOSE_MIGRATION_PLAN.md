@@ -20,7 +20,7 @@ This supersedes the legacy B0-B8 grouping as the current remaining-work schedule
 |2/13|Complete CPU math,quantized/repacked MoE and native CPU removal|19|0|19|QUEUED / retain existing partial work|
 |3/13|Complete CUDA compute operators|15|0|15|QUEUED / retain existing partial work|
 |4/13|CUDA host ownership,device abstraction and CUDA native removal|6|0|6|QUEUED / retain existing partial work|
-|5/13|GGML tensor,graph,allocator and unified scheduler|12|0|12|QUEUED / retain existing partial work|
+|5/13|GGML tensor,graph,allocator and unified scheduler|12|2|10|QUEUED / retain existing partial work|
 |6/13|KV,recurrent/session memory and complete shared Apex model runtime|18|0|18|QUEUED / retain existing partial work|
 |7/13|GGUF,model loader,tokenizer and common text infrastructure|12|0|12|QUEUED / retain existing partial work|
 |8/13|Complete server,API,queues and application lifecycle|12|0|12|QUEUED / retain existing partial work|
@@ -30,7 +30,7 @@ This supersedes the legacy B0-B8 grouping as the current remaining-work schedule
 |12/13|Remaining models,tokenizers,platforms and device compatibility|12|0|12|QUEUED / retain existing partial work|
 |13/13|Final universal closure and genuine100percent completion|4|0|4|QUEUED / retain existing partial work|
 
-Current stage: **1/13**. Completed groups: **0/13**. Original requirements: **14/160 DONE; 146remaining; 8.75%** by requirement count,not code or effort.
+Current stage: **1/13**. Completed groups: **0/13**. Original requirements: **16/160 DONE; 144remaining; 10.00%** by requirement count,not code or effort.
 
 Per-component source ownership,correctness,memory safety,liveness and rollback remain mandatory. Share code generation/build/integration and full-system model samples across coherent groups. Keep critical synchronization/allocator/deletion subgates separate internally. Record objective blockers rather than relabeling partial work as full completion. Qwen waits until stage10fullApex. Final100%requires all contracts,source/import closure and no-worse-than-C++ real-system performance evidence.
 
@@ -52,34 +52,34 @@ Per-component source ownership,correctness,memory safety,liveness and rollback r
 
 Owner requested larger delivery batches;these group all existing13logical stages and unchanged original contracts. They are not new goals,40-50automatic completions,or a promise to suppress necessary critical internal gates. Share expensive integration/model gates where safe;separate ownership/concurrency/hardware dependencies when required.
 
-Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient.
+Current owner rule:after each significant change,perform scoped correctness checks and one fixed Apex32K/128 system gate before continuing integration. During implementation run necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. Additional full suites/model runs require a concrete correctness/safety failure or material performance concern;routine reassurance is insufficient.
 
 | Cycle | Existing stages | Requirement scope | DONE | Left |
 |---|---|---:|---:|---:|
 |1/3|1,2,3,4|45|2|43|
-|2/3|5,6,7,8|54|0|54|
+|2/3|5,6,7,8|54|2|52|
 |3/3|9,10,11,12,13|49|0|49|
 
 Target3large delivery cycles,with a fourth only for a real dependency. Internal critical correctness/ownership/hardware gates remain separate where required;they are not per-function experiments. Expensive builds/model reloads are shared where safe. A partial checkpoint does not complete a cycle or count its unfinished requirements.
 
 ## Active isolated candidate
 
-- experiment: `EXP163`,solo continuation from restored EXP150 and verified EXP155..162.
+- experiment: `EXP164`,solo continuation from restored EXP150 and verified EXP155..163.
 - root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108`
 - branch: `codex/apex-exp150-restored-20261108`
-- source: `experiments/EXP-2026-11-08-163-goose-stream-control/source`
-- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp163/run`
-- status:Generic stream/I-O/copy/event/device interface control is actual Goose. All48entry modes match native local contracts;bounds/staging/thread checks and one exact Apex pass. Provider implementations and real scheduler/global registry state remain native/partial.
-- next_batch:Actual placement/split/copy-slot/lifetime scheduler state and planning in the shared backend unit;reuse prior designs only after verifying they are active or explicitly reintegrating them.
-- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp162/run`
-- rollback: `GGML_GOOSE_STREAM_CONTROL=0` or previous immutable EXP162 runtime. Production/compiler untouched,no agents;EXP153 remains quarantined.
+- source: `experiments/EXP-2026-11-08-164-goose-scheduler/source`
+- run: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/run`
+- status:Actual shared placement/split/copy/reserve/compute/owned lifecycle is Goose;local parity/rollback/failure/thread/expert paths and one exact Apex gate pass. Functional placement/reuse requirements P4-09/P4-11 closed;actual multi-stream cancellation and branch/restore compatibility still open. Full Apex/CPU/CUDA/source closure is not complete.
+- next_batch:Actual global registry/dynamic loader and remaining common backend helpers;then remaining provider/model/KV scope per retained Apex plan.
+- previous_runtime_root: `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp163/run`
+- rollback: `GGML_GOOSE_SCHEDULER=0` or previous immutable EXP163 runtime. Production/compiler untouched,no agents;EXP153 quarantined.
 
 ## Authoritative execution policy
 
 1. Follow the current13-stage campaign and its dependency gates;P0-P11/B0-B8remain source/history classifications. Finish full shared/Apex closure before Qwen/MTP(stage11),other compatibility(stage12),and final universal closure(stage13). No separate Apex/Qwen runtimes or parallel projects.
 2. The only current real-model development,debug and measurement target is Apex. Qwen source differences are a read-only future reference; do not build,develop,test,benchmark or tune Qwen now. Historical Qwen evidence remains explicitly historical.
 3. Transfer whole coherent modules. For every step require source/producer provenance,correctness,actual Goose liveness and rollback. Calling original native computation from a Goose wrapper does not count. Native arithmetic/policy hidden inside ABI glue does not count.
-4. At the end of a large delivery cycle record one combined full-system fixed-profile Apex sample: prefill,decode,RAM/VRAM and correctness,compared with previous measured stage and frozen original C++. No microbenchmarks,no per-kernel tuning,no repeated optimization series. Record noise and regressions in local ignored COMPILER_FEEDBACK.md,then continue functional work.
+4. After each significant change record one full-system fixed-profile Apex sample: prefill,decode,RAM/VRAM and correctness,compared with previous measured stage and frozen original C++. No microbenchmarks,no per-kernel tuning,no repeated optimization series. Record noise and regressions in local ignored COMPILER_FEEDBACK.md,then continue functional work.
 5. Preserve production/default executable,libraries,profiles and compiler source. Use isolated candidate directories. Select latest completed self-hosted Goose producer with receipts at each new stage; do not modify the compiler or interrupt its developer.
 6. Keep one canonical common Goose implementation. New architecture-specific code requires a concrete differing semantic contract; prefer metadata/adapters,not copied backends. Preserve Apex correctness and the fixed-profile history during later compatibility extension.
 7. Update tasks.json,evidence and this plan at meaningful checkpoints;close delivery cycles with the shared integration/model evidence. Stable task IDs; append discovered missing scope and explain count changes; never erase unfinished work to improve the percentage.
@@ -574,3 +574,8 @@ Active EXP160allocator object reproduces SHA9246ec1bc84e9f0e5d65ba52f7f3b3c7e2af
 ### EXP163: generic stream/I-O/copy/event/device control (2026-11-08)
 
 48generic bodies now Goose:required/optional interface validation,2D fallback loops,copy routes/staging,both-backend sync,event ownership,graph status/sync and device/reg forwarding.37native case groups/264callback events/1091checks and rollback pass,including host->unbound-view.11bounds/overflow/staging/callback failure cases reject safely;128threaded staged-copy/event lifecycles are exact with zero heaps. One Apex2631.942/26.956,RSS21314.930MiB/VRAM3246MiB,swap0,exact text/all128IDs/all probabilities,127graph reuses,actual stream mask0xf3ffc4fa233e. Staging markers50/51were local-only,not claimed exercised by this Apex profile. -0.282%/-1.573%vs EXP162,single sample,no stable speed-parity claim. See `experiments/EXP-2026-11-08-163-goose-stream-control/`. P4-07remainsIN_PROGRESS;P4-08interface subset becomesIN_PROGRESS,global registry/loader native. No new full universal requirementDONE. Next:actual scheduler placement/split/owned state,not another interface-only layer. Solo,production/compiler untouched.
+
+
+### EXP164: actual shared scheduler (2026-11-08)
+
+EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted Goose:placement/compatibility/offload,splits/parallel copies,ordered allocator deps,reserve/reuse,compute/eval/event/expert orchestration and owned lifecycle.44native placement/reuse cases,2wide72input graphs,compute failure,10expert phase routes,12constructor OOM sites and32threaded independent lifecycles pass with rollback. One Apex2626.103prefill/27.267decode,RSS21315.086MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,new scheduler witness/zero heaps. Small single-sample speed variation;stable C++ parity unproven. P4-09/P4-11 close their functional placement and reserve/compute/reuse contracts. P4-10/P4-15 remain partial for real asynchronous cancellation and branch/restore/future compatibility. This does not close a campaign stage or delivery cycle. Default-off fallback remains original native scheduler,strict native-source removal remains P4-16. See `experiments/EXP-2026-11-08-164-goose-scheduler/`. Latest owner per-significant-change correctness/system-speed gate retained. Next:global registry/dynamic loading and residual common backend helpers. Production/compiler untouched,no agents.

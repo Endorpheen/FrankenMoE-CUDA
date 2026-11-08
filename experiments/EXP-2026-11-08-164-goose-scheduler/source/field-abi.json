@@ -1,0 +1,198 @@
+{
+  "0": {
+    "field": "is_reset",
+    "type": "bool"
+  },
+  "1": {
+    "field": "is_alloc",
+    "type": "bool"
+  },
+  "2": {
+    "field": "n_backends",
+    "type": "int"
+  },
+  "3": {
+    "field": "backends[i]",
+    "type": "ggml_backend_t"
+  },
+  "4": {
+    "field": "bufts[i]",
+    "type": "ggml_backend_buffer_type_t"
+  },
+  "5": {
+    "field": "galloc",
+    "type": "ggml_gallocr_t"
+  },
+  "6": {
+    "field": "&hash_set",
+    "type": "addr"
+  },
+  "7": {
+    "field": "hv_tensor_backend_ids",
+    "type": "int *"
+  },
+  "8": {
+    "field": "hv_tensor_copies",
+    "type": "ggml_tensor **"
+  },
+  "9": {
+    "field": "node_backend_ids",
+    "type": "int *"
+  },
+  "10": {
+    "field": "leaf_backend_ids",
+    "type": "int *"
+  },
+  "11": {
+    "field": "prev_node_backend_ids",
+    "type": "int *"
+  },
+  "12": {
+    "field": "prev_leaf_backend_ids",
+    "type": "int *"
+  },
+  "13": {
+    "field": "&graph",
+    "type": "addr"
+  },
+  "14": {
+    "field": "splits",
+    "type": "ggml_backend_sched_split *"
+  },
+  "15": {
+    "field": "n_splits",
+    "type": "int"
+  },
+  "16": {
+    "field": "splits_capacity",
+    "type": "int"
+  },
+  "17": {
+    "field": "n_copies",
+    "type": "int"
+  },
+  "18": {
+    "field": "cur_copy",
+    "type": "int"
+  },
+  "19": {
+    "field": "next_copy",
+    "type": "int"
+  },
+  "20": {
+    "field": "events[i/GGML_SCHED_MAX_COPIES][i%GGML_SCHED_MAX_COPIES]",
+    "type": "ggml_backend_event_t"
+  },
+  "21": {
+    "field": "graph_inputs",
+    "type": "ggml_tensor **"
+  },
+  "22": {
+    "field": "n_graph_inputs",
+    "type": "int"
+  },
+  "23": {
+    "field": "graph_inputs_capacity",
+    "type": "int"
+  },
+  "24": {
+    "field": "ctx",
+    "type": "ggml_context *"
+  },
+  "25": {
+    "field": "callback_eval",
+    "type": "ggml_backend_sched_eval_callback"
+  },
+  "26": {
+    "field": "callback_eval_user_data",
+    "type": "void *"
+  },
+  "27": {
+    "field": "expert_pipeline_enabled",
+    "type": "bool"
+  },
+  "28": {
+    "field": "expert_pipeline[i]",
+    "type": "ggml_expert_pipeline_fn"
+  },
+  "29": {
+    "field": "callback_copy",
+    "type": "ggml_backend_sched_copy_callback"
+  },
+  "30": {
+    "field": "callback_copy_user_data",
+    "type": "void *"
+  },
+  "31": {
+    "field": "callback_realloc",
+    "type": "ggml_backend_sched_realloc_callback"
+  },
+  "32": {
+    "field": "callback_realloc_user_data",
+    "type": "void *"
+  },
+  "33": {
+    "field": "context_buffer",
+    "type": "char *"
+  },
+  "34": {
+    "field": "context_buffer_size",
+    "type": "size_t"
+  },
+  "35": {
+    "field": "op_offload",
+    "type": "bool"
+  },
+  "36": {
+    "field": "debug",
+    "type": "int"
+  },
+  "37": {
+    "field": "graph_size",
+    "type": "int"
+  },
+  "38": {
+    "field": "prev_graph_size",
+    "type": "int"
+  },
+  "39": {
+    "field": "debug_realloc",
+    "type": "int"
+  },
+  "40": {
+    "field": "fg164_ids_capacity",
+    "type": "size_t"
+  },
+  "41": {
+    "field": "fg164_active_deps",
+    "type": "void *"
+  },
+  "42": {
+    "field": "fg164_candidates",
+    "type": "void *"
+  },
+  "43": {
+    "field": "fg164_candidate_count",
+    "type": "size_t"
+  },
+  "44": {
+    "field": "fg164_candidate_capacity",
+    "type": "size_t"
+  },
+  "45": {
+    "field": "fg164_pipeline_sizes[i]",
+    "type": "size_t"
+  },
+  "46": {
+    "field": "fg164_pipeline_ready[i]",
+    "type": "bool"
+  },
+  "47": {
+    "field": "fg164_pipeline_slots[i]",
+    "type": "size_t"
+  },
+  "48": {
+    "field": "fg164_query_size",
+    "type": "size_t"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "kind": "Self-hosted Fried Goose Stage3",
+  "sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "frozen": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+  "qualification": "Latest completed full compiler bootstrap;EXP302 guard observer is not a full compiler replacement",
+  "compiler_sources_changed": false
+}
