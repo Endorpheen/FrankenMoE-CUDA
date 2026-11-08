@@ -1,0 +1,104 @@
+{
+ "job": "EXP168 apex-fattn-mask-fixups GLM worker: dense FA mask scan + both stream-K fixup kernels as Goose device logic",
+ "deliverable": "apex-fattn-mask-fixups/device.goose",
+ "native_input": "apex-fattn-mask-fixups/inputs/fattn-common.cuh (pinned, read-only; names and line spans verified in input)",
+ "verified_native_names": [
+  {"native": "flash_attn_mask_to_KV_max<ncols1>", "input_lines": "669-724", "goose": "mask_to_kv_max", "launch": "block(128,1,1)=FATTN_KQ_STRIDE/2 threads; grid(ntiles_x, Q->ne[3], 1); static shared 128 B"},
+  {"native": "flash_attn_stream_k_fixup_uniform<D,ncols1,ncols2>", "input_lines": "729-809", "goose": "fixup_uniform", "launch": "block(256,1,1)=DV threads; grid(ntiles_dst, ncols1, ncols2); launched when blocks_num.x%ntiles_dst==0 && blocks_num.x>ntiles_dst; bpt=blocks_num.x/ntiles_dst; shared 0 B"},
+  {"native": "flash_attn_stream_k_fixup_general<D,ncols1,ncols2>", "input_lines": "813-920", "goose": "fixup_general", "launch": "block(256,1,1)=DV threads; grid(blocks_num.x, ncols1, ncols2); launched when ntiles_dst%blocks_num.x!=0; shared 0 B"}
+ ],
+ "scope_notes": [
+  "Task label flash_attn_stream_k_fixup corresponds to flash_attn_stream_k_fixup_general in the supplied source; exact native names are kept in port comments and both supplied stream-K fixup kernels are ported.",
+  "flash_attn_combine_results (non-stream-K parallel-blocks path) and ggml_cuda_flash_attn_ext_compact_mask (sparse) are not ported; no sparsecompact.",
+  "Mask entry is the dense scan_mask path of launch_fattn (mask!=0, K->ne[1]%FATTN_KQ_STRIDE==0, Q->ne[1]>=1024 or Q->ne[3]>1).",
+  "Other head configs, host launch policy, ABI and generated-C are parent-owned and deferred."
+ ],
+ "fixed_target": {"D": 256, "DV": 256, "ncols1": [4, 8], "ncols2": 8, "warp_size": 32, "FATTN_KQ_STRIDE": 256, "SOFTMAX_FTZ_THRESHOLD": -20.0},
+ "primitives": [
+  {"name": "fg168f_ld_u32", "sig": "u32 ld_u32(u64 p, u64 byte)", "effect": "global raw 4-byte little-endian load at p+byte; bits returned, no conversion; used for one aligned half2 mask word"},
+  {"name": "fg168f_ld_f32", "sig": "f32 ld_f32(u64 p, u64 byte)", "effect": "global raw 4-byte load; bits read as f32"},
+  {"name": "fg168f_st_f32", "sig": "void st_f32(u64 p, u64 byte, f32 v)", "effect": "global raw 4-byte store of f32 bits"},
+  {"name": "fg168f_st_i32", "sig": "void st_i32(u64 p, u64 byte, i32 v)", "effect": "global raw 4-byte store of i32 bits (KV_max word)"},
+  {"name": "fg168f_sm_i32", "sig": "i32 sm_i32(u64 p, u64 word)", "effect": "shared-memory i32 load; word is a 4-byte word index relative to p (buf_iw[i] -> word i)"},
+  {"name": "fg168f_sm_st_i32", "sig": "void sm_st_i32(u64 p, u64 word, i32 v)", "effect": "shared-memory i32 store, word-indexed"},
+  {"name": "fg168f_shfl_xor_i32", "sig": "i32 shfl_xor_i32(i32 v, i32 o)", "effect": "__shfl_xor_sync(0xffffffff, v, o, 32); kernels using it contain only full 32-lane warps (128 or 256 threads)"},
+  {"name": "fg168f_barrier", "sig": "void barrier()", "effect": "__syncthreads"},
+  {"name": "fg168f_sync", "sig": "void pdl_sync()", "effect": "ggml_cuda_pdl_sync() == cudaGridDependencySynchronize()"},
+  {"name": "fg168f_lc", "sig": "void lc()", "effect": "ggml_cuda_pdl_lc() == cudaTriggerProgrammaticLaunchCompletion()"},
+  {"name": "fg168f_expf", "sig": "f32 expf(f32 x)", "effect": "device expf"},
+  {"name": "fg168f_fmaxf", "sig": "f32 fmaxf(f32 a, f32 b)", "effect": "device fmaxf"}
+ ],
+ "entry_params_widths_units": [
+  {"entry": "mask_to_kv_max", "params": [
+   "mask_p:u64 byte address of mask->data (GGML_TYPE_F16), addressed as half2 words (4 B each)",
+   "kv_max_p:u64 byte address of int KV_max pool, ntiles_x*Q->ne[3] words",
+   "ne30:i32 iter_k = K->ne[1]/FATTN_KQ_STRIDE (native arg ne30)",
+   "s31:i64 mask->nb[1]/sizeof(half2), half2 elements per query row",
+   "s33:i64 mask->nb[3]/sizeof(half2), half2 elements per sequence",
+   "nc1:i32 ncols1 in {4,8}",
+   "bx:i32 blockIdx.x = jt (query tile index < ntiles_x)",
+   "by:i32 blockIdx.y = sequence",
+   "gx:i32 gridDim.x = ntiles_x (native ne31)",
+   "tx:i32 threadIdx.x in [0,128)",
+   "smem:u64 byte address of 128 B shared scratch (32 i32 words, buf_iw)"]},
+  {"entry": "fixup_uniform", "params": [
+   "dst_p:u64 byte address of KQV->data (float)",
+   "fix_p:u64 byte address of dst_tmp_meta pool (float2 elements)",
+   "ne01:i32 Q->ne[1]",
+   "ne02:i32 Q->ne[2]",
+   "ne12:i32 K->ne[2] (kept for native signature parity; unused in body exactly as native)",
+   "nb:i32 nblocks_stream_k = blocks_num.x",
+   "gqa:i32 gqa_ratio = Q->ne[2]/K->ne[2]",
+   "bpt:i32 blocks_per_tile = nblocks_sk/ntiles_dst",
+   "d0:i64 logical divisor for fd_iter_j_z_ne12 = ntiles_x*ntiles_z_gqa*K->ne[2]",
+   "d1:i64 logical divisor for fd_iter_j_z = ntiles_x*ntiles_z_gqa",
+   "d2:i64 logical divisor for fd_iter_j = ntiles_x; ntiles_x=ceil(Q->ne[1]/ncols1), ntiles_z_gqa=ceil(gqa_ratio/ncols2)",
+   "nc1:i32 template ncols1",
+   "nc2:i32 template ncols2 (fixed target 8)",
+   "bx:i32 blockIdx.x = tile_idx < ntiles_dst",
+   "by:i32 blockIdx.y = j (query row in tile)",
+   "bz:i32 blockIdx.z = c (gqa column)",
+   "tx:i32 threadIdx.x in [0,256)"]},
+  {"entry": "fixup_general", "params": [
+   "dst_p:u64, fix_p:u64 as in fixup_uniform",
+   "ne01:i32 Q->ne[1]",
+   "ne02:i32 Q->ne[2]",
+   "gqa:i32 gqa_ratio",
+   "tw:i32 total_work = ntiles_KV*ntiles_dst; ntiles_KV = ceil(K->ne[1]/nbatch_fa) dense",
+   "d0:i64 fd_iter_k_j_z_ne12 = ntiles_KV*ntiles_x*ntiles_z_gqa*K->ne[2]",
+   "d1:i64 fd_iter_k_j_z = ntiles_KV*ntiles_x*ntiles_z_gqa",
+   "d2:i64 fd_iter_k_j = ntiles_KV*ntiles_x",
+   "d3:i64 fd_iter_k = ntiles_KV",
+   "nc1:i32, nc2:i32 template widths",
+   "bx:i32 blockIdx.x = bidx0",
+   "by:i32 blockIdx.y = j",
+   "bz:i32 blockIdx.z = c",
+   "gx:i32 gridDim.x = blocks_num.x (drives kbc bounds, fixup-data base and meta region)",
+   "tx:i32 threadIdx.x in [0,256)"]}
+ ],
+ "fastdiv_replacement": "fast_div_modulo(x,fd) -> q=x/d, r=x-q*d with the logical divisor d passed explicitly as i64; fastdiv(k,fd_k)=k/d3 and fastmodulo(k,fd_k)=k-q*d3. Truncation toward zero like C++ int64 division; dividends nonnegative on valid launches. Divisor values are host launch-policy quantities (ntiles_x, ntiles_z_gqa, ntiles_KV, ne12) supplied per launch.",
+ "index_layout": "didx (float elements) = sequence*ne02*ne01*256 + jt*ne02*(ncols1*256) + zt_Q*256 + (j*ne02+c)*256 + tx, byte offset = didx*4; zt_Q = z_KV*gqa_ratio + zt_gqa*ncols2; jc = j*ncols2+c. Mask half2 word index = sequence*s33 + jt*ncols1*s31 + j*s31 + sj/2 + tx, byte offset = index*4. KV_max int index = sequence*ntiles_x + jt, byte offset = index*4. All index products computed in i64 (native uses int; identical values in range; overflow parity beyond int range is parent-owned).",
+ "buffers_and_aliasing": {
+  "dst": "KQV->data float buffer, native aliasing: the mma kernel's needs_fixup partial data sits at didx and is overwritten in place by the fixup store",
+  "fixup_pool": "dst_tmp_meta, float2, native alloc blocks_num.x*ncols*(2+DV/2) float2 with ncols=ncols1*ncols2; regions: [0,b*ncols) needs_fixup meta read as fix[b*ncols+jc] (float2 index, byte 8*idx / 8*idx+4); [b*ncols,2*b*ncols) is_fixup meta read as fix[(nb+b)*ncols+jc]; partial data floats begin at float offset nb*4*ncols (uniform nb=nblocks_stream_k, general nb=gridDim.x), read as fix_data[b*ncols*256 + jc*256 + tx]",
+  "kv_max": "int pool KV_max[sequence*ntiles_x+jt] for the dense scan; the mma kernel reads KV_max[sequence*iter_j+jt] with iter_j=ntiles_x",
+  "device_alloc": "none; device code uses POD scalars and a 128 B shared scratch, no heap"
+ },
+ "numerical_order": [
+  "mask scan: buf_iw preinit to 1 for tid<32, then pdl_sync then barrier; per 256-tile descending from (ne30-1)*256: all_inf=1; j=0..ncols1-1 ascending all_inf = all_inf && isinf(lo) && isinf(hi) as 0/1 int products; warp AND via xor shuffles 16,8,4,2,1; warp leader stores buf_iw[tid/32]; barrier; all threads read buf_iw[tid%32]; barrier; warp AND again; stop when 0 (native break); tile step -256 with native break/decrement timing (no decrement on the stopping iteration); result = sj+256 stored by tid 0 only",
+  "fixup combine per step (uniform bidx=b_last-1..b_first descending; general while loop that skips empty blocks kbc==kbc_stop and stops when kbc%ntiles_KV==0 or kbc/ntiles_KV<tile_kbc0, with bidx/kbc_stop update skipped on the stopping iteration): max_val_new=fmaxf(max_val,tmp.x); diff_val=max_val-max_val_new; diff_add=tmp.x-max_val_new; scale_val = diff_val>=-20.0 ? expf(diff_val) : 0.0; scale_add likewise on diff_add; dst_val=scale_val*dst_val+scale_add*dst_add; rowsum=scale_val*rowsum+scale_add*tmp.y; max_val=max_val_new; final store dst=dst_val/rowsum (f32 divide)",
+  "load order: dst_val=*dst first, then block meta (max_val,rowsum), then per-bidx data then meta, exactly as native",
+  "PDL: mask kernel pdl_sync after buf_iw preinit (then barrier); uniform lc() as first statement and pdl_sync after index math before the *dst read; general has no lc, early exits before pdl_sync, then loads"
+ ],
+ "bit_decode": "int(isinf(__half22float2(w).x/.y)) is realized as ((h & 0x7FFF) == 0x7C00) on the raw half bits; equivalent for all 65536 encodings because half->float conversion is exact and maps exactly the all-ones-exponent zero-mantissa halves to +/-inf while half NaN converts to NaN (isinf false).",
+ "ftz": "SOFTMAX_FTZ_THRESHOLD -20.0f preserved via ftz_thresh(); ternary expf semantics kept (expf evaluated only on the >= branch).",
+ "fma": "Scalar FMA contraction of a*b+c by generated C is allowed; operation order and the algorithm are otherwise unchanged.",
+ "constraints": [
+  "No original numerical C++ function is called; all mapping, accumulation and reductions are Goose.",
+  "Primitives limited to raw byte loads/stores, inline half bit decode, fmaxf/expf, shuffles, barriers, PDL.",
+  "POD/fixed storage only, no heap, no allocation, no shared-memory use beyond buf_iw.",
+  "fn main retained with benign arguments and never executed by the parent.",
+  "No timing, no compiler or production writes, no shell/network/agent tools used.",
+  "Goose file is under the 380-line budget."
+ ]
+}

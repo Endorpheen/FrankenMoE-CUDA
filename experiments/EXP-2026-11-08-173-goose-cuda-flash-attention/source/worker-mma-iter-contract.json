@@ -1,0 +1,130 @@
+{
+  "experiment": "apex-fattn-mma-iter",
+  "artifact": "device.goose",
+  "source": "flash_attn_ext_f16_iter, fattn-mma-f16.cuh lines 583-1072 (TURING_MMA_AVAILABLE branches) + ggml_cuda_mma primitives of mma.cuh",
+  "claim": "structural port only; no compile/GPU/numeric acceptance claimed; parent reviews, emits and compares against native on GPU",
+  "fixed_config": {
+    "gpu_target": "CUDA Ada (SM89), TURING_MMA_AVAILABLE tile set, mma.m16n8k16.row.col",
+    "DKQ": 256, "DV": 256, "D2_half2": 128,
+    "ncols1": [4, 8], "ncols2": 8, "ncols": "ncols1*ncols2 = 32 or 64",
+    "nwarps": 4, "warp_size": 32, "block_dim": [32, 4, 1],
+    "nbatch_fa": 32, "nbatch_K2": 128, "nbatch_V2": 128,
+    "Q_in_reg": true, "nstages": 2, "swizzled": true,
+    "cols_per_warp": 16, "cols_per_thread": 2,
+    "np": "2 when ncols1==4, 1 when ncols1==8 (runtime argument, caller must keep consistent with ncols1)",
+    "use_logit_softcap": false, "V_is_K_view": false, "use_sparse": false, "oob_check": false,
+    "ncols2_gt_1": true,
+    "every_other_config": "deferred and not implemented"
+  },
+  "tiles": {
+    "T_A_KQ": "tile<16,8,half2>", "T_B_KQ": "tile<16,8,half2>",
+    "T_C_KQ": "tile<16,16,float>, wide column-major: physical I=Q column j, physical J=KV row i",
+    "T_A_VKQ": "tile<16,8,half2>", "T_B_VKQ": "tile<16,8,half2>", "T_C_VKQ": "tile<16,8,half2>",
+    "Q_B": "16 tiles x 4 u32 = 256 B per thread, read-only input state",
+    "VKQ_C": "16 tiles x 4 u32 = 256 B per thread, mutated f16 accumulator state",
+    "KQ_C": "32/(np*16) local fixed-array tiles per warp (1 for np=2, 2 for np=1), 8 f32/thread each, fresh zero per call",
+    "B_probs": "32/(np*16) local tiles, 4 u32/thread each, get_half2(KQ_C) without transpose"
+  },
+  "entry": {
+    "symbol": "iterate",
+    "signature": "fn iterate(k_h2:u64, v_h2:u64, mask_h:u64, stride_k:i64, stride_v:i64, stride_mask:i64, slope:f32, jt:i32, kb0:i32, n_queries:i64, ncols1:i32, qregs:u64, vkqregs:u64, kmax:u64, rowsums:u64, smem:u64, tx:i32, ty:i32, np:i32, last:bool)",
+    "params": {
+      "k_h2": "raw u64 byte address of global K rows as half2 (native K_h2)",
+      "v_h2": "raw u64 byte address of global V rows as half2 (native V_h2)",
+      "mask_h": "raw u64 byte address of global mask rows as half (native mask_h); only dereferenced by the fg175l loader",
+      "stride_k": "K row stride in half2 elements (native stride_K)",
+      "stride_v": "V row stride in half2 elements (native stride_V)",
+      "stride_mask": "mask row stride in half elements (native stride_mask)",
+      "slope": "native slope; multiplied into the mask add via fmaf (scale is NOT applied here: native pre-scales Q at tile_Q load)",
+      "jt": "Q tile index along ncols1; query0=jt*ncols1 computed in Goose",
+      "kb0": "KV batch index; kv_row0=kb0*32 computed in Goose",
+      "n_queries": "ne01 extent used by the loader fastmodulo wrap of mask rows",
+      "ncols1": "4 or 8, forwarded to the fg175l mask loader",
+      "qregs": "u64 byte address of this thread's Q_B POD state",
+      "vkqregs": "u64 byte address of this thread's VKQ_C POD state",
+      "kmax": "u64 byte address of this thread's KQ_max[2] f32",
+      "rowsums": "u64 byte address of this thread's KQ_rowsum[2] f32",
+      "smem": "u64 byte address (generic/shared space) of the tile area below",
+      "tx": "threadIdx.x, 0..31",
+      "ty": "threadIdx.y, 0..3",
+      "np": "parallel warps per Q column: 2 (ncols1=4) or 1 (ncols1=8)",
+      "last": "true on the final kb0 iteration; suppresses only the next K+mask preload"
+    },
+    "pointer_convention": "all u64 values are raw byte addresses; every offset, permutation and swizzle is computed in Goose and passed absolute",
+    "no_heap": "no allocation, no stack VM, no recursion; locals are fixed-size arrays/scalars/struct records only"
+  },
+  "register_state": {
+    "qregs_256B_readonly": {
+      "layout": "Q_B[16] of tile<16,8,half2>; tile q element l at byte q*16+l*4",
+      "fragment": "x[l] = Q_half2[j0 + (l%2)*8 + tx/4][8q + (l/2)*4 + tx%4] with j0=(ty/np)*16; must be produced by native load_ldmatrix (non-trans ldmatrix.x4) from tile_Q rows j0..j0+15, half2 cols 8q..8q+7, row stride 132 half2 (DKQ/2+4), values pre-scaled by scale and zero-filled for OOB Q rows exactly as fattn-mma-f16.cuh L1300-1327",
+      "operand_role": "A operand of the KQ mma (M=Q column j, K=16 halves)"
+    },
+    "vkqregs_256B_mutated": {
+      "layout": "VKQ_C[16] of tile<16,8,half2>; tile v element l at byte v*16+l*4",
+      "fragment": "get_i(l)=(l%2)*8+tx/4 -> Q column (ty/np)*16+..., get_j(l)=(l/2)*4+tx%4 -> D half2 col 8v+...; covers Q cols (ty/np)*16..+15 x D [16v,16v+16)",
+      "init": "parent must zero before the first iterate call",
+      "updates": "f16x2 rescale by KQ_max_scale then mma.f16 accumulation each call"
+    },
+    "kmax_8B_mutated": "KQ_max[2] f32 at bytes 0/4; parent initializes both to -FLT_MAX/2 (native L1272); each call replaces them with KQ_max_new",
+    "rowsums_8B_mutated": "KQ_rowsum[2] f32 at bytes 0/4; parent initializes to 0; each call applies scale*old+rowsum_add via fmaf",
+    "thread_private": "all four are strictly per-thread PODs; no cross-thread access, no heap"
+  },
+  "shared_layout": {
+    "tile_K": "smem+0, 8192 B: 32 rows x 128 half2, row stride 512 B, swizzle off^((row%8)<<2) in half2 units (swizzle<128,half2>)",
+    "tile_V": "smem+8192, 8192 B: same geometry and swizzle as tile_K",
+    "tile_mask": "smem+16384, ncols1*80 B: ncols1 rows x 20 half2 (64 B data + 16 B pad per row; pad unwritten and unread)",
+    "stages": "single-buffered tiles; cross-iteration WAR safety comes from the barrier at iterate entry (next K/mask) and the barrier before the V issue (previous VKQ reads)"
+  },
+  "primitives": {
+    "naming": "fg176i_* adapters must exist in the parent bridge; each is ONE ISA instruction plus register moves except where noted",
+    "ldu_a_u64_u32": "generic 32-bit load at absolute byte address (ld.global.b32 or ld.local.b32 depending on where the POD state lives)",
+    "stu_a_u64_v_u32": "generic 32-bit store",
+    "ldm4_a_u64_U4": "ldmatrix.sync.aligned.m8n8.x4.b16 on the shared address; U4 = tile registers x[0..3] in hardware order",
+    "ldm4t_a_u64_U4": "ldmatrix.sync.aligned.m8n8.x4.trans.b16; U4 = hardware registers h0..h3 (Goose remaps to tile order 0,2,1,3)",
+    "mma_f32_d_F4_a0_a3_b0_b1_F4": "mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32; f32 accumulate",
+    "mma_f16_d_U2_a0_a3_b0_b1_U2": "mma.sync.aligned.m16n8k16.row.col.f16.f16.f16.f16; packed half2 accumulate",
+    "hlo_w_u32_f32": "cvt.f32.f16 of the low half",
+    "hhi_w_u32_f32": "cvt.f32.f16 of the high half (shift/register move + cvt; fg174m whi precedent)",
+    "h2_a_f32_b_f32_u32": "make_half2: two cvt.rn.f16.f32 + pack move (multi-instruction by nature, matches native make_half2)",
+    "mulh2_w_u32_s_u32_u32": "mul.rn.f16x2",
+    "expf_x_f32_f32": "device expf exactly as native codegen (fg174m expf precedent; not a single instruction, matches native numerics)",
+    "fmaf_a_b_c_f32": "fma.rn.f32 (exact fused float step)",
+    "shflx_x_f32_off_i32_f32": "__shfl_xor_sync(0xFFFFFFFF, x, off, 32)",
+    "cpwait": "cp.async.wait_all",
+    "barrier": "__syncthreads (barrier.sync 0)"
+  },
+  "imported_loaders": {
+    "fg175l_load_kv": "Goose loader adapter (loaders-device.goose) issuing cp.async.cg 16 B for K/V tiles; called as (src, dst_shared, stride_kv_h2:i64, kv_row0:i64, tx, ty)",
+    "fg175l_load_mask": "called as (src, dst_shared, stride_mask_half:i64, kv_row0:i64, query0:i64, n_queries:i64, ncols1:i32, tx, ty)",
+    "binding": "parent binds these extern names to the fg175l Goose loaders (actual Goose, no native algorithm callback); joint compile must dedupe definitions",
+    "usage": "entry: V tile of kb0; tail when !last: mask then K tile of kb0+1"
+  },
+  "numerics": {
+    "KQ_max_offset": "FATTN_KQ_MAX_OFFSET = 3.0*0.6931 added to every score before the running max",
+    "softmax": "KQ_C = expf(KQ_C - KQ_max_new); divisor accumulated in KQ_rowsum, applied by the parent epilogue",
+    "shfl_reduce": "KQ_max_new reduces over the 4 threads sharing a KQ column via shfl_xor offsets 2 then 1 (TURING, cols_per_warp=16)",
+    "ftz": "KQ_max_scale bits multiplied by (KQ_max_diff >= SOFTMAX_FTZ_THRESHOLD == -20.0); implemented as the native u32 bit-multiply via as! casts",
+    "fused_steps": "mask add slope*mask+KQ and rowsum scale*rowsum+rowsum_add use the fmaf primitive (native -fmad=true contraction)",
+    "half_conversions": "cvt.rn.f16.f32 for make_half2/get_half2, cvt.f32.f16 for __half2float, mul.rn.f16x2 for the VKQ scale",
+    "mma_accum": "KQ in f32 (two m16n8k16.f32.f16.f16.f32 per tile-mma, B registers 0,2 then 1,3); VKQ in packed f16 (two m16n8k16.f16.f16.f16.f16 per tile-mma, same B order, no f32 substitute)"
+  },
+  "mma_operand_map": {
+    "KQ": "native wide-CUDA swap: mma(KQ_C, Q_B, K_A); Q_B is A (M=j, K=16 halves), K_A is B (tile rows = n = KV row i, tile cols = k/2); K_A from ldmatrix.x4 at tile_K half2 offset (t*np*16+(ty%np)*16)*128 + q*8, per-lane row tx%16, col (tx/16)*4, swizzled (row%8)<<2",
+    "KQ_f32_pair": "first mma consumes K_A registers x0,x2 into C elements 0..3 (KV rows 0..7), second consumes x1,x3 into elements 4..7 (KV rows 8..15)",
+    "VKQ": "native wide-CUDA swap: mma(VKQ_C, B_probs, A_V); A_V from ldmatrix.x4.trans at tile_V half2 offset 2*k0*128 + v*8 (k0=k00*np*8+(ty%np)*8), hardware registers remapped 0,2,1,3; first mma consumes (x0,x2) -> D.x[0..1], second (x1,x3) -> D.x[2..3]",
+    "probs": "B_probs.x[c] = half2(KQ_C.x[2c], KQ_C.x[2c+1]); register order already compatible with the A operand on Turing"
+  },
+  "sequencing": {
+    "per_iter": "1) cp.async.wait_all + __syncthreads (K+mask of kb0 ready) 2) issue cp.async V tile of kb0 3) KQ mma over k in [0,128) 4) slope mask add 5) running max + shfl_xor 2/1 6) expf + rowsum_add 7) KQ_max/rowsum rescale (FTZ, fmaf) 8) VKQ f16 rescale 9) build B_probs 10) wait_all + __syncthreads (V tile ready) 11) if !last: issue mask+K of kb0+1 12) VKQ mma over all 16 v-tiles",
+    "last_iter": "step 11 skipped; both waits/barriers still execute (native L985-987 are unconditional)",
+    "parent_prologue": "before the first iterate: fg175l load_mask + load_tile_K for kb0_start (native L1335-1347), Q_B preload into qregs, VKQ_C zero, KQ_max=-FLT_MAX/2, KQ_rowsum=0",
+    "parent_epilogue": "after the last iterate: one __syncthreads (native L1394, nwarps*cols_per_warp=64>32), rowsum shfl_xor reduction (offsets 2 then 1), normalize by KQ_rowsum, dstk write/fixup, combine"
+  },
+  "out_of_scope": [
+    "host/scheduler/launch configuration, Q global->tile_Q load and scaling, Q_B preload, VKQ init",
+    "rowsum cross-warp reduction, output normalization, dstk/dstk_fixup, attention sinks",
+    "combine/fixup variants (needs_fixup/is_fixup), stream-K partitioning",
+    "use_logit_softcap, V_is_K_view, use_sparse, oob_check, nstages<=1, Volta/AMD paths",
+    "any ncols1/ncols2/nwarps/nbatch_fa/DKQ/DV outside fixed_config"
+  ]
+}

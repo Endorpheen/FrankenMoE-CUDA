@@ -1,0 +1,9 @@
+{
+  "status": "PASS_SCOPED_COMPONENT_ONLY",
+  "cases": 4,
+  "stdout": "PASS loader N4 strideKV128 row0 query0 nq4\nPASS loader N8 strideKV136 row32 query1 nq3\nPASS loader N4 strideKV144 row64 query7 nq9\nPASS loader N8 strideKV128 row64 query8 nq9\nPASS four asynchronous loader cases, native+independent byte oracle, guards and immutable inputs; no timing or model claim\n",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "source_sha256": "7826cb3e69aa7ba0163eeea206a14bbd425602bfed92a578c747fa08b1f07dc8",
+  "production_changed": false,
+  "not_runtime_accepted": true
+}

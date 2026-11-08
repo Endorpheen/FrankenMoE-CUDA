@@ -1,6 +1,6 @@
 # FrankenMoE -> Fried Goose: complete migration plan
 
-Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified EXP155..168;current checkpoint recorded in Git and runtime/active.json.
+Updated: 2026-11-08. Active experimental lineage: restored EXP150 plus verified EXP155..172;current checkpoint recorded in Git and runtime/active.json.
 
 **One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**
 
@@ -639,3 +639,10 @@ Current full self-hosted Goose replaces both active GDN CUDA units:scalar recurr
 25native-bitwise GPU cases/9966684checks,original rollback,1capture per mode,32before-stream refusals,18host-policy cases and16thread once-init check pass. V32blocks1 is compile/host-only on this GPU;rawcache capacity caller-owned;native MMA final-slot behavior for eligible K>1 preserved without claiming full branch/restore certification. One actual Apex2603.792prefill/27.402decode,exact text/all128IDs/full probabilities,127graph reuses,RSS21332.500MiB/VRAM3246MiB,swap0,zero prior owned heaps. New scalar SV128/fused-cache and whole-head TensorCore/partial-tile witnesses both status0. -1.319percent/-2.227percent vs EXP171 remains preliminary,not stable/fresh-C++ performance parity. No repeat series or microbenchmarks.
 
 P3-13 remains IN_PROGRESS with EXP170+172 actual Apex convolution/GDN evidence;other recurrence/native removal and remaining attention/CPU/provider/model/KV/load/server/source scope stay open. No universal requirement,Apex batch or campaign stage falsely closed. Runtime never links the no-MMA component-test adapter. Immutable EXP171 or GGML_GOOSE_CUDA_GDN=0 gives rollback. Source/qualification/export/header pins retained;compiler/production unchanged. Next actual FlashAttention decode+prefill;two GLM workers have disjoint vector/host drafts. See `experiments/EXP-2026-11-08-172-goose-cuda-gdn/`.
+
+
+### EXP173 intermediate FlashAttention component checkpoint (2026-11-08)
+
+No runtime is activated: EXP172 remains the rollback and active candidate. The current full self-hosted compiler emits actual Goose decode, Q4-F16 staging, async tile loaders and prefill TensorCore-iteration logic. Parent corrected byte/bit/host-planning and CUDA adapter issues. Decode12cases/one graph replay/witnesses, loaders4native+independent-byte cases, staging6native-bitwise cases, and MMA-iteration4complete-state native-bitwise cases pass. A concrete illegal shared access justified a local memcheck; fixed adapter passes with zero errors. Vector few-ULP failure was traced to the original NVCC first-product/rescale FMA contraction, explicitly reproduced in Goose without relaxing equality.
+
+Full prefill process/output/sinks, stream-K mask/fixup and host bounds/ownership/once-cache still require joint integration and tests. No EXP173 model request, system speed/RAM/VRAM result, new universal requirement DONE or Apex batch closure. Preserve the existing performance history; no repeated model/microbenchmark series. The next gate is one coherent FlashAttention runtime, then one actual Apex32K/128 check with execution witnesses. Production/compiler unchanged. See `experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/`.

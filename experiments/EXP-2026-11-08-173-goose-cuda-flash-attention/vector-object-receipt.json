@@ -1,0 +1,12 @@
+{
+  "status": "COMPILED_COMPONENT_ONLY_NOT_RUNTIME_ACCEPTED",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": [
+    "fg175vd_gg_function_1",
+    "fg175vd_gg_function_32"
+  ],
+  "object": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/cuda-vector.o",
+  "object_sha256": "103f7fb6888aec87e5eb07e367004846c358fe66f41d69e571f2c44695ed8f9f",
+  "vm_allocation_in_compute": false,
+  "production_changed": false
+}

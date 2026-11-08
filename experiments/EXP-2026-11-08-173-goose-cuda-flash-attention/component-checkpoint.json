@@ -1,0 +1,103 @@
+{
+  "status": "COMPONENT_CHECKPOINT_NOT_RUNTIME_ACCEPTED",
+  "active_runtime": "immutable EXP172",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "components": {
+    "decode_vector": {
+      "cases": 12,
+      "captures": 1,
+      "checks": 87,
+      "paths": 7,
+      "features": 15,
+      "native_bitwise": true
+    },
+    "async_loaders": {
+      "cases": 4,
+      "native_and_independent_byte_oracle": true
+    },
+    "q4_f16_staging": {
+      "cases": 6,
+      "byte_checks": 20224,
+      "native_bitwise": true
+    },
+    "prefill_mma_iteration": {
+      "cases": 4,
+      "words_per_case": 8704,
+      "native_bitwise": true,
+      "memcheck_errors_after_fix": 0
+    }
+  },
+  "parent_fixes": [
+    "Q float element-to-byte addressing; signed Q8 byte packing; current mask pointer",
+    "Native NVCC contracts first VKQ rescale/product as fma(old,scale,mul_rn(V,prob)); proven by PTX and per-thread tracing; subsequent products use fma(V,prob,accumulator)",
+    "Q4 nibble layout comment and signed-zero contiguous scale expression",
+    "Host draft: retained GQA ncols2; real contiguously-allocated predicate; scratch counts before pool allocation; checked pointer/size additions; no set-device for support/allocation roles; fixed source syntax and pointer widths",
+    "MMA worker overlapping shared tiles corrected from 8192/16384 to actual 16384/32768 byte offsets",
+    "F32 bit reinterpret uses explicit raw bitcast primitives; Goose as! is not a float bitcast",
+    "MMA adapter ldmatrix shared-address ABI matched the previously proven EXP172 generic-address convention; concrete illegal shared access fixed and checked with local memcheck"
+  ],
+  "pending": [
+    "Full prefill process/output/sinks/stream-K loop",
+    "Mask scan and stream-K fixup drafts need parent review, code generation and GPU tests",
+    "Host dispatch/metadata/bounds/ownership/once-cache integration and fault/rollback checks",
+    "Combined CUDA link/export/provenance and actual Apex 32K/128 liveness/correctness/system performance gate"
+  ],
+  "production_changed": false,
+  "compiler_changed": false,
+  "universal_requirements_newly_done": 0,
+  "new_model_runs": 0,
+  "source_sha256": {
+    "source/cuda-vector.cu": "794a481db6b0b067cdd80f167080410424d39007284a9ec4d8b6c7d8c8feb18f",
+    "source/host-corrected-draft-generated.c": "bf50f2c88b950e3bff80ce4cf890b523b3721225f1d7fbdefbabd7ac7a391871",
+    "source/host-corrected-draft.goose": "8647ae3730e43af7bdfb940e96e0c2a9cd2df35c4ad3894c3cdd04385cef6944",
+    "source/host-draft.goose": "8b99cff952ff081fb4a1e2fa10c55eeedd657cf8700c3d6dc85c44e2c74af9d7",
+    "source/loaders-device-generated.c": "860e1628dad44594b51955e87dd991418aa4cc0abcbfbe87672b33e37ec08742",
+    "source/loaders-device.goose": "7826cb3e69aa7ba0163eeea206a14bbd425602bfed92a578c747fa08b1f07dc8",
+    "source/loaders-fixture.cu": "f546aafcea0d2c6965628a9c8eedfcdd1d8bd02a49437d25c708f24008360a83",
+    "source/loaders-functions-generated.cuh": "e1a24390d162cf27675ecaebe751e456bf2311d386c2f41fba27f1bd77e94ef6",
+    "source/mma-iter-device-generated.c": "c4d99dd74717ee2b69faa411faae3e2a69fc918bca4dbb3bff2cf9673f8c9c0b",
+    "source/mma-iter-device.goose": "7359b7816a795fcf638c836f3f5f1e870fc6c2ab693cc2edea040d0451585a87",
+    "source/mma-iter-fixture.cu": "487c7ee06da7dd2d59bac58964fcc0da823e3057288c7a728f4da00a7fece765",
+    "source/mma-iter-functions-generated.cuh": "88b5282dc6ae658101da593c7bf13e5cacb314cefab4734732c9118b0ffeded7",
+    "source/mma-iter-primitives.cuh": "af91d02d2ecfa557be1a3b74dcd82cc84cd27399bc7097bff125814322f46877",
+    "source/mma-iter-types-generated.cuh": "f5eafd1ea760563299d4528491295d1e751613158c7b8f538736b07eca8eaac4",
+    "source/native-cp-async.cuh": "c0857cb62072ead470b2ec86039a90cd06b1825443fc523564992f5b7d94fec4",
+    "source/native-fattn-common.cuh": "d47e737d80329f4b0862e92109b060a4ef7031041165b812ce0d6792b9466679",
+    "source/native-fattn-mma-f16.cuh": "17fd122555460f7c762d119b8ccb1d90221e7d003b9952acd0fa87e0fed05ef9",
+    "source/native-fattn-vec.cuh": "70e35f944d7d13118cae4d8a782525771de0ef4f557d2841360c7187dace2be4",
+    "source/native-fattn.cu": "b286c1ac71064d43003d34d8cebfe2fa9627657d22a5ca4eb83f60d0ef0fd44e",
+    "source/native-fattn.cuh": "e3a56f9e753b3994a086f668903e9c960ade092e134df9ff55b351d84828d7b6",
+    "source/native-ggml-common.h": "0061131b615c5721fc88a78feeb22c1f8c450f1c2646a317d80796a653bf595c",
+    "source/native-mma.cuh": "36d1f0e55e8ce384efc3c0c6e2be249903313d9792fc419fae31b1a8fc1d1fc1",
+    "source/staging-device-generated.c": "110aaa48d2245d6103b18ae2ed9bf919e988e879659519a557f57e277a296c35",
+    "source/staging-device.goose": "dc690c15adb5248bfb44f9f8a9f73d2f23f4b0abafcac00f1e7997fa286eb0ee",
+    "source/staging-fixture.cu": "12e39b55c4029b670f9c3d42c1a5a4fce08972f1b1132f21a42047e1941abba3",
+    "source/staging-functions-generated.cuh": "9192558d6944b64cd42327a34214c2cfa86fe786a050fa130c8d19567e60a45c",
+    "source/staging-native-reference.cuh": "dd18b38e7367773bacbd00a7125542dc985d6ad9cd3c36994b388234d09210bd",
+    "source/vector-bridge.cuh": "08ef186377698489f6d65014e45a9a0cb91634865475a073934dcfd10acbeb9f",
+    "source/vector-device-generated.c": "ebab95cdc9906cb52fdab3658a404999753e84deb3ef511156dfa7b148eedb93",
+    "source/vector-device.goose": "059a9b36b129fbb4f8d46147f265601e0f2b1664e8e053957bba3acd6ca706e0",
+    "source/vector-diagnose.cu": "9308a33a21b5401b0a049932ca62c6995c52446b60f55d2aa3d7dd23467b957a",
+    "source/vector-fixture.cu": "45a2f461328aad6e2156890a206e05d7979ef98d57f8503437acc3a09b8e6c2d",
+    "source/vector-functions-generated.cuh": "c9a4c1bd1402b65b86ab10e2fb9c4b498db24d4bac76ba3da3e65a38073cb95c",
+    "source/vector-native-common.cuh": "39e21b273fab6bc26623694da5495751bf4686c80f23245897f82b543a428260",
+    "source/vector-native.cuh": "3dc6199d5c26ec76757636523f253127c0fe6d9b2a2a87dff7cb770300bcb899",
+    "source/vector-primitives.cuh": "a1fa9c120f813e38e81a0f9c30e0c48541682fdb05af0f48b5a9924535cc7d89",
+    "source/vector-test-shim.h": "b587e64026911a509d5c6dd8f3b1b1b1d5529817764194dcfbabbcbf3579b079",
+    "source/vector-types-generated.cuh": "0d41cf491e2da07825977e29cea11ab3397b099bb98fe816ea75110f5d143637",
+    "source/worker-host-contract.json": "81795d3164ccf18ef421ee250fd2ce662b04e8da41b65735bbd0835fc9a68452",
+    "source/worker-host-host.goose": "8b99cff952ff081fb4a1e2fa10c55eeedd657cf8700c3d6dc85c44e2c74af9d7",
+    "source/worker-mask-fixups-contract.json": "974130899f7d595c55841e71eb07c94d92603f00a51e39ebd0ff745887a56446",
+    "source/worker-mask-fixups-device.goose": "d0e288f6278a228ac66f0da3b7ebc4aad36029c06bc6a9e6ffb7c36b2c3320e2",
+    "source/worker-mma-iter-contract.json": "72f52f62385de730b47fc59e60cd947cf005f3121031579115f0de93fb89e189",
+    "source/worker-mma-iter-device.goose": "4c4b65d86e589a503a7aa69b878e808e3d9d8ff4bce3a5ae25bce44034bb739c",
+    "source/worker-mma-process-contract.json": "fbc05ee9f8741adc7c28af2d17eca8f3ddc0a2e20d441041c1d70eb4b6e71608",
+    "source/worker-mma-process-device.goose": "e919094eb659bb57c35001c30ebd4bd927e7595c7925f27d86c643f5f0480452",
+    "source/worker-staging-device.goose": "f53ab53d972b9779281936bbc7c9dad45fd29276e9f2bab9a3910929c1622b59",
+    "source/worker-vector-contract.json": "e46ce15ed42086c5c521448112becd48cd87a69cbeefa25800c9058ad5ad0841",
+    "source/worker-vector-device.goose": "262dead056cd9e92c7352a3cf66420211215e078a561a49b49ff83a4baeadabe",
+    "source/worker-vector-fixture.cu": "9a6e80e908a25cb1aac05a16fb7f68fa48da755b07c41c8687588c2bc0ca5728"
+  },
+  "active_runtime_manifest_sha256": "69572cf4874aa10d0a8954a47d6b21f4b238d9b55c3975316b9f6c081198acc4",
+  "active_cuda_sha256": "64e6f9912c688eac7d0c2bde416b5fa0a7b63de6d78fd08a4dc42472052998d3"
+}
