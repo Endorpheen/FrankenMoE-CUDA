@@ -890,14 +890,14 @@
       "id": "P3-07",
       "phase": "P3",
       "title": "Port CUDA dequantization and activation quantization",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/dequantize.cuh",
         "ggml/src/ggml-cuda/quantize*",
         "ggml/src/ggml-cuda/vecdotq.cuh"
       ],
       "acceptance": "Every supported type and packed block path mapped to Goose with byte/ULP fixtures and malformed-size rejection.",
-      "evidence": "",
+      "evidence": "EXP178 transfers the non-MMQ Q8_1 activation quantizer (quantize_q8_1 / quantize_row_q8_1_cuda with ids==nullptr):flat index,fastdiv of blockIdx.z into (i2,i3),guarded load,amax,warp max/sum reductions,delta,int8 quant and both half stores,plus init_fastdiv_values and grid/block planning.10 checks/5 cases pass in both arms,5/5 block_q8_1 arrays byte-identical to native,memcheck0 errors. Two opposite-order Apex32K/128 pairs: forward native2627.24pp/25.597tg vs Goose2615.33/27.046(-0.453%/+5.661%),reverse Goose2614.89/25.663(-0.470%/+0.255%),mean -0.462%/+2.957%;all128IDs/text/top5 exact,witness host=0x1 paths=0x1. Five own defects fixed:fastdiv writing over the pointer slots,a slot-6 read mismatch,the stream published as a local address,ld_f32 given an element index,and objcopy renaming the .cold companion. MMQ D4/DS4/D2S6 layouts,scatter form and the dequantization module remain native.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3146,6 +3146,14 @@
       "change": "CUDA CPY element path and branch selection moved to Goose",
       "status": "IN_PROGRESS",
       "evidence": "experiments/EXP-2026-11-08-177-goose-cuda-cpy/apex-summary.json"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-07",
+      "experiment": "EXP178",
+      "change": "CUDA Q8_1 activation quantization moved to Goose",
+      "status": "IN_PROGRESS",
+      "evidence": "experiments/EXP-2026-11-08-178-goose-cuda-quantize/apex-summary.json"
     }
   ],
   "batches": [
