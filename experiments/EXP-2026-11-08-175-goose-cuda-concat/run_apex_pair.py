@@ -5,7 +5,7 @@ L=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107/results')
 R=A/'runtime/exp175/run'
 mode=os.environ.get('FG175_MEASURE_MODE','goose')
 assert mode in ['goose','native-rollback'],mode
-label='apex-32k128-concat-pair-'+mode
+label='apex-32k128-concat-pair'+os.environ.get('FG175_LABEL_SUFFIX','')+'-'+mode
 B=A/'runtime/exp175/results'/label
 T=A/'runtime/exp175/measured'/label/'run'
 B.mkdir(parents=True,exist_ok=True);T.mkdir(parents=True,exist_ok=True)
