@@ -1,0 +1,48 @@
+{
+  "status": "PASS_GPU_SSM_NATIVE_REFERENCE_ROLLBACK",
+  "runs": [
+    {
+      "label": "ssm-fixture-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "ssm-fixture-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "ssm-gpu-parity",
+      "exit_code": 0,
+      "stdout": "PASS captures=2 cases=160 native_paired=156 exact_tail=4 ref_points=2934272 checks=14494007 rollback=0 host=3 device=[15,63] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG170S_CUDA_SSM host=0x3,cuda_status=0,modes=0xf,sizes=0x3f\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x405\n"
+    },
+    {
+      "label": "ssm-gpu-rollback",
+      "exit_code": 0,
+      "stdout": "PASS captures=2 cases=156 native_paired=156 exact_tail=0 ref_points=2909184 checks=14367531 rollback=1 host=0 device=[0,0] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x401\n"
+    },
+    {
+      "label": "ssm-preflight-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "ssm-preflight-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "ssm-preflight-run",
+      "exit_code": 0,
+      "stdout": "PASS SSM preflight_cases=26 no_stream_or_kernel_before_rejection=1\n",
+      "stderr": "FG157_CONTEXT_CORE goose_modes=0x4000000,live_context_heaps=0\n"
+    }
+  ],
+  "production_changed": false
+}

@@ -1,0 +1,39 @@
+{
+  "status": "LINKED_PENDING_GPU_AND_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "3": [
+      "fg170s3_gg_function_1",
+      "fg170s3_gg_function_8"
+    ],
+    "4": [
+      "fg170s4_gg_function_1",
+      "fg170s4_gg_function_8"
+    ],
+    "5": [
+      "fg170s5_gg_function_1",
+      "fg170s5_gg_function_8"
+    ],
+    "7": [
+      "fg170s7_gg_function_1",
+      "fg170s7_gg_function_8"
+    ],
+    "9": [
+      "fg170s9_gg_function_1",
+      "fg170s9_gg_function_8"
+    ],
+    "15": [
+      "fg170s15_gg_function_1",
+      "fg170s15_gg_function_8"
+    ],
+    "host": "fg170sh_gg_function_1"
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp170/run/libggml-cuda-ssm-c9f75d6d9373.so.0.27.0",
+  "sha256": "02bd6343887edb8049c20700cd81b43dfbe9bbdd26b49200e47af650101df2a3",
+  "previous_library_sha256": "26bd426d10e14e512ad1812d390180272ff9007adbeb033c0c3c236060a41d7b",
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ssm-conv.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_SSM=0 or immutable EXP169",
+  "production_changed": false
+}

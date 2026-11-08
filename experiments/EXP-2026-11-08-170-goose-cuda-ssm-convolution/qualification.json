@@ -1,0 +1,88 @@
+{
+  "status": "PASS_SCOPED_GPU_REFERENCE_ROLLBACK_PREFLIGHT_REAL_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "3": [
+      "fg170s3_gg_function_1",
+      "fg170s3_gg_function_8"
+    ],
+    "4": [
+      "fg170s4_gg_function_1",
+      "fg170s4_gg_function_8"
+    ],
+    "5": [
+      "fg170s5_gg_function_1",
+      "fg170s5_gg_function_8"
+    ],
+    "7": [
+      "fg170s7_gg_function_1",
+      "fg170s7_gg_function_8"
+    ],
+    "9": [
+      "fg170s9_gg_function_1",
+      "fg170s9_gg_function_8"
+    ],
+    "15": [
+      "fg170s15_gg_function_1",
+      "fg170s15_gg_function_8"
+    ],
+    "host": "fg170sh_gg_function_1"
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp170/run/libggml-cuda-ssm-c9f75d6d9373.so.0.27.0",
+  "sha256": "02bd6343887edb8049c20700cd81b43dfbe9bbdd26b49200e47af650101df2a3",
+  "previous_library_sha256": "26bd426d10e14e512ad1812d390180272ff9007adbeb033c0c3c236060a41d7b",
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ssm-conv.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_SSM=0 or immutable EXP169",
+  "production_changed": false,
+  "producer": "Full self-hosted Stage3 f849233b999c;latest complete verified producer;EXP302 is a parser observer,not full compiler replacement",
+  "local_results": "local-results.json",
+  "apex_summary": "apex-summary.json",
+  "source_sha256": {
+    "cases.json": "8ccf5945c5d658727595eea364d1175baad1b11cf9d17334badaff35f658801c",
+    "cuda-bridge.cuh": "ab9b4d91379eb8a8b44803135091497bb565080d25c496289d09ead394f52e1c",
+    "cuda-ssm.cu": "2a6a9eb2a24fdf208ad3229a575159f545bb71455391166a8d32fc1317bdc597",
+    "device-c15-generated.c": "c859093a02a2ff81dffb14ac30d2c8ba5d34bc0e4ec739dcf0703d12e567dfd1",
+    "device-c15-generated.cuh": "be34cf95eae4f4c8da4a38a214b4c89120649618ee990165ae13310d47acdab6",
+    "device-c15.goose": "78ecc684a771509870dbc1a9263f17614b6e16140bf369edb930641cc7c511fd",
+    "device-c3-generated.c": "2655dc1e9cfba3029524bca5339491757501878917fcee526928bef076449215",
+    "device-c3-generated.cuh": "f98ac5f81f0f0b3b798b21aa4adfb91933f6970a5e88cf56884c341b27ddbefa",
+    "device-c3.goose": "4aafcdc2763bc5f885fa41277429dd7ca5bd3b7454269c0f62a863e94416e4d5",
+    "device-c4-generated.c": "fcacd62f9b6a184528b601c34554171c2059bfb3cd3ce524f3ffb21d3e936a66",
+    "device-c4-generated.cuh": "fc0397e4f33c9eb75d4de82f1e4e52864447b5e4d42376cd54e751c06a390321",
+    "device-c4.goose": "74748f8b427081c02f61d118077fa10c4df607870883f312dd0dc04c0ab1aee8",
+    "device-c5-generated.c": "360045fbe61ec4ec3efd06f464c77195a76c6b00e757ca9137d629e1d183c6f1",
+    "device-c5-generated.cuh": "2dbd4f8bd68a07599cb1006f284625600beb291503a8369dcf0fbf4e4152addd",
+    "device-c5.goose": "c916e7f0fbac6f83c331a1bd45b4c6142a064da50ec08c0176e3e3045631cb77",
+    "device-c7-generated.c": "ef2069402b71b9cc216dbbc622d8af6fbb809042235fbdcb0bb2dcdaa8af6bde",
+    "device-c7-generated.cuh": "fe6bd0ddd8cad86e5c3c153f42f3a4d8bdae8cae5f1ebf88fc5eddff9f480732",
+    "device-c7.goose": "a0254c25f2b41c0e29b1c6b924e26c30bef26475b5a702bd22992a270866e448",
+    "device-c9-generated.c": "5a09c51e6a353061c5af2044ecbc16a18576e5144a2309b8d0ae8653424a7204",
+    "device-c9-generated.cuh": "d2f42a12f1dabc680370d8a5b13d662ac6b50dba9ebe6bfd619de9455cf23f89",
+    "device-c9.goose": "850c22b4098f0550fcd5a09d9d20a014c67a1c86d68e54afb9c4c5f90d2e4ec3",
+    "device.goose": "78ecc684a771509870dbc1a9263f17614b6e16140bf369edb930641cc7c511fd",
+    "entries.cuh": "0f313772e9dba0340511a6a6f0b83577ce7341f84eee96e7e5743ec57de3d548",
+    "fixture.cu": "b555cac26d5850a0b6c8cb982f857a1f1f1a98f9eedd321a31afc74569fabf0c",
+    "host-ffi.h": "563a5ad28d2940e5c007545c2dbaaf75df155f754f6d4ffeb6b6ee6b23aa34ae",
+    "host-generated.c": "4c75aa54090f24bcf1d7295a2590b41715067b25fa4dbbd16ba512558d3de9dc",
+    "host-qualified.c": "1f783a78ff7c274513a9d6997365435f4443cd2573013f958ba0e2f2f8068e69",
+    "host-unit.c": "9fb7e89998dd8157204a04d6ce6a2e016540314af3a9299f3eafab5428c0dcf5",
+    "host.goose": "dddeeb88759cd191c7835b879781805066e67ec1c0887c509e6ae0501ccbaaaa",
+    "manifest.json": "c80cef1e50ea7cd1c6ab670b21ceec0c9cd67807d51c5a052666e828ffef722b",
+    "native-prefixed.cuh": "f23f1a0dbc3480a4f160fb86b1165819bd877106694b7f5136f955c9905b5adf",
+    "native-ssm-conv.cu": "6075a431a11b90bf46df322b320cc1cdf233cb0bd8d9ed3eeb46e4cdea909dca",
+    "native-ssm-conv.cuh": "36de452e725fd79f445fba170e1f361255be602e1fd52a3d87745b63735f3852",
+    "plan.h": "345f6cb5d71ceb072b7bd8f97d3d9a7f1e9b1e3dc4041ef422a5182a39532cd7",
+    "preflight.cu": "0a30df404a161aee693b2d15fc2e2e848c8f72da98c70d271ddf9c9743089985",
+    "projection.cuh": "847895af619a6a91181ac81ab39623bb9c4ab38900285edd20d0d54ce33c92a0",
+    "visibility.map": "072fa7825f3cb92495159833cbc1f3fd0dfaf07b0015f929aa3b454c27b9b947",
+    "worker-cases.json": "8ccf5945c5d658727595eea364d1175baad1b11cf9d17334badaff35f658801c",
+    "worker-contract.json": "ebf4b492c1d01f8c89a516f2d2a7abcbf86488bdf3cc5acdc8f698937a8ea34b",
+    "worker-device.goose": "cbb98fd34d1ce46d5918bf8d96fc573fce731f88f71755b6ceb3bc2838b91128",
+    "worker-fixture.cu": "f2e63f0b6539f529576427a2265e6f31b645c52bc869fe2d02a4b319c465f5ea",
+    "worker-policy.goose": "7d0bcb4d1da98c1f5fffe81e31a52be5814ed630a6062bd6cff07d552adf3f00"
+  },
+  "native_tail_read": "Original unused ragged-tail reads exist;candidate always bounds them in Goose. Native tests use padding;canaries do not detect all read-only OOB and no sanitizer claim is made.",
+  "external_dependencies": "CUDA scalar ISA,storage,launch/PDL/stream effects only;no original SSM arithmetic callback on enabled path"
+}

@@ -996,7 +996,7 @@
       "id": "P3-13",
       "phase": "P3",
       "title": "Port CUDA recurrent,SSM,gated-delta and sparse indexing",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/ssm*",
         "ggml/src/ggml-cuda/gated*",
@@ -1007,7 +1007,7 @@
         "ggml/src/ggml-cuda/dsv4*"
       ],
       "acceptance": "Multi-step stateful outputs match for each registered path; state ownership and concurrent stream ordering checked.",
-      "evidence": "",
+      "evidence": "EXP170 transfers full active CUDA SSM convolution host/device TU:serial/tiled,six d_conv sizes,fused SiLU/bias,checked shape/stride/span/alias and bounded ragged loads.160GPU cases/156native pairs/4candidate-only bounded tails/2934272independent fp64 references,156rollback,2capture executions per mode and26before-stream rejections pass. One real Apex2650.059/27.985,exact text/all128IDs/full probabilities,127graph reuses,host2/device7/size2 proving actual d_conv4 serial+tiled fusion,cuda_status0,zero owned heaps. Other recurrence/GDN-MMA/scan/sparse/source closure remains open;not full requirement DONE.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
