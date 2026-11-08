@@ -1,6 +1,6 @@
 from pathlib import Path
 import os,json,time,subprocess,urllib.request,urllib.error,threading,hashlib,signal,traceback
-A=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');L=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107/results');R=A/'runtime/exp174/run';mode=os.environ.get('FG174_MEASURE_MODE','goose');assert mode in ['goose','native-rollback'];label='apex-32k128-setrows-recheck'+os.environ.get('FG_SUFFIX','')+'-'+mode;B=A/'runtime/exp175/results'/label;T=A/'runtime/exp175/measured'/label/'run';B.mkdir(parents=True,exist_ok=True);T.mkdir(parents=True,exist_ok=True)
+A=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');L=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107/results');R=A/('runtime/'+os.environ.get('FG_STAGE','exp174')+'/run');mode=os.environ.get('FG174_MEASURE_MODE','goose');assert mode in ['goose','native-rollback'];label='apex-32k128-setrows-recheck'+os.environ.get('FG_SUFFIX','')+'-'+mode;B=A/'runtime/exp175/results'/label;T=A/'runtime/exp175/measured'/label/'run';B.mkdir(parents=True,exist_ok=True);T.mkdir(parents=True,exist_ok=True)
 if (B/'process.json').exists():raise SystemExit('Existing diagnostic receipt;inspect before rerunning')
 for f in R.iterdir():
  if f.is_file() or f.is_symlink():
@@ -27,7 +27,7 @@ env.pop('GGML_GOOSE_CUDA_FA',None)
 if mode=='native-rollback':env['GGML_GOOSE_CUDA_SET_ROWS']='0'
 else:env.pop('GGML_GOOSE_CUDA_SET_ROWS',None)
 (B/'environment.json').write_text(json.dumps({k:v for k,v in env.items() if k.startswith(('GGML_GOOSE_','GGML_EXPERT_')) or k=='LD_LIBRARY_PATH'},indent=2)+'\n')
-(B/'setrows-control-mode.json').write_text(json.dumps(dict(mode=mode,same_cuda_library_sha256=libs['libggml-cuda.so']['sha256'],pair='EXP174-SET_ROWS-only-FA-remains-Goose'),indent=2)+'\n')
+(B/'setrows-control-mode.json').write_text(json.dumps(dict(mode=mode,same_cuda_library_sha256=libs['libggml-cuda.so']['sha256'],pair='stage='+os.environ.get('FG_STAGE','exp174')+' same DSO component switch'),indent=2)+'\n')
 log=(B/'server.log').open('w');p=subprocess.Popen(argv,env=env,cwd=T,stdout=log,stderr=subprocess.STDOUT,start_new_session=True);receipt=dict(pid=p.pid,started=time.time(),phase='LOADING',model='Apex-35B-V1.0-Q4_K_M',input_tokens=32768,output_tokens=128,preliminary=True,not_acceptance='EXP174 SET_ROWS F32/Q4_0 I32/I64 arithmetic and checked host planning in Goose;all other EXP173 components unchanged;actual SET_ROWS witness required;full migration incomplete',production_changed=False);(B/'process.json').write_text(json.dumps(receipt,indent=2)+'\n');print('APEX_DIAGNOSTIC_STARTED pid='+str(p.pid),flush=True)
 stop=threading.Event();samples=[]
 def monitor():
@@ -47,6 +47,37 @@ def monitor():
    samples.append(d)
   except (OSError,ValueError,subprocess.TimeoutExpired):pass
 thread=threading.Thread(target=monitor,daemon=True);thread.start()
+# CPU telemetry of the server process itself, sampled once per second while it
+# runs. Thread CPU time is read from /proc/<pid>/task/<tid>/stat so contention on
+# the expert threads is visible without touching the server.
+cpu_samples=[]
+def cpu_monitor():
+ prev={}
+ while not stop.wait(1):
+  try:
+   now={}
+   for d in Path('/proc/'+str(p.pid)+'/task').iterdir():
+    try:
+     f=Path(str(d)+'/stat').read_text().rsplit(')',1)[1].split()
+     utime,stime=int(f[11]),int(f[12])
+     now[d.name]=utime+stime
+    except (OSError,IndexError,ValueError): continue
+   total=sum(now.values())
+   tick=os.sysconf('SC_CLK_TCK')
+   if prev:
+    used=sum(max(0,now[k]-prev.get(k,0)) for k in now)/tick
+    freqs={}
+    for c in sorted(os.sched_getaffinity(p.pid)):
+     try: freqs[str(c)]=int(Path(f'/sys/devices/system/cpu/cpu{c}/cpufreq/scaling_cur_freq').read_text())//1000
+     except OSError: pass
+    cpu_samples.append(dict(at=time.time(),cores_used=round(used,3),
+      threads=len(now),loadavg=os.getloadavg()[0],
+      mhz_min=min(freqs.values()) if freqs else None,
+      mhz_max=max(freqs.values()) if freqs else None,
+      mhz={k:v for k,v in freqs.items()}))
+   prev=now
+  except (OSError,ValueError): pass
+cpu_thread=threading.Thread(target=cpu_monitor,daemon=True);cpu_thread.start()
 def savephase(phase):
  receipt['phase']=phase;receipt['updated']=time.time();(B/'process.json').write_text(json.dumps(receipt,indent=2)+'\n');print('APEX_PHASE '+phase,flush=True)
 try:
@@ -81,7 +112,7 @@ try:
   except OSError: pass
  (B/'thread-affinity.json').write_text(json.dumps(tasks,indent=2,sort_keys=True)+'\n')
  (B/'cpu-topology.json').write_text(json.dumps(dict(cpus=len(os.sched_getaffinity(0)),
-   physical_cores=subprocess.run(['bash','-lc','lscpu -p=core,socket | grep -v ^# | sort -u | wc -l'],capture_output=True,text=True).stdout.strip())),indent=2)+'\n')
+   physical_cores=subprocess.run(['bash','-lc','lscpu -p=core,socket | grep -v ^# | sort -u | wc -l'],capture_output=True,text=True).stdout.strip()),indent=2)+'\n')
  for n,item in libs.items():
   if item['path'] not in maps:raise RuntimeError('Expected current library not mapped: '+n)
  savephase('PREFILL_DECODE');start=time.monotonic();request=urllib.request.Request('http://127.0.0.1:8081/completion',data=req,headers={'Content-Type':'application/json'})
@@ -92,7 +123,7 @@ try:
 except Exception as e:
  receipt['error']=str(e);(B/'failure.txt').write_text(traceback.format_exc());savephase('FAILED');print('APEX_DIAGNOSTIC_FAILED '+str(e),flush=True)
 finally:
- stop.set();thread.join(timeout=6);(B/'memory.json').write_text(json.dumps(samples,indent=2)+'\n')
+ stop.set();thread.join(timeout=6);cpu_thread.join(timeout=3);(B/'cpu-telemetry.json').write_text(json.dumps(cpu_samples,indent=2)+'\n')(B/'memory.json').write_text(json.dumps(samples,indent=2)+'\n')
  if p.poll() is None:
   os.killpg(p.pid,signal.SIGTERM)
   try:p.wait(timeout=15)

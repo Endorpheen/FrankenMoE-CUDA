@@ -1,5 +1,5 @@
 {
-  "status": "FUNCTIONAL_APEX_PATH_PASS_ONE_PAIR_NO_REGRESSION",
+  "status": "FUNCTIONAL_APEX_PATH_PASS_CLEAN_PAIR_NO_REGRESSION",
   "component": "CUDA CONCAT device arithmetic+host planning in Goose;all other EXP174 modules identical",
   "mechanism": "same DSO,GGML_GOOSE_CUDA_CONCAT=0 selects the private-renamed native op",
   "runs": {
@@ -36,12 +36,60 @@
     "swap_kib": 0,
     "vram_mib": 3278
   },
-  "limits": "preliminary single pair under uncontrolled external load;not stable performance acceptance;other P3-03 scope (COPY/GET_ROWS/PAD/ROLL/SET) and full source closure remain open",
+  "limits": "preliminary single clean pair;other P3-03 scope (COPY/DUP/CONT,GET_ROWS(+BACK),SET,PAD,PAD_REFLECT_1D,ROLL,dim3-quantized and non-contiguous branches) remains native;P3-03 in progress",
   "production_changed": false,
   "active_runtime_changed": false,
   "defects_found_and_fixed": [
     "host accessor type confusion: fg175cn_ti dereferenced the packet instead of the tensor address; fixed to dereference the tensor directly",
     "plan arena overlap: memcpy sizes were written into the slots holding the src0/src1/dst pointers; moved to their own row",
     "fixture-only: a dim=2 quantized case declared an inconsistent src1 plane count, so both arms failed it identically until the case was corrected; the strict reference check was restored, not weakened"
+  ],
+  "clean_measurement": {
+    "conditions": "original EXP174 runner, ghostty terminal closed, load ~6, one request per arm",
+    "exp174": {
+      "prefill": 2610.756575233618,
+      "decode": 27.457791213117645,
+      "cuda_sha": "0b187bc1cca2"
+    },
+    "exp175": {
+      "prefill": 2625.730864349285,
+      "decode": 27.581198396555084,
+      "cuda_sha": "55e1beae086f"
+    },
+    "delta_pct": {
+      "prefill": 0.573,
+      "decode": 0.437
+    },
+    "vs_historical": {
+      "exp174": {
+        "prefill": -1.96,
+        "decode": -1.43
+      },
+      "exp175": {
+        "prefill": -1.4,
+        "decode": -1.02
+      }
+    },
+    "cpu": {
+      "cores_used": [
+        8.02,
+        8.05
+      ],
+      "mhz": [
+        "3712-4591",
+        "4421-4730"
+      ],
+      "threads": 54
+    },
+    "correctness": "exact 128 ids, text and all top-5 in both arms; content sha256 e68df05b"
+  },
+  "cause_of_earlier_low_numbers": "ghostty rendered through 32 llvmpipe threads at 1947% average / 2414% peak CPU, competing with --cpu-moe expert threads; unchanged EXP174 recovered 18.70 -> 27.46 tok/s decode after it was closed",
+  "contaminated_observations_not_evidence": [
+    "interleaved A/B 2189.82/18.70",
+    "2231.25/19.39",
+    "2251.26/17.10",
+    "2222.58/18.86",
+    "same-DSO pair native 2150.66/18.31",
+    "goose 2210.01/19.03"
   ]
 }

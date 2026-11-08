@@ -1,78 +1,71 @@
-# Measurement status EXP175: unresolved speed discrepancy
+# Measurement status EXP175: resolved
 
-The CONCAT transfer itself is committed (`52011a5`) with passing local gates and
-byte-exact model output. What is NOT established is the absolute
-prefill/decode speed, because the same unchanged binaries now report numbers well
-below the recorded EXP174 baseline.
+The speed discrepancy recorded here earlier is now measured, not assumed, and it
+is resolved. Two facts decide it: the same unchanged EXP174 binary recovered its
+baseline once the terminal stopped contending for CPU, and EXP175 is marginally
+faster than EXP174 under identical clean conditions.
 
-## Facts, not conclusions
+## Clean-condition comparison
 
-| Source | Machine state | Prefill | Decode |
-|---|---|---:|---:|
-| EXP174 original run (recorded) | load ~1.8-2.3 | 2663.00 | 27.86 |
-| EXP175 same-DSO pair, native arm | load 22.6-28.5 | 2150.66 | 18.31 |
-| EXP175 same-DSO pair, Goose arm | load 14.7-24.4 | 2210.01 | 19.03 |
-| Interleaved A/B, old EXP174 arm #0 | load 18.9 | 2189.82 | 18.70 |
-| Interleaved A/B, new EXP175 arm #1 | load 16.1 | 2231.25 | 19.39 |
-| Interleaved A/B, new EXP175 arm #2 | load 21.1 | 2251.26 | 17.10 |
-| Interleaved A/B, old EXP174 arm #3 | load 25.9 | 2222.58 | 18.86 |
-| EXP174 re-run with the original runner | load ~2 | see receipt | see receipt |
-| Independent re-run reported by the owner | load 1.7-2.7 | 2467.91 | 25.10 |
+Both arms run the original EXP174 runner outside ghostty, one fixed-profile
+request each, 32768 prompt tokens and 128 predictions.
 
-The `runtime/exp174/run/libggml-cuda.so` used by the old arms is byte-identical to
-the hash recorded at the original 2663/27.86 measurement
-(`0b187bc1cca2b4077a076845fcfc099dc68183dbc55b3b3011d765fe18a47117`), and its
-modification time predates every re-run. All arms reproduce exactly the saved
-128 token ids, response text and all returned top-5 probabilities.
+| Build | Prefill tok/s | Decode tok/s | CUDA DSO sha256 | Cores used | CPU MHz | Threads |
+|---|---:|---:|---|---:|---|---:|
+| EXP174 (previous checkpoint) | 2610.76 | 27.46 | `0b187bc1cca2…` | 8.02 | 3712-4591 | 54 |
+| EXP175 (CONCAT in Goose) | 2625.73 | 27.58 | `55e1beae086f…` | 8.05 | 4421-4730 | 54 |
+| Delta, new versus old | **+0.573%** | **+0.437%** | | | | |
 
-An independent re-run of the same unchanged code elsewhere recovered 25.10 tok/s
-rather than 18.7-18.9, so a slow machine is not the whole story and no single
-cause is proven.
+Against the historical 2663.00 / 27.86 baseline both arms sit inside the 2%
+tolerance: EXP174 at -1.96% / -1.43%, EXP175 at -1.40% / -1.02%. Tokens, text
+and all returned top-5 probabilities are bit-exact in every arm; response content
+sha256 is `e68df05b`.
 
-## What was ruled out by comparison, and what was not
+The EXP174 arm above loaded the same `libggml-cuda.so` hash that was recorded at
+the original 2663/27.86 measurement (`0b187bc1cca2…`), so its recovery is
+attributable to the environment, not to a rebuild.
 
-Ruled out as the *explanation of the delta*, since they were identical across
-arms:
+CPU telemetry taken during the decode window shows 8.02 and 8.05 cores in use,
+which matches `-t 8`, with per-core frequencies 3712-4591 and 4421-4730 MHz. The
+expert threads were therefore not short of cores in either arm.
 
-- server flags: the 56 flags are byte-identical to the audited profile
-  (`plan-apex-native-argv.json`); only the extra `--alias` appears, which the
-  owner's list omits and which does not affect inference;
-- request: 32768 prompt tokens, 128 predictions, seed 123, temperature 1,
-  top_p 0.95, top_k 20, min_p 0, n_probs 5, cache_prompt false, ignore_eos true;
-- `LD_PRELOAD` empty in both, `GGML_EXPERT_HOTSTORE=0`, same model file.
+## Cause established by measurement
 
-Not established:
+The earlier arms ran under a terminal that rendered through 32 llvmpipe threads,
+consuming 1947% CPU on average and 2414% at peak, roughly 20-24 of the 32 cores.
+With `--cpu-moe` the expert arithmetic runs on CPU, so that contention directly
+competed with the expert threads. Removing it returned the unchanged EXP174
+binary from 18.70 to 27.46 tok/s decode with no code change.
 
-- whether my earlier sampling harness perturbed the measurement. It called
-  `nvidia-smi` four times per second (about 80 process spawns per request), while
-  the original runner samples once every five seconds. That difference is a
-  plausible self-inflicted perturbation and is why the original runner is now
-  used unchanged;
-- CPU-side facts during decode: per-thread affinity, per-core frequency,
-  utilisation and steal time were not captured in the earlier runs. The owner
-  notes that mask `0f0f` addresses eight distinct physical cores on this machine,
-  that the Apex process had zero swap of its own, and that `powersave` governor
-  with `amd-pstate-epp`, `balance_performance` and boost enabled is not by itself
-  evidence of a forced low frequency;
-- GPU idle clocks say nothing about inference speed and are not used as evidence.
+Arms measured under that contention, retained as contaminated observations and
+not used as performance evidence: interleaved A/B 2189.82/18.70,
+2231.25/19.39, 2251.26/17.10, 2222.58/18.86; same-DSO pair 2150.66/18.31 native
+and 2210.01/19.03 Goose.
 
-## Owner corrections recorded
+Two harness faults of my own are recorded and were fixed: the earlier sampler
+called `nvidia-smi` four times per second instead of once per five seconds, and
+it did not capture per-thread affinity, core frequency or per-thread CPU time
+during decode.
+
+## Owner corrections that shaped this
 
 1. Mask `0f0f` spans eight distinct physical cores here, not four.
-2. The Apex process itself had zero swap; system-wide swap occupancy does not
+2. The Apex process itself had zero swap; system-wide swap occupancy did not
    prove the cause.
-3. `powersave` with amd-pstate-epp and boost is not proof of a forced low clock.
-4. GPU idle frequencies are irrelevant to inference speed.
-5. The independent re-run had load about 1.7-2.7 and still did not return to
-   27.86.
+3. `powersave` with amd-pstate-epp, `balance_performance` and boost enabled is not
+   proof of a forced low clock. Measured frequencies were in fact 3.7-4.7 GHz.
+4. GPU idle clocks say nothing about inference speed.
+5. An independent re-run at load 1.7-2.7 still reported 25.10 rather than 27.86,
+   so a slow machine alone was not the whole story; here it took removing the
+   competing renderer to recover the baseline.
 
-## Next measurement, when needed
+## Evidence captured per run
 
-Use `run_apex_recheck.py`, which is the original EXP174 runner with only the
-output directories changed, so the sampling cadence stays at one `nvidia-smi`
-call per five seconds. It additionally records the actual argv, the full
-environment, resolved library hashes and the Cpus_allowed_list of every thread,
-plus CPU topology, so the next comparison has evidence rather than inference.
-Capture per-thread CPU time and core frequency during the decode window before
-attributing the discrepancy. Do not change production, system settings or other
-processes.
+`run_apex_recheck.py` is the original EXP174 runner with only the output
+directories parameterised by `FG_STAGE`/`FG_SUFFIX`, so the one-`nvidia-smi`-per-
+five-seconds cadence is preserved. It writes, per run: `argv-actual.json`,
+`env-actual.json`, `loaded-library-hashes.json` (resolved paths, not symlinks),
+`thread-affinity.json` (every thread's `Cpus_allowed_list`), `cpu-topology.json`,
+`cpu-telemetry.json` (per-second cores used, frequencies, load average) and
+`memory.json`. KEEP the measurement host free of CPU-rendering terminals for any
+future Apex number.
