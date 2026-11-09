@@ -17,11 +17,19 @@ Goose path for quantized sources, RoPE trapped on a non-positive `n_ctx_orig`, C
 element size instead of type, SILU_BACK was routed to a Goose body that had never been written,
 and the matvec modules admitted shapes they do not model.
 
-**One bound is masking an unexplained case.** The matvec modules are restricted to `ne3 == 1`.
-Without that, nine `MUL_MAT` cases fail — yet the Goose kernel is byte-identical to native in
-all 21 fixture configurations that can be built here, including padding, overlap and sample
-broadcast. Both measurements stand. The bound is a bound, not a fix, and it is labelled that
-way everywhere it appears.
+**The last unexplained case is now explained and fixed.** The matvec modules were briefly
+restricted to `ne3 == 1` after nine `MUL_MAT` cases failed. That bound is gone: the cause was
+found by comparing against the native kernel, and implemented in both bodies. `mmvf.cu:43`
+divides the destination sample by `nsamples_dst / nsamples_x`, broadcasting a source with fewer
+samples; the Goose bodies used `sample_dst` directly, so the second sample read past the end of
+a 16-row source. Measured signature before the fix: sample 0 exact to 1e-6, sample 1 wrong by
+87.5. After it, the original failing case passes with `paths=0x1` and both predicates admit the
+broadcast shape.
+
+This is worth stating plainly because the earlier notes in `test-backend-ops-failures.md` went
+back and forth: two intermediate conclusions were wrong — an attribution produced by a broken
+shell command, and a reading that said Goose was correct when the reference capture was the
+broken part. Both are retracted in that document with the evidence that overturned them.
 
 **Not reachable from this repository.** The remaining share of GPU time is `mul_mat_q` Q4_K and
 Q6_K (~40%), `quantize_mmq_q8_1`, `mul_mat_f` and `mul_mat_vec_q` Q6_K. All are blocked on one
