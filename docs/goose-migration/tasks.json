@@ -915,7 +915,7 @@
         "ggml/src/ggml-cuda/template-instances/**"
       ],
       "acceptance": "Every registered MMVQ format/instance,expert routing,split K,tail and batch mode executes Goose; Apex decode witnesses.",
-      "evidence": "",
+      "evidence": " EXP184 actual Apex CUDA mul_mat_vec_f for T=float,ncols_dst=1,no fusion is Goose: channel/sample/row addressing including the ids path,the float2-strided dot product,the FMA accumulation,the shfl_xor warp reduction,the cross-warp shared pass and the store,plus the block-size search in the host module. 10 checks/5 cases per arm,5 of 5 outputs byte-identical (ncols 256/512/2048/4096/8192 covering every block-size branch,and a 4-channel case),memcheck 0 errors. Paired Apex in the same DSO with only this op switched,order native->goose->goose->native: prefill 2564.82->2575.08 (+0.40%),decode 26.16->26.60 (+1.69%),content sha256 identical,witness FG184M only in the Goose arms. Six defects in my own work found and fixed; the last one, searching block sizes on ncols2 instead of ncols, was the root cause of a residual 1-ULP difference and took the fixture from 3/5 to 5/5. Half/bfloat16/quantized sources,ncols_dst>1,the fusion path and the multi-token ids path remain native,as do mul_mat_vec_q and mul_mat_q.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3194,6 +3194,14 @@
       "change": "CUDA FWHT warp path (N=64..512, F32) implemented in Goose and enabled by default",
       "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-183-goose-cuda-fwht/README.md"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-08",
+      "experiment": "EXP184",
+      "change": "CUDA mul_mat_vec_f (float, one dest column, no fusion) implemented in Goose and enabled by default",
+      "status": "ACCEPTED",
+      "evidence": "experiments/EXP-2026-11-08-184-goose-cuda-mmvf/README.md"
     }
   ],
   "batches": [
