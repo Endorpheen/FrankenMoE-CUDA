@@ -85,12 +85,34 @@ static void fg184m_report(){
   (unsigned long long)fg184m_ne1.load());
 }
 
+
+// Capture: with FG184M_CAP=<dir> every call's destination is written out, so the same harness
+// case can be run on both routes and the two outputs diffed directly instead of guessed at.
+static void fg184m_capture(cudaStream_t s, const ggml_tensor * dst, const char * route) {
+ const char * dir = getenv("FG184M_CAP");
+ if (!dir || !dst || !dst->data) return;
+ static std::atomic<int> seq{0};
+ const int i = seq.fetch_add(1);
+ if (i >= 64) return;
+ cudaStreamSynchronize(s);
+ const size_t nb = ggml_nbytes(dst);
+ void * host = malloc(nb);
+ if (!host) return;
+ if (cudaMemcpy(host, dst->data, nb, cudaMemcpyDeviceToHost) == cudaSuccess) {
+  char path[600];
+  snprintf(path, sizeof path, "%s/%03d_%s_%lldx%lldx%lldx%lld.bin", dir, i, route,
+           (long long)dst->ne[0],(long long)dst->ne[1],(long long)dst->ne[2],(long long)dst->ne[3]);
+  if (FILE * f = fopen(path, "wb")) { fwrite(host, 1, nb, f); fclose(f); }
+ }
+ free(host);
+}
+
 void fg184m_native_ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context&,const ggml_tensor*,const ggml_tensor*,
  const ggml_tensor*,ggml_tensor*,const ggml_cuda_mm_fusion_args_host*);
 void ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context &ctx,const ggml_tensor*src0,const ggml_tensor*src1,
  const ggml_tensor*ids,ggml_tensor*dst,const ggml_cuda_mm_fusion_args_host*fusion){
  const char*flag=getenv("GGML_GOOSE_CUDA_MMVF");
- if(flag&&strcmp(flag,"0")==0){fg184m_native_ggml_cuda_mul_mat_vec_f(ctx,src0,src1,ids,dst,fusion);return;}
+ if(flag&&strcmp(flag,"0")==0){fg184m_native_ggml_cuda_mul_mat_vec_f(ctx,src0,src1,ids,dst,fusion);fg184m_capture(ctx.stream(),dst,"natflag");return;}
  // Recorded for every call, whatever route it takes, so a single-case run answers what the
  // arguments were without needing another fixture variant.
  if(ids&&ids->data)fg184m_with_ids.fetch_add(1,std::memory_order_relaxed);
@@ -143,8 +165,10 @@ void ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  p.v[5][2]=ids?1ULL:0ULL;
  if(fg184hh_run((int64_t)(uintptr_t)&p)&&eligible){
   fg184m_host_seen.fetch_or(p.launched?1ULL:16ULL,std::memory_order_relaxed);
+  fg184m_capture(p.stream,dst,"goose");
   return;
  }
  fg184m_host_seen.fetch_or(32ULL,std::memory_order_relaxed);
  fg184m_native_ggml_cuda_mul_mat_vec_f(ctx,src0,src1,ids,dst,fusion);
+ fg184m_capture(ctx.stream(),dst,"native");
 }

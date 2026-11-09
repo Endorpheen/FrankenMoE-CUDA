@@ -413,3 +413,42 @@ harness case at all. That is the point to stop varying the fixture: it has match
 strides, padding, overlap, broadcast, call arguments and input magnitude, and the harness still
 disagrees. Reproducing it now needs the harness's own tensors, captured and replayed, not more
 generated ones.
+
+## Captured the harness's own tensors: reproduced, and the output is uncorrelated
+
+Instead of generating more fixtures, the dispatch itself now dumps `dst` when
+`FG184M_CAP=<dir>` is set, so the harness case can be run on both routes and the two outputs
+compared directly.
+
+    MUL_MAT(type_a=f32,type_b=f32,m=16,n=1,k=256,bs=[1,1],nr=[1,2],...)
+    dst shape 16x1x1x2
+
+    /tmp/cg2/000_goose_16x1x1x2.bin     (bound removed)
+    /tmp/cn/000_natflag_16x1x1x2.bin    (GGML_GOOSE_CUDA_MMVF=0)
+
+    DIFFER — all 32 values differ, not a subset
+
+First and last few, goose against native:
+
+    idx 0    -4.2523   -1.7559        idx 21   81.2890    3.2449
+    idx 4     5.8011   -5.8084        idx 30    1.3454    6.3562
+    idx 9    -8.8988    7.7125        idx 31    0.0000    6.0407
+
+Two things stand out. Every element differs, which is not the signature of a partial write or
+a wrong batch offset — those corrupt a contiguous slice. And the last element of the Goose
+output is exactly `0.0` while its neighbours are order 1-10.
+
+`idx 21 = 81.289` against `3.2449` is also inconsistent with "the same reduction computed
+differently": an FMA-ordering difference cannot move a result by 25x. That is the signature of
+the kernel reducing over **different memory**, not over the same memory in a different order.
+
+So the next question is no longer about the arithmetic at all: it is which addresses the kernel
+reads. The capture facility now makes that answerable — dumping `src0` and `src1` alongside
+`dst` for the same call, and dotting them on the host, would say immediately whether the body
+read the intended rows or something else.
+
+Note the fixture cannot see this because it places `src0` and `src1` in clean, separate,
+freshly filled buffers; the harness places them as views into one base allocation. That
+difference was reproduced in the fixture and still matched, so the trigger is narrower than the
+layout — it is plausibly a specific address relationship that only the harness's allocator
+produces.
