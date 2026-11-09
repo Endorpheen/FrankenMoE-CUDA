@@ -34,6 +34,9 @@ int64_t fg199k_can_use(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
 int64_t fg199k_pos_in(int64_t, int64_t, int64_t);
 int64_t fg199k_norm_range(int64_t, int64_t, uint64_t);
 int64_t fg199k_head_after_rm(int64_t, int64_t, int64_t);
+int64_t fg199k_same_stream(int64_t, int64_t);
+int64_t fg199k_seq_cp_self(int64_t, int64_t);
+int64_t fg199k_seq_cp_is_full(int64_t, int64_t, int64_t);
 }
 
 // ---- arena, laid out as the module documents it ----
@@ -277,6 +280,21 @@ int main(void) {
         const int64_t head = rng() % 40, nh = rng() % 40, freed = rng() % 2;
         const int64_t ref = freed == 0 ? head : (nh < head ? nh : head);
         ck(fg199k_head_after_rm(freed, nh, head) == ref, "head_after_rm", 0, ref);
+    }
+
+    // seq_cp decisions.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t s0 = rng() % 4, s1 = rng() % 4;
+        ck((fg199k_same_stream(s0, s1) != 0) == (s0 == s1), "same_stream", 0, 0);
+        const int64_t a = rng() % 4, b = rng() % 4;
+        ck((fg199k_seq_cp_self(a, b) != 0) == (a == b), "seq_cp_self", 0, 0);
+
+        const int64_t size = (int64_t)(rng() % 100);
+        const int64_t p0 = (int64_t)(rng() % 100), p1 = (int64_t)(rng() % 100);
+        bool full = true;
+        if (p0 > 0 && p0 + 1 < size) full = false;
+        if (p1 > 0 && p1 + 1 < size) full = false;
+        ck((fg199k_seq_cp_is_full(p0, p1, size) != 0) == full, "seq_cp_is_full", 0, full);
     }
 
     run_trap("rm on empty cell", 12, trap_rm_empty);

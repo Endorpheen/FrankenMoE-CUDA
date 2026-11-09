@@ -143,3 +143,27 @@ Gate: 69529 checks / 0 failures.
 
 `prepare`'s trial loop and the `llama_kv_cache_context` seam; then the same treatment for
 `seq_cp` / `seq_keep` at cache level.
+
+## seq_cp decisions ported; the path is not exercised here
+
+From `llama-kv-cache.cpp:473-560`: `same_stream`, `seq_cp_self` (copy onto itself is a no-op) and
+`seq_cp_is_full` (cross-stream copies are only supported for a full buffer, otherwise native
+asserts). All three are gated against the native expressions over 300 randomised cases.
+
+Apex:
+
+    FG199K_KV_SEQCP cp_decisions=0
+
+So `seq_cp` is **not called on this profile** -- a single-sequence run never copies KV between
+sequences. The decisions are ported and covered by the differential gate; the live path is absent
+rather than proven, and per the standing rule an unexercised path keeps its native fallback
+(`GGML_GOOSE_KV_CELLS=0`) and is recorded here instead of being counted as a landed integration.
+
+Everything else is unchanged and still exact:
+
+    FG199K_KV_CELLS goose=65814 cleared=0 native=0
+    FG199K_KV_SLOT  head_start=146 can_use=32907
+    FG199K_KV_SEQRM pos_in=2621440 head_after_rm=0
+    tokens and all 128 top-5 probabilities equal, 2537.45 / 26.57
+
+Gate: 70429 checks / 0 failures.

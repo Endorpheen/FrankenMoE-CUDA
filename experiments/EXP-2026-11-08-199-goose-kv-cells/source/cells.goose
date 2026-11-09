@@ -297,6 +297,36 @@ fn head_after_rm(freed:i64,new_head:i64,head:i64)->i64{
  return head;
 }
 
+
+// seq_cp, from llama-kv-cache.cpp:473-560.
+
+// same_stream: `if (s0 == s1)` -- both sequences share a stream, so only metadata changes and
+// no buffer copy happens.
+fn same_stream(s0:i64,s1:i64)->i64{
+ ensure(s0>=0&&s1>=0,170);
+ if s0==s1{return 1 as i64;}
+ return 0 as i64;
+}
+
+// seq_cp_range_ok: `if (seq_id_src == seq_id_dst) return;` -- copying a sequence onto itself is
+// a no-op rather than a full copy.
+fn seq_cp_self(src:i64,dst:i64)->i64{
+ ensure(src>=0&&dst>=0,171);
+ if src==dst{return 1 as i64;}
+ return 0 as i64;
+}
+
+// seq_cp_is_full: lines 517-526. Cross-stream copies are only supported for full buffers; a
+// range that starts above 0 and stops short of the end makes the copy partial and the native
+// code then asserts.
+fn seq_cp_is_full(p0:i64,p1:i64,size:i64)->i64{
+ ensure(size>=0,180);
+ var full:i64=1;
+ if p0>0 as i64&&p0+1 as i64<size{full=0;}
+ if p1>0 as i64&&p1+1 as i64<size{full=0;}
+ return full;
+}
+
 // should_purge: llama-kv-cache.cpp:1228 `cells.seq_pos_min(s) <= seq_pos_max_rm[s]`.
 // Returns 1 when the purge loop must call seq_rm for this sequence.
 fn should_purge(seq_pos_min:i64,max_rm:i64)->i64{
@@ -333,4 +363,7 @@ fn main(){
  pos_in(0 as i64,0 as i64,0 as i64);
  norm_range(0 as i64,0 as i64,0 as u64);
  head_after_rm(0 as i64,0 as i64,0 as i64);
+ same_stream(0 as i64,0 as i64);
+ seq_cp_self(0 as i64,0 as i64);
+ seq_cp_is_full(0 as i64,0 as i64,0 as i64);
 }

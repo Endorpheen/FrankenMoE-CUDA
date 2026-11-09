@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdatomic.h>
 
-static _Atomic unsigned long long g_calls, g_cleared, g_native, g_purge, g_head, g_slot, g_swa, g_posin, g_rmhead;
+static _Atomic unsigned long long g_calls, g_cleared, g_native, g_purge, g_head, g_slot, g_swa, g_posin, g_rmhead, g_cp;
 
 static void g_fail(int64_t c) {
     fprintf(stderr, "FG199K validation code %lld\n", (long long)c);
@@ -59,6 +59,12 @@ int64_t fg199k_should_purge_c(int64_t min_pos, int64_t max_rm) {
     return r;
 }
 int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm) { return fg199k_should_purge_c(min_pos, max_rm); }
+int64_t fg199k_same_stream(int64_t s0, int64_t s1) {
+    atomic_fetch_add(&g_cp, 1);
+    return gg_function_30(s0, s1, 0);
+}
+int64_t fg199k_seq_cp_self(int64_t src, int64_t dst) { return gg_function_31(src, dst, 0); }
+int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size) { return gg_function_32(p0, p1, size, 0); }
 int64_t fg199k_pos_in(int64_t pos, int64_t p0, int64_t p1) {
     atomic_fetch_add(&g_posin, 1);
     return gg_function_27(pos, p0, p1, 0);
@@ -91,6 +97,7 @@ __attribute__((destructor)) static void fg199k_report(void) {
             atomic_load(&g_slot), atomic_load(&g_swa));
     fprintf(stderr, "FG199K_KV_SEQRM pos_in=%llu head_after_rm=%llu\n",
             atomic_load(&g_posin), atomic_load(&g_rmhead));
+    fprintf(stderr, "FG199K_KV_SEQCP cp_decisions=%llu\n", atomic_load(&g_cp));
 }
 int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared) {
     if (!enabled) { atomic_fetch_add(&g_native, 1); return 0; }
