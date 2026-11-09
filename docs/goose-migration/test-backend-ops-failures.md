@@ -4,7 +4,7 @@ Run: `test-backend-ops test -b CUDA0`, runtime `runtime/exp196/run`, 2026-11-08.
 
 Result after the GET_ROWS and RoPE fixes: the suite completes instead of aborting.
 
-    18753 cases OK, 11 FAIL, 0 aborts
+    full suite: rc=0, 0 FAIL, 2/2 backends passed
 
 Before those two fixes it aborted at GET_ROWS after 1115 cases, and RoPE aborted before its
 first case.
@@ -19,7 +19,7 @@ binary and same runtime:
 | `GET_ROWS` | 69 → **fixed** | `GGML_GOOSE_CUDA_GET_ROWS` | EXP176 (type gate, fixed) |
 | `ROPE` | abort → **fixed** | `GGML_GOOSE_CUDA_ROPE` | EXP171 (`n_ctx_orig` gate, fixed) |
 | `CPY` | 4 → **fixed** | `GGML_GOOSE_CUDA_CPY` | EXP177 (type gate, fixed) |
-| `MUL_MAT` | 11 | `GGML_GOOSE_CUDA_MMVF` and, separately, `GGML_GOOSE_CUDA_MMVQ_Q4K` | EXP184 / EXP185 |
+| `MUL_MAT` | 9 → **fixed** | `GGML_GOOSE_CUDA_MMVF` and, separately, `GGML_GOOSE_CUDA_MMVQ_Q4K` | EXP184 / EXP185 (batch bound, fixed) |
 | `SILU_BACK` | 1 → **fixed** | `GGML_GOOSE_CUDA_ACTIVATIONS` | EXP166 (routed to native, fixed) |
 
 ## What the remaining failures have in common
@@ -151,5 +151,14 @@ combination that fails is `n=1` together with a batched fourth dimension, and it
 the f32 module and the q4_K one.
 
 This is where the next attempt should start: the grid dimension the module derives for the
-non-ids path (`p.v[4][2] = ne3`) interacting with a single destination column. Nothing was
-changed on the strength of this table.
+non-ids path (`p.v[4][2] = ne3`) interacting with a single destination column.
+
+### Resolution taken
+
+Both eligibility predicates now also require `ne3 == 1`, the shape the profile uses, and
+everything else goes native. That took `-o MUL_MAT` to 0 failures and the full suite to
+**rc=0, 0 failures, 2/2 backends passed**, with the Apex witnesses unchanged at `paths=0x1`.
+
+It bounds the port; it does not explain the mismatch. The body's handling of `n=1` together
+with a batched fourth dimension is still unexplained, and the `ne3 == 1` bound is what keeps
+it off the results until it is.

@@ -235,7 +235,8 @@ With both fixes the full suite completes: **18748 cases OK, 16 FAIL, no abort** 
 aborted at 1115 cases). A third fix followed: EXP177 `CPY` gated on element size rather than
 type, so `f32 -> i32` took the raw word path; declining on a type mismatch brings the count to
 **18751 OK, 13 FAIL**; a fourth fix routed `SILU_BACK` to native, where the Goose body had
-never been written at all, bringing it to **18753 OK, 11 FAIL** -- only `MUL_MAT` left. The remaining 16 are attributed per module in
+never been written at all, bringing it to **18753 OK, 11 FAIL**; a fifth bounded the matvec modules to `ne3 == 1`, which
+takes the whole suite to **rc=0, 0 failures, 2/2 backends passed**. The remaining 16 are attributed per module in
 `test-backend-ops-failures.md`: EXP177 `CPY` type conversion, EXP184/EXP185 `MUL_MAT`
 batched/permuted matvec, and EXP166 `SILU_BACK`.
 
