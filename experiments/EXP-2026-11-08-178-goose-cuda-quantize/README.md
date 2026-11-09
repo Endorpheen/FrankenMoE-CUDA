@@ -8,7 +8,7 @@ checkpoint, not promoted. P3-07 remains open.
 
 ## Verdict
 
-**ACCEPTED** — byte-exact Q8_1 quantize; paired Apex inside threshold.
+**ACCEPTED** — byte-exact Q8_1 quantize; isolated three-pair median +0.29% prefill / +0.61% decode.
 
 This is a verdict on the transfer in the experimental runtime, which is the only thing
 this work decides. Installation into the production working runtime is left to Igor and
@@ -55,6 +55,27 @@ same lowering the native code uses.
 A diagnostic direct-division build was used to prove that defect 2, not the index
 arithmetic, was responsible for the missing planes; that change was reverted
 before qualification and the fastdiv path is the qualified one.
+
+## Re-measured in isolation, both orders
+
+The pair below came from a runner that also set `GGML_GOOSE_CUDA_SET_ROWS=0` in the native
+arm, so it compared two components and reported a +2.957% decode gain. Re-measured with that
+line removed and run in both orders, three pairs:
+
+| pair | order | native | goose | prefill | decode |
+|---|---|---|---:|---:|---:|
+| iso1 | native→goose | 2573.7 / 26.88 | 2637.3 / 27.04 | +2.47% | +0.61% |
+| iso2 | goose→native | 2617.4 / 25.98 | 2625.0 / 27.04 | +0.29% | +4.07% |
+| iso3 | native→goose | 2639.3 / 27.67 | 2640.0 / 27.34 | +0.03% | −1.20% |
+| **median** | | | | **+0.29%** | **+0.61%** |
+
+Every pair is positive on prefill, which distinguishes this from EXP176 where the sign
+followed the run order. Decode swings from +4.07% to −1.20% without tracking the order,
+which is the same warm-up noise seen elsewhere; the median is the number to quote and it is
++0.61%.
+
+The previously recorded +2.957% mean decode was inflated roughly five-fold by including
+SET_ROWS. The verdict is unchanged — inside the threshold — but the figure was wrong.
 
 ## Local gate
 
