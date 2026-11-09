@@ -1,0 +1,28 @@
+{
+  "status": "FUNCTIONAL_TRANSFER_PASS_NOT_EXERCISED_BY_APEX",
+  "component": "CUDA Q4_K dequantization (dequantize_q4_K, F32 destination) in Goose",
+  "mechanism": "same DSO, GGML_GOOSE_CUDA_DEQUANT_Q4K=0 selects the private-renamed native ggml_get_to_fp32_cuda",
+  "local_gates": {
+    "goose": "12 checks/0 failures/4 cases",
+    "native": "12/0/4",
+    "byte_identical": "4 of 4 (1/4/64/256 blocks)",
+    "memcheck": "0 errors",
+    "exports": "only the two diagnostics added"
+  },
+  "apex_run": {
+    "prefill": 2580.590491207619,
+    "decode": 26.67028430523069,
+    "tokens": true,
+    "content": true,
+    "probs": true,
+    "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9"
+  },
+  "apex_witness": "FG182D_CUDA_DEQUANT_Q4_K ABSENT from the Apex log: the only caller of ggml_get_to_fp32_cuda on this profile is the cuBLAS output-conversion path, which the Apex MoE profile does not reach (it dispatches MMQ). So the transfer is correct but not exercised by this workload.",
+  "defects_fixed": [
+    "the destination base omitted the per-block offset that native passes as yy + i*QK_K, so every block wrote block 0",
+    "the fixture declared a constant named QK_K, which is a preprocessor macro from ggml-common.h"
+  ],
+  "limits": "no Apex performance claim possible because the path is not taken; still required for the cuBLAS and quantized get_rows paths, and it is a prerequisite for the MMQ family",
+  "production_changed": false,
+  "active_runtime_changed": false
+}
