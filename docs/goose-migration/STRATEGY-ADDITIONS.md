@@ -8,19 +8,33 @@ changes the current priority: the Apex path stays the focus until it is complete
 The Goose `stage3` compiler this repo builds against is pinned in `runtime/compiler/current.json`
 and must be checked for updates periodically, then adopted when a newer qualified build exists.
 
-**Tooling now in place:** `scripts/check_compiler_updates.py`.
+**Authoritative catalogue:** `/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/catalog.json`.
+Only `channels.llm_runtime.current` may be used for LLM runtime work; it must be non-empty and
+carry `runtime_approved: true`, and its `sha256` must be verified against the binary before use.
+`channels.selfhosted_subset` covers a supported language subset only — a newer mtime or a new
+commit does not qualify it. Version directories under `versions/` are kept for rollback.
+
+**Tooling:** `scripts/check_compiler_updates.py` reads that catalogue and verifies the pin.
 
     python3 scripts/check_compiler_updates.py
-    exit 0  pinned compiler is the newest found
-    exit 1  a newer build exists; the qualification gate is required before use
+    exit 0  no runtime-approved build differs from the pin; the pin stays
+    exit 1  a runtime-approved build exists; gate, then adopt
+    exit 2  catalogue or pin unreadable, or a sha256 mismatch
 
-Status at the time of writing: pinned `stage3-871aec9cc92d` (mtime 2026-11-08 19:42) is the newest
-of the 18 builds on this machine; every other `stage3-*` predates it. Nothing to adopt.
+Status 2026-11-09: `llm_runtime.status = NO_NEW_QUALIFIED_RUNTIME_BUILD`, `current = null`. The
+pinned `stage3-871aec9cc92d` (sha256 verified OK on disk) therefore stays, and
+`subset-ed38143e3794662d` is explicitly not adopted. The script says so rather than leaving the
+absence of a newer build to be assumed.
 
 **Adoption rule, unchanged from the existing qualification policy:** a newer binary is not usable
 until it reproduces the four bootstrap C files byte-identically, matches its recorded hash, and
 emits byte-identical C for the current FA module. Only then does `current.json` move and the older
 build become the rollback. The check script deliberately does not adopt anything by itself.
+
+**Adoption sequence when a runtime-approved build appears:** verify its sha256, run this repo's
+qualification gate, then a correctness Apex run and a paired performance run, then move
+`runtime/compiler/current.json` and keep the previous path recorded for rollback. A catalogue
+entry alone is not acceptance.
 
 `const`-related behaviour is relevant here: EXP199 found that `const` values in generated code live
 in `gg_globals`, initialised inside `gg_program`, so a bridge that calls a generated function

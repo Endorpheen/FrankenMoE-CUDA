@@ -1,69 +1,97 @@
 #!/usr/bin/env python3
-"""Report whether a newer Goose stage3 compiler exists than the one this repo is pinned to.
+"""Report whether a runtime-approved Goose compiler exists that differs from the pinned one.
 
-The pin lives in runtime/compiler/current.json. Newer builds appear in the sibling directories
-that host Goose compilers; this script only *reports*, it never adopts anything, because adopting
-a compiler requires a fresh qualification run (four bootstrap C files, hash and byte-identical
-emissions) before it can be used for the runtime work.
+Authoritative source for new builds:
+    /home/end0/AI/Fried-Goose/.cache/selfhosted-builds/catalog.json
 
-Usage:
-    python3 scripts/check_compiler_updates.py [--adopt-sha SHA]
+Rules, taken from the catalog's own publication_rule and from Igor:
 
-Exit codes: 0 = pinned compiler is newest, 1 = a newer candidate exists, 2 = error.
+  * Only `channels.llm_runtime.current` qualifies for LLM runtime work.
+  * It must be non-empty, have `runtime_approved: true`, and its `sha256` must match the binary
+    before anything uses it.
+  * `channels.selfhosted_subset` is a *supported-subset* build, not a runtime build. A newer
+    mtime or a new commit does not make it usable for the runtime.
+  * Version directories under `versions/` are retained for rollback; the previous pin stays
+    recorded when a new one is adopted.
+
+This script only reports. Adopting a compiler also requires the repo's own qualification gate
+(byte-identical bootstrap C, hash match, byte-identical emission of the current FA module) and a
+correctness + performance run before the pin moves.
+
+Exit codes: 0 = no usable new build, pinned compiler stays; 1 = a runtime-approved build exists
+and differs from the pin; 2 = error reading the catalog or the pin.
 """
+import hashlib
 import json
 import sys
 from pathlib import Path
 
-F = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108')
-PIN = F / 'runtime/compiler/current.json'
-SEARCH_ROOTS = [
-    Path('/home/end0/AI/LlamaServer'),
-]
+CATALOG = Path('/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/catalog.json')
+PIN = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/current.json')
 
 
-def pinned():
-    d = json.loads(PIN.read_text())
-    return Path(d['compiler']), d['sha256']
+def sha256(p: Path) -> str:
+    h = hashlib.sha256()
+    with open(p, 'rb') as f:
+        for chunk in iter(lambda: f.read(1 << 20), b''):
+            h.update(chunk)
+    return h.hexdigest()
 
 
-def candidates():
-    """Every stage3-* binary under the search roots, newest first by mtime."""
-    found = {}
-    for root in SEARCH_ROOTS:
-        for p in root.glob('*/compiler/stage3-*'):
-            if p.is_file():
-                found.setdefault(p.stat().st_mtime, []).append(p)
-    out = []
-    for mtime in sorted(found, reverse=True):
-        for p in found[mtime]:
-            out.append((mtime, p))
-    return out
-
-
-def main():
-    cur, cur_sha = pinned()
-    if not cur.exists():
-        print(f'ERROR: pinned compiler missing: {cur}', file=sys.stderr)
+def main() -> int:
+    try:
+        cat = json.loads(CATALOG.read_text())
+        pin = json.loads(PIN.read_text())
+    except Exception as e:
+        print(f'ERROR: {e}', file=sys.stderr)
         return 2
-    print(f'pinned: {cur.name}')
-    print(f'        sha256 {cur_sha[:16]}…')
-    print(f'        mtime  {cur.stat().st_mtime:.0f}')
 
-    newer = [(m, p) for m, p in candidates() if p.stat().st_mtime > cur.stat().st_mtime]
-    # A different name with an older mtime is not an update; same name elsewhere is the same build.
-    newer = [(m, p) for m, p in newer if p.name != cur.name]
+    pinned_path = Path(pin['compiler'])
+    pinned_sha = pin['sha256']
+    print(f'pinned:   {pinned_path.name}')
+    print(f'          sha256 {pinned_sha[:16]}…')
+    if pinned_path.exists():
+        actual = sha256(pinned_path)
+        print(f'          on disk {actual[:16]}…  {"OK" if actual == pinned_sha else "MISMATCH"}')
+    else:
+        print('          MISSING on disk')
 
-    if not newer:
-        print('no newer stage3 build found')
+    ch = cat.get('channels', {})
+    lr = ch.get('llm_runtime') or {}
+    status = lr.get('status')
+    cur = lr.get('current')
+    print(f'\nllm_runtime: status={status} current={"set" if cur else "null"}')
+
+    if not cur:
+        print('runtime channel is empty; the pinned compiler stays.')
+        sub = (ch.get('selfhosted_subset') or {}).get('current') or {}
+        if sub:
+            print(f'note: subset build {sub.get("version")} exists but is not runtime-approved —')
+            print('      it covers a supported language subset only and must not be adopted.')
         return 0
 
-    print(f'\n{len(newer)} newer build(s):')
-    for mtime, p in newer:
-        print(f'  {p.name}  ({p.parent.parent.name})  mtime {mtime:.0f}')
-    print('\nAdopting one requires the qualification gate before any runtime work uses it:')
-    print('  4 byte-identical bootstrap C files, hash check, and byte-identical emission of the')
-    print('  current FA module C. Until that passes, the pinned compiler stays.')
+    if not cur.get('runtime_approved'):
+        print('current entry is NOT runtime_approved; it must not be used for runtime work.')
+        return 0
+
+    cand = Path(cur['compiler'])
+    want = cur['sha256']
+    if not cand.exists():
+        print(f'ERROR: runtime_approved entry points at a missing file: {cand}', file=sys.stderr)
+        return 2
+    got = sha256(cand)
+    if got != want:
+        print(f'ERROR: sha256 mismatch for {cand.name}: catalog {want[:16]}… disk {got[:16]}…',
+              file=sys.stderr)
+        return 2
+
+    if got == pinned_sha:
+        print('runtime-approved build is the one already pinned.')
+        return 0
+
+    print(f'\nNEW runtime-approved build: {cur.get("version")}  sha256 {want[:16]}…')
+    print('Before adopting: run the repo qualification gate, then correctness and performance')
+    print('checks, then move runtime/compiler/current.json and keep the old pin as rollback.')
     return 1
 
 
