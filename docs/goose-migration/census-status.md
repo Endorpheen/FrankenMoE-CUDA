@@ -1,5 +1,42 @@
 # Apex census — transfer status
 
+## Where the transfer stands (2026-11-08)
+
+This section is the current answer; the sections below are the detailed evidence.
+
+**Verified working.** The active runtime `runtime/exp196/run` executes 40 Goose witness lines
+in one 32K/128 Apex pass, covering every stage in the chain. Output text sha256 is
+`e68df05b`, identical to the reference. `test-backend-ops test -b CUDA0` completes with
+**rc=0, 0 failures, 2/2 backends passed**. Compute Sanitizer memcheck, initcheck, synccheck and
+racecheck are clean across every stage that ships a GPU fixture.
+
+**Five defects were found by running that harness, and all five are fixed.** They share one
+cause: each stage's gate was written against the Apex profile, so "covered" meant "covered for
+the profile". Their details are in `test-backend-ops-failures.md`; in short, GET_ROWS took the
+Goose path for quantized sources, RoPE trapped on a non-positive `n_ctx_orig`, CPY gated on
+element size instead of type, SILU_BACK was routed to a Goose body that had never been written,
+and the matvec modules admitted shapes they do not model.
+
+**One bound is masking an unexplained case.** The matvec modules are restricted to `ne3 == 1`.
+Without that, nine `MUL_MAT` cases fail — yet the Goose kernel is byte-identical to native in
+all 21 fixture configurations that can be built here, including padding, overlap and sample
+broadcast. Both measurements stand. The bound is a bound, not a fix, and it is labelled that
+way everywhere it appears.
+
+**Not reachable from this repository.** The remaining share of GPU time is `mul_mat_q` Q4_K and
+Q6_K (~40%), `quantize_mmq_q8_1`, `mul_mat_f` and `mul_mat_vec_q` Q6_K. All are blocked on one
+code-generation limitation, documented with four measured attempts: the emitter passes addresses
+as `int64_t`, so nvcc cannot fold `base + i*k` into a load's immediate offset or use the
+read-only path. The CPU quantized dot products are blocked because Goose has no SIMD.
+
+**Immediate next steps**, in order:
+
+1. Trace one failing `MUL_MAT` case through the backend to see which entry point it reaches.
+   Tensor properties are ruled out by byte comparison; the difference is in the execution path.
+2. Re-run the census on the current runtime. The EXP084 profile predates several ports and is
+   the only remaining source of uncertainty about what actually runs.
+3. P4–P11 as listed in `GOOSE_MIGRATION_PLAN.md`.
+
 Source of truth for kernel coverage: `results/exp084-apex-profile/analysis.json`,
 cross-checked against the per-experiment `apex-summary.json` files. "Executed by Apex"
 means the model log carries the module's witness line, not merely that the module
