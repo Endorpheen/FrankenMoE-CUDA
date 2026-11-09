@@ -103,3 +103,19 @@ Against that, the CPU dot products are out of reach for the same reason as the G
 `ggml_vec_dot_q4_K_q8_K` contains 58 SIMD instructions and `ggml_vec_dot_q6_K_q8_K` 91 on
 this host, and Goose has no SIMD. `quantize_row_q8_K` was transferred (EXP190) precisely
 because it has zero, but Apex does not reach it: the graph goes straight to the matmuls.
+
+## Process defect found and fixed
+
+EXP180 (MMQ Q8_1) was rejected for a measured 12-14% kernel regression, but its switch
+was written opt-OUT, so the Goose path ran unless the flag was explicitly "0" and the
+object sat in the active link chain. Every Apex run since EXP180 paid the regression, and
+the evidence was in the log all along as `FG180Q ... host=0x23`.
+
+Fixed by inverting that switch to opt-IN and rebuilding the chain. The witness is gone
+from the Apex log and the paired figures moved from -1.28% to -0.55% decode and -0.19%
+prefill. EXP186, the other rejected candidate, was checked and is not in the active chain,
+but its switch was inverted too so a later stage building on it cannot inherit the same
+problem.
+
+Rule now enforced in code, not just in the write-ups: a rejected experiment is never
+default-on.

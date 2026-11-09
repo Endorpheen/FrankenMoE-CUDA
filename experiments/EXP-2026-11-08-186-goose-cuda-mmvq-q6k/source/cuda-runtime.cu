@@ -92,8 +92,13 @@ void fg185q_native_ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context&,const ggml
  const ggml_tensor*,ggml_tensor*,const ggml_cuda_mm_fusion_args_host*);
 void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*src0,const ggml_tensor*src1,
  const ggml_tensor*ids,ggml_tensor*dst,const ggml_cuda_mm_fusion_args_host*fusion){
+ // EXP186 was REJECTED: -3.66% decode, kernel 21.82us vs 17.41us, SASS 504 vs 193.
+ // A rejected candidate must not be on by default, so this is opt-IN: the Goose path
+ // runs only when the flag is explicitly "1". Any other value, including unset, stays
+ // native. (EXP180 shipped opt-out despite being rejected; this makes sure the same
+ // mistake cannot reappear when a later stage builds on this base.)
  const char*flag=getenv("GGML_GOOSE_CUDA_MMVQ_Q6K");
- if(flag&&strcmp(flag,"0")==0){fg185q_native_ggml_cuda_mul_mat_vec_q(ctx,src0,src1,ids,dst,fusion);return;}
+ if(!(flag&&strcmp(flag,"1")==0)){fg185q_native_ggml_cuda_mul_mat_vec_q(ctx,src0,src1,ids,dst,fusion);return;}
  static std::once_flag once;std::call_once(once,[]{std::atexit(fg186q_report);});
  const int dev=ggml_cuda_get_device();
  const int warp=ggml_cuda_info().devices[dev].warp_size;
