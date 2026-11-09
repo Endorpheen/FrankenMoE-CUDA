@@ -33,8 +33,21 @@ So `SUM` alone passes, and the pairs that precede it in the full run pass. The f
 longer sequence, which is consistent with state carried between cases — a buffer left holding
 `inf` from an earlier case, or a gradient accumulated into a reused allocation.
 
-The all-switches-off arm was run only with `-o SUM`, so it does **not** yet establish whether the
-defect is ours; that arm must be repeated on the full run before any attribution is claimed.
+## Not ours: the same four failures occur with every Goose switch off
+
+Ran the full `grad` suite with all 24 `GGML_GOOSE_CUDA_*` switches plus `GGML_GOOSE_RMS` set to
+`0`:
+
+    rc=134, 4 FAIL
+    SUM(type=f32,ne_a=[128,2,2,2],v=0): nonfinite gradient at index 8 (CUDA0=inf)
+    SUM(type=f32,ne_a=[5,7,11,13],v=0): nonfinite gradient at index 3 (CUDA0=inf)
+
+Same operator, same count, same `inf` signature. The failing index differs between runs, which
+confirms the non-determinism seen before. So this is **pre-existing in the baseline**, not a
+product of the Goose port, and it does not block P3-19.
+
+That is the arm the earlier note was missing, and it reverses the "state carried between cases,
+possibly ours" reading: it is state carried between cases in the native build too.
 
 ## Why this is recorded rather than worked around
 
