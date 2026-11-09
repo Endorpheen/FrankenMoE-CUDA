@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "identical": [
+    "direct-128.bin",
+    "direct-2048.bin",
+    "direct-512.bin",
+    "scatter.bin"
+  ]
+}
