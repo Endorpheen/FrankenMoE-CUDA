@@ -1,0 +1,240 @@
+{
+  "generated_from": {
+    "log": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp185/results/apex-32k128-mmvq4k-b2-goose/server.log",
+    "link_command": "runtime/exp185/build/commands.json"
+  },
+  "modules": [
+    {
+      "module": 174,
+      "experiment": "EXP174",
+      "component": "set_rows",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG176R_CUDA_SET_ROWS",
+      "witness_seen_in_live_log": true,
+      "byte_compare": null,
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 175,
+      "experiment": "EXP175",
+      "component": "concat",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG175C_CUDA_CONCAT",
+      "witness_seen_in_live_log": true,
+      "byte_compare": null,
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 176,
+      "experiment": "EXP176",
+      "component": "get_rows",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG176G_CUDA_GET_ROWS",
+      "witness_seen_in_live_log": true,
+      "byte_compare": null,
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 177,
+      "experiment": "EXP177",
+      "component": "cpy/dup/cont",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG177C_CUDA_CPY",
+      "witness_seen_in_live_log": true,
+      "byte_compare": null,
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 178,
+      "experiment": "EXP178",
+      "component": "q8_1 quantize",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG178Q_CUDA_Q8_1",
+      "witness_seen_in_live_log": true,
+      "byte_compare": null,
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 179,
+      "experiment": "EXP179",
+      "component": "MoE weighted reduction",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG179W_CUDA_MOE_WEIGHTED",
+      "witness_seen_in_live_log": true,
+      "byte_compare": null,
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 180,
+      "experiment": "EXP180",
+      "component": "MMQ q8_1 quantize",
+      "tier": "REJECTED",
+      "in_active_chain": true,
+      "witness": "FG180Q_CUDA_MMQ_Q8_1",
+      "witness_seen_in_live_log": false,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 4
+      },
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 181,
+      "experiment": "EXP181",
+      "component": "mm_ids helper",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG181M_CUDA_MM_IDS",
+      "witness_seen_in_live_log": true,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 15
+      },
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 182,
+      "experiment": "EXP182",
+      "component": "Q4_K dequantization",
+      "tier": "OFF_PATH",
+      "in_active_chain": true,
+      "witness": "FG182D_CUDA_DEQUANT_Q4_K",
+      "witness_seen_in_live_log": false,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 4
+      },
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 183,
+      "experiment": "EXP183",
+      "component": "FWHT warp path",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG183F_CUDA_FWHT",
+      "witness_seen_in_live_log": true,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 5
+      },
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 184,
+      "experiment": "EXP184",
+      "component": "mul_mat_vec_f",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG184M_CUDA_MMVF",
+      "witness_seen_in_live_log": true,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 5
+      },
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 185,
+      "experiment": "EXP185",
+      "component": "mul_mat_vec_q Q4_K",
+      "tier": "ACCEPTED",
+      "in_active_chain": true,
+      "witness": "FG185Q_CUDA_MMVQ_Q4K",
+      "witness_seen_in_live_log": true,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 4
+      },
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    },
+    {
+      "module": 186,
+      "experiment": "EXP186",
+      "component": "mul_mat_vec_q Q6_K",
+      "tier": "REJECTED",
+      "in_active_chain": false,
+      "witness": "FG186Q_CUDA_MMVQ_Q6K",
+      "witness_seen_in_live_log": false,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 4
+      },
+      "sanitizer": null
+    },
+    {
+      "module": 188,
+      "experiment": "EXP188",
+      "component": "Q4_0 dequantization",
+      "tier": "OFF_PATH",
+      "in_active_chain": false,
+      "witness": "FG188D_CUDA_DEQUANT_Q4_0",
+      "witness_seen_in_live_log": false,
+      "byte_compare": {
+        "status": "PASS",
+        "cases": 5
+      },
+      "sanitizer": {
+        "memcheck": 0,
+        "racecheck": 0,
+        "initcheck": 0
+      }
+    }
+  ],
+  "conflicts": [],
+  "status": "CONSISTENT"
+}
