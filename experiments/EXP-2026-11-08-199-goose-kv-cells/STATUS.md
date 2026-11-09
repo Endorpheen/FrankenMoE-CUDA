@@ -5,7 +5,7 @@ Goose; the host holds the arena, Goose holds every decision.
 
 ## Result
 
-    FG199K_FIXTURE checks=37929 failures=0
+    FG199K_FIXTURE checks=66729 failures=0
     EXP199_LOCAL_GATES_PASS
 
 The gate mirrors 40 trials x 60 random operations into the Goose module and into a transcription

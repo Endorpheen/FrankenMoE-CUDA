@@ -39,3 +39,7 @@ void fg199k_seq_add(uint64_t a, int64_t n, int64_t i, int64_t widx, int64_t bit)
 void fg199k_pos_set(uint64_t a, int64_t n, int64_t i, int64_t pos) { gg_function_16(a, n, i, pos, 0); }
 int64_t fg199k_seq_count(uint64_t a, int64_t n, int64_t i) { return gg_function_17(a, n, i, 0); }
 int64_t fg199k_used_max_p1(uint64_t a, int64_t n) { return gg_function_18(a, n, 0); }
+int64_t fg199k_place_cell(uint64_t a, int64_t n, int64_t idx, int64_t pos, int64_t seq_n, uint64_t seqs) {
+    return gg_function_20(a, n, idx, pos, seq_n, seqs, 0);
+}
+int64_t fg199k_head_after_place(int64_t last_idx) { return gg_function_21(last_idx, 0); }

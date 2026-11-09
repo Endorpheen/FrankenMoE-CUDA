@@ -159,6 +159,55 @@ fn used_max_p1(a:u64,n:i64)->i64{
  return last+1 as i64;
 }
 
+
+// place_cell: one step of llama_kv_cache::apply_ubatch for a single token, from
+// llama-kv-cache.cpp:1147-1178.
+//
+// Native sequence for token i on cell idx:
+//   if (!cells.is_empty(idx)) { rm(idx) }
+//   cells.pos_set(idx, ubatch.pos[i])
+//   for each of ubatch.seq_id[i][*] : cells.seq_add(idx, seq)
+// The extension record (pos_2d x/y and token id) is deliberately not modelled here: it is a
+// separate struct in native and carries no decision this profile makes, so it stays with the host.
+//
+// Returns 1 when an occupied cell was cleared first, else 0, so the caller can count reuse.
+// seq_base_addr is the arena's seq region; seq_n is how many sequences this token carries;
+// seq_bits[i] is the sequence id of the i-th.
+extern "fg199k_seq_bits" fn seq_bit_of(base:u64,i:i64)->i64;
+
+fn place_cell(a:u64,n:i64,idx:i64,pos:i64,seq_n:i64,seqs:u64)->i64{
+ ensure(n>0&&idx>=0&&idx<n,80);
+ ensure(pos>=(0 as i64)-1 as i64,81);
+ ensure(seq_n>=0,82);
+ var reused:i64=0;
+ if is_empty(n,pos_at(a,idx))==false{
+  rm(a,n,idx);
+  reused=1 as i64;
+ }
+ pos_set(a,n,idx,pos);
+ var s:i64=0;
+ while s<seq_n{
+  let sid:i64=ld_i64(seqs,s*8 as i64);
+  ensure(sid>=0,83);
+  let widx:i64=sid/32 as i64;
+  let bit:i64=(1 as i64)<<(sid%32 as i64);
+  let cur:i64=seqword(a,n,idx,widx);
+  // A bitset set is idempotent, so a repeated sequence id is not an error -- native just sets it
+  // again. Only the store is guarded, so a duplicate does not change the word.
+  if (cur&bit)==0{
+   st_i64(a,seq_base(n)+(idx*w()+widx)*8 as i64,cur+bit);
+  }
+  s+=1;
+ }
+ return reused;
+}
+
+// head_after_place: llama-kv-cache.cpp:1216 `head = sinfo.idxs[s].back() + 1`.
+fn head_after_place(last_idx:i64)->i64{
+ ensure(last_idx>=(0 as i64)-1 as i64,90);
+ return last_idx+1 as i64;
+}
+
 // Used range over the arena, so the caller can rebuild the ordered std::set.
 fn main(){
  is_empty(0 as i64,0 as i64);
@@ -169,4 +218,6 @@ fn main(){
  pos_set(0 as u64,1 as i64,0 as i64,0 as i64);
  seq_count(0 as u64,1 as i64,0 as i64);
  used_max_p1(0 as u64,1 as i64);
+ place_cell(0 as u64,1 as i64,0 as i64,0 as i64,0 as i64,0 as u64);
+ head_after_place(0 as i64);
 }

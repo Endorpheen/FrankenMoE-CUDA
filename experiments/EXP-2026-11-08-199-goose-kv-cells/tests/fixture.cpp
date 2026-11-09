@@ -27,6 +27,8 @@ void fg199k_seq_add(uint64_t, int64_t, int64_t, int64_t, int64_t);
 void fg199k_pos_set(uint64_t, int64_t, int64_t, int64_t);
 int64_t fg199k_seq_count(uint64_t, int64_t, int64_t);
 int64_t fg199k_used_max_p1(uint64_t, int64_t);
+int64_t fg199k_place_cell(uint64_t, int64_t, int64_t, int64_t, int64_t, uint64_t);
+int64_t fg199k_head_after_place(int64_t);
 }
 
 // ---- arena, laid out as the module documents it ----
@@ -209,6 +211,30 @@ int main(void) {
                    (long long)fg199k_seq_count(A.base(), n, i), (long long)R.seq_count(i));
             }
             compare(A, R, "step");
+        }
+    }
+
+    // place_cell against the native sequence: clear-if-occupied, pos_set, seq_add per sequence.
+    for (int trial = 0; trial < 20; ++trial) {
+        const int64_t n = 8;
+        Arena A(n); Ref R(n);
+        for (int step = 0; step < 40; ++step) {
+            const uint32_t idx = (uint32_t)(rng() % (unsigned)n);
+            const int64_t pos = (int64_t)(rng() % 50);
+            const int nseq = (int)(rng() % 3);
+            std::vector<int64_t> seqs;
+            for (int s = 0; s < nseq; ++s) seqs.push_back((int64_t)(rng() % 4));
+            int64_t g = fg199k_place_cell(A.base(), n, idx, pos, (int64_t)seqs.size(),
+                                          (uint64_t)(uintptr_t)seqs.data());
+
+            bool reused = false;
+            if (!R.is_empty(idx)) { R.rm(idx); reused = true; }
+            R.pos_set(idx, pos);
+            std::set<int> uniq(seqs.begin(), seqs.end());
+            for (int s : uniq) R.seq_add(idx, s);
+            ck((g != 0) == reused, "place_cell reused", g, reused);
+            compare(A, R, "place");
+            ck(fg199k_head_after_place((int64_t)idx) == (int64_t)idx + 1, "head", 0, 0);
         }
     }
 
