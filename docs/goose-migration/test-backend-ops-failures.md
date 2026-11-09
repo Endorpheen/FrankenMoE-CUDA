@@ -482,3 +482,39 @@ output for the same case through the same facility and compare all three, rather
 comparing against a native capture that has been shown unreliable.
 
 Nothing above is a conclusion about the Goose kernel; it is a correction of the instrument.
+
+## Defect localised: sample 0 exact, sample 1 wrong
+
+Split the host comparison by sample instead of by element, on the captured tensors:
+
+    src0 256 x 16 x 1 x 1      (one sample)
+    src1 256 x 1 x 1 x 2       (two samples)
+    dst  16 x 1 x 1 x 2
+
+    max |goose[r]    - host_dot(row r, src1 sample 0)| = 0.000001
+    max |goose[16+r] - host_dot(row r, src1 sample 1)| = 87.509125
+
+Sample 0 is exact to the float precision of the host dot. Sample 1 is wrong by two orders of
+magnitude. So the kernel handles a single destination column correctly and mishandles the second
+sample — which is exactly the "n = 1 with a batched fourth dimension" case the harness fails on,
+and it is now reproduced on the harness's own tensors rather than only inferred from it.
+
+The two cross-checks rule out a simple mix-up: sample 0 against sample 1's data is 23.08 off and
+sample 1 against sample 0's data is 79.15 off, so it is not reading the neighbouring sample.
+
+An offset sweep over row shifts -48..48, `src1` bases {0, 256, 512} and reduction lengths
+{64, 128, 256} found no match either; the best fit was still 69.9 off. So sample 1 is not reading
+a shifted or wrapped view of the same two buffers. It is consistent with reading **beyond**
+`src0`, which holds exactly 16 rows for one sample: a per-sample row offset with no bound would
+land past the allocation, and the values there are whatever the allocator left.
+
+That is a concrete, checkable hypothesis for the first time in this investigation: the row
+address is being advanced by the sample index without the source's own `ne[3]` being taken into
+account.
+
+## Correction to the previous section
+
+The previous section concluded that the native capture was unreliable and that Goose therefore
+computed correctly. The first half stands — the native dump does not match its own inputs and is
+unusable. The second half was wrong: sorting by sample shows a real defect in sample 1, which the
+all-elements-differ view had hidden behind the bad reference.
