@@ -42,6 +42,10 @@ static __global__ __launch_bounds__(256) void fg184m_kernel(
 
 struct fg184m_packet{cudaStream_t stream{};uint64_t v[8][32]{};bool launched=false;};
 static std::atomic<uint64_t>fg184m_host_seen{0};
+// Diagnostic: whether calls arrive with a non-null ids table or a fusion struct, and how
+// many distinct dst->ne[1] values are seen. A single-case run then answers the question
+// directly instead of needing another fixture variant.
+static std::atomic<uint64_t>fg184m_with_ids{0},fg184m_with_fusion{0},fg184m_ne1{0};
 static fg184m_packet&fg184m_p(int64_t p){GGML_ASSERT(p);return*(fg184m_packet*)(uintptr_t)p;}
 
 extern "C" int64_t fg184h_arg(int64_t p,int64_t k){GGML_UNUSED(k);return p;}
@@ -76,6 +80,9 @@ static void fg184m_report(){
  uint64_t x[2]={};int e=fg184m_cuda_device_read(x);
  fprintf(stderr,"FG184M_CUDA_MMVF host=0x%llx,cuda_status=%d,paths=0x%llx,guards=%llu\n",
   (unsigned long long)fg184m_cuda_host_seen(),e,(unsigned long long)x[0],(unsigned long long)x[1]);
+ fprintf(stderr,"FG184M_ARGS ids=%llu fusion=%llu ne1_bits=0x%llx\n",
+  (unsigned long long)fg184m_with_ids.load(),(unsigned long long)fg184m_with_fusion.load(),
+  (unsigned long long)fg184m_ne1.load());
 }
 
 void fg184m_native_ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context&,const ggml_tensor*,const ggml_tensor*,
@@ -84,6 +91,11 @@ void ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  const ggml_tensor*ids,ggml_tensor*dst,const ggml_cuda_mm_fusion_args_host*fusion){
  const char*flag=getenv("GGML_GOOSE_CUDA_MMVF");
  if(flag&&strcmp(flag,"0")==0){fg184m_native_ggml_cuda_mul_mat_vec_f(ctx,src0,src1,ids,dst,fusion);return;}
+ // Recorded for every call, whatever route it takes, so a single-case run answers what the
+ // arguments were without needing another fixture variant.
+ if(ids&&ids->data)fg184m_with_ids.fetch_add(1,std::memory_order_relaxed);
+ if(fusion)fg184m_with_fusion.fetch_add(1,std::memory_order_relaxed);
+ {const unsigned n1=(unsigned)(dst&&dst->ne[1]<64?dst->ne[1]:63);fg184m_ne1.fetch_or(1ULL<<n1,std::memory_order_relaxed);}
  static std::once_flag once;std::call_once(once,[]{std::atexit(fg184m_report);});
  const int dev=ggml_cuda_get_device();
  const int warp=ggml_cuda_info().devices[dev].warp_size;

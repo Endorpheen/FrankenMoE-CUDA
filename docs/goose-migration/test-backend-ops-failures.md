@@ -378,3 +378,33 @@ per-case environment around the call. Two candidates remain and both are cheap t
 The single-case run above is the instrument: it prints the witness for exactly one test, so
 adding a field to the witness that reports `ids != nullptr` and `fusion != nullptr` for that
 call would answer it in one build instead of another fixture variant.
+
+### Both remaining candidates eliminated
+
+Instrumented the entry point to record, for every call whatever route it takes, whether `ids`
+and `fusion` are non-null and what `dst->ne[1]` was. Running the single failing case:
+
+    FG184M_CUDA_MMVF host=0x20,cuda_status=0,paths=0x0,guards=0
+    FG184M_ARGS ids=0 fusion=0 ne1_bits=0x2
+
+`ne1_bits=0x2` is bit 1, i.e. `dst->ne[1] == 1`, which confirms the shape. `ids=0` and
+`fusion=0` eliminate both candidates: the call carries neither a non-null `ids` table nor a
+fusion struct, so neither of the alternative branches the body could take is the cause.
+
+An earlier attempt put those counters inside the Goose branch and they read zero for a
+different reason — the branch was not taken. Moving them to the entry is what made the reading
+meaningful, and that first reading should not have been trusted.
+
+### What is left
+
+For this case the module declines only because of the `ne3 == 1` bound added earlier; without
+it the kernel launches and the result is wrong. Every tensor property matches the fixture, and
+now the two call-argument candidates are gone as well. What has not been compared is the
+*content*: the fixture generates its own inputs, the harness generates different ones. A
+mismatch that only appears for particular data — a NaN or an extreme magnitude in the source —
+would not show up in a fixture with uniform random values in [-2, 2], and the harness's
+`ERR = 1.03` with `NaN` on the quantized module is consistent with that.
+
+The next step is therefore to feed the harness's own tensors through both arms, or to widen
+the fixture's input distribution to include the magnitudes and patterns the harness uses,
+rather than to keep varying the shape.
