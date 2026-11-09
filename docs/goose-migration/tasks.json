@@ -1110,13 +1110,13 @@
       "id": "P3-19",
       "phase": "P3",
       "title": "Run whole CUDA backend functional/sanitizer milestone",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "tests/test-backend-ops.cpp",
         "ggml/src/ggml-cuda/**"
       ],
       "acceptance": "Supported matrix passes differential checks and Compute Sanitizer memcheck/racecheck/initcheck/synccheck where applicable; Apex CPU/GPU mixed paths execute Goose.",
-      "evidence": "",
+      "evidence": "EXP191 runs the ten modules that have a standalone GPU fixture under compute-sanitizer memcheck, racecheck and initcheck, from one script, with a machine-readable artifact. Nine of ten are clean under all three; all ten are clean under memcheck and initcheck. The single non-zero result is EXP181 with five write-write hazards in the shared staging array used for (token,expert) compaction -- and the native arm run under the same tool reports 18, so the pattern is inherent to the __shfl prefix-sum algorithm and the Goose body shows fewer than the code it replaces. Recorded as PASS_WITH_NATIVE_PARITY rather than cleared, because the honest statement is that both share the hazard, not that it is zero. Limit: this covers per-module fixtures, not the CUDA DSO as a whole, because a whole-library sanitizer run does not fit next to a 35B model in 11.8GB. A whole-backend run remains open.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
