@@ -54,6 +54,11 @@ several lanes can transiently target the same staging slot before `syncwarp()` o
 publish — and is not introduced by the transfer. The Goose body shows *fewer* hazards than
 the native one it replaces.
 
+The script re-derives that parity on every run: for a module with a known inherent
+hazard it executes the native arm under the same tool and only passes if native reports
+at least as many hazards. A note in a README cannot clear a result; the comparison has to
+reproduce.
+
 It is recorded as `PASS_WITH_NATIVE_PARITY` rather than silently cleared, because the
 honest statement is "the algorithm has this hazard and both implementations share it",
 not "the hazard is zero". `memcheck` and `initcheck` are clean in both arms and the byte
