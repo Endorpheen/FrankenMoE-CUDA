@@ -34,12 +34,26 @@ the profile executes, not what the module does.
 
 `test-backend-ops test -o CPY` is 2/2 passed. This is a performance regression, not a wrong result.
 
-## The fix, not yet applied
+## Fix applied: route 4 declined
 
-Declining route 4 to the native branch would restore the native speed on a path Apex does not
-use, exactly as the `sample_ratio` fix declined broadcast shapes. Not applied in this pass because
-it changes what the module covers and that decision should be recorded with its own paired
-measurement rather than folded into a diagnostic note.
+    if (can_tr && src0->type == src1->type) { return false; }   // transposed tile kernel
+
+Any transposed copy now goes to the native branch. Measured after the change, same method:
+
+| case | before | after | native |
+|---|---:|---:|---:|
+| f32 786432×256 transposed | 15304 | **4228** | 4229 |
+| f32 768×1024×256 transposed | 6756 | **1923** | 1926 |
+
+So the 3.7× is gone and the two worst cases are now indistinguishable from native. The module's own
+gate still passes 18/18.
+
+## What is left
+
+One case remains slower: f32 `8192×512×2` with `permute_src=[0,2,1,3]`, 241 µs against 189 µs
+(+29%). That is route 2, the general scalar walk, not route 4. It is a smaller regression on a
+path Apex does not take, and it is recorded here rather than fixed in the same pass — declining it
+would remove the element path entirely and that needs its own measurement.
 
 Severity: no effect on the Apex profile. Real for any workload that does large f32 transposed
 copies through this backend.

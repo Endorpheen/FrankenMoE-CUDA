@@ -1633,10 +1633,10 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t288 = t277;
   if (t288) {
   {
-  v16 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
+  t0 = ((uint8_t)UINT64_C(0));
+  goto gg_done;
   }
-  } else {
-  {
+  }
   t289 = v13;
   t290 = t289;
   if (t290) {
@@ -1660,8 +1660,6 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   } else {
   {
   v16 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(2))))));
-  }
-  }
   }
   }
   t302 = ((int64_t)(v5));

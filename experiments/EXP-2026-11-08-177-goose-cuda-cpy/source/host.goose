@@ -108,9 +108,14 @@ fn run(packet:i64)->bool{
  put(p,2,0,itg(nev(s1,0)));put(p,2,1,itg(nev(s1,1)));put(p,2,2,itg(nev(s1,2)));
  put(p,2,3,nbv(s1,0) as u64);put(p,2,4,nbv(s1,1) as u64);
  put(p,2,5,nbv(s1,2) as u64);put(p,2,6,nbv(s1,3) as u64);
- // Route 3 is the contiguous fast path, 2 the general scalar walk, 4 the
- // transposed tile kernel selected by can_be_transposed on equal-type copies.
- let route:u64=if can_tr&&ti(s0,2,0)==ti(s1,2,0){4 as u64}else{if cont&&ti(s0,2,0)==ti(s1,2,0){3 as u64}else{2 as u64}};
+ // Route 3 is the contiguous fast path, 2 the general scalar walk. Route 4, the transposed
+ // tile kernel, is declined: test-backend-ops perf measured it 1.7x to 3.7x slower than the
+ // native branch on f32 transposed copies (15304 vs 4168 us on 786432x256), while f16 and
+ // quantized transposed cases match to 0.1%. The Apex profile never reaches this route
+ // (paths=0x1 is bit 0 only, the contiguous memcpy), so the whole-model comparison could not
+ // have shown it. Any transposed copy now goes to native.
+ if can_tr&&ti(s0,2,0)==ti(s1,2,0){return false;}
+ let route:u64=if cont&&ti(s0,2,0)==ti(s1,2,0){3 as u64}else{2 as u64};
  put(p,3,0,route);
  ensure(launch(packet)==0,23);
  return true;
