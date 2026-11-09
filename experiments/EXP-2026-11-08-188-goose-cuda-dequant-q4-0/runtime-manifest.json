@@ -1,8 +1,8 @@
 {
   "status": "LINKED_PENDING_HOST_GPU_APEX",
-  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp188/run/libggml-cuda-deq4-0-e77ebb59b842.so.0.27.0",
-  "sha256": "2a8d831f6f5f6b8cd182be299b3312d63fd688405d8e869a4018d5536d54bec0",
-  "base_library_sha256": "647d217ff55560abedacc5f6e26389d69dd4a22ae6461a1a9b91c2ac390ae41f",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp188/run/libggml-cuda-deq4-0-137110e31095.so.0.27.0",
+  "sha256": "d840ab7cc3c89149891ebd4443da5181d8c206a0aebe23ec81a1dee0cb8bdb82",
+  "base_library_sha256": "232058c901df36a7acce0b62ec1af355680dc7ac1adafbce238857f3494d4884",
   "original_object": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp182/build/native-convert.o",
   "original_object_sha256": "8a2d9e0832101b1b76cd7b5342be4f01155a8a43a1a3a554cac1c6620962e9f4",
   "private_symbol_rename": {
