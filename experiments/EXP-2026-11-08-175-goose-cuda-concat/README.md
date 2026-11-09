@@ -9,7 +9,7 @@ activated as the working runtime. P3-03 overall remains incomplete.
 
 ## Verdict
 
-**ACCEPTED** — paired Apex +0.573% prefill / +0.437% decode vs EXP174.
+**ACCEPTED** — paired Apex +0.26% prefill / +0.76% decode (median of three valid pairs).
 
 This is a verdict on the transfer in the experimental runtime, which is the only thing
 this work decides. Installation into the production working runtime is left to Igor and
