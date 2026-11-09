@@ -82,6 +82,11 @@ Output text sha256 stayed `e68df05b`, identical to the reference.
 | Goose | 2569.52 | 26.26 |
 | delta | **−0.27%** | **+2.12%** |
 
+All four runs loaded the same DSO, `libggml-cuda-pinned.so.0.27.0`, sha256 `836ea3dd23480fa0…`; only
+`GGML_GOOSE_CUDA_PINNED` differed between the arms. The recorded `libraries.json` sha256 for
+each run was re-checked against the file on disk and matches, so the pair is a single-variable
+comparison rather than two builds.
+
 Prefill, the more stable of the two, moves by 0.27% on sixteen decision events per pass. The
 decode figure is inside the 1–2 tok/s within-arm spread this machine shows, so it is not a
 speed-up claim; read the row as "no regression detected".
