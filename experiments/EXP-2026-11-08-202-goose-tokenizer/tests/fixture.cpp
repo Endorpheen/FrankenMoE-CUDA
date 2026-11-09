@@ -15,6 +15,9 @@ int64_t fg202t_bigram_valid(int64_t, int64_t, int64_t);
 int64_t fg202t_try_add_allowed(int64_t, int64_t, int64_t, int64_t, int64_t);
 int64_t fg202t_resegment_kind(int64_t, int64_t);
 int64_t fg202t_clamp_symbol_len(int64_t, int64_t);
+int64_t fg202t_bpe_add_allowed(int64_t, int64_t, int64_t);
+int64_t fg202t_bpe_merge_valid(int64_t, int64_t, int64_t);
+int64_t fg202t_bpe_ignore_merges(int64_t, int64_t);
 }
 
 static int checks, failures;
@@ -75,6 +78,23 @@ int main(void) {
     for (int i = 0; i < 300; ++i) {
         const int64_t len = 1 + (int64_t)(rng() % 4), rem = 1 + (int64_t)(rng() % 8);
         ck(fg202t_clamp_symbol_len(len, rem) == std::min(len, rem), "clamp", 0, 0);
+    }
+
+    // GPT-2 BPE predicates, the ones Qwen actually exercises.
+    for (int i = 0; i < 400; ++i) {
+        const int64_t l = (int64_t)(rng() % 4) - 1, r = (int64_t)(rng() % 4) - 1;
+        const int64_t rank = (int64_t)(rng() % 8) - 2;
+        const bool ref = !(l == -1 || r == -1 || rank < 0);
+        ck((fg202t_bpe_add_allowed(l, r, rank) != 0) == ref, "bpe_add", l, rank);
+    }
+    for (int i = 0; i < 400; ++i) {
+        const int64_t ln = (int64_t)(rng() % 4), rn = (int64_t)(rng() % 4);
+        const int64_t cm = (int64_t)(rng() % 2);
+        const bool ref = !(ln == 0 || rn == 0 || cm == 0);
+        ck((fg202t_bpe_merge_valid(ln, rn, cm) != 0) == ref, "bpe_merge", ln, rn);
+    }
+    for (int a = 0; a < 2; ++a) for (int b = 0; b < 2; ++b) {
+        ck((fg202t_bpe_ignore_merges(a, b) != 0) == (a && b), "bpe_ignore", a, b);
     }
 
     run_trap("utf8_len out of range", 10, trap_utf8_range);

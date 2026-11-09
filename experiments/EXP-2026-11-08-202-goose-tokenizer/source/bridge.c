@@ -27,6 +27,16 @@ static void g_st_i64(uint64_t base, int64_t byte, int64_t v) {
 #include "vocab-generated.c"
 #undef main
 
+int64_t fg202t_bpe_add_allowed(int64_t l, int64_t r, int64_t rank) {
+    atomic_fetch_add(&g_bigram, 1);
+    return gg_function_8(l, r, rank, 0);
+}
+int64_t fg202t_bpe_merge_valid(int64_t ln, int64_t rn, int64_t concat_matches) {
+    return gg_function_9(ln, rn, concat_matches, 0);
+}
+int64_t fg202t_bpe_ignore_merges(int64_t ignore, int64_t has_token) {
+    return gg_function_10(ignore, has_token, 0);
+}
 int64_t fg202t_utf8_len(int64_t src) { atomic_fetch_add(&g_utf8, 1); return gg_function_1(src, 0); }
 int64_t fg202t_bigram_valid(int64_t ln, int64_t rn, int64_t sz) {
     atomic_fetch_add(&g_bigram, 1);

@@ -59,10 +59,42 @@ fn clamp_symbol_len(len:i64,remaining:i64)->i64{
  return remaining;
 }
 
+
+// GPT-2 BPE (`llm_tokenizer_bpe_session`), the tokenizer Qwen actually uses.
+//
+// bpe_add_allowed: llama-vocab.cpp:784-797. A pair enters the work queue only when both
+// neighbours exist and a rank exists for the concatenation.
+fn bpe_add_allowed(left:i64,right:i64,rank:i64)->i64{
+ if left==(0 as i64)-1 as i64{return 0 as i64;}
+ if right==(0 as i64)-1 as i64{return 0 as i64;}
+ if rank<(0 as i64){return 0 as i64;}
+ return 1 as i64;
+}
+
+// bpe_merge_valid: lines 715-724. A queued merge is dropped when a side was already merged away,
+// or when the recorded text no longer equals the two current sides concatenated.
+//   concat_matches is the result of `left_token + right_token == bigram.text`, computed by the
+//   caller because Goose has no string type yet.
+fn bpe_merge_valid(left_n:i64,right_n:i64,concat_matches:i64)->i64{
+ if left_n==0 as i64{return 0 as i64;}
+ if right_n==0 as i64{return 0 as i64;}
+ if concat_matches==0 as i64{return 0 as i64;}
+ return 1 as i64;
+}
+
+// bpe_ignore_merges: line 686, `ignore_merges && text_to_token(word) != NULL`.
+fn bpe_ignore_merges(ignore:i64,has_token:i64)->i64{
+ if ignore!=0 as i64&&has_token!=0 as i64{return 1 as i64;}
+ return 0 as i64;
+}
+
 fn main(){
  utf8_len(0 as i64);
  bigram_valid(0 as i64,0 as i64,0 as i64);
  try_add_allowed(0 as i64,0 as i64,0 as i64,0 as i64,0 as i64);
  resegment_kind(0 as i64,0 as i64);
  clamp_symbol_len(1 as i64,1 as i64);
+ bpe_add_allowed(0 as i64,0 as i64,0 as i64);
+ bpe_merge_valid(1 as i64,1 as i64,1 as i64);
+ bpe_ignore_merges(0 as i64,0 as i64);
 }
