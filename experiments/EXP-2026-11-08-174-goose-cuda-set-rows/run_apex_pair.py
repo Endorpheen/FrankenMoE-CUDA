@@ -1,6 +1,6 @@
 from pathlib import Path
 import os,json,time,subprocess,urllib.request,urllib.error,threading,hashlib,signal,traceback
-A=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');L=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107/results');R=A/'runtime/exp174/run';mode=os.environ.get('FG174_MEASURE_MODE','goose');assert mode in ['goose','native-rollback'];label='apex-32k128-setrows-pair-'+mode;B=A/'runtime/exp174/results'/label;T=A/'runtime/exp174/measured'/label/'run';B.mkdir(parents=True,exist_ok=True);T.mkdir(parents=True,exist_ok=True)
+A=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');L=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107/results');R=A/'runtime/exp174/run';mode=os.environ.get('FG174_MEASURE_MODE','goose');assert mode in ['goose','native-rollback'];label='apex-32k128-setrows-pair'+os.environ.get('FG_SUFFIX','')+'-'+mode;B=A/'runtime/exp174/results'/label;T=A/'runtime/exp174/measured'/label/'run';B.mkdir(parents=True,exist_ok=True);T.mkdir(parents=True,exist_ok=True)
 if (B/'process.json').exists():raise SystemExit('Existing diagnostic receipt;inspect before rerunning')
 for f in R.iterdir():
  if f.is_file() or f.is_symlink():
