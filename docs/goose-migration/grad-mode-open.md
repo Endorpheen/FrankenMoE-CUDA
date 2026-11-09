@@ -59,3 +59,24 @@ gets explained away.
 The next step is a bisection over the operator list: run the full set, then halves, until the
 minimal failing sequence is found. That needs the harness to accept an ordered list, which it
 does through `-o` with several names, so it is mechanical.
+
+## Related: EXP186's sanitizer errors are also native
+
+Re-ran memcheck on the rebuilt fixtures after the `sample_ratio` fixes. EXP184, EXP185 and EXP188
+are clean. EXP186 reports 10 errors, and they are the same ones recorded earlier:
+
+    Invalid __global__ read of size 2 bytes
+    at void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)1, (bool)0>(...)
+
+`(bool)1` is the template parameter, i.e. the **native** kernel the fixture runs as its reference
+arm. Searching the whole log for the Goose symbol returns zero: no error is attributed to
+`fg186*`, and the Goose arm alone reports none.
+
+This mattered to check because the `sample_ratio` change touched EXP186's body, and an
+out-of-bounds read in the Goose arm would have been a defect introduced by that fix. It is not:
+the read is in the native template at block 4, which is the same finding already recorded rather
+than a new one.
+
+Worth stating plainly, since the raw count "10 errors" will otherwise look alarming in the
+sanitizer sweep: it is a property of the reference arm of an opt-in experiment that is not in the
+active link.
