@@ -193,7 +193,18 @@ Every stage that ships a GPU fixture was run under `compute-sanitizer --tool mem
 | EXP180 MMQ Q8_1 (opt-in, not in chain) | 8 / 0 | 0 errors |
 | EXP186 mul_mat_vec_q Q6_K (opt-in, not in chain) | — | **10 errors** |
 
-Everything in the active chain is clean. Note on the last row: the out-of-bounds reads are
+Everything in the active chain is clean.
+
+The other three tools were run over the same fixtures:
+
+    memcheck    13 stages, 0 errors each
+    initcheck   14 stages, 0 errors each
+    synccheck   14 stages, 0 errors each
+    racecheck   9 stages, "RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)"
+
+racecheck only prints a summary when it has something to say, so its absence was checked
+against the log rather than read as a skip: the `COMPUTE-SANITIZER` banner and the fixture's
+own `checks=N failures=0` line are both present in each run. Note on the last row: the out-of-bounds reads are
 reported at `mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)1, (bool)0>` — the native
 template the fixture runs as its reference arm, not a Goose kernel — so this is not evidence
 against the Goose body. EXP186 is not in the active link. The fixture's native arm reading
