@@ -73,3 +73,35 @@ Apex is unaffected, checked rather than assumed: `FG177C_CUDA_CPY host=0x4,paths
 `FG171R host=0x1,modes=0x8,variants=0x50` and `FG176G host=0x3,paths=0x3` are all unchanged,
 output is still `e68df05b`, and the run reads 2576.97 / 26.73 at load 2.07 — in line with the
 native 2549.14 / 25.90 pair taken under the same conditions.
+
+## MUL_MAT: what the 12 failures actually are
+
+Exact shapes from the run, all with `n=1`:
+
+| type_a | m | n | k | bs | nr | result |
+|---|---:|---:|---:|---|---|---|
+| f32 | 16 | 1 | 256 | 1x1 | 1x2 | error 0.95 |
+| f32 | 16 | 1 | 256 | 3x2 | 1x2 | NaN |
+| f32 | 16 | 1 | 256 | 3x2 | 2x2 | NaN |
+| f32 | 16 | 1 | 4 | 1x1 | 1x2 | error 0.42 |
+| f32 | 16 | 1 | 4 | 3x2 | 1x2 | error 1.31 |
+| f32 | 16 | 1 | 4 | 3x2 | 2x2 | error 1.62 |
+| q4_K | 16 | 1 | 256 | 1x1 | 1x2 | NaN |
+| q4_K | 16 | 1 | 256 | 3x2 | 1x2 | NaN |
+| q4_K | 16 | 1 | 256 | 3x2 | 2x2 | NaN |
+
+Both modules decline-then-fall-back correctly when their switch is off, so the failures are in
+what they compute, not in what they replace.
+
+The important part for the next attempt: EXP184 already carries an eligibility predicate
+(`cuda-runtime.cu`, `const bool eligible = ...`) that the Goose body consults, and these cases
+pass it. So the fix is not "decline more shapes" — the predicate believes it models them and
+does not. Reading the predicate against the table is where the next step starts.
+
+Also worth noting: the plain `bs=1x1` case fails as well as the batched ones, so batching alone
+is not the discriminator, and `n=1` is not either — the Apex profile runs `mul_mat_vec_f` four
+times per pass successfully with much larger `k`.
+
+No change was made here. The predicate currently admits these shapes, and narrowing it by
+guesswork would either be wrong or would silently reduce coverage; the failure needs to be
+traced inside the body first.
