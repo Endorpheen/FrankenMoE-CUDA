@@ -577,6 +577,13 @@ Result on the case that started this:
 
 So the broadcast case is now computed, not declined.
 
-EXP185 is **not** patched: its own body still lacks the ratio, so its predicate stays at
-`src0->ne[3] == dst->ne[3]`. Loosening it without patching the body would reintroduce the same
-defect for q4_K. That asymmetry is deliberate and recorded in the source comment.
+EXP185 followed in the same pass: `fg185q_body` takes `sample_ratio`, applies
+`sample_x = sample_dst / sample_ratio` on the non-ids route, and its predicate loosens to the
+same divisibility condition. Its packet slot `(5,5)` was initially missed, which showed up as
+`unspecified launch failure` rather than a wrong number — the ratio arrived as zero and tripped
+`ensure(sample_ratio > 0, 14)`. Adding the slot fixed it.
+
+    full test-backend-ops  ->  rc=0, 0 failures, 2/2 backends passed
+    Apex                   ->  FG184M and FG185Q both paths=0x1, output e68df05b
+    paired                 ->  Goose 2533.23/24.96 vs native 2532.72/25.00
+                               (+0.02% / -0.16%, inside noise)
