@@ -983,13 +983,13 @@
       "id": "P3-14",
       "phase": "P3",
       "title": "Port CUDA FWHT and remaining inference math that Apex executes",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/fwht.cu",
         "ggml/src/ggml-cuda/fwht.cuh"
       ],
       "acceptance": "FWHT carried out through MUL_MAT (ggml_cuda_op_mul_mat_use_fwht, the GGML_HINT_SRC0_IS_HADAMARD path) has a Goose device implementation byte-identical to native for F32/F16 sources with a shape/type corpus. Convolution, im2col, col2im, pooling and upscale are out of scope by owner directive 2026-11-08: no kept architecture uses them.",
-      "evidence": "",
+      "evidence": "EXP183 transfers fwht_cuda<N,T> for F32 sources and N in {64,128,256,512}, reached through ggml_cuda_op_fwht, with the row decode, scaled register load, xor shuffle ladder, intra-warp stages and scaled stores owned by Goose. Byte-identical to native over its corpus, Apex witness FG183F_CUDA_FWHT paths=0x1, VERDICT ACCEPTED with no regression beyond 2%.\nCLOSED 2026-11-08 by census re-check, not by assumption: the raw nsys trace runtime/exp175/results/census/apex-census.sqlite contains exactly two live instantiations, fwht_cuda<256,float> (220 launches, 23.6 ms) and fwht_cuda<64,float> (220 launches, 24.0 ms), both inside the EXP183 set. The wide path fwht_cuda_block (N>=1024) never launches in this profile. An earlier read of ggml_cuda_op_mul_mat_use_fwht suggested the hint must come from the GGUF prism.hadamard metadata, which Apex lacks; the trace shows the calls instead come from the KV-cache rotation path (llama-kv-cache.cpp:368-384, n_rot_k/n_rot_v), so the metadata check was a wrong inference and is recorded here rather than left to be repeated. Half sources and the N>=1024 block path remain native and outside the Apex profile.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
