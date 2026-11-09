@@ -19,6 +19,8 @@ extern "C" int fg199k_enabled(void);
 extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared);
 extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
 extern "C" int64_t fg199k_head_after(int64_t last_idx);
+extern "C" int64_t fg199k_head_start(int64_t head_cur, int64_t used, int64_t n_tokens);
+extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
 
 static bool ggml_is_power_of_2(int n) {
     return (n & (n - 1)) == 0;
@@ -416,6 +418,8 @@ void llama_kv_cache::clear(bool data) {
 extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared);
 extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
 extern "C" int64_t fg199k_head_after(int64_t last_idx);
+extern "C" int64_t fg199k_head_start(int64_t head_cur, int64_t used, int64_t n_tokens);
+extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
 // ---------------------------------------------------------------------------------------------
 
 bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
@@ -936,6 +940,8 @@ bool llama_kv_cache::update(llama_context * lctx, bool do_shift, const stream_co
 }
 
 llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch, bool cont) const {
+    // Goose slot-selection decisions (EXP199); GGML_GOOSE_KV_CELLS=0 restores the native logic.
+    const int enabled = fg199k_enabled();
 
     if (debug > 0) {
         for (uint32_t s = 0; s < ubatch.n_seqs_unq; ++s) {
@@ -1042,9 +1048,9 @@ llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch,
 
         // if we have enough unused cells before the current head ->
         //   better to start searching from the beginning of the cache, hoping to fill it
-        if (head_cur > cells.get_used() + 2*n_tokens) {
-            head_cur = 0;
-        }
+        // Goose decides whether the search restarts at 0.
+        head_cur = enabled ? (uint32_t)fg199k_head_start(head_cur, cells.get_used(), n_tokens)
+                           : (head_cur > cells.get_used() + 2*n_tokens ? 0 : head_cur);
 
         if (n_tokens > cells.size()) {
             LLAMA_LOG_ERROR("%s: n_tokens = %d > size = %u\n", __func__, n_tokens, cells.size());
@@ -1079,25 +1085,18 @@ llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch,
                 //    - (disabled) mask causally, if the sequence is the same as the one we are inserting
                 //    - mask SWA, using current max pos for that sequence in the cache
                 //                always insert in the cell with minimum pos
-                bool can_use = cells.is_empty(idx);
-
-                if (!can_use && cells.seq_count(idx) == 1) {
-                    const llama_pos pos_cell = cells.pos_get(idx);
-
-                    // (disabled) causal mask
-                    // note: it's better to purge any "future" tokens beforehand
-                    //if (cells.seq_has(idx, seq_id)) {
-                    //    can_use = pos_cell >= pos;
-                    //}
-
-                    if (!can_use) {
-                        const llama_seq_id seq_id_cell = cells.seq_get(idx);
-
-                        // SWA mask
-                        if (llama_hparams::is_masked_swa(n_swa, swa_type, pos_cell, cells.seq_pos_max(seq_id_cell) + 1)) {
-                            can_use = true;
-                        }
-                    }
+                // Goose decides whether the cell is reusable; the container reads stay here.
+                bool can_use;
+                {
+                    const bool occupied   = !cells.is_empty(idx);
+                    const int  seq_count  = occupied ? cells.seq_count(idx) : 0;
+                    const llama_pos pos_cell = occupied ? cells.pos_get(idx) : 0;
+                    const llama_pos max_p1   = (occupied && seq_count == 1)
+                                             ? cells.seq_pos_max(cells.seq_get(idx)) + 1 : 0;
+                    can_use = enabled
+                        ? (fg199k_can_use(occupied ? 1 : 0, seq_count, pos_cell, max_p1, n_swa, swa_type) != 0)
+                        : (!occupied || (seq_count == 1 &&
+                           llama_hparams::is_masked_swa(n_swa, swa_type, pos_cell, max_p1)));
                 }
 
                 if (can_use) {

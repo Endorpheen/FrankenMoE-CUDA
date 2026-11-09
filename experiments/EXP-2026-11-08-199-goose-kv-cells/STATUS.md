@@ -78,3 +78,30 @@ means is narrower and worth stating plainly:
 Per the standing rule, a path the profile does not take keeps its native fallback and gets
 recorded rather than manufactured. `GGML_GOOSE_KV_CELLS=0` restores the whole native sequence, and
 the two decisions that do run are proven by the `native=0` witness.
+
+## find_slot decisions ported and live
+
+Three more from `find_slot` / `llama-hparams.h`:
+
+- `head_start(head_cur, used, n_tokens)` -- line 1026: restart the search at 0 when enough cells
+  are free before the head. This decides which cells get reused.
+- `is_masked_swa(n_swa, swa_type, p0, p1)` -- all four SWA types (NONE / STANDARD / CHUNKED /
+  SYMMETRIC). One correction during the port: native divides by `n_swa` without a guard in the
+  CHUNKED case, and my first version trapped on zero. The module now mirrors the arithmetic and
+  returns 0 for `n_swa == 0` instead of asserting a condition native does not have.
+- `can_use_cell(occupied, seq_count, pos_cell, seq_pos_max_1, n_swa, swa_type)` -- lines 1060-1082.
+
+Apex after routing all three:
+
+    FG199K_KV_CELLS goose=65814 cleared=0 native=0 purge=0 head=292
+    FG199K_KV_SLOT  head_start=146 can_use=32907
+    tokens and all 128 top-5 probabilities equal, 2542.02 / 26.62
+
+`head_start=146` and `can_use=32907` are the live evidence that slot selection now runs through
+Goose: 32907 cell-reuse decisions in one pass. Gate is 67929 checks / 0 failures, with the new
+decisions compared against the native expressions over 400 randomised cases each.
+
+## Next
+
+`prepare` itself -- the trial-placement loop with its recovery stack -- and then the
+`llama_kv_cache_context` seam.

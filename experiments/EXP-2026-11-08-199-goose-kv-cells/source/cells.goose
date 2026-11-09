@@ -212,6 +212,60 @@ fn plan_cell(occupied:i64,pos:i64,r:u64){
  st_i64(r,8,pos);
 }
 
+
+// find_slot decisions, from llama-kv-cache.cpp:1026-1094 and llama-hparams.h:506.
+
+// head_start: line 1026-1029. If enough cells are free before the head, native restarts the
+// search at 0 rather than wrapping; that choice decides which cells get reused.
+fn head_start(head_cur:i64,used:i64,n_tokens:i64)->i64{
+ ensure(head_cur>=0&&used>=0&&n_tokens>=0,120);
+ if head_cur>used+2 as i64*n_tokens{return 0 as i64;}
+ return head_cur;
+}
+
+// is_masked_swa: llama-hparams.h. swa_type is the enum value (0 NONE, 1 STANDARD, 2 CHUNKED,
+// 3 SYMMETRIC). Returns 1 when the cell is masked and therefore not reusable.
+fn is_masked_swa(n_swa:i64,swa_type:i64,p0:i64,p1:i64)->i64{
+ ensure(p0>=0&&p1>=0,130);
+ ensure(n_swa>=0,131);
+ if swa_type==0 as i64{return 0 as i64;}
+ if swa_type==1 as i64{
+  if p1-p0>=n_swa{return 1 as i64;}
+  return 0 as i64;
+ }
+ if swa_type==2 as i64{
+  // Native divides without a guard; n_swa == 0 is not a configuration it reaches (the SWA type
+  // is only chosen for models that configure a window). Mirror the arithmetic, not an assert.
+  if n_swa==0 as i64{return 0 as i64;}
+  let chunk:i64=(p1/n_swa)*n_swa;
+  if p0<chunk{return 1 as i64;}
+  return 0 as i64;
+ }
+ if swa_type==3 as i64{
+  let half:i64=n_swa/2 as i64;
+  let diff:i64=p1-p0;
+  if diff<(0 as i64)-half||diff>half{return 1 as i64;}
+  return 0 as i64;
+ }
+ ensure(false,133);
+ return 0 as i64;
+}
+
+// can_use: lines 1060-1082. A cell is usable when it is empty, or when it holds exactly one
+// sequence whose position is masked by SWA relative to that sequence's max position.
+//   occupied 1 when the cell is in use
+//   seq_count the number of sequences in the cell
+//   pos_cell  the cell position, seq_pos_max_1 the sequence's max position + 1
+fn can_use_cell(occupied:i64,seq_count:i64,pos_cell:i64,seq_pos_max_1:i64,
+                n_swa:i64,swa_type:i64)->i64{
+ ensure(occupied==0||occupied==1,140);
+ ensure(seq_count>=0,141);
+ if occupied==0{return 1 as i64;}
+ if seq_count!=1{return 0 as i64;}
+ if is_masked_swa(n_swa,swa_type,pos_cell,seq_pos_max_1)==1{return 1 as i64;}
+ return 0 as i64;
+}
+
 // should_purge: llama-kv-cache.cpp:1228 `cells.seq_pos_min(s) <= seq_pos_max_rm[s]`.
 // Returns 1 when the purge loop must call seq_rm for this sequence.
 fn should_purge(seq_pos_min:i64,max_rm:i64)->i64{
@@ -242,4 +296,7 @@ fn main(){
  head_after_place(0 as i64);
  plan_cell(0 as i64,0 as i64,0 as u64);
  should_purge(0 as i64,0 as i64);
+ head_start(0 as i64,0 as i64,0 as i64);
+ is_masked_swa(0 as i64,0 as i64,0 as i64,0 as i64);
+ can_use_cell(0 as i64,0 as i64,0 as i64,0 as i64,0 as i64,0 as i64);
 }

@@ -29,6 +29,8 @@ int64_t fg199k_seq_count(uint64_t, int64_t, int64_t);
 int64_t fg199k_used_max_p1(uint64_t, int64_t);
 int64_t fg199k_place_cell(uint64_t, int64_t, int64_t, int64_t, int64_t, uint64_t);
 int64_t fg199k_head_after_place(int64_t);
+int64_t fg199k_head_start(int64_t, int64_t, int64_t);
+int64_t fg199k_can_use(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
 }
 
 // ---- arena, laid out as the module documents it ----
@@ -236,6 +238,25 @@ int main(void) {
             compare(A, R, "place");
             ck(fg199k_head_after_place((int64_t)idx) == (int64_t)idx + 1, "head", 0, 0);
         }
+    }
+
+    // find_slot decisions against the native expressions.
+    for (int i = 0; i < 400; ++i) {
+        const int64_t head = rng() % 64, used = rng() % 64, nt = rng() % 8;
+        const int64_t ref = (head > used + 2*nt) ? 0 : head;
+        ck(fg199k_head_start(head, used, nt) == ref, "head_start", fg199k_head_start(head,used,nt), ref);
+
+        const int64_t n_swa = (int64_t)(rng() % 32);
+        const int64_t ty = rng() % 4;
+        const int64_t p0 = rng() % 64, p1 = rng() % 64;
+        bool m = false;
+        if (ty == 1) m = (p1 - p0 >= n_swa);
+        else if (ty == 2 && n_swa > 0) m = (p0 < (p1 / n_swa) * n_swa);
+        else if (ty == 3) { const int64_t h = n_swa/2, d = p1-p0; m = (d < -h || d > h); }
+        ck((fg199k_can_use(1, 1, p0, p1, n_swa, ty) != 0) == m, "can_use", 0, m);
+
+        const int64_t occ = rng() % 2, sc = rng() % 3;
+        ck(fg199k_can_use(occ, sc, p0, p1, 0, 0) == (occ == 0 ? 1 : 0), "can_use empty", 0, 0);
     }
 
     run_trap("rm on empty cell", 12, trap_rm_empty);
