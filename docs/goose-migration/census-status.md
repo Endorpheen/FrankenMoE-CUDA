@@ -288,6 +288,37 @@ batched/permuted matvec, and EXP166 `SILU_BACK`.
 Apex after both fixes, back-to-back pair under one load average: native 2549.14/25.90 against
 Goose 2576.54/27.28, prefill +1.07% and decode +5.33%, identical `e68df05b`.
 
+
+## Re-taking the census: what was tried on 2026-11-08
+
+Two attempts, both recorded with their exact failure so the next one starts further along.
+
+**`nsys profile`** — the earlier attempt never finished its export. Not retried: the failure was
+in shutdown, not in capture, and it would block a session the same way.
+
+**`ncu`** — this one connects and profiles, but cannot be driven through the mandated runner:
+
+    ==PROF== Connected to process 2171018 (.../variants/cpu-backend/run/llama-server)
+
+The runner builds its argv from a recorded plan and rewrites `argv[0]` to the measured copy of
+`llama-server`, so wrapping it in `ncu` makes the wrapper the process the runner launched. The
+runner then checks that the expected libraries are mapped in that process, finds that
+`libllama.so` is not (it is mapped in a child, not in `ncu`), and reports
+
+    APEX_DIAGNOSTIC_FAILED Expected current library not mapped: libllama.so
+
+A first attempt also failed earlier than that with `Unable to write to file null.ncu-rep` from
+`-o /dev/null`, which is not a writable report path.
+
+So the blocker is the interaction between an external profiler wrapper and the runner's
+library-integrity check, not the profiler. Making this work needs either a runner mode that
+skips the mapping assertion when a profiler is in front, or a profiled invocation launched
+outside the runner with the same argv and environment — the second is closer to what the rules
+allow, but it means re-deriving the exact environment the runner records, which is what makes
+the numbers comparable in the first place.
+
+The EXP084 census therefore remains the authority, with the caveat already recorded that it
+predates several of the ports.
 ## Not covered
 
 `ggml_get_to_fp16_nc_cuda` and its `to_t_nc_cuda_t` per-dimension-stride signature. The
