@@ -219,3 +219,25 @@ The one real anomaly is `m=4` at 1.4e-02 on sample 0 with sample 1 clean, which 
 the harness cases either and is its own open question.
 
 Nothing is concluded from this beyond the negative result: shape and padding are not enough.
+
+### The kernel is bit-identical; the gap is a shape the fixture still misses
+
+Dumped the output of both arms and compared byte for byte, which is the project's own
+criterion and does not depend on any host oracle:
+
+    SAME  n256-r64            SAME  n256-r16-s2      SAME  n256-r16-s2-pad   SAME  n256-r16-s2-ovl
+    SAME  n512-r128           SAME  n256-r4-s2       SAME  n256-r4-s2-pad    SAME  n256-r4-s2-ovl
+    SAME  n2048-r33           SAME  n4096-r8         SAME  n8192-r5-c4
+
+All eleven, including the overlap layout that copies the harness arrangement exactly (both
+sources views into one allocation, at offsets 0 and `k*type_size`). So the Goose matvec kernel
+produces the same bytes as the native one for every shape reproduced so far.
+
+That also retires the `m=4` anomaly: it came from the host oracle dividing by a sum close to
+zero, not from the kernel. The byte comparison is the right instrument and the oracle was not.
+
+What the fixture still does not cover is the combination the harness actually fails on: its
+cases have `bs=[3,2]`, so `ne2 = 3` *and* `ne3 = 2` at once. Every case here has either a
+channel dimension or a sample dimension, never both non-unit. When the predicate bound
+`ne3 == 1` was added, those became native and passed; that is consistent with a defect that
+needs both dimensions, and it is the next case to add to the fixture.

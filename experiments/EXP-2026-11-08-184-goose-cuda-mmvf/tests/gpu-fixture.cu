@@ -24,24 +24,28 @@ static void check(bool ok, const char * what) {
     if (!ok) { ++g_fail; std::fprintf(stderr, "FAIL %s\n", what); }
 }
 
-struct Case { int64_t ncols; int64_t nrows; int64_t extra; int64_t samples; int padded; const char * name; };
+struct Case { int64_t ncols; int64_t nrows; int64_t extra; int64_t samples; int padded; int overlap; const char * name; };
 
 // ncols values span every block-size branch of the dispatcher: 256 and 512 stay at
 // 32/64 threads, 2048 and 8192 climb to wider blocks, and odd multiples force the
 // ceil in the column loop.
 static const Case CASES[] = {
-    {  256,   64, 1, 1, 0, "n256-r64"   },
-    {  512,  128, 1, 1, 0, "n512-r128"  },
-    { 2048,   33, 1, 1, 0, "n2048-r33"  },
-    { 4096,    8, 1, 1, 0, "n4096-r8"   },
-    { 8192,    5, 4, 1, 0, "n8192-r5-c4" },   // extra = channel count in src1
+    {  256,   64, 1, 1, 0, 0, "n256-r64"   },
+    {  512,  128, 1, 1, 0, 0, "n512-r128"  },
+    { 2048,   33, 1, 1, 0, 0, "n2048-r33"  },
+    { 4096,    8, 1, 1, 0, 0, "n4096-r8"   },
+    { 8192,    5, 4, 1, 0, 0, "n8192-r5-c4" },   // extra = channel count in src1
     // One destination column with the batch on dimension 3.
-    {  256,   16, 1, 2, 0, "n256-r16-s2" },
-    {  256,    4, 1, 2, 0, "n256-r4-s2"  },
+    {  256,   16, 1, 2, 0, 0, "n256-r16-s2" },
+    {  256,    4, 1, 2, 0, 0, "n256-r4-s2"  },
     // Same shape, but laid out the way test-backend-ops builds it: the sources are views
     // into a base tensor twice as wide and as tall, so nb[1] and nb[2] carry padding.
-    {  256,   16, 1, 2, 1, "n256-r16-s2-pad" },
-    {  256,    4, 1, 2, 1, "n256-r4-s2-pad"  },
+    {  256,   16, 1, 2, 1, 0, "n256-r16-s2-pad" },
+    {  256,    4, 1, 2, 1, 0, "n256-r4-s2-pad"  },
+    // Exactly how the harness builds it: one base allocation, both sources are views into
+    // it at offsets 0 and k*type_size, so they overlap.
+    {  256,   16, 1, 2, 1, 1, "n256-r16-s2-ovl" },
+    {  256,    4, 1, 2, 1, 1, "n256-r4-s2-ovl"  },
 };
 
 int main(int argc, char ** argv) {
@@ -77,6 +81,7 @@ int main(int argc, char ** argv) {
         cudaMalloc(&dy, y.size()*sizeof(float));
         cudaMalloc(&dd, out.size()*sizeof(float));
         cudaMemcpy(dx, x.data(), x.size()*4, cudaMemcpyHostToDevice);
+        if (c.overlap) cudaMemcpy(dy, y.data(), std::min(y.size(), x.size())*4, cudaMemcpyHostToDevice);
         cudaMemcpy(dy, y.data(), y.size()*4, cudaMemcpyHostToDevice);
         cudaMemset(dd, 0x7f, out.size()*sizeof(float));
 
@@ -89,13 +94,14 @@ int main(int argc, char ** argv) {
         const int64_t nb1 = (c.padded ? 2*c.ncols : c.ncols) * 4;
         const int64_t nb2 = (c.padded ? 2*c.ncols*base_rows : c.ncols*c.nrows) * 4;
         s0.ne[0] = c.ncols; s0.ne[1] = c.nrows; s0.ne[2] = 1; s0.ne[3] = ns;
-        s0.nb[0] = 4; s0.nb[1] = nb1; s0.nb[2] = nb2; s0.nb[3] = c.padded ? nb2*ns : nb2;
+        s0.nb[0] = 4; s0.nb[1] = nb1; s0.nb[2] = nb2; s0.nb[3] = nb2;
         s1.ne[0] = c.ncols; s1.ne[1] = 1; s1.ne[2] = nch; s1.ne[3] = ns;
         s1.nb[0] = 4; s1.nb[1] = nb1; s1.nb[2] = c.padded ? nb2 : nb1;
-        s1.nb[3] = c.padded ? nb2*ns : s1.nb[2]*nch;
+        s1.nb[3] = s1.nb[2];
         d.ne[0] = c.nrows; d.ne[1] = 1; d.ne[2] = nch; d.ne[3] = ns;
         d.nb[0] = 4; d.nb[1] = d.ne[0]*4; d.nb[2] = d.nb[1]; d.nb[3] = d.nb[2]*nch;
-        s0.data = dx; s1.data = dy; d.data = dd;
+        // Overlap case: both sources live in the x buffer, as the harness arranges.
+        s0.data = dx; s1.data = (c.overlap ? dx + c.ncols : dy); d.data = dd;
 
         ggml_backend_cuda_context ctx(0);
         ggml_cuda_mul_mat_vec_f(ctx, &s0, &s1, nullptr, &d, nullptr);
