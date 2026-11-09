@@ -139,12 +139,16 @@ never written, which follows. The substitution itself is correct, checked by sym
 `t fg188d_native_ggml_get_to_fp16_cuda`.
 
 So EXP188's verdict stands, now on positive evidence rather than a missing log line, and its
-witness bug is fixed. What remains unexplained is only why the EXP084 profile attributes 20
-prefill instances to that kernel: the only launcher in the tree is
-`dequantize_row_q4_0_cuda`, reached from `ggml_get_to_fp16_cuda` (three call sites: the two
-`fattn-common.cuh` conversions and the cuBLAS F16 trait), and none of them runs here. The
-profile predates this chain, so re-taking it on the current runtime is the step that would
-settle it; the earlier `nsys` attempt did not complete, as recorded below.
+witness bug is fixed.
+
+The 20 prefill instances in the EXP084 profile are accounted for by the profile's age, and
+this is a consequence of the live witness rather than a guess. `dequantize_block_q4_0<__half>`
+has exactly one launcher in the tree, `dequantize_row_q4_0_cuda`, which is the target returned
+by `ggml_get_to_fp16_cuda(Q4_0)`. In the current build that selector's entry counter is zero,
+so the kernel cannot have been launched by this chain; the profile predates EXP173, which
+replaced the F16 attention path with the Goose vector kernel that dequantizes the V cache
+inline as `dequantize_V_q4_0`. Re-taking the census on the current runtime is what would put a
+number on that, and the earlier `nsys` attempt did not complete, as recorded below.
 
 ## Transfer/residency: no executing decision on this profile
 
