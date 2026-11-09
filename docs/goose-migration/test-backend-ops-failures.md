@@ -193,3 +193,29 @@ Next step that would settle it: a GPU fixture with `k=256, m=16, n=1, ne3=2` for
 modules, comparing each output element against the native kernel and separating sample 0 from
 sample 1. If only sample 1 is wrong, the sample offset is the culprit and the channel
 arithmetic is exonerated; if both are, the column handling for `ncols_dst = 1` is.
+
+### Fixture result: shape and padding do not reproduce it
+
+The fixture now carries the failing shape and a padded layout that mirrors how the harness
+builds its inputs (both sources are views into a base tensor twice as wide, so `nb[1]` and
+`nb[2]` carry padding). The oracle walks the real strides and reports per sample.
+
+Goose-arm relative error against the host oracle:
+
+| case | sample 0 | sample 1 |
+|---|---|---|
+| k=256, m=16, n=1, ne3=2, contiguous | 6.1e-07 | 5.3e-06 |
+| k=256, m=16, n=1, ne3=2, padded | 5.0e-05 | 4.2e-06 |
+| k=256, m=4, n=1, ne3=2, contiguous | **1.4e-02** | 6.1e-08 |
+| k=256, m=4, n=1, ne3=2, padded | 1.8e-07 | 1.9e-07 |
+
+So the shape the harness reports as failing computes correctly in isolation, in both layouts.
+That rules out "the module mishandles a batched fourth dimension" as the whole story and means
+the harness case has another ingredient — the most likely candidate being that its two sources
+are views into the *same* base allocation, at offset 0 and offset `k * type_size`, so the
+inputs overlap each other in a way this fixture does not reproduce.
+
+The one real anomaly is `m=4` at 1.4e-02 on sample 0 with sample 1 clean, which does not match
+the harness cases either and is its own open question.
+
+Nothing is concluded from this beyond the negative result: shape and padding are not enough.
