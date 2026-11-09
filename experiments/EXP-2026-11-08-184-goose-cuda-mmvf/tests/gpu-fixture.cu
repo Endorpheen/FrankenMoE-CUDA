@@ -24,35 +24,41 @@ static void check(bool ok, const char * what) {
     if (!ok) { ++g_fail; std::fprintf(stderr, "FAIL %s\n", what); }
 }
 
-struct Case { int64_t ncols; int64_t nrows; int64_t extra; int64_t samples; int padded; int overlap; const char * name; };
+struct Case { int64_t ncols; int64_t nrows; int64_t extra; int64_t samples; int padded; int overlap; int bcast; const char * name; };
 
 // ncols values span every block-size branch of the dispatcher: 256 and 512 stay at
 // 32/64 threads, 2048 and 8192 climb to wider blocks, and odd multiples force the
 // ceil in the column loop.
 static const Case CASES[] = {
-    {  256,   64, 1, 1, 0, 0, "n256-r64"   },
-    {  512,  128, 1, 1, 0, 0, "n512-r128"  },
-    { 2048,   33, 1, 1, 0, 0, "n2048-r33"  },
-    { 4096,    8, 1, 1, 0, 0, "n4096-r8"   },
-    { 8192,    5, 4, 1, 0, 0, "n8192-r5-c4" },   // extra = channel count in src1
+    {  256,   64, 1, 1, 0, 0, 0, "n256-r64"   },
+    {  512,  128, 1, 1, 0, 0, 0, "n512-r128"  },
+    { 2048,   33, 1, 1, 0, 0, 0, "n2048-r33"  },
+    { 4096,    8, 1, 1, 0, 0, 0, "n4096-r8"   },
+    { 8192,    5, 4, 1, 0, 0, 0, "n8192-r5-c4" },   // extra = channel count in src1
     // One destination column with the batch on dimension 3.
-    {    4,   16, 1, 2, 0, 0, "n4-r16-s2"   },
-    {    4,   16, 3, 2, 0, 0, "n4-r16-c3-s2" },
-    {    4,   16, 1, 1, 0, 0, "n4-r16"      },
-    {  256,   16, 1, 2, 0, 0, "n256-r16-s2" },
-    {  256,    4, 1, 2, 0, 0, "n256-r4-s2"  },
+    // src0 carries ONE sample while src1 and dst carry two: the broadcast the harness builds
+    // from bs=[1,1] with nr=[*,2].
+    {  256,   16, 1, 2, 1, 1, 1, "n256-r16-s2-bcast"     },
+    {  256,   16, 1, 2, 1, 0, 1, "n256-r16-s2-bcast-pad" },
+    {    4,   16, 1, 2, 1, 1, 1, "n4-r16-s2-bcast"       },
+    {    4,   16, 1, 2, 0, 0, 1, "n4-r16-s2-bcast-c"     },
+    {    4,   16, 1, 2, 0, 0, 0, "n4-r16-s2"   },
+    {    4,   16, 3, 2, 0, 0, 0, "n4-r16-c3-s2" },
+    {    4,   16, 1, 1, 0, 0, 0, "n4-r16"      },
+    {  256,   16, 1, 2, 0, 0, 0, "n256-r16-s2" },
+    {  256,    4, 1, 2, 0, 0, 0, "n256-r4-s2"  },
     // Same shape, but laid out the way test-backend-ops builds it: the sources are views
     // into a base tensor twice as wide and as tall, so nb[1] and nb[2] carry padding.
-    {  256,   16, 1, 2, 1, 0, "n256-r16-s2-pad" },
-    {  256,    4, 1, 2, 1, 0, "n256-r4-s2-pad"  },
+    {  256,   16, 1, 2, 1, 0, 0, "n256-r16-s2-pad" },
+    {  256,    4, 1, 2, 1, 0, 0, "n256-r4-s2-pad"  },
     // Exactly how the harness builds it: one base allocation, both sources are views into
     // it at offsets 0 and k*type_size, so they overlap.
     // The harness's bs=[3,2]: channels and samples both greater than one.
-    {  256,   16, 3, 2, 1, 1, "n256-r16-c3-s2-ovl" },
-    {  256,   16, 3, 2, 1, 0, "n256-r16-c3-s2-pad" },
-    {  256,   16, 3, 2, 0, 0, "n256-r16-c3-s2"     },
-    {  256,   16, 1, 2, 1, 1, "n256-r16-s2-ovl" },
-    {  256,    4, 1, 2, 1, 1, "n256-r4-s2-ovl"  },
+    {  256,   16, 3, 2, 1, 1, 0, "n256-r16-c3-s2-ovl" },
+    {  256,   16, 3, 2, 1, 0, 0, "n256-r16-c3-s2-pad" },
+    {  256,   16, 3, 2, 0, 0, 0, "n256-r16-c3-s2"     },
+    {  256,   16, 1, 2, 1, 1, 0, "n256-r16-s2-ovl" },
+    {  256,    4, 1, 2, 1, 1, 0, "n256-r4-s2-ovl"  },
 };
 
 int main(int argc, char ** argv) {
@@ -100,7 +106,7 @@ int main(int argc, char ** argv) {
         const int64_t base_rows = c.nrows > 1 ? c.nrows : 1;
         const int64_t nb1 = (c.padded ? 2*c.ncols : c.ncols) * 4;
         const int64_t nb2 = (c.padded ? 2*c.ncols*base_rows : c.ncols*c.nrows) * 4;
-        s0.ne[0] = c.ncols; s0.ne[1] = c.nrows; s0.ne[2] = 1; s0.ne[3] = ns;
+        s0.ne[0] = c.ncols; s0.ne[1] = c.nrows; s0.ne[2] = 1; s0.ne[3] = c.bcast ? 1 : ns;
         s0.nb[0] = 4; s0.nb[1] = nb1; s0.nb[2] = nb2; s0.nb[3] = nb2;
         s1.ne[0] = c.ncols; s1.ne[1] = 1; s1.ne[2] = nch; s1.ne[3] = ns;
         s1.nb[0] = 4; s1.nb[1] = nb1; s1.nb[2] = c.padded ? nb2 : nb1;

@@ -315,3 +315,27 @@ differ from a freshly allocated tensor) and the per-case dispatch that precedes 
 
 The bound `ne3 == 1` stays because it is what keeps the suite green, and it is labelled as a
 bound over an unexplained case rather than a fix.
+
+### The broadcast layout is also bit-identical
+
+Read `test_mul_mat::build_graph` again rather than assuming symmetry: it builds a `base` of
+`[2k, max(m,n), bs0*nr0, bs1*nr1]` and takes `a = view(k, m, bs0, bs1)` and
+`b = view(k, n, bs0*nr0, bs1*nr1)`. So with `bs=[1,1], nr=[*,2]` the **source has one sample
+while the destination has two** — src0 is broadcast over the sample dimension. That is a shape
+the fixture had never produced; every earlier case gave src0 as many samples as src1.
+
+Added it in contiguous, padded and overlapping layouts:
+
+    SAME n256-r16-s2-bcast.bin
+    SAME n256-r16-s2-bcast-pad.bin
+    SAME n4-r16-s2-bcast.bin
+    SAME n4-r16-s2-bcast-c.bin
+
+Still byte-identical. Twenty-one fixture configurations now agree with native exactly, and the
+harness still fails the same nine cases when the bound is removed.
+
+So every property of the tensors that can be expressed in this fixture — shape, strides,
+padding, overlap, broadcast — has been ruled out by byte comparison. What remains is not a
+property of the tensors but of the harness's execution path: which entry point the failing
+cases reach, and what that entry point does before and after the kernel. That needs a per-case
+trace inside the backend, not another fixture variant, and it is where the next attempt starts.
