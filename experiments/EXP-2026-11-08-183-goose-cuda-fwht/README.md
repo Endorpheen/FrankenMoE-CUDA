@@ -26,11 +26,36 @@ Order native → goose → goose → native, one component changed:
 | native-rollback g | 2603.63 | **27.83** |
 | native median | 2599.19 | 27.24 |
 | goose median | 2569.35 | 26.97 |
-| delta | **-1.15%** | **-0.99%** |
+| delta (pairs f,g) | **-1.15%** | **-0.99%** |
 
 Both figures inside the 2% threshold. Content sha256 identical in all four runs
 (`e68df05b`), and the model witness `FG183F_CUDA_FWHT ... paths=0x1` appears only in
 the Goose arms, so the two arms really do differ.
+
+## All pairs, and which of them are valid
+
+Seven pairs exist for this stage. Four of them (b, c, d, e) are **invalid** for isolating
+FWHT: they were taken with the inherited runner that set `GGML_GOOSE_CUDA_SET_ROWS=0` for
+the native arm, so they compared two components at once. That defect is recorded in this
+file and was fixed, but those runs cannot be reused.
+
+The result of the valid measurements, re-taken under stable load with the corrected runner:
+
+| pair | native | goose | delta |
+|---|---:|---:|---:|
+| h1 | 27.71 | 27.53 | −0.66% |
+| h2 | 27.41 | 27.52 | **+0.38%** |
+| median | | | **−0.14%** |
+
+Earlier valid pairs f and g read +3.35% and −5.15%, which bracket the same point from both
+sides and show how wide the noise band is at this scale: nearly nine percentage points
+between two runs of the same binaries. Quoting −0.99% from their median was arithmetically
+right and practically meaningless.
+
+What the data supports: FWHT does not regress decode. Across the valid pairs the effect is
+within about ±1%, with median −0.14%, and the arms differ in no consistent direction. The
+verdict (accepted, inside the 2% threshold) stands on the re-taken pairs, not on the first
+two.
 
 ## Local gate
 
