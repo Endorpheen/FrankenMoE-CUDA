@@ -7,6 +7,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #define MAX_SIZE (1ull << 35)
 
@@ -46,6 +49,61 @@ static void ck(int ok, const char *what) { ++checks; if (!ok) { ++failures; fpri
 
 static unsigned rs = 195001;
 static unsigned nx(void) { rs = rs * 1664525u + 1013904223u; return rs; }
+
+
+// ---- trap coverage ------------------------------------------------------------------
+// The pool must refuse to continue on a violated invariant, exactly as the native
+// GGML_ASSERT does. Each case runs in a child so the abort is observed rather than
+// survived; the child writes the trap code to a pipe and the parent checks both the
+// signal and the code.
+static void run_trap(const char * what, int expected, void (*fn)(void)) {
+    int fd[2];
+    if (pipe(fd) != 0) { printf("FAIL pipe %s\n", what); failures++; return; }
+    pid_t pid = fork();
+    if (pid == 0) {
+        close(fd[0]);
+        dup2(fd[1], 2);
+        close(fd[1]);
+        fn();
+        // Reaching here means the trap did not fire.
+        _exit(0);
+    }
+    close(fd[1]);
+    char buf[256] = {0};
+    ssize_t n = read(fd[0], buf, sizeof(buf) - 1);
+    close(fd[0]);
+    int status = 0;
+    waitpid(pid, &status, 0);
+
+    ++checks;
+    int died = WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
+    int code_ok = n > 0 && strstr(buf, "validation code") != NULL &&
+                  atoi(strstr(buf, "validation code") + 16) == expected;
+    if (!died || !code_ok) {
+        printf("FAIL trap %s: died=%d code=%d expected=%d (%s)\n", what, died,
+               n > 0 ? atoi(strstr(buf, "validation code") + 16) : -1, expected, buf);
+        ++failures;
+    }
+}
+
+static void trap_zero_size(void)  { int64_t r[8] = {0}; fg195v_plan_alloc(0, 0, 0, 2097152, (uint64_t)(uintptr_t)r); }
+static void trap_used_gt_size(void) { int64_t r[8] = {0}; fg195v_plan_alloc(128, 4096, 1024, 2097152, (uint64_t)(uintptr_t)r); }
+static void trap_zero_gran(void)  { int64_t r[8] = {0}; fg195v_plan_alloc(128, 0, 0, 0, (uint64_t)(uintptr_t)r); }
+// One byte short of the 32 GB ceiling: the growth cannot be legal.
+// The pool is full to within 100 bytes of the 32 GB ceiling: the 2 MB growth needed for
+// this request cannot be legal.
+static void trap_ceiling(void) { int64_t r[8] = {0}; fg195v_plan_alloc(2097152, (int64_t)(MAX_SIZE - 100), (int64_t)MAX_SIZE, 2097152, (uint64_t)(uintptr_t)r); }
+static void trap_free_too_big(void) { fg195v_plan_free(0, 128, 256); }
+static void trap_free_order(void)   { fg195v_plan_free(0, 256, 128); }
+
+static void traps(void) {
+    run_trap("alloc size 0",             10, trap_zero_size);
+    run_trap("alloc pool_used > size",   10, trap_used_gt_size);
+    run_trap("alloc granularity 0",      10, trap_zero_gran);
+    run_trap("alloc over ceiling",       12, trap_ceiling);
+    run_trap("free size > pool_used",    20, trap_free_too_big);
+    run_trap("free out of order",        21, trap_free_order);
+}
 
 int main(void) {
     const size_t grans[] = { 2u << 20, 16u << 20 };
@@ -87,6 +145,7 @@ int main(void) {
             ck((unsigned long long)got == n.pool_used, "free rewinds like native");
         }
     }
+    traps();
     printf("FG195V_FIXTURE checks=%d failures=%d\n", checks, failures);
     return failures ? 1 : 0;
 }
