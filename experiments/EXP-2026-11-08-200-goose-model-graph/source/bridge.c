@@ -89,6 +89,13 @@ int64_t fg200g_key_dim(int64_t hk, int64_t nk) { return gg_function_27(hk, nk, 0
 int64_t fg200g_value_dim(int64_t hv, int64_t nv) { return gg_function_28(hv, nv, 0); }
 int64_t fg200g_conv_dim(int64_t kd, int64_t vd) { return gg_function_29(kd, vd, 0); }
 int64_t fg200g_wqkv_width(int64_t kd, int64_t vd) { return gg_function_30(kd, vd, 0); }
+int64_t fg200g_merged_half(int64_t ne0) { return gg_function_31(ne0, 0); }
+int64_t fg200g_up_view_offset(int64_t n_ff) { return gg_function_32(n_ff, 0); }
+int64_t fg200g_has_gate(int64_t a, int64_t b) { return gg_function_33(a, b, 0); }
+int64_t fg200g_swiglu_limit_used(int64_t bits) { return gg_function_34(bits, 0); }
+int64_t fg200g_fused_swiglu(int64_t m, int64_t d, int64_t g, int64_t f, int64_t hc, int64_t hy) {
+    return gg_function_35(m, d, g, f, hc, hy, 0);
+}
 
 // --- integration switch ----------------------------------------------------------------------
 int fg200g_enabled(void) {

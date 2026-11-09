@@ -30,6 +30,8 @@ extern "C" int fg200g_enabled(void);
 extern "C" int64_t fg200g_gating_kind(int64_t gating_op);
 extern "C" int64_t fg200g_group_select(int64_t n_expert_groups, int64_t n_tokens);
 extern "C" int64_t fg200g_weights_need_scale(int64_t w_scale_bits);
+extern "C" int64_t fg200g_merged_half(int64_t ne0);
+extern "C" int64_t fg200g_has_gate(int64_t has_gate_exps, int64_t has_gate_up);
 
 // dedup helpers
 
@@ -2393,7 +2395,7 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
             cb(gate_up, "ffn_moe_gate_up_biased", il);
         }
 
-        const int64_t n_ff = gate_up->ne[0] / 2;
+        const int64_t n_ff = en_moe ? fg200g_merged_half(gate_up->ne[0]) : gate_up->ne[0] / 2;
         cur = ggml_view_3d(ctx0, gate_up, n_ff, gate_up->ne[1], gate_up->ne[2], gate_up->nb[1], gate_up->nb[2], 0);
         cb(cur, "ffn_moe_gate", il);
         up  = ggml_view_3d(ctx0, gate_up, n_ff, gate_up->ne[1], gate_up->ne[2], gate_up->nb[1], gate_up->nb[2], n_ff * gate_up->nb[0]);
@@ -2429,7 +2431,8 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
         }
     }
 
-    const bool has_gate = gate_exps || gate_up_exps;
+    const bool has_gate = en_moe ? (fg200g_has_gate(gate_exps != nullptr, gate_up_exps != nullptr) != 0)
+                                 : (gate_exps || gate_up_exps);
 
     switch (type_op) {
         case LLM_FFN_SILU:

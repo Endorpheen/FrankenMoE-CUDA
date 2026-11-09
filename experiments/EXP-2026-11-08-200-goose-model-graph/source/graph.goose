@@ -240,6 +240,48 @@ fn conv_dim(key_d:i64,value_d:i64)->i64{
 // wqkv_width: line 86, `{ n_embd, key_dim*2 + value_dim }`.
 fn wqkv_width(key_d:i64,value_d:i64)->i64{return conv_dim(key_d,value_d);}
 
+
+// build_moe_ffn tail, from llama-graph.cpp:2129-2440.
+
+// merged_half: line 2383, `n_ff = gate_up->ne[0] / 2` -- the merged gate_up tensor holds gate
+// and up side by side, so each half is half the row.
+fn merged_half(ne0:i64)->i64{
+ ensure(ne0>=0,100);
+ return ne0/2 as i64;
+}
+
+// up_view_offset: line 2387, the up view starts one half-row in:
+//   n_ff * nb0, where nb0 is the element size.
+fn up_view_offset(n_ff:i64)->i64{
+ ensure(n_ff>=0,101);
+ return n_ff;
+}
+
+// has_gate: line 2412, `gate_exps || gate_up_exps`.
+fn has_gate(has_gate_exps:i64,has_gate_up:i64)->i64{
+ if has_gate_exps!=0||has_gate_up!=0{return 1 as i64;}
+ return 0 as i64;
+}
+
+// swiglu_limit_used: line 2420-2422, `limit > eps` with eps = 1e-6f.
+// The comparison is on float bits; 1e-6f = 0x358637BD. Only greater-than matters, and every
+// non-negative float below that pattern compares less, so an integer compare on the bit pattern
+// is exact for non-negative finite values.
+fn swiglu_limit_used(limit_bits:i64)->i64{
+ const EPS_BITS:i64=897988541 as i64;   // 0x358637BD = 1e-6f (checked, not hand-computed)
+ if limit_bits<=0 as i64{return 0 as i64;}      // negative or zero
+ if limit_bits>EPS_BITS{return 1 as i64;}
+ return 0 as i64;
+}
+
+// fused_swiglu_clamp: line 2423, the architectures that have a fused clamped swiglu rather than
+// the clamp/silu/mul sequence.
+fn fused_swiglu_clamp(is_maple:i64,is_dsv4:i64,is_glm5:i64,is_dflash:i64,has_hc:i64,is_hy_v4:i64)->i64{
+ if is_maple!=0||is_dsv4!=0||is_glm5!=0||is_hy_v4!=0{return 1 as i64;}
+ if is_dflash!=0&&has_hc!=0{return 1 as i64;}
+ return 0 as i64;
+}
+
 fn main(){
  is_recr(0 as i64,1 as i64,0 as u64);
  crop_before_nextn(0 as i64,0 as i64,0 as i64);
@@ -268,4 +310,9 @@ fn main(){
  value_dim(0 as i64,0 as i64);
  conv_dim(0 as i64,0 as i64);
  wqkv_width(0 as i64,0 as i64);
+ merged_half(0 as i64);
+ up_view_offset(0 as i64);
+ has_gate(0 as i64,0 as i64);
+ swiglu_limit_used(0 as i64);
+ fused_swiglu_clamp(0 as i64,0 as i64,0 as i64,0 as i64,0 as i64,0 as i64);
 }

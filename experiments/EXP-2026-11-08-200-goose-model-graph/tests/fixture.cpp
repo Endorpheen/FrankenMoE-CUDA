@@ -41,6 +41,11 @@ int64_t fg200g_key_dim(int64_t, int64_t);
 int64_t fg200g_value_dim(int64_t, int64_t);
 int64_t fg200g_conv_dim(int64_t, int64_t);
 int64_t fg200g_wqkv_width(int64_t, int64_t);
+int64_t fg200g_merged_half(int64_t);
+int64_t fg200g_up_view_offset(int64_t);
+int64_t fg200g_has_gate(int64_t, int64_t);
+int64_t fg200g_swiglu_limit_used(int64_t);
+int64_t fg200g_fused_swiglu(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
 }
 
 static int checks, failures;
@@ -185,6 +190,28 @@ int main(void) {
         const int64_t kd = fg200g_key_dim(hk, nk), vd = fg200g_value_dim(hv, nv);
         ck(fg200g_conv_dim(kd, vd) == kd*2 + vd, "conv_dim", 0, 0);
         ck(fg200g_wqkv_width(kd, vd) == kd*2 + vd, "wqkv_width", 0, 0);
+    }
+
+    // build_moe_ffn tail.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t ne0 = (int64_t)(rng() % 16384);
+        ck(fg200g_merged_half(ne0) == ne0/2, "merged_half", 0, 0);
+        const int64_t nff = (int64_t)(rng() % 4096);
+        ck(fg200g_up_view_offset(nff) == nff, "up_view_offset", 0, 0);
+
+        const int64_t a = rng() % 2, b = rng() % 2;
+        ck((fg200g_has_gate(a, b) != 0) == (a || b), "has_gate", 0, 0);
+
+        const float vals[] = {0.0f, 1e-6f, 5e-7f, 2e-6f, 1.0f, -1.0f};
+        for (float v : vals) {
+            int32_t bits; memcpy(&bits, &v, 4);
+            const bool ref = v > 1e-6f;
+            ck((fg200g_swiglu_limit_used(bits) != 0) == ref, "swiglu_limit", bits, ref);
+        }
+
+        const int64_t m = rng()%2, d = rng()%2, g = rng()%2, f = rng()%2, hc = rng()%2, hy = rng()%2;
+        const bool ref_f = m || d || g || hy || (f && hc);
+        ck((fg200g_fused_swiglu(m,d,g,f,hc,hy) != 0) == ref_f, "fused_swiglu", 0, ref_f);
     }
 
     run_trap("is_recr negative layer", 10, trap_neg_layer);

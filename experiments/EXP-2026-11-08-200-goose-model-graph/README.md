@@ -25,6 +25,10 @@ per-layer decisions the qwen35moe builder makes, while the graph construction it
 | `k_view_offset` / `v_view_offset` | lines 447/453 | where the K and V views start in the row |
 | `n_ff_exp` / `n_ff_shexp` | `qwen35moe.cpp:57-58` | declared expert FF width, else `n_ff / n_expert_used` |
 | `key_dim` / `value_dim` / `conv_dim` / `wqkv_width` | lines 65-67, 86 | the SSM tensor shapes |
+| `merged_half` | `llama-graph.cpp:2383` | `n_ff = gate_up->ne[0] / 2` |
+| `has_gate` | line 2412 | `gate_exps \|\| gate_up_exps` |
+| `swiglu_limit_used` | line 2420 | `limit > 1e-6f`, decided on the float bit pattern |
+| `fused_swiglu_clamp` | line 2423 | architectures with a fused clamped swiglu |
 
 `is_recr` is the one integrated into the library: it is called once per layer per pass and decides
 which attention mechanism the graph builds.
@@ -109,6 +113,18 @@ One operational note from this run: an Apex attempt failed with
 `cudaMalloc failed: out of memory` at 864 MiB, and the cause was a leftover `llama-server` from a
 killed run still holding VRAM (8120 MiB used). Killing it restored 3493 MiB and the run passed.
 Not a code defect, recorded so the next occurrence is not misdiagnosed.
+
+## A constant I hand-computed wrong
+
+`swiglu_limit_used` compares `limit > 1e-6f`. Writing it as an integer compare on the float bit
+pattern is exact for non-negative finite values, but I put `1e-6f = 897608381` in the source.
+That is `0x358637BD` mis-added. The real value is **897988541**, and the gate caught it:
+
+    FAIL swiglu_limit: goose=897988541 reference=0      (300 failures)
+
+The constant is now checked rather than hand-computed, and the fixture tests six values across
+the threshold in both directions. Worth recording because hand-computing hex for a float bit
+pattern is exactly the kind of thing that looks right.
 
 ## Switch
 
