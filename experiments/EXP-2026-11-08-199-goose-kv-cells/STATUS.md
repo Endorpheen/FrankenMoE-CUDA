@@ -55,3 +55,26 @@ generated function directly must inline such constants as literals or pass them 
 
 `apply_ubatch` and `prepare` on top of these eight operations — the probe showed 276 and 138
 calls per pass. The cell primitives they need are now Goose and gated.
+
+## The purge branch is not reachable on this profile
+
+Tried to make it run with a warm-up request before the measured one:
+
+    APEX_WARMUP_DONE
+    FG199K_KV_CELLS goose=65814 cleared=0 native=0 purge=0 head=292
+
+`purge` stays zero, and the reason is the profile itself: the fixed Apex request sets
+`cache_prompt=false`, so the cache is reset before the measured request and no cell being placed
+is ever occupied. `cleared=0` and `purge=0` are the same fact seen twice.
+
+That is not a defect and not a reason to change the profile to make a branch light up. What it
+means is narrower and worth stating plainly:
+
+- the **decision** `should_purge` is ported and covered by the differential gate, where occupied
+  cells are generated directly;
+- the **branch in the live runtime** is not exercised by this profile, so the in-situ evidence
+  for it is absent rather than positive.
+
+Per the standing rule, a path the profile does not take keeps its native fallback and gets
+recorded rather than manufactured. `GGML_GOOSE_KV_CELLS=0` restores the whole native sequence, and
+the two decisions that do run are proven by the `native=0` witness.
