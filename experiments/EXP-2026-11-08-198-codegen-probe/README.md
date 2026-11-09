@@ -31,6 +31,29 @@ all, because the base is still an integer and the offsets still have to be mater
 an independent confirmation of the EXP186 note that `__ldg` made it slower rather than better
 (504 → 552 there): it buys the cache path and pays the arithmetic.
 
+## Two workarounds tried inside our own wrapper, both failed
+
+The emitter is not something this work may change, but the CUDA wrapper is ours. So the obvious
+next question is whether the wrapper can recover the typed path. Two attempts, both compiled and
+measured:
+
+1. **Locally restrict-qualified cast at the load.**
+
+       const float * __restrict__ q = (const float * __restrict__)(const char *)(uintptr_t)p;
+       return q[o/4];
+
+   64 instructions, **0** `LDG.E.CONSTANT`. A restrict qualifier on a cast from an integer proves
+   nothing — the compiler cannot know the pointee is unaliased, because an integer has no
+   provenance.
+
+2. **Typed `__restrict__` kernel parameter, converted once at entry.**
+
+       __global__ void k(const float * __restrict__ a, ...) {
+           const uint64_t base = (uint64_t)(uintptr_t)a;
+
+   64 instructions, **0** `LDG.E.CONSTANT`. Same reason, one step later: the moment the pointer
+   becomes an integer the provenance is gone, and it is gone for every subsequent load.
+
 ## What this does and does not show
 
 It shows the mechanism is real and reproducible in a five-line kernel, and that the workaround
@@ -38,8 +61,13 @@ does not work. It does **not** give the size of the effect on a real kernel: her
 +14%, while EXP180 and EXP186 measured roughly 2.5x on the full bodies, because those loop over
 many blocks and the per-access cost compounds.
 
-The one fix that would help is an emitter that emits typed `__restrict__` parameters. That is a
-compiler change and is out of bounds for this work, which is why the blocker has stayed open.
+The one fix that would help is an emitter that emits typed `__restrict__` parameters **and** keeps
+the addressing in pointer arithmetic rather than integers. That is a compiler change and is out of
+bounds for this work, which is why the blocker has stayed open.
+
+That conclusion is now tested rather than argued: four variants, two of them attempts to recover
+the typed path from inside the wrapper, and only the fully typed one reaches
+`LDG.E.CONSTANT` — 56 instructions against 64 for every integer-carrying variant.
 
 ## Reproducing
 
