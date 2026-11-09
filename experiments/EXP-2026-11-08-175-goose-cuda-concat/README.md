@@ -97,6 +97,32 @@ These are preliminary single-pair component observations under uncontrolled
 external load, not stable whole-runtime C++ parity. The small opposite-direction
 deltas justify no further series.
 
+## The original figures were measured under contamination
+
+The pair that produced the earlier +0.573% / +0.437% ran with prefill 2198 and decode 18.99.
+Against the 26xx / 27.x this profile returns under normal conditions, that run was on a
+loaded machine: the two arms were mutually consistent, which is why the delta looked
+plausible, but neither absolute value belongs to this configuration.
+
+Re-measured with the same runner and the same fixed profile, three pairs, all at normal
+throughput:
+
+| pair | native | goose | prefill delta | decode delta |
+|---|---|---:|---:|---:|
+| h1 | 2624 / 27.59 | 2644 / 27.80 | +0.78% | +0.76% |
+| h2 | 2637 / 27.32 | 2641 / 26.53 | +0.15% | −2.90% |
+| h3 | 2636 / 27.08 | 2642 / 27.60 | +0.26% | +1.92% |
+| **median** | | | **+0.26%** | **+0.76%** |
+
+The verdict does not change — inside the 2% threshold — but the number now rests on runs at
+normal throughput rather than on a contaminated pair. Decode still spreads from −2.9% to
++1.9% across pairs, which is the honest resolution of this measurement: the effect is small
+and the noise is larger than it.
+
+This runner predates the CPU-telemetry addition, so unlike later stages there is no load or
+clock record for these pairs — only the absolute throughput, which is what exposed the
+original contamination in the first place.
+
 ## Rollback
 
 `GGML_GOOSE_CUDA_CONCAT=0` restores the private-renamed native
