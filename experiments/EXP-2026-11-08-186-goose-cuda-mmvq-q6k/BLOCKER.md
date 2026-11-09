@@ -133,3 +133,34 @@ address-folding difference and needs a compiler change.
 
 The shift rewrite is kept because it is equivalent and slightly smaller, but it does not
 unblock the transfer. EXP186 stays rejected and opt-in.
+
+### Attempt 5: route the loads through __ldg (measured, no gain)
+
+The native kernel's loads are `LDG.E.CONSTANT` because its parameters are `__restrict__`,
+which lets nvcc use the read-only path; the Goose body was emitting plain `LDG.E`. Since
+this kernel is memory-bound, that looked like the missing piece, so all four load
+primitives were switched to `__ldg`.
+
+Measured result:
+
+    LDG.E.CONSTANT in the emitted body   yes, 5 of them
+    SASS instructions                    504 -> 552  (worse)
+    kernel time                     21.92us -> 22.21us  (native 17.41us)
+    byte comparison                          4/4 identical, unchanged
+
+The read-only path did appear in the SASS but the total got larger, not smaller, and the
+kernel got marginally slower. Reverted; the body is back to 536 instructions in the object
+and 504 in the kernel function.
+
+So the four measured attempts now cover both halves of the earlier hypothesis and neither
+moves the number:
+
+    shifts instead of checked divisions   504 -> 504
+    __ldg for the read-only path          504 -> 552, slower
+    i32 index math                        504 -> 504
+    absolute-address primitives           504 -> 664, slower
+
+The instruction gap is the emitted address arithmetic itself, not the guards, not the cache
+path, and not the integer width. It needs the compiler to fold `base + i*k` into the load's
+immediate offset the way nvcc does when the addressing is written as array indexing over a
+`__restrict__` pointer.
