@@ -12,6 +12,9 @@
     "n256-r4-s2-pad.bin",
     "n256-r4-s2.bin",
     "n256-r64.bin",
+    "n4-r16-c3-s2.bin",
+    "n4-r16-s2.bin",
+    "n4-r16.bin",
     "n4096-r8.bin",
     "n512-r128.bin",
     "n8192-r5-c4.bin"
