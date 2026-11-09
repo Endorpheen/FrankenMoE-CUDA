@@ -172,6 +172,38 @@ So there is nothing to transfer here without moving zero computation into the ho
 times per pass. The measured statement is that the policy is not reached, not that it was
 ported.
 
+## Compute Sanitizer memcheck across the chain (P3-19, partial)
+
+Every stage that ships a GPU fixture was run under `compute-sanitizer --tool memcheck
+--error-exitcode 9`, each against its own runtime directory:
+
+| stage | fixture checks | memcheck |
+|---|---|---|
+| EXP175 concat | 32 / 0 | 0 errors |
+| EXP176 get_rows | 27 / 0 | 0 errors |
+| EXP177 cpy | 18 / 0 | 0 errors |
+| EXP178 q8_1 quantize | 10 / 0 | 0 errors |
+| EXP179 MoE weighted | 12 / 0 | 0 errors |
+| EXP181 mm_ids | 20 / 0 | 0 errors |
+| EXP182 q4_K dequant | 12 / 0 | 0 errors |
+| EXP183 FWHT | 15 / 0 | 0 errors |
+| EXP184 mul_mat_vec_f | 10 / 0 | 0 errors |
+| EXP185 mul_mat_vec_q Q4_K | 8 / 0 | 0 errors |
+| EXP188 q4_0 dequant | 15 / 0 | 0 errors |
+| EXP180 MMQ Q8_1 (opt-in, not in chain) | 8 / 0 | 0 errors |
+| EXP186 mul_mat_vec_q Q6_K (opt-in, not in chain) | — | **10 errors** |
+
+Everything in the active chain is clean. Note on the last row: the out-of-bounds reads are
+reported at `mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)1, (bool)0>` — the native
+template the fixture runs as its reference arm, not a Goose kernel — so this is not evidence
+against the Goose body. EXP186 is not in the active link. The fixture's native arm reading
+past its buffer at block 4 was not investigated further because it belongs to an experiment
+that is not promoted; it is recorded so the finding is not lost.
+
+The fixtures need `LD_LIBRARY_PATH` pointing at the stage's runtime directory: under the
+sanitizer the `fg160_fusion_enabled` reference from `libggml-cuda.so.0` does not resolve from
+the binary's rpath alone, and the run aborts before the first instrumented call.
+
 ## Not covered
 
 `ggml_get_to_fp16_nc_cuda` and its `to_t_nc_cuda_t` per-dimension-stride signature. The
