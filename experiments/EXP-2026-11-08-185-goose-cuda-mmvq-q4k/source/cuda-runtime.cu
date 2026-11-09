@@ -145,7 +145,7 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
   (!ids||dst->ne[2]==1) && (ids||dst->ne[1]==1) &&
   (fusion==nullptr||(fusion->gate==nullptr&&fusion->x_bias==nullptr&&fusion->gate_bias==nullptr&&
                      fusion->x_scale==nullptr&&fusion->gate_scale==nullptr)) &&
-  ne13==ne3;
+  ne13==ne3 && ne3==1;
  p.v[6][0]=eligible?1ULL:0ULL;
  if(fg185qh_run((int64_t)(uintptr_t)&p)&&eligible){
   fg185q_host_seen.fetch_or(p.launched?1ULL:16ULL,std::memory_order_relaxed);
