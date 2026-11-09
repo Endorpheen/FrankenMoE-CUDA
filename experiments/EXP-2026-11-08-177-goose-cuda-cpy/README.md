@@ -8,7 +8,7 @@ checkpoint, not promoted to the working runtime. P3-03 remains open.
 
 ## Verdict
 
-**ACCEPTED** — byte-exact CPY/DUP/CONT on the Apex path.
+**ACCEPTED** — byte-exact CPY/DUP/CONT on the Apex path; isolated two-way pair −0.38% prefill / −0.77% decode.
 
 This is a verdict on the transfer in the experimental runtime, which is the only thing
 this work decides. Installation into the production working runtime is left to Igor and
@@ -53,6 +53,25 @@ this stage's F32→F32 scope. That is stated rather than claimed as covered.
    number, but the adapter returns the CUDA status. It now checks `==0`.
 4. `ggml_cuda_dup` — privatising only `ggml_cuda_cpy` left DUP resolving to the
    native function inside the same object. Both symbols are renamed now.
+
+## Re-measured in isolation, both orders
+
+The forward/reverse pair below came from a runner that also set
+`GGML_GOOSE_CUDA_SET_ROWS=0` in the native arm, so it compared two components. The line is
+removed and the stage re-measured, one pair in each order:
+
+| pair | order | native | goose | prefill | decode |
+|---|---|---|---:|---:|---:|
+| iso1 | native→goose | 26.73 | 26.56 | −0.37% | −0.65% |
+| iso2 | goose→native | 27.32 | 27.07 | −0.39% | −0.89% |
+| **median** | | | | **−0.38%** | **−0.77%** |
+
+Unlike EXP176, the two orders agree here: both native readings are in the same band, so
+there is no warm-up artefact to confound. The effect is a small consistent cost of about
+0.4% prefill and 0.8% decode, inside the 2% threshold.
+
+The earlier record claimed +1.97% and +3.75% decode from the two-component pairs, which
+measured SET_ROWS as well. Corrected figures are negative and stable.
 
 ## Local gate
 
