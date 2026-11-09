@@ -16,6 +16,9 @@ per-layer decisions the qwen35moe builder makes, while the graph construction it
 | `group_select` | line 2283 | `n_expert_groups > 1 && n_tokens > 0` |
 | `weight_before_ffn` | line 2214 | only llama4 weights before the FFN |
 | `weights_need_scale` | line 2345 | `w_scale != 0 && w_scale != 1`, decided on the float bit pattern |
+| `kq_scale_auto` | `qwen35moe.cpp:344` | `f_attention_scale == 0` means compute `1/sqrt(n_embd_head)` |
+| `q_full_width` | line 288 | the QG projection width is twice the head width |
+| `gate_elem_offset` | line 311 | the gate is the second half of the QG row |
 
 `is_recr` is the one integrated into the library: it is called once per layer per pass and decides
 which attention mechanism the graph builds.
@@ -54,6 +57,15 @@ Gate: 5506 checks / 0 failures.
 2. `weights_need_scale` compares floats, so the bit pattern is passed in and compared as integers;
    a first attempt wrote the conversion inline as a lambda inside the condition, which was
    unreadable and unsafe. It is now a plain `memcpy` before the test.
+
+## Integration reach
+
+`is_recr` needed `llama-hparams.cpp`, the MoE decisions needed `llama-graph.cpp`, and the
+attention decisions live inside `src/models/qwen35moe.cpp`, which the build compiles inside
+`unity_8_cxx.cxx` together with eleven other model files. The integration therefore copies the
+unity source and redirects one include; nothing in the reference tree is touched. The copy needs
+`-I src/models` because its quoted `#include "models.h"` resolves relative to the original
+directory.
 
 ## Switch
 

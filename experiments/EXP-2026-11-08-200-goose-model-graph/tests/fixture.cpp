@@ -23,6 +23,9 @@ int64_t fg200g_gating_kind(int64_t);
 int64_t fg200g_group_select(int64_t, int64_t);
 int64_t fg200g_weight_before_ffn(int64_t);
 int64_t fg200g_weights_need_scale(int64_t);
+int64_t fg200g_kq_scale_auto(int64_t);
+int64_t fg200g_gate_elem_offset(int64_t);
+int64_t fg200g_q_full_width(int64_t);
 }
 
 static int checks, failures;
@@ -110,6 +113,18 @@ int main(void) {
             const bool ref = (v != 0.0f && v != 1.0f);
             ck((fg200g_weights_need_scale(bits) != 0) == ref, "weights_need_scale", 0, ref);
         }
+    }
+
+    // build_layer_attn decisions.
+    for (int i = 0; i < 200; ++i) {
+        const float scales[] = {0.0f, 1.0f, 0.125f, -2.0f};
+        for (float s : scales) {
+            int32_t bits; memcpy(&bits, &s, 4);
+            ck((fg200g_kq_scale_auto(bits) != 0) == (s == 0.0f), "kq_scale_auto", 0, s == 0.0f);
+        }
+        const int64_t nh = 1 + (int64_t)(rng() % 256);
+        ck(fg200g_gate_elem_offset(nh) == nh, "gate_offset", fg200g_gate_elem_offset(nh), nh);
+        ck(fg200g_q_full_width(nh) == 2*nh, "q_full_width", fg200g_q_full_width(nh), 2*nh);
     }
 
     run_trap("is_recr negative layer", 10, trap_neg_layer);

@@ -100,6 +100,34 @@ fn weights_need_scale(w_scale_bits:i64)->i64{
  return 1 as i64;
 }
 
+
+// build_layer_attn, from models/qwen35moe.cpp:276-355.
+
+// kq_scale_kind: line 344.
+//   f_attention_scale == 0.0f ? 1/sqrt(n_embd_head) : f_attention_scale
+// The decision is whether to compute the reciprocal square root at all; the value itself stays
+// with the caller, which already has sqrtf.
+//   1 -> caller must compute 1/sqrt(n_embd_head);  0 -> caller uses f_attention_scale
+fn kq_scale_auto(f_attention_scale_bits:i64)->i64{
+ if f_attention_scale_bits==0 as i64{return 1 as i64;}   // 0.0f
+ return 0 as i64;
+}
+
+// gate_view_offset: line 311-313. The gate is the second half of the QG projection, so its byte
+// offset inside one row is element_size * n_embd_head. Returned as an element count so the caller
+// multiplies by element size once.
+fn gate_elem_offset(n_embd_head:i64)->i64{
+ ensure(n_embd_head>0,60);
+ return n_embd_head;
+}
+
+// q_full_width: line 288, the QG projection emits query and gate interleaved, so the projection
+// width is twice the head width.
+fn q_full_width(n_embd_head:i64)->i64{
+ ensure(n_embd_head>0,61);
+ return n_embd_head*2 as i64;
+}
+
 fn main(){
  is_recr(0 as i64,1 as i64,0 as u64);
  crop_before_nextn(0 as i64,0 as i64,0 as i64);
@@ -110,4 +138,7 @@ fn main(){
  group_select(1 as i64,0 as i64);
  weight_before_ffn(0 as i64);
  weights_need_scale(0 as i64);
+ kq_scale_auto(0 as i64);
+ gate_elem_offset(1 as i64);
+ q_full_width(1 as i64);
 }

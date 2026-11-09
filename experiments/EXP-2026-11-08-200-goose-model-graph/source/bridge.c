@@ -49,6 +49,9 @@ int64_t fg200g_gating_kind(int64_t gating_op) { return gg_function_9(gating_op, 
 int64_t fg200g_group_select(int64_t g, int64_t ntok) { atomic_fetch_add(&g_moe_grp, 1); return gg_function_10(g, ntok, 0); }
 int64_t fg200g_weight_before_ffn(int64_t is4) { return gg_function_11(is4, 0); }
 int64_t fg200g_weights_need_scale(int64_t bits) { atomic_fetch_add(&g_moe_scale, 1); return gg_function_12(bits, 0); }
+int64_t fg200g_kq_scale_auto(int64_t bits) { return gg_function_13(bits, 0); }
+int64_t fg200g_gate_elem_offset(int64_t n) { return gg_function_14(n, 0); }
+int64_t fg200g_q_full_width(int64_t n) { return gg_function_15(n, 0); }
 
 // Integration entry points. The switch is opt-out so a new build has the feature on by default.
 int fg200g_enabled(void) {
