@@ -4,7 +4,7 @@
 #if defined(__AVX2__)
 #include <immintrin.h>
 #endif
-/* Goose-in-Goose experimental C backend. Generated from test/goose_in_goose/. */
+/* Fried Goose self-hosted C backend. */
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -109,6 +109,54 @@ static void gg_unsigned(gg_reference out,uint64_t n) { char b[32]; int k=snprint
 static double gg_double_bits(uint64_t bits) { double d; memcpy(&d, &bits, sizeof d); return d; }
 static int64_t ggf_fmt_f64(uint8_t *out,double n);
 static int64_t ggf_fmt_f32(uint8_t *out,float n);
+/* Only the in-range fast path uses a C float-to-integer cast. The tail
+   projects the finite IEEE significand modulo 2^64 without UB or libm.
+   Nonfinite unchecked inputs produce zero; checked inputs reject them. */
+static uint64_t gg_float_integer_wrap(double d) {
+    uint64_t bits, magnitude; int exponent;
+    if(d>=-9223372036854775808.0 && d<9223372036854775808.0)
+        return (uint64_t)(int64_t)d;
+    memcpy(&bits,&d,sizeof bits);
+    exponent=(int)((bits>>52)&2047)-1023;
+    if(exponent<0 || exponent>=116) return 0;
+    magnitude=(bits&UINT64_C(0xFFFFFFFFFFFFF))|UINT64_C(0x10000000000000);
+    if(exponent>=52) magnitude<<=exponent-52;
+    else magnitude>>=52-exponent;
+    return bits>>63 ? (uint64_t)0-magnitude : magnitude;
+}
+#if defined(GS_DEBUG) && GS_DEBUG
+static void gg_float_integer_fail(double d,int f32,const char *type,const char *file,int line,const char *why) {
+    uint8_t text[64];int64_t n=f32?ggf_fmt_f32(text,(float)d):ggf_fmt_f64(text,d);
+    fprintf(stderr,"goose runtime error: conversion %s to %s (%.*s) at %s:%d\\n",why,type,(int)n,(const char*)text,file,line);
+    exit(1);
+}
+#endif
+static uint64_t gg_float_integer(double d,int width,int unsign,int checked,int f32,const char *type,const char *file,int line) {
+#if defined(GS_DEBUG) && GS_DEBUG
+    if(checked) {
+        int64_t value,lo,hi;
+        if(unsign && width==64) {
+            uint64_t u;
+            if(!(d>=0.0 && d<18446744073709551616.0))
+                gg_float_integer_fail(d,f32,type,file,line,"out of range");
+            u=(uint64_t)d;
+            if((double)u!=d)gg_float_integer_fail(d,f32,type,file,line,"changes the value");
+            return u;
+        }
+        if(!(d>=-9223372036854775808.0 && d<9223372036854775808.0))
+            gg_float_integer_fail(d,f32,type,file,line,"out of range");
+        value=(int64_t)d;
+        hi=(int64_t)((UINT64_C(1)<<(width-(unsign?0:1)))-1);
+        lo=unsign?0:-1-hi;
+        if(value<lo || value>hi)gg_float_integer_fail(d,f32,type,file,line,"out of range");
+        if((double)value!=d)gg_float_integer_fail(d,f32,type,file,line,"changes the value");
+        return (uint64_t)value;
+    }
+#else
+    (void)width;(void)unsign;(void)checked;(void)f32;(void)type;(void)file;(void)line;
+#endif
+    return gg_float_integer_wrap(d);
+}
 static void gg_float(gg_reference out,double n) { uint8_t b[64];int64_t k=ggf_fmt_f64(b,n);gg_append(out,b,k,1); }
 static void gg_float32(gg_reference out,float n) { uint8_t b[64];int64_t k=ggf_fmt_f32(b,n);gg_append(out,b,k,1); }
 static void gg_bool(gg_reference out,uint8_t n) { gg_append(out,n?"true":"false",n?4:5,1); }
@@ -131,6 +179,67 @@ static void gs_os_write_stderr(gg_slice s) { gg_write(stderr,s); }
 static void gs_os_flush_stdout(void) { fflush(stdout); }
 static int64_t gs_os_arg_count(void) { return gg_argc; }
 static void gs_os_arg(int64_t i,gg_reference out) { if(i>=0 && i<gg_argc)gg_append(out,gg_argv[i],(int64_t)strlen(gg_argv[i]),1); }
+/* math's sqrt (stdlib/math.goose). Goose has no errno, and C's sqrt has to
+   set it for a negative argument: clang and gcc then guard the square root
+   instruction with a test and a library call at every use, and will not
+   vectorize a loop around one. A compiler that has a square root without
+   errno uses that instead; the value is the same correctly rounded root
+   either way, and NaN for a negative argument. */
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_elementwise_sqrt)
+#define GS_SQRT_NO_ERRNO 1
+#endif
+#endif
+#ifdef GS_SQRT_NO_ERRNO
+static double gs_sqrt(double x) { return __builtin_elementwise_sqrt(x); }
+static float gs_sqrtf(float x) { return __builtin_elementwise_sqrt(x); }
+#else
+static double gs_sqrt(double x) { return sqrt(x); }
+static float gs_sqrtf(float x) { return sqrtf(x); }
+#endif
+
+/* math's other libm functions (stdlib/math.goose). C has them set errno on a
+   domain or range error, so a C compiler takes each call for a write to
+   memory: a loop around one loads again after it whatever it had hoisted
+   out or kept in registers. Goose has no errno, so where the compiler has
+   asm labels and the const attribute each is libm's own function declared
+   under a name of its own as depending on its arguments alone; elsewhere
+   the name forwards to libm. */
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(__TINYC__)
+#define GS_LIBM_SYM2(p, f) #p #f
+#define GS_LIBM_SYM(p, f) GS_LIBM_SYM2(p, f)
+#define GS_LIBM
+#define GS_LIBM1(f) __asm__(GS_LIBM_SYM(__USER_LABEL_PREFIX__, f)) __attribute__((const));
+#define GS_LIBM2(f) GS_LIBM1(f)
+#else
+#define GS_LIBM static
+#define GS_LIBM1(f) { return f(x); }
+#define GS_LIBM2(f) { return f(x, y); }
+#endif
+GS_LIBM double gs_sin(double x) GS_LIBM1(sin)
+GS_LIBM double gs_cos(double x) GS_LIBM1(cos)
+GS_LIBM double gs_tan(double x) GS_LIBM1(tan)
+GS_LIBM double gs_asin(double x) GS_LIBM1(asin)
+GS_LIBM double gs_acos(double x) GS_LIBM1(acos)
+GS_LIBM double gs_atan(double x) GS_LIBM1(atan)
+GS_LIBM double gs_atan2(double x, double y) GS_LIBM2(atan2)
+GS_LIBM double gs_exp(double x) GS_LIBM1(exp)
+GS_LIBM double gs_log(double x) GS_LIBM1(log)
+GS_LIBM double gs_log2(double x) GS_LIBM1(log2)
+GS_LIBM double gs_log10(double x) GS_LIBM1(log10)
+GS_LIBM double gs_pow(double x, double y) GS_LIBM2(pow)
+GS_LIBM float gs_sinf(float x) GS_LIBM1(sinf)
+GS_LIBM float gs_cosf(float x) GS_LIBM1(cosf)
+GS_LIBM float gs_tanf(float x) GS_LIBM1(tanf)
+GS_LIBM float gs_asinf(float x) GS_LIBM1(asinf)
+GS_LIBM float gs_acosf(float x) GS_LIBM1(acosf)
+GS_LIBM float gs_atanf(float x) GS_LIBM1(atanf)
+GS_LIBM float gs_atan2f(float x, float y) GS_LIBM2(atan2f)
+GS_LIBM float gs_expf(float x) GS_LIBM1(expf)
+GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
+GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
+GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
+GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
 /* A float's text is the fewest significant digits that read back as the
    same value of its own type and, of those, the ones nearest it, a tie going
    to the even digit (as Python's repr and Ryu choose). They are found in
@@ -406,6 +515,10 @@ static int64_t gg_function_17(int64_t p0, int64_t p1, int64_t p2, int64_t base);
 static int64_t gg_function_18(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base);
 static int64_t gg_function_19(int64_t p0, int64_t p1, int64_t base);
 static int64_t gg_function_20(int64_t p0, int64_t p1, int64_t base);
+static int64_t gg_function_21(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base);
+static int64_t gg_function_22(int64_t p0, int64_t p1, int64_t base);
+static int64_t gg_function_23(int64_t p0, int64_t p1, int64_t base);
+static int64_t gg_function_24(int64_t p0, int64_t p1, int64_t base);
 static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   uint8_t t0;
   uint8_t t1;
@@ -420,11 +533,221 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
+#ifndef __cplusplus
+  extern void (fg200g_fail)(int64_t);
+#endif
   fg200g_fail(t2);
   }
   }
   }
 gg_done:;
+}
+static int64_t gg_function_24(int64_t p0, int64_t p1, int64_t base) {
+  int64_t t0;
+  int64_t t1;
+  int64_t t2;
+  uint8_t t3;
+  uint8_t t4;
+  int64_t t5;
+  int64_t t6;
+  uint8_t t7;
+  int64_t t8;
+  int64_t t9;
+  int64_t t10;
+  int64_t v0;
+  int64_t v1;
+  v0 = p0;
+  v1 = p1;
+  {
+  t1 = ((int64_t)(v0));
+  t2 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t3 = ((t1) >= (t2));
+  t4 = t3;
+  if (t4) {
+  t5 = ((int64_t)(v1));
+  t6 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t4 = ((t5) >= (t6));
+  }
+  t7 = t4;
+  t8 = ((int64_t)(((int64_t)UINT64_C(83))));
+  gg_function_2(t7, t8, base + 0);
+  t9 = ((int64_t)(v0));
+  t10 = ((int64_t)(v1));
+  t0 = ((int64_t)(((int64_t)((uint64_t)(t9) * (uint64_t)(t10)))));
+  goto gg_done;
+  }
+gg_done:;
+  return t0;
+}
+static int64_t gg_function_23(int64_t p0, int64_t p1, int64_t base) {
+  int64_t t0;
+  int64_t t1;
+  int64_t t2;
+  uint8_t t3;
+  uint8_t t4;
+  int64_t t5;
+  int64_t t6;
+  uint8_t t7;
+  int64_t t8;
+  int64_t t9;
+  int64_t t10;
+  int64_t v0;
+  int64_t v1;
+  v0 = p0;
+  v1 = p1;
+  {
+  t1 = ((int64_t)(v0));
+  t2 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t3 = ((t1) >= (t2));
+  t4 = t3;
+  if (t4) {
+  t5 = ((int64_t)(v1));
+  t6 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t4 = ((t5) >= (t6));
+  }
+  t7 = t4;
+  t8 = ((int64_t)(((int64_t)UINT64_C(82))));
+  gg_function_2(t7, t8, base + 0);
+  t9 = ((int64_t)(v0));
+  t10 = ((int64_t)(v1));
+  t0 = ((int64_t)(((int64_t)((uint64_t)(t9) * (uint64_t)(t10)))));
+  goto gg_done;
+  }
+gg_done:;
+  return t0;
+}
+static int64_t gg_function_22(int64_t p0, int64_t p1, int64_t base) {
+  int64_t t0;
+  int64_t t1;
+  int64_t t2;
+  uint8_t t3;
+  uint8_t t4;
+  int64_t t5;
+  int64_t t6;
+  uint8_t t7;
+  int64_t t8;
+  int64_t t9;
+  int64_t t10;
+  uint8_t t11;
+  int64_t t12;
+  int64_t t13;
+  int64_t t14;
+  int64_t t15;
+  uint8_t t16;
+  int64_t v0;
+  int64_t v1;
+  v0 = p0;
+  v1 = p1;
+  {
+  t1 = ((int64_t)(v0));
+  t2 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t3 = ((t1) >= (t2));
+  t4 = t3;
+  if (t4) {
+  t5 = ((int64_t)(v1));
+  t6 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t4 = ((t5) >= (t6));
+  }
+  t7 = t4;
+  t8 = ((int64_t)(((int64_t)UINT64_C(81))));
+  gg_function_2(t7, t8, base + 0);
+  t9 = ((int64_t)(v0));
+  t10 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t11 = ((t9) == (t10));
+  if (t11) {
+  {
+  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  goto gg_done;
+  }
+  }
+  t12 = ((int64_t)(v1));
+  t13 = ((int64_t)(v0));
+  t14 = ((int64_t)(((int64_t)gg_mod(t12, t13))));
+  t15 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t16 = ((t14) == (t15));
+  if (t16) {
+  {
+  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  goto gg_done;
+  }
+  }
+  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  goto gg_done;
+  }
+gg_done:;
+  return t0;
+}
+static int64_t gg_function_21(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base) {
+  int64_t t0;
+  int64_t t1;
+  int64_t t2;
+  uint8_t t3;
+  uint8_t t4;
+  int64_t t5;
+  int64_t t6;
+  uint8_t t7;
+  int64_t t8;
+  int64_t t9;
+  int64_t t10;
+  uint8_t t11;
+  int64_t t12;
+  int64_t t13;
+  uint8_t t14;
+  uint8_t t15;
+  int64_t t16;
+  int64_t t17;
+  uint8_t t18;
+  int64_t v0;
+  int64_t v1;
+  int64_t v2;
+  int64_t v3;
+  v0 = p0;
+  v1 = p1;
+  v2 = p2;
+  v3 = p3;
+  {
+  t1 = ((int64_t)(v0));
+  t2 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t3 = ((t1) >= (t2));
+  t4 = t3;
+  if (t4) {
+  t5 = ((int64_t)(v1));
+  t6 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t4 = ((t5) >= (t6));
+  }
+  t7 = t4;
+  t8 = ((int64_t)(((int64_t)UINT64_C(80))));
+  gg_function_2(t7, t8, base + 0);
+  t9 = ((int64_t)(v0));
+  t10 = ((int64_t)(v1));
+  t11 = ((t9) == (t10));
+  if (t11) {
+  {
+  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  goto gg_done;
+  }
+  }
+  t12 = ((int64_t)(v2));
+  t13 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t14 = ((t12) != (t13));
+  t15 = t14;
+  if (t15) {
+  t16 = ((int64_t)(v3));
+  t17 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t15 = ((t16) != (t17));
+  }
+  t18 = t15;
+  if (t18) {
+  {
+  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  goto gg_done;
+  }
+  }
+  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  goto gg_done;
+  }
+gg_done:;
+  return t0;
 }
 static int64_t gg_function_20(int64_t p0, int64_t p1, int64_t base) {
   int64_t t0;
@@ -1156,6 +1479,9 @@ static int64_t gg_function_1(int64_t p0, int64_t p1, uint64_t p2, int64_t base) 
   }
   t13 = ((uint64_t)(v2));
   t14 = ((int64_t)(v0));
+#ifndef __cplusplus
+  extern int64_t (fg200g_ld_u32)(uint64_t, int64_t);
+#endif
   t15 = fg200g_ld_u32(t13, t14);
   v3 = ((int64_t)(t15));
   t16 = ((int64_t)(v3));
@@ -1224,6 +1550,20 @@ static void gg_function_0(int64_t base) {
   int64_t t47;
   int64_t t48;
   int64_t t49;
+  int64_t t50;
+  int64_t t51;
+  int64_t t52;
+  int64_t t53;
+  int64_t t54;
+  int64_t t55;
+  int64_t t56;
+  int64_t t57;
+  int64_t t58;
+  int64_t t59;
+  int64_t t60;
+  int64_t t61;
+  int64_t t62;
+  int64_t t63;
   {
   t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t1 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1292,6 +1632,24 @@ static void gg_function_0(int64_t base) {
   t48 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t49 = gg_function_20(t47, t48, base + 0);
   (void)(t49);
+  t50 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t51 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t52 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t53 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t54 = gg_function_21(t50, t51, t52, t53, base + 0);
+  (void)(t54);
+  t55 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t56 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t57 = gg_function_22(t55, t56, base + 0);
+  (void)(t57);
+  t58 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t59 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t60 = gg_function_23(t58, t59, base + 0);
+  (void)(t60);
+  t61 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t62 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t63 = gg_function_24(t61, t62, base + 0);
+  (void)(t63);
   }
 gg_done:;
 }

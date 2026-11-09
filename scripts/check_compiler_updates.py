@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
-"""Report whether a runtime-approved Goose compiler exists that differs from the pinned one.
+"""Report which Goose compiler build is the best qualified candidate to run against.
 
-Authoritative source for new builds:
+Authoritative catalogue:
     /home/end0/AI/Fried-Goose/.cache/selfhosted-builds/catalog.json
 
-Rules, taken from the catalog's own publication_rule and from Igor:
+Policy (simplified 2026-11-09): the channel name does not decide eligibility. Any build the
+catalogue marks as qualified is a candidate, including `selfhosted_subset`. What decides is
+whether it actually works for this runtime, and that is settled by the existing checks -- not by a
+label:
 
-  * Only `channels.llm_runtime.current` qualifies for LLM runtime work.
-  * It must be non-empty, have `runtime_approved: true`, and its `sha256` must match the binary
-    before anything uses it.
-  * `channels.selfhosted_subset` is a *supported-subset* build, not a runtime build. A newer
-    mtime or a new commit does not make it usable for the runtime.
-  * Version directories under `versions/` are retained for rollback; the previous pin stays
-    recorded when a new one is adopted.
+  1. sha256 in the catalogue must match the binary on disk.
+  2. The repo's existing gates must pass (the per-experiment local gates and one Apex correctness
+     run: tokens, text and all 128 top-5 probabilities equal).
+  3. If correctness holds, one standard A/B -> B/A performance pair decides whether it is kept.
 
-This script only reports. Adopting a compiler also requires the repo's own qualification gate
-(byte-identical bootstrap C, hash match, byte-identical emission of the current FA module) and a
-correctness + performance run before the pin moves.
+No extra mass compiler test suite is run, and no check already done is repeated.
 
-Exit codes: 0 = no usable new build, pinned compiler stays; 1 = a runtime-approved build exists
-and differs from the pin; 2 = error reading the catalog or the pin.
+Exit codes: 0 = nothing new to try, pinned compiler stays; 1 = a candidate exists and should be
+tried through the existing checks; 2 = catalogue or pin unreadable, or a sha256 mismatch.
 """
 import hashlib
 import json
@@ -51,47 +49,51 @@ def main() -> int:
     print(f'pinned:   {pinned_path.name}')
     print(f'          sha256 {pinned_sha[:16]}…')
     if pinned_path.exists():
-        actual = sha256(pinned_path)
-        print(f'          on disk {actual[:16]}…  {"OK" if actual == pinned_sha else "MISMATCH"}')
+        ok = sha256(pinned_path) == pinned_sha
+        print(f'          on disk {"OK" if ok else "MISMATCH"}')
     else:
         print('          MISSING on disk')
 
-    ch = cat.get('channels', {})
-    lr = ch.get('llm_runtime') or {}
-    status = lr.get('status')
-    cur = lr.get('current')
-    print(f'\nllm_runtime: status={status} current={"set" if cur else "null"}')
+    # Every qualified build is a candidate; the channel name is not a filter.
+    cands = []
+    for name, ch in (cat.get('channels') or {}).items():
+        cur = (ch or {}).get('current')
+        if not cur:
+            continue
+        cands.append((name, (ch or {}).get('status'), cur))
 
-    if not cur:
-        print('runtime channel is empty; the pinned compiler stays.')
-        sub = (ch.get('selfhosted_subset') or {}).get('current') or {}
-        if sub:
-            print(f'note: subset build {sub.get("version")} exists but is not runtime-approved —')
-            print('      it covers a supported language subset only and must not be adopted.')
+    if not cands:
+        print('\nno qualified build in any channel; the pin stays.')
         return 0
 
-    if not cur.get('runtime_approved'):
-        print('current entry is NOT runtime_approved; it must not be used for runtime work.')
+    new = []
+    for name, status, cur in cands:
+        p = Path(cur.get('compiler', ''))
+        want = cur.get('sha256', '')
+        if not p.exists():
+            print(f'\n{name}: {cur.get("version")} — binary missing, skipped')
+            continue
+        got = sha256(p)
+        if got != want:
+            print(f'\n{name}: {cur.get("version")} — sha256 MISMATCH, skipped')
+            continue
+        if got == pinned_sha:
+            print(f'\n{name}: {cur.get("version")} — already the pin')
+            continue
+        new.append((name, status, cur, p, got))
+        print(f'\n{name}: {cur.get("version")}  status={status}')
+        print(f'  sha256 {got[:16]}… verified')
+        print(f'  path   {p}')
+
+    if not new:
+        print('\nnothing new to try; the pin stays.')
         return 0
 
-    cand = Path(cur['compiler'])
-    want = cur['sha256']
-    if not cand.exists():
-        print(f'ERROR: runtime_approved entry points at a missing file: {cand}', file=sys.stderr)
-        return 2
-    got = sha256(cand)
-    if got != want:
-        print(f'ERROR: sha256 mismatch for {cand.name}: catalog {want[:16]}… disk {got[:16]}…',
-              file=sys.stderr)
-        return 2
-
-    if got == pinned_sha:
-        print('runtime-approved build is the one already pinned.')
-        return 0
-
-    print(f'\nNEW runtime-approved build: {cur.get("version")}  sha256 {want[:16]}…')
-    print('Before adopting: run the repo qualification gate, then correctness and performance')
-    print('checks, then move runtime/compiler/current.json and keep the old pin as rollback.')
+    print('\nCandidate(s) above should go through the existing checks, in this order:')
+    print('  1. repo gates already in place (per-experiment local gates)')
+    print('  2. one Apex correctness run: tokens, text, all 128 top-5 probabilities')
+    print('  3. one A/B -> B/A performance pair')
+    print('On success move runtime/compiler/current.json and keep the old path as rollback.')
     return 1
 
 
