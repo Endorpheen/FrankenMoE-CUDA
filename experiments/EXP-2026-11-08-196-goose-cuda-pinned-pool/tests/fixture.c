@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 void fg196p_plan_host_alloc(int64_t, int64_t, uint64_t);
 void fg196p_plan_host_alloc_result(int64_t, uint64_t);
@@ -33,6 +36,35 @@ static int64_t mib_milli_ref(int64_t size) {
     long double v = ((long double)size * 1000.0L) / 1048576.0L;
     return (int64_t)floorl(v);
 }
+
+
+// ---- trap coverage ------------------------------------------------------------------
+// A negative size cannot come from a real size_t on this target, but the invariant is
+// asserted in Goose and the gate must notice if the assertion is dropped.
+static void run_trap(const char * what, int expected, void (*fn)(void)) {
+    int fd[2];
+    if (pipe(fd) != 0) { printf("FAIL pipe %s\n", what); failures++; return; }
+    pid_t pid = fork();
+    if (pid == 0) { close(fd[0]); dup2(fd[1], 2); close(fd[1]); fn(); _exit(0); }
+    close(fd[1]);
+    char buf[256] = {0};
+    ssize_t n = read(fd[0], buf, sizeof(buf) - 1);
+    close(fd[0]);
+    int status = 0;
+    waitpid(pid, &status, 0);
+    ++checks;
+    int died = WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
+    int code_ok = n > 0 && strstr(buf, "validation code") && atoi(strstr(buf, "validation code") + 16) == expected;
+    if (!died || !code_ok) {
+        printf("FAIL trap %s: died=%d code=%d expected=%d (%s)\n", what, died,
+               n > 0 && strstr(buf, "validation code") ? atoi(strstr(buf, "validation code") + 16) : -1,
+               expected, buf);
+        ++failures;
+    }
+}
+static void trap_alloc_neg(void)   { int64_t o[4] = {0}; fg196p_plan_host_alloc(0, -1, (uint64_t)(uintptr_t)o); }
+static void trap_reg_neg(void)     { int64_t o[4] = {0}; fg196p_plan_register(0, -1, (uint64_t)(uintptr_t)o); }
+static void trap_alloc_neg2(void)  { int64_t o[4] = {0}; fg196p_plan_host_alloc(1, -1024, (uint64_t)(uintptr_t)o); }
 
 int main(void) {
     int64_t sizes[] = {0, 1, 1023, 1024, 4095, 4096, 1 << 20, (1 << 20) - 1, 677719168,
@@ -116,6 +148,9 @@ int main(void) {
         }
     }
 
+    run_trap("host_alloc negative size", 21, trap_alloc_neg);
+    run_trap("host_alloc negative size, disabled", 21, trap_alloc_neg2);
+    run_trap("register negative size", 22, trap_reg_neg);
     printf("FG196P_FIXTURE checks=%lld failures=%lld\n", checks, failures);
     if (failures) { printf("EXP196_LOCAL_GATES_FAIL\n"); return 1; }
     printf("EXP196_LOCAL_GATES_PASS\n");
