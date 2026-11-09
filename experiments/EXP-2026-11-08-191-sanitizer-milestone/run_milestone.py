@@ -26,11 +26,12 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 MODULES = [175, 176, 177, 178, 179, 181, 183, 184, 185, 188]
 
-# Modules whose racecheck result is non-zero because the algorithm itself has the hazard.
-# The parity is re-derived on every run rather than trusted from a note: the native arm is
-# executed under the same tool and must report at least as many hazards, otherwise this
-# fails like any other module.
-NATIVE_PARITY = {181: ('GGML_GOOSE_CUDA_MM_IDS', '0')}
+# No module is exempt. An earlier version declared EXP181 an "inherent" hazard because the
+# native arm showed more of them; that was wrong. The hazards came from the fixture feeding
+# duplicate experts for one token, which a router never emits, and once the fixture
+# generated distinct experts per token both arms reported zero. Any non-zero result now
+# fails the milestone, as it should.
+NATIVE_PARITY = {}
 
 PATS = {
     'memcheck':  r'ERROR SUMMARY: (\d+) errors',

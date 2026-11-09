@@ -19,6 +19,7 @@ void ggml_cuda_launch_mm_ids_helper(const int32_t * ids, int32_t * ids_src1, int
 #include <cuda_runtime.h>
 #include <vector>
 #include <random>
+#include <algorithm>
 #include <string>
 
 static int g_checks, g_fail;
@@ -46,8 +47,19 @@ static Out run_case(int dev, const Case & c) {
     Out o;
     std::mt19937 rng(181001 + (unsigned)c.n_tokens + (unsigned)c.n_experts);
     std::uniform_int_distribution<int32_t> de(0, c.n_experts - 1);
+    // A router never selects the same expert twice for one token, and the operator relies
+    // on that: the compaction writes the packed (token, expert) slot at
+    // it_compact + inclusive_prefix, so duplicate experts inside one token would target
+    // the same staging address from different lanes. Generating duplicates was a defect
+    // in this fixture, not a property of the kernel -- it produced racecheck hazards in
+    // both arms that cannot occur on real input. Each token now gets a distinct expert set.
     std::vector<int32_t> ids((size_t)c.n_tokens * c.n_used);
-    for (auto & v : ids) v = de(rng);
+    for (int t = 0; t < c.n_tokens; ++t) {
+        std::vector<int32_t> pool(c.n_experts);
+        for (int e = 0; e < c.n_experts; ++e) pool[e] = e;
+        std::shuffle(pool.begin(), pool.end(), rng);
+        for (int u = 0; u < c.n_used; ++u) ids[(size_t)t*c.n_used + u] = pool[u];
+    }
     const size_t ndst = ids.size();
     const size_t nsrc1 = ids.size();
     const size_t nbounds = (size_t)c.n_experts + 1;

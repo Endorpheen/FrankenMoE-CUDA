@@ -22,47 +22,52 @@ plus one log per module and tool.
 
 | module | memcheck | racecheck | initcheck |
 |---|---:|---:|---:|
+| module | memcheck | racecheck | initcheck |
+|---|---:|---:|---:|
 | EXP175 concat | 0 | 0 | 0 |
 | EXP176 get_rows | 0 | 0 | 0 |
 | EXP177 cpy | 0 | 0 | 0 |
 | EXP178 q8_1 quantize | 0 | 0 | 0 |
 | EXP179 MoE weighted | 0 | 0 | 0 |
-| EXP181 mm_ids | 0 | **5** | 0 |
+| EXP181 mm_ids | 0 | 0 | 0 |
 | EXP183 FWHT | 0 | 0 | 0 |
 | EXP184 mul_mat_vec_f | 0 | 0 | 0 |
 | EXP185 mul_mat_vec_q Q4_K | 0 | 0 | 0 |
 | EXP188 Q4_0 dequant | 0 | 0 | 0 |
 
-Nine of ten modules are clean under all three tools. All ten are clean under memcheck and
-initcheck.
+All ten modules are clean under all three tools.
 
-## The one non-zero result, and why it is not a regression
+## A wrong conclusion, corrected
 
-EXP181's `racecheck` reports five write-write hazards in the shared staging array that
-packs `(token, expert)` slots during compaction.
+The first run of this milestone reported five write-write hazards in EXP181's shared
+staging array. The native arm was run for comparison and showed eighteen, and that was
+taken to mean the hazard was inherent to the algorithm and the transfer had merely
+inherited it. The milestone was recorded as `PASS_WITH_NATIVE_PARITY` on that basis.
 
-The same array is used by the native kernel, so the native arm was run under the same
-tool for comparison:
+That reasoning was wrong, and running it down found a real defect — in the fixture, not
+the kernel.
 
-| arm | racecheck hazards |
-|---|---:|
-| native | **18** |
-| Goose | **5** |
+EXP181 compaction writes the packed `(token, expert)` slot at
+`it_compact + inclusive_prefix`. If one token names the same expert twice, two lanes of
+the same 8-wide group compute the same staging address and race. The fixture filled `ids`
+with a uniform random draw over all experts, so duplicate experts within a token were
+common. A router never emits that: the top-k experts of a token are distinct.
 
-The pattern is inherent to the algorithm — an `__shfl`-based inclusive prefix sum where
-several lanes can transiently target the same staging slot before `syncwarp()` orders the
-publish — and is not introduced by the transfer. The Goose body shows *fewer* hazards than
-the native one it replaces.
+With the fixture generating a distinct expert set per token, both arms report **zero**
+hazards:
 
-The script re-derives that parity on every run: for a module with a known inherent
-hazard it executes the native arm under the same tool and only passes if native reports
-at least as many hazards. A note in a README cannot clear a result; the comparison has to
-reproduce.
+| arm | before fixture fix | after |
+|---|---:|---:|
+| native | 18 | 0 |
+| Goose | 5 | 0 |
 
-It is recorded as `PASS_WITH_NATIVE_PARITY` rather than silently cleared, because the
-honest statement is "the algorithm has this hazard and both implementations share it",
-not "the hazard is zero". `memcheck` and `initcheck` are clean in both arms and the byte
-comparison against native is exact, so nothing here changes a result.
+So the hazards were an artifact of unrealistic input, the kernel was never racy, and the
+"native parity" exemption has been deleted from the script — no module is exempt now, and
+any non-zero sanitizer result fails the milestone.
+
+The general lesson is recorded because it nearly became a permanent excuse: a comparison
+that shows the native code is *worse* does not prove the difference is inherent. It can
+equally mean both implementations are being fed input the operator does not accept.
 
 ## Scope and limits
 
