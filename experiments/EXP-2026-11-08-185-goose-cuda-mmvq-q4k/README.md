@@ -30,11 +30,33 @@ Order native → goose → goose → native:
 | native-rollback b | 2588.24 | 27.00 |
 | native median | 2582.59 | 26.89 |
 | goose median | 2588.07 | 26.55 |
-| delta | **+0.21%** | **−1.28%** |
+| delta (first pair) | **+0.21%** | **−1.28%** |
 
 Both inside the 2% threshold. Content sha256 identical in all four runs
 (`e68df05b`) and the witness `FG185Q_CUDA_MMVQ_Q4K ... paths=0x1` appears only in the
 Goose arms.
+
+## Re-measured over seven pairs
+
+The pair above was the first one taken. Seven paired runs now exist for this stage across
+several sessions and conditions, and the median is what should be quoted:
+
+| statistic | goose | native | delta |
+|---|---:|---:|---:|
+| decode median (n=7) | 26.37 | 26.83 | **−1.70%** |
+| decode range | 25.80–27.08 | 26.53–27.40 | |
+| prefill median (n=7) | 2585.84 | 2587.64 | −0.07% |
+
+Both are still inside the 2% threshold, so the verdict does not change, but the honest
+figure is −1.70% decode, not the −0.45%..−1.28% that the early pairs suggested. Reporting a
+single pair was optimistic by roughly a percentage point, and the spread within each arm
+(1.3 tok/s for goose, 0.9 for native) is large enough that a two-run comparison can land
+anywhere in that band.
+
+The spread correlates with host load and CPU clock during the run, not with the library:
+every run used the identical `libggml-cuda-mmvq4k-fa8dc98a39ae`, verified by hash in each
+run's `loaded-library-hashes.json`. So the number to carry forward is the median, and any
+future comparison should use at least four pairs under comparable load.
 
 ## Local gate
 
