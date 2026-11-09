@@ -35,3 +35,9 @@ __pycache__/
 
 # Private project instructions loaded by Codex.
 /AGENTS.override.md
+
+# Profiler artifacts: multi-megabyte traces and SQLite exports stay local.
+# The derived text summary is committed under docs/goose-migration/ instead.
+*.nsys-rep
+*.ncu-rep
+*.sqlite

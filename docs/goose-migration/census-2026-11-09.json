@@ -1,0 +1,494 @@
+{
+  "date": "2026-11-09",
+  "runtime": "runtime/exp202/run (EXP202 lineage: EXP175..181 + EXP199/200/201/202)",
+  "source": "runtime/exp202/results/census-20261109/apex-census.nsys-rep",
+  "profile": "fixed Apex 32K/128, argv and env replayed verbatim from apex-vocab202-bpe2-goose",
+  "why_outside_runner": "runner integrity check rejects a profiler in front (libllama not mapped in the profiled parent)",
+  "ncu_blocker": "ERR_NVGPUCTRPERM: no permission for GPU performance counters; nsys records launch durations instead",
+  "totals": {
+    "kernels": 59,
+    "ns": 7967845232,
+    "seconds": 7.968,
+    "goose_ns": 4309077411,
+    "goose_pct": 54.08,
+    "native_ns": 3658767821,
+    "native_pct": 45.92,
+    "goose_distinct_kernels": 26
+  },
+  "correctness": "tokens_equal=true vs apex-vocab202-bpe2-goose reference",
+  "not_an_acceptance_run": "nsys adds overhead: prefill 2496.43, decode 24.40 measured under the profiler; use the unprofiled runner for acceptance",
+  "kernels": [
+    {
+      "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int",
+      "short": "mul_mat_q<",
+      "instances": 2448,
+      "ns": 2371876846,
+      "share": 29.768,
+      "goose": false
+    },
+    {
+      "name": "void fg175m_kernel<(int)8>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, uns",
+      "short": "fg175m_kernel<",
+      "instances": 80,
+      "ns": 1433228499,
+      "share": 17.988,
+      "goose": true
+    },
+    {
+      "name": "void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int",
+      "short": "mul_mat_q<",
+      "instances": 464,
+      "ns": 750949268,
+      "share": 9.425,
+      "goose": false
+    },
+    {
+      "name": "void fg174m_kernel<(int)128, (int)1>(ggml_cuda_gdn_mma_args)",
+      "short": "fg174m_kernel<",
+      "instances": 240,
+      "ns": 648483477,
+      "share": 8.139,
+      "goose": true
+    },
+    {
+      "name": "fg181m_kernel(const char *, char *, char *, char *, int, int, int, int, int, int)",
+      "short": "fg181m_kernel",
+      "instances": 936,
+      "ns": 519891685,
+      "share": 6.525,
+      "goose": true
+    },
+    {
+      "name": "void fg175c_nc_kernel<(int)0>(const char *, const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long",
+      "short": "fg175c_nc_kernel<",
+      "instances": 300,
+      "ns": 258241014,
+      "share": 3.241,
+      "goose": true
+    },
+    {
+      "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+      "short": "quantize_mmq_q8_1<",
+      "instances": 2304,
+      "ns": 253978476,
+      "share": 3.188,
+      "goose": false
+    },
+    {
+      "name": "void fg166_kernel<(int)2, (int)7, (int)0>(fg166_plan)",
+      "short": "fg166_kernel<",
+      "instances": 1032,
+      "ns": 253333318,
+      "share": 3.179,
+      "goose": true
+    },
+    {
+      "name": "fg179w_kernel(const char *, const char *, const char *, char *, long, long)",
+      "short": "fg179w_kernel",
+      "instances": 431,
+      "ns": 224952449,
+      "share": 2.823,
+      "goose": true
+    },
+    {
+      "name": "void fg170s_kernel<(int)4, (bool)1, (bool)1>(fg170s_plan)",
+      "short": "fg170s_kernel<",
+      "instances": 240,
+      "ns": 203543632,
+      "share": 2.555,
+      "goose": true
+    },
+    {
+      "name": "fg183f_kernel(const char *, float *, int, long, float)",
+      "short": "fg183f_kernel",
+      "instances": 440,
+      "ns": 153649285,
+      "share": 1.928,
+      "goose": true
+    },
+    {
+      "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)1>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+      "short": "quantize_mmq_q8_1<",
+      "instances": 624,
+      "ns": 153394615,
+      "share": 1.925,
+      "goose": false
+    },
+    {
+      "name": "void fg167_kernel<(int)1, (int)2, (int)0, (int)0, (int)0, (int)0>(fg167_plan)",
+      "short": "fg167_kernel<",
+      "instances": 431,
+      "ns": 92663418,
+      "share": 1.163,
+      "goose": true
+    },
+    {
+      "name": "void fg168_kernel<(int)3, (int)512, (int)1, (bool)1>(fg168_plan)",
+      "short": "fg168_kernel<",
+      "instances": 874,
+      "ns": 79511519,
+      "share": 0.998,
+      "goose": true
+    },
+    {
+      "name": "void fg168_kernel<(int)3, (int)32, (int)1, (bool)1>(fg168_plan)",
+      "short": "fg168_kernel<",
+      "instances": 330,
+      "ns": 69534576,
+      "share": 0.873,
+      "goose": true
+    },
+    {
+      "name": "void fg168_kernel<(int)4, (int)32, (int)1, (bool)1>(fg168_plan)",
+      "short": "fg168_kernel<",
+      "instances": 660,
+      "ns": 68610403,
+      "share": 0.861,
+      "goose": true
+    },
+    {
+      "name": "void fg167_kernel<(int)1, (int)1, (int)0, (int)0, (int)0, (int)0>(fg167_plan)",
+      "short": "fg167_kernel<",
+      "instances": 723,
+      "ns": 61946870,
+      "share": 0.777,
+      "goose": true
+    },
+    {
+      "name": "void cutlass::Kernel2<cutlass_80_tensorop_s1688gemm_64x128_32x3_tn_align4>(T1::Params)",
+      "short": "cutlass::Kernel2<cutlass_80_tensorop_s1688gemm_64x128_32x3_tn_align4>",
+      "instances": 312,
+      "ns": 54486361,
+      "share": 0.684,
+      "goose": false
+    },
+    {
+      "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+      "short": "quantize_mmq_q8_1<",
+      "instances": 464,
+      "ns": 42709775,
+      "share": 0.536,
+      "goose": false
+    },
+    {
+      "name": "void fg177c_kernel<(int)0>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+      "short": "fg177c_kernel<",
+      "instances": 440,
+      "ns": 40420936,
+      "share": 0.507,
+      "goose": true
+    },
+    {
+      "name": "void fg166_kernel<(int)2, (int)10, (int)0>(fg166_plan)",
+      "short": "fg166_kernel<",
+      "instances": 110,
+      "ns": 38075399,
+      "share": 0.478,
+      "goose": true
+    },
+    {
+      "name": "void fg167_kernel<(int)3, (int)1, (int)0, (int)0, (int)0, (int)0>(fg167_plan)",
+      "short": "fg167_kernel<",
+      "instances": 731,
+      "ns": 35813600,
+      "share": 0.449,
+      "goose": true
+    },
+    {
+      "name": "fg184m_kernel(const char *, const float *, const char *, float *, long, long, long, long, long, long, long, long, long, long, long, long, long, int, long, long)",
+      "short": "fg184m_kernel",
+      "instances": 395,
+      "ns": 27827761,
+      "share": 0.349,
+      "goose": true
+    },
+    {
+      "name": "void fg168_kernel<(int)3, (int)128, (int)1, (bool)1>(fg168_plan)",
+      "short": "fg168_kernel<",
+      "instances": 220,
+      "ns": 24176421,
+      "share": 0.303,
+      "goose": true
+    },
+    {
+      "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)1, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int",
+      "short": "mul_mat_q<",
+      "instances": 480,
+      "ns": 18654110,
+      "share": 0.234,
+      "goose": false
+    },
+    {
+      "name": "fg175q_contig(const void *, __half *, long)",
+      "short": "fg175q_contig",
+      "instances": 180,
+      "ns": 16732808,
+      "share": 0.21,
+      "goose": true
+    },
+    {
+      "name": "void fg171r_kernel<(int)40, (bool)0, (bool)0, (bool)1, (bool)0>(fg171r_plan)",
+      "short": "fg171r_kernel<",
+      "instances": 220,
+      "ns": 15567392,
+      "share": 0.195,
+      "goose": true
+    },
+    {
+      "name": "void fg169t_kernel<(int)256, (bool)0>(fg169t_plan)",
+      "short": "fg169t_kernel<",
+      "instances": 432,
+      "ns": 9814306,
+      "share": 0.123,
+      "goose": true
+    },
+    {
+      "name": "void fg176r_kernel<(bool)1, (bool)1>(const float *, const void *, void *, long, fg176rd_gg_type_1, fg176rd_gg_type_1, fg176rd_gg_type_1, fg176rd_gg_type_1, fg17",
+      "short": "fg176r_kernel<",
+      "instances": 220,
+      "ns": 5096735,
+      "share": 0.064,
+      "goose": true
+    },
+    {
+      "name": "fg175f_general(float *, const float2 *, int, int, int, int, long, long, long, long, int, int)",
+      "short": "fg175f_general",
+      "instances": 80,
+      "ns": 4853996,
+      "share": 0.061,
+      "goose": true
+    },
+    {
+      "name": "void fg174s_kernel<(int)128, (bool)0, (bool)0>(fg174s_plan)",
+      "short": "fg174s_kernel<",
+      "instances": 90,
+      "ns": 4499728,
+      "share": 0.056,
+      "goose": true
+    },
+    {
+      "name": "void fg176g_kernel<(int)0>(const char *, const char *, char *, long, long, long, int, long, long, long, long, long, long, long, long, long, unsigned int, unsign",
+      "short": "fg176g_kernel<",
+      "instances": 330,
+      "ns": 3701389,
+      "share": 0.046,
+      "goose": true
+    },
+    {
+      "name": "fg175f_mask(const void *, int *, int, long, long, int)",
+      "short": "fg175f_mask",
+      "instances": 80,
+      "ns": 3695855,
+      "share": 0.046,
+      "goose": true
+    },
+    {
+      "name": "void mul_mat_q_stream_k_fixup<(ggml_type)12, (int)128, (bool)1, (ggml_prec)30>(const int *, const int *, float *, float *, uint3, int, int, int, uint3, int, uin",
+      "short": "mul_mat_q_stream_k_fixup<",
+      "instances": 480,
+      "ns": 3172007,
+      "share": 0.04,
+      "goose": false
+    },
+    {
+      "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned",
+      "short": "mul_mat_vec_q<",
+      "instances": 22,
+      "ns": 2362211,
+      "share": 0.03,
+      "goose": false
+    },
+    {
+      "name": "void fg175v_kernel<(int)1>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, uns",
+      "short": "fg175v_kernel<",
+      "instances": 10,
+      "ns": 2229527,
+      "share": 0.028,
+      "goose": true
+    },
+    {
+      "name": "void mul_mat_vec_q<(ggml_type)12, (int)4, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned",
+      "short": "mul_mat_vec_q<",
+      "instances": 268,
+      "ns": 2192203,
+      "share": 0.028,
+      "goose": false
+    },
+    {
+      "name": "void mul_mat_vec_q<(ggml_type)12, (int)2, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned",
+      "short": "mul_mat_vec_q<",
+      "instances": 268,
+      "ns": 2109857,
+      "share": 0.026,
+      "goose": false
+    },
+    {
+      "name": "fg178q_kernel(const char *, char *, long, long, long, long, long, long, long, unsigned int, unsigned int, unsigned int)",
+      "short": "fg178q_kernel",
+      "instances": 1625,
+      "ns": 1978715,
+      "share": 0.025,
+      "goose": true
+    },
+    {
+      "name": "void fg175m_kernel<(int)4>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, uns",
+      "short": "fg175m_kernel<",
+      "instances": 10,
+      "ns": 1761933,
+      "share": 0.022,
+      "goose": true
+    },
+    {
+      "name": "fg185q_kernel(const char *, const char *, const char *, float *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long, int, ",
+      "short": "fg185q_kernel",
+      "instances": 151,
+      "ns": 1543861,
+      "share": 0.019,
+      "goose": true
+    },
+    {
+      "name": "void fg176g_kernel<(int)1>(const char *, const char *, char *, long, long, long, int, long, long, long, long, long, long, long, long, long, unsigned int, unsign",
+      "short": "fg176g_kernel<",
+      "instances": 336,
+      "ns": 1026008,
+      "share": 0.013,
+      "goose": true
+    },
+    {
+      "name": "void fg166_kernel<(int)0, (int)10, (int)0>(fg166_plan)",
+      "short": "fg166_kernel<",
+      "instances": 761,
+      "ns": 1023589,
+      "share": 0.013,
+      "goose": true
+    },
+    {
+      "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned",
+      "short": "mul_mat_vec_q<",
+      "instances": 80,
+      "ns": 665084,
+      "share": 0.008,
+      "goose": false
+    },
+    {
+      "name": "void mul_mat_vec_q<(ggml_type)14, (int)4, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned",
+      "short": "mul_mat_vec_q<",
+      "instances": 39,
+      "ns": 660981,
+      "share": 0.008,
+      "goose": false
+    },
+    {
+      "name": "void mul_mat_vec_q<(ggml_type)14, (int)2, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned",
+      "short": "mul_mat_vec_q<",
+      "instances": 39,
+      "ns": 651027,
+      "share": 0.008,
+      "goose": false
+    },
+    {
+      "name": "void fg166_kernel<(int)7, (int)0, (int)0>(fg166_plan)",
+      "short": "fg166_kernel<",
+      "instances": 120,
+      "ns": 590031,
+      "share": 0.007,
+      "goose": true
+    },
+    {
+      "name": "void fg166_kernel<(int)0, (int)25, (int)0>(fg166_plan)",
+      "short": "fg166_kernel<",
+      "instances": 300,
+      "ns": 460229,
+      "share": 0.006,
+      "goose": true
+    },
+    {
+      "name": "void mul_mat_f<float, (int)32, (int)4, (int)8, (bool)0>(const T1 *, const float *, const int *, float *, int, int, int, int, int, int, int, int, int, int, int, ",
+      "short": "mul_mat_f<float, ",
+      "instances": 39,
+      "ns": 378781,
+      "share": 0.005,
+      "goose": false
+    },
+    {
+      "name": "void mul_mat_vec_f<float, float, (int)2, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint",
+      "short": "mul_mat_vec_f<float, float, ",
+      "instances": 78,
+      "ns": 340347,
+      "share": 0.004,
+      "goose": false
+    },
+    {
+      "name": "void fg175v_kernel<(int)2>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, uns",
+      "short": "fg175v_kernel<",
+      "instances": 10,
+      "ns": 228082,
+      "share": 0.003,
+      "goose": true
+    },
+    {
+      "name": "void fg170s_kernel<(int)4, (bool)1, (bool)0>(fg170s_plan)",
+      "short": "fg170s_kernel<",
+      "instances": 90,
+      "ns": 200692,
+      "share": 0.003,
+      "goose": true
+    },
+    {
+      "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned",
+      "short": "mul_mat_vec_q<",
+      "instances": 21,
+      "ns": 88235,
+      "share": 0.001,
+      "goose": false
+    },
+    {
+      "name": "void fg175c_cont_kernel<(int)0>(const char *, const char *, char *, long, long, long, long, long, long, int)",
+      "short": "fg175c_cont_kernel<",
+      "instances": 30,
+      "ns": 55525,
+      "share": 0.001,
+      "goose": true
+    },
+    {
+      "name": "fg175f_uniform(float *, const float2 *, int, int, int, int, int, int, long, long, long, int, int)",
+      "short": "fg175f_uniform",
+      "instances": 10,
+      "ns": 55080,
+      "share": 0.001,
+      "goose": true
+    },
+    {
+      "name": "void dot_kernel<float, (int)128, (int)0, cublasDotParams<cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>>>(T4)",
+      "short": "dot_kernel<float, ",
+      "instances": 39,
+      "ns": 51461,
+      "share": 0.001,
+      "goose": false
+    },
+    {
+      "name": "void reduce_1Block_kernel<float, (int)128, (int)7, cublasGemvTensorStridedBatched<float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBa",
+      "short": "reduce_1Block_kernel<float, ",
+      "instances": 39,
+      "ns": 46176,
+      "share": 0.001,
+      "goose": false
+    },
+    {
+      "name": "void fg166_kernel<(int)2, (int)25, (int)0>(fg166_plan)",
+      "short": "fg166_kernel<",
+      "instances": 30,
+      "ns": 40066,
+      "share": 0.001,
+      "goose": true
+    },
+    {
+      "name": "fg175v_combine(const float *, const float2 *, float *, int)",
+      "short": "fg175v_combine",
+      "instances": 10,
+      "ns": 17602,
+      "share": 0.0,
+      "goose": true
+    }
+  ]
+}

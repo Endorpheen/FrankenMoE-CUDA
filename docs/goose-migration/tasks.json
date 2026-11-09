@@ -3968,5 +3968,16 @@
       "GGUF, loader, tokenizer and text infrastructure for the kept set"
     ],
     "not_removed_because_live": "P3-14 narrowed, not deleted: fwht_cuda is in the Apex census (0.3%+0.3%) through ggml_cuda_op_mul_mat_use_fwht."
+  },
+  "census": {
+    "date": "2026-11-09",
+    "authority": "docs/goose-migration/census-2026-11-09.json; trace runtime/exp202/results/census-20261109/apex-census.nsys-rep (local)",
+    "runtime": "EXP202 lineage",
+    "total_kernel_seconds": 7.968,
+    "goose_pct": 54.08,
+    "native_pct": 45.92,
+    "blocked_family_pct": 39.47,
+    "feeder_pct": 5.65,
+    "note": "Replaces the EXP084 trace as the authority. Profile replay: ncu blocked by ERR_NVGPUCTRPERM; nsys needs no counters."
   }
 }

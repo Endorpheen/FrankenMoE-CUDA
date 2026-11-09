@@ -1,5 +1,50 @@
 # Apex census — transfer status
 
+## CURRENT AUTHORITY: re-taken 2026-11-09 on the EXP202 runtime
+
+The stale EXP084 trace is no longer the authority. A fresh census was taken on the live runtime
+and its raw trace is `runtime/exp202/results/census-20261109/apex-census.nsys-rep` with
+`summary.json` beside it.
+
+| | value |
+|---|---:|
+| total kernel time | 7.968 s |
+| distinct kernels | 59 |
+| **Goose** | **54.08%** (4.309 s, 26 distinct kernels) |
+| **native** | **45.92%** (3.659 s) |
+| correctness | `tokens_equal=true` vs the EXP202 reference |
+
+Native, by family:
+
+| share | launches | ms | family |
+|---|---:|---:|---|
+| 39.47% | 3872 | 3144.7 | `mul_mat_q` (Q4_K + Q6_K MMQ) |
+| 5.65% | 3392 | 450.1 | `quantize_mmq_q8_1` |
+| 0.68% | 312 | 54.5 | CUTLASS internal gemms |
+| 0.11% | 737 | 8.7 | `mul_mat_vec_q` |
+| 0.09% | 117 | 0.9 | `mul_mat_f`, `mul_mat_vec_f`, dot/reduce |
+
+So the picture is unchanged in shape but now measured on the current code: **45.12% of kernel
+time is one blocked family** (MMQ plus its q8_1 feeder). Everything else native is 0.8%.
+
+The derived per-kernel table is committed as `docs/goose-migration/census-2026-11-09.json`. The
+trace itself stays local (`.gitignore` now excludes `*.nsys-rep`, `*.ncu-rep`, `*.sqlite`).
+
+### How this run was produced, and why it is not an acceptance number
+
+Two prior attempts are recorded below as blocked. Both stand: `ncu` still fails with
+`ERR_NVGPUCTRPERM` (no permission for GPU performance counters on this account), and the runner's
+library-integrity check still rejects a profiler wrapper.
+
+The working method: replay the exact `argv` and environment the runner saved for a passing run
+(`argv-actual.json`, `env-actual.json` from `apex-vocab202-bpe2-goose`) and launch `nsys profile`
+directly, then compare the request against the saved response. `nsys` needs no performance
+counters, only launch timing. This is a census, not a benchmark: the profiler distorts throughput
+(measured 2496.43 / 24.40 under it), so acceptance still comes from the unprofiled runner.
+
+Two defects in my own first attempts, both fixed: sending SIGTERM to the process group killed
+`nsys` before it wrote the report, and wrapping the run in `ncu` still cannot work here.
+
 ## Where the transfer stands (2026-11-08)
 
 This section is the current answer; the sections below are the detailed evidence.
