@@ -5,6 +5,15 @@ expert ids into the compact per-expert layout that `mul_mat_id` consumes, with a
 Goose for the width the Apex profile uses. No production or compiler-source changes.
 Current state: qualified on the fixed Apex profile and preserved as a checkpoint.
 
+## Verdict
+
+**ACCEPTED** — byte-exact mm_ids helper; 20 checks, 15/15 byte-identical.
+
+This is a verdict on the transfer in the experimental runtime, which is the only thing
+this work decides. Installation into the production working runtime is left to Igor and
+Codex, which is why the state line below says "not promoted" for several stages: it means
+"not installed", never "not accepted".
+
 ## Scope transferred
 
 `ggml_cuda_launch_mm_ids_helper` for `n_expert_used == 8`, which is the

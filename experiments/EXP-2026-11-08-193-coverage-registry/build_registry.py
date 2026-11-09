@@ -68,6 +68,24 @@ def tier_map():
             t[int('1' + m.group(1))] = h.get('status', '?')
     return t
 
+# Two shapes exist in the tree: a '## Verdict' section (added for stages that had none) and
+# an inline 'Verdict: **X**' sentence. Both are accepted so the registry reads every stage
+# rather than skipping the ones written in the other style.
+VERDICT_RE = re.compile(
+    r'(?:^## Verdict\s*\n\s*\n\*\*|\bVerdict: \*\*)(ACCEPTED|REJECTED|OFF_PATH)\*\*',
+    re.M)
+
+def readme_verdict(n):
+    """The README is the primary record of a stage's verdict; the ledger is a summary of it."""
+    d = glob.glob(str(F / f'experiments/EXP-2026-11-08-{n}-*'))
+    if not d:
+        return None
+    p = Path(d[0]) / 'README.md'
+    if not p.exists():
+        return None
+    m = VERDICT_RE.search(p.read_text())
+    return m.group(1) if m else None
+
 def byte_facts(n):
     d = glob.glob(str(F / f'experiments/EXP-2026-11-08-{n}-*'))
     if not d:
@@ -106,12 +124,17 @@ for n, (wit, desc) in sorted(EXPECTED.items()):
     live = bool(wit and wit in log_text)
     bf = byte_facts(n)
     san = sanitizer(n)
+    rv = readme_verdict(n)
     row = dict(module=n, experiment=f'EXP{n}', component=desc, tier=tier,
+               readme_verdict=rv,
                in_active_chain=in_chain, witness=wit, witness_seen_in_live_log=live,
                byte_compare=bf, sanitizer=san)
     rows.append(row)
 
     # A rejected or off-path module must not be executing; an accepted one must be.
+    if rv and rv != tier and not (rv == 'OFF_PATH' and tier in ('IN_PROGRESS', 'UNKNOWN')):
+        conflicts.append(f'EXP{n}: ledger says {tier}, README says {rv}')
+
     if tier in ('REJECTED', 'OFF_PATH') and live:
         conflicts.append(f'EXP{n} recorded {tier} but its witness is in the live log')
     if tier == 'ACCEPTED' and not live:

@@ -6,6 +6,10 @@ Two isolated DeepSeek drafts are retained. Parent corrects the has_cap/descripto
 
 Producer is the independently qualified complete selfhosted EXP303Stage3. Control is native SET_ROWS in the same experimental CUDA DSO through one component switch;all other EXP173 modules stay identical. Local host/ABI/GPU/capture/rollback gates precede a significant fixed Apex32K/128 milestone;confirmed performance regressions require sameDSO opposite-order pairs before diagnosis. Whole Apex and source scope remain incomplete.
 
+## Verdict
+
+**ACCEPTED** — the whole active CUDA SET_ROWS operator is Goose and byte-exact; this is the baseline every later stage was layered on.
+
 ## Verified result
 
 Parent-corrected host fixture:22 groups/46 runs/333 checks. Public CUDA operator:13 cases and380checks in each default/native-rollback mode,two actual graph replays per mode,byte-identical output,readonly sources and guards. Separate invalid-index fixture:four actual Goose routes,132 guarded threads/no destination writes. No undefined native invalid-index comparison. Exports add only two readonly diagnostics. Fresh producer output and mechanical compiled bodies verified.

@@ -8,6 +8,10 @@ on the attention path.
 Result: the transfer is **byte-exact**, but the Apex profile does not execute it, so
 no performance claim is made and the active runtime is unchanged.
 
+## Verdict
+
+**OFF_PATH** — byte-exact Q4_0 dequantization to F16, but the profile reaches ggml_get_to_fp16_nc_cuda rather than the row selector this module replaces.
+
 ## Scope transferred
 
 `dequantize_block_q4_0<dst_t=half>` and its helper `dequantize_q4_0`, reached through

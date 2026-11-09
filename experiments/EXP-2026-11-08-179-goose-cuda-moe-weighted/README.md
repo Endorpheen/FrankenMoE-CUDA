@@ -5,6 +5,15 @@ the profile Apex runs, keeping every earlier module and the native implementatio
 behind one switch. No production or compiler-source changes. Current state:
 qualified on the fixed Apex profile and preserved as a checkpoint.
 
+## Verdict
+
+**ACCEPTED** — byte-exact MoE weighted reduction on the Apex path.
+
+This is a verdict on the transfer in the experimental runtime, which is the only thing
+this work decides. Installation into the production working runtime is left to Igor and
+Codex, which is why the state line below says "not promoted" for several stages: it means
+"not installed", never "not accepted".
+
 ## Scope transferred
 
 `ggml_cuda_op_moe_weighted_reduction` and `launch_moe_weighted_reduction` are

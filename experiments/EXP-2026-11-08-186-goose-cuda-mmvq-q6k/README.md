@@ -1,4 +1,8 @@
 # EXP186: CUDA mul_mat_vec_q for Q6_K in Goose — REJECTED
+## Verdict
+
+**REJECTED** — byte-exact Q6_K matvec, but -3.66% decode from a measured kernel cost (21.82us vs 17.41us, SASS 504 vs 193). Opt-in behind GGML_GOOSE_CUDA_MMVQ_Q6K=1; not in the active chain.
+
 
 The transfer is functionally correct and byte-exact, but it costs 3.66% of decode
 throughput, so it is **not promoted**. Full evidence, measurement and diagnosis:

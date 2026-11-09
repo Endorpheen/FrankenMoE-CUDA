@@ -7,6 +7,15 @@ compiler-source changes. Current state: the whole active CUDA CONCAT operator is
 Goose on the fixed Apex profile and is preserved as a separate checkpoint, not
 activated as the working runtime. P3-03 overall remains incomplete.
 
+## Verdict
+
+**ACCEPTED** — paired Apex +0.573% prefill / +0.437% decode vs EXP174.
+
+This is a verdict on the transfer in the experimental runtime, which is the only thing
+this work decides. Installation into the production working runtime is left to Igor and
+Codex, which is why the state line below says "not promoted" for several stages: it means
+"not installed", never "not accepted".
+
 ## Scope transferred
 
 `ggml-cuda/concat.cu` has one public entry, `ggml_cuda_op_concat`, and two

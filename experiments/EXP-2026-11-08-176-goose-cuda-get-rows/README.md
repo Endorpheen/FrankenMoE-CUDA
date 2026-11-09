@@ -4,6 +4,15 @@ Status: local gate PASS. CUDA `GET_ROWS` float fast paths are Goose and match th
 native operator byte-for-byte. The one fixed-profile Apex gate is recorded in
 `apex-summary.json`.
 
+## Verdict
+
+**ACCEPTED** — byte-exact GET_ROWS on the Apex path.
+
+This is a verdict on the transfer in the experimental runtime, which is the only thing
+this work decides. Installation into the production working runtime is left to Igor and
+Codex, which is why the state line below says "not promoted" for several stages: it means
+"not installed", never "not accepted".
+
 ## What was transferred
 
 | Native (`ggml-cuda/getrows.cu`) | Goose |

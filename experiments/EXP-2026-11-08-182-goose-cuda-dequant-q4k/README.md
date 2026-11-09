@@ -5,6 +5,10 @@ production or compiler-source changes. Current state: byte-exact against native,
 **not exercised by the Apex profile**, so no performance claim is made and the
 active runtime is unchanged.
 
+## Verdict
+
+**OFF_PATH** — byte-exact Q4_K dequantization to F32, but the Apex profile never reaches it: the only caller of the F32 selector is the cuBLAS output-conversion path, which this profile does not take.
+
 ## Scope transferred
 
 `dequantize_q4_K<dst_t=float>` and its helper `get_scale_min_k4`, reached through
