@@ -24,7 +24,7 @@ SAN = '/usr/local/cuda-12.6/bin/compute-sanitizer'
 OUT = F / 'runtime/sanitizer-milestone'
 OUT.mkdir(parents=True, exist_ok=True)
 
-MODULES = [175, 176, 177, 178, 179, 181, 183, 184, 185, 188]
+MODULES = [174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 188]
 
 # No module is exempt. An earlier version declared EXP181 an "inherent" hazard because the
 # native arm showed more of them; that was wrong. The hazards came from the fixture feeding

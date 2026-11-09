@@ -24,18 +24,26 @@ plus one log per module and tool.
 |---|---:|---:|---:|
 | module | memcheck | racecheck | initcheck |
 |---|---:|---:|---:|
+| EXP174 set_rows | 0 | 0 | 0 |
 | EXP175 concat | 0 | 0 | 0 |
 | EXP176 get_rows | 0 | 0 | 0 |
 | EXP177 cpy | 0 | 0 | 0 |
 | EXP178 q8_1 quantize | 0 | 0 | 0 |
 | EXP179 MoE weighted | 0 | 0 | 0 |
+| EXP180 MMQ q8_1 (rejected on speed) | 0 | 0 | 0 |
 | EXP181 mm_ids | 0 | 0 | 0 |
+| EXP182 Q4_K dequant (off-path) | 0 | 0 | 0 |
 | EXP183 FWHT | 0 | 0 | 0 |
 | EXP184 mul_mat_vec_f | 0 | 0 | 0 |
 | EXP185 mul_mat_vec_q Q4_K | 0 | 0 | 0 |
 | EXP188 Q4_0 dequant | 0 | 0 | 0 |
 
-All ten modules are clean under all three tools.
+All thirteen modules that have a standalone fixture are clean under all three tools.
+
+That includes the two that are not on the fast path: EXP180 was rejected for being slower,
+not for being wrong, and EXP182 is byte-exact but never executed by this profile. Running
+them costs nothing and means a future decision to re-enable either starts from a known
+clean baseline rather than an untested one.
 
 ## A wrong conclusion, corrected
 
@@ -71,7 +79,7 @@ equally mean both implementations are being fed input the operator does not acce
 
 ## Scope and limits
 
-This covers the ten modules with a standalone GPU fixture. It does not cover the CUDA
+This covers the thirteen modules with a standalone GPU fixture. It does not cover the CUDA
 DSO as a whole, because a whole-library run needs the full model and the sanitizer's
 memory overhead does not fit the 11.8 GB card next to a 35B model. The per-module
 fixtures exercise the same kernels on the same compile path with representative shapes,
