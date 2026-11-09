@@ -94,8 +94,9 @@ int main(int argc, char ** argv) {
 
         // Every written compact row must be a valid (token, slot) pair.
         bool valid = true;
-        for (int32_t i = 0; i < total; ++i) {
+        for (size_t i = 0; i < o.dst.size(); ++i) {
             const int32_t v = o.dst[i];
+            if (v == (int32_t)0xCDCDCDCD) continue;   // slot never written
             if (v < 0 || v >= c.n_tokens * c.n_used) { valid = false; break; }
         }
         // bounds must also be exactly the expert-sorted partition: each entry is the

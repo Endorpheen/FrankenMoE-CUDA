@@ -39,12 +39,10 @@ fn ensure(v:bool,c:i64){if !v{fail(c);}}
 // the lanes are reduced within their 8-wide group over offsets 4,2,1.
 fn red_any8(v:i32)->i32{
  var x:i32=v;
- x=shfl_xor(x,4294967295 as u32,4,8);
- x=x|x;
- x=shfl_xor(x,4294967295 as u32,2,8);
- x=x|x;
- x=shfl_xor(x,4294967295 as u32,1,8);
- x=x|x;
+ var p:i32=0;
+ p=shfl_xor(x,4294967295 as u32,4,8);x=x|p;
+ p=shfl_xor(x,4294967295 as u32,2,8);x=x|p;
+ p=shfl_xor(x,4294967295 as u32,1,8);x=x|p;
  return x;
 }
 // warp_reduce_sum<32>: xor ladder over the whole warp, offsets 16,8,4,2,1.

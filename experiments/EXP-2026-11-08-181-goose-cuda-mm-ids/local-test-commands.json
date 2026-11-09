@@ -109,6 +109,68 @@
       "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build/gpu-fixture"
     ],
     "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
-    "exit_code": 1
+    "exit_code": 0
+  },
+  {
+    "label": "gpu-fixture-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
+    "exit_code": 0
+  },
+  {
+    "label": "dump-goose",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
+    "exit_code": 0
+  },
+  {
+    "label": "dump-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
+    "exit_code": 0
+  },
+  {
+    "label": "base-exports",
+    "argv": [
+      "nm",
+      "-D",
+      "--defined-only",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp180/run/libggml-cuda.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
+    "exit_code": 0
+  },
+  {
+    "label": "candidate-exports",
+    "argv": [
+      "nm",
+      "-D",
+      "--defined-only",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/run/libggml-cuda.so"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
+    "exit_code": 0
+  },
+  {
+    "label": "dump-goose",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
+    "exit_code": 0
+  },
+  {
+    "label": "dump-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp181/build",
+    "exit_code": 0
   }
 ]

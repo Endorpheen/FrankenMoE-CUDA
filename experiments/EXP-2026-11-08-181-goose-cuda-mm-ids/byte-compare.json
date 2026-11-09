@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "identical": [
+    "e16-t128-ch2.bounds.bin",
+    "e16-t128-ch2.dst.bin",
+    "e16-t128-ch2.src1.bin",
+    "e32-t64-fwd.bounds.bin",
+    "e32-t64-fwd.dst.bin",
+    "e32-t64-fwd.src1.bin",
+    "e8-t16-inv.bounds.bin",
+    "e8-t16-inv.dst.bin",
+    "e8-t16-inv.src1.bin",
+    "e8-t33-fwd.bounds.bin",
+    "e8-t33-fwd.dst.bin",
+    "e8-t33-fwd.src1.bin",
+    "e8-t4-fwd.bounds.bin",
+    "e8-t4-fwd.dst.bin",
+    "e8-t4-fwd.src1.bin"
+  ]
+}

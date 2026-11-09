@@ -1,0 +1,77 @@
+{
+  "status": "FUNCTIONAL_APEX_PATH_PASS_TWO_PAIRS_BOTH_ORDERS",
+  "component": "CUDA MM IDs helper (n_expert_used==8) in Goose; all other EXP180 modules identical",
+  "mechanism": "same DSO, GGML_GOOSE_CUDA_MM_IDS=0 selects the private-renamed native launcher",
+  "pairs": {
+    "forward": {
+      "native": {
+        "prefill": 2568.6740913221333,
+        "decode": 27.06665066821593,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2603.830192256561,
+        "decode": 27.495724090151338,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": 1.3686477803158124,
+        "decode": 1.5852475697677015
+      }
+    },
+    "reverse": {
+      "native": {
+        "prefill": 2568.6740913221333,
+        "decode": 27.06665066821593,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2607.648045183105,
+        "decode": 26.89857331661527,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": 1.5172790504112201,
+        "decode": -0.6209758039920067
+      }
+    },
+    "goose_mean": {
+      "prefill": 2605.7391187198327,
+      "decode": 27.197148703383306
+    },
+    "mean_delta_pct": {
+      "prefill": 1.4429634153635076,
+      "decode": 0.48213588288785403
+    }
+  },
+  "correctness": "all 128 ids, text and every returned top-5 equal to the saved wholly-C++ oracle in all three runs; sha256 e68df05b",
+  "witnesses": {
+    "mm_ids": "FG181M_CUDA_MM_IDS host=0x1,cuda_status=0,paths=0x1,guards=0",
+    "retained": "FG180Q host=0x23; FG179W host=0x1"
+  },
+  "local_gates": {
+    "goose": "20 checks/0 failures/5 cases",
+    "native": "20/0/5",
+    "byte_identical": "15 of 15 output files (dst, src1, bounds per case)",
+    "memcheck": "0 errors",
+    "racecheck": "5 write-write hazards in shared staging, and the SAME hazards are reported for the native kernel, so this is a property of the warp-synchronous staging pattern, not of the transfer",
+    "exports": "only the two diagnostics added"
+  },
+  "defects_fixed": [
+    "red_any8 overwrote the running value with the shuffle result and then OR-ed it with itself, so the any-reduce never propagated across the 8-lane group and the compact counter advanced by one instead of by the number of matching groups",
+    "the shared window was addressed per block instead of per kernel",
+    "the closing bound was written by block 0 instead of the last block",
+    "a bounds store lacked its u64 cast, so the diagnostic probe wrote to the wrong offset"
+  ],
+  "limits": "preliminary pairs, uncontrolled external load; other n_expert_used widths and the generic template-0 variant remain native",
+  "production_changed": false,
+  "active_runtime_changed": false
+}
