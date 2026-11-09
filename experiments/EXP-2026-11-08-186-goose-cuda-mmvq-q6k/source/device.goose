@@ -131,7 +131,7 @@ fn fg186q_body(vx:u64,vy:u64,ids:u64,dst:u64,
  stride_row_x:i64,stride_col_y:i64,stride_col_dst:i64,
  stride_channel_x:i64,stride_channel_y:i64,stride_channel_dst:i64,
  stride_sample_x:i64,stride_sample_y:i64,stride_sample_dst:i64,
- nchannels_y:i64,channel_ratio:i64,use_ids:bool,ids_stride:i64,
+ nchannels_y:i64,channel_ratio:i64,sample_ratio:i64,use_ids:bool,ids_stride:i64,
  nwarps:i64,row:i64,tx:i64,ty:i64,by:i64,bz:i64){
  ensure(nwarps==4 as i64,10);
  ensure(tx>=0&&tx<32 as i64,11);
@@ -149,7 +149,13 @@ fn fg186q_body(vx:u64,vy:u64,ids:u64,dst:u64,
   channel_x=by/channel_ratio;
   channel_y=by;
  }
- let sample_x:i64=sample_dst;
+ // Native divides the destination sample by nsamples_dst/nsamples_x (mmvf.cu:43), so a source
+ // with fewer samples is broadcast. Using sample_dst directly reads past the source.
+ var sample_x:i64=sample_dst;
+ if !use_ids{
+  ensure(sample_ratio>0,14);
+  sample_x=sample_dst/sample_ratio;
+ }
  let sample_y:i64=sample_dst;
  let kbx_offset:i64=sample_x*stride_sample_x+channel_x*stride_channel_x;
  let ybase:i64=sample_y*stride_sample_y+channel_y*stride_channel_y;
@@ -182,5 +188,5 @@ fn fg186q_body(vx:u64,vy:u64,ids:u64,dst:u64,
 }
 
 fn main(){
- fg186q_body(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,false,0,4,0,0,0,0,0);
+ fg186q_body(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,false,0,4,0,0,0,0,0);
 }

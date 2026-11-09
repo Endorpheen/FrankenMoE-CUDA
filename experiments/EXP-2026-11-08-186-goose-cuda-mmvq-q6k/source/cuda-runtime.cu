@@ -33,7 +33,7 @@ static __global__ __launch_bounds__(128) void fg186q_kernel(
  int64_t ncols_x,int64_t blocks_per_row,int64_t blocks_per_iter,
  int64_t stride_row_x,int64_t stride_col_y,int64_t stride_col_dst,
  int64_t scx,int64_t scy,int64_t scd,int64_t ssx,int64_t ssy,int64_t ssd,
- int64_t nchannels_y,int64_t channel_ratio,int32_t use_ids,int64_t ids_stride,
+ int64_t nchannels_y,int64_t channel_ratio,int64_t sample_ratio,int32_t use_ids,int64_t ids_stride,
  int64_t nwarps){
  if(blockIdx.x==0&&blockIdx.y==0&&blockIdx.z==0&&threadIdx.x==0&&threadIdx.y==0)atomicOr(&fg186q_paths,1);
  extern __shared__ char fg186q_data[];
@@ -42,7 +42,7 @@ static __global__ __launch_bounds__(128) void fg186q_kernel(
  const bool u=use_ids!=0;
  FG186Q_BODY(X,Y,I,D,ncols_x,blocks_per_row,blocks_per_iter,
   stride_row_x,stride_col_y,stride_col_dst,scx,scy,scd,ssx,ssy,ssd,
-  nchannels_y,channel_ratio,u,ids_stride,nwarps,
+  nchannels_y,channel_ratio,sample_ratio,u,ids_stride,nwarps,
   (int64_t)blockIdx.x,(int64_t)threadIdx.x,(int64_t)threadIdx.y,
   (int64_t)blockIdx.y,(int64_t)blockIdx.z,0);
 }
@@ -72,7 +72,7 @@ extern "C" int64_t fg186h_launch(int64_t pp){
    (int64_t)v[1][1],(int64_t)v[1][2],(int64_t)v[1][3],
    (int64_t)v[2][0],(int64_t)v[2][1],(int64_t)v[2][2],
    (int64_t)v[3][0],(int64_t)v[3][1],(int64_t)v[3][2],
-   (int64_t)v[4][3],(int64_t)v[5][4],(int32_t)v[5][2],(int64_t)v[5][3],
+   (int64_t)v[4][3],(int64_t)v[5][4],(int64_t)v[5][5],(int32_t)v[5][2],(int64_t)v[5][3],
    (int64_t)v[7][6]);
  return cudaGetLastError();
 }
@@ -143,6 +143,7 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  p.v[5][2]=ids?1ULL:0ULL;
  p.v[5][3]=(uint64_t)(ids?ids->nb[1]/4:0);
  p.v[5][4]=(uint64_t)(ids?0:(ne2/src0->ne[2]));
+ p.v[5][5]=(uint64_t)(src0->ne[3]?(dst->ne[3]/src0->ne[3]):1);
  p.v[6][1]=(uint64_t)(ids?ne2:ne1);
  p.v[6][2]=(src0->type==GGML_TYPE_Q6_K)?1ULL:0ULL;
  const bool eligible = src0->type==GGML_TYPE_Q6_K && src1->type==GGML_TYPE_F32 &&
