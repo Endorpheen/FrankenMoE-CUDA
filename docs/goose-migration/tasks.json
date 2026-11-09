@@ -838,7 +838,7 @@
         "ggml/src/ggml-cuda/add-id*"
       ],
       "acceptance": "Complete registered binary/unary/GLU type/mode matrix; all actual kernels generated from Goose, no original arithmetic callback.",
-      "evidence": "EXP166 activation/GLU/scale/clamp device+host family qualified;EXP167 transfers the whole active CUDA binbcast module:add/sub/mul/div/repeat/repeat-back,fused add/mul2..8,host collapse/type/stride/grid planning,Goose fast-div metadata and real device arithmetic/indexing.1692GPUcases/34282156values/111498checks include1080native-exact,396repaired-type and216padded-native-defect cases;1074native-compatible rollback cases pass. Independent typed GPU reference confirms corrected F16 pointer selection/padded destinations.1792full-uint32fast-div cases match CPU division and native host coefficients;245native overflow/shift discrepancies repaired.12host preflight cases reject before stream/kernel effects. One Apex2635.581prefill/26.567decode,RSS21328.164MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,actual add/mul/fused-add device witness,cuda_status0. Decode-2.223percent single uncontrolled sample vs latest EXP166 retained;stable speed parity unproven. Other CUDA/provider/model/KV/source scope remains. Snake/softcap/acc/add-id/inline residual families remain,not silently removed.",
+      "evidence": "EXP166 activation/GLU/scale/clamp device+host family qualified;EXP167 transfers the whole active CUDA binbcast module:add/sub/mul/div/repeat/repeat-back,fused add/mul2..8,host collapse/type/stride/grid planning,Goose fast-div metadata and real device arithmetic/indexing.1692GPUcases/34282156values/111498checks include1080native-exact,396repaired-type and216padded-native-defect cases;1074native-compatible rollback cases pass. Independent typed GPU reference confirms corrected F16 pointer selection/padded destinations.1792full-uint32fast-div cases match CPU division and native host coefficients;245native overflow/shift discrepancies repaired.12host preflight cases reject before stream/kernel effects. One Apex2635.581prefill/26.567decode,RSS21328.164MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,actual add/mul/fused-add device witness,cuda_status0. Decode-2.223percent single uncontrolled sample vs latest EXP166 retained;stable speed parity unproven. Other CUDA/provider/model/KV/source scope remains. Snake/softcap/acc/add-id/inline residual families remain,not silently removed. EXP183 actual Apex CUDA FWHT warp path (fwht_cuda for N=64/128/256/512,F32 source) is Goose: row decode, scaled register load, the shfl_xor warp butterfly with the (lane & h)==0 add/subtract rule, the in-register butterflies above the warp width and the store. 15 checks/5 cases per arm, 5 of 5 outputs byte-identical (row counts deliberately not multiples of 4), memcheck 0 errors. Paired Apex in the same DSO with only FWHT switched,order native->goose->goose->native: prefill 2599.19->2569.35 (-1.15%), decode 27.24->26.97 (-0.99%), both inside the 2% threshold, content sha256 identical, witness FG183F present only in the Goose arms. Kernel microbench 3-9% slower per launch at ~3us vs a 39ms token budget. The wider fwht_cuda_block path (N>=1024) and half sources remain native.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3186,6 +3186,14 @@
       "change": "CUDA Q4_K dequantization (F32) implemented in Goose; not on the Apex path",
       "status": "IN_PROGRESS",
       "evidence": "experiments/EXP-2026-11-08-182-goose-cuda-dequant-q4k/apex-summary.json"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-04",
+      "experiment": "EXP183",
+      "change": "CUDA FWHT warp path (N=64..512, F32) implemented in Goose and enabled by default",
+      "status": "ACCEPTED",
+      "evidence": "experiments/EXP-2026-11-08-183-goose-cuda-fwht/README.md"
     }
   ],
   "batches": [

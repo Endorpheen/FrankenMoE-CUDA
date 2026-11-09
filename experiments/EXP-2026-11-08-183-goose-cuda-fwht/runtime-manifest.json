@@ -1,0 +1,23 @@
+{
+  "status": "LINKED_PENDING_HOST_GPU_APEX",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp183/run/libggml-cuda-fwht-7fe679c3ed7a.so.0.27.0",
+  "sha256": "d20d1b37aa37af8228cd75908eadbab60d8cbe129585302d85483c2eb15cec6d",
+  "base_library_sha256": "0fab58b4523e5c1e8ac03648949035f6a560a46020821ee3155f2a989f0bfe18",
+  "original_object": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fwht.cu.o",
+  "original_object_sha256": "2e0eeb32842b4068939097c3b9bbf7d1269c8818ca70321827f8912cbc3c075b",
+  "private_symbol_rename": {
+    "_Z17ggml_cuda_op_fwhtR25ggml_backend_cuda_contextPK11ggml_tensorPS1_": "_Z31fg183f_native_ggml_cuda_op_fwhtR25ggml_backend_cuda_contextPK11ggml_tensorPS1_"
+  },
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true
+  },
+  "production_changed": false,
+  "active_runtime_changed": false,
+  "numerical_original_callback_on_enabled_supported_path": false
+}
