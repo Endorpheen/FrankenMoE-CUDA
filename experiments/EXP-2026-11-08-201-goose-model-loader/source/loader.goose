@@ -54,8 +54,51 @@ fn shape_ok(allow_reshape:i64,desc:u64,nreq:i64,total_req:i64,
  return dims_ok(desc,nreq,r0,r1,r2,r3);
 }
 
+
+// get_key_or_arr and load-mode decisions, from llama-model-loader.cpp:455-560.
+
+// or_arr_too_many: line 470, `n > N_MAX`.
+fn or_arr_too_many(n:i64,n_max:i64)->i64{
+ ensure(n>=0&&n_max>=0,40);
+ if n>n_max{return 1 as i64;}
+ return 0 as i64;
+}
+
+// is_array_kv: line 474, `gguf_get_kv_type(...) == GGUF_TYPE_ARRAY`. The enum value is passed in.
+fn is_array_kv(kv_type:i64,array_type:i64)->i64{
+ if kv_type==array_type{return 1 as i64;}
+ return 0 as i64;
+}
+
+// arr_length_ok: line 479, `n == arr_info.length`.
+fn arr_length_ok(n:i64,length:i64)->i64{
+ ensure(n>=0&&length>=0,41);
+ if n==length{return 1 as i64;}
+ return 0 as i64;
+}
+
+// use_mmap: line 558, `MMAP || MMAP_MLOCK || AUTO`.
+//   AUTO = -1, MMAP = 1, MMAP_MLOCK = 3
+fn use_mmap_mode(load_mode:i64)->i64{
+ if load_mode==(0 as i64)-1 as i64{return 1 as i64;}
+ if load_mode==1 as i64{return 1 as i64;}
+ if load_mode==3 as i64{return 1 as i64;}
+ return 0 as i64;
+}
+
+// use_direct_io: line 559, `load_mode == DIRECT_IO`, DIRECT_IO = 4.
+fn use_direct_io_mode(load_mode:i64)->i64{
+ if load_mode==4 as i64{return 1 as i64;}
+ return 0 as i64;
+}
+
 fn main(){
  nelements(0 as u64,1 as i64);
  dims_ok(0 as u64,1 as i64,1 as i64,1 as i64,1 as i64,1 as i64);
  shape_ok(0 as i64,0 as u64,1 as i64,1 as i64,1 as i64,1 as i64,1 as i64,1 as i64);
+ or_arr_too_many(0 as i64,0 as i64);
+ is_array_kv(0 as i64,0 as i64);
+ arr_length_ok(0 as i64,0 as i64);
+ use_mmap_mode(0 as i64);
+ use_direct_io_mode(0 as i64);
 }

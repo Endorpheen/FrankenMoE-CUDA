@@ -11,6 +11,11 @@ native.
 | `nelements` | `ggml_nelements` over a request | product of the first `n` dims |
 | `dims_ok` | `llama-model-loader.cpp:907-915` | each requested dim must match exactly; unmentioned dims must be 1 |
 | `shape_ok` | lines 896-916 | the two branches: element count when reshape is allowed, exact dims otherwise |
+| `or_arr_too_many` | line 470 | `n > N_MAX` |
+| `is_array_kv` | line 474 | `gguf_get_kv_type(...) == GGUF_TYPE_ARRAY` |
+| `arr_length_ok` | line 479 | array length must equal the request |
+| `use_mmap_mode` | line 558 | `MMAP \|\| MMAP_MLOCK \|\| AUTO` |
+| `use_direct_io_mode` | line 559 | `== DIRECT_IO` |
 
 `shape_ok` is routed into `llama-model-loader.cpp`.
 
@@ -28,6 +33,7 @@ inline its constants as literals.**
 ## Evidence
 
     FG201L_MODEL_LOADER shape_checks=753 direct=0
+    FG201L_KEYS load_mode=1 or_arr=6
     tokens and all 128 top-5 probabilities equal, 2538.40 / 25.68
 
 753 tensors validated through Goose in one model load, `direct=0` -- the switch never fell back.

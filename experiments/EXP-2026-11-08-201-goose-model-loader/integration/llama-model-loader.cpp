@@ -17,6 +17,11 @@
 
 // Goose model-loader decisions (EXP201). GGML_GOOSE_MODEL_LOADER=0 restores the native checks.
 extern "C" int fg201l_shape_check(int allow_reshape, const int64_t * dims, int64_t nreq, int64_t total, const int64_t * req);
+extern "C" int64_t fg201l_or_arr_too_many(int64_t n, int64_t n_max);
+extern "C" int64_t fg201l_arr_length_ok(int64_t n, int64_t length);
+extern "C" int64_t fg201l_use_mmap_mode(int64_t load_mode);
+extern "C" int64_t fg201l_use_direct_io_mode(int64_t load_mode);
+extern "C" int fg201l_enabled(void);
 
 static const size_t kiB = 1024;
 static const size_t MiB = 1024*kiB;
@@ -470,7 +475,8 @@ namespace GGUFMeta {
             return false;
         }
 
-        if (n > N_MAX) {
+        if (fg201l_enabled() ? (fg201l_or_arr_too_many((int64_t)n, (int64_t)N_MAX) != 0)
+                             : (n > N_MAX)) {
             throw std::runtime_error(format("n > N_MAX: %u > %u for key %s", n, (uint32_t) N_MAX, key.c_str()));
         }
 
@@ -478,7 +484,8 @@ namespace GGUFMeta {
             struct GGUFMeta::ArrayInfo arr_info =
                 GGUFMeta::GKV<GGUFMeta::ArrayInfo>::get_kv(metadata, kid);
 
-            if (n != arr_info.length) {
+            if (fg201l_enabled() ? (fg201l_arr_length_ok((int64_t)n, (int64_t)arr_info.length) == 0)
+                                 : (n != arr_info.length)) {
                 throw std::runtime_error(format("key %s has wrong array length; expected %u, got %u", key.c_str(), n, (uint32_t) arr_info.length));
             }
 
@@ -560,8 +567,13 @@ llama_model_loader::llama_model_loader(
 
     tensor_buft_overrides = param_tensor_buft_overrides_p;
 
-    this->use_mmap      = load_mode == LLAMA_LOAD_MODE_MMAP || load_mode == LLAMA_LOAD_MODE_MMAP_MLOCK || load_mode == LLAMA_LOAD_MODE_AUTO;
-    this->use_direct_io = load_mode == LLAMA_LOAD_MODE_DIRECT_IO;
+    // Goose decides the loading mode from the enum.
+    this->use_mmap      = fg201l_enabled()
+        ? (fg201l_use_mmap_mode((int64_t)load_mode) != 0)
+        : (load_mode == LLAMA_LOAD_MODE_MMAP || load_mode == LLAMA_LOAD_MODE_MMAP_MLOCK || load_mode == LLAMA_LOAD_MODE_AUTO);
+    this->use_direct_io = fg201l_enabled()
+        ? (fg201l_use_direct_io_mode((int64_t)load_mode) != 0)
+        : (load_mode == LLAMA_LOAD_MODE_DIRECT_IO);
 
     if (!fname.empty()) {
         // Load the main GGUF

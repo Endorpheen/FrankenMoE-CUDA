@@ -17,6 +17,11 @@ int64_t fg201l_nelements(uint64_t, int64_t);
 int64_t fg201l_dims_ok(uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
 int64_t fg201l_shape_ok(int64_t, uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
 int fg201l_shape_check(int, const int64_t *, int64_t, int64_t, const int64_t *);
+int64_t fg201l_or_arr_too_many(int64_t, int64_t);
+int64_t fg201l_is_array_kv(int64_t, int64_t);
+int64_t fg201l_arr_length_ok(int64_t, int64_t);
+int64_t fg201l_use_mmap_mode(int64_t);
+int64_t fg201l_use_direct_io_mode(int64_t);
 }
 
 static int checks, failures;
@@ -110,6 +115,25 @@ int main(void) {
         ck(fg201l_shape_check(0, d, 4, 24, req2) == 0, "entry mismatch", 0, 0);
         ck(fg201l_shape_check(1, d, 4, 24, req) == 1, "entry reshape", 0, 1);
         ck(fg201l_shape_check(1, d, 4, 25, req) == 0, "entry reshape count", 0, 0);
+    }
+
+    // get_key_or_arr and load-mode decisions.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t n = (int64_t)(rng() % 600), nmax = (int64_t)(rng() % 600);
+        ck((fg201l_or_arr_too_many(n, nmax) != 0) == (n > nmax), "or_arr_too_many", 0, 0);
+
+        const int64_t kt = (int64_t)(rng() % 8), at = (int64_t)(rng() % 8);
+        ck((fg201l_is_array_kv(kt, at) != 0) == (kt == at), "is_array_kv", 0, 0);
+
+        const int64_t l1 = (int64_t)(rng() % 600), l2 = (int64_t)(rng() % 600);
+        ck((fg201l_arr_length_ok(l1, l2) != 0) == (l1 == l2), "arr_length_ok", 0, 0);
+
+        // Every load mode enum value from -1 to 4.
+        const int64_t lm = (int64_t)(rng() % 7) - 1;
+        const bool ref_mmap = (lm == -1 || lm == 1 || lm == 3);
+        const bool ref_dio  = (lm == 4);
+        ck((fg201l_use_mmap_mode(lm) != 0) == ref_mmap, "use_mmap", lm, ref_mmap);
+        ck((fg201l_use_direct_io_mode(lm) != 0) == ref_dio, "use_direct_io", lm, ref_dio);
     }
 
     run_trap("nelements n out of range", 10, trap_nreq_oor);

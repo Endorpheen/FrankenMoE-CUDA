@@ -5,12 +5,14 @@
 #include <string.h>
 #include <stdatomic.h>
 
-static _Atomic unsigned long long g_shape, g_native;
+static _Atomic unsigned long long g_shape, g_native, g_mode, g_key;
 
 __attribute__((destructor)) static void fg201l_report(void) {
     if (!atomic_load(&g_shape) && !atomic_load(&g_native)) return;
     fprintf(stderr, "FG201L_MODEL_LOADER shape_checks=%llu direct=%llu\n",
             atomic_load(&g_shape), atomic_load(&g_native));
+    fprintf(stderr, "FG201L_KEYS load_mode=%llu or_arr=%llu\n",
+            atomic_load(&g_mode), atomic_load(&g_key));
 }
 
 static void g_fail(int64_t c) {
@@ -35,6 +37,11 @@ int64_t fg201l_nelements(uint64_t desc, int64_t n) { return gg_function_1(desc, 
 int64_t fg201l_dims_ok(uint64_t desc, int64_t nreq, int64_t r0, int64_t r1, int64_t r2, int64_t r3) {
     return gg_function_5(desc, nreq, r0, r1, r2, r3, 0);
 }
+int64_t fg201l_or_arr_too_many(int64_t n, int64_t n_max) { atomic_fetch_add(&g_key, 1); return gg_function_7(n, n_max, 0); }
+int64_t fg201l_is_array_kv(int64_t kv_type, int64_t array_type) { return gg_function_8(kv_type, array_type, 0); }
+int64_t fg201l_arr_length_ok(int64_t n, int64_t length) { return gg_function_9(n, length, 0); }
+int64_t fg201l_use_mmap_mode(int64_t load_mode) { atomic_fetch_add(&g_mode, 1); return gg_function_10(load_mode, 0); }
+int64_t fg201l_use_direct_io_mode(int64_t load_mode) { return gg_function_11(load_mode, 0); }
 int64_t fg201l_shape_ok(int64_t allow_reshape, uint64_t desc, int64_t nreq, int64_t total,
                         int64_t r0, int64_t r1, int64_t r2, int64_t r3) {
     return gg_function_6(allow_reshape, desc, nreq, total, r0, r1, r2, r3, 0);
