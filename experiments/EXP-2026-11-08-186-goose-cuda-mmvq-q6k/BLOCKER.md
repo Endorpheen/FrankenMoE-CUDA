@@ -70,3 +70,41 @@ solved; `GGML_GOOSE_CUDA_MMVQ_Q6K=0` is not needed because nothing enables it.
 2. Or hand-shaping the Goose source so every address is precomputed once in the host
    module and the kernel only does `base + i0` — worth one more attempt now that the
    instruction budget is understood, but it was already tried six times for EXP180.
+
+## Follow-up diagnosis: where the extra instructions actually come from
+
+The instruction counts were re-examined per opcode on the two kernels rather than in
+aggregate, and the profile points at one specific cause.
+
+| opcode | goose | native |
+|---|---:|---:|
+| total | 504 | 193 |
+| IMAD | 172 | 45 |
+| IADD3 | 58 | 14 |
+| ISETP + SEL | **79** | **7** |
+| LDG (16-bit) | 11 | 11 |
+
+The loads match exactly, so the difference is not memory access. It is the predicate and
+select traffic: 79 against 7.
+
+That traffic comes from the Goose runtime's checked arithmetic helpers. Every `gg_div`,
+`gg_mod`, `gg_udiv` and `gg_umod` in the emitted body is wrapped as
+
+    if (!b) fail("division by zero"); if (a==INT64_MIN && b==-1) fail("division overflow"); return a/b;
+
+so each one compiles to a zero test, an overflow test and a trap branch. The Q6_K body
+contains 13 such calls.
+
+Part of that is provably redundant: 5 of the 13 have a **constant** divisor (4 or 16, from
+`QI6_K` and `QK8_1` shifts), so the compiler could drop both guards, but it cannot see
+through the helper's interface. The other 8 have variable divisors and their guards are
+semantically necessary.
+
+5 of 13 explains only part of the 72-instruction excess, so this is a contributor rather
+than the whole story; the remaining IMAD and IADD3 gap is still the pointer arithmetic
+that nvcc folds into load immediates in the native version and the Goose emitter does not.
+
+Both halves of the cause are outside what a kernel rewrite can fix from here: dropping
+the guards needs either a compiler mode that knows a divisor is non-zero, or a Goose
+integer type that cannot be zero. Recorded so the next attempt starts from the profile
+rather than from the instruction total.
