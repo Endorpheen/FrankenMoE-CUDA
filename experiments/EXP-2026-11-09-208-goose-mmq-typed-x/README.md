@@ -42,8 +42,26 @@ Measured by removing pieces one at a time:
 - the remaining ~40 are the four generated `alignof` guards and the typed-edge bookkeeping.
 
 So the regression is not "typed pointers are slow"; it is that this stage pays four alignment
-checks the u64 version did not have. Whether NVCC can hoist them once the typed pointer is proven
-aligned is the next question, and it is the reason no speedup is claimed here.
+checks the u64 version did not have.
+
+## Diagnostic: with the checks stripped, the typed kernel is exactly the u64 kernel
+
+To answer whether typed addressing helps at all here, the four generated `alignof` guards and my
+16-byte guard were removed in a throwaway build (not promoted, restored immediately):
+
+    SASS typed without guards   432 instructions   (identical count to u64)
+    SASS typed with guards      488 instructions
+
+So the entire +56 is the guards, byte for byte. Timing with them removed, 5 interleaved samples
+each way: u64 median 1848.2 ns, typed median 1983.1 ns -- still not faster, and the samples overlap
+heavily (1833-2119 vs 1855-2060), which says this kernel is not instruction-bound in the way the
+historical 64-to-56 probe suggested.
+
+**Conclusion for the compiler side, stated plainly:** the typed port is neutral, and in this stage
+it is a small net loss because the alignment guards are emitted per call site. Hoisting them to one
+check per kernel, or dropping them once the caller proves alignment, is the change that would make
+typed addresses pay here. Until then there is nothing to promote, and MMQ has no measured speedup
+from this work.
 
 ## Defects found and fixed on the way
 
