@@ -915,7 +915,7 @@
         "ggml/src/ggml-cuda/template-instances/**"
       ],
       "acceptance": "Every registered MMVQ format/instance,expert routing,split K,tail and batch mode executes Goose; Apex decode witnesses.",
-      "evidence": " EXP184 actual Apex CUDA mul_mat_vec_f for T=float,ncols_dst=1,no fusion is Goose: channel/sample/row addressing including the ids path,the float2-strided dot product,the FMA accumulation,the shfl_xor warp reduction,the cross-warp shared pass and the store,plus the block-size search in the host module. 10 checks/5 cases per arm,5 of 5 outputs byte-identical (ncols 256/512/2048/4096/8192 covering every block-size branch,and a 4-channel case),memcheck 0 errors. Paired Apex in the same DSO with only this op switched,order native->goose->goose->native: prefill 2564.82->2575.08 (+0.40%),decode 26.16->26.60 (+1.69%),content sha256 identical,witness FG184M only in the Goose arms. Six defects in my own work found and fixed; the last one, searching block sizes on ncols2 instead of ncols, was the root cause of a residual 1-ULP difference and took the fixture from 3/5 to 5/5. Half/bfloat16/quantized sources,ncols_dst>1,the fusion path and the multi-token ids path remain native,as do mul_mat_vec_q and mul_mat_q.",
+      "evidence": " EXP184 actual Apex CUDA mul_mat_vec_f for T=float,ncols_dst=1,no fusion is Goose: channel/sample/row addressing including the ids path,the float2-strided dot product,the FMA accumulation,the shfl_xor warp reduction,the cross-warp shared pass and the store,plus the block-size search in the host module. 10 checks/5 cases per arm,5 of 5 outputs byte-identical (ncols 256/512/2048/4096/8192 covering every block-size branch,and a 4-channel case),memcheck 0 errors. Paired Apex in the same DSO with only this op switched,order native->goose->goose->native: prefill 2564.82->2575.08 (+0.40%),decode 26.16->26.60 (+1.69%),content sha256 identical,witness FG184M only in the Goose arms. Six defects in my own work found and fixed; the last one, searching block sizes on ncols2 instead of ncols, was the root cause of a residual 1-ULP difference and took the fixture from 3/5 to 5/5. Half/bfloat16/quantized sources,ncols_dst>1,the fusion path and the multi-token ids path remain native,as do mul_mat_vec_q and mul_mat_q. EXP185 actual Apex CUDA mul_mat_vec_q for Q4_K (ncols_dst=1,no fusion) is Goose, covering vec_dot_q4_K_q8_1 and vec_dot_q4_K_q8_1_impl_vmmq: tid decomposition,bq8_offset and q4 pointer derivation,the 6-bit scale/min unpack with the branchless hi mask,the nibble-shifted dp4a dot and q8 sum,the per-i accumulation,the cross-warp staging and the super-block combination,plus the launch geometry in the host. 8 checks/4 cases per arm,4 of 4 outputs byte-identical (ncols 256/1024/4096 and a two-channel 2048),memcheck 0 errors,a single-block probe target that compares both arms on one 256-wide block. Paired Apex in the same DSO with only this op switched,order native->goose->goose->native: prefill 2582.59->2588.07 (+0.21%),decode 26.89->26.55 (-1.28%),content sha256 identical,witness only in the Goose arms. Seven defects in my own work found and fixed,including sc/m aliasing different words of aux,the dmin half2 offset,the reduction publish order,channel_y without ids,the F32 src1 staging contract,the padded q8_1 strides,and finally ybase being a block index added to a byte offset (the NaN in the multi-channel case). A stale object file made several fixes appear inert until the object was removed before rebuilding. The other 17 quantized types,ncols_dst>1,fusion,the multi-token ids path and small_k/halve_iters variants remain native,as does mul_mat_q.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3202,6 +3202,14 @@
       "change": "CUDA mul_mat_vec_f (float, one dest column, no fusion) implemented in Goose and enabled by default",
       "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-184-goose-cuda-mmvf/README.md"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-08",
+      "experiment": "EXP185",
+      "change": "CUDA mul_mat_vec_q for Q4_K (one dest column, no fusion) implemented in Goose and enabled by default",
+      "status": "ACCEPTED",
+      "evidence": "experiments/EXP-2026-11-08-185-goose-cuda-mmvq-q4k/README.md"
     }
   ],
   "batches": [
