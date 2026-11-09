@@ -71,6 +71,9 @@ fn run(packet:i64)->bool{
  let ne0=ti(s0,7,0);
  let ne1=ti(s1,7,0);
  if ne0!=ne1{return false;}
+ // Equal element size is not equal type: f32 and i32 are both four bytes, and the element
+ // path copies raw words. A numeric conversion has to stay with the native branch.
+ if ti(s0,2,0)!=ti(s1,2,0){return false;}
  let p=plan_ptr(packet);
  // Same type and both contiguous: the native branch is a single device memcpy.
  if ti(s0,2,0)==ti(s1,2,0)&&ti(s0,8,0)==1&&ti(s1,8,0)==1{
