@@ -1,37 +1,47 @@
-# EXP207: per-sequence position index — BLOCKED, not promoted
+# EXP207: per-sequence position index — REJECTED on performance
 
-`seq_pos_min`/`seq_pos_max` were replaced by a Goose scan over the cells carrying a sequence.
+## Verdict
 
-## What works
+**REJECTED.** The module is functionally correct and its gate is green, but replacing the native
+ordered set with a linear scan costs **59% of decode**: 26.46 -> 10.76 tok/s. Not promoted.
 
-    FG207P_KV_SEQPOS calls=99874
-    FG207P_FIXTURE checks=99874 failures=0
+## Evidence
 
-The gate is real and it is load-bearing: reverting the empty-cell filter makes it fail with 2130
-errors. That filter is the defect I found here -- native `seq_pos` never holds an empty cell
-(`rm()` resets the sequence bits before the position becomes -1), and the first scan included
-them, so `min` came back as -1.
+    gate:                    FG207P_KV_SEQPOS calls=99874
+                             FG207P_FIXTURE checks=99874 failures=0
+    live, module ON:         prefill 2323.78  decode 10.76   tokens exact
+    live, module OFF:        prefill 2558.20  decode 26.46   tokens exact
+    accepted checkpoint:     EXP206, 2554.17 / 26.08
 
-## What is blocked, and the exact evidence
+Tokens and all 128 probabilities are exact in both arms, so this is purely a cost problem, not a
+correctness one.
 
-Live wiring fails with **HTTP 500, "Context size has been exceeded"**, and `FG207P calls=34`.
+## A measurement defect I have to own
 
-The decisive control: the same build with **`GGML_GOOSE_KV_SEQPOS=0` fails identically**. So the
-Goose scan is not the cause. The cause is in the wiring, and the EXP206 ODR trap is the suspect:
-the referenced copy of `llama-kv-cells.h` had grown two `mutable std::vector` members for staging,
-which changes `sizeof(llama_kv_cells)`. Every translation unit built against the unmodified header
-then disagrees on the layout of the object it is manipulating. EXP206 hit exactly this and
-recorded it; I repeated it.
+My first "control" was not a control. `run207.py:19` strips every `GGML_GOOSE_*` variable from the
+environment before launching the arm, so `GGML_GOOSE_KV_SEQPOS=0` never reached the process and
+both runs had the module ON. I read the resulting 10.76 as a wiring failure and blamed an ODR
+layout mismatch from EXP206.
 
-The staging members were moved out of the class into accessors that fill caller-owned vectors, so
-`sizeof` is unchanged, but the rerun after that change is not recorded here -- the verdict is
-therefore **BLOCKED, not accepted**, and the module is not in the active chain.
+That attribution was wrong. The real control (a patched runner copy that forwards the switch,
+`/tmp/run207p.py`) gives 26.46 with the module off, which isolates the cost to the scan itself.
+Recorded so the same shortcut is not repeated: a switch that the harness strips is not a control.
 
-EXP206 remains the last accepted checkpoint (2554.17 / 26.08 on a recheck).
+## Why the scan is the wrong shape
 
-## What this does not say
+`seq_pos_min` / `seq_pos_max` are called from `can_use_cell` inside the slot-search walk
+(`llama-kv-cache.cpp:1080`), that is, once per tested cell on the hot path. Native answers them in
+O(1) from `std::set` (`begin()->first` / `rbegin()->first`). A scan over all cells is O(cells), and
+the Apex cache is 262144 cells, so the walk becomes quadratic in the worst case.
 
-It does not say the scan is too slow, and it does not say the algorithm is wrong. The gate covers
-the algorithm; the control isolates the failure to the wiring. A future attempt should verify the
-control passes with the switch off *before* looking at the Goose numbers, which is the check I ran
-too late.
+The two consumers that would justify the ordered structure are `seq_pos_get`
+(`llama-memory-hybrid-idx.cpp:414`, `upper_bound`) and the min/max pair. Hybrid-idx is not
+instantiated in this profile, so a port needs only min/max -- but it needs them in O(1).
+
+## What a viable next attempt looks like
+
+Either keep the native `std::set` and port only the decisions around it, or maintain per-sequence
+min/max incrementally alongside the cell writes (O(1) update on pos_set/rm/pos_add/pos_div, O(1)
+query) and validate it against the set. The second is the real port; the scan is not.
+
+`active.json` untouched. EXP206 remains the last accepted runtime.
