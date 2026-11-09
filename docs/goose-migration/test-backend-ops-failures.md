@@ -130,3 +130,26 @@ all (`m6=0x0` in the profile log), so nothing on the hot path changes.
 Apex is unchanged, checked: the activation witness reads
 `m0=0x2000400,m2=0x2000480,m6=0x0,m7=0x1`, identical to before the change, with `m6=0x0`
 confirming the mode is not on the profile. Output still `e68df05b`, 2572.84 / 27.01.
+
+## MUL_MAT: the discriminator narrowed
+
+`-o MUL_MAT` runs 2468 cases; exactly 9 fail. `nr` is documented in the harness as "repeat in
+dims 3 and 4", so `nr=[*,2]` means the fourth dimension is 2, and every failing case has it:
+
+    type_a=f32,  m=16, n=1, k=256, bs=[1,1], nr=[1,2]
+    type_a=f32,  m=16, n=1, k=256, bs=[3,2], nr=[1,2]
+    type_a=f32,  m=16, n=1, k=256, bs=[3,2], nr=[2,2]
+    type_a=f32,  m=16, n=1, k=4,   bs=[1,1], nr=[1,2]
+    type_a=f32,  m=16, n=1, k=4,   bs=[3,2], nr=[1,2]
+    type_a=f32,  m=16, n=1, k=4,   bs=[3,2], nr=[2,2]
+    type_a=q4_K, m=16, n=1, k=256, bs=[1,1], nr=[1,2]
+    type_a=q4_K, m=16, n=1, k=256, bs=[3,2], nr=[1,2]
+    type_a=q4_K, m=16, n=1, k=256, bs=[3,2], nr=[2,2]
+
+`ne3 == 2` on its own is not the cause: hundreds of cases with that dimension pass. The
+combination that fails is `n=1` together with a batched fourth dimension, and it fails for both
+the f32 module and the q4_K one.
+
+This is where the next attempt should start: the grid dimension the module derives for the
+non-ids path (`p.v[4][2] = ne3`) interacting with a single destination column. Nothing was
+changed on the strength of this table.
