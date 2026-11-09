@@ -66,7 +66,9 @@ int main(int argc, char ** argv) {
     if (ggml_backend_cuda_get_device_count() < 1) { std::fprintf(stderr, "no CUDA device\n"); return 77; }
     cudaSetDevice(0);
     std::mt19937 rng(184001);
+    const char * scale = getenv("FG184M_WIDE");
     std::uniform_real_distribution<float> dist(-2.0f, 2.0f);
+    std::uniform_real_distribution<float> wide(-1.0e4f, 1.0e4f);
     const char * dump = getenv("FG184M_DUMP");
     const bool native_arm = getenv("GGML_GOOSE_CUDA_MMVF") &&
                             std::strcmp(getenv("GGML_GOOSE_CUDA_MMVF"), "0") == 0;
@@ -84,9 +86,9 @@ int main(int argc, char ** argv) {
         const size_t ysz = (size_t)((ns_buf-1)*nb3_b/4 + (nch-1)*(c.padded ? nb2_b : nb1_b)/4 + c.ncols + 1);
         const size_t osz = (size_t)(c.nrows*nch*ns_buf);
         std::vector<float> x(xsz);
-        for (auto & v : x) v = dist(rng);
+        for (auto & v : x) v = scale ? wide(rng) : dist(rng);
         std::vector<float> y(ysz);
-        for (auto & v : y) v = dist(rng);
+        for (auto & v : y) v = scale ? wide(rng) : dist(rng);
         std::vector<float> out(osz, -3.5f);
 
         float * dx = nullptr, * dy = nullptr, * dd = nullptr;

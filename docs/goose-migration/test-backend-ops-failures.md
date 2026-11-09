@@ -405,6 +405,11 @@ mismatch that only appears for particular data — a NaN or an extreme magnitude
 would not show up in a fixture with uniform random values in [-2, 2], and the harness's
 `ERR = 1.03` with `NaN` on the quantized module is consistent with that.
 
-The next step is therefore to feed the harness's own tensors through both arms, or to widen
-the fixture's input distribution to include the magnitudes and patterns the harness uses,
-rather than to keep varying the shape.
+Widened the fixture's input distribution to `[-1e4, 1e4]` via `FG184M_WIDE=1` and compared
+both arms again: all cases byte-identical. So input magnitude is not the discriminator either.
+
+Input content is therefore eliminated as well, leaving the fixture unable to reproduce the
+harness case at all. That is the point to stop varying the fixture: it has matched shape,
+strides, padding, overlap, broadcast, call arguments and input magnitude, and the harness still
+disagrees. Reproducing it now needs the harness's own tensors, captured and replayed, not more
+generated ones.
