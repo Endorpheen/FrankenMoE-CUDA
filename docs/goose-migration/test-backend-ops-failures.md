@@ -452,3 +452,33 @@ freshly filled buffers; the harness places them as views into one base allocatio
 difference was reproduced in the fixture and still matched, so the trigger is narrower than the
 layout — it is plausibly a specific address relationship that only the harness's allocator
 produces.
+
+## The host dot matches Goose, not native — and the native capture is unreliable
+
+Extended the capture to dump `src0` and `src1` for the same call and computed the reduction on
+the host in double:
+
+    src0 dump 16384 bytes  = 256 x 16 x 4, exactly the contiguous size
+    src1 dump  512 bytes    = 256 x 1 x 2
+
+    host dot  sample0 rows 0..3 : 13.7200  7.5504  3.7734  -6.3700
+    goose     idx 0..3          : 13.7200  7.5504  3.7734  -6.3700   <-- exact match
+    native    idx 0..3          : -2.0832 -2.8702  5.7180  -5.8179   <-- does not match its own data
+
+So the Goose kernel reproduces `dst[row] = sum_c src0[row][c] * src1[0][c]` exactly, and the
+captured "native" output is **inconsistent with the inputs it was captured next to**. The
+native capture takes `ctx.stream()`, synchronises it and then copies; the native route evidently
+completes on a different stream, so that dump is garbage and must not be used.
+
+This inverts the earlier reading of the 25x difference. It was not the Goose kernel reading the
+wrong memory — it was the *reference capture* being taken before the work finished. The
+`idx 31 == 0.0` is likewise a not-yet-written slot, not a Goose defect.
+
+What this leaves: by the host oracle, Goose computes the right answer for the tensors it is
+given, and the harness still reports `ERR = 1.03` for the case. Those two cannot both be
+complete descriptions, so one of the assumed facts is wrong — most likely that the harness
+compares against the tensors captured here. The next step is to capture the **CPU** route's
+output for the same case through the same facility and compare all three, rather than
+comparing against a native capture that has been shown unreliable.
+
+Nothing above is a conclusion about the Goose kernel; it is a correction of the instrument.
