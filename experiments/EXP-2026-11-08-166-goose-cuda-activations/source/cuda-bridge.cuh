@@ -177,7 +177,10 @@ void ggml_cuda_op_geglu_quick(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!
 void ggml_cuda_op_swiglu_oai(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!fg166_enabled()){fg166_native_ggml_cuda_op_swiglu_oai(ctx,a);return;}fg166_run(31,ctx,a);}
 void ggml_cuda_op_swiglu_clamp(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!fg166_enabled()){fg166_native_ggml_cuda_op_swiglu_clamp(ctx,a);return;}fg166_run(32,ctx,a);}
 void ggml_cuda_op_xielu(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!fg166_enabled()){fg166_native_ggml_cuda_op_xielu(ctx,a);return;}fg166_run(33,ctx,a);}
-void ggml_cuda_op_silu_back(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!fg166_enabled()){fg166_native_ggml_cuda_op_silu_back(ctx,a);return;}fg166_run(34,ctx,a);}
+// The Goose body does not implement the SiLU backward pass -- no `silu` appears in
+// device.goose -- so this route stays native. test-backend-ops reported a 1.57 error here
+// while the module claimed the mode; Apex does not execute it (m6=0x0).
+void ggml_cuda_op_silu_back(ggml_backend_cuda_context&ctx,ggml_tensor *a){fg166_native_ggml_cuda_op_silu_back(ctx,a);}
 void ggml_cuda_op_leaky_relu(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!fg166_enabled()){fg166_native_ggml_cuda_op_leaky_relu(ctx,a);return;}fg166_run(35,ctx,a);}
 void ggml_cuda_op_scale(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!fg166_enabled()){fg166_native_ggml_cuda_op_scale(ctx,a);return;}fg166_run(36,ctx,a);}
 void ggml_cuda_op_clamp(ggml_backend_cuda_context&ctx,ggml_tensor *a){if(!fg166_enabled()){fg166_native_ggml_cuda_op_clamp(ctx,a);return;}fg166_run(37,ctx,a);}

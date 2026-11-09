@@ -4,7 +4,7 @@ Run: `test-backend-ops test -b CUDA0`, runtime `runtime/exp196/run`, 2026-11-08.
 
 Result after the GET_ROWS and RoPE fixes: the suite completes instead of aborting.
 
-    18751 cases OK, 13 FAIL, 0 aborts
+    18753 cases OK, 11 FAIL, 0 aborts
 
 Before those two fixes it aborted at GET_ROWS after 1115 cases, and RoPE aborted before its
 first case.
@@ -20,7 +20,7 @@ binary and same runtime:
 | `ROPE` | abort → **fixed** | `GGML_GOOSE_CUDA_ROPE` | EXP171 (`n_ctx_orig` gate, fixed) |
 | `CPY` | 4 → **fixed** | `GGML_GOOSE_CUDA_CPY` | EXP177 (type gate, fixed) |
 | `MUL_MAT` | 11 | `GGML_GOOSE_CUDA_MMVF` and, separately, `GGML_GOOSE_CUDA_MMVQ_Q4K` | EXP184 / EXP185 |
-| `SILU_BACK` | 1 | `GGML_GOOSE_CUDA_ACTIVATIONS` | EXP166 |
+| `SILU_BACK` | 1 → **fixed** | `GGML_GOOSE_CUDA_ACTIVATIONS` | EXP166 (routed to native, fixed) |
 
 ## What the remaining failures have in common
 
@@ -35,8 +35,7 @@ declining to the native branch:
 
 ## Next steps, in order
 
-1. `MUL_MAT` batched/permuted matvec — the larger of the two, and it affects two modules.
-2. `SILU_BACK` — lowest priority; Apex never runs it, but it is the same defect class.
+1. `MUL_MAT` batched/permuted matvec — the last cluster, and it affects two modules.
 
 Each needs the same procedure already used twice: bound the Goose path by a predicate matching
 what the body models, rebuild that object, relink the stages that reference it by path, rerun
@@ -114,3 +113,16 @@ not a case that should have declined and did not.
 No change was made here. The predicate currently admits these shapes, and narrowing it by
 guesswork would either be wrong or would silently reduce coverage; the failure needs to be
 traced inside the body first.
+
+## SILU_BACK: the body was never written
+
+`ggml_cuda_op_silu_back` routed straight into `fg166_run(34, ...)`, but no `silu` appears
+anywhere in `device.goose`, `device-generated.c` or `host.goose` — the backward pass was never
+implemented, yet the route claimed it. `test-backend-ops` measured a 1.57 error, and the live
+witness confirmed the mode ran (`m6=0x1`).
+
+The route now calls the native function unconditionally. Apex does not execute this mode at
+all (`m6=0x0` in the profile log), so nothing on the hot path changes.
+
+    test-backend-ops test -o SILU_BACK -b CUDA0   ->  2/2 backends passed
+    full suite                                    ->  18753 OK, 11 FAIL, no abort
