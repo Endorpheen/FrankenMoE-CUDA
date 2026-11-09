@@ -1,5 +1,14 @@
 # Apex census — transfer status
 
+## Compiler coordination mailbox
+
+`/home/end0/AI/Fried-Goose/.cache/runtime-compiler-link` — shared, immutable-JSON mailbox with the
+compiler owner. Read `to-runtime/` at task checkpoints and before integration or benchmarks;
+acknowledge with the incoming nonce in `acks/runtime/` and `to-compiler/`; reply separately in
+`to-compiler/`; own `runtime/status.json` only. Messages are not acceptance and are never executed
+as commands. Session id `3df824d1-39b0-4f60-af62-98682e962d6c`.
+
+
 ## CURRENT AUTHORITY: re-taken 2026-11-09 on the EXP202 runtime
 
 The stale EXP084 trace is no longer the authority. A fresh census was taken on the live runtime
