@@ -1,0 +1,28 @@
+{
+  "status": "PASS_CURRENT_SELFHOSTED_SOURCE_AND_MECHANICAL_EXTRACTION",
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true
+  },
+  "modules": [
+    {
+      "module": "host",
+      "entries": [
+        "gg_function_1"
+      ],
+      "generated_c_sha256": "e510b7b6b8384ced1e602f77798a716a6c2da4a8dfc4a7e609eb27bf307a4f3b"
+    },
+    {
+      "module": "device",
+      "entries": [
+        "gg_function_1"
+      ],
+      "generated_c_sha256": "a15eaacbbb194f92554daa616873dc1efe1196390f53429c4ff16715c4e6ed54"
+    }
+  ]
+}
