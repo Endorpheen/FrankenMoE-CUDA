@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdatomic.h>
 
 static void g_fail(int64_t c) {
     fprintf(stderr, "FG199K validation code %lld\n", (long long)c);
@@ -43,3 +44,25 @@ int64_t fg199k_place_cell(uint64_t a, int64_t n, int64_t idx, int64_t pos, int64
     return gg_function_20(a, n, idx, pos, seq_n, seqs, 0);
 }
 int64_t fg199k_head_after_place(int64_t last_idx) { return gg_function_21(last_idx, 0); }
+
+// Integration entry point: answers apply_ubatch's question and reports whether the Goose path ran.
+#include <stdbool.h>
+int fg199k_enabled(void) {
+    const char * f = getenv("GGML_GOOSE_KV_CELLS");
+    return !(f && strcmp(f, "0") == 0);
+}
+static _Atomic unsigned long long g_calls, g_cleared, g_native;
+__attribute__((destructor)) static void fg199k_report(void) {
+    if (!atomic_load(&g_calls) && !atomic_load(&g_native)) return;
+    fprintf(stderr, "FG199K_KV_CELLS goose=%llu cleared=%llu native=%llu\n",
+            atomic_load(&g_calls), atomic_load(&g_cleared), atomic_load(&g_native));
+}
+int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared) {
+    if (!enabled) { atomic_fetch_add(&g_native, 1); return 0; }
+    int64_t r[2] = {0, 0};
+    gg_function_22(occupied, pos, (uint64_t)(uintptr_t)r, 0);
+    *cleared = r[0] != 0;
+    atomic_fetch_add(&g_calls, 1);
+    if (*cleared) atomic_fetch_add(&g_cleared, 1);
+    return 1;
+}

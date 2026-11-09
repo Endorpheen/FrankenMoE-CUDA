@@ -202,6 +202,16 @@ fn place_cell(a:u64,n:i64,idx:i64,pos:i64,seq_n:i64,seqs:u64)->i64{
  return reused;
 }
 
+// plan_cell: the decision apply_ubatch needs before touching the container, with no arena --
+// the container itself is the state, so the module only answers "clear first, and at which
+// position". r[0]=1 when the cell must be cleared, r[1]=the position to place.
+fn plan_cell(occupied:i64,pos:i64,r:u64){
+ ensure(pos>=(0 as i64)-1 as i64,100);
+ ensure(occupied==0||occupied==1,101);
+ st_i64(r,0,if occupied==1{1 as i64}else{0 as i64});
+ st_i64(r,8,pos);
+}
+
 // head_after_place: llama-kv-cache.cpp:1216 `head = sinfo.idxs[s].back() + 1`.
 fn head_after_place(last_idx:i64)->i64{
  ensure(last_idx>=(0 as i64)-1 as i64,90);
@@ -220,4 +230,5 @@ fn main(){
  used_max_p1(0 as u64,1 as i64);
  place_cell(0 as u64,1 as i64,0 as i64,0 as i64,0 as i64,0 as u64);
  head_after_place(0 as i64);
+ plan_cell(0 as i64,0 as i64,0 as u64);
 }
