@@ -97,6 +97,28 @@ prefill instances to that kernel: the only launcher in the tree is
 profile predates this chain, so re-taking it on the current runtime is the step that would
 settle it; the earlier `nsys` attempt did not complete, as recorded below.
 
+## Transfer/residency: no executing decision on this profile
+
+P3-17 also asks for transfer and residency policy. Probed rather than assumed, on a full
+32K/128 Apex pass:
+
+    cudaMemcpyAsync_h2d=60077 cudaMemcpyAsync_d2h=10962
+    cudaMemcpyAsync_d2d=0 cudaMemcpyPeerAsync=0 cudaMemcpy2DAsync=0
+
+Every transfer is a plain host/device `cudaMemcpyAsync` on `cudaStreamPerThread` followed by
+`cudaStreamSynchronize`, issued by `ggml_backend_cuda_buffer_set_tensor` / `get_tensor`. Those
+two bodies are a device select, a memcpy with a fixed direction and stream, and a synchronize:
+there is no device choice, no peer decision and no residency decision in them.
+
+The one real decision in the transfer path, `ggml_backend_cuda_buffer_cpy_tensor` (same
+physical device versus peer copy versus refusing under `GGML_CUDA_NO_PEER_COPY`), never runs:
+a D2D copy count of zero and a peer count of zero say so. The 2D variants are likewise
+unexercised.
+
+So there is nothing to transfer here without moving zero computation into the hot path ~71000
+times per pass. The measured statement is that the policy is not reached, not that it was
+ported.
+
 ## Not covered
 
 `ggml_get_to_fp16_nc_cuda` and its `to_t_nc_cuda_t` per-dimension-stride signature. The
