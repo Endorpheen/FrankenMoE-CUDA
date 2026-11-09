@@ -68,3 +68,8 @@ The GET_ROWS and RoPE fixes were not affected: both were edits to C/C++ (`cuda-r
 
     test-backend-ops test -o CPY -b CUDA0   ->  2/2 backends passed
     full suite                              ->  18751 OK, 13 FAIL, no abort
+
+Apex is unaffected, checked rather than assumed: `FG177C_CUDA_CPY host=0x4,paths=0x1`,
+`FG171R host=0x1,modes=0x8,variants=0x50` and `FG176G host=0x3,paths=0x3` are all unchanged,
+output is still `e68df05b`, and the run reads 2576.97 / 26.73 at load 2.07 — in line with the
+native 2549.14 / 25.90 pair taken under the same conditions.

@@ -232,7 +232,9 @@ path now declines for non-positive values. `-o ROPE` goes from an abort to 2/2 p
 Apex witness is unchanged at `host=0x1,modes=0x8,variants=0x50`.
 
 With both fixes the full suite completes: **18748 cases OK, 16 FAIL, no abort** (it previously
-aborted at 1115 cases). The remaining 16 are attributed per module in
+aborted at 1115 cases). A third fix followed: EXP177 `CPY` gated on element size rather than
+type, so `f32 -> i32` took the raw word path; declining on a type mismatch brings the count to
+**18751 OK, 13 FAIL**. The remaining 16 are attributed per module in
 `test-backend-ops-failures.md`: EXP177 `CPY` type conversion, EXP184/EXP185 `MUL_MAT`
 batched/permuted matvec, and EXP166 `SILU_BACK`.
 
