@@ -54,3 +54,46 @@ Every per-stage gate in this chain was written against the Apex profile, and so 
 "covered" row in the census. That was deliberate — port by fact, not by guess — but it means
 "covered" describes the profile, not the operator. `test-backend-ops` is the instrument that
 shows the difference, and running it across the whole matrix is what P3-19 is for.
+
+## Exact trap
+
+The abort carries a code, which `cuda-bridge.cuh:21` prints:
+
+    Goose RoPE validation failed:code=27
+
+`host.goose:88` is `ensure(n_ctx>0,27)`, and the variable is read at `host.goose:71` as
+`ti(node,8,4)` — `op_params[4]`, which the native code calls `n_ctx_orig`.
+
+The native kernel does not require it to be positive. `rope.cu:582` shows `n_ctx`
+(`op_params[3]`) commented out entirely, and only `n_ctx_orig` is used, in
+`ggml_rope_yarn_corr_dims`. Called with zero, that function yields a non-finite correction
+bound and the native kernel simply carries it into `fmaxf(0, floor(...))` / `fminf(n_dims-1,
+ceil(...))` without complaint.
+
+So the Goose contract is stricter than the code it replaces. Removing the single `ensure` is
+not enough: the same zero would then reach `floorh`, whose own `ensure(fin(x),49)` would trap
+on the `-inf`, so the trap would move from code 27 to code 49 rather than disappear.
+
+## Two candidate fixes
+
+1. **Bound the Goose path by the contract it actually models.** Decline to the native branch
+   when `n_ctx_orig <= 0`, exactly as the GET_ROWS fix declines on a type mismatch. Smallest
+   change, no behavioural modelling of the non-finite case.
+2. **Make validation failure a fallback instead of a trap.** `fg171r_fail` would call the
+   native op rather than `GGML_ABORT`. This is the more robust design — any configuration the
+   body does not model stops being fatal — but it changes what the module's own gate asserts
+   about invalid inputs, so that gate has to be revisited rather than left as is.
+
+Option 1 is the one to do first: it is the same shape as the GET_ROWS fix, it keeps the gate
+honest, and it cannot silently change trap semantics.
+
+## Not fixed in this iteration
+
+The change needs the EXP171 object rebuilt and every inheriting stage relinked, then the RoPE
+matrix rerun and the paired Apex protocol repeated. Started and stopped cleanly instead of
+half-applied.
+
+Note also that this is the second module found this way, which says the pattern is systematic:
+each stage's gate was written against the Apex profile, so "covered" means "covered for the
+profile". The next step after this fix is to run the full matrix and fix the modules it names,
+rather than assuming RoPE is the last.
