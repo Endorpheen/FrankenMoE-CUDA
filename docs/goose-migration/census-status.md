@@ -11,7 +11,7 @@ builds.
 |---|---|---|
 | `rms_norm_f32` | EXP168 | in the CUDA DSO |
 | `ggml_cuda_gated_delta_net_mma::gdn_single` | EXP172 | witness in Apex log |
-| `flash_attn_ext_vec`, `flash_attn_ext_f16` | EXP173 | witness in Apex log |
+| `flash_attn_ext_vec`, `flash_attn_ext_f16` | EXP173 | witness `FG175FA_CUDA host=0xf`, four paths |
 | `unary_gated_op_kernel` (SiLU/gated) | EXP166 | witness in Apex log |
 | `concat_non_cont` | EXP175 | +1.03% paired |
 | `k_get_rows_float_vec` | EXP176 | byte-exact |
@@ -119,3 +119,42 @@ problem.
 
 Rule now enforced in code, not just in the write-ups: a rejected experiment is never
 default-on.
+
+## Verified kernel-by-kernel against a live run
+
+Every census kernel was matched to its witness in one Apex log rather than assumed:
+
+| kernel | instances | state |
+|---|---:|---|
+| mul_mat_vec_q | 18 | covered (Q4_K accepted; Q6_K byte-exact but rejected, opt-in) |
+| mul_mat_q | 8 | blocked: codegen |
+| flash_attn_ext_vec | 6 | covered, `FG175FA host=0xf` |
+| flash_attn_ext_f16 | 5 | covered, same witness |
+| quantize_q8_1 | 5 | covered, `FG178Q` |
+| gdn_single | 4 | covered, `FG174M`/`FG174S` |
+| concat_non_cont | 4 | covered, `FG175C` |
+| mul_mat_vec_f | 4 | covered, `FG184M` |
+| k_get_rows_float_vec | 4 | covered, `FG176G` |
+| rms_norm_f32 | 4 | covered, `FG168` |
+| quantize_mmq_q8_1 | 3 | blocked: codegen (and rejected, opt-in) |
+| unary_gated_op_kernel | 3 | covered, `FG166` |
+| dequantize_block_q4_0 | 1 | EXP188 byte-exact, not on this path |
+| mul_mat_f | 1 | blocked: codegen |
+
+Also confirmed by direct check: the rejected EXP186 contributes no symbols to the active
+library, and the EXP188 witness is absent from the live log, both as documented.
+
+### Why the other mm_ids widths are not ported
+
+`mm_ids_helper` has eight specialisations (2/4/6/8/10/16/32/0) selected by
+`n_expert_used`. EXP181 transfers the 8-wide one because that is what this model
+instantiates; the others cannot execute in this profile, so porting them would add code
+that no Apex run exercises. If a different model with a different expert count is ever
+targeted, the remaining widths are mechanical repeats of the same body with `slot`
+changed.
+
+### Why the Q4_0 quantizer keeps the rejected-adjacent shape
+
+The remaining unported work is behind one of two walls: the code-generation gap for the
+matmul families, or the absence of SIMD for the CPU dot products. Neither is reachable
+from this repository; both are recorded with measurements in the per-experiment notes.
