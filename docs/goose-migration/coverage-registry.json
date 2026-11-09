@@ -200,7 +200,7 @@
       "experiment": "EXP185",
       "component": "mul_mat_vec_q Q4_K",
       "tier": "ACCEPTED",
-      "readme_verdict": "REJECTED",
+      "readme_verdict": "ACCEPTED",
       "in_active_chain": true,
       "witness": "FG185Q_CUDA_MMVQ_Q4K",
       "witness_seen_in_live_log": true,
@@ -249,8 +249,6 @@
       }
     }
   ],
-  "conflicts": [
-    "EXP185: ledger says ACCEPTED, README says REJECTED"
-  ],
-  "status": "INCONSISTENT"
+  "conflicts": [],
+  "status": "CONSISTENT"
 }
