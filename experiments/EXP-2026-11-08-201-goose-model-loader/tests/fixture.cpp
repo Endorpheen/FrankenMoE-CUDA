@@ -11,6 +11,8 @@
 #include <signal.h>
 #include <random>
 #include <vector>
+#include <algorithm>
+#include <utility>
 
 extern "C" {
 int64_t fg201l_nelements(uint64_t, int64_t);
@@ -22,6 +24,8 @@ int64_t fg201l_is_array_kv(int64_t, int64_t);
 int64_t fg201l_arr_length_ok(int64_t, int64_t);
 int64_t fg201l_use_mmap_mode(int64_t);
 int64_t fg201l_use_direct_io_mode(int64_t);
+int64_t fg201l_merge_ranges(uint64_t, int64_t, uint64_t, int64_t);
+int64_t fg201l_sub_ranges(uint64_t, int64_t, uint64_t, int64_t, uint64_t, int64_t);
 }
 
 static int checks, failures;
@@ -134,6 +138,67 @@ int main(void) {
         const bool ref_dio  = (lm == 4);
         ck((fg201l_use_mmap_mode(lm) != 0) == ref_mmap, "use_mmap", lm, ref_mmap);
         ck((fg201l_use_direct_io_mode(lm) != 0) == ref_dio, "use_direct_io", lm, ref_dio);
+    }
+
+    // merge_ranges / sub_ranges against std::algorithm transcriptions.
+    for (int t = 0; t < 200; ++t) {
+        const int n = 1 + (int)(rng() % 8);
+        std::vector<std::pair<int64_t,int64_t>> rs;
+        int64_t cur = 0;
+        for (int i = 0; i < n; ++i) {
+            const int64_t len = (int64_t)(rng() % 20) + 1;
+            const int64_t gap = (int64_t)(rng() % 10);
+            rs.push_back({cur + gap, cur + gap + len});
+            cur = cur + gap + len;
+        }
+        std::vector<int64_t> src; for (auto & p : rs) { src.push_back(p.first); src.push_back(p.second); }
+
+        // native merge
+        std::vector<std::pair<int64_t,int64_t>> merged;
+        for (auto & r : rs) {
+            if (!merged.empty() && r.first <= merged.back().second)
+                merged.back().second = std::max(merged.back().second, r.second);
+            else merged.push_back(r);
+        }
+        std::vector<int64_t> dst(64, 0);
+        const int64_t k = fg201l_merge_ranges((uint64_t)(uintptr_t)src.data(), n,
+                                              (uint64_t)(uintptr_t)dst.data(), 32);
+        ck(k == (int64_t)merged.size(), "merge count", k, (int64_t)merged.size());
+        for (size_t i = 0; i < merged.size() && (int64_t)i < k; ++i) {
+            ck(dst[i*2] == merged[i].first && dst[i*2+1] == merged[i].second, "merge pair", 0, 0);
+        }
+
+        // sub_ranges with a random sub-cover
+        std::vector<std::pair<int64_t,int64_t>> subs;
+        if (n > 0 && (rng() % 2)) {
+            const int ns2 = 1 + (int)(rng() % 3);
+            for (int i = 0; i < ns2; ++i) {
+                const int64_t a = (int64_t)(rng() % (unsigned)(cur + 1));
+                const int64_t b = a + (int64_t)(rng() % 20);
+                subs.push_back({a, b});
+            }
+            std::sort(subs.begin(), subs.end());
+        }
+        std::vector<int64_t> subv; for (auto & p : subs) { subv.push_back(p.first); subv.push_back(p.second); }
+
+        std::vector<std::pair<int64_t,int64_t>> subres;
+        for (auto & x : rs) {
+            int64_t c = x.first;
+            for (auto & y : subs) {
+                if (y.second <= c || y.first >= x.second) continue;
+                if (y.first > c) subres.push_back({c, y.first});
+                c = std::max(c, y.second);
+            }
+            if (c < x.second) subres.push_back({c, x.second});
+        }
+        std::vector<int64_t> d2(64, 0);
+        const int64_t k2 = fg201l_sub_ranges((uint64_t)(uintptr_t)src.data(), n,
+                                             (uint64_t)(uintptr_t)subv.empty() ? 0 : (uint64_t)(uintptr_t)subv.data(),
+                                             (int64_t)subs.size(), (uint64_t)(uintptr_t)d2.data(), 32);
+        ck(k2 == (int64_t)subres.size(), "sub count", k2, (int64_t)subres.size());
+        for (size_t i = 0; i < subres.size() && (int64_t)i < k2; ++i) {
+            ck(d2[i*2] == subres[i].first && d2[i*2+1] == subres[i].second, "sub pair", 0, 0);
+        }
     }
 
     run_trap("nelements n out of range", 10, trap_nreq_oor);

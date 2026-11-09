@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdatomic.h>
 
-static _Atomic unsigned long long g_shape, g_native, g_mode, g_key;
+static _Atomic unsigned long long g_shape, g_native, g_mode, g_key, g_merge, g_sub;
 
 __attribute__((destructor)) static void fg201l_report(void) {
     if (!atomic_load(&g_shape) && !atomic_load(&g_native)) return;
@@ -13,6 +13,8 @@ __attribute__((destructor)) static void fg201l_report(void) {
             atomic_load(&g_shape), atomic_load(&g_native));
     fprintf(stderr, "FG201L_KEYS load_mode=%llu or_arr=%llu\n",
             atomic_load(&g_mode), atomic_load(&g_key));
+    fprintf(stderr, "FG201L_RANGES merge=%llu sub=%llu\n",
+            atomic_load(&g_merge), atomic_load(&g_sub));
 }
 
 static void g_fail(int64_t c) {
@@ -42,6 +44,20 @@ int64_t fg201l_is_array_kv(int64_t kv_type, int64_t array_type) { return gg_func
 int64_t fg201l_arr_length_ok(int64_t n, int64_t length) { return gg_function_9(n, length, 0); }
 int64_t fg201l_use_mmap_mode(int64_t load_mode) { atomic_fetch_add(&g_mode, 1); return gg_function_10(load_mode, 0); }
 int64_t fg201l_use_direct_io_mode(int64_t load_mode) { return gg_function_11(load_mode, 0); }
+int64_t fg201l_merge_touches(int64_t a, int64_t b) { return gg_function_12(a, b, 0); }
+int64_t fg201l_merged_last(int64_t a, int64_t b) { return gg_function_13(a, b, 0); }
+int64_t fg201l_sub_skip(int64_t a, int64_t b, int64_t c, int64_t d) { return gg_function_14(a, b, c, d, 0); }
+int64_t fg201l_sub_emit_gap(int64_t a, int64_t b) { return gg_function_15(a, b, 0); }
+int64_t fg201l_sub_advance(int64_t a, int64_t b) { return gg_function_16(a, b, 0); }
+int64_t fg201l_sub_emit_tail(int64_t a, int64_t b) { return gg_function_17(a, b, 0); }
+int64_t fg201l_merge_ranges(uint64_t src, int64_t n, uint64_t dst, int64_t cap) {
+    atomic_fetch_add(&g_merge, 1);
+    return gg_function_18(src, n, dst, cap, 0);
+}
+int64_t fg201l_sub_ranges(uint64_t a, int64_t na, uint64_t sub, int64_t ns, uint64_t dst, int64_t cap) {
+    atomic_fetch_add(&g_sub, 1);
+    return gg_function_23(a, na, sub, ns, dst, cap, 0);
+}
 int64_t fg201l_shape_ok(int64_t allow_reshape, uint64_t desc, int64_t nreq, int64_t total,
                         int64_t r0, int64_t r1, int64_t r2, int64_t r3) {
     return gg_function_6(allow_reshape, desc, nreq, total, r0, r1, r2, r3, 0);

@@ -16,6 +16,12 @@ native.
 | `arr_length_ok` | line 479 | array length must equal the request |
 | `use_mmap_mode` | line 558 | `MMAP \|\| MMAP_MLOCK \|\| AUTO` |
 | `use_direct_io_mode` | line 559 | `== DIRECT_IO` |
+| `merge_ranges` | lines 1455-1471 | sort/merge covers into a non-overlapping list |
+| `sub_ranges` | lines 1476-1495 | subtract one cover from another |
+
+`merge_ranges` and `sub_ranges` are the full algorithms, not just their predicates: Goose walks
+the pair arrays and writes the result; the caller owns both buffers. The native sort stays in C++
+because Goose has no ordering pass, and that is stated rather than worked around.
 
 `shape_ok` is routed into `llama-model-loader.cpp`.
 
@@ -34,6 +40,7 @@ inline its constants as literals.**
 
     FG201L_MODEL_LOADER shape_checks=753 direct=0
     FG201L_KEYS load_mode=1 or_arr=6
+    FG201L_RANGES merge=2 sub=1
     tokens and all 128 top-5 probabilities equal, 2538.40 / 25.68
 
 753 tensors validated through Goose in one model load, `direct=0` -- the switch never fell back.
@@ -41,7 +48,8 @@ This is the same check whose earlier native path produced
 `blk.1.attn_qkv.weight has wrong shape` when `is_recr` was wrong, so it is a live, load-bearing
 decision rather than a formality.
 
-Gate: 1205 checks / 0 failures.
+Gate: 5001 checks / 0 failures, including `merge_ranges` and `sub_ranges` compared pair-by-pair
+against `std::algorithm` transcriptions over 200 randomised cover sets.
 
 ## Switch
 

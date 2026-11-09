@@ -22,6 +22,8 @@ extern "C" int64_t fg201l_arr_length_ok(int64_t n, int64_t length);
 extern "C" int64_t fg201l_use_mmap_mode(int64_t load_mode);
 extern "C" int64_t fg201l_use_direct_io_mode(int64_t load_mode);
 extern "C" int fg201l_enabled(void);
+extern "C" int64_t fg201l_merge_ranges(uint64_t src, int64_t n, uint64_t dst, int64_t cap);
+extern "C" int64_t fg201l_sub_ranges(uint64_t a, int64_t na, uint64_t sub, int64_t ns, uint64_t dst, int64_t cap);
 
 static const size_t kiB = 1024;
 static const size_t MiB = 1024*kiB;
@@ -1480,6 +1482,18 @@ using mapping_ranges = std::vector<llama_model_loader::mapping_range>;
 static mapping_ranges merge_ranges(mapping_ranges ranges) {
     std::sort(ranges.begin(), ranges.end(), [](const auto & a, const auto & b) { return a.first < b.first; });
 
+    if (fg201l_enabled() && !ranges.empty()) {
+        // Goose merges the sorted ranges; the sort stays here because Goose has no ordering pass.
+        std::vector<int64_t> src, dst((size_t)ranges.size() * 2, 0);
+        src.reserve(ranges.size() * 2);
+        for (const auto & r : ranges) { src.push_back((int64_t)r.first); src.push_back((int64_t)r.last); }
+        const int64_t k = fg201l_merge_ranges((uint64_t)(uintptr_t)src.data(), (int64_t)ranges.size(),
+                                              (uint64_t)(uintptr_t)dst.data(), (int64_t)ranges.size());
+        mapping_ranges out;
+        for (int64_t i = 0; i < k; ++i) out.push_back({(size_t)dst[i*2], (size_t)dst[i*2+1]});
+        return out;
+    }
+
     mapping_ranges res;
     for (const auto & range : ranges) {
         if (!res.empty() && range.first <= res.back().last) {
@@ -1494,6 +1508,22 @@ static mapping_ranges merge_ranges(mapping_ranges ranges) {
 
 // subtract the sorted, non-overlapping ranges 'sub' from 'a'
 static mapping_ranges sub_ranges(const mapping_ranges & a, const mapping_ranges & sub) {
+    if (fg201l_enabled() && !a.empty()) {
+        // Goose subtracts the covers; capacity bounds the result at all of a's endpoints.
+        std::vector<int64_t> av, sv, dv;
+        for (const auto & r : a)   { av.push_back((int64_t)r.first); av.push_back((int64_t)r.last); }
+        for (const auto & r : sub) { sv.push_back((int64_t)r.first); sv.push_back((int64_t)r.last); }
+        dv.assign((a.size() + sub.size() + 1) * 2, 0);
+        const int64_t k = fg201l_sub_ranges((uint64_t)(uintptr_t)av.data(), (int64_t)a.size(),
+                                            sv.empty() ? 0 : (uint64_t)(uintptr_t)sv.data(),
+                                            (int64_t)sub.size(),
+                                            (uint64_t)(uintptr_t)dv.data(),
+                                            (int64_t)(a.size() + sub.size() + 1));
+        mapping_ranges out;
+        for (int64_t i = 0; i < k; ++i) out.push_back({(size_t)dv[i*2], (size_t)dv[i*2+1]});
+        return out;
+    }
+
     mapping_ranges res;
 
     for (const auto & x : a) {

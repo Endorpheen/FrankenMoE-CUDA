@@ -92,6 +92,124 @@ fn use_direct_io_mode(load_mode:i64)->i64{
  return 0 as i64;
 }
 
+
+// mmap range arithmetic, from llama-model-loader.cpp:1455-1508.
+//
+// merge_ranges produces a sorted, non-overlapping cover; sub_ranges subtracts one cover from
+// another. Both are pure integer interval logic, and an error there means a mapped range that is
+// wrong by a byte -- which shows up as a corrupted weight rather than a clear failure.
+
+// merge_touches: line 1462, `range.first <= res.back().last` -- merge into the previous range.
+// Ranges are half-open [first, last), and the comparison is `<=`, so adjacent ranges merge.
+fn merge_touches(prev_last:i64,cur_first:i64)->i64{
+ ensure(prev_last>=0&&cur_first>=0,50);
+ if cur_first<=prev_last{return 1 as i64;}
+ return 0 as i64;
+}
+
+// merged_last: line 1463, `max(prev.last, cur.last)`.
+fn merged_last(prev_last:i64,cur_last:i64)->i64{
+ if prev_last>cur_last{return prev_last;}
+ return cur_last;
+}
+
+// sub_skip: line 1481, `y.last <= cur || y.first >= x.last` -- this subtraction does not apply.
+fn sub_skip(y_first:i64,y_last:i64,cur:i64,x_last:i64)->i64{
+ ensure(y_first>=0&&y_last>=0&&cur>=0&&x_last>=0,51);
+ if y_last<=cur{return 1 as i64;}
+ if y_first>=x_last{return 1 as i64;}
+ return 0 as i64;
+}
+
+// sub_emit_gap: line 1484, `y.first > cur` -- emit [cur, y.first) before advancing.
+fn sub_emit_gap(cur:i64,y_first:i64)->i64{
+ if y_first>cur{return 1 as i64;}
+ return 0 as i64;
+}
+
+// sub_advance: line 1486, `cur = max(cur, y.last)`.
+fn sub_advance(cur:i64,y_last:i64)->i64{
+ if cur>y_last{return cur;}
+ return y_last;
+}
+
+// sub_emit_tail: line 1489, `cur < x.last` -- the remainder of the range survives.
+fn sub_emit_tail(cur:i64,x_last:i64)->i64{
+ if cur<x_last{return 1 as i64;}
+ return 0 as i64;
+}
+
+
+// Full interval algorithms over flat arrays of (first,last) int64 pairs.
+//   src: n pairs, assumed sorted by first (the caller sorts, as native does)
+//   dst: capacity-cap pairs; the return value is the number of pairs written.
+// The caller owns both buffers, so no allocation happens in Goose.
+
+fn st_pair(dst:u64,k:i64,a:i64,b:i64){
+ st_i64(dst,k*16 as i64,a);
+ st_i64(dst,k*16 as i64+8 as i64,b);
+}
+fn ld_first(src:u64,k:i64)->i64{return ld_ne(src,k*2 as i64);}
+fn ld_last(src:u64,k:i64)->i64{return ld_ne(src,k*2 as i64+1 as i64);}
+
+// merge_ranges: llama-model-loader.cpp:1455-1471. Input already sorted by first.
+fn merge_ranges(src:u64,n:i64,dst:u64,cap:i64)->i64{
+ ensure(n>=0&&cap>=0,60);
+ var k:i64=0;
+ var i:i64=0;
+ while i<n{
+  let f:i64=ld_first(src,i);
+  let l:i64=ld_last(src,i);
+  ensure(f<=l,61);
+  if k>0 as i64{
+   let pl:i64=ld_last(dst,k-1 as i64);
+   if merge_touches(pl,f)!=0{
+    st_pair(dst,k-1 as i64,ld_first(dst,k-1 as i64),merged_last(pl,l));
+    i+=1;
+    continue;
+   }
+  }
+  ensure(k<cap,62);
+  st_pair(dst,k,f,l);
+  k+=1;
+  i+=1;
+ }
+ return k;
+}
+
+// sub_ranges: lines 1476-1495. Subtracts `sub` (sorted, non-overlapping) from `a`.
+fn sub_ranges(a:u64,na:i64,sub:u64,ns:i64,dst:u64,cap:i64)->i64{
+ ensure(na>=0&&ns>=0&&cap>=0,70);
+ var k:i64=0;
+ var x:i64=0;
+ while x<na{
+  let xf:i64=ld_first(a,x);
+  let xl:i64=ld_last(a,x);
+  var cur:i64=xf;
+  var y:i64=0;
+  while y<ns{
+   let yf:i64=ld_first(sub,y);
+   let yl:i64=ld_last(sub,y);
+   if sub_skip(yf,yl,cur,xl)==0 as i64{
+    if sub_emit_gap(cur,yf)!=0{
+     ensure(k<cap,71);
+     st_pair(dst,k,cur,yf);
+     k+=1;
+    }
+    cur=sub_advance(cur,yl);
+   }
+   y+=1;
+  }
+  if sub_emit_tail(cur,xl)!=0{
+   ensure(k<cap,72);
+   st_pair(dst,k,cur,xl);
+   k+=1;
+  }
+  x+=1;
+ }
+ return k;
+}
+
 fn main(){
  nelements(0 as u64,1 as i64);
  dims_ok(0 as u64,1 as i64,1 as i64,1 as i64,1 as i64,1 as i64);
@@ -101,4 +219,12 @@ fn main(){
  arr_length_ok(0 as i64,0 as i64);
  use_mmap_mode(0 as i64);
  use_direct_io_mode(0 as i64);
+ merge_touches(0 as i64,0 as i64);
+ merged_last(0 as i64,0 as i64);
+ sub_skip(0 as i64,0 as i64,0 as i64,0 as i64);
+ sub_emit_gap(0 as i64,0 as i64);
+ sub_advance(0 as i64,0 as i64);
+ sub_emit_tail(0 as i64,0 as i64);
+ merge_ranges(0 as u64,0 as i64,0 as u64,0 as i64);
+ sub_ranges(0 as u64,0 as i64,0 as u64,0 as i64,0 as u64,0 as i64);
 }
