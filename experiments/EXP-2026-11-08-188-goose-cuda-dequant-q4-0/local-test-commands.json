@@ -156,5 +156,21 @@
     ],
     "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp188/build",
     "exit_code": 0
+  },
+  {
+    "label": "dump-goose",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp188/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp188/build",
+    "exit_code": 0
+  },
+  {
+    "label": "dump-native",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp188/build/gpu-fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp188/build",
+    "exit_code": 0
   }
 ]

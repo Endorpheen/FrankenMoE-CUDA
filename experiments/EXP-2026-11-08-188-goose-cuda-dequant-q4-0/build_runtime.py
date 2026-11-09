@@ -72,8 +72,8 @@ for old,new in renames:args+=['--redefine-sym',old+'='+new]
 run('private-native-convert',args+[obj,B/'native-convert.o'])
 
 vm=(F/'experiments/EXP-2026-11-08-185-goose-cuda-mmvq-q4k/source/visibility.map').read_text()
-vm=vm.replace('local:','fg185q_cuda_host_seen; fg185q_cuda_device_read; local: fg185h_*;')
-vm=vm.replace(' *fg184m*;',' *fg184m*; *fg185q*; *fg185qs_*; *fg185qd_*;')
+vm=vm.replace('local:','fg188d_cuda_host_seen; fg188d_cuda_device_read; local: fg188h_*; *fg188d_native*; *fg188dd_*; *fg188hs_*;')
+
 (S/'visibility.map').write_text(vm)
 
 link=[('-Wl,--version-script='+str(S/'visibility.map')) if x.startswith('-Wl,--version-script=') else

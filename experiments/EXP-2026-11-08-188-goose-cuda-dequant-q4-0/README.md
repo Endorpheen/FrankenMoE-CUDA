@@ -29,6 +29,12 @@ so one CTA covers 8 blocks = 256 elements.
 | compute-sanitizer memcheck | 0 errors |
 | export surface vs EXP185 | exactly the two diagnostics |
 
+A defect in my own export gate was caught by re-running it and fixed: the visibility
+map still carried EXP185's `local:` substitutions, so `fg188h_*`, the privatised
+native selector and the Goose device prefixes were all exported instead of hidden.
+Without the fix the gate reported nine added symbols; with it, exactly the two
+diagnostic readers, and the byte comparison stays at 5 of 5.
+
 Byte equality is the right criterion: the transform is `d*(q&0xF)+dm` and
 `d*(q>>4)+dm` with one rounding to half, so a tolerance would hide a wrong nibble
 order or a wrong `-8d` bias. Sizes 256/512/768/1024/4096 include a tail CTA that is
