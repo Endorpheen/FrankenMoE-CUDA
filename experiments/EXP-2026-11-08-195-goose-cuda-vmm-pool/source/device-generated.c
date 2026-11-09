@@ -534,6 +534,9 @@ static void gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, uint64
   uint64_t t69;
   int64_t t70;
   int64_t t71;
+  uint64_t t72;
+  int64_t t73;
+  int64_t t74;
   int64_t v0;
   int64_t v1;
   int64_t v2;
@@ -656,6 +659,10 @@ static void gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, uint64
   t70 = ((int64_t)(((int64_t)UINT64_C(32))));
   t71 = ((int64_t)(v6));
   fg195v_st_i64(t69, t70, t71);
+  t72 = ((uint64_t)(v4));
+  t73 = ((int64_t)(((int64_t)UINT64_C(40))));
+  t74 = ((int64_t)(v2));
+  fg195v_st_i64(t72, t73, t74);
   }
 gg_done:;
 }

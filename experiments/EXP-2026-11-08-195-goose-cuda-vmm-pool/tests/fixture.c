@@ -65,13 +65,13 @@ int main(void) {
             size_t actual_n = 0; unsigned long long reserve_n = 0; int grew_n = 0;
             nat_alloc(&n, size, gran, &actual_n, &reserve_n, &grew_n);
 
-            uint64_t out[5] = {0};
+            uint64_t out[8] = {0};
             fg195v_plan_alloc((int64_t)size, (int64_t)0, (int64_t)0, (int64_t)gran, (uint64_t)(uintptr_t)out);
             // rerun with the real pool state, since the first call above only checked the guards
             struct nat snapshot = n;
             snapshot.pool_used = n.pool_used - actual_n;   // state before this alloc
             snapshot.pool_size = n.pool_size - reserve_n;
-            uint64_t o2[5] = {0};
+            uint64_t o2[8] = {0};
             fg195v_plan_alloc((int64_t)size, (int64_t)snapshot.pool_used, (int64_t)snapshot.pool_size,
                               (int64_t)gran, (uint64_t)(uintptr_t)o2);
             ck((unsigned long long)o2[0] == reserve_n, "reserve matches native");
@@ -79,6 +79,7 @@ int main(void) {
             ck((unsigned long long)o2[2] == n.pool_size, "pool_size matches native");
             ck((unsigned long long)o2[3] == n.pool_used, "pool_used matches native");
             ck((unsigned long long)o2[4] == actual_n, "actual_size matches native");
+            ck((unsigned long long)o2[5] == snapshot.pool_size, "map offset is the pre-growth pool_size");
 
             // free immediately, exercising the reverse-order check
             int64_t got = fg195v_plan_free((int64_t)snapshot.pool_used, (int64_t)n.pool_used, (int64_t)actual_n);

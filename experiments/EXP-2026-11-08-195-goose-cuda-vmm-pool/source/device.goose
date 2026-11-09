@@ -29,6 +29,7 @@ fn ensure(v:bool,c:i64){if !v{fail(c);}}
 //   r[2] new pool_size
 //   r[3] new pool_used
 //   r[4] actual_size handed back to the caller
+//   r[5] mapping offset from pool_addr (old pool_size, where cuMemMap must map)
 fn plan_alloc(size:i64,pool_used:i64,pool_size:i64,granularity:i64,r:u64){
  ensure(size>0&&pool_used>=0&&pool_size>=pool_used&&granularity>0,10);
  let max_size:i64=(1 as i64)<<35 as i64;
@@ -53,6 +54,9 @@ fn plan_alloc(size:i64,pool_used:i64,pool_size:i64,granularity:i64,r:u64){
  st_i64(r,16,new_pool_size);
  st_i64(r,24,new_pool_used);
  st_i64(r,32,aligned);
+ // The mapping goes at the END of the pool before the growth, which is the caller's
+ // current pool_size. Returned so the caller does not re-derive it.
+ st_i64(r,40,pool_size);
 }
 
 // Release: the pool is a bump allocator, so a free only rewinds the pointer and the

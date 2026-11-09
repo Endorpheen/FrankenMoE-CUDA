@@ -1,6 +1,6 @@
 from pathlib import Path
 import os,json,time,subprocess,urllib.request,urllib.error,threading,hashlib,signal,traceback
-A=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');L=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107/results');R=A/('runtime/'+os.environ.get('FG_STAGE','exp174')+'/run');mode=os.environ.get('FG174_MEASURE_MODE','goose');assert mode in ['goose','native-rollback'];label='apex-32k128-probe195'+os.environ.get('FG_SUFFIX','')+'-'+mode;B=A/'runtime/exp195/results'/label;T=A/'runtime/exp195/measured'/label/'run';B.mkdir(parents=True,exist_ok=True);T.mkdir(parents=True,exist_ok=True)
+A=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');L=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107/results');R=A/('runtime/'+os.environ.get('FG_STAGE','exp174')+'/run');mode=os.environ.get('FG174_MEASURE_MODE','goose');assert mode in ['goose','native-rollback'];label='apex-32k128-vmmpool'+os.environ.get('FG_SUFFIX','')+'-'+mode;B=A/'runtime/exp195/results'/label;T=A/'runtime/exp195/measured'/label/'run';B.mkdir(parents=True,exist_ok=True);T.mkdir(parents=True,exist_ok=True)
 if (B/'process.json').exists():raise SystemExit('Existing diagnostic receipt;inspect before rerunning')
 for f in R.iterdir():
  if f.is_file() or f.is_symlink():
@@ -21,10 +21,10 @@ saved_env=json.loads(Path('/home/end0/AI/LlamaServer/franken-goose-exp150-expert
 removed=[p for p in env.get('LD_PRELOAD','').split() if Path(p).name in ['libfranken-goose-silu.so','libfranken-goose-scale.so','libfranken-goose-rms-block.so']]
 assert len(removed)==3
 preserved=[p for p in env['LD_PRELOAD'].split() if p not in removed];assert not preserved
-env['LD_PRELOAD']=' '.join([x for x in preserved if x]+[str(A/'runtime/exp195/build/libfg195probe.so')]);(B/'preload-transition.json').write_text(json.dumps(dict(superseded=removed,preserved=preserved,reason='SiLU/scale inherited from EXP166;RMS inherited from EXP168 in the CUDA DSO;all superseded preloads removed only here'),indent=2)+'\n');env['GGML_EXPERT_HOTSTORE']='0';env['LD_LIBRARY_PATH']=str(T)
+env['LD_PRELOAD']=' '.join(preserved);(B/'preload-transition.json').write_text(json.dumps(dict(superseded=removed,preserved=preserved,reason='SiLU/scale inherited from EXP166;RMS inherited from EXP168 in the CUDA DSO;all superseded preloads removed only here'),indent=2)+'\n');env['GGML_EXPERT_HOTSTORE']='0';env['LD_LIBRARY_PATH']=str(T)
 (B/'environment.json').write_text(json.dumps({k:v for k,v in env.items() if k.startswith(('GGML_GOOSE_','GGML_EXPERT_')) or k=='LD_LIBRARY_PATH'},indent=2)+'\n')
 env.pop('GGML_GOOSE_CUDA_FA',None)
-if mode=='native-rollback':env['GGML_GOOSE_CUDA_MMVQ_Q4K']='0'
+if mode=='native-rollback':env['GGML_GOOSE_CUDA_VMM_POOL']='0'
 env.pop('GGML_GOOSE_CUDA_SET_ROWS',None)
 (B/'environment.json').write_text(json.dumps({k:v for k,v in env.items() if k.startswith(('GGML_GOOSE_','GGML_EXPERT_')) or k=='LD_LIBRARY_PATH'},indent=2)+'\n')
 (B/'setrows-control-mode.json').write_text(json.dumps(dict(mode=mode,same_cuda_library_sha256=libs['libggml-cuda.so']['sha256'],pair='stage='+os.environ.get('FG_STAGE','exp176')+' same DSO switch: mul_mat_vec_q Q4_K only'),indent=2)+'\n')
