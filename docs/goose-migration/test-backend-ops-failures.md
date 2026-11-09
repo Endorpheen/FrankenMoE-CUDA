@@ -236,8 +236,20 @@ produces the same bytes as the native one for every shape reproduced so far.
 That also retires the `m=4` anomaly: it came from the host oracle dividing by a sum close to
 zero, not from the kernel. The byte comparison is the right instrument and the oracle was not.
 
-What the fixture still does not cover is the combination the harness actually fails on: its
-cases have `bs=[3,2]`, so `ne2 = 3` *and* `ne3 = 2` at once. Every case here has either a
-channel dimension or a sample dimension, never both non-unit. When the predicate bound
-`ne3 == 1` was added, those became native and passed; that is consistent with a defect that
-needs both dimensions, and it is the next case to add to the fixture.
+The missing combination was then added — `ne2 = 3` *and* `ne3 = 2` together, which is the
+harness's `bs=[3,2]` — in contiguous, padded and overlapping layouts:
+
+    SAME n256-r16-c3-s2.bin
+    SAME n256-r16-c3-s2-pad.bin
+    SAME n256-r16-c3-s2-ovl.bin
+
+All three bit-identical to native. So the kernel is correct for every layout that can be
+constructed here, and the harness failure is therefore **not** in the matvec body.
+
+That changes what the `ne3 == 1` bound means. It is not bounding a kernel that gets the answer
+wrong — the kernel gets it right. It is bounding a case where something else differs, and the
+bound makes the difference disappear, which is itself a clue: it sits in what the two routes
+do *around* the kernel, not inside it. The next instrument is a per-case trace of which
+function the harness's failing shapes actually enter, rather than more fixture variants.
+
+Recorded as an open question with the evidence on both sides, not as a diagnosis.

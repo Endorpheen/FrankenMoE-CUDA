@@ -44,6 +44,10 @@ static const Case CASES[] = {
     {  256,    4, 1, 2, 1, 0, "n256-r4-s2-pad"  },
     // Exactly how the harness builds it: one base allocation, both sources are views into
     // it at offsets 0 and k*type_size, so they overlap.
+    // The harness's bs=[3,2]: channels and samples both greater than one.
+    {  256,   16, 3, 2, 1, 1, "n256-r16-c3-s2-ovl" },
+    {  256,   16, 3, 2, 1, 0, "n256-r16-c3-s2-pad" },
+    {  256,   16, 3, 2, 0, 0, "n256-r16-c3-s2"     },
     {  256,   16, 1, 2, 1, 1, "n256-r16-s2-ovl" },
     {  256,    4, 1, 2, 1, 1, "n256-r4-s2-ovl"  },
 };
