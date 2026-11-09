@@ -109,3 +109,22 @@ Note also that this is the second module found this way, which says the pattern 
 each stage's gate was written against the Apex profile, so "covered" means "covered for the
 profile". The next step after this fix is to run the full matrix and fix the modules it names,
 rather than assuming RoPE is the last.
+
+## Apex after the fix
+
+The gate must not bypass the configuration Apex actually uses, so the witness was re-read
+rather than assumed:
+
+    FG171R_CUDA_ROPE host=0x1,cuda_status=0,modes=0x8,variants=0x50
+
+Identical to before the change, so RoPE is still Goose on the profile.
+
+One run taken while `chrome`, `python3.14` and `gnome-shell` were each holding 35-45% CPU read
+2195 prefill, which would look like a 15% regression against the 2578 recorded earlier. It is
+not: a back-to-back pair under one load average gives
+
+    native 2549.14 / 25.90
+    Goose  2576.54 / 27.28      prefill +1.07%, decode +5.33%
+
+with identical output `e68df05b`. The low absolute figure belongs to the machine, not the
+change, and the pair is what the comparison has to rest on.
