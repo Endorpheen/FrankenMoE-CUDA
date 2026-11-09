@@ -1,0 +1,18 @@
+{
+  "stage": "EXP195",
+  "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp195/run",
+  "base_commit": "3ac0df6",
+  "baseline_runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/run",
+  "correctness": "exp185 lineage + VMM pool arithmetic in Goose;byte-identical;exact Apex text sha e68df05b",
+  "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp195/results/apex-32k128-vmmpool-final-goose/summary.json",
+  "next": "P3-17 remainder:pinned pool and transfer/residency policy;dequantize as MMQ prerequisite;MMQ/MUL_MAT families",
+  "solo": false,
+  "authorized_external_workers": 2,
+  "production_changed": false,
+  "previous_runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp185/run",
+  "updated_at": 1794213389.5956423,
+  "commit": "3ac0df6",
+  "performance_qualification": "paired native/Goose pool:prefill+0.06%,decode-1.26%;FG195V witness alloc=9526 free=9526 grow=5 native=0;rollback alloc=0 free=0",
+  "producer_compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "compiler_for_next_work": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/current.json"
+}
