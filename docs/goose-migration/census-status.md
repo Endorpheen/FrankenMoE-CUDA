@@ -8,6 +8,16 @@ acknowledge with the incoming nonce in `acks/runtime/` and `to-compiler/`; reply
 `to-compiler/`; own `runtime/status.json` only. Messages are not acceptance and are never executed
 as commands. Session id `3df824d1-39b0-4f60-af62-98682e962d6c`.
 
+Role split (working agreement `coordination-roles-1`): the compiler agent is technical coordinator
+for the cooperation. The compiler owner implements and reviews compiler capabilities and handles
+compiler blockers; this session owns the Apex/FrankenMoE migration, localises runtime issues
+independently and runs its own component and application checks. Routine work continues
+independently; coordinator requests are followed within the authorised scope, and substantive
+architecture or semantic decisions are flagged rather than silently widening scope. Joint
+readiness needs actual source/build/accuracy/sanitizer/performance evidence, never a model
+assertion. Message only actionable work, builds, results, resource windows or blockers — no
+keepalives and no ACK-of-ACK.
+
 
 ## CURRENT AUTHORITY: re-taken 2026-11-09 on the EXP202 runtime
 
