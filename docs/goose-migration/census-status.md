@@ -64,27 +64,38 @@ gets the read-only `LDG.E.CONSTANT` path from its `__restrict__` parameters.
 Closing this needs a compiler-side change, which is out of bounds for this work.
 
 
-## The q4_0 row-dequantization seam is still unexplained
+## The q4_0 row-dequantization seam: witness was broken, the verdict was not
 
-The EXP084 profile records the *row* kernel, not the NC template, in prefill:
+The EXP084 profile records the *row* kernel, not the NC template:
 
     void dequantize_block_q4_0<__half>(const void *, T1 *, int)   count=20   summed_ns=1915413
 
-That signature is the three-argument form launched by `dequantize_row_q4_0_cuda`, which is
-the selector EXP188 ported, so the earlier note that "the NC template rather than the row
-wrapper" is reached does not match this profile.
+That is the three-argument form launched by `dequantize_row_q4_0_cuda`, the selector EXP188
+ported, so the earlier note that "the NC template rather than the row wrapper" is reached
+does not match this profile.
 
-Re-tested rather than reasoned about: EXP188's runtime was rebuilt and a full 32K/128 Apex
-run executed with `libggml-cuda-deq4-0-e83a43381d60.so` confirmed as the loaded library and
-the `FG188D_CUDA_DEQUANT_Q4_0` string confirmed present in it. The witness did not appear and
-the output was the usual `e68df05b`. So in this configuration `ggml_get_to_fp16_cuda(Q4_0)`
-is not called, yet the kernel it selects runs 20 times in the profile.
+The first re-test showed nothing, but the absence was an artefact of the witness itself:
+EXP188 reported from `std::atexit`, and a handler registered inside a shared library does not
+run once that library is unloaded. EXP195 hit the identical defect and fixed it with
+`__attribute__((destructor))`. EXP188 was rebuilt that way.
 
-Neither half is in doubt on its own: the profile is real and the live run is real. What is
-missing is the call site that reaches the kernel by another route. Candidates not yet
-checked: a per-TU static copy of the selector, `ggml_cuda_cpy` calling it internally, and a
-different cache-type configuration in the EXP084 profile. Until that is measured, EXP188
-stays off the active chain and its verdict stands as "byte-exact, seam not reached".
+With a live witness the picture is unambiguous:
+
+    FG188D_CUDA_DEQUANT_Q4_0 host=0x0,cuda_status=4,paths=0x0,guards=0
+
+`host=0x0` is the counter incremented at entry to the Goose row function, so the selector was
+never called; `cuda_status=4` is `cudaErrorInvalidValue` from reading device symbols that were
+never written, which follows. The substitution itself is correct, checked by symbol table:
+`T ggml_get_to_fp16_cuda(ggml_type)` is the Goose definition and the native body sits at
+`t fg188d_native_ggml_get_to_fp16_cuda`.
+
+So EXP188's verdict stands, now on positive evidence rather than a missing log line, and its
+witness bug is fixed. What remains unexplained is only why the EXP084 profile attributes 20
+prefill instances to that kernel: the only launcher in the tree is
+`dequantize_row_q4_0_cuda`, reached from `ggml_get_to_fp16_cuda` (three call sites: the two
+`fattn-common.cuh` conversions and the cuBLAS F16 trait), and none of them runs here. The
+profile predates this chain, so re-taking it on the current runtime is the step that would
+settle it; the earlier `nsys` attempt did not complete, as recorded below.
 
 ## Not covered
 

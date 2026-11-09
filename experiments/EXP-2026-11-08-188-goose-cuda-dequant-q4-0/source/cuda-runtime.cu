@@ -49,7 +49,7 @@ extern "C" int fg188d_cuda_device_read(uint64_t*out){
  auto e=cudaMemcpyFromSymbol(out,fg188d_paths,sizeof(uint64_t));if(e!=cudaSuccess)return e;
  return cudaMemcpyFromSymbol(out+1,fg188d_guards,sizeof(uint64_t));
 }
-static void fg188d_report(){
+__attribute__((destructor)) static void fg188d_report(){
  uint64_t x[2]={};int e=fg188d_cuda_device_read(x);
  fprintf(stderr,"FG188D_CUDA_DEQUANT_Q4_0 host=0x%llx,cuda_status=%d,paths=0x%llx,guards=%llu\n",
   (unsigned long long)fg188d_cuda_host_seen(),e,(unsigned long long)x[0],(unsigned long long)x[1]);
@@ -57,7 +57,6 @@ static void fg188d_report(){
 
 // The Goose row dequantizer: same signature as the native F16 selector target.
 static void fg188d_row(const void * vx, half * y, const int64_t k, cudaStream_t stream){
- static std::once_flag once;std::call_once(once,[]{std::atexit(fg188d_report);});
  if(k<=0||k%32!=0){
   fg188d_host_seen.fetch_or(32ULL,std::memory_order_relaxed);
   return;
