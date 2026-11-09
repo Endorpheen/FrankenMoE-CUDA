@@ -339,3 +339,42 @@ padding, overlap, broadcast — has been ruled out by byte comparison. What rema
 property of the tensors but of the harness's execution path: which entry point the failing
 cases reach, and what that entry point does before and after the kernel. That needs a per-case
 trace inside the backend, not another fixture variant, and it is where the next attempt starts.
+
+## Per-case trace: it is our defect, and the fixture still misses it
+
+Removed the `ne3 == 1` bound, rebuilt EXP184/185, relinked, and ran one case by its exact
+string:
+
+    MUL_MAT(type_a=f32,type_b=f32,m=16,n=1,k=256,bs=[1,1],nr=[1,2],per=[0,1,2,3],
+            k_v=0,o=1,src_overlap=0,m_v=0,pad=0)
+
+    Goose arm:  0/1 tests passed, ERR = 1.03, witness FG184M host=0x1,paths=0x1
+    native arm: 1/1 tests passed                              (GGML_GOOSE_CUDA_MMVF=0)
+
+So the trace settles the ownership question the earlier bad measurement had muddied: the Goose
+path launches, and it produces a wrong result where the native path on the same case is correct.
+`paths=0x1` rules out the decline route.
+
+It also settles the fixture question in the negative. Twenty-one fixture configurations are
+byte-identical to native, including this shape, this stride layout, sample broadcast, padding
+and overlap — and the harness still disagrees. Therefore some property of the harness case is
+still not reproduced, and the fixture's "SAME" results cannot be used to clear the module.
+
+The bound was restored and the suite re-verified at 0 `MUL_MAT` failures.
+
+### What the fixture is missing
+
+Everything expressible as a tensor property has been matched: `ne`, `nb[0..3]`, offsets
+(including the overlapping one), and the broadcast. What has not been matched is the harness's
+per-case environment around the call. Two candidates remain and both are cheap to test:
+
+1. **The `ids` argument.** The fixture passes `nullptr`. If the harness reaches this entry point
+   with a non-null `ids` — for instance through a fusion route — the body takes the ids branch,
+   which is a different code path with different strides, and the eligibility predicate would
+   not stop it (`(!ids||dst->ne[2]==1)` holds either way when `ne[2] == 1`).
+2. **`fusion != nullptr`.** The predicate only rejects fusions whose gate/bias pointers are set;
+   a fusion struct with those null but with other fields populated would still be admitted.
+
+The single-case run above is the instrument: it prints the witness for exactly one test, so
+adding a field to the witness that reports `ids != nullptr` and `fusion != nullptr` for that
+call would answer it in one build instead of another fixture variant.
