@@ -77,3 +77,36 @@ barrier and remains native.
 The quantized dot-product families (`q4_K`, `q6_K` and the rest), which are SIMD on this
 host, and the non-OpenMP expert work distribution. Both need either SIMD in Goose or a
 different execution strategy, and neither is available from this side.
+
+
+## Duplicate of work already done in EXP148
+
+This module transfers `quantize_row_q8_K_ref`, reachable through the `quantize_row_q8_K`
+trampoline. Apex does not call the trampoline, and the reason is that the function it
+dispatches to has already been replaced.
+
+EXP148 (`EXP-2026-11-07-148-goose-cpu-quant-batch`) installs Goose implementations into the
+CPU type-trait table for ten formats. Its `source/quant/unit.c:43` defines
+
+    void fg148_row_q8_K(const float*x,void*y,int64_t n){ if(!enabled||!fg148_encode(9,x,y,n)) quantize_row_q8_K(x,y,n); }
+
+with `kind=9` at width 256 and stride 292 — exactly Q8_K — and the Apex log carries its
+witness:
+
+    FG148_QUANT kind=9 calls=456800 values=172640
+
+So Q8_K activation quantization has been running in Goose for this whole migration, and this
+module reimplements it on a path nothing takes. The LD_PRELOAD probe confirmed the negative
+directly: loaded into a real Apex run, its `quantize_row_q8_K_ref` wrapper never fired, while
+the same probe shape worked in a standalone DSO test.
+
+Two lessons, both already learned the hard way once in this project:
+
+1. **Read the executed implementation, not the first match by name.** The Q4_0 case (EXP188)
+   had the same shape: the dequantization on the path lives in the attention kernel, not in
+   `convert.cu`.
+2. **Check the type-trait table before porting a `from_float`.** If a Goose function already
+   occupies the slot, the native one is unreachable and a transfer of it proves nothing.
+
+This directory is kept as a record and its build script still runs, but it is not part of the
+migration.
