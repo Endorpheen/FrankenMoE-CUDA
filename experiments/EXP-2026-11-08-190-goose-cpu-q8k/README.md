@@ -47,9 +47,26 @@ int16 group sums — must match exactly.
 The fixture caught the second only because the byte comparison covers the quant bytes
 and not just the block delta.
 
+## Apex execution check: negative, and why
+
+An LD_PRELOAD shim was built (`source/preload.c`) that overrides
+`quantize_row_q8_K_ref` -- the symbol `quantize_row_q8_K` jumps to through the PLT -- and
+the shim was verified against the fixture first: with it loaded, two calls went to the
+Goose module, zero to native, and the output stayed byte-identical.
+
+It was then loaded into a real Apex run. The output was exact (`e68df05b`) but the
+witness never fired: `FG190Q_CPU_Q8K` is absent, so the function is not reached on this
+profile. `objdump` on the built library finds no call site to `quantize_row_q8_K` at all;
+it is registered in the type table but nothing on this path selects it, because the CPU
+MoE graph reaches the expert matmul (op=100) and the dense matmul (op=40) directly, which
+the EXP143 Goose modules already cover.
+
+So this transfer is byte-exact and reproducible, but like EXP182 and EXP188 it is not
+exercised by the Apex profile. Recorded rather than presented as an active improvement.
+
 ## What this does and does not claim
 
-This is a real transfer of executed CPU code, verified byte-exactly. It makes no
+This is a real transfer of the algorithm, verified byte-exactly. It makes no
 performance claim: the function is a small part of CPU MoE node time next to the AVX2
 dot products, and no Apex pair was run for it. The dominant CPU cost —
 38,226 Q4_K dot calls at 176.79 us mean CPU-node time per EXP133 — is behind the SIMD
