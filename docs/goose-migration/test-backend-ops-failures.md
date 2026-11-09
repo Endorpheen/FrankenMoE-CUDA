@@ -518,3 +518,36 @@ The previous section concluded that the native capture was unreliable and that G
 computed correctly. The first half stands — the native dump does not match its own inputs and is
 unusable. The second half was wrong: sorting by sample shows a real defect in sample 1, which the
 all-elements-differ view had hidden behind the bad reference.
+
+## Root cause found: the body has no sample_ratio
+
+`mmvf.cu:43` in the native kernel is
+
+    const int sample_x = fastdiv((uint32_t) sample_dst, sample_ratio);
+
+with `sample_ratio = init_fastdiv_values(nsamples_dst / nsamples_x)` (`mmvf.cu:434`). The Goose
+body in `device.goose` has
+
+    var sample_x:i64=sample_dst;
+
+and no ratio at all. That is identical only when the source and destination carry the same
+number of samples. The harness case has one source sample and two destination samples, so native
+computes `sample_dst / 2` (both columns read sample 0 of the source) while Goose reads
+`sample_dst` (sample 1 reads past the end of a 16-row source). That is exactly the measured
+signature: sample 0 exact to 1e-6, sample 1 wrong by 87.5, and no shifted or wrapped offset in
+the same buffers matching it.
+
+The predicate is now the precise condition rather than the earlier blunt bound:
+
+    ne13 == ne3 && src0->ne[3] == dst->ne[3]
+
+instead of `ne13 == ne3 && ne3 == 1`. That admits every shape whose sample counts agree — which
+includes `ne3 == 2` when both sides have two — and declines the broadcast case where they do not.
+
+    -o MUL_MAT   ->  0 failures
+    Apex witness ->  FG184M and FG185Q both still paths=0x1, output e68df05b
+
+So the earlier bound was hiding a real defect, and the defect is now identified rather than
+masked. Implementing `sample_ratio` in the body would be the fuller fix and is recorded as the
+next step; it needs the ratio as a new packet field and a divide per element, which is why it is
+not done in the same pass as the diagnosis.

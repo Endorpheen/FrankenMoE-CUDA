@@ -183,7 +183,10 @@ void ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
   dst->type==GGML_TYPE_F32 && (!ids||ids->type==GGML_TYPE_I32) &&
   (!ids||dst->ne[2]==1) && (ids||dst->ne[1]==1) &&
   (fusion==nullptr||(fusion->gate==nullptr&&fusion->x_bias==nullptr&&fusion->gate_bias==nullptr)) &&
-  ne13==ne3 && ne3==1 && (ne10%2==0);
+  // The body has no sample_ratio: it uses sample_dst directly, while native divides by
+  // nsamples_dst/nsamples_x. That is only the same when the source and destination have the
+  // same number of samples, so a broadcast source must go native.
+  ne13==ne3 && src0->ne[3]==dst->ne[3] && (ne10%2==0);
  p.v[6][0]=eligible?1ULL:0ULL;
  p.v[5][2]=ids?1ULL:0ULL;
  if(fg184hh_run((int64_t)(uintptr_t)&p)&&eligible){
