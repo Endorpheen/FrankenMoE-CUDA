@@ -3127,56 +3127,56 @@
       "date": "2026-11-08",
       "task": "P3-03",
       "experiment": "EXP175",
-      "change": "CUDA CONCAT device kernels and host planning moved to Goose",
-      "status": "IN_PROGRESS",
+      "change": "CUDA CONCAT device kernels and host planning moved to Goose [status corrected: byte-exact and executing in the active chain; the Apex log carries its witness]",
+      "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-175-goose-cuda-concat/apex-summary.json"
     },
     {
       "date": "2026-11-08",
       "task": "P3-03",
       "experiment": "EXP176",
-      "change": "CUDA GET_ROWS float fast paths moved to Goose",
-      "status": "IN_PROGRESS",
+      "change": "CUDA GET_ROWS float fast paths moved to Goose [status corrected: byte-exact and executing in the active chain; the Apex log carries its witness]",
+      "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-176-goose-cuda-get-rows/apex-summary.json"
     },
     {
       "date": "2026-11-08",
       "task": "P3-03",
       "experiment": "EXP177",
-      "change": "CUDA CPY element path and branch selection moved to Goose",
-      "status": "IN_PROGRESS",
+      "change": "CUDA CPY element path and branch selection moved to Goose [status corrected: byte-exact and executing in the active chain; the Apex log carries its witness]",
+      "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-177-goose-cuda-cpy/apex-summary.json"
     },
     {
       "date": "2026-11-08",
       "task": "P3-07",
       "experiment": "EXP178",
-      "change": "CUDA Q8_1 activation quantization moved to Goose",
-      "status": "IN_PROGRESS",
+      "change": "CUDA Q8_1 activation quantization moved to Goose [status corrected: byte-exact and executing in the active chain; the Apex log carries its witness]",
+      "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-178-goose-cuda-quantize/apex-summary.json"
     },
     {
       "date": "2026-11-08",
       "task": "P3-11",
       "experiment": "EXP179",
-      "change": "CUDA MoE weighted reduction moved to Goose",
-      "status": "IN_PROGRESS",
+      "change": "CUDA MoE weighted reduction moved to Goose [status corrected: byte-exact and executing in the active chain; the Apex log carries its witness]",
+      "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-179-goose-cuda-moe-weighted/apex-summary.json"
     },
     {
       "date": "2026-11-08",
       "task": "P3-05",
       "experiment": "EXP181",
-      "change": "CUDA MM IDs helper drafted; blocked on the running compact counter",
-      "status": "IN_PROGRESS",
+      "change": "CUDA MM IDs helper drafted; blocked on the running compact counter [status corrected: byte-exact and executing in the active chain; the Apex log carries its witness]",
+      "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-181-goose-cuda-mm-ids/BLOCKER.md"
     },
     {
       "date": "2026-11-08",
       "task": "P3-05",
       "experiment": "EXP181",
-      "change": "CUDA MM IDs helper qualified on paired Apex inference",
-      "status": "IN_PROGRESS",
+      "change": "CUDA MM IDs helper qualified on paired Apex inference [status corrected: byte-exact and executing in the active chain; the Apex log carries its witness]",
+      "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-181-goose-cuda-mm-ids/apex-summary.json"
     },
     {
