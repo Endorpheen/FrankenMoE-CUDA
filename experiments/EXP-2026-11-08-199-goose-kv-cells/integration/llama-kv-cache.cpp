@@ -17,6 +17,8 @@
 // Goose KV cell ownership (EXP199). GGML_GOOSE_KV_CELLS=0 restores the native sequence.
 extern "C" int fg199k_enabled(void);
 extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared);
+extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
+extern "C" int64_t fg199k_head_after(int64_t last_idx);
 
 static bool ggml_is_power_of_2(int n) {
     return (n & (n - 1)) == 0;
@@ -412,6 +414,8 @@ void llama_kv_cache::clear(bool data) {
 //   true  -> Goose handled the placement
 //   false -> the caller must run the native sequence, which is what the switch selects
 extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared);
+extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
+extern "C" int64_t fg199k_head_after(int64_t last_idx);
 // ---------------------------------------------------------------------------------------------
 
 bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
@@ -1226,7 +1230,10 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
 
         auto & cells = v_cells[seq_to_stream[s]];
 
-        if (cells.seq_pos_min(s) <= seq_pos_max_rm[s]) {
+        // Goose decides whether this sequence needs purging; the scan and the seq_rm stay here.
+        const bool purge = enabled ? (fg199k_should_purge(cells.seq_pos_min(s), seq_pos_max_rm[s]) != 0)
+                                  : (cells.seq_pos_min(s) <= seq_pos_max_rm[s]);
+        if (purge) {
             LLAMA_LOG_DEBUG("%s: purging positions [%d, %d] of sequence %d from KV cache\n",
                     __func__, cells.seq_pos_min(s), seq_pos_max_rm[s], s);
 
@@ -1238,7 +1245,9 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
     for (uint32_t s = 0; s < sinfo.n_stream(); ++s) {
         auto & head = v_heads[sinfo.strm[s]];
 
-        head = sinfo.idxs[s].back() + 1;
+        // Goose owns the head advance; the store stays here.
+        head = enabled ? (uint32_t)fg199k_head_after((int64_t)sinfo.idxs[s].back())
+                       : sinfo.idxs[s].back() + 1;
     }
 }
 

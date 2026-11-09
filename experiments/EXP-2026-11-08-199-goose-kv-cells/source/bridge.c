@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdatomic.h>
 
+static _Atomic unsigned long long g_calls, g_cleared, g_native, g_purge, g_head;
+
 static void g_fail(int64_t c) {
     fprintf(stderr, "FG199K validation code %lld\n", (long long)c);
     abort();
@@ -51,11 +53,22 @@ int fg199k_enabled(void) {
     const char * f = getenv("GGML_GOOSE_KV_CELLS");
     return !(f && strcmp(f, "0") == 0);
 }
-static _Atomic unsigned long long g_calls, g_cleared, g_native;
+int64_t fg199k_should_purge_c(int64_t min_pos, int64_t max_rm) {
+    const int64_t r = gg_function_23(min_pos, max_rm, 0);
+    atomic_fetch_add(&g_purge, 1);
+    return r;
+}
+int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm) { return fg199k_should_purge_c(min_pos, max_rm); }
+int64_t fg199k_head_after(int64_t last_idx) {
+    atomic_fetch_add(&g_head, 1);
+    return gg_function_21(last_idx, 0);
+}
+
 __attribute__((destructor)) static void fg199k_report(void) {
     if (!atomic_load(&g_calls) && !atomic_load(&g_native)) return;
-    fprintf(stderr, "FG199K_KV_CELLS goose=%llu cleared=%llu native=%llu\n",
-            atomic_load(&g_calls), atomic_load(&g_cleared), atomic_load(&g_native));
+    fprintf(stderr, "FG199K_KV_CELLS goose=%llu cleared=%llu native=%llu purge=%llu head=%llu\n",
+            atomic_load(&g_calls), atomic_load(&g_cleared), atomic_load(&g_native),
+            atomic_load(&g_purge), atomic_load(&g_head));
 }
 int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared) {
     if (!enabled) { atomic_fetch_add(&g_native, 1); return 0; }

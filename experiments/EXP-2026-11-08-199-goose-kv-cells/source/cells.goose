@@ -212,6 +212,16 @@ fn plan_cell(occupied:i64,pos:i64,r:u64){
  st_i64(r,8,pos);
 }
 
+// should_purge: llama-kv-cache.cpp:1228 `cells.seq_pos_min(s) <= seq_pos_max_rm[s]`.
+// Returns 1 when the purge loop must call seq_rm for this sequence.
+fn should_purge(seq_pos_min:i64,max_rm:i64)->i64{
+ ensure(max_rm>=(0 as i64)-1 as i64,110);
+ ensure(seq_pos_min>=(0 as i64)-1 as i64,111);
+ if max_rm==(0 as i64)-1 as i64{return 0 as i64;}
+ if seq_pos_min<=max_rm{return 1 as i64;}
+ return 0 as i64;
+}
+
 // head_after_place: llama-kv-cache.cpp:1216 `head = sinfo.idxs[s].back() + 1`.
 fn head_after_place(last_idx:i64)->i64{
  ensure(last_idx>=(0 as i64)-1 as i64,90);
@@ -231,4 +241,5 @@ fn main(){
  place_cell(0 as u64,1 as i64,0 as i64,0 as i64,0 as i64,0 as u64);
  head_after_place(0 as i64);
  plan_cell(0 as i64,0 as i64,0 as u64);
+ should_purge(0 as i64,0 as i64);
 }
