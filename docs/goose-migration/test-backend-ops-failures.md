@@ -253,3 +253,35 @@ do *around* the kernel, not inside it. The next instrument is a per-case trace o
 function the harness's failing shapes actually enter, rather than more fixture variants.
 
 Recorded as an open question with the evidence on both sides, not as a diagnosis.
+
+### k=4 is also bit-identical
+
+The failing set includes `k=4`, which the fixture had not covered. Added it in the same three
+layouts:
+
+    SAME n4-r16.bin
+    SAME n4-r16-s2.bin
+    SAME n4-r16-c3-s2.bin
+
+Seventeen fixture cases now, every one byte-identical between the two arms.
+
+### What the evidence now says
+
+Three facts have to be held at once:
+
+1. The Goose matvec kernel is bit-identical to the native one in every configuration that can
+   be built here — fourteen layouts plus k=4, spanning contiguous, padded and overlapping
+   storage, with channels, samples and both together.
+2. Under the harness, disabling EXP184 alone clears **all** MUL_MAT failures, and disabling
+   EXP185 alone also clears **all** of them. If the f32 failures belonged to one module and the
+   q4_K ones to the other, each switch would clear only its own half.
+3. Adding `ne3 == 1` to both predicates also cleared all of them while leaving the Apex
+   witnesses at `paths=0x1`.
+
+Fact 2 is the odd one, and it does not fit "a body computes the wrong number". Together with
+fact 1 it points at the route around the kernel rather than the kernel, exactly as the last
+section said. The next step is to trace, for one failing case, which of the two entry points
+the harness reaches and what the other one then does — a per-case trace, not another fixture
+variant.
+
+Nothing here is concluded beyond that.

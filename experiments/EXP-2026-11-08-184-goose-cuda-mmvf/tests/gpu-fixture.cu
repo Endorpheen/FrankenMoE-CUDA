@@ -36,6 +36,9 @@ static const Case CASES[] = {
     { 4096,    8, 1, 1, 0, 0, "n4096-r8"   },
     { 8192,    5, 4, 1, 0, 0, "n8192-r5-c4" },   // extra = channel count in src1
     // One destination column with the batch on dimension 3.
+    {    4,   16, 1, 2, 0, 0, "n4-r16-s2"   },
+    {    4,   16, 3, 2, 0, 0, "n4-r16-c3-s2" },
+    {    4,   16, 1, 1, 0, 0, "n4-r16"      },
     {  256,   16, 1, 2, 0, 0, "n256-r16-s2" },
     {  256,    4, 1, 2, 0, 0, "n256-r4-s2"  },
     // Same shape, but laid out the way test-backend-ops builds it: the sources are views
