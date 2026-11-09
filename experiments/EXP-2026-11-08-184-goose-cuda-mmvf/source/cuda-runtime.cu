@@ -88,6 +88,29 @@ static void fg184m_report(){
 
 // Capture: with FG184M_CAP=<dir> every call's destination is written out, so the same harness
 // case can be run on both routes and the two outputs diffed directly instead of guessed at.
+// Inputs for the same call, so a host-side dot can say whether the body read the intended rows.
+static void fg184m_capture_in(cudaStream_t s, const ggml_tensor * a, const ggml_tensor * b, const char * route) {
+ const char * dir = getenv("FG184M_CAP");
+ if (!dir || !a || !a->data || !b || !b->data) return;
+ static std::atomic<int> seq{0};
+ const int i = seq.fetch_add(1);
+ if (i >= 64) return;
+ cudaStreamSynchronize(s);
+ struct { const char * tag; const ggml_tensor * t; } items[2] = {{"src0",a},{"src1",b}};
+ for (int k = 0; k < 2; ++k) {
+  const size_t nb = ggml_nbytes(items[k].t);
+  void * host = malloc(nb);
+  if (!host) continue;
+  if (cudaMemcpy(host, items[k].t->data, nb, cudaMemcpyDeviceToHost) == cudaSuccess) {
+   char path[640];
+   snprintf(path, sizeof path, "%s/%03d_%s_%s_%lldx%lldx%lldx%lld.bin", dir, i, route, items[k].tag,
+            (long long)items[k].t->ne[0],(long long)items[k].t->ne[1],
+            (long long)items[k].t->ne[2],(long long)items[k].t->ne[3]);
+   if (FILE * f = fopen(path, "wb")) { fwrite(host, 1, nb, f); fclose(f); }
+  }
+  free(host);
+ }
+}
 static void fg184m_capture(cudaStream_t s, const ggml_tensor * dst, const char * route) {
  const char * dir = getenv("FG184M_CAP");
  if (!dir || !dst || !dst->data) return;
@@ -165,7 +188,7 @@ void ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  p.v[5][2]=ids?1ULL:0ULL;
  if(fg184hh_run((int64_t)(uintptr_t)&p)&&eligible){
   fg184m_host_seen.fetch_or(p.launched?1ULL:16ULL,std::memory_order_relaxed);
-  fg184m_capture(p.stream,dst,"goose");
+  fg184m_capture(p.stream,dst,"goose");fg184m_capture_in(p.stream,src0,src1,"goose");
   return;
  }
  fg184m_host_seen.fetch_or(32ULL,std::memory_order_relaxed);
