@@ -162,3 +162,34 @@ everything else goes native. That took `-o MUL_MAT` to 0 failures and the full s
 It bounds the port; it does not explain the mismatch. The body's handling of `n=1` together
 with a batched fourth dimension is still unexplained, and the `ne3 == 1` bound is what keeps
 it off the results until it is.
+
+## Where the MUL_MAT mechanism is, and where it is not
+
+The bound is in place and the suite is green, so this section is only about what is known
+versus assumed, for whoever picks it up.
+
+Known from measurement:
+
+- `n=2` with `ne3=2` passes; `n=1` with `ne3=1` passes; `n=1` with `ne3=2` fails. The
+  interaction is the pair, not either value.
+- The f32 module gives a relative error around 0.95-1.6; the q4_K module gives `NaN`, which is
+  what an out-of-range read produces from quantized data rather than merely a wrong number.
+
+Known from the code:
+
+- Both modules already required `ne13 == ne3`, so the predicate admitted the shape; the body
+  believed it modelled it.
+- Launch geometry is computed in Goose: `put(p,7,0,nrows); put(p,7,1,nch); put(p,7,2,ntok)`
+  with `ntok` from `dst->ne[3]`, i.e. 2 in the failing cases.
+- The per-element body takes `sample_dst` and derives `sample_x` from it, with the non-ids
+  branch handling channel derivation through `channel_ratio` (host.goose, the block starting
+  "Without ids native derives the source channel").
+
+Not established: which of those address terms is wrong. The `NaN` on the quantized module
+points at a sample or channel offset that leaves the buffer, but that is a direction, not a
+diagnosis, and it is recorded as such.
+
+Next step that would settle it: a GPU fixture with `k=256, m=16, n=1, ne3=2` for both
+modules, comparing each output element against the native kernel and separating sample 0 from
+sample 1. If only sample 1 is wrong, the sample offset is the culprit and the channel
+arithmetic is exonerated; if both are, the column handling for `ncols_dst = 1` is.
