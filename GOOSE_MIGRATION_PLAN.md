@@ -160,6 +160,37 @@ B0 is audit/reference initialization. B1-B5 are the5large Apex/common implementa
 
 Legacy source family: **B1**;current execution follows stage1control/ownership then stage2CPUmath/closure in the13-stage campaign. P1-06 is a starting source anchor,not an independent experiment. Use Apex native contracts and one combined synthetic/operator corpus; no Qwen implementation or execution. Then B2-B5; compatibility tasks wait until full Apex.
 
+## Permanent acceptance criteria (owner directive, 2026-11-08)
+
+Applies to every remaining stage of the Apex/FrankenMoE migration. Not renegotiable per stage.
+
+| Criterion | Threshold | Measured on |
+|---|---|---|
+| Prefill throughput | **not below 2500 tok/s** | fixed Apex 32K/128 profile |
+| Decode throughput | **not below 25 tok/s** | fixed Apex 32K/128 profile |
+| Regression versus previous accepted stage | **not more than 2%** | same profile, paired |
+
+Both floors and the 2% rule must hold at the same time. A stage that clears the floors but
+regresses more than 2% is still rejected. A stage within 2% of the previous stage but below a
+floor is rejected outright, because the floor is absolute and the 2% rule is relative.
+
+Correctness remains a gate ahead of speed and is unchanged: exact token IDs, exact saved
+probabilities, identical output text hash, and a real Goose execution witness. A faster run that
+changes any of these is a failure, not a trade-off.
+
+Measurement discipline is unchanged: one request per arm on the fixed profile, telemetry sampled
+during inference, argv/environment/library hashes persisted, original runner without new
+scaffolding. Repeating a benchmark to rescue a number is not permitted; a confirmed regression is
+fixed in code.
+
+Standing against the floors (EXP202 lineage, clean terminal):
+
+| Arm | Prefill | Decode | Prefill floor | Decode floor |
+|---|---:|---:|---|---|
+| EXP174 reference | 2663.00 | 27.86 | pass | pass |
+| EXP201 loader | 2561.25 | 27.14 | pass | pass |
+| EXP202 tokenizer | 2551.43 | 25.95 | pass | pass |
+
 ## Fixed Apex end-to-end profile and cumulative history
 
 Authoritative profile/request hashes,argv,library hashes and raw records: [apex-history.json](docs/goose-migration/apex-history.json). One request/sample per stage; no averaging or speed acceptance from a noisy sample. One immutable model,context,placement,batches,thread affinity,KV types,input token IDs,sampling and cache/reset policy. A necessary profile change starts a new series and never silently joins incompatible rows.
@@ -474,7 +505,10 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 2. Implement the complete coherent Goose module with typed ownership and explicit primitive imports. Generate C/CUDA through the qualified self-hosted compiler. No compiler edits,no native-computation wrapper counted as migration.
 3. Compile isolated candidate. Run suitable differential correctness/error fixtures and scoped sanitizer checks. Preserve failed sources/logs; distinguish native-control defects from new defects.
 4. At the large delivery-cycle end,run one combined real Apex gate using the fixed profile. Earlier model runs require a concrete correctness boundary that cannot be checked locally. Check text/IDs/probabilities or a predeclared numerical contract and actual Goose path witnesses. Record one full-system prefill/decode/RAM/VRAM row,plus exact configuration/library hashes. Do not run Qwen now.
-5. Compare new row to original and previous stage,record any regression in private ignored COMPILER_FEEDBACK.md,and continue. Do not tune local loops or repeat benchmarks to rescue a number.
+5. Compare new row to original and previous stage against the permanent acceptance criteria
+   (prefill >= 2500 tok/s, decode >= 25 tok/s, regression <= 2%); record any failure in private
+   ignored COMPILER_FEEDBACK.md and continue. Do not tune local loops or repeat benchmarks to
+   rescue a number.
 6. Check disable/rollback path and unchanged working runtime. Save source/emitted code/tests/receipts/results as one coherent stage. Update task status/evidence/history and regenerate this file. Never mark a whole parent subsystem DONE from one leaf.
 7. Remove replaced native code only from candidate once functional closure is proven. The final link/import/source audit must reject hidden owned native services. Generated C/CUDA and OS/vendor primitive calls remain explicitly declared.
 

@@ -237,3 +237,33 @@ lifetime management. ABI compatibility and performance gains remain hypotheses.
 
 This note schedules no implementation or experiment now and does not change the
 current Goose migration GOAL, task count, sequence, or priorities.
+
+
+## Long-term research idea: FlashState
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-08. Third-party project,
+not ours and not yet evaluated: https://github.com/FutureMLS-Lab/FlashState
+
+The stated idea is to save and restore hybrid inference state — KV-cache
+together with linear-attention state — without repeating the prefill, plus
+intelligent management and eviction of those states. The authors report up to
+**3.14x** prefill speedup.
+
+Why it might matter here: the Apex profile already runs with a large checkpoint
+budget (`--ctx-checkpoints 32`) and `--cache-ram 0`, and the KV work ported in
+EXP199 already covers cell ownership, placement and range clearing. If hybrid
+state can be parked and resumed cheaply, repeated-prefix and multi-session
+workloads could skip prefill entirely. That is a different axis from the
+current single-request 32K/128 acceptance profile, which measures one fresh
+prefill per arm and would not show the benefit at all.
+
+Recorded only for future study. Nothing is adopted, integrated or benchmarked,
+and no claim from the upstream project is treated as reproduced. If this is ever
+scheduled, it needs a workload that actually repeats prefixes, a state
+compatibility contract across the Goose-ported KV modules, and a correctness
+gate that proves restored state is bit-identical to a fresh prefill — the 3.14x
+figure must be reproduced locally under the fixed profile before it means
+anything.
+
+This note does not change the current Goose migration GOAL, its sequence, or
+priorities.
