@@ -26,6 +26,11 @@ int64_t fg200g_weights_need_scale(int64_t);
 int64_t fg200g_kq_scale_auto(int64_t);
 int64_t fg200g_gate_elem_offset(int64_t);
 int64_t fg200g_q_full_width(int64_t);
+int64_t fg200g_head_v_dim(int64_t, int64_t);
+int64_t fg200g_conv_channels(int64_t, int64_t, int64_t);
+int64_t fg200g_qkv_dim(int64_t, int64_t, int64_t, int64_t);
+int64_t fg200g_k_view_offset(int64_t, int64_t);
+int64_t fg200g_v_view_offset(int64_t, int64_t);
 }
 
 static int checks, failures;
@@ -125,6 +130,21 @@ int main(void) {
         const int64_t nh = 1 + (int64_t)(rng() % 256);
         ck(fg200g_gate_elem_offset(nh) == nh, "gate_offset", fg200g_gate_elem_offset(nh), nh);
         ck(fg200g_q_full_width(nh) == 2*nh, "q_full_width", fg200g_q_full_width(nh), 2*nh);
+    }
+
+    // Recurrent-branch geometry against the native expressions.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t di = (int64_t)(rng() % 8192), nvh = 1 + (int64_t)(rng() % 64);
+        ck(fg200g_head_v_dim(di, nvh) == di / nvh, "head_v_dim", fg200g_head_v_dim(di,nvh), di/nvh);
+
+        const int64_t ng = (int64_t)(rng() % 32), ds = (int64_t)(rng() % 256);
+        ck(fg200g_conv_channels(di, ng, ds) == di + 2*ng*ds, "conv_channels", 0, 0);
+
+        const int64_t hk = (int64_t)(rng() % 256), nk = (int64_t)(rng() % 64);
+        const int64_t hv = fg200g_head_v_dim(di, nvh);
+        ck(fg200g_qkv_dim(hk, nk, hv, nvh) == hk*nk*2 + hv*nvh, "qkv_dim", 0, 0);
+        ck(fg200g_k_view_offset(hk, nk) == hk*nk, "k_off", 0, 0);
+        ck(fg200g_v_view_offset(hk, nk) == hk*nk*2, "v_off", 0, 0);
     }
 
     run_trap("is_recr negative layer", 10, trap_neg_layer);

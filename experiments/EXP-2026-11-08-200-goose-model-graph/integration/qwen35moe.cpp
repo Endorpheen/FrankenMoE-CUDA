@@ -6,6 +6,9 @@ extern "C" int fg200g_enabled(void);
 extern "C" int64_t fg200g_kq_scale_auto(int64_t f_attention_scale_bits);
 extern "C" int64_t fg200g_q_full_width(int64_t n_embd_head);
 extern "C" int64_t fg200g_gate_elem_offset(int64_t n_embd_head);
+extern "C" int64_t fg200g_head_v_dim(int64_t d_inner, int64_t num_v_heads);
+extern "C" int64_t fg200g_conv_channels(int64_t d_inner, int64_t n_group, int64_t d_state);
+extern "C" int64_t fg200g_qkv_dim(int64_t hk, int64_t nk, int64_t hv, int64_t nv);
 
 void llama_model_qwen35moe::load_arch_hparams(llama_model_loader & ml) {
     ml.get_key_or_arr(LLM_KV_EXPERT_FEED_FORWARD_LENGTH, hparams.n_ff_exp_arr, hparams.n_layer_all, false);
@@ -377,7 +380,10 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn_linear(
     const int64_t head_k_dim   = hparams.ssm_d_state;
     const int64_t num_k_heads  = hparams.ssm_n_group;
     const int64_t num_v_heads  = hparams.ssm_dt_rank;
-    const int64_t head_v_dim   = d_inner / num_v_heads;
+    // Goose derives the per-head value width; it divides, so a wrong divisor corrupts silently.
+    const int64_t head_v_dim   = fg200g_enabled()
+        ? fg200g_head_v_dim(d_inner, num_v_heads)
+        : d_inner / num_v_heads;
     const int64_t n_seq_tokens = ubatch.n_seq_tokens;
 
     GGML_ASSERT(n_seqs != 0);
@@ -414,7 +420,9 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn_linear(
 
     ggml_tensor * conv_kernel      = model.layers[il].ssm_conv1d;
     const int64_t conv_kernel_size = conv_kernel->ne[0];
-    const int64_t conv_channels    = d_inner + 2 * hparams.ssm_n_group * hparams.ssm_d_state;
+    const int64_t conv_channels    = fg200g_enabled()
+        ? fg200g_conv_channels(d_inner, hparams.ssm_n_group, hparams.ssm_d_state)
+        : d_inner + 2 * hparams.ssm_n_group * hparams.ssm_d_state;
 
     ggml_tensor * conv_input = build_conv_state(inp, conv_states_all, qkv_mixed, conv_kernel_size, conv_channels, il);
 
@@ -431,7 +439,9 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn_linear(
     ggml_tensor * conv_qkv_mix = conv_output_silu;
 
     // Calculate the total conv dimension
-    int64_t qkv_dim = head_k_dim * num_k_heads * 2 + head_v_dim * num_v_heads;
+    int64_t qkv_dim = fg200g_enabled()
+        ? fg200g_qkv_dim(head_k_dim, num_k_heads, head_v_dim, num_v_heads)
+        : head_k_dim * num_k_heads * 2 + head_v_dim * num_v_heads;
     int64_t nb1_qkv = ggml_row_size(conv_qkv_mix->type, qkv_dim);
 
     // Extract the convolved Q, K, V from conv_output

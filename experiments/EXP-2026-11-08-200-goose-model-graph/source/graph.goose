@@ -128,6 +128,45 @@ fn q_full_width(n_embd_head:i64)->i64{
  return n_embd_head*2 as i64;
 }
 
+
+// build_layer_attn_linear geometry, from models/qwen35moe.cpp:357-440.
+//
+// The recurrent branch derives every view shape from four head counts and one inner size. These
+// are exact integer divisions and products, and an off-by-one here silently corrupts the state
+// rather than failing, so they are worth having in Goose.
+
+// head_v_dim: line 365, `d_inner / num_v_heads`.
+fn head_v_dim(d_inner:i64,num_v_heads:i64)->i64{
+ ensure(num_v_heads>0,70);
+ ensure(d_inner>=0,71);
+ return d_inner/num_v_heads;
+}
+
+// conv_channels: line 400, `d_inner + 2 * ssm_n_group * ssm_d_state`.
+fn conv_channels(d_inner:i64,n_group:i64,d_state:i64)->i64{
+ ensure(d_inner>=0&&n_group>=0&&d_state>=0,72);
+ return d_inner+2 as i64*n_group*d_state;
+}
+
+// qkv_dim: line 425, `head_k_dim * num_k_heads * 2 + head_v_dim * num_v_heads`.
+fn qkv_dim(head_k_dim:i64,num_k_heads:i64,head_v_dim_:i64,num_v_heads:i64)->i64{
+ ensure(head_k_dim>=0&&num_k_heads>=0&&head_v_dim_>=0&&num_v_heads>=0,73);
+ return head_k_dim*num_k_heads*2 as i64+head_v_dim_*num_v_heads;
+}
+
+// k_view_offset_elems: line 447, the K view starts after the whole Q block:
+//   head_k_dim * num_k_heads   elements into the row.
+fn k_view_offset_elems(head_k_dim:i64,num_k_heads:i64)->i64{
+ ensure(head_k_dim>=0&&num_k_heads>=0,74);
+ return head_k_dim*num_k_heads;
+}
+
+// v_view_offset_elems: the V view starts after Q and K blocks together.
+fn v_view_offset_elems(head_k_dim:i64,num_k_heads:i64)->i64{
+ ensure(head_k_dim>=0&&num_k_heads>=0,75);
+ return head_k_dim*num_k_heads*2 as i64;
+}
+
 fn main(){
  is_recr(0 as i64,1 as i64,0 as u64);
  crop_before_nextn(0 as i64,0 as i64,0 as i64);
@@ -141,4 +180,9 @@ fn main(){
  kq_scale_auto(0 as i64);
  gate_elem_offset(1 as i64);
  q_full_width(1 as i64);
+ head_v_dim(1 as i64,1 as i64);
+ conv_channels(0 as i64,0 as i64,0 as i64);
+ qkv_dim(0 as i64,0 as i64,0 as i64,0 as i64);
+ k_view_offset_elems(0 as i64,0 as i64);
+ v_view_offset_elems(0 as i64,0 as i64);
 }
