@@ -25,9 +25,58 @@ builds.
 | Q4_K dequantization (F32) | EXP182 | byte-exact, **off the Apex path** |
 | Q4_0 dequantization (F16) | EXP188 | byte-exact, **off the Apex path** |
 
-Fourteen modules execute inside a single Apex pass. Their witnesses appear together in
-one model log: `FG175C`, `FG176G`, `FG177C`, `FG178Q`, `FG179W`, `FG181M`, `FG183F`,
-`FG184M`, `FG185Q`, plus the earlier normalization/attention/GDN set.
+### Complete witness inventory of the active runtime (EXP196)
+
+Re-taken from a single 32K/128 pass on `runtime/exp196/run` instead of being carried forward.
+Forty witness lines appear together in one model log, covering every stage in the chain.
+The earlier "fourteen modules" figure was stale.
+
+    FG143_CONTROL plans=5346 task_queries=0 dispatches=170378 jobs=5346 worker_jobs=42706
+    FG143_CPU op=40 calls=138 values=67377152
+    FG143_EXECUTOR worker_graphs=42706 worker_steps=170410 worker_fusions=0
+    FG147_BACKEND mode=0 calls=1
+    FG148_QUANT kind=9 calls=456800 values=172640
+    FG149_POOL mode=0 calls=2
+    FG150_EXPERT scratch_calls=127680 enabled=1
+    FG150_REGISTRY mode=0 calls=1
+    FG155_GEOMETRY goose_modes=0x5fb4d7
+    FG156_CONSTRUCTORS goose_modes=0x53ff
+    FG157_CONTEXT_CORE goose_modes=0x570333d,live_context_heaps=0
+    FG158_GRAPH_BUILDERS goose_modes=0x83f3e5f1b
+    FG159_GRAPH_LIFECYCLE goose_modes=0x50dd225,live_graph_heaps=0
+    FG160_SHARED caller=core modes=0x100000011410
+    FG161_ALLOCATOR modes=0xb18070000c,live_allocator_heaps=0
+    FG162_BUFFERS modes=0x100180dfbef,live_buffer_heaps=0
+    FG163_STREAM modes=0xf3ffc4fa233e,live_staging_heaps=0
+    FG164_SCHEDULER modes=0x1400079fc003bf,live_scheduler_heaps=0
+    FG165_REGISTRY modes=0x110040000564,live_registry_heaps=0,retained_plugin_handles=0
+    FG166_CUDA_ACTIVATIONS host=0x5012000400,cuda_status=0,m0=0x2000400,m1=0x0,m2=0x2000480,m3=0x0,m4=0x0,m5=0x0,m6=0x0,m7=0x1,m8=0x0,m9=0x0
+    FG167_CUDA_BROADCAST host=0x4a,cuda_status=0,grid=0xa,unravel=0x0,repeat_back=0x0,types=0x1
+    FG168_CUDA_NORM host=0x18,cuda_status=0,modes=0x18,vectors=0x2,fusions=0x5
+    FG169T_CUDA_TOPK host=0x3,cuda_status=0,experts=0x100,flags=0x9
+    FG170S_CUDA_SSM host=0x2,cuda_status=0,modes=0x7,sizes=0x2
+    FG171R_CUDA_ROPE host=0x1,cuda_status=0,modes=0x8,variants=0x50
+    FG174M_CUDA_GDN host=0x8,cuda_status=0,paths=0x4,variants=0x1
+    FG174S_CUDA_GDN host=0x2,cuda_status=0,modes=0x1,sizes=0x8
+    FG175C_CUDA_CONCAT host=0x100,cuda_status=0,paths=0x11,guards=0
+    FG175FA_CUDA host=0xf,cuda_status=0,vector=0x7,features=0x3,prefill=0x1dc
+    FG176G_CUDA_GET_ROWS host=0x3,cuda_status=0,paths=0x3,guards=0
+    FG176R_CUDA_SET_ROWS host=0x8,cuda_status=0,paths=0x8,invalid_index_threads=0
+    FG177C_CUDA_CPY host=0x4,cuda_status=0,paths=0x1,guards=0
+    FG178Q_CUDA_Q8_1 host=0x1,cuda_status=0,paths=0x1,guards=0
+    FG179W_CUDA_MOE_WEIGHTED host=0x1,cuda_status=0,paths=0x1,guards=0
+    FG181M_CUDA_MM_IDS host=0x1,cuda_status=0,paths=0x1,guards=0
+    FG183F_CUDA_FWHT host=0x1,cuda_status=0,paths=0x1,guards=0
+    FG184M_CUDA_MMVF host=0x21,cuda_status=0,paths=0x1,guards=0
+    FG185Q_CUDA_MMVQ_Q4K host=0x21,cuda_status=0,paths=0x1,guards=0
+    FG195V_CUDA_VMM_POOL alloc=9526 free=9526 grow=5 native=0
+    FG196P_CUDA_PINNED host_plan=3 host_fail=0 fallback=0 reg_plan=120 reg_fail=0 unreg=240 native=0
+
+Every tag above is a counter incremented inside the Goose body, not a build-time marker, so
+their presence together is the evidence that the whole chain executes in one process rather
+than that each stage buildt in isolation.
+
+
 
 ## Blocked on the same code-generation limitation
 
