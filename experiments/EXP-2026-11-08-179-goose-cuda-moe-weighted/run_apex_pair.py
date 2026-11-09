@@ -24,8 +24,11 @@ preserved=[p for p in env['LD_PRELOAD'].split() if p not in removed];assert not 
 env['LD_PRELOAD']=' '.join(preserved);(B/'preload-transition.json').write_text(json.dumps(dict(superseded=removed,preserved=preserved,reason='SiLU/scale inherited from EXP166;RMS inherited from EXP168 in the CUDA DSO;all superseded preloads removed only here'),indent=2)+'\n');env['GGML_EXPERT_HOTSTORE']='0';env['LD_LIBRARY_PATH']=str(T)
 (B/'environment.json').write_text(json.dumps({k:v for k,v in env.items() if k.startswith(('GGML_GOOSE_','GGML_EXPERT_')) or k=='LD_LIBRARY_PATH'},indent=2)+'\n')
 env.pop('GGML_GOOSE_CUDA_FA',None)
-if mode=='native-rollback':env['GGML_GOOSE_CUDA_SET_ROWS']='0'
-else:env.pop('GGML_GOOSE_CUDA_SET_ROWS',None)
+# The native arm must keep every OTHER qualified module on Goose; only this stage's
+# component is switched. The inherited line also disabled SET_ROWS, so earlier pairs for
+# this stage compared two components at once. SET_ROWS stays in its default (Goose) state
+# in both arms now.
+env.pop('GGML_GOOSE_CUDA_SET_ROWS',None)
 (B/'environment.json').write_text(json.dumps({k:v for k,v in env.items() if k.startswith(('GGML_GOOSE_','GGML_EXPERT_')) or k=='LD_LIBRARY_PATH'},indent=2)+'\n')
 (B/'setrows-control-mode.json').write_text(json.dumps(dict(mode=mode,same_cuda_library_sha256=libs['libggml-cuda.so']['sha256'],pair='stage='+os.environ.get('FG_STAGE','exp176')+' same DSO switch: MoE weighted reduction only'),indent=2)+'\n')
 log=(B/'server.log').open('w');p=subprocess.Popen(argv,env=env,cwd=T,stdout=log,stderr=subprocess.STDOUT,start_new_session=True);receipt=dict(pid=p.pid,started=time.time(),phase='LOADING',model='Apex-35B-V1.0-Q4_K_M',input_tokens=32768,output_tokens=128,preliminary=True,not_acceptance='EXP174 SET_ROWS F32/Q4_0 I32/I64 arithmetic and checked host planning in Goose;all other EXP173 components unchanged;actual SET_ROWS witness required;full migration incomplete',production_changed=False);(B/'process.json').write_text(json.dumps(receipt,indent=2)+'\n');print('APEX_DIAGNOSTIC_STARTED pid='+str(p.pid),flush=True)

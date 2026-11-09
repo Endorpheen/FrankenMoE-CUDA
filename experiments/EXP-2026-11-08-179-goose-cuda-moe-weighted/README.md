@@ -7,7 +7,7 @@ qualified on the fixed Apex profile and preserved as a checkpoint.
 
 ## Verdict
 
-**ACCEPTED** — byte-exact MoE weighted reduction on the Apex path.
+**ACCEPTED** — byte-exact MoE weighted reduction on the Apex path; isolated pair +0.70% prefill / −0.62% decode.
 
 This is a verdict on the transfer in the experimental runtime, which is the only thing
 this work decides. Installation into the production working runtime is left to Igor and
@@ -46,6 +46,28 @@ multiply order is preserved deliberately: native computes
 The bridge filled only the extents and flags in plan slot 1 and left the four
 pointers in slot 0 unwritten, so the host rejected every call with validation
 code 20. The pointers are now published to slot 0.
+
+## The recorded deltas were measuring two components
+
+The forward/reverse figures below (−0.855% / −0.295%) came from a runner inherited from
+EXP174 that set `GGML_GOOSE_CUDA_SET_ROWS=0` in the native arm. That disabled SET_ROWS as
+well as this stage's component, so the comparison covered two modules, not one. The same
+inherited line is present in the runners for EXP176, 177, 178 and 181 — all five measured
+MoE-adjacent stages at once instead of in isolation.
+
+Re-measured with that line removed, so SET_ROWS stays in its default Goose state in both
+arms and only this component switches:
+
+| pair | native | goose | prefill | decode |
+|---|---|---:|---:|---:|
+| iso1 | 2607 / 27.09 | 2639 / 26.94 | +1.23% | −0.55% |
+| iso2 | 2627 / 27.94 | 2631 / 27.75 | +0.17% | −0.69% |
+| **median** | | | **+0.70%** | **−0.62%** |
+
+The verdict does not change — both inside the 2% threshold — but the numbers do, and the
+earlier pair had the wrong sign on prefill. SET_ROWS alone is worth about −0.09% prefill /
+−0.52% decode (EXP174's own measurement), which is the same order as the effect being
+measured, so it had to be removed rather than argued about.
 
 ## Local gate
 
