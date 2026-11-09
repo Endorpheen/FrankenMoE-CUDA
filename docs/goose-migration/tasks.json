@@ -608,39 +608,6 @@
       "batch": "B1"
     },
     {
-      "id": "P2-11",
-      "phase": "P2",
-      "title": "Port convolution,image and relative-position operations",
-      "status": "TODO",
-      "sources": [
-        "ggml/src/ggml-cpu/ops.cpp"
-      ],
-      "acceptance": "All registered1D/2D/3Dconv/im2col/col2im,pooling/upscale,window partition and relative-position modes have differential fixtures.",
-      "evidence": "",
-      "depends_on": [],
-      "workstream": "APEX_COMMON",
-      "source_phase_files_at_audit": 109,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B1"
-    },
-    {
-      "id": "P2-12",
-      "phase": "P2",
-      "title": "Port training,custom and miscellaneous CPU operators",
-      "status": "TODO",
-      "sources": [
-        "ggml/src/ggml-cpu/ops.cpp",
-        "ggml/src/ggml-opt.cpp"
-      ],
-      "acceptance": "Every residual GGML op enum has Goose support/identical unsupported error; loss/backward/AdamW/SGD/custom-callback contracts checked.",
-      "evidence": "",
-      "depends_on": [],
-      "workstream": "APEX_COMMON",
-      "source_phase_files_at_audit": 109,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B1"
-    },
-    {
       "id": "P2-13",
       "phase": "P2",
       "title": "Port remaining quantization/serialization math and type traits",
@@ -747,8 +714,6 @@
         "P2-08",
         "P2-09",
         "P2-10",
-        "P2-11",
-        "P2-12",
         "P2-13",
         "P2-14",
         "P2-15",
@@ -1017,43 +982,20 @@
     {
       "id": "P3-14",
       "phase": "P3",
-      "title": "Port CUDA convolution,image,pooling and remaining math",
+      "title": "Port CUDA FWHT and remaining inference math that Apex executes",
       "status": "TODO",
       "sources": [
-        "ggml/src/ggml-cuda/conv*",
-        "ggml/src/ggml-cuda/im2col*",
-        "ggml/src/ggml-cuda/col2im*",
-        "ggml/src/ggml-cuda/pool*",
-        "ggml/src/ggml-cuda/upscale*",
-        "ggml/src/ggml-cuda/fwht*"
+        "ggml/src/ggml-cuda/fwht.cu",
+        "ggml/src/ggml-cuda/fwht.cuh"
       ],
-      "acceptance": "Every remaining inference op has Goose device implementation and shape/type corpus; inventory has no unassigned kernel.",
+      "acceptance": "FWHT carried out through MUL_MAT (ggml_cuda_op_mul_mat_use_fwht, the GGML_HINT_SRC0_IS_HADAMARD path) has a Goose device implementation byte-identical to native for F32/F16 sources with a shape/type corpus. Convolution, im2col, col2im, pooling and upscale are out of scope by owner directive 2026-11-08: no kept architecture uses them.",
       "evidence": "",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B2"
-    },
-    {
-      "id": "P3-15",
-      "phase": "P3",
-      "title": "Port CUDA backward,optimizer and residual operators",
-      "status": "TODO",
-      "sources": [
-        "ggml/src/ggml-cuda/cross*",
-        "ggml/src/ggml-cuda/opt*",
-        "ggml/src/ggml-cuda/fill*",
-        "ggml/src/ggml-cuda/tri*",
-        "ggml/src/ggml-cuda/**"
-      ],
-      "acceptance": "All residual registered enum/dispatch branches implemented or same native unsupported error; no silent deletion of supported capability.",
-      "evidence": "",
-      "depends_on": [],
-      "workstream": "APEX_COMMON",
-      "source_phase_files_at_audit": 572,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B2"
+      "batch": "B2",
+      "scope_note": "Narrowed, not deleted: fwht_cuda is live in the Apex census at 0.3%+0.3%, reached from ggml_cuda_mul_mat. The image kernels are legacy and dropped."
     },
     {
       "id": "P3-16",
@@ -1148,7 +1090,6 @@
         "P3-12",
         "P3-13",
         "P3-14",
-        "P3-15",
         "P3-16",
         "P3-17",
         "P3-19"
@@ -1675,36 +1616,36 @@
     {
       "id": "P6-05",
       "phase": "P6",
-      "title": "Port every remaining text model architecture builder",
+      "title": "Port remaining modern text model architecture builders",
       "status": "TODO",
       "sources": [
         "src/models/*.cpp"
       ],
-      "acceptance": "Every remaining audited text builder assigned and ported; tiny per-architecture graph construction fixture and native-supported API behavior.",
+      "acceptance": "Every audited text builder in the kept architecture set assigned and ported; tiny per-architecture graph construction fixture. Legacy architectures removed by owner directive are not in scope and carry no requirement.",
       "evidence": "",
       "depends_on": [],
       "workstream": "OTHER_COMPATIBILITY",
       "source_phase_files_at_audit": 416,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
+      "batch": "B7",
+      "scope_note": "Narrowed to modern architectures; see docs/goose-migration/architecture-scope.md"
     },
     {
       "id": "P6-06",
       "phase": "P6",
-      "title": "Port recurrent,multimodal,audio and special model builders",
+      "title": "Port remaining recurrent and hybrid model builders",
       "status": "TODO",
       "sources": [
-        "src/models/*.cpp",
-        "tools/mtmd/**",
-        "tools/tts/**"
+        "src/models/*.cpp"
       ],
-      "acceptance": "Every remaining special builder/encoder/projector mapped; image/audio/recurrent tiny fixtures; unavailable model assets explicit unverified, not DONE.",
+      "acceptance": "Every remaining recurrent/hybrid text builder in the kept set mapped with a tiny fixture. Multimodal encoders, projectors and audio builders are out of scope by owner directive.",
       "evidence": "",
       "depends_on": [],
       "workstream": "OTHER_COMPATIBILITY",
       "source_phase_files_at_audit": 416,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
+      "batch": "B7",
+      "scope_note": "Multimodal/audio dropped; see docs/goose-migration/architecture-scope.md"
     },
     {
       "id": "P6-07",
@@ -2422,41 +2363,6 @@
       "batch": "B5"
     },
     {
-      "id": "P10-03",
-      "phase": "P10",
-      "title": "Port multimodal,audio and RPC tool infrastructure",
-      "status": "TODO",
-      "sources": [
-        "tools/mtmd/**",
-        "tools/tts/**",
-        "tools/rpc/**",
-        "ggml/src/ggml-rpc/**"
-      ],
-      "acceptance": "Owned projector/audio/codec orchestration and RPC serialization/server/client Goose; protocol/tiny media fixtures; hardware/asset gaps explicit.",
-      "evidence": "",
-      "depends_on": [],
-      "workstream": "OTHER_COMPATIBILITY",
-      "source_phase_files_at_audit": 3541,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
-    },
-    {
-      "id": "P10-04",
-      "phase": "P10",
-      "title": "Port maintained non-CPU/CUDA backend implementations",
-      "status": "TODO",
-      "sources": [
-        "ggml/src/ggml-*"
-      ],
-      "acceptance": "Every additional audited BLAS/CANN/ET/Hexagon/HIP/Metal/MUSA/OpenCL/OpenVINO/RPC/SYCL/VirtGPU/Vulkan/WebGPU/ZDNN/ZenDNN source assigned and ported or remains explicitly unfinished; not labeled inevitable dependency.",
-      "evidence": "",
-      "depends_on": [],
-      "workstream": "OTHER_COMPATIBILITY",
-      "source_phase_files_at_audit": 3541,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
-    },
-    {
       "id": "P10-05",
       "phase": "P10",
       "title": "Port owned executable infrastructure and generators",
@@ -2854,61 +2760,6 @@
       "batch": "B6"
     },
     {
-      "id": "C2-01",
-      "phase": "C2",
-      "workstream": "OTHER_COMPATIBILITY",
-      "title": "Port all remaining tokenizer/vocabulary families",
-      "status": "TODO",
-      "sources": [
-        "src/llama-vocab.cpp",
-        "src/unicode*.cpp"
-      ],
-      "acceptance": "Every audited tokenizer family has Goose implementation and native golden corpus; shared interface from Apex retained.",
-      "evidence": "",
-      "depends_on": [
-        "P11-07"
-      ],
-      "source_phase_files_at_audit": 0,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
-    },
-    {
-      "id": "C2-02",
-      "phase": "C2",
-      "workstream": "OTHER_COMPATIBILITY",
-      "title": "Port all remaining dense/MoE/recurrent architecture adapters",
-      "status": "TODO",
-      "sources": [
-        "src/models/*.cpp"
-      ],
-      "acceptance": "Each audited architecture not handled by Apex/Qwen assigned once to shared graph-based adapter and a tiny shape/operation fixture; no separate runtime.",
-      "evidence": "",
-      "depends_on": [
-        "P11-07"
-      ],
-      "source_phase_files_at_audit": 0,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
-    },
-    {
-      "id": "C2-03",
-      "phase": "C2",
-      "workstream": "OTHER_COMPATIBILITY",
-      "title": "Close optional model/tool/platform compatibility matrix",
-      "status": "TODO",
-      "sources": [
-        "all optional backend/model/tool source inventory"
-      ],
-      "acceptance": "No maintained feature silently dropped; unavailable hardware/assets have explicit evidence gaps and prevent claims beyond tested scope.",
-      "evidence": "",
-      "depends_on": [
-        "P11-07"
-      ],
-      "source_phase_files_at_audit": 0,
-      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
-    },
-    {
       "id": "C2-04",
       "phase": "C2",
       "workstream": "OTHER_COMPATIBILITY",
@@ -3299,8 +3150,6 @@
         "P2-08",
         "P2-09",
         "P2-10",
-        "P2-11",
-        "P2-12",
         "P2-13",
         "P2-14",
         "P2-15",
@@ -3332,7 +3181,6 @@
         "P3-12",
         "P3-13",
         "P3-14",
-        "P3-15",
         "P3-16",
         "P3-17",
         "P3-19",
@@ -3490,12 +3338,7 @@
         "P5-03",
         "P6-05",
         "P6-06",
-        "P10-03",
-        "P10-04",
         "P10-10",
-        "C2-01",
-        "C2-02",
-        "C2-03",
         "C2-04"
       ],
       "depends_on": [
@@ -3620,8 +3463,6 @@
           "P2-08",
           "P2-09",
           "P2-10",
-          "P2-11",
-          "P2-12",
           "P2-13",
           "P2-16",
           "P2-17",
@@ -3650,8 +3491,7 @@
           "P3-11",
           "P3-12",
           "P3-13",
-          "P3-14",
-          "P3-15"
+          "P3-14"
         ],
         "depends_on_stages": [
           2
@@ -3849,12 +3689,7 @@
           "P5-03",
           "P6-05",
           "P6-06",
-          "P10-03",
-          "P10-04",
           "P10-10",
-          "C2-01",
-          "C2-02",
-          "C2-03",
           "C2-04"
         ],
         "depends_on_stages": [
@@ -3929,8 +3764,6 @@
           "P2-08",
           "P2-09",
           "P2-10",
-          "P2-11",
-          "P2-12",
           "P2-13",
           "P2-16",
           "P2-17",
@@ -3949,7 +3782,6 @@
           "P3-12",
           "P3-13",
           "P3-14",
-          "P3-15",
           "P3-16",
           "P3-17",
           "P3-19",
@@ -4073,12 +3905,7 @@
           "P5-03",
           "P6-05",
           "P6-06",
-          "P10-03",
-          "P10-04",
           "P10-10",
-          "C2-01",
-          "C2-02",
-          "C2-03",
           "C2-04",
           "F1-01",
           "F1-02",
@@ -4107,5 +3934,39 @@
     "temporary_original_occupancy_metadata_dependency": false,
     "previous_summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/apex-summary.json",
     "codegen_audit": "experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/codegen-static-report.json"
+  },
+  "excluded_legacy_scope": {
+    "recorded": "2026-11-08",
+    "directive": "Owner: full compatibility with historical llama.cpp models is not wanted. Priority is modern architectures plus universal inference infrastructure.",
+    "removed_task_ids": [
+      "P2-11",
+      "P2-12",
+      "P3-15",
+      "C2-01",
+      "C2-02",
+      "C2-03",
+      "P10-03",
+      "P10-04"
+    ],
+    "narrowed_task_ids": [
+      "P3-14",
+      "P6-05",
+      "P6-06"
+    ],
+    "excluded_capability": [
+      "Training, backward and optimizer operators (cross-entropy-loss, opt-step-adamw, opt-step-sgd, ggml-opt)",
+      "Convolution, im2col/col2im, pooling, upscale and image tensor transforms on CPU and CUDA",
+      "Legacy text architectures listed in docs/goose-migration/architecture-scope.md",
+      "Multimodal encoders/projectors and audio/TTS builders and tool infrastructure",
+      "Non-CPU/CUDA alternative backends: Metal, Vulkan, SYCL, CANN, HIP, MUSA, OpenCL, OpenVINO, WebGPU, ZDNN, ZenDNN, RPC, Hexagon, ET, BLAS wrappers",
+      "Legacy tokenizer families not required by the kept architectures"
+    ],
+    "retained_capability": [
+      "All shared inference infrastructure: GGML core, allocator, scheduler, graph, backend abstraction",
+      "CPU and CUDA backends with the operator families Apex/Qwen execute",
+      "Server/API, streaming, sessions, KV and memory subsystems",
+      "GGUF, loader, tokenizer and text infrastructure for the kept set"
+    ],
+    "not_removed_because_live": "P3-14 narrowed, not deleted: fwht_cuda is in the Apex census (0.3%+0.3%) through ggml_cuda_op_mul_mat_use_fwht."
   }
 }
