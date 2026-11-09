@@ -1,54 +1,57 @@
-# EXP199 status: KV cell ownership ported to Goose, gate not yet green
+# EXP199: KV cell ownership in Goose — gate GREEN
 
-Real implementation, not a survey. The module exists and compiles; the differential gate is
-failing on one condition and the cause is not yet isolated.
+Real implementation, not a survey. Eight cell-ownership operations from `llama-kv-cells.h` are
+Goose; the host holds the arena, Goose holds every decision.
 
-## What is implemented
+## Result
 
-`source/cells.goose` -- eight cell-ownership operations from `llama-kv-cells.h`, with the arena
-held by the host and the policy in Goose:
+    FG199K_FIXTURE checks=37929 failures=0
+    EXP199_LOCAL_GATES_PASS
 
-| Goose function | native | what it does |
+The gate mirrors 40 trials x 60 random operations into the Goose module and into a transcription
+of `llama_kv_cells`, comparing after every step: positions, sequence words, used flags, shift,
+the used range, `is_empty`, and the return values of `seq_rm`/`seq_keep`. Three fork-isolated trap
+cases cover `rm` on an empty cell, `rm` out of range and `seq_rm` on an absent sequence.
+
+## Operations ported
+
+| Goose | native | behaviour |
 |---|---|---|
 | `is_empty` | `is_empty` | `pos == -1` |
 | `rm` | `rm` | clear position, sequence words, used flag, shift |
-| `seq_rm` | `seq_rm` | drop one sequence bit, return 1 when the cell empties |
-| `seq_keep` | `seq_keep` | keep only one sequence bit, return 1 when it empties |
-| `seq_add` | `seq_add` | set one sequence bit (does not touch the used set) |
-| `pos_set` | `pos_set` | write the position, mark used |
-| `seq_count` | `seq_count` | popcount over the sequence words |
-| `used_max_p1` | `used_max_p1` | one past the highest used index, 0 if none |
+| `seq_rm` | `seq_rm` | drop one sequence bit, return 1 when the cell empties, zero the words |
+| `seq_keep` | `seq_keep` | keep only one bit, return 1 when it empties |
+| `seq_add` | `seq_add` | set one bit only (does not mark used) |
+| `pos_set` | `pos_set` | write position, mark used unless -1 |
+| `seq_count` | `seq_count` | popcount over the words |
+| `used_max_p1` | `used_max_p1` | one past the highest used index |
 
-Layout is documented in the source: `pos[n] | seq[n*W] | used[n] | shift[n]`, int64 slots,
-`W = 8` words per cell for 512 sequence bits. The C++ containers stay as storage; what moved is
-every decision that was inside the class, which is the requirement.
+Arena: `pos[n] | seq[n*W] | used[n] | shift[n]`, int64 slots, `W = 8` words (512 sequence bits).
 
-## What the gate caught so far
+## Defects the gate found, in order
 
-`tests/fixture.cpp` mirrors a random operation sequence into both the Goose module and a
-transcription of `llama_kv_cells`, comparing pos, sequence words, used flags, shift, the used
-range and the return values of the two remove operations after every step.
+Four in the port:
 
-Three real defects in the port were found and fixed:
+1. **Arena offsets were constants, not derived from `n`** — every region after `pos` addressed
+   the wrong memory.
+2. **`seq_rm` left stale sequence words** when a cell emptied, so a later `seq_add` saw a bit
+   already set. Native resets them.
+3. **`seq_add` marked the cell used**; native does not.
+4. **`const W` read as zero.** The generated code takes consts from `gg_globals`, which the
+   emitter initialises inside `gg_program` — and the bridge never runs that. Replaced with a
+   function returning a literal. This one was only visible by dumping arena slots directly; the
+   generated C looked correct.
 
-1. Arena offsets were constants instead of being derived from `n` -- every region after `pos`
-   addressed the wrong memory. The gate trapped immediately.
-2. `seq_rm` left stale sequence words behind when the cell emptied, so a later `seq_add` saw a
-   bit already set. Native resets the bitset in that path.
-3. `seq_add` set the used flag; native does not (the position index is derived from `pos[]`).
+Three in the gate itself: `seq_add`'s precondition had to mirror native's assert, the gate's
+arena was sized for a different layout, and empty cells had to start at `-1` rather than `0`.
 
-Two more were defects in the gate, not the module: `seq_add`'s precondition must mirror native's
-assert, and the gate's own arena buffer was sized for a different layout.
+## Point worth carrying to the next module
 
-## Where it stands
+The `const` defect is a trap for every future Goose module that reads a compile-time constant at
+runtime: the value is fine inside `main` and zero everywhere else. Any module whose bridge calls a
+generated function directly must inline such constants as literals or pass them in.
 
-The gate still fails with validation code 42 (`seq_add` precondition: the bit is already set).
-The operation sequence that reaches it has not been reduced to a minimal case yet.
+## Next
 
-## Next step, precisely
-
-Add a trace of the last ten operations before the trap so the failing sequence can be read
-directly, then decide whether the module or the gate's mirror is wrong. The gate is the more
-likely party: the module's `seq_rm` and `seq_keep` now match native line by line, while the
-gate's random generator can place a sequence on a cell it had already given that sequence
-through a path the mirror does not reproduce.
+`apply_ubatch` and `prepare` on top of these eight operations — the probe showed 276 and 138
+calls per pass. The cell primitives they need are now Goose and gated.

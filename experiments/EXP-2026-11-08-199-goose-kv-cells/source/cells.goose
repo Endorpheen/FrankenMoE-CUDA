@@ -11,7 +11,7 @@
 //
 // Cell state layout in the arena, all int64 slots:
 //   pos[i]         -1 = empty, else the position
-//   seqw[i*W + w]  W words of LLAMA_MAX_SEQ bits: which sequences see this cell
+//   seqw[i*w() + w]  W words of LLAMA_MAX_SEQ bits: which sequences see this cell
 //   shift[i]       the shift value, 0 when unused
 //   used[i]        1 = the cell is in the used set
 // The host recomputes the std::set from used[] when it needs the ordered view.
@@ -21,15 +21,18 @@ extern "fg199k_st_i64" fn st_i64(base:u64,byte:i64,v:i64);
 
 fn ensure(v:bool,c:i64){if !v{fail(c);}}
 
-const W:i64=8 as i64;   // 512 sequence bits per cell, matching LLAMA_MAX_SEQ
+// W is written as a literal everywhere rather than a const: the generated code reads consts
+// from gg_globals, which the emitter initialises inside gg_program -- and the bridge never runs
+// that, so a const here reads as 0. Found by a direct slot dump, not by reading the generated C.
+fn w()->i64{return 8 as i64;}
 
 // Arena regions are consecutive and sized by the cell count, so every offset depends on n:
 //   pos[n] | seq[n*W] | used[n] | shift[n]        (all int64 slots)
 fn seq_base(n:i64)->i64{return n*8 as i64;}
-fn used_base(n:i64)->i64{return (n+n*W)*8 as i64;}
-fn shift_base(n:i64)->i64{return (n+n*W+n)*8 as i64;}
+fn used_base(n:i64)->i64{return (n+n*w())*8 as i64;}
+fn shift_base(n:i64)->i64{return (n+n*w()+n)*8 as i64;}
 fn pos_at(a:u64,i:i64)->i64{return ld_i64(a,i*8 as i64);}
-fn seqword(a:u64,n:i64,i:i64,w:i64)->i64{return ld_i64(a,seq_base(n)+(i*W+w)*8 as i64);}
+fn seqword(a:u64,n:i64,i:i64,w:i64)->i64{return ld_i64(a,seq_base(n)+(i*w()+w)*8 as i64);}
 fn used_at(a:u64,n:i64,i:i64)->i64{return ld_i64(a,used_base(n)+i*8 as i64);}
 
 // is_empty: a cell is empty exactly when its position is -1.
@@ -47,7 +50,7 @@ fn rm(a:u64,n:i64,i:i64){
  st_i64(a,i*8 as i64,(0 as i64)-1 as i64);
  st_i64(a,used_base(n)+i*8 as i64,0 as i64);
  var w:i64=0;
- while w<W{st_i64(a,seq_base(n)+(i*W+w)*8 as i64,0 as i64);w+=1;}
+ while w<w(){st_i64(a,seq_base(n)+(i*w()+w)*8 as i64,0 as i64);w+=1;}
  st_i64(a,shift_base(n)+i*8 as i64,0 as i64);
 }
 
@@ -60,11 +63,11 @@ fn seq_rm(a:u64,n:i64,i:i64,seq_id:i64,widx:i64,bit:i64)->i64{
  let cur:i64=seqword(a,n,i,widx);
  ensure((cur&bit)!=0,23);
  let next:i64=cur-(cur&bit);
- st_i64(a,seq_base(n)+(i*W+widx)*8 as i64,next);
+ st_i64(a,seq_base(n)+(i*w()+widx)*8 as i64,next);
  // any remaining sequence bit in this cell?
  var any:i64=0;
  var w:i64=0;
- while w<W{
+ while w<w(){
   let v:i64=if w==widx{next}else{seqword(a,n,i,w)};
   if v!=0{any=1;}
   w+=1;
@@ -74,7 +77,7 @@ fn seq_rm(a:u64,n:i64,i:i64,seq_id:i64,widx:i64,bit:i64)->i64{
   // here there are none, so the stored words must be zeroed or a later seq_add would see a
   // stale bit. The gate caught exactly that.
   var z:i64=0;
-  while z<W{st_i64(a,seq_base(n)+(i*W+z)*8 as i64,0 as i64);z+=1;}
+  while z<w(){st_i64(a,seq_base(n)+(i*w()+z)*8 as i64,0 as i64);z+=1;}
   st_i64(a,i*8 as i64,(0 as i64)-1 as i64);
   st_i64(a,used_base(n)+i*8 as i64,0 as i64);
   st_i64(a,shift_base(n)+i*8 as i64,0 as i64);
@@ -90,19 +93,19 @@ fn seq_keep(a:u64,n:i64,i:i64,seq_id:i64,widx:i64,bit:i64)->i64{
  let cur:i64=seqword(a,n,i,widx);
  if (cur&bit)!=0{
   var w:i64=0;
-  while w<W{
+  while w<w(){
    let v:i64=if w==widx{bit}else{0 as i64};
-   st_i64(a,seq_base(n)+(i*W+w)*8 as i64,v);
+   st_i64(a,seq_base(n)+(i*w()+w)*8 as i64,v);
    w+=1;
   }
   return 0 as i64;
  }
  var any:i64=0;
  var w:i64=0;
- while w<W{if seqword(a,n,i,w)!=0{any=1;}w+=1;}
+ while w<w(){if seqword(a,n,i,w)!=0{any=1;}w+=1;}
  if any!=0{
   var k:i64=0;
-  while k<W{st_i64(a,seq_base(n)+(i*W+k)*8 as i64,0 as i64);k+=1;}
+  while k<w(){st_i64(a,seq_base(n)+(i*w()+k)*8 as i64,0 as i64);k+=1;}
   st_i64(a,i*8 as i64,(0 as i64)-1 as i64);
   st_i64(a,used_base(n)+i*8 as i64,0 as i64);
   st_i64(a,shift_base(n)+i*8 as i64,0 as i64);
@@ -118,7 +121,7 @@ fn seq_add(a:u64,n:i64,i:i64,widx:i64,bit:i64){
  ensure(pos_at(a,i)!=(0 as i64)-1 as i64,41);
  let cur:i64=seqword(a,n,i,widx);
  ensure((cur&bit)==0,42);
- st_i64(a,seq_base(n)+(i*W+widx)*8 as i64,cur+bit);
+ st_i64(a,seq_base(n)+(i*w()+widx)*8 as i64,cur+bit);
 }
 
 // pos_set: place a cell at a position, marking it used.
@@ -134,7 +137,7 @@ fn seq_count(a:u64,n:i64,i:i64)->i64{
  ensure(n>0&&i>=0&&i<n,60);
  var c:i64=0;
  var w:i64=0;
- while w<W{
+ while w<w(){
   var v:i64=seqword(a,n,i,w);
   var b:i64=0;
   while b<32 as i64{

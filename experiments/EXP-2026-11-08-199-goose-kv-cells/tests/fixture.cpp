@@ -36,6 +36,7 @@ struct Arena {
     explicit Arena(int64_t cells) : n(cells) {
         // pos[n] | seq[n*W] | used[n] | shift[n], matching the module's documented layout
         v.assign((size_t)(cells + cells*W + cells + cells), 0);
+        for (int64_t i = 0; i < cells; ++i) pos()[i] = -1;   // empty cells start at -1
     }
     uint64_t base() { return (uint64_t)(uintptr_t)v.data(); }
     int64_t * pos()  { return v.data(); }
@@ -168,6 +169,12 @@ int main(void) {
             const int seq_id = (int)(rng() % 4);
             const int widx = seq_id / 32;
             const int64_t bit = (int64_t)1 << (seq_id % 32);
+            if (getenv("FG199K_TRACE")) {
+                printf("trial=%d step=%d op=%d i=%u seq=%d pos=%lld bits=%llu\n",
+                       trial, step, op, i, seq_id, (long long)R.pos[i],
+                       (unsigned long long)R.seq[i].to_ullong());
+                fflush(stdout);
+            }
 
             if (op == 0) {
                 if (!R.is_empty(i)) continue;
