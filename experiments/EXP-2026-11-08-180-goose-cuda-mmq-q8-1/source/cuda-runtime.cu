@@ -87,8 +87,12 @@ void fg180q_native_quantize_mmq_q8_1_cuda(const float*,const int32_t*,void*,ggml
 void fg180q_native_quantize_scatter_mmq_q8_1_cuda(const float*,const int32_t*,void*,ggml_type,
  int64_t,int64_t,int64_t,int64_t,int64_t,int32_t,cudaStream_t);
 
+// EXP180 was REJECTED: the kernel is 12-14% slower per launch (2065 vs 1819 ns) and
+// the paired Apex showed a regression. A rejected candidate must not be on by default,
+// so this is opt-IN: the Goose path runs only when the flag is explicitly "1". Any
+// other value, including unset, keeps native.
 static bool fg180q_goose(const char*flag){
- return !(flag&&strcmp(flag,"0")==0);
+ return flag&&strcmp(flag,"1")==0;
 }
 void quantize_mmq_q8_1_cuda(const float*x,const int32_t*ids,void*vy,ggml_type type_src0,
  int64_t ne00,int64_t s01,int64_t s02,int64_t s03,

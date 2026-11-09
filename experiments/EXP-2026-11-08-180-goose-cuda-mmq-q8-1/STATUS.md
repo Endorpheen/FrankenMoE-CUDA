@@ -1,5 +1,15 @@
 # EXP180: MMQ Q8_1 quantization — correct, but 12-14% slower per launch
 
+> **DEFECT FOUND AND FIXED 2026-11-08.** Despite this rejection the module was on by
+> default: the switch was opt-OUT (`fg180q_goose` returned true unless the flag was "0"),
+> and the built object sat in the active link chain. Every Apex run since EXP180 therefore
+> paid the regression, visible as `FG180Q ... host=0x23` in the model log. The switch is
+> now opt-IN — the Goose path runs only when `GGML_GOOSE_CUDA_MMQ_Q8_1=1` is set
+> explicitly, and any other value including unset keeps native. After rebuilding the chain
+> 181→183→184→185 the witness is absent from the Apex log and the paired figures improved
+> from -1.28% to -0.55% decode and -0.19% prefill. A rejected candidate must never be
+> default-on; that rule is now enforced in the code.
+
 Status: FUNCTIONAL PASS, PERFORMANCE REGRESSION NOT RESOLVED. The transfer is
 byte-exact against native on all cases and runs in Apex with an exact response.
 The kernel itself is measurably slower, so the candidate is not promoted and this
