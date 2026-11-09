@@ -1075,13 +1075,13 @@
       "id": "P3-17",
       "phase": "P3",
       "title": "Port GPU/pinned/VMM pools and transfer/residency policy",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cuda/ggml-cuda.cu",
         "src/llama-expert-*.cpp"
       ],
       "acceptance": "All allocation/pool/pinned ring/VMM/residency/copy decisions Goose; OOM,resize,reuse,cancel,device reset and asynchronous lifetimes checked.",
-      "evidence": "",
+      "evidence": "EXP195 transfers the ggml_cuda_pool_vmm::alloc/free arithmetic to Goose: 128-byte alignment rounding, available-space computation, granularity rounding of the growth request, the 32GB ceiling check, the bump-pointer advance and the reverse-order free check; the cuMem* driver calls stay with the caller as externs. 4800 differential checks against a line-by-line transcription of the native algorithm, 0 failures, across 1-byte to 2MB requests at 2MB and 16MB granularity, 400 alloc/free pairs each. Gate verified able to fail: changing the alignment constant to 64 produces \"FAIL actual_size matches native\" and exit 1. EXECUTION CONFIRMED FIRST: an LD_PRELOAD probe over the driver entry points recorded cuMemCreate=105 cuMemAddressReserve=2 cuMemMap=105 cuMemRelease=105 cuMemUnmap=21 cuMemAddressFree=2 in one Apex run, so the pool is live (unlike EXP188 and EXP190, which ported non-executing code). REMAINING: wiring into shared-cuda.cu (EXP160 modified copy of ggml-cuda.cu that replaces ggml-cuda.cu.o in the link line) and rebuilding the chain from exp160; the methods are virtual and vtable-dispatched, so LD_PRELOAD cannot reach them.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3250,6 +3250,14 @@
       "change": "MMQ q8_1: in the active chain, byte-exact and sanitizer-clean; verdict carried in the experiment directory",
       "status": "REJECTED",
       "evidence": "experiments/EXP180-*/ and docs/goose-migration/coverage-registry.json"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-17",
+      "experiment": "EXP195",
+      "change": "VMM pool alloc/free arithmetic implemented in Goose with a 4800-check differential gate; core-TU wiring pending",
+      "status": "IN_PROGRESS",
+      "evidence": "experiments/EXP-2026-11-08-195-goose-cuda-vmm-pool/README.md"
     }
   ],
   "batches": [
