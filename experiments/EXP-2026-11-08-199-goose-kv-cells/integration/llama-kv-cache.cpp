@@ -26,6 +26,11 @@ extern "C" int64_t fg199k_head_after_rm(int64_t freed, int64_t new_head, int64_t
 extern "C" int64_t fg199k_same_stream(int64_t s0, int64_t s1);
 extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
 extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
+extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
+extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
+extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
+extern "C" void fg199k_pos_div(int64_t pos, int64_t shift, int64_t d, uint64_t out);
 extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
 
 static bool ggml_is_power_of_2(int n) {
@@ -431,6 +436,11 @@ extern "C" int64_t fg199k_head_after_rm(int64_t freed, int64_t new_head, int64_t
 extern "C" int64_t fg199k_same_stream(int64_t s0, int64_t s1);
 extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
 extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
+extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
+extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
+extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
+extern "C" void fg199k_pos_div(int64_t pos, int64_t shift, int64_t d, uint64_t out);
 extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
 // ---------------------------------------------------------------------------------------------
 

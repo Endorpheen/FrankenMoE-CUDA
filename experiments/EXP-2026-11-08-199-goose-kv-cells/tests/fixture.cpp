@@ -37,6 +37,11 @@ int64_t fg199k_head_after_rm(int64_t, int64_t, int64_t);
 int64_t fg199k_same_stream(int64_t, int64_t);
 int64_t fg199k_seq_cp_self(int64_t, int64_t);
 int64_t fg199k_seq_cp_is_full(int64_t, int64_t, int64_t);
+int64_t fg199k_seq_add_skip(int64_t, int64_t, int64_t);
+int64_t fg199k_pos_add(int64_t, int64_t, int64_t, uint64_t);
+void fg199k_pos_div(int64_t, int64_t, int64_t, uint64_t);
+int64_t fg199k_seq_add_head(int64_t, int64_t);
+int64_t fg199k_seq_div_skip(int64_t, int64_t, int64_t);
 }
 
 // ---- arena, laid out as the module documents it ----
@@ -295,6 +300,35 @@ int main(void) {
         if (p0 > 0 && p0 + 1 < size) full = false;
         if (p1 > 0 && p1 + 1 < size) full = false;
         ck((fg199k_seq_cp_is_full(p0, p1, size) != 0) == full, "seq_cp_is_full", 0, full);
+    }
+
+    // seq_add / seq_div decisions.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t sh = (int64_t)(rng() % 21) - 10;
+        const int64_t a0 = rng() % 10, a1 = rng() % 10;
+        ck((fg199k_seq_add_skip(sh, a0, a1) != 0) == (sh == 0 || a0 == a1), "seq_add_skip", 0, 0);
+
+        const int64_t d = (int64_t)(rng() % 5) - 2;
+        ck((fg199k_seq_div_skip(d, a0, a1) != 0) == (d == 1 || a0 == a1), "seq_div_skip", 0, 0);
+
+        const int64_t pos = (int64_t)(rng() % 40), shift = (int64_t)(rng() % 20);
+        int64_t o[3] = {0, 0, 0};
+        const int64_t emptied = fg199k_pos_add(pos, shift, d, (uint64_t)(uintptr_t)o);
+        const int64_t np = pos + d;
+        ck((emptied != 0) == (np < 0), "pos_add empty", emptied, np < 0);
+        if (np >= 0) {
+            ck(o[0] == np, "pos_add pos", o[0], np);
+            ck(o[1] == shift + d, "pos_add shift", o[1], shift + d);
+        }
+
+        const int64_t dv = 1 + (int64_t)(rng() % 4);
+        int64_t q[2] = {0, 0};
+        fg199k_pos_div(pos, shift, dv, (uint64_t)(uintptr_t)q);
+        ck(q[0] == pos / dv, "pos_div pos", q[0], pos / dv);
+        ck(q[1] == shift + (pos - pos / dv), "pos_div shift", q[1], shift + (pos - pos / dv));
+
+        const int64_t freed = rng() % 2, nh = rng() % 20;
+        ck(fg199k_seq_add_head(freed, nh) == (freed == 0 ? 0 : nh), "seq_add_head", 0, 0);
     }
 
     run_trap("rm on empty cell", 12, trap_rm_empty);

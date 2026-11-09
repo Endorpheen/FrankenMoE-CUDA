@@ -327,6 +327,63 @@ fn seq_cp_is_full(p0:i64,p1:i64,size:i64)->i64{
  return full;
 }
 
+
+// seq_add / seq_div at cache level, from llama-kv-cache.cpp:592-678 and llama-kv-cells.h:448-496.
+
+// seq_add_skip: line 605-615. A zero shift is a no-op, and an empty range is skipped to avoid
+// looping over the whole cache.
+fn seq_add_skip(shift:i64,p0:i64,p1:i64)->i64{
+ ensure(p0>=0&&p1>=0,190);
+ if shift==0 as i64{return 1 as i64;}
+ if p0==p1{return 1 as i64;}
+ return 0 as i64;
+}
+
+// pos_add: llama-kv-cells.h:448. Adds to the position and the shift; if the position goes
+// negative the cell is emptied instead. Returns 1 when the cell became empty, which is what the
+// caller counts to pick a new head.
+//   r[0] new pos, r[1] new shift, r[2] empty flag
+fn pos_add(pos:i64,shift:i64,d:i64,r:u64)->i64{
+ ensure(pos!=(0 as i64)-1 as i64,191);
+ let np:i64=pos+d;
+ st_i64(r,8,shift+d);
+ if np<0 as i64{
+  st_i64(r,0,(0 as i64)-1 as i64);
+  st_i64(r,8,0 as i64);
+  st_i64(r,16,1 as i64);
+  return 1 as i64;
+ }
+ st_i64(r,0,np);
+ st_i64(r,16,0 as i64);
+ return 0 as i64;
+}
+
+// pos_div: llama-kv-cells.h:477. Divides the position and accumulates the difference into the
+// shift, so the two stay consistent.
+fn pos_div(pos:i64,shift:i64,d:i64,r:u64){
+ ensure(pos!=(0 as i64)-1 as i64,200);
+ ensure(d!=0 as i64,201);
+ let np:i64=pos/d;
+ st_i64(r,0,np);
+ st_i64(r,8,shift+(pos-np));
+}
+
+// seq_add_head: line 632. `head = new_head != size ? new_head : 0` -- unlike seq_rm this does not
+// keep the old head when nothing was freed; it restarts from zero.
+fn seq_add_head(freed:i64,new_head:i64)->i64{
+ ensure(new_head>=0,210);
+ if freed==0 as i64{return 0 as i64;}
+ return new_head;
+}
+
+// seq_div_skip: `if (d == 1) return;` plus the same empty-range early exit.
+fn seq_div_skip(d:i64,p0:i64,p1:i64)->i64{
+ ensure(p0>=0&&p1>=0,220);
+ if d==1 as i64{return 1 as i64;}
+ if p0==p1{return 1 as i64;}
+ return 0 as i64;
+}
+
 // should_purge: llama-kv-cache.cpp:1228 `cells.seq_pos_min(s) <= seq_pos_max_rm[s]`.
 // Returns 1 when the purge loop must call seq_rm for this sequence.
 fn should_purge(seq_pos_min:i64,max_rm:i64)->i64{
@@ -366,4 +423,9 @@ fn main(){
  same_stream(0 as i64,0 as i64);
  seq_cp_self(0 as i64,0 as i64);
  seq_cp_is_full(0 as i64,0 as i64,0 as i64);
+ seq_add_skip(0 as i64,0 as i64,0 as i64);
+ pos_add(0 as i64,0 as i64,0 as i64,0 as u64);
+ pos_div(0 as i64,0 as i64,1 as i64,0 as u64);
+ seq_add_head(0 as i64,0 as i64);
+ seq_div_skip(1 as i64,0 as i64,0 as i64);
 }

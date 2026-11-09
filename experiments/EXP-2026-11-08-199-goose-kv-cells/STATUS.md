@@ -167,3 +167,40 @@ Everything else is unchanged and still exact:
     tokens and all 128 top-5 probabilities equal, 2537.45 / 26.57
 
 Gate: 70429 checks / 0 failures.
+
+## seq_add / seq_div ported; neither is exercised on this profile
+
+From `llama-kv-cache.cpp:592-678` and `llama-kv-cells.h:448-496`:
+
+- `seq_add_skip(shift, p0, p1)` -- zero shift or empty range is a no-op.
+- `pos_add(pos, shift, d, out)` -- position and shift advance together; a negative result empties
+  the cell and that is the return value the caller counts.
+- `pos_div(pos, shift, d, out)` -- divides the position and folds the difference into the shift so
+  the two stay consistent.
+- `seq_add_head(freed, new_head)` -- line 632; unlike `seq_rm`, this restarts at 0 when nothing
+  was freed instead of keeping the old head.
+- `seq_div_skip(d, p0, p1)` -- `d == 1` or an empty range is a no-op.
+
+Apex:
+
+    FG199K_KV_SHIFT add=0 div=0
+
+So context shifting is not used by this run at all. Both are gated against native arithmetic over
+300 randomised cases each, and both keep the native fallback. Recorded, not counted as landed.
+
+## KV status summary
+
+Ported and gated (72823 checks / 0 failures total), with live call counts from one Apex pass:
+
+| area | Goose | live per pass |
+|---|---|---:|
+| cell ownership | 8 operations + `place_cell` | 65798 |
+| head advance | `head_after_place` | 292 |
+| purge condition | `should_purge` | 0 (unreachable) |
+| slot search | `head_start`, `can_use_cell`, `is_masked_swa` | 146 / 32907 |
+| range clear | `pos_in`, `norm_range`, `head_after_rm` | 2621440 |
+| seq_cp | `same_stream`, `seq_cp_self`, `seq_cp_is_full` | 0 (unreachable) |
+| shifting | `seq_add_skip`, `pos_add`, `pos_div`, `seq_add_head`, `seq_div_skip` | 0 (unreachable) |
+
+Four of the seven groups are exercised by the profile; three are ported, gated and marked as
+unexercised. Nothing is claimed as landed that the profile does not run.
