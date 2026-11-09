@@ -102,6 +102,15 @@ Also worth noting: the plain `bs=1x1` case fails as well as the batched ones, so
 is not the discriminator, and `n=1` is not either — the Apex profile runs `mul_mat_vec_f` four
 times per pass successfully with much larger `k`.
 
+The witness confirms the path rather than the dispatch: running `-o MUL_MAT` leaves
+
+    FG184M_CUDA_MMVF   host=0x21,paths=0x1
+    FG185Q_CUDA_MMVQ_Q4K host=0x21,paths=0x1
+
+`paths=0x1` is the launched-route bit, so the Goose kernels did execute on these cases. That
+settles the question this note exists to answer: it is a computation mismatch inside the body,
+not a case that should have declined and did not.
+
 No change was made here. The predicate currently admits these shapes, and narrowing it by
 guesswork would either be wrong or would silently reduce coverage; the failure needs to be
 traced inside the body first.
