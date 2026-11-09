@@ -6,7 +6,7 @@ native operator byte-for-byte. The one fixed-profile Apex gate is recorded in
 
 ## Verdict
 
-**ACCEPTED** — byte-exact GET_ROWS on the Apex path.
+**ACCEPTED** — byte-exact GET_ROWS on the Apex path; no measurable speed effect once run order is controlled.
 
 This is a verdict on the transfer in the experimental runtime, which is the only thing
 this work decides. Installation into the production working runtime is left to Igor and
@@ -66,6 +66,29 @@ particular `src0->ne[3] == src1->ne[2]`. My multi-plane cases set
 `src0->ne[3] = 1` while `src1->ne[2]` was 2 or 3. That is why the *unchanged
 native* arm failed those cases identically: the fixture, not the candidate, was
 wrong. With the assert set satisfied, both arms pass every case.
+
+## Run order dominates this stage's timing
+
+Four pairs were taken after removing the inherited `SET_ROWS=0` line, two in each order:
+
+| pair | order | native | goose | prefill | decode |
+|---|---|---|---:|---:|---:|
+| iso1 | native→goose | 26.11 | 27.26 | +0.02% | **+4.43%** |
+| iso2 | native→goose | 26.91 | 27.71 | −0.02% | **+2.97%** |
+| iso3 | goose→native | 27.48 | 27.07 | −0.13% | **−1.50%** |
+| iso4 | goose→native | 27.47 | 27.74 | +0.27% | **+0.98%** |
+
+The pattern is in the native column, not in the delta: native reads 26.11 and 26.91 when it
+runs first, and 27.48 and 27.47 when it runs second. Whichever arm goes first pays a warm-up
+of roughly 1.3 tok/s, so a one-way comparison attributes that to the component under test.
+
+Taking all four pairs the median is +1.97% decode, which is entirely this artefact. The
+supported conclusion is that GET_ROWS has **no measurable effect on throughput**: when the
+arms are measured in both orders the difference changes sign, and every pair agrees within
+the warm-up band.
+
+This is why the two-way protocol exists. A single-order pair here would have reported a 3-4%
+speed-up that does not exist, and it would have been confidently wrong.
 
 ## Local gate
 
