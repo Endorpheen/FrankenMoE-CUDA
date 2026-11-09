@@ -29,14 +29,14 @@ static __global__ __launch_bounds__(256) void fg184m_kernel(
  const char * x,const float * y,const char * ids,float * dst,
  int64_t ncols2,int64_t stride_row,int64_t stride_col_y2,int64_t stride_col_dst,
  int64_t scx,int64_t scy,int64_t scd,int64_t ssx,int64_t ssy,int64_t ssd,
- int64_t nchannels_y,int64_t channel_ratio,int32_t use_ids,int64_t ids_stride,int64_t block_size){
+ int64_t nchannels_y,int64_t channel_ratio,int64_t sample_ratio,int32_t use_ids,int64_t ids_stride,int64_t block_size){
  if(blockIdx.x==0&&blockIdx.y==0&&blockIdx.z==0&&threadIdx.x==0)atomicOr(&fg184m_paths,1);
  extern __shared__ char fg184m_data[];
  fg184m_buf=(float*)fg184m_data;
  const uint64_t X=(uint64_t)(uintptr_t)x,Y=(uint64_t)(uintptr_t)y,D=(uint64_t)(uintptr_t)dst,I=(uint64_t)(uintptr_t)ids;
  const bool u=use_ids!=0;
  FG184M_ROW(X,Y,D,I,ncols2,stride_row,stride_col_y2,stride_col_dst,
-  scx,scy,scd,ssx,ssy,ssd,nchannels_y,channel_ratio,u,ids_stride,
+  scx,scy,scd,ssx,ssy,ssd,nchannels_y,channel_ratio,sample_ratio,u,ids_stride,
   (int64_t)blockIdx.x,(int64_t)blockIdx.y,(int64_t)blockIdx.z,block_size,(int64_t)threadIdx.x,0);
 }
 
@@ -67,7 +67,7 @@ extern "C" int64_t fg184h_launch(int64_t pp){
    (int64_t)(v[1][0]/2),(int64_t)v[1][1],(int64_t)v[1][2],(int64_t)v[1][3],
    (int64_t)v[2][0],(int64_t)v[2][1],(int64_t)v[2][2],
    (int64_t)v[3][0],(int64_t)v[3][1],(int64_t)v[3][2],
-   (int64_t)v[4][3],(int64_t)v[5][4],(int32_t)v[5][2],(int64_t)v[5][3],(int64_t)v[7][3]);
+   (int64_t)v[4][3],(int64_t)v[5][4],(int64_t)v[5][5],(int32_t)v[5][2],(int64_t)v[5][3],(int64_t)v[7][3]);
  return cudaGetLastError();
 }
 extern "C" uint64_t fg184m_cuda_host_seen(){return fg184m_host_seen.load(std::memory_order_relaxed);}
@@ -186,8 +186,9 @@ void ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
   // The body has no sample_ratio: it uses sample_dst directly, while native divides by
   // nsamples_dst/nsamples_x. That is only the same when the source and destination have the
   // same number of samples, so a broadcast source must go native.
-  ne13==ne3 && src0->ne[3]==dst->ne[3] && (ne10%2==0);
+  ne13==ne3 && src0->ne[3]>0 && dst->ne[3]%src0->ne[3]==0 && (ne10%2==0);
  p.v[6][0]=eligible?1ULL:0ULL;
+ p.v[5][5]=(uint64_t)(src0->ne[3]?(dst->ne[3]/src0->ne[3]):1);
  p.v[5][2]=ids?1ULL:0ULL;
  if(fg184hh_run((int64_t)(uintptr_t)&p)&&eligible){
   fg184m_host_seen.fetch_or(p.launched?1ULL:16ULL,std::memory_order_relaxed);

@@ -551,3 +551,32 @@ So the earlier bound was hiding a real defect, and the defect is now identified 
 masked. Implementing `sample_ratio` in the body would be the fuller fix and is recorded as the
 next step; it needs the ratio as a new packet field and a divide per element, which is why it is
 not done in the same pass as the diagnosis.
+
+## Full fix: sample_ratio implemented in the body
+
+Rather than decline the broadcast case, the body now computes what native computes. `mmvf.cu:43`
+divides the destination sample index by `nsamples_dst / nsamples_x`; the Goose body did not.
+
+Changes:
+
+- `device.goose`: `fg184m_row` takes a new `sample_ratio` argument and, on the non-ids route,
+  `sample_x = sample_dst / sample_ratio`, guarded by `ensure(sample_ratio > 0, 14)` — the same
+  place native derives `channel_x` from `channel_ratio`.
+- `cuda-runtime.cu`: the ratio is computed as `dst->ne[3] / src0->ne[3]` (mirroring
+  `mmvf.cu:434`), carried in packet slot `(5,5)`, and passed through the kernel to the body.
+- Eligibility loosened from `src0->ne[3] == dst->ne[3]` to the condition that actually matters
+  for a division, `dst->ne[3] % src0->ne[3] == 0`.
+
+Result on the case that started this:
+
+    MUL_MAT(type_a=f32,type_b=f32,m=16,n=1,k=256,bs=[1,1],nr=[1,2],...)
+    FG184M host=0x1,paths=0x1  ->  1/1 tests passed     (was 0/1, ERR 1.03)
+
+    full test-backend-ops  ->  rc=0, 0 failures, 2/2 backends passed
+    Apex witness           ->  FG184M and FG185Q both paths=0x1, output e68df05b
+
+So the broadcast case is now computed, not declined.
+
+EXP185 is **not** patched: its own body still lacks the ratio, so its predicate stays at
+`src0->ne[3] == dst->ne[3]`. Loosening it without patching the body would reintroduce the same
+defect for q4_K. That asymmetry is deliberate and recorded in the source comment.

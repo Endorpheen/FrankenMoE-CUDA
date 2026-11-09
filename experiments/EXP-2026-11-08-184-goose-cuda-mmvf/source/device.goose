@@ -51,7 +51,7 @@ fn fg184m_row(x:u64,y:u64,dst:u64,ids:u64,
  ncols2:i64,stride_row:i64,stride_col_y2:i64,stride_col_dst:i64,
  stride_channel_x:i64,stride_channel_y:i64,stride_channel_dst:i64,
  stride_sample_x:i64,stride_sample_y:i64,stride_sample_dst:i64,
- nchannels_y:i64,channel_ratio:i64,use_ids:bool,ids_stride:i64,
+ nchannels_y:i64,channel_ratio:i64,sample_ratio:i64,use_ids:bool,ids_stride:i64,
  row:i64,channel_dst:i64,sample_dst:i64,block_size:i64,tid:i64){
  ensure(block_size>0,10);
  ensure(tid>=0&&tid<block_size,11);
@@ -65,6 +65,13 @@ fn fg184m_row(x:u64,y:u64,dst:u64,ids:u64,
   ensure(channel_ratio>0,13);
   channel_x=channel_dst/channel_ratio;
   channel_y=channel_dst%nchannels_y;
+ }
+ if !use_ids{
+  // Native derives the source sample the same way it derives the channel, by dividing the
+  // destination index by nsamples_dst/nsamples_x (mmvf.cu:43), so a source with fewer samples
+  // than the destination is broadcast. Without this the read runs off the end of the source.
+  ensure(sample_ratio>0,14);
+  sample_x=sample_dst/sample_ratio;
  }
  if use_ids{
   // ids[channel_dst + token_idx*ids_stride]; token_idx is zero on this profile.
@@ -116,5 +123,5 @@ fn fg184m_row(x:u64,y:u64,dst:u64,ids:u64,
 // Retained entry; the parent never executes main.
 fn main(){
  let z:u64=0;
- fg184m_row(z,z,z,z,0,0,0,0,0,0,0,0,0,0,0,0,false,0,0,0,0,32 as i64,0);
+ fg184m_row(z,z,z,z,0,0,0,0,0,0,0,0,0,0,0,0,0,false,0,0,0,0,32 as i64,0);
 }
