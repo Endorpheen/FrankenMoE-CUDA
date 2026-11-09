@@ -20,6 +20,9 @@ extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * c
 extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
 extern "C" int64_t fg199k_head_after(int64_t last_idx);
 extern "C" int64_t fg199k_head_start(int64_t head_cur, int64_t used, int64_t n_tokens);
+extern "C" int64_t fg199k_pos_in(int64_t pos, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_norm_range(int64_t p0, int64_t p1, uint64_t out);
+extern "C" int64_t fg199k_head_after_rm(int64_t freed, int64_t new_head, int64_t head);
 extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
 
 static bool ggml_is_power_of_2(int n) {
@@ -419,6 +422,9 @@ extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * c
 extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
 extern "C" int64_t fg199k_head_after(int64_t last_idx);
 extern "C" int64_t fg199k_head_start(int64_t head_cur, int64_t used, int64_t n_tokens);
+extern "C" int64_t fg199k_pos_in(int64_t pos, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_norm_range(int64_t p0, int64_t p1, uint64_t out);
+extern "C" int64_t fg199k_head_after_rm(int64_t freed, int64_t new_head, int64_t head);
 extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
 // ---------------------------------------------------------------------------------------------
 
@@ -431,12 +437,14 @@ bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
     // TODO: fix incosistent handling of `seq_id < 0` and `seq_id == -1` in the codebase [TAG_LLAMA_SEQ_ID_NEG]
     GGML_ASSERT(seq_id == -1 || (seq_id >= 0 && (size_t) seq_id < seq_to_stream.size()));
 
-    if (p0 < 0) {
-        p0 = 0;
-    }
-
-    if (p1 < 0) {
-        p1 = std::numeric_limits<llama_pos>::max();
+    {
+        // Goose normalises the range; the values are stored back into p0/p1 here.
+        const int en = fg199k_enabled();
+        if (en) { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
+        else {
+            if (p0 < 0) p0 = 0;
+            if (p1 < 0) p1 = std::numeric_limits<llama_pos>::max();
+        }
     }
 
     if (seq_id >= 0) {
@@ -445,8 +453,11 @@ bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
 
         uint32_t new_head = cells.size();
 
+        const int en = fg199k_enabled();
         for (uint32_t i = 0; i < cells.size(); ++i) {
-            if (!cells.pos_in(i, p0, p1)) {
+            const bool in = en ? (fg199k_pos_in(cells.is_empty(i) ? -1 : cells.pos_get(i), p0, p1) != 0)
+                               : cells.pos_in(i, p0, p1);
+            if (!in) {
                 continue;
             }
 
@@ -628,12 +639,14 @@ void llama_kv_cache::seq_add(llama_seq_id seq_id, llama_pos p0, llama_pos p1, ll
 
     uint32_t new_head = cells.size();
 
-    if (p0 < 0) {
-        p0 = 0;
-    }
-
-    if (p1 < 0) {
-        p1 = std::numeric_limits<llama_pos>::max();
+    {
+        // Goose normalises the range; the values are stored back into p0/p1 here.
+        const int en = fg199k_enabled();
+        if (en) { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
+        else {
+            if (p0 < 0) p0 = 0;
+            if (p1 < 0) p1 = std::numeric_limits<llama_pos>::max();
+        }
     }
 
     // If there is no range then return early to avoid looping over all cells.
@@ -675,12 +688,14 @@ void llama_kv_cache::seq_div(llama_seq_id seq_id, llama_pos p0, llama_pos p1, in
         return;
     }
 
-    if (p0 < 0) {
-        p0 = 0;
-    }
-
-    if (p1 < 0) {
-        p1 = std::numeric_limits<llama_pos>::max();
+    {
+        // Goose normalises the range; the values are stored back into p0/p1 here.
+        const int en = fg199k_enabled();
+        if (en) { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
+        else {
+            if (p0 < 0) p0 = 0;
+            if (p1 < 0) p1 = std::numeric_limits<llama_pos>::max();
+        }
     }
 
     // If there is no range then return early to avoid looping over the cache.

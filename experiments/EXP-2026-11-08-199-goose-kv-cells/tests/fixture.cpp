@@ -31,6 +31,9 @@ int64_t fg199k_place_cell(uint64_t, int64_t, int64_t, int64_t, int64_t, uint64_t
 int64_t fg199k_head_after_place(int64_t);
 int64_t fg199k_head_start(int64_t, int64_t, int64_t);
 int64_t fg199k_can_use(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
+int64_t fg199k_pos_in(int64_t, int64_t, int64_t);
+int64_t fg199k_norm_range(int64_t, int64_t, uint64_t);
+int64_t fg199k_head_after_rm(int64_t, int64_t, int64_t);
 }
 
 // ---- arena, laid out as the module documents it ----
@@ -257,6 +260,23 @@ int main(void) {
 
         const int64_t occ = rng() % 2, sc = rng() % 3;
         ck(fg199k_can_use(occ, sc, p0, p1, 0, 0) == (occ == 0 ? 1 : 0), "can_use empty", 0, 0);
+    }
+
+    // seq_rm decisions.
+    for (int i = 0; i < 400; ++i) {
+        const int64_t pos = (int64_t)(rng() % 80) - 10;
+        const int64_t p0 = (int64_t)(rng() % 60), p1 = p0 + (int64_t)(rng() % 40);
+        ck((fg199k_pos_in(pos, p0, p1) != 0) == (pos >= p0 && pos < p1), "pos_in", 0, 0);
+
+        const int64_t a = (int64_t)(rng() % 60) - 20, b = (int64_t)(rng() % 60) - 5;
+        int64_t out[2] = {-1, -1};
+        fg199k_norm_range(a, b, (uint64_t)(uintptr_t)out);
+        ck(out[0] == (a < 0 ? 0 : a), "norm p0", out[0], (a < 0 ? 0 : a));
+        ck(out[1] == (b < 0 ? 2147483647LL : b), "norm p1", out[1], (b < 0 ? 2147483647LL : b));
+
+        const int64_t head = rng() % 40, nh = rng() % 40, freed = rng() % 2;
+        const int64_t ref = freed == 0 ? head : (nh < head ? nh : head);
+        ck(fg199k_head_after_rm(freed, nh, head) == ref, "head_after_rm", 0, ref);
     }
 
     run_trap("rm on empty cell", 12, trap_rm_empty);

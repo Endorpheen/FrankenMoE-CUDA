@@ -105,3 +105,41 @@ decisions compared against the native expressions over 400 randomised cases each
 
 `prepare` itself -- the trial-placement loop with its recovery stack -- and then the
 `llama_kv_cache_context` seam.
+
+## Cache-level seq_rm decisions ported and live
+
+From `llama-kv-cache.cpp:404-467`:
+
+- `pos_in(pos, p0, p1)` -- llama-kv-cells.h:421, `pos >= p0 && pos < p1`.
+- `norm_range(p0, p1, out)` -- lines 416-422, the negative-bound normalisation. One native
+  property had to be preserved rather than "improved": an inverted range is not an error there,
+  it simply matches nothing, so the module does not assert `p0 <= p1`.
+- `head_after_rm(freed, new_head, head)` -- lines 435-437.
+
+Apex:
+
+    FG199K_KV_CELLS goose=65814 cleared=0 native=0 purge=0 head=292
+    FG199K_KV_SLOT  head_start=146 can_use=32907
+    FG199K_KV_SEQRM pos_in=2621440 head_after_rm=0
+    tokens and all 128 top-5 probabilities equal, 2547.10 / 25.15
+
+**2.6 million `pos_in` decisions in one pass**, all Goose, `native=0`. `head_after_rm=0` because
+nothing is freed in this profile -- the same fact as `cleared=0`, recorded rather than hidden.
+
+Gate: 69529 checks / 0 failures.
+
+## Running total for KV
+
+| decision | Goose function | live calls per pass |
+|---|---|---:|
+| cell ownership (8 ops) | `rm`/`seq_rm`/`seq_keep`/`seq_add`/`pos_set`/`seq_count`/`is_empty`/`used_max_p1` | gate + 65798 placements |
+| token placement | `place_cell` | 65798 |
+| purge condition | `should_purge` | 0 (unreachable here) |
+| head advance | `head_after_place` | 292 |
+| slot search | `head_start`, `can_use_cell`, `is_masked_swa` | 146 / 32907 |
+| range clear | `pos_in`, `norm_range`, `head_after_rm` | 2621440 |
+
+## Next
+
+`prepare`'s trial loop and the `llama_kv_cache_context` seam; then the same treatment for
+`seq_cp` / `seq_keep` at cache level.

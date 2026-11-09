@@ -266,6 +266,37 @@ fn can_use_cell(occupied:i64,seq_count:i64,pos_cell:i64,seq_pos_max_1:i64,
  return 0 as i64;
 }
 
+
+// seq_rm at cache level, from llama-kv-cache.cpp:404-467.
+
+// pos_in: llama-kv-cells.h:421, `pos[i] >= p0 && pos[i] < p1`.
+fn pos_in(pos:i64,p0:i64,p1:i64)->i64{
+ ensure(p0>=0,150);
+ if pos>=p0&&pos<p1{return 1 as i64;}
+ return 0 as i64;
+}
+
+// norm_range: lines 416-422. A negative p0 means "from the start", a negative p1 means
+// "to the end". The max position value is the native numeric_limits<llama_pos>::max().
+fn norm_range(p0:i64,p1:i64,r:u64)->i64{
+ let pmax:i64=2147483647 as i64;
+ let a:i64=if p0<0 as i64{0 as i64}else{p0};
+ let b:i64=if p1<0 as i64{pmax}else{p1};
+ st_i64(r,0,a);
+ st_i64(r,8,b);
+ // Native does not require p0 <= p1; an inverted range simply matches nothing.
+ return 1 as i64;
+}
+
+// head_after_rm: line 435-437. `if (new_head != size && new_head < head) head = new_head;`
+// new_head is `size` when nothing was freed, which the caller passes as freed=0.
+fn head_after_rm(freed:i64,new_head:i64,head:i64)->i64{
+ ensure(head>=0&&new_head>=0,160);
+ if freed==0 as i64{return head;}
+ if new_head<head{return new_head;}
+ return head;
+}
+
 // should_purge: llama-kv-cache.cpp:1228 `cells.seq_pos_min(s) <= seq_pos_max_rm[s]`.
 // Returns 1 when the purge loop must call seq_rm for this sequence.
 fn should_purge(seq_pos_min:i64,max_rm:i64)->i64{
@@ -299,4 +330,7 @@ fn main(){
  head_start(0 as i64,0 as i64,0 as i64);
  is_masked_swa(0 as i64,0 as i64,0 as i64,0 as i64);
  can_use_cell(0 as i64,0 as i64,0 as i64,0 as i64,0 as i64,0 as i64);
+ pos_in(0 as i64,0 as i64,0 as i64);
+ norm_range(0 as i64,0 as i64,0 as u64);
+ head_after_rm(0 as i64,0 as i64,0 as i64);
 }
