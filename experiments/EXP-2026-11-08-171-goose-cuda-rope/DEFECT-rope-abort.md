@@ -1,6 +1,6 @@
 # DEFECT: RoPE aborts on inputs outside the Apex profile
 
-Status: open, reproduced, isolated, not yet fixed.
+Status: **FIXED** and verified against `test-backend-ops`.
 Found: 2026-11-08, while running `test-backend-ops` against `runtime/exp196/run`.
 
 ## What happens
@@ -87,11 +87,23 @@ on the `-inf`, so the trap would move from code 27 to code 49 rather than disapp
 Option 1 is the one to do first: it is the same shape as the GET_ROWS fix, it keeps the gate
 honest, and it cannot silently change trap semantics.
 
-## Not fixed in this iteration
+## Fix applied
 
-The change needs the EXP171 object rebuilt and every inheriting stage relinked, then the RoPE
-matrix rerun and the paired Apex protocol repeated. Started and stopped cleanly instead of
-half-applied.
+Option 1, in `source/cuda-bridge.cuh`: the Goose path now also declines when
+`op_params[4] <= 0`,
+
+    if (!fg171r_enabled() || op_params[2] == GGML_ROPE_TYPE_VISION || op_params[4] <= 0) {
+        ...native...
+    }
+
+so the non-finite correction-dims case is never modelled. EXP171 was rebuilt and the active
+runtime relinked; the link line references `runtime/exp171/build/{cuda-rope,host-goose}.o` by
+path, so no downstream stage carries a copy.
+
+    test-backend-ops test -o ROPE -b CUDA0   ->  2/2 backends passed
+
+The full suite then completes instead of aborting: 18748 cases OK, 16 FAIL, no abort. The
+remaining failures are mapped in `docs/goose-migration/test-backend-ops-failures.md`.
 
 Note also that this is the second module found this way, which says the pattern is systematic:
 each stage's gate was written against the Apex profile, so "covered" means "covered for the
