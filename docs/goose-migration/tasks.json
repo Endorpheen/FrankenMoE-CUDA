@@ -3226,6 +3226,14 @@
       "change": "CUDA Q4_0 dequantization (F16) implemented in Goose; not on the Apex path",
       "status": "IN_PROGRESS",
       "evidence": "experiments/EXP-2026-11-08-188-goose-cuda-dequant-q4-0/README.md"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "ALL",
+      "experiment": "—",
+      "change": "census transferred/blocked status consolidated in docs/goose-migration/census-status.md",
+      "status": "DOCUMENTED",
+      "evidence": "docs/goose-migration/census-status.md"
     }
   ],
   "batches": [
