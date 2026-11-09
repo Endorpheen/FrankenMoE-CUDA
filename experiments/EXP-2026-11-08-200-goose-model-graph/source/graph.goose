@@ -58,10 +58,56 @@ fn shift_skip(shift:i64)->i64{
  return 0 as i64;
 }
 
+
+// build_moe_ffn decisions, from llama-graph.cpp:2189-2348.
+//
+// The MoE body is graph construction; what it decides, and what is ported here, is which gating
+// op to apply, whether group selection runs, whether weights are normalised and scaled, and
+// whether the weights are applied before the FFN.
+
+// gating_kind: the four gating functions, as the switch at 2227-2249 expresses them.
+//   0 SOFTMAX, 1 SIGMOID, 2 SOFTMAX_WEIGHT (identity before top-k), 3 SQRT_SOFTPLUS
+fn gating_kind(gating_op:i64)->i64{
+ if gating_op==0 as i64{return 0 as i64;}
+ if gating_op==1 as i64{return 1 as i64;}
+ if gating_op==2 as i64{return 2 as i64;}
+ if gating_op==3 as i64{return 3 as i64;}
+ ensure(false,50);   // native aborts on an unknown gating type
+ return 0 as i64;
+}
+
+// group_select: line 2283, `n_expert_groups > 1 && n_tokens > 0`.
+fn group_select(n_expert_groups:i64,n_tokens:i64)->i64{
+ // Native has no lower bound here: a model may report 0 groups, and `> 1` then simply fails.
+ ensure(n_expert_groups>=0,51);
+ ensure(n_tokens>=0,52);
+ if n_expert_groups>1 as i64&&n_tokens>0 as i64{return 1 as i64;}
+ return 0 as i64;
+}
+
+// weight_before_ffn: line 2214, only llama4 applies the sigmoid-ed weights before the FFN.
+fn weight_before_ffn(is_llama4:i64)->i64{
+ if is_llama4!=0{return 1 as i64;}
+ return 0 as i64;
+}
+
+// weights_need_scale: line 2345, `w_scale != 0 && w_scale != 1`.
+// The comparison is on the float value; the caller passes it as a bit pattern so the decision
+// stays integer arithmetic. 0.0f = 0x00000000, 1.0f = 0x3f800000.
+fn weights_need_scale(w_scale_bits:i64)->i64{
+ if w_scale_bits==0 as i64{return 0 as i64;}
+ if w_scale_bits==1065353216 as i64{return 0 as i64;}   // 0x3f800000
+ return 1 as i64;
+}
+
 fn main(){
  is_recr(0 as i64,1 as i64,0 as u64);
  crop_before_nextn(0 as i64,0 as i64,0 as i64);
  crop_after_nextn(0 as i64,0 as i64,0 as i64);
  capture_layer_input(0 as i64,1 as i64);
  shift_skip(0 as i64);
+ gating_kind(0 as i64);
+ group_select(1 as i64,0 as i64);
+ weight_before_ffn(0 as i64);
+ weights_need_scale(0 as i64);
 }

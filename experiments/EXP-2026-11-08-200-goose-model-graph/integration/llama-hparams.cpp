@@ -8,6 +8,10 @@
 // Goose Apex graph decisions (EXP200). GGML_GOOSE_MODEL_GRAPH=0 restores the native bodies.
 extern "C" int fg200g_enabled(void);
 extern "C" int64_t fg200g_is_recr(int64_t il, int64_t n_layer_all, uint64_t flags);
+extern "C" int64_t fg200g_gating_kind(int64_t gating_op);
+extern "C" int64_t fg200g_group_select(int64_t n_expert_groups, int64_t n_tokens);
+extern "C" int64_t fg200g_weight_before_ffn(int64_t is_llama4);
+extern "C" int64_t fg200g_weights_need_scale(int64_t w_scale_bits);
 
 void llama_hparams::set_swa_pattern(uint32_t n_pattern, bool dense_first) {
     if (dense_first) {

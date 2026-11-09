@@ -19,6 +19,10 @@ int64_t fg200g_crop_before_nextn(int64_t, int64_t, int64_t);
 int64_t fg200g_crop_after_nextn(int64_t, int64_t, int64_t);
 int64_t fg200g_capture_layer_input(int64_t, int64_t);
 int64_t fg200g_shift_skip(int64_t);
+int64_t fg200g_gating_kind(int64_t);
+int64_t fg200g_group_select(int64_t, int64_t);
+int64_t fg200g_weight_before_ffn(int64_t);
+int64_t fg200g_weights_need_scale(int64_t);
 }
 
 static int checks, failures;
@@ -86,6 +90,26 @@ int main(void) {
         ck((fg200g_capture_layer_input(il, nl) != 0) == (il < nl), "capture", 0, 0);
         const int64_t sh = (int64_t)(rng() % 21) - 10;
         ck((fg200g_shift_skip(sh) != 0) == (sh == 0), "shift_skip", 0, 0);
+    }
+
+    // MoE routing decisions against the native conditions.
+    for (int64_t g = 0; g < 4; ++g) {
+        ck(fg200g_gating_kind(g) == g, "gating_kind", fg200g_gating_kind(g), g);
+    }
+    for (int i = 0; i < 200; ++i) {
+        const int64_t ng = 1 + (int64_t)(rng() % 8), nt = (int64_t)(rng() % 5);
+        ck((fg200g_group_select(ng, nt) != 0) == (ng > 1 && nt > 0), "group_select", 0, 0);
+
+        const int64_t is4 = rng() % 2;
+        ck((fg200g_weight_before_ffn(is4) != 0) == (is4 != 0), "weight_before_ffn", 0, 0);
+
+        // Bit patterns: 0.0f, 1.0f, and a few other floats.
+        const float vals[] = {0.0f, 1.0f, 0.5f, -1.0f, 2.5f};
+        for (float v : vals) {
+            int32_t bits; memcpy(&bits, &v, 4);
+            const bool ref = (v != 0.0f && v != 1.0f);
+            ck((fg200g_weights_need_scale(bits) != 0) == ref, "weights_need_scale", 0, ref);
+        }
     }
 
     run_trap("is_recr negative layer", 10, trap_neg_layer);

@@ -23,11 +23,13 @@ static int64_t g_ld_u32(uint64_t base, int64_t index) {
 #include "graph-generated.c"
 #undef main
 
-static _Atomic unsigned long long g_recr, g_recr_y, g_native;
+static _Atomic unsigned long long g_recr, g_recr_y, g_native, g_moe_grp, g_moe_scale;
 __attribute__((destructor)) static void fg200g_report(void) {
     if (!atomic_load(&g_recr) && !atomic_load(&g_native)) return;
     fprintf(stderr, "FG200G_MODEL_GRAPH is_recr=%llu recurrent=%llu native=%llu\n",
             atomic_load(&g_recr), atomic_load(&g_recr_y), atomic_load(&g_native));
+    fprintf(stderr, "FG200G_MOE group_select=%llu scale_check=%llu\n",
+            atomic_load(&g_moe_grp), atomic_load(&g_moe_scale));
 }
 int64_t fg200g_is_recr(int64_t il, int64_t n_layer_all, uint64_t flags) {
     const int64_t r = gg_function_1(il, n_layer_all, flags, 0);
@@ -43,6 +45,10 @@ int64_t fg200g_crop_before_nextn(int64_t a, int64_t b, int64_t c) { return gg_fu
 int64_t fg200g_crop_after_nextn(int64_t a, int64_t b, int64_t c) { return gg_function_6(a, b, c, 0); }
 int64_t fg200g_capture_layer_input(int64_t il, int64_t n_layer) { return gg_function_7(il, n_layer, 0); }
 int64_t fg200g_shift_skip(int64_t shift) { return gg_function_8(shift, 0); }
+int64_t fg200g_gating_kind(int64_t gating_op) { return gg_function_9(gating_op, 0); }
+int64_t fg200g_group_select(int64_t g, int64_t ntok) { atomic_fetch_add(&g_moe_grp, 1); return gg_function_10(g, ntok, 0); }
+int64_t fg200g_weight_before_ffn(int64_t is4) { return gg_function_11(is4, 0); }
+int64_t fg200g_weights_need_scale(int64_t bits) { atomic_fetch_add(&g_moe_scale, 1); return gg_function_12(bits, 0); }
 
 // Integration entry points. The switch is opt-out so a new build has the feature on by default.
 int fg200g_enabled(void) {

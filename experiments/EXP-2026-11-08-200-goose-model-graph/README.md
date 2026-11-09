@@ -12,6 +12,10 @@ per-layer decisions the qwen35moe builder makes, while the graph construction it
 | `crop_after_nextn` | `llama-graph.h:1091` | `out_ids && emb_nextn && !emb_masked` |
 | `capture_layer_input` | `models/qwen35moe.cpp:182` | record the layer input during the main pass |
 | `shift_skip` | KV shift gate | a zero shift does not build the shift graph |
+| `gating_kind` | `build_moe_ffn` 2227-2249 | which of the four gating functions applies |
+| `group_select` | line 2283 | `n_expert_groups > 1 && n_tokens > 0` |
+| `weight_before_ffn` | line 2214 | only llama4 weights before the FFN |
+| `weights_need_scale` | line 2345 | `w_scale != 0 && w_scale != 1`, decided on the float bit pattern |
 
 `is_recr` is the one integrated into the library: it is called once per layer per pass and decides
 which attention mechanism the graph builds.
@@ -37,10 +41,19 @@ author writes both, a shared misunderstanding passes it, and only a real model l
 ## Evidence
 
     FG200G_MODEL_GRAPH is_recr=880 recurrent=660 native=0
-    tokens and all 128 top-5 probabilities equal, 2585.03 / 26.16
+    FG200G_MOE group_select=760 scale_check=760
+    tokens and all 128 top-5 probabilities equal, 2570.95 / 26.74
 
 880 calls in one pass, 660 of them recurrent layers, and `native=0` -- the switch never fell back.
 Gate: 5506 checks / 0 failures.
+
+## Two corrections the live run forced
+
+1. `group_select` asserted `n_expert_groups >= 1`; native has no such bound, and the model reports
+   0 for the grouped-selection count. The abort took the server down at startup. Relaxed to `>= 0`.
+2. `weights_need_scale` compares floats, so the bit pattern is passed in and compared as integers;
+   a first attempt wrote the conversion inline as a lambda inside the condition, which was
+   unreadable and unsafe. It is now a plain `memcpy` before the test.
 
 ## Switch
 
