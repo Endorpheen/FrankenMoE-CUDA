@@ -23,6 +23,8 @@ per-layer decisions the qwen35moe builder makes, while the graph construction it
 | `conv_channels` | line 400 | `d_inner + 2*n_group*d_state` |
 | `qkv_dim` | line 425 | `head_k_dim*num_k_heads*2 + head_v_dim*num_v_heads` |
 | `k_view_offset` / `v_view_offset` | lines 447/453 | where the K and V views start in the row |
+| `n_ff_exp` / `n_ff_shexp` | `qwen35moe.cpp:57-58` | declared expert FF width, else `n_ff / n_expert_used` |
+| `key_dim` / `value_dim` / `conv_dim` / `wqkv_width` | lines 65-67, 86 | the SSM tensor shapes |
 
 `is_recr` is the one integrated into the library: it is called once per layer per pass and decides
 which attention mechanism the graph builds.
@@ -94,6 +96,19 @@ Four runs in the mandated order, old (EXP199) -> new (EXP200) -> new -> old:
 prefill **-0.80%**, decode **-1.24%**, tokens exact on all four runs. Inside the 2% band, and the
 within-arm spread is 1.3 tok/s on decode, so this reads as "no regression detected" rather than a
 measurement of a small effect.
+
+## Load-time shapes
+
+The tensor-shape geometry at lines 54-96 decides every expert and SSM tensor's declared extent.
+This is the same class of value whose earlier mis-computation produced
+`blk.1.attn_qkv.weight has wrong shape`, so it belongs in Goose with a gate. Verified indirectly
+but firmly: the model loads and generates, which means every declared shape passed the loader's
+validation with Goose computing them.
+
+One operational note from this run: an Apex attempt failed with
+`cudaMalloc failed: out of memory` at 864 MiB, and the cause was a leftover `llama-server` from a
+killed run still holding VRAM (8120 MiB used). Killing it restored 3493 MiB and the run passed.
+Not a code defect, recorded so the next occurrence is not misdiagnosed.
 
 ## Switch
 

@@ -31,6 +31,16 @@ int64_t fg200g_conv_channels(int64_t, int64_t, int64_t);
 int64_t fg200g_qkv_dim(int64_t, int64_t, int64_t, int64_t);
 int64_t fg200g_k_view_offset(int64_t, int64_t);
 int64_t fg200g_v_view_offset(int64_t, int64_t);
+int64_t fg200g_need_repeat(int64_t, int64_t, int64_t, int64_t);
+int64_t fg200g_repeat_divisible(int64_t, int64_t);
+int64_t fg200g_final_width(int64_t, int64_t);
+int64_t fg200g_final_rows(int64_t, int64_t);
+int64_t fg200g_n_ff_exp(int64_t, int64_t, int64_t);
+int64_t fg200g_n_ff_shexp(int64_t, int64_t);
+int64_t fg200g_key_dim(int64_t, int64_t);
+int64_t fg200g_value_dim(int64_t, int64_t);
+int64_t fg200g_conv_dim(int64_t, int64_t);
+int64_t fg200g_wqkv_width(int64_t, int64_t);
 }
 
 static int checks, failures;
@@ -145,6 +155,36 @@ int main(void) {
         ck(fg200g_qkv_dim(hk, nk, hv, nvh) == hk*nk*2 + hv*nvh, "qkv_dim", 0, 0);
         ck(fg200g_k_view_offset(hk, nk) == hk*nk, "k_off", 0, 0);
         ck(fg200g_v_view_offset(hk, nk) == hk*nk*2, "v_off", 0, 0);
+    }
+
+    // Recurrent-branch tail decisions.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t nk = 1 + (int64_t)(rng() % 16), nv = 1 + (int64_t)(rng() % 16);
+        const int64_t ar = rng() % 2, ch = rng() % 2;
+        const bool ref_rep = (nk != nv) && !(ar && ch);
+        ck((fg200g_need_repeat(nk, nv, ar, ch) != 0) == ref_rep, "need_repeat", 0, ref_rep);
+        ck((fg200g_repeat_divisible(nk, nv) != 0) == (nv % nk == 0), "repeat_divisible", 0, 0);
+
+        const int64_t hv = (int64_t)(rng() % 256), nt = (int64_t)(rng() % 64), ns = (int64_t)(rng() % 8);
+        ck(fg200g_final_width(hv, nv) == hv*nv, "final_width", 0, 0);
+        ck(fg200g_final_rows(nt, ns) == nt*ns, "final_rows", 0, 0);
+    }
+
+    // Tensor-shape geometry against the native expressions.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t nff = 1 + (int64_t)(rng() % 8192), nu = 1 + (int64_t)(rng() % 16);
+        const int64_t decl = (rng() % 2) ? (int64_t)(rng() % 4096) : 0;
+        ck(fg200g_n_ff_exp(decl, nff, nu) == (decl ? decl : nff / nu), "n_ff_exp", 0, 0);
+        const int64_t ds = (rng() % 2) ? (int64_t)(rng() % 4096) : 0;
+        ck(fg200g_n_ff_shexp(ds, nff) == (ds ? ds : nff), "n_ff_shexp", 0, 0);
+
+        const int64_t hk = (int64_t)(rng() % 256), nk = (int64_t)(rng() % 32);
+        const int64_t hv = (int64_t)(rng() % 256), nv = (int64_t)(rng() % 32);
+        ck(fg200g_key_dim(hk, nk) == hk*nk, "key_dim", 0, 0);
+        ck(fg200g_value_dim(hv, nv) == hv*nv, "value_dim", 0, 0);
+        const int64_t kd = fg200g_key_dim(hk, nk), vd = fg200g_value_dim(hv, nv);
+        ck(fg200g_conv_dim(kd, vd) == kd*2 + vd, "conv_dim", 0, 0);
+        ck(fg200g_wqkv_width(kd, vd) == kd*2 + vd, "wqkv_width", 0, 0);
     }
 
     run_trap("is_recr negative layer", 10, trap_neg_layer);

@@ -9,6 +9,14 @@ extern "C" int64_t fg200g_gate_elem_offset(int64_t n_embd_head);
 extern "C" int64_t fg200g_head_v_dim(int64_t d_inner, int64_t num_v_heads);
 extern "C" int64_t fg200g_conv_channels(int64_t d_inner, int64_t n_group, int64_t d_state);
 extern "C" int64_t fg200g_qkv_dim(int64_t hk, int64_t nk, int64_t hv, int64_t nv);
+extern "C" int64_t fg200g_need_repeat(int64_t nk, int64_t nv, int64_t ar, int64_t ch);
+extern "C" int64_t fg200g_final_width(int64_t hv, int64_t nv);
+extern "C" int64_t fg200g_final_rows(int64_t nt, int64_t ns);
+extern "C" int64_t fg200g_n_ff_exp(int64_t declared, int64_t n_ff, int64_t n_expert_used);
+extern "C" int64_t fg200g_n_ff_shexp(int64_t declared, int64_t n_ff);
+extern "C" int64_t fg200g_key_dim(int64_t head_k_dim, int64_t n_k_heads);
+extern "C" int64_t fg200g_value_dim(int64_t head_v_dim, int64_t n_v_heads);
+extern "C" int64_t fg200g_conv_dim(int64_t key_d, int64_t value_d);
 
 void llama_model_qwen35moe::load_arch_hparams(llama_model_loader & ml) {
     ml.get_key_or_arr(LLM_KV_EXPERT_FEED_FORWARD_LENGTH, hparams.n_ff_exp_arr, hparams.n_layer_all, false);
@@ -63,17 +71,22 @@ void llama_model_qwen35moe::load_arch_tensors(llama_model_loader & ml) {
     auto load_block_trunk = [&](int il, int flags) {
         auto & layer = layers[il];
 
-        const int64_t n_ff_exp   = hparams.n_ff_exp() ? hparams.n_ff_exp() : n_ff / n_expert_used;
-        const int64_t n_ff_shexp = hparams.n_ff_shexp ? hparams.n_ff_shexp : n_ff;
+        // Goose derives the expert FF widths; these are the shapes the loader declares.
+        const int en_sh = fg200g_enabled();
+        const int64_t n_ff_exp   = en_sh ? fg200g_n_ff_exp(hparams.n_ff_exp(), n_ff, n_expert_used)
+                                         : (hparams.n_ff_exp() ? hparams.n_ff_exp() : n_ff / n_expert_used);
+        const int64_t n_ff_shexp = en_sh ? fg200g_n_ff_shexp(hparams.n_ff_shexp, n_ff)
+                                         : (hparams.n_ff_shexp ? hparams.n_ff_shexp : n_ff);
 
         // Calculate dimensions from hyperparameters
         const int64_t head_k_dim = hparams.ssm_d_state;
         const int64_t head_v_dim = hparams.ssm_d_state;
         const int64_t n_k_heads  = hparams.ssm_n_group;
         const int64_t n_v_heads  = hparams.ssm_dt_rank;
-        const int64_t key_dim    = head_k_dim * n_k_heads;
-        const int64_t value_dim  = head_v_dim * n_v_heads;
-        const int64_t conv_dim   = key_dim * 2 + value_dim;
+        const int64_t key_dim    = en_sh ? fg200g_key_dim(head_k_dim, n_k_heads)   : head_k_dim * n_k_heads;
+        const int64_t value_dim  = en_sh ? fg200g_value_dim(head_v_dim, n_v_heads) : head_v_dim * n_v_heads;
+        const int64_t conv_dim   = en_sh ? fg200g_conv_dim(key_dim, value_dim)
+                                         : key_dim * 2 + value_dim;
 
         layer.attn_norm      = create_tensor(tn(LLM_TENSOR_ATTN_NORM,      "weight", il), { n_embd }, flags);
         layer.attn_post_norm = create_tensor(tn(LLM_TENSOR_ATTN_POST_NORM, "weight", il), { n_embd }, flags);
@@ -115,8 +128,12 @@ void llama_model_qwen35moe::load_arch_tensors(llama_model_loader & ml) {
     auto load_block_mtp = [&](int il) {
         auto & layer = layers[il];
 
-        const int64_t n_ff_exp   = hparams.n_ff_exp() ? hparams.n_ff_exp() : n_ff / n_expert_used;
-        const int64_t n_ff_shexp = hparams.n_ff_shexp ? hparams.n_ff_shexp : n_ff;
+        // Goose derives the expert FF widths; these are the shapes the loader declares.
+        const int en_sh = fg200g_enabled();
+        const int64_t n_ff_exp   = en_sh ? fg200g_n_ff_exp(hparams.n_ff_exp(), n_ff, n_expert_used)
+                                         : (hparams.n_ff_exp() ? hparams.n_ff_exp() : n_ff / n_expert_used);
+        const int64_t n_ff_shexp = en_sh ? fg200g_n_ff_shexp(hparams.n_ff_shexp, n_ff)
+                                         : (hparams.n_ff_shexp ? hparams.n_ff_shexp : n_ff);
 
         // MTP block looks like a full-attention Qwen3.5 decoder block with MoE FFN.
         layer.attn_norm      = create_tensor(tn(LLM_TENSOR_ATTN_NORM,      "weight", il), { n_embd }, mtp_flags);
@@ -479,7 +496,11 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn_linear(
 
     // if head keys and value keys are different, repeat to force tensors into matching shapes
     // note: need explicit repeat only if we are not using the fused GDN.
-    if (num_k_heads != num_v_heads && (!cparams.fused_gdn_ar || !cparams.fused_gdn_ch)) {
+    // Goose decides whether the explicit repeat is needed.
+    if (fg200g_enabled()
+            ? (fg200g_need_repeat(num_k_heads, num_v_heads, cparams.fused_gdn_ar ? 1 : 0,
+                                  cparams.fused_gdn_ch ? 1 : 0) != 0)
+            : (num_k_heads != num_v_heads && (!cparams.fused_gdn_ar || !cparams.fused_gdn_ch))) {
         GGML_ASSERT(num_v_heads % num_k_heads == 0);
         q_conv = ggml_repeat_4d(ctx0, q_conv, head_k_dim, num_v_heads, n_seq_tokens, n_seqs);
         k_conv = ggml_repeat_4d(ctx0, k_conv, head_k_dim, num_v_heads, n_seq_tokens, n_seqs);
@@ -498,7 +519,11 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn_linear(
     ggml_tensor * attn_out_norm = build_norm_gated(output, model.layers[il].ssm_norm, z_2d, il);
 
     // Final reshape: [head_dim, n_heads, n_tokens, n_seqs] -> [n_heads * head_dim , n_tokens * n_seqs ]
-    ggml_tensor * final_output = ggml_reshape_2d(ctx0, attn_out_norm, head_v_dim * num_v_heads, n_seq_tokens * n_seqs);
+    const int64_t fw = fg200g_enabled() ? fg200g_final_width(head_v_dim, num_v_heads)
+                                        : head_v_dim * num_v_heads;
+    const int64_t fr = fg200g_enabled() ? fg200g_final_rows(n_seq_tokens, n_seqs)
+                                        : n_seq_tokens * n_seqs;
+    ggml_tensor * final_output = ggml_reshape_2d(ctx0, attn_out_norm, fw, fr);
 
     // Output projection
     cur = build_lora_mm(model.layers[il].ssm_out, final_output, model.layers[il].ssm_out_s);

@@ -167,6 +167,79 @@ fn v_view_offset_elems(head_k_dim:i64,num_k_heads:i64)->i64{
  return head_k_dim*num_k_heads*2 as i64;
 }
 
+
+// Recurrent-branch tail, from models/qwen35moe.cpp:457-484.
+
+// need_repeat: line 457.
+//   num_k_heads != num_v_heads && (!fused_gdn_ar || !fused_gdn_ch)
+// The repeat is skipped when the fused GDN path already matches the shapes, so this decides
+// whether two extra graph nodes are inserted.
+fn need_repeat(num_k_heads:i64,num_v_heads:i64,fused_ar:i64,fused_ch:i64)->i64{
+ ensure(num_k_heads>=0&&num_v_heads>=0,80);
+ if num_k_heads==num_v_heads{return 0 as i64;}
+ if fused_ar!=0 as i64&&fused_ch!=0 as i64{return 0 as i64;}
+ return 1 as i64;
+}
+
+// repeat_divisible: the assert at line 458, `num_v_heads % num_k_heads == 0`.
+// Returns 1 when the repeat is legal; the caller aborts otherwise, as native does.
+fn repeat_divisible(num_k_heads:i64,num_v_heads:i64)->i64{
+ ensure(num_k_heads>=0&&num_v_heads>=0,81);
+ if num_k_heads==0 as i64{return 0 as i64;}
+ if num_v_heads%num_k_heads==0 as i64{return 1 as i64;}
+ return 0 as i64;
+}
+
+// final_output_width: line 480, `head_v_dim * num_v_heads`.
+fn final_output_width(hv:i64,nv:i64)->i64{
+ ensure(hv>=0&&nv>=0,82);
+ return hv*nv;
+}
+
+// final_output_rows: line 480, `n_seq_tokens * n_seqs`.
+fn final_output_rows(nt:i64,ns:i64)->i64{
+ ensure(nt>=0&&ns>=0,83);
+ return nt*ns;
+}
+
+
+// Tensor-shape geometry from models/qwen35moe.cpp:54-96.
+//
+// This is what decides every expert and SSM tensor's declared shape at load time. A wrong value
+// here is exactly what produced "blk.1.attn_qkv.weight has wrong shape" earlier, so the divisions
+// belong in Goose where the gate can hold them.
+
+// n_ff_exp: line 57, `hparams.n_ff_exp() ? that : n_ff / n_expert_used`.
+fn n_ff_exp(declared:i64,n_ff:i64,n_expert_used:i64)->i64{
+ ensure(n_expert_used>0,90);
+ if declared!=0 as i64{return declared;}
+ return n_ff/n_expert_used;
+}
+
+// n_ff_shexp: line 58, `hparams.n_ff_shexp ? that : n_ff`.
+fn n_ff_shexp(declared:i64,n_ff:i64)->i64{
+ if declared!=0 as i64{return declared;}
+ return n_ff;
+}
+
+// key_dim / value_dim / conv_dim: lines 65-67.
+fn key_dim(head_k_dim:i64,n_k_heads:i64)->i64{
+ ensure(head_k_dim>=0&&n_k_heads>=0,91);
+ return head_k_dim*n_k_heads;
+}
+fn value_dim(head_v_dim:i64,n_v_heads:i64)->i64{
+ ensure(head_v_dim>=0&&n_v_heads>=0,92);
+ return head_v_dim*n_v_heads;
+}
+// conv_dim = key_dim*2 + value_dim
+fn conv_dim(key_d:i64,value_d:i64)->i64{
+ ensure(key_d>=0&&value_d>=0,93);
+ return key_d*2 as i64+value_d;
+}
+
+// wqkv_width: line 86, `{ n_embd, key_dim*2 + value_dim }`.
+fn wqkv_width(key_d:i64,value_d:i64)->i64{return conv_dim(key_d,value_d);}
+
 fn main(){
  is_recr(0 as i64,1 as i64,0 as u64);
  crop_before_nextn(0 as i64,0 as i64,0 as i64);
@@ -185,4 +258,14 @@ fn main(){
  qkv_dim(0 as i64,0 as i64,0 as i64,0 as i64);
  k_view_offset_elems(0 as i64,0 as i64);
  v_view_offset_elems(0 as i64,0 as i64);
+ need_repeat(0 as i64,0 as i64,0 as i64,0 as i64);
+ repeat_divisible(1 as i64,1 as i64);
+ final_output_width(0 as i64,0 as i64);
+ final_output_rows(0 as i64,0 as i64);
+ n_ff_exp(0 as i64,0 as i64,1 as i64);
+ n_ff_shexp(0 as i64,0 as i64);
+ key_dim(0 as i64,0 as i64);
+ value_dim(0 as i64,0 as i64);
+ conv_dim(0 as i64,0 as i64);
+ wqkv_width(0 as i64,0 as i64);
 }

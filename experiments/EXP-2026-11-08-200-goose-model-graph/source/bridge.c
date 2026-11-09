@@ -79,6 +79,16 @@ int64_t fg200g_qkv_dim(int64_t hk, int64_t nk, int64_t hv, int64_t nv) {
 }
 int64_t fg200g_k_view_offset(int64_t hk, int64_t nk) { return gg_function_19(hk, nk, 0); }
 int64_t fg200g_v_view_offset(int64_t hk, int64_t nk) { return gg_function_20(hk, nk, 0); }
+int64_t fg200g_need_repeat(int64_t nk, int64_t nv, int64_t ar, int64_t ch) { return gg_function_21(nk, nv, ar, ch, 0); }
+int64_t fg200g_repeat_divisible(int64_t nk, int64_t nv) { return gg_function_22(nk, nv, 0); }
+int64_t fg200g_final_width(int64_t hv, int64_t nv) { return gg_function_23(hv, nv, 0); }
+int64_t fg200g_final_rows(int64_t nt, int64_t ns) { return gg_function_24(nt, ns, 0); }
+int64_t fg200g_n_ff_exp(int64_t d, int64_t n_ff, int64_t nu) { return gg_function_25(d, n_ff, nu, 0); }
+int64_t fg200g_n_ff_shexp(int64_t d, int64_t n_ff) { return gg_function_26(d, n_ff, 0); }
+int64_t fg200g_key_dim(int64_t hk, int64_t nk) { return gg_function_27(hk, nk, 0); }
+int64_t fg200g_value_dim(int64_t hv, int64_t nv) { return gg_function_28(hv, nv, 0); }
+int64_t fg200g_conv_dim(int64_t kd, int64_t vd) { return gg_function_29(kd, vd, 0); }
+int64_t fg200g_wqkv_width(int64_t kd, int64_t vd) { return gg_function_30(kd, vd, 0); }
 
 // --- integration switch ----------------------------------------------------------------------
 int fg200g_enabled(void) {
