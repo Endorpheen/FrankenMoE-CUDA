@@ -46,8 +46,17 @@ The honest options, in order of what they would actually buy:
 1. **Port the pure index arithmetic** that exists around the containers — `apply_ubatch`'s
    `s*sinfo.size() + ii`, the `head = idxs.back() + 1` update, the purge bounds — leaving the
    container operations native. Small, real, and it is arithmetic.
-2. **Port `cpy_k`/`cpy_v`**, which are tensor-shaped and closer to the CUDA modules, and where the
-   dequantization side is already Goose.
+2. ~~Port `cpy_k`/`cpy_v`~~ — **already covered at the kernel level, and this is the useful find.**
+   Both are graph builders, not computations:
+
+       k_cur = ggml_view_2d(ctx, k_cur, n_embd_gqa, n_tokens, k_cur->nb[2], 0);
+       ...
+       return ggml_set_rows(ctx, k, k_cur, k_idxs);
+
+   The actual work is `ggml_set_rows`, and that kernel is already Goose: the live witness reads
+   `FG176R_CUDA_SET_ROWS host=0x8,paths=0x8`, eight bits set, i.e. every route the module has
+   executed. So the 170 `cpy_k` + 170 `cpy_v` calls per pass are graph construction around a
+   kernel that is already ported. Porting the builder would move nothing.
 3. **Leave the rest native** and record why, rather than manufacture a port whose Goose body is a
    trampoline.
 
