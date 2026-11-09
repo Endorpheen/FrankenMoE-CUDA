@@ -43,5 +43,18 @@ changes which of the two is worth a session.
 3. Gate against the existing differential harness, which is already built and green, rather than
    inventing a new one.
 
+## Feasibility of step 1, checked
+
+`llama_kv_cache` is not hidden: the shipped `runtime/run/libllama-exp150-restored.so.0.7.0` exports
+**571** symbols matching `llama_kv_cache`, including `init_batch`, `state_read` and the cell
+methods. So the same interposition approach used for the CUDA modules works here — an
+`LD_PRELOAD` counter or a symbol-rename around the entry points that matter, no compiler change
+and no edit to the reference tree.
+
+Note the symlink layout while doing it: `runtime/exp196/run/libllama-exp150-restored.so.0.7.0`
+points at `runtime/run/…` in the base runtime, so instrumenting "the active runtime" means
+interposing on the shared library, not rebuilding a per-stage copy. That is what the CUDA modules
+did too, and it is why their witnesses work across stages.
+
 Nothing in P5 was changed in this pass; this is the entry plan and the measurement that justifies
 its order.
