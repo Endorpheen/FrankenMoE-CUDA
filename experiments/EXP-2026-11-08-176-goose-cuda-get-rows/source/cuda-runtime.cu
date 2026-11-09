@@ -117,6 +117,10 @@ void fg176g_native_ggml_cuda_op_get_rows(ggml_backend_cuda_context&,ggml_tensor*
 void ggml_cuda_op_get_rows(ggml_backend_cuda_context&ctx,ggml_tensor*dst){
  const char*flag=getenv("GGML_GOOSE_CUDA_GET_ROWS");
  if(flag&&strcmp(flag,"0")==0){fg176g_native_ggml_cuda_op_get_rows(ctx,dst);return;}
+ // The Goose body models src0_t == dst_t: its vector path is gated on the types matching and
+ // its scalar path reads elements of the destination size. A quantized source therefore has
+ // to go to the native branch, or rows are read as float.
+ if(dst->src[0]==nullptr||dst->src[0]->type!=dst->type){fg176g_native_ggml_cuda_op_get_rows(ctx,dst);return;}
  static std::once_flag once;std::call_once(once,[]{std::atexit(fg176g_report);});
  fg176g_packet p{&ctx,dst};
  p.v[6][1]=(uint64_t)(uintptr_t)(dst->src[0]?dst->src[0]->data:nullptr);

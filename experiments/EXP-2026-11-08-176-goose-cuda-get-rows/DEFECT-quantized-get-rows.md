@@ -1,6 +1,6 @@
 # DEFECT: GET_ROWS takes the Goose path for quantized sources
 
-Status: open, reproduced, isolated, not yet fixed.
+Status: **FIXED** and verified against `test-backend-ops`.
 Found: 2026-11-08, while running `test-backend-ops` against `runtime/exp196/run`.
 
 ## What happens
@@ -56,9 +56,24 @@ That restores correctness for every quantized source while leaving the Apex path
 The alternative — teaching the Goose body the quantized element sizes — is a larger change
 and is not needed for this profile.
 
-## Why it is not fixed in this commit
+## Fix applied
 
-Fixing `cuda-runtime.cu` requires rebuilding the EXP176 object and relinking every stage that
-inherits it up to the active runtime. That rebuild is a single coherent change and must be
-followed by the full paired Apex protocol; it should not be started in a half-finished state.
-The gate that would prove the fix is already known and is the command above.
+`source/cuda-runtime.cu` now declines the Goose path whenever the source and destination types
+differ:
+
+    if (dst->src[0] == nullptr || dst->src[0]->type != dst->type) {
+        fg176g_native_ggml_cuda_op_get_rows(ctx, dst);
+        return;
+    }
+
+The EXP176 objects were rebuilt and the active runtime relinked from them; the link line
+references `runtime/exp176/build/{cuda-getrows,host,native-getrows}.o` by path, so no
+downstream stage carries a stale copy.
+
+Verification on the rebuilt runtime:
+
+    test-backend-ops test -o GET_ROWS -b CUDA0     ->  2/2 backends passed
+    full run, GET_ROWS section                     ->  0 FAIL
+
+The full run then proceeds past GET_ROWS and aborts later, in RoPE — a separate defect
+recorded in `experiments/EXP-2026-11-08-171-goose-cuda-rope/DEFECT-rope-abort.md`.
