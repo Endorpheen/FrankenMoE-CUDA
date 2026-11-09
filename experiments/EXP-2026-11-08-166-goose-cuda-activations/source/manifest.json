@@ -1,12 +1,12 @@
 {
-  "status": "PASS_GPU_CORPUS_AND_REAL_APEX",
+  "status": "LINKED_PENDING_CORRECTNESS",
   "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
   "entries": {
     "device": "fg166d_gg_function_1",
     "host": "fg166h_gg_function_1"
   },
-  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run/libggml-cuda-activations-ecdf67c48b3c.so.0.27.0",
-  "sha256": "276d4e0279da778decaf6818e32ab3b8b6153c836055f4ce63261fcd9853a9eb",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp166/run/libggml-cuda-activations-51819d5f9282.so.0.27.0",
+  "sha256": "25906394f91b4d3a716b679a7c46be8efd1feecdbfd863272b86683196c52c10",
   "public_entrypoints": [
     {
       "name": "ggml_cuda_op_abs",
@@ -340,7 +340,5 @@
     "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/unary.cu.o"
   ],
   "rollback": "GGML_GOOSE_CUDA_ACTIVATIONS=0 with legacy SiLU/scale preloads or immutable EXP165 runtime",
-  "production_changed": false,
-  "cuda_object_sha256": "20e11e9ebba4a324b0d7611cd7a53f2fea2c9aa80b36f523bfa5b8792849886c",
-  "host_object_sha256": "9551ebd6d6be3672f126746423d402917b3eae4b2c5fc90bf3875ed0e686188a"
+  "production_changed": false
 }

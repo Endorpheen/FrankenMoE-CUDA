@@ -5,8 +5,8 @@
     "device": "fg171rd_gg_function_1",
     "host": "fg171rh_gg_function_1"
   },
-  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp171/run/libggml-cuda-rope-4ff60bd7bea9.so.0.27.0",
-  "sha256": "ac247dfc4c3c58cbf4ebd40a2b7de19cad910e040999949ad4ebe0931e6aa8b5",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp171/run/libggml-cuda-rope-bf1965e2d7f4.so.0.27.0",
+  "sha256": "d26f37467ebca07a520b0983cb583173381418c1a68f326b090c8b55df7ff915",
   "previous_library_sha256": "02bd6343887edb8049c20700cd81b43dfbe9bbdd26b49200e47af650101df2a3",
   "removed_objects": [
     "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/rope.cu.o"
