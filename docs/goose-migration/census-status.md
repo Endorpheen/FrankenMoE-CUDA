@@ -74,3 +74,20 @@ EXP188's byte-exact module never runs. Reaching it needs a separate seam.
 Every kernel in the census is either transferred-and-verified, or blocked on one
 identified code-generation limitation with measured evidence. Nothing is in an unknown
 state, and nothing was promoted on the strength of an invalid comparison.
+
+## Tooling limitation found while trying to re-take the census
+
+The plan calls for re-taking the census on the current qualified runtime rather than
+trusting the EXP084 profile. An attempt was made by wrapping the exact same verified
+server invocation in `nsys profile -t cuda --sample=none` and replaying the fixed
+32K/128 request.
+
+It did not complete: the profiled server reached `{"status":"ok"}` on `/health` and
+served the model, GPU utilisation fell back to 4%, a 4 MB `.qdstrm` was written, but the
+closing `nsys` export never finished, so no `.nsys-rep` appeared. After several minutes
+the wrapper was terminated and the port released. No profile data was produced.
+
+This is recorded rather than worked around, because a census taken from a different
+build would not be comparable to the EXP084 numbers and the instruction is to port by
+fact, not by guess. The EXP084 census remains the authority, and it is complete: 14
+distinct kernels, 70 entries, all of them in one of the three documented states above.
