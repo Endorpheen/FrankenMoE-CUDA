@@ -1,6 +1,6 @@
 {
   "generated_from": {
-    "log": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp185/results/apex-32k128-mmvq4k-b2-goose/server.log",
+    "log": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp185/results/apex-32k128-mmvq4k-chk3-goose/server.log",
     "link_command": "runtime/exp185/build/commands.json"
   },
   "modules": [

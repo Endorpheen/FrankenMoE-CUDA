@@ -44,7 +44,14 @@ EXPECTED = {
 }
 
 def newest_log():
-    cands = sorted(F.glob('runtime/*/results/*-goose/server.log'),
+    """The log of the ACTIVE stage, not of whatever ran most recently.
+
+    Stages have different module sets: a CONCAT run carries EXP175 but not EXP183-185, so
+    picking the newest file in the tree makes the registry report every late-stage module as
+    missing. That happened, and it is the same class of mistake as trusting a stale
+    manifest -- the evidence must come from a run of the runtime being described.
+    """
+    cands = sorted((F / 'runtime/exp185/results').glob('*-goose/server.log'),
                    key=lambda p: p.stat().st_mtime)
     return cands[-1] if cands else None
 

@@ -69,3 +69,14 @@ Verified by flipping EXP185's README verdict to REJECTED: the registry exits 1 w
 The parser accepts both verdict shapes because the tree had both, and an earlier version
 that only understood the section form silently skipped EXP183/184/185 -- which is why the
 first negative test passed when it should have failed.
+
+## A third defect in the builder: it read the wrong log
+
+After an EXP175 measurement the registry reported every late-stage module as missing. The
+cause was `newest_log()` globbing `runtime/*/results/*-goose/server.log` and taking the most
+recent file: a CONCAT run carries EXP175 but not EXP183-185, so "newest in the tree" was a
+run of a different stage's module set.
+
+Fixed by scoping the glob to the active stage's `results/` directory. This is the same
+class of mistake as trusting a stale manifest -- the evidence has to come from a run of the
+runtime being described, not from whatever happened to be written last.
