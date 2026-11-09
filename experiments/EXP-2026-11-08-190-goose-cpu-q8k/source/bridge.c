@@ -38,7 +38,7 @@ static void    g_fail(int64_t c);
 #define fg190q_abs    g_abs
 #define fg190q_fail   g_fail
 #define main fg190q_generated_main
-#include "../../../runtime/exp190/build/device-generated.c"
+#include "device-generated.c"
 #undef main
 
 uint8_t fg190q_enter(int64_t k, const float * src, void * dst) {
