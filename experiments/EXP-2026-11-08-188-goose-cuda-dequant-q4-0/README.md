@@ -10,7 +10,26 @@ no performance claim is made and the active runtime is unchanged.
 
 ## Verdict
 
-**OFF_PATH** — byte-exact Q4_0 dequantization to F16, but the profile reaches ggml_get_to_fp16_nc_cuda rather than the row selector this module replaces.
+**OFF_PATH** — byte-exact Q4_0 dequantization to F16, but the profile never calls the
+selector this module replaces.
+
+### The Q4_0 dequantization Apex actually runs is already Goose
+
+This is the important correction. The Apex KV cache is q4_0, and the dequantization that
+actually executes for it is `dequantize_V_q4_0` inside Flash Attention's vector kernel --
+not the `ggml_get_to_fp16_cuda` row selector this module intercepts. That path was
+transferred by EXP173 as `dequant_v4` in `source/vector-device.goose`, and the live Apex
+log confirms the whole attention path is Goose:
+
+    FG175FA_CUDA host=0xf,cuda_status=0,vector=0x7,features=0x3,prefill=0x1dc
+
+`host=0xf` is all four bits: alloc-size query, support query, and both the vector and
+prefill dispatch routes. So the q4_0 V-cache dequantization is already running as Goose,
+and this module covers a seam nothing takes.
+
+Verified by reading `fattn-common.cuh:409` (`dequantize_V_q4_0`, the executed form) against
+`convert.cu:291` (`dequantize_row_q4_0_cuda`, the form intercepted here), and by finding
+`dequant_v4` already present with a matching body in the EXP173 source.
 
 ## Scope transferred
 
