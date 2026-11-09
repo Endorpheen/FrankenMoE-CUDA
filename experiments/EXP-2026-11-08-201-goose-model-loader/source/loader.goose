@@ -210,6 +210,34 @@ fn sub_ranges(a:u64,na:i64,sub:u64,ns:i64,dst:u64,cap:i64)->i64{
  return k;
 }
 
+
+// Stable insertion sort over (first,last) pairs, by first. llama-model-loader.cpp:1483 used
+// std::sort for this and it had to stay in C++ while Goose had no ordering pass; with bounded
+// arrays the ordering is Goose's too. Equal keys keep their input order, which matches the
+// std::sort tie behaviour the loader relies on only by accident -- recorded, not assumed.
+fn sort_pairs(base:u64,n:i64)->i64{
+ ensure(n>=0,80);
+ var i:i64=1;
+ while i<n{
+  let kf:i64=ld_ne(base,i*2 as i64);
+  let kl:i64=ld_ne(base,i*2 as i64+1 as i64);
+  var j:i64=i-1 as i64;
+  while j>=0 as i64{
+   let pf:i64=ld_ne(base,j*2 as i64);
+   if pf<=kf{
+    break;
+   }
+   st_i64(base,(j+1 as i64)*16 as i64,pf);
+   st_i64(base,(j+1 as i64)*16 as i64+8 as i64,ld_ne(base,j*2 as i64+1 as i64));
+   j-=1;
+  }
+  st_i64(base,(j+1 as i64)*16 as i64,kf);
+  st_i64(base,(j+1 as i64)*16 as i64+8 as i64,kl);
+  i+=1;
+ }
+ return n;
+}
+
 fn main(){
  nelements(0 as u64,1 as i64);
  dims_ok(0 as u64,1 as i64,1 as i64,1 as i64,1 as i64,1 as i64);
@@ -227,4 +255,6 @@ fn main(){
  sub_emit_tail(0 as i64,0 as i64);
  merge_ranges(0 as u64,0 as i64,0 as u64,0 as i64);
  sub_ranges(0 as u64,0 as i64,0 as u64,0 as i64,0 as u64,0 as i64);
+ sort_pairs(0 as u64,0 as i64);
+ sort_pairs(16 as u64,1 as i64);
 }

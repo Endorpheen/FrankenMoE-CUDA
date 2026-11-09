@@ -3,6 +3,50 @@
 Audit date: 2026-11-08. Compiler under test: `subset-84f31960f9f3031e` (current supported build).
 Prior build `stage3-f849233b999c` noted where behaviour differs.
 
+## Re-audit 2026-11-09 against `subset-09897d96febb01b5`
+
+A newer qualified self-hosted build was checked against every item below. Two are now closed and
+one changed shape. All four of this repo's module gates were regenerated with the new compiler and
+pass: 74123 + 6342 + 1965 + 593237 checks, zero failures.
+
+| # | Limitation | Status on `0989` |
+|---|---|---|
+| 1 | no pointer types | **open** — `ptr` still `unknown type`; typed CUDA pointers explicitly not implemented |
+| 2 | `const` globals not initialised for direct callers | **CLOSED** — `gg_init_globals(argc,argv)` now has external linkage and returns the temporary frame base; verified `K=7` through it |
+| 3 | no SIMD / vector types | **open** — unchanged |
+| 4 | no thread/warp/shared/barrier | **open** — `thread_id()` still unknown |
+| 5 | no array types | **CLOSED** — `T[k]`, `T[..N]` with `push`/`append`/`resize`/`clear`/`pop`/`len`/indexing; real implementation via `gg_append` and an arena |
+| 6 | no string type | **open** — `string` still `unknown type` |
+| 7 | no ordering primitive | **narrowed** — no builtin `sort`, but orderings are now *writable*: an insertion sort over `(first,last)` pairs was written in Goose and wired into the loader, replacing the `std::sort` that item 7 forced to stay in C++ |
+| 8 | `pad`/`block` reserved | **open** — unchanged |
+| 9 | no inlining / constant-argument specialisation | **open** — unchanged |
+| 10 | checked division | **open** — `gg_div` guards unchanged |
+| 11 | body deduplication | **open** — two identical bodies still collapse |
+| 12 | float→int conversion | **still closed** |
+
+### What the array support actually enables here
+
+Confirmed on an isolated stand first, per the owner's instruction:
+
+- `var g:i64[>..]=[]` with `push`/`pop`/`resize(n)`/`resize(n,fill)`/`clear`/`g.len`/`g[i]` works and
+  generates real code (`gg_append`, `gg_view`, `gg_header`), not stubs.
+- `resize` without a fill only shrinks — "resize without fill may only shrink". That is behaviour,
+  not a defect; the first probe of mine was wrong.
+- Slices `g[1..3]` into `T[..]` are **not** implemented yet ("runtime-capacity limited array
+  storage"), and non-fixed struct fields are **not** implemented ("nonfixed struct fields"), so a
+  growable array cannot yet be a struct member.
+- Non-fixed values are passed by reference; passing one as a plain parameter needs `&` or an
+  explicit `copy`.
+
+That is enough for the one thing that mattered: `merge_ranges` in the loader no longer keeps its
+ordering in C++.
+
+### Evidence of what changed in the emitted code
+
+For every module, all `gg_function_*` bodies are byte-identical between the two compilers. The
+only differences are the new `gg_globals_ready/claim/publish` trio, a rewritten `gg_program`, and
+`GG_UNALIGNED` typedefs for packed-data access.
+
 Every item below was reproduced on this machine with a minimal input or measured on a real
 Apex run. Nothing here is speculative. Intended for the compiler backlog, after the priority
 work on full stdlib support.

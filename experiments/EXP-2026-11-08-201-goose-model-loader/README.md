@@ -16,12 +16,17 @@ native.
 | `arr_length_ok` | line 479 | array length must equal the request |
 | `use_mmap_mode` | line 558 | `MMAP \|\| MMAP_MLOCK \|\| AUTO` |
 | `use_direct_io_mode` | line 559 | `== DIRECT_IO` |
+| `sort_pairs` | line 1483 | stable ordering of the covers by first (was `std::sort`, in C++) |
 | `merge_ranges` | lines 1455-1471 | sort/merge covers into a non-overlapping list |
 | `sub_ranges` | lines 1476-1495 | subtract one cover from another |
 
 `merge_ranges` and `sub_ranges` are the full algorithms, not just their predicates: Goose walks
-the pair arrays and writes the result; the caller owns both buffers. The native sort stays in C++
-because Goose has no ordering pass, and that is stated rather than worked around.
+the pair arrays and writes the result; the caller owns both buffers.
+
+The ordering is Goose's too, as of 2026-11-09. It used to stay in C++ because the language had no
+ordering pass; bounded arrays (`T[..N]`, push/resize/pop/len, and by-reference passing) made an
+insertion sort over `(first,last)` pairs writable, so `sort_pairs` replaced the `std::sort` that
+was the last native fragment of this function. Live at `FG201L_RANGES merge=2 sub=1 sort=2`.
 
 `shape_ok` is routed into `llama-model-loader.cpp`.
 

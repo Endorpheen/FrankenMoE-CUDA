@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdatomic.h>
 
-static _Atomic unsigned long long g_shape, g_native, g_mode, g_key, g_merge, g_sub;
+static _Atomic unsigned long long g_shape, g_native, g_mode, g_key, g_merge, g_sub, g_sort;
 
 __attribute__((destructor)) static void fg201l_report(void) {
     if (!atomic_load(&g_shape) && !atomic_load(&g_native)) return;
@@ -13,8 +13,8 @@ __attribute__((destructor)) static void fg201l_report(void) {
             atomic_load(&g_shape), atomic_load(&g_native));
     fprintf(stderr, "FG201L_KEYS load_mode=%llu or_arr=%llu\n",
             atomic_load(&g_mode), atomic_load(&g_key));
-    fprintf(stderr, "FG201L_RANGES merge=%llu sub=%llu\n",
-            atomic_load(&g_merge), atomic_load(&g_sub));
+    fprintf(stderr, "FG201L_RANGES merge=%llu sub=%llu sort=%llu\n",
+            atomic_load(&g_merge), atomic_load(&g_sub), atomic_load(&g_sort));
 }
 
 static void g_fail(int64_t c) {
@@ -35,6 +35,11 @@ static void g_st_i64(uint64_t base, int64_t byte, int64_t v) {
 #include "loader-generated.c"
 #undef main
 
+// Bounded arrays make the ordering Goose's too; the caller owns the pair buffer.
+int64_t fg201l_sort_pairs(uint64_t base, int64_t n) {
+    atomic_fetch_add(&g_sort, 1);
+    return gg_function_24(base, n, 0);
+}
 int64_t fg201l_nelements(uint64_t desc, int64_t n) { return gg_function_1(desc, n, 0); }
 int64_t fg201l_dims_ok(uint64_t desc, int64_t nreq, int64_t r0, int64_t r1, int64_t r2, int64_t r3) {
     return gg_function_5(desc, nreq, r0, r1, r2, r3, 0);

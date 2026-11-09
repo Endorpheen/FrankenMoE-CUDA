@@ -26,6 +26,7 @@ int64_t fg201l_use_mmap_mode(int64_t);
 int64_t fg201l_use_direct_io_mode(int64_t);
 int64_t fg201l_merge_ranges(uint64_t, int64_t, uint64_t, int64_t);
 int64_t fg201l_sub_ranges(uint64_t, int64_t, uint64_t, int64_t, uint64_t, int64_t);
+int64_t fg201l_sort_pairs(uint64_t, int64_t);
 }
 
 static int checks, failures;
@@ -199,6 +200,34 @@ int main(void) {
         for (size_t i = 0; i < subres.size() && (int64_t)i < k2; ++i) {
             ck(d2[i*2] == subres[i].first && d2[i*2+1] == subres[i].second, "sub pair", 0, 0);
         }
+    }
+
+    // sort_pairs: stable ordering by first over the same pair layout merge_ranges uses.
+    for (int t = 0; t < 200; ++t) {
+        const int n = 1 + (int)(rng() % 8);
+        std::vector<int64_t> v, ref;
+        for (int i = 0; i < n; ++i) {
+            const int64_t f = (int64_t)(rng() % 10), l = f + (int64_t)(rng() % 10);
+            v.push_back(f); v.push_back(l);
+        }
+        ref = v;
+        std::stable_sort(ref.begin(), ref.end(), [](int64_t a, int64_t b) { return a < b; });
+        // rebuild as pairs to sort by first only
+        std::vector<std::pair<int64_t,int64_t>> pr;
+        for (int i = 0; i < n; ++i) pr.push_back({v[i*2], v[i*2+1]});
+        std::stable_sort(pr.begin(), pr.end(), [](const auto & a, const auto & b) { return a.first < b.first; });
+
+        std::vector<int64_t> w = v;
+        const int64_t rc = fg201l_sort_pairs((uint64_t)(uintptr_t)w.data(), n);
+        ck(rc == n, "sort count", rc, n);
+        for (int i = 0; i < n; ++i) {
+            ck(w[i*2] == pr[i].first && w[i*2+1] == pr[i].second, "sort pair", w[i*2], pr[i].first);
+        }
+        // the sort must not lose or duplicate elements
+        std::vector<int64_t> a1, a2;
+        for (int i = 0; i < n; ++i) { a1.push_back(v[i*2]); a2.push_back(w[i*2]); }
+        std::sort(a1.begin(), a1.end()); std::sort(a2.begin(), a2.end());
+        ck(a1 == a2, "sort preserves multiset", 0, 0);
     }
 
     run_trap("nelements n out of range", 10, trap_nreq_oor);

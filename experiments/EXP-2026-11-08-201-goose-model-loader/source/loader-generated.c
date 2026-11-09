@@ -4,6 +4,17 @@
 #if defined(__AVX2__)
 #include <immintrin.h>
 #endif
+#if defined(_MSC_VER)
+#define GG_ALIGN1
+#if defined(_M_IX86)
+#define GG_UNALIGNED
+#else
+#define GG_UNALIGNED __unaligned
+#endif
+#else
+#define GG_UNALIGNED
+#define GG_ALIGN1 __attribute__((aligned(1)))
+#endif
 /* Fried Goose self-hosted C backend. */
 #include <stdint.h>
 #include <stddef.h>
@@ -452,6 +463,9 @@ static int64_t ggf_fmt_f32(uint8_t *dst, float v) {
 }
 
 
+typedef uint64_t gg_unaligned_1 GG_ALIGN1;
+typedef int64_t gg_unaligned_2 GG_ALIGN1;
+typedef uint8_t gg_unaligned_5 GG_ALIGN1;
 static void gg_quote(gg_reference out,gg_slice text) { int64_t i; unsigned char c; gg_append(out,"\"",1,1); for(i=0;i<text.len;i++){c=((unsigned char*)text.data)[i]; if(c=='\"'||c=='\\'){gg_append(out,"\\",1,1);gg_append(out,&c,1,1);} else if(c=='\n')gg_append(out,"\\n",2,1);else if(c=='\r')gg_append(out,"\\r",2,1);else if(c=='\t')gg_append(out,"\\t",2,1);else gg_append(out,&c,1,1);}gg_append(out,"\"",1,1);}
 static uint8_t gg_eq_1(uint64_t a, uint64_t b);
 static uint8_t gg_equal_elements_1(gg_slice a, gg_slice b);
@@ -465,14 +479,14 @@ static void gg_render_3(gg_reference out, uint8_t value);
 static uint8_t gg_eq_5(uint8_t a, uint8_t b);
 static uint8_t gg_equal_elements_5(gg_slice a, gg_slice b);
 static void gg_render_5(gg_reference out, uint8_t value);
-static uint8_t gg_equal_elements_1(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_1(((uint64_t*)a.data)[i],((uint64_t*)b.data)[i]))return 0;return 1;}
+static uint8_t gg_equal_elements_1(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_1(((GG_UNALIGNED gg_unaligned_1*)a.data)[i],((GG_UNALIGNED gg_unaligned_1*)b.data)[i]))return 0;return 1;}
 static uint8_t gg_eq_1(uint64_t a, uint64_t b) {
 return a == b;
 }
 static void gg_render_1(gg_reference out, uint64_t value) {
 gg_unsigned(out,value);
 }
-static uint8_t gg_equal_elements_2(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_2(((int64_t*)a.data)[i],((int64_t*)b.data)[i]))return 0;return 1;}
+static uint8_t gg_equal_elements_2(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_2(((GG_UNALIGNED gg_unaligned_2*)a.data)[i],((GG_UNALIGNED gg_unaligned_2*)b.data)[i]))return 0;return 1;}
 static uint8_t gg_eq_2(int64_t a, int64_t b) {
 return a == b;
 }
@@ -486,7 +500,7 @@ return a == b;
 static void gg_render_3(gg_reference out, uint8_t value) {
 gg_bool(out,value);
 }
-static uint8_t gg_equal_elements_5(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_5(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
+static uint8_t gg_equal_elements_5(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_5(((GG_UNALIGNED gg_unaligned_5*)a.data)[i],((GG_UNALIGNED gg_unaligned_5*)b.data)[i]))return 0;return 1;}
 static uint8_t gg_eq_5(uint8_t a, uint8_t b) {
 return a == b;
 }
@@ -517,6 +531,247 @@ static int64_t gg_function_19(uint64_t p0, int64_t p1, int64_t base);
 static int64_t gg_function_20(uint64_t p0, int64_t p1, int64_t base);
 static void gg_function_21(uint64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base);
 static int64_t gg_function_23(uint64_t p0, int64_t p1, uint64_t p2, int64_t p3, uint64_t p4, int64_t p5, int64_t base);
+static int64_t gg_function_24(uint64_t p0, int64_t p1, int64_t base);
+static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
+  uint8_t t0;
+  uint8_t t1;
+  int64_t t2;
+  uint8_t v0;
+  int64_t v1;
+  v0 = p0;
+  v1 = p1;
+  {
+  t0 = v0;
+  t1 = (!(t0));
+  if (t1) {
+  {
+  t2 = ((int64_t)(v1));
+#ifndef __cplusplus
+  extern void (fg201l_fail)(int64_t);
+#endif
+  fg201l_fail(t2);
+  }
+  }
+  }
+gg_done:;
+}
+static int64_t gg_function_24(uint64_t p0, int64_t p1, int64_t base) {
+  int64_t t0;
+  int64_t t1;
+  int64_t t2;
+  uint8_t t3;
+  int64_t t4;
+  int64_t t5;
+  int64_t t6;
+  uint64_t t7;
+  int64_t t8;
+  int64_t t9;
+  int64_t t10;
+  int64_t t11;
+  uint64_t t12;
+  int64_t t13;
+  int64_t t14;
+  int64_t t15;
+  int64_t t16;
+  int64_t t17;
+  int64_t t18;
+  int64_t t19;
+  int64_t t20;
+  int64_t t21;
+  int64_t t22;
+  uint64_t t23;
+  int64_t t24;
+  int64_t t25;
+  int64_t t26;
+  int64_t t27;
+  int64_t t28;
+  int64_t t29;
+  uint8_t t30;
+  uint64_t t31;
+  int64_t t32;
+  int64_t t33;
+  int64_t t34;
+  int64_t t35;
+  int64_t t36;
+  int64_t t37;
+  uint64_t t38;
+  int64_t t39;
+  int64_t t40;
+  int64_t t41;
+  int64_t t42;
+  int64_t t43;
+  int64_t t44;
+  int64_t t45;
+  uint64_t t46;
+  int64_t t47;
+  int64_t t48;
+  int64_t t49;
+  int64_t t50;
+  int64_t t51;
+  int64_t t52;
+  int64_t t53;
+  int64_t t54;
+  int64_t t55;
+  uint64_t t56;
+  int64_t t57;
+  int64_t t58;
+  int64_t t59;
+  int64_t t60;
+  int64_t t61;
+  int64_t t62;
+  uint64_t t63;
+  int64_t t64;
+  int64_t t65;
+  int64_t t66;
+  int64_t t67;
+  int64_t t68;
+  int64_t t69;
+  int64_t t70;
+  int64_t t71;
+  int64_t t72;
+  int64_t t73;
+  uint64_t v0;
+  int64_t v1;
+  int64_t v2;
+  int64_t v3;
+  int64_t v4;
+  int64_t v5;
+  int64_t v6;
+  v0 = p0;
+  v1 = p1;
+  {
+  t1 = ((int64_t)(v1));
+  t2 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t3 = ((t1) >= (t2));
+  t4 = ((int64_t)(((int64_t)UINT64_C(80))));
+  gg_function_2(t3, t4, base + 0);
+  v2 = ((int64_t)(((int64_t)UINT64_C(1))));
+label1:;
+  t5 = ((int64_t)(v2));
+  t6 = ((int64_t)(v1));
+  if (!(((t5) < (t6)))) goto label2;
+  {
+  t7 = ((uint64_t)(v0));
+  t8 = ((int64_t)(v2));
+  t9 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
+  t10 = ((int64_t)(((int64_t)((uint64_t)(t8) * (uint64_t)(t9)))));
+#ifndef __cplusplus
+  extern int64_t (fg201l_ld_ne)(uint64_t, int64_t);
+#endif
+  t11 = fg201l_ld_ne(t7, t10);
+  v3 = ((int64_t)(t11));
+  t12 = ((uint64_t)(v0));
+  t13 = ((int64_t)(v2));
+  t14 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
+  t15 = ((int64_t)(((int64_t)((uint64_t)(t13) * (uint64_t)(t14)))));
+  t16 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t17 = ((int64_t)(((int64_t)((uint64_t)(t15) + (uint64_t)(t16)))));
+#ifndef __cplusplus
+  extern int64_t (fg201l_ld_ne)(uint64_t, int64_t);
+#endif
+  t18 = fg201l_ld_ne(t12, t17);
+  v4 = ((int64_t)(t18));
+  t19 = ((int64_t)(v2));
+  t20 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v5 = ((int64_t)(((int64_t)((uint64_t)(t19) - (uint64_t)(t20)))));
+label4:;
+  t21 = ((int64_t)(v5));
+  t22 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  if (!(((t21) >= (t22)))) goto label5;
+  {
+  t23 = ((uint64_t)(v0));
+  t24 = ((int64_t)(v5));
+  t25 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
+  t26 = ((int64_t)(((int64_t)((uint64_t)(t24) * (uint64_t)(t25)))));
+#ifndef __cplusplus
+  extern int64_t (fg201l_ld_ne)(uint64_t, int64_t);
+#endif
+  t27 = fg201l_ld_ne(t23, t26);
+  v6 = ((int64_t)(t27));
+  t28 = ((int64_t)(v6));
+  t29 = ((int64_t)(v3));
+  t30 = ((t28) <= (t29));
+  if (t30) {
+  {
+  goto label5;
+  }
+  }
+  t31 = ((uint64_t)(v0));
+  t32 = ((int64_t)(v5));
+  t33 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t34 = ((int64_t)(((int64_t)((uint64_t)(t32) + (uint64_t)(t33)))));
+  t35 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t36 = ((int64_t)(((int64_t)((uint64_t)(t34) * (uint64_t)(t35)))));
+  t37 = ((int64_t)(v6));
+#ifndef __cplusplus
+  extern void (fg201l_st_i64)(uint64_t, int64_t, int64_t);
+#endif
+  fg201l_st_i64(t31, t36, t37);
+  t38 = ((uint64_t)(v0));
+  t39 = ((int64_t)(v5));
+  t40 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t41 = ((int64_t)(((int64_t)((uint64_t)(t39) + (uint64_t)(t40)))));
+  t42 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t43 = ((int64_t)(((int64_t)((uint64_t)(t41) * (uint64_t)(t42)))));
+  t44 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
+  t45 = ((int64_t)(((int64_t)((uint64_t)(t43) + (uint64_t)(t44)))));
+  t46 = ((uint64_t)(v0));
+  t47 = ((int64_t)(v5));
+  t48 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
+  t49 = ((int64_t)(((int64_t)((uint64_t)(t47) * (uint64_t)(t48)))));
+  t50 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t51 = ((int64_t)(((int64_t)((uint64_t)(t49) + (uint64_t)(t50)))));
+#ifndef __cplusplus
+  extern int64_t (fg201l_ld_ne)(uint64_t, int64_t);
+#endif
+  t52 = fg201l_ld_ne(t46, t51);
+  t53 = ((int64_t)(t52));
+#ifndef __cplusplus
+  extern void (fg201l_st_i64)(uint64_t, int64_t, int64_t);
+#endif
+  fg201l_st_i64(t38, t45, t53);
+  t54 = v5;
+  t55 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v5 = ((int64_t)((uint64_t)(t54) - (uint64_t)(t55)));
+  }
+  goto label4;
+label5:;
+  t56 = ((uint64_t)(v0));
+  t57 = ((int64_t)(v5));
+  t58 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t59 = ((int64_t)(((int64_t)((uint64_t)(t57) + (uint64_t)(t58)))));
+  t60 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t61 = ((int64_t)(((int64_t)((uint64_t)(t59) * (uint64_t)(t60)))));
+  t62 = ((int64_t)(v3));
+#ifndef __cplusplus
+  extern void (fg201l_st_i64)(uint64_t, int64_t, int64_t);
+#endif
+  fg201l_st_i64(t56, t61, t62);
+  t63 = ((uint64_t)(v0));
+  t64 = ((int64_t)(v5));
+  t65 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t66 = ((int64_t)(((int64_t)((uint64_t)(t64) + (uint64_t)(t65)))));
+  t67 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t68 = ((int64_t)(((int64_t)((uint64_t)(t66) * (uint64_t)(t67)))));
+  t69 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
+  t70 = ((int64_t)(((int64_t)((uint64_t)(t68) + (uint64_t)(t69)))));
+  t71 = ((int64_t)(v4));
+#ifndef __cplusplus
+  extern void (fg201l_st_i64)(uint64_t, int64_t, int64_t);
+#endif
+  fg201l_st_i64(t63, t70, t71);
+  t72 = v2;
+  t73 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v2 = ((int64_t)((uint64_t)(t72) + (uint64_t)(t73)));
+  }
+  goto label1;
+label2:;
+  t0 = ((int64_t)(v1));
+  goto gg_done;
+  }
+gg_done:;
+  return t0;
+}
 static void gg_function_21(uint64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base) {
   uint64_t t0;
   int64_t t1;
@@ -559,29 +814,6 @@ static void gg_function_21(uint64_t p0, int64_t p1, int64_t p2, int64_t p3, int6
   extern void (fg201l_st_i64)(uint64_t, int64_t, int64_t);
 #endif
   fg201l_st_i64(t5, t10, t11);
-  }
-gg_done:;
-}
-static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
-  uint8_t t0;
-  uint8_t t1;
-  int64_t t2;
-  uint8_t v0;
-  int64_t v1;
-  v0 = p0;
-  v1 = p1;
-  {
-  t0 = v0;
-  t1 = (!(t0));
-  if (t1) {
-  {
-  t2 = ((int64_t)(v1));
-#ifndef __cplusplus
-  extern void (fg201l_fail)(int64_t);
-#endif
-  fg201l_fail(t2);
-  }
-  }
   }
 gg_done:;
 }
@@ -1780,6 +2012,12 @@ static void gg_function_0(int64_t base) {
   uint64_t t61;
   int64_t t62;
   int64_t t63;
+  uint64_t t64;
+  int64_t t65;
+  int64_t t66;
+  uint64_t t67;
+  int64_t t68;
+  int64_t t69;
   {
   t0 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
   t1 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1861,14 +2099,58 @@ static void gg_function_0(int64_t base) {
   t62 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t63 = gg_function_23(t57, t58, t59, t60, t61, t62, base + 0);
   (void)(t63);
+  t64 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
+  t65 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t66 = gg_function_24(t64, t65, base + 0);
+  (void)(t66);
+  t67 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(16))))));
+  t68 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t69 = gg_function_24(t67, t68, base + 0);
+  (void)(t69);
   }
 gg_done:;
 }
-static int gg_program(int argc, char **argv) {
+#ifdef _MSC_VER
+static volatile LONG gg_globals_state;
+static __declspec(thread) int gg_globals_owner;
+static int gg_globals_ready(void) { return InterlockedCompareExchange(&gg_globals_state, 0, 0) == 2; }
+static int gg_globals_claim(void) { return InterlockedCompareExchange(&gg_globals_state, 1, 0) == 0; }
+static void gg_globals_publish(void) { InterlockedExchange(&gg_globals_state, 2); }
+#else
+#include <stdatomic.h>
+static atomic_int gg_globals_state;
+static _Thread_local int gg_globals_owner;
+static int gg_globals_ready(void) { return atomic_load_explicit(&gg_globals_state, memory_order_acquire) == 2; }
+static int gg_globals_claim(void) { int expected = 0; return atomic_compare_exchange_strong_explicit(&gg_globals_state, &expected, 1, memory_order_acq_rel, memory_order_acquire); }
+static void gg_globals_publish(void) { atomic_store_explicit(&gg_globals_state, 2, memory_order_release); }
+#endif
+#ifndef _WIN32
+#include <sched.h>
+#endif
+int64_t gg_init_globals(int argc, char **argv) {  if (argc < 0 || (argc && !argv)) gg_fail("invalid module arguments");
+  if (gg_globals_ready()) return 0;
+  if (gg_globals_owner) gg_fail("recursive global initialization");
+  if (!gg_globals_claim()) {
+    while (!gg_globals_ready()) {
+#ifdef _WIN32
+      SwitchToThread();
+#else
+      sched_yield();
+#endif
+    }
+    return 0;
+  }
+  gg_globals_owner = 1;
   struct { int64_t base; } frame;
   frame.base = 0;
   gg_argc = argc; gg_argv = argv;
-  gg_function_0(frame.base + 0);
+  gg_globals_owner = 0;
+  gg_globals_publish();
+  return 0;
+}
+static int gg_program(int argc, char **argv) {
+  int64_t base = gg_init_globals(argc, argv);
+  gg_function_0(base);
   return 0;
 }
 int main(int argc, char **argv) {

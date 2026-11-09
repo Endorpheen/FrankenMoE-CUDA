@@ -24,6 +24,7 @@ extern "C" int64_t fg201l_use_direct_io_mode(int64_t load_mode);
 extern "C" int fg201l_enabled(void);
 extern "C" int64_t fg201l_merge_ranges(uint64_t src, int64_t n, uint64_t dst, int64_t cap);
 extern "C" int64_t fg201l_sub_ranges(uint64_t a, int64_t na, uint64_t sub, int64_t ns, uint64_t dst, int64_t cap);
+extern "C" int64_t fg201l_sort_pairs(uint64_t base, int64_t n);
 
 static const size_t kiB = 1024;
 static const size_t MiB = 1024*kiB;
@@ -1480,19 +1481,20 @@ using mapping_ranges = std::vector<llama_model_loader::mapping_range>;
 
 // merge a list of [first, last) ranges into a sorted, non-overlapping list
 static mapping_ranges merge_ranges(mapping_ranges ranges) {
-    std::sort(ranges.begin(), ranges.end(), [](const auto & a, const auto & b) { return a.first < b.first; });
-
     if (fg201l_enabled() && !ranges.empty()) {
-        // Goose merges the sorted ranges; the sort stays here because Goose has no ordering pass.
+        // Bounded arrays made the ordering portable, so Goose now sorts and merges both.
         std::vector<int64_t> src, dst((size_t)ranges.size() * 2, 0);
         src.reserve(ranges.size() * 2);
         for (const auto & r : ranges) { src.push_back((int64_t)r.first); src.push_back((int64_t)r.last); }
+        fg201l_sort_pairs((uint64_t)(uintptr_t)src.data(), (int64_t)ranges.size());
         const int64_t k = fg201l_merge_ranges((uint64_t)(uintptr_t)src.data(), (int64_t)ranges.size(),
                                               (uint64_t)(uintptr_t)dst.data(), (int64_t)ranges.size());
         mapping_ranges out;
         for (int64_t i = 0; i < k; ++i) out.push_back({(size_t)dst[i*2], (size_t)dst[i*2+1]});
         return out;
     }
+
+    std::sort(ranges.begin(), ranges.end(), [](const auto & a, const auto & b) { return a.first < b.first; });
 
     mapping_ranges res;
     for (const auto & range : ranges) {
