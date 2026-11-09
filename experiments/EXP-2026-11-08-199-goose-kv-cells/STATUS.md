@@ -204,3 +204,22 @@ Ported and gated (72823 checks / 0 failures total), with live call counts from o
 
 Four of the seven groups are exercised by the profile; three are ported, gated and marked as
 unexercised. Nothing is claimed as landed that the profile does not run.
+
+## get_n_kv ported and live (146 calls per pass)
+
+`llama-kv-cache.cpp:1285-1299`. This decides the KV length the graph is built for, so it is a real
+decision rather than bookkeeping:
+
+    n_pad_cur   = max(n_pad, 256)
+    per stream  = min(size, max(n_pad_cur, PAD(used_max_p1, n_pad_cur)))
+    result      = max over streams
+
+`pad_up`, `buf_n_pad` and `n_kv_one` are Goose; the max across streams stays native.
+
+    FG199K_KV_NKV calls=146
+    tokens and all 128 top-5 probabilities equal, 2564.52 / 26.62
+
+One source-level correction: `pad` is a reserved identifier in the Goose front end (the same trap
+EXP158 hit), so the local was renamed `pstep`. Recorded because it will recur.
+
+Gate: 73223 checks / 0 failures.

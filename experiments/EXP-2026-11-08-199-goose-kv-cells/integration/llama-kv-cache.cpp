@@ -27,6 +27,7 @@ extern "C" int64_t fg199k_same_stream(int64_t s0, int64_t s1);
 extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
 extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
 extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_n_kv_one(int64_t size, int64_t used_max_p1, int64_t n_pad);
 extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
 extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
 extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
@@ -437,6 +438,7 @@ extern "C" int64_t fg199k_same_stream(int64_t s0, int64_t s1);
 extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
 extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
 extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_n_kv_one(int64_t size, int64_t used_max_p1, int64_t n_pad);
 extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
 extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
 extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
@@ -1360,10 +1362,15 @@ uint32_t llama_kv_cache::get_n_kv(const slot_info & sinfo) const {
     // note: this also helps some backends with performance (f.ex https://github.com/ggml-org/llama.cpp/pull/16812#issuecomment-3455112220)
     const uint32_t n_pad_cur = std::max(n_pad, 256u);
 
+    const int en_nkv = fg199k_enabled();
     for (uint32_t s = 0; s < sinfo.n_stream(); ++s) {
         const auto & cells = v_cells[sinfo.strm[s]];
 
-        result = std::max(std::min(cells.size(), std::max(n_pad_cur, GGML_PAD(cells.used_max_p1(), n_pad_cur))), result);
+        // Goose computes the per-stream candidate; the max across streams stays here.
+        const uint32_t cand = en_nkv
+            ? (uint32_t)fg199k_n_kv_one((int64_t)cells.size(), (int64_t)cells.used_max_p1(), (int64_t)n_pad)
+            : std::min(cells.size(), std::max(n_pad_cur, GGML_PAD(cells.used_max_p1(), n_pad_cur)));
+        result = std::max(cand, result);
     }
 
     return result;

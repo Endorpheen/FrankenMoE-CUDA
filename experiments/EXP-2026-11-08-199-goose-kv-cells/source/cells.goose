@@ -384,6 +384,35 @@ fn seq_div_skip(d:i64,p0:i64,p1:i64)->i64{
  return 0 as i64;
 }
 
+
+// get_n_kv, from llama-kv-cache.cpp:1285-1299. This runs 150 times per Apex pass and decides the
+// KV length the graph is built for, so it is a real decision rather than bookkeeping.
+//
+// Native:  result = max over streams of min(size, max(n_pad_cur, PAD(used_max_p1, n_pad_cur)))
+// where n_pad_cur = max(n_pad, 256).
+fn pad_up(v:i64,n:i64)->i64{
+ ensure(n>0,230);
+ if v%n==0 as i64{return v;}
+ return v+(n-v%n);
+}
+
+// buf_n_pad: max(n_pad, 256).
+fn buf_n_pad(n_pad:i64)->i64{
+ ensure(n_pad>=0,231);
+ if n_pad>256 as i64{return n_pad;}
+ return 256 as i64;
+}
+
+// n_kv_one: the per-stream candidate.
+fn n_kv_one(size:i64,used_max_p1:i64,n_pad:i64)->i64{
+ ensure(size>=0&&used_max_p1>=0,232);
+ let pstep:i64=buf_n_pad(n_pad);
+ let p:i64=pad_up(used_max_p1,pstep);
+ let m:i64=if pstep>p{pstep}else{p};
+ if size<m{return size;}
+ return m;
+}
+
 // should_purge: llama-kv-cache.cpp:1228 `cells.seq_pos_min(s) <= seq_pos_max_rm[s]`.
 // Returns 1 when the purge loop must call seq_rm for this sequence.
 fn should_purge(seq_pos_min:i64,max_rm:i64)->i64{
@@ -428,4 +457,7 @@ fn main(){
  pos_div(0 as i64,0 as i64,1 as i64,0 as u64);
  seq_add_head(0 as i64,0 as i64);
  seq_div_skip(1 as i64,0 as i64,0 as i64);
+ pad_up(0 as i64,256 as i64);
+ buf_n_pad(0 as i64);
+ n_kv_one(0 as i64,0 as i64,0 as i64);
 }

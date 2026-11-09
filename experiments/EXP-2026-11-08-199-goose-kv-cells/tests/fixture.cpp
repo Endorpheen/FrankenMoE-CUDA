@@ -42,6 +42,7 @@ int64_t fg199k_pos_add(int64_t, int64_t, int64_t, uint64_t);
 void fg199k_pos_div(int64_t, int64_t, int64_t, uint64_t);
 int64_t fg199k_seq_add_head(int64_t, int64_t);
 int64_t fg199k_seq_div_skip(int64_t, int64_t, int64_t);
+int64_t fg199k_n_kv_one(int64_t, int64_t, int64_t);
 }
 
 // ---- arena, laid out as the module documents it ----
@@ -329,6 +330,18 @@ int main(void) {
 
         const int64_t freed = rng() % 2, nh = rng() % 20;
         ck(fg199k_seq_add_head(freed, nh) == (freed == 0 ? 0 : nh), "seq_add_head", 0, 0);
+    }
+
+    // get_n_kv per-stream candidate against the native expression.
+    for (int i = 0; i < 400; ++i) {
+        const int64_t size = (int64_t)(rng() % 4000);
+        const int64_t used = (int64_t)(rng() % 4000);
+        const int64_t n_pad = (int64_t)(rng() % 600);
+        const int64_t pad_cur = std::max<int64_t>(n_pad, 256);
+        const int64_t padded = ((used + pad_cur - 1) / pad_cur) * pad_cur;
+        const int64_t ref = std::min<int64_t>(size, std::max<int64_t>(pad_cur, padded));
+        ck(fg199k_n_kv_one(size, used, n_pad) == ref, "n_kv_one",
+           fg199k_n_kv_one(size, used, n_pad), ref);
     }
 
     run_trap("rm on empty cell", 12, trap_rm_empty);
