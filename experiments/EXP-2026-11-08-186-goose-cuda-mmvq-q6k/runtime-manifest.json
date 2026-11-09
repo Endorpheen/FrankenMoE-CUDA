@@ -1,0 +1,21 @@
+{
+  "status": "LINKED_PENDING_HOST_GPU_APEX",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp186/run/libggml-cuda-mmvq6k-696a02939417.so.0.27.0",
+  "sha256": "6034ccda50aa056a739184b035263339f1c935d89a0ea581ad9b36af886a0980",
+  "base_library_sha256": "647d217ff55560abedacc5f6e26389d69dd4a22ae6461a1a9b91c2ac390ae41f",
+  "original_object": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp185/build/native-mmvq.o",
+  "original_object_sha256": "0f8f7a14cae0c28a22ad51efb0a81d10562d3e10851c389cbcfd324740a54bb3",
+  "private_symbol_rename": {},
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/qualification.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true
+  },
+  "production_changed": false,
+  "active_runtime_changed": false,
+  "numerical_original_callback_on_enabled_supported_path": false
+}

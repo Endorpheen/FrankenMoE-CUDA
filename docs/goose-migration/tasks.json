@@ -3210,6 +3210,14 @@
       "change": "CUDA mul_mat_vec_q for Q4_K (one dest column, no fusion) implemented in Goose and enabled by default",
       "status": "ACCEPTED",
       "evidence": "experiments/EXP-2026-11-08-185-goose-cuda-mmvq-q4k/README.md"
+    },
+    {
+      "date": "2026-11-08",
+      "task": "P3-08",
+      "experiment": "EXP186",
+      "change": "CUDA mul_mat_vec_q for Q6_K implemented in Goose, byte-exact but REJECTED on a 3.66% decode regression",
+      "status": "REJECTED",
+      "evidence": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/BLOCKER.md"
     }
   ],
   "batches": [
