@@ -63,6 +63,29 @@ gets the read-only `LDG.E.CONSTANT` path from its `__restrict__` parameters.
 
 Closing this needs a compiler-side change, which is out of bounds for this work.
 
+
+## The q4_0 row-dequantization seam is still unexplained
+
+The EXP084 profile records the *row* kernel, not the NC template, in prefill:
+
+    void dequantize_block_q4_0<__half>(const void *, T1 *, int)   count=20   summed_ns=1915413
+
+That signature is the three-argument form launched by `dequantize_row_q4_0_cuda`, which is
+the selector EXP188 ported, so the earlier note that "the NC template rather than the row
+wrapper" is reached does not match this profile.
+
+Re-tested rather than reasoned about: EXP188's runtime was rebuilt and a full 32K/128 Apex
+run executed with `libggml-cuda-deq4-0-e83a43381d60.so` confirmed as the loaded library and
+the `FG188D_CUDA_DEQUANT_Q4_0` string confirmed present in it. The witness did not appear and
+the output was the usual `e68df05b`. So in this configuration `ggml_get_to_fp16_cuda(Q4_0)`
+is not called, yet the kernel it selects runs 20 times in the profile.
+
+Neither half is in doubt on its own: the profile is real and the live run is real. What is
+missing is the call site that reaches the kernel by another route. Candidates not yet
+checked: a per-TU static copy of the selector, `ggml_cuda_cpy` calling it internally, and a
+different cache-type configuration in the EXP084 profile. Until that is measured, EXP188
+stays off the active chain and its verdict stands as "byte-exact, seam not reached".
+
 ## Not covered
 
 `ggml_get_to_fp16_nc_cuda` and its `to_t_nc_cuda_t` per-dimension-stride signature. The
