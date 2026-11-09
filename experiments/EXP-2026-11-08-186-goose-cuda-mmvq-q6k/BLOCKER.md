@@ -108,3 +108,28 @@ Both halves of the cause are outside what a kernel rewrite can fix from here: dr
 the guards needs either a compiler mode that knows a divisor is non-zero, or a Goose
 integer type that cannot be zero. Recorded so the next attempt starts from the profile
 rather than from the instruction total.
+
+### Attempt 4: replace the divisions with shifts (measured, no effect)
+
+The previous note identified the checked-arithmetic guards as a contributor. Since every
+divisor in this body is a power of two, the divisions were rewritten as shifts and masks
+so the emitter never produces `gg_div`/`gg_mod` and the guards cannot appear:
+
+    h = iq>>4          r = iq&15
+    bq8 = 4h + (r>>3)  scale_off = 8h + (r>>2)  vh_shift = 2*(r>>3)
+    kbx = tid>>4       iqs = 2*(tid&15)        uoff = iqs&7
+    256/32 folded to the literal 8
+
+Result: the emitted body dropped from 9 checked divisions to 4 (one pair per function,
+for the one genuinely variable divisor), correctness stayed at 4/4 byte-identical, and the
+instruction count went from 504 to **504** with predicates 79 to 76. Kernel time measured
+under nsys moved 21.82 us to 21.92 us, i.e. unchanged within noise, against native's
+17.41 us.
+
+So the guards were not the operative cost: ptxas already folds the zero test away when it
+can see a constant divisor, and the shift form gives it nothing new. The remaining gap is
+the pointer arithmetic — 171 IMAD and 60 IADD3 against 45 and 14 — which is the
+address-folding difference and needs a compiler change.
+
+The shift rewrite is kept because it is equivalent and slightly smaller, but it does not
+unblock the transfer. EXP186 stays rejected and opt-in.

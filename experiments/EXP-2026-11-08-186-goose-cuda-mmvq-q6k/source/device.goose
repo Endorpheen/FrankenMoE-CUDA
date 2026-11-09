@@ -85,28 +85,33 @@ fn impl_mmvq(vl0:i32,vl1:i32,vh0:i32,vh1:i32,u0:i32,u1:i32,u2:i32,u3:i32,
 // One thread's contribution for one absolute block index kbx with intra-block index iqs.
 fn dot_row(vx:u64,vy:u64,ybase:i64,kbx_offset:i64,kbx:i64,kby:i64,iqs:i64)->f32{
  let xb:i64=(kbx_offset+kbx)*(210 as i64);
- // Index math is kept in 32-bit: native uses `int` here, and 64-bit divide/modulo by
- // constants does not fold to shifts the same way.
+ // Every divisor here is a power of two, so the divisions are written as shifts and
+ // masks. Goose lowers `/` and `%` to gg_div/gg_mod, each of which is emitted with a
+ // zero-divisor test, an overflow test and a trap branch; with 13 such calls the Q6_K
+ // body carried 79 ISETP+SEL against 7 in native. Shifts have no runtime helper at all,
+ // so the guards disappear without changing any result.
+ //   h  = iqs/16      r  = iqs%16
+ //   bq8 = 4h + r/8   scale_off = 8h + r/4   vh_shift = 2*(r/8)
  let iq:i32=iqs as i32;
- let h:i32=iq/16 as i32;
- let r:i32=iq%16 as i32;
- let bq8:i64=(2*2*h+(r/8 as i32)) as i64;
- let scale_off:i64=(8*h+(r/4 as i32)) as i64;
- let vh_shift:i32=2*(r/8 as i32);
+ let h:i32=iq>>4 as i32;
+ let r:i32=iq&15 as i32;
+ let bq8:i64=(4*h+(r>>3 as i32)) as i64;
+ let scale_off:i64=(8*h+(r>>2 as i32)) as i64;
+ let vh_shift:i32=2*(r>>3 as i32);
  // vl[j] = get_int_b2(ql, iqs+j) -> 32-bit word at byte 4*(iqs+j)
  let vl0:i32=ld_b2(vx,xb+4*(iqs+0 as i64));
  let vl1:i32=ld_b2(vx,xb+4*(iqs+1 as i64));
  // vh[j] = get_int_b2(qh, 4*h + iqs%4 + j) >> vh_shift, qh at xb+128
  let qhb:i64=xb+(128 as i64);
- let vh0:i32=ld_b2(vx,qhb+4*((8 as i64)*h+(iqs%8 as i64)+0))>>(vh_shift);
- let vh1:i32=ld_b2(vx,qhb+4*((8 as i64)*h+(iqs%8 as i64)+1))>>(vh_shift);
+ let vh0:i32=ld_b2(vx,qhb+4*((8 as i64)*h+(iqs&7 as i64)+0))>>(vh_shift);
+ let vh1:i32=ld_b2(vx,qhb+4*((8 as i64)*h+(iqs&7 as i64)+1))>>(vh_shift);
  // int8 scales[16] at xb+192; the two used entries are scale_off and scale_off+4
  let scb:i64=xb+(192 as i64)+scale_off;
  // scales is int8_t[16], so the byte must be sign-extended before the multiply.
  let sc0:i32=(ld_i8(vx,(scb as u64)) as i32);
  let sc1:i32=(ld_i8(vx,((scb+(4 as i64)) as u64)) as i32);
  // u words: q8 block bq8+2*i, word offset (iqs%QI8_1) + j with QI8_1 = 8
- let uoff:i64=iqs%8 as i64;
+ let uoff:i64=iqs&7 as i64;
  let yb0:i64=(ybase+kby+bq8)*(36 as i64);
  let yb1:i64=(ybase+kby+bq8+(2 as i64))*(36 as i64);
  let d8_0:f32=ld_half(vy,(yb0 as u64));
@@ -149,10 +154,10 @@ fn fg186q_body(vx:u64,vy:u64,ids:u64,dst:u64,
  let kbx_offset:i64=sample_x*stride_sample_x+channel_x*stride_channel_x;
  let ybase:i64=sample_y*stride_sample_y+channel_y*stride_channel_y;
  var sum:f32=0.0;
- var kbx:i64=tid/16 as i64;
+ var kbx:i64=tid>>4 as i64;
  while kbx<blocks_per_row{
-  let kby:i64=kbx*(256 as i64/32 as i64);
-  let iqs:i64=2*((tid%16 as i64));
+  let kby:i64=kbx*(8 as i64);
+  let iqs:i64=2*((tid&15 as i64));
   sum=sum+dot_row(vx,vy,ybase,kbx_offset+row*stride_row_x,kbx,kby,iqs);
   kbx=kbx+blocks_per_iter;
  }
