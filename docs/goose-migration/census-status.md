@@ -215,6 +215,28 @@ The fixtures need `LD_LIBRARY_PATH` pointing at the stage's runtime directory: u
 sanitizer the `fg160_fusion_enabled` reference from `libggml-cuda.so.0` does not resolve from
 the binary's rpath alone, and the run aborts before the first instrumented call.
 
+## Open defect: GET_ROWS on quantized sources
+
+`test-backend-ops test -o GET_ROWS -b CUDA0` against the active runtime reports 69 failures
+and a misaligned-address abort. Isolated to EXP176's module by its own switch: with
+`GGML_GOOSE_CUDA_GET_ROWS=0` the same binary passes 2/2, so this is our port and not an
+inherited baseline problem.
+
+Cause and fix direction are in
+`experiments/EXP-2026-11-08-176-goose-cuda-get-rows/DEFECT-quantized-get-rows.md`. The short
+version: the dispatch does not gate on type, and the Goose body models `src0_t == dst_t`, so a
+quantized source row is read as `float`. The Apex profile uses `F32 -> F32` only, which is why
+the whole chain runs clean there.
+
+Everything else in this document describes a runtime that is correct on the Apex profile and
+now known to be wrong outside it for this one op. The fix is a one-line type gate plus a chain
+rebuild and the paired protocol, and it is the next piece of work.
+
+The same run also showed `test-backend-ops` half-working: the binary must be built from the
+read-only llama.cpp source into a scratch directory and pointed at the runtime with
+`LD_LIBRARY_PATH`, because this CUDA backend exports `ggml_backend_init` while the flint
+build's own copy does not, so only the tree's `libggml-base` can be used.
+
 ## Not covered
 
 `ggml_get_to_fp16_nc_cuda` and its `to_t_nc_cuda_t` per-dimension-stride signature. The
