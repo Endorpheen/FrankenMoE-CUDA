@@ -215,27 +215,27 @@ The fixtures need `LD_LIBRARY_PATH` pointing at the stage's runtime directory: u
 sanitizer the `fg160_fusion_enabled` reference from `libggml-cuda.so.0` does not resolve from
 the binary's rpath alone, and the run aborts before the first instrumented call.
 
-## Open defect: GET_ROWS on quantized sources
+## test-backend-ops: one defect fixed, one open
 
-`test-backend-ops test -o GET_ROWS -b CUDA0` against the active runtime reports 69 failures
-and a misaligned-address abort. Isolated to EXP176's module by its own switch: with
-`GGML_GOOSE_CUDA_GET_ROWS=0` the same binary passes 2/2, so this is our port and not an
-inherited baseline problem.
+Building the harness from the read-only llama.cpp source into a scratch directory and pointing
+it at the runtime with `LD_LIBRARY_PATH` works. It immediately found what the per-stage gates
+could not: modules whose Goose body models one configuration and traps on the rest instead of
+declining to the native branch.
 
-Cause and fix direction are in
-`experiments/EXP-2026-11-08-176-goose-cuda-get-rows/DEFECT-quantized-get-rows.md`. The short
-version: the dispatch does not gate on type, and the Goose body models `src0_t == dst_t`, so a
-quantized source row is read as `float`. The Apex profile uses `F32 -> F32` only, which is why
-the whole chain runs clean there.
+**Fixed — GET_ROWS on quantized sources.** `test -o GET_ROWS` reported 69 mismatches and a
+misaligned-address abort. Isolated to EXP176 by its own switch (`=0` passes 2/2). The dispatch
+did not gate on type, and the body models `src0_t == dst_t`, so a `q2_K`/`q8_0` row was read
+as `float`. A one-line type gate sends mismatches to the native branch; the objects were
+rebuilt and the runtime relinked. Now 2/2 passed and 0 failures. Apex is unchanged:
+`FG176G host=0x3,paths=0x3`, exact `e68df05b`, 2578.52 / 26.56.
 
-Everything else in this document describes a runtime that is correct on the Apex profile and
-now known to be wrong outside it for this one op. The fix is a one-line type gate plus a chain
-rebuild and the paired protocol, and it is the next piece of work.
+**Open — RoPE aborts outside the Apex configuration.** `test -o ROPE` aborts before its first
+case completes, in `fg171r_fail`; with `GGML_GOOSE_CUDA_ROPE=0` the same binary passes 2/2. The
+witness shows the module does run in Apex, for the one configuration the profile uses. See
+`experiments/EXP-2026-11-08-171-goose-cuda-rope/DEFECT-rope-abort.md`.
 
-The same run also showed `test-backend-ops` half-working: the binary must be built from the
-read-only llama.cpp source into a scratch directory and pointed at the runtime with
-`LD_LIBRARY_PATH`, because this CUDA backend exports `ggml_backend_init` while the flint
-build's own copy does not, so only the tree's `libggml-base` can be used.
+The full suite reaches 1115 passing cases and 0 mismatches before that abort. The remaining
+work is the same shape as the GET_ROWS fix, per module, until the matrix runs clean.
 
 ## Not covered
 
