@@ -57,3 +57,12 @@ would remove the element path entirely and that needs its own measurement.
 
 Severity: no effect on the Apex profile. Real for any workload that does large f32 transposed
 copies through this backend.
+
+## Apex unaffected, checked
+
+After the change: `FG177C_CUDA_CPY host=0x4,paths=0x1` — the same bit 0 only, so the contiguous
+memcpy route Apex uses is untouched. 2568.68 / 26.17, tokens and all 128 top-5 probabilities
+equal, output `e68df05b`.
+
+That is the expected result — route 4 is not on this profile — and it is verified rather than
+assumed, because the change touched the retired route's dispatch condition.
