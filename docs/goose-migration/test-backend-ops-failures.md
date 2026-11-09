@@ -272,16 +272,46 @@ Three facts have to be held at once:
 1. The Goose matvec kernel is bit-identical to the native one in every configuration that can
    be built here — fourteen layouts plus k=4, spanning contiguous, padded and overlapping
    storage, with channels, samples and both together.
-2. Under the harness, disabling EXP184 alone clears **all** MUL_MAT failures, and disabling
-   EXP185 alone also clears **all** of them. If the f32 failures belonged to one module and the
-   q4_K ones to the other, each switch would clear only its own half.
+2. ~~Disabling either module alone clears all MUL_MAT failures.~~ **Retracted — it was a broken
+   measurement.** See the correction section below: the real split is 6 f32 cases owned by
+   EXP184 and 3 q4_K cases owned by EXP185, which is exactly the shape table.
 3. Adding `ne3 == 1` to both predicates also cleared all of them while leaving the Apex
    witnesses at `paths=0x1`.
 
-Fact 2 is the odd one, and it does not fit "a body computes the wrong number". Together with
-fact 1 it points at the route around the kernel rather than the kernel, exactly as the last
-section said. The next step is to trace, for one failing case, which of the two entry points
-the harness reaches and what the other one then does — a per-case trace, not another fixture
-variant.
+Fact 2 was retracted, so the anomaly that motivated a "route around the kernel" reading is
+gone. Facts 1 and 3 stand on their own and still do not explain the failure.
 
-Nothing here is concluded beyond that.
+## Measurement defect, found and corrected
+
+The attribution above was produced with
+
+    `for k in MMVF MMVQ_Q4K; do n=$(LD_LIBRARY_PATH=$R GGML_GOOSE_CUDA_$k=0 timeout ... test-backend-ops ...)`
+
+`GGML_GOOSE_CUDA_$k=0` is not a valid POSIX assignment — the name contains an unexpanded `$`
+in a position the shell does not treat as a variable — so the command never ran, its output was
+empty, and `grep -c` reported 0 failures. Every "switch X clears the failures" reading in this
+document came from that line.
+
+Control that exposed it: setting any unrelated variable the same way also reported 0, including
+`FOO=0` and a non-existent `GGML_GOOSE_CUDA_NOPE=0`; and the unmodified run reports 9 failures
+three times in a row, so the result is deterministic and the zeros were the artifact.
+
+Redone with `env`:
+
+    MMVF=0      ->  3 failures remain (EXP184 owns the 6 f32 cases)
+    MMVQ_Q4K=0  ->  6 failures remain (EXP185 owns the 3 q4_K cases)
+
+which matches the shape table exactly and is the attribution that should have been recorded the
+first time.
+
+## Where this leaves the MUL_MAT question
+
+The kernel is byte-identical to native in seventeen fixture configurations, including every
+layout and shape the harness uses, yet the harness still fails these nine cases when the bound
+is removed. Both statements are measured. The gap is therefore in something the fixture does
+not reproduce, and the remaining candidates are the ones the fixture cannot express: the
+harness's own tensor construction (it builds a `base` and views, so strides and *offsets*
+differ from a freshly allocated tensor) and the per-case dispatch that precedes the kernel.
+
+The bound `ne3 == 1` stays because it is what keeps the suite green, and it is labelled as a
+bound over an unexplained case rather than a fix.
