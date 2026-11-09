@@ -13,7 +13,7 @@ builds.
 | `ggml_cuda_gated_delta_net_mma::gdn_single` | EXP172 | witness in Apex log |
 | `flash_attn_ext_vec`, `flash_attn_ext_f16` | EXP173 | witness `FG175FA_CUDA host=0xf`, four paths |
 | `unary_gated_op_kernel` (SiLU/gated) | EXP166 | witness in Apex log |
-| `concat_non_cont` | EXP175 | +1.03% paired |
+| `concat_non_cont` | EXP175 | +0.26% / +0.76% (median of 3, isolated) |
 | `k_get_rows_float_vec` | EXP176 | byte-exact |
 | cpy / dup / cont | EXP177 | byte-exact |
 | `quantize_q8_1` | EXP178 | witness in Apex log |
@@ -21,7 +21,7 @@ builds.
 | `mm_ids_helper` | EXP181 | byte-exact |
 | FWHT (N=64..512) | EXP183 | −1.15% / −0.99%, inside threshold |
 | `mul_mat_vec_f` | EXP184 | +0.40% / +1.69% |
-| `mul_mat_vec_q` Q4_K | EXP185 | +0.21% / −1.28%, byte-exact |
+| `mul_mat_vec_q` Q4_K | EXP185 | −0.07% / −1.70% (median of 7), byte-exact |
 | Q4_K dequantization (F32) | EXP182 | byte-exact, **off the Apex path** |
 | Q4_0 dequantization (F16) | EXP188 | byte-exact, **off the Apex path** |
 
@@ -158,3 +158,43 @@ changed.
 The remaining unported work is behind one of two walls: the code-generation gap for the
 matmul families, or the absence of SIMD for the CPU dot products. Neither is reachable
 from this repository; both are recorded with measurements in the per-experiment notes.
+
+## Timing figures: what they are and are not
+
+Every paired figure in this project comes from an Apex 32K/128 run compared against the
+same build with one component switched. Three measurement defects were found and corrected
+while auditing those numbers, and they change the figures without changing any verdict:
+
+1. **Two components in one comparison.** Five runners (EXP176, 177, 178, 179, 181)
+   inherited a line from EXP174 that set `GGML_GOOSE_CUDA_SET_ROWS=0` in the native arm,
+   so the native side had reverted SET_ROWS as well. SET_ROWS alone is worth about −0.09%
+   prefill / −0.52% decode, the same order as the effects being claimed. All five were
+   re-measured in isolation.
+2. **Contaminated runs.** EXP175's original pair ran at prefill 2198 / decode 18.99, where
+   this profile returns 26xx / 27.x under normal conditions. The arms were mutually
+   consistent so the delta looked plausible, but neither absolute value belonged to the
+   configuration. Re-measured at normal throughput.
+3. **Run order.** Whichever arm runs first pays a warm-up of roughly 1.3 tok/s on this
+   machine. EXP176's first pairs showed a 3-4% "speed-up" that was entirely this artefact;
+   the sign reversed when the order reversed. All stages are now measured in both orders.
+
+The isolated medians:
+
+| stage | component | prefill | decode | before correction |
+|---|---|---|---:|---:|---|
+| EXP175 | concat | +0.26% | +0.76% | +0.57% / +0.44% (contaminated) |
+| EXP176 | get_rows | 0.00% | 0.00% | not previously isolated; first pairs showed +3-4% (order artefact) |
+| EXP177 | cpy | −0.38% | −0.77% | −0.95% / +1.97% (two components, wrong sign) |
+| EXP178 | q8_1 quantize | +0.29% | +0.61% | −0.46% / +2.96% (five-fold inflated) |
+| EXP179 | MoE weighted | +0.70% | −0.62% | −0.86% / −0.30% (wrong prefill sign) |
+| EXP181 | mm_ids | −0.46% | +1.79% | +1.44% / +0.48% (wrong prefill sign) |
+| EXP183 | FWHT | — | −0.14% | −1.15% / −0.99% (from two valid pairs spanning 8.5 points) |
+| EXP184 | mul_mat_vec_f | +0.40% | +1.69% | unchanged |
+| EXP185 | mul_mat_vec_q Q4_K | −0.07% | −1.70% | −1.28% from a single pair |
+
+Every stage remains inside the 2% threshold, so no verdict changes. What changes is that the
+numbers now measure one component, on runs at normal throughput, in both orders.
+
+Resolution is coarser than the effects: within-arm spread is 1-2 tok/s on decode, so a
+figure like +0.61% cannot be distinguished from zero. Read the table as "no regression
+detected" rather than as a ranking of components.
