@@ -215,27 +215,29 @@ The fixtures need `LD_LIBRARY_PATH` pointing at the stage's runtime directory: u
 sanitizer the `fg160_fusion_enabled` reference from `libggml-cuda.so.0` does not resolve from
 the binary's rpath alone, and the run aborts before the first instrumented call.
 
-## test-backend-ops: one defect fixed, one open
+## test-backend-ops: two defects fixed, three clusters left
 
 Building the harness from the read-only llama.cpp source into a scratch directory and pointing
-it at the runtime with `LD_LIBRARY_PATH` works. It immediately found what the per-stage gates
-could not: modules whose Goose body models one configuration and traps on the rest instead of
-declining to the native branch.
+it at the runtime with `LD_LIBRARY_PATH` works. It found what the per-stage gates could not:
+modules whose Goose body models one configuration and is wrong or fatal for the rest.
 
-**Fixed — GET_ROWS on quantized sources.** `test -o GET_ROWS` reported 69 mismatches and a
-misaligned-address abort. Isolated to EXP176 by its own switch (`=0` passes 2/2). The dispatch
-did not gate on type, and the body models `src0_t == dst_t`, so a `q2_K`/`q8_0` row was read
-as `float`. A one-line type gate sends mismatches to the native branch; the objects were
-rebuilt and the runtime relinked. Now 2/2 passed and 0 failures. Apex is unchanged:
-`FG176G host=0x3,paths=0x3`, exact `e68df05b`, 2578.52 / 26.56.
+**Fixed — GET_ROWS on quantized sources.** 69 mismatches and a misaligned-address abort. The
+dispatch did not gate on type and the body models `src0_t == dst_t`, so a quantized row was
+read as `float`. One-line type gate, objects rebuilt, runtime relinked. Now 2/2 passed.
 
-**Open — RoPE aborts outside the Apex configuration.** `test -o ROPE` aborts before its first
-case completes, in `fg171r_fail`; with `GGML_GOOSE_CUDA_ROPE=0` the same binary passes 2/2. The
-witness shows the module does run in Apex, for the one configuration the profile uses. See
-`experiments/EXP-2026-11-08-171-goose-cuda-rope/DEFECT-rope-abort.md`.
+**Fixed — RoPE with a non-positive `n_ctx_orig`.** The body required `op_params[4] > 0`; the
+native kernel does not, and feeding zero into `ggml_rope_yarn_corr_dims` is harmless there.
+Deleting the guard alone would only move the trap to `floorh`'s finiteness check, so the Goose
+path now declines for non-positive values. `-o ROPE` goes from an abort to 2/2 passed, and the
+Apex witness is unchanged at `host=0x1,modes=0x8,variants=0x50`.
 
-The full suite reaches 1115 passing cases and 0 mismatches before that abort. The remaining
-work is the same shape as the GET_ROWS fix, per module, until the matrix runs clean.
+With both fixes the full suite completes: **18748 cases OK, 16 FAIL, no abort** (it previously
+aborted at 1115 cases). The remaining 16 are attributed per module in
+`test-backend-ops-failures.md`: EXP177 `CPY` type conversion, EXP184/EXP185 `MUL_MAT`
+batched/permuted matvec, and EXP166 `SILU_BACK`.
+
+Apex after both fixes, back-to-back pair under one load average: native 2549.14/25.90 against
+Goose 2576.54/27.28, prefill +1.07% and decode +5.33%, identical `e68df05b`.
 
 ## Not covered
 
