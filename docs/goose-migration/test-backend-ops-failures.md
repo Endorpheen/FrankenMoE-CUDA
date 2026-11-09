@@ -126,3 +126,7 @@ all (`m6=0x0` in the profile log), so nothing on the hot path changes.
 
     test-backend-ops test -o SILU_BACK -b CUDA0   ->  2/2 backends passed
     full suite                                    ->  18753 OK, 11 FAIL, no abort
+
+Apex is unchanged, checked: the activation witness reads
+`m0=0x2000400,m2=0x2000480,m6=0x0,m7=0x1`, identical to before the change, with `m6=0x0`
+confirming the mode is not on the profile. Output still `e68df05b`, 2572.84 / 27.01.
