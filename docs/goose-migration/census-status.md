@@ -91,3 +91,15 @@ This is recorded rather than worked around, because a census taken from a differ
 build would not be comparable to the EXP084 numbers and the instruction is to port by
 fact, not by guess. The EXP084 census remains the authority, and it is complete: 14
 distinct kernels, 70 entries, all of them in one of the three documented states above.
+
+## CPU side
+
+EXP143 already executes Goose modules in the CPU MoE path and its witnesses appear in
+every Apex run: `FG143_CONTROL plans=5346 dispatches=170378`,
+`FG143_CPU op=100 calls=42560` (expert matmul) and `op=40 calls=138` (dense matmul),
+`FG143_EXECUTOR worker_graphs=42706 worker_steps=170410`, `FG147_BACKEND`.
+
+Against that, the CPU dot products are out of reach for the same reason as the GPU ones:
+`ggml_vec_dot_q4_K_q8_K` contains 58 SIMD instructions and `ggml_vec_dot_q6_K_q8_K` 91 on
+this host, and Goose has no SIMD. `quantize_row_q8_K` was transferred (EXP190) precisely
+because it has zero, but Apex does not reach it: the graph goes straight to the matmuls.
