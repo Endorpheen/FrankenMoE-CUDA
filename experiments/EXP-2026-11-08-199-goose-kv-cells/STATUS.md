@@ -223,3 +223,20 @@ One source-level correction: `pad` is a reserved identifier in the Goose front e
 EXP158 hit), so the local was renamed `pstep`. Recorded because it will recur.
 
 Gate: 73223 checks / 0 failures.
+
+## update() / get_can_shift decisions
+
+From `llama-kv-cache.cpp:836-916` and `1213-1223`:
+
+- `can_shift(is_step35, n_pos_per_embd)` -- Step35 uses per-layer RoPE dims and K-shift assumes a
+  single global n_rot, so it is refused there and whenever a position spans several embeddings.
+  `can_shift` and `shift_needed` are routed into `llama-kv-cache.cpp`.
+- `shift_needed(do_shift, rope_none, n_layers_with_rope)` -- whether the shift graph is built.
+- `update_updated(shift_computed)` -- `updated` becomes true only when the shift actually ran.
+
+    FG199K_KV_UPDATE can_shift=1 shift_needed=0
+
+`can_shift` runs once at initialisation; `shift_needed` is zero because `do_shift` is false on this
+profile. Both are gated over 300 randomised cases each; the live path is minimal but present.
+
+Gate: 74123 checks / 0 failures.

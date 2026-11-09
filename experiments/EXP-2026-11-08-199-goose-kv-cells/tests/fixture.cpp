@@ -43,6 +43,9 @@ void fg199k_pos_div(int64_t, int64_t, int64_t, uint64_t);
 int64_t fg199k_seq_add_head(int64_t, int64_t);
 int64_t fg199k_seq_div_skip(int64_t, int64_t, int64_t);
 int64_t fg199k_n_kv_one(int64_t, int64_t, int64_t);
+int64_t fg199k_can_shift(int64_t, int64_t);
+int64_t fg199k_shift_needed(int64_t, int64_t, int64_t);
+int64_t fg199k_update_updated(int64_t);
 }
 
 // ---- arena, laid out as the module documents it ----
@@ -342,6 +345,20 @@ int main(void) {
         const int64_t ref = std::min<int64_t>(size, std::max<int64_t>(pad_cur, padded));
         ck(fg199k_n_kv_one(size, used, n_pad) == ref, "n_kv_one",
            fg199k_n_kv_one(size, used, n_pad), ref);
+    }
+
+    // update / can_shift decisions.
+    for (int i = 0; i < 300; ++i) {
+        const int64_t s35 = rng() % 2, npe = (int64_t)(rng() % 4);
+        const bool ref_cs = !s35 && npe <= 1;
+        ck((fg199k_can_shift(s35, npe) != 0) == ref_cs, "can_shift", 0, ref_cs);
+
+        const int64_t ds = rng() % 2, rn = rng() % 2, nl = (int64_t)(rng() % 3);
+        const bool ref_sn = ds && !rn && nl > 0;
+        ck((fg199k_shift_needed(ds, rn, nl) != 0) == ref_sn, "shift_needed", 0, ref_sn);
+
+        const int64_t c = rng() % 2;
+        ck((fg199k_update_updated(c) != 0) == (c != 0), "update_updated", 0, 0);
     }
 
     run_trap("rm on empty cell", 12, trap_rm_empty);

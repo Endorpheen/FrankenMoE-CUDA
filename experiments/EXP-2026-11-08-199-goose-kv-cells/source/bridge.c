@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdatomic.h>
 
-static _Atomic unsigned long long g_calls, g_cleared, g_native, g_purge, g_head, g_slot, g_swa, g_posin, g_rmhead, g_cp, g_shift, g_nkv;
+static _Atomic unsigned long long g_calls, g_cleared, g_native, g_purge, g_head, g_slot, g_swa, g_posin, g_rmhead, g_cp, g_shift, g_nkv, g_upd;
 
 static void g_fail(int64_t c) {
     fprintf(stderr, "FG199K validation code %lld\n", (long long)c);
@@ -59,6 +59,9 @@ int64_t fg199k_should_purge_c(int64_t min_pos, int64_t max_rm) {
     return r;
 }
 int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm) { return fg199k_should_purge_c(min_pos, max_rm); }
+int64_t fg199k_can_shift(int64_t is_step35, int64_t n_pos_per_embd) { atomic_fetch_add(&g_upd, 1); return gg_function_41(is_step35, n_pos_per_embd, 0); }
+int64_t fg199k_shift_needed(int64_t do_shift, int64_t rope_none, int64_t n_layers) { return gg_function_42(do_shift, rope_none, n_layers, 0); }
+int64_t fg199k_update_updated(int64_t computed) { return gg_function_43(computed, 0); }
 int64_t fg199k_n_kv_one(int64_t size, int64_t used_max_p1, int64_t n_pad) {
     atomic_fetch_add(&g_nkv, 1);
     return gg_function_40(size, used_max_p1, n_pad, 0);
@@ -116,6 +119,7 @@ __attribute__((destructor)) static void fg199k_report(void) {
     fprintf(stderr, "FG199K_KV_SEQCP cp_decisions=%llu\n", atomic_load(&g_cp));
     fprintf(stderr, "FG199K_KV_SHIFT add=%llu div=%llu\n", atomic_load(&g_shift), 0ULL);
     fprintf(stderr, "FG199K_KV_NKV calls=%llu\n", atomic_load(&g_nkv));
+    fprintf(stderr, "FG199K_KV_UPDATE can_shift=%llu shift_needed=%llu\n", atomic_load(&g_upd), 0ULL);
 }
 int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared) {
     if (!enabled) { atomic_fetch_add(&g_native, 1); return 0; }

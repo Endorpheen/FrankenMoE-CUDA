@@ -413,6 +413,34 @@ fn n_kv_one(size:i64,used_max_p1:i64,n_pad:i64)->i64{
  return m;
 }
 
+
+// update / get_can_shift, from llama-kv-cache.cpp:836-916 and 1213-1223.
+
+// can_shift: line 1213. Step35 uses per-layer RoPE dims, and K-shift assumes a single global
+// n_rot, so it is refused for that architecture and whenever a position spans several embeddings.
+fn can_shift(is_step35:i64,n_pos_per_embd:i64)->i64{
+ ensure(n_pos_per_embd>=0,240);
+ if is_step35!=0{return 0 as i64;}
+ if n_pos_per_embd>1 as i64{return 0 as i64;}
+ return 1 as i64;
+}
+
+// shift_needed: line 894-898. The shift graph is built only when RoPE is active and at least one
+// layer actually has RoPE. `rope_type_none` is the enum value for LLAMA_ROPE_TYPE_NONE.
+fn shift_needed(do_shift:i64,rope_type_none:i64,layers_with_rope:i64)->i64{
+ ensure(layers_with_rope>=0,241);
+ if do_shift==0 as i64{return 0 as i64;}
+ if rope_type_none!=0 as i64{return 0 as i64;}
+ if layers_with_rope==0 as i64{return 0 as i64;}
+ return 1 as i64;
+}
+
+// update_updated: line 891-905. `updated` becomes true only when the shift graph actually ran.
+fn update_updated(shift_computed:i64)->i64{
+ if shift_computed!=0{return 1 as i64;}
+ return 0 as i64;
+}
+
 // should_purge: llama-kv-cache.cpp:1228 `cells.seq_pos_min(s) <= seq_pos_max_rm[s]`.
 // Returns 1 when the purge loop must call seq_rm for this sequence.
 fn should_purge(seq_pos_min:i64,max_rm:i64)->i64{
@@ -460,4 +488,7 @@ fn main(){
  pad_up(0 as i64,256 as i64);
  buf_n_pad(0 as i64);
  n_kv_one(0 as i64,0 as i64,0 as i64);
+ can_shift(0 as i64,1 as i64);
+ shift_needed(0 as i64,0 as i64,0 as i64);
+ update_updated(0 as i64);
 }

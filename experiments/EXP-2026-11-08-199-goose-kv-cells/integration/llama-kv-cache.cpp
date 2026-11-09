@@ -28,6 +28,8 @@ extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
 extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
 extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
 extern "C" int64_t fg199k_n_kv_one(int64_t size, int64_t used_max_p1, int64_t n_pad);
+extern "C" int64_t fg199k_can_shift(int64_t is_step35, int64_t n_pos_per_embd);
+extern "C" int64_t fg199k_shift_needed(int64_t do_shift, int64_t rope_none, int64_t n_layers_with_rope);
 extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
 extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
 extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
@@ -439,6 +441,8 @@ extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
 extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
 extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
 extern "C" int64_t fg199k_n_kv_one(int64_t size, int64_t used_max_p1, int64_t n_pad);
+extern "C" int64_t fg199k_can_shift(int64_t is_step35, int64_t n_pos_per_embd);
+extern "C" int64_t fg199k_shift_needed(int64_t do_shift, int64_t rope_none, int64_t n_layers_with_rope);
 extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
 extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
 extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
@@ -936,10 +940,12 @@ bool llama_kv_cache::update(llama_context * lctx, bool do_shift, const stream_co
         LLAMA_LOG_DEBUG("%s: applying K-shift\n", __func__);
 
         // apply K-shift if needed
-        if (hparams.rope_type != LLAMA_ROPE_TYPE_NONE &&
-                std::any_of(layers.begin(), layers.end(), [&](const auto & layer) {
-                    return hparams.has_rope(layer.il);
-                })) {
+        const int64_t n_rope_layers = (int64_t)std::count_if(layers.begin(), layers.end(),
+                [&](const auto & layer) { return hparams.has_rope(layer.il); });
+        // Goose decides whether the shift graph is built at all.
+        if (fg199k_enabled()
+                ? (fg199k_shift_needed(1, hparams.rope_type == LLAMA_ROPE_TYPE_NONE ? 1 : 0, n_rope_layers) != 0)
+                : (hparams.rope_type != LLAMA_ROPE_TYPE_NONE && n_rope_layers > 0)) {
             ggml_backend_sched_reset(sched);
 
             auto * res = lctx->get_gf_res_reserve();
@@ -1284,6 +1290,11 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
 }
 
 bool llama_kv_cache::get_can_shift() const {
+    if (fg199k_enabled()) {
+        // Goose decides whether this configuration supports K-shift at all.
+        return fg199k_can_shift(model.arch == LLM_ARCH_STEP35 ? 1 : 0,
+                                (int64_t)hparams.n_pos_per_embd()) != 0;
+    }
     // Step35 uses per-layer RoPE dims; K-shift assumes a single global n_rot.
     if (model.arch == LLM_ARCH_STEP35) {
         return false;
