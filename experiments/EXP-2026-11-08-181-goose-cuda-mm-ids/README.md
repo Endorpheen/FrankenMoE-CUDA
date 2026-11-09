@@ -7,7 +7,7 @@ Current state: qualified on the fixed Apex profile and preserved as a checkpoint
 
 ## Verdict
 
-**ACCEPTED** — byte-exact mm_ids helper; 20 checks, 15/15 byte-identical.
+**ACCEPTED** — byte-exact mm_ids helper; 20 checks, 15/15 byte-identical; isolated two-way median −0.46% prefill / +1.79% decode.
 
 This is a verdict on the transfer in the experimental runtime, which is the only thing
 this work decides. Installation into the production working runtime is left to Igor and
@@ -75,6 +75,27 @@ every returned top-5 probability (sha256 `e68df05b`). Both mean deltas are insid
 Actual execution is witnessed by `FG181M_CUDA_MM_IDS host=0x1, paths=0x1`, with
 `FG180Q_CUDA_MMQ_Q8_1 host=0x23` and `FG179W_CUDA_MOE_WEIGHTED host=0x1` still
 active, so six transferred operators now run together in one Apex pass.
+
+## Re-measured in isolation, both orders
+
+The forward/reverse pair above came from a runner that also set
+`GGML_GOOSE_CUDA_SET_ROWS=0` in the native arm, so it compared two components. Re-measured
+with that line removed, one pair in each order:
+
+| pair | order | native | goose | prefill | decode |
+|---|---|---|---:|---:|---:|
+| iso1 | native→goose | 2610.6 / 27.20 | 2582.7 / 27.06 | −1.07% | −0.54% |
+| iso2 | goose→native | 2590.5 / 26.68 | 2594.2 / 27.78 | +0.14% | +4.11% |
+| **median** | | | | **−0.46%** | **+1.79%** |
+
+Both figures are inside the 2% threshold, so the verdict holds, but the resolution here is
+poor: prefill moves from −1.07% to +0.14% and decode from −0.54% to +4.11% between the two
+orders. The warm-up band on this stage is wide enough that two pairs cannot separate the
+effect from noise, and the +1.79% decode median should be read as "no clear difference"
+rather than as a gain.
+
+The earlier recorded +1.443% prefill / +0.481% decode came from a two-component comparison;
+the prefill sign differs after isolation.
 
 ## Rollback and reproduce
 
