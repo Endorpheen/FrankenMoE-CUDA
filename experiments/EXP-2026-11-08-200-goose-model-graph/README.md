@@ -78,6 +78,23 @@ directory.
 shapes. An error there does not fail loudly: it produces a view of the wrong extent and the state
 corrupts over time. 1710 calls in one pass, `native=0`.
 
+## Paired regression check against EXP199
+
+Four runs in the mandated order, old (EXP199) -> new (EXP200) -> new -> old:
+
+| run | prefill | decode |
+|---|---:|---:|
+| EXP199 #1 | 2541.87 | 25.76 |
+| EXP200 #1 | 2541.44 | 26.13 |
+| EXP200 #2 | 2518.28 | 25.45 |
+| EXP199 #2 | 2558.70 | 26.47 |
+| **mean old** | **2550.27** | **26.12** |
+| **mean new** | **2529.86** | **25.79** |
+
+prefill **-0.80%**, decode **-1.24%**, tokens exact on all four runs. Inside the 2% band, and the
+within-arm spread is 1.3 tok/s on decode, so this reads as "no regression detected" rather than a
+measurement of a small effect.
+
 ## Switch
 
 `GGML_GOOSE_MODEL_GRAPH=0` restores the native `is_recr` body. Opt-out, so a new build has it on.
