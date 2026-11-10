@@ -40,6 +40,26 @@ mechanically rather than by eye:
     prefill 2557.42 >= 2500    decode 26.30 >= 25
     vs EXP209: prefill +0.38%, decode -0.33%, both within 2%
 
+## Second loss, found by the same check: FG203D
+
+The witness comparison also showed **FG203D (the MMQ dispatch policy) missing** from every run
+after EXP203. Cause: EXP203 shipped it as its own CUDA DSO
+(`runtime/exp203/run/libggml-cuda-pinned.so.0.27.0`, sha `219af975…`), and EXP204's run directory
+symlinked `libggml-cuda.so.0.27.0` back to **EXP196's** library (sha `cb19fc8d…`). So the loader
+never saw the dispatch module.
+
+Worse, the first attempt to fix it looked successful and was not: copying the EXP203 library into
+`runtime/exp211/run/libggml-cuda-pinned.so.0.27.0` changed nothing, because
+`libggml-cuda.so.0.27.0` still pointed at EXP196 and that is the name the loader opens. The
+`loaded-library-hashes.json` receipt is what exposed it: it recorded `cb19fc8d…` after the copy.
+
+Fix: repoint the symlink chain, not just the file.
+
+    FG203D present again, 2568.74 / 26.29, tokens and probabilities exact
+
+Full chain after both repairs: 27 modules, `check_witnesses.py` reports OK against EXP203 with
+FG199K, FG203D and FG209I expected.
+
 ## Rule adopted from this
 
 A stage is not composed until its witness list is compared against the previous stage's, not just
