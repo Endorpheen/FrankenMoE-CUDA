@@ -221,3 +221,42 @@ right is a session's work, not a few minutes at the end of this one.
 
 A port that compiles and has three known indexing defects is not a deliverable. Recorded as the current
 state so the next attempt starts from the list instead of from a blank file.
+
+---
+
+# Tile loop verified: 512 cases, 0 differences — after five defects
+
+    FG235_TILE_MATCH cases=512 bad=0
+
+The unit differential runs the native tile and the Goose tile on the same buffers in the same kernel and
+compares every accumulator slot. It took **five defects** to get there, and only one was found by reading
+the code:
+
+| # | defect | how found |
+|---|---|---|
+| 1 | `sc` byte offset multiplied by 4 as well as the index | reading the native `(uint8_t*)&x_sc[idx] + 2*(k01/16)` |
+| 2 | `sc` passed once instead of twice (`sc`, `sc+8`) | reading the signature |
+| 3 | `ds8` is two `half2` = four floats, I filled one pair | reading the inner function |
+| 4 | `(j0/nwarps)*(I/warp_size)` instead of native's left-to-right `j0/nwarps*I/warp_size` | **the differential** — with I=8, warp_size=32 the parenthesised form is 0 for every j0 |
+| 5 | `MMQ_TILE_Y_K` taken as `TILE+QI8_1`=40 instead of `TILE+TILE/QI8_1`=36 | **the differential** |
+
+Defects 4 and 5 are the important ones: both produce plausible-looking numbers, only some slots differ,
+and neither is visible without running both implementations side by side. Defect 4 in particular is a
+silent index collision that would have made the port write into the wrong accumulator slot for every
+thread — the kind of bug that survives a token-equality check because the sums are still finite.
+
+## My harness was wrong twice too
+
+The first differential gave 4 mismatches that were partly its own fault: it handed the native arm
+`y_qs - 4` and the Goose arm `y_qs`, when native computes `(const int*)y + 4`. Both arms now receive the
+identical pointer. A comparison harness that gives the two sides different inputs is worse than none.
+
+## State
+
+The tile loop is ported and **verified equal to native** on the geometry used (`I=8, J=8, nwarps=1,
+warp_size=32, k00 ∈ {0,16}`). Not yet wired into `mmq-vec-dot.cuh`, and no performance claim: the inner
+product was at parity, this is the surrounding loop, and only a full measurement would say whether the two
+together hold parity at kernel level.
+
+Remaining before the 30% block can be claimed: wire it, run the same kernel-level A/B that proved the
+inner product, then a full Apex pass.

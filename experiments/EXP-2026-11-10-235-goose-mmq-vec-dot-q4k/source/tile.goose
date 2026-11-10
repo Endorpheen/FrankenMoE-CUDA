@@ -53,16 +53,25 @@ fn tile_q4k(x_qs:u64,x_dm:u64,x_sc:u64,y_qs:u64,y_ds:u64,sum:u64,
     // Mixing those up is the first bug I had here: multiplying the byte term by 4 again.
     let sc_idx:i64=i*((tile_ne_k/(8 as i64)))+(i/(8 as i64))+(k0/(32 as i64));
     let sc_byte:i64=sc_idx*(4 as i64)+(2 as i64)*(k01/(16 as i64));
+    // Scratch layout, in bytes: +0 dm4.x, +4 dm4.y, +8/+12 dsx[0..1], +16/+20 dsy[0..1].
     split_h2(x_dm,i,scratch,scratch+4 as i64);
-    split_h2(y_ds,j*(tile_ne_k+(tile_ne_k/i8_1))+k01/i8_1,scratch+8 as i64,scratch+12 as i64);
+    let dsbase:i64=j*(tile_ne_k+(tile_ne_k/i8_1))+k01/i8_1;
+    split_h2(y_ds,dsbase,scratch+8 as i64,scratch+16 as i64);
+    split_h2(y_ds,dsbase+1 as i64,scratch+12 as i64,scratch+20 as i64);
     let xo:i64=i*(tile_ne_k+1 as i64)+(k0/(2 as i64));
-    let yo:i64=j*(tile_ne_k+i8_1)+k01;
+    // MMQ_TILE_Y_K is (TILE_NE_K + TILE_NE_K/QI8_1) = 36, NOT (TILE_NE_K + QI8_1) = 40.
+    // Using 40 here was the fifth defect in this loop; the unit-differential caught it.
+    let yo:i64=j*(tile_ne_k+tile_ne_k/i8_1)+k01;
     let r:f32=vd((x_qs as i64+xo*(4 as i64)) as u64,
                  (y_qs as i64+yo*(4 as i64)) as u64,
                  (x_sc as i64+sc_byte) as u64, (x_sc as i64+sc_byte+8 as i64) as u64,
                  ld_f32(scratch,0 as i64),ld_f32(scratch,1 as i64),
-                 scratch+24 as i64,scratch+28 as i64);
-    let si:i64=(j0/nwarps)*(I/warp_size)+i0/warp_size;
+                 scratch+8 as i64,scratch+16 as i64);
+    // Native is `j0/nwarps*I/warp_size + i0/warp_size`, evaluated LEFT TO RIGHT. My first version
+    // parenthesised it as (j0/nwarps)*(I/warp_size), which differs whenever I < warp_size: with I=8 and
+    // warp_size=32 the native expression yields j0/4 while the parenthesised one yields 0 for every j0.
+    // That is a silent index collision, and the GPU differential is what caught it.
+    let si:i64=j0/nwarps*I/warp_size+i0/warp_size;
     st_f32(sum,si,ld_f32(sum,si)+r);
     calls=calls+1 as i64;
     i0=i0+warp_size;
