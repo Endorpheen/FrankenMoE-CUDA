@@ -1659,7 +1659,7 @@
    "id": "P6-07",
    "phase": "P6",
    "title": "Port batching,ubatching,sequence and output mapping",
-   "status": "TODO",
+   "status": "IN_PROGRESS",
    "sources": [
     "src/llama-batch.cpp",
     "src/llama-context.cpp"
@@ -1670,7 +1670,8 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 416,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B3"
+   "batch": "B3",
+   "notes": "Five Goose routes live in llama-batch.cpp as of EXP241, all verified present with nm -u before linking: fg237s split_equal expansion (146 calls/request), fg238q split_seq selection, fg239b batch entry classification (146), fg240q sequence-set construction (146, 256-bit), fg241u ubatch_add classification (146). Gates: 89920 / 61059 / 67640 / 300008 / 160048 checks, all 0 failures. LIVENESS IS MIXED AND RECORDED: split_equal, classify, seqset and ubatch_add all fire 146 times; split_seq is 0 because it is the embd_all path this profile never takes. STILL NATIVE in this task: ubatch_add's container marshalling (resize + per-token copies into token/embd/pos/seq_id arrays), output mapping (output_reorder, out_ids), and llama_batch_ext/compat conversion. Those are data movement rather than decisions, which is why the decisions went first. MISTAKE CLASS TO WATCH (three occurrences this session): a stage built from the pristine source silently dropped the previous stage's route, and twice a runner derived from the previous stage kept writing to the old results directory. Both are caught by nm -u on the object and by grepping the generated runner for the new stage name -- cheap checks that I skipped."
   },
   {
    "id": "P6-08",
@@ -4001,6 +4002,7 @@
   "2026-11-10-kv-line": "Ten KV/recurrent ports since EXP227, of which two are unreachable in this profile. Noted explicitly in each README and in this ledger, because five commits in a row saying 'ported' invites the wrong reading.",
   "2026-11-10-scope": "Recorded two negative findings this session rather than only ports: the sampler's working set is 20 elements because top_k truncates first, and recurrent find_slot is structurally unsuited to the module boundary. Both save a future session from redoing the analysis.",
   "2026-11-10-mmq-structural": "MMQ now has a precise boundary. The arithmetic of the 30% block is ported and bit-exact at parity. The loop around it is ported and exact but cannot be competitive in the current module format, for three named reasons. That is a language/format question for Codex and Igor, not a porting task: no amount of further work on my side closes it without a way to express register-resident accumulators and constant loop bounds.",
-  "2026-11-10-mmq-final": "The MMQ question is now answered in three parts. (1) The arithmetic is ported and bit-exact. (2) On this GPU it is unreachable: a compile-time MMA branch bypasses it. (3) The reachable MMA path is not expressible in the module format without a language change. The remaining 40% is therefore not a porting task, and presenting it as one would be inventing work. What WOULD change this: a module format that can express warp-collective ops, or a non-MMA target."
+  "2026-11-10-mmq-final": "The MMQ question is now answered in three parts. (1) The arithmetic is ported and bit-exact. (2) On this GPU it is unreachable: a compile-time MMA branch bypasses it. (3) The reachable MMA path is not expressible in the module format without a language change. The remaining 40% is therefore not a porting task, and presenting it as one would be inventing work. What WOULD change this: a module format that can express warp-collective ops, or a non-MMA target.",
+  "2026-11-10-p6-07": "Batching went from zero Goose coverage to five live routes. The useful distinction recorded: decisions are portable, container marshalling is not. Four of the five fire 146 times per request; split_seq is dormant because the profile never takes the embd_all path."
  }
 }
