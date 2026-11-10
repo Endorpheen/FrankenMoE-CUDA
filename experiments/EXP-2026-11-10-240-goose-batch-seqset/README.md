@@ -54,3 +54,47 @@ dormant route and a silently wrong batch split.
 
 **Прогон выполнен при параллельной нагрузке. Показатели производительности могут быть искажены.** Prefill
 1477.1 is far below the usual band; nothing is concluded from it, and the route is not even taken.
+
+---
+
+# 256-bit version: gated at 300,008 checks, but still not entered — cause NOT established
+
+Finished the four-word version (`source/ss4.goose`, `source/bridge4.c`), because `LLAMA_MAX_SEQ` is 256:
+
+    FG240Q_FIXTURE checks=300008 failures=0
+
+8 named cases pinning every word boundary (63, 64, 127, 128, 192, 255) plus 20000 random with `nmax` up to
+256. Mutations:
+
+| mutation | failures |
+|---|---:|
+| word index `sid/64` → `sid/128` | 58293 |
+| bit mask `sid&63` → `sid&31` | 33514 |
+
+Integrated with the guard widened to `LLAMA_MAX_SEQ <= 256`, object rebuilt, and verified by `nm`:
+
+    DSO defines   fg240q_build_sets4  fg240q_enabled  fg240q_generated_main  fg240q_init_globals
+    object undef  fg240q_build_sets4  (alongside fg237s/fg238q/fg239b)
+
+Then the run:
+
+    FG240Q calls=0        prefill 2463.3  decode 24.29  tokens True  probs True  sha e68df05b
+    witness superset vs exp239: verdict OK
+
+**The route is linked and never entered.** I did not establish why, and I am not going to guess. The
+candidates I would check first, in this order:
+
+1. whether `llama_batch_allocr::init` is the path the server actually takes for this profile — `split_equal`
+   does fire (146 calls) from the same class, which is why I expected `init` to run, but "same class" is not
+   evidence that this function runs;
+2. whether `batch.n_tokens` at that point exceeds the 65536 guard;
+3. whether `flat` is empty because `batch.n_seq_id[i]` is zero for this batch shape.
+
+A one-line unconditional counter inside the guard would answer all three in a single run, and that is the
+next step rather than a fourth theory.
+
+## Honest status of EXP240
+
+Two gated implementations, 390,055 combined checks, zero failures, and **neither is exercised**. The first
+was refused by its own guard (correctly); the second is linked and does not run for a reason not yet known.
+Recording it as `#deferred` is the accurate label.

@@ -14,8 +14,8 @@
 
 // Goose sequence-set construction (EXP240). GGML_GOOSE_BATCH_SEQSET=0 restores the native block.
 extern "C" int fg240s_enabled(void);
-extern "C" int64_t fg240s_build_sets(int64_t n_tok, const int32_t * flat, const int32_t * off,
-                                     int64_t * out_lo, int64_t n_max);
+extern "C" int64_t fg240q_build_sets4(int64_t n_tok, const int32_t * flat, const int32_t * off,
+                                      int64_t * out, int64_t * unq, int64_t n_max);
 
 
 // Goose batch entry classification (EXP239). GGML_GOOSE_BATCH_CLASSIFY=0 restores the native block.
@@ -327,7 +327,7 @@ bool llama_batch_allocr::init(
         seq_set_t seq_set_unq;
 
         bool fg240s_done = false;
-        if (fg240s_enabled() && batch.n_tokens > 0 && batch.n_tokens <= 65536 && LLAMA_MAX_SEQ <= 64) {
+        if (fg240s_enabled() && batch.n_tokens > 0 && batch.n_tokens <= 65536 && LLAMA_MAX_SEQ <= 256) {
             // Goose computes the bitmask per token and the union; the std::bitset and the map stay here.
             const int32_t nt = (int32_t) batch.n_tokens;
             std::vector<int32_t> flat, off((size_t) nt + 1, 0);
@@ -336,17 +336,27 @@ bool llama_batch_allocr::init(
                 off[(size_t) i + 1] = (int32_t) flat.size();
             }
             if (!flat.empty()) {
-                std::vector<int64_t> masks((size_t) nt + 1, 0);
-                const int64_t unq = fg240s_build_sets((int64_t) nt, flat.data(), off.data(),
-                                                      masks.data(), (int64_t) LLAMA_MAX_SEQ);
-                if (unq >= 0) {
+                std::vector<int64_t> masks((size_t) nt * 4 + 4, 0);
+                int64_t unq[4] = {0,0,0,0};
+                const int64_t ok = fg240q_build_sets4((int64_t) nt, flat.data(), off.data(),
+                                                      masks.data(), unq, (int64_t) LLAMA_MAX_SEQ);
+                if (ok == 1) {
+                    // Rebuild the std::bitset from the four words; seq_set_map stays a C++ container.
                     for (int32_t i = 0; i < nt; ++i) {
-                        seq_set_t cur((unsigned long long) masks[(size_t) i]);
+                        seq_set_t cur;
+                        for (int w = 0; w < 4; ++w) {
+                            const int64_t word = masks[(size_t) i*4 + w];
+                            for (int b = 0; b < 64; ++b) {
+                                if ((word >> b) & 1) cur.set((size_t) w*64 + b);
+                            }
+                        }
                         seq_set.push_back(cur);
                         seq_set_map[cur].push_back(i);
                     }
-                    for (uint32_t s = 0; s < (uint32_t) LLAMA_MAX_SEQ; ++s) {
-                        if (((unq >> s) & 1)) seq_set_unq.set(s);
+                    for (int w = 0; w < 4; ++w) {
+                        for (int b = 0; b < 64; ++b) {
+                            if ((unq[w] >> b) & 1) seq_set_unq.set((size_t) w*64 + b);
+                        }
                     }
                     fg240s_done = true;
                 }
