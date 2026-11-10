@@ -108,3 +108,28 @@ measured against it with a one-line arm switch.
 The honest summary of the 30% block: the arithmetic is now ported and proven bit-exact, and the blocker
 has moved from "not ported" to "the compiler does not yet emit code competitive with hand-written CUDA
 for this kernel" — which is a compiler question, not a migration one, and I have said so in the mailbox.
+
+## Where the 19% comes from: no `IDP.4A`
+
+SASS counts for the two kernels in the same binary, same arithmetic, same inlining:
+
+| | instructions | dot-product opcode |
+|---|---:|---|
+| native | 133 | **16× `IDP.4A.S8.S8`** |
+| goose | 741 | **0** |
+
+The Goose kernel reconstructs each of the 32 byte products with `LOP3.LUT` (128), `SHF.R.U64` (96),
+`IMAD.WIDE.U32` (64), `ISETP.GT.U32.AND.EX` (64) and `SEL` (64) — masks, shifts and selects standing in
+for one hardware instruction. Native spends 16 `IDP.4A` for the same work.
+
+`IDP.4A` is the four-way byte dot product: exactly what my source expresses as a loop of four
+sign-extended products. nvcc recognises that pattern and folds it; the emission does not.
+
+This is the first time I can attribute a port's slowdown to something specific and reproducible rather
+than to a static count I later learn to distrust. EXP222's instruction surplus was my own dead branch;
+EXP223 showed counts alone predict nothing. Here the difference is 5.6× concentrated in the inner
+arithmetic, with a matching 19% time delta and no measurable noise.
+
+Filed with the compiler owner as a defect report with the reproduction, the SASS evidence and two
+possible fixes: fold the pattern, or expose the intrinsic as a declarable primitive (smaller, and it would
+let me handle it on this side).
