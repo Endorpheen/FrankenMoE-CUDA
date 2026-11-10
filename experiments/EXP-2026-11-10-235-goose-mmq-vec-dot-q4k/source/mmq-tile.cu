@@ -87,6 +87,38 @@ static __global__ void fg235t_run(const int* x_qs, const half2* x_dm, const int*
                   (int64_t) tx, (int64_t) ty, (uint64_t)(uintptr_t) scratch, 0);
 }
 
+// Timing: repeat the whole tile many times in one launch so the measurement is not dominated by launch.
+static __global__ void fg235t_time(const int* x_qs, const half2* x_dm, const int* x_sc,
+                                   const int* y_qs, const half2* y_ds, float* sum,
+                                   int k00, Geo g, int tx, int ty, float* scratch, int rep, int arm) {
+    if (threadIdx.x != tx || threadIdx.y != ty) return;
+    constexpr int TILE = 32;
+    for (int r = 0; r < rep; ++r) {
+        if (arm == 0) {
+            const int* yb = y_qs + 4;
+            for (int k01 = 0; k01 < TILE; k01 += 16) {
+                const int k0 = k00 + k01;
+                for (int j0 = 0; j0 < g.J; j0 += g.nwarps) {
+                    const int j = j0 + threadIdx.y;
+                    for (int i0 = 0; i0 < g.I; i0 += g.warp_size) {
+                        const int i = i0 + threadIdx.x;
+                        const uint8_t * sc = (const uint8_t *) &x_sc[i*(TILE/8) + i/8 + k0/32] + 2*(k01/16);
+                        sum[j0/g.nwarps*g.I/g.warp_size + i0/g.warp_size] += vec_dot_q4_K_q8_1_impl_mmq(
+                            &x_qs[i*(TILE + 1) + k0/2], &yb[j*(TILE + TILE/8) + k01], sc, sc+8,
+                            x_dm[i], &y_ds[j*(TILE + TILE/8) + k01/8]);
+                    }
+                }
+            }
+        } else {
+            gg_function_1((uint64_t)(uintptr_t) x_qs, (uint64_t)(uintptr_t) x_dm, (uint64_t)(uintptr_t) x_sc,
+                          (uint64_t)(uintptr_t)(y_qs + 4), (uint64_t)(uintptr_t) y_ds,
+                          (uint64_t)(uintptr_t) sum, (int64_t) k00, (int64_t) g.J, (int64_t) g.nwarps,
+                          (int64_t) g.I, (int64_t) g.warp_size, (int64_t) g.tile_ne_k, (int64_t) g.i8_1,
+                          (int64_t) tx, (int64_t) ty, (uint64_t)(uintptr_t) scratch, 0);
+        }
+    }
+}
+
 int main() {
     { int n = 0; if (cudaGetDeviceCount(&n) != cudaSuccess || n < 1) { fprintf(stderr,"no CUDA device\n"); return 77; } }
     cudaSetDevice(0);
@@ -133,5 +165,25 @@ int main() {
         }
     }
     printf("FG235_TILE_MATCH cases=%d bad=%d\n", cases, bad);
+
+    if (getenv("FG235_TILE_TIME")) {
+        const int rep = 20000;
+        std::vector<double> samples;
+        for (int arm = 0; arm < 2; ++arm) {
+            for (int it = 0; it < 20; ++it) {
+                cudaMemset(s_n, 0, 256*4);
+                cudaEvent_t a, b; cudaEventCreate(&a); cudaEventCreate(&b);
+                cudaEventRecord(a);
+                fg235t_time<<<1, dim3(32,1)>>>(d_qs, d_dm, d_sc, d_qs, d_yds, s_n, 0, g, 0, 0, s_scr, rep, arm);
+                cudaEventRecord(b); cudaEventSynchronize(b);
+                float ms = 0; cudaEventElapsedTime(&ms, a, b);
+                samples.push_back(ms * 1e6 / rep);
+                cudaEventDestroy(a); cudaEventDestroy(b);
+            }
+            std::sort(samples.begin(), samples.end());
+            printf("FG235_TILE_TIMING arm=%s median_ns_per_tile=%.1f min=%.1f max=%.1f rep=%d\n",
+                   arm ? "goose" : "native", samples[samples.size()/2], samples.front(), samples.back(), rep);
+        }
+    }
     return bad ? 1 : 0;
 }

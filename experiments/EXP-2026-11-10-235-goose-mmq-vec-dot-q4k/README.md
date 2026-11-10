@@ -260,3 +260,46 @@ together hold parity at kernel level.
 
 Remaining before the 30% block can be claimed: wire it, run the same kernel-level A/B that proved the
 inner product, then a full Apex pass.
+
+---
+
+# Tile loop timing: correct, and 2.7× slower
+
+    native median 3250.0 ns / tile   (min 3106, max 3772)
+    goose  median 8823.8 ns / tile   (min 3106, max 9157)
+
+Three runs, same picture (`3258/8707`, `3250/8824`, `3224/8686`). **+171%.**
+
+## Why, and it is my design, not the compiler
+
+The inner product at this same boundary measured at parity (`+0.29%`). The difference between that case
+and this one is what I added around it:
+
+- **a scratch buffer.** Native does `__half22float2(dm4)` and `__half22float2(ds8[i])` in registers. My
+  tile module cannot, because the conversion is a primitive it calls, so it writes four floats to
+  `scratch` and reads them back — per inner call, in the hottest loop in the kernel.
+- **strides as parameters.** The native constants (`MMQ_TILE_NE_K`, `QI8_1`, `I`, `J`, `nwarps`,
+  `warp_size`) are `constexpr`. I pass them as runtime `i64` arguments, so every address computation is a
+  runtime multiply instead of a folded constant.
+- **the accumulator.** Native does `sum[idx] += ...` on a register-resident value that nvcc keeps in a
+  register across the whole `k01` loop. My module does `ld_f32`/`st_f32` on `sum` for every element,
+  through memory.
+
+So the honest read is: **the boundary is fine; the way I expressed the loop is not.** Writing scalar
+memory traffic where native keeps registers, and runtime strides where native has compile-time constants,
+costs more than the arithmetic ever did.
+
+## What this says about the migration plan
+
+This is the same lesson as the `dp4a` case, one level up. There, naming the hardware operation as a
+primitive fixed a 19% gap. Here, *not* keeping the values in registers created a 171% gap. Porting a hot
+inner loop means respecting what the language can express without memory round-trips — and Goose modules
+communicate through a base pointer, so **anything the native keeps in a register has to be named as a
+primitive or the port will lose**.
+
+## Status
+
+The tile loop is verified equal to native and **not promotable**: it is slower by more than the 2% rule,
+for a reason I can name. It stays unwired. The next attempt should convert `dm4`/`ds8` through a primitive
+that returns the one float the inner product needs, and pass the geometry as module constants rather than
+arguments — but that is a redesign, not a tweak, and I am recording it rather than starting it blind.
