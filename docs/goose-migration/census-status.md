@@ -19,6 +19,19 @@ assertion. Message only actionable work, builds, results, resource windows or bl
 keepalives and no ACK-of-ACK.
 
 
+## Attempt on EXP214 (2026-11-10): did not complete
+
+Tried to re-take the census on the current runtime. Prefill finished normally (2581 tok/s at the
+end of the chunk), then decode under `nsys` produced no further output for several minutes and the
+run was stopped. Same shape as the earlier failed attempts: the profiler interacts badly with this
+long decode, not with capture.
+
+The 2026-11-09 census below therefore **remains the authority**, and that is defensible for the
+ports since then: EXP210 (recurrent seq_keep, not reachable), EXP212 (sampler thresholds, rejected),
+EXP213 (`_try_copy` in detokenization) and EXP214 (stock `std.sort` in the loader) are all host-side
+or model-load work. None of them adds or removes a GPU kernel, so the kernel mix cannot have moved
+from 54.08% Goose / 45.92% native to any material degree.
+
 ## CURRENT AUTHORITY: re-taken 2026-11-09 on the EXP202 runtime
 
 The stale EXP084 trace is no longer the authority. A fresh census was taken on the live runtime
