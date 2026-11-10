@@ -1,5 +1,35 @@
 # EXP208: typed input address (`const f32&`) for the MMQ Q8_1 quantizer
 
+## Re-evaluated on subset-acc916a43628499a (2026-11-10)
+
+The compiler shipped two qualified fixes and I re-ran the whole stage on them.
+
+**Parser fix: verified.** The minimal case `if (iqs&(15 as i64))==0&&iqs<96{...}` followed by a
+`>>` in the same body is accepted by `acc` and rejected by `73da` with `expected identifier`. That
+unblocks reproducing EXP180's committed source.
+
+**Guard reduction: real in the source, absent in the code.** The unchanged EXP208 module now emits
+**1** `_Alignof` guard instead of **4** (2100 vs 2103 emitted lines), and the remaining guard sits
+at the executed foreign call on the first `ld_f4x`, exactly as described. But the SASS is unchanged:
+
+| build | guards in C | SASS instructions |
+|---|---:|---:|
+| 73da | 4 | 488 |
+| acc | 1 | 488 |
+| acc, guards stripped (throwaway) | 0 | 488 |
+
+So the three removed guards were already free -- NVCC appears to have hoisted or CSE-ed them. **My
+earlier claim that "the entire +56 instructions is the guards" does not hold on this compiler and
+is retracted.**
+
+Accuracy and sanitizers are unchanged: 8/8 fixture, 4/4 byte-identical, memcheck 0 errors, typed
+`const` typedefs and the C++ `alignof` spelling preserved. Controlled A/B-B/A timing still shows
+the typed variant slower: u64 1806.6 ns vs typed 1890.6 ns median (+4.65%).
+
+**Compiler pin not moved.** The pin advances only when a stage is accepted, and this stage is not.
+
+
+
 First verifiable stage of the typed-address port. Isolated copy of EXP180 with **one** change: the
 input address `x` and its four loaders move from `u64` to `const f32&`. Nothing else was mixed in.
 

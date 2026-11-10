@@ -882,7 +882,6 @@ static __device__ __forceinline__ void fg208qd_gg_function_2(fg208qd_gg_type_5 p
   t73 = fg180q_ld_f4x(t71, t72);
   v32 = ((float)(t73));
   t74 = v0;
-  if ((uintptr_t)t74 % alignof(float)) fg208qd_gg_fail("unaligned foreign reference");
   t75 = ((uint64_t)(v37));
 #ifndef __cplusplus
   extern float (fg180q_ld_f4y)(fg208qd_gg_type_5, uint64_t);
@@ -890,7 +889,6 @@ static __device__ __forceinline__ void fg208qd_gg_function_2(fg208qd_gg_type_5 p
   t76 = fg180q_ld_f4y(t74, t75);
   v33 = ((float)(t76));
   t77 = v0;
-  if ((uintptr_t)t77 % alignof(float)) fg208qd_gg_fail("unaligned foreign reference");
   t78 = ((uint64_t)(v37));
 #ifndef __cplusplus
   extern float (fg180q_ld_f4z)(fg208qd_gg_type_5, uint64_t);
@@ -898,7 +896,6 @@ static __device__ __forceinline__ void fg208qd_gg_function_2(fg208qd_gg_type_5 p
   t79 = fg180q_ld_f4z(t77, t78);
   v34 = ((float)(t79));
   t80 = v0;
-  if ((uintptr_t)t80 % alignof(float)) fg208qd_gg_fail("unaligned foreign reference");
   t81 = ((uint64_t)(v37));
 #ifndef __cplusplus
   extern float (fg180q_ld_f4w)(fg208qd_gg_type_5, uint64_t);

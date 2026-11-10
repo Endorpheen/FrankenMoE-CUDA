@@ -1,8 +1,8 @@
 {
   "status": "PASS_CURRENT_SELFHOSTED_SOURCE_AND_MECHANICAL_EXTRACTION",
   "compiler": {
-    "compiler": "/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/versions/subset-73da093a6df7f26b/compiler",
-    "sha256": "73da093a6df7f26b143c605017ab5970383c23bcdbe6a2ce5d71325307291079"
+    "compiler": "/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/versions/subset-acc916a43628499a/compiler",
+    "sha256": "acc916a43628499aa9d6453e10b392e5ff1d7c22eb210e01d96b8d032e066c4f"
   },
   "modules": [
     {
@@ -18,7 +18,7 @@
         "gg_function_1",
         "gg_function_22"
       ],
-      "generated_c_sha256": "9e22259f03dbbda29fce4a130ca59234d0338221cdaa60ab86b8137ff8c6c403"
+      "generated_c_sha256": "430bcd26952b9ebc87374fd4b4c530dccffcce82bfb71e1a112af4950508347d"
     }
   ]
 }

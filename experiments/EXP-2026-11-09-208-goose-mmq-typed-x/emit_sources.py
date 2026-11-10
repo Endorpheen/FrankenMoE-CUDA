@@ -4,9 +4,9 @@ F=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108')
 E=F/'experiments/EXP-2026-11-09-208-goose-mmq-typed-x'
 S=E/'source'
 # EXP208 uses the typed-reference subset build explicitly; the runtime pin stays where it is.
-C=Path('/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/versions/subset-73da093a6df7f26b/compiler')
+C=Path('/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/versions/subset-acc916a43628499a/compiler')
 pin=dict(compiler=str(C), sha256=hashlib.sha256(C.read_bytes()).hexdigest())
-assert pin['sha256'].startswith('73da093a6df7f26b'), pin['sha256']
+assert pin['sha256'].startswith('acc916a43628499a'), pin['sha256']
 
 def body(g,m):
     at=m.end();depth=1
