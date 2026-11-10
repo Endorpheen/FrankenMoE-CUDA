@@ -41,3 +41,4 @@ __pycache__/
 *.nsys-rep
 *.ncu-rep
 *.sqlite
+experiments/*/build-copy/
