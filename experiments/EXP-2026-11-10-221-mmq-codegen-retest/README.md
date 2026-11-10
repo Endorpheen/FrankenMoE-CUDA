@@ -54,3 +54,55 @@ number says is needed. Nothing measured here shows any of that has happened.
 
 Kept as a script rather than prose so the 824 figure can be re-derived after any compiler release
 instead of being quoted.
+
+---
+
+# Correction: the 824-vs-160 figure compares the wrong scopes
+
+Before accepting "the emission is 5× worse", I counted per function instead of per cubin. It does
+not hold up.
+
+## Per-kernel counts, same flags, same arch, same tool
+
+| side | kernel | instructions |
+|---|---|---:|
+| Goose | `fg180q_kernel<0>` (direct) | **432** |
+| Goose | `fg180q_kernel<1>` (scatter) | **392** |
+| native | `quantize_mmq_q8_1<layout 2, false>` (DS4 direct) | **168** |
+| native | `quantize_mmq_q8_1<layout 2, true>` (DS4 scatter) | **264** |
+
+The old figure paired the **sum of both Goose kernels** (824) against **one** native instantiation
+(160). Two separate scope errors:
+
+1. 824 is two kernels, not one. Per kernel it is 432 and 392.
+2. 160 was not even the DS4 instantiation — DS4 is layout 2, which is 168 direct and 264 scatter.
+   The 160 belongs to layout 1.
+
+Corrected gap: **432 vs 168 on direct (2.6×) and 392 vs 264 on scatter (1.5×)** — not 5.15×.
+
+## And 432 is not a coincidence
+
+    168 + 264 = 432
+
+`fg180q_kernel<0>` is exactly as large as **both** native DS4 variants combined. The kernel comment
+already states why: "the Goose body keeps the reductions, the layout branches and both the direct
+and the scatter block index." Native emits those as separate template instantiations; the Goose body
+carries both paths in each instantiation, so part of the count is code that never runs there.
+
+So the emission is close to native in size **per unit of functionality**. What it is not, is
+specialized.
+
+## What this changes
+
+- The instruction count was never the explanation for the 11.4% slowdown. That measurement
+  (2007 ns vs 1801 ns) stands on its own and is what blocks the promotion.
+- A 2.6× count producing only 11.4% more time means the kernel is **not** instruction-bound. Register
+  pressure, occupancy or the extra per-element branch is the more likely lever, and instruction
+  count is the wrong thing to optimise.
+- The concrete next step is no longer "wait for the compiler": it is to emit the scatter and layout
+  paths as separate Goose variants so each instantiation matches one native kernel. That is runtime
+  work, not compiler work.
+
+I have not verified which of the two paths the `scatter` argument selects in each wrapper — both
+call sites pass `0` as the last argument, which does not obviously match the two-path structure, and
+I stopped rather than assert a cause. That is the first thing to check when this resumes.
