@@ -59,3 +59,52 @@ move is to wire it and measure with the kernel harness, which is the only instru
 
 Unlike the last several ports, this is not a helper: it is the arithmetic of the block that dominates the
 census. Even unwired, having it gated means the wiring step is a mechanical change rather than a port.
+
+---
+
+# Wired, exact on GPU, and +19.2% slower — the clearest measurement in this whole line
+
+I wired the module the way EXP182/EXP188 do it: the Goose emission is compiled **inside the same
+translation unit** as a `__device__ __forceinline__` function, so the "boundary" is a C++ call that nvcc
+inlines. No launch, no copy, no table. The file is `source/mmq-vd.cu`.
+
+## Exactness on the real GPU
+
+`fg235_check` computes the native function and the Goose function side by side on the same 65,536 inputs
+and compares:
+
+    FG235_KERNEL_MATCH n=65536 bad=0 worst_rel=0.000e+00
+
+**Zero difference, not a tolerance pass.** `dp4a` is integer, the scales are the same floats in the same
+order, so the two are bit-identical. The host gate (30000 checks) compares against a C++ transcription
+with an absolute tolerance; this compares against the actual native device function and needs none.
+
+## Timing — 12 runs, native and goose interleaved in both orders
+
+    native median 174.5 ns   (min 174.0, max 176.0 across runs)
+    goose  median 208.0 ns   (identical in every run)
+    delta  +19.20%
+
+This is the cleanest measurement I have produced: the native medians span 2 ns and the goose median is the
+same value six times. **No load noise is visible at all**, because the two kernels differ only in the code
+between two `cudaEventRecord`s in one process.
+
+## What it means for the whole MMQ line
+
+The port emits a function that is **bit-exact and 19% slower**, and this is with the boundary fully
+inlined. That removes the last structural explanation I had been holding in reserve: it is not a launch
+cost, not a copy, not a switch. The emission itself is slower code for the same arithmetic.
+
+Combined with EXP223 — where a 23% instruction reduction bought no time — the picture is consistent:
+the Goose emission is not optimising the same way nvcc optimises the hand-written CUDA, and the
+difference shows up as ~10-20% on this kernel regardless of how it is called.
+
+## Consequence
+
+`vec_dot_q4_K_q8_1_impl_mmq` is **ready to promote on correctness** and **not promotable on speed**. It
+stays unwired in the shipped path, and the module remains gated so that any future codegen work can be
+measured against it with a one-line arm switch.
+
+The honest summary of the 30% block: the arithmetic is now ported and proven bit-exact, and the blocker
+has moved from "not ported" to "the compiler does not yet emit code competitive with hand-written CUDA
+for this kernel" — which is a compiler question, not a migration one, and I have said so in the mailbox.
