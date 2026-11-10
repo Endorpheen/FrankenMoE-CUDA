@@ -17,9 +17,24 @@ dormant, each with its reason taken from the guard in the source plus a zero wit
 | out_ids + seq_idx | `fg242o_` | 292 | live |
 | compat positions | `fg243c_` | 0 | dormant: legacy `llama_batch` entry point |
 | output reorder | `fg244s_` | 0 | dormant: requires `n_outputs > 1` |
+| SET view | `fg245v_` | — | gated candidate, deliberately NOT in the DSO |
+| PAD index map | `fg246p_` | — | gated candidate, deliberately NOT in the DSO |
 
 All gates re-verified against the shipped DSO: 89920 / 61059 / 67640 / 300008 / 160048 / 1680413 / 261197 /
 325375 checks, zero failures.
+
+## The single most important finding: division and modulo differ from C
+
+Goose's `%` is Euclidean, C's keeps the sign of the dividend — `-5 % 10` is `5` in Goose and `-5` in C, and `/`
+diverges the same way. EXP246 caught this the honest way: a direct transcription of `pad.cu`'s
+`wrap_around(coord, size) = (coord + size) % size` produced **30 wrong indices in 10234 checks**, with the module
+returning `+5` where the reference returned `-5`.
+
+`docs/goose-migration/MODULO_SEMANTICS.md` holds the sweep of the eight shipped routes: seven have no `/` or `%`
+at all, and the single site (EXP240 `sid/(64 as i64)`) is **verified safe** because its guard sits one line above
+the division. That file also states the standing rule for new modules.
+
+Read that file before porting anything that indexes or wraps.
 
 ## Verified performance
 
@@ -58,7 +73,10 @@ single pair. Prefill spread stayed at 0.07–0.43% and is the only trustworthy s
 
 ## What is next, in order
 
-1. `SET` / `PAD` / `ROLL` — the remaining P3-03 items. Not executed in this profile, so low priority.
+1. `ROLL` — the last P3-03 item. `SET` (EXP245) and `PAD` (EXP246) are implemented and gated but deliberately
+   NOT integrated: neither executes in this profile, and a zero witness cannot distinguish "correct and unused"
+   from "broken and unused". Rule settled: a route earns a place in the shipped DSO by being reachable, not by
+   being finished.
 2. Other `n_expert_used` widths for `mm_ids_helper`; only the `int)8` specialisation is ported.
 3. Dequantisation paths — prerequisite for MMQ and not yet ported.
 4. MMQ / MUL_MAT — the largest remaining native share (`mul_mat_q` Q4_K 30.3% + Q6_K 9.7% ≈ 40% of GPU time).
