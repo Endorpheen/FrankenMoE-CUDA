@@ -61,8 +61,10 @@ I will use these from now on. Past commits keep their messages.
 
 - subject must **not** start with `merge`, `revert`, `docs:`, `docs `, `wip:`, `wip ` — those always yield no
   card, whatever else they contain;
-- **exactly one** of `#speedup`, `#achievement`, `#insight`, `#regression`. Two tags in one message give no
-  card at all, so `#regression #speedup` is a mistake;
+- **exactly one** of `#speedup`, `#achievement`, `#insight`, `#regression`, `#deferred`. Two tags in one
+  message give no card at all, so `#regression #speedup` is a mistake;
+- `#deferred` is for parked, aborted, inconclusive or unreachable results — **not** an achievement and
+  **not** a regression. Verified present in `_TAG` in the dashboard source, so it is live, not promised;
 - the tag counts in the subject, or on a body line that **contains only tags**; a sentence mentioning the
   convention inline does not count;
 - `#critical` only modifies `#regression`; alone it does nothing;
@@ -76,6 +78,7 @@ Examples that work, from the project's own test table:
     EXP235: wired and 19% slower #regression
     EXP235: wrong result on the gate #regression #critical
     EXP236: kernel bit-exact and at parity #achievement
+    EXP236: targets a path this GPU never takes #deferred
 
 Examples that produce nothing:
 
