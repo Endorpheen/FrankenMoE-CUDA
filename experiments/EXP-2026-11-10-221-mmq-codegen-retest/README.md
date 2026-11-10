@@ -260,3 +260,53 @@ the next measurement should count `IMAD.WIDE` and its operands rather than guess
 The honest summary of this whole investigation: the port is byte-exact, 13.5% slower, and no static
 metric tried so far explains it. Four rounds of looking have produced zero established causes and
 one useful elimination.
+
+---
+
+# Method correction and one concrete finding: 22 vs 2 division instructions
+
+## The absolute counts I published were method-dependent
+
+Three extraction methods gave three answers for the same cubin, so the numbers above must be read
+with that caveat. The one to use is `cuobjdump -sass -fun <mangled>` counting lines that match
+`/*addr*/ OPCODE`, because it is per-function and needs no section bookkeeping:
+
+| | Goose `<0>` | Goose `<1>` | native DS4 direct | native DS4 scatter |
+|---|---:|---:|---:|---:|
+| `cuobjdump -fun` (correct) | **400** | **355** | **157** | **227** |
+| `nvdisasm` section split | 432 | (mis-attributed) | 168 | 264 |
+| loose regex, whole cubin | 432 | 392 | 168 | 264 |
+
+The **ratio is stable across methods** — 400/157 = 2.55×, 355/227 = 1.56× — so the conclusion
+(2.6× direct, 1.5× scatter) survives. The absolute numbers in the earlier sections of this file are
+from the loose method and are ~8% high. Use the table above.
+
+## The one measured difference in instruction mix
+
+    IMAD.HI.U32   Goose <0>: 22     native DS4 direct: 2
+
+`IMAD.HI.U32` is the signature of 64-bit division expansion, and the Goose source has exactly two
+64-bit division sites (`bzi % ne2i` and `bzi / ne2i`). Native's DS4 path does not need that split at
+all. This is the only instruction-mix difference found with a count behind it.
+
+## But it does not execute in this shape
+
+The Goose source guards those divisions behind `if ne2i == 1` (fast path, no division). The EXP180
+harness — the one that produced the +13.5% — passes `ne2 = 1`:
+
+    quantize_mmq_q8_1_cuda(dx, nullptr, dy, GGML_TYPE_Q4_0, ne0, ne0, ne0, ne0, ne0, ne1, 1, 1, st);
+                                                                                   ^ ne2
+
+So the 22 instructions are **dead code at runtime** in the measured shape. They cost I-cache and
+code size, not execution. The division is therefore *not* the explanation for +13.5% either.
+
+## The actionable item that does come out of it
+
+`ds` and `scatter` are pinned as constants by four thin wrappers so the backend folds them. `ne2` is
+not — it stays a runtime kernel argument, so the division branch survives in every instantiation
+even though every Apex call has `ne2 == 1`. Pinning it as a fifth wrapper constant would delete ~20
+dead instructions per kernel.
+
+Whether that changes runtime is unmeasured and likely small, since dead code does not execute. It is
+recorded as the one concrete, verifiable improvement this investigation produced, not as a fix for
+the slowdown.
