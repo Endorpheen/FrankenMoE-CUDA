@@ -233,3 +233,30 @@ than a surprise, but it is now measured rather than assumed.
 
 Reproduce with `measure_sass.py` + `extract_device.py` in this directory; point the extraction at a
 fresh emission of `device.goose` from any build.
+
+---
+
+# Elimination, not a fourth hypothesis: shifts and divisions are not the weight
+
+Instead of proposing another cause, count the things that *could* produce 238 `IMAD` and rule them
+out with numbers. From the emitted device header (36506 bytes, same on two releases):
+
+| construct | occurrences | emitted form |
+|---|---:|---|
+| `gg_div` call sites | 3 | inlined, with `!b` and `INT64_MIN/-1` guards |
+| `gg_mod` call sites | 3 | inlined, with `!b` and `b == -1` guards |
+| shift masks `& 31` | 4 | variable-shift lowering, but the amounts are constants 8/16/24 and fold |
+| total shifts | 9 | — |
+
+Four masked shifts and six division call sites cannot account for 238 `IMAD` in 432 instructions.
+That is a useful negative: the division guards and the shift lowering are **not** where the extra
+instructions live, so a source rewrite of either would not pay.
+
+What remains unmeasured is the 64-bit multiply-and-add chain for the addresses themselves —
+`i3*s03 + i2*s02 + i01*s01`, `o*4`, `k_block*ne1 + ii`, and one address recomputation per memory
+accessor. I am not claiming that is the cause; I am recording that it is the only bucket left, so
+the next measurement should count `IMAD.WIDE` and its operands rather than guess.
+
+The honest summary of this whole investigation: the port is byte-exact, 13.5% slower, and no static
+metric tried so far explains it. Four rounds of looking have produced zero established causes and
+one useful elimination.
