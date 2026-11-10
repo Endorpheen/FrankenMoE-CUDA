@@ -1398,7 +1398,7 @@
    "id": "P5-02",
    "phase": "P5",
    "title": "Port KV tensors,type conversion and physical cache layout",
-   "status": "TODO",
+   "status": "IN_PROGRESS",
    "sources": [
     "src/llama-kv-cache.cpp"
    ],
@@ -1408,7 +1408,8 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 46,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B3"
+   "batch": "B3",
+   "notes": "KV cell ownership and the hot per-batch paths are Goose and live: EXP199 (cells), EXP204 (set), EXP205 (find_slot), EXP206 (cp), EXP209 (seqpos incr), EXP227 (get_n_kv padding arithmetic, 146 calls/request, gate 5011 checks 0 failures, tokens and all 128 probabilities exact). All six routes verified present in one object with nm -u before linking; integration built on EXP209's cumulative source, not the pristine file. NEXT CANDIDATES, assessed rather than guessed: llama_memory_recurrent::find_slot (131 lines, real algorithm, live for the GDN layers, closest analogue to the already-ported KV variant -- the best remaining target); llama_kv_cache::state_write/state_write_data (serialization, P5-08, checkpointing is enabled in the profile but the call count is unverified); output_reorder and set_input_kq_mask are conditionally dead in this profile (no output swaps, fast attention on); llama_memory_hybrid::init_batch is orchestration with little arithmetic, low value per unit of risk."
   },
   {
    "id": "P5-03",
@@ -1510,7 +1511,8 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 46,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B3"
+   "batch": "B3",
+   "notes": "Serialization is untouched. llama_kv_cache::state_* and llama_memory_recurrent::state_* are all unrouted. --ctx-checkpoints 32 is in the Apex profile, so some of this path may be live, but no witness measures it yet; before porting, take the call count rather than assuming."
   },
   {
    "id": "P5-09",
@@ -3994,6 +3996,7 @@
   "2026-11-10-mmq": "The MMQ investigation went from 'cause not established' to a located and measured cause: a dead ne2 division branch worth 236 of 400 instructions. Three earlier hypotheses of mine were wrong (5x scope error, both-paths error, occupancy speculation) and are retracted in the EXP221/222 READMEs; the surviving statement -- that the kernel is not instruction-bound -- was later proven by measurement (59% fewer instructions bought 3.7% of time).",
   "2026-11-10-p6": "P6-01 and P6-04 moved to IN_PROGRESS with the exact boundary recorded: EXP200 ports per-layer DECISIONS (36 call sites in qwen35moe.cpp plus llama-graph.cpp and llama-hparams.cpp routes), but its own README says construction stays native. P6-03 (the builder DSL) is the prerequisite.",
   "2026-11-10-p1": "P1-06 kept IN_PROGRESS but documented by witness: the CPU MoE expert matmul (op=100) executes 45120 times per request through Goose, plus executor, quant batch, expert scratch and registry modes. The open part is native removal and a fresh census, not a known unported family.",
-  "2026-11-10-mmq-apex": "MMQ is no longer 'rejected on an untested basis': it has been measured at Apex twice on comparable builds and both means sit inside the 2% rule with exact tokens and probabilities. What blocks a promotion is measurement resolution, not evidence of a regression. The remaining decisions -- which variant, and the switch direction -- are now separable and both recorded."
+  "2026-11-10-mmq-apex": "MMQ is no longer 'rejected on an untested basis': it has been measured at Apex twice on comparable builds and both means sit inside the 2% rule with exact tokens and probabilities. What blocks a promotion is measurement resolution, not evidence of a regression. The remaining decisions -- which variant, and the switch direction -- are now separable and both recorded.",
+  "2026-11-10-p5": "EXP227 added get_n_kv to the KV chain: correctness-first acceptance with the paired performance measurement explicitly deferred, per Igor's revised rule that threshold numbers under uncontrolled load are not a stop condition. Candidate list for the next KV step recorded with an assessment of each rather than a ranking."
  }
 }
