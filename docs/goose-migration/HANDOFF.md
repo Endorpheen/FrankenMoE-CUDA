@@ -5,15 +5,31 @@ this repository; nothing here asks the reader to trust a summary line.
 
 ## The candidate runtime
 
-    stage       EXP196
-    path        runtime/exp196/run
-    DSO         libggml-cuda-pinned.so.0.27.0
-    sha256      466a33342f5abfa7…  (build/ and run/ copies verified identical)
-    commit      2b38c2e
-    rollback    runtime/exp195/run, and every module has its own switch below
+    stage       EXP220
+    path        runtime/exp220/run
+    DSO         libllama-exp220.so.0.7.0
+    commit      c910402
+    prefill     2567.91   decode 26.47   (medians of 3 runs, 2 interleaved pairs)
+    correctness 128 tokens and all 128 saved probabilities exact, sha e68df05b
+    memory      RSS peak 21.3 GiB, VRAM peak 4590 MiB (transient; ~3348 steady), swap 0
+    rollback    runtime/exp219/run and earlier; every module has its own env switch
 
-Contents: the EXP185 lineage plus the VMM pool arithmetic (EXP195), the pinned-memory and
-host-registration policy (EXP196), and `sample_ratio` in both matvec bodies.
+Contents: 62 Goose witness modules in one Apex pass — the EXP185 lineage, the KV cell/set/find/cp/
+seqpos work, the loader and graph builders, the tokenizer text layer (piece copy, UTF-8 decode,
+encode, whole-string recovery) and the CUDA kernels up to MMQ dispatch.
+
+**Read this before trusting a stage name on an older document:** EXP213 through EXP218 each shipped
+with only *one* route in `unicode.cpp` and `llama-vocab.cpp`, because each copied the pristine native
+file instead of the previous integration. Two stages silently lost components that had millions of
+calls, while tokens, probabilities and speed all passed. EXP219 and EXP220 are the repairs. The rule
+that catches this class before it ships:
+
+    python3 scripts/check_witnesses.py --run <new> --baseline <previous>
+
+**with `--baseline`** — an empty baseline can never fail, and running it without one is a no-op that
+prints `verdict: OK`. Also `nm -u runtime/<stage>/build/*.o` for the expected route prefixes before
+linking, not only afterwards. `docs/goose-migration/route-audit-2026-11-10.md` audits all 23
+declared prefixes against the active runtime; every one is live, deliberately absent or rejected.
 
 ## Verified on this exact DSO
 
@@ -40,6 +56,23 @@ Every module keeps a switch; setting it to `0` restores the native body for that
 The VMM and pinned switches were each verified to restore the native path by the witness going to
 `alloc=0 free=0` and `native=N` respectively. Per-module rollback is therefore the first response
 to any problem after install, before anything else is considered.
+
+
+## MMQ: byte-exact, not promoted, cause of the 13.5% not established
+
+`quantize_mmq_q8_1` is ported and byte-exact (4/4) but runs 13.5% slower at the operator level:
+goose 2055/2103 ns against native 1812/1842 ns, 2000 launches per arm, under 1% spread within an arm
+(EXP221 README). Not promoted.
+
+Three explanations were proposed and each was wrong: the "824 vs 160 instructions" figure compared
+the sum of two kernels against one non-DS4 instantiation; "both paths in every instantiation" is
+false, the wrappers pin `ds` and `scatter` as constants; "not instruction-bound, so occupancy" is
+unsupported, there are no spills and register counts are comparable. Corrected numbers: 432 (direct)
+and 392 (scatter) against 168 and 264.
+
+The metric that would settle it is unavailable here — `ncu` returns `ERR_NVGPUCTRPERM`, and
+unblocking needs root or `NVreg_RestrictProfilingToAdminUsers=0`, a system change. The exact command
+is in the EXP221 README for whoever has the permission.
 
 ## What is not done, stated plainly
 
