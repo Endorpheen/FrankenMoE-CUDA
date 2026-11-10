@@ -1549,7 +1549,7 @@
    "id": "P6-01",
    "phase": "P6",
    "title": "Port architecture,hparams,cparams and tensor-name registries",
-   "status": "TODO",
+   "status": "IN_PROGRESS",
    "sources": [
     "src/llama-arch.cpp",
     "src/llama-hparams.cpp",
@@ -1561,7 +1561,8 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 416,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B3"
+   "batch": "B3",
+   "notes": "hparams and the recurrent-layer predicate are ported and live: EXP200 answers is_recr per layer (llama-hparams.cpp:260) plus 20 other per-layer decisions, with witness FG200G_MODEL_GRAPH / FG200G_MOE / FG200G_RECR. Registered as an IN_PROGRESS rather than DONE because the cparams side and the tensor-name registry are native; nothing measured says those matter for the Apex profile."
   },
   {
    "id": "P6-02",
@@ -1595,13 +1596,14 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 416,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B3"
+   "batch": "B3",
+   "notes": "Blocker for P6-04. The shared graph-builder DSL is what the per-layer decisions would hang off; EXP200 ports decisions but leaves construction native, so this is the largest single structural item left in the model runtime."
   },
   {
    "id": "P6-04",
    "phase": "P6",
    "title": "Port complete Apex architecture graph and shared MoE graph interface",
-   "status": "TODO",
+   "status": "IN_PROGRESS",
    "sources": [
     "src/models/qwen35moe.cpp",
     "src/models/qwen35.cpp",
@@ -1613,7 +1615,8 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 416,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B3"
+   "batch": "B3",
+   "notes": "The graph BUILDER is still native -- EXP200's README states it outright: 'Goose answers the per-layer decisions the qwen35moe builder makes, while the graph construction itself stays native.' What IS ported: 20+ named decisions in models/qwen35moe.cpp (gating_kind among four functions, group_select, weights_need_scale on the float bit pattern, kq_scale_auto, q_full_width, gate_elem_offset, head_v_dim, crop_before/after_nextn, capture_layer_input, shift_skip), 36 fg200g_ call sites in that file, plus llama-graph.cpp and llama-hparams.cpp routes -- all three shared into one unity translation unit. What is NOT: the Go graph-builder DSL itself (P6-03), so the builder's structure, node creation and tensor wiring remain C++. Closing P6-03 is the prerequisite to closing this."
   },
   {
    "id": "P6-05",
@@ -3987,6 +3990,7 @@
  "ledger_notes": {
   "2026-11-10": "EXP213-218 added. Every one was accepted on tokens+probabilities exact against sha e68df05b and on a balanced interleaved A/B pair; EXP218 is the exception and is deliberately not promoted (zero calls in profile, and a paired timing that contradicted that -- see its README). Module gates re-verified on subset-d5e9fdc5 (729479 checks) and again on subset-7ef08c2d (731096 checks), both 0 failures.",
   "2026-11-10-late": "EXP219/220 repaired two silent chain losses (unicode.cpp, llama-vocab.cpp) that had dropped modules with millions of calls while every gate passed; the witness check only works with --baseline. EXP221 retested MMQ codegen on two further qualified compiler releases: no change. Full gate run against the committed artifacts: 17 fixtures, 914112 checks, 0 failures.",
-  "2026-11-10-mmq": "The MMQ investigation went from 'cause not established' to a located and measured cause: a dead ne2 division branch worth 236 of 400 instructions. Three earlier hypotheses of mine were wrong (5x scope error, both-paths error, occupancy speculation) and are retracted in the EXP221/222 READMEs; the surviving statement -- that the kernel is not instruction-bound -- was later proven by measurement (59% fewer instructions bought 3.7% of time)."
+  "2026-11-10-mmq": "The MMQ investigation went from 'cause not established' to a located and measured cause: a dead ne2 division branch worth 236 of 400 instructions. Three earlier hypotheses of mine were wrong (5x scope error, both-paths error, occupancy speculation) and are retracted in the EXP221/222 READMEs; the surviving statement -- that the kernel is not instruction-bound -- was later proven by measurement (59% fewer instructions bought 3.7% of time).",
+  "2026-11-10-p6": "P6-01 and P6-04 moved to IN_PROGRESS with the exact boundary recorded: EXP200 ports per-layer DECISIONS (36 call sites in qwen35moe.cpp plus llama-graph.cpp and llama-hparams.cpp routes), but its own README says construction stays native. P6-03 (the builder DSL) is the prerequisite."
  }
 }
