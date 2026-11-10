@@ -137,3 +137,51 @@ Three attempts, three clean builds, three byte-identical cubins. Without compari
 have believed the override took effect — and the previous section's "the object hash differs" claim was
 about a *different* build (an `-I` copy that did change something) while these do not. The lesson is the
 same one this project keeps teaching: a clean build is not evidence that the change was used.
+
+---
+
+# The Q6_K port targets a path this GPU never takes
+
+The copy-the-directory mechanism worked (`cubin ae8665ae…` versus stock `4c280687…`), and then the
+comparison answered the question in an unexpected direction: **all 32 `mul_mat_q` kernels are
+instruction-for-instruction identical to stock.**
+
+## Why
+
+    mmq.cuh:195  constexpr __device__ bool use_mma_data_layout() {
+                     #if defined(AMD_MFMA_AVAILABLE) || defined(AMD_WMMA_AVAILABLE) || defined(TURING_MMA_AVAILABLE)
+                         return true;
+    #ifdef GGML_CUDA_MMA ...
+
+`ggml_cuda_mmq_get_util_funcs` only reaches the `dp4a` branch when `use_mma_data_layout()` is **false**. On
+sm_89 `TURING_MMA_AVAILABLE` is defined, so it is always **true**, and Q6_K uses
+`ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma` — the `IMMA.16816.S8.S8` path, 512 of those instructions in the
+kernel. `vec_dot_q6_K_q8_1_impl_mmq` is never called, so patching it changes nothing, which is exactly what
+the 0-difference function table shows.
+
+## What that means
+
+- **EXP236's port is correct and irrelevant to Apex on this GPU.** It is bit-exact and at parity on the
+  harness (that measurement stands — it called the function directly), but the production kernel does not
+  use that function at all.
+- The Q6_K share of the census (9.7%) is **MMA code**, not `dp4a` code. Porting the `dp4a` variant of any
+  `K`-quantised type on this GPU cannot affect it.
+- The same reasoning applies to my EXP235 Q4_K inner product: Q4_K's `dp4a` path is also skipped on sm_89.
+  Its parity measurement is real, but wiring it would be dead code here too.
+
+## The larger lesson
+
+This is the third time in this session that a port was correct and the question was whether it is
+*reached*: EXP218 (`unicode_tolower`, 0 calls), EXP230/231 (shift paths, 0 calls), and now two MMQ kernels
+that are bypassed by a compile-time branch rather than by a runtime condition. A census that attributes
+time to `mul_mat_q` says nothing about *which template instantiation* of it runs.
+
+Before porting any MMQ-family inner function, the first question is now `use_mma_data_layout()`: if the
+target has MMA, the `dp4a` code is not what executes, and the MMA path is a different port entirely
+(`IMMA`-based, with its own tile layout).
+
+## State
+
+EXP235 and EXP236 stand as measured, gated, bit-exact, **unreachable** implementations. They are kept
+because the harness work is real and a non-MMA target would use them, but no wiring attempt should continue
+on this machine.
