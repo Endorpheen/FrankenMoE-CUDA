@@ -61,3 +61,23 @@ The host needs the native control back at 26.0-26.7 and needs my own session's p
 cannot arrange from inside a measurement — opencode and the desktop app are the session itself. The
 realistic options are a second machine, or accepting the kernel-level harness (spread under 1%) as the
 decision instrument for this question, which is what EXP208 already used.
+
+---
+
+# WITHDRAWN — the two arms were the same configuration
+
+The Apex runner strips **every** `GGML_GOOSE_*` variable from the environment and applies a frozen
+EXP150 snapshot, so the toggle this experiment varied never reached the server. Both arms ran the same
+configuration; every delta above is run-to-run noise.
+
+See `docs/goose-migration/measurement-env-stripped.md`. Proof: the recorded `environment.json` of every
+run holds the same 18 EXP150-era Goose variables and none of the ones ported since, and a run with the
+toggle exported as `0` produced byte-identical witness counts to one with `1`.
+
+Consequences specific to this file:
+
+- the numbers above are not measurements of anything;
+- any verdict drawn from them is withdrawn;
+- the correctness statements (tokens, text and all 128 probabilities equal) still hold, because those
+  are single-configuration checks;
+- the gate and witness evidence elsewhere in the repository is unaffected.

@@ -144,3 +144,23 @@ EXP208 itself rejected, and the switch is opt-in against rule 10.
 `/tmp/il227.sh` (the alternating driver) is correct and can be re-run once the host is quiet. The
 precondition that actually matters is not "no build running" but **the native arm returning 26.0-26.7**;
 if it does not, the round is void regardless of what the Goose arm says.
+
+---
+
+# WITHDRAWN — the two arms were the same configuration
+
+The Apex runner strips **every** `GGML_GOOSE_*` variable from the environment and applies a frozen
+EXP150 snapshot, so the toggle this experiment varied never reached the server. Both arms ran the same
+configuration; every delta above is run-to-run noise.
+
+See `docs/goose-migration/measurement-env-stripped.md`. Proof: the recorded `environment.json` of every
+run holds the same 18 EXP150-era Goose variables and none of the ones ported since, and a run with the
+toggle exported as `0` produced byte-identical witness counts to one with `1`.
+
+Consequences specific to this file:
+
+- the numbers above are not measurements of anything;
+- any verdict drawn from them is withdrawn;
+- the correctness statements (tokens, text and all 128 probabilities equal) still hold, because those
+  are single-configuration checks;
+- the gate and witness evidence elsewhere in the repository is unaffected.
