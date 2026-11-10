@@ -111,3 +111,35 @@ What it does establish, and it is the first time in this line:
 The honest statement is therefore narrower than "MMQ is unportable" and wider than "MMQ is ported": the
 arithmetic is ported, it is unreachable by default on this GPU, and it becomes reachable through one
 compile-time flag whose performance implications are a separate decision.
+
+## Verified in the forced configuration
+
+    Q6_K mul_mat_q kernel, forced dp4a
+      native inner product   4079 instructions   SASS md5 67525ef7660f
+      Goose inner product    4047 instructions   SASS md5 bb713d330a08
+
+Different code, **32 instructions fewer**, and the opcode histogram is identical between the two — so the
+difference is scheduling and register allocation, not a different algorithm. Both use `IDP.4A`; the Goose
+version simply arranges the surrounding work slightly better.
+
+This is the first configuration in the whole MMQ line where the Goose version is **not larger than native**.
+It says nothing about speed: an instruction count difference of 0.8% is far inside the noise this project
+has measured, and EXP223 taught me not to extrapolate from counts.
+
+## What is still missing before any claim
+
+1. **Correctness in the real kernel.** The unit differential (EXP236, `worst_rel=0` on 65536 elements)
+   validates the function in isolation. It does not validate the tile integration inside this kernel.
+   Building that needs input tensors shaped the way `mul_mat_q` expects, which is a harness in itself.
+2. **Speed in the forced configuration**, which is a different question from speed in the default one — the
+   whole point of forcing `dp4a` would be to trade tensor-core throughput for portability, and that trade
+   needs its own measurement.
+3. **A decision**, not a measurement: whether forcing `dp4a` on sm_89 is acceptable at all. It affects every
+   K-quantised type, not just the ones ported here.
+
+## My recommendation, stated as one
+
+If the goal is "show the arithmetic runs on Goose", this is done and evidenced. If the goal is "make Apex
+faster", forcing `dp4a` is almost certainly the wrong direction — tensor cores exist for this workload, and
+the ported path is a fallback. Those two goals should not be conflated in the ledger, and I have kept them
+separate.
