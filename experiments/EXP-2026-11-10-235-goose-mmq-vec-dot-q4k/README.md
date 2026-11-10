@@ -188,3 +188,36 @@ request is the *weaker* option. The primitive route works today and needs nothin
 in the MMQ family where the Goose version does not lose. It is still not wired into the shipping path —
 that needs the outer tiling loop and a full Apex measurement — but the reason it could not be wired is
 gone.
+
+---
+
+# The tile loop: started, compiles, NOT verified — three defects found by inspection
+
+With the inner product at parity, the remaining step for this block is the surrounding tile loop
+(`ggml_cuda_mmq_vec_dot_q4_K_q8_1_dp4a`, mmq-vec-dot.cuh:905). Porting it matters because it moves the
+boundary from one call per element to one call per thread — and EXP223 showed a per-element boundary is
+what makes a port lose regardless of the inner code.
+
+`source/tile.goose` compiles and is **not** claimed to work. Writing it surfaced three defects, two of
+which I found only by re-reading the native after the fact:
+
+1. **`sc` stride.** Native does `(const uint8_t *) &x_sc[idx] + 2*(k01/16)`: `x_sc` is `int *`, so `idx`
+   scales by 4 bytes, but the `2*(k01/16)` term is already a **byte** offset. My first version multiplied
+   both by 4. Fixed, but it is exactly the kind of error that produces a plausible-looking wrong answer
+   rather than a crash.
+2. **`sc` is passed twice.** Native passes `sc, sc+8` as two separate arguments (`sc` and `m`); I had one
+   pointer for both.
+3. **`ds8` is an array of two `half2`.** Native passes `&y_ds[...]` and the inner function reads
+   `ds8[0]` and `ds8[1]` — four floats. My split helper fills only one pair, so `i=1` would read
+   uninitialised scratch. Not fixed.
+
+## Why I stopped rather than push it through
+
+Fixing (3) is mechanical, but after (1) and (2) the honest conclusion is that this loop's indexing is
+dense enough that **it needs a GPU differential against the native tile loop before anything else is
+claimed** — the same instrument that proved the inner product exact
+(`FG235_KERNEL_MATCH ... worst_rel=0`). Writing a second comparison harness and getting the tile geometry
+right is a session's work, not a few minutes at the end of this one.
+
+A port that compiles and has three known indexing defects is not a deliverable. Recorded as the current
+state so the next attempt starts from the list instead of from a blank file.
