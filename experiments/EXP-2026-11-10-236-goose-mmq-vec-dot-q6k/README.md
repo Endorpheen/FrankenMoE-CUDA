@@ -92,3 +92,48 @@ were obtained.
 
 So: wiring needs its own harness, not post-hoc disassembly of the production object. Recorded instead of
 guessing.
+
+---
+
+# Why the override never bound: three failed mechanisms, each ruled out by a measurement
+
+I tried three ways to route the Q6_K call site into the emission. All three produced **byte-identical
+cubins** (`sha256 4c280687e0a01b1a`, 4096 instructions in the kernel), and each failure has a distinct,
+verified cause.
+
+## 1. `-I` with a patched copy of `vecdotq.cuh` — never used
+
+`mmq-vec-dot.cuh` does `#include "vecdotq.cuh"`. A quoted include resolves **in the includer's own
+directory first**, then in `-I` paths. My copy sat in an `-I` directory, so the compiler always found the
+original next to `mmq-vec-dot.cuh`. Putting `-I` first among the flags changes nothing; the includer's
+directory is not in that ordering at all.
+
+## 2. `-Dvec_dot_q6_K_q8_1_impl_mmq=..._native` — renames the call sites too
+
+The macro applies to every occurrence, so the definition **and** the call in `mmq-vec-dot.cuh:1002` both
+became `_native`. My replacement under the original name was therefore never called, and the resulting code
+is exactly the native code. This is the subtle one: it looked like a successful rename, and the build was
+clean.
+
+## 3. `-include override.cuh` — works, but cannot fix either of the above
+
+Verified that `-include` is honoured: forcing a header containing `#error FORCED` makes the build fail with
+`FORCED seen: True`. So the mechanism is fine; the problem is what the header can express. It cannot
+retroactively change a quoted include's resolution, and it cannot avoid the `-D` covering both sides.
+
+## What would actually work
+
+Copy the **whole** `ggml-cuda` directory into the experiment, patch the copy's `vecdotq.cuh`, and compile
+from a source file inside the copy — then every quoted include resolves within the copy. That is heavy
+(hundreds of files) but it is the only mechanism that does not depend on include-order tricks or macro
+trickery, and it is what a promotion-time change would look like anyway.
+
+Alternatively patch `mmq-vec-dot.cuh`'s single call site rather than the function definition, which needs
+only one file copied *and* that file to be the includer — still the same directory problem.
+
+## Recorded because
+
+Three attempts, three clean builds, three byte-identical cubins. Without comparing hashes each time I would
+have believed the override took effect — and the previous section's "the object hash differs" claim was
+about a *different* build (an `-I` copy that did change something) while these do not. The lesson is the
+same one this project keeps teaching: a clean build is not evidence that the change was used.
