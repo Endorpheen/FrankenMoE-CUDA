@@ -885,13 +885,14 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 572,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B2"
+   "batch": "B2",
+   "notes": "Q8_1 activation quantize is live (EXP178). The MMQ family that consumes it is the blocker; see P3-09."
   },
   {
    "id": "P3-09",
    "phase": "P3",
    "title": "Port full CUDA quantized matrix-matrix prefill",
-   "status": "TODO",
+   "status": "IN_PROGRESS",
    "sources": [
     "ggml/src/ggml-cuda/mmq*",
     "ggml/src/ggml-cuda/template-instances/**"
@@ -902,7 +903,8 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 572,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B2"
+   "batch": "B2",
+   "notes": "MMQ Q8_1 feeder ported byte-exact in EXP180 but NOT promoted: 13.5% slower at operator level (2055/2103 ns vs 1812/1842 ns, 2000 launches per arm, under 1% spread; EXP221 README). Corrected SIZE measurement: Goose kernel<0>=400, <1>=355 SASS instructions against native DS4 157 direct / 227 scatter (cuobjdump -sass -fun per mangled name -- the earlier 432/392/168/264 and the 824-vs-160 figure came from looser extraction and are withdrawn). Ratio 2.55x/1.56x is stable. One measured instruction-mix difference: IMAD.HI.U32 22 vs 2, the 64-bit division expansion for bzi/ne2i -- but it is dead at runtime because the measured shape has ne2==1. No cause for the 13.5% is established; four rounds of static analysis produced three wrong hypotheses (all retracted in the EXP221 README) and one elimination. ncu is blocked by ERR_NVGPUCTRPERM and nsys aborts the server under tracing, so counters are unavailable here (profiling-unavailable-2026-11-10.md). NEXT STEP, concrete and unstarted: pin ne2 as a fifth wrapper constant alongside ds and scatter so the ~20 dead division instructions are eliminated per kernel; then re-measure with the EXP180 harness. Expected small or zero, since dead code does not execute -- do not treat as a fix."
   },
   {
    "id": "P3-10",
@@ -3983,6 +3985,7 @@
   "note": "Replaces the EXP084 trace as the authority. Profile replay: ncu blocked by ERR_NVGPUCTRPERM; nsys needs no counters."
  },
  "ledger_notes": {
-  "2026-11-10": "EXP213-218 added. Every one was accepted on tokens+probabilities exact against sha e68df05b and on a balanced interleaved A/B pair; EXP218 is the exception and is deliberately not promoted (zero calls in profile, and a paired timing that contradicted that -- see its README). Module gates re-verified on subset-d5e9fdc5 (729479 checks) and again on subset-7ef08c2d (731096 checks), both 0 failures."
+  "2026-11-10": "EXP213-218 added. Every one was accepted on tokens+probabilities exact against sha e68df05b and on a balanced interleaved A/B pair; EXP218 is the exception and is deliberately not promoted (zero calls in profile, and a paired timing that contradicted that -- see its README). Module gates re-verified on subset-d5e9fdc5 (729479 checks) and again on subset-7ef08c2d (731096 checks), both 0 failures.",
+  "2026-11-10-late": "EXP219/220 repaired two silent chain losses (unicode.cpp, llama-vocab.cpp) that had dropped modules with millions of calls while every gate passed; the witness check only works with --baseline. EXP221 retested MMQ codegen on two further qualified compiler releases: no change. Full gate run against the committed artifacts: 17 fixtures, 914112 checks, 0 failures."
  }
 }
