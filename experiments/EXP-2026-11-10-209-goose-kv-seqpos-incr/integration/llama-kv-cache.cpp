@@ -29,6 +29,28 @@ extern "C" int64_t fg205g_find_slots(const llama_kv_cells * cells, int n_swa, in
                                      int64_t head0, int64_t n_tokens, int64_t cont, int64_t * out);
 
 
+// Goose KV cell ownership (EXP199). GGML_GOOSE_KV_CELLS=0 restores the native sequence.
+extern "C" int fg199k_enabled(void);
+extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared);
+extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
+extern "C" int64_t fg199k_head_after(int64_t last_idx);
+extern "C" int64_t fg199k_head_start(int64_t head_cur, int64_t used, int64_t n_tokens);
+extern "C" int64_t fg199k_pos_in(int64_t pos, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_norm_range(int64_t p0, int64_t p1, uint64_t out);
+extern "C" int64_t fg199k_head_after_rm(int64_t freed, int64_t new_head, int64_t head);
+extern "C" int64_t fg199k_same_stream(int64_t s0, int64_t s1);
+extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
+extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
+extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_n_kv_one(int64_t size, int64_t used_max_p1, int64_t n_pad);
+extern "C" int64_t fg199k_can_shift(int64_t is_step35, int64_t n_pos_per_embd);
+extern "C" int64_t fg199k_shift_needed(int64_t do_shift, int64_t rope_none, int64_t n_layers_with_rope);
+extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
+extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
+extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
+extern "C" void fg199k_pos_div(int64_t pos, int64_t shift, int64_t d, uint64_t out);
+extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
+
 static bool ggml_is_power_of_2(int n) {
     return (n & (n - 1)) == 0;
 }
@@ -416,6 +438,33 @@ void llama_kv_cache::clear(bool data) {
     }
 }
 
+
+// ---------------------------------------------------------------------------------------------
+// Goose KV cell ownership (EXP199). The cell decisions in apply_ubatch are Goose; the C++
+// containers stay as storage and the extension record stays native.
+//   true  -> Goose handled the placement
+//   false -> the caller must run the native sequence, which is what the switch selects
+extern "C" int fg199k_plan_cell(int enabled, int occupied, int64_t pos, bool * cleared);
+extern "C" int64_t fg199k_should_purge(int64_t min_pos, int64_t max_rm);
+extern "C" int64_t fg199k_head_after(int64_t last_idx);
+extern "C" int64_t fg199k_head_start(int64_t head_cur, int64_t used, int64_t n_tokens);
+extern "C" int64_t fg199k_pos_in(int64_t pos, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_norm_range(int64_t p0, int64_t p1, uint64_t out);
+extern "C" int64_t fg199k_head_after_rm(int64_t freed, int64_t new_head, int64_t head);
+extern "C" int64_t fg199k_same_stream(int64_t s0, int64_t s1);
+extern "C" int64_t fg199k_seq_cp_self(int64_t src, int64_t dst);
+extern "C" int64_t fg199k_seq_cp_is_full(int64_t p0, int64_t p1, int64_t size);
+extern "C" int64_t fg199k_seq_add_skip(int64_t shift, int64_t p0, int64_t p1);
+extern "C" int64_t fg199k_n_kv_one(int64_t size, int64_t used_max_p1, int64_t n_pad);
+extern "C" int64_t fg199k_can_shift(int64_t is_step35, int64_t n_pos_per_embd);
+extern "C" int64_t fg199k_shift_needed(int64_t do_shift, int64_t rope_none, int64_t n_layers_with_rope);
+extern "C" int64_t fg199k_pos_add(int64_t pos, int64_t shift, int64_t d, uint64_t out);
+extern "C" int64_t fg199k_seq_add_head(int64_t freed, int64_t new_head);
+extern "C" int64_t fg199k_seq_div_skip(int64_t d, int64_t p0, int64_t p1);
+extern "C" void fg199k_pos_div(int64_t pos, int64_t shift, int64_t d, uint64_t out);
+extern "C" int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_cell, int64_t seq_pos_max_1, int64_t n_swa, int64_t swa_type);
+// ---------------------------------------------------------------------------------------------
+
 bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
     // TODO: refactor [TAG_KV_CACHE_SHARE_CELLS]
     if (other) {
@@ -425,12 +474,14 @@ bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
     // TODO: fix incosistent handling of `seq_id < 0` and `seq_id == -1` in the codebase [TAG_LLAMA_SEQ_ID_NEG]
     GGML_ASSERT(seq_id == -1 || (seq_id >= 0 && (size_t) seq_id < seq_to_stream.size()));
 
-    if (p0 < 0) {
-        p0 = 0;
-    }
-
-    if (p1 < 0) {
-        p1 = std::numeric_limits<llama_pos>::max();
+    {
+        // Goose normalises the range; the values are stored back into p0/p1 here.
+        const int en = fg199k_enabled();
+        if (en) { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
+        else {
+            if (p0 < 0) p0 = 0;
+            if (p1 < 0) p1 = std::numeric_limits<llama_pos>::max();
+        }
     }
 
     if (seq_id >= 0) {
@@ -439,8 +490,11 @@ bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
 
         uint32_t new_head = cells.size();
 
+        const int en = fg199k_enabled();
         for (uint32_t i = 0; i < cells.size(); ++i) {
-            if (!cells.pos_in(i, p0, p1)) {
+            const bool in = en ? (fg199k_pos_in(cells.is_empty(i) ? -1 : cells.pos_get(i), p0, p1) != 0)
+                               : cells.pos_in(i, p0, p1);
+            if (!in) {
                 continue;
             }
 
@@ -496,14 +550,17 @@ void llama_kv_cache::seq_cp(llama_seq_id seq_id_src, llama_seq_id seq_id_dst, ll
 
     const auto s0 = seq_to_stream[seq_id_src];
     const auto s1 = seq_to_stream[seq_id_dst];
+    const int enabled_cp = fg199k_enabled();
 
-    if (s0 == s1) {
+    // Goose decides whether this is an intra-stream metadata copy.
+    if (enabled_cp ? (fg199k_same_stream(s0, s1) != 0) : (s0 == s1)) {
         // since both sequences are in the same stream, no data copy is necessary
         // we just have to update the cells meta data
 
         auto & cells = v_cells[s0];
 
-        if (seq_id_src == seq_id_dst) {
+        if (enabled_cp ? (fg199k_seq_cp_self(seq_id_src, seq_id_dst) != 0)
+                       : (seq_id_src == seq_id_dst)) {
             return;
         }
 
@@ -530,15 +587,12 @@ void llama_kv_cache::seq_cp(llama_seq_id seq_id_src, llama_seq_id seq_id_dst, ll
 
     // cross-stream sequence copies require to copy the actual buffer data
 
-    bool is_full = true;
-
-    if (p0 > 0 && p0 + 1 < (int) get_size()) {
-        is_full = false;
-    }
-
-    if (p1 > 0 && p1 + 1 < (int) get_size()) {
-        is_full = false;
-    }
+    // Goose decides whether the range covers the whole buffer.
+    const bool is_full = enabled_cp ? (fg199k_seq_cp_is_full(p0, p1, (int64_t)get_size()) != 0)
+                                    : [&]{ bool f = true;
+                                           if (p0 > 0 && p0 + 1 < (int) get_size()) f = false;
+                                           if (p1 > 0 && p1 + 1 < (int) get_size()) f = false;
+                                           return f; }();
 
     GGML_ASSERT(is_full && "seq_cp() is only supported for full KV buffers");
 
@@ -622,12 +676,14 @@ void llama_kv_cache::seq_add(llama_seq_id seq_id, llama_pos p0, llama_pos p1, ll
 
     uint32_t new_head = cells.size();
 
-    if (p0 < 0) {
-        p0 = 0;
-    }
-
-    if (p1 < 0) {
-        p1 = std::numeric_limits<llama_pos>::max();
+    {
+        // Goose normalises the range; the values are stored back into p0/p1 here.
+        const int en = fg199k_enabled();
+        if (en) { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
+        else {
+            if (p0 < 0) p0 = 0;
+            if (p1 < 0) p1 = std::numeric_limits<llama_pos>::max();
+        }
     }
 
     // If there is no range then return early to avoid looping over all cells.
@@ -669,12 +725,14 @@ void llama_kv_cache::seq_div(llama_seq_id seq_id, llama_pos p0, llama_pos p1, in
         return;
     }
 
-    if (p0 < 0) {
-        p0 = 0;
-    }
-
-    if (p1 < 0) {
-        p1 = std::numeric_limits<llama_pos>::max();
+    {
+        // Goose normalises the range; the values are stored back into p0/p1 here.
+        const int en = fg199k_enabled();
+        if (en) { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
+        else {
+            if (p0 < 0) p0 = 0;
+            if (p1 < 0) p1 = std::numeric_limits<llama_pos>::max();
+        }
     }
 
     // If there is no range then return early to avoid looping over the cache.
@@ -944,10 +1002,12 @@ bool llama_kv_cache::update(llama_context * lctx, bool do_shift, const stream_co
         LLAMA_LOG_DEBUG("%s: applying K-shift\n", __func__);
 
         // apply K-shift if needed
-        if (hparams.rope_type != LLAMA_ROPE_TYPE_NONE &&
-                std::any_of(layers.begin(), layers.end(), [&](const auto & layer) {
-                    return hparams.has_rope(layer.il);
-                })) {
+        const int64_t n_rope_layers = (int64_t)std::count_if(layers.begin(), layers.end(),
+                [&](const auto & layer) { return hparams.has_rope(layer.il); });
+        // Goose decides whether the shift graph is built at all.
+        if (fg199k_enabled()
+                ? (fg199k_shift_needed(1, hparams.rope_type == LLAMA_ROPE_TYPE_NONE ? 1 : 0, n_rope_layers) != 0)
+                : (hparams.rope_type != LLAMA_ROPE_TYPE_NONE && n_rope_layers > 0)) {
             ggml_backend_sched_reset(sched);
 
             auto * res = lctx->get_gf_res_reserve();
@@ -981,6 +1041,8 @@ bool llama_kv_cache::update(llama_context * lctx, bool do_shift, const stream_co
 }
 
 llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch, bool cont) const {
+    // Goose slot-selection decisions (EXP199); GGML_GOOSE_KV_CELLS=0 restores the native logic.
+    const int enabled = fg199k_enabled();
 
     if (debug > 0) {
         for (uint32_t s = 0; s < ubatch.n_seqs_unq; ++s) {
@@ -1087,9 +1149,9 @@ llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch,
 
         // if we have enough unused cells before the current head ->
         //   better to start searching from the beginning of the cache, hoping to fill it
-        if (head_cur > cells.get_used() + 2*n_tokens) {
-            head_cur = 0;
-        }
+        // Goose decides whether the search restarts at 0.
+        head_cur = enabled ? (uint32_t)fg199k_head_start(head_cur, cells.get_used(), n_tokens)
+                           : (head_cur > cells.get_used() + 2*n_tokens ? 0 : head_cur);
 
         if (n_tokens > cells.size()) {
             LLAMA_LOG_ERROR("%s: n_tokens = %d > size = %u\n", __func__, n_tokens, cells.size());
@@ -1138,25 +1200,18 @@ llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch,
                 //    - (disabled) mask causally, if the sequence is the same as the one we are inserting
                 //    - mask SWA, using current max pos for that sequence in the cache
                 //                always insert in the cell with minimum pos
-                bool can_use = cells.is_empty(idx);
-
-                if (!can_use && cells.seq_count(idx) == 1) {
-                    const llama_pos pos_cell = cells.pos_get(idx);
-
-                    // (disabled) causal mask
-                    // note: it's better to purge any "future" tokens beforehand
-                    //if (cells.seq_has(idx, seq_id)) {
-                    //    can_use = pos_cell >= pos;
-                    //}
-
-                    if (!can_use) {
-                        const llama_seq_id seq_id_cell = cells.seq_get(idx);
-
-                        // SWA mask
-                        if (llama_hparams::is_masked_swa(n_swa, swa_type, pos_cell, cells.seq_pos_max(seq_id_cell) + 1)) {
-                            can_use = true;
-                        }
-                    }
+                // Goose decides whether the cell is reusable; the container reads stay here.
+                bool can_use;
+                {
+                    const bool occupied   = !cells.is_empty(idx);
+                    const int  seq_count  = occupied ? cells.seq_count(idx) : 0;
+                    const llama_pos pos_cell = occupied ? cells.pos_get(idx) : 0;
+                    const llama_pos max_p1   = (occupied && seq_count == 1)
+                                             ? cells.seq_pos_max(cells.seq_get(idx)) + 1 : 0;
+                    can_use = enabled
+                        ? (fg199k_can_use(occupied ? 1 : 0, seq_count, pos_cell, max_p1, n_swa, swa_type) != 0)
+                        : (!occupied || (seq_count == 1 &&
+                           llama_hparams::is_masked_swa(n_swa, swa_type, pos_cell, max_p1)));
                 }
 
                 if (can_use) {
@@ -1194,6 +1249,8 @@ llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch,
 }
 
 void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & ubatch) {
+    // Goose KV cell ownership (EXP199); GGML_GOOSE_KV_CELLS=0 restores the native sequence.
+    const int enabled = fg199k_enabled();
     // TODO: refactor [TAG_KV_CACHE_SHARE_CELLS]
     if (other) {
         return;
@@ -1216,18 +1273,33 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
 
             const auto idx = sinfo.idxs[s][ii];
 
-            if (!cells.is_empty(idx)) {
-                assert(cells.seq_count(idx) == 1);
+            // Goose decides whether the cell must be cleared and at which position it is
+            // placed; the container mutation is performed here from that decision. The switch
+            // selects the native sequence unchanged, so the rollback path is the original code.
+            bool goose_cleared = false;
+            if (fg199k_plan_cell(enabled, cells.is_empty(idx) ? 0 : 1, ubatch.pos[i], &goose_cleared)) {
+                if (goose_cleared) {
+                    assert(cells.seq_count(idx) == 1);
+                    const llama_seq_id seq_id = cells.seq_get(idx);
+                    const llama_pos    pos    = cells.pos_get(idx);
+                    seq_pos_max_rm[seq_id] = std::max(seq_pos_max_rm[seq_id], pos);
+                    cells.rm(idx);
+                }
+                cells.pos_set(idx, ubatch.pos[i]);
+            } else {
+                if (!cells.is_empty(idx)) {
+                    assert(cells.seq_count(idx) == 1);
 
-                const llama_seq_id seq_id = cells.seq_get(idx);
-                const llama_pos    pos    = cells.pos_get(idx);
+                    const llama_seq_id seq_id = cells.seq_get(idx);
+                    const llama_pos    pos    = cells.pos_get(idx);
 
-                seq_pos_max_rm[seq_id] = std::max(seq_pos_max_rm[seq_id], pos);
+                    seq_pos_max_rm[seq_id] = std::max(seq_pos_max_rm[seq_id], pos);
 
-                cells.rm(idx);
+                    cells.rm(idx);
+                }
+
+                cells.pos_set(idx, ubatch.pos[i]);
             }
-
-            cells.pos_set(idx, ubatch.pos[i]);
 
             if (ubatch.is_pos_2d() || ubatch.token || hparams.ple_n_heads > 0) {
                 llama_kv_cell_ext ext;
@@ -1253,6 +1325,8 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
             }
 
             for (int32_t s = 0; s < ubatch.n_seq_id[i]; s++) {
+                // Goose's place_cell treats a repeated sequence id as idempotent, matching the
+                // bitset set; the container call is the same either way, so it stays one line.
                 cells.seq_add(idx, ubatch.seq_id[i][s]);
             }
         }
@@ -1270,7 +1344,10 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
 
         auto & cells = v_cells[seq_to_stream[s]];
 
-        if (cells.seq_pos_min(s) <= seq_pos_max_rm[s]) {
+        // Goose decides whether this sequence needs purging; the scan and the seq_rm stay here.
+        const bool purge = enabled ? (fg199k_should_purge(cells.seq_pos_min(s), seq_pos_max_rm[s]) != 0)
+                                  : (cells.seq_pos_min(s) <= seq_pos_max_rm[s]);
+        if (purge) {
             LLAMA_LOG_DEBUG("%s: purging positions [%d, %d] of sequence %d from KV cache\n",
                     __func__, cells.seq_pos_min(s), seq_pos_max_rm[s], s);
 
@@ -1282,11 +1359,18 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
     for (uint32_t s = 0; s < sinfo.n_stream(); ++s) {
         auto & head = v_heads[sinfo.strm[s]];
 
-        head = sinfo.idxs[s].back() + 1;
+        // Goose owns the head advance; the store stays here.
+        head = enabled ? (uint32_t)fg199k_head_after((int64_t)sinfo.idxs[s].back())
+                       : sinfo.idxs[s].back() + 1;
     }
 }
 
 bool llama_kv_cache::get_can_shift() const {
+    if (fg199k_enabled()) {
+        // Goose decides whether this configuration supports K-shift at all.
+        return fg199k_can_shift(model.arch == LLM_ARCH_STEP35 ? 1 : 0,
+                                (int64_t)hparams.n_pos_per_embd()) != 0;
+    }
     // Step35 uses per-layer RoPE dims; K-shift assumes a single global n_rot.
     if (model.arch == LLM_ARCH_STEP35) {
         return false;
@@ -1365,10 +1449,15 @@ uint32_t llama_kv_cache::get_n_kv(const slot_info & sinfo) const {
     // note: this also helps some backends with performance (f.ex https://github.com/ggml-org/llama.cpp/pull/16812#issuecomment-3455112220)
     const uint32_t n_pad_cur = std::max(n_pad, 256u);
 
+    const int en_nkv = fg199k_enabled();
     for (uint32_t s = 0; s < sinfo.n_stream(); ++s) {
         const auto & cells = v_cells[sinfo.strm[s]];
 
-        result = std::max(std::min(cells.size(), std::max(n_pad_cur, GGML_PAD(cells.used_max_p1(), n_pad_cur))), result);
+        // Goose computes the per-stream candidate; the max across streams stays here.
+        const uint32_t cand = en_nkv
+            ? (uint32_t)fg199k_n_kv_one((int64_t)cells.size(), (int64_t)cells.used_max_p1(), (int64_t)n_pad)
+            : std::min(cells.size(), std::max(n_pad_cur, GGML_PAD(cells.used_max_p1(), n_pad_cur)));
+        result = std::max(cand, result);
     }
 
     return result;
