@@ -106,3 +106,58 @@ specialized.
 I have not verified which of the two paths the `scatter` argument selects in each wrapper — both
 call sites pass `0` as the last argument, which does not obviously match the two-path structure, and
 I stopped rather than assert a cause. That is the first thing to check when this resumes.
+
+---
+
+# Second correction: the specialization claim was wrong
+
+I wrote above that "the Goose body carries the direct and scatter block index in every
+instantiation". **That is false.** Checked the source instead of the kernel comment:
+
+    fn fg180q_mmq_ds4_direct (...)  { fg180q_mmq(..., 1 as i32, 0 as i32, ...); }
+    fn fg180q_mmq_ds4_scatter(...)  { fg180q_mmq(..., 1 as i32, 1 as i32, ...); }
+
+`ds` and `scatter` are **constants in four thin wrappers**, exactly as the source comment says, so
+the backend folds the body the way the native template does. The last argument at the call site
+(`0`) is the `base` ABI argument, not `scatter` — that is what confused me. Specialization is
+present and was never the problem.
+
+## So 432 is live code, and the count difference is real
+
+| | instructions | registers | LDL/STL | MOV |
+|---|---:|---:|---:|---:|
+| Goose `fg180q_kernel<0>` | 432 | 30 | 0 | 68 |
+| Goose `fg180q_kernel<1>` | 392 | 34 | 0 | — |
+| native DS4 direct | 168 | 26 | 0 | — |
+| native DS4 scatter | 264 | 38 | 0 | — |
+
+2.6× (direct) and 1.5× (scatter) is a genuine difference in emitted code. 68 `MOV` of 432 is 16%,
+which is what unoptimised register allocation looks like.
+
+## And my inference about the cause was also speculation
+
+I wrote "a 2.6× count producing only 11.4% more time means the kernel is not instruction-bound", and
+proposed register pressure or occupancy. **The resource numbers do not support that either**: no
+spills on either side (LDL/STL = 0), 30/34 registers against native's 26/38. Occupancy is not
+degraded.
+
+So the honest state is:
+
+- the emission is 2.6× larger — measured;
+- it does not spill and does not use more registers — measured;
+- the port is 11.4% slower — measured;
+- **why** is not established.
+
+## Third time I proposed a cause before verifying it
+
+First the 5× figure (wrong scope), then "both paths in every instantiation" (wrong), then "not
+instruction-bound, it must be occupancy" (unsupported). Each took one command to check and each was
+written as a conclusion first. The pattern is the thing to fix, not any single claim: for a
+performance question, report the measurement and say "cause not established" until a controlled
+differential points at one.
+
+## What to do next, now that the wrong explanations are out
+
+Compare like for like on the actual work rather than on code size: run the two kernels under `nsys`
+in one Apex pass and read achieved occupancy, memory throughput and stall reasons. Static counts
+have now produced three wrong conclusions; a profile of the running kernel has not been tried.
