@@ -325,7 +325,8 @@
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 58,
    "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-   "batch": "B1"
+   "batch": "B1",
+   "notes": "Live in the active run, measured by witness rather than by the ledger: FG143_CPU op=100 calls=45120 (the expert matmul, the dominant CPU-MoE op) and op=40 calls=146 (dense matmul); FG143_CONTROL plans=5674; FG143_EXECUTOR worker_graphs=45274; FG148_QUANT kind=9; FG150_EXPERT scratch_calls=135360; FG150_REGISTRY modes 0 and 1 active. So the expert math, the graph/job executor, the quantization batch and the expert scratch policy are all Goose already. EXP150's own README is explicit that CPU backend/buffer/registry policies, the SLRU cache state machine and the GPU budget planner are Goose too, while native keeps ABI records/containers and OS/vendor calls. Remaining, and the reason this stays IN_PROGRESS instead of DONE: native removal (P4-16) has not happened, so the native bodies still exist as rollback, and 'every remaining family' is a claim about a census that cannot be retaken here (profiling-unavailable-2026-11-10.md). Not a blocker for Apex: nothing measured shows a CPU-MoE family still running native at this profile's shapes. Closing this properly needs a fresh census, not a guess."
   },
   {
    "id": "P1-07",
@@ -3991,6 +3992,7 @@
   "2026-11-10": "EXP213-218 added. Every one was accepted on tokens+probabilities exact against sha e68df05b and on a balanced interleaved A/B pair; EXP218 is the exception and is deliberately not promoted (zero calls in profile, and a paired timing that contradicted that -- see its README). Module gates re-verified on subset-d5e9fdc5 (729479 checks) and again on subset-7ef08c2d (731096 checks), both 0 failures.",
   "2026-11-10-late": "EXP219/220 repaired two silent chain losses (unicode.cpp, llama-vocab.cpp) that had dropped modules with millions of calls while every gate passed; the witness check only works with --baseline. EXP221 retested MMQ codegen on two further qualified compiler releases: no change. Full gate run against the committed artifacts: 17 fixtures, 914112 checks, 0 failures.",
   "2026-11-10-mmq": "The MMQ investigation went from 'cause not established' to a located and measured cause: a dead ne2 division branch worth 236 of 400 instructions. Three earlier hypotheses of mine were wrong (5x scope error, both-paths error, occupancy speculation) and are retracted in the EXP221/222 READMEs; the surviving statement -- that the kernel is not instruction-bound -- was later proven by measurement (59% fewer instructions bought 3.7% of time).",
-  "2026-11-10-p6": "P6-01 and P6-04 moved to IN_PROGRESS with the exact boundary recorded: EXP200 ports per-layer DECISIONS (36 call sites in qwen35moe.cpp plus llama-graph.cpp and llama-hparams.cpp routes), but its own README says construction stays native. P6-03 (the builder DSL) is the prerequisite."
+  "2026-11-10-p6": "P6-01 and P6-04 moved to IN_PROGRESS with the exact boundary recorded: EXP200 ports per-layer DECISIONS (36 call sites in qwen35moe.cpp plus llama-graph.cpp and llama-hparams.cpp routes), but its own README says construction stays native. P6-03 (the builder DSL) is the prerequisite.",
+  "2026-11-10-p1": "P1-06 kept IN_PROGRESS but documented by witness: the CPU MoE expert matmul (op=100) executes 45120 times per request through Goose, plus executor, quant batch, expert scratch and registry modes. The open part is native removal and a fresh census, not a known unported family."
  }
 }
