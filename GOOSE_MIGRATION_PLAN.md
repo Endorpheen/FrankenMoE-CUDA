@@ -503,6 +503,11 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
    (prefill >= 2500 tok/s, decode >= 25 tok/s, regression <= 2%); record any failure in private
    ignored COMPILER_FEEDBACK.md and continue. Do not tune local loops or repeat benchmarks to
    rescue a number.
+5a. Before accepting, run `scripts/check_witnesses.py --run <new> --baseline <previous>` and
+   require OK. Speed and token equality cannot reveal a component that silently fell back to
+   native; EXP199 went missing at EXP204 and stayed missing through EXP209 while every gate
+   passed. A stage is not composed until its witness modules are a superset of the previous
+   stage's.
 6. Check disable/rollback path and unchanged working runtime. Save source/emitted code/tests/receipts/results as one coherent stage. Update task status/evidence/history and regenerate this file. Never mark a whole parent subsystem DONE from one leaf.
 7. Remove replaced native code only from candidate once functional closure is proven. The final link/import/source audit must reject hidden owned native services. Generated C/CUDA and OS/vendor primitive calls remain explicitly declared.
 
