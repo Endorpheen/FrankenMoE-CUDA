@@ -133,3 +133,58 @@ arithmetic, with a matching 19% time delta and no measurable noise.
 Filed with the compiler owner as a defect report with the reproduction, the SASS evidence and two
 possible fixes: fold the pattern, or expose the intrinsic as a declarable primitive (smaller, and it would
 let me handle it on this side).
+
+---
+
+# The fix is on my side: declare `dp4a` as a primitive
+
+I did not wait for the compiler. The emission already supports declaring an extern primitive, so the
+question was whether `dp4a` can be one. It can, and it closes the gap completely.
+
+## What changed
+
+One function body in the Goose source. Instead of
+
+    fn dp4a(a,b,acc) { loop of four sign-extended byte products }
+
+declare it:
+
+    extern "fg235v_dp4a" fn dp4a(a:i64, b:i64, acc:i64) -> i64;
+
+and provide `__dp4a` in the `.cu` beside the other device services. Everything else in the module is
+unchanged.
+
+## Result — identical code, identical time
+
+| | instructions | `IDP.4A` | median ns |
+|---|---:|---:|---:|
+| native | 133 | 16 | 173.8 |
+| Goose, loop version | 741 | 0 | 208.0 (**+19.2%**) |
+| **Goose, intrinsic version** | **133** | **16** | **174.2 (+0.29%)** |
+
+Six interleaved runs each way:
+
+    native  172.5 173.5 174.0 174.0 175.0 173.5   median 173.8
+    goose   174.5 174.0 174.0 175.5 173.5 176.0   median 174.2
+
+`+0.29%` median, `+0.48%` mean — inside noise, and the two arms produce **byte-identical SASS instruction
+counts and the same 16 `IDP.4A`**, so this is not a lucky measurement: the compiler emitted the same code.
+
+Bit-exactness re-verified on the GPU: `n=65536 bad=0 worst_rel=0.000e+00`.
+
+## What this teaches about the migration
+
+The 19% was never a compiler defect in the sense of bad codegen from a correct description. It was a
+**description problem**: I wrote the arithmetic out longhand, and the emission faithfully produced
+longhand code. Declaring the hardware operation as a primitive is the right expression of intent, exactly
+as the modules already do for loads, stores and half conversions.
+
+So my defect report to the compiler owner needs a correction, and I will send it: the foldable-pattern
+request is the *weaker* option. The primitive route works today and needs nothing from them.
+
+## Where this leaves the 30% block
+
+`vec_dot_q4_K_q8_1_impl_mmq` is now bit-exact **and** at parity at kernel level. That is the first kernel
+in the MMQ family where the Goose version does not lose. It is still not wired into the shipping path —
+that needs the outer tiling loop and a full Apex measurement — but the reason it could not be wired is
+gone.
