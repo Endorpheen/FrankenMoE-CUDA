@@ -13,7 +13,7 @@
 #include <sstream>
 
 // Goose sequence-set construction (EXP240). GGML_GOOSE_BATCH_SEQSET=0 restores the native block.
-extern "C" int fg240s_enabled(void);
+extern "C" int fg240q_enabled(void);
 extern "C" int64_t fg240q_build_sets4(int64_t n_tok, const int32_t * flat, const int32_t * off,
                                       int64_t * out, int64_t * unq, int64_t n_max);
 
@@ -326,13 +326,16 @@ bool llama_batch_allocr::init(
     {
         seq_set_t seq_set_unq;
 
-        bool fg240s_done = false;
-        if (fg240s_enabled() && batch.n_tokens > 0 && batch.n_tokens <= 65536 && LLAMA_MAX_SEQ <= 256) {
-            // Goose computes the bitmask per token and the union; the std::bitset and the map stay here.
-            const int32_t nt = (int32_t) batch.n_tokens;
+        bool fg240q_done = false;
+        if (fg240q_enabled() && n_tok > 0 && n_tok <= 65536 && LLAMA_MAX_SEQ <= 256) {
+            // init works from batch_inp.tokens[i].seq_ids, NOT batch.n_seq_id / batch.seq_id -- those
+            // belong to the llama_batch view used in split_equal. Reading the wrong pair made `flat`
+            // always empty, which is why an earlier build was linked and never entered.
+            const int32_t nt = (int32_t) n_tok;
             std::vector<int32_t> flat, off((size_t) nt + 1, 0);
             for (int32_t i = 0; i < nt; ++i) {
-                for (int32_t s = 0; s < batch.n_seq_id[i]; ++s) flat.push_back((int32_t) batch.seq_id[i][s]);
+                // seq_ids is an unordered_set<int>; the bitmask is order-independent.
+                for (const int sid : batch_inp.tokens[i].seq_ids) flat.push_back((int32_t) sid);
                 off[(size_t) i + 1] = (int32_t) flat.size();
             }
             if (!flat.empty()) {
@@ -341,29 +344,24 @@ bool llama_batch_allocr::init(
                 const int64_t ok = fg240q_build_sets4((int64_t) nt, flat.data(), off.data(),
                                                       masks.data(), unq, (int64_t) LLAMA_MAX_SEQ);
                 if (ok == 1) {
-                    // Rebuild the std::bitset from the four words; seq_set_map stays a C++ container.
                     for (int32_t i = 0; i < nt; ++i) {
                         seq_set_t cur;
                         for (int w = 0; w < 4; ++w) {
                             const int64_t word = masks[(size_t) i*4 + w];
-                            for (int b = 0; b < 64; ++b) {
-                                if ((word >> b) & 1) cur.set((size_t) w*64 + b);
-                            }
+                            for (int b = 0; b < 64; ++b) if ((word >> b) & 1) cur.set((size_t) w*64 + b);
                         }
                         seq_set.push_back(cur);
                         seq_set_map[cur].push_back(i);
                     }
                     for (int w = 0; w < 4; ++w) {
-                        for (int b = 0; b < 64; ++b) {
-                            if ((unq[w] >> b) & 1) seq_set_unq.set((size_t) w*64 + b);
-                        }
+                        for (int b = 0; b < 64; ++b) if ((unq[w] >> b) & 1) seq_set_unq.set((size_t) w*64 + b);
                     }
-                    fg240s_done = true;
+                    fg240q_done = true;
                 }
             }
         }
 
-        for (int32_t i = 0; !fg240s_done && i < batch.n_tokens; ++i) {
+        for (int32_t i = 0; !fg240q_done && i < batch.n_tokens; ++i) {
             seq_set_t cur;
             for (int32_t s = 0; s < batch.n_seq_id[i]; ++s) {
                 const llama_seq_id seq_id = batch.seq_id[i][s];

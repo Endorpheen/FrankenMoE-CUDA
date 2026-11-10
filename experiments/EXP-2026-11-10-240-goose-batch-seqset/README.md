@@ -57,44 +57,56 @@ dormant route and a silently wrong batch split.
 
 ---
 
-# 256-bit version: gated at 300,008 checks, but still not entered — cause NOT established
+# 256-bit version: gated at 300,008 checks and LIVE — after finding three of my own bugs
 
-Finished the four-word version (`source/ss4.goose`, `source/bridge4.c`), because `LLAMA_MAX_SEQ` is 256:
+`LLAMA_MAX_SEQ` is 256 (`src/llama-cparams.h:8`), so a set is four 64-bit words. Finished that version and it
+now runs: `FG240Q_BATCH_SEQSET calls=146`, tokens and all 128 probabilities exact, witness superset OK.
 
-    FG240Q_FIXTURE checks=300008 failures=0
+    gate  300008 checks, 0 failures   (8 named word-boundary cases + 20000 random, nmax to 256)
+    mut   word index sid/64 -> sid/128   58293 failures
+    mut   bit mask  sid&63 -> sid&31     33514 failures
 
-8 named cases pinning every word boundary (63, 64, 127, 128, 192, 255) plus 20000 random with `nmax` up to
-256. Mutations:
+## What actually blocked it — three bugs of mine, found in order
 
-| mutation | failures |
-|---|---:|
-| word index `sid/64` → `sid/128` | 58293 |
-| bit mask `sid&63` → `sid&31` | 33514 |
+1. **Wrong field.** The first integration read `batch.n_seq_id[i]` / `batch.seq_id[i]`, which belong to the
+   `llama_batch` view that `split_equal` uses. `init` works from `batch_inp.tokens[i].seq_ids`, so `flat`
+   was always empty and the route never fired. `seq_ids` is an `unordered_set<int>`, not a vector — the
+   bitmask is order-independent, so iteration order does not matter, but the type does.
+2. **Stale symbol.** After switching to the 256-bit module the declaration still named `fg240s_enabled`
+   while only `fg240q_enabled` existed, so the server died at startup with
+   `undefined symbol: fg240s_enabled`. `nm -u` on the object showed the mismatch in one second.
+3. **The runner does not use the directory I built.** It loads `runtime/exp240/run`. I had linked into
+   `run2`, `run3` and `run4` and watched three runs report zero calls against the **old** DSO. The
+   `loaded-library-hashes.json` of the run names the exact path and sha — reading it would have saved all
+   three.
 
-Integrated with the guard widened to `LLAMA_MAX_SEQ <= 256`, object rebuilt, and verified by `nm`:
+## The probe that settled it
 
-    DSO defines   fg240q_build_sets4  fg240q_enabled  fg240q_generated_main  fg240q_init_globals
-    object undef  fg240q_build_sets4  (alongside fg237s/fg238q/fg239b)
+Guessing three times was the mistake. A temporary unconditional counter inside the guard answered it in one
+run:
 
-Then the run:
+    FG240PROBE block=146 guard=146 flat=146
 
-    FG240Q calls=0        prefill 2463.3  decode 24.29  tokens True  probs True  sha e68df05b
-    witness superset vs exp239: verdict OK
+So the block runs 146 times, the guard passes 146 times, and `flat` is non-empty 146 times. The probe was
+removed afterwards and the final build re-verified — `FG240PROBE` count is 0 in the shipped run.
 
-**The route is linked and never entered.** I did not establish why, and I am not going to guess. The
-candidates I would check first, in this order:
+## Why this took so long
 
-1. whether `llama_batch_allocr::init` is the path the server actually takes for this profile — `split_equal`
-   does fire (146 calls) from the same class, which is why I expected `init` to run, but "same class" is not
-   evidence that this function runs;
-2. whether `batch.n_tokens` at that point exceeds the 65536 guard;
-3. whether `flat` is empty because `batch.n_seq_id[i]` is zero for this batch shape.
+Each failure looked like the previous one: a linked route that does not fire. I kept forming a new theory
+instead of instrumenting. The lesson is the one this project keeps relearning from the other direction — one
+counter beats three hypotheses, and the runner's own `loaded-library-hashes.json` already recorded which
+binary it used.
 
-A one-line unconditional counter inside the guard would answer all three in a single run, and that is the
-next step rather than a fourth theory.
+## Live
 
-## Honest status of EXP240
+    FG240Q_BATCH_SEQSET calls=146
+    prefill 958.6  decode 20.18
+    tokens True  probabilities True  sha e68df05b
 
-Two gated implementations, 390,055 combined checks, zero failures, and **neither is exercised**. The first
-was refused by its own guard (correctly); the second is linked and does not run for a reason not yet known.
-Recording it as `#deferred` is the accurate label.
+Prefill 958.6 is far below the normal band; **Прогон выполнен при параллельной нагрузке. Показатели
+производительности могут быть искажены.** Nothing is concluded from it.
+
+## Performance
+
+Not measured as a pair. 146 calls over `n_tok` tokens each, with a vector rebuild per token, so this one
+*does* deserve a real pair when the host is quiet — unlike the 146-call single-scalar ports.
