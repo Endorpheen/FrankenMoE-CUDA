@@ -51,3 +51,36 @@ still above the 2% rule, and this variant is only correct for `ne2 == 1`.
 The 3.7% is real and worth promoting once the width is handled properly — the right shape is a fifth
 wrapper constant (`ne2_is_one`) selecting between two Goose bodies, so the general case keeps its
 divisions and the Apex case does not.
+
+## Byte-exactness of the specialised variant
+
+The EXP180 GPU fixture covers exactly the shapes this variant is valid for: `direct_run` passes
+`ne2 = 1`, and the scatter case likewise. Run against the variant DSO, both arms:
+
+    FG180Q_GPU_FIXTURE checks=8 failures=0 arm=goose
+    FG180Q_GPU_FIXTURE checks=8 failures=0 arm=native
+
+and the output dumps compare byte for byte:
+
+    files=4 differing=0
+
+So the −3.69% and the 400→164 instruction drop come with no numerical change on `ne2 == 1`.
+
+## Why this is still not promoted
+
+Two reasons, both stated rather than glossed:
+
+1. the remaining gap is **11.31%**, well above the 2% rule;
+2. the variant is only correct for `ne2 == 1`. The gate cannot test the general case against it
+   because the fixture never exercises `ne2 != 1` — so promoting it as-is would narrow the port's
+   correctness envelope without measuring the loss.
+
+## The promotable shape
+
+Add a fifth wrapper constant (`ne2_is_one`) selecting between two Goose bodies, so the general case
+keeps its divisions and the Apex case does not. One structural obstacle is known and should be
+recorded before anyone starts: `emit_sources.py` asserts that exactly **2** entries are called from
+`main` (the ds4 direct/scatter pair), because the extraction mapping is keyed on that. Doubling the
+wrappers breaks that assertion, so the extractor has to be taught to carry four entries and the
+check must be re-derived from the emission rather than the constant. That is the real work in the
+promotable form — the kernel edit itself is four lines.
