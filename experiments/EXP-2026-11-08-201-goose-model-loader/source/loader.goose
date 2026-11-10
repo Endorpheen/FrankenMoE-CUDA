@@ -4,6 +4,8 @@
 // the GGUF matches the shape the model asked for, and it is exactly what caught a wrong
 // is_recr value in EXP200 ("blk.1.attn_qkv.weight has wrong shape").
 
+import std;
+
 extern "fg201l_fail" fn fail(code:i64);
 extern "fg201l_ld_ne" fn ld_ne(desc:u64,i:i64)->i64;
 extern "fg201l_st_i64" fn st_i64(base:u64,byte:i64,v:i64);
@@ -217,6 +219,42 @@ fn sub_ranges(a:u64,na:i64,sub:u64,ns:i64,dst:u64,cap:i64)->i64{
 // std::sort tie behaviour the loader relies on only by accident -- recorded, not assumed.
 fn sort_pairs(base:u64,n:i64)->i64{
  ensure(n>=0,80);
+ if n<=1 as i64{return n;}
+
+ // STOCK std.sort with an index comparator when the count fits a compile-time array bound.
+ // Native llama-model-loader.cpp:1483 uses std::sort, so this is the faithful route; the
+ // insertion sort below stays as the general path so no artificial capacity limit is introduced
+ // (an mmap range list is small, but "small in practice" is not a bound).
+ if n<=256 as i64{
+  var key:i64[256]=[0 as i64;256];
+  var idx:i64[256]=[0 as i64;256];
+  var a:i64=0;
+  while a<n{
+   key[a]=ld_ne(base,a*2 as i64);
+   idx[a]=a;
+   a+=1;
+  }
+  sort(idx[0..n]) { x, y => key[x] < key[y] };
+  // read the pairs in sorted order first, then write them back: an in-place scatter would
+  // overwrite pairs it has not read yet
+  var sf:i64[256]=[0 as i64;256];
+  var sl:i64[256]=[0 as i64;256];
+  a=0;
+  while a<n{
+   let s:i64=idx[a];
+   sf[a]=ld_ne(base,s*2 as i64);
+   sl[a]=ld_ne(base,s*2 as i64+1 as i64);
+   a+=1;
+  }
+  a=0;
+  while a<n{
+   st_i64(base,a*16 as i64,sf[a]);
+   st_i64(base,a*16 as i64+8 as i64,sl[a]);
+   a+=1;
+  }
+  return n;
+ }
+
  var i:i64=1;
  while i<n{
   let kf:i64=ld_ne(base,i*2 as i64);
