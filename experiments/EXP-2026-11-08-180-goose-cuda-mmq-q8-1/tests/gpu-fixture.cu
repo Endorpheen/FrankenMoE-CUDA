@@ -86,8 +86,14 @@ int main(int argc, char ** argv) {
     std::mt19937 rng(180001);
     std::uniform_real_distribution<float> dist(-4.0f, 4.0f);
     const char * dumpdir = getenv("FG180Q_DUMP");
-    const bool native_arm = getenv("GGML_GOOSE_CUDA_MMQ_Q8_1") &&
-                            std::strcmp(getenv("GGML_GOOSE_CUDA_MMQ_Q8_1"), "0") == 0;
+    // Must mirror the dispatcher in source/cuda-runtime.cu exactly:
+    //   static bool fg180q_goose(const char* flag){ return flag && strcmp(flag, "1") == 0; }
+    // That route is OPT-IN, so an unset variable runs NATIVE. The previous label tested for "0" and
+    // therefore printed arm=goose for the unset case while native actually ran -- an inverted label
+    // that would let a bare invocation look like it exercised the Goose path.
+    const char * mmq_flag = getenv("GGML_GOOSE_CUDA_MMQ_Q8_1");
+    const bool goose_arm = mmq_flag && std::strcmp(mmq_flag, "1") == 0;
+    const bool native_arm = !goose_arm;
 
     // Direct path, several widths so the y-block grid and the 128-value grouping vary.
     for (int64_t ne0 : {128LL, 512LL, 2048LL}) {

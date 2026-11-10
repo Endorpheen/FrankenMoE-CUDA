@@ -35,3 +35,29 @@ It is the prerequisite for the MMQ family, which is ~40% of GPU time. The blocke
 code-generation gap measured in EXP186: a Goose kernel that recomputes a full byte address
 per access compiles to roughly 2.5x the native instruction count. When that is solved
 compiler-side, this module can be re-measured and enabled without new work.
+
+## Fixture arm label corrected (2026-11-10)
+
+The fixture's arm label disagreed with the dispatcher and is now derived from it.
+
+Before, the label was `native_arm = getenv(...) && strcmp(getenv(...), "0") == 0`, so an **unset**
+variable printed `arm=goose` while `fg180q_goose()` — which requires `"1"` — ran **native**. A bare
+`./gpu-fixture` therefore looked like it exercised the Goose path when it did not. I hit this myself
+while looking for the witness and briefly read the output as confirmation.
+
+Now it mirrors the dispatcher exactly:
+
+    static bool fg180q_goose(const char* flag){ return flag && strcmp(flag, "1") == 0; }
+
+and the three cases behave as the label claims:
+
+    unset -> arm=native      (was: arm=goose)
+    =0    -> arm=native
+    =1    -> arm=goose
+
+Re-verified with the corrected binary against the active `exp220` DSO: both arms
+`checks=8 failures=0`, output dumps `4 files, 0 differing` — so the route is still byte-exact and the
+label now matches what actually ran.
+
+This is a test-accuracy fix, not a weakening: the previous label could only ever make a native run look
+like a Goose one, never the reverse.
