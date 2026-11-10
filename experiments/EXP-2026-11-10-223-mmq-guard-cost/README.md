@@ -54,3 +54,53 @@ The honest options for a promotable change, in preference order:
 
 Option 1 is the only one that keeps both properties, and it is source work in the Goose module rather
 than a flag.
+
+---
+
+# Re-measurement: removing the guards does not change the time
+
+Ran the four-run pattern (native → goose → goose → native) on the no-guard variant to control drift:
+
+    native 1843.2
+    goose  2014.7
+    goose  2002.4
+    native 2069.0
+
+The trailing native reading is 12% above the leading one for a kernel that cannot change, so the
+machine heats over successive runs and the last slot is unreliable. The goose readings, however, are
+tight and consistent with everything before:
+
+| variant | instructions `<0>` | goose ns observed |
+|---|---:|---|
+| baseline | 400 | 2054.7, 2102.9 |
+| `ne2` pinned | 164 | 2032.2, 1982.8, 1991.1 |
+| `ne2` pinned + guards off | 128 | 2016.1, 2032.0, 2014.7, 2002.4 (one 2224.1 outlier) |
+
+Cutting from 164 to 128 instructions — and on the scatter kernel from 355 to 206 — produced **no
+measurable change in time**. The gains stop after the first step.
+
+## So instruction count does not predict time here, and that is now measured
+
+Two data points, same harness, same method:
+
+- 400 → 164 (−59% instructions) bought −3.69%;
+- 164 → 128 (−22%) plus 355 → 206 (−42% on the other kernel) bought nothing measurable.
+
+If time tracked static code size, the second step would have moved the needle too. It did not. So the
+first step's gain most likely came from removing a **branch** (`if ne2i == 1` and its divergence) on
+the per-element path rather than from 236 instructions of dead code being absent from the I-cache.
+
+I am careful here: that is the most consistent reading of two measurements, not a proven mechanism.
+What is proven is narrower and worth stating plainly — **on this kernel, static instruction count is
+not a usable predictor of runtime**, and every hypothesis in the earlier rounds that leaned on it was
+leaning on the wrong signal.
+
+## Consequence for the plan
+
+The remaining ~11% gap cannot be closed by making the emission smaller. The two structural items the
+investigation produced (dead `ne2` branch, guard volume) are now both quantified and neither explains
+the rest. Closing it needs a counter-based answer, which this machine cannot give
+(`profiling-unavailable-2026-11-10.md`), or a controlled experiment that isolates a single runtime
+property — occupancy, load latency, or the per-element branch — rather than a code-size change.
+
+That is where this line of work stops being productive without profiling.
