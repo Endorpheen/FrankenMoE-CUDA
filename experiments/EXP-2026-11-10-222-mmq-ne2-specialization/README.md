@@ -84,3 +84,51 @@ recorded before anyone starts: `emit_sources.py` asserts that exactly **2** entr
 wrappers breaks that assertion, so the extractor has to be taught to carry four entries and the
 check must be re-derived from the emission rather than the constant. That is the real work in the
 promotable form — the kernel edit itself is four lines.
+
+---
+
+# Where the remaining 128 instructions are (scatter kernel)
+
+With `ne2` pinned the direct kernel is at parity (164 vs 157). The scatter kernel is still 355
+against native's 227, so the remaining gap is measurable and it is not the division. Opcode diff,
+goose `<1>` minus native `<layout 2, scatter>`:
+
+| opcode | goose | native | diff |
+|---|---:|---:|---:|
+| `IMAD.MOV.U32` | 32 | 10 | +22 |
+| `IMAD.U32` | 19 | 0 | +19 |
+| `IMAD.WIDE.U32` | 21 | 9 | +12 |
+| `UMOV` | 11 | 0 | +11 |
+| `IADD3.X` | 10 | 0 | +10 |
+| `LOP3.LUT` | 21 | 12 | +9 |
+| `SHF.R.S32.HI` | 11 | 2 | +9 |
+| `ISETP.GT.AND.EX` | 9 | 0 | +9 |
+| `UIADD3` | 6 | 0 | +6 |
+| `FSETP.GEU.FTZ.AND` | 6 | 0 | +6 |
+| `UFLO.U32` | 6 | 0 | +6 |
+| **`BPT.TRAP`** | **6** | **0** | **+6** |
+
+## The clearest item: six inlined traps
+
+`BPT.TRAP` appears **6 times in the Goose kernel and never in native**. These are the `ensure()`
+guards lowered to a trap instruction at each call site — `GGML_ABORT`-style validation that native
+does not perform because it trusts the caller's invariants. Around them sit `ISETP.GT.AND.EX` (the
+`INT64_MIN / -1`-style range comparisons), `UIADD3`, `UFLO.U32` and `UMOV` — the checked-arithmetic
+scaffolding, roughly 30 instructions of the 128.
+
+So a substantial part of the remaining gap is **validation the port adds and native omits**. That is
+a correctness/performance trade to make deliberately, not a codegen defect: the guards exist because
+Goose has no way to express "the caller guarantees this", and they are what the earlier EXP reports
+credited for catching real fixture bugs.
+
+## The rest: 64-bit constant materialisation
+
+`IMAD.MOV.U32` (+22) and `UMOV` (+11) with `IADD3.X` (+10) are register shuffling for 64-bit
+constants and address halves — the same class as before: native folds them, the emission
+re-materialises them. `IMAD.U32` +19 has no native counterpart at all.
+
+## What to do next, in order
+
+1. Gate the `ensure()` checks behind a compile-time debug flag so the Apex build carries no traps;
+   measure. This is the largest single identified bucket and it does not change the algorithm.
+2. Revisit the 64-bit constant materialisation only if step 1 leaves a gap above 2%.
