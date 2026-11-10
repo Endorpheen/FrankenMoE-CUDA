@@ -1,35 +1,41 @@
 # Handoff: what is ready, what is not, and what installing would mean
 
-Written for Codex, who owns the final install. Everything below is measured on the artefacts in
-this repository; nothing here asks the reader to trust a summary line.
+Written for Codex, who owns the final install. Everything below is measured on the artefacts in this
+repository; nothing here asks the reader to trust a summary line.
 
 ## The candidate runtime
 
-    stage       EXP220
-    path        runtime/exp220/run
-    DSO         libllama-exp220.so.0.7.0
-    commit      c910402
-    prefill     2567.91   decode 26.47   (medians of 3 runs, 2 interleaved pairs)
+    stage       EXP231 (unreviewed experimental branch -- see the caveat below)
+    path        runtime/exp231/run
+    DSO         libllama-exp231.so.0.7.0
+    commit      12fd4b5
+    prefill     2547.6   decode 25.14   (single run, not a pair)
     correctness 128 tokens and all 128 saved probabilities exact, sha e68df05b
-    memory      RSS peak 21.3 GiB, VRAM peak 4590 MiB (transient; ~3348 steady), swap 0
-    rollback    runtime/exp219/run and earlier; every module has its own env switch
+    rollback    runtime/exp220/run and earlier; every module has its own env switch
 
-Contents: 62 Goose witness modules in one Apex pass — the EXP185 lineage, the KV cell/set/find/cp/
-seqpos work, the loader and graph builders, the tokenizer text layer (piece copy, UTF-8 decode,
-encode, whole-string recovery) and the CUDA kernels up to MMQ dispatch.
+19 Goose route prefixes present in that DSO, each object checked with `nm -u` before linking:
+`fg199k fg200g fg201l fg202t fg204x fg205g fg206d fg209i fg210k fg213p fg215u fg216e fg217c fg218t
+fg227n fg228e fg229i fg230s fg231a`.
 
-**Read this before trusting a stage name on an older document:** EXP213 through EXP218 each shipped
-with only *one* route in `unicode.cpp` and `llama-vocab.cpp`, because each copied the pristine native
-file instead of the previous integration. Two stages silently lost components that had millions of
-calls, while tokens, probabilities and speed all passed. EXP219 and EXP220 are the repairs. The rule
-that catches this class before it ships:
+**Caveat on the numbers.** The performance figures above and in most EXP213-231 READMEs are single runs
+taken under uncontrolled host load; the native control read 23.8-25.8 tok/s today against 26.0-26.7 in
+earlier clean sessions. They are recorded as observed, not as evidence of anything. The one measurement
+class I have that is clean is kernel-level (`runtime/exp180/build/timing`, spread under 1%).
 
-    python3 scripts/check_witnesses.py --run <new> --baseline <previous>
+**Read this before trusting any A/B in those READMEs.** The Apex runner strips every `GGML_GOOSE_*`
+variable and applies a frozen EXP150 snapshot, so env-based A/B pairs on this harness are void — see
+`measurement-env-stripped.md`. A valid A/B needs two DSOs, the way EXP213-220 did it. EXP224-226 are
+marked WITHDRAWN for this reason.
 
-**with `--baseline`** — an empty baseline can never fail, and running it without one is a no-op that
-prints `verdict: OK`. Also `nm -u runtime/<stage>/build/*.o` for the expected route prefixes before
-linking, not only afterwards. `docs/goose-migration/route-audit-2026-11-10.md` audits all 23
-declared prefixes against the active runtime; every one is live, deliberately absent or rejected.
+**Read this before trusting a stage name.** EXP213-218 each shipped with only one route in `unicode.cpp`
+and `llama-vocab.cpp` because each copied the pristine native file instead of the previous integration.
+EXP219/220 are the repairs. The check that catches this class:
+
+    python3 scripts/check_witnesses.py --run <new> --baseline <previous>     # WITH a baseline
+    nm -u runtime/<stage>/build/*.o                                          # before linking
+
+An empty baseline can never fail, so running that tool without `--baseline` is a no-op that prints
+`verdict: OK`.
 
 ## Verified on this exact DSO
 
