@@ -1460,14 +1460,14 @@
       "id": "P5-06",
       "phase": "P5",
       "title": "Port lazy KV/VMM reservation and context growth policy",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "src/llama-kv-cache*.cpp",
         "ggml/src/ggml-cuda/ggml-cuda.cu",
         "patches/kv-lazy-vmm.patch"
       ],
       "acceptance": "Preserve lazy mapping/reservation,bounded committed pages,OOM/reallocation and original large-context correctness; CUDA driver primitive import only.",
-      "evidence": "",
+      "evidence": "PARTIAL by fact, checked against the live runtime rather than the patch description. The VMM pool path IS live and already Goose: witness `FG195V_CUDA_VMM_POOL alloc=10591 free=10591 grow=5 native=0` in the EXP211 Apex run, with allocation/free/alignment/growth accounting verified by 5606 differential checks in EXP195 and the pinned/host-registration decisions in EXP196 (1275 checks). The lazy mapping/reservation half is NOT reachable in this profile: patches/kv-lazy-vmm.patch is not applied to the tree (zero `lazy` occurrences in src/llama-kv-cache.cpp), so there is no lazy-mapping code path to port and no witness to demand. Recording that as not-reachable is the honest state; porting the patch's logic would mean maintaining a code path this build never executes. Remaining if it is ever enabled: preserve bounded committed pages, OOM/reallocation and large-context correctness, with CUDA driver calls as the only primitive import.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 46,
