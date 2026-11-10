@@ -161,3 +161,53 @@ differential points at one.
 Compare like for like on the actual work rather than on code size: run the two kernels under `nsys`
 in one Apex pass and read achieved occupancy, memory throughput and stall reasons. Static counts
 have now produced three wrong conclusions; a profile of the running kernel has not been tried.
+
+---
+
+# Operator-level timing reproduced; profiling blocked by permissions
+
+The end-to-end Apex delta is noisy, so I revived EXP180's own kernel harness (`tests/timing.cu`),
+which launches the real entry point 2000 times on a fixed Apex-like shape and reports ns per launch.
+Each arm is a separate process because the toggle is read per call.
+
+    goose  2054.7 ns   (min 2017.9  max 2089.0)
+    native 1811.9 ns   (min 1803.7  max 1820.7)
+    goose  2102.9 ns   (min 2068.1  max 2223.1)
+    native 1841.8 ns   (min 1827.8  max 1872.8)
+
+**+13.5% and +14.2%**, consistent with EXP180's +11.4% from the full Apex delta. This is a cleaner
+measurement of the same effect: same process shape, fixed input, 2000 launches, alternating arms,
+spread under 1% within each arm.
+
+Getting the harness to run needed `LD_LIBRARY_PATH=runtime/exp180/run` — without it the binary
+resolved `libggml-cuda` from exp180 but `libggml-base` from elsewhere and died on
+`undefined symbol: fg160_fusion_enabled`, which *is* defined in that directory's libggml-base. The
+stale binary is not broken; the search path was.
+
+## The microarchitectural question cannot be answered here
+
+    ==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access
+              NVIDIA GPU Performance Counters on the target device 0.
+
+`ncu` cannot read counters. Unblocking needs either root or
+`NVreg_RestrictProfilingToAdminUsers=0` on the nvidia module — a system change, and system settings
+are off limits for this task. `nsys` would work but only gives durations, which the harness above
+already provides more precisely.
+
+So the cause of the 13.5% remains **not established**, and now for a stated environmental reason
+rather than for lack of trying. Three wrong hypotheses came from static metrics; the metric that
+would settle it is the one this machine will not report.
+
+## Exact command for when permission exists
+
+    export LD_LIBRARY_PATH=<repo>/runtime/exp180/run:$LD_LIBRARY_PATH
+    ncu --metrics \
+      gpu__time_duration.sum,\
+      sm__warps_active.avg.pct_of_peak_sustained_active,\
+      dram__throughput.avg.pct_of_peak_sustained_elapsed,\
+      smsp__inst_executed.sum,\
+      smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active.ratio \
+      -c 4 --launch-skip 100 <repo>/runtime/exp180/build/timing
+
+Run once with `GGML_GOOSE_CUDA_MMQ_Q8_1=1` and once with `=0`. The harness is already linked at
+`runtime/exp180/build/timing`; nothing else needs rebuilding.
