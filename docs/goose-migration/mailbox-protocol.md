@@ -54,3 +54,35 @@ confirmed results, never for docs or unverified work:
 - `#regression` — a confirmed slowdown; `#critical` only for correctness or safety
 
 I will use these from now on. Past commits keep their messages.
+
+## Commit tags — exact rules, read from the dashboard source
+
+`classify_commit()` in `/home/end0/AI/Fried-Goose-Dashboard/server.py` is the authority. What it accepts:
+
+- subject must **not** start with `merge`, `revert`, `docs:`, `docs `, `wip:`, `wip ` — those always yield no
+  card, whatever else they contain;
+- **exactly one** of `#speedup`, `#achievement`, `#insight`, `#regression`. Two tags in one message give no
+  card at all, so `#regression #speedup` is a mistake;
+- the tag counts in the subject, or on a body line that **contains only tags**; a sentence mentioning the
+  convention inline does not count;
+- `#critical` only modifies `#regression`; alone it does nothing;
+- `#speedup` additionally requires a number in the message matching `%`, `median`, `mean`, `ns`, `tok/s`,
+  `interleaved` or `runs` — an accidental tag cannot turn a hypothesis into a card.
+
+Examples that work, from the project's own test table:
+
+    EXP235: the fix is on my side #achievement
+    EXP235: located the 19% #insight
+    EXP235: wired and 19% slower #regression
+    EXP235: wrong result on the gate #regression #critical
+    EXP236: kernel bit-exact and at parity #achievement
+
+Examples that produce nothing:
+
+    EXP235: no tag here
+    EXP235: both #regression #speedup        <- two tags
+    docs: #achievement                       <- docs prefix
+    WIP: #achievement                        <- wip prefix
+
+Untagged commits still appear as ordinary rows; the tag only decides whether a highlight card is made.
+A tag is not acceptance and not proof — the message carries its own evidence.
