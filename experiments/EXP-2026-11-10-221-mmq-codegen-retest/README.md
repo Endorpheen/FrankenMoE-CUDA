@@ -211,3 +211,25 @@ would settle it is the one this machine will not report.
 
 Run once with `GGML_GOOSE_CUDA_MMQ_Q8_1=1` and once with `=0`. The harness is already linked at
 `runtime/exp180/build/timing`; nothing else needs rebuilding.
+
+---
+
+# Third compiler release tested: still 432 / 392
+
+`subset-78968fac6ca99ab2` (sha256 `78968fac6ca99ab2…b8b95bb`) emits the same kernel:
+
+| emission | `fg180q_kernel<0>` | `<1>` | total |
+|---|---:|---:|---:|
+| EXP180 baseline (recorded artifact) | 432 | 392 | 824 |
+| `subset-7ef08c2d0b65dffe` | 432 | 392 | 824 |
+| **`subset-78968fac6ca99ab2`** | **432** | **392** | **824** |
+
+The extracted header is byte-identical in size (36506) across both new builds. Native DS4 is 168
+(direct) and 264 (scatter).
+
+Three qualified releases, no movement. The recent compiler work — nonlocal return, named results,
+`bytes_of` — is orthogonal to address-arithmetic lowering, so this is the expected result rather
+than a surprise, but it is now measured rather than assumed.
+
+Reproduce with `measure_sass.py` + `extract_device.py` in this directory; point the extraction at a
+fresh emission of `device.goose` from any build.
