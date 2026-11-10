@@ -102,3 +102,45 @@ What is **not** valid is any ranking of the two MMQ variants, and any claim that
 Re-run with the alternating schedule before any promotion decision. Until then the ledger entry that
 says "both means inside 2%" should be read as "both means measured with an upward bias of unknown
 size".
+
+---
+
+# Corrected alternating schedule attempted — aborted, host contaminated
+
+I wrote the schedule the previous section says is required: round 1 = A B, round 2 = B A, so each arm
+takes the cold first slot the same number of times. It had to be stopped part-way.
+
+    A1  24.82 tok/s      (first slot, cold)
+    B1  26.08 tok/s
+    B2  19.39 tok/s      <- collapse
+    A2  24.99 tok/s      (second slot)
+
+## Why it is unusable
+
+The **native control itself** reads 24.8-25.0 here, against 26.0-26.7 in the clean sessions earlier
+today. A control that has moved 5% cannot anchor a comparison — that is the rule this project paid for
+once already.
+
+`ps` at the time, sorted by CPU:
+
+    igorek-factory      41.3%
+    python3.14          40.5%
+    chrome              30.9%
+    gnome-shell         20.4%
+    ptyxis              10.9%   <- the terminal this session runs in
+
+With `--cpu-moe` the expert matmuls run on eight pinned cores, so a terminal rendering on CPU and a
+browser are direct competitors. That is the same mechanism as the earlier Ghostty finding, and B2's
+19.39 tok/s — the contaminated regime this project has seen before at 18.7-19 — is the visible symptom.
+
+## What this means
+
+I did **not** get a valid MMQ verdict, and I am not reporting one. The two things that remain true from
+this file are the ones that never depended on timing: the chain links EXP208's typed variant which
+EXP208 itself rejected, and the switch is opt-in against rule 10.
+
+## To run it properly
+
+`/tmp/il227.sh` (the alternating driver) is correct and can be re-run once the host is quiet. The
+precondition that actually matters is not "no build running" but **the native arm returning 26.0-26.7**;
+if it does not, the round is void regardless of what the Goose arm says.
