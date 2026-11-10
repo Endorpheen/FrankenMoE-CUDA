@@ -303,3 +303,45 @@ The tile loop is verified equal to native and **not promotable**: it is slower b
 for a reason I can name. It stays unwired. The next attempt should convert `dm4`/`ds8` through a primitive
 that returns the one float the inner product needs, and pass the geometry as module constants rather than
 arguments — but that is a redesign, not a tweak, and I am recording it rather than starting it blind.
+
+---
+
+# Redesign: scratch removed, still 2.1× slower
+
+I did the redesign the previous section asked for: every conversion is now a primitive that **returns** the
+float, so nothing round-trips through memory. `source/tile2.goose`.
+
+    correctness  FG235_TILE_MATCH cases=512 bad=0      (unchanged, still exact)
+    native       3432.6 ns / tile
+    goose        7233.9 ns / tile                       (+111%, was +171%)
+
+So removing the scratch buffer recovered about a third of the gap — 8824 → 7234 ns — and **the port is
+still more than twice as slow as native**.
+
+## What is left
+
+Three things remain that the module cannot express the way native does:
+
+1. **the accumulator.** Native's `sum[i] += ...` stays in a register across the whole `k01` loop because
+   nvcc can see the array is a local. My module receives `sum` as a base pointer and does `ld_f32`/`st_f32`
+   per element. That is memory traffic native does not have.
+2. **geometry.** `tile_ne_k`, `i8_1`, `I`, `J`, `nwarps`, `warp_size` arrive as `i64` arguments. The caller
+   passes literals and nvcc folds them, but the module's own body is written against runtime values, so
+   the address arithmetic is generated as multiplies.
+3. **the loop structure.** Native's `#pragma unroll` on all three loops lets nvcc fully unroll 2×J×I
+   iterations. The emission produces a `while` loop, and nvcc will not unroll a loop it did not see written
+   as a constant-trip loop.
+
+## Honest conclusion for this kernel
+
+Two redesigns, both correct, one at parity for the **inner product** and one at 2.1× for the **tile**. The
+difference between them is exactly the register-resident accumulator and the constant geometry. So the
+practical rule for porting hot CUDA loops to Goose, now measured twice:
+
+- an inner function whose whole state can be named as primitives ports at parity;
+- a loop that owns an accumulator and constant geometry does not, until the language can express "keep
+  this in a register across the loop" and "this bound is a constant".
+
+Neither is a compiler bug; both are things the module format does not yet express. Recorded as the state of
+the 30% block: the arithmetic is ported and exact, the loop is not competitive, and the reason is
+structural rather than a defect anyone can fix in an afternoon.
