@@ -310,3 +310,19 @@ dead instructions per kernel.
 Whether that changes runtime is unmeasured and likely small, since dead code does not execute. It is
 recorded as the one concrete, verifiable improvement this investigation produced, not as a fix for
 the slowdown.
+
+---
+
+# Fourth compiler release: `subset-323087a6168e157e` — still 400 / 355
+
+    <0>  400 instructions, IMAD.HI.U32 22
+    <1>  355 instructions, IMAD.HI.U32  0
+    extracted header 36506 bytes — byte-identical across three releases now
+
+Four qualified releases (recorded baseline, `7ef08c2d`, `78968fac`, `323087a6`), same emission. The
+newest build's headline feature — integer-literal branches adapting to an integer destination — was
+also executed rather than read: a branch returning bare `100`/`200` into an `i64` result and `7`/`9`
+into an `i32` result both produce the expected 2107.
+
+MMQ's blocker is unchanged and is now recorded across four releases, so a fifth retest adds nothing
+until the shape of the request changes.
