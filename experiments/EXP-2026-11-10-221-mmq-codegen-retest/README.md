@@ -326,3 +326,19 @@ into an `i32` result both produce the expected 2107.
 
 MMQ's blocker is unchanged and is now recorded across four releases, so a fifth retest adds nothing
 until the shape of the request changes.
+
+---
+
+# Fifth compiler release: `subset-5ccc761dcbb0e62c` — still 400 / 355
+
+    <0>  400 instructions, IMAD.HI.U32 22
+    <1>  355 instructions, IMAD.HI.U32  0
+    extracted header 36506 bytes — byte-identical across four releases now
+
+Headline feature executed: `<<=` with an `i32` count and `>>=` on a `u8` destination with an `i64`
+count both work in one program, producing the expected 132.
+
+Five qualified releases, no movement. The interesting fact is no longer the stability of the emission
+but that it stopped mattering: EXP222 showed the instruction weight was a dead `ne2` branch, fixable on
+this side, and EXP223 showed that further instruction cuts buy no time. Recording the fifth release is
+bookkeeping, not a search.
