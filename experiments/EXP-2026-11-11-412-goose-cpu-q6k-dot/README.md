@@ -80,3 +80,16 @@ nb). The module was then aligned to it:
     FG412_ADAPTOR cases=240 failures=0
 
 240 of 240 bit-exact for nb = 1, 2, 3, 7, 8, 16.
+
+## Gate and mutations are clean; the two-kernel library is not
+
+- gate: **240/240 bit-exact**, nb = 1, 2, 3, 7, 8, 16;
+- mutations: **6/6 caught** (d offset, scales offset, half selection, offset shift, sub sign, qh shift).
+
+Integration, however, is not right yet. `libggml-cpu` relinked with both Goose kernels returns `"!!!!"` /
+`2f74420af441bf2d` instead of `" Paris, a city"` / `d13cf4cf221fa5fd`. Crucially, turning **either** kernel off
+(`GGML_GOOSE_CPU_Q4K_DOT=0` or `GGML_GOOSE_CPU_Q6K_DOT=0`) still returns `"!!!!"`, so the fault is in the
+relinked build itself, not in either kernel: the native path through the renamed symbols is already broken.
+
+That is a build/link problem to fix next, and it is exactly why the A -> B -> A method insists on restoring A
+before claiming anything: the module is correct against its reference, the assembled library is not yet correct.

@@ -22,22 +22,22 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
-typedef struct { void *data; int64_t len; } fg410ds_gg_slice;
-typedef struct { unsigned char *base; int64_t len; } fg410ds_gg_header;
-typedef struct { unsigned char *base; size_t top, committed; } fg410ds_gg_stack;
-typedef struct { fg410ds_gg_header *header; fg410ds_gg_stack *stack; } fg410ds_gg_reference;
+typedef struct { void *data; int64_t len; } fg412ds_gg_slice;
+typedef struct { unsigned char *base; int64_t len; } fg412ds_gg_header;
+typedef struct { unsigned char *base; size_t top, committed; } fg412ds_gg_stack;
+typedef struct { fg412ds_gg_header *header; fg412ds_gg_stack *stack; } fg412ds_gg_reference;
 #define GG_RESERVATION ((size_t)268435456)
 #define GG_STACK_COUNT 8192
-static fg410ds_gg_stack fg410ds_gg_stacks[GG_STACK_COUNT];
-static int fg410ds_gg_argc;
-static char **fg410ds_gg_argv;
-static void fg410ds_gg_fail(const char *message) {
+static fg412ds_gg_stack fg412ds_gg_stacks[GG_STACK_COUNT];
+static int fg412ds_gg_argc;
+static char **fg412ds_gg_argv;
+static void fg412ds_gg_fail(const char *message) {
     fprintf(stderr, "goose runtime error: %s\n", message); exit(1);
 }
-static fg410ds_gg_stack *fg410ds_gg_get_stack(int64_t id) {
-    fg410ds_gg_stack *s;
-    if (id < 0 || id >= GG_STACK_COUNT) fg410ds_gg_fail("data stack limit exceeded");
-    s = &fg410ds_gg_stacks[id];
+static fg412ds_gg_stack *fg412ds_gg_get_stack(int64_t id) {
+    fg412ds_gg_stack *s;
+    if (id < 0 || id >= GG_STACK_COUNT) fg412ds_gg_fail("data stack limit exceeded");
+    s = &fg412ds_gg_stacks[id];
     if (!s->base) {
 #ifdef _WIN32
         s->base = VirtualAlloc(NULL, GG_RESERVATION + 65536, MEM_RESERVE, PAGE_NOACCESS);
@@ -45,74 +45,74 @@ static fg410ds_gg_stack *fg410ds_gg_get_stack(int64_t id) {
         s->base = mmap(NULL, GG_RESERVATION + 65536, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (s->base == MAP_FAILED) s->base = NULL;
 #endif
-        if (!s->base) fg410ds_gg_fail("cannot reserve data stack");
+        if (!s->base) fg412ds_gg_fail("cannot reserve data stack");
     }
     return s;
 }
-static void *fg410ds_gg_allocate(fg410ds_gg_stack *s, size_t size) {
+static void *fg412ds_gg_allocate(fg412ds_gg_stack *s, size_t size) {
     size_t end, committed;
     void *result;
-    if (size > GG_RESERVATION - s->top) fg410ds_gg_fail("data stack reservation exceeded");
+    if (size > GG_RESERVATION - s->top) fg412ds_gg_fail("data stack reservation exceeded");
     result = s->base + s->top; end = s->top + size;
     if (end > s->committed) {
         committed = (end + 65535) & ~(size_t)65535;
 #ifdef _WIN32
-        if (!VirtualAlloc(s->base + s->committed, committed - s->committed, MEM_COMMIT, PAGE_READWRITE)) fg410ds_gg_fail("cannot commit data stack");
+        if (!VirtualAlloc(s->base + s->committed, committed - s->committed, MEM_COMMIT, PAGE_READWRITE)) fg412ds_gg_fail("cannot commit data stack");
 #else
-        if (mprotect(s->base + s->committed, committed - s->committed, PROT_READ | PROT_WRITE)) fg410ds_gg_fail("cannot commit data stack");
+        if (mprotect(s->base + s->committed, committed - s->committed, PROT_READ | PROT_WRITE)) fg412ds_gg_fail("cannot commit data stack");
 #endif
         s->committed = committed;
     }
     s->top = end; return result;
 }
-static fg410ds_gg_reference fg410ds_gg_ref(fg410ds_gg_header *h, fg410ds_gg_stack *s) { fg410ds_gg_reference r; r.header=h; r.stack=s; return r; }
-static fg410ds_gg_slice fg410ds_gg_view(void *p, int64_t n) { fg410ds_gg_slice v; v.data=p; v.len=n; return v; }
-static fg410ds_gg_slice fg410ds_gg_byte_view(fg410ds_gg_slice a, size_t width) {
-    if (a.len < 0 || (width && (uint64_t)a.len > (uint64_t)INT64_MAX / width)) fg410ds_gg_fail("byte view size overflow");
-    return fg410ds_gg_view(a.data, (int64_t)((uint64_t)a.len * width));
+static fg412ds_gg_reference fg412ds_gg_ref(fg412ds_gg_header *h, fg412ds_gg_stack *s) { fg412ds_gg_reference r; r.header=h; r.stack=s; return r; }
+static fg412ds_gg_slice fg412ds_gg_view(void *p, int64_t n) { fg412ds_gg_slice v; v.data=p; v.len=n; return v; }
+static fg412ds_gg_slice fg412ds_gg_byte_view(fg412ds_gg_slice a, size_t width) {
+    if (a.len < 0 || (width && (uint64_t)a.len > (uint64_t)INT64_MAX / width)) fg412ds_gg_fail("byte view size overflow");
+    return fg412ds_gg_view(a.data, (int64_t)((uint64_t)a.len * width));
 }
-static fg410ds_gg_slice fg410ds_gg_sub(fg410ds_gg_slice a, int64_t lo, int64_t hi, size_t element) {
-    if (lo < 0 || hi < lo || hi > a.len) fg410ds_gg_fail("slice out of bounds");
-    return fg410ds_gg_view((unsigned char *)a.data + (size_t)lo * element, hi - lo);
+static fg412ds_gg_slice fg412ds_gg_sub(fg412ds_gg_slice a, int64_t lo, int64_t hi, size_t element) {
+    if (lo < 0 || hi < lo || hi > a.len) fg412ds_gg_fail("slice out of bounds");
+    return fg412ds_gg_view((unsigned char *)a.data + (size_t)lo * element, hi - lo);
 }
-static int64_t fg410ds_gg_index(int64_t i, int64_t len) { if ((uint64_t)i >= (uint64_t)len) fg410ds_gg_fail("array index out of bounds"); return i; }
-static void fg410ds_gg_append(fg410ds_gg_reference a, const void *p, int64_t n, size_t element) {
+static int64_t fg412ds_gg_index(int64_t i, int64_t len) { if ((uint64_t)i >= (uint64_t)len) fg412ds_gg_fail("array index out of bounds"); return i; }
+static void fg412ds_gg_append(fg412ds_gg_reference a, const void *p, int64_t n, size_t element) {
     void *to;
-    if (n < 0 || (uint64_t)n > GG_RESERVATION / (element ? element : 1)) fg410ds_gg_fail("invalid array size");
-    to=fg410ds_gg_allocate(a.stack, (size_t)n * element);
+    if (n < 0 || (uint64_t)n > GG_RESERVATION / (element ? element : 1)) fg412ds_gg_fail("invalid array size");
+    to=fg412ds_gg_allocate(a.stack, (size_t)n * element);
     if (n && element) memmove(to, p, (size_t)n * element);
     a.header->len += n;
 }
-static void fg410ds_gg_resize(fg410ds_gg_reference a, int64_t n, size_t element, const void *fill) {
+static void fg412ds_gg_resize(fg412ds_gg_reference a, int64_t n, size_t element, const void *fill) {
     int64_t old=a.header->len, i;
-    if (n < 0) fg410ds_gg_fail("negative array length");
+    if (n < 0) fg412ds_gg_fail("negative array length");
     if (n > old) {
         unsigned char *p;
-        if (!fill) fg410ds_gg_fail("resize without fill may only shrink");
-        if ((uint64_t)(n-old) > GG_RESERVATION / (element ? element : 1)) fg410ds_gg_fail("invalid array size");
-        p=fg410ds_gg_allocate(a.stack, (size_t)(n-old)*element);
+        if (!fill) fg412ds_gg_fail("resize without fill may only shrink");
+        if ((uint64_t)(n-old) > GG_RESERVATION / (element ? element : 1)) fg412ds_gg_fail("invalid array size");
+        p=fg412ds_gg_allocate(a.stack, (size_t)(n-old)*element);
         for (i=0; i<n-old; i++) if(element) memcpy(p+(size_t)i*element, fill, element);
     } else { a.stack->top = (size_t)(a.header->base-a.stack->base) + (size_t)n*element; }
     a.header->len=n;
 }
-static int64_t fg410ds_gg_div(int64_t a, int64_t b) { if (!b) fg410ds_gg_fail("division by zero"); if (a==INT64_MIN && b==-1) fg410ds_gg_fail("division overflow"); return a/b; }
-static int64_t fg410ds_gg_mod(int64_t a, int64_t b) {
-    int64_t r; if (!b) fg410ds_gg_fail("division by zero"); if (b==-1) return 0;
+static int64_t fg412ds_gg_div(int64_t a, int64_t b) { if (!b) fg412ds_gg_fail("division by zero"); if (a==INT64_MIN && b==-1) fg412ds_gg_fail("division overflow"); return a/b; }
+static int64_t fg412ds_gg_mod(int64_t a, int64_t b) {
+    int64_t r; if (!b) fg412ds_gg_fail("division by zero"); if (b==-1) return 0;
     r=a%b; if(r<0) return (int64_t)((uint64_t)r + (b<0 ? (uint64_t)0-(uint64_t)b : (uint64_t)b)); return r;
 }
-static uint64_t fg410ds_gg_udiv(uint64_t a,uint64_t b) { if(!b)fg410ds_gg_fail("division by zero");return a/b; }
-static uint64_t fg410ds_gg_umod(uint64_t a,uint64_t b) { if(!b)fg410ds_gg_fail("division by zero");return a%b; }
-static int fg410ds_gg_equal(fg410ds_gg_slice a, fg410ds_gg_slice b, size_t element) { return a.len==b.len && (!a.len || !memcmp(a.data,b.data,(size_t)a.len*element)); }
-static void fg410ds_gg_text(fg410ds_gg_reference out, fg410ds_gg_slice v) { fg410ds_gg_append(out,v.data,v.len,1); }
-static void fg410ds_gg_integer(fg410ds_gg_reference out,int64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%lld",(long long)n);fg410ds_gg_append(out,b,k,1); }
-static void fg410ds_gg_unsigned(fg410ds_gg_reference out,uint64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%llu",(unsigned long long)n);fg410ds_gg_append(out,b,k,1); }
-static double fg410ds_gg_double_bits(uint64_t bits) { double d; memcpy(&d, &bits, sizeof d); return d; }
+static uint64_t fg412ds_gg_udiv(uint64_t a,uint64_t b) { if(!b)fg412ds_gg_fail("division by zero");return a/b; }
+static uint64_t fg412ds_gg_umod(uint64_t a,uint64_t b) { if(!b)fg412ds_gg_fail("division by zero");return a%b; }
+static int fg412ds_gg_equal(fg412ds_gg_slice a, fg412ds_gg_slice b, size_t element) { return a.len==b.len && (!a.len || !memcmp(a.data,b.data,(size_t)a.len*element)); }
+static void fg412ds_gg_text(fg412ds_gg_reference out, fg412ds_gg_slice v) { fg412ds_gg_append(out,v.data,v.len,1); }
+static void fg412ds_gg_integer(fg412ds_gg_reference out,int64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%lld",(long long)n);fg412ds_gg_append(out,b,k,1); }
+static void fg412ds_gg_unsigned(fg412ds_gg_reference out,uint64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%llu",(unsigned long long)n);fg412ds_gg_append(out,b,k,1); }
+static double fg412ds_gg_double_bits(uint64_t bits) { double d; memcpy(&d, &bits, sizeof d); return d; }
 static int64_t ggf_fmt_f64(uint8_t *out,double n);
 static int64_t ggf_fmt_f32(uint8_t *out,float n);
 /* Only the in-range fast path uses a C float-to-integer cast. The tail
    projects the finite IEEE significand modulo 2^64 without UB or libm.
    Nonfinite unchecked inputs produce zero; checked inputs reject them. */
-static uint64_t fg410ds_gg_float_integer_wrap(double d) {
+static uint64_t fg412ds_gg_float_integer_wrap(double d) {
     uint64_t bits, magnitude; int exponent;
     if(d>=-9223372036854775808.0 && d<9223372036854775808.0)
         return (uint64_t)(int64_t)d;
@@ -125,60 +125,60 @@ static uint64_t fg410ds_gg_float_integer_wrap(double d) {
     return bits>>63 ? (uint64_t)0-magnitude : magnitude;
 }
 #if defined(GS_DEBUG) && GS_DEBUG
-static void fg410ds_gg_float_integer_fail(double d,int f32,const char *type,const char *file,int line,const char *why) {
+static void fg412ds_gg_float_integer_fail(double d,int f32,const char *type,const char *file,int line,const char *why) {
     uint8_t text[64];int64_t n=f32?ggf_fmt_f32(text,(float)d):ggf_fmt_f64(text,d);
     fprintf(stderr,"goose runtime error: conversion %s to %s (%.*s) at %s:%d\\n",why,type,(int)n,(const char*)text,file,line);
     exit(1);
 }
 #endif
-static uint64_t fg410ds_gg_float_integer(double d,int width,int unsign,int checked,int f32,const char *type,const char *file,int line) {
+static uint64_t fg412ds_gg_float_integer(double d,int width,int unsign,int checked,int f32,const char *type,const char *file,int line) {
 #if defined(GS_DEBUG) && GS_DEBUG
     if(checked) {
         int64_t value,lo,hi;
         if(unsign && width==64) {
             uint64_t u;
             if(!(d>=0.0 && d<18446744073709551616.0))
-                fg410ds_gg_float_integer_fail(d,f32,type,file,line,"out of range");
+                fg412ds_gg_float_integer_fail(d,f32,type,file,line,"out of range");
             u=(uint64_t)d;
-            if((double)u!=d)fg410ds_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
+            if((double)u!=d)fg412ds_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
             return u;
         }
         if(!(d>=-9223372036854775808.0 && d<9223372036854775808.0))
-            fg410ds_gg_float_integer_fail(d,f32,type,file,line,"out of range");
+            fg412ds_gg_float_integer_fail(d,f32,type,file,line,"out of range");
         value=(int64_t)d;
         hi=(int64_t)((UINT64_C(1)<<(width-(unsign?0:1)))-1);
         lo=unsign?0:-1-hi;
-        if(value<lo || value>hi)fg410ds_gg_float_integer_fail(d,f32,type,file,line,"out of range");
-        if((double)value!=d)fg410ds_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
+        if(value<lo || value>hi)fg412ds_gg_float_integer_fail(d,f32,type,file,line,"out of range");
+        if((double)value!=d)fg412ds_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
         return (uint64_t)value;
     }
 #else
     (void)width;(void)unsign;(void)checked;(void)f32;(void)type;(void)file;(void)line;
 #endif
-    return fg410ds_gg_float_integer_wrap(d);
+    return fg412ds_gg_float_integer_wrap(d);
 }
-static void fg410ds_gg_float(fg410ds_gg_reference out,double n) { uint8_t b[64];int64_t k=ggf_fmt_f64(b,n);fg410ds_gg_append(out,b,k,1); }
-static void fg410ds_gg_float32(fg410ds_gg_reference out,float n) { uint8_t b[64];int64_t k=ggf_fmt_f32(b,n);fg410ds_gg_append(out,b,k,1); }
-static void fg410ds_gg_bool(fg410ds_gg_reference out,uint8_t n) { fg410ds_gg_append(out,n?"true":"false",n?4:5,1); }
-static void fg410ds_gg_write(FILE *file,fg410ds_gg_slice text) { if(text.len && fwrite(text.data,1,(size_t)text.len,file)!=(size_t)text.len)fg410ds_gg_fail("write failed"); }
-static char *fg410ds_gg_cstring(fg410ds_gg_slice path) {
-    char *s=malloc((size_t)path.len+1); if(!s)fg410ds_gg_fail("out of memory in file shim");
+static void fg412ds_gg_float(fg412ds_gg_reference out,double n) { uint8_t b[64];int64_t k=ggf_fmt_f64(b,n);fg412ds_gg_append(out,b,k,1); }
+static void fg412ds_gg_float32(fg412ds_gg_reference out,float n) { uint8_t b[64];int64_t k=ggf_fmt_f32(b,n);fg412ds_gg_append(out,b,k,1); }
+static void fg412ds_gg_bool(fg412ds_gg_reference out,uint8_t n) { fg412ds_gg_append(out,n?"true":"false",n?4:5,1); }
+static void fg412ds_gg_write(FILE *file,fg412ds_gg_slice text) { if(text.len && fwrite(text.data,1,(size_t)text.len,file)!=(size_t)text.len)fg412ds_gg_fail("write failed"); }
+static char *fg412ds_gg_cstring(fg412ds_gg_slice path) {
+    char *s=malloc((size_t)path.len+1); if(!s)fg412ds_gg_fail("out of memory in file shim");
     if(path.len)memcpy(s,path.data,(size_t)path.len);s[path.len]=0;return s;
 }
-static uint8_t gs_os_read_file(fg410ds_gg_slice path,fg410ds_gg_reference out) {
-    char *p=fg410ds_gg_cstring(path);FILE *f=fopen(p,"rb");unsigned char b[16384];size_t n;int ok;free(p);
-    if(!f)return 0;while((n=fread(b,1,sizeof b,f))!=0)fg410ds_gg_append(out,b,(int64_t)n,1);ok=!ferror(f);fclose(f);return (uint8_t)ok;
+static uint8_t gs_os_read_file(fg412ds_gg_slice path,fg412ds_gg_reference out) {
+    char *p=fg412ds_gg_cstring(path);FILE *f=fopen(p,"rb");unsigned char b[16384];size_t n;int ok;free(p);
+    if(!f)return 0;while((n=fread(b,1,sizeof b,f))!=0)fg412ds_gg_append(out,b,(int64_t)n,1);ok=!ferror(f);fclose(f);return (uint8_t)ok;
 }
-static uint8_t gs_os_write_file(fg410ds_gg_slice path,fg410ds_gg_slice data) {
-    char *p=fg410ds_gg_cstring(path);FILE *f=fopen(p,"wb");int ok;free(p);if(!f)return 0;
+static uint8_t gs_os_write_file(fg412ds_gg_slice path,fg412ds_gg_slice data) {
+    char *p=fg412ds_gg_cstring(path);FILE *f=fopen(p,"wb");int ok;free(p);if(!f)return 0;
     ok=!data.len || fwrite(data.data,1,(size_t)data.len,f)==(size_t)data.len;if(fclose(f))ok=0;return (uint8_t)ok;
 }
-static uint8_t gs_os_file_exists(fg410ds_gg_slice path) { char*p=fg410ds_gg_cstring(path);FILE*f=fopen(p,"rb");free(p);if(!f)return 0;fclose(f);return 1; }
-static void gs_os_write_stdout(fg410ds_gg_slice s) { fg410ds_gg_write(stdout,s); }
-static void gs_os_write_stderr(fg410ds_gg_slice s) { fg410ds_gg_write(stderr,s); }
+static uint8_t gs_os_file_exists(fg412ds_gg_slice path) { char*p=fg412ds_gg_cstring(path);FILE*f=fopen(p,"rb");free(p);if(!f)return 0;fclose(f);return 1; }
+static void gs_os_write_stdout(fg412ds_gg_slice s) { fg412ds_gg_write(stdout,s); }
+static void gs_os_write_stderr(fg412ds_gg_slice s) { fg412ds_gg_write(stderr,s); }
 static void gs_os_flush_stdout(void) { fflush(stdout); }
-static int64_t gs_os_arg_count(void) { return fg410ds_gg_argc; }
-static void gs_os_arg(int64_t i,fg410ds_gg_reference out) { if(i>=0 && i<fg410ds_gg_argc)fg410ds_gg_append(out,fg410ds_gg_argv[i],(int64_t)strlen(fg410ds_gg_argv[i]),1); }
+static int64_t gs_os_arg_count(void) { return fg412ds_gg_argc; }
+static void gs_os_arg(int64_t i,fg412ds_gg_reference out) { if(i>=0 && i<fg412ds_gg_argc)fg412ds_gg_append(out,fg412ds_gg_argv[i],(int64_t)strlen(fg412ds_gg_argv[i]),1); }
 /* math's sqrt (stdlib/math.goose). Goose has no errno, and C's sqrt has to
    set it for a negative argument: clang and gcc then guard the square root
    instruction with a test and a library call at every use, and will not
@@ -453,99 +453,99 @@ static int64_t ggf_fmt_f32(uint8_t *dst, float v) {
 
 
 #pragma pack(push, 1)
-typedef struct { float data[8]; } fg410ds_gg_type_5;
+typedef struct { float data[8]; } fg412ds_gg_type_5;
 #pragma pack(pop)
 #pragma pack(push, 1)
-typedef struct { int64_t data[8]; } fg410ds_gg_type_7;
+typedef struct { int64_t data[8]; } fg412ds_gg_type_7;
 #pragma pack(pop)
-static void fg410ds_gg_quote(fg410ds_gg_reference out,fg410ds_gg_slice text) { int64_t i; unsigned char c; fg410ds_gg_append(out,"\"",1,1); for(i=0;i<text.len;i++){c=((unsigned char*)text.data)[i]; if(c=='\"'||c=='\\'){fg410ds_gg_append(out,"\\",1,1);fg410ds_gg_append(out,&c,1,1);} else if(c=='\n')fg410ds_gg_append(out,"\\n",2,1);else if(c=='\r')fg410ds_gg_append(out,"\\r",2,1);else if(c=='\t')fg410ds_gg_append(out,"\\t",2,1);else fg410ds_gg_append(out,&c,1,1);}fg410ds_gg_append(out,"\"",1,1);}
-static uint8_t fg410ds_gg_eq_1(int64_t a, int64_t b);
-static uint8_t fg410ds_gg_equal_elements_1(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_1(fg410ds_gg_reference out, int64_t value);
-static uint8_t fg410ds_gg_eq_2(uint8_t a, uint8_t b);
-static uint8_t fg410ds_gg_equal_elements_2(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_2(fg410ds_gg_reference out, uint8_t value);
-static uint8_t fg410ds_gg_eq_3(uint64_t a, uint64_t b);
-static uint8_t fg410ds_gg_equal_elements_3(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_3(fg410ds_gg_reference out, uint64_t value);
-static uint8_t fg410ds_gg_eq_4(float a, float b);
-static uint8_t fg410ds_gg_equal_elements_4(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_4(fg410ds_gg_reference out, float value);
-static uint8_t fg410ds_gg_eq_5(fg410ds_gg_type_5 a, fg410ds_gg_type_5 b);
-static uint8_t fg410ds_gg_equal_elements_5(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_5(fg410ds_gg_reference out, fg410ds_gg_type_5 value);
-static uint8_t fg410ds_gg_eq_6(double a, double b);
-static uint8_t fg410ds_gg_equal_elements_6(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_6(fg410ds_gg_reference out, double value);
-static uint8_t fg410ds_gg_eq_7(fg410ds_gg_type_7 a, fg410ds_gg_type_7 b);
-static uint8_t fg410ds_gg_equal_elements_7(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_7(fg410ds_gg_reference out, fg410ds_gg_type_7 value);
-static uint8_t fg410ds_gg_eq_9(uint8_t a, uint8_t b);
-static uint8_t fg410ds_gg_equal_elements_9(fg410ds_gg_slice a, fg410ds_gg_slice b);
-static void fg410ds_gg_render_9(fg410ds_gg_reference out, uint8_t value);
-static uint8_t fg410ds_gg_equal_elements_1(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_1(((int64_t*)a.data)[i],((int64_t*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_1(int64_t a, int64_t b) {
+static void fg412ds_gg_quote(fg412ds_gg_reference out,fg412ds_gg_slice text) { int64_t i; unsigned char c; fg412ds_gg_append(out,"\"",1,1); for(i=0;i<text.len;i++){c=((unsigned char*)text.data)[i]; if(c=='\"'||c=='\\'){fg412ds_gg_append(out,"\\",1,1);fg412ds_gg_append(out,&c,1,1);} else if(c=='\n')fg412ds_gg_append(out,"\\n",2,1);else if(c=='\r')fg412ds_gg_append(out,"\\r",2,1);else if(c=='\t')fg412ds_gg_append(out,"\\t",2,1);else fg412ds_gg_append(out,&c,1,1);}fg412ds_gg_append(out,"\"",1,1);}
+static uint8_t fg412ds_gg_eq_1(int64_t a, int64_t b);
+static uint8_t fg412ds_gg_equal_elements_1(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_1(fg412ds_gg_reference out, int64_t value);
+static uint8_t fg412ds_gg_eq_2(uint8_t a, uint8_t b);
+static uint8_t fg412ds_gg_equal_elements_2(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_2(fg412ds_gg_reference out, uint8_t value);
+static uint8_t fg412ds_gg_eq_3(uint64_t a, uint64_t b);
+static uint8_t fg412ds_gg_equal_elements_3(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_3(fg412ds_gg_reference out, uint64_t value);
+static uint8_t fg412ds_gg_eq_4(float a, float b);
+static uint8_t fg412ds_gg_equal_elements_4(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_4(fg412ds_gg_reference out, float value);
+static uint8_t fg412ds_gg_eq_5(fg412ds_gg_type_5 a, fg412ds_gg_type_5 b);
+static uint8_t fg412ds_gg_equal_elements_5(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_5(fg412ds_gg_reference out, fg412ds_gg_type_5 value);
+static uint8_t fg412ds_gg_eq_6(double a, double b);
+static uint8_t fg412ds_gg_equal_elements_6(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_6(fg412ds_gg_reference out, double value);
+static uint8_t fg412ds_gg_eq_7(fg412ds_gg_type_7 a, fg412ds_gg_type_7 b);
+static uint8_t fg412ds_gg_equal_elements_7(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_7(fg412ds_gg_reference out, fg412ds_gg_type_7 value);
+static uint8_t fg412ds_gg_eq_9(uint8_t a, uint8_t b);
+static uint8_t fg412ds_gg_equal_elements_9(fg412ds_gg_slice a, fg412ds_gg_slice b);
+static void fg412ds_gg_render_9(fg412ds_gg_reference out, uint8_t value);
+static uint8_t fg412ds_gg_equal_elements_1(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_1(((int64_t*)a.data)[i],((int64_t*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_1(int64_t a, int64_t b) {
 return a == b;
 }
-static void fg410ds_gg_render_1(fg410ds_gg_reference out, int64_t value) {
-fg410ds_gg_integer(out,value);
+static void fg412ds_gg_render_1(fg412ds_gg_reference out, int64_t value) {
+fg412ds_gg_integer(out,value);
 }
-static uint8_t fg410ds_gg_equal_elements_2(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_2(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_2(uint8_t a, uint8_t b) {
+static uint8_t fg412ds_gg_equal_elements_2(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_2(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_2(uint8_t a, uint8_t b) {
 return a == b;
 }
-static void fg410ds_gg_render_2(fg410ds_gg_reference out, uint8_t value) {
-fg410ds_gg_bool(out,value);
+static void fg412ds_gg_render_2(fg412ds_gg_reference out, uint8_t value) {
+fg412ds_gg_bool(out,value);
 }
-static uint8_t fg410ds_gg_equal_elements_3(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_3(((uint64_t*)a.data)[i],((uint64_t*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_3(uint64_t a, uint64_t b) {
+static uint8_t fg412ds_gg_equal_elements_3(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_3(((uint64_t*)a.data)[i],((uint64_t*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_3(uint64_t a, uint64_t b) {
 return a == b;
 }
-static void fg410ds_gg_render_3(fg410ds_gg_reference out, uint64_t value) {
-fg410ds_gg_unsigned(out,value);
+static void fg412ds_gg_render_3(fg412ds_gg_reference out, uint64_t value) {
+fg412ds_gg_unsigned(out,value);
 }
-static uint8_t fg410ds_gg_equal_elements_4(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_4(((float*)a.data)[i],((float*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_4(float a, float b) {
+static uint8_t fg412ds_gg_equal_elements_4(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_4(((float*)a.data)[i],((float*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_4(float a, float b) {
 return a == b;
 }
-static void fg410ds_gg_render_4(fg410ds_gg_reference out, float value) {
-fg410ds_gg_float32(out,value);
+static void fg412ds_gg_render_4(fg412ds_gg_reference out, float value) {
+fg412ds_gg_float32(out,value);
 }
-static uint8_t fg410ds_gg_equal_elements_5(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_5(((fg410ds_gg_type_5*)a.data)[i],((fg410ds_gg_type_5*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_5(fg410ds_gg_type_5 a, fg410ds_gg_type_5 b) {
-return fg410ds_gg_equal_elements_4(fg410ds_gg_view((a).data, 8),fg410ds_gg_view((b).data, 8));
+static uint8_t fg412ds_gg_equal_elements_5(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_5(((fg412ds_gg_type_5*)a.data)[i],((fg412ds_gg_type_5*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_5(fg412ds_gg_type_5 a, fg412ds_gg_type_5 b) {
+return fg412ds_gg_equal_elements_4(fg412ds_gg_view((a).data, 8),fg412ds_gg_view((b).data, 8));
 }
-static void fg410ds_gg_render_5(fg410ds_gg_reference out, fg410ds_gg_type_5 value) {
-int64_t i; fg410ds_gg_slice view=fg410ds_gg_view((value).data, 8);fg410ds_gg_append(out,"[",1,1);for(i=0;i<view.len;i++){if(i)fg410ds_gg_append(out,", ",2,1);fg410ds_gg_render_4(out, ((float*)view.data)[i]);}fg410ds_gg_append(out,"]",1,1);
+static void fg412ds_gg_render_5(fg412ds_gg_reference out, fg412ds_gg_type_5 value) {
+int64_t i; fg412ds_gg_slice view=fg412ds_gg_view((value).data, 8);fg412ds_gg_append(out,"[",1,1);for(i=0;i<view.len;i++){if(i)fg412ds_gg_append(out,", ",2,1);fg412ds_gg_render_4(out, ((float*)view.data)[i]);}fg412ds_gg_append(out,"]",1,1);
 }
-static uint8_t fg410ds_gg_equal_elements_6(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_6(((double*)a.data)[i],((double*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_6(double a, double b) {
+static uint8_t fg412ds_gg_equal_elements_6(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_6(((double*)a.data)[i],((double*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_6(double a, double b) {
 return a == b;
 }
-static void fg410ds_gg_render_6(fg410ds_gg_reference out, double value) {
-fg410ds_gg_float(out,value);
+static void fg412ds_gg_render_6(fg412ds_gg_reference out, double value) {
+fg412ds_gg_float(out,value);
 }
-static uint8_t fg410ds_gg_equal_elements_7(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_7(((fg410ds_gg_type_7*)a.data)[i],((fg410ds_gg_type_7*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_7(fg410ds_gg_type_7 a, fg410ds_gg_type_7 b) {
-return fg410ds_gg_equal_elements_1(fg410ds_gg_view((a).data, 8),fg410ds_gg_view((b).data, 8));
+static uint8_t fg412ds_gg_equal_elements_7(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_7(((fg412ds_gg_type_7*)a.data)[i],((fg412ds_gg_type_7*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_7(fg412ds_gg_type_7 a, fg412ds_gg_type_7 b) {
+return fg412ds_gg_equal_elements_1(fg412ds_gg_view((a).data, 8),fg412ds_gg_view((b).data, 8));
 }
-static void fg410ds_gg_render_7(fg410ds_gg_reference out, fg410ds_gg_type_7 value) {
-int64_t i; fg410ds_gg_slice view=fg410ds_gg_view((value).data, 8);fg410ds_gg_append(out,"[",1,1);for(i=0;i<view.len;i++){if(i)fg410ds_gg_append(out,", ",2,1);fg410ds_gg_render_1(out, ((int64_t*)view.data)[i]);}fg410ds_gg_append(out,"]",1,1);
+static void fg412ds_gg_render_7(fg412ds_gg_reference out, fg412ds_gg_type_7 value) {
+int64_t i; fg412ds_gg_slice view=fg412ds_gg_view((value).data, 8);fg412ds_gg_append(out,"[",1,1);for(i=0;i<view.len;i++){if(i)fg412ds_gg_append(out,", ",2,1);fg412ds_gg_render_1(out, ((int64_t*)view.data)[i]);}fg412ds_gg_append(out,"]",1,1);
 }
-static uint8_t fg410ds_gg_equal_elements_9(fg410ds_gg_slice a,fg410ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg410ds_gg_eq_9(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
-static uint8_t fg410ds_gg_eq_9(uint8_t a, uint8_t b) {
+static uint8_t fg412ds_gg_equal_elements_9(fg412ds_gg_slice a,fg412ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg412ds_gg_eq_9(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
+static uint8_t fg412ds_gg_eq_9(uint8_t a, uint8_t b) {
 return a == b;
 }
-static void fg410ds_gg_render_9(fg410ds_gg_reference out, uint8_t value) {
-fg410ds_gg_unsigned(out,value);
+static void fg412ds_gg_render_9(fg412ds_gg_reference out, uint8_t value) {
+fg412ds_gg_unsigned(out,value);
 }
 static struct {
   unsigned char dummy;
-} fg410ds_gg_globals;
-static void fg410ds_gg_function_0(int64_t base);
-static uint8_t fg410ds_gg_function_1(int64_t p0, int64_t base);
-static void fg410ds_gg_function_3(uint8_t p0, int64_t p1, int64_t base);
-static void fg410ds_gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
+} fg412ds_gg_globals;
+static void fg412ds_gg_function_0(int64_t base);
+static uint8_t fg412ds_gg_function_1(int64_t p0, int64_t base);
+static void fg412ds_gg_function_3(uint8_t p0, int64_t p1, int64_t base);
+static void fg412ds_gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   uint8_t t0;
   uint8_t t1;
   int64_t t2;
@@ -560,15 +560,15 @@ static void fg410ds_gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   {
   t2 = ((int64_t)(v1));
 #ifndef __cplusplus
-  extern void (fg410k_fail)(int64_t);
+  extern void (fg412k_fail)(int64_t);
 #endif
-  fg410k_fail(t2);
+  fg412k_fail(t2);
   }
   }
   }
-fg410ds_gg_done:;
+fg412ds_gg_done:;
 }
-static uint8_t fg410ds_gg_function_1(int64_t p0, int64_t base) {
+static uint8_t fg412ds_gg_function_1(int64_t p0, int64_t base) {
   uint8_t t0;
   int64_t t1;
   int64_t t2;
@@ -903,20 +903,20 @@ static uint8_t fg410ds_gg_function_1(int64_t p0, int64_t base) {
   int64_t v1;
   uint64_t v2;
   uint64_t v3;
-  _Alignas(float) fg410ds_gg_type_5 v4;
+  _Alignas(float) fg412ds_gg_type_5 v4;
   int64_t v5;
   int64_t v6;
   uint64_t v7;
   uint64_t v8;
   int64_t v9;
   float v10;
-  _Alignas(int64_t) fg410ds_gg_type_7 v11;
+  _Alignas(int64_t) fg412ds_gg_type_7 v11;
   int64_t v12;
   int64_t v13;
   int64_t v14;
   int64_t v15;
   int64_t v16;
-  _Alignas(int64_t) fg410ds_gg_type_7 v17;
+  _Alignas(int64_t) fg412ds_gg_type_7 v17;
   int64_t v18;
   uint64_t v19;
   uint64_t v20;
@@ -951,31 +951,31 @@ static uint8_t fg410ds_gg_function_1(int64_t p0, int64_t base) {
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
 #ifndef __cplusplus
-  extern uint64_t (fg410k_get)(int64_t, int64_t, int64_t);
+  extern uint64_t (fg412k_get)(int64_t, int64_t, int64_t);
 #endif
-  t4 = fg410k_get(t1, t2, t3);
+  t4 = fg412k_get(t1, t2, t3);
   v1 = ((int64_t)(((int64_t)(t4))));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(1))));
 #ifndef __cplusplus
-  extern uint64_t (fg410k_get)(int64_t, int64_t, int64_t);
+  extern uint64_t (fg412k_get)(int64_t, int64_t, int64_t);
 #endif
-  t8 = fg410k_get(t5, t6, t7);
+  t8 = fg412k_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(2))));
 #ifndef __cplusplus
-  extern uint64_t (fg410k_get)(int64_t, int64_t, int64_t);
+  extern uint64_t (fg412k_get)(int64_t, int64_t, int64_t);
 #endif
-  t12 = fg410k_get(t9, t10, t11);
+  t12 = fg412k_get(t9, t10, t11);
   v3 = ((uint64_t)(t12));
   t13 = ((int64_t)(v1));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((t13) > (t14));
   t16 = ((int64_t)(((int64_t)UINT64_C(10))));
-  fg410ds_gg_function_3(t15, t16, base + 0);
+  fg412ds_gg_function_3(t15, t16, base + 0);
   memset(&t17, 0, sizeof(t17));
   t18 = ((float)(t17));
   for (t19=0; t19<8; t19++) (v4).data[t19] = t18;
@@ -987,8 +987,8 @@ label1:;
   {
   /* FG_DIRECT_SLICE_INDEX */
   t22 = v5;
-  t23 = ((float *)(v4).data) + fg410ds_gg_index(t22, ((int64_t)UINT64_C(8)));
-  (*t23) = ((float)(((float)(fg410ds_gg_double_bits(UINT64_C(0))))));
+  t23 = ((float *)(v4).data) + fg412ds_gg_index(t22, ((int64_t)UINT64_C(8)));
+  (*t23) = ((float)(((float)(fg412ds_gg_double_bits(UINT64_C(0))))));
   t24 = ((int64_t)(v5));
   t25 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   v5 = ((int64_t)(((int64_t)((uint64_t)(t24) + (uint64_t)(t25)))));
@@ -1014,24 +1014,24 @@ label4:;
   t36 = ((uint64_t)(v7));
   t37 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(208))))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi16)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi16)(uint64_t, int64_t);
 #endif
-  t38 = fg410k_ldi16(t36, t37);
+  t38 = fg412k_ldi16(t36, t37);
   t39 = ((int64_t)(t38));
   t40 = ((int64_t)(((int64_t)UINT64_C(65535))));
   v9 = ((int64_t)(((t39) & (t40))));
   t41 = ((uint64_t)(v8));
   t42 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
 #ifndef __cplusplus
-  extern float (fg410k_ldf)(uint64_t, int64_t);
+  extern float (fg412k_ldf)(uint64_t, int64_t);
 #endif
-  t43 = fg410k_ldf(t41, t42);
+  t43 = fg412k_ldf(t41, t42);
   t44 = ((float)(t43));
   t45 = ((int64_t)(v9));
 #ifndef __cplusplus
-  extern float (fg410k_f16f32)(int64_t);
+  extern float (fg412k_f16f32)(int64_t);
 #endif
-  t46 = fg410k_f16f32(t45);
+  t46 = fg412k_f16f32(t45);
   t47 = ((float)(t46));
   v10 = ((float)(((t44) * (t47))));
   memset(&t48, 0, sizeof(t48));
@@ -1050,9 +1050,9 @@ label7:;
   t57 = ((int64_t)(((int64_t)((uint64_t)(t55) * (uint64_t)(t56)))));
   t58 = ((int64_t)(((int64_t)((uint64_t)(t54) + (uint64_t)(t57)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi16)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi16)(uint64_t, int64_t);
 #endif
-  t59 = fg410k_ldi16(t53, t58);
+  t59 = fg412k_ldi16(t53, t58);
   v13 = ((int64_t)(t59));
   t60 = ((uint64_t)(v8));
   t61 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(262))))));
@@ -1061,9 +1061,9 @@ label7:;
   t64 = ((int64_t)(((int64_t)((uint64_t)(t62) * (uint64_t)(t63)))));
   t65 = ((int64_t)(((int64_t)((uint64_t)(t61) + (uint64_t)(t64)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi16)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi16)(uint64_t, int64_t);
 #endif
-  t66 = fg410k_ldi16(t60, t65);
+  t66 = fg412k_ldi16(t60, t65);
   v14 = ((int64_t)(t66));
   t67 = ((uint64_t)(v7));
   t68 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(192))))));
@@ -1072,9 +1072,9 @@ label7:;
   t71 = ((int64_t)(((int64_t)((uint64_t)(t69) * (uint64_t)(t70)))));
   t72 = ((int64_t)(((int64_t)((uint64_t)(t68) + (uint64_t)(t71)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t73 = fg410k_ldi8(t67, t72);
+  t73 = fg412k_ldi8(t67, t72);
   v15 = ((int64_t)(t73));
   t74 = ((uint64_t)(v7));
   t75 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(193))))));
@@ -1083,13 +1083,13 @@ label7:;
   t78 = ((int64_t)(((int64_t)((uint64_t)(t76) * (uint64_t)(t77)))));
   t79 = ((int64_t)(((int64_t)((uint64_t)(t75) + (uint64_t)(t78)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t80 = fg410k_ldi8(t74, t79);
+  t80 = fg412k_ldi8(t74, t79);
   v16 = ((int64_t)(t80));
   /* FG_DIRECT_SLICE_INDEX */
   t81 = v12;
-  t82 = ((int64_t *)(v11).data) + fg410ds_gg_index(t81, ((int64_t)UINT64_C(8)));
+  t82 = ((int64_t *)(v11).data) + fg412ds_gg_index(t81, ((int64_t)UINT64_C(8)));
   t83 = ((int64_t)(v13));
   t84 = ((int64_t)(v15));
   t85 = ((int64_t)(((int64_t)((uint64_t)(t83) * (uint64_t)(t84)))));
@@ -1116,7 +1116,7 @@ label10:;
   {
   /* FG_DIRECT_SLICE_INDEX */
   t98 = v12;
-  t99 = ((int64_t *)(v17).data) + fg410ds_gg_index(t98, ((int64_t)UINT64_C(8)));
+  t99 = ((int64_t *)(v17).data) + fg412ds_gg_index(t98, ((int64_t)UINT64_C(8)));
   (*t99) = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t100 = ((int64_t)(v12));
   t101 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1161,23 +1161,23 @@ label16:;
   t124 = ((uint64_t)(v19));
   t125 = ((int64_t)(v23));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldu8)(uint64_t, int64_t);
 #endif
-  t126 = fg410k_ldu8(t124, t125);
+  t126 = fg412k_ldu8(t124, t125);
   v24 = ((int64_t)(t126));
   t127 = ((uint64_t)(v20));
   t128 = ((int64_t)(v23));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldu8)(uint64_t, int64_t);
 #endif
-  t129 = fg410k_ldu8(t127, t128);
+  t129 = fg412k_ldu8(t127, t128);
   v25 = ((int64_t)(t129));
   t130 = ((uint64_t)(v21));
   t131 = ((int64_t)(v23));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldu8)(uint64_t, int64_t);
 #endif
-  t132 = fg410k_ldu8(t130, t131);
+  t132 = fg412k_ldu8(t130, t131);
   v26 = ((int64_t)(t132));
   t133 = ((int64_t)(v24));
   t134 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(15))))));
@@ -1219,7 +1219,7 @@ label16:;
   v30 = ((int64_t)(((t161) | (t166))));
   t167 = ((int64_t)(v23));
   t168 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
-  v31 = ((int64_t)(((int64_t)fg410ds_gg_div(t167, t168))));
+  v31 = ((int64_t)(((int64_t)fg412ds_gg_div(t167, t168))));
   t169 = ((int64_t)(v31));
   t170 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t171 = ((t169) >= (t170));
@@ -1245,9 +1245,9 @@ label16:;
   t182 = ((int64_t)(v32));
   t183 = ((int64_t)(((int64_t)((uint64_t)(t181) + (uint64_t)(t182)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t184 = fg410k_ldi8(t172, t183);
+  t184 = fg412k_ldi8(t172, t183);
   v33 = ((int64_t)(t184));
   t185 = ((uint64_t)(v7));
   t186 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(192))))));
@@ -1262,9 +1262,9 @@ label16:;
   t195 = ((int64_t)(v32));
   t196 = ((int64_t)(((int64_t)((uint64_t)(t194) + (uint64_t)(t195)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t197 = fg410k_ldi8(t185, t196);
+  t197 = fg412k_ldi8(t185, t196);
   v34 = ((int64_t)(t197));
   t198 = ((uint64_t)(v7));
   t199 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(192))))));
@@ -1279,9 +1279,9 @@ label16:;
   t208 = ((int64_t)(v32));
   t209 = ((int64_t)(((int64_t)((uint64_t)(t207) + (uint64_t)(t208)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t210 = fg410k_ldi8(t198, t209);
+  t210 = fg412k_ldi8(t198, t209);
   v35 = ((int64_t)(t210));
   t211 = ((uint64_t)(v7));
   t212 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(192))))));
@@ -1296,50 +1296,50 @@ label16:;
   t221 = ((int64_t)(v32));
   t222 = ((int64_t)(((int64_t)((uint64_t)(t220) + (uint64_t)(t221)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t223 = fg410k_ldi8(t211, t222);
+  t223 = fg412k_ldi8(t211, t222);
   v36 = ((int64_t)(t223));
   t224 = ((uint64_t)(v22));
   t225 = ((int64_t)(v23));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t226 = fg410k_ldi8(t224, t225);
+  t226 = fg412k_ldi8(t224, t225);
   v37 = ((int64_t)(((int64_t)(t226))));
   t227 = ((uint64_t)(v22));
   t228 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(32))))));
   t229 = ((int64_t)(v23));
   t230 = ((int64_t)(((int64_t)((uint64_t)(t228) + (uint64_t)(t229)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t231 = fg410k_ldi8(t227, t230);
+  t231 = fg412k_ldi8(t227, t230);
   v38 = ((int64_t)(((int64_t)(t231))));
   t232 = ((uint64_t)(v22));
   t233 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(64))))));
   t234 = ((int64_t)(v23));
   t235 = ((int64_t)(((int64_t)((uint64_t)(t233) + (uint64_t)(t234)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t236 = fg410k_ldi8(t232, t235);
+  t236 = fg412k_ldi8(t232, t235);
   v39 = ((int64_t)(((int64_t)(t236))));
   t237 = ((uint64_t)(v22));
   t238 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(96))))));
   t239 = ((int64_t)(v23));
   t240 = ((int64_t)(((int64_t)((uint64_t)(t238) + (uint64_t)(t239)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
+  extern int64_t (fg412k_ldi8)(uint64_t, int64_t);
 #endif
-  t241 = fg410k_ldi8(t237, t240);
+  t241 = fg412k_ldi8(t237, t240);
   v40 = ((int64_t)(((int64_t)(t241))));
   /* FG_DIRECT_SLICE_INDEX */
   t242 = v31;
-  t243 = ((int64_t *)(v17).data) + fg410ds_gg_index(t242, ((int64_t)UINT64_C(8)));
+  t243 = ((int64_t *)(v17).data) + fg412ds_gg_index(t242, ((int64_t)UINT64_C(8)));
   /* FG_DIRECT_SLICE_INDEX */
   t244 = v31;
-  t245 = ((int64_t *)(v17).data) + fg410ds_gg_index(t244, ((int64_t)UINT64_C(8)));
+  t245 = ((int64_t *)(v17).data) + fg412ds_gg_index(t244, ((int64_t)UINT64_C(8)));
   t246 = ((int64_t)((*t245)));
   t247 = ((int64_t)(v33));
   t248 = ((int64_t)(v27));
@@ -1385,25 +1385,25 @@ label19:;
   {
   /* FG_DIRECT_SLICE_INDEX */
   t276 = v12;
-  t277 = ((float *)(v4).data) + fg410ds_gg_index(t276, ((int64_t)UINT64_C(8)));
+  t277 = ((float *)(v4).data) + fg412ds_gg_index(t276, ((int64_t)UINT64_C(8)));
   t278 = ((float)(v10));
   /* FG_DIRECT_SLICE_INDEX */
   t279 = v12;
-  t280 = ((int64_t *)(v17).data) + fg410ds_gg_index(t279, ((int64_t)UINT64_C(8)));
+  t280 = ((int64_t *)(v17).data) + fg412ds_gg_index(t279, ((int64_t)UINT64_C(8)));
   t281 = ((int64_t)((*t280)));
   /* FG_DIRECT_SLICE_INDEX */
   t282 = v12;
-  t283 = ((int64_t *)(v11).data) + fg410ds_gg_index(t282, ((int64_t)UINT64_C(8)));
+  t283 = ((int64_t *)(v11).data) + fg412ds_gg_index(t282, ((int64_t)UINT64_C(8)));
   t284 = ((int64_t)((*t283)));
   t285 = ((float)(((float)(((int64_t)((uint64_t)(t281) - (uint64_t)(t284)))))));
   /* FG_DIRECT_SLICE_INDEX */
   t286 = v12;
-  t287 = ((float *)(v4).data) + fg410ds_gg_index(t286, ((int64_t)UINT64_C(8)));
+  t287 = ((float *)(v4).data) + fg412ds_gg_index(t286, ((int64_t)UINT64_C(8)));
   t288 = ((float)((*t287)));
 #ifndef __cplusplus
-  extern float (fg410k_fma)(float, float, float);
+  extern float (fg412k_fma)(float, float, float);
 #endif
-  t289 = fg410k_fma(t278, t285, t288);
+  t289 = fg412k_fma(t278, t285, t288);
   (*t277) = ((float)(t289));
   t290 = ((int64_t)(v12));
   t291 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1419,38 +1419,38 @@ label20:;
 label5:;
   /* FG_DIRECT_SLICE_INDEX */
   t294 = ((int64_t)UINT64_C(4));
-  t295 = ((float *)(v4).data) + fg410ds_gg_index(t294, ((int64_t)UINT64_C(8)));
+  t295 = ((float *)(v4).data) + fg412ds_gg_index(t294, ((int64_t)UINT64_C(8)));
   t296 = ((float)((*t295)));
   /* FG_DIRECT_SLICE_INDEX */
   t297 = ((int64_t)UINT64_C(0));
-  t298 = ((float *)(v4).data) + fg410ds_gg_index(t297, ((int64_t)UINT64_C(8)));
+  t298 = ((float *)(v4).data) + fg412ds_gg_index(t297, ((int64_t)UINT64_C(8)));
   t299 = ((float)((*t298)));
   v41 = ((float)(((t296) + (t299))));
   /* FG_DIRECT_SLICE_INDEX */
   t300 = ((int64_t)UINT64_C(5));
-  t301 = ((float *)(v4).data) + fg410ds_gg_index(t300, ((int64_t)UINT64_C(8)));
+  t301 = ((float *)(v4).data) + fg412ds_gg_index(t300, ((int64_t)UINT64_C(8)));
   t302 = ((float)((*t301)));
   /* FG_DIRECT_SLICE_INDEX */
   t303 = ((int64_t)UINT64_C(1));
-  t304 = ((float *)(v4).data) + fg410ds_gg_index(t303, ((int64_t)UINT64_C(8)));
+  t304 = ((float *)(v4).data) + fg412ds_gg_index(t303, ((int64_t)UINT64_C(8)));
   t305 = ((float)((*t304)));
   v42 = ((float)(((t302) + (t305))));
   /* FG_DIRECT_SLICE_INDEX */
   t306 = ((int64_t)UINT64_C(6));
-  t307 = ((float *)(v4).data) + fg410ds_gg_index(t306, ((int64_t)UINT64_C(8)));
+  t307 = ((float *)(v4).data) + fg412ds_gg_index(t306, ((int64_t)UINT64_C(8)));
   t308 = ((float)((*t307)));
   /* FG_DIRECT_SLICE_INDEX */
   t309 = ((int64_t)UINT64_C(2));
-  t310 = ((float *)(v4).data) + fg410ds_gg_index(t309, ((int64_t)UINT64_C(8)));
+  t310 = ((float *)(v4).data) + fg412ds_gg_index(t309, ((int64_t)UINT64_C(8)));
   t311 = ((float)((*t310)));
   v43 = ((float)(((t308) + (t311))));
   /* FG_DIRECT_SLICE_INDEX */
   t312 = ((int64_t)UINT64_C(7));
-  t313 = ((float *)(v4).data) + fg410ds_gg_index(t312, ((int64_t)UINT64_C(8)));
+  t313 = ((float *)(v4).data) + fg412ds_gg_index(t312, ((int64_t)UINT64_C(8)));
   t314 = ((float)((*t313)));
   /* FG_DIRECT_SLICE_INDEX */
   t315 = ((int64_t)UINT64_C(3));
-  t316 = ((float *)(v4).data) + fg410ds_gg_index(t315, ((int64_t)UINT64_C(8)));
+  t316 = ((float *)(v4).data) + fg412ds_gg_index(t315, ((int64_t)UINT64_C(8)));
   t317 = ((float)((*t316)));
   v44 = ((float)(((t314) + (t317))));
   t318 = ((float)(v41));
@@ -1465,44 +1465,44 @@ label5:;
   t326 = ((int64_t)(((int64_t)UINT64_C(0))));
   t327 = ((float)(v45));
 #ifndef __cplusplus
-  extern int64_t (fg410k_f32bits)(float);
+  extern int64_t (fg412k_f32bits)(float);
 #endif
-  t328 = fg410k_f32bits(t327);
+  t328 = fg412k_f32bits(t327);
   t329 = ((uint64_t)(((uint64_t)(t328))));
 #ifndef __cplusplus
-  extern void (fg410k_put)(int64_t, int64_t, int64_t, uint64_t);
+  extern void (fg412k_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg410k_put(t324, t325, t326, t329);
+  fg412k_put(t324, t325, t326, t329);
   t0 = ((uint8_t)UINT64_C(1));
-  goto fg410ds_gg_done;
+  goto fg412ds_gg_done;
   }
-fg410ds_gg_done:;
+fg412ds_gg_done:;
   return t0;
 }
-static void fg410ds_gg_function_0(int64_t base) {
+static void fg412ds_gg_function_0(int64_t base) {
   int64_t t0;
   uint8_t t1;
   {
   t0 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t1 = fg410ds_gg_function_1(t0, base + 0);
+  t1 = fg412ds_gg_function_1(t0, base + 0);
   (void)(t1);
   }
-fg410ds_gg_done:;
+fg412ds_gg_done:;
 }
-static int fg410ds_gg_program(int argc, char **argv) {
+static int fg412ds_gg_program(int argc, char **argv) {
   struct { int64_t base; } frame;
   frame.base = 0;
-  fg410ds_gg_argc = argc; fg410ds_gg_argv = argv;
-  fg410ds_gg_function_0(frame.base + 0);
+  fg412ds_gg_argc = argc; fg412ds_gg_argv = argv;
+  fg412ds_gg_function_0(frame.base + 0);
   return 0;
 }
 int main(int argc, char **argv) {
 #ifdef _MSC_VER
-  __try { return fg410ds_gg_program(argc, argv); }
+  __try { return fg412ds_gg_program(argc, argv); }
   __except (GetExceptionCode() == EXCEPTION_STACK_OVERFLOW ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
-    _resetstkoflw(); fg410ds_gg_fail("native call stack overflow"); return 1;
+    _resetstkoflw(); fg412ds_gg_fail("native call stack overflow"); return 1;
   }
 #else
-  return fg410ds_gg_program(argc, argv);
+  return fg412ds_gg_program(argc, argv);
 #endif
 }

@@ -9,7 +9,7 @@ assert hashlib.sha256(C.read_bytes()).hexdigest()==pin['sha256'],'compiler pin m
 q=subprocess.run([str(C),'-o',str(S/'host-generated.c'),str(S/'host.goose')],capture_output=True,text=True)
 assert q.returncode==0,q.stderr
 g=(S/'host-generated.c').read_text()
-prefix='fg410ds_'
+prefix='fg412ds_'
 qual=lambda s:re.sub(r'\b(gg_)',lambda m:prefix+m[1],s)
 main=g[g.rfind('static void gg_function_0('):]
 entries=[x for x in re.findall(r'\b(gg_function_\d+)\(',main) if x!='gg_function_0']

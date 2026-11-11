@@ -24,26 +24,26 @@ static float   g_f16f32(int64_t h){ uint16_t u=(uint16_t)h; uint32_t s=(u>>15)&1
     float f; memcpy(&f,&o,4); return f; }
 static int64_t g_f32bits(float v){ int32_t u; memcpy(&u,&v,4); return u; }
 static void g_fail(int64_t c){ fprintf(stderr, "FG410S validation code %lld\n", (long long)c); abort(); }
-#define fg410k_get  g_get
-#define fg410k_put  g_put
-#define fg410k_stw  g_stw
-#define fg410k_stb  g_stb
-#define fg410k_ld_i64 g_ld
-#define fg410k_ldu8 g_ldu8
-#define fg410k_ldi8 g_ldi8
-#define fg410k_ldi16 g_ldi16
-#define fg410k_ldu32 g_ldu32
-#define fg410k_ldf  g_ldf
-#define fg410k_f16f32 g_f16f32
-#define fg410k_f32bits g_f32bits
-#define fg410k_fma g_fma
-#define fg410k_fail g_fail
+#define fg412k_get  g_get
+#define fg412k_put  g_put
+#define fg412k_stw  g_stw
+#define fg412k_stb  g_stb
+#define fg412k_ld_i64 g_ld
+#define fg412k_ldu8 g_ldu8
+#define fg412k_ldi8 g_ldi8
+#define fg412k_ldi16 g_ldi16
+#define fg412k_ldu32 g_ldu32
+#define fg412k_ldf  g_ldf
+#define fg412k_f16f32 g_f16f32
+#define fg412k_f32bits g_f32bits
+#define fg412k_fma g_fma
+#define fg412k_fail g_fail
 #define gg_init_globals fg410s_init_globals
-#define main fg410s_generated_main
+#define main fg412s_generated_main
 #include "host-qualified.c"
 #undef main
 
-float fg410s_dot(int64_t nb, const void * q4, const void * q8) {
+float fg412s_dot(int64_t nb, const void * q4, const void * q8) {
     const unsigned long long c = atomic_fetch_add(&g_calls, 1) + 1;
     if (c == 1) fprintf(stderr, "FG410S_Q4K_DOT first call calls=1\n");
     if ((c % 1000) == 0) fprintf(stderr, "FG410S_Q4K_DOT calls=%llu\n", c);
@@ -52,7 +52,7 @@ float fg410s_dot(int64_t nb, const void * q4, const void * q8) {
     if(!pkt||!sc) abort();
     pkt[0*16+0]=nb; pkt[0*16+1]=(int64_t)(uintptr_t)q4; pkt[0*16+2]=(int64_t)(uintptr_t)q8;
     pkt[1*16+0]=(int64_t)(uintptr_t)sc; pkt[2*16+0]=0;
-    (void) fg410ds_gg_function_1((int64_t)(uintptr_t)pkt, 1);
+    (void) fg412ds_gg_function_1((int64_t)(uintptr_t)pkt, 1);
     if (getenv("FG410_DEBUG")) {
         for (int64_t bi = 0; bi < nb; ++bi) {
             float dv,dm,s0; int64_t si;
@@ -86,4 +86,4 @@ float fg410s_dot(int64_t nb, const void * q4, const void * q8) {
     free(pkt); free(sc);
     return r;
 }
-int fg410s_enabled(void){ const char* f=getenv("GGML_GOOSE_CPU_Q4K_DOT"); return !(f&&strcmp(f,"0")==0); }
+int fg412s_enabled(void){ const char* f=getenv("GGML_GOOSE_CPU_Q4K_DOT"); return !(f&&strcmp(f,"0")==0); }

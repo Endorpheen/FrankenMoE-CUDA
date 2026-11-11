@@ -6,16 +6,16 @@
 // AVX2 builds four 6-bit groups per 128-block, multiplies each with the signed scale, subtracts the
 // q6 "-32 offset" term derived from bsums, accumulates d*sumi per lane with fma and reduces with hsum_float_8.
 
-extern "fg410k_get" fn get(p:i64,k:i64,i:i64)->u64;
-extern "fg410k_put" fn put(p:i64,k:i64,i:i64,v:u64);
-extern "fg410k_ldu8" fn ldu8(base:u64,byte:i64)->i64;
-extern "fg410k_ldi8" fn ldi8(base:u64,byte:i64)->i64;
-extern "fg410k_ldi16" fn ldi16(base:u64,byte:i64)->i64;
-extern "fg410k_ldf" fn ldf(base:u64,byte:i64)->f32;
-extern "fg410k_f16f32" fn f16f32(h:i64)->f32;
-extern "fg410k_f32bits" fn f32b(x:f32)->i64;
-extern "fg410k_fma" fn fma(a:f32,b:f32,c:f32)->f32;
-extern "fg410k_fail" fn fail(c:i64);
+extern "fg412k_get" fn get(p:i64,k:i64,i:i64)->u64;
+extern "fg412k_put" fn put(p:i64,k:i64,i:i64,v:u64);
+extern "fg412k_ldu8" fn ldu8(base:u64,byte:i64)->i64;
+extern "fg412k_ldi8" fn ldi8(base:u64,byte:i64)->i64;
+extern "fg412k_ldi16" fn ldi16(base:u64,byte:i64)->i64;
+extern "fg412k_ldf" fn ldf(base:u64,byte:i64)->f32;
+extern "fg412k_f16f32" fn f16f32(h:i64)->f32;
+extern "fg412k_f32bits" fn f32b(x:f32)->i64;
+extern "fg412k_fma" fn fma(a:f32,b:f32,c:f32)->f32;
+extern "fg412k_fail" fn fail(c:i64);
 
 fn ensure(v:bool,c:i64){if !v{fail(c);}}
 
