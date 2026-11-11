@@ -82,5 +82,17 @@
       },
       "delta_note": "1573.6/21.93 against 1647.0/23.75 at the previous point: outside nothing, but still a single run under load; trend only"
     }
+  ],
+  "checkpoints": [
+    {
+      "item": "APEX.CPU_MATH",
+      "experiment": "EXP412",
+      "measured_at": "2026-11-11T19:08:44.620840+00:00",
+      "profile": "CPU-only bench (-ngl 0, -c 2048), Goose libggml-cpu with Q4_K and Q6_K kernels",
+      "load_seconds": 4.6,
+      "completion_4_tokens_seconds_median_of_3": 4.26,
+      "method": "wall clock around HTTP /completion, temperature 0, top_k 1, cache_prompt false; no CUDA, no background load from this session",
+      "note": "functional checkpoint only; the accepted GPU profile does not call these kernels"
+    }
   ]
 }
