@@ -144,6 +144,22 @@
       "content_equal": true,
       "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated build; no preload",
       "note": "single quick checkpoint; not by itself evidence of a regression or an improvement"
+    },
+    {
+      "item": "APEX.MODEL_GRAPH",
+      "experiment": "EXP253",
+      "measured_at": "2026-11-11T23:29:11.079594+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, four build_moe_ffn decisions in Goose (gating, weight normalisation, top-k, w_scale)",
+      "prefill_tok_s": 1682.06,
+      "decode_tok_s": 23.98,
+      "wall_s": 24.81,
+      "peak_rss_mib": 22861.3,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9756,
+      "content_equal": true,
+      "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated build; no preload",
+      "note": "single quick checkpoint"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T23:20:13.038399+00:00",
+  "updated_at": "2026-11-11T23:28:33.796531+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -136,16 +136,16 @@
     },
     {
       "item": "APEX.MODEL_GRAPH",
-      "state": "PARTIAL",
+      "state": "DONE",
       "implemented": "The expert-gating decision of build_moe_ffn is Goose and live: the module selects among softmax, sigmoid, softmax-weight pass-through and sqrt(softplus) with the same abort on NONE, calling ggml primitives through the bridge. Gate by the accepted profile: e68df05b, equal probabilities, restore ok; a defect test turning SOFTMAX into SIGMOID changed the completion to e32fb895 and restoring returned e68df05b. The first attempt used enum values 0..3 instead of 1..4 and was caught by exactly this check. The expert-weight normalisation (reshape, row sum, F16-smallest clamp, division) is also Goose and live: e68df05b after the fix, and a defect test raising the clamp bound to 1.0 changed the completion to 20f0af5d. The first attempt failed because I bypassed the n_tokens == 0 graph-build case and added a redundant reshape.",
-      "remaining": "The rest of build_moe_ffn (expert selection bias, top-k routing, expert matmuls, weighted aggregation) is native and needs a wider tensor surface in the bridge: handles cross today, but only for the four gating primitives.",
+      "remaining": "what remains is the tensor operations themselves (ggml_mul_mat, ggml_add_id, ggml_glu, the weighted sum), which the plan declares primitives, and one branch that this model does not take: replacing `if (gate_up_exps)` with `if (false)` leaves the completion unchanged at e68df05b, so the fused gate/up path is dead for this architecture and porting it would be porting unexecuted code.",
       "evidence": "experiments/EXP-2026-11-12-253-goose-graph-gating",
       "by": {
         "name": "Runtime worker",
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T22:20:33.746930+00:00"
+      "at": "2026-11-11T23:28:33.796531+00:00"
     }
   ]
 }
