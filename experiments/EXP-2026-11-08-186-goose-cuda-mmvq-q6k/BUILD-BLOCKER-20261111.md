@@ -43,3 +43,29 @@ linked into the active library from what is present. Options, none of which I wi
 the surviving exp185 library as the base and splice the Q6_K module into it at the binary level, (b) rebuild the
 CUDA backend from the flint sources with both modules compiled in, or (c) record the item as blocked by missing
 build infrastructure.
+
+## A working route exists: build the CUDA backend from the flint sources
+
+The surviving-artefact route was abandoned in favour of rebuilding the backend from source, which needs no
+missing artefacts:
+
+    cmake -S llama.cpp-flint-cuda -B /tmp/build-cuda-goose -DGGML_CUDA=ON -DCMAKE_CUDA_COMPILER=/usr/bin/nvcc \
+          -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF
+    ninja -j16 ggml-cuda    ->  bin/libggml-cuda.so.0.27.0  (145,811,304 bytes)
+
+The EXP186 module then compiles **unchanged** in that tree:
+
+    nvcc -c source/cuda-runtime.cu -O3 -std=c++17 -arch=sm_89 \
+         -I source -I <flint>/ggml/src/ggml-cuda -I <flint>/ggml/include -I <flint>/ggml/src
+    -> /tmp/fg186.o  (128,664 bytes, rc=0, warnings only)
+    gcc -c source/host-unit.c -> /tmp/fg186_host.o   (defines fg186qh_run)
+
+Remaining unresolved externals of the module: `fg186qh_run` (satisfied by the host object), `ggml_abort` and
+`ggml_type_size` (satisfied by libggml-base), CUDA runtime symbols (resolved at load), and the deliberately
+absent `fg185q_native_ggml_cuda_mul_mat_vec_q` — the module calls the native kernel under that name, so the
+shim must supply it, pointing at the original `ggml_cuda_mul_mat_vec_q` in the loaded library.
+
+Next step: build a small shim library from these two objects that (a) exports
+`fg185q_native_ggml_cuda_mul_mat_vec_q` forwarding through a saved pointer, and (b) installs the module's
+`ggml_cuda_mul_mat_vec_q` by entry patching, exactly as the CPU item did; then verify with the A -> B -> A
+defect test and the e68df05b run.
