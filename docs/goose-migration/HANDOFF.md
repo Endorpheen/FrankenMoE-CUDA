@@ -623,10 +623,17 @@ most dangerous and is worth checking first in any new fixture.
    `check_integration.py` reproduces all three checks without a model run. The stage link and
    the run are still open: the first needs every other object of the working build, the second
    needs rule-1 approval.
-70. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+70. State-write stage linked — EXP347 now has a linked stage DSO: every object of the working
+   build except `llama-kv-cache.cpp.o`, the integrated object, and the bridge. 4.8 MB, all
+   5 249 exported symbols preserved, `dlopen` from outside llama calls the bridge and prints
+   `FG345W_KV_STATE_WRITE`. The working build and `runtime/exp244` are untouched; the stage
+   lives under the experiment's ignored `build/`.
+   Open, deliberately: the run (rule 1). Without it the stage can be neither accepted nor
+   rejected, so it carries no scoped credit.
+71. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-71. Downstream phases P4–P11.
+72. Downstream phases P4–P11.
 
 ## Disk
 

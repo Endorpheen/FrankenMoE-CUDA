@@ -53,8 +53,21 @@ The native block is still in the file behind the same guard, so `GGML_GOOSE_KV_S
 restores it. A cell count above 64 sequences keeps the native path, because the bridge carries the
 sequence set in a 64-bit mask.
 
-Not done here, and deliberately: the stage link and the run. The first needs every other object of
-the working build, the second needs rule-1 approval.
+Stage link (done, no model):
+
+| check | result |
+|---|---|
+| link with every object of the working build, one swapped | 4 831 552 bytes |
+| exported symbols preserved | 5 249 = 5 249, none lost |
+| `dlopen` + bridge call from outside llama | ok, `ranges=1 count=2 first=[0,2)` |
+| witness line | `FG345W_KV_STATE_WRITE calls=1` |
+
+The stage is a separate file under the ignored `build/`; the working build and `runtime/exp244` are
+untouched. One extra symbol is exported by the module itself (`fg345w_generated_main`); it is the
+generated entry point and is harmless, but worth knowing if a symbol audit is ever exact-match.
+
+What is still open, and deliberately: the run. It needs rule-1 approval, and without it the stage
+cannot be accepted or rejected on correctness.
 
 ## Files
 
