@@ -449,10 +449,17 @@ most dangerous and is worth checking first in any new fixture.
    relink unless freed) and the head rule that falls back to **zero**, not the cache size,
    when nothing was freed. 17 656 checks, 8/8 mutations. P5-09 now has shift covered; the
    cancellation/unload sweep is still open.
-48. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+48. KV sequence division and extremes — EXP328 transfers `seq_div` (a divided cell keeps
+   its bits, its shift grows by the position difference, index unlinked before and
+   relinked after) and `seq_pos_min`/`seq_pos_max` (mirrored caches delegate; an empty
+   sequence is -1, the same sentinel as an empty cell). 26 244 checks, 8/8 mutations.
+   Recorded: "empty cells count as positions" in the maximum is provably unobservable —
+   an empty cell is -1, the running maximum starts far below it, and the fallback is -1 —
+   so it was replaced by dropping the sequence-bit check.
+49. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-49. Downstream phases P4–P11.
+50. Downstream phases P4–P11.
 
 ## Disk
 
