@@ -857,10 +857,14 @@ most dangerous and is worth checking first in any new fixture.
    `top-n-sigma`, `mirostat` all need `exp`; `rsqrt` exists only as an `extern` host call, which is not
    a port. Recorded in compiler-limitations item 13. Sampler blocks stay native by necessity, not by
    omission.
-103. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+103. Penalty bookkeeping — EXP380 integrated (window disabled, ring eviction, counter erase), gate 92/0,
+   6/6 mutations, **NOT VALIDATED**: `llama-server` never builds a `penalties` sampler — it tracks the
+   sampled tokens itself and does not call `llama_sampler_init_penalties`, so `accept` is never invoked.
+   The default chain in `common/common.h` lists penalties, but this server does not use that chain.
+104. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-104. Downstream phases P4–P11.
+105. Downstream phases P4–P11.
 
 ## Disk
 
