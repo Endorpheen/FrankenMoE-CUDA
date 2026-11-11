@@ -24,8 +24,27 @@ extern "fg253s_clamp" fn clamp(t:i64,lo:i64,hi:i64)->i64;
 extern "fg253s_div" fn div(a:i64,b:i64)->i64;
 extern "fg253s_reshape_3d" fn reshape_3d(t:i64,a:i64,b:i64,c:i64)->i64;
 
+// top-k: the expert selection itself (argsort_top_k over the probabilities).
+// mode 3: only the selection; the tensor gathering stays native.
+extern "fg253s_argsort_top_k" fn argsort_top_k(t:i64,k:i64)->i64;
+extern "fg253s_get_rows" fn get_rows(a:i64,b:i64)->i64;
+
 fn run(packet:i64)->bool {
     let mode:i64 = get(packet,0,2) as i64;
+    if mode == 3 as i64 {
+        let selection:i64 = get(packet,0,0) as i64;
+        let probs:i64     = get(packet,0,1) as i64;
+        let n_used:i64    = get(packet,0,3) as i64;
+        let n_expert:i64  = get(packet,0,4) as i64;
+        let n_tokens:i64  = get(packet,0,5) as i64;
+        ensure(selection != 0 as i64 && probs != 0 as i64, 30);
+        ensure(n_used > 0 as i64 && n_expert > 0 as i64, 31);
+        ensure(n_tokens >= 0 as i64, 32);
+        ensure(probs != 0 as i64, 33);   // unused here, kept for packet shape stability
+        let selected:i64 = argsort_top_k(selection, n_used);
+        put(packet,1,0, selected as u64);
+        return true;
+    }
     if mode == 2 as i64 {
         let weights:i64 = get(packet,0,0) as i64;
         let n_used:i64  = get(packet,0,1) as i64;

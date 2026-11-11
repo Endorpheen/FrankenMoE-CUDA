@@ -26,6 +26,10 @@ static int64_t fg253s_sum_rows(int64_t t){return (int64_t)(uintptr_t) ggml_sum_r
 static int64_t fg253s_clamp(int64_t t,int64_t lo,int64_t hi){return (int64_t)(uintptr_t) ggml_clamp(g_ctx,(ggml_tensor*)(uintptr_t)t,fg253s_bits2f(lo),fg253s_bits2f(hi));}
 static int64_t fg253s_div(int64_t a,int64_t b){return (int64_t)(uintptr_t) ggml_div(g_ctx,(ggml_tensor*)(uintptr_t)a,(ggml_tensor*)(uintptr_t)b);}
 
+extern ggml_tensor * ggml_argsort_top_k(ggml_context *, ggml_tensor *, int);
+extern ggml_tensor * ggml_get_rows(ggml_context *, ggml_tensor *, ggml_tensor *);
+static int64_t fg253s_argsort_top_k(int64_t t,int64_t k){return (int64_t)(uintptr_t) ggml_argsort_top_k(g_ctx,(ggml_tensor*)(uintptr_t)t,(int)k);}
+static int64_t fg253s_get_rows(int64_t a,int64_t b){return (int64_t)(uintptr_t) ggml_get_rows(g_ctx,(ggml_tensor*)(uintptr_t)a,(ggml_tensor*)(uintptr_t)b);}
 static void fg253s_fail(int64_t c){fprintf(stderr,"FG253S_FAIL code=%lld\n",(long long)c);abort();}
 static void fg253s_put(int64_t p,int64_t k,int64_t i,uint64_t v){((int64_t*)(uintptr_t)p)[k*16+i]=(int64_t)v;}
 static uint64_t fg253s_get(int64_t p,int64_t k,int64_t i){return (uint64_t)((const int64_t*)(uintptr_t)p)[k*16+i];}
@@ -46,4 +50,11 @@ int64_t fg253s_norm(int64_t weights, int64_t n_used, int64_t n_tokens) {
     int64_t pkt[2*16] = {0}; pkt[0]=weights; pkt[1]=n_used; pkt[2]=2; pkt[3]=n_tokens;
     (void) fg253ds_gg_function_1((int64_t)(uintptr_t)pkt,1);
     return pkt[16+0];
+}
+
+void fg253s_topk(int64_t selection, int64_t probs, int64_t n_used, int64_t n_expert, int64_t n_tokens, int64_t out[2]) {
+    int64_t pkt[2*16] = {0};
+    pkt[0]=selection; pkt[1]=probs; pkt[2]=3; pkt[3]=n_used; pkt[4]=n_expert; pkt[5]=n_tokens;
+    (void) fg253ds_gg_function_1((int64_t)(uintptr_t)pkt,1);
+    out[0]=pkt[16+0]; out[1]=pkt[16+1];
 }

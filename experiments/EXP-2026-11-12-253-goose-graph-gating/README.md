@@ -51,3 +51,16 @@ special case and the extra reshape made it exact:
 
 Defect test (A -> B -> A): raising the clamp lower bound from the F16-smallest to 1.0f changed the completion to
 `20f0af5d...`; restoring returned `e68df05b`. So the normalisation sequence is on the live graph path.
+
+## top-k expert selection: third graph decision, live
+
+`selected_experts = ggml_argsort_top_k(ctx0, selection_probs, n_expert_used)` is now decided in Goose (mode 3),
+with ggml doing the sort through the bridge.
+
+    first_sha = e68df05b..., probs_equal, restore_ok
+
+Defect test: selecting `n_used - 1` experts instead of `n_used` made the server crash while building the graph --
+the downstream gather no longer matches. A crash in a graph whose shape is derived from this value is proof the
+decision is on the live path; the accepted profile is restored to `e68df05b` afterwards.
+
+Three graph decisions are now Goose and tested: gating selection, expert-weight normalisation, and top-k selection.
