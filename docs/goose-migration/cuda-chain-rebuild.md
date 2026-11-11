@@ -30,6 +30,21 @@ So the chain must be rebuilt from the experiment sources, not patched.
 The last row is the only real work beyond mechanical compilation: two modules edit `mmvq.cu` and neither
 contains the other, so they need a single combined source before that object can be built.
 
+## Progress
+
+Compiled against the clang build so far, all rc 0: EXP174 (set-rows), 175 (concat), 176 (getrows),
+177 (cpy), 179 (moe-weighted), 181 (mmid), 182 (convert), 183 (fwht), 184 (mmvf), 186 (mmvq, supersedes 185),
+plus the host units for 180–186.
+
+Three groups still need merged sources before their objects can be built, because several experiments edit
+the same file and none contains the others:
+
+| target file | experiments |
+|---|---|
+| `quantize.cu` | EXP178, EXP180, EXP208 |
+| `mmvq.cu` | EXP186 (has 185), EXP188 |
+| `fattn-vec-instance-q4_0-q4_0.cu` | EXP173 — compiles with one error, needs its own include set |
+
 ## Order
 
 1. Compile the five independent modules (180, 181, 182, 183, 184) against the clang build.
