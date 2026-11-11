@@ -1,0 +1,52 @@
+[
+  {
+    "mutation": "device ignores the src0 dim-2 grouping",
+    "status": "CAUGHT",
+    "failures": 691
+  },
+  {
+    "mutation": "device multiplies by dps3 instead of dividing",
+    "status": "CAUGHT",
+    "failures": 1050
+  },
+  {
+    "mutation": "device swaps the b strides",
+    "status": "CAUGHT",
+    "failures": 1143
+  },
+  {
+    "mutation": "device swaps the c strides",
+    "status": "CAUGHT",
+    "failures": 1143
+  },
+  {
+    "mutation": "device drops the float scale on the a pointer",
+    "status": "CAUGHT",
+    "failures": 1153
+  },
+  {
+    "mutation": "device drops i2 from the flat index",
+    "status": "CAUGHT",
+    "failures": 3486
+  },
+  {
+    "mutation": "host treats a grouped src0 as the strided branch",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "host batches only ne2 for the pointer branch",
+    "status": "CAUGHT",
+    "failures": 2
+  },
+  {
+    "mutation": "host defaults the src1 op to N",
+    "status": "CAUGHT",
+    "failures": 1
+  },
+  {
+    "mutation": "host halves the lda divisor",
+    "status": "CAUGHT",
+    "failures": 1
+  }
+]
