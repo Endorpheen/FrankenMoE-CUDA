@@ -583,3 +583,23 @@ detour.
 
 Next: drop the creation detour, keep only the kernel-entry patch (proven safe there by the harness), and make the
 pointer-attributes probe unconditional so it reports on the first call without extra patching.
+
+## The preloaded module now breaks CUDA initialisation itself
+
+Controlled comparison, same profile and runner:
+
+| run | result |
+|---|---|
+| without `LD_PRELOAD` | completes, `first_sha = e68df05b...` |
+| with `LD_PRELOAD=/tmp/libfg186q.so` | `not ready`; the crash stack is inside the driver: `libcuda.so.1(cuDeviceGetAttribute)`, called from `cudaGetDeviceProperties_v2`, called from libggml-cuda, from `ggml_backend_dev_type` |
+
+So merely loading our DSO now breaks device enumeration, before any of our code runs. The stack has no frame of
+ours. This is the same class of problem flagged earlier as likely: a DSO carrying its own CUDA fat-binary
+registration, loaded into a process that registers its modules separately.
+
+Important consequence for the record: the earlier successful preloaded runs happened before the most recent
+additions. In its current form the module cannot be preloaded at all, so every "not ready" in the last several
+attempts is this, not the original defect.
+
+Next: build the module so it is linked into the backend instead of preloaded (the CMake-into-ggml-cuda route), which
+removes the second fat-binary registration entirely.

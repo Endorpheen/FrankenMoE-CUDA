@@ -158,7 +158,7 @@ __attribute__((constructor)) static void init(void) {
     g_patched = 1;
     {
         /* also detour the context-creation entry itself, so internal callers are covered */
-        fg186_install_cinit(h);
+        if (getenv("FG186S_CINIT")) fg186_install_cinit(h);
     }
     if (getenv("FG186S_WITNESS")) {
         Dl_info di;
