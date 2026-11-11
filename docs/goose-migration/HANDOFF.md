@@ -444,10 +444,15 @@ most dangerous and is worth checking first in any new fixture.
    tensor and are a no-op for a plain buffer or a zero request; the three call sites use
    the highest range end. 16 290 checks, 8/8 mutations. The registry lookup and the
    commit itself stay native primitives.
-47. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+47. KV sequence shift — EXP327 transfers `seq_add(seq_id, p0, p1, shift)` with its four
+   early exits, the fixed order inside a shifted cell (unlink the per-sequence index, move,
+   relink unless freed) and the head rule that falls back to **zero**, not the cache size,
+   when nothing was freed. 17 656 checks, 8/8 mutations. P5-09 now has shift covered; the
+   cancellation/unload sweep is still open.
+48. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-48. Downstream phases P4–P11.
+49. Downstream phases P4–P11.
 
 ## Disk
 
