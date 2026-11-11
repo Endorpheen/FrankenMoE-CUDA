@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "nl destination 4*il -> 2*il (f16 body)",
+    "status": "CAUGHT",
+    "failures": 5
+  },
+  {
+    "mutation": "nl destination uses guard index ibg (f16 body)",
+    "status": "CAUGHT",
+    "failures": 3
+  },
+  {
+    "mutation": "xs scale bias 32 -> 31 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion (nl body)",
+    "status": "CAUGHT",
+    "failures": 5
+  },
+  {
+    "mutation": "high nibble reads low nibble (f16 body)",
+    "status": "CAUGHT",
+    "failures": 5
+  }
+]
