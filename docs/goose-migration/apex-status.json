@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T19:13:03.046664+03:00",
+  "updated_at": "2026-11-11T19:16:26.714980+03:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -42,6 +42,12 @@
       "item": "APEX.LOAD",
       "state": "DONE",
       "implemented": "Load-path decisions in Goose and live: shape acceptance (FG201L), duplicate names and dominant file type (FG389S), buffer placement (EXP404/FG404S). gguf_init, mmap/file I/O and ggml tensor metadata are the named system primitives. mmap alignment (EXP403) integrated but only reachable via FILE*, not counted.",
+      "remaining": "none against the stated criterion"
+    },
+    {
+      "item": "APEX.CORE",
+      "state": "DONE",
+      "implemented": "Decision layer on the used core path in Goose and live: FG155..FG165 accepted routes, fused-op resolution (FG391S), scheduler decisions (FG405S). ggml_backend_sched, allocator and CUDA runtime are the named primitives.",
       "remaining": "none against the stated criterion"
     }
   ]
