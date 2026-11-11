@@ -955,10 +955,21 @@ most dangerous and is worth checking first in any new fixture.
    Explicitly separated as buffer primitives, per the criterion: `write_tensor`/`read_tensor` and the
    backend allocation. Not claimed and not needed for the criterion: `state_read_data` still refuses the
    interleaved per-layer format at a coarser granularity than EXP394's per-span arithmetic (EXP366).
-118. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+118. APEX.RECURRENT_MEMORY complete against its criterion. Used recurrent/hybrid memory, state
+   transitions, stream ordering and tensor state I/O are all Goose-owned on the live path:
+   transitions and ordering (FG232R from the accepted runtime, FG382S live), payload layout on write and
+   read for R/PLE/S including the transposed case (FG396S live), hybrid delegation order and the
+   rollback rule (FG397S live), plus the hybrid combinators and context decisions (FG375S, FG376S live).
+   Gates: 34/0, 875/0, 33/0, 76/0, 35/0 with 20 mutations caught across them.
+   CORRECTION to items 98 and 99: those two were recorded NOT VALIDATED because their witnesses never
+   fired, and I explained that with the M-RoPE branch and `n_ubatch`. The real cause was that
+   **llama-memory-hybrid.cpp was not in the build's changed list**, so no hybrid decision code was in the
+   binary at all. With the file compiled, both witness routes fire on the ordinary profile. Lesson kept:
+   before explaining a zero by reachability, prove the code is in the artefact.
+119. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-119. Downstream phases P4–P11.
+120. Downstream phases P4–P11.
 
 ## Disk
 
