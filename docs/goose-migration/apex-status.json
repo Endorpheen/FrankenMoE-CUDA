@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T19:08:07.842262+00:00",
+  "updated_at": "2026-11-11T19:34:17.574163+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -68,6 +68,19 @@
         "model": "claude-sonnet-4.5"
       },
       "at": "2026-11-11T19:08:07.842244+00:00"
+    },
+    {
+      "item": "APEX.CUDA_MATVEC",
+      "state": "BLOCKED",
+      "implemented": "Goose Q6_K CUDA matvec (EXP186) is functionally complete and was byte-exact in its own experiment (4/4 outputs, Apex sha e68df05b, memcheck clean). The source flag is flipped to opt-out per the owner's rule. Integration route established end to end: libggml-cuda rebuilt from the flint sources in /tmp (145,811,304 bytes), module compiled unchanged against them (rc=0), shim links it as a DSO, installs an entry patch and resolves the mangled native callback; the call is routed into the module (gdb frame confirmed).",
+      "remaining": "The module faults at runtime against this backend and the fault point moves with unrelated edits (step 4a/4b/4c in different builds), i.e. undefined behaviour, most likely from packet/device-code expectations of the older backend. compute-sanitizer reports 0 device errors, so it is host-side. AddressSanitizer build produced no report because the module was not reached in that run. Not integrated; the active runtime still uses the native kernel.",
+      "evidence": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/BUILD-BLOCKER-20261111.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T19:34:17.574136+00:00"
     }
   ]
 }
