@@ -69,3 +69,15 @@ piece of device code than the inner product.
 
 Recorded plainly: quantizer and dispatch are Goose and executing; the dp4a inner product is Goose and gated but not
 exercised; the tensor-core route is not ported.
+
+## Correction: the MMQ tensor-core route IS executing
+
+A radical probe settles what the dp4a probe could not: making `ggml_cuda_mmq_load_tiles_q4_K` return immediately
+changed the completion to `a85b73755224...`; restoring it returned `e68df05b`.
+
+So on this device the Q4_K MMQ kernel does run, through the tile-load plus tensor-core route, and that route is the
+one that has to become Goose. The earlier "dormant" conclusion applies only to the dp4a `vec_dot`, which is the branch
+this device does not take - not to MMQ as a whole.
+
+That also re-frames the remainder measured earlier: `mmq.cuh` + `mmq-load-tiles.cuh` (3,375 lines of templates) is
+live code on the accepted path, not dead weight. Porting it is the real body of this item.
