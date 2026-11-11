@@ -282,10 +282,17 @@ most dangerous and is worth checking first in any new fixture.
    "max" versus "last" unless a position above 1024 is drawn; and the HCA dummy's
    assert (last slot must not be live) has to be modelled so invalid draws are skipped
    instead of faked.
-23. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+23. DSV4 comp plan, overlap layout — EXP303 adds the `overlap == true` read layout:
+   previous-window halves for every block, then current-window halves, collected
+   separately and concatenated once, with dummy blocks appending to both. 124 118
+   checks, 8/8 mutations. My own slip, caught by the count before the contents: a
+   text substitution missed two dummy sites because their indentation differed, so
+   they kept writing to the shared list. Compare counts first in every plan gate.
+   Still open in this plan: the restore/snapshot planes (`n_rs_seq > 0`).
+24. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-24. Downstream phases P4–P11.
+25. Downstream phases P4–P11.
 
 ## Disk
 
