@@ -463,3 +463,19 @@ run and see which instruction writes.
 
 That is the next concrete step, and it needs the context offset, which the module already prints. Nothing further
 can be concluded from prints alone.
+
+## Watchpoint attempt under gdb did not run
+
+Tried the planned hardware watchpoint: break on `ggml_backend_cuda_init`, `finish`, compute the context from the
+returned backend (`+0x18`), watch `ctx+0xcf0` (the slot offset measured from the module's own prints), then
+continue. The batch session ended without reaching the watchpoint:
+
+    0x00007ffff7f989fb in ggml_cuda_mul_mat_vec_q(...) from /tmp/libfg186q.so
+    Couldn't get registers: Нет такого процесса
+
+i.e. the process dies early under this gdb+preload combination, before the watch is armed usefully. Running the
+same stack interactively (or with the harness instead of the server) is a better environment for the watchpoint,
+because the harness reaches the same kernel in seconds.
+
+This is recorded as a failed attempt, not as a result. The evidence chain stands as documented above; the open
+question (who writes the slot) needs a watchpoint in a stable session.
