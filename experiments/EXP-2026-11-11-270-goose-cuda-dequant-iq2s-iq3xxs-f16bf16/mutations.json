@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "q2_s grid byte drops il (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "q2_s qh shift 8-2*il -> 6-2*il (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "q3_xxs exponent 28 -> 27 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "q3_xxs second group +4 -> +8 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion (q3_xxs body)",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
