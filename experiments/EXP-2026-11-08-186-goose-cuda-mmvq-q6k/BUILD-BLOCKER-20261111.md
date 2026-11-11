@@ -338,3 +338,22 @@ Two candidates remain, both concrete:
 
 Next probe: print `&ctx`, `dladdr(&ctx)` and `dladdr(ggml_cuda_mul_mat_vec_q)` from inside the module, and dump
 `/proc/self/maps` filtered for ggml-cuda while it runs. That settles both candidates at once.
+
+## The server really uses stage-run's libggml-cuda, and swapping it changes nothing
+
+`dladdr` from inside the shim shows the patched symbol belongs to
+`stage-run/libggml-cuda.so.0` (base 0x736350200000), **not** to the flint build directory that `ldd` reports for a
+separately started binary. The maps dump confirms exactly one copy of that file is mapped.
+
+I then replaced `stage-run/libggml-cuda.so.0.27.0` with the build compiled from the same sources as the module
+(sha 219af9757810 -> 83ef33dc89e2), ran again, and restored the original afterwards (hash verified back to
+219af9757810). Result: identical trace and the same implausible `pool=0x11d0039ab04`.
+
+So the layout hypothesis is closed too: with the library built from the very sources the module uses, the module
+still reads a bad `pools[device][curr_stream_no]` reference in the server, while the same module works perfectly in
+the harness. What differs is the process: the server builds the CUDA backend through the goose-modified
+`libggml-base` (fg163_backend_call), the harness calls the backend API directly.
+
+Next probe: print, from the module, the address of `ctx` and the address the *native* call would receive
+(capture `ctx` in the shim before patching), to confirm whether the object passed to the patched entry is the same
+one the backend created.

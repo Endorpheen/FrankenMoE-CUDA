@@ -72,8 +72,18 @@ __attribute__((constructor)) static void init(void) {
     memcpy(g_target, patch, sizeof(patch));
     __builtin___clear_cache((char *) g_target, (char *) g_target + sizeof(patch));
     g_patched = 1;
-    if (getenv("FG186S_WITNESS"))
-        fprintf(stderr, "FG186S_PATCH target=%p ours=%p enabled\n", g_target, ours);
+    if (getenv("FG186S_WITNESS")) {
+        Dl_info di;
+        const char * path = (dladdr(g_target, &di) && di.dli_fname) ? di.dli_fname : "?";
+        fprintf(stderr, "FG186S_PATCH target=%p ours=%p lib=%s base=%p\n", g_target, ours, path, di.dli_fbase);
+        FILE * m = fopen("/proc/self/maps", "r");
+        if (m) {
+            char line[512];
+            while (fgets(line, sizeof(line), m))
+                if (strstr(line, "ggml-cuda")) fprintf(stderr, "FG186S_MAP %s", line);
+            fclose(m);
+        }
+    }
 }
 
 __attribute__((destructor)) static void fini(void) {
