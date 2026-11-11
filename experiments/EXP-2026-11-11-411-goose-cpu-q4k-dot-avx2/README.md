@@ -199,3 +199,32 @@ that fixed the same captured call gives `goose = 6.91547248e-05 = native` exactl
 
     FG410S_ADAPTOR cases=160 checks=161 failures=0
     nb = 1, 2, 3, 7, 8, 16, 32, 64, 128: 0 mismatches / 20 each
+
+## Independent proof that the Goose kernel executes (not my own counters)
+
+Prompted by a fair objection: zero detour counters do not by themselves prove anything. Three independent
+checks were run on a real server process.
+
+1. **Real process maps.** `/proc/PID/maps` of the running server shows exactly one CPU DSO:
+   `.../stage-run/libggml-cpu.so.0` — the library I patch and rebuild. `ldd` of a separately started binary
+   would not have shown this.
+
+2. **gdb breakpoint.** Attaching was refused (`ptrace_scope`), and when the server was started under gdb the
+   pending breakpoints never resolved, so this route produced no evidence either way. Recorded as inconclusive,
+   not as proof of absence. `perf` is also unavailable (`perf_event_paranoid = 4`).
+
+3. **Defect test — the decisive one.** Only the Goose code was changed, one character of the fp16 decoder
+   (`127-14-sh` -> `127-15-sh`), and the whole library rebuilt:
+
+   | library | content | sha |
+   |---|---|---|
+   | Goose with the defect | `endahendahendahendah` | `e4de6b44829acb78` |
+   | Goose correct | ` Paris, a city` | `d13cf4cf221fa5fd` |
+   | native | ` Paris, a city` | `d13cf4cf221fa5fd` |
+
+   A one-character change inside the Goose kernel changes the model output, and only that. That is direct
+   evidence the kernel runs on the used CPU path and that its result reaches the model; it does not depend on
+   any counter of mine.
+
+The zero counts on the 32K/128 GPU profile remain a separate fact: that profile does not call these kernels,
+and on the CPU profile they are called and now proven to matter.
