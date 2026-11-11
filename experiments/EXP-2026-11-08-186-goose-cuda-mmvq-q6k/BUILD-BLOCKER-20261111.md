@@ -522,3 +522,23 @@ Therefore the next instrument is not a wrapper but either:
 - an interactive gdb session with a watchpoint on the slot, started from a breakpoint that actually resolves.
 
 That is a separate task from porting the kernel, and it is where this item now honestly stands.
+
+## Decisive narrowing: it is one context, corrupted between creation and first use
+
+With the context-creation entry detoured at the code level (not via symbol wrapping), the two addresses finally
+agree:
+
+    FG186S_CINIT backend=0x58b47fa0c690 ctx=0x58b47e7f47c0 slot0=(nil)
+    FG186T step=1 enter ctx=0x58b47e7f47c0 dev=0 name='CUDA0' curr_stream=0
+    FG186T step=1a slot=0x58b47e7f54b0 slot0=0x11d2c5e9105
+
+So there is **one** context after all — earlier "two contexts" was an artefact of comparing against a wrapper that
+fired on a different call. At creation its slot is `nullptr`; by the first matvec it holds garbage. Something writes
+into that slot in between.
+
+Also found and fixed a self-inflicted blocker: the earlier page guard was armed unconditionally and made the server
+unable to start (the guard page covers the context itself). It is now opt-in via `FG186S_GUARD`.
+
+Next: the guard is the right instrument, but it must be armed only after creation and must distinguish reads from
+writes. A SIGSEGV handler already logs the faulting address plus a backtrace; with the guard scope narrowed to the
+single slot page and protected state restored after the first hit, it will name the writer.

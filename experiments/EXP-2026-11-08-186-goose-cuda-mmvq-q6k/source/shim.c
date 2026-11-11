@@ -65,6 +65,18 @@ static void segv_probe(int sig, siginfo_t * si, void * uc) {
     raise(SIGSEGV);
 }
 
+static void fg186_install_cinit(void * h);
+typedef void * (*cidx_fn)(size_t);
+static cidx_fn g_cinit_orig;
+static void * cinit_wrap(size_t n) {
+    void * be = g_cinit_orig ? g_cinit_orig(n) : NULL;
+    if (be && getenv("FG186S_WITNESS")) {
+        void * c = *(void **) ((char *) be + 0x90);
+        fprintf(stderr, "FG186S_CINIT backend=%p ctx=%p slot0=%p\n", be, c, c ? *(void **) ((char *) c + 0xcf0) : NULL);
+    }
+    return be;
+}
+
 typedef void * (*dev_init_fn)(void *, const char *);
 static dev_init_fn g_dev_orig;
 void * ggml_backend_dev_init(void * dev, const char * params) {
@@ -97,7 +109,7 @@ void * ggml_backend_cuda_init(size_t n) {
             struct sigaction sa; memset(&sa, 0, sizeof sa);
             sa.sa_sigaction = segv_probe; sa.sa_flags = SA_SIGINFO;
             sigaction(SIGSEGV, &sa, NULL);
-            if (mprotect(g_guard_page, (size_t) pg, PROT_NONE) == 0 && getenv("FG186S_WITNESS"))
+            if (getenv("FG186S_GUARD") && mprotect(g_guard_page, (size_t) pg, PROT_NONE) == 0 && getenv("FG186S_WITNESS"))
                 fprintf(stderr, "FG186S_GUARD armed at %p (slot %p)\n", g_guard_page, slot);
         }
     }
@@ -134,6 +146,10 @@ __attribute__((constructor)) static void init(void) {
     memcpy(g_target, patch, sizeof(patch));
     __builtin___clear_cache((char *) g_target, (char *) g_target + sizeof(patch));
     g_patched = 1;
+    {
+        /* also detour the context-creation entry itself, so internal callers are covered */
+        fg186_install_cinit(h);
+    }
     if (getenv("FG186S_WITNESS")) {
         Dl_info di;
         const char * path = (dladdr(g_target, &di) && di.dli_fname) ? di.dli_fname : "?";
@@ -157,4 +173,23 @@ __attribute__((destructor)) static void fini(void) {
         __builtin___clear_cache((char *) g_target, (char *) g_target + (int) sizeof(g_saved));
     }
     if (getenv("FG186S_WITNESS")) fprintf(stderr, "FG186S_PATCH restored\n");
+}
+
+static void fg186_install_cinit(void * h) {
+    void * ci = dlsym(h, "ggml_backend_cuda_init");
+    if (!ci) return;
+    unsigned char * saved_ci = mmap(NULL, 64, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void * tramp_ci = make_trampoline(ci);
+    if (!saved_ci || saved_ci == MAP_FAILED || !tramp_ci) return;
+    g_cinit_orig = (cidx_fn) tramp_ci;
+    long pg = sysconf(_SC_PAGESIZE);
+    void * base = (void *) ((uintptr_t) ci & ~(uintptr_t) (pg - 1));
+    if (mprotect(base, (size_t) pg, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) return;
+    memcpy(saved_ci, ci, 12);
+    unsigned char patch[12] = { 0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0 };
+    uintptr_t dest = (uintptr_t) &cinit_wrap;
+    memcpy(&patch[2], &dest, 8);
+    memcpy(ci, patch, sizeof(patch));
+    __builtin___clear_cache((char *) ci, (char *) ci + sizeof(patch));
+    if (getenv("FG186S_WITNESS")) fprintf(stderr, "FG186S_CINIT detour installed\n");
 }
