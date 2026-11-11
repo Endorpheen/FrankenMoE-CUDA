@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "an empty cell is selected for a whole-cache write",
+    "status": "CAUGHT",
+    "failures": 1714,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a cell of another sequence is selected",
+    "status": "CAUGHT",
+    "failures": 13790,
+    "exit_code": 1
+  },
+  {
+    "mutation": "data ranges merge across a gap",
+    "status": "CAUGHT",
+    "failures": 10749,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the previous source of a cell is ignored",
+    "status": "CAUGHT",
+    "failures": 10647,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the rollback index does not shift the row block",
+    "status": "CAUGHT",
+    "failures": 3301,
+    "exit_code": 1
+  },
+  {
+    "mutation": "disagreeing rollback indices in a shared cell pass",
+    "status": "CAUGHT",
+    "failures": 156,
+    "exit_code": 1
+  },
+  {
+    "mutation": "device saves accept several ranges",
+    "status": "CAUGHT",
+    "failures": 1095,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed read clears with the requested count",
+    "status": "CAUGHT",
+    "failures": 349,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a successful read forgets to reset the rollback index",
+    "status": "CAUGHT",
+    "failures": 673,
+    "exit_code": 1
+  }
+]

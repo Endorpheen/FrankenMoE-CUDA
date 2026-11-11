@@ -591,10 +591,19 @@ most dangerous and is worth checking first in any new fixture.
    sequence's maximum position, so a whole-cache write never filters. Ranges coalesce and a
    zero-cell stream is skipped with no meta and no data. All four masking rules are covered,
    including the inclusive `p1 - p0 >= n_swa` boundary. 39 388 checks, 9/9 mutations.
-66. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+66. Recurrent state write and read — EXP346 transfers both halves. The write keeps two lists:
+   logical ranges over cells and data ranges over source rows `rs_idx[seq]*size + (src>=0?src:i)`,
+   so cells adjacent in cell order but not in row order stay separate. Two checks run **before
+   anything is written** even though both depend on the selection: a shared cell must resolve one
+   rollback index across all its sequences, and a device save refuses more than one range. The
+   section order is count, meta, data — not the order the lists are built in; the first two
+   versions got that wrong and only the record stream showed it. The read clears with the count
+   only when meta actually read one, then throws, and a success resets the rollback index.
+   44 871 checks, 9/9 mutations.
+67. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-67. Downstream phases P4–P11.
+68. Downstream phases P4–P11.
 
 ## Disk
 
