@@ -444,3 +444,22 @@ Combined with earlier steps, the picture is complete on the module side and open
 
 What remains is an ownership/state defect in the goose-integrated backend context in this process. That is a
 distinct item, not kernel porting, and it is fully documented here.
+
+## Backend creation is observable; the context it hands out is the one the module receives
+
+Added a shim wrapper for `ggml_backend_cuda_init` (calls the backend's own symbol, then reports what it returned):
+
+    FG186S_INIT backend=0x6287b77a9710 ctxguess=0x7c0ef3591840
+    FG186T step=1 enter ctx=0x6287b6591840 dev=0 name='CUDA0' curr_stream=0
+    FG186T step=1a slot=0x6287b6592530 slot0=0x11d162286c1
+
+The backend handle never equals the context (as expected), and the context the module is handed is a normal heap
+object with valid device/name/stream fields. The slot is already garbage at the first call.
+
+So the writer is somewhere between backend construction and the first matvec, and it is not the goose CUDA
+modules (they were all disabled with the same result). This is the exact interval a hardware watchpoint covers:
+`watch *(void **)(ctx + offsetof(pools))` immediately after `ggml_backend_cuda_init` returns, then let the server
+run and see which instruction writes.
+
+That is the next concrete step, and it needs the context offset, which the module already prints. Nothing further
+can be concluded from prints alone.

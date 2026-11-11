@@ -46,6 +46,19 @@ static int enabled(void) {
     return !(e && strcmp(e, "0") == 0);
 }
 
+typedef void * (*init_fn)(size_t);
+static init_fn g_init_orig;
+void * ggml_backend_cuda_init(size_t n) {
+    void * h = dlopen("libggml-cuda.so.0", RTLD_NOW | RTLD_NOLOAD);
+    if (!g_init_orig && h) g_init_orig = (init_fn) dlsym(h, "ggml_backend_cuda_init");
+    void * be = g_init_orig ? g_init_orig(n) : NULL;
+    if (be && getenv("FG186S_WITNESS")) {
+        void ** ctxp = (void **) ((char *) be + 8);   /* ggml_backend.context field; printed for reference */
+        fprintf(stderr, "FG186S_INIT backend=%p ctxguess=%p\n", be, ctxp ? *ctxp : NULL);
+    }
+    return be;
+}
+
 __attribute__((constructor)) static void init(void) {
     if (!enabled()) return;
     void * h = dlopen("libggml-cuda.so.0", RTLD_NOW | RTLD_NOLOAD);
