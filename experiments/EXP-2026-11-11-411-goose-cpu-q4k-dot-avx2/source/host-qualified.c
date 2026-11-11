@@ -1632,8 +1632,8 @@ label25:;
   t269 = fg410k_ldi8(t265, t268);
   v32 = ((int64_t)(((int64_t)(t269))));
   t270 = ((int64_t)(v9));
-  t271 = ((int64_t)(((int64_t)UINT64_C(8))));
-  v33 = ((int64_t)(((int64_t)fg410ds_gg_mod(t270, t271))));
+  t271 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
+  v33 = ((int64_t)(((int64_t)fg410ds_gg_div(t270, t271))));
   /* FG_DIRECT_SLICE_INDEX */
   t272 = v33;
   t273 = ((int64_t *)(v26).data) + fg410ds_gg_index(t272, ((int64_t)UINT64_C(8)));

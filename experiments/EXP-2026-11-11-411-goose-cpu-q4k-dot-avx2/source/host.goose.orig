@@ -95,16 +95,15 @@ fn run(packet:i64)->bool {
         while li < 8 { acc[li] = 0 as i64; li = li + 1 as i64; }
         j = 0 as i64;
         while j < 8 {
-            let scale:i64 = ldu8(sc, j) as i64;
             li = 0 as i64;
             while li < 32 {
                 let idx:i64 = j*32 as i64 + li;
+                let grp:i64 = idx / 64 as i64;
+                let half:i64 = (idx % 64 as i64) / 32 as i64;
+                let scale:i64 = ldu8(sc, grp*2 as i64 + half) as i64;
                 let qv:i64 = ldu8(sc, 64 as i64 + idx);
                 let xv:i64 = ldi8(q8 + (i*292) as u64, 4 as i64 + idx) as i64;
                 let lane:i64 = li % 8;
-                if j == 0 as i64 && li == 0 as i64 {
-                    stw(sc, 1600 as i64, scale); stw(sc, 1608 as i64, qv); stw(sc, 1616 as i64, xv);
-                }
                 acc[lane] = acc[lane] + scale * qv * xv;
                 li = li + 1 as i64;
             }
@@ -117,13 +116,17 @@ fn run(packet:i64)->bool {
             li = li + 1 as i64;
         }
         let dminn:f32 = 0.0 as f32 - dmin;
+        // madd_epi16 pairs: prod[i] = mins[2i]*(bs[4i]+bs[4i+1]) + mins[2i+1]*(bs[4i+2]+bs[4i+3])
         am = 0 as i64;
         while am < 4 {
-            let b0:i64 = ldi16(q8 + (i*292) as u64, 260 as i64 + am*4 as i64);
-            let b1:i64 = ldi16(q8 + (i*292) as u64, 262 as i64 + am*4 as i64);
-            let mn2:i64 = ldu8(sc, 8 as i64 + am as i64) as i64;
-            let pr:f32 = (mn2 * (b0 + b1)) as f32;
-            accm[am] = fma(dminn, pr, accm[am]);
+            let bs0:i64 = ldi16(q8 + (i*292) as u64, 260 as i64 + am*8 as i64);
+            let bs1:i64 = ldi16(q8 + (i*292) as u64, 262 as i64 + am*8 as i64);
+            let bs2:i64 = ldi16(q8 + (i*292) as u64, 264 as i64 + am*8 as i64);
+            let bs3:i64 = ldi16(q8 + (i*292) as u64, 266 as i64 + am*8 as i64);
+            let mna:i64 = ldu8(sc, 8 as i64 + am*2 as i64) as i64;
+            let mnb:i64 = ldu8(sc, 9 as i64 + am*2 as i64) as i64;
+            let pr:i64 = mna*(bs0+bs1) + mnb*(bs2+bs3);
+            accm[am] = fma(dminn, pr as f32, accm[am]);
             am = am + 1 as i64;
         }
         stw(sc, 2000 as i64 + i*32 as i64, f32b(d));

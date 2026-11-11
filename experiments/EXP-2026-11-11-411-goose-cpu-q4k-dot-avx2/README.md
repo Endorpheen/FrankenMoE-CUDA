@@ -67,3 +67,23 @@ Next probe, and it is decisive rather than another guess: build an intrinsic `-m
 `arch/x86/quants.c` in the test, diff its `hsum`, `msum` and `sumi` against the module's on the same block, and
 find the first member that differs. The source for the AVX2 path exists, so the remaining work is to compare
 member by member instead of reasoning about it.
+
+## Clean: 160/160 against the dispatched AVX2, and the defect that was left
+
+Isolating the two terms decided it in one step:
+
+| data | what it exercises | failures |
+|---|---|---|
+| `x.dmin = 0` | scale branch only | 104 |
+| `x.d = 0` | min branch only | **0** |
+
+So the min branch was already exact and the scale branch was wrong **by value**, not by association — which is
+why every horizontal-order variant landed between 89 and 105 instead of reaching zero.
+
+The defect: lane grouping. The portable kernel assigns lane `l` the elements `l, l+8, l+16, l+24`
+(`li % 8`). AVX2 goes through `maddubs` then `madd_epi16`, so lane `i` owns the four consecutive elements
+`4i..4i+3`, i.e. `li / 4`. With `li / 4`:
+
+    FG410S_ADAPTOR cases=160 checks=161 failures=0
+
+160 of 160 bit-exact against `ggml_vec_dot_q4_K_q8_K` for nb = 1, 2, 3, 7.

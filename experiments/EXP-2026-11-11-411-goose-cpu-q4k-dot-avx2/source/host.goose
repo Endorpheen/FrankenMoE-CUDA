@@ -103,7 +103,7 @@ fn run(packet:i64)->bool {
                 let scale:i64 = ldu8(sc, grp*2 as i64 + half) as i64;
                 let qv:i64 = ldu8(sc, 64 as i64 + idx);
                 let xv:i64 = ldi8(q8 + (i*292) as u64, 4 as i64 + idx) as i64;
-                let lane:i64 = li % 8;
+                let lane:i64 = li / 4 as i64;
                 acc[lane] = acc[lane] + scale * qv * xv;
                 li = li + 1 as i64;
             }
