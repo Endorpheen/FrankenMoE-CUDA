@@ -55,3 +55,18 @@ the `dm` rows. That is the honest state: the measuring instrument is sound, the 
 
 Next: print the first differing index per array, which separates "wrong slot arithmetic" (`sram_stride`, `16*(txi/8)`,
 `txi%8`) from "wrong source bytes" (`qs@16`, `scales@4`, `dm@0`).
+
+## DM fixed, QS still wrong
+
+Two findings from the index diff:
+
+1. **DM was missing the sign.** Native computes `dm = bxi->dm * make_half2(1.0f, -1.0f)` and only then multiplies by
+   `(sc, m)`; my primitive multiplied the raw `dm`. Symptom: `native=bf004a40 goose=3f004a40` -- one sign bit.
+   After the fix the DM rows match and the count dropped 18432 -> 16384.
+2. **QS still differs at the first index**: `native=090f0903 goose=020e000f`. `get_int_b4(x, i)` is
+   `((const int *)x)[i]`, i.e. 4 bytes at `qs + 4*i`, and `qs` is at byte 16 -- which is what the module does, so the
+   source offset is not obviously wrong. The remaining suspects are the argument order actually received by the
+   generated function, and the mask applied after the shift.
+
+DM matching while QS does not is useful: the staging slot arithmetic (`sram_stride`, `16*(txi/8)`, `txi%8`) is
+shared by both writes, so the slot formula is right and the disagreement is in the bytes read or the mask.

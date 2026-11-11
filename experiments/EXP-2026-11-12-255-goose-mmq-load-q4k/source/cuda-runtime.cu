@@ -13,8 +13,10 @@ static __device__ __forceinline__ int64_t fg255q_ld_i32(uint64_t b,int64_t i){re
 static __device__ __forceinline__ void  fg255q_st_i32(uint64_t b,int64_t i,int64_t v){((int32_t*)(uintptr_t)b)[i]=(int32_t)v;}
 static __device__ __forceinline__ int64_t fg255q_unpack_scales(uint64_t s,int64_t k){return (int64_t) unpack_scales_q45_K((const int*)(uintptr_t)s,(int)k);}
 static __device__ __forceinline__ int64_t fg255q_dm_scale(int64_t dm_bits,int64_t a,int64_t b){
+    // native: dm = bxi->dm * make_half2(1.0f, -1.0f); then dm * make_half2(sc, m)
     half2 dm = *(const half2*)&dm_bits;
-    half2 v = dm * make_half2((float)a,(float)b);
+    dm = dm * make_half2(1.0f, -1.0f);
+    half2 v = dm * make_half2((float)a, (float)b);
     int32_t out; memcpy(&out,&v,4); return (int64_t)out;
 }
 #if defined(__cplusplus) && !defined(_Alignas)
@@ -57,6 +59,16 @@ __global__ static void fg255q_check(const char * x, int kbx0, int stride, int I,
         (void) fg255qd_gg_function_1((uint64_t)(uintptr_t) x, (uint64_t)(uintptr_t) qs_g, (uint64_t)(uintptr_t) dm_g,
                                      kbx0, stride, i, txi, sram_stride, txi % 2, 0);
         __syncthreads();
+        if (threadIdx.x == 0 && i == 0) {
+            int shown = 0;
+            for (int k = 0; k < 64*32 && shown < 4; ++k)
+                if (qs_n[k] != qs_g[k]) { printf("QS k=%d native=%08x goose=%08x\n", k, qs_n[k], qs_g[k]); ++shown; }
+            shown = 0;
+            for (int k = 0; k < 64*16 && shown < 4; ++k) {
+                int a,b; memcpy(&a,&dm_n[k],4); memcpy(&b,&dm_g[k],4);
+                if (a != b) { printf("DM k=%d native=%08x goose=%08x\n", k, a, b); ++shown; }
+            }
+        }
         for (int k = 0; k < 64*32; ++k) if (qs_n[k] != qs_g[k]) atomicAdd(bad, 1);
         for (int k = 0; k < 64*16; ++k) { int a,b; memcpy(&a,&dm_n[k],4); memcpy(&b,&dm_g[k],4); if (a != b) atomicAdd(bad, 1); }
         __syncthreads();
