@@ -761,10 +761,16 @@ most dangerous and is worth checking first in any new fixture.
    completion is byte-identical to the first: tokens, all 128 probabilities, `e68df05b`.
    `FG345W_KV_STATE_WRITE` fires once (the save); restore goes through the read path, which has no
    Goose call site yet. So this is a correctness result for the write selection, not a read witness.
-88. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+88. KV state-read header bridge — EXP365 transfers the read path's decisions (layer count, capacity,
+   transposed state, and per-layer key/PLE/value type and row checks) and returns three read masks,
+   so the caller performs exactly the native transfers. Gate 11 595 checks / 0 failures. Not wired
+   yet: the call site in `state_read_data` is next, and one difference is recorded by design — the
+   caller reads all headers before asking, so a rejection leaves the IO stream further along, while
+   the observable restore result is unchanged because a rejection aborts.
+89. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-89. Downstream phases P4–P11.
+90. Downstream phases P4–P11.
 
 ## Disk
 
