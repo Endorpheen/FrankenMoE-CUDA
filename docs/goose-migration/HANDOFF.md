@@ -925,10 +925,17 @@ most dangerous and is worth checking first in any new fixture.
    yet its work is the loop over `cache_special_tokens`, and the run log carries no special-token cache
    line, so the cache is empty for this model and the loop body never executes. A chat-template request
    or a model declaring special tokens would exercise it; the agreed profile does neither.
-114. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+114. Fused-op resolution live — EXP391 moves the probe gate, the probe graph width and the mismatch
+   verdict of `llama_context::resolve_fused_ops` into Goose. Gate 43/0, 5/5 mutations; `FG391S` reports
+   its first call at context creation, completion `e68df05b`.
+   Process note worth keeping: a script whose escaping does not match the file aborted the staging
+   rebuild half-way, and the next run executed without the lost-bridge disable and died with
+   `FG205G validation code 21` — a half-applied staging is visible immediately rather than silently
+   accepted.
+115. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-115. Downstream phases P4–P11.
+116. Downstream phases P4–P11.
 
 ## Disk
 
