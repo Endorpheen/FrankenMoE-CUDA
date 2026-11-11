@@ -513,10 +513,17 @@ most dangerous and is worth checking first in any new fixture.
    The gate itself caught two generator defects: both breakdown sides are maps so keys are
    unique within a side while sides may overlap, and the port double-counted the first
    recurrent row of a recurrent-only key.
-56. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+56. Hybrid indexed initialisation — EXP336 transfers `llama_memory_hybrid_idx::init_batch`
+   (the hybrid split rules plus the rule that the indexer takes the attention slot layout
+   **verbatim** rather than searching its own cells), `init_update` (carries the optimize
+   flag, decides nothing) and `clear` (base halves, then indexer, then a zero staleness
+   reset). A failed batch yields no layout, never a partial one. 34 774 checks, 8/8
+   mutations — the pair "copy nothing" / "copy unconditionally" guards the layout rule from
+   both sides.
+57. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-57. Downstream phases P4–P11.
+58. Downstream phases P4–P11.
 
 ## Disk
 

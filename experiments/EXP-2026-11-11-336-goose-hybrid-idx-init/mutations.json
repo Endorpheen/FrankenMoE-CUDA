@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "an all-output batch splits equally",
+    "status": "CAUGHT",
+    "failures": 11502,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the rollback window is one long",
+    "status": "CAUGHT",
+    "failures": 1281,
+    "exit_code": 1
+  },
+  {
+    "mutation": "attention prepares before recurrent",
+    "status": "CAUGHT",
+    "failures": 7032,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the indexer layout is not copied",
+    "status": "CAUGHT",
+    "failures": 1842,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the indexer layout is copied even when there is no indexer",
+    "status": "CAUGHT",
+    "failures": 1838,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a partial batch still reports success",
+    "status": "CAUGHT",
+    "failures": 2230,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the optimize flag is dropped",
+    "status": "CAUGHT",
+    "failures": 523,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the indexer staleness is not reset",
+    "status": "CAUGHT",
+    "failures": 2952,
+    "exit_code": 1
+  }
+]
