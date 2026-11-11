@@ -21,6 +21,17 @@ nothing is claimed: no integration, no route, no acceptance.
 | the packed scales were read as 64-bit words | scale unpack produced values like 5.8e17 | 32-bit word reads |
 | mins were looked up at byte 16 | the reference keeps `scales` in `utmp[0..1]` and `mins` in `utmp[2..3]`, i.e. mins start at byte **8** | offset corrected |
 
+## Instrumented measurement
+
+The bridge prints the raw result bits: for the single-block probe the module returns `1560351732` =
+`0x5D00…`, i.e. the `5.81e17` value, while the reference gives `225.75`. The fp16 decode is verified, the
+mins offset is fixed, the scale words are read as 32-bit. So the corruption happens inside the module's
+block loop, not in the data exchange.
+
+A float of `0x5D00…` is around 2^59, which is not a plausible accumulator for 256 products of small
+integers — it looks like a bit pattern rather than an arithmetic result, so the next probe is to write the
+intermediate `d`, `sumi` and `sums[0]` back through the scratch buffer and read them in the bridge.
+
 ## What is still open
 
 One block still differs: reference `225.75`, Goose `5.81e17`. With the three defects above ruled out, the

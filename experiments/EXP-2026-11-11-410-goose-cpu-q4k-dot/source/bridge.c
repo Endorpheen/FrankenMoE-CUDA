@@ -49,7 +49,8 @@ float fg410s_dot(int64_t nb, const void * q4, const void * q8) {
     pkt[0*16+0]=nb; pkt[0*16+1]=(int64_t)(uintptr_t)q4; pkt[0*16+2]=(int64_t)(uintptr_t)q8;
     pkt[1*16+0]=(int64_t)(uintptr_t)sc; pkt[2*16+0]=0;
     (void) fg410ds_gg_function_1((int64_t)(uintptr_t)pkt, 1);
-    float r = g_f16f32(0); memcpy(&r, &(int32_t){(int32_t)pkt[2*16+0]}, 4);
+    if (getenv("FG410_DEBUG")) fprintf(stderr, "DBG nb=%lld raw=%lld\n", (long long) nb, (long long) pkt[2*16+0]);
+    float r; { int32_t u = (int32_t) pkt[2*16+0]; memcpy(&r, &u, 4); }
     free(pkt); free(sc);
     return r;
 }
