@@ -48,3 +48,10 @@ test.
 
 Applied so far: one character in the fp16 decoder turned " Paris, a city" / d13cf4cf into
 "endahendahendahendah" / e4de6b44 and back, which proves the kernel runs and its result reaches the model.
+
+## Overnight autonomy (2026-11-11)
+
+`igor-autonomous-sequential-overnight-bd13b4a4d597`: continue the small Apex path strictly one item at a time
+through implementation, checks and own DONE, plus one measurement per closed item, with no further confirmations.
+After the whole path: one final run, then a separate optimisation phase in the agreed order. Do not touch the
+compiler or other people's processes without approval, and create no user notifications.
