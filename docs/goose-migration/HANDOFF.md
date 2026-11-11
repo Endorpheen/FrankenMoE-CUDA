@@ -410,10 +410,16 @@ most dangerous and is worth checking first in any new fixture.
    indexer architectures rotate when the key width equals the indexer head size).
    5 819 576 checks, 8/8 mutations. The narrow one is the factor-two test (19 checks):
    it needs a width divisible by the size but not by twice it.
-41. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+41. KV state ranges — EXP321 opens P5-08 with the cell selection of
+   `state_write`: non-empty, carries the sequence (all cells for -1), not excluded by
+   the sliding window at the sequence's highest position, coalesced into ranges whose
+   lengths must equal the per-stream counts; and the partial-only section drop for a
+   cache without a window. 40 670 checks, 8/8 mutations. Still open in P5-08: the
+   metadata payload and the tensor data of the same write/read pair.
+42. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-42. Downstream phases P4–P11.
+43. Downstream phases P4–P11.
 
 ## Disk
 

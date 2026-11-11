@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "empty cells are written",
+    "status": "CAUGHT",
+    "failures": 7332,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sequence bit is not checked",
+    "status": "CAUGHT",
+    "failures": 23113,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sliding window is not checked",
+    "status": "CAUGHT",
+    "failures": 13873,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a range remembers the wrong start",
+    "status": "CAUGHT",
+    "failures": 27870,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the last range ends one cell early",
+    "status": "CAUGHT",
+    "failures": 1306,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the per-stream count is not incremented",
+    "status": "CAUGHT",
+    "failures": 7196,
+    "exit_code": 1
+  },
+  {
+    "mutation": "partial-only never drops a section",
+    "status": "CAUGHT",
+    "failures": 202,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sliding window also applies to all sequences",
+    "status": "CAUGHT",
+    "failures": 5119,
+    "exit_code": 1
+  }
+]
