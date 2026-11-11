@@ -26,9 +26,9 @@ fn load_row(x:u64, qs_stage:u64, dm_stage:u64, kbx0:i64, stride:i64, i:i64, txi:
 
     // four consecutive bytes of qs, indexed as int
     let qs0:i64 = ld_i32(bxi, 16 as i64 + txi*4 as i64);
-    let slot:i64 = i*sram_stride + 16*(txi/8 as i64) + (txi % 8 as i64);
+    let slot:i64 = (i*sram_stride + 16*(txi/8 as i64) + (txi % 8 as i64)) * 4 as i64;
     st_i32(qs_stage, slot,             (qs0 >> 0 as i64) & 0x0F0F0F0F as i64);
-    st_i32(qs_stage, slot + 8 as i64,  (qs0 >> 4 as i64) & 0x0F0F0F0F as i64);
+    st_i32(qs_stage, slot + 8*4 as i64, (qs0 >> 4 as i64) & 0x0F0F0F0F as i64);
 
     let sc32:i64 = unpack_scales(bxi + 4 as u64, ksc + 0 as i64);
     let m32:i64  = unpack_scales(bxi + 4 as u64, ksc + 2 as i64);
@@ -37,7 +37,7 @@ fn load_row(x:u64, qs_stage:u64, dm_stage:u64, kbx0:i64, stride:i64, i:i64, txi:
     while l < 4 {
         let sc8:i64 = (sc32 >> ((l*8) as i64)) & 0xff as i64;
         let m8:i64  = (m32  >> ((l*8) as i64)) & 0xff as i64;
-        st_i32(dm_stage, i*sram_stride + 4*ksc as i64 + l, dm_scale(dm_bits, sc8, m8));
+        st_i32(dm_stage, (i*sram_stride + 4*ksc as i64 + l) * 4 as i64, dm_scale(dm_bits, sc8, m8));
         l = l + 1 as i64;
     }
     true

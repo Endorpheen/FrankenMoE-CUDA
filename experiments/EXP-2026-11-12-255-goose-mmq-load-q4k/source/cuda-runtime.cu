@@ -9,8 +9,8 @@
 #include <algorithm>
 
 static __device__ __forceinline__ void  fg255q_fail(int64_t){ asm("trap;"); }
-static __device__ __forceinline__ int64_t fg255q_ld_i32(uint64_t b,int64_t i){return (int64_t)((const int32_t*)(uintptr_t)b)[i];}
-static __device__ __forceinline__ void  fg255q_st_i32(uint64_t b,int64_t i,int64_t v){((int32_t*)(uintptr_t)b)[i]=(int32_t)v;}
+static __device__ __forceinline__ int64_t fg255q_ld_i32(uint64_t b,int64_t i){int32_t v; memcpy(&v,(const void*)(uintptr_t)(b+(uint64_t)i),4); return (int64_t)v;}
+static __device__ __forceinline__ void  fg255q_st_i32(uint64_t b,int64_t i,int64_t v){int32_t t=(int32_t)v; memcpy((void*)(uintptr_t)(b+(uint64_t)i),&t,4);}
 static __device__ __forceinline__ int64_t fg255q_unpack_scales(uint64_t s,int64_t k){return (int64_t) unpack_scales_q45_K((const int*)(uintptr_t)s,(int)k);}
 static __device__ __forceinline__ int64_t fg255q_dm_scale(int64_t dm_bits,int64_t a,int64_t b){
     // native: dm = bxi->dm * make_half2(1.0f, -1.0f); then dm * make_half2(sc, m)
@@ -61,7 +61,8 @@ __global__ static void fg255q_check(const char * x, int kbx0, int stride, int I,
         __syncthreads();
         if (threadIdx.x == 0 && i == 0) {
             int shown = 0;
-            for (int k = 0; k < 64*32 && shown < 4; ++k)
+            if (threadIdx.x == 0 && i == 0) printf("QS0 native_raw=%08x goose_raw=%08x\n", qs_n[2040], qs_g[2040]);
+        for (int k = 0; k < 64*32 && shown < 4; ++k)
                 if (qs_n[k] != qs_g[k]) { printf("QS k=%d native=%08x goose=%08x\n", k, qs_n[k], qs_g[k]); ++shown; }
             shown = 0;
             for (int k = 0; k < 64*16 && shown < 4; ++k) {
@@ -92,6 +93,9 @@ int main() {
     fg255q_check<<<1, 32, shmem>>>((const char *) dx, 0, 1, I, sram_stride, bad);
     cudaError_t e = cudaDeviceSynchronize();
     int hb = 0; cudaMemcpy(&hb, bad, sizeof(int), cudaMemcpyDeviceToHost);
+    { int q0; memcpy(&q0, x[0].qs, 4);
+      printf("HOST qs0=%08x dm0=%04x%04x\n", q0,
+             *(const uint16_t*)&x[0].dm, *((const uint16_t*)&x[0].dm + 1)); }
     printf("FG255Q_AB mismatches=%d cuda=%d\n", hb, (int) e);
     return hb == 0 ? 0 : 1;
 }

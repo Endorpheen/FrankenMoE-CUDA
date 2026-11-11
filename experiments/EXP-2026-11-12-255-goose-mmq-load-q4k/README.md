@@ -70,3 +70,23 @@ Two findings from the index diff:
 
 DM matching while QS does not is useful: the staging slot arithmetic (`sram_stride`, `16*(txi/8)`, `txi%8`) is
 shared by both writes, so the slot formula is right and the disagreement is in the bytes read or the mask.
+
+## Gate clean: the Goose loader matches the native one
+
+Two defects, both mine:
+
+1. `dm` was missing the native `* make_half2(1.0f, -1.0f)` factor (one sign bit; 18432 -> 16384 mismatches).
+2. **The address primitives took int indices, not bytes.** My module passes byte offsets (`qs@16`, `scales@4`,
+   `dm@0`), but the bridge's `ld_i32`/`st_i32` indexed `int32_t[]`, so `16` meant byte 64. That is why the first raw
+   value read was `12ae20df` against a real `qs0` of `79dfa933`. Switching both primitives to byte addressing fixed
+   it, and the module now scales its slot indices by 4 explicitly.
+
+Result:
+
+    FG255Q_AB mismatches=0 cuda=0
+
+Eight blocks, both staging arrays compared element by element, zero differences. The Q4_K loader for the MMA layout
+is reproduced exactly.
+
+Next: substitute it into `mmq-load-tiles.cuh` (the header is included widely, so the generated device code has to be
+placed carefully) and require the accepted profile to stay at `e68df05b`.
