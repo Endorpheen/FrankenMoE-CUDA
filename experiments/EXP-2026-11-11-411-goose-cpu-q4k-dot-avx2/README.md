@@ -108,3 +108,29 @@ on a copy of the library also left the symbol unchanged.
 Consequence: the e68df05b run proves the profile and the machine reproduce the reference, but it does **not**
 prove the Goose kernel took part. Acceptance needs the patched library (or the Goose-built `libggml-cpu`) where
 the symbol is genuinely replaced, plus a non-zero witness.
+
+## Runtime patching works, and it says the kernel is not called on this profile
+
+`LD_PRELOAD` interposition does not reach the call, so `hook.c` now patches the function entry at load time:
+a constructor finds `ggml_vec_dot_q4_K_q8_K` with `dlopen(..., RTLD_NOLOAD)` + `dlsym`, saves the first 12
+bytes, `mprotect`s the page, and writes `movabs rax, imm64; jmp rax`. A destructor restores the bytes. Verified
+on a stand-alone caller: `FG411S_PATCH target=... enabled`, `FG411S_WITNESS calls=1`, result `-611.971619`
+(the AVX2 value).
+
+On the real profile:
+
+    FG411S_PATCH target=0x7621f14f41c0 enabled
+    FG411S_PATCH restored calls=0
+
+Zero calls, with the run still producing `e68df05b...`, equal probabilities and a successful restore. So on this
+profile the dispatched `ggml_vec_dot_q4_K_q8_K` is **not on the used path**, and the patched library is not
+where the work happens:
+
+    ldd llama-server => libggml-cpu.so.0 -> /home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/bin/
+
+The server loads the CPU backend from the flint build directory, not from `stage-run`. Two consequences, both
+matter for the item:
+
+1. A replacement must be installed in the library the server actually loads.
+2. Before porting more kernels, the used `vec_dot` entries must be identified rather than assumed — the
+   `Q4_K x Q8_K` dot may simply not run on this profile (`--cpu-moe`, Q4_K_M, 32K/128).
