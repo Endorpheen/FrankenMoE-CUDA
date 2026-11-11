@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "an all-output batch splits equally",
+    "status": "CAUGHT",
+    "failures": 11440,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the split is not sequential",
+    "status": "CAUGHT",
+    "failures": 4000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the rollback window is missing",
+    "status": "CAUGHT",
+    "failures": 1290,
+    "exit_code": 1
+  },
+  {
+    "mutation": "unplaced tokens are accepted",
+    "status": "CAUGHT",
+    "failures": 3275,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the dry run commits nothing but reports nothing either",
+    "status": "CAUGHT",
+    "failures": 9171,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the walk continues past a refused slot",
+    "status": "CAUGHT",
+    "failures": 624,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the state is only restored on failure",
+    "status": "CAUGHT",
+    "failures": 2210,
+    "exit_code": 1
+  },
+  {
+    "mutation": "init_update returns a working context",
+    "status": "CAUGHT",
+    "failures": 500,
+    "exit_code": 1
+  }
+]

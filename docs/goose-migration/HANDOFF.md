@@ -520,10 +520,16 @@ most dangerous and is worth checking first in any new fixture.
    reset). A failed batch yields no layout, never a partial one. 34 774 checks, 8/8
    mutations — the pair "copy nothing" / "copy unconditionally" guards the layout rule from
    both sides.
-57. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+57. Recurrent initialisation and preparation — EXP337 transfers recurrent `init_batch`
+   (all-output splits by sequence, anything else equally and **sequentially regardless of
+   the unified flag**, window `1 + n_rs_seq`), `prepare` as a dry run that snapshots the
+   whole state, asks each ubatch for a slot, and restores **also on success** — success
+   means "could be placed", not "was placed" — and `init_update`, which reports no-update
+   rather than a context. 30 022 checks, 8/8 mutations.
+58. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-58. Downstream phases P4–P11.
+59. Downstream phases P4–P11.
 
 ## Disk
 
