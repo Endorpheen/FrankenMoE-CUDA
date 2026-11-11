@@ -228,3 +228,32 @@ restore failure, or the lost hybrid tree for throughput.
 The reconstructed tree is a **correctness** base, not a performance equivalent. Two gaps documented:
 `fg205g` (lost bridge, native walk used) and the patch set (throughput, needs a full tree and one
 rebased patch). Promoting it is the owner's decision and needs the patches first.
+
+## Routes added by this line (status as measured)
+
+All gates were re-run in one sweep before this note; every one returned 0 failures.
+
+| route | experiment | status on the 32K/128 profile | gate |
+|---|---|---|---|
+| `FG381S_KV_WHOLE_CLEAR` | EXP381 | **live** (whole-context restore) | 22 |
+| `FG382S_RECURRENT_IO_PLAN` | EXP382 | **live** (save, R and S passes) | 34 |
+| `FG383S_BATCH_CONTAINER_PLAN` | EXP383 | **live** (every ubatch) | 37 |
+| `FG384S_SOFTMAX` | EXP384 | **live, bit-identical** | 3 769 |
+| `FG385S_SAMPLER_GUARDS` | EXP385 | **live** | 73 |
+| `FG386S_DIST_PICK` | EXP386 | **live, bit-identical** | 24 086 |
+| `FG387S_SAMPLER_CHAIN` | EXP387 | **live** (715 calls) | 51 |
+| `FG389S_GGUF_INVENTORY` | EXP389 | **live** (load) | 31 117 |
+| `FG373S_KV_READ_SINFO` | EXP373 | **live** (successful restore) | 41 |
+| `FG345W_KV_STATE_WRITE` | EXP347 | **live** (save) | — |
+| `FG367S_KV_STATE_CLEAR` | EXP367 | live on the failure path only | 51 077 |
+| `FG375S_HYBRID_MEMORY` | EXP375 | **0** — M-RoPE branch only | 76 |
+| `FG376S_HYBRID_CONTEXT` | EXP376 | **0** — needs `n_ubatch < n_tokens` | 35 |
+| `FG377S_FILE_ALIGN` | EXP377 | **0** — DirectIO branch, host uses mmap | 2 161 |
+| `FG380S_PENALTY_ACCEPT` | EXP380 | **0** — server builds no penalties sampler | 92 |
+| `FG388S_SAMPLER_FILTERS` | EXP388 | **0** — server's chain omits dry/xtc/sigma | 76 |
+
+The last five are integrated and guard-correct but **not counted**: the profile or the server never
+reaches them. Each has its measured reason above, so none of them is an open question.
+
+The sampler's probability path — softmax, selection, early exits, chain walk — is now Goose-owned and
+bit-identical; only the RNG primitive remains native, by design.
