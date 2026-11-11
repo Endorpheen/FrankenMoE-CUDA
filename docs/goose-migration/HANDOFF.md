@@ -332,10 +332,19 @@ most dangerous and is worth checking first in any new fixture.
    `seq_cp`/`seq_keep`/`seq_div`. 19 362 checks, 8/8 mutations. The narrow margins
    are the two boundaries (edit exactly at the first position, shift that crosses it),
    which is why the generator draws `p0` and `seq_min` from overlapping ranges.
-30. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+30. Hybrid pool layout — EXP310 transfers kpool_pad, kpool_rank and the
+   per-sequence layout update: resume from the stored scan point when clean and the
+   first position still matches, rebuild (dropping the scan point) when stale or
+   shrinking, and the two grouping modes (by order, by position with alignment and
+   consecutive positions). 32 147 checks, 8/8 mutations. Two candidate mutations were
+   rejected as unobservable, not missed: the `max(64, …)` floor is dead code and
+   resuming from an empty layout at scan point zero scans the same as rebuilding.
+   Replaced by observable ones — an extra pad block and a rebuild that keeps the old
+   scan point.
+31. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-31. Downstream phases P4–P11.
+32. Downstream phases P4–P11.
 
 ## Disk
 

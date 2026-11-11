@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "pad returns one extra block",
+    "status": "CAUGHT",
+    "failures": 3000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "pad rounds one block too far",
+    "status": "CAUGHT",
+    "failures": 38,
+    "exit_code": 1
+  },
+  {
+    "mutation": "rank lower_bound uses <= ",
+    "status": "CAUGHT",
+    "failures": 237,
+    "exit_code": 1
+  },
+  {
+    "mutation": "rebuild keeps the old scan point",
+    "status": "CAUGHT",
+    "failures": 5253,
+    "exit_code": 1
+  },
+  {
+    "mutation": "resume accepts a shrinking sequence",
+    "status": "CAUGHT",
+    "failures": 313,
+    "exit_code": 1
+  },
+  {
+    "mutation": "position grouping lets a misaligned offset start a pool",
+    "status": "CAUGHT",
+    "failures": 4260,
+    "exit_code": 1
+  },
+  {
+    "mutation": "position grouping only checks the first cell",
+    "status": "CAUGHT",
+    "failures": 2711,
+    "exit_code": 1
+  },
+  {
+    "mutation": "order grouping advances one cell too far",
+    "status": "CAUGHT",
+    "failures": 5685,
+    "exit_code": 1
+  }
+]
