@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T18:34:57.129460+03:00",
+  "updated_at": "2026-11-11T18:38:26.807834+03:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -24,6 +24,12 @@
       "item": "APEX.BATCH",
       "state": "DONE",
       "implemented": "used paths live: classify FG352S, selection FG350S, ubatch_add FG349S, outids FG242O, set building FG240Q, split FG237S/FG239B; container composition FG383S; container fill/index layout FG398S (live, 527 report lines). Real-request match: completion e68df05b, restore exact.; disable contract verified for every new route (EXP399); the accepted runtime binary writes a byte-identical state file: 387989920 bytes, sha256 3e216c49..., the same digest this tree writes with every Goose route on (EXP400); self-accepted by the runtime worker under Igor's explicit authorisation (Codex review follows, does not block)",
+      "remaining": "none against the stated criterion"
+    },
+    {
+      "item": "APEX.OUTPUT",
+      "state": "DONE",
+      "implemented": "logits/sampling chain in Goose and bit-identical (EXP384 softmax, EXP385 guards, EXP386 selection, EXP387 chain); detokenisation piece copy FG213P plus skip/lstrip/loop-bound decisions (EXP401); output-id mapping FG242O. Socket write is the separated byte transport.",
       "remaining": "none against the stated criterion"
     }
   ]
