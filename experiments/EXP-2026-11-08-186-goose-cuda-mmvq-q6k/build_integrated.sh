@@ -183,6 +183,55 @@ if 'fg180q-host-unit.c' not in ct:
 print('fg180q prepared')
 PY4
 
+
+# --- EXP203 (CUDA_MMQ dispatch policy), host logic ---
+export E203_DIR="$ROOT/experiments/EXP-2026-11-09-203-goose-mmq-dispatch"
+python3 - <<'PY5'
+import os
+from pathlib import Path
+flint = Path('/tmp/flint-goose/ggml/src/ggml-cuda')
+e = Path(os.environ['E203_DIR']) / 'source'
+(flint / 'fg203d-bridge.c').write_text((e / 'bridge.c').read_text().replace('#include "dispatch-generated.c"', '#include "fg203d-generated.c"'))
+(flint / 'fg203d-generated.c').write_text((e / 'dispatch-generated.c').read_text())
+m = flint / 'mmq.cu'; s = m.read_text()
+s = s.replace('bool ggml_cuda_should_use_mmq(enum ggml_type type, int cc, int64_t ne11, int64_t n_experts) {\n#ifdef GGML_CUDA_FORCE_CUBLAS',
+              'static bool ggml_cuda_should_use_mmq_native(enum ggml_type type, int cc, int64_t ne11, int64_t n_experts) {\n#ifdef GGML_CUDA_FORCE_CUBLAS', 1)
+if 'fg203d_enabled' not in s:
+    s = s.rstrip() + """
+
+static bool ggml_cuda_env_flag(const char * name) {
+    const char * env = getenv(name);
+    return env != nullptr && std::atoi(env) != 0;
+}
+extern "C" int fg203d_enabled(void);
+extern "C" int64_t fg203d_should_use_mmq(int64_t,int64_t,int64_t,int64_t,int64_t,int64_t,
+                                         int64_t,int64_t,int64_t,int64_t,int64_t,int64_t);
+
+bool ggml_cuda_should_use_mmq(enum ggml_type type, int cc, int64_t ne11, int64_t n_experts) {
+    if (!fg203d_enabled()) {
+        return ggml_cuda_should_use_mmq_native(type, cc, ne11, n_experts);
+    }
+    const int id = ggml_cuda_get_device();
+    const int64_t smpbo = (int64_t) ggml_cuda_info().devices[id].smpbo;
+    return fg203d_should_use_mmq((int64_t) type, (int64_t) cc, ne11, n_experts, smpbo,
+                                 (int64_t) ggml_cuda_highest_compiled_arch(cc),
+                                 turing_mma_available(cc) ? 1 : 0,
+                                 fp16_mma_hardware_available(cc) ? 1 : 0,
+                                 amd_mfma_available(cc) ? 1 : 0,
+                                 amd_wmma_available(cc) ? 1 : 0,
+                                 ggml_cuda_env_flag("GGML_CUDA_FORCE_CUBLAS") ? 1 : 0,
+                                 ggml_cuda_env_flag("GGML_CUDA_FORCE_MMQ") ? 1 : 0) != 0;
+}
+"""
+m.write_text(s)
+cm = flint / 'CMakeLists.txt'; ct = cm.read_text()
+if 'fg203d-bridge.c' not in ct:
+    ct = ct.replace('    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg180q-host-unit.c")',
+                    '    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg180q-host-unit.c")\n    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg203d-bridge.c")')
+    cm.write_text(ct)
+print('fg203d prepared')
+PY5
+
 cmake -S "$WORK" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON \
       -DCMAKE_CUDA_COMPILER=/usr/bin/nvcc -DLLAMA_BUILD_TESTS=OFF \
       -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF >/dev/null

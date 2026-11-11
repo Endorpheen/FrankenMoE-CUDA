@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T21:03:09.005007+00:00",
+  "updated_at": "2026-11-11T21:13:42.995262+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -137,7 +137,7 @@
     {
       "item": "APEX.CUDA_MMQ",
       "state": "PARTIAL",
-      "implemented": "The MMQ Q8_1 quantizer (EXP180, both direct and scatter forms) is built into the backend with the flag flipped to opt-out. It executes on the accepted profile (FG180Q_CUDA_MMQ_Q8_1 host=0x23, paths=0x3, guards=0) and the completion is unchanged: e68df05b, equal probabilities, restore ok. Encoded in build_integrated.sh so it rebuilds from scratch alongside the Q6_K matvec, FG196P and FG195V.",
+      "implemented": "The MMQ Q8_1 quantizer (EXP180, both direct and scatter forms) is built into the backend with the flag flipped to opt-out. It executes on the accepted profile (FG180Q_CUDA_MMQ_Q8_1 host=0x23, paths=0x3, guards=0) and the completion is unchanged: e68df05b, equal probabilities, restore ok. Encoded in build_integrated.sh so it rebuilds from scratch alongside the Q6_K matvec, FG196P and FG195V. The dispatch policy ggml_cuda_should_use_mmq is also Goose now (EXP203): the native decision is kept as *_native and the Goose version receives exactly the arguments the native one derives, executing 8550 times on the accepted profile with the completion unchanged.",
       "remaining": "The MMA/TensorCore matmul path itself is not integrated yet; only dispatch (FG203D) was ever live. That is the second half of this item.",
       "evidence": "experiments/EXP-2026-11-08-180-goose-cuda-mmq-q8-1, experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh",
       "by": {
@@ -145,7 +145,7 @@
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T21:03:09.005007+00:00"
+      "at": "2026-11-11T21:13:42.995262+00:00"
     }
   ]
 }
