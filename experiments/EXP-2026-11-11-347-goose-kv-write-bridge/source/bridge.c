@@ -15,9 +15,12 @@
 #include <stdatomic.h>
 
 static _Atomic unsigned long long g_calls;
-__attribute__((destructor)) static void fg345w_report(void){
-    if(!atomic_load(&g_calls)) return;
-    fprintf(stderr, "FG345W_KV_STATE_WRITE calls=%llu\n", atomic_load(&g_calls));
+// print on the first call: a SIGINT shutdown does not run destructors, and an exit-only witness is
+// indistinguishable from "never called" (EXP354 lesson)
+static void fg345w_tick(void){
+    const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
+    if (n == 1) fprintf(stderr, "FG345W_KV_STATE_WRITE first call\n");
+    if ((n % 100) == 0) fprintf(stderr, "FG345W_KV_STATE_WRITE calls=%llu\n", n);
 }
 
 static void g_fail(int64_t c){ fprintf(stderr, "FG345W validation code %lld\n", (long long)c); abort(); }
@@ -58,7 +61,7 @@ int64_t fg345w_select(int64_t other, int64_t partial, int64_t swa_none, int64_t 
                       int64_t n_swa, int64_t swa_type, int64_t size, const int32_t * pos,
                       const uint64_t * seqmask, int32_t * out_counts, int32_t * out_ranges,
                       int64_t out_ranges_cap) {
-    atomic_fetch_add(&g_calls, 1);
+    fg345w_tick();
 
     // The module reads int64 arrays; widen once, on this side.
     int64_t * pos64 = (int64_t *) malloc(sizeof(int64_t) * (size_t)(n_stream * size) + 1);
