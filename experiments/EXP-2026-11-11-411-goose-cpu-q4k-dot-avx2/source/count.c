@@ -52,6 +52,7 @@ static int install(void * target, void (*wrapper)(void), unsigned char * saved) 
 
 #define WRAP(n) static void wrap_##n(int a, float * s, size_t bs, const void * vx, size_t bx, \
                                      const void * vy, size_t by, int nrc) { \
+    if (cnt_##n == 0) fprintf(stderr, "FG411S_FIRST %s n=%d\n", #n, a); \
     cnt_##n++; \
     ((dot_fn) tramp_##n)(a, s, bs, vx, bx, vy, by, nrc); }
 static void * tramp_q4_K_q8_K; static void * tramp_q6_K_q8_K; static void * tramp_q8_0_q8_0;
