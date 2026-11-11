@@ -112,3 +112,23 @@ as an `int16` and then `aux32[l] += scale*aux16[l]`, while the module accumulate
 64 bits. For the values here that is arithmetically identical, but the next probe is to reproduce the int16
 intermediate step exactly, and if that still differs, to compare against the AVX2 entry point rather than the
 generic one — the AVX2 code sums in a different order and may be what this library actually dispatches to.
+
+## Eighth measurement: the module follows the generic order, not the AVX2 one
+
+| reference used by the gate | failures |
+|---|---|
+| `ggml_vec_dot_q4_K_q8_K_generic` | **49 / 160** (nb = 1 exact) |
+| `ggml_vec_dot_q4_K_q8_K` (AVX2) | 105 / 160 (even nb = 1 differs, e.g. -611.96875 vs -611.971619) |
+
+So the port reproduces the reference's *generic* order exactly and the residue is only between blocks. The
+AVX2 kernel sums in a different order, which is expected: it accumulates per lane with different grouping.
+
+That settles which order the port owns. If the goal is bit-identity with the **dispatched** kernel rather
+than with the portable one, the target must be AVX2 and the port needs its grouping; otherwise the generic
+comparison is the right one and only the inter-block residue remains.
+
+## Decision needed from the plan
+
+`ggml_vec_dot_q4_K_q8_K` is a dispatcher: on this CPU it resolves to AVX2. Bit-identity with "whatever runs"
+therefore means matching AVX2, which is a different accumulation, not a bug in the current module. This is a
+scoping question for the item, not a defect to keep chasing blind.
