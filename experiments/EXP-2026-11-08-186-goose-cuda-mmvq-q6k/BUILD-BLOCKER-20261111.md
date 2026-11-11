@@ -380,3 +380,27 @@ VMM range and whose pointer must not be dereferenced as host heap.
 
 Next probe: log the slot value at process start and after each backend call, and compare with the native path's own
 reads, to find who writes it.
+
+## The slot pointer is not merely odd, it is unreadable
+
+Probed the object the slot points at:
+
+    FG186T step=1a slot=0x5b5b7dc244a0 slot0=0x11d0a2c2258
+    (trace ends here)
+
+Reading `*(void **)&pool` — the vtable pointer — faults. So `pools[0][0]` in the server process does not point at
+any mapped object: it is garbage, while the harness has a valid pool object there.
+
+Summary of what is now established, and why this stops here for now:
+
+- the module itself is correct: bit-identical to native in the harness on the same input (`cmp IDENTICAL`);
+- the fault was originally UB in a constructor argument and is fixed;
+- in the server the context pointer, device, name and stream index are all valid, yet one end-of-struct member
+  holds an unreadable pointer before the first pool creation;
+- swapping the backend library for one built from identical sources changes nothing, and `maps` shows a single
+  copy;
+- so something in this process writes a bad value into that slot, and that writer is not the module.
+
+Deliberately stopping active work on this path again: the remaining question is ownership/state inside the
+goose-built backend, and chasing it further is a different task from porting the kernel. Registered BLOCKED with
+the complete evidence chain so whoever picks it up starts from the slot, not from the beginning.

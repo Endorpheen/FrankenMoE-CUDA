@@ -8,6 +8,7 @@
 #include <mutex>
 #include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 
 // Raw device services for the Goose mul_mat_vec_q. Integer loads, the half2 unpack,
 // dp4a, a float store, the shuffle/barrier pair and shared staging; nothing else.
@@ -104,7 +105,10 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  static std::once_flag once;std::call_once(once,[]{std::atexit(fg186q_report);});
  fprintf(stderr,"FG186T step=1 enter ctx=%p dev=%d name='%s' curr_stream=%d\n",(void*)&ctx,ctx.device,ctx.name.c_str(),ctx.curr_stream_no);
  { fprintf(stderr,"FG186T step=1a slot=%p slot0=%p\n",(void*)&ctx.pools, (void*)ctx.pools[ctx.device][ctx.curr_stream_no].get());
-   ggml_cuda_pool & pr = ctx.pool(); fprintf(stderr,"FG186T step=1b pool=%p\n",(void*)&pr); }
+   ggml_cuda_pool & pr = ctx.pool();
+   void * vt = *(void**)&pr; Dl_info di2;
+   const char * vl = (dladdr(vt,&di2)&&di2.dli_fname)?di2.dli_fname:"?";
+   fprintf(stderr,"FG186T step=1b pool=%p vtable=%p lib=%s\n",(void*)&pr,vt,vl); }
  const int dev=ggml_cuda_get_device();
  fprintf(stderr,"FG186T step=2 dev=%d\n",dev);
  const int warp=ggml_cuda_info().devices[dev].warp_size;
