@@ -43,3 +43,27 @@ configuration. They are not used as a reference.
 Candidate checkpoints (32K in, 128 out: 1640.2 / 23.5, 1621.3 / 22.7, 1647.0 / 23.75) are a **separate
 series** under `--cpu-moe`. They are not a regression against the baseline until the same `--n-cpu-moe 35`
 placement is used, and the optimisation stage must restore that flag first rather than guess.
+
+## Attempt to run the exact baseline launch profile
+
+Command used (the candidate argv with the one difference removed):
+
+    --n-cpu-moe 35 instead of --cpu-moe, everything else as saved
+
+Result: **the server does not start.**
+
+    llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+
+Measured at the time: the device reports 12 282 MiB total, 3 443 MiB used and **8 429 MiB free**, of which
+other processes hold roughly 880 MiB. The `--n-cpu-moe 35` placement needs more than that for the context
+compute buffers at `-c 262144` with `-ctk/-ctv q4_0`.
+
+So the exact baseline profile is **not reproducible right now** because of available GPU memory, not because
+of the candidate. I did not kill other processes, did not lower the context and did not change the profile
+to make it fit. The candidate series stays the all-CPU one, clearly separate.
+
+## What would make the exact comparison possible
+
+A quiet GPU with at least the free memory the saved profile had on 2026-10-29. The saved record does not
+state VRAM, so the requirement can only be measured, not assumed. Until then every comparison across the
+two placements is a comparison of configurations.
