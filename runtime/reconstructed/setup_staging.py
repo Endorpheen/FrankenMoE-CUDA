@@ -1030,3 +1030,4 @@ subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_loader_ali
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_weight_placement.py')], check=True)
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_sched_decisions.py')], check=True)
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_transfer_policy.py')], check=True)
+subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_graph_input_plan.py')], check=True)
