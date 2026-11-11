@@ -600,10 +600,18 @@ most dangerous and is worth checking first in any new fixture.
    versions got that wrong and only the record stream showed it. The read clears with the count
    only when meta actually read one, then throws, and a success resets the rollback index.
    44 871 checks, 9/9 mutations.
-67. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+67. Integration readiness for APEX.KV — new note `docs/goose-migration/integration-readiness-2026-11-11.md`
+   maps every gated module of EXP321–EXP334 to the native function it replaces, the live
+   witness it would add and the request that would exercise it; the hybrid rows are marked
+   dormant for Apex and must not be counted. It also records the one thing that cannot go
+   live (set_input_pos_bucket needs a double path in Goose) and the four-step plan: build a
+   stage from EXP244, run one Apex request under rule 1, accept only on exact text/tokens/
+   probabilities with non-zero counters, revert the stage otherwise. No new OFF_PATH module
+   was added; the next step is a build-and-run, not another port.
+68. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-68. Downstream phases P4–P11.
+69. Downstream phases P4–P11.
 
 ## Disk
 
