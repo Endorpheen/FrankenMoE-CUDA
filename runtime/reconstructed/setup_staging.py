@@ -984,5 +984,20 @@ assert old_hr in hsrc
 hsrc = hsrc.replace(old_hr, new_hr, 1)
 h.write_text(hsrc)
 
+# ubatch container layout (EXP398)
+decl25 = '// Goose ubatch container layout (EXP398). GGML_GOOSE_BATCH_CONTAINER_LAYOUT=0 restores the native indexing.\nextern "C" int fg398s_enabled(void);\nextern "C" int64_t fg398s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t * out2);\n\n'
+anchor25 = '// Goose ubatch container plan (EXP383).'
+assert anchor25 in bsrc
+bsrc = bsrc.replace(anchor25, decl25 + anchor25, 1)
+old_pos = '            udata->pos[j*n_tokens + i] = batch.pos[j*batch.n_tokens + idxs[i]];'
+new_pos = ('            const int64_t g_dst = fg398s_enabled() ? fg398s_decide(0, (int64_t) j, (int64_t) n_tokens, (int64_t) i, 0, 0, nullptr)\n'
+           '                                                  : (int64_t) (j*n_tokens + i);\n'
+           '            const int64_t g_src = fg398s_enabled() ? fg398s_decide(1, (int64_t) j, (int64_t) batch.n_tokens, (int64_t) idxs[i], 0, 0, nullptr)\n'
+           '                                                  : (int64_t) (j*batch.n_tokens + idxs[i]);\n'
+           '            udata->pos[g_dst] = batch.pos[g_src];')
+assert old_pos in bsrc
+bsrc = bsrc.replace(old_pos, new_pos, 1)
+bch.write_text(bsrc)
+
 p.write_text(src)
-print('staging rebuilt ... + hybrid delegation')
+print('staging rebuilt ... + batch container layout')

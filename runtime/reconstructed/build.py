@@ -40,7 +40,7 @@ print('modules needed:', ' '.join(sorted(pref)))
 # locate host-unit.c per prefix and build it
 modules = []
 for p in sorted(pref):
-    if p in ('fg345w', 'fg367s', 'fg373s', 'fg375s', 'fg376s', 'fg377s', 'fg380s', 'fg381s', 'fg382s', 'fg383s', 'fg384s', 'fg385s', 'fg386s', 'fg387s', 'fg388s', 'fg389s', 'fg390s', 'fg391s', 'fg392s', 'fg393s', 'fg394s', 'fg395s', 'fg396s', 'fg397s'):
+    if p in ('fg345w', 'fg367s', 'fg373s', 'fg375s', 'fg376s', 'fg377s', 'fg380s', 'fg381s', 'fg382s', 'fg383s', 'fg384s', 'fg385s', 'fg386s', 'fg387s', 'fg388s', 'fg389s', 'fg390s', 'fg391s', 'fg392s', 'fg393s', 'fg394s', 'fg395s', 'fg396s', 'fg397s', 'fg398s'):
         continue  # our own bridges are linked explicitly below
     found = None
     # any translation unit in a module's source that defines the prefix; generated files are
@@ -93,7 +93,8 @@ for mod, out_name in (('EXP-2026-11-11-347-goose-kv-write-bridge', 'b345.o'),
                       ('EXP-2026-11-11-394-goose-kv-layout-span', 'b394.o'),
                       ('EXP-2026-11-11-395-goose-kv-read-meta', 'b395.o'),
                       ('EXP-2026-11-11-396-goose-recurrent-payload-span', 'b396.o'),
-                      ('EXP-2026-11-11-397-goose-hybrid-delegation', 'b397.o')):
+                      ('EXP-2026-11-11-397-goose-hybrid-delegation', 'b397.o'),
+                      ('EXP-2026-11-11-398-goose-batch-container-layout', 'b398.o')):
     o = W/out_name
     q = subprocess.run(['gcc','-O3','-DNDEBUG','-fPIC','-std=c11','-c', str(BR/mod/'source/bridge.c'),
                         '-o', str(o), '-I', str(BR/mod/'source')], capture_output=True, text=True)
