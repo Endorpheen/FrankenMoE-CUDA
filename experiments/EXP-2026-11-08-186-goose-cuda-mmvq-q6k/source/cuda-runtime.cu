@@ -98,10 +98,14 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  const char*flag=getenv("GGML_GOOSE_CUDA_MMVQ_Q6K");
  if(flag&&strcmp(flag,"0")==0){fg185q_native_ggml_cuda_mul_mat_vec_q(ctx,src0,src1,ids,dst,fusion);return;}
  static std::once_flag once;std::call_once(once,[]{std::atexit(fg186q_report);});
+ fprintf(stderr,"FG186T step=1 enter\n");
  const int dev=ggml_cuda_get_device();
+ fprintf(stderr,"FG186T step=2 dev=%d\n",dev);
  const int warp=ggml_cuda_info().devices[dev].warp_size;
  GGML_TENSOR_BINARY_OP_LOCALS;
+ fprintf(stderr,"FG186T step=3 locals ne00=%lld\n",(long long)ne00);
  fg186q_packet p{};
+ fprintf(stderr,"FG186T step=4 packet\n");
  p.stream=ctx.stream();
  p.v[0][0]=(uint64_t)(uintptr_t)src0->data;
  // src1 arrives as F32 and must be quantized to q8_1 first; native does this into a
@@ -111,6 +115,7 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  ggml_cuda_pool_alloc<char> src1_q8(ctx.pool(),ne13*ne12*ne11*ne10_padded*sizeof(block_q8_1)/QK8_1);
  {
   const int64_t t11=src1->nb[1]/4,t12=src1->nb[2]/4,t13=src1->nb[3]/4;
+  fprintf(stderr,"FG186T step=5 quantize ne10=%lld type=%d\n",(long long)ne10,(int)src0->type);
   quantize_row_q8_1_cuda((const float*)src1->data,nullptr,src1_q8.get(),src0->type,
    ne10,t11,t12,t13,ne10_padded,ne11,ne12,ne13,ctx.stream());
  }
@@ -151,10 +156,13 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
                      fusion->x_scale==nullptr&&fusion->gate_scale==nullptr)) &&
   ne13==ne3;
  p.v[6][0]=eligible?1ULL:0ULL;
+ fprintf(stderr,"FG186T step=6 run eligible=%d\n",(int)eligible);
  if(fg186qh_run((int64_t)(uintptr_t)&p)&&eligible){
   fg186q_host_seen.fetch_or(p.launched?1ULL:16ULL,std::memory_order_relaxed);
   return;
  }
  fg186q_host_seen.fetch_or(32ULL,std::memory_order_relaxed);
+ fprintf(stderr,"FG186T step=7 fallback native\n");
  fg185q_native_ggml_cuda_mul_mat_vec_q(ctx,src0,src1,ids,dst,fusion);
+ fprintf(stderr,"FG186T step=8 done\n");
 }

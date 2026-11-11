@@ -136,3 +136,23 @@ does not map one-to-one here).
 Next probe: add stage prints to `cuda-runtime.cu`'s host part (packet fill, quantize call, launch, read-back) and
 rebuild; the last print before the crash names the step. This is the same incremental approach that closed the CPU
 items, and it costs one rebuild per step.
+
+## Stage trace: the crash is between the packet fill and the quantize call
+
+Instrumented the host path and reran:
+
+    FG186T step=1 enter
+    FG186T step=2 dev=0
+    FG186T step=3 locals ne00=2048
+    FG186T step=4 packet
+    (no step=5)
+
+So the module reaches the call with a valid context and valid tensor geometry, and dies before the quantizer is
+invoked — i.e. in the staging allocation region:
+
+    ggml_cuda_pool_alloc<char> src1_q8(ctx.pool(), ne13*ne12*ne11*ne10_padded*sizeof(block_q8_1)/QK8_1);
+
+Next: split that region with two more prints (`ctx.stream()` / pool size / after alloc) to pin the exact
+expression. This is the last mile: everything else in the module's host path is reached and sane.
+
+Active runtime untouched.

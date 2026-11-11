@@ -16,6 +16,19 @@
 typedef void (*mmvq_fn)(void *, void *, void *, void *, void *, void *);
 
 static mmvq_fn g_native;
+static long page_size_;
+
+/* a callable copy of the original entry, so the module's "native" call cannot land in our own patch */
+static mmvq_fn make_trampoline(void * target) {
+    unsigned char * t = mmap(NULL, 64, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (t == MAP_FAILED) return NULL;
+    memcpy(t, target, 12);
+    t[12] = 0x48; t[13] = 0xB8;
+    uintptr_t back = (uintptr_t) target + 12;
+    memcpy(&t[14], &back, 8);
+    t[22] = 0xFF; t[23] = 0xE0;
+    return (mmvq_fn) t;
+}
 static unsigned char g_saved[16];
 static void * g_target;
 static int g_patched;
@@ -40,7 +53,8 @@ __attribute__((constructor)) static void init(void) {
     /* mangled ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context&, ggml_tensor const*, ...) */
     g_target = dlsym(h, "_Z23ggml_cuda_mul_mat_vec_qR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_PK29ggml_cuda_mm_fusion_args_host");
     if (!g_target) return;
-    g_native = (mmvq_fn) g_target;
+    g_native = make_trampoline(g_target);
+    page_size_ = sysconf(_SC_PAGESIZE);
 
     /* our replacement lives in this library and has the same mangled name */
     void * ours = dlsym(RTLD_DEFAULT, "_Z23ggml_cuda_mul_mat_vec_qR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_PK29ggml_cuda_mm_fusion_args_host");
@@ -48,7 +62,7 @@ __attribute__((constructor)) static void init(void) {
         if (getenv("FG186S_WITNESS")) fprintf(stderr, "FG186S_PATCH skipped ours=%p target=%p\n", ours, g_target);
         return;
     }
-    long page = sysconf(_SC_PAGESIZE);
+    long page = page_size_ ? page_size_ : sysconf(_SC_PAGESIZE);
     void * base = (void *) ((uintptr_t) g_target & ~(uintptr_t) (page - 1));
     if (mprotect(base, (size_t) page, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) return;
     memcpy(g_saved, g_target, sizeof(g_saved));
@@ -64,7 +78,7 @@ __attribute__((constructor)) static void init(void) {
 
 __attribute__((destructor)) static void fini(void) {
     if (!g_patched || !g_target) return;
-    long page = sysconf(_SC_PAGESIZE);
+    long page = page_size_ ? page_size_ : sysconf(_SC_PAGESIZE);
     void * base = (void *) ((uintptr_t) g_target & ~(uintptr_t) (page - 1));
     if (mprotect(base, (size_t) page, PROT_READ | PROT_WRITE | PROT_EXEC) == 0) {
         memcpy(g_target, g_saved, sizeof(g_saved));
