@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "k stride between heads is one head wide",
+    "status": "CAUGHT",
+    "failures": 1736,
+    "exit_code": 1
+  },
+  {
+    "mutation": "k view ignores the stream offset",
+    "status": "CAUGHT",
+    "failures": 961,
+    "exit_code": 1
+  },
+  {
+    "mutation": "v stride between tokens uses the head width",
+    "status": "CAUGHT",
+    "failures": 971,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed v first stride drops the head width",
+    "status": "CAUGHT",
+    "failures": 982,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed v stream stride drops the head count",
+    "status": "CAUGHT",
+    "failures": 990,
+    "exit_code": 1
+  },
+  {
+    "mutation": "n_kv ignores the 256 floor",
+    "status": "CAUGHT",
+    "failures": 750,
+    "exit_code": 1
+  },
+  {
+    "mutation": "n_kv does not pad the used position",
+    "status": "CAUGHT",
+    "failures": 1236,
+    "exit_code": 1
+  },
+  {
+    "mutation": "n_kv clamps from below",
+    "status": "CAUGHT",
+    "failures": 2997,
+    "exit_code": 1
+  }
+]
