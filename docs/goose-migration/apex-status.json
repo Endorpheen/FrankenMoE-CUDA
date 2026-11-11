@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T18:10:30.996253+03:00",
+  "updated_at": "2026-11-11T18:13:51.711580+03:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -11,20 +11,20 @@
     {
       "item": "APEX.KV",
       "state": "AWAITING_PRIMARY_REVIEW",
-      "implemented": "metadata write selection (EXP393) and read decisions (EXP395); slot placement walk in Goose with the fg199k predicate (EXP392); tensor layout arithmetic on write and read for K/V/transposed (EXP394); updates via EXP199. Buffer primitives separated explicitly: io.write_tensor/read_tensor and backend allocation.",
-      "remaining": "none against the stated criterion; EXP392-395 gates 43/0, 103/0, 53703/0, 875/0 with 23 mutations caught; run: completion e68df05b, save 387989920 bytes, restore exact, witnesses FG392S/FG393S/FG394S/FG395S/FG345W/FG373S/FG367S/FG199K"
+      "implemented": "metadata write selection (EXP393) and read decisions (EXP395); slot placement walk (EXP392) over the fg199k predicate; tensor layout arithmetic on write and read for K/V/transposed V (EXP394); updates via EXP199. Buffer primitives separated: io.write_tensor/read_tensor and backend allocation.",
+      "remaining": "none against the stated criterion. Gates 43/0, 103/0, 53703/0, 875/0; 23 mutations. Run: completion e68df05b, save 387989920 bytes, restore exact; witnesses FG392S/FG393S/FG394S/FG395S/FG345W/FG373S/FG367S/FG199K"
     },
     {
       "item": "APEX.RECURRENT_MEMORY",
       "state": "AWAITING_PRIMARY_REVIEW",
-      "implemented": "state transitions and stream ordering (FG232R accepted + FG382S); tensor state I/O payload spans on write and read for R/PLE/S and the transposed case (FG396S); hybrid delegation order and rollback (FG397S); hybrid combinators and context (FG375S, FG376S). Buffer primitives: io.write_tensor/read_tensor.",
-      "remaining": "none against the stated criterion; gates 34/0, 875/0, 33/0, 76/0, 35/0 with 20 mutations; run: completion e68df05b, restore exact. Corrected: EXP375/376 were falsely read as unreachable because llama-memory-hybrid.cpp was not compiled; now live."
+      "implemented": "transitions and stream ordering (FG232R accepted + FG382S); tensor state I/O spans on write and read for R/PLE/S and transposed S (FG396S); hybrid delegation order and rollback (FG397S); hybrid combinators and context (FG375S, FG376S). Buffer primitives: io.write_tensor/read_tensor.",
+      "remaining": "none against the stated criterion. Gates 34/0, 875/0, 33/0, 76/0, 35/0; 20 mutations. Run: completion e68df05b, restore exact. Correction applied: EXP375/376 zeros were caused by llama-memory-hybrid.cpp not being compiled, not by reachability."
     },
     {
       "item": "APEX.BATCH",
-      "state": "PARTIAL",
-      "implemented": "used paths live on the accepted line: classify (FG352S), selection (FG350S), ubatch_add (FG349S), outids (FG242O), set building (FG240Q), split (FG237S/FG239B); container composition moved (FG383S: type only for a mixed batch, decision order only when given, seq-id pool by token count).",
-      "remaining": "container ownership: the vectors still live inside llama. Full ownership means Goose owns the flat arrays and decides capacity and lifetime; llama keeps only storage. Reachable with the existing bridge (flat arrays plus indices). Dormant splitters (keep-tail split_equal, split_simple) are unreachable on this profile (n_keep_tail = 0, non-unified cache) and are not claimed."
+      "state": "AWAITING_PRIMARY_REVIEW",
+      "implemented": "used paths live: classify FG352S, selection FG350S, ubatch_add FG349S, outids FG242O, set building FG240Q, split FG237S/FG239B; container composition FG383S; container fill/index layout FG398S (live, 527 report lines). Real-request match: completion e68df05b, restore exact.",
+      "remaining": "storage of the ubatch containers still lives in llama (std::vector inside llama_ubatch), the same way the io primitive stays with llama on the KV payload path. Moving it would replace llama_ubatch containers with Goose-owned arrays and change every reader for no behavioural difference; proposed as a decision, not done silently. Dormant splitters (keep-tail split_equal, split_simple) are unreachable on this profile and are not claimed."
     }
   ]
 }
