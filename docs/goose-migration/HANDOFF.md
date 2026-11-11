@@ -920,10 +920,15 @@ most dangerous and is worth checking first in any new fixture.
    inventories compared against the loader's own loop), 0 failures, 5/5 mutations. `FG389S_GGUF_INVENTORY`
    reports its first call on startup; the print interval is 5 000 because the inventory is a few thousand
    calls for this model, so only the first line appears by design.
-113. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+113. Special-token partition — EXP390 integrates the skip/LSTRIP/RSTRIP decisions (gate 33/0, 5/5
+   mutations) but they are **NOT VALIDATED**: `tokenizer_st_partition` runs on every non-empty tokenize,
+   yet its work is the loop over `cache_special_tokens`, and the run log carries no special-token cache
+   line, so the cache is empty for this model and the loop body never executes. A chat-template request
+   or a model declaring special tokens would exercise it; the agreed profile does neither.
+114. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-114. Downstream phases P4–P11.
+115. Downstream phases P4–P11.
 
 ## Disk
 
