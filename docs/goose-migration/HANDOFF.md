@@ -907,10 +907,14 @@ most dangerous and is worth checking first in any new fixture.
    draws landing exactly on thresholds, 0 failures; 7/7 mutations. On the profile `FG386S_DIST_PICK`
    fires about 128 times and the completion stays `e68df05b` with all probabilities equal.
    With EXP384 the sampler's probability path is Goose-owned end to end; the RNG primitive stays native.
-110. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+110. Sampler chain orchestration live — EXP387 moves the two skip decisions of `chain_apply` (backend
+   sampler only while the chain is in backend mode, and samplers without an apply hook) and the accept
+   counter into Goose. Gate 51/0, 5/5 mutations. On the profile `FG387S_SAMPLER_CHAIN` fires 715 times
+   (every sampler on both the walk and accept), completion `e68df05b`, probabilities equal.
+111. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-111. Downstream phases P4–P11.
+112. Downstream phases P4–P11.
 
 ## Disk
 
