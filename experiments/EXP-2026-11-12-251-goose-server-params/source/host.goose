@@ -13,6 +13,20 @@ extern "fg251s_flt_bits" fn flt_bits(p:i64,key:i64,defbits:i64)->i64;
 fn ensure(v:bool,c:i64){if !v{fail(c);}}
 
 fn run(packet:i64)->bool {
+    let mode:i64 = get(packet,0,1) as i64;
+    if mode == 1 as i64 {
+        // already-parsed values from common_params: apply the same bounds the server applies today
+        var np:i64 = get(packet,0,2) as i64;
+        var tk:i64 = get(packet,0,3) as i64;
+        let tp:i64 = get(packet,0,4) as i64;
+        if np < -1 as i64 { np = -1 as i64; }
+        if tk < 0 as i64 { tk = 0 as i64; }
+        put(packet,1,0, np as u64);
+        put(packet,1,1, tk as u64);
+        put(packet,1,2, tp as u64);
+        put(packet,1,3, 1 as u64);
+        return true;
+    }
     let req:i64 = get(packet,0,0) as i64;
 
     var n_predict:i64 = int_of(req, 1 as i64, -1 as i64);

@@ -49,3 +49,16 @@ extern "C" void fg251s_decide(int64_t req, int64_t out /* int64_t[4] */) {
     ((int64_t *)(uintptr_t) out)[2] = pkt[16 + 2];
     ((int64_t *)(uintptr_t) out)[3] = pkt[16 + 3];
 }
+
+// mode 1: bounds applied to already-parsed values (n_predict >= -1, top_k >= 0)
+extern "C" void fg251s_apply(int64_t n_predict, int64_t top_k, int64_t top_p_bits, int64_t out[2]) {
+    int64_t pkt[2 * 16] = {0};
+    pkt[0] = 0;            // json handle unused in this mode
+    pkt[1] = 1;            // mode
+    pkt[2] = n_predict;
+    pkt[3] = top_k;
+    pkt[4] = top_p_bits;
+    (void) fg251ds_run((int64_t)(uintptr_t) pkt);
+    out[0] = pkt[16 + 0];
+    out[1] = pkt[16 + 1];
+}

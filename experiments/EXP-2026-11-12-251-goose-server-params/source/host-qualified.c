@@ -608,7 +608,7 @@ static int64_t ggf_fmt_f32(uint8_t *dst, float v) {
 
 typedef int64_t fg251ds_gg_unaligned_1 GG_ALIGN1;
 typedef uint64_t fg251ds_gg_unaligned_3 GG_ALIGN1;
-typedef uint8_t fg251ds_gg_unaligned_4 GG_ALIGN1;
+typedef uint8_t fg251ds_gg_unaligned_5 GG_ALIGN1;
 static void fg251ds_gg_quote(fg251ds_gg_reference out,fg251ds_gg_slice text) { int64_t i; unsigned char c; fg251ds_gg_append(out,"\"",1,1); for(i=0;i<text.len;i++){c=((unsigned char*)text.data)[i]; if(c=='\"'||c=='\\'){fg251ds_gg_append(out,"\\",1,1);fg251ds_gg_append(out,&c,1,1);} else if(c=='\n')fg251ds_gg_append(out,"\\n",2,1);else if(c=='\r')fg251ds_gg_append(out,"\\r",2,1);else if(c=='\t')fg251ds_gg_append(out,"\\t",2,1);else fg251ds_gg_append(out,&c,1,1);}fg251ds_gg_append(out,"\"",1,1);}
 static uint8_t fg251ds_gg_eq_1(int64_t a, int64_t b);
 static uint8_t fg251ds_gg_equal_elements_1(fg251ds_gg_slice a, fg251ds_gg_slice b);
@@ -619,9 +619,9 @@ static void fg251ds_gg_render_2(fg251ds_gg_reference out, uint8_t value);
 static uint8_t fg251ds_gg_eq_3(uint64_t a, uint64_t b);
 static uint8_t fg251ds_gg_equal_elements_3(fg251ds_gg_slice a, fg251ds_gg_slice b);
 static void fg251ds_gg_render_3(fg251ds_gg_reference out, uint64_t value);
-static uint8_t fg251ds_gg_eq_4(uint8_t a, uint8_t b);
-static uint8_t fg251ds_gg_equal_elements_4(fg251ds_gg_slice a, fg251ds_gg_slice b);
-static void fg251ds_gg_render_4(fg251ds_gg_reference out, uint8_t value);
+static uint8_t fg251ds_gg_eq_5(uint8_t a, uint8_t b);
+static uint8_t fg251ds_gg_equal_elements_5(fg251ds_gg_slice a, fg251ds_gg_slice b);
+static void fg251ds_gg_render_5(fg251ds_gg_reference out, uint8_t value);
 static uint8_t fg251ds_gg_equal_elements_1(fg251ds_gg_slice a,fg251ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg251ds_gg_eq_1(((GG_UNALIGNED fg251ds_gg_unaligned_1*)a.data)[i],((GG_UNALIGNED fg251ds_gg_unaligned_1*)b.data)[i]))return 0;return 1;}
 static uint8_t fg251ds_gg_eq_1(int64_t a, int64_t b) {
 return a == b;
@@ -643,11 +643,11 @@ return a == b;
 static void fg251ds_gg_render_3(fg251ds_gg_reference out, uint64_t value) {
 fg251ds_gg_unsigned(out,value);
 }
-static uint8_t fg251ds_gg_equal_elements_4(fg251ds_gg_slice a,fg251ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg251ds_gg_eq_4(((GG_UNALIGNED fg251ds_gg_unaligned_4*)a.data)[i],((GG_UNALIGNED fg251ds_gg_unaligned_4*)b.data)[i]))return 0;return 1;}
-static uint8_t fg251ds_gg_eq_4(uint8_t a, uint8_t b) {
+static uint8_t fg251ds_gg_equal_elements_5(fg251ds_gg_slice a,fg251ds_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg251ds_gg_eq_5(((GG_UNALIGNED fg251ds_gg_unaligned_5*)a.data)[i],((GG_UNALIGNED fg251ds_gg_unaligned_5*)b.data)[i]))return 0;return 1;}
+static uint8_t fg251ds_gg_eq_5(uint8_t a, uint8_t b) {
 return a == b;
 }
-static void fg251ds_gg_render_4(fg251ds_gg_reference out, uint8_t value) {
+static void fg251ds_gg_render_5(fg251ds_gg_reference out, uint8_t value) {
 fg251ds_gg_unsigned(out,value);
 }
 static struct {
@@ -655,8 +655,8 @@ static struct {
 } fg251ds_gg_globals;
 static void fg251ds_gg_function_0(int64_t base);
 static uint8_t fg251ds_gg_function_1(int64_t p0, int64_t base);
-static void fg251ds_gg_function_4(uint8_t p0, int64_t p1, int64_t base);
-static void fg251ds_gg_function_4(uint8_t p0, int64_t p1, int64_t base) {
+static void fg251ds_gg_function_5(uint8_t p0, int64_t p1, int64_t base);
+static void fg251ds_gg_function_5(uint8_t p0, int64_t p1, int64_t base) {
   _Alignas(8) uint8_t t0;
   _Alignas(8) uint8_t t1;
   _Alignas(8) int64_t t2;
@@ -686,54 +686,101 @@ static uint8_t fg251ds_gg_function_1(int64_t p0, int64_t base) {
   _Alignas(8) uint64_t t4;
   _Alignas(8) int64_t t5;
   _Alignas(8) int64_t t6;
-  _Alignas(8) int64_t t7;
+  _Alignas(8) uint8_t t7;
   _Alignas(8) int64_t t8;
   _Alignas(8) int64_t t9;
   _Alignas(8) int64_t t10;
-  _Alignas(8) int64_t t11;
+  _Alignas(8) uint64_t t11;
   _Alignas(8) int64_t t12;
-  _Alignas(8) uint8_t t13;
+  _Alignas(8) int64_t t13;
   _Alignas(8) int64_t t14;
-  _Alignas(8) int64_t t15;
+  _Alignas(8) uint64_t t15;
   _Alignas(8) int64_t t16;
   _Alignas(8) int64_t t17;
   _Alignas(8) int64_t t18;
-  _Alignas(8) int64_t t19;
+  _Alignas(8) uint64_t t19;
   _Alignas(8) int64_t t20;
-  _Alignas(8) uint8_t t21;
+  _Alignas(8) int64_t t21;
   _Alignas(8) int64_t t22;
-  _Alignas(8) int64_t t23;
+  _Alignas(8) uint8_t t23;
   _Alignas(8) int64_t t24;
   _Alignas(8) int64_t t25;
   _Alignas(8) int64_t t26;
-  _Alignas(8) int64_t t27;
+  _Alignas(8) uint8_t t27;
   _Alignas(8) int64_t t28;
-  _Alignas(8) uint64_t t29;
+  _Alignas(8) int64_t t29;
   _Alignas(8) int64_t t30;
-  _Alignas(8) int64_t t31;
+  _Alignas(8) uint64_t t31;
   _Alignas(8) int64_t t32;
-  _Alignas(8) uint64_t t33;
+  _Alignas(8) int64_t t33;
   _Alignas(8) int64_t t34;
-  _Alignas(8) int64_t t35;
+  _Alignas(8) uint64_t t35;
   _Alignas(8) int64_t t36;
-  _Alignas(8) uint64_t t37;
+  _Alignas(8) int64_t t37;
   _Alignas(8) int64_t t38;
-  _Alignas(8) int64_t t39;
+  _Alignas(8) uint64_t t39;
   _Alignas(8) int64_t t40;
   _Alignas(8) int64_t t41;
   _Alignas(8) int64_t t42;
-  _Alignas(8) int64_t t43;
-  _Alignas(8) uint64_t t44;
+  _Alignas(8) uint64_t t43;
+  _Alignas(8) int64_t t44;
+  _Alignas(8) int64_t t45;
+  _Alignas(8) int64_t t46;
+  _Alignas(8) uint64_t t47;
+  _Alignas(8) int64_t t48;
+  _Alignas(8) int64_t t49;
+  _Alignas(8) int64_t t50;
+  _Alignas(8) int64_t t51;
+  _Alignas(8) int64_t t52;
+  _Alignas(8) int64_t t53;
+  _Alignas(8) int64_t t54;
+  _Alignas(8) int64_t t55;
+  _Alignas(8) uint8_t t56;
+  _Alignas(8) int64_t t57;
+  _Alignas(8) int64_t t58;
+  _Alignas(8) int64_t t59;
+  _Alignas(8) int64_t t60;
+  _Alignas(8) int64_t t61;
+  _Alignas(8) int64_t t62;
+  _Alignas(8) int64_t t63;
+  _Alignas(8) uint8_t t64;
+  _Alignas(8) int64_t t65;
+  _Alignas(8) int64_t t66;
+  _Alignas(8) int64_t t67;
+  _Alignas(8) int64_t t68;
+  _Alignas(8) int64_t t69;
+  _Alignas(8) int64_t t70;
+  _Alignas(8) int64_t t71;
+  _Alignas(8) uint64_t t72;
+  _Alignas(8) int64_t t73;
+  _Alignas(8) int64_t t74;
+  _Alignas(8) int64_t t75;
+  _Alignas(8) uint64_t t76;
+  _Alignas(8) int64_t t77;
+  _Alignas(8) int64_t t78;
+  _Alignas(8) int64_t t79;
+  _Alignas(8) uint64_t t80;
+  _Alignas(8) int64_t t81;
+  _Alignas(8) int64_t t82;
+  _Alignas(8) int64_t t83;
+  _Alignas(8) int64_t t84;
+  _Alignas(8) int64_t t85;
+  _Alignas(8) int64_t t86;
+  _Alignas(8) uint64_t t87;
   _Alignas(8) int64_t v0;
   _Alignas(8) int64_t v1;
   _Alignas(8) int64_t v2;
   _Alignas(8) int64_t v3;
   _Alignas(8) int64_t v4;
+  _Alignas(8) int64_t v5;
+  _Alignas(8) int64_t v6;
+  _Alignas(8) int64_t v7;
+  _Alignas(8) int64_t v8;
   v0 = p0;
   {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t3 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t3 = ((int64_t)(((int64_t)UINT64_C(1))));
 #ifndef __cplusplus
   extern uint64_t (fg251s_get)(int64_t, int64_t, int64_t);
 #endif
@@ -741,83 +788,175 @@ static uint8_t fg251ds_gg_function_1(int64_t p0, int64_t base) {
   v1 = ((int64_t)(((int64_t)(t4))));
   t5 = ((int64_t)(v1));
   t6 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t8 = ((int64_t)(((int64_t)((uint64_t)0 - (uint64_t)(t7)))));
+  t7 = ((t5) == (t6));
+  if (t7) {
+  {
+  t8 = ((int64_t)(v0));
+  t9 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t10 = ((int64_t)(((int64_t)UINT64_C(2))));
 #ifndef __cplusplus
-  extern int64_t (fg251s_int)(int64_t, int64_t, int64_t);
+  extern uint64_t (fg251s_get)(int64_t, int64_t, int64_t);
 #endif
-  t9 = fg251s_int(t5, t6, t8);
-  v2 = ((int64_t)(t9));
-  t10 = ((int64_t)(v2));
-  t11 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t12 = ((int64_t)(((int64_t)((uint64_t)0 - (uint64_t)(t11)))));
-  t13 = ((t10) >= (t12));
-  t14 = ((int64_t)(((int64_t)UINT64_C(10))));
-  fg251ds_gg_function_4(t13, t14, base + 0);
-  t15 = ((int64_t)(v1));
-  t16 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
-  t17 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(40))))));
+  t11 = fg251s_get(t8, t9, t10);
+  v2 = ((int64_t)(((int64_t)(t11))));
+  t12 = ((int64_t)(v0));
+  t13 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t14 = ((int64_t)(((int64_t)UINT64_C(3))));
 #ifndef __cplusplus
-  extern int64_t (fg251s_int)(int64_t, int64_t, int64_t);
+  extern uint64_t (fg251s_get)(int64_t, int64_t, int64_t);
 #endif
-  t18 = fg251s_int(t15, t16, t17);
-  v3 = ((int64_t)(t18));
-  t19 = ((int64_t)(v3));
-  t20 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-  t21 = ((t19) < (t20));
-  if (t21) {
+  t15 = fg251s_get(t12, t13, t14);
+  v3 = ((int64_t)(((int64_t)(t15))));
+  t16 = ((int64_t)(v0));
+  t17 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t18 = ((int64_t)(((int64_t)UINT64_C(4))));
+#ifndef __cplusplus
+  extern uint64_t (fg251s_get)(int64_t, int64_t, int64_t);
+#endif
+  t19 = fg251s_get(t16, t17, t18);
+  v4 = ((int64_t)(((int64_t)(t19))));
+  t20 = ((int64_t)(v2));
+  t21 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t22 = ((int64_t)(((int64_t)((uint64_t)0 - (uint64_t)(t21)))));
+  t23 = ((t20) < (t22));
+  if (t23) {
+  {
+  t24 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v2 = ((int64_t)(((int64_t)((uint64_t)0 - (uint64_t)(t24)))));
+  }
+  }
+  t25 = ((int64_t)(v3));
+  t26 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t27 = ((t25) < (t26));
+  if (t27) {
   {
   v3 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   }
   }
-  t22 = ((int64_t)(v1));
-  t23 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(3))))));
-  t24 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1056964608))))));
+  t28 = ((int64_t)(v0));
+  t29 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t30 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t31 = ((uint64_t)(((uint64_t)(v2))));
+#ifndef __cplusplus
+  extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
+#endif
+  fg251s_put(t28, t29, t30, t31);
+  t32 = ((int64_t)(v0));
+  t33 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t34 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t35 = ((uint64_t)(((uint64_t)(v3))));
+#ifndef __cplusplus
+  extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
+#endif
+  fg251s_put(t32, t33, t34, t35);
+  t36 = ((int64_t)(v0));
+  t37 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t38 = ((int64_t)(((int64_t)UINT64_C(2))));
+  t39 = ((uint64_t)(((uint64_t)(v4))));
+#ifndef __cplusplus
+  extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
+#endif
+  fg251s_put(t36, t37, t38, t39);
+  t40 = ((int64_t)(v0));
+  t41 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t42 = ((int64_t)(((int64_t)UINT64_C(3))));
+  t43 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(1))))));
+#ifndef __cplusplus
+  extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
+#endif
+  fg251s_put(t40, t41, t42, t43);
+  t0 = ((uint8_t)UINT64_C(1));
+  goto fg251ds_gg_done;
+  }
+  }
+  t44 = ((int64_t)(v0));
+  t45 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t46 = ((int64_t)(((int64_t)UINT64_C(0))));
+#ifndef __cplusplus
+  extern uint64_t (fg251s_get)(int64_t, int64_t, int64_t);
+#endif
+  t47 = fg251s_get(t44, t45, t46);
+  v5 = ((int64_t)(((int64_t)(t47))));
+  t48 = ((int64_t)(v5));
+  t49 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  t50 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t51 = ((int64_t)(((int64_t)((uint64_t)0 - (uint64_t)(t50)))));
+#ifndef __cplusplus
+  extern int64_t (fg251s_int)(int64_t, int64_t, int64_t);
+#endif
+  t52 = fg251s_int(t48, t49, t51);
+  v6 = ((int64_t)(t52));
+  t53 = ((int64_t)(v6));
+  t54 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t55 = ((int64_t)(((int64_t)((uint64_t)0 - (uint64_t)(t54)))));
+  t56 = ((t53) >= (t55));
+  t57 = ((int64_t)(((int64_t)UINT64_C(10))));
+  fg251ds_gg_function_5(t56, t57, base + 0);
+  t58 = ((int64_t)(v5));
+  t59 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
+  t60 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(40))))));
+#ifndef __cplusplus
+  extern int64_t (fg251s_int)(int64_t, int64_t, int64_t);
+#endif
+  t61 = fg251s_int(t58, t59, t60);
+  v7 = ((int64_t)(t61));
+  t62 = ((int64_t)(v7));
+  t63 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t64 = ((t62) < (t63));
+  if (t64) {
+  {
+  v7 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  }
+  }
+  t65 = ((int64_t)(v5));
+  t66 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(3))))));
+  t67 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1056964608))))));
 #ifndef __cplusplus
   extern int64_t (fg251s_flt_bits)(int64_t, int64_t, int64_t);
 #endif
-  t25 = fg251s_flt_bits(t22, t23, t24);
-  v4 = ((int64_t)(t25));
-  t26 = ((int64_t)(v0));
-  t27 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t28 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t29 = ((uint64_t)(((uint64_t)(v2))));
+  t68 = fg251s_flt_bits(t65, t66, t67);
+  v8 = ((int64_t)(t68));
+  t69 = ((int64_t)(v0));
+  t70 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t71 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t72 = ((uint64_t)(((uint64_t)(v6))));
 #ifndef __cplusplus
   extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg251s_put(t26, t27, t28, t29);
-  t30 = ((int64_t)(v0));
-  t31 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t32 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t33 = ((uint64_t)(((uint64_t)(v3))));
+  fg251s_put(t69, t70, t71, t72);
+  t73 = ((int64_t)(v0));
+  t74 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t75 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t76 = ((uint64_t)(((uint64_t)(v7))));
 #ifndef __cplusplus
   extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg251s_put(t30, t31, t32, t33);
-  t34 = ((int64_t)(v0));
-  t35 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t36 = ((int64_t)(((int64_t)UINT64_C(2))));
-  t37 = ((uint64_t)(((uint64_t)(v4))));
+  fg251s_put(t73, t74, t75, t76);
+  t77 = ((int64_t)(v0));
+  t78 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t79 = ((int64_t)(((int64_t)UINT64_C(2))));
+  t80 = ((uint64_t)(((uint64_t)(v8))));
 #ifndef __cplusplus
   extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg251s_put(t34, t35, t36, t37);
-  t38 = ((int64_t)(v0));
-  t39 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t40 = ((int64_t)(((int64_t)UINT64_C(3))));
-  t41 = ((int64_t)(v1));
-  t42 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  fg251s_put(t77, t78, t79, t80);
+  t81 = ((int64_t)(v0));
+  t82 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t83 = ((int64_t)(((int64_t)UINT64_C(3))));
+  t84 = ((int64_t)(v5));
+  t85 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
 #ifndef __cplusplus
   extern int64_t (fg251s_present)(int64_t, int64_t);
 #endif
-  t43 = fg251s_present(t41, t42);
-  t44 = ((uint64_t)(((uint64_t)(t43))));
+  t86 = fg251s_present(t84, t85);
+  t87 = ((uint64_t)(((uint64_t)(t86))));
 #ifndef __cplusplus
   extern void (fg251s_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg251s_put(t38, t39, t40, t44);
+  fg251s_put(t81, t82, t83, t87);
   t0 = ((uint8_t)UINT64_C(1));
   }
+fg251ds_gg_done:;
   return t0;
 }
 static void fg251ds_gg_function_0(int64_t base) {

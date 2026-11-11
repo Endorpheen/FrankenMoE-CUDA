@@ -16,3 +16,16 @@ transcription of the server's handling.
 
 Module and gate are complete. Wiring it into `server_context.cpp` is the next step; the previous function
 (`n_remaining`/`has_budget`, EXP250) is already live in a real server run with a defect test proving execution.
+
+## Live server and defect test
+
+Wired into `server_context.cpp` for the per-request `n_predict` decision (`fg251s_apply` bounds the value before it
+becomes the slot limit). The server built from the flint tree completes the accepted request with `e68df05b`, equal
+probabilities and a successful restore.
+
+Defect test (A -> B -> A): forcing the Goose bound to return 1 instead of the request value changed the completion to
+`d03502c43d74a30b936740a9517dc4ea2b2ad7168caa0a774cefe793ce0b33e7`; restoring returned `e68df05b`. So the request
+decisions are on the live path, not merely linked.
+
+Build note: `host-qualified.c` is C11 (`atomic_int`, `_Thread_local`) and cannot be compiled as C++, so it is a
+separate object from the C++ JSON bridge, with `main` renamed and a `fg251ds_run` wrapper exported.
