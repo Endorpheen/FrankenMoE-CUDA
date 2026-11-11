@@ -941,10 +941,15 @@ most dangerous and is worth checking first in any new fixture.
    Tooling fix: `build.py` chose a module's owner by "any file contains the prefix", so a bridge that
    merely called `fg199k_can_use` took ownership and the link failed with duplicate symbols. The
    criterion is now `<prefix>_enabled`.
-116. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+116. KV metadata selection is Goose-owned — EXP393 moves the field selection of `state_write_meta`:
+   which sequences a cell lists (all for a whole-context write, the requested one otherwise, and only when
+   the cell holds it) and whether the extension block is written. Gate 43/0, 5/5 mutations. On the profile
+   `FG393S_KV_META_PLAN` fires about 1 600 times and both the slot file and the post-restore answer are
+   unchanged. Remaining for APEX.KV: tensor layout arithmetic (row sizes and range offsets).
+117. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-117. Downstream phases P4–P11.
+118. Downstream phases P4–P11.
 
 ## Disk
 
