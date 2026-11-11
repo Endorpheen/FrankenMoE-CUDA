@@ -85,3 +85,20 @@ this backend build. The next probe is to run the same case under `compute-saniti
 `mmvq.cuh` expectations with the flint build's, since the module was written against the older backend.
 
 Recorded; not accepted; the active runtime is untouched and still uses the native kernel.
+
+## Loading the module library alone aborts the process
+
+The abort is not caused by the patch. With `GGML_GOOSE_CUDA_MMVQ_Q6K=0` (shim skips patching) the server still
+never becomes ready, so merely loading `libfg186q.so` breaks the process; the log stops at the same place.
+
+The first cause found was concrete and is fixed: the library was linked without `libstdc++`, so `__once_proxy`
+was undefined and even `timeout` reported a symbol lookup error under the preload. Relinked with `-lstdc++`, the
+preload loads, but the server still dies.
+
+Remaining difference from a working build: this object carries its own CUDA fat-binary registration
+(`__cudaRegisterFatBinary*`) compiled with `-arch=sm_89` outside the backend's CMake target, and it is loaded as an
+independent DSO rather than linked into `libggml-cuda`. A DSO with its own fat-binary registration, loaded into a
+process that already registered its CUDA modules, is the likely source.
+
+Next: either compile the module into the backend target (CMake, so registration happens once) or keep the module
+device-free and compile only host code here, calling the existing device kernels.
