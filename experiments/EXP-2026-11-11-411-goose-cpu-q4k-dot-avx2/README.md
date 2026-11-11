@@ -51,3 +51,19 @@ Current: **96 of 160 fail**, differences are ~3e-6 relative, e.g. `-611.969666` 
 one ulp, so a term still differs rather than only its association.
 
 Lesson recorded: a reference must not be the same symbol the module defines.
+
+## State after the honest gate
+
+96 of 160 fail with ~3e-6 relative differences. Ruled out by exact comparison against the AVX2 source:
+
+- scale assignment: AVX2 applies `scale[2j]` to the low 32 of each 64-element group and `scale[2j+1]` to the
+  high 32, which for sub-block index `j` is exactly `sc[j]` — my formula `sc[grp*2 + half]` reduces to the same
+  indexing, so the earlier "one scale per 32-block" reading was right by coincidence of index arithmetic;
+- min term: `madd_epi16` pairs confirmed, `prod[i] = mins[2i]*(bs[4i]+bs[4i+1]) + mins[2i+1]*(bs[4i+2]+bs[4i+3])`;
+- horizontal orders: `hsum = (r0+r2)+(r1+r3)` with `r[i]=sums[i+4]+sums[i]`, and `acc_m = (m0+m2)+(m1+m3)`;
+- `d` and `dmin` sign folding are exact in float.
+
+Next probe, and it is decisive rather than another guess: build an intrinsic `-mavx2 -mfma` transcription of
+`arch/x86/quants.c` in the test, diff its `hsum`, `msum` and `sumi` against the module's on the same block, and
+find the first member that differs. The source for the AVX2 path exists, so the remaining work is to compare
+member by member instead of reasoning about it.
