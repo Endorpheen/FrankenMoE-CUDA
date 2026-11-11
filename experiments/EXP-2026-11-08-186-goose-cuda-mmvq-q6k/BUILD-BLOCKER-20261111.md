@@ -318,3 +318,23 @@ In the full server the path now reaches `step=4c1` with `pool=0x11cf5c0d9f7` —
 whereas the harness reports a normal heap address. So in the server the context reference and its layout still
 disagree, which is a separate fact to chase next (candidate: the server loads libggml-cuda from
 `llama.cpp-flint-cuda/build-cuda/bin`, while the module was compiled against `flint/ggml/src`).
+
+## Same implausible pool address with our own backend build
+
+Pointed the server at the backend built from the same sources the module was compiled against
+(`LD_LIBRARY_PATH=/tmp/build-cuda-goose/bin` first; `ldd` confirms it is the one picked) and reran. The trace is
+unchanged:
+
+    FG186T step=4c1 pool=0x11cf9ede005 size=4608
+
+The address is unaligned and nearly identical in shape to the one seen with the flint build (0x11cf5c0d9f7), while
+the harness reports a normal heap address (0x5d4580588bb0). Since swapping the library did not change it, the
+difference is not which backend is loaded but what the module is handed as `ctx` in the server process.
+
+Two candidates remain, both concrete:
+1. the server process has more than one copy of libggml-cuda mapped (a `dlopen` by absolute path would bypass
+   LD_LIBRARY_PATH), so the object was created by one copy while the patched function lives in the other;
+2. the goose-modified `libggml-base` (fg163_backend_call) passes a different context than a plain backend would.
+
+Next probe: print `&ctx`, `dladdr(&ctx)` and `dladdr(ggml_cuda_mul_mat_vec_q)` from inside the module, and dump
+`/proc/self/maps` filtered for ggml-cuda while it runs. That settles both candidates at once.
