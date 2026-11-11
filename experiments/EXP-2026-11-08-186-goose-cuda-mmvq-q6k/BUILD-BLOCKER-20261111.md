@@ -228,3 +228,16 @@ buffers before the fault surfaces elsewhere.
 Next probe: run the same call under `compute-sanitizer --tool memcheck` with `--check-device-heap` and also build
 the module with `-fsanitize=address` on the host part, to catch the first out-of-bounds host write. That is the
 instrument that will name the actual defect instead of its shadow.
+
+## Ruled out: quantizer signature and device-side shared memory sizing (partly)
+
+- `quantize_row_q8_1_cuda` takes 13 arguments in this backend (`mmvq.cu:1557`) and the module passes 13 in the
+  same order, so the earlier suspicion of a mismatched call is wrong — that call is well-formed.
+- `fg186h_launch` computes shared memory as `(v[7][6]-1) * v[7][5] * sizeof(float)`, matching the native formula
+  `(nwarps-1)*ncols_dst*warp_size*4` when `v[7][6]=nwarps` and `v[7][5]=warp_size`. That is only correct if the
+  Goose planner actually filled `v[7][*]`; if it left any of them zero, `grid` or `block` becomes
+  `(0, ...)`, and a zero-sized launch is itself invalid, not a crash inside the kernel.
+
+So the open question narrows to: does the module's own planner fill `v[7][0..6]` before `fg186h_launch`, and with
+what values? Next probe prints `v[7][0..6]` right before the launch, and the shared-memory size, which will show
+whether the fault is a bad launch geometry rather than the allocation that precedes it.
