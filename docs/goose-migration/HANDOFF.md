@@ -833,10 +833,15 @@ most dangerous and is worth checking first in any new fixture.
    alone. Both completions stay `e68df05b`, probabilities equal, restore works, our three witnesses
    vanish and `FG241U`/`FG237S`/`FG227N` stay live. A build that enables them by default returns to
    native on request, and the switch touches no neighbour.
-98. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+98. Hybrid memory decisions — EXP375 integrated (`seq_pos_min` = max of minima, `seq_pos_max` = min of
+   maxima, failed recurrent read clears the attention half), gate 76/0, but **NOT VALIDATED**: the
+   combinators are reached only from the M-RoPE branch of `llama_batch_allocr::init`, and the Apex
+   32K/128 profile is not M-RoPE. Answer unchanged, `FG375S` never fires. Not counted as closed; needs
+   an M-RoPE request or a recurrent-only restore failure, neither of which exists in the agreed profile.
+99. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-99. Downstream phases P4–P11.
+100. Downstream phases P4–P11.
 
 ## Disk
 
