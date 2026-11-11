@@ -899,10 +899,18 @@ most dangerous and is worth checking first in any new fixture.
    `e68df05b`, probabilities equal. Known band, documented rather than hidden: `p` crosses as
    `p * 1e6` as an integer, so a parameter within 1e-6 of a boundary would compare differently than the
    native float test; the profile's values (0, 0.95, 1.0) are nowhere near it.
-109. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+109. Token selection ported and bit-identical — EXP386. My first attempt ported
+   `std::discrete_distribution`; reading the line showed this server does not use it.
+   `llama_sampler_dist_apply` takes the `#if 1` branch: one uniform draw, `target = sum_cum * rnd`, the
+   first index whose running float sum reaches the target, `p /= sum_cum` in the same pass. That is what
+   moved. Gate: 70 sets, 24 086 comparisons of the **index and every probability, bit for bit**, plus
+   draws landing exactly on thresholds, 0 failures; 7/7 mutations. On the profile `FG386S_DIST_PICK`
+   fires about 128 times and the completion stays `e68df05b` with all probabilities equal.
+   With EXP384 the sampler's probability path is Goose-owned end to end; the RNG primitive stays native.
+110. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-110. Downstream phases P4–P11.
+111. Downstream phases P4–P11.
 
 ## Disk
 
