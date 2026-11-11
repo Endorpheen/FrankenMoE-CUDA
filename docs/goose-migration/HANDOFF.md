@@ -497,10 +497,17 @@ most dangerous and is worth checking first in any new fixture.
    Also recorded: records are a walk-order journal, not an index-addressed buffer. The
    first gate compared by cell index and read a neighbouring record as soon as the streams
    had different widths.
-54. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+54. KV previous-token lookup — EXP334 transfers `get_prev_tokens`: target by position for a
+   token batch and by ubatch order for an embedding or mixed batch (where one image repeats
+   a position), and the nearest cell is the **last** cell at that position, because the
+   per-sequence index is ordered by (position, cell index). 46 566 checks, 8/8 mutations.
+   Two mutations proved unobservable and were replaced: `k >= 0` vs `k > 0` (at k == 0 the
+   pre-chunk branch computes the same position) and "look up a negative target anyway" (an
+   empty cell's mask is empty, so the answer is null either way).
+55. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-55. Downstream phases P4–P11.
+56. Downstream phases P4–P11.
 
 ## Disk
 
