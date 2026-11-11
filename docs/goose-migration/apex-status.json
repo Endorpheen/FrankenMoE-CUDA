@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T19:02:36.664784+03:00",
+  "updated_at": "2026-11-11T19:13:03.046664+03:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -36,6 +36,12 @@
       "item": "APEX.TOKENIZER",
       "state": "DONE",
       "implemented": "BPE merge control (EXP202), codepoint decode (EXP215), encode (EXP216), whole-string decode with recovery (EXP217), piece copy FG213P, byte fallback (EXP402), detokenisation decisions (EXP401). Live: FG202T FG213P FG215U FG216E FG217C FG401S FG402S.",
+      "remaining": "none against the stated criterion"
+    },
+    {
+      "item": "APEX.LOAD",
+      "state": "DONE",
+      "implemented": "Load-path decisions in Goose and live: shape acceptance (FG201L), duplicate names and dominant file type (FG389S), buffer placement (EXP404/FG404S). gguf_init, mmap/file I/O and ggml tensor metadata are the named system primitives. mmap alignment (EXP403) integrated but only reachable via FILE*, not counted.",
       "remaining": "none against the stated criterion"
     }
   ]
