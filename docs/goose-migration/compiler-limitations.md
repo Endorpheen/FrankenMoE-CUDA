@@ -343,6 +343,26 @@ directory — a harness defect, not a language gap.
 
 `log` and `pow` should be re-checked the same way before any claim is made about them.
 
-**CUDA.** Device code was the real gap: under `__CUDACC__` the pinned block declared these as host-only,
+**CUDA, measured on candidate v49.** Device code was the real gap: under `__CUDACC__` the pinned block declared these as host-only,
 so a kernel could not call them. That is the compiler side's task and is being handled in their channel;
 it does not affect the CPU softmax port.
+
+Independent check of candidate `verify-addropt-20261111-v49/stage3`
+(sha256 `b75a018408221cd9727757d951bf57c6a0245a0eb6a42a27531b632a29c2749b`, verified):
+
+| point | device | host libm |
+|---|---|---|
+| 0, ±1, ±5, ±88, ±700, ±inf, nan | bit-identical | — |
+| `exp(-708)` | 1 ulp from host | 3.3075530036384083e-308 |
+| `exp(-744)` | 9.8813129168249309e-324, bit-identical | same |
+| `exp(-745)` | **0** | 4.9406564584124654e-324 |
+| `expf(-90)` | 8.19400869e-40, preserved | same |
+
+So the compiler's note "subnormal result flushed to +0" is too broad: every subnormal tested is
+preserved bit for bit, and only the final step `exp(-745)` — where the true result rounds to the smallest
+subnormal — is flushed. This does not affect a softmax normaliser, which works in the normal range.
+
+Toolchain note: nvcc 12.6 cannot build this check here — system glibc declares `cospi`/`sinpi`/`rsqrt`
+with an exception specification that clashes with CUDA's `math_functions`, and every `--ccbin`/`-std`
+combination failed identically. The device check was built with clang 21 (`--cuda-gpu-arch=sm_89`,
+libdevice). The compiler side was asked for the exact nvcc command they used.
