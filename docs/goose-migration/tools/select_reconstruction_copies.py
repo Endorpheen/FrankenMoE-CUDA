@@ -19,7 +19,17 @@ CXX = ['/usr/bin/g++-13', '-DGGML_BACKEND_SHARED', '-DGGML_SHARED', '-DGGML_USE_
 
 def syms(obj):
     out = subprocess.run(['nm', '--defined-only', str(obj)], capture_output=True, text=True).stdout
-    return {l.split()[-1] for l in out.splitlines() if l.strip() and not l.split()[-1].startswith('.LC')}
+    syms = set()
+    for line in out.splitlines():
+        if not line.strip(): continue
+        name = line.split()[-1]
+        if name.startswith('.LC'): continue
+        # compiler-generated variants of the same function are not part of the interface
+        if any(x in name for x in ('std::', '.part.', '.isra.', '.constprop.', '.cold',
+                                   'St6vector', 'St8_Rb_tree', 'St4pair', 'St3map', 'St6atomic')):
+            continue
+        syms.add(name)
+    return syms
 
 def compile_one(src, obj):
     q = subprocess.run(CXX + ['-o', str(obj), '-c', str(src)], capture_output=True, text=True)
@@ -30,7 +40,10 @@ cands = {}
 for p in E.glob('EXP-*/integration/*.cpp'):
     m = re.search(r'EXP-(\d{4}-\d{2}-\d{2})-(\d+)', str(p))
     if not m: continue
-    if p.name.startswith('llama-') and p.name.count('-') > 1:  # our own composites (llama-batch-both etc.)
+    # our own composite copies carry an extra suffix; the plain files are the ones to overlay
+    if any(p.name.startswith(x) and p.name != x for x in
+           ('llama-batch-both', 'llama-batch-flint', 'llama-batch-classify',
+            'llama-kv-cache-both', 'llama-kv-cache-flint', 'llama-kv-cache-clear')):
         continue
     cands.setdefault(p.name, []).append((int(m.group(2)), p))
 
