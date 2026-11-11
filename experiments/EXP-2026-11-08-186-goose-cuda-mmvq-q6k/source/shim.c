@@ -20,8 +20,10 @@ static unsigned char g_saved[16];
 static void * g_target;
 static int g_patched;
 
-/* the module calls the native kernel under this name */
-void fg185q_native_ggml_cuda_mul_mat_vec_q(void * a, void * b, void * c, void * d, void * e, void * f) {
+/* the module calls the native kernel under its own C++ mangled name */
+void fg185q_native_shim(void * a, void * b, void * c, void * d, void * e, void * f)
+    __asm__("_Z37fg185q_native_ggml_cuda_mul_mat_vec_qR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_PK29ggml_cuda_mm_fusion_args_host");
+void fg185q_native_shim(void * a, void * b, void * c, void * d, void * e, void * f) {
     if (!g_native) return;
     g_native(a, b, c, d, e, f);
 }

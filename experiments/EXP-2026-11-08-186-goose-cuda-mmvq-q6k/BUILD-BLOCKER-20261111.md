@@ -102,3 +102,24 @@ process that already registered its CUDA modules, is the likely source.
 
 Next: either compile the module into the backend target (CMake, so registration happens once) or keep the module
 device-free and compile only host code here, calling the existing device kernels.
+
+## Exact fault location
+
+Fixed the last load-time issue (the module expects its native callback under a C++ mangled name; the shim now
+defines exactly that symbol). The patch then installs and the process reaches the kernel. Under gdb the fault is
+localised:
+
+    Thread 1 "llama-server" received signal SIGSEGV
+    #0 ggml_cuda_mul_mat_vec_q(...) from /tmp/libfg186q.so
+    #1 ggml_backend_cuda_graph_compute from .../llama.cpp-flint-cuda/build-cuda/bin/libggml-cuda.so.0
+    #2 fg163_backend_call from stage-run/libggml-base.so.0
+
+So the call is routed into the Goose module and the module itself crashes on first use against this backend. The
+module and its generated device code were written for the older backend; the host structures line up (the patch
+and the callback resolve), but the kernel body does not survive.
+
+This is now a normal porting defect to debug with compute-sanitizer on a single call, not an infrastructure
+blocker: the build route works end to end (backend from flint, module compiled unchanged, shim patching, symbol
+resolution, call routed).
+
+Active runtime untouched; native kernel still used there.
