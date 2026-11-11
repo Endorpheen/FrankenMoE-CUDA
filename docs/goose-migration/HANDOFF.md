@@ -811,10 +811,20 @@ most dangerous and is worth checking first in any new fixture.
    per file name, build, then prove identity against `libllama-exp244` by symbol set **and** witness
    lines before adding any call site there. This is the prerequisite for promoting EXP359–EXP370 out of
    a side stage.
-95. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+95. KV routes live on the reconstructed accepted tree — EXP371/372. The reconstructed DSO (5 415 656
+   bytes, 26 accepted modules + our two bridges) runs the fixed profile with `FG345W_KV_STATE_WRITE`
+   and `FG367S_KV_STATE_CLEAR` alongside ten accepted witnesses (`FG227N`, `FG228E`, `FG229I`,
+   `FG232R`, `FG233C`, `FG237S`, `FG239B`, `FG240Q`, `FG241U`, `FG242O`), answer unchanged
+   (`e68df05b`, save 387 989 920 bytes, truncated restore rejected).
+   Recorded cause of an earlier false zero: the run script inherited from EXP369 set every
+   `GGML_GOOSE_*` switch to 0 — the harness disabled the feature it was measuring.
+   Also recorded: the batch area is already Goose-owned in the accepted runtime (fg240q/fg241u/fg242o/
+   fg243c), so EXP349/350/352 duplicate existing routes and must not be stacked on top.
+   The tree is a side tree; promoting it as the active candidate is the owner's decision.
+96. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-96. Downstream phases P4–P11.
+97. Downstream phases P4–P11.
 
 ## Disk
 

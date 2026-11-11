@@ -120,7 +120,23 @@ not reach `llama_kv_cache::state_write` the way it does on the flint-side stage 
 to find which memory implementation the save goes through here — the accepted tree's `llama-context`
 calls `memory->state_write`, and the memory object may be the hybrid one, whose `state_write` delegates.
 
+## KV promotion done
+
+Cause of the zero calls was our own harness: the run script inherited from EXP369 set every
+`GGML_GOOSE_*` switch to `0`. With the switches left alone, the reconstructed tree runs the fixed
+profile with **both** new routes and every accepted route alive:
+
+| group | witnesses |
+|---|---|
+| new (this line) | `FG345W_KV_STATE_WRITE`, `FG367S_KV_STATE_CLEAR` |
+| accepted | `FG227N`, `FG228E`, `FG229I`, `FG232R`, `FG233C`, `FG237S`, `FG239B`, `FG240Q`, `FG241U`, `FG242O` |
+
+and the answer is unchanged: completion `e68df05b`, save 387 989 920 bytes, truncated restore rejected.
+
+This is the first candidate where the accepted runtime's Goose routes and ours execute together.
+
 ## Status
 
-The reconstructed tree is a working base that reproduces the accepted answer; the KV promotion needs
-one more diagnosis (which `state_write` the save reaches). The decision asked for above stays the same.
+The reconstructed tree is the working base. It still lacks `fg205g` (lost bridge, native walk used) and
+`llama_model::pin_mmap_experts` (absent patch), and it is a side tree, not the promoted candidate —
+promotion itself is the owner's call.
