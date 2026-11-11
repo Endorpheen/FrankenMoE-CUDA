@@ -57,7 +57,9 @@ __global__ static void fg255q_check(const char * x, int kbx0, int stride, int I,
         __syncthreads();
         native_load(x, qs_n, dm_n, kbx0, stride, i, txi, sram_stride);
         (void) fg255qd_gg_function_1((uint64_t)(uintptr_t) x, (uint64_t)(uintptr_t) qs_g, (uint64_t)(uintptr_t) dm_g,
-                                     kbx0, stride, i, txi, sram_stride, txi % 2, 0);
+                                     0, kbx0, stride, i, txi, sram_stride, 0);
+        (void) fg255qd_gg_function_1((uint64_t)(uintptr_t) x, (uint64_t)(uintptr_t) qs_g, (uint64_t)(uintptr_t) dm_g,
+                                     1, kbx0, stride, i, txi, sram_stride, 0);
         __syncthreads();
         if (threadIdx.x == 0 && i == 0) {
             int shown = 0;

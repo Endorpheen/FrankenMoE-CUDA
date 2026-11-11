@@ -90,3 +90,18 @@ is reproduced exactly.
 
 Next: substitute it into `mmq-load-tiles.cuh` (the header is included widely, so the generated device code has to be
 placed carefully) and require the accepted profile to stay at `e68df05b`.
+
+## Integrated and live: the first tensor-core piece is Goose
+
+The loader is now called from both native loops in `mmq-load-tiles.cuh` (mode 0 for the `qs` staging, mode 1 for
+the `dm` rows), with its device services declared next to the header and the generated code included after them. The
+server built from the flint tree completes the accepted request with:
+
+    first_sha = e68df05b..., probs_equal, restore_ok
+
+Defect test (A -> B -> A): changing the low-nibble mask from `0x0F0F0F0F` to `0x0F0F0F0E` changed the completion to
+`1a8543b0e7a5...`; restoring returned `e68df05b`. So this loader is on the live tensor-core path of the accepted
+profile, not merely linked in.
+
+That makes CUDA_MMQ genuinely partial rather than decision-only: the Q4_K tile loader -- the piece the earlier probe
+proved is executed -- is now Goose and bit-exact.
