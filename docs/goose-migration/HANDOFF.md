@@ -304,10 +304,17 @@ most dangerous and is worth checking first in any new fixture.
    were written at `2*i*8` through a helper that already scales by 8. **Rule now
    recorded: a helper that takes an index must never receive a byte-scaled offset** —
    this is the second occurrence (EXP297 was the first).
-26. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+26. DSV4 state tensor I/O — EXP306 transfers the per-stream transfer records and
+   metadata checks of the compressed state: 9 924 checks, 8/8 mutations. A
+   representation defect worth carrying: pointer-plus-length cannot tell a null map
+   from an empty one, and native does distinguish them; there is now an explicit
+   presence flag. **Length zero does not encode presence.** Still open in P5-03:
+   `init_batch` (belongs with the batch allocator) and the remaining dsv4 state
+   read path.
+27. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-27. Downstream phases P4–P11.
+28. Downstream phases P4–P11.
 
 ## Disk
 

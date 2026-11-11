@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "stream stride uses the live row count",
+    "status": "CAUGHT",
+    "failures": 632,
+    "exit_code": 1
+  },
+  {
+    "mutation": "record size uses the storage row count",
+    "status": "CAUGHT",
+    "failures": 1021,
+    "exit_code": 1
+  },
+  {
+    "mutation": "row count check is off by one",
+    "status": "CAUGHT",
+    "failures": 407,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stream map accepts fewer ids than streams",
+    "status": "CAUGHT",
+    "failures": 63,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stream bound check is off by one",
+    "status": "CAUGHT",
+    "failures": 65,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write offset drops the stride",
+    "status": "CAUGHT",
+    "failures": 314,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read offset drops the stride",
+    "status": "CAUGHT",
+    "failures": 549,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read ignores the tensor type",
+    "status": "CAUGHT",
+    "failures": 348,
+    "exit_code": 1
+  }
+]
