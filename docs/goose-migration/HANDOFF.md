@@ -364,10 +364,21 @@ most dangerous and is worth checking first in any new fixture.
    mutations. The two track mutations are the narrowest because each disabled
    condition needs a draw satisfying every other one, which is why flag combinations
    are exhaustive.
-34. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+34. **Open, not committed:** `set_input_kpool` (the host-side pool inputs) was
+   started as EXP314 and its gate does not agree yet. Symptom: the pool-cell table
+   diverges at the second sequence (module `1*12+23 = 35`, transcription `20`), and the
+   probe shows the module reading `cells_off[1] = 0` while the transcription uses a
+   non-zero base. The module's formula matches the native expression, so the suspicion
+   is the harness wiring between `cells_off`, `pools_all` and the pool-count table —
+   the same class of pointer/table confusion as EXP312, where the offset table and the
+   value array were one pointer. Next attempt should build the arena from one
+   description instead of three parallel vectors. The draft lives in
+   `experiments/EXP-2026-11-11-314-goose-hybrid-idx-inputs/` and is untracked; do not
+   commit it until the gate is green.
+35. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-35. Downstream phases P4–P11.
+36. Downstream phases P4–P11.
 
 ## Disk
 
