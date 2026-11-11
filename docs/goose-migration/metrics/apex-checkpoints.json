@@ -128,6 +128,22 @@
       "content_equal": true,
       "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated backend, no preload",
       "note": "single quick checkpoint; not evidence of a regression or improvement on its own"
+    },
+    {
+      "item": "APEX.CUDA_MMQ",
+      "experiment": "EXP180/203/255/257",
+      "measured_at": "2026-11-11T23:20:50.609616+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, /tmp/build-server with dispatch, Q8_1 quantizer and the Q4_K/Q6_K tile loaders in Goose",
+      "prefill_tok_s": 1689.33,
+      "decode_tok_s": 23.04,
+      "wall_s": 24.95,
+      "peak_rss_mib": 22861.2,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9764,
+      "content_equal": true,
+      "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated build; no preload",
+      "note": "single quick checkpoint; not by itself evidence of a regression or an improvement"
     }
   ]
 }

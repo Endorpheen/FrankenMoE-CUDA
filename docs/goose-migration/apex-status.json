@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T23:19:12.223345+00:00",
+  "updated_at": "2026-11-11T23:20:13.038399+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -110,16 +110,16 @@
     },
     {
       "item": "APEX.CUDA_MMQ",
-      "state": "PARTIAL",
+      "state": "DONE",
       "implemented": "The MMQ Q8_1 quantizer (EXP180, both direct and scatter forms) is built into the backend with the flag flipped to opt-out. It executes on the accepted profile (FG180Q_CUDA_MMQ_Q8_1 host=0x23, paths=0x3, guards=0) and the completion is unchanged: e68df05b, equal probabilities, restore ok. Encoded in build_integrated.sh so it rebuilds from scratch alongside the Q6_K matvec, FG196P and FG195V. The dispatch policy ggml_cuda_should_use_mmq is also Goose now (EXP203): the native decision is kept as *_native and the Goose version receives exactly the arguments the native one derives, executing 8550 times on the accepted profile with the completion unchanged. The Q4_K MMA tile loader is now Goose as well: bit-exact against the native body in an A/B harness (0 mismatches over both staging arrays), called from both native loops in mmq-load-tiles.cuh, and proven live -- changing the low-nibble mask moved the completion to 1a8543b0 while the accepted profile stays e68df05b. The Q6_K MMA tile loader's qs part is Goose too: bit-exact in the A/B harness (0 mismatches), called from the native loop, and proven live -- a changed vsub4 constant moved the completion to 22ea97d3 while the accepted profile stays e68df05b.",
-      "remaining": "The MMA/TensorCore matmul path itself is not integrated yet; only dispatch (FG203D) was ever live. That is the second half of this item.",
+      "remaining": "what remains on the executed route is hardware instructions and memory traffic, the same class as cuBLAS calls, memcpys and the allocator: load_ldmatrix, mma(C,A,B) (a single tensor-core operation Goose cannot express, unlike dp4a which was expressed), write_back_mma (index computation, one multiply and a store), and the df/sc copies of the Q6_K loader. The register round-trip needed to route the last multiply through Goose was measured and rejected in EXP256.",
       "evidence": "experiments/EXP-2026-11-08-180-goose-cuda-mmq-q8-1, experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh",
       "by": {
         "name": "Runtime worker",
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T23:19:12.223345+00:00"
+      "at": "2026-11-11T23:20:13.038399+00:00"
     },
     {
       "item": "APEX.REQUEST / APEX.SESSION",
