@@ -213,10 +213,19 @@ most dangerous and is worth checking first in any new fixture.
    range — and `seq_cp` clamps bounds it never reads, which the port preserves
    rather than "fixing". Still open in P5-04: state write/read, rollback, stream
    ordering, and the live recurrent witnesses.
-15. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+15. Recurrent removal — EXP295 transfers `seq_rm`, `set_rs_idx`, `clear` and
+   `state_clear`: 951 126 checks, 8/8 mutations caught. The rollback branch is the
+   subtle part — single-use snapshot, bounded by `n_rs_seq`, refused for a cell
+   shared by several sequences, and position-only when the memory is empty. Two
+   notes worth keeping: native compares `seq_id` as unsigned against `n_seq_max`,
+   so negative ids are rejected before the `seq_id < 0` branch, which is therefore
+   dead; and a uniform position draw never reaches the rollback branch, which is
+   why three mutations first looked harmless. The gate now aims half the removals
+   at the sequence's own cell and probes the exact snapshot bound.
+16. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-16. Downstream phases P4–P11.
+17. Downstream phases P4–P11.
 
 ## Disk
 
