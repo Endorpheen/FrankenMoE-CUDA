@@ -603,3 +603,24 @@ attempts is this, not the original defect.
 
 Next: build the module so it is linked into the backend instead of preloaded (the CMake-into-ggml-cuda route), which
 removes the second fat-binary registration entirely.
+
+## Breakthrough: module linked into the backend; the accepted run is clean
+
+Copied the flint tree to `/tmp/flint-goose`, renamed the original kernel to
+`ggml_cuda_mul_mat_vec_q_native`, added the module as `fg186q-runtime.cu` plus its host part (`host-unit.c` via an
+explicit CMake append, since the glob only takes `.cu`), and built:
+
+    /tmp/build-cuda-fg/bin/libggml-cuda.so.0.27.0  (145,891,776 bytes)
+
+Running the accepted profile with `LD_LIBRARY_PATH=/tmp/build-cuda-fg/bin` (no preload at all):
+
+    first_sha = e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9
+    probs_equal = true, restore_ok = true
+
+So the integration problem is solved: no second fat-binary registration, no entry patching, the module is inside
+the library and the run is clean.
+
+One thing remains before this counts: the trace shows `step=6 run eligible=0`, i.e. the module is reached but its
+eligibility guard is false, so the call falls back to the native kernel. The next step is to see which clause
+fails (tensor types, ids, `dst->ne[1] == 1`, `ne13 == ne3`) and make the guard match the shapes this profile
+actually uses.
