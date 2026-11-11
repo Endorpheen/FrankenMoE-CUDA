@@ -873,10 +873,16 @@ most dangerous and is worth checking first in any new fixture.
    the indexed hybrid memory); `state_read_data` stays out of scope (EXP366). APEX.PATH status files
    live in the dashboard, so the evidence is recorded here and in the experiment, not by hand-editing
    that JSON.
-105. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+105. APEX.RECURRENT_MEMORY I/O plan closed — EXP382 moves the layer-visit decisions of
+   `llama_memory_recurrent::state_write_data` into Goose (skip a layer with no R tensor; the S pass
+   covers exactly the layers that own one), making the fixed stream ordering explicit. Gate 34/0, 4/4
+   mutations. On save the log shows `FG382S_RECURRENT_IO_PLAN` twice (R pass, S pass) next to the
+   accepted `FG232R`, with `FG381S`/`FG373S`/`FG345W`/`FG241U` and both completions at `e68df05b`.
+   Boundary kept honest: payload bytes and tensor ownership stay in llama by bridge design.
+106. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-106. Downstream phases P4–P11.
+107. Downstream phases P4–P11.
 
 ## Disk
 
