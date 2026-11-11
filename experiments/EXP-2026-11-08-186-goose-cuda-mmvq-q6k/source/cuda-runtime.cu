@@ -107,12 +107,16 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  fg186q_packet p{};
  fprintf(stderr,"FG186T step=4 packet\n");
  p.stream=ctx.stream();
+ fprintf(stderr,"FG186T step=4a stream=%p\n",(void*)p.stream);
  p.v[0][0]=(uint64_t)(uintptr_t)src0->data;
  // src1 arrives as F32 and must be quantized to q8_1 first; native does this into a
  // padded staging buffer. The quantizer is already a qualified Goose module (EXP178),
  // so reusing it here keeps the quantization itself in Goose.
  const int64_t ne10_padded=GGML_PAD(ne00,MATRIX_ROW_PADDING);
+ fprintf(stderr,"FG186T step=4b pad=%lld bytes=%lld\n",(long long)ne10_padded,(long long)(ne13*ne12*ne11*ne10_padded*(int64_t)sizeof(block_q8_1)/QK8_1));
+ fprintf(stderr,"FG186T step=4c pool enter\n");
  ggml_cuda_pool_alloc<char> src1_q8(ctx.pool(),ne13*ne12*ne11*ne10_padded*sizeof(block_q8_1)/QK8_1);
+ fprintf(stderr,"FG186T step=4d alloc ptr=%p\n",(void*)src1_q8.get());
  {
   const int64_t t11=src1->nb[1]/4,t12=src1->nb[2]/4,t13=src1->nb[3]/4;
   fprintf(stderr,"FG186T step=5 quantize ne10=%lld type=%d\n",(long long)ne10,(int)src0->type);

@@ -156,3 +156,23 @@ Next: split that region with two more prints (`ctx.stream()` / pool size / after
 expression. This is the last mile: everything else in the module's host path is reached and sane.
 
 Active runtime untouched.
+
+## Exact expression: the staging allocation crashes
+
+Second-stage trace:
+
+    FG186T step=4a stream=0x5f229644abd0
+    FG186T step=4b pad=2048 bytes=4608
+    FG186T step=4c pool enter
+    (no step=4d)
+
+So the crash is inside `ggml_cuda_pool_alloc<char> src1_q8(ctx.pool(), 4608)`: the context and stream are valid, and
+the request is only 4.5 KiB, so it is not an out-of-memory condition — the allocation path itself faults for this
+module.
+
+Observation that matters: `ctx.stream()` and `ctx.pool()` are inlined against the flint headers, and this module
+was compiled with exactly those headers, so the offsets agree; the remaining candidate is that the allocation is
+reached before the backend's pool has been set up for this device, or through a pool type mismatch.
+
+Next: print `ctx.device`, the pool type via a virtual call guard, and try allocating through the backend's own
+`ggml_cuda_pool_alloc` in a native peer call for comparison.
