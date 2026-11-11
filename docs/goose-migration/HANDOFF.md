@@ -748,10 +748,18 @@ most dangerous and is worth checking first in any new fixture.
    `FG349S_UBATCH_ADD` first/100 — with prefill 1589.0 and decode 25.69. They do not interfere: the
    selection fills sets and cursors, `ubatch_add` consumes the resulting index list.
    Remaining batch items: container ownership and the splitter parts this profile never reaches.
-86. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+86. Three call sites live, KV state-write exercised — EXP363 links selection, `ubatch_add` and the
+   KV state-write range selection in one stage (5 297 008 bytes, ABI complete). The completion is
+   exact and both batch witnesses fire; `FG345W_KV_STATE_WRITE` fires **once**, from a slot save:
+   `POST /slots/0?action=save` with `--slot-save-path` produced a 387 989 920-byte file the server
+   accepted. prefill 1621.2, decode 26.09.
+   That settles the earlier zero-call question: the KV state path is not on completion, it is on
+   save. Not covered: `state_read`/restore, the meta/data halves as separate live routes, and
+   `state_clear`. Natural next check: restore the file just written and compare the state.
+87. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-87. Downstream phases P4–P11.
+88. Downstream phases P4–P11.
 
 ## Disk
 
