@@ -791,10 +791,15 @@ most dangerous and is worth checking first in any new fixture.
    Neither KV route is on completion — one is on save, the other on a failed restore — so this proves
    coexistence, not a new path. KV remaining: `state_read_data` (format, EXP366), the whole-cache
    clear branch, the hybrid drop, and separate live routes for meta/data.
-92. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+92. Disable contract verified — EXP369 runs the EXP368 stage with all four switches at `0`
+   (`GGML_GOOSE_UBATCH_ADD`, `GGML_GOOSE_SPLIT_SELECT`, `GGML_GOOSE_KV_STATE_WRITE`,
+   `GGML_GOOSE_KV_STATE_CLEAR`). The completion is still `e68df05b`, save and a rejected truncated
+   restore behave the same, and **no** witness fires. The switches therefore only turn features off,
+   and a rollback does not need a rebuild.
+93. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-93. Downstream phases P4–P11.
+94. Downstream phases P4–P11.
 
 ## Disk
 
