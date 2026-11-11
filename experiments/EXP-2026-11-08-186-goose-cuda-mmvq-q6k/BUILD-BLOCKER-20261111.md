@@ -710,3 +710,18 @@ Closing position for this item: the integration is solved and 168 of 324 calls a
 with an unchanged completion; the remaining 156 need multi-column support, which is a substantial change to the
 generated device code (column-aware staging and block-to-destination mapping), not a wrapper fix. That is recorded
 as the concrete next task.
+
+## Per-column decomposition revisited with element-level output: it is not about the columns
+
+Rebuilt with the per-column loop and compared element by element at (ncols_dst=2, nrows=8): indices 0..7 are the
+first destination, 8..15 the second. **Both** differ, including the first one.
+
+That rules out the column mapping as the cause: with a per-column call the first destination is produced by exactly
+the same single-column path that is bit-exact at ncols_dst=1. So something in the single-column path changes when
+`dst->ne[1]` and `src1->ne[1]` are 2 — most plausibly the y-side (`src1`) stride/offset derivation in the launch
+packet, which is computed from `ne11`/`ne12` and `blocks` rather than from the tensor the kernel reads.
+
+Next probe: print, for (2,8) and (1,8), the packet's y-side values (`v[2][1]`, `v[4][1]`, `v[5][4]`, `v[5][5]`,
+`v[6][1]`) and the ybase each block computes; the difference between the two cases is the defect.
+
+Multi-column support is my responsibility, as instructed, and this narrowing is the way in.
