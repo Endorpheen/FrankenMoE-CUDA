@@ -643,3 +643,23 @@ and it is now reachable in seconds through the harness instead of a full server 
 
 Next: bisect nrows in the harness (16/256/1024/4096/8192) to find the first size that fails, then inspect the
 corresponding row/block indexes in the generated device code.
+
+## Bisect: the kernel is exact for one column and crashes for two
+
+Harness, both columns counts, six row counts:
+
+| ncols_dst | nrows 16..8192 | result |
+|---|---|---|
+| 1 | 16, 256, 1024, 2048, 4096, 8192 | **IDENTICAL** at every size |
+| 2 | same six sizes | **exit 139 (SIGSEGV)** at every size |
+
+So the port is exact for `ncols_dst == 1` across all row counts, and it does not support two or more destination
+columns at all. The earlier "IDENTICAL" for (2,4) was measured against an earlier module build and no longer holds.
+
+Consequence for the profile: every Q6_K matvec on this path reports `dst->ne[1] == 2`, i.e. two columns. The module
+therefore **cannot replace any call on the accepted profile today**, which is exactly what its original guard was
+protecting against. The guard is restored, so the library falls back to native and the run is correct.
+
+The remaining work is a real feature in the Goose kernel: multi-column support (the native kernel allocates
+`tmp_shared[nwarps-1][ncols_dst][rows_per_block][warp_size]`, i.e. an extra dimension the generated code does not
+carry), not a tuning detail.
