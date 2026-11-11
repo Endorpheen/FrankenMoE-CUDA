@@ -66,8 +66,24 @@ The stage is a separate file under the ignored `build/`; the working build and `
 untouched. One extra symbol is exported by the module itself (`fg345w_generated_main`); it is the
 generated entry point and is harmless, but worth knowing if a symbol audit is ever exact-match.
 
-What is still open, and deliberately: the run. It needs rule-1 approval, and without it the stage
-cannot be accepted or rejected on correctness.
+## Apex run on the stage (one run, fixed profile 32K/128)
+
+Owner authorization 2026-11-11 removed the per-run approval gate for periodic validation after a
+large integration step. This is that validation, on the agreed profile and the accepted criteria.
+
+| check | result |
+|---|---|
+| status | RESPONSE_RECEIVED, 128 tokens |
+| content hash | `e68df05b...` — equals the accepted EXP244 control |
+| tokens | equal, 128 / 128 |
+| saved probabilities | equal, 128 / 128 |
+| acceptance script | ACCEPTED — prefill 2588.9 tok/s, decode 25.88 tok/s, floors met |
+| wall | 17.58 s (single run, no parallel work) |
+| `FG345W` witness | **0 calls** — expected: `state_write` is not on the completion path |
+
+So the stage neither changes nor exercises anything measurable here: it proves the substitution is
+sound (identical object set, identical outputs) and proves nothing about the module being live. A
+non-zero witness needs a route that a completion actually calls — the next integration step.
 
 ## Files
 

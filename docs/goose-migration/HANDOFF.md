@@ -670,10 +670,17 @@ most dangerous and is worth checking first in any new fixture.
    override only fires when a zero exists), and a decreasing-order variant kept its increment and
    looped forever — a hanging mutation is not a detection, and killing the driver left the source
    mutated until it was restored by hand.
-77. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+77. Stage validated on a real run — first use of the owner's standing permission for periodic
+   validation: one Apex run (32K/128) on the EXP347 stage DSO. Tokens, all 128 saved probabilities
+   and the content hash (`e68df05b`) equal the accepted EXP244 control; the acceptance script
+   returns ACCEPTED with prefill 2588.9 and decode 25.88 tok/s at 17.58 s wall, no parallel work.
+   The `FG345W` witness logged **0** calls, as predicted: `state_write` is not on the completion
+   path. So the run proves the substitution is sound and proves nothing about the module being
+   live — a non-zero witness needs a route a completion actually calls.
+78. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-78. Downstream phases P4–P11.
+79. Downstream phases P4–P11.
 
 ## Disk
 
