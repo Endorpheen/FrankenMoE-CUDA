@@ -932,10 +932,19 @@ most dangerous and is worth checking first in any new fixture.
    rebuild half-way, and the next run executed without the lost-bridge disable and died with
    `FG205G validation code 21` — a half-applied staging is visible immediately rather than silently
    accepted.
-115. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+115. KV slot placement is Goose-owned — EXP392 ports the `find_slot` walk. The blocking premise was
+   false: the predicate was already Goose (`fg199k_can_use`), and the cells fit in three flat arrays, so
+   no `llama_kv_cells*` has to cross. Gate: 18 000 generated caches, **53 703 checks, 0 failures**,
+   8 mutations caught; three mutations were proven unobservable and replaced rather than waived.
+   On the profile `FG392S_KV_FIND_SLOT` and `FG199K` are both live and the completion stays `e68df05b`
+   with an exact restore.
+   Tooling fix: `build.py` chose a module's owner by "any file contains the prefix", so a bridge that
+   merely called `fg199k_can_use` took ownership and the link failed with duplicate symbols. The
+   criterion is now `<prefix>_enabled`.
+116. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-116. Downstream phases P4–P11.
+117. Downstream phases P4–P11.
 
 ## Disk
 
