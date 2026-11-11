@@ -438,10 +438,16 @@ most dangerous and is worth checking first in any new fixture.
    50 384 checks, 8/8 mutations. The first run failed because the transcription had runs
    outermost while native has layers outermost — the transcription was corrected, not
    the module. Two validation mutations are caught by the run aborting.
-46. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+46. Lazy VMM KV buffer — EXP326 opens P5-06 with the policy from
+   `patches/kv-lazy-vmm.patch`: the buffer is lazy only when offloaded, non-transposed
+   and actually offered by the backend; commits are one `(offset, row*n_kv)` per present
+   tensor and are a no-op for a plain buffer or a zero request; the three call sites use
+   the highest range end. 16 290 checks, 8/8 mutations. The registry lookup and the
+   commit itself stay native primitives.
+47. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-47. Downstream phases P4–P11.
+48. Downstream phases P4–P11.
 
 ## Disk
 

@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "the lazy buffer is used without offload",
+    "status": "CAUGHT",
+    "failures": 444,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the lazy buffer is used for a transposed V too",
+    "status": "CAUGHT",
+    "failures": 476,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the lazy buffer is used when the backend has none",
+    "status": "CAUGHT",
+    "failures": 502,
+    "exit_code": 1
+  },
+  {
+    "mutation": "commits happen on a plain buffer",
+    "status": "CAUGHT",
+    "failures": 771,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a zero request still commits",
+    "status": "CAUGHT",
+    "failures": 4,
+    "exit_code": 1
+  },
+  {
+    "mutation": "absent tensors are committed too",
+    "status": "CAUGHT",
+    "failures": 3814,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the highest cell is taken from the range start",
+    "status": "CAUGHT",
+    "failures": 1589,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the highest cell becomes the lowest",
+    "status": "CAUGHT",
+    "failures": 1589,
+    "exit_code": 1
+  }
+]
