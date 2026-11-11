@@ -11,7 +11,7 @@
 #include <vector>
 #include <random>
 
-int main() {
+int main(int argc, char ** argv) {
     ggml_backend_t be = ggml_backend_cuda_init(0);
     if (!be) { printf("no backend\n"); return 1; }
     ggml_init_params ip{};
@@ -35,6 +35,13 @@ int main() {
     printf("harness: calling ggml_cuda_mul_mat_vec_q\n"); fflush(stdout);
     ggml_cuda_mul_mat_vec_q(*c, src0, src1, nullptr, dst, nullptr);
     cudaDeviceSynchronize();
+    {
+        std::vector<float> out(ggml_nelements(dst));
+        ggml_backend_tensor_get(dst, out.data(), 0, out.size()*sizeof(float));
+        FILE * fo = fopen(argc > 1 ? argv[1] : "/tmp/harness_out.bin", "wb");
+        if (fo) { fwrite(out.data(), sizeof(float), out.size(), fo); fclose(fo); }
+        printf("harness: out[0]=%.9g out[1]=%.9g\n", out[0], out.size() > 1 ? out[1] : 0.0f);
+    }
     printf("harness: returned\n");
     ggml_backend_buffer_free(buf);
     ggml_free(ctx);

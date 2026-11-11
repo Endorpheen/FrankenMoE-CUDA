@@ -120,7 +120,10 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  const int64_t ne10_padded=GGML_PAD(ne00,MATRIX_ROW_PADDING);
  fprintf(stderr,"FG186T step=4b pad=%lld bytes=%lld\n",(long long)ne10_padded,(long long)(ne13*ne12*ne11*ne10_padded*(int64_t)sizeof(block_q8_1)/QK8_1));
  fprintf(stderr,"FG186T step=4c pool enter dev=%d stream_no=%d\n",ctx.device,ctx.curr_stream_no);
- ggml_cuda_pool_alloc<char> src1_q8(ctx.pool(),ne13*ne12*ne11*ne10_padded*sizeof(block_q8_1)/QK8_1);
+ ggml_cuda_pool & fg186pool = ctx.pool();
+ const size_t fg186sz = (size_t)(ne13*ne12*ne11*ne10_padded*sizeof(block_q8_1)/QK8_1);
+ fprintf(stderr,"FG186T step=4c1 pool=%p size=%zu\n",(void*)&fg186pool,fg186sz);
+ ggml_cuda_pool_alloc<char> src1_q8(fg186pool,fg186sz);
  fprintf(stderr,"FG186T step=4d alloc ptr=%p\n",(void*)src1_q8.get());
  {
   const int64_t t11=src1->nb[1]/4,t12=src1->nb[2]/4,t13=src1->nb[3]/4;

@@ -288,3 +288,33 @@ also explains why the earlier ASan run of the server never reached the module.
 Consequence: the harness is ready and useful (it calls the kernel directly, no server, no model), but the
 instrument must be Valgrind memcheck or CUDA's own API-error checking, not ASan. Recorded so the next attempt does
 not repeat this dead end.
+
+## Breakthrough: the module is correct, and the fault was argument evaluation order
+
+Split `ctx.pool()` and the size into separate statements before constructing the allocation:
+
+    ggml_cuda_pool & p = ctx.pool();
+    const size_t sz = ...;
+    ggml_cuda_pool_alloc<char> src1_q8(p, sz);
+
+After that, the harness (`tests/harness.cpp`, one call, no server, no model) runs the whole path:
+
+    FG186T step=6 run eligible=1
+    FG186T launch grid=(4,1,1) block=(32,4) shm=384 v7=[4,1,1,8,8,32,4]
+    FG186Q_CUDA_MMVQ_Q6K host=0x1,cuda_status=0,paths=0x1,guards=0
+    harness: returned
+
+and the kernel's output is **bit-identical** to the native kernel on the same input:
+
+    native: out[0]=145453472 out[1]=31870514
+    goose : out[0]=145453472 out[1]=31870514
+    cmp: IDENTICAL
+
+So the module itself is correct; the earlier "moving crash" was undefined behaviour in that single expression,
+where `ctx.pool()` (which lazily creates the pool) and the size expression were evaluated as constructor
+arguments.
+
+In the full server the path now reaches `step=4c1` with `pool=0x11cf5c0d9f7` — an unaligned, implausible address —
+whereas the harness reports a normal heap address. So in the server the context reference and its layout still
+disagree, which is a separate fact to chase next (candidate: the server loads libggml-cuda from
+`llama.cpp-flint-cuda/build-cuda/bin`, while the module was compiled against `flint/ggml/src`).
