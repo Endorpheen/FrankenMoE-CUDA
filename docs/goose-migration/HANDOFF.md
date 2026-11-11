@@ -398,10 +398,15 @@ most dangerous and is worth checking first in any new fixture.
    the cache size, maximum over streams). 29 000 checks, 8/8 mutations. Note that the
    plain-V token stride uses the GQA width, not `head_v * n_head_kv` — the variable-V
    case, which is easy to "simplify" away.
-39. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+39. KV copy-in plan — EXP319 transfers `cpy_k`/`cpy_v` operation sequences: the head
+   merge, the cross-stream reshape for global indices, the contiguous-copy versus
+   reshape choice for a transposed V, the width pad, and the flattening to one element
+   per row; plus the V index shape (one per token, or per token and value element when
+   transposed). 30 201 checks, 8/8 mutations.
+40. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-40. Downstream phases P4–P11.
+41. Downstream phases P4–P11.
 
 ## Disk
 
