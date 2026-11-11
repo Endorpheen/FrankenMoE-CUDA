@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T18:41:26.176284+00:00",
+  "updated_at": "2026-11-11T18:49:26.603094+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -59,15 +59,15 @@
     {
       "item": "APEX.CPU_MATH",
       "state": "PARTIAL",
-      "implemented": "Q4_K x Q8_K super-block dot ported twice: the portable algorithm (EXP410) and the dispatched AVX2 association (EXP411). AVX2 gate: 160/160 bit-exact against the library's own ggml_vec_dot_q4_K_q8_K for nb=1,2,3,7; 7/7 mutations caught. Entry-patch detour verified on a stand-alone caller (returns the AVX2 value).",
-      "remaining": "No run can witness the kernel: on the accepted 32K/128 profile every quantised and float vec_dot counter stays at 0 (work runs on the GPU), and the CPU-only profile aborts with goose assertion failures in this staging build. Only the Q4_K x Q8_K kernel is ported; the rest of CPU_MATH is untouched.",
+      "implemented": "Q4_K x Q8_K dot is ported to Goose with the dispatched AVX2 association and accepted on a CPU bench: libggml-cpu builds out-of-tree from the flint sources (AVX2/FMA), is relinked with the Goose symbol, and on the same profile native and Goose produce identical content and sha d13cf4cf221fa5fd with 2000+ witness calls and zero diffs; GGML_GOOSE_CPU_Q4K_DOT=0 restores the native path. Gate 160/160 bit-exact, 7/7 mutations, nb up to 128 clean. Fixed a real fp16-subnormal defect (127-15-sh -> 127-14-sh) that halved the min term.",
+      "remaining": "Only Q4_K x Q8_K is ported. The other CPU dot kernels (q6_K, q8_0, q2_K/q3_K/q5_K and the float ones) are not, and on the accepted GPU profile none of them is called at all.",
       "evidence": "experiments/EXP-2026-11-11-410-goose-cpu-q4k-dot, experiments/EXP-2026-11-11-411-goose-cpu-q4k-dot-avx2",
       "by": {
         "name": "Runtime worker",
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T18:41:26.176266+00:00"
+      "at": "2026-11-11T18:49:26.603077+00:00"
     }
   ]
 }
