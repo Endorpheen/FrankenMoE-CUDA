@@ -176,3 +176,17 @@ reached before the backend's pool has been set up for this device, or through a 
 
 Next: print `ctx.device`, the pool type via a virtual call guard, and try allocating through the backend's own
 `ggml_cuda_pool_alloc` in a native peer call for comparison.
+
+## Context is valid; the fault is inside lazy pool creation
+
+    FG186T step=4c pool enter dev=0 stream_no=0
+    (no step=4d)
+
+`ctx.pool()` finds no pool for (device 0, stream 0) and calls `new_pool_for_device(*this, 0, 0)`; the crash is
+inside that lazy creation. Note the same call succeeds in the native kernel on the same graph, so the difference is
+in how this module reaches it: `new_pool_for_device` is a member of the flint backend's context and is invoked
+from a foreign DSO.
+
+Next probe: call `ctx.pool()` once earlier (before any other work) and print its address, and also try
+`ggml_cuda_pool_alloc` from a native peer at the same point, to see whether the difference is the timing of the
+first pool creation rather than the call site.
