@@ -586,10 +586,15 @@ most dangerous and is worth checking first in any new fixture.
    a clear-before-throw on failure) together with `state_clear(seq_id)` (cells only this
    sequence holds) and the shared clear body (contiguous range or per cell, keys then values,
    transposed values per embedding row). 42 287 checks, 9/9 mutations.
-65. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+65. KV state write ranges — EXP345 transfers `state_write`: a cell is written when non-empty,
+   holding the sequence, and — only for a real sequence — not SWA-masked against that
+   sequence's maximum position, so a whole-cache write never filters. Ranges coalesce and a
+   zero-cell stream is skipped with no meta and no data. All four masking rules are covered,
+   including the inclusive `p1 - p0 >= n_swa` boundary. 39 388 checks, 9/9 mutations.
+66. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-66. Downstream phases P4–P11.
+67. Downstream phases P4–P11.
 
 ## Disk
 
