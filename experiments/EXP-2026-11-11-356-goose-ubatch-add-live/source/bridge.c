@@ -13,7 +13,7 @@ static _Atomic unsigned long long g_calls;
 static void fg349s_tick(void){
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
     if (n == 1) fprintf(stderr, "FG349S_UBATCH_ADD first call\n");
-    if ((n % 10000) == 0) fprintf(stderr, "FG349S_UBATCH_ADD calls=%llu\n", n);
+    if ((n % 100) == 0) fprintf(stderr, "FG349S_UBATCH_ADD calls=%llu\n", n);
 }
 
 static int32_t id64_of(const int32_t * idxs, int64_t i){ return idxs ? idxs[i] : 0; }

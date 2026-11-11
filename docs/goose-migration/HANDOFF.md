@@ -727,10 +727,19 @@ most dangerous and is worth checking first in any new fixture.
    stage is the plain line by construction.
    Next: add call sites to this line, starting with `ubatch_add` (its module matches this line's
    `mixed` block), and only then read a witness.
-83. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+83. ubatch_add LIVE on the accepted line — EXP359 builds the stage from the flint objects with
+   `llama-batch.cpp.o` replaced by the EXP356-integrated copy and the bridge linked: ABI complete,
+   all three library names substituted. The Apex run is byte-identical to the control (tokens, 128
+   probabilities, `e68df05b`) and logs `FG349S_UBATCH_ADD first call` then `calls=100` — the first
+   Goose module proved to execute on the real path since the method was fixed. prefill 1547.4 /
+   decode 24.09, below the floors because this stage carries one module; the floors describe the
+   full accepted runtime.
+   Not closed by this: the batch sub-system as a whole, and all KV state paths (they need a request
+   that saves or restores state).
+84. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-84. Downstream phases P4–P11.
+85. Downstream phases P4–P11.
 
 ## Disk
 
