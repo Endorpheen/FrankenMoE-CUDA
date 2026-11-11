@@ -911,10 +911,14 @@ most dangerous and is worth checking first in any new fixture.
    sampler only while the chain is in backend mode, and samplers without an apply hook) and the accept
    counter into Goose. Gate 51/0, 5/5 mutations. On the profile `FG387S_SAMPLER_CHAIN` fires 715 times
    (every sampler on both the walk and accept), completion `e68df05b`, probabilities equal.
-111. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+111. Sampler filter guards — EXP388 integrates the DRY / top-n-sigma / XTC no-op tests (gate 76/0, 5/5
+   mutations) but they are **NOT VALIDATED**: the server builds its chain from its own sampler list, and
+   `llama_sampler_init_dry` / `_top_n_sigma` / `_xtc` are only created when their types appear there.
+   Same category as penalties (EXP380): guard-correct code that this server never calls.
+112. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-112. Downstream phases P4–P11.
+113. Downstream phases P4–P11.
 
 ## Disk
 
