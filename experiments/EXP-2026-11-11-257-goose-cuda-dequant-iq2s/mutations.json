@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "grid byte uses 4*ib only",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "qh shift 8-2*il -> 6-2*il",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "sign byte offset +32 -> +31",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scale shift 4*(il/2) -> 2*(il/2)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "destination 8*il -> 4*il",
+    "status": "CAUGHT",
+    "failures": 8
+  }
+]
