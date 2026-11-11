@@ -80,3 +80,23 @@ skip the `.cold` companions on purpose), add the Goose objects, and link with th
 3. `FG186Q` (and the Q4_K witness) report non-zero, with Q6_K routed by default;
 4. only then replace `libggml-cuda.so.0.27.0` in the stage run directory, keeping the current file for
    rollback.
+
+## Where the reconstruction stands after the first link attempt
+
+`runtime/reconstructed/tools/link_cuda_chain.py` privatises the overlapping public symbols by
+`objcopy --redefine-sym` (keeping `.cold` companions) and relinks. All fifteen module objects compile and
+are picked up; the tool found and fixed three collisions on the way:
+
+| collision | resolution |
+|---|---|
+| three experiments all target `quantize.cu` and two of them define the same two symbols | only EXP208 is linked; 180 and 178 are dropped because 208 supersedes them for those names |
+| a stage with no overlapping symbol was still copying the native object | module-only path added |
+| EXP182 and EXP188 both intercept `ggml_get_to_fp16_cuda` | **unresolved** |
+
+## The one remaining merge
+
+`ggml_get_to_fp16_cuda` is a single dispatch function: each of EXP182 (Q4_K dequant) and EXP188 (Q4_0
+dequant) installs its own version, and neither contains the other. Linking both is a duplicate definition,
+and linking one drops a route. They need one combined dispatch that routes Q4_K and Q4_0 to their
+respective Goose converters and everything else to native. That is the last piece before the library can be
+built and the item verified.
