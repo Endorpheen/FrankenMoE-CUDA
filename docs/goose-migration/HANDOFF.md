@@ -1011,3 +1011,14 @@ clean host. If the collection breaks, save the error and continue the main work.
 
 No new automatic notifications, reminders or periodic observers are to be created: the numbers are only
 recorded, and Igor asks for them himself. The existing Telegram configuration is untouched.
+
+## Deferred plan (Igor, 2026-11-11): one optimization item after the small path
+
+Sequence fixed: finish every original small-path item by its own criterion (one item at a time, one short
+metrics checkpoint after each), then one final whole-path run, then exactly one optimization item.
+Its order: recover the pre-regression numbers first (restore the existing patches from the real
+inventory, then look for other causes), then prefill 3000+ / decode 30+ and less memory. Remembered
+orientation 2700/27 and ~3400 MiB VRAM is a memory of the baseline, not a reference; extract the baseline
+from the saved original runs before any acceptance. No invented RAM threshold. Final conclusions only
+from comparable A/B→B/A on a quiet host. Details in `apex-deferred-optimization.md`.
+Optimization is not started now.
