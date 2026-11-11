@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "from_agent": "runtime",
+  "updated_at": "2026-11-11T18:10:30.996253+03:00",
+  "updated_by": {
+    "name": "Runtime worker",
+    "harness": "Command Code",
+    "model": "claude-sonnet-4.5"
+  },
+  "apex_updates": [
+    {
+      "item": "APEX.KV",
+      "state": "AWAITING_PRIMARY_REVIEW",
+      "implemented": "metadata write selection (EXP393) and read decisions (EXP395); slot placement walk in Goose with the fg199k predicate (EXP392); tensor layout arithmetic on write and read for K/V/transposed (EXP394); updates via EXP199. Buffer primitives separated explicitly: io.write_tensor/read_tensor and backend allocation.",
+      "remaining": "none against the stated criterion; EXP392-395 gates 43/0, 103/0, 53703/0, 875/0 with 23 mutations caught; run: completion e68df05b, save 387989920 bytes, restore exact, witnesses FG392S/FG393S/FG394S/FG395S/FG345W/FG373S/FG367S/FG199K"
+    },
+    {
+      "item": "APEX.RECURRENT_MEMORY",
+      "state": "AWAITING_PRIMARY_REVIEW",
+      "implemented": "state transitions and stream ordering (FG232R accepted + FG382S); tensor state I/O payload spans on write and read for R/PLE/S and the transposed case (FG396S); hybrid delegation order and rollback (FG397S); hybrid combinators and context (FG375S, FG376S). Buffer primitives: io.write_tensor/read_tensor.",
+      "remaining": "none against the stated criterion; gates 34/0, 875/0, 33/0, 76/0, 35/0 with 20 mutations; run: completion e68df05b, restore exact. Corrected: EXP375/376 were falsely read as unreachable because llama-memory-hybrid.cpp was not compiled; now live."
+    },
+    {
+      "item": "APEX.BATCH",
+      "state": "PARTIAL",
+      "implemented": "used paths live on the accepted line: classify (FG352S), selection (FG350S), ubatch_add (FG349S), outids (FG242O), set building (FG240Q), split (FG237S/FG239B); container composition moved (FG383S: type only for a mixed batch, decision order only when given, seq-id pool by token count).",
+      "remaining": "container ownership: the vectors still live inside llama. Full ownership means Goose owns the flat arrays and decides capacity and lifetime; llama keeps only storage. Reachable with the existing bridge (flat arrays plus indices). Dormant splitters (keep-tail split_equal, split_simple) are unreachable on this profile (n_keep_tail = 0, non-unified cache) and are not claimed."
+    }
+  ]
+}
