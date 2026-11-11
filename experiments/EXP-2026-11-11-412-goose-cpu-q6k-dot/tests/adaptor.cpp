@@ -7,7 +7,7 @@
 
 extern "C" void ggml_cpu_init(void);          // without it the reference returns 0
 extern "C" void ggml_vec_dot_q6_K_q8_K(int, float *, size_t, const void *, size_t, const void *, size_t, int);
-extern "C" float fg410s_dot(int64_t nb, const void * x, const void * y);
+extern "C" float fg412s_dot(int64_t nb, const void * x, const void * y);
 
 struct block_q6_K { uint8_t ql[128]; uint8_t qh[64]; int8_t scales[16]; uint16_t d; };
 struct block_q8_K { float d; int8_t qs[256]; int16_t bsums[16]; };
@@ -46,7 +46,7 @@ int main() {
             }
             float want = 0.0f;
             ggml_vec_dot_q6_K_q8_K(256 * nb, &want, 0, x.data(), 0, y.data(), 0, 1);
-            const float got = fg410s_dot(nb, x.data(), y.data());
+            const float got = fg412s_dot(nb, x.data(), y.data());
             ++cases;
             if (bits(got) != bits(want)) {
                 if (failures < 3)

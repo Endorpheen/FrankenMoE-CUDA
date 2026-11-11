@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T18:49:26.603094+00:00",
+  "updated_at": "2026-11-11T19:08:07.842262+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -58,16 +58,16 @@
     },
     {
       "item": "APEX.CPU_MATH",
-      "state": "PARTIAL",
-      "implemented": "Q4_K x Q8_K dot is ported to Goose with the dispatched AVX2 association and accepted on a CPU bench: libggml-cpu builds out-of-tree from the flint sources (AVX2/FMA), is relinked with the Goose symbol, and on the same profile native and Goose produce identical content and sha d13cf4cf221fa5fd with 2000+ witness calls and zero diffs; GGML_GOOSE_CPU_Q4K_DOT=0 restores the native path. Gate 160/160 bit-exact, 7/7 mutations, nb up to 128 clean. Fixed a real fp16-subnormal defect (127-15-sh -> 127-14-sh) that halved the min term.",
-      "remaining": "Only Q4_K x Q8_K is ported. The other CPU dot kernels (q6_K, q8_0, q2_K/q3_K/q5_K and the float ones) are not, and on the accepted GPU profile none of them is called at all.",
-      "evidence": "experiments/EXP-2026-11-11-410-goose-cpu-q4k-dot, experiments/EXP-2026-11-11-411-goose-cpu-q4k-dot-avx2",
+      "state": "DONE",
+      "implemented": "Both kernels the agreed Apex path uses are ported with the dispatched AVX2 association and accepted on a CPU bench: Q4_K x Q8_K (EXP411) and Q6_K x Q8_K (EXP412). Measured inventory (first-call witnesses on the real process): only q4_K_q8_K and q6_K_q8_K are called; q8_0, q2_K, q3_K, q5_K, f32, f16, bf16 never. Gates bit-exact (160/160 and 240/240), mutations 7/7 and 6/6, and a relinked libggml-cpu with both Goose kernels reproduces the native run exactly: content ' Paris, a city', sha d13cf4cf221fa5fd. Off-switches GGML_GOOSE_CPU_Q4K_DOT=0 / Q6K_DOT=0 both restore the native path with the same sha. Execution proven by controlled defect tests: q4_K defect -> e4de6b44, q6_K defect -> 1e212569, restore -> d13cf4cf.",
+      "remaining": "none on the agreed Apex path; other quantised kernels are out of scope by Igor's instruction (port only with proof of need). Optimisation of this path is the next phase.",
+      "evidence": "experiments/EXP-2026-11-11-410-goose-cpu-q4k-dot, experiments/EXP-2026-11-11-411-goose-cpu-q4k-dot-avx2, experiments/EXP-2026-11-11-412-goose-cpu-q6k-dot, docs/goose-migration/apex-cpu-math-inventory.md",
       "by": {
         "name": "Runtime worker",
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T18:49:26.603077+00:00"
+      "at": "2026-11-11T19:08:07.842244+00:00"
     }
   ]
 }
