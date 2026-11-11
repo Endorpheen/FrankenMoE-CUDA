@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T19:45:35.929880+00:00",
+  "updated_at": "2026-11-11T20:12:59.174567+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -70,19 +70,6 @@
       "at": "2026-11-11T19:08:07.842244+00:00"
     },
     {
-      "item": "APEX.CUDA_MATVEC",
-      "state": "BLOCKED",
-      "implemented": "Goose Q6_K CUDA matvec (EXP186) is functionally complete and was byte-exact in its own experiment (4/4 outputs, Apex sha e68df05b, memcheck clean). The source flag is flipped to opt-out per the owner's rule. Integration route established end to end: libggml-cuda rebuilt from the flint sources in /tmp (145,811,304 bytes), module compiled unchanged against them (rc=0), shim links it as a DSO, installs an entry patch and resolves the mangled native callback; the call is routed into the module (gdb frame confirmed).",
-      "remaining": "The module faults at runtime against this backend and the fault point moves with unrelated edits (step 4a/4b/4c in different builds), i.e. undefined behaviour, most likely from packet/device-code expectations of the older backend. compute-sanitizer reports 0 device errors, so it is host-side. AddressSanitizer build produced no report because the module was not reached in that run. Not integrated; the active runtime still uses the native kernel.",
-      "evidence": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/BUILD-BLOCKER-20261111.md",
-      "by": {
-        "name": "Runtime worker",
-        "harness": "Command Code",
-        "model": "claude-sonnet-4.5"
-      },
-      "at": "2026-11-11T19:34:17.574136+00:00"
-    },
-    {
       "item": "APEX.CUDA_CONTROL",
       "state": "BLOCKED",
       "implemented": "The mandatory routes FG195V/FG196P live in libggml-cuda (63 Goose symbols in the staged build) and are live in the accepted runtime.",
@@ -146,6 +133,19 @@
         "model": "claude-sonnet-4.5"
       },
       "at": "2026-11-11T19:45:35.929880+00:00"
+    },
+    {
+      "item": "APEX.CUDA_MATVEC",
+      "state": "PARTIAL",
+      "implemented": "The Goose Q6_K CUDA matvec is now linked directly into the backend (no preload, no entry patching): the flint tree is copied to /tmp, the native kernel renamed ggml_cuda_mul_mat_vec_q_native, the module and its host part built in via CMake. On the accepted profile that library completes with first_sha e68df05b, equal probabilities and a successful restore, and the module executes: 168 of 324 Q6_K matvec calls go through the Goose kernel (all single-column calls), with the completion unchanged. Kernel is byte-exact vs native for ncols_dst=1 at 16/256/1024/2048/4096/8192 rows.",
+      "remaining": "Multi-column calls are not supported by the kernel: ncols_dst=2 exits 139 (SIGSEGV) at every row count, so the 156 calls with 2 or 4 columns (78 each) fall back to native. A per-column wrapper was tried and is not equivalent (DIFF). Correct support needs ncols_dst as a staging dimension in the generated device code. Not promoted into the active runtime; the build lives in /tmp.",
+      "evidence": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/BUILD-BLOCKER-20261111.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T20:12:59.174567+00:00"
     }
   ]
 }
