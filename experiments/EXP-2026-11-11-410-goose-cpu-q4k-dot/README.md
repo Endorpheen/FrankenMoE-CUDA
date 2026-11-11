@@ -62,3 +62,17 @@ probe is to dump `bsums[0..3]` and `mins[0..3]` as the loop sees them.
 
 Byte stores are fixed (a 64-bit store per byte was overwriting neighbours), the reference is initialised
 with `ggml_cpu_init()`, and `d` is confirmed (0.125 x 0.5 = 0.0625).
+
+## Fifth measurement: two more layout bugs, result now plausible but still wrong
+
+| defect | how it showed | fix |
+|---|---|---|
+| `bsums` read at byte 4 | probe bsums came back as -259/255/513/-765 instead of -8/-7/-6/-5 | `block_q8_K` puts `bsums` after `qs[256]`, i.e. at byte **260** |
+| nibbles stored with a 64-bit store | `acc[0]` was -6.6e18 | byte store and byte load |
+
+After both fixes: `sumi` = **-172**, exactly the value computed by hand from the dumped mins, and the
+result moved from 5.81e17 to **-36.75** against a reference of **225.75**. So the min term is now correct
+and the remaining error is in the per-lane accumulation.
+
+`acc[0]` still reads -3.4e12 while its plausible magnitude is ~4e6, so the next probe is the first
+iteration's `scale`, `qv` and `xv` values.

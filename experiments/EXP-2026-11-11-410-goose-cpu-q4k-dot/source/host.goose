@@ -67,8 +67,10 @@ fn run(packet:i64)->bool {
         var sumi:i64 = 0 as i64;
         var j:i64 = 0 as i64;
         while j < 16 {
-            let bsum:i64 = ldi16(q8 + (i*292) as u64, 4 as i64 + j*2 as i64);
-            sumi = sumi + bsum * (ldu8(sc, 8 as i64 + (j/2 as i64)) as i64);
+            let bsum:i64 = ldi16(q8 + (i*292) as u64, 260 as i64 + j*2 as i64);
+            let mn:i64 = ldu8(sc, 8 as i64 + (j/2 as i64)) as i64;
+            sumi = sumi + bsum * mn;
+            if j < 4 as i64 { stw(sc, 1400 as i64 + j*16 as i64, bsum); stw(sc, 1408 as i64 + j*16 as i64, mn); }
             j = j + 1 as i64;
         }
 
@@ -77,7 +79,7 @@ fn run(packet:i64)->bool {
         while k < 256 {
             let b:i64 = ldu8(q4 + (i*144) as u64, 16 as i64 + (k/2 as i64)) as i64;
             let v:i64 = if (k % 2) == 0 { b & 0x0f } else { (b >> 4) & 0x0f };
-            stw(sc, 64 as i64 + k, v);
+            stb(sc, 64 as i64 + k, v);
             k = k + 1 as i64;
         }
         var acc:i64[8] = default<i64[8]>();
@@ -88,7 +90,7 @@ fn run(packet:i64)->bool {
             li = 0 as i64;
             while li < 32 {
                 let idx:i64 = j*32 as i64 + li;
-                let qv:i64 = ld(sc, 64 as i64 + idx);
+                let qv:i64 = ldu8(sc, 64 as i64 + idx);
                 let xv:i64 = ldi8(q8 + (i*292) as u64, 4 as i64 + idx) as i64;
                 let lane:i64 = li % 8;
                 acc[lane] = acc[lane] + scale * qv * xv;
@@ -99,6 +101,7 @@ fn run(packet:i64)->bool {
         li = 0 as i64;
         while li < 8 {
             sums[li] = sums[li] + d * (acc[li] as f32);
+            if li == 0 as i64 { stw(sc, 1500 as i64, acc[0]); }
             li = li + 1 as i64;
         }
         sumf = sumf - dmin * (sumi as f32);

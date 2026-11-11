@@ -760,9 +760,9 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   int64_t t137;
   int64_t t138;
   int64_t t139;
-  int64_t t140;
+  uint64_t t140;
   int64_t t141;
-  uint64_t t142;
+  int64_t t142;
   int64_t t143;
   int64_t t144;
   int64_t t145;
@@ -773,15 +773,15 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   int64_t t150;
   int64_t t151;
   int64_t t152;
-  int64_t t153;
-  int64_t t154;
-  uint64_t t155;
+  uint8_t t153;
+  uint64_t t154;
+  int64_t t155;
   int64_t t156;
   int64_t t157;
-  uint64_t t158;
-  uint64_t t159;
+  int64_t t158;
+  int64_t t159;
   int64_t t160;
-  int64_t t161;
+  uint64_t t161;
   int64_t t162;
   int64_t t163;
   int64_t t164;
@@ -790,14 +790,14 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   int64_t t167;
   int64_t t168;
   int64_t t169;
-  uint8_t t170;
+  int64_t t170;
   int64_t t171;
-  int64_t t172;
+  uint64_t t172;
   int64_t t173;
   int64_t t174;
-  int64_t t175;
-  int64_t t176;
-  uint64_t t177;
+  uint64_t t175;
+  uint64_t t176;
+  int64_t t177;
   int64_t t178;
   int64_t t179;
   int64_t t180;
@@ -807,15 +807,15 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   int64_t t184;
   int64_t t185;
   int64_t t186;
-  int64_t t187;
+  uint8_t t187;
   int64_t t188;
   int64_t t189;
-  int64_t * t190;
+  int64_t t190;
   int64_t t191;
   int64_t t192;
   int64_t t193;
-  int64_t t194;
-  uint64_t t195;
+  uint64_t t194;
+  int64_t t195;
   int64_t t196;
   int64_t t197;
   int64_t t198;
@@ -824,16 +824,16 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   int64_t t201;
   int64_t t202;
   int64_t t203;
-  uint64_t t204;
+  int64_t t204;
   int64_t t205;
   int64_t t206;
-  int64_t t207;
+  int64_t * t207;
   int64_t t208;
-  uint64_t t209;
+  int64_t t209;
   int64_t t210;
   int64_t t211;
   uint64_t t212;
-  uint64_t t213;
+  int64_t t213;
   int64_t t214;
   int64_t t215;
   int64_t t216;
@@ -841,68 +841,93 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   int64_t t218;
   int64_t t219;
   int64_t t220;
-  int64_t * t221;
+  uint64_t t221;
   int64_t t222;
-  int64_t * t223;
+  int64_t t223;
   int64_t t224;
   int64_t t225;
-  int64_t t226;
+  uint64_t t226;
   int64_t t227;
   int64_t t228;
-  int64_t t229;
-  int64_t t230;
+  uint64_t t229;
+  uint64_t t230;
   int64_t t231;
   int64_t t232;
   int64_t t233;
   int64_t t234;
   int64_t t235;
   int64_t t236;
-  float * t237;
-  int64_t t238;
-  float * t239;
-  float t240;
-  float t241;
+  int64_t t237;
+  int64_t * t238;
+  int64_t t239;
+  int64_t * t240;
+  int64_t t241;
   int64_t t242;
-  int64_t * t243;
-  float t244;
-  float t245;
+  int64_t t243;
+  int64_t t244;
+  int64_t t245;
   int64_t t246;
   int64_t t247;
-  float t248;
-  float t249;
-  float t250;
-  float t251;
-  uint64_t t252;
+  int64_t t248;
+  int64_t t249;
+  int64_t t250;
+  int64_t t251;
+  int64_t t252;
   int64_t t253;
-  float t254;
+  float * t254;
   int64_t t255;
-  int64_t t256;
-  uint64_t t257;
-  int64_t t258;
+  float * t256;
+  float t257;
+  float t258;
   int64_t t259;
-  uint64_t t260;
-  int64_t t261;
-  int64_t t262;
-  float * t263;
-  float t264;
-  int64_t t265;
-  int64_t t266;
+  int64_t * t260;
+  float t261;
+  float t262;
+  int64_t t263;
+  int64_t t264;
+  uint8_t t265;
+  uint64_t t266;
   int64_t t267;
   int64_t t268;
-  int64_t t269;
+  int64_t * t269;
   int64_t t270;
-  float t271;
+  int64_t t271;
   int64_t t272;
-  float * t273;
+  float t273;
   float t274;
-  int64_t t275;
-  int64_t t276;
-  int64_t t277;
+  float t275;
+  float t276;
+  uint64_t t277;
   int64_t t278;
-  int64_t t279;
-  float t280;
+  float t279;
+  int64_t t280;
   int64_t t281;
   uint64_t t282;
+  int64_t t283;
+  int64_t t284;
+  uint64_t t285;
+  int64_t t286;
+  int64_t t287;
+  float * t288;
+  float t289;
+  int64_t t290;
+  int64_t t291;
+  int64_t t292;
+  int64_t t293;
+  int64_t t294;
+  int64_t t295;
+  float t296;
+  int64_t t297;
+  float * t298;
+  float t299;
+  int64_t t300;
+  int64_t t301;
+  int64_t t302;
+  int64_t t303;
+  int64_t t304;
+  float t305;
+  int64_t t306;
+  uint64_t t307;
   int64_t v0;
   int64_t v1;
   uint64_t v2;
@@ -926,12 +951,13 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   int64_t v20;
   int64_t v21;
   int64_t v22;
-  _Alignas(int64_t) gg_type_7 v23;
-  int64_t v24;
+  int64_t v23;
+  _Alignas(int64_t) gg_type_7 v24;
   int64_t v25;
   int64_t v26;
   int64_t v27;
   int64_t v28;
+  int64_t v29;
   v0 = p0;
   {
   t1 = ((int64_t)(v0));
@@ -1146,7 +1172,7 @@ label7:;
   t131 = ((int64_t)(((int64_t)UINT64_C(292))));
   t132 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t130) * (uint64_t)(t131)))))));
   t133 = ((uint64_t)(((uint64_t)((uint64_t)(t129) + (uint64_t)(t132)))));
-  t134 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
+  t134 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(260))))));
   t135 = ((int64_t)(v18));
   t136 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t137 = ((int64_t)(((int64_t)((uint64_t)(t135) * (uint64_t)(t136)))));
@@ -1156,277 +1182,324 @@ label7:;
 #endif
   t139 = fg410k_ldi16(t133, t138);
   v19 = ((int64_t)(t139));
-  t140 = ((int64_t)(v17));
-  t141 = ((int64_t)(v19));
-  t142 = ((uint64_t)(v4));
-  t143 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
-  t144 = ((int64_t)(v18));
-  t145 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
-  t146 = ((int64_t)(((int64_t)gg_div(t144, t145))));
-  t147 = ((int64_t)(((int64_t)((uint64_t)(t143) + (uint64_t)(t146)))));
+  t140 = ((uint64_t)(v4));
+  t141 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
+  t142 = ((int64_t)(v18));
+  t143 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
+  t144 = ((int64_t)(((int64_t)gg_div(t142, t143))));
+  t145 = ((int64_t)(((int64_t)((uint64_t)(t141) + (uint64_t)(t144)))));
 #ifndef __cplusplus
   extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
 #endif
-  t148 = fg410k_ldu8(t142, t147);
-  t149 = ((int64_t)(((int64_t)(t148))));
-  t150 = ((int64_t)(((int64_t)((uint64_t)(t141) * (uint64_t)(t149)))));
-  v17 = ((int64_t)(((int64_t)((uint64_t)(t140) + (uint64_t)(t150)))));
+  t146 = fg410k_ldu8(t140, t145);
+  v20 = ((int64_t)(((int64_t)(t146))));
+  t147 = ((int64_t)(v17));
+  t148 = ((int64_t)(v19));
+  t149 = ((int64_t)(v20));
+  t150 = ((int64_t)(((int64_t)((uint64_t)(t148) * (uint64_t)(t149)))));
+  v17 = ((int64_t)(((int64_t)((uint64_t)(t147) + (uint64_t)(t150)))));
   t151 = ((int64_t)(v18));
-  t152 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v18 = ((int64_t)(((int64_t)((uint64_t)(t151) + (uint64_t)(t152)))));
-  }
-  goto label7;
-label8:;
-  v20 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-label10:;
-  t153 = ((int64_t)(v20));
-  t154 = ((int64_t)(((int64_t)UINT64_C(256))));
-  if (!(((t153) < (t154)))) goto label11;
+  t152 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
+  t153 = ((t151) < (t152));
+  if (t153) {
   {
-  t155 = ((uint64_t)(v2));
-  t156 = ((int64_t)(v9));
-  t157 = ((int64_t)(((int64_t)UINT64_C(144))));
-  t158 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t156) * (uint64_t)(t157)))))));
-  t159 = ((uint64_t)(((uint64_t)((uint64_t)(t155) + (uint64_t)(t158)))));
-  t160 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
-  t161 = ((int64_t)(v20));
-  t162 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
-  t163 = ((int64_t)(((int64_t)gg_div(t161, t162))));
-  t164 = ((int64_t)(((int64_t)((uint64_t)(t160) + (uint64_t)(t163)))));
-#ifndef __cplusplus
-  extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
-#endif
-  t165 = fg410k_ldu8(t159, t164);
-  v21 = ((int64_t)(((int64_t)(t165))));
-  t166 = ((int64_t)(v20));
-  t167 = ((int64_t)(((int64_t)UINT64_C(2))));
-  t168 = ((int64_t)(((int64_t)gg_mod(t166, t167))));
-  t169 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t170 = ((t168) == (t169));
-  if (t170) {
-  {
-  t171 = ((int64_t)(v21));
-  t172 = ((int64_t)(((int64_t)UINT64_C(15))));
-  v22 = ((int64_t)(((t171) & (t172))));
-  }
-  } else {
-  {
-  t173 = ((int64_t)(v21));
-  t174 = ((int64_t)(((int64_t)UINT64_C(4))));
-  t175 = ((int64_t)(((t173) >> ((uint64_t)(t174) & 63))));
-  t176 = ((int64_t)(((int64_t)UINT64_C(15))));
-  v22 = ((int64_t)(((t175) & (t176))));
-  }
-  }
-  t177 = ((uint64_t)(v4));
-  t178 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(64))))));
-  t179 = ((int64_t)(v20));
-  t180 = ((int64_t)(((int64_t)((uint64_t)(t178) + (uint64_t)(t179)))));
-  t181 = ((int64_t)(v22));
+  t154 = ((uint64_t)(v4));
+  t155 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1400))))));
+  t156 = ((int64_t)(v18));
+  t157 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t158 = ((int64_t)(((int64_t)((uint64_t)(t156) * (uint64_t)(t157)))));
+  t159 = ((int64_t)(((int64_t)((uint64_t)(t155) + (uint64_t)(t158)))));
+  t160 = ((int64_t)(v19));
 #ifndef __cplusplus
   extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
 #endif
-  fg410k_stw(t177, t180, t181);
-  t182 = ((int64_t)(v20));
-  t183 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v20 = ((int64_t)(((int64_t)((uint64_t)(t182) + (uint64_t)(t183)))));
+  fg410k_stw(t154, t159, t160);
+  t161 = ((uint64_t)(v4));
+  t162 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1408))))));
+  t163 = ((int64_t)(v18));
+  t164 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t165 = ((int64_t)(((int64_t)((uint64_t)(t163) * (uint64_t)(t164)))));
+  t166 = ((int64_t)(((int64_t)((uint64_t)(t162) + (uint64_t)(t165)))));
+  t167 = ((int64_t)(v20));
+#ifndef __cplusplus
+  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stw(t161, t166, t167);
+  }
+  }
+  t168 = ((int64_t)(v18));
+  t169 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v18 = ((int64_t)(((int64_t)((uint64_t)(t168) + (uint64_t)(t169)))));
+  }
+  goto label7;
+label8:;
+  v21 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+label10:;
+  t170 = ((int64_t)(v21));
+  t171 = ((int64_t)(((int64_t)UINT64_C(256))));
+  if (!(((t170) < (t171)))) goto label11;
+  {
+  t172 = ((uint64_t)(v2));
+  t173 = ((int64_t)(v9));
+  t174 = ((int64_t)(((int64_t)UINT64_C(144))));
+  t175 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t173) * (uint64_t)(t174)))))));
+  t176 = ((uint64_t)(((uint64_t)((uint64_t)(t172) + (uint64_t)(t175)))));
+  t177 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t178 = ((int64_t)(v21));
+  t179 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
+  t180 = ((int64_t)(((int64_t)gg_div(t178, t179))));
+  t181 = ((int64_t)(((int64_t)((uint64_t)(t177) + (uint64_t)(t180)))));
+#ifndef __cplusplus
+  extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
+#endif
+  t182 = fg410k_ldu8(t176, t181);
+  v22 = ((int64_t)(((int64_t)(t182))));
+  t183 = ((int64_t)(v21));
+  t184 = ((int64_t)(((int64_t)UINT64_C(2))));
+  t185 = ((int64_t)(((int64_t)gg_mod(t183, t184))));
+  t186 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t187 = ((t185) == (t186));
+  if (t187) {
+  {
+  t188 = ((int64_t)(v22));
+  t189 = ((int64_t)(((int64_t)UINT64_C(15))));
+  v23 = ((int64_t)(((t188) & (t189))));
+  }
+  } else {
+  {
+  t190 = ((int64_t)(v22));
+  t191 = ((int64_t)(((int64_t)UINT64_C(4))));
+  t192 = ((int64_t)(((t190) >> ((uint64_t)(t191) & 63))));
+  t193 = ((int64_t)(((int64_t)UINT64_C(15))));
+  v23 = ((int64_t)(((t192) & (t193))));
+  }
+  }
+  t194 = ((uint64_t)(v4));
+  t195 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(64))))));
+  t196 = ((int64_t)(v21));
+  t197 = ((int64_t)(((int64_t)((uint64_t)(t195) + (uint64_t)(t196)))));
+  t198 = ((int64_t)(v23));
+#ifndef __cplusplus
+  extern void (fg410k_stb)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stb(t194, t197, t198);
+  t199 = ((int64_t)(v21));
+  t200 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v21 = ((int64_t)(((int64_t)((uint64_t)(t199) + (uint64_t)(t200)))));
   }
   goto label10;
 label11:;
-  memset(&t184, 0, sizeof(t184));
-  t185 = ((int64_t)(t184));
-  for (t186=0; t186<8; t186++) (v23).data[t186] = t185;
+  memset(&t201, 0, sizeof(t201));
+  t202 = ((int64_t)(t201));
+  for (t203=0; t203<8; t203++) (v24).data[t203] = t202;
 label13:;
-  t187 = ((int64_t)(v7));
-  t188 = ((int64_t)(((int64_t)UINT64_C(8))));
-  if (!(((t187) < (t188)))) goto label14;
+  t204 = ((int64_t)(v7));
+  t205 = ((int64_t)(((int64_t)UINT64_C(8))));
+  if (!(((t204) < (t205)))) goto label14;
   {
   /* FG_DIRECT_SLICE_INDEX */
-  t189 = v7;
-  t190 = ((int64_t *)(v23).data) + gg_index(t189, ((int64_t)UINT64_C(8)));
-  (*t190) = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-  t191 = ((int64_t)(v7));
-  t192 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v7 = ((int64_t)(((int64_t)((uint64_t)(t191) + (uint64_t)(t192)))));
+  t206 = v7;
+  t207 = ((int64_t *)(v24).data) + gg_index(t206, ((int64_t)UINT64_C(8)));
+  (*t207) = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t208 = ((int64_t)(v7));
+  t209 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v7 = ((int64_t)(((int64_t)((uint64_t)(t208) + (uint64_t)(t209)))));
   }
   goto label13;
 label14:;
   v18 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
 label16:;
-  t193 = ((int64_t)(v18));
-  t194 = ((int64_t)(((int64_t)UINT64_C(8))));
-  if (!(((t193) < (t194)))) goto label17;
+  t210 = ((int64_t)(v18));
+  t211 = ((int64_t)(((int64_t)UINT64_C(8))));
+  if (!(((t210) < (t211)))) goto label17;
   {
-  t195 = ((uint64_t)(v4));
-  t196 = ((int64_t)(v18));
+  t212 = ((uint64_t)(v4));
+  t213 = ((int64_t)(v18));
 #ifndef __cplusplus
   extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
 #endif
-  t197 = fg410k_ldu8(t195, t196);
-  v24 = ((int64_t)(((int64_t)(t197))));
+  t214 = fg410k_ldu8(t212, t213);
+  v25 = ((int64_t)(((int64_t)(t214))));
   v7 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
 label19:;
-  t198 = ((int64_t)(v7));
-  t199 = ((int64_t)(((int64_t)UINT64_C(32))));
-  if (!(((t198) < (t199)))) goto label20;
+  t215 = ((int64_t)(v7));
+  t216 = ((int64_t)(((int64_t)UINT64_C(32))));
+  if (!(((t215) < (t216)))) goto label20;
   {
-  t200 = ((int64_t)(v18));
-  t201 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(32))))));
-  t202 = ((int64_t)(((int64_t)((uint64_t)(t200) * (uint64_t)(t201)))));
-  t203 = ((int64_t)(v7));
-  v25 = ((int64_t)(((int64_t)((uint64_t)(t202) + (uint64_t)(t203)))));
-  t204 = ((uint64_t)(v4));
-  t205 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(64))))));
-  t206 = ((int64_t)(v25));
-  t207 = ((int64_t)(((int64_t)((uint64_t)(t205) + (uint64_t)(t206)))));
+  t217 = ((int64_t)(v18));
+  t218 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(32))))));
+  t219 = ((int64_t)(((int64_t)((uint64_t)(t217) * (uint64_t)(t218)))));
+  t220 = ((int64_t)(v7));
+  v26 = ((int64_t)(((int64_t)((uint64_t)(t219) + (uint64_t)(t220)))));
+  t221 = ((uint64_t)(v4));
+  t222 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(64))))));
+  t223 = ((int64_t)(v26));
+  t224 = ((int64_t)(((int64_t)((uint64_t)(t222) + (uint64_t)(t223)))));
 #ifndef __cplusplus
-  extern int64_t (fg410k_ld_i64)(uint64_t, int64_t);
+  extern int64_t (fg410k_ldu8)(uint64_t, int64_t);
 #endif
-  t208 = fg410k_ld_i64(t204, t207);
-  v26 = ((int64_t)(t208));
-  t209 = ((uint64_t)(v3));
-  t210 = ((int64_t)(v9));
-  t211 = ((int64_t)(((int64_t)UINT64_C(292))));
-  t212 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t210) * (uint64_t)(t211)))))));
-  t213 = ((uint64_t)(((uint64_t)((uint64_t)(t209) + (uint64_t)(t212)))));
-  t214 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
-  t215 = ((int64_t)(v25));
-  t216 = ((int64_t)(((int64_t)((uint64_t)(t214) + (uint64_t)(t215)))));
+  t225 = fg410k_ldu8(t221, t224);
+  v27 = ((int64_t)(t225));
+  t226 = ((uint64_t)(v3));
+  t227 = ((int64_t)(v9));
+  t228 = ((int64_t)(((int64_t)UINT64_C(292))));
+  t229 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t227) * (uint64_t)(t228)))))));
+  t230 = ((uint64_t)(((uint64_t)((uint64_t)(t226) + (uint64_t)(t229)))));
+  t231 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
+  t232 = ((int64_t)(v26));
+  t233 = ((int64_t)(((int64_t)((uint64_t)(t231) + (uint64_t)(t232)))));
 #ifndef __cplusplus
   extern int64_t (fg410k_ldi8)(uint64_t, int64_t);
 #endif
-  t217 = fg410k_ldi8(t213, t216);
-  v27 = ((int64_t)(((int64_t)(t217))));
-  t218 = ((int64_t)(v7));
-  t219 = ((int64_t)(((int64_t)UINT64_C(8))));
-  v28 = ((int64_t)(((int64_t)gg_mod(t218, t219))));
+  t234 = fg410k_ldi8(t230, t233);
+  v28 = ((int64_t)(((int64_t)(t234))));
+  t235 = ((int64_t)(v7));
+  t236 = ((int64_t)(((int64_t)UINT64_C(8))));
+  v29 = ((int64_t)(((int64_t)gg_mod(t235, t236))));
   /* FG_DIRECT_SLICE_INDEX */
-  t220 = v28;
-  t221 = ((int64_t *)(v23).data) + gg_index(t220, ((int64_t)UINT64_C(8)));
+  t237 = v29;
+  t238 = ((int64_t *)(v24).data) + gg_index(t237, ((int64_t)UINT64_C(8)));
   /* FG_DIRECT_SLICE_INDEX */
-  t222 = v28;
-  t223 = ((int64_t *)(v23).data) + gg_index(t222, ((int64_t)UINT64_C(8)));
-  t224 = ((int64_t)((*t223)));
-  t225 = ((int64_t)(v24));
-  t226 = ((int64_t)(v26));
-  t227 = ((int64_t)(((int64_t)((uint64_t)(t225) * (uint64_t)(t226)))));
-  t228 = ((int64_t)(v27));
-  t229 = ((int64_t)(((int64_t)((uint64_t)(t227) * (uint64_t)(t228)))));
-  (*t221) = ((int64_t)(((int64_t)((uint64_t)(t224) + (uint64_t)(t229)))));
-  t230 = ((int64_t)(v7));
-  t231 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v7 = ((int64_t)(((int64_t)((uint64_t)(t230) + (uint64_t)(t231)))));
+  t239 = v29;
+  t240 = ((int64_t *)(v24).data) + gg_index(t239, ((int64_t)UINT64_C(8)));
+  t241 = ((int64_t)((*t240)));
+  t242 = ((int64_t)(v25));
+  t243 = ((int64_t)(v27));
+  t244 = ((int64_t)(((int64_t)((uint64_t)(t242) * (uint64_t)(t243)))));
+  t245 = ((int64_t)(v28));
+  t246 = ((int64_t)(((int64_t)((uint64_t)(t244) * (uint64_t)(t245)))));
+  (*t238) = ((int64_t)(((int64_t)((uint64_t)(t241) + (uint64_t)(t246)))));
+  t247 = ((int64_t)(v7));
+  t248 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v7 = ((int64_t)(((int64_t)((uint64_t)(t247) + (uint64_t)(t248)))));
   }
   goto label19;
 label20:;
-  t232 = ((int64_t)(v18));
-  t233 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v18 = ((int64_t)(((int64_t)((uint64_t)(t232) + (uint64_t)(t233)))));
+  t249 = ((int64_t)(v18));
+  t250 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v18 = ((int64_t)(((int64_t)((uint64_t)(t249) + (uint64_t)(t250)))));
   }
   goto label16;
 label17:;
   v7 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
 label22:;
-  t234 = ((int64_t)(v7));
-  t235 = ((int64_t)(((int64_t)UINT64_C(8))));
-  if (!(((t234) < (t235)))) goto label23;
+  t251 = ((int64_t)(v7));
+  t252 = ((int64_t)(((int64_t)UINT64_C(8))));
+  if (!(((t251) < (t252)))) goto label23;
   {
   /* FG_DIRECT_SLICE_INDEX */
-  t236 = v7;
-  t237 = ((float *)(v6).data) + gg_index(t236, ((int64_t)UINT64_C(8)));
+  t253 = v7;
+  t254 = ((float *)(v6).data) + gg_index(t253, ((int64_t)UINT64_C(8)));
   /* FG_DIRECT_SLICE_INDEX */
-  t238 = v7;
-  t239 = ((float *)(v6).data) + gg_index(t238, ((int64_t)UINT64_C(8)));
-  t240 = ((float)((*t239)));
-  t241 = ((float)(v10));
+  t255 = v7;
+  t256 = ((float *)(v6).data) + gg_index(t255, ((int64_t)UINT64_C(8)));
+  t257 = ((float)((*t256)));
+  t258 = ((float)(v10));
   /* FG_DIRECT_SLICE_INDEX */
-  t242 = v7;
-  t243 = ((int64_t *)(v23).data) + gg_index(t242, ((int64_t)UINT64_C(8)));
-  t244 = ((float)(((float)((*t243)))));
-  t245 = ((float)(((t241) * (t244))));
-  (*t237) = ((float)(((t240) + (t245))));
-  t246 = ((int64_t)(v7));
-  t247 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v7 = ((int64_t)(((int64_t)((uint64_t)(t246) + (uint64_t)(t247)))));
+  t259 = v7;
+  t260 = ((int64_t *)(v24).data) + gg_index(t259, ((int64_t)UINT64_C(8)));
+  t261 = ((float)(((float)((*t260)))));
+  t262 = ((float)(((t258) * (t261))));
+  (*t254) = ((float)(((t257) + (t262))));
+  t263 = ((int64_t)(v7));
+  t264 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t265 = ((t263) == (t264));
+  if (t265) {
+  {
+  t266 = ((uint64_t)(v4));
+  t267 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1500))))));
+  /* FG_DIRECT_SLICE_INDEX */
+  t268 = ((int64_t)UINT64_C(0));
+  t269 = ((int64_t *)(v24).data) + gg_index(t268, ((int64_t)UINT64_C(8)));
+  t270 = ((int64_t)((*t269)));
+#ifndef __cplusplus
+  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stw(t266, t267, t270);
+  }
+  }
+  t271 = ((int64_t)(v7));
+  t272 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v7 = ((int64_t)(((int64_t)((uint64_t)(t271) + (uint64_t)(t272)))));
   }
   goto label22;
 label23:;
-  t248 = ((float)(v5));
-  t249 = ((float)(v11));
-  t250 = ((float)(((float)(v17))));
-  t251 = ((float)(((t249) * (t250))));
-  v5 = ((float)(((t248) - (t251))));
-  t252 = ((uint64_t)(v4));
-  t253 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1300))))));
-  t254 = ((float)(v10));
+  t273 = ((float)(v5));
+  t274 = ((float)(v11));
+  t275 = ((float)(((float)(v17))));
+  t276 = ((float)(((t274) * (t275))));
+  v5 = ((float)(((t273) - (t276))));
+  t277 = ((uint64_t)(v4));
+  t278 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1300))))));
+  t279 = ((float)(v10));
 #ifndef __cplusplus
   extern int64_t (fg410k_f32bits)(float);
 #endif
-  t255 = fg410k_f32bits(t254);
-  t256 = ((int64_t)(t255));
+  t280 = fg410k_f32bits(t279);
+  t281 = ((int64_t)(t280));
 #ifndef __cplusplus
   extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
 #endif
-  fg410k_stw(t252, t253, t256);
-  t257 = ((uint64_t)(v4));
-  t258 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1308))))));
-  t259 = ((int64_t)(v17));
+  fg410k_stw(t277, t278, t281);
+  t282 = ((uint64_t)(v4));
+  t283 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1308))))));
+  t284 = ((int64_t)(v17));
 #ifndef __cplusplus
   extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
 #endif
-  fg410k_stw(t257, t258, t259);
-  t260 = ((uint64_t)(v4));
-  t261 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1316))))));
+  fg410k_stw(t282, t283, t284);
+  t285 = ((uint64_t)(v4));
+  t286 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1316))))));
   /* FG_DIRECT_SLICE_INDEX */
-  t262 = ((int64_t)UINT64_C(0));
-  t263 = ((float *)(v6).data) + gg_index(t262, ((int64_t)UINT64_C(8)));
-  t264 = ((float)((*t263)));
+  t287 = ((int64_t)UINT64_C(0));
+  t288 = ((float *)(v6).data) + gg_index(t287, ((int64_t)UINT64_C(8)));
+  t289 = ((float)((*t288)));
 #ifndef __cplusplus
   extern int64_t (fg410k_f32bits)(float);
 #endif
-  t265 = fg410k_f32bits(t264);
-  t266 = ((int64_t)(t265));
+  t290 = fg410k_f32bits(t289);
+  t291 = ((int64_t)(t290));
 #ifndef __cplusplus
   extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
 #endif
-  fg410k_stw(t260, t261, t266);
-  t267 = ((int64_t)(v9));
-  t268 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v9 = ((int64_t)(((int64_t)((uint64_t)(t267) + (uint64_t)(t268)))));
+  fg410k_stw(t285, t286, t291);
+  t292 = ((int64_t)(v9));
+  t293 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v9 = ((int64_t)(((int64_t)((uint64_t)(t292) + (uint64_t)(t293)))));
   }
   goto label4;
 label5:;
   v7 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
 label25:;
-  t269 = ((int64_t)(v7));
-  t270 = ((int64_t)(((int64_t)UINT64_C(8))));
-  if (!(((t269) < (t270)))) goto label26;
+  t294 = ((int64_t)(v7));
+  t295 = ((int64_t)(((int64_t)UINT64_C(8))));
+  if (!(((t294) < (t295)))) goto label26;
   {
-  t271 = ((float)(v5));
+  t296 = ((float)(v5));
   /* FG_DIRECT_SLICE_INDEX */
-  t272 = v7;
-  t273 = ((float *)(v6).data) + gg_index(t272, ((int64_t)UINT64_C(8)));
-  t274 = ((float)((*t273)));
-  v5 = ((float)(((t271) + (t274))));
-  t275 = ((int64_t)(v7));
-  t276 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v7 = ((int64_t)(((int64_t)((uint64_t)(t275) + (uint64_t)(t276)))));
+  t297 = v7;
+  t298 = ((float *)(v6).data) + gg_index(t297, ((int64_t)UINT64_C(8)));
+  t299 = ((float)((*t298)));
+  v5 = ((float)(((t296) + (t299))));
+  t300 = ((int64_t)(v7));
+  t301 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v7 = ((int64_t)(((int64_t)((uint64_t)(t300) + (uint64_t)(t301)))));
   }
   goto label25;
 label26:;
-  t277 = ((int64_t)(v0));
-  t278 = ((int64_t)(((int64_t)UINT64_C(2))));
-  t279 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t280 = ((float)(v5));
+  t302 = ((int64_t)(v0));
+  t303 = ((int64_t)(((int64_t)UINT64_C(2))));
+  t304 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t305 = ((float)(v5));
 #ifndef __cplusplus
   extern int64_t (fg410k_f32bits)(float);
 #endif
-  t281 = fg410k_f32bits(t280);
-  t282 = ((uint64_t)(((uint64_t)(t281))));
+  t306 = fg410k_f32bits(t305);
+  t307 = ((uint64_t)(((uint64_t)(t306))));
 #ifndef __cplusplus
   extern void (fg410k_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg410k_put(t277, t278, t279, t282);
+  fg410k_put(t302, t303, t304, t307);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
   }
