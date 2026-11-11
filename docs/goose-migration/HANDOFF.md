@@ -140,11 +140,18 @@ most dangerous and is worth checking first in any new fixture.
    idea recorded there is to precompute all address arithmetic host-side so the
    kernel only does `base + i0`. Six attempts were made; the blocker rule was
    reached.
-5. CUDA shared-memory kernels — unblocked by EXP279 and closed by EXP280–285
+5. Dense `mul_mat_vec_f` — closed for every source type this profile can carry.
+   EXP184 covered float (one destination column, no fusion); EXP287 adds half
+   and bfloat16 to the same body, 3 696 values bit-identical against a verbatim
+   native copy, eight mutations caught. The lesson that cost the first draft:
+   the native kernel advances `y` in floats and then indexes it as `float2`, so
+   `yb*4 + col2*8` is the pair offset — `(yb+col2)*8` is invisible while the
+   channel base is zero, which is why channel 0 passed and channel 1 did not.
+6. CUDA shared-memory kernels — unblocked by EXP279 and closed by EXP280–285
    (softmax forward mask-free/mask/sinks, backward, cooperative) and EXP283
    (bitonic argsort). The pattern: explicit shared base/load/store/
    `__syncthreads`/shuffles plus a statement-by-statement port.
-6. CUDA recurrent kernels (RWKV6/7 `wkv.cu`, GLA `gla.cu`) — **blocked on local
+7. CUDA recurrent kernels (RWKV6/7 `wkv.cu`, GLA `gla.cu`) — **blocked on local
    arrays**. Each thread keeps `float state[head_size]` with `head_size` 64 or
    128 in registers, and Goose has no local array type; the device backend was
    deliberately kept free of the stack allocator (the emit gate asserts no
@@ -153,10 +160,10 @@ most dangerous and is worth checking first in any new fixture.
    different, needs its own gate) or a language array feature (the compiler is
    read-only). EXP172 already covers the GDN scalar/MMA path, so this is the
    remaining recurrent scope only.
-7. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+8. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-8. Downstream phases P4–P11.
+9. Downstream phases P4–P11.
 
 ## Disk
 
