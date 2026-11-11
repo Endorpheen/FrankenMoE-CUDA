@@ -39,3 +39,15 @@ divide. Two things were caught along the way and both are worth recording:
 
 Reverted to the native block; the accepted profile is back to `e68df05b`. The gating decision stays ported and
 defect-tested. A correct `norm_w` port needs the graph-build case handled deliberately, not bypassed.
+
+## norm_w: corrected and now live
+
+The earlier failure had one cause, and it was mine: I special-cased `n_tokens == 0` by returning the input unchanged,
+while the native code reshapes unconditionally, and I added a redundant `reshape_2d` around the row sum. Removing the
+special case and the extra reshape made it exact:
+
+    first_sha = e68df05b...
+    probs_equal = true, restore_ok = true
+
+Defect test (A -> B -> A): raising the clamp lower bound from the F16-smallest to 1.0f changed the completion to
+`20f0af5d...`; restoring returned `e68df05b`. So the normalisation sequence is on the live graph path.

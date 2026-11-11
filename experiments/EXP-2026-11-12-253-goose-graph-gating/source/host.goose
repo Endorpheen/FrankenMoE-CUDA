@@ -31,9 +31,8 @@ fn run(packet:i64)->bool {
         let n_used:i64  = get(packet,0,1) as i64;
         let n_tokens:i64 = get(packet,0,3) as i64;
         ensure(weights != 0 as i64 && n_used > 0 as i64, 20);
-        if n_tokens <= 0 as i64 { put(packet,1,0, weights as u64); return true; }
         var w:i64 = reshape_2d(weights, n_used, n_tokens);
-        let ws:i64 = reshape_2d(sum_rows(w), 1 as i64, n_tokens);
+        let ws:i64 = sum_rows(w);
         let wc:i64 = clamp(ws, 0x38800000 as i64, 0x7f800000 as i64);  // 6.103515625e-5 .. +inf
         w = div(w, wc);
         put(packet,1,0, w as u64);
