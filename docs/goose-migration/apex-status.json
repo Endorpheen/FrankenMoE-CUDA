@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T19:34:17.574163+00:00",
+  "updated_at": "2026-11-11T19:45:35.929880+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -81,6 +81,71 @@
         "model": "claude-sonnet-4.5"
       },
       "at": "2026-11-11T19:34:17.574136+00:00"
+    },
+    {
+      "item": "APEX.CUDA_CONTROL",
+      "state": "BLOCKED",
+      "implemented": "The mandatory routes FG195V/FG196P live in libggml-cuda (63 Goose symbols in the staged build) and are live in the accepted runtime.",
+      "remaining": "Their own decisions cannot be finished or re-verified here: the CUDA chain that builds them (EXP170..186) has no build scripts at EXP170-172 and its artefacts were never committed, so the library cannot be rebuilt from this tree. Rebuilding the backend from the flint sources works (EXP186) but produces a backend whose context state is not equivalent (see CUDA_MATVEC).",
+      "evidence": "docs/goose-migration/apex-remaining-boundaries.md, experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/BUILD-BLOCKER-20261111.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T19:45:35.929880+00:00"
+    },
+    {
+      "item": "APEX.CUDA_MMQ",
+      "state": "BLOCKED",
+      "implemented": "Dispatch (FG203D) is live; the Q8_1 quantizer was accepted as an opt-in module earlier.",
+      "remaining": "The MMA/TensorCore kernel and quantize_mmq_q8_1 cannot be promoted for the same reason as CUDA_CONTROL: no rebuildable chain in this tree.",
+      "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T19:45:35.929880+00:00"
+    },
+    {
+      "item": "APEX.MODEL_GRAPH",
+      "state": "BLOCKED",
+      "implemented": "Only the decision layer is ported (EXP408).",
+      "remaining": "Node creation is not a transcription: build_moe_ffn alone is 504 lines with 104 ggml_* calls creating and connecting tensors, and the bridge carries scalars and flat arrays only, so a tensor handle cannot cross. Needs a tensor API in Goose or a criteria change, which is not mine to make.",
+      "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T19:45:35.929880+00:00"
+    },
+    {
+      "item": "APEX.REQUEST / APEX.SESSION",
+      "state": "BLOCKED",
+      "implemented": "nothing -- the HTTP server, queue and slots live in tools/server, outside libllama.",
+      "remaining": "The bridge has no HTTP or socket surface; this needs a server-side Goose component, a new artefact.",
+      "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T19:45:35.929880+00:00"
+    },
+    {
+      "item": "APEX.SOURCE_CLOSURE / APEX.FINAL",
+      "state": "BLOCKED",
+      "implemented": "End states only.",
+      "remaining": "They follow from the rows above; they cannot be reached while CUDA_CONTROL, CUDA_MMQ, MODEL_GRAPH and REQUEST/SESSION are blocked.",
+      "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T19:45:35.929880+00:00"
     }
   ]
 }
