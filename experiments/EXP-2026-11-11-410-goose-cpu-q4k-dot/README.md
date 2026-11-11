@@ -93,3 +93,22 @@ blocks, not the data layout.
 
 Cause of the earlier "acc0 = -3.4e12": my own reader used `sc[1500/8]`, which is byte 1496 — the same
 off-by-alignment class as the code it was diagnosing. Read by byte offset, `acc0 = -792`, a plausible value.
+
+## Seventh measurement: the residue is one ulp between blocks
+
+Compiling the bridge with `-ffp-contract=off` changes nothing (49/160 either way), so FMA contraction is
+not the cause. The residue is one ulp on multi-block inputs:
+
+    nb=2: got 15579.2646   want 15579.2627
+    nb=2: got -37574.0781  want -37574.0859
+    nb=1: bit-exact
+
+What is already ruled out: layout (both blocks use the same code path that is exact for one block), nibble
+order, byte vs word access, `ggml_cpu_init`, FMA contraction, and the min term (`sumi` matches the hand
+computation).
+
+The remaining structural difference is the integer intermediate: the reference forms `aux16[l] = q8[l]*a[l]`
+as an `int16` and then `aux32[l] += scale*aux16[l]`, while the module accumulates `scale*qv*xv` directly in
+64 bits. For the values here that is arithmetically identical, but the next probe is to reproduce the int16
+intermediate step exactly, and if that still differs, to compare against the AVX2 entry point rather than the
+generic one — the AVX2 code sums in a different order and may be what this library actually dispatches to.
