@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "dmin offset 82 -> 80 (reuses d)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "qs offset 16 -> 17",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "second field shift 2 -> 1",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "destination 128*n -> 127*n",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "last scale is+6 -> is+4",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
