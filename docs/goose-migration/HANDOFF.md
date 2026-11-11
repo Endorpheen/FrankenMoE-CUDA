@@ -140,14 +140,12 @@ most dangerous and is worth checking first in any new fixture.
    idea recorded there is to precompute all address arithmetic host-side so the
    kernel only does `base + i0`. Six attempts were made; the blocker rule was
    reached.
-5. CUDA `cumsum` — assessed, not started. The build does **not** define
-   `GGML_CUDA_USE_CUB`, so the native path is the fallback kernel, which computes
-   the scan in float through shared memory (`s_vals`, `s_warp_sums`, `s_carry`,
-   `s_chunk_total`) and a block-wide exclusive scan of warp sums. Bit-exactness
-   depends on that exact addition order, so a Goose version needs explicit
-   shared-memory and block-scan primitives rather than a reshaped algorithm.
-   Decide between those primitives and an explicitly declared external scan
-   before porting.
+5. CUDA shared-memory kernels — unblocked by EXP279. The cumsum fallback kernel
+   (the native path here, since no `GGML_CUDA_USE_CUB`) is now fully Goose with
+   explicit primitives: dynamic shared base, shared load/store, `__syncthreads`
+   and `shfl_up`. The statement order is preserved, so the float results are
+   bit-identical. This is the pattern to reuse for `softmax` and the `argsort`
+   bitonic kernel, which were the other members of this class.
 6. Downstream phases P4–P11.
 
 ## Disk
