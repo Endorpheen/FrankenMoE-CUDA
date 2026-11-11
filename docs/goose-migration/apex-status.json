@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T18:38:26.807834+03:00",
+  "updated_at": "2026-11-11T19:02:36.664784+03:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -30,6 +30,12 @@
       "item": "APEX.OUTPUT",
       "state": "DONE",
       "implemented": "logits/sampling chain in Goose and bit-identical (EXP384 softmax, EXP385 guards, EXP386 selection, EXP387 chain); detokenisation piece copy FG213P plus skip/lstrip/loop-bound decisions (EXP401); output-id mapping FG242O. Socket write is the separated byte transport.",
+      "remaining": "none against the stated criterion"
+    },
+    {
+      "item": "APEX.TOKENIZER",
+      "state": "DONE",
+      "implemented": "BPE merge control (EXP202), codepoint decode (EXP215), encode (EXP216), whole-string decode with recovery (EXP217), piece copy FG213P, byte fallback (EXP402), detokenisation decisions (EXP401). Live: FG202T FG213P FG215U FG216E FG217C FG401S FG402S.",
       "remaining": "none against the stated criterion"
     }
   ]
