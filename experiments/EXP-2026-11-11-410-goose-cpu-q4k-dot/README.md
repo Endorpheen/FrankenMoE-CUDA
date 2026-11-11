@@ -181,3 +181,21 @@ With the gate comparing against an exact C transcription of `quants.c` from **th
 
 Status: module faithful to the source it ports. Mutations, integration into the Goose `libggml-cpu` behind a
 switch, witness + `e68df05b` check and the checkpoint are still to do.
+
+## Twelfth measurement: mutations
+
+Nine single-defect mutations of the module, each built and run against the clean gate:
+
+| mutation | verdict |
+|---|---|
+| scale mask widened to 0x7f7f7f7f | CAUGHT |
+| ut3 shift off by one | CAUGHT |
+| high nibble not shifted | CAUGHT |
+| scale always from the first byte | CAUGHT |
+| min index not halved | CAUGHT |
+| min term added instead of subtracted | CAUGHT |
+| lane sums overwritten instead of accumulated | CAUGHT |
+| lane index modulo four | CAUGHT |
+| bsums read two bytes early | CAUGHT |
+
+**9 caught, 0 missed, 0 hangs.** The source and the compiled object are restored after the loop.
