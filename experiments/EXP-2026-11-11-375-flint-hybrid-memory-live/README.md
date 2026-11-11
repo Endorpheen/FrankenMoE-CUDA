@@ -24,6 +24,10 @@
 branch (`seq_pos[s]` non-empty). The Apex 32K/128 profile is not M-RoPE, so the combinators are never
 called, and the failed-read branch needs a restore that fails in the recurrent half specifically.
 
+EXP378 measured the second possibility directly: truncating the slot file between 360 MB and 387.9 MB
+still restores successfully, and truncating to 1 MB fails inside the **attention** half, so the
+recurrent section carries no payload to cut on this profile. The branch is unreachable by truncation.
+
 So the port is present and correct under the gate, but this profile cannot exercise it. Closing this
 point needs an M-RoPE request or a scenario that fails only the recurrent read; neither exists in the
 agreed profile and neither was invented.
