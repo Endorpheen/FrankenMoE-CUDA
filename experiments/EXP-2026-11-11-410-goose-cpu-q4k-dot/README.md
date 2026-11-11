@@ -161,3 +161,23 @@ The gate now writes the first failing input to `/tmp/fail_blocks.bin` (876 bytes
 Plan for it: run both sides on the file, print `d`, `dmin`, `sumi`, `sums[l]` and `sumf` per block, and find
 the first block where the two diverge. That will tell whether the difference enters through the scale term
 (`d*aux32`) or through the min term (`dmin*sumi`).
+
+## Eleventh measurement: the gate is clean against the source in this tree
+
+The earlier "49 of 160" had a cause on my side: the gate compared against
+`ggml_vec_dot_q4_K_q8_K_generic` **from the inherited library**, and that binary's `_generic` and AVX2 entry
+points return the same value (`15579.2627`), while a transcription of `ggml-cpu/quants.c` in this tree returns
+`15579.2646` — which is exactly what the Goose module returns.
+
+So the inherited `libggml-cpu` was built from a different source revision than the one present here, and
+comparing against it measured the library difference, not the port.
+
+With the gate comparing against an exact C transcription of `quants.c` from **this tree**:
+
+| reference | failures |
+|---|---|
+| inherited library `_generic` | 49 / 160 |
+| C transcription of this tree's `quants.c` | **0 / 160** |
+
+Status: module faithful to the source it ports. Mutations, integration into the Goose `libggml-cpu` behind a
+switch, witness + `e68df05b` check and the checkpoint are still to do.

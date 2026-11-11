@@ -52,6 +52,13 @@ float fg410s_dot(int64_t nb, const void * q4, const void * q8) {
     pkt[1*16+0]=(int64_t)(uintptr_t)sc; pkt[2*16+0]=0;
     (void) fg410ds_gg_function_1((int64_t)(uintptr_t)pkt, 1);
     if (getenv("FG410_DEBUG")) {
+        for (int64_t bi = 0; bi < nb; ++bi) {
+            float dv,dm,s0; int64_t si;
+            memcpy(&dv,(char*)sc+2000+bi*32,4); memcpy(&dm,(char*)sc+2008+bi*32,4);
+            memcpy(&si,(char*)sc+2016+bi*32,8); memcpy(&s0,(char*)sc+2024+bi*32,4);
+            fprintf(stderr, "BLK %lld d=%.9g dmin=%.9g sumi=%lld sums0=%.9g\n",
+                    (long long) bi, dv, dm, (long long) si, s0);
+        }
         float ddbg, s0dbg; int64_t sib;
         { int32_t u; memcpy(&u, (char*)sc + 1300, 4); memcpy(&ddbg, &u, 4);
           memcpy(&u, (char*)sc + 1316, 4); memcpy(&s0dbg, &u, 4);

@@ -113,6 +113,10 @@ fn run(packet:i64)->bool {
             li = li + 1 as i64;
         }
         sumf = sumf - dmin * (sumi as f32);
+        stw(sc, 2000 as i64 + i*32 as i64, f32b(d));
+        stw(sc, 2008 as i64 + i*32 as i64, f32b(dmin));
+        stw(sc, 2016 as i64 + i*32 as i64, sumi);
+        stw(sc, 2024 as i64 + i*32 as i64, f32b(sums[0]));
         stw(sc, 1300 as i64, f32b(d));
         stw(sc, 1308 as i64, sumi);
         stw(sc, 1316 as i64, f32b(sums[0]));
