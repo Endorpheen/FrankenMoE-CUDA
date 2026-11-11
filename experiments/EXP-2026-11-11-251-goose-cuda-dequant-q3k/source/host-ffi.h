@@ -1,0 +1,14 @@
+#pragma once
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+uint64_t fg251h_get(int64_t,int64_t,int64_t);
+int64_t fg251h_plan(int64_t);
+void fg251h_put(int64_t,int64_t,int64_t,uint64_t);
+int64_t fg251h_launch(int64_t);
+void fg251h_fail(int64_t);
+uint8_t fg251dh_run(int64_t);
+#ifdef __cplusplus
+}
+#endif
