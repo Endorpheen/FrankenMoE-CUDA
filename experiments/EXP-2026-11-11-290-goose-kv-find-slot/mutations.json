@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "standard SWA window is one short",
+    "status": "CAUGHT",
+    "failures": 189,
+    "exit_code": 1
+  },
+  {
+    "mutation": "chunked SWA drops the chunk alignment",
+    "status": "CAUGHT",
+    "failures": 908,
+    "exit_code": 1
+  },
+  {
+    "mutation": "symmetric SWA loses the lower half",
+    "status": "CAUGHT",
+    "failures": 930,
+    "exit_code": 1
+  },
+  {
+    "mutation": "slot search tolerates a further head",
+    "status": "CAUGHT",
+    "failures": 69,
+    "exit_code": 1
+  },
+  {
+    "mutation": "slot search wraps one cell early",
+    "status": "CAUGHT",
+    "failures": 9,
+    "exit_code": 1
+  },
+  {
+    "mutation": "continuous search tests one cell at a time",
+    "status": "CAUGHT",
+    "failures": 250,
+    "exit_code": 1
+  },
+  {
+    "mutation": "continuous retry keeps the partial run",
+    "status": "CAUGHT",
+    "failures": 403,
+    "exit_code": 1
+  }
+]

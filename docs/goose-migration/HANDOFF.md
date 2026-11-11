@@ -176,10 +176,16 @@ most dangerous and is worth checking first in any new fixture.
    index or the `upper_bound({p, UINT32_MAX})` sentinel becomes -1 and skips
    cells at exactly `p`; and a `const` in a Goose module reads as zero unless
    `gg_program` ran, so compile-time constants are literals.
-10. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+10. KV slot search — EXP290 closes the `find_slot` item that EXP199/204/289 left open,
+   together with its SWA predicate. 39 032 predicate checks and 2 455 slot-search
+   checks against the native function and a transcription of the class, 7/7
+   mutations caught; one candidate mutation was rejected because no output could
+   observe it. `seq_pos_max` is a scan here rather than the cached set — same
+   value by the set invariant, different cost, and this module is not timed.
+11. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-11. Downstream phases P4–P11.
+12. Downstream phases P4–P11.
 
 ## Disk
 
