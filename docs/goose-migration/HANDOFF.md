@@ -848,10 +848,14 @@ most dangerous and is worth checking first in any new fixture.
    its completion is `e68df05b…`, identical to the reference, with 37 live witnesses in the same run.
    Closes the "cancel leaves the cache usable" half of P5-09. Not covered: unload during an active
    request, and a cancel arriving mid-batch rather than mid-stream.
-101. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+101. Mutation loops must restore the object, not just the source — the EXP377 sweep found
+   `build/bridge-377.o` still compiled from the last mutant while `host.goose` had been restored, so the
+   adaptor reported 607 failures against a correct module; a rebuild returns 2161/0. Same family as the
+    EXP353 driver leaving applied mutations behind: the artifact outlives the edit.
+102. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-102. Downstream phases P4–P11.
+103. Downstream phases P4–P11.
 
 ## Disk
 

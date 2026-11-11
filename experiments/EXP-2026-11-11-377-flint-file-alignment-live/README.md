@@ -19,6 +19,13 @@
 Mutations: rounding-up dropped, skip set to the absolute offset, buffer ignoring the cap, mask off by
 one, no rounding down, cap compared against `size`, unaligned byte count.
 
+## Post-mutation artifact (caught by the regression sweep)
+
+The mutation loop left `build/bridge-377.o` compiled from the last **mutated** source while the source
+itself had been restored, so a later run of the adaptor reported 607 failures against a correct module.
+Rebuilding the object from the restored source returns 2161/0. The lesson: a mutation loop must restore
+and rebuild **both** the source and the object it compiled, or it leaves a trap for the next run.
+
 ## Why no witness
 
 `read_aligned_chunk` is the DirectIO branch. The model is loaded through `mmap` on this host, so the
