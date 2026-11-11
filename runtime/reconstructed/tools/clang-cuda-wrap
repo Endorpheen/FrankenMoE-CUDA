@@ -1,0 +1,10 @@
+#!/bin/sh
+args=""
+for a in "$@"; do
+  case "$a" in
+    -extended-lambda) continue ;;
+    -DGGML_CUDA_FA_QUANTS=*) args="$args \"-DGGML_CUDA_FA_QUANTS=\\\"${a#-DGGML_CUDA_FA_QUANTS=}\\\"\"" ;;
+    *) args="$args \"$a\"" ;;
+  esac
+done
+eval exec /usr/bin/clang++ $args
