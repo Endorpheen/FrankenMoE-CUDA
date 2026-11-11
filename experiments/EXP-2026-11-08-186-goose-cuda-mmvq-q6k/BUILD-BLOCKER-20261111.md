@@ -624,3 +624,22 @@ One thing remains before this counts: the trace shows `step=6 run eligible=0`, i
 eligibility guard is false, so the call falls back to the native kernel. The next step is to see which clause
 fails (tensor types, ids, `dst->ne[1] == 1`, `ne13 == ne3`) and make the guard match the shapes this profile
 actually uses.
+
+## The module now runs on the profile but is wrong, and dies on large shapes
+
+Widened the eligibility guard to allow `dst->ne[1] > 1` (the profile uses 2 columns; the harness had already shown
+2 and 4 columns are correct). The module is then taken (`step=6 run eligible=1`, `launch grid=(8192,1,1)
+block=(32,4) shm=384`), but the run's completion changes:
+
+    first_sha = 51c559ee843003b36ee579d7d9c4aacddbf8030e2e17c28872432254eda415c5   (expected e68df05b)
+
+and in the harness the same shape is fatal:
+
+    ncols_dst=2 nrows=8192 -> goose exits 132 (SIGILL), native exits 0
+
+So the module is correct for small rows and broken for the sizes this profile actually uses. That is a concrete,
+reproducible porting defect in the Goose kernel's row handling (8192 rows, 2 columns), not an integration issue —
+and it is now reachable in seconds through the harness instead of a full server run.
+
+Next: bisect nrows in the harness (16/256/1024/4096/8192) to find the first size that fails, then inspect the
+corresponding row/block indexes in the generated device code.
