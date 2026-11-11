@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "device diagonal test inverted (f32 body)",
+    "status": "CAUGHT",
+    "failures": 66249
+  },
+  {
+    "mutation": "device i1 divisor ne0 -> ne1 (f32 body)",
+    "status": "CAUGHT",
+    "failures": 144
+  },
+  {
+    "mutation": "device i2 divisor drops ne1 (f32 body)",
+    "status": "CAUGHT",
+    "failures": 364
+  },
+  {
+    "mutation": "host product check weakened to >=",
+    "status": "CAUGHT",
+    "failures": 1
+  },
+  {
+    "mutation": "host block size 256 -> 128",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
