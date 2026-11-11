@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "a mirrored cache reads state too",
+    "status": "CAUGHT",
+    "failures": 654,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a partial-only restore of a non-SWA cache proceeds",
+    "status": "CAUGHT",
+    "failures": 1063,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a mirrored layout with the wrong stream count is accepted",
+    "status": "CAUGHT",
+    "failures": 481,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a stream count mismatch is accepted",
+    "status": "CAUGHT",
+    "failures": 889,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the whole cache is not cleared up front",
+    "status": "CAUGHT",
+    "failures": 2173,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a zero-cell stream ignores its mirrored layout",
+    "status": "CAUGHT",
+    "failures": 140,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed restore leaves the cells in place",
+    "status": "CAUGHT",
+    "failures": 676,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a single-sequence restore uses the per-stream index",
+    "status": "CAUGHT",
+    "failures": 2236,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the transposed clear forgets the cache stride",
+    "status": "CAUGHT",
+    "failures": 4595,
+    "exit_code": 1
+  }
+]

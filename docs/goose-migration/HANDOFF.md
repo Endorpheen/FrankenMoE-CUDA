@@ -580,10 +580,16 @@ most dangerous and is worth checking first in any new fixture.
    the stable bound rather than this step's count. 28 482 checks, 8/8 mutations.
    The "bound may be zero" case needed an explicit zero draw: with layout and cache both
    empty the bound must still be 1, and only an explicit draw reaches that path.
-64. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+64. KV state read orchestration and clearing — EXP344 transfers `state_read_sinfo` (mirrored
+   and partial-only-on-non-SWA exits, layout and stream-count guards before any I/O, a **single
+   up-front clear** for a whole-context read, an empty mirrored layout per zero-cell stream, and
+   a clear-before-throw on failure) together with `state_clear(seq_id)` (cells only this
+   sequence holds) and the shared clear body (contiguous range or per cell, keys then values,
+   transposed values per embedding row). 42 287 checks, 9/9 mutations.
+65. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-65. Downstream phases P4–P11.
+66. Downstream phases P4–P11.
 
 ## Disk
 
