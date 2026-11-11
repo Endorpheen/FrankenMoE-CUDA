@@ -256,10 +256,17 @@ most dangerous and is worth checking first in any new fixture.
    the SWA cache because its base is. 14 099 checks, 7/7 mutations. The position
    check passes values, not a constant, so reading the wrong cache shows as a wrong
    number.
-20. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+20. DSA cache policy — EXP300 adds the MLA+lightning-indexer pair: indexer MQA
+   with one key head, indexer head width, rope forced to NeoX (unlike MSA), two
+   independent filters, position observers on the MLA cache, `can_shift` including
+   the size equality, and `state_read` as a transaction that clears the MLA part
+   when the indexer read throws. 16 495 checks, 8/8 mutations. Harness lesson: an
+   operation that writes through an omitted output buffer segfaults instead of
+   mismatching, so a gate that can crash is not measuring the module.
+21. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-21. Downstream phases P4–P11.
+22. Downstream phases P4–P11.
 
 ## Disk
 
