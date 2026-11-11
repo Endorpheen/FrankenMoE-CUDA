@@ -357,3 +357,26 @@ the harness. What differs is the process: the server builds the CUDA backend thr
 Next probe: print, from the module, the address of `ctx` and the address the *native* call would receive
 (capture `ctx` in the shim before patching), to confirm whether the object passed to the patched entry is the same
 one the backend created.
+
+## The context is the same object; the pool slot itself is already corrupt
+
+Printing the fields from inside the module, both processes show an identical, valid context:
+
+    harness: ctx=0x622ce303e900 dev=0 name='CUDA0' curr_stream=0
+    server : ctx=0x61f6233877c0 dev=0 name='CUDA0' curr_stream=0
+
+and reading the slot directly:
+
+    server : step=1a slot=0x560edec164b0 slot0=0x11d06d4263d
+    server : step=1b pool=0x11d06d4263d
+
+So the context pointer, the device, the name and the stream index are all correct, but the `pools[0][0]` slot
+already holds an implausible pointer before the first pool creation, while the harness has a valid one there.
+
+Consequence: the module is not mis-reading the context — something in the server writes a bad value into that slot
+before the patched entry runs. Candidate: the goose-modified backend code in this process (fg symbols in
+libggml-cuda / libggml-base) writing into the context structure, or a pool type whose object is placed in CUDA's
+VMM range and whose pointer must not be dereferenced as host heap.
+
+Next probe: log the slot value at process start and after each backend call, and compare with the native path's own
+reads, to find who writes it.

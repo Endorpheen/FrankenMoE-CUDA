@@ -102,8 +102,9 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  const char*flag=getenv("GGML_GOOSE_CUDA_MMVQ_Q6K");
  if(flag&&strcmp(flag,"0")==0){fg185q_native_ggml_cuda_mul_mat_vec_q(ctx,src0,src1,ids,dst,fusion);return;}
  static std::once_flag once;std::call_once(once,[]{std::atexit(fg186q_report);});
- fprintf(stderr,"FG186T step=1 enter ctx=%p dev=%d\n",(void*)&ctx,ctx.device);
- { ggml_cuda_pool & pr = ctx.pool(); fprintf(stderr,"FG186T step=1a pool=%p\n",(void*)&pr); }
+ fprintf(stderr,"FG186T step=1 enter ctx=%p dev=%d name='%s' curr_stream=%d\n",(void*)&ctx,ctx.device,ctx.name.c_str(),ctx.curr_stream_no);
+ { fprintf(stderr,"FG186T step=1a slot=%p slot0=%p\n",(void*)&ctx.pools, (void*)ctx.pools[ctx.device][ctx.curr_stream_no].get());
+   ggml_cuda_pool & pr = ctx.pool(); fprintf(stderr,"FG186T step=1b pool=%p\n",(void*)&pr); }
  const int dev=ggml_cuda_get_device();
  fprintf(stderr,"FG186T step=2 dev=%d\n",dev);
  const int warp=ggml_cuda_info().devices[dev].warp_size;
