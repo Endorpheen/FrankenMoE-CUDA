@@ -174,3 +174,28 @@ What is proven independently of the bench:
 
 What is not proven: that the kernel participates in a real server run. That is a bench limitation (no CPU-path
 profile in this staging build), not a property of the port, and it is recorded as such.
+
+## Accepted on a CPU bench: the kernel runs and the output is identical
+
+`libggml-cpu` now builds from source out-of-tree from the flint tree with AVX2/FMA enabled, and that build is
+relinked with the Goose kernel replacing the dispatched symbol (native kept as
+`ggml_vec_dot_q4_K_q8_K_native`). Two libraries were produced from the same objects:
+
+| run | library | content | sha |
+|---|---|---|---|
+| A | native (unmodified build) | ` Paris, a city` | `d13cf4cf221fa5fd` |
+| B | Goose kernel | ` Paris, a city` | `d13cf4cf221fa5fd` |
+
+with `FG410S_Q4K_DOT ... calls=2000+` in B and zero diffs, and `GGML_GOOSE_CPU_Q4K_DOT=0` restoring the native
+path (same sha, no Goose calls). The switch therefore disables rather than enables, as required.
+
+## The last real defect: fp16 subnormals
+
+The first B run produced `endahenda...`: exactly a factor of two low on the blocks whose `dmin` was `0x0001`.
+The fp16 decoder used `127 - 15 - sh`, which is one too small for subnormals; `127 - 14 - sh` is correct. With
+that fixed the same captured call gives `goose = 6.91547248e-05 = native` exactly.
+
+## Gate after the fix
+
+    FG410S_ADAPTOR cases=160 checks=161 failures=0
+    nb = 1, 2, 3, 7, 8, 16, 32, 64, 128: 0 mismatches / 20 each

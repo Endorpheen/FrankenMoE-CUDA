@@ -18,7 +18,7 @@ static int64_t g_ldi16(uint64_t b,int64_t o){ int16_t v; memcpy(&v,(const void*)
 static float   g_fma(float a,float b,float c){ return fmaf(a,b,c); }
 static float   g_ldf(uint64_t b,int64_t o){ float v; memcpy(&v,(const void*)(uintptr_t)(b+(uint64_t)o),4); return v; }
 static float   g_f16f32(int64_t h){ uint16_t u=(uint16_t)h; uint32_t s=(u>>15)&1, e=(u>>10)&0x1f, m=u&0x3ff; uint32_t o;
-    if(e==0){ if(m==0) o=s<<31; else { int sh=0; while(!(m&0x400)){ m<<=1; ++sh; } m&=0x3ff; o=(s<<31)|((uint32_t)(127-15-sh)<<23)|(m<<13); } }
+    if(e==0){ if(m==0) o=s<<31; else { int sh=0; while(!(m&0x400)){ m<<=1; ++sh; } m&=0x3ff; o=(s<<31)|((uint32_t)(127-14-sh)<<23)|(m<<13); } }
     else if(e==31){ o=(s<<31)|0x7f800000|(m<<13); }
     else { o=(s<<31)|((e+112)<<23)|(m<<13); }
     float f; memcpy(&f,&o,4); return f; }
