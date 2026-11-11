@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "track accepts a zero pool size",
+    "status": "CAUGHT",
+    "failures": 101,
+    "exit_code": 1
+  },
+  {
+    "mutation": "track accepts an empty stream list",
+    "status": "CAUGHT",
+    "failures": 117,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stale marks are cleared on every step",
+    "status": "CAUGHT",
+    "failures": 2309,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the step counter does not advance",
+    "status": "CAUGHT",
+    "failures": 3000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "apply accepts either side succeeding",
+    "status": "CAUGHT",
+    "failures": 2260,
+    "exit_code": 1
+  },
+  {
+    "mutation": "apply does not pin the pool step",
+    "status": "CAUGHT",
+    "failures": 702,
+    "exit_code": 1
+  },
+  {
+    "mutation": "apply rebuilds even when a side failed",
+    "status": "CAUGHT",
+    "failures": 1146,
+    "exit_code": 1
+  },
+  {
+    "mutation": "n_stream accepts a step past the list",
+    "status": "CAUGHT",
+    "failures": 238,
+    "exit_code": 1
+  }
+]

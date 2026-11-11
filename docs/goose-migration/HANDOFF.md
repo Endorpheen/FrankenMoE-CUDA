@@ -357,10 +357,17 @@ most dangerous and is worth checking first in any new fixture.
    sized with `assign` then filled with `push_back` keeps its zeros at the front. The
    bound mutations only became visible once the generator made the bound actually
    bind.
-33. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+33. Hybrid indexed context stepping — EXP313 transfers `next`, `apply` and
+   `kpool_track`: staleness marks are cleared only on the first step (the ubatch that
+   exists to consume them), apply ANDs both sides and only then extends the layout and
+   pins the pool step, and track is derived rather than cached. 19 405 checks, 8/8
+   mutations. The two track mutations are the narrowest because each disabled
+   condition needs a draw satisfying every other one, which is why flag combinations
+   are exhaustive.
+34. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-34. Downstream phases P4–P11.
+35. Downstream phases P4–P11.
 
 ## Disk
 
