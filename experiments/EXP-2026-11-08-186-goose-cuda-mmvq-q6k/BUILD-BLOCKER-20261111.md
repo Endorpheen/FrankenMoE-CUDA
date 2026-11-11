@@ -69,3 +69,19 @@ Next step: build a small shim library from these two objects that (a) exports
 `fg185q_native_ggml_cuda_mul_mat_vec_q` forwarding through a saved pointer, and (b) installs the module's
 `ggml_cuda_mul_mat_vec_q` by entry patching, exactly as the CPU item did; then verify with the A -> B -> A
 defect test and the e68df05b run.
+
+## Shim built, patch installs, process aborts
+
+`libfg186q.so` was built from the module object, the host object and the shim (141,456 bytes; exports the mangled
+`ggml_cuda_mul_mat_vec_q` and `fg185q_native_ggml_cuda_mul_mat_vec_q`). On a real run the patch installs:
+
+    FG186S_PATCH target=0x7462284b0920 ours=0x746237769490 enabled
+
+and then the server never becomes ready: the log stops right after the earlier items' witnesses, so the process
+dies inside the patched path rather than failing to load.
+
+So the module is binary-compatible enough to link and patch, but its kernel does not survive execution against
+this backend build. The next probe is to run the same case under `compute-sanitizer` and to compare the module's
+`mmvq.cuh` expectations with the flint build's, since the module was written against the older backend.
+
+Recorded; not accepted; the active runtime is untouched and still uses the native kernel.
