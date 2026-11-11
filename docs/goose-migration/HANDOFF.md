@@ -915,10 +915,15 @@ most dangerous and is worth checking first in any new fixture.
    mutations) but they are **NOT VALIDATED**: the server builds its chain from its own sampler list, and
    `llama_sampler_init_dry` / `_top_n_sigma` / `_xtc` are only created when their types appear there.
    Same category as penalties (EXP380): guard-correct code that this server never calls.
-112. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+112. GGUF inventory live on the load path — EXP389 moves the duplicate-name check and the dominant
+   file-type decision of `llama_model_loader` into Goose. Gate 31 117 checks (including 200 simulated
+   inventories compared against the loader's own loop), 0 failures, 5/5 mutations. `FG389S_GGUF_INVENTORY`
+   reports its first call on startup; the print interval is 5 000 because the inventory is a few thousand
+   calls for this model, so only the first line appears by design.
+113. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-113. Downstream phases P4–P11.
+114. Downstream phases P4–P11.
 
 ## Disk
 
