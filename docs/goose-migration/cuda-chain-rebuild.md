@@ -100,3 +100,21 @@ dequant) installs its own version, and neither contains the other. Linking both 
 and linking one drops a route. They need one combined dispatch that routes Q4_K and Q4_0 to their
 respective Goose converters and everything else to native. That is the last piece before the library can be
 built and the item verified.
+
+## The chain links
+
+`link_cuda_chain.py` now produces `/tmp/libggml-cuda-chain.so.0.27.0` (159 MB) with **rc 0**, after three
+more fixes: privativisation runs over **all** native objects (EXP173 defines `fattn.cu`'s symbols, not only
+its own file's), one priv copy per target instead of one per module, and the exclusion list covers every
+replaced native object.
+
+It exports **32** Goose routes; the current library exports 63. The 41 missing ones are fg166–fg179, whose
+experiments use other source shapes (`cuda-broadcast.cu`, `arg-*`, and so on) rather than the
+`cuda-runtime.cu` pattern this tool assumes. The new routes fg186q and fg188d are present, so Q6_K is in the
+built library.
+
+## What is left, precisely
+
+Collect the remaining ten or so modules in their own shapes and add them to the link, then run the gate:
+symbol superset of 63, completion `e68df05b`, Q6_K routed by default. The library is not installed until
+that passes — it currently has fewer routes than the one it would replace.

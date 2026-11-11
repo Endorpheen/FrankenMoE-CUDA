@@ -40,35 +40,37 @@ def defined(path, kinds=('T','W')):
 
 priv = {}
 link_objs = []
+# every public name any module defines: a native object that also defines one of these must be privatised,
+# even if that particular module does not overlap with it (convert.cu carries both fp32 and fp16)
+pub = set()
+sorted_mods = []
 for exp, target in MODULES:
-    d = F/'experiments'/exp
-    if not d.exists():
-        d = next(F.glob(f'experiments/*{exp.split("-")[-1]}*'), None)
-    num = re.search(r'-(\d{3})-', exp).group(1)
-    mod_obj = Path(f'/tmp/mod-{target}-{num}.o')
-    if not d or not mod_obj.exists():
-        print('skip (missing)', exp, target); continue
-    nat = OBJDIR/(target + '.o')
-    if not nat.exists():
-        print('skip (no native)', target); continue
-    mine = defined(mod_obj)
-    theirs = defined(nat)
-    overlap = sorted(set(mine) & set(theirs))
-    if not overlap:
-        print('no overlap', exp, target, '-> module only')
-        link_objs.append(str(mod_obj)); continue
-    dst = WORK/(target + f'.{num}.o')
-    shutil.copy2(nat, dst)
-    for sym in overlap:
-        if sym.endswith('.cold'): continue
-        new = sym + '.priv'
-        subprocess.run(['objcopy','--redefine-sym',f'{sym}={new}',str(dst)],check=True)
-        priv.setdefault(exp,[]).append((sym,new))
-    link_objs.append(str(dst))
-    link_objs.append(str(mod_obj))
-    host = Path(f'/tmp/host-{exp.split("-")[-3] if False else ""}.o')
+    num0 = re.search(r'-(\d{3})-', exp).group(1)
+    m0 = Path(f'/tmp/mod-{target}-{num0}.o')
+    if m0.exists():
+        pub |= set(defined(m0))
+        sorted_mods.append((exp, target, m0))
+print('public names across modules:', len(pub))
 
-# host units: compiled earlier as /tmp/host-NNN.o for 180..186; build the rest on demand
+targets = sorted({q.name[:-2] for q in OBJDIR.glob('*.o')})
+for t in targets:
+    nat = OBJDIR/(t + '.o')
+    if not nat.exists():
+        print('skip (no native)', t); continue
+    dst = WORK/(t + '.priv.o')
+    shutil.copy2(nat, dst)
+    renamed = 0
+    for sym in sorted(defined(nat)):
+        if sym.endswith('.cold'): continue
+        if sym not in pub: continue
+        subprocess.run(['objcopy','--redefine-sym',f'{sym}={sym}.priv',str(dst)],check=True)
+        renamed += 1
+    priv[t] = renamed
+    link_objs.append(str(dst))
+
+for exp, target, mod in sorted_mods:
+    link_objs.append(str(mod))
+
 for exp, target in MODULES:
     num = re.search(r'-(\d{3})-', exp).group(1)
     h = Path(f'/tmp/host-{num}.o')
@@ -84,7 +86,7 @@ compiler = '/usr/bin/clang++'
 body = args[1:]
 base_objs = [a for a in body if a.endswith('.o')]
 rest = [a for a in body if not a.endswith('.o')]
-replaced = {t + '.o' for _, t in MODULES}
+replaced = {t + '.o' for t in targets}
 base_objs = [o for o in base_objs if Path(o).name not in replaced]
 out = []; skip = 0
 for a in rest:
@@ -95,5 +97,5 @@ out += ['-Wl,--version-script=' + str(F/'experiments/EXP-2026-11-08-186-goose-cu
 q = subprocess.run([compiler]+out+base_objs+link_objs, cwd='/tmp/cuda-build2/ggml/src/ggml-cuda', capture_output=True, text=True, timeout=1800)
 print('link rc', q.returncode)
 if q.returncode: print((q.stdout+q.stderr)[-2000:]); sys.exit(1)
-print('priv', {k: len(v) for k, v in priv.items()})
+print('priv', priv)
 print('out', OUT, OUT.stat().st_size)
