@@ -85,7 +85,26 @@ Two honest options for promotion, both needing the owner's decision:
 2. Keep promoting nothing until the accepted tree or its exact bridge revisions are recovered from a
    backup or an archived image.
 
+## Working state reached
+
+With the one lost bridge disabled in the staging copy only, the reconstructed DSO (5 402 688 bytes,
+26 modules) runs the fixed profile **exactly**: completion `e68df05b`, save
+387 989 920 bytes, truncated restore rejected. Witnesses alive: `FG227N`, `FG228E`, `FG229I`,
+`FG232R`, `FG233C`, `FG237S`, `FG239B`, `FG240Q`, `FG241U`, `FG242O` — i.e. the accepted runtime's
+routes, minus the one whose bridge is lost.
+
+So the tree is not just buildable, it reproduces the accepted answer and almost all of its Goose
+routes. What it cannot carry is `fg205g`, and it also lacks `llama_model::pin_mmap_experts` (the patch
+that is absent from the flint tree).
+
+## Trap worth remembering
+
+The first run after rebuilding still failed with the same `FG205G` code 21 — because the run directory
+held a **hard link** to the previous DSO. The path was right and the content was stale, exactly as in
+EXP357. The run directory now uses symlinks, so a rebuild is always picked up.
+
 ## Status
 
-Blocked on that decision. The reconstruction tools (`select_reconstruction_copies.py`, `overlay.py`,
-`build.py`) are kept because they will be needed either way.
+Usable as a development and promotion base with one documented gap. The decision asked for above is now
+narrower: accept the reconstructed tree as the base (with native `find_slot` on this host) or recover
+the lost bridge revision first.
