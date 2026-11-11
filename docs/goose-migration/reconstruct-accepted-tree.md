@@ -38,7 +38,19 @@ runtime uses, or it cannot be promoted.
 - A file with no integration copy but with a Goose call site from a *later* experiment would be
   silently lost. Step 4's witness comparison is the guard against that.
 
+## Progress (this pass)
+
+- Staging tree created: `runtime/reconstructed/src`, a copy of the flint `src` (236 files).
+- **Base confirmed.** The flint `llama-kv-cache.cpp` object defines 296 symbols; the EXP233 copy defines
+  315 and is missing only inlining artefacts (`*.part.0`, `std::` helpers). So the integrations were
+  made from this line, and `work/llama.cpp-integration` remains the wrong line.
+- Selection automated: `tools/select_reconstruction_copies.py` compiles each candidate with the flint
+  flags and keeps the newest copy whose defined symbols contain the flint object's. Picks so far:
+  batch 243, context 244, graph 200, hparams 200, sampler 212, vocab 220, unicode 218.
+- Still to resolve: `llama-kv-cache.cpp` and `llama-model-loader.cpp` did not make it through the
+  automated pass; the kv file was verified by hand instead.
+
 ## Status
 
-Plan written, facts verified, nothing rebuilt yet. This is the prerequisite for promoting any of the
-live routes of EXP359–EXP370 out of a side stage.
+Staging and selection done; overlay and the identity build are next. This is the prerequisite for
+promoting any of the live routes of EXP359–EXP370 out of a side stage.
