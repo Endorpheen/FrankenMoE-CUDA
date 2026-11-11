@@ -47,3 +47,19 @@ measured rather than assumed: first-call witnesses in a real CPU-profile run sho
 `bf16` never called. Recorded in `docs/goose-migration/apex-cpu-math-inventory.md`.
 
 So Q4_K (accepted) plus Q6_K (this item) complete CPU_MATH for this plan, and the 64 Q6_K tensors are one kernel.
+
+## Scalar transcription progress
+
+Built a scalar transcription of the AVX2 kernel next to the module and compared all three: transcription,
+dispatched kernel and module, on identical data (nb = 1, 2, 7, 16).
+
+First finding: `get_scale_shuffle(i)` returns **two** values per 16-byte vector — bytes 0-7 give `scales[2i]`,
+bytes 8-15 give `scales[2i+1]` — so a 6-bit group uses one scale for lanes 0-3 and another for lanes 4-7. My
+first version used a single scale per group, which was wrong.
+
+After that correction the transcription moved but still disagrees with the reference (for example -212572.688
+vs -455389.5), while `_generic` and the dispatched kernel agree to within one ulp. So one more mapping detail is
+still wrong; the transcription is now the tool to find it, and the module will be aligned to it once the
+transcription matches.
+
+Not accepted, not integrated.
