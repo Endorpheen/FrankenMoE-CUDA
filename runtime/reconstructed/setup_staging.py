@@ -214,7 +214,8 @@ extern "C" int fg376s_enabled(void);
 extern "C" int64_t fg376s_decide(int64_t op, int64_t a, int64_t b);
 
 '''
-anchor5='bool llama_memory_hybrid_context::apply() {'
+anchor5='// Goose hybrid memory decisions (EXP375).'
+assert anchor5 in hsrc
 hsrc = hsrc.replace(anchor5, decl5 + anchor5, 1)
 hsrc = hsrc.replace('''    bool res = true;
 
@@ -916,5 +917,72 @@ new_rm='''            const bool g_mirror_bad = fg395s_enabled()
             if (g_mirror_bad) {'''
 assert old_rm in src
 src = src.replace(old_rm, new_rm, 1)
+# recurrent payload layout (EXP396)
+decl23 = '// Goose recurrent payload layout (EXP396). GGML_GOOSE_RECURRENT_PAYLOAD_SPAN=0 restores the native arithmetic.\nextern "C" int fg396s_enabled(void);\nextern "C" int64_t fg396s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t * out2);\n\n'
+anchor23 = '// Goose recurrent I/O plan (EXP382).'
+assert anchor23 in rsrc
+rsrc = rsrc.replace(anchor23, decl23 + anchor23, 1)
+
+def span_call(first, count, row, indent):
+    pad = ' ' * indent
+    return (pad + 'size_t g_off = (size_t) (' + first + ') * (' + row + ');\n'
+            + pad + 'size_t g_sz  = (size_t) (' + count + ') * (' + row + ');\n'
+            + pad + 'if (fg396s_enabled()) { int64_t g2 = 0; g_off = (size_t) fg396s_decide(0, (int64_t) (' + first + '), (int64_t) (' + count + '), (int64_t) (' + row + '), 0, 0, &g2); g_sz = (size_t) g2; }\n')
+
+repls = [
+ ('            io.write_tensor(r_l[il], range.first * r_size_row, buf_size);',
+  span_call('range.first','range_size','r_size_row',12) + '            io.write_tensor(r_l[il], g_off, g_sz);'),
+ ('                io.write_tensor(p_l[il], range.first * p_size_row, range_size * p_size_row);',
+  span_call('range.first','range_size','p_size_row',16) + '                io.write_tensor(p_l[il], g_off, g_sz);'),
+ ('                io.write_tensor(s_l[il], range.first * s_size_row, buf_size);',
+  span_call('range.first','range_size','s_size_row',16) + '                io.write_tensor(s_l[il], g_off, g_sz);'),
+ ('            io.read_tensor(r_l[il], head * r_size_row, cell_count * r_size_row);',
+  span_call('head','cell_count','r_size_row',12) + '            io.read_tensor(r_l[il], g_off, g_sz);'),
+ ('                io.read_tensor(p_l[il], head * p_size_row, cell_count * p_size_row);',
+  span_call('head','cell_count','p_size_row',16) + '                io.read_tensor(p_l[il], g_off, g_sz);'),
+ ('                io.read_tensor(s_l[il], head * s_size_row, cell_count * s_size_row);',
+  span_call('head','cell_count','s_size_row',16) + '                io.read_tensor(s_l[il], g_off, g_sz);'),
+]
+for old,new in repls:
+    assert old in rsrc, old[:60]
+    rsrc = rsrc.replace(old,new,1)
+rec.write_text(rsrc)
+
+# hybrid delegation (EXP397)
+decl24 = '// Goose hybrid delegation (EXP397). GGML_GOOSE_HYBRID_DELEGATION=0 restores the native order.\nextern "C" int fg397s_enabled(void);\nextern "C" int64_t fg397s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t * out2);\n\n'
+anchor24 = 'void llama_memory_hybrid::state_write('
+assert anchor24 in hsrc
+hsrc = hsrc.replace(anchor24, decl24 + anchor24, 1)
+old_hw = '    mem_attn->state_write(io, seq_id, flags);\n    mem_recr->state_write(io, seq_id, flags);'
+new_hw = ('    if (fg397s_enabled()) {\n'
+          '        // the order is the Goose decision: step 0 is the attention half, step 1 the recurrent half\n'
+          '        for (int step = 0; step < 2; ++step) {\n'
+          '            if (fg397s_decide(0, step, 0, 0, 0, 0, nullptr) != 0) { mem_attn->state_write(io, seq_id, flags); }\n'
+          '            else                                                    { mem_recr->state_write(io, seq_id, flags); }\n'
+          '        }\n'
+          '        return;\n'
+          '    }\n'
+          '    mem_attn->state_write(io, seq_id, flags);\n    mem_recr->state_write(io, seq_id, flags);')
+assert old_hw in hsrc
+hsrc = hsrc.replace(old_hw, new_hw, 1)
+old_hr = '    mem_attn->state_read(io, seq_id, flags);'
+new_hr = ('    if (fg397s_enabled()) {\n'
+          '        for (int step = 0; step < 2; ++step) {\n'
+          '            if (fg397s_decide(0, step, 0, 0, 0, 0, nullptr) != 0) { mem_attn->state_read(io, seq_id, flags); }\n'
+          '            else {\n'
+          '                try { mem_recr->state_read(io, seq_id, flags); }\n'
+          '                catch (...) {\n'
+          '                    if (fg397s_decide(1, 1, 0, 0, 0, 0, nullptr) != 0) { mem_attn->state_clear(seq_id); }\n'
+          '                    throw;\n'
+          '                }\n'
+          '            }\n'
+          '        }\n'
+          '        return;\n'
+          '    }\n'
+          '    mem_attn->state_read(io, seq_id, flags);')
+assert old_hr in hsrc
+hsrc = hsrc.replace(old_hr, new_hr, 1)
+h.write_text(hsrc)
+
 p.write_text(src)
-print('staging rebuilt ... + KV metadata read')
+print('staging rebuilt ... + hybrid delegation')
