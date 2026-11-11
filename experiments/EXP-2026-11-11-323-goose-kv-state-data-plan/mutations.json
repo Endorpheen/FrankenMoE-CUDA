@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "the V rotation size is not written",
+    "status": "CAUGHT",
+    "failures": 57183,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the layout flag comes second",
+    "status": "CAUGHT",
+    "failures": 4000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "key offsets drop the row size",
+    "status": "CAUGHT",
+    "failures": 3443,
+    "exit_code": 1
+  },
+  {
+    "mutation": "key sizes drop the row size",
+    "status": "CAUGHT",
+    "failures": 4136,
+    "exit_code": 1
+  },
+  {
+    "mutation": "plain V offsets use the key row size",
+    "status": "CAUGHT",
+    "failures": 1665,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed V offsets forget the cache stride",
+    "status": "CAUGHT",
+    "failures": 33469,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed V sizes drop the element size",
+    "status": "CAUGHT",
+    "failures": 32809,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the GQA width is not written for a transposed V",
+    "status": "CAUGHT",
+    "failures": 37974,
+    "exit_code": 1
+  }
+]

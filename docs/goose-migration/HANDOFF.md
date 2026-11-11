@@ -421,10 +421,16 @@ most dangerous and is worth checking first in any new fixture.
    sequence writing only itself and an unnamed write carrying all of them. 109 429
    checks, 8/8 mutations. One candidate mutation was unobservable with a single bit
    word and was replaced. Still open in P5-08: the tensor data and the read side.
-43. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+43. KV state data plan — EXP323 transfers `state_write_data`: the header (layout flag,
+   layer count, both rotation sizes), the per-layer key type and row size with one
+   transfer per range, the plain-V repetition of that shape, and the transposed-V walk
+   where the embedding dimension is the outer loop and the offset is
+   `(first + j*kv_size) * element_size`. 65 202 checks, 8/8 mutations. Still open in
+   P5-08: both halves of the read.
+44. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-44. Downstream phases P4–P11.
+45. Downstream phases P4–P11.
 
 ## Disk
 
