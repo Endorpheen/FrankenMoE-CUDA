@@ -6,8 +6,8 @@
 static _Atomic unsigned long long g_ins,g_rem,g_bound;
 __attribute__((destructor)) static void fg209i_report(void){
  if(!atomic_load(&g_ins)&&!atomic_load(&g_rem)&&!atomic_load(&g_bound))return;
- fprintf(stderr,"FG209I_KV_SEQPOS ins=%llu rem=%llu bound=%llu\n",
-   atomic_load(&g_ins),atomic_load(&g_rem),atomic_load(&g_bound));}
+ fprintf(stderr,"FG209I_KV_SEQPOS ins=%llu rem=%llu bound=%llu calls=%llu\n",
+   atomic_load(&g_ins),atomic_load(&g_rem),atomic_load(&g_bound),atomic_load(&g_ins));}
 static void g_fail(int64_t c){fprintf(stderr,"FG209I validation code %lld\n",(long long)c);abort();}
 static int64_t g_ld_i64(uint64_t d,int64_t b){return *(const int64_t*)(uintptr_t)(d+(uint64_t)b);}
 static void g_st_i64(uint64_t d,int64_t b,int64_t v){*(int64_t*)(uintptr_t)(d+(uint64_t)b)=v;}

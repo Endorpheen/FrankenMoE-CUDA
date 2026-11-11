@@ -715,6 +715,11 @@ extern "C" int64_t fg392s_find_slots(int64_t size, int64_t head, int64_t n_token
                                      int64_t n_swa, int64_t swa_type,
                                      const int64_t * pos, const int64_t * seqcnt, const int64_t * maxp1,
                                      int64_t * out, int64_t cap);
+extern "C" int fg205g_enabled(void);
+extern "C" int64_t fg205g_find_slots_flat(int64_t size, int64_t head, int64_t n_tokens, int64_t cont,
+                                          int64_t n_swa, int64_t swa_type,
+                                          const int64_t * pos, const int64_t * seqcnt, const int64_t * maxp1,
+                                          int64_t * out, int64_t cap);
 
 '''
 anchor19='extern "C" int fg205g_enabled(void);'
@@ -744,7 +749,11 @@ new_walk='''        if (fg392s_enabled()) {
                 pos_[(size_t) i] = occ ? cells.pos_get(i) : 0;
                 maxp1_[(size_t) i] = (occ && cnt_[(size_t) i] == 1) ? cells.seq_pos_max(cells.seq_get(i)) + 1 : 0;
             }
-            const int64_t got = fg392s_find_slots((int64_t) n_cells, (int64_t) head_cur, (int64_t) n_tokens,
+            const int64_t got = fg205g_enabled()
+                ? fg205g_find_slots_flat((int64_t) n_cells, (int64_t) head_cur, (int64_t) n_tokens,
+                                         cont ? 1 : 0, (int64_t) n_swa, (int64_t) swa_type,
+                                         pos_.data(), cnt_.data(), maxp1_.data(), out_.data(), (int64_t) out_.size())
+                : fg392s_find_slots((int64_t) n_cells, (int64_t) head_cur, (int64_t) n_tokens,
                                                   cont ? 1 : 0, (int64_t) n_swa, (int64_t) swa_type,
                                                   pos_.data(), cnt_.data(), maxp1_.data(),
                                                   out_.data(), (int64_t) out_.size());

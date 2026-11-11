@@ -9,7 +9,7 @@ static _Atomic unsigned long long g_cells;
 
 __attribute__((destructor)) static void fg204x_report(void) {
     if (!atomic_load(&g_cells)) return;
-    fprintf(stderr, "FG204X_KV_SET cells=%llu\n", atomic_load(&g_cells));
+    fprintf(stderr, "FG204X_KV_SET cells=%llu calls=%llu\n", atomic_load(&g_cells), atomic_load(&g_cells));
 }
 
 static void g_fail(int64_t c) {

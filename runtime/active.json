@@ -1,34 +1,20 @@
 {
-  "stage": "EXP244",
-  "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp244/run",
-  "base_commit": "4185f26",
+  "stage": "EXP392-399 (reconstructed tree, KV / RECURRENT / BATCH)",
+  "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build/stage-run",
+  "base_commit": "c867f44",
   "baseline_runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/run",
-  "correctness": "EXP237-244 batch/output block: eight Goose routes, five live; exact Apex text (sha256 e68df05b) and all saved completion probabilities",
-  "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp244/results-apex-or244-or-goose/summary.json",
-  "next": "mmvf half/bfloat16 source types (gated); recurrent RWKV/GLA blocked on per-thread state arrays; MMQ blocked on EXP180",
+  "correctness": "KV, RECURRENT_MEMORY and BATCH routes are Goose-owned and live: slot placement (FG205G/FG392S), metadata write and read (FG393S/FG395S), tensor layout (FG394S), recurrent payload spans (FG396S), hybrid delegation (FG397S), container composition and layout (FG383S/FG398S). Completion e68df05b, all saved probabilities equal, restore exact, slot file byte-identical to the file the accepted runtime writes (sha256 3e216c49...).",
+  "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build/run-restore/summary.json",
+  "next": "primary review of the three items; BATCH storage boundary decision if the reviewer wants it moved",
   "solo": true,
   "authorized_external_workers": 0,
   "production_changed": false,
-  "previous_runtime": null,
-  "updated_at": 1794374000,
-  "commit": "56ddd37",
-  "performance_qualification": "EXP238 vs EXP242 pair: prefill +0.16 percent (spread 0.07-0.43) is sound; decode +0.48 percent is not, within-series decode spread reached 6.87 percent, three times the 2 percent threshold",
+  "previous_runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp244/run",
+  "updated_at": 1794411264,
+  "commit": "c867f44",
+  "performance_qualification": "no new performance claim: this stage carries additional Goose routes on the reconstructed tree, whose prefill is known to be below the accepted build because the patch set is not in it",
   "producer_compiler_sha256": "84f31960f9f3031e5fba6b767f775dfaf79448a736169fdef006072d7deccf6c",
   "compiler_for_next_work": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/current.json",
-  "dso_sha256_16": "2bc628a170a51dd1",
-  "cleanup_2026_11_11": {
-    "reason": "host disk was at 100 percent with 3.1 GiB free",
-    "freed_gib": 85,
-    "kept_runtime_stages": [
-      "exp244"
-    ],
-    "self_contained": "87 external symlinks in exp244/run replaced with hard links before other stage run directories were deleted",
-    "deleted": "runtime/exp*/run and build for every stage except exp244; archived agent candidate builds, workspace runtime copies, GLM attempt ndjson logs and archive build variants",
-    "untouched": [
-      "production /home/end0/AI/FrankenMoE-CUDA",
-      "compiler /home/end0/AI/Fried-Goose",
-      "runtime/compiler",
-      "git-tracked evidence under experiments/"
-    ]
-  }
+  "dso_sha256_16": "ce4f004bc83caecd",
+  "note": "summary and server.log in the pointed directory are the verified artefact: 47 FG routes live, completion e68df05b"
 }

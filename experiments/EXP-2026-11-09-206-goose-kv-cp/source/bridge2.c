@@ -8,7 +8,7 @@
 static _Atomic unsigned long long g_cells;
 __attribute__((destructor)) static void fg206d_report(void) {
     if (!atomic_load(&g_cells)) return;
-    fprintf(stderr, "FG206D_KV_CP cells=%llu\n", atomic_load(&g_cells));
+    fprintf(stderr, "FG206D_KV_CP cells=%llu calls=%llu\n", atomic_load(&g_cells), atomic_load(&g_cells));
 }
 static void g_fail(int64_t c) { fprintf(stderr, "FG206D validation code %lld\n", (long long)c); abort(); }
 static int64_t g_ld_i64(uint64_t d, int64_t b) { return *(const int64_t *)(uintptr_t)(d + (uint64_t)b); }

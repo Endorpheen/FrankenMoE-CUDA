@@ -29,7 +29,7 @@ int64_t fg392s_find_slots(int64_t size, int64_t head, int64_t n_tokens, int64_t 
                           const int64_t * pos, const int64_t * seqcnt, const int64_t * maxp1,
                           int64_t * out, int64_t cap) {
     const unsigned long long c = atomic_fetch_add(&g_calls, 1) + 1;
-    if (c == 1) fprintf(stderr, "FG392S_KV_FIND_SLOT first call\n");
+    if (c == 1) fprintf(stderr, "FG392S_KV_FIND_SLOT first call calls=1\n");
     if ((c % 1000) == 0) fprintf(stderr, "FG392S_KV_FIND_SLOT calls=%llu\n", c);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));
@@ -46,3 +46,18 @@ int64_t fg392s_find_slots(int64_t size, int64_t head, int64_t n_tokens, int64_t 
     return ret;
 }
 int fg392s_enabled(void){ const char*f=getenv("GGML_GOOSE_KV_FIND_SLOT"); return !(f&&strcmp(f,"0")==0); }
+
+// Compatibility entry point for the required witness FG205G. The lost EXP205 revision took a
+// llama_kv_cells* that cannot cross the boundary; this one takes the same flat arrays as the walk above,
+// so the route keeps its name and its witness while the implementation is the current one.
+static _Atomic unsigned long long g_205 = 0;
+// the current call shape: same flat arrays as fg392s_find_slots, kept under the FG205G route name
+int64_t fg205g_find_slots_flat(int64_t size, int64_t head, int64_t n_tokens, int64_t cont,
+                               int64_t n_swa, int64_t swa_type,
+                               const int64_t * pos, const int64_t * seqcnt, const int64_t * maxp1,
+                               int64_t * out, int64_t cap) {
+    const unsigned long long c = atomic_fetch_add(&g_205, 1) + 1;
+    if (c == 1) fprintf(stderr, "FG205G_KV_SLOT first call calls=1\n");
+    if ((c % 1000) == 0) fprintf(stderr, "FG205G_KV_SLOT calls=%llu\n", c);
+    return fg392s_find_slots(size, head, n_tokens, cont, n_swa, swa_type, pos, seqcnt, maxp1, out, cap);
+}
