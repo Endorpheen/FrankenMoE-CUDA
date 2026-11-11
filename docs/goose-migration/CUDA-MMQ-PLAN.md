@@ -47,3 +47,25 @@ do run (paths=0x3, calls=8550); the MMA arithmetic is integrated but dormant for
 Consequence: CUDA_MMQ cannot be closed as "the MMA path executes on the profile", because it does not. What is true
 and verifiable: the quantizer and dispatch are Goose and executing, the inner product is Goose with its 30000-check
 gate, and the whole thing rebuilds from scratch without changing the completion.
+
+## Step 1 correction: the dp4a vec_dot path is not what MMQ uses here
+
+The dispatch counter shows MMQ is chosen for almost every call, and by type:
+
+    FG203D_SELECT calls=8000 true=7395
+    FG203D_TYPES   q6k=1116 q4k=6279 q8_0=0 other=0
+
+so Q4_K matmuls genuinely take the MMQ path. Yet replacing the Goose inner product's body with a hard
+`return 0.0f` leaves the completion at `e68df05b`. A defect that cannot move the output means that code is not on the
+executed path.
+
+Therefore the Q4_K MMQ kernel reached here is **not** the dp4a path through
+`vec_dot_q4_K_q8_1_impl_mmq`. The `mul_mat_q` templates have a second route (tile-load + tensor-core MMA), and that is
+what runs on this device. The dp4a `vec_dot` is a fallback for shapes/architectures that do not take it.
+
+So EXP235's port sits on a live but unexercised branch here. The MMA route - load-tile + `mma.sync` - is the one that
+would have to be ported to make CUDA_MMQ's matmul body Goose on this workload, and that is a substantially larger
+piece of device code than the inner product.
+
+Recorded plainly: quantizer and dispatch are Goose and executing; the dp4a inner product is Goose and gated but not
+exercised; the tensor-core route is not ported.
