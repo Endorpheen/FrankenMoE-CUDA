@@ -152,8 +152,19 @@ were overlaid. `llama_model::pin_mmap_experts` being absent is the visible sympt
 Consequence: this tree may be used to verify routes and correctness, but it must not be promoted as the
 candidate until the patches are applied and the throughput is re-measured.
 
+## Patch set needs a full tree
+
+Applying `patches/*.patch` to the staged tree fails with "No file to patch": the patches touch
+`ggml/src/...`, `ggml/src/ggml-cuda/...` and new headers next to `src/`, while the staging tree holds
+only `src`. `expert-tier-integration.patch` reports six real conflicts as well, so even a full tree will
+need that one rebased.
+
+Next attempt should stage the whole flint checkout (`src`, `ggml`, `include`, `common`) and apply the
+patch set in a fixed order, checking the build after each patch. Covered so far read-only: at least 12
+patches report zero conflicts against the `src` tree alone, which is promising but not sufficient.
+
 ## Status
 
 The reconstructed tree is a **correctness** base, not a performance equivalent. Two gaps documented:
-`fg205g` (lost bridge, native walk used) and the patch set (throughput). Promoting it is the owner's
-decision and needs the patches first.
+`fg205g` (lost bridge, native walk used) and the patch set (throughput, needs a full tree and one
+rebased patch). Promoting it is the owner's decision and needs the patches first.
