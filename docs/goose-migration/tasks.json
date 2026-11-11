@@ -846,7 +846,7 @@
     "ggml/src/ggml-cuda/arange*"
    ],
    "acceptance": "All position/mask/scaling/attention-shape variants differential; valid finite tolerance fixed before candidate test.",
-   "evidence": "EXP171 normal/NeoX/MRoPE/IMRoPE forward/back numerical/host logic in full self-hosted Goose.68GPU/native-bitwise/rollback cases,14464independent identity/sincos pairs,YaRN/F16/offset/strided/inplace/partial coverage,1capture per mode and30before-stream failures pass. One actual Apex2638.584/28.026,exact text/all128IDs/full probabilities,127graph reuses,FG171R host1/modes8/variants50/status0,zero owned heaps. Source pointer/YaRN bound/test indexing bugs corrected before acceptance. Vision/set-rows/RMS fusion still native;softmax/masks/position/native-removal scope remains;not full requirement DONE. EXP280 implements soft_max_f32 for the mask-free, sink-free path with alibi: row/grid mapping, slope, x*scale+0.0f, block max reduce, exp pass, block sum reduce, 1/sum and normalize, using EXP279's shared-memory primitives. Not ported and rejected explicitly: mask/sinks variants, the cooperative parallelize_cols kernel (host code 24) and soft_max_back. Device: 8 cases (ncols 1..4096, one low-shared path, one alibi 4096x2x3) = 27894 values bit-identical, 0 failures/0 launches; host 45 checks/0 failures. The host doubling mutation was first masked by a redundant defensive clamp; rewriting the loop to the native form exposed it. 5/5 mutations (2730/27894/9463/9541/1). Oracle is a verbatim struct+kernel copy with source sha256. OFF_PATH: FA does its own softmax on this profile; not linked.",
+   "evidence": "EXP171 normal/NeoX/MRoPE/IMRoPE forward/back numerical/host logic in full self-hosted Goose.68GPU/native-bitwise/rollback cases,14464independent identity/sincos pairs,YaRN/F16/offset/strided/inplace/partial coverage,1capture per mode and30before-stream failures pass. One actual Apex2638.584/28.026,exact text/all128IDs/full probabilities,127graph reuses,FG171R host1/modes8/variants50/status0,zero owned heaps. Source pointer/YaRN bound/test indexing bugs corrected before acceptance. Vision/set-rows/RMS fusion still native;softmax/masks/position/native-removal scope remains;not full requirement DONE. EXP280 implements soft_max_f32 for the mask-free, sink-free path with alibi: row/grid mapping, slope, x*scale+0.0f, block max reduce, exp pass, block sum reduce, 1/sum and normalize, using EXP279's shared-memory primitives. Not ported and rejected explicitly: mask/sinks variants, the cooperative parallelize_cols kernel (host code 24) and soft_max_back. Device: 8 cases (ncols 1..4096, one low-shared path, one alibi 4096x2x3) = 27894 values bit-identical, 0 failures/0 launches; host 45 checks/0 failures. The host doubling mutation was first masked by a redundant defensive clamp; rewriting the loop to the native form exposed it. 5/5 mutations (2730/27894/9463/9541/1). Oracle is a verbatim struct+kernel copy with source sha256. OFF_PATH: FA does its own softmax on this profile; not linked. EXP281 extends the EXP280 softmax to mask T=float and T=half: native mask pointer arithmetic (i11*nb11+i12*nb12+i13*nb13 divided by sizeof(T), i12=by%ne12, i13=bz%ne13), value pass with slope*t2f32(mask[col]), and the same reduce/normalize body. Sinks and the cooperative/backward variants remain unported. Device: 5 shapes x 2 mask types = 15584 values bit-identical, 0 failures/0 launches; host 45 checks/0 (EXP280 plan, mask-independent). The 32-bit-read mutation first looked missed because it traps (launch_fail), and the harness summed only failures=; the harness now counts both channels, then 5/5 mutations (1663/362/826/9/4620). OFF_PATH: FA does its own softmax; not linked.",
    "depends_on": [],
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 572,
@@ -3385,6 +3385,14 @@
    "change": "CUDA softmax (mask-free, sink-free, alibi) in Goose with shared-memory primitives; mask/sinks/cooperative/backward not ported; off the Apex profile, not integrated",
    "status": "IN_PROGRESS",
    "evidence": "experiments/EXP-2026-11-11-280-goose-cuda-softmax/README.md"
+  },
+  {
+   "date": "2026-11-11",
+   "task": "P3-06",
+   "experiment": "EXP281",
+   "change": "CUDA softmax with F32/F16 mask in Goose; sinks and cooperative/backward variants remain; off the Apex profile, not integrated",
+   "status": "IN_PROGRESS",
+   "evidence": "experiments/EXP-2026-11-11-281-goose-cuda-softmax-mask/README.md"
   }
  ],
  "batches": [
