@@ -95,6 +95,25 @@ mutations. The shared grid/sign tables (`iq2xxs_grid`, `iq2xs_grid`, `iq2s_grid`
 explicit device constant primitives — data, not code; every index and arithmetic
 operation is Goose.
 
+### Non-F32 destinations, EXP263–272
+
+The same templated functions were then reproduced for `half` and
+`nv_bfloat16`, two destinations per module: Q4_K (EXP263), Q6_K (264), Q5_K
+(265), Q2_K (266), Q3_K (267), IQ4_NL+IQ4_XS (268), IQ2_XXS+IQ2_XS (269),
+IQ2_S+IQ3_XXS (270), IQ3_S+IQ1_S (271), IQ1_M+MXFP4 (272). Only the store
+differs: `__float2half` for the implicit round-to-nearest-even conversion and
+`__float2bfloat16` for bf16. Every module is gated on both destinations against
+the native instantiations (83 200 values per destination) with five mutations,
+including one that swaps the bf16 store for the half conversion. The legacy
+32-element callbacks (EXP262) are destination-independent — the cast lives in
+the shared `dequantize_block_cuda` template — so they need no variants.
+
+The F32/F16/BF16 matrix for every templated dequantizer in `dequantize.cuh` is
+therefore complete. The activation quantizer (`quantize_mmq_q8_1`) is the only
+dequantisation-adjacent piece still native, and it is blocked on the same
+emitter address typing as MMQ.
+
+
 Defect classes found in this block, all by the gate rather than by reading the
 formula: block-layout conflation (Q2_K dm at the end of the block, IQ1_S stride
 50 not 66), guard-index vs block-index conflation (IQ4_NL), fixture
@@ -110,8 +129,11 @@ most dangerous and is worth checking first in any new fixture.
    DSO by being reachable, not by being finished.
 2. Other `n_expert_used` widths for `mm_ids_helper`; only the `int)8`
    specialisation is ported and the others are dormant for this profile.
-3. Dequantisation — closed by EXP248–262 for every `dequantize.cuh` path. The
-   non-F32 destinations (half/bfloat16) of the same functions remain.
+3. Dequantisation — closed: EXP248–262 cover every `dequantize.cuh` path for
+   F32, and EXP263–272 cover `half`/`nv_bfloat16` for every templated function.
+   The activation quantizer (`quantize_mmq_q8_1`) remains native and is blocked
+   on the EXP180 emitter typing, as is the shared `dequantize_block_cuda`
+   launch template.
 4. MMQ / MUL_MAT — the largest remaining native share (`mul_mat_q` Q4_K 30.3% +
    Q6_K 9.7% ≈ 40% of GPU time). Blocked on EXP180's codegen gap: 824 SASS
    instructions against native's 160, including 206 `IMAD` against ~20. The next
@@ -122,5 +144,8 @@ most dangerous and is worth checking first in any new fixture.
 
 ## Disk
 
-The host runs near full (`~885G/938G`). Five stale `runtime/exp240/run*` copies were removed to recover space.
-Do **not** recreate stage copies; symlink switching needs one directory per stage, not two.
+The host was at 100 percent (3.1 GiB free) on 2026-11-11. About 85 GiB were
+reclaimed by deleting old stage `run`/`build` copies and archived agent builds
+after making EXP244 self-contained (87 external symlinks replaced with hard
+links first). The retention set is EXP244; `runtime/active.json` records the
+cleanup. Do not recreate stage copies.
