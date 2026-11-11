@@ -26,7 +26,30 @@ produce a file of the same size with different bytes. Byte identity across indep
 whole write path — KV metadata selection (EXP393), KV layout (EXP394), recurrent payload spans (EXP396)
 and the hybrid delegation order (EXP397) — is deterministic and reproducible, not merely "restores fine".
 
-## Limit
+## Stronger: the file does not depend on our switches
 
-This compares the Goose path with itself. It does not prove byte identity against the accepted runtime's
-file, which would need a save on that binary; that comparison is still open and is recorded as such.
+The same digest `3e216c49941d30998115a8b41909a59619dd934bc94ea4d6db07b724f1b6f8a1` appears in four separate
+directories produced under different switch settings:
+
+| directory | switches |
+|---|---|
+| `build/run-restore` | everything on |
+| `build/run-apex-save` | everything on |
+| `build/run-ours-off` | our earlier routes at 0 |
+| `build/run-disabled` (`good.bin`) | earlier disable-contract run |
+
+So turning the Goose routes off does not change a single byte of the state file. That is a stronger
+statement than run-to-run determinism: it means the ported decisions reproduce the native file exactly,
+because the native path and the Goose path agree.
+
+## Limit, with the exact blocker
+
+Byte identity against a file written by the **accepted runtime binary** is still not measured. I tried:
+`runtime/exp244/measured-apex-or244-or-goose/run/libllama.so.0` does not start in that directory —
+
+    symbol lookup error: libllama.so.0: undefined symbol: ggml_backend_sched_set_copy_callback
+
+and that symbol is defined by none of the `libggml-*.so` files present there. So the accepted binary needs
+a ggml build that is not in its own run directory. Until that library is found or rebuilt, the comparison
+against the accepted file cannot be made, and I record it as open rather than pretending the on/off
+agreement covers it.
