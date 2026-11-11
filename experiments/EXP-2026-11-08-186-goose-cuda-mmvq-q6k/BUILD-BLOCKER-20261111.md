@@ -542,3 +542,27 @@ unable to start (the guard page covers the context itself). It is now opt-in via
 Next: the guard is the right instrument, but it must be armed only after creation and must distinguish reads from
 writes. A SIGSEGV handler already logs the faulting address plus a backtrace; with the guard scope narrowed to the
 single slot page and protected state restored after the first hit, it will name the writer.
+
+## The guard caught the CUDA driver, not a writer of the slot
+
+Two fixes first: the fault-handler compared `si_addr` by equality instead of page membership, and my own wrappers
+read the guarded slot too early. With both corrected, the first fault inside the guarded page is:
+
+    FG186S_OTHERSEGV addr=0x63554ae687c8 frames=24
+    /tmp/libfg186q.so(+0x5dd5)              <- our handler
+    /usr/lib/.../libc.so.6 ...
+    /usr/lib/.../libcuda.so.1(+0x482f6e)
+    /usr/lib/.../libcuda.so.1(+0x49112d)
+    /usr/lib/.../libcuda.so.1(+0x495517)
+    /usr/lib/.../libcuda.so.1(+0x477512)
+
+The first access to that page comes from **the CUDA driver itself**, at an offset (+0x7c8) that is not our slot
+(+0x380). So a page-level guard on this object is too coarse: the driver legitimately touches the same page, and
+mprotecting it turns normal driver work into a fault.
+
+This also makes the earlier "slot holds unmapped garbage" fact more interesting: the CUDA driver writing into the
+same page as the context suggests the object may share a page with driver-managed state, and the bad slot value
+could be a stale pointer left by driver-side bookkeeping rather than a host write.
+
+Next: a byte-granular watchpoint instead of a page guard, or an interactive gdb watch on the exact 8 bytes at
+ctx+0xcf0. A page guard cannot answer this question.

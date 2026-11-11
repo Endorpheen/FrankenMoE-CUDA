@@ -54,12 +54,21 @@ static void segv_probe(int sig, siginfo_t * si, void * uc) {
     (void) sig; (void) uc;
     if (si && si->si_addr == g_guard_page && g_guard_hits < 1) {
         g_guard_hits++;
+        fprintf(stderr, "FG186S_GUARDHIT addr=%p\n", si->si_addr);
         void * bt[24];
         int n = backtrace(bt, 24);
         fprintf(stderr, "FG186S_WRITER addr=%p frames=%d\n", si->si_addr, n);
         backtrace_symbols_fd(bt, n, 2);
         mprotect(g_guard_page, (size_t) sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE);
         return;
+    }
+    if (g_guard_hits < 2) {
+        g_guard_hits++;
+        void * bt[24];
+        int n = backtrace(bt, 24);
+        fprintf(stderr, "FG186S_OTHERSEGV addr=%p frames=%d\n", si ? si->si_addr : NULL, n);
+        backtrace_symbols_fd(bt, n, 2);
+        if (g_guard_page) mprotect(g_guard_page, (size_t) sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE);
     }
     signal(SIGSEGV, SIG_DFL);
     raise(SIGSEGV);
@@ -87,7 +96,7 @@ void * ggml_backend_dev_init(void * dev, const char * params) {
     void * be = g_dev_orig ? g_dev_orig(dev, params) : NULL;
     if (be && getenv("FG186S_WITNESS")) {
         void * c = *(void **) ((char *) be + 0x90);
-        fprintf(stderr, "FG186S_DEVINIT backend=%p ctx=%p slot0=%p\n", be, c, c ? *(void **) ((char *) c + 0xcf0) : NULL);
+        fprintf(stderr, "FG186S_DEVINIT backend=%p ctx=%p\n", be, c);
     }
     return be;
 }
@@ -104,7 +113,8 @@ void * ggml_backend_cuda_init(size_t n) {
         void * c = *ctxslot;
         if (c) {
             void * slot = (void *) ((char *) c + 0xcf0);
-            fprintf(stderr, "FG186S_ATINIT ctx=%p slot0=%p\n", c, *(void **) slot);
+            if (!getenv("FG186S_GUARD")) fprintf(stderr, "FG186S_ATINIT ctx=%p slot0=%p\n", c, *(void **) slot);
+            else fprintf(stderr, "FG186S_ATINIT ctx=%p (slot not read: guarded)\n", c);
             g_guard_page = (void *) ((uintptr_t) slot & ~(uintptr_t) (pg - 1));
             struct sigaction sa; memset(&sa, 0, sizeof sa);
             sa.sa_sigaction = segv_probe; sa.sa_flags = SA_SIGINFO;
