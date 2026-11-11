@@ -325,10 +325,17 @@ most dangerous and is worth checking first in any new fixture.
    compressed stay per-sequence even in unified mode). 31 432 checks, 8/8 mutations.
    The flags are the part worth guarding: a later "simplification" that follows the
    public setting would show here instead of at a recall regression.
-29. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+29. Hybrid indexed memory — EXP309 opens P5-05 with the pool staleness rules:
+   minimum edited position, regroup-from-zero at or below the sequence's first
+   position, the recurrent-refusal short circuit in `seq_rm`, the shifted mark for a
+   negative `seq_add`, and the destination/all/sequence marks of
+   `seq_cp`/`seq_keep`/`seq_div`. 19 362 checks, 8/8 mutations. The narrow margins
+   are the two boundaries (edit exactly at the first position, shift that crosses it),
+   which is why the generator draws `p0` and `seq_min` from overlapping ranges.
+30. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-30. Downstream phases P4–P11.
+31. Downstream phases P4–P11.
 
 ## Disk
 

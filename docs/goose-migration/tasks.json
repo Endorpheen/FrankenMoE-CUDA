@@ -1448,13 +1448,13 @@
    "id": "P5-05",
    "phase": "P5",
    "title": "Port hybrid and indexed hybrid memory",
-   "status": "TODO",
+   "status": "IN_PROGRESS",
    "sources": [
     "src/llama-memory-hybrid*.cpp",
     "src/llama-memory.cpp"
    ],
    "acceptance": "Hybrid full/sliding/recurrent memory composition and sequence synchronization match reset/branch/interleave fixtures.",
-   "evidence": "",
+   "evidence": "EXP309 transfers the hybrid-indexed pool staleness rules: marking keeps the minimum edited position (clamped at zero) and a negative sequence marks all; stale_pos regroups the whole sequence at or below its first position; seq_rm tries the recurrent cache first and stops on refusal; seq_add marks with the shifted start when the shift is negative; seq_cp marks the destination, seq_keep marks all, seq_div marks the sequence. Gate: 19 362 checks / 0 failures, 8/8 mutations caught. Still open: kpool layout/update, the state suffix ordering, and the hybrid context apply.",
    "depends_on": [],
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 46,

@@ -1,0 +1,41 @@
+[
+  {
+    "label": "unit-build",
+    "argv": [
+      "gcc-13",
+      "-std=gnu11",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-11-309-goose-hybrid-idx-stale/source",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-11-309-goose-hybrid-idx-stale/source/host-unit.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp309/build/host-unit.o"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp309/build",
+    "exit_code": 0
+  },
+  {
+    "label": "host-fixture-build",
+    "argv": [
+      "g++-13",
+      "-std=c++17",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-11-309-goose-hybrid-idx-stale/source",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-11-309-goose-hybrid-idx-stale/reference",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-11-309-goose-hybrid-idx-stale/tests/fixture.cpp",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp309/build/host-unit.o",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp309/build/fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp309/build",
+    "exit_code": 0
+  },
+  {
+    "label": "fixture",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp309/build/fixture"
+    ],
+    "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp309/build",
+    "exit_code": 0
+  }
+]
