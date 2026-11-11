@@ -32,3 +32,18 @@ plus the tile loop stay native.
    kernel level before touching the profile.
 2. EXP222 `ne2` fast path for the Q8_1 quantizer shapes used here.
 3. Re-run the accepted profile and require `e68df05b` with the MMQ witness non-zero.
+
+## Step 1 done: vec_dot Q4_K is Goose, and the profile does not exercise it
+
+The EXP235 device body is now inlined inside `vecdotq.cuh` (its own `fg235v_` namespace, primitives supplied
+locally) and `vec_dot_q4_K_q8_1_impl_mmq` calls it. The backend builds and the accepted profile completes with
+`e68df05b`, equal probabilities and a successful restore.
+
+Execution check, and this is the honest part: scaling the inner product's return by 0.5 inside the Goose body did
+**not** change the completion. So on this profile the MMQ matmul body is never reached - consistent with `--cpu-moe`
+sending the expert matmuls to the CPU and the dense matmuls going to cuBLAS. The quantizer and the dispatch decision
+do run (paths=0x3, calls=8550); the MMA arithmetic is integrated but dormant for this workload.
+
+Consequence: CUDA_MMQ cannot be closed as "the MMA path executes on the profile", because it does not. What is true
+and verifiable: the quantizer and dispatch are Goose and executing, the inner product is Goose with its 30000-check
+gate, and the whole thing rebuilds from scratch without changing the completion.
