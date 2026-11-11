@@ -271,10 +271,21 @@ most dangerous and is worth checking first in any new fixture.
    and the gate pins it; and a comparison written as `x>(1 as i64)` does not parse
    -- the bracket is read as a generic and the parser wants a closing `>`; write
    `x > 1 as i64`.
-22. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+22. DSV4 comp plan (non-overlap, no rollback planes) — EXP302 transfers
+   `dsv4_build_comp_plan` for `overlap == false` and `n_rs_seq == 0`: n_visible,
+   state_pos, n_kv, write/read lists with the three-way source, the CSA and HCA dummy
+   blocks, and the sorted persist rows. 87 911 checks, 8/8 mutations. Still open in
+   this plan: the overlap index layout and the restore/snapshot planes. Four traps
+   recorded: an output section sized "a few entries per token" overflows when a dummy
+   block writes `ratio` entries (use separate arrays); the native token lookup keeps
+   the *last* token for a duplicated (sequence, position); `GGML_PAD(n_kv, 256)` hides
+   "max" versus "last" unless a position above 1024 is drawn; and the HCA dummy's
+   assert (last slot must not be live) has to be modelled so invalid draws are skipped
+   instead of faked.
+23. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-23. Downstream phases P4–P11.
+24. Downstream phases P4–P11.
 
 ## Disk
 
