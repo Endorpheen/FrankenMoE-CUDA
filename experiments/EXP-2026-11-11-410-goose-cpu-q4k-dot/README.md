@@ -216,3 +216,22 @@ bit-identical, with the witness confirming the call went through the hook (`call
 Note for the record: the earlier "expect 15579.2646" line in my probe was stale — the captured file had been
 overwritten by a later run with nb=1, so the probe was comparing against someone else's expectation rather
 than the file's. Reading the file and the reference together removed the confusion.
+
+## Fourteenth measurement: the real run is blocked on VRAM occupancy, not on the port
+
+Three attempts to run the accepted profile (32K/128, `-c 262144 -ngl all`) with the drop-in library preloaded
+fail before any token is produced:
+
+    0.02.671.965 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 3314.03 MiB on device 0:
+                  cudaMalloc failed: out of memory
+    0.02.671.970 E graph_reserve: failed to allocate compute buffers
+    0.02.577.208 E srv  llama_server: exiting due to model loading error
+
+GPU state at the time: 12282 MiB total, **5816 MiB held by other processes**, 6056 MiB free. The largest
+holder is `whisper-cli` at 2478 MiB, plus desktop/browser GPU processes (~1070 MiB). `GGML_CUDA_NO_VMM=1` made
+no difference.
+
+Consequence for this item: the server never reaches the compute path, so `FG410S` is never called
+(`grep FG410S server.log` = 0) and no completion can be compared. This is an environment blocker — free VRAM
+below what the accepted profile needs — not a defect of the port. The item stays open until a run reaches
+completion `e68df05b` with equal probabilities and a restore.
