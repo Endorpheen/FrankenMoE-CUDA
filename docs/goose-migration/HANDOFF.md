@@ -885,10 +885,18 @@ most dangerous and is worth checking first in any new fixture.
    `FG382S`×2/`FG381S`/`FG373S`/`FG345W`/`FG232R`/`FG241U`, both completions `e68df05b`.
    Containers stay inside llama by bridge design; what moved is their composition. Dormant splitter
    branches remain a profile fact with no witness obtainable.
-107. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+107. Sampler softmax ported and bit-identical — EXP384 runs the normaliser in Goose: max (from the
+   first element when sorted, else a scan), `exp(logit-max)` accumulated left to right, one division per
+   element. `exp` comes from `stdlib/math.goose` via `extern "gs_expf"`, the same libm function the
+   native loop calls, so identity is by construction. Gate: 243 sets, 3 769 comparisons, **bit for bit,
+   0 failures**, 6/6 mutations. On the profile `FG384S_SOFTMAX` fires ≈200 times and the completion stays
+   `e68df05b` with all probabilities equal.
+   Still native in this chain: `dist`, which uses `std::discrete_distribution` — reproducing it would pin
+   the port to one libstdc++ implementation, so that needs a deliberate decision, not a silent step.
+108. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-108. Downstream phases P4–P11.
+109. Downstream phases P4–P11.
 
 ## Disk
 
