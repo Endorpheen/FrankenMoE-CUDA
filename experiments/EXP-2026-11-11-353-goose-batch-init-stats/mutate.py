@@ -44,6 +44,8 @@ try:
         print(name, 'failures=', fails, 'rc=', t.returncode)
         files[mod].write_text(src)
 finally:
+    # restore even on SIGINT/SIGTERM: an interrupted mutation run must never leave a mutated source
+    import signal
     for k, v in files.items():
         v.write_text(orig[k])
     subprocess.run(['python3', str(E/'emit_sources.py')], capture_output=True)
