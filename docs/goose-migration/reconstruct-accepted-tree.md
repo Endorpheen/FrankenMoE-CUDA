@@ -58,10 +58,16 @@ run failed:
 
     FG205G validation code 21
 
-Code 21 in that module is `ensure(cont == 0 || cont == 1)`: the integration copy of
-`llama-kv-cache.cpp` (EXP233) passes a `cont` value the EXP205 bridge considers illegal. The two
-artefacts are from different revisions — the bridge and the call site were each updated in later
-experiments, and the revision that went into the accepted DSO is not the one preserved here.
+Code 21 in that module is `ensure(cont == 0 || cont == 1)`. Exact cause, checked by signature:
+
+    EXP233 call site:  fg205g_find_slots(&cells, n_swa, swa_type, ...)
+    EXP205 bridge:     fg205g_find_slots(const uint8_t * can, size_t size, int64_t head0, ...)
+
+The call site passes a `llama_kv_cells *`, the only preserved bridge expects a `can` array and a
+different argument list. `grep -rln fg205g_find_slots experiments/*/source/` returns exactly one file,
+so the revised bridge that matched this call site was never preserved. The two artefacts are from
+different revisions — the bridge and the call site were each updated in later experiments, and the
+revision that went into the accepted DSO is not the one preserved here.
 Supporting evidence: the accepted DSO defines 218 `fg` symbols, the reconstruction 198, and the accepted
 one also exports `llama_model::pin_mmap_experts`, which comes from a patch not present in the flint tree.
 
