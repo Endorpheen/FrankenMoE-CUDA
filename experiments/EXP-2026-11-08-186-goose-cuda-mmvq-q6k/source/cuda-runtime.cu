@@ -106,6 +106,9 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  fprintf(stderr,"FG186T step=1 enter ctx=%p dev=%d name='%s' curr_stream=%d\n",(void*)&ctx,ctx.device,ctx.name.c_str(),ctx.curr_stream_no);
  { fprintf(stderr,"FG186T step=1a slot=%p slot0=%p\n",(void*)&ctx.pools, (void*)ctx.pools[ctx.device][ctx.curr_stream_no].get());
    ggml_cuda_pool & pr = ctx.pool();
+   { uintptr_t a=(uintptr_t)&pr; FILE*m=fopen("/proc/self/maps","r"); char ln[512]; int found=0;
+     while(m&&fgets(ln,sizeof ln,m)){ unsigned long lo=0,hi=0; if(sscanf(ln,"%lx-%lx",&lo,&hi)==2 && a>=lo && a<hi){found=1; fprintf(stderr,"FG186T slotmap %s",ln); break;} }
+     if(m)fclose(m); if(!found) fprintf(stderr,"FG186T slotmap NOT MAPPED for %p\n",(void*)a); }
    void * vt = *(void**)&pr; Dl_info di2;
    const char * vl = (dladdr(vt,&di2)&&di2.dli_fname)?di2.dli_fname:"?";
    fprintf(stderr,"FG186T step=1b pool=%p vtable=%p lib=%s\n",(void*)&pr,vt,vl); }

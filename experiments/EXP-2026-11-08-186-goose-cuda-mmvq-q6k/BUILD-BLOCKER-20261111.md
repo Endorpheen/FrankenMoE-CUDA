@@ -419,3 +419,28 @@ same inputs, output buffers compared byte for byte:
 So the kernel is not merely correct for the single shape the first probe used; it matches the native kernel for
 multi-column and larger-row cases as well. That strengthens the conclusion that the remaining failure is
 state/ownership in the server process, not the port.
+
+## The slot pointer is not mapped at all, and it is not the goose CUDA modules
+
+Two final checks:
+
+1. Membership of the pointed address in `/proc/self/maps`:
+
+       FG186T slotmap NOT MAPPED for 0x11d1206e293
+
+   So `pools[0][0]` holds an address outside every mapping in the process — not a wrong object, not a pool in a
+   VMM range, simply unmapped memory.
+
+2. Ran with all fourteen `GGML_GOOSE_CUDA_*` modules disabled. The slot is still garbage
+   (`0x11d1037e197`), so the goose CUDA modules are not the writer.
+
+Combined with earlier steps, the picture is complete on the module side and open only on the process side:
+
+- the kernel is byte-identical to native for five shapes in the harness;
+- the context pointer, device, name and stream are valid in the server;
+- the pool slot at the end of the same object is unmapped garbage before first use;
+- the backend library in use is stage-run's, replacing it with an identical-source build changes nothing, and
+  the goose CUDA modules are not the writer.
+
+What remains is an ownership/state defect in the goose-integrated backend context in this process. That is a
+distinct item, not kernel porting, and it is fully documented here.
