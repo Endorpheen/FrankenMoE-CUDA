@@ -828,10 +828,15 @@ most dangerous and is worth checking first in any new fixture.
    completions at `e68df05b` and all probabilities equal.
    Complementary to EXP367 (the clear on the failure path). Not transferred: the per-stream body
    (meta/data order and clear-before-throw) — same interleaving constraint as EXP366.
-97. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+97. Disable contract on the reconstructed tree — EXP374 turns off our three routes
+   (`GGML_GOOSE_KV_STATE_WRITE`, `_KV_STATE_CLEAR`, `_KV_READ_SINFO`) while leaving the accepted switches
+   alone. Both completions stay `e68df05b`, probabilities equal, restore works, our three witnesses
+   vanish and `FG241U`/`FG237S`/`FG227N` stay live. A build that enables them by default returns to
+   native on request, and the switch touches no neighbour.
+98. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-98. Downstream phases P4–P11.
+99. Downstream phases P4–P11.
 
 ## Disk
 
