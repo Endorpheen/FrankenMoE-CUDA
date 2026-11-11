@@ -181,3 +181,29 @@ still goes to the compiler side with a minimal repro.
 The Goose modules are fine: they compile, they link, and they export the expected routes. The reconstruction
 tool is fine: it now privatises by the names the modules expect and preserves the fg entry points the
 per-module `.so` files consume. The missing piece is only the toolchain that reproduces nvcc's numbers.
+
+## Status after the toolchain correction
+
+The compiler side is right that nvcc 12.4 works here: `/usr/bin/nvcc` (12.4.131) compiles a `<cmath>` +
+device-`exp` kernel and prints `2.718282`, while `/usr/local/cuda-12.6/bin/nvcc` fails on the glibc clash.
+My earlier toolchain blocker was therefore based on the wrong binary.
+
+Switching the rebuild to nvcc 12.4 progressed much further:
+
+| step | result |
+|---|---|
+| thirteen modules compiled with nvcc | ok |
+| link through nvcc with the visibility map and `-lcuda` | ok |
+| missing `fattn-vec-instance-*` objects (absent from the old build tree) | compiled from source and added |
+| server start with the rebuilt library | **fails**: `RemoteDisconnected`, after the driver symbols resolved |
+
+So the structure is now right (all symbols resolve), but the rebuilt library still does not run cleanly. The
+inherited library is back in place and the run gives `e68df05b…`.
+
+## What the next pass should do
+
+Run the rebuilt nvcc library under a debugger or with `CUDA_LAUNCH_BLOCKING=1` to get the actual failure
+instead of the connection drop, and compare the object list of the old build tree (71 objects, no
+`fattn-vec-instance-*`) with the library the accepted runtime actually ships (220 MB, which does contain
+them). That difference means the old `build-cuda` tree is itself incomplete, so the object set has to be
+taken from the accepted library's lineage rather than from that stale build directory.
