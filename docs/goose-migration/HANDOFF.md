@@ -1033,3 +1033,11 @@ compiler side as urgent dependencies.
 A real functional or compiler blocker — a missing operation or type, a miscompile, ABI or memory safety —
 still goes to the compiler side first with a minimal repro. Do not call a barrier proven while the current
 compiler supports it; check first.
+
+## Standing run authorization (2026-11-11)
+
+Igor has pre-authorized builds, isolated test-server runs, functional checks and one short measurement per
+closed item for this task. Do not ask for a separate "yes" before each run; re-read
+`docs/goose-migration/RUN_AUTHORIZATION.md` instead of assuming the permission is missing. A loop continuation
+means: finish the current item end to end, then move to the next. Production and the compiler stay untouched;
+colleagues' processes are not stopped.
