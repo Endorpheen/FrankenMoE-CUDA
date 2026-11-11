@@ -311,10 +311,17 @@ most dangerous and is worth checking first in any new fixture.
    presence flag. **Length zero does not encode presence.** Still open in P5-03:
    `init_batch` (belongs with the batch allocator) and the remaining dsv4 state
    read path.
-27. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+27. DSV4 compressed-state restore plan — EXP307 transfers the header validation,
+   destination range and per-layer call order of `comp_state::state_read`, with
+   distinct rejection codes and a read count that exposes a skipped or duplicated
+   read: 5 000 checks, 8/8 mutations. The lesson is now written as a rule: every
+   inequality rejection needs a probe on both sides — a fixture that only corrupts
+   upward leaves `!=` weakened to `>` undetected, and this is the second occurrence
+   (EXP306 was the first).
+28. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-28. Downstream phases P4–P11.
+29. Downstream phases P4–P11.
 
 ## Disk
 

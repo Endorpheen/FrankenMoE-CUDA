@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "version zero is accepted",
+    "status": "CAUGHT",
+    "failures": 318,
+    "exit_code": 1
+  },
+  {
+    "mutation": "embedding size is not compared",
+    "status": "CAUGHT",
+    "failures": 874,
+    "exit_code": 1
+  },
+  {
+    "mutation": "smaller layer counts pass",
+    "status": "CAUGHT",
+    "failures": 733,
+    "exit_code": 1
+  },
+  {
+    "mutation": "destination accepts a stream count below one",
+    "status": "CAUGHT",
+    "failures": 339,
+    "exit_code": 1
+  },
+  {
+    "mutation": "destination accepts the first id past the range",
+    "status": "CAUGHT",
+    "failures": 18,
+    "exit_code": 1
+  },
+  {
+    "mutation": "layer ids below the expected one pass",
+    "status": "CAUGHT",
+    "failures": 21,
+    "exit_code": 1
+  },
+  {
+    "mutation": "each layer performs one read",
+    "status": "CAUGHT",
+    "failures": 129,
+    "exit_code": 1
+  },
+  {
+    "mutation": "full-state restore accepts a partial stream count",
+    "status": "CAUGHT",
+    "failures": 48,
+    "exit_code": 1
+  }
+]
