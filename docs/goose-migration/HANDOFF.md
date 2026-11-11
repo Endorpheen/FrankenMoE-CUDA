@@ -893,10 +893,16 @@ most dangerous and is worth checking first in any new fixture.
    `e68df05b` with all probabilities equal.
    Still native in this chain: `dist`, which uses `std::discrete_distribution` — reproducing it would pin
    the port to one libstdc++ implementation, so that needs a deliberate decision, not a silent step.
-108. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+108. Sampler early-exit guards live — EXP385 moves four no-op tests into Goose (`min_p` at p<=0 or empty
+   list, `typical`/`top_p` at p>=1, `top_k` at k<=0). Gate 73/0, 5/5 mutations. On the profile
+   `FG385S_SAMPLER_GUARDS` fires about 200 times (min_p=0 and top_k=20 both hit), completion stays
+   `e68df05b`, probabilities equal. Known band, documented rather than hidden: `p` crosses as
+   `p * 1e6` as an integer, so a parameter within 1e-6 of a boundary would compare differently than the
+   native float test; the profile's values (0, 0.95, 1.0) are nowhere near it.
+109. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-109. Downstream phases P4–P11.
+110. Downstream phases P4–P11.
 
 ## Disk
 
