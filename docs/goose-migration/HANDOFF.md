@@ -978,3 +978,21 @@ reclaimed by deleting old stage `run`/`build` copies and archived agent builds
 after making EXP244 self-contained (87 external symlinks replaced with hard
 links first). The retention set is EXP244; `runtime/active.json` records the
 cleanup. Do not recreate stage copies.
+
+## Standing order (Igor, 2026-11-11): one small-path item at a time
+
+After the three-item focus (KV, RECURRENT_MEMORY, BATCH) was self-accepted, the working order for the
+small Apex path is fixed:
+
+1. name the item and its final remainder from the unchanged criterion;
+2. implement only what that item needs;
+3. integrate and run the required checks, including real Goose calls and the permitted model runs;
+4. self-accept against the original criterion, keep the evidence and the commit, and set DONE through
+   update_apex.py **and** apex-status.json with author and time;
+5. only then take the next item.
+
+Not allowed: jumping between independent items, substituting the large runtime plan, changing criteria to
+score, or hiding an open criterion behind DONE. Codex's later review never blocks self-acceptance or
+continuation. Any change in a shared subsystem must be tied explicitly to the current item's criterion.
+If a genuine external blocker appears, record the exact cause and what would unblock it, and only then
+take one other available item.
