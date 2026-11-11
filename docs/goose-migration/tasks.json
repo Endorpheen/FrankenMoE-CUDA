@@ -826,7 +826,7 @@
     "ggml/src/ggml-cuda/count*"
    ],
    "acceptance": "Every reduction/sort/topk MoE mode,tie/index rule and partial block checked; routing witnesses on real model.",
-   "evidence": "EXP181 transfers the MM IDs routing helper for n_expert_used==8 (the Apex specialisation):warp/token slot decode,guarded id read,used-expert compare,8-wide any reduction,shfl_up scan,running compact counter,shared-memory packed store/load,forward and inverse map writes,and expert-bound publication.20 checks/5 cases pass in both arms,15/15 output files byte-identical to native,memcheck0 errors. Racecheck reports5 write-write hazards in the shared staging AND the same hazards for the native kernel,so it is the warp-synchronous pattern, not the transfer. Two opposite-order Apex32K/128 pairs:forward native2568.67pp/27.067tg vs Goose2603.83/27.496(+1.368%/+1.585%),reverse Goose2607.65/26.899(+1.516%/-0.622%),mean+1.443%/+0.481%,all128 IDs/text/top5 exact,witness host=0x1 paths=0x1 with Q8_1,MoE-weighted,CPY,GET_ROWS and CONCAT still active. Root defect fixed:red_any8 overwrote the running value with the shuffle result and OR-ed it with itself,so the any-reduce never propagated and the compact counter advanced by one per pass;tests/probe.cu isolated the intrinsics to prove the shuffle layer was correct. Other n_expert_used widths and the template-0 variant remain native.",
+   "evidence": "EXP181 transfers the MM IDs routing helper for n_expert_used==8 (the Apex specialisation):warp/token slot decode,guarded id read,used-expert compare,8-wide any reduction,shfl_up scan,running compact counter,shared-memory packed store/load,forward and inverse map writes,and expert-bound publication.20 checks/5 cases pass in both arms,15/15 output files byte-identical to native,memcheck0 errors. Racecheck reports5 write-write hazards in the shared staging AND the same hazards for the native kernel,so it is the warp-synchronous pattern, not the transfer. Two opposite-order Apex32K/128 pairs:forward native2568.67pp/27.067tg vs Goose2603.83/27.496(+1.368%/+1.585%),reverse Goose2607.65/26.899(+1.516%/-0.622%),mean+1.443%/+0.481%,all128 IDs/text/top5 exact,witness host=0x1 paths=0x1 with Q8_1,MoE-weighted,CPY,GET_ROWS and CONCAT still active. Root defect fixed:red_any8 overwrote the running value with the shuffle result and OR-ed it with itself,so the any-reduce never propagated and the compact counter advanced by one per pass;tests/probe.cu isolated the intrinsics to prove the shuffle layer was correct. Other n_expert_used widths and the template-0 variant remain native. EXP273 implements the CUDA count_equal device computation: chunk bounds, WARP_SIZE-strided loop, equality count, 32-lane integer reduction ladder and atomic add; externs are a 32-bit load, a shuffle and an atomic add. The native kernel lives in count-equal.cu (not a header), so the oracle is a verbatim copy of its body with the source sha256 recorded; the host launch plan stays native and is reproduced in the fixture only to feed both arms the same grid. 9 sizes x 4 equality patterns = 36 checks/0 failures, 0 launch failures, 5/5 mutations (25/17/32/25/28). OFF_PATH: not linked.",
    "depends_on": [],
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 572,
@@ -3321,6 +3321,14 @@
    "change": "IQ1_M and MXFP4 F16/BF16 in Goose; F32/F16/BF16 matrix complete for all templated dequantizers; off the Apex profile, not integrated",
    "status": "IN_PROGRESS",
    "evidence": "experiments/EXP-2026-11-11-272-goose-cuda-dequant-iq1m-mxfp4-f16bf16/README.md"
+  },
+  {
+   "date": "2026-11-11",
+   "task": "P3-05",
+   "experiment": "EXP273",
+   "change": "CUDA count_equal device computation in Goose with a verbatim-kernel oracle; off the Apex profile, not integrated",
+   "status": "IN_PROGRESS",
+   "evidence": "experiments/EXP-2026-11-11-273-goose-cuda-count-equal/README.md"
   }
  ],
  "batches": [
