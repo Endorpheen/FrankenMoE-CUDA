@@ -24,3 +24,17 @@ while **both** the dispatched kernel and `_generic` return `0`, so the reference
 offset term itself, not on the accumulation. Next step is to reconcile that case before touching anything else.
 
 Not accepted, not integrated.
+
+## Minimal case says the module is wrong in the offset term, and the reference is not what I assumed
+
+With `ql = qh = 0`, all `scales = 1`, `bsums = 16`, `x.d = 0x3c00`, `y.d = 1.0`:
+
+    avx2 = -0.109756291   generic = -0.109756291
+
+Both references agree with each other and are nowhere near the `-512` my module returns, so the disagreement is
+in the offset/scale handling itself, not in accumulation. My assumption that this case must give
+`-32 * 16 * scale` was wrong; the factor is set by how the reference folds `d` and the `-32` compensation.
+
+Next step is the same method that settled Q4_K: an intrinsic transcription of this exact kernel in the test,
+then diff `sumi`, `sums`/`acc` member by member against the module on the same block, instead of reasoning about
+the formula.
