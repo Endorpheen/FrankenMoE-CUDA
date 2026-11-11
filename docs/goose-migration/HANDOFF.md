@@ -677,10 +677,19 @@ most dangerous and is worth checking first in any new fixture.
    The `FG345W` witness logged **0** calls, as predicted: `state_write` is not on the completion
    path. So the run proves the substitution is sound and proves nothing about the module being
    live — a non-zero witness needs a route a completion actually calls.
-78. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+78. Split-simple route probe — EXP354 wires `split_simple` behind a bridge (EXP351 module) and links
+   a stage with two call sites; the adapter gate is 49 824 checks / 0 failures and the integrated
+   object keeps its 123-symbol set. The Apex run stays exact (tokens, 128 probabilities, hash) but
+   logs **zero** `FG351S` calls: with a non-unified attention cache Apex splits with `split_equal`,
+   not the simple walk.
+   Two traps recorded: the witness had to move from the destructor to the first call, because a
+   SIGINT shutdown does not run destructors and an exit-only witness is indistinguishable from
+   "never called"; and "wired but zero calls" must be read as a route fact, not a porting failure.
+   Next live route: `split_equal`, which needs a journal-to-actions bridge.
+79. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-79. Downstream phases P4–P11.
+80. Downstream phases P4–P11.
 
 ## Disk
 
