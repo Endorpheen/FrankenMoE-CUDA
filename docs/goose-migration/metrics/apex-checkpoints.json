@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "schema": 1,
+      "item": "APEX.TOKENIZER (checkpoint after the fifth closed item)",
+      "note": "one preliminary run requested by Igor; no separate runs were made for KV, RECURRENT, BATCH or OUTPUT because the rule arrived after they were closed",
+      "when": "2026-11-11T19:04:22.947729+03:00",
+      "commit": "3000f3d",
+      "dso": "runtime/reconstructed/build/libllama-exp371.so.0.7.0 sha256 388f013d2e5eee7a…",
+      "candidate_status": "candidate tree, not the accepted control (EXP244)",
+      "profile": "Apex 32K/128, temp 1.0, top_k 20, top_p 0.95, min_p 0, seed 123, n_probs 5",
+      "prefill_tok_s": 1640.2,
+      "decode_tok_s": 23.52,
+      "peak_rss_mib": 22855.1,
+      "peak_vram_mib_attributed": 6408,
+      "gpu_total_used_mib_max": 9820,
+      "memory_method": "RSS: sum of VmRSS over the server tree sampled 1 Hz (shared pages counted per process); VRAM: nvidia-smi per-process query filtered to the tree, device total kept separate",
+      "background_load": "load average 4.75/4.23/4.07 on 32 cores, compiler line active",
+      "correctness": {
+        "completion_sha": "e68df05b…",
+        "equal_to_reference": true
+      }
+    }
+  ]
+}

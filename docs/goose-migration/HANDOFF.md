@@ -996,3 +996,18 @@ score, or hiding an open criterion behind DONE. Codex's later review never block
 continuation. Any change in a shared subsystem must be tied explicitly to the current item's criterion.
 If a genuine external blocker appears, record the exact cause and what would unblock it, and only then
 take one other available item.
+
+## Standing order (Igor, 2026-11-11): one short metrics checkpoint per closed item
+
+After every item of the small Apex path is closed and self-accepted, run **one** short checkpoint of the
+verified configuration and record prefill tok/s, decode tok/s, peak RSS and peak VRAM, bound to the item
+id and the time, in `docs/goose-migration/metrics/apex-checkpoints.json`. Reuse an ordinary verification
+run when it already produced these numbers instead of adding load.
+
+Rules that stay: the same profile (32K/128), the real commit and binary, the correctness result, the
+memory method and units, and a note about parallel load. Device VRAM is not process VRAM; current memory
+is not peak; one noisy run does not prove a regression; no series for pretty numbers; no waiting for a
+clean host. If the collection breaks, save the error and continue the main work.
+
+No new automatic notifications, reminders or periodic observers are to be created: the numbers are only
+recorded, and Igor asks for them himself. The existing Telegram configuration is untouched.
