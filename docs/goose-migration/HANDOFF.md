@@ -638,10 +638,15 @@ most dangerous and is worth checking first in any new fixture.
    Two layout mistakes were caught by the gate: `used` is an `int64` array (helpers need `i*8`),
    and the per-set list holds the whole set while `cur_idx` says how much was taken — truncation
    starts from the taken prefix, not the list length.
-72. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+72. Ubatch assembly — EXP349 transfers the decision half of `ubatch_add`: the three shape flags
+   (mixed only when the embedding-marked rows are neither none nor all, tokens unless all rows
+   are embeddings, embeddings unless none are), the state payload independent of mixed, the
+   payload sizes, `out_ids` in row order and `seq_id_unq` scanned in increasing sequence id.
+   122 968 checks, 7/7 mutations. Payload copies stay native.
+73. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-73. Downstream phases P4–P11.
+74. Downstream phases P4–P11.
 
 ## Disk
 
