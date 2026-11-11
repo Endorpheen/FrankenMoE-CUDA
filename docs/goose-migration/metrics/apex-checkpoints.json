@@ -111,6 +111,23 @@
       "coverage": "636 single-column sub-calls = all 324 Q6_K matvec calls",
       "method": "run_metrics.py with LD_LIBRARY_PATH pointing at the integrated backend; no preload",
       "note": "functional stage measurement; acceptable slowdowns are recorded, not treated as a veto"
+    },
+    {
+      "item": "APEX.CUDA_CONTROL",
+      "experiment": "EXP195+196",
+      "measured_at": "2026-11-11T20:56:26.148682+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, /tmp/build-cuda-fg with Q6_K matvec, FG196P policy and FG195V pool arithmetic linked in",
+      "prefill_tok_s": 1664.42,
+      "decode_tok_s": 24.49,
+      "wall_s": 24.9,
+      "peak_rss_mib": 22861.4,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9717,
+      "completion_sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "content_equal": true,
+      "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated backend, no preload",
+      "note": "single quick checkpoint; not evidence of a regression or improvement on its own"
     }
   ]
 }
