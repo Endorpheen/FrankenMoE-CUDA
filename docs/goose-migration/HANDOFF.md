@@ -389,10 +389,14 @@ most dangerous and is worth checking first in any new fixture.
    recorded-window comparison is unobservable because a boundary cell's verdict is the
    same for every token of its sequence. Still open in this area: ALiBi, 2-D/M-RoPE,
    the half path, and the non-causal SWA-full span.
-37. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+37. KV mask, full float path — EXP317 adds ALiBi (signed distance, and row reuse
+   disabled because the value depends on the query position), the 2-D/M-RoPE causal
+   comparison (same position, y then x), and the non-causal SWA-full span. 115 277
+   checks, 8/8 mutations. Still open for this function: the half-precision path only.
+38. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-38. Downstream phases P4–P11.
+39. Downstream phases P4–P11.
 
 ## Disk
 

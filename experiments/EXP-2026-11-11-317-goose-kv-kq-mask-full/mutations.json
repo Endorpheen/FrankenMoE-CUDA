@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "ALiBi keeps the signed distance",
+    "status": "CAUGHT",
+    "failures": 7796,
+    "exit_code": 1
+  },
+  {
+    "mutation": "ALiBi still reuses rows",
+    "status": "CAUGHT",
+    "failures": 142,
+    "exit_code": 1
+  },
+  {
+    "mutation": "2-D comparison ignores the y axis",
+    "status": "CAUGHT",
+    "failures": 1517,
+    "exit_code": 1
+  },
+  {
+    "mutation": "2-D comparison masks an equal y on the token",
+    "status": "CAUGHT",
+    "failures": 108,
+    "exit_code": 1
+  },
+  {
+    "mutation": "non-causal span starts one position late",
+    "status": "CAUGHT",
+    "failures": 98,
+    "exit_code": 1
+  },
+  {
+    "mutation": "non-causal span is never applied",
+    "status": "CAUGHT",
+    "failures": 309,
+    "exit_code": 1
+  },
+  {
+    "mutation": "2-D comparison applies to every past cell",
+    "status": "CAUGHT",
+    "failures": 2043,
+    "exit_code": 1
+  },
+  {
+    "mutation": "ALiBi distance loses its absolute value",
+    "status": "CAUGHT",
+    "failures": 5873,
+    "exit_code": 1
+  }
+]
