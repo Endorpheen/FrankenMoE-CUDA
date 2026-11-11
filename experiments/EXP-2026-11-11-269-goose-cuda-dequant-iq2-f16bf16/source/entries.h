@@ -1,0 +1,5 @@
+#pragma once
+#define FG269D_CB_q2_xxs_f16 fg269dd_gg_function_1
+#define FG269D_CB_q2_xxs_bf16 fg269dd_gg_function_12
+#define FG269D_CB_q2_xs_f16 fg269dd_gg_function_15
+#define FG269D_CB_q2_xs_bf16 fg269dd_gg_function_17
