@@ -106,6 +106,10 @@ void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*sr
  fprintf(stderr,"FG186T step=1 enter ctx=%p dev=%d name='%s' curr_stream=%d\n",(void*)&ctx,ctx.device,ctx.name.c_str(),ctx.curr_stream_no);
  { fprintf(stderr,"FG186T step=1a slot=%p slot0=%p\n",(void*)&ctx.pools, (void*)ctx.pools[ctx.device][ctx.curr_stream_no].get());
    ggml_cuda_pool & pr = ctx.pool();
+   { void * sv = *(void**)&pr; cudaPointerAttributes pa{};
+     cudaError_t pe = cudaPointerGetAttributes(&pa, sv);
+     fprintf(stderr,"FG186T ptrcheck slot0=%p err=%d type=%d dev=%d devptr=%p hostptr=%p\n",
+       sv,(int)pe,(int)pa.type,(int)pa.device,(void*)pa.devicePointer,(void*)pa.hostPointer); }
    { uintptr_t a=(uintptr_t)&pr; FILE*m=fopen("/proc/self/maps","r"); char ln[512]; int found=0;
      while(m&&fgets(ln,sizeof ln,m)){ unsigned long lo=0,hi=0; if(sscanf(ln,"%lx-%lx",&lo,&hi)==2 && a>=lo && a<hi){found=1; fprintf(stderr,"FG186T slotmap %s",ln); break;} }
      if(m)fclose(m); if(!found) fprintf(stderr,"FG186T slotmap NOT MAPPED for %p\n",(void*)a); }

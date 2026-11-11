@@ -566,3 +566,20 @@ could be a stale pointer left by driver-side bookkeeping rather than a host writ
 
 Next: a byte-granular watchpoint instead of a page guard, or an interactive gdb watch on the exact 8 bytes at
 ctx+0xcf0. A page guard cannot answer this question.
+
+## The creation detour is itself unsafe (trampoline)
+
+After adding the pointer-attributes probe the server stopped reaching the kernel at all: the log ends inside
+`server_context_impl::load_model`, with no `FG186T` line, i.e. the function is never entered.
+
+Cause: to observe creation I patch the entry of `ggml_backend_cuda_init` and call the original through a
+12-byte trampoline (`copy 12 bytes; jmp back`). That technique is only safe when the first 12 bytes contain no
+RIP-relative or PC-relative instruction; for this function they evidently do, so the trampoline jumps into
+garbage and initialisation dies.
+
+So the creation detour is a diagnostic that cannot be left in place, and the earlier "one context" measurement was
+taken with it active — the two addresses agreeing may still be correct, but it must be re-confirmed without the
+detour.
+
+Next: drop the creation detour, keep only the kernel-entry patch (proven safe there by the harness), and make the
+pointer-attributes probe unconditional so it reports on the first call without extra patching.
