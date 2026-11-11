@@ -71,18 +71,53 @@ single pair. Prefill spread stayed at 0.07–0.43% and is the only trustworthy s
 4. **Guessing instead of instrumenting.** Three theories about a linked-but-silent route were wrong; one
    unconditional counter (`block=146 guard=146 flat=146`) settled it in a single run.
 
+## Dequantisation block, EXP248–262
+
+Every path in `ggml-cuda/dequantize.cuh` now has a Goose implementation, gated
+against the native template compiled from the read-only source into the same
+fixture:
+
+| group | experiments | destinations |
+|---|---|---|
+| K-quants | EXP182 Q4_K, EXP248 Q6_K, EXP249 Q5_K, EXP250 Q2_K, EXP251 Q3_K | F32 |
+| IQ lattice-free | EXP252 IQ4_NL, EXP253 IQ4_XS | F32 |
+| IQ grid tables | EXP255 IQ2_XXS, EXP256 IQ2_XS, EXP257 IQ2_S, EXP258 IQ3_XXS, EXP259 IQ3_S, EXP260 IQ1_S, EXP261 IQ1_M | F32 |
+| MX | EXP254 MXFP4 | F32 |
+| legacy 32-element | EXP262 q1_0, q2_0, q4_0, q4_1, q5_0, q5_1, q8_0 | F32 pair |
+| q4_0 8-block | EXP188 | F16 |
+
+All are **OFF_PATH** and deliberately not linked: the fixed 32K/128 profile never
+calls `ggml_get_to_fp32_cuda` for these types, because Q4_K_M executes through
+MMQ. Each module carries a differential gate (native oracle in the fixture,
+bitwise comparison), a host-plan gate where a row wrapper exists, and five
+mutations. The shared grid/sign tables (`iq2xxs_grid`, `iq2xs_grid`, `iq2s_grid`,
+`iq3xxs_grid`, `iq3s_grid`, `iq1s_grid_gpu`, `ksigns_iq2xs`) are imported as
+explicit device constant primitives — data, not code; every index and arithmetic
+operation is Goose.
+
+Defect classes found in this block, all by the gate rather than by reading the
+formula: block-layout conflation (Q2_K dm at the end of the block, IQ1_S stride
+50 not 66), guard-index vs block-index conflation (IQ4_NL), fixture
+under-allocation (MXFP4), an unaligned word read (q5_0), and a fixture whose
+failure counter was invisible to `cudaMemcpyFromSymbol`, which made every
+mutation report zero failures while the run looked green. The last one is the
+most dangerous and is worth checking first in any new fixture.
+
 ## What is next, in order
 
-1. `ROLL` — the last P3-03 item. `SET` (EXP245) and `PAD` (EXP246) are implemented and gated but deliberately
-   NOT integrated: neither executes in this profile, and a zero witness cannot distinguish "correct and unused"
-   from "broken and unused". Rule settled: a route earns a place in the shipped DSO by being reachable, not by
-   being finished.
-2. Other `n_expert_used` widths for `mm_ids_helper`; only the `int)8` specialisation is ported.
-3. Dequantisation paths — prerequisite for MMQ and not yet ported.
-4. MMQ / MUL_MAT — the largest remaining native share (`mul_mat_q` Q4_K 30.3% + Q6_K 9.7% ≈ 40% of GPU time).
-   Blocked on EXP180's codegen gap: 824 SASS instructions against native's 160, including 206 `IMAD` against
-   ~20. The next idea recorded there is to precompute all address arithmetic host-side so the kernel only does
-   `base + i0`. Six attempts were made; the blocker rule was reached.
+1. `ROLL` — closed by EXP247. `SET` (EXP245), `PAD` (EXP246) and ROLL stay
+   implemented and gated but not shipped: a route earns a place in the shipped
+   DSO by being reachable, not by being finished.
+2. Other `n_expert_used` widths for `mm_ids_helper`; only the `int)8`
+   specialisation is ported and the others are dormant for this profile.
+3. Dequantisation — closed by EXP248–262 for every `dequantize.cuh` path. The
+   non-F32 destinations (half/bfloat16) of the same functions remain.
+4. MMQ / MUL_MAT — the largest remaining native share (`mul_mat_q` Q4_K 30.3% +
+   Q6_K 9.7% ≈ 40% of GPU time). Blocked on EXP180's codegen gap: 824 SASS
+   instructions against native's 160, including 206 `IMAD` against ~20. The next
+   idea recorded there is to precompute all address arithmetic host-side so the
+   kernel only does `base + i0`. Six attempts were made; the blocker rule was
+   reached.
 5. Downstream phases P4–P11.
 
 ## Disk
