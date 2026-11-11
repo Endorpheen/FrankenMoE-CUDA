@@ -5,6 +5,7 @@
 #include <vector>
 extern "C" float fg410s_dot(int64_t nb, const void * q4, const void * q8);
 extern "C" int fg410s_enabled(void);
+extern "C" void ggml_cpu_init(void);
 extern "C" void ggml_vec_dot_q4_K_q8_K_generic(int n, float * s, size_t bs, const void * vx, size_t bx,
                                                 const void * vy, size_t by, int nrc);
 static int checks, failures;
@@ -25,6 +26,7 @@ static float f16(uint32_t h) { // small helper for test data
 }
 
 int main(void) {
+    ggml_cpu_init();   // without it the reference returns 0 for every input
     check(fg410s_enabled() == 1, "enabled");
     std::mt19937 rng(410);
     int cases = 0;

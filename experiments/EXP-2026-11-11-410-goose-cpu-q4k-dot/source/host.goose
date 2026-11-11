@@ -67,7 +67,7 @@ fn run(packet:i64)->bool {
         var j:i64 = 0 as i64;
         while j < 16 {
             let bsum:i64 = ldi16(q8 + (i*292) as u64, 4 as i64 + j*2 as i64);
-            sumi = sumi + bsum * (ldu8(sc, 16 as i64 + (j/2 as i64)) as i64);
+            sumi = sumi + bsum * (ldu8(sc, 8 as i64 + (j/2 as i64)) as i64);
             j = j + 1 as i64;
         }
 

@@ -1144,7 +1144,7 @@ label7:;
   t140 = ((int64_t)(v17));
   t141 = ((int64_t)(v19));
   t142 = ((uint64_t)(v4));
-  t143 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(16))))));
+  t143 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t144 = ((int64_t)(v18));
   t145 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t146 = ((int64_t)(((int64_t)gg_div(t144, t145))));

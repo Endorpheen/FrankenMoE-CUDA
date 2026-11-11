@@ -13,16 +13,22 @@ nothing is claimed: no integration, no route, no acceptance.
 | bridge | byte/int16/uint32 access, fp16 decode and float-bit exchange; layout sizes checked at compile time (`144` and `292`) |
 | gate | 160 cases over nb 1, 2, 3, 7 against `ggml_vec_dot_q4_K_q8_K_generic`, bit-for-bit comparison |
 
-## What is wrong so far
+## What has been fixed so far
 
-First measurement on a single block: reference `0`, Goose `5.8e17`. Two facts to resolve, in this order:
+| defect | evidence | fix |
+|---|---|---|
+| the reference returned 0 for every input | with `ggml_cpu_init()` a plain block gives 256, without it 0 — the dispatch table was empty | gate calls `ggml_cpu_init()` first |
+| the packed scales were read as 64-bit words | scale unpack produced values like 5.8e17 | 32-bit word reads |
+| mins were looked up at byte 16 | the reference keeps `scales` in `utmp[0..1]` and `mins` in `utmp[2..3]`, i.e. mins start at byte **8** | offset corrected |
 
-1. the **reference returns 0** on my synthetic block, which is suspicious in itself — either the synthetic
-   block is invalid for this path or I am calling the reference with the wrong convention;
-2. the Goose result is huge, which points at the scale unpack or at the fp16 header decode.
+## What is still open
 
-The obvious 32-bit-vs-64-bit word bug was already found and fixed (the packed scales were being read as
-64-bit words); the remaining difference is not that.
+One block still differs: reference `225.75`, Goose `5.81e17`. With the three defects above ruled out, the
+remaining suspects are the per-lane accumulation (integer lanes vs the reference's `aux32[8]` layout) and the
+float-bit exchange through the bridge. The fp16 decode itself is verified separately (0x3C00 → 1.0,
+0x3000 → 0.125, 0x2c00 → 0.0625).
+
+Nothing is integrated until the gate is 0 failures.
 
 ## Next
 
