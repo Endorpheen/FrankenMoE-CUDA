@@ -946,10 +946,19 @@ most dangerous and is worth checking first in any new fixture.
    the cell holds it) and whether the extension block is written. Gate 43/0, 5/5 mutations. On the profile
    `FG393S_KV_META_PLAN` fires about 1 600 times and both the slot file and the post-restore answer are
    unchanged. Remaining for APEX.KV: tensor layout arithmetic (row sizes and range offsets).
-117. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+117. APEX.KV complete against its criterion. All four named parts are Goose-owned on the used path:
+   metadata write selection (EXP393) and read decisions (EXP395), slot placement walk (EXP392), tensor
+   layout arithmetic on both sides (EXP394), and the update path (EXP199: prepare/apply_ubatch, live since
+   the accepted runtime). Gates: 43/0 + 103/0 + 53 703 + 875/0 with 5/5, 6/6, 8 and 5/5 mutations.
+   Live on the 32K/128 profile: FG392S, FG393S, FG394S, FG395S, FG345W, FG373S, FG367S, FG199K. Completion
+   `e68df05b`, save 387 989 920 bytes, restore exact.
+   Explicitly separated as buffer primitives, per the criterion: `write_tensor`/`read_tensor` and the
+   backend allocation. Not claimed and not needed for the criterion: `state_read_data` still refuses the
+   interleaved per-layer format at a coarser granularity than EXP394's per-span arithmetic (EXP366).
+118. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-118. Downstream phases P4–P11.
+119. Downstream phases P4–P11.
 
 ## Disk
 
