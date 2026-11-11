@@ -226,3 +226,35 @@ FA instance variants. The accepted 220 MB library does contain them, which is wh
 Compile the 22 `mmq-instance-*` translation units (plus the FA instances already done) with nvcc, add them
 to the link, and re-run the off-switch gate. Only after that library answers `e68df05b` with every goose
 route disabled is the reconstruction faithful, and only then do the routes get enabled one at a time.
+
+## Second missing-instance discovery: the source tree itself differs
+
+After compiling the 22 `mmq-instance-*` units the next start failed on a different missing definition:
+
+    undefined symbol: mul_mat_f_cuda<float, 32, 4>
+
+Measured where it lives:
+
+| source of the symbol | count |
+|---|---|
+| objects in the old `build-cuda` tree | **0** for any object |
+| the accepted 220 MB library | **96** instantiations |
+| `mmvf.cu` / `mmvf.cuh` in this source tree | 0 uses of `mul_mat_f_cuda<...>` |
+
+So this tree does not contain the translation unit that instantiates `mul_mat_f_cuda` at all, and its
+`template-instances/` directory has 121 files of which the old build compiled 75 (45 missing), none of them
+`mmvf`.
+
+## Conclusion for the CUDA items
+
+The accepted `libggml-cuda` was built from a source tree that is **not this one**: it carries 96
+`mul_mat_f_cuda` instantiations that no file here produces. That is the same situation as the llama side,
+where the accepted runtime came from a hybrid of two lines that is not on disk.
+
+Therefore APEX.CUDA_MATVEC and APEX.CUDA_MMQ cannot be reproduced by rebuilding here: it is not a toolchain,
+flag or object-list problem, the sources for those instantiations are absent. Their routes stay as they are
+in the inherited library (which is live and correct), and the items stay PARTIAL with this reason.
+
+Everything that *could* be rebuilt was rebuilt and verified structurally: 13 modules, 4 FA instances, 22 MMQ
+instances, the link resolves through the visibility map, and the disable switch contract still holds on the
+inherited library.

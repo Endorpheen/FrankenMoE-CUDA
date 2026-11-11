@@ -105,7 +105,7 @@ hosts = [str(q) for q in Path('/tmp').glob('host-*.o')]
 cmd = ['/usr/local/cuda-12.6/bin/nvcc','-shared','-Xcompiler','-fPIC','-o',str(OUT),
        '-Xlinker','-soname','-Xlinker','libggml-cuda.so.0',
        '-Xlinker','--version-script='+str(F/'experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/source/visibility.map'),
-       '-L/usr/local/cuda/lib64','-lcudart','-lcublas','-lcublasLt','-lcuda'] + list(dict.fromkeys(objs + mods + hosts + link_objs + glob.glob('/tmp/native-fattn-*.o') + ['/tmp/native-fattn-instance.o']))
+       '-L/usr/local/cuda/lib64','-lcudart','-lcublas','-lcublasLt','-lcuda'] + list(dict.fromkeys(objs + mods + hosts + link_objs + glob.glob('/tmp/native-mmq-*.o') + glob.glob('/tmp/native-fattn-*.o') + ['/tmp/native-fattn-instance.o']))
 q = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
 print('link rc', q.returncode)
 if q.returncode: print((q.stdout+q.stderr)[-2000:]); sys.exit(1)
