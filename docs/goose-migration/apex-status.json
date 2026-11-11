@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T20:55:42.934293+00:00",
+  "updated_at": "2026-11-11T21:03:09.005007+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -70,19 +70,6 @@
       "at": "2026-11-11T19:08:07.842244+00:00"
     },
     {
-      "item": "APEX.CUDA_MMQ",
-      "state": "BLOCKED",
-      "implemented": "Dispatch (FG203D) is live; the Q8_1 quantizer was accepted as an opt-in module earlier.",
-      "remaining": "The MMA/TensorCore kernel and quantize_mmq_q8_1 cannot be promoted for the same reason as CUDA_CONTROL: no rebuildable chain in this tree.",
-      "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
-      "by": {
-        "name": "Runtime worker",
-        "harness": "Command Code",
-        "model": "claude-sonnet-4.5"
-      },
-      "at": "2026-11-11T19:45:35.929880+00:00"
-    },
-    {
       "item": "APEX.MODEL_GRAPH",
       "state": "BLOCKED",
       "implemented": "Only the decision layer is ported (EXP408).",
@@ -146,6 +133,19 @@
         "model": "claude-sonnet-4.5"
       },
       "at": "2026-11-11T20:55:42.934293+00:00"
+    },
+    {
+      "item": "APEX.CUDA_MMQ",
+      "state": "PARTIAL",
+      "implemented": "The MMQ Q8_1 quantizer (EXP180, both direct and scatter forms) is built into the backend with the flag flipped to opt-out. It executes on the accepted profile (FG180Q_CUDA_MMQ_Q8_1 host=0x23, paths=0x3, guards=0) and the completion is unchanged: e68df05b, equal probabilities, restore ok. Encoded in build_integrated.sh so it rebuilds from scratch alongside the Q6_K matvec, FG196P and FG195V.",
+      "remaining": "The MMA/TensorCore matmul path itself is not integrated yet; only dispatch (FG203D) was ever live. That is the second half of this item.",
+      "evidence": "experiments/EXP-2026-11-08-180-goose-cuda-mmq-q8-1, experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T21:03:09.005007+00:00"
     }
   ]
 }
