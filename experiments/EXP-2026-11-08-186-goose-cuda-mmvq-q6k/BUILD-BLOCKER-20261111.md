@@ -479,3 +479,22 @@ because the harness reaches the same kernel in seconds.
 
 This is recorded as a failed attempt, not as a result. The evidence chain stands as documented above; the open
 question (who writes the slot) needs a watchpoint in a stable session.
+
+## The context at backend creation is not the context the kernel sees
+
+Printed the slot at backend creation (with the correct `context` offset 0x90 measured via offsetof):
+
+    FG186S_ATINIT ctx=0x62ae53c817b0 slot0=(nil)
+    FG186T step=1 enter ctx=0x61f6233877c0 dev=0 name='CUDA0' curr_stream=0
+    FG186T step=1a slot=0x... slot0=0x11d...
+
+Two **different** contexts. The one our shim sees created has `pools[0][0] == nullptr` as it must; the one reaching
+the patched kernel is another object whose slot holds garbage, and both report `name='CUDA0'`.
+
+So there are two CUDA backend contexts in this process, and our wrapper only intercepts the one created through an
+external call. The other is created inside the library (an internal call, invisible to symbol wrapping) — exactly
+the case LD_PRELOAD and call-site wrapping cannot see. That also explains every earlier paradox: the object the
+module is handed was never constructed on the path we were inspecting.
+
+Next: enumerate contexts as they are used (print ctx at each entry) and map each to the library copy that created
+it, to confirm the second context's origin.

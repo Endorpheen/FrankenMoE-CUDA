@@ -12,6 +12,8 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <signal.h>
+#include <execinfo.h>
 
 typedef void (*mmvq_fn)(void *, void *, void *, void *, void *, void *);
 
@@ -46,12 +48,44 @@ static int enabled(void) {
     return !(e && strcmp(e, "0") == 0);
 }
 
+static void * g_guard_page;
+static volatile int g_guard_hits;
+static void segv_probe(int sig, siginfo_t * si, void * uc) {
+    (void) sig; (void) uc;
+    if (si && si->si_addr == g_guard_page && g_guard_hits < 1) {
+        g_guard_hits++;
+        void * bt[24];
+        int n = backtrace(bt, 24);
+        fprintf(stderr, "FG186S_WRITER addr=%p frames=%d\n", si->si_addr, n);
+        backtrace_symbols_fd(bt, n, 2);
+        mprotect(g_guard_page, (size_t) sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE);
+        return;
+    }
+    signal(SIGSEGV, SIG_DFL);
+    raise(SIGSEGV);
+}
+
 typedef void * (*init_fn)(size_t);
 static init_fn g_init_orig;
 void * ggml_backend_cuda_init(size_t n) {
     void * h = dlopen("libggml-cuda.so.0", RTLD_NOW | RTLD_NOLOAD);
     if (!g_init_orig && h) g_init_orig = (init_fn) dlsym(h, "ggml_backend_cuda_init");
     void * be = g_init_orig ? g_init_orig(n) : NULL;
+    if (be) {
+        long pg = sysconf(_SC_PAGESIZE);
+        void ** ctxslot = (void **) ((char *) be + 0x90);
+        void * c = *ctxslot;
+        if (c) {
+            void * slot = (void *) ((char *) c + 0xcf0);
+            fprintf(stderr, "FG186S_ATINIT ctx=%p slot0=%p\n", c, *(void **) slot);
+            g_guard_page = (void *) ((uintptr_t) slot & ~(uintptr_t) (pg - 1));
+            struct sigaction sa; memset(&sa, 0, sizeof sa);
+            sa.sa_sigaction = segv_probe; sa.sa_flags = SA_SIGINFO;
+            sigaction(SIGSEGV, &sa, NULL);
+            if (mprotect(g_guard_page, (size_t) pg, PROT_NONE) == 0 && getenv("FG186S_WITNESS"))
+                fprintf(stderr, "FG186S_GUARD armed at %p (slot %p)\n", g_guard_page, slot);
+        }
+    }
     if (be && getenv("FG186S_WITNESS")) {
         void ** ctxp = (void **) ((char *) be + 8);   /* ggml_backend.context field; printed for reference */
         fprintf(stderr, "FG186S_INIT backend=%p ctxguess=%p\n", be, ctxp ? *ctxp : NULL);
