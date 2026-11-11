@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "q2 stride 8*ib -> 4*ib",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "destination 8*il -> 4*il",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "scales index ib -> 2*ib",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scale shift 4*(il/2) -> 2*(il/2)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "grid mask 511 -> 255",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
