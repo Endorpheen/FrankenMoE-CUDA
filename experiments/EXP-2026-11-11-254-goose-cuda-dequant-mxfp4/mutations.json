@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "qs offset 1 -> 2",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "destination 4*il -> 2*il",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "block stride 17 -> 18",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "E8M0 shift 23 -> 22",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "drop the 0.5 factor on the low nibble",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
