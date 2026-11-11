@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "default attention filter follows the recurrent layers",
+    "status": "CAUGHT",
+    "failures": 6066,
+    "exit_code": 1
+  },
+  {
+    "mutation": "default recurrent filter takes the non-recurrent layers",
+    "status": "CAUGHT",
+    "failures": 6054,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an explicit attention filter is ignored",
+    "status": "CAUGHT",
+    "failures": 1425,
+    "exit_code": 1
+  },
+  {
+    "mutation": "all-output batches use the equal split",
+    "status": "CAUGHT",
+    "failures": 493,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sequential flag follows the wrong condition",
+    "status": "CAUGHT",
+    "failures": 507,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the rollback window is one token short",
+    "status": "CAUGHT",
+    "failures": 341,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the attention cache is prepared first",
+    "status": "CAUGHT",
+    "failures": 980,
+    "exit_code": 1
+  },
+  {
+    "mutation": "empty attention heads are accepted",
+    "status": "CAUGHT",
+    "failures": 250,
+    "exit_code": 1
+  }
+]

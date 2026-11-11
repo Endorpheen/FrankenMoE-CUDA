@@ -375,10 +375,16 @@ most dangerous and is worth checking first in any new fixture.
    description instead of three parallel vectors. The draft lives in
    `experiments/EXP-2026-11-11-314-goose-hybrid-idx-inputs/` and is untracked; do not
    commit it until the gate is green.
-35. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+35. Base hybrid memory — EXP315 transfers the layer split between the attention and
+   recurrent caches (each with its own external filter, otherwise the recurrent pattern
+   decides), the batch split choice (all-output by sequence, else equal with the
+   non-sequential form for a non-unified attention cache and the rollback window kept
+   inside one ubatch), and the prepare order (recurrent first, because it can refuse and
+   the attention preparation is the expensive one). 23 582 checks, 8/8 mutations.
+36. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-36. Downstream phases P4–P11.
+37. Downstream phases P4–P11.
 
 ## Disk
 
