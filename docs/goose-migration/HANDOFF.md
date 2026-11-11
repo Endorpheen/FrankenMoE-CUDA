@@ -475,10 +475,20 @@ most dangerous and is worth checking first in any new fixture.
    The gate first missed the early exit entirely — it never generated a zero-token ubatch,
    so two mutations passed uncounted; the generator now inserts zero at 25%. A gate that
    cannot reach a branch looks exactly like a gate that passes.
-52. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+52. KV ubatch application — EXP332 transfers the plain `apply_ubatch` end to end: an
+   occupied destination is emptied and its **highest** position recorded per sequence, then
+   position, extension and sequences are written, then everything below each overwritten
+   position is purged (range end exclusive), then the head moves **past** the last slot.
+   The extension rule: an embedding batch carries no token id, PLE fills the gap from the
+   image token and from EOS when none is configured. 154 235 checks, 8/8 mutations.
+   Three invalid-input classes were removed from the generator because native rejects them
+   by assert: slots beyond the stream's cells, duplicate ids inside a token, and writing a
+   cell that already holds two sequences. Out-of-range slot indices first appeared as heap
+   corruption, not as a failed comparison.
+53. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-53. Downstream phases P4–P11.
+54. Downstream phases P4–P11.
 
 ## Disk
 

@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "the overwritten position recorded is the lowest, not the highest",
+    "status": "CAUGHT",
+    "failures": 18531,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an occupied destination is not emptied",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "the extension is written only for 2-D positions",
+    "status": "CAUGHT",
+    "failures": 15362,
+    "exit_code": 1
+  },
+  {
+    "mutation": "mixed embeddings keep their token id",
+    "status": "CAUGHT",
+    "failures": 2136,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the PLE fallback prefers the image token",
+    "status": "CAUGHT",
+    "failures": 3854,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the purge is skipped",
+    "status": "CAUGHT",
+    "failures": 18531,
+    "exit_code": 1
+  },
+  {
+    "mutation": "only positions strictly above the minimum are purged",
+    "status": "CAUGHT",
+    "failures": 1783,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the head stops at the last slot instead of past it",
+    "status": "CAUGHT",
+    "failures": 9020,
+    "exit_code": 1
+  }
+]
