@@ -1,0 +1,5 @@
+#pragma once
+#define FG286D_CB_snake_f32 fg286dd_gg_function_1
+#define FG286D_CB_snake_f16 fg286dd_gg_function_7
+#define FG286D_CB_snake_bf16 fg286dd_gg_function_10
+#define FG286D_CB_softcap fg286dd_gg_function_13
