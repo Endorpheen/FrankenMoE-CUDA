@@ -204,3 +204,27 @@ entered: the access `pools[device][curr_stream_no]` on a context that is valid f
 Next probe: print `&ctx` and call `ctx.pool()` once at the very top of the function, before any other use of the
 context, to separate "the object is fine but this expression faulting" from "the first pool creation is the
 problem".
+
+## The crash point moves: this is memory corruption, not one bad expression
+
+With an early `ctx.pool()` probe added at the top of the function:
+
+    FG186T step=1 enter ctx=0x57401076c7c0 dev=0
+    FG186T step=1a pool=0x11cdda69e8b        <- pool() works when called early
+    FG186T step=2 dev=0
+    FG186T step=3 locals ne00=2048
+    FG186T step=4 packet
+    FG186T step=4a stream=...
+    (stops here)
+
+In the previous build the trace passed 4a, 4b and 4c and stopped in the allocation; now it stops at 4a. The call
+that "crashed" earlier now succeeds when made first. A fault whose position moves with unrelated edits is memory
+corruption or undefined behaviour, not a specific wrong expression.
+
+Most likely source: the module's packet/`fg186q_packet` and the generated device code were written against the
+older backend's layout, and this build's structures/packet expectations differ, so the module writes past its own
+buffers before the fault surfaces elsewhere.
+
+Next probe: run the same call under `compute-sanitizer --tool memcheck` with `--check-device-heap` and also build
+the module with `-fsanitize=address` on the host part, to catch the first out-of-bounds host write. That is the
+instrument that will name the actual defect instead of its shadow.
