@@ -64,6 +64,10 @@ extern "C" int64_t fg186h_launch(int64_t pp){
  const dim3 block((unsigned)v[7][5],(unsigned)v[7][6],1u);
  // native shared size: (nwarps-1)*ncols_dst*rows_per_block*warp_size*4
  const int nbytes=(int)((v[7][6]-1)*v[7][5]*sizeof(float));
+ fprintf(stderr,"FG186T launch grid=(%u,%u,%u) block=(%u,%u) shm=%d v7=[%llu,%llu,%llu,%llu,%llu,%llu,%llu]\n",
+   grid.x,grid.y,grid.z,block.x,block.y,nbytes,
+   (unsigned long long)v[7][0],(unsigned long long)v[7][1],(unsigned long long)v[7][2],
+   (unsigned long long)v[7][3],(unsigned long long)v[7][4],(unsigned long long)v[7][5],(unsigned long long)v[7][6]);
  const auto lp=ggml_cuda_kernel_launch_params(grid,block,(size_t)nbytes,stream);
  ggml_cuda_kernel_launch(fg186q_kernel,lp,
    (const char*)(uintptr_t)v[0][0],(const char*)(uintptr_t)v[0][1],

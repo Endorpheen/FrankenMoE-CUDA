@@ -241,3 +241,31 @@ instrument that will name the actual defect instead of its shadow.
 So the open question narrows to: does the module's own planner fill `v[7][0..6]` before `fg186h_launch`, and with
 what values? Next probe prints `v[7][0..6]` right before the launch, and the shared-memory size, which will show
 whether the fault is a bad launch geometry rather than the allocation that precedes it.
+
+## Confirmed unstable: the fault moves between 4a and 4c across builds
+
+Same module, only a print added inside `fg186h_launch` (never reached):
+
+    step=4a stream=...        (previous build stopped here)
+    step=4b pad=2048 bytes=4608
+    step=4c pool enter dev=0 stream_no=0   (this build stops here)
+
+With no change to the code before `step=4a`, the stop point moves. That is decisive: the defect is not a
+specific expression on this path but memory corruption or undefined behaviour that surfaces at whichever point
+next touches the damaged state.
+
+Where it most plausibly originates: `ctx.pool()` returns a reference created by the backend's
+`new_pool_for_device` and the very next use is `ggml_cuda_pool_alloc(...).get()`; earlier the same `ctx.pool()`
+succeeded when called at the top of the function. Combined with the fact that the module was written for an older
+backend, the most likely explanation is that the module's packet/device expectations and this backend's object
+lifetimes disagree, and something is written past its bounds before the visible fault.
+
+Stopping active work on this path here, deliberately:
+- the integration route is proven (backend built, module compiled, shim patches, call routed, gdb frame
+  confirmed);
+- the defect is host-side UB whose location moves with unrelated edits, so chasing the print that currently
+  crashes would be chasing a shadow, exactly the loop the instructions warn against;
+- finding the first bad write needs AddressSanitizer actually reaching the module, which the last attempt did not.
+
+Registered as BLOCKED with this diagnosis. The concrete next instrument is an ASan build whose module is
+guaranteed to be reached (single-call harness instead of a full server), which is a separate, self-contained task.
