@@ -26,7 +26,7 @@ extern int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_c
 // op 0: include this sequence (a=cur, b=scope, c=holds); op 1: extension block present (a=has_ext).
 int64_t fg393s_decide(int64_t op, int64_t a, int64_t b, int64_t c) {
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG393S_KV_META_PLAN first call\n");
+    if (n == 1) fprintf(stderr, "FG393S_KV_META_PLAN first call calls=1\n");
     if ((n % 1000) == 0) fprintf(stderr, "FG393S_KV_META_PLAN calls=%llu\n", n);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

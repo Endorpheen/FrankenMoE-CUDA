@@ -17,7 +17,7 @@ static _Atomic unsigned long long g_calls;
 // that only prints at exit would look like "never called".
 static void fg351s_tick(void){
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG351S_BATCH_SPLIT_SIMPLE first call\n");
+    if (n == 1) fprintf(stderr, "FG351S_BATCH_SPLIT_SIMPLE first call calls=1\n");
     if ((n % 1000) == 0) fprintf(stderr, "FG351S_BATCH_SPLIT_SIMPLE calls=%llu\n", n);
 }
 

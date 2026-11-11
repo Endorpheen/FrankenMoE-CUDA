@@ -23,7 +23,7 @@ static int64_t g_ld(uint64_t b,int64_t o){ return *(const int64_t*)(uintptr_t)(b
 // op 0: mirrored size, op 1: stream count, op 2: zero-cell mirror. Returns 0 or a negative code.
 int64_t fg373s_guard(int64_t op, int64_t a, int64_t b, int64_t c) {
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG373S_KV_READ_SINFO first call\n");
+    if (n == 1) fprintf(stderr, "FG373S_KV_READ_SINFO first call calls=1\n");
     if ((n % 100) == 0) fprintf(stderr, "FG373S_KV_READ_SINFO calls=%llu\n", n);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

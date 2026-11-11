@@ -26,7 +26,7 @@ extern int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_c
 // op 0: destination index; op 1: source index; op 2: pool growth.
 int64_t fg398s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t * out2) {
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG398S_BATCH_CONTAINER_LAYOUT first call\n");
+    if (n == 1) fprintf(stderr, "FG398S_BATCH_CONTAINER_LAYOUT first call calls=1\n");
     if ((n % 1000) == 0) fprintf(stderr, "FG398S_BATCH_CONTAINER_LAYOUT calls=%llu\n", n);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

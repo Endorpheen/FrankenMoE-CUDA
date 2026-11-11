@@ -26,7 +26,7 @@ extern int64_t fg199k_can_use(int64_t occupied, int64_t seq_count, int64_t pos_c
 // op 0: delegation step order (a=step); op 1: clear the attention half (a=recurrent failed).
 int64_t fg397s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t * out2) {
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG397S_HYBRID_DELEGATION first call\n");
+    if (n == 1) fprintf(stderr, "FG397S_HYBRID_DELEGATION first call calls=1\n");
     if ((n % 100) == 0) fprintf(stderr, "FG397S_HYBRID_DELEGATION calls=%llu\n", n);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

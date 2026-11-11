@@ -37,7 +37,7 @@ static int64_t g_bits64(double v){ int64_t u; memcpy(&u,&v,8); return u; }
 // op 0: dry multiplier/window; op 1: dry base; op 2: top-n-sigma; op 3: xtc probability; op 4: xtc threshold.
 int64_t fg388s_decide(int64_t op, int64_t a, int64_t b) {
     const unsigned long long c = atomic_fetch_add(&g_calls, 1) + 1;
-    if (c == 1) fprintf(stderr, "FG388S_SAMPLER_FILTERS first call\n");
+    if (c == 1) fprintf(stderr, "FG388S_SAMPLER_FILTERS first call calls=1\n");
     if ((c % 100) == 0) fprintf(stderr, "FG388S_SAMPLER_FILTERS calls=%llu\n", c);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

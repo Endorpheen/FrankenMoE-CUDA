@@ -30,7 +30,7 @@ static int64_t g_bits(float v){ int32_t u; memcpy(&u,&v,4); return (int64_t)u; }
 // Normalise `n` logits into `out`: p[i] = exp(l[i] - max) / sum
 int64_t fg384s_softmax(const float * logits, int64_t n, int32_t sorted, float * out) {
     const unsigned long long c = atomic_fetch_add(&g_calls, 1) + 1;
-    if (c == 1) fprintf(stderr, "FG384S_SOFTMAX first call\n");
+    if (c == 1) fprintf(stderr, "FG384S_SOFTMAX first call calls=1\n");
     if ((c % 100) == 0) fprintf(stderr, "FG384S_SOFTMAX calls=%llu\n", c);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

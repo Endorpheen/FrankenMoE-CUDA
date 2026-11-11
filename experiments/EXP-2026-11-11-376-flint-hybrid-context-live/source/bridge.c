@@ -23,7 +23,7 @@ static int64_t g_ld(uint64_t b,int64_t o){ return *(const int64_t*)(uintptr_t)(b
 // op 0: apply conjunction, op 1: iterator end.
 int64_t fg376s_decide(int64_t op, int64_t a, int64_t b) {
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG376S_HYBRID_CONTEXT first call\n");
+    if (n == 1) fprintf(stderr, "FG376S_HYBRID_CONTEXT first call calls=1\n");
     if ((n % 100) == 0) fprintf(stderr, "FG376S_HYBRID_CONTEXT calls=%llu\n", n);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

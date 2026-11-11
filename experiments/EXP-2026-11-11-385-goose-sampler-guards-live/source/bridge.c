@@ -30,7 +30,7 @@ static int64_t g_bits(float v){ int32_t u; memcpy(&u,&v,4); return (int64_t)u; }
 // op 0: min_p skip (a=p*1e6, b=size); op 1: typical skip; op 2: top_p skip; op 3: top_k skip.
 int64_t fg385s_decide(int64_t op, int64_t a, int64_t b) {
     const unsigned long long c = atomic_fetch_add(&g_calls, 1) + 1;
-    if (c == 1) fprintf(stderr, "FG385S_SAMPLER_GUARDS first call\n");
+    if (c == 1) fprintf(stderr, "FG385S_SAMPLER_GUARDS first call calls=1\n");
     if ((c % 100) == 0) fprintf(stderr, "FG385S_SAMPLER_GUARDS calls=%llu\n", c);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

@@ -7,7 +7,7 @@
 static _Atomic unsigned long long g_calls;
 static void fg366s_tick(void){
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG366S_KV_READ_HEADER first call\n");
+    if (n == 1) fprintf(stderr, "FG366S_KV_READ_HEADER first call calls=1\n");
     if ((n % 100) == 0) fprintf(stderr, "FG366S_KV_READ_HEADER calls=%llu\n", n);
 }
 static void g_fail(int64_t c){ fprintf(stderr, "FG366S validation code %lld\n", (long long)c); abort(); }

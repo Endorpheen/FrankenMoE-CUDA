@@ -38,7 +38,7 @@ static int64_t g_bits64(double v){ int64_t u; memcpy(&u,&v,8); return u; }
 // op 2: accept targets (b=count); op 3: sample counter (a=counter).
 int64_t fg387s_decide(int64_t op, int64_t a, int64_t b) {
     const unsigned long long c = atomic_fetch_add(&g_calls, 1) + 1;
-    if (c == 1) fprintf(stderr, "FG387S_SAMPLER_CHAIN first call\n");
+    if (c == 1) fprintf(stderr, "FG387S_SAMPLER_CHAIN first call calls=1\n");
     if ((c % 100) == 0) fprintf(stderr, "FG387S_SAMPLER_CHAIN calls=%llu\n", c);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

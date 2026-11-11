@@ -38,7 +38,7 @@ static int64_t g_bits64(double v){ int64_t u; memcpy(&u,&v,8); return u; }
 // op 2: running count (a=count).
 int64_t fg389s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t * out2) {
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG389S_GGUF_INVENTORY first call\n");
+    if (n == 1) fprintf(stderr, "FG389S_GGUF_INVENTORY first call calls=1\n");
     if ((n % 5000) == 0) fprintf(stderr, "FG389S_GGUF_INVENTORY calls=%llu\n", n);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

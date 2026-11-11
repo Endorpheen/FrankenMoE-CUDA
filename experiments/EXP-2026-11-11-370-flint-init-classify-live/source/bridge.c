@@ -7,7 +7,7 @@
 static _Atomic unsigned long long g_calls;
 static void fg352s_tick(void){
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG352S_BATCH_CLASSIFY first call\n");
+    if (n == 1) fprintf(stderr, "FG352S_BATCH_CLASSIFY first call calls=1\n");
     if ((n % 100) == 0) fprintf(stderr, "FG352S_BATCH_CLASSIFY calls=%llu\n", n);
 }
 static void g_fail(int64_t c){ fprintf(stderr, "FG352S validation code %lld\n", (long long)c); abort(); }

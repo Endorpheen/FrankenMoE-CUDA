@@ -23,7 +23,7 @@ static int64_t g_ld(uint64_t b,int64_t o){ return *(const int64_t*)(uintptr_t)(b
 // offset, size, alignment, cap -> { aligned_offset, bytes_to_read, skip, buffer_size }
 int64_t fg377s_plan(int64_t offset, int64_t size, int64_t alignment, int64_t cap, int64_t * out) {
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG377S_FILE_ALIGN first call\n");
+    if (n == 1) fprintf(stderr, "FG377S_FILE_ALIGN first call calls=1\n");
     if ((n % 1000) == 0) fprintf(stderr, "FG377S_FILE_ALIGN calls=%llu\n", n);
 
     int64_t *pkt=(int64_t*)calloc(8*16,sizeof(int64_t));

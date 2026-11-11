@@ -17,7 +17,7 @@
 static _Atomic unsigned long long g_calls;
 static void fg348s_tick(void){
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG348S_BATCH_SPLIT_TAIL first call\n");
+    if (n == 1) fprintf(stderr, "FG348S_BATCH_SPLIT_TAIL first call calls=1\n");
     if ((n % 1000) == 0) fprintf(stderr, "FG348S_BATCH_SPLIT_TAIL calls=%llu\n", n);
 }
 

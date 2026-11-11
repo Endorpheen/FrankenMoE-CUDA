@@ -37,7 +37,7 @@ static int64_t g_bits64(double v){ int64_t u; memcpy(&u,&v,8); return u; }
 // Selection plus normalisation: max, exp, running sum against the target, then p /= sum_cum.
 int64_t fg386s_pick(const float * logits, int64_t n, int32_t sorted, float * out, double rnd) {
     const unsigned long long c = atomic_fetch_add(&g_calls, 1) + 1;
-    if (c == 1) fprintf(stderr, "FG386S_DIST_PICK first call\n");
+    if (c == 1) fprintf(stderr, "FG386S_DIST_PICK first call calls=1\n");
     if ((c % 100) == 0) fprintf(stderr, "FG386S_DIST_PICK calls=%llu\n", c);
 
     double rbuf = rnd;

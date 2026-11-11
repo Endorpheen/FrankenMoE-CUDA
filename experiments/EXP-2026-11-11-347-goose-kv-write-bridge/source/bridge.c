@@ -19,7 +19,7 @@ static _Atomic unsigned long long g_calls;
 // indistinguishable from "never called" (EXP354 lesson)
 static void fg345w_tick(void){
     const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
-    if (n == 1) fprintf(stderr, "FG345W_KV_STATE_WRITE first call\n");
+    if (n == 1) fprintf(stderr, "FG345W_KV_STATE_WRITE first call calls=1\n");
     if ((n % 100) == 0) fprintf(stderr, "FG345W_KV_STATE_WRITE calls=%llu\n", n);
 }
 
