@@ -152,3 +152,12 @@ block total crosses a float rounding boundary — rather than at a structural mi
 
 Bisect the failing cases from the gate by their inputs (largest |sumi|, largest per-lane acc, and the case
 with the biggest d) and check whether the one-ulp difference appears only when one of them crosses 2^24.
+
+## Tenth measurement: the failing case is captured
+
+The gate now writes the first failing input to `/tmp/fail_blocks.bin` (876 bytes: `nb` plus `nb` q4_K and
+`nb` q8_K blocks). With a reproducible failing case, the comparison can be stepped instead of randomised.
+
+Plan for it: run both sides on the file, print `d`, `dmin`, `sumi`, `sums[l]` and `sumf` per block, and find
+the first block where the two diverge. That will tell whether the difference enters through the scale term
+(`d*aux32`) or through the min term (`dmin*sumi`).
