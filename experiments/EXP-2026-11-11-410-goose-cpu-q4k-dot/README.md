@@ -199,3 +199,20 @@ Nine single-defect mutations of the module, each built and run against the clean
 | bsums read two bytes early | CAUGHT |
 
 **9 caught, 0 missed, 0 hangs.** The source and the compiled object are restored after the loop.
+
+## Thirteenth measurement: the drop-in replacement works and is enabled by default
+
+`build/libfs410s.so` exports `ggml_vec_dot_q4_K_q8_K_generic`, routing to the Goose kernel. It is **enabled by
+default**; `FG410S_ENABLED=0` forwards to the native symbol via `dlsym(RTLD_NEXT, ...)`. A witness prints
+`FG410S_WITNESS calls=<n>` on the first call when `FG410S_WITNESS` is set.
+
+Checked against the transcription on a captured case:
+
+    hoox (preloaded) = -611.96875
+    REF total        = -611.96875
+
+bit-identical, with the witness confirming the call went through the hook (`calls=1`).
+
+Note for the record: the earlier "expect 15579.2646" line in my probe was stale — the captured file had been
+overwritten by a later run with nb=1, so the probe was comparing against someone else's expectation rather
+than the file's. Reading the file and the reference together removed the confusion.
