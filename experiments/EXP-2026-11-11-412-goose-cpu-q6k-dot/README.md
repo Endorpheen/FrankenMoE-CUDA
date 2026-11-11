@@ -38,3 +38,12 @@ in the offset/scale handling itself, not in accumulation. My assumption that thi
 Next step is the same method that settled Q4_K: an intrinsic transcription of this exact kernel in the test,
 then diff `sumi`, `sums`/`acc` member by member against the module on the same block, instead of reasoning about
 the formula.
+
+## Scope confirmed by measurement
+
+The scope note (`igor-apex-only-required-paths-15595bcf18c2`) says only the agreed Apex path matters. That is now
+measured rather than assumed: first-call witnesses in a real CPU-profile run show exactly
+`ggml_vec_dot_q4_K_q8_K` and `ggml_vec_dot_q6_K_q8_K`, with `q8_0`, `q2_K`, `q3_K`, `q5_K`, `f32`, `f16` and
+`bf16` never called. Recorded in `docs/goose-migration/apex-cpu-math-inventory.md`.
+
+So Q4_K (accepted) plus Q6_K (this item) complete CPU_MATH for this plan, and the 64 Q6_K tensors are one kernel.
