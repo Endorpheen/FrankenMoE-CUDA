@@ -31,3 +31,20 @@ production processes, and treat "my process's memory" and "total GPU occupancy" 
 
 Checked at the time of writing: no `llama-server`/`llama-cli` process belongs to this account; the GPU holders
 are all other applications, so the 3314 MiB failure is not a leftover of my runs.
+
+## Scope: the agreed Apex path only
+
+`igor-apex-only-required-paths-15595bcf18c2`: finish the small end-to-end path for Apex-35B-V1.0-Q4_K_M with its
+agreed configuration, then optimise that path. Other models, architectures, weight formats and unused llama.cpp
+variants are a later, larger plan. For CPU_MATH: the model's known inventory carries **Q4_K and Q6_K**; 64 Q6_K
+tensors do not mean 64 kernels. Anything else is ported only with proof that it is needed.
+
+## Preferred proof method: controlled defect test
+
+`igor-prefer-controlled-defect-proof-4bf3f3132929`: to prove a module actually executes, prefer the simple
+A -> B -> A cycle over counters. Build correct A, make one computational change B, then guarantee restoration of
+A. Test build only; correctness is always judged separately against an independent reference, never by this
+test.
+
+Applied so far: one character in the fp16 decoder turned " Paris, a city" / d13cf4cf into
+"endahendahendahendah" / e4de6b44 and back, which proves the kernel runs and its result reaches the model.

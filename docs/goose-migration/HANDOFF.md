@@ -1048,3 +1048,8 @@ Check saved PIDs with their identity, the tree, the port, executable/cwd and GPU
 test server; finish the previous own server and wait for real exit and GPU release; repeat the cleanup after
 every error or timeout. No `killall`/broad `pkill`, no touching others' or production processes, and keep "my
 memory" separate from "total GPU".
+
+## Preferred proof method: controlled defect test
+
+To prove a module executes, prefer A -> B -> A: correct build, one computational change, guaranteed restore.
+Test build only. Correctness is judged separately against an independent reference, never by this test.
