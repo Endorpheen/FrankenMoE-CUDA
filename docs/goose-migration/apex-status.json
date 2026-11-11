@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T20:48:47.003311+00:00",
+  "updated_at": "2026-11-11T20:55:42.934293+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -136,16 +136,16 @@
     },
     {
       "item": "APEX.CUDA_CONTROL",
-      "state": "PARTIAL",
-      "implemented": "FG196P (pinned-memory and host-registration policy) is now built into the backend: the four replaced functions of ggml-cuda.cu (host_malloc, host_buffer_type_alloc_buffer, register_host_buffer, unregister_host_buffer) carry the Goose bodies, the originals live on as *_native, and the Goose host unit is linked in via fg196p-bridge.c. On the accepted profile the module executes (FG196P_CUDA_PINNED host_plan=2, host_fail=0, fallback=0) and the completion is unchanged: e68df05b, probabilities equal, restore ok, 636 Q6_K sub-calls still in Goose. Reproducible from scratch with build_integrated.sh.",
-      "remaining": "FG195V (VMM pool, device side) is not yet integrated; that is the second mandatory route of this item.",
-      "evidence": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh, docs/goose-migration/CUDA-CONTROL-PLAN.md",
+      "state": "DONE",
+      "implemented": "Both mandatory routes are built into the backend. FG196P: the four pinned/host-registration functions of ggml-cuda.cu carry the Goose bodies (originals kept as *_native), the Goose host unit is linked in, and the route executes on the accepted profile (FG196P_CUDA_PINNED host_plan=2, fallback=0, native=0). FG195V: the VMM pool arithmetic (alignment, growth, granularity, 32 GB ceiling, bump pointer, reverse-order free check) is embedded in the pool class; its own fixture reports 5606 checks, 0 failures. With both in place the accepted profile still completes with e68df05b, equal probabilities, restore ok, and 636 Q6_K sub-calls. Reproducible from scratch via build_integrated.sh.",
+      "remaining": "FG195V reports alloc=0/free=0 on this profile because the VMM pool is not the pool used here -- the same zero the active runtime reports, so the route is integrated and unit-verified but not exercised by this workload.",
+      "evidence": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh, experiments/EXP-2026-11-08-195-goose-cuda-vmm-pool, experiments/EXP-2026-11-08-196-goose-cuda-pinned-pool",
       "by": {
         "name": "Runtime worker",
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T20:48:47.003311+00:00"
+      "at": "2026-11-11T20:55:42.934293+00:00"
     }
   ]
 }

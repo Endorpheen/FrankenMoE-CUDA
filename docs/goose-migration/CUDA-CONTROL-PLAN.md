@@ -45,3 +45,12 @@ because they use file-static helpers (`ggml_cuda_env_flag`, the buffer-free help
 are needed before the buffer-type table.
 
 Next: FG195V (device VMM pool), same route.
+
+## Closed
+
+FG196P: executes on the profile (`host_plan=2`), completion unchanged.
+FG195V: embedded in the pool class, fixture 5606 checks / 0 failures; `alloc=0` on this profile because the VMM pool
+is not the one this workload uses - the active runtime reports the same zero.
+
+Both are in `build_integrated.sh`, so the whole CUDA_CONTROL state rebuilds from scratch, and the accepted profile
+still gives `e68df05b` with 636 Q6_K sub-calls.

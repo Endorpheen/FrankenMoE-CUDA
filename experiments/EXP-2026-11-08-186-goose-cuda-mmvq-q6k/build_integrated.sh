@@ -106,6 +106,51 @@ if 'fg196p-bridge.c' not in ct:
 print('fg196p prepared')
 PY2
 
+
+# --- FG195V (CUDA_CONTROL VMM pool arithmetic), same pattern ---
+export E195_DIR="$ROOT/experiments/EXP-2026-11-08-195-goose-cuda-vmm-pool"
+python3 - <<'PY3'
+import os
+from pathlib import Path
+flint = Path('/tmp/flint-goose/ggml/src/ggml-cuda')
+src = Path(os.environ['E195_DIR']) / 'source/shared-cuda.cu'
+lines = src.read_text().splitlines()
+def grab(marker):
+    for i, l in enumerate(lines):
+        if marker in l:
+            depth = 0; out = []
+            for j in range(i, len(lines)):
+                out.append(lines[j]); depth += lines[j].count('{') - lines[j].count('}')
+                if depth == 0 and j > i: return out
+    return []
+alloc = grab('    void * alloc(size_t size, size_t * actual_size) override {')
+free = grab('    void free(void * ptr, size_t size) override {')
+c = flint / 'ggml-cuda.cu'; s = c.read_text()
+def body(sig):
+    i = s.index(sig); depth = 0
+    for j in range(i, len(s)):
+        if s[j] == '{': depth += 1
+        elif s[j] == '}':
+            depth -= 1
+            if depth == 0: return i, j + 1
+i1, j1 = body('    void * alloc(size_t size, size_t * actual_size) override {')
+i2, j2 = body('    void free(void * ptr, size_t size) override {')
+s = s[:i1] + '\n'.join(alloc) + s[j1:i2] + '\n'.join(free) + s[j2:]
+m = '#include "ggml-cuda.h"'
+if 'fg195v_enabled' not in s:
+    s = s.replace(m, m + '\nextern "C" int fg195v_enabled(void);\nextern "C" void fg195v_plan_alloc(int64_t,int64_t,int64_t,int64_t,uint64_t);\nextern "C" int64_t fg195v_plan_free(int64_t,int64_t,int64_t);', 1)
+c.write_text(s)
+e = Path(os.environ['E195_DIR']) / 'source'
+(flint / 'fg195v-bridge.c').write_text((e / 'bridge.c').read_text().replace('#include "device-generated.c"', '#include "fg195v-generated.c"'))
+(flint / 'fg195v-generated.c').write_text((e / 'device-generated.c').read_text())
+cm = flint / 'CMakeLists.txt'; ct = cm.read_text()
+if 'fg195v-bridge.c' not in ct:
+    ct = ct.replace('    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg196p-bridge.c")',
+                    '    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg196p-bridge.c")\n    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg195v-bridge.c")')
+    cm.write_text(ct)
+print('fg195v prepared')
+PY3
+
 cmake -S "$WORK" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON \
       -DCMAKE_CUDA_COMPILER=/usr/bin/nvcc -DLLAMA_BUILD_TESTS=OFF \
       -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF >/dev/null
