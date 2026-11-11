@@ -630,10 +630,18 @@ most dangerous and is worth checking first in any new fixture.
    lives under the experiment's ignored `build/`.
    Open, deliberately: the run (rule 1). Without it the stage can be neither accepted nor
    rejected, so it carries no scoped credit.
-71. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+71. Batch split tail policy — EXP348 closes the `n_keep_tail` block of `split_equal`, which is
+   on the live batching path: keep the longest prefix of sets that are finished or have at least
+   the tail left, resolve the first set directly when it alone violates the rule (extend to
+   completion if it fits, otherwise truncate and give tokens back), defer the rest, concatenate
+   only the kept sets. 99 626 checks, 7/7 mutations.
+   Two layout mistakes were caught by the gate: `used` is an `int64` array (helpers need `i*8`),
+   and the per-set list holds the whole set while `cur_idx` says how much was taken — truncation
+   starts from the taken prefix, not the list length.
+72. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-72. Downstream phases P4–P11.
+73. Downstream phases P4–P11.
 
 ## Disk
 

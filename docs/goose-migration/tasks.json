@@ -1666,7 +1666,7 @@
         "src/llama-context.cpp"
       ],
       "acceptance": "Batch splitting,positions,logit/embedding selection,multi-sequence and output permutations match; invalid batch rejection and aborts.",
-      "evidence": "",
+      "evidence": "EXP237: split_equal expansion loop. EXP348: the n_keep_tail block -- keep the longest prefix that is finished or has the tail left, resolve the first set directly (extend or truncate with pool return), defer the rest, concatenate only kept sets. 99 626 checks / 0 failures, 7/7 mutations. Not integrated.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 416,
