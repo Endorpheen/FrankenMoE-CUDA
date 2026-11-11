@@ -756,10 +756,15 @@ most dangerous and is worth checking first in any new fixture.
    That settles the earlier zero-call question: the KV state path is not on completion, it is on
    save. Not covered: `state_read`/restore, the meta/data halves as separate live routes, and
    `state_clear`. Natural next check: restore the file just written and compare the state.
-87. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+87. Save/restore round trip — EXP364 runs completion, save, restore, completion on the same stage.
+   Save reports `n_saved` (387 989 920-byte file), restore reports `n_restored`, and the repeated
+   completion is byte-identical to the first: tokens, all 128 probabilities, `e68df05b`.
+   `FG345W_KV_STATE_WRITE` fires once (the save); restore goes through the read path, which has no
+   Goose call site yet. So this is a correctness result for the write selection, not a read witness.
+88. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-88. Downstream phases P4–P11.
+89. Downstream phases P4–P11.
 
 ## Disk
 
