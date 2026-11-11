@@ -11,14 +11,23 @@ language defect. So this was attempted, not deferred.
 | build the `ggml-cpu` target | **ok**, `bin/libggml-cpu.so` produced |
 | reproduce the EXP149 pipeline (`reproduce/build.py --pthread`) up to the object stages | **ok**: `control`, `backend-goose` and `backend-cpp` all exit 0 |
 
-## Where it stops
+## The rename recipe was not lost
 
-The pipeline's next step renames symbols with `objcopy` using a recipe file, and that file is gone:
+The `objcopy` failure was a path problem, not a missing artefact: `rename-0.txt` lives in
+`franken-goose-live-20261107/variants/cpu-backend/build/`, while the pipeline looked inside the EXP149
+directory. Copied into place, the whole chain runs.
 
-    objcopy: cannot open symbol rename file .../variants/pthread/build/rename-0.txt
+## Reproduced end to end
 
-So the recipe's rename list was not preserved — the same family as the lost EXP205 bridge. Without it the
-objects are built but not yet combined into the library under the expected symbol names.
+| step | result |
+|---|---|
+| EXP149 `cpu-backend` and `pthread` variants | **link-cpu ok** |
+| EXP150 (expert registry) on top | **link-llama ok**, `libggml-cpu.so.0.27.0`, 1 966 936 bytes |
+| Goose symbol set against the inherited library | **326 / 326 — identical, no missing and no extra** |
+| run with the rebuilt library in place | completion `e68df05b` twice, probabilities equal, restore exact |
+| CPU_CONTROL witnesses | FG143 4, FG147 21, FG149 7, FG150 11 — all live |
+
+The inherited library is kept as `libggml-cpu.so.0.27.0.inherited` next to the rebuilt one for rollback.
 
 ## What already exists
 
