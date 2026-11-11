@@ -879,10 +879,16 @@ most dangerous and is worth checking first in any new fixture.
    mutations. On save the log shows `FG382S_RECURRENT_IO_PLAN` twice (R pass, S pass) next to the
    accepted `FG232R`, with `FG381S`/`FG373S`/`FG345W`/`FG241U` and both completions at `e68df05b`.
    Boundary kept honest: payload bytes and tensor ownership stay in llama by bridge design.
-106. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+106. APEX.BATCH container composition closed — EXP383 moves the ubatch container sizing into Goose
+   (`type` only for a mixed batch, decision order only when given, sequence-id pool reserved for the
+   token count). Gate 37/0, 5/5 mutations. Live: `FG383S_BATCH_CONTAINER_PLAN` next to
+   `FG382S`×2/`FG381S`/`FG373S`/`FG345W`/`FG232R`/`FG241U`, both completions `e68df05b`.
+   Containers stay inside llama by bridge design; what moved is their composition. Dormant splitter
+   branches remain a profile fact with no witness obtainable.
+107. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-107. Downstream phases P4–P11.
+108. Downstream phases P4–P11.
 
 ## Disk
 
