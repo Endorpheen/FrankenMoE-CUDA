@@ -197,6 +197,21 @@ So the read orchestration is the one KV block the accepted runtime left native, 
 block we have a gated plan for (EXP344). It is the natural next call site, and it is reachable with a
 **successful** restore — the opposite of the truncated file used to witness the clear.
 
+## Reachability first
+
+Three blocks ported in a row met the same ending: the gate passed, the tree ran, and the witness never
+fired because the profile does not reach the code.
+
+| block | gate | witness on 32K/128 | why |
+|---|---|---|---|
+| KV read guards (EXP373) | 41/0 | **live** | runs on every restore |
+| hybrid memory decisions (EXP375) | 76/0 | 0 | reached only from the M-RoPE branch |
+| hybrid context apply/next (EXP376) | 35/0 | 0 | needs `n_ubatch < n_tokens` |
+
+So the rule for the next blocks is: establish the reachability path from the profile **before** writing
+the port, not after. A block whose only entry point is a branch this profile never takes is not a
+candidate, however clean its gate is.
+
 ## Status
 
 The reconstructed tree is a **correctness** base, not a performance equivalent. Two gaps documented:
