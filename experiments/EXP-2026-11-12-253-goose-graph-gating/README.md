@@ -25,3 +25,17 @@ back to `e32fb895...`; restoring returned `e68df05b`. So this decision is on the
 Ported: the gating selection (five cases including the abort). Not ported: the rest of `build_moe_ffn` -- expert
 selection bias, top-k routing, the expert matmuls and the weighted aggregation. Those need the wider tensor
 surface in the bridge, which is the next concrete step for this item.
+
+## Attempt: normalising the expert weights (reverted)
+
+Tried to port the `norm_w` block as well: reshape to 2D, `sum_rows`, clamp the sum to `6.103515625e-5 .. +inf`,
+divide. Two things were caught along the way and both are worth recording:
+
+- the first constant was `0x3a800000`, which is `2^-10`, not the F16-smallest `2^-14 = 0x38800000`; the correct
+  value was verified with a bit-level check before changing the code;
+- with the guard fixed and the constant corrected, the completion was still `e611eee2...` instead of `e68df05b`, so
+  the ported sequence is not equivalent to the native one. The likely difference is the `n_tokens == 0` graph-build
+  case, where the native code still reshapes and mine returns the input unchanged.
+
+Reverted to the native block; the accepted profile is back to `e68df05b`. The gating decision stays ported and
+defect-tested. A correct `norm_w` port needs the graph-build case handled deliberately, not bypassed.
