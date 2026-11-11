@@ -7,6 +7,9 @@ static _Atomic unsigned long long g_calls;
 __attribute__((destructor)) static void fg215u_report(void){
  if(!atomic_load(&g_calls))return;
  fprintf(stderr,"FG215U_UNICODE_CPT calls=%llu\n",atomic_load(&g_calls));}
+static void g_tick(void) { const unsigned long long n = atomic_fetch_add(&g_calls, 1) + 1;
+    if (n == 1) fprintf(stderr, "FG215U_UNICODE_CPT first call calls=1\n");
+    if ((n % 1000) == 0) fprintf(stderr, "FG215U_UNICODE_CPT calls=%llu\n", n); }
 static void g_fail(int64_t c){fprintf(stderr,"FG215U validation code %lld\n",(long long)c);abort();}
 static int64_t g_ld_u8(uint64_t d,int64_t b){return (int64_t)*(const uint8_t*)(uintptr_t)(d+(uint64_t)b);}
 static void g_st_i64(uint64_t d,int64_t b,int64_t v){*(int64_t*)(uintptr_t)(d+(uint64_t)b)=v;}
@@ -17,7 +20,7 @@ static void g_st_i64(uint64_t d,int64_t b,int64_t v){*(int64_t*)(uintptr_t)(d+(u
 #define main fg215u_generated_main
 #include "cpt-generated.c"
 #undef main
-int64_t fg215u_cpt_from_utf8(const char*buf,int64_t size,int64_t off,int64_t*adv){
+int64_t fg215u_cpt_from_utf8(const char*buf,int64_t size,int64_t off,int64_t*adv){ g_tick();
  atomic_fetch_add(&g_calls,1);
  return gg_function_1((uint64_t)(uintptr_t)buf,size,off,(uint64_t)(uintptr_t)adv,0);
 }
