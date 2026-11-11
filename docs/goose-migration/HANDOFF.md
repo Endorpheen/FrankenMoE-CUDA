@@ -550,10 +550,22 @@ most dangerous and is worth checking first in any new fixture.
    agreed on every draw and the mutation passed at 0; zero sizes now appear at 75%.
    P5-04 stays IN_PROGRESS only because its acceptance also names live recurrent witnesses,
    which need a model run under rule 1.
-61. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+61. Hybrid indexed operations — EXP341 transfers the hybrid-idx delegates: `seq_rm`
+   (recurrent refusal stops everything; the indexer is told the position, removed, then told
+   it again), `seq_cp` (whole sequences only, destination marked from zero), `seq_keep`
+   (every sequence marked), `seq_add` (p0 + shift for a negative shift), `seq_div`, plus
+   `state_write` (indexer section as a pure suffix), `state_read` (attention layout reused,
+   stale mark only for a non-empty copy, a throw drops from all three) and `state_drop`
+   (deliberately not via seq_rm). 44 122 checks, 9/9 mutations.
+   Gate defect worth remembering: the first version mutated its staleness model while
+   building the expectation and then handed that mutated model to the port as its input, so
+   the port received the post-operation state and three mutations passed at 0. A gate that
+   builds its input from its own expectation cannot fail and looks exactly like a passing
+   gate; the fix is copying the model before the switch.
+62. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-62. Downstream phases P4–P11.
+63. Downstream phases P4–P11.
 
 ## Disk
 

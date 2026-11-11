@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "a refusing recurrent cache still touches the indexer",
+    "status": "CAUGHT",
+    "failures": 461,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the indexer is removed before being told the position",
+    "status": "CAUGHT",
+    "failures": 452,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stale_pos never zeroes at the first position",
+    "status": "CAUGHT",
+    "failures": 356,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a negative shift is not accounted for",
+    "status": "CAUGHT",
+    "failures": 46,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_keep marks only the kept sequence",
+    "status": "CAUGHT",
+    "failures": 950,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the minimum is overwritten instead of kept",
+    "status": "CAUGHT",
+    "failures": 128,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the indexer section is written first",
+    "status": "CAUGHT",
+    "failures": 933,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a half-failed restore is left as it is",
+    "status": "CAUGHT",
+    "failures": 309,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an empty copied layout still invalidates the pools",
+    "status": "CAUGHT",
+    "failures": 423,
+    "exit_code": 1
+  }
+]
