@@ -134,3 +134,21 @@ matter for the item:
 1. A replacement must be installed in the library the server actually loads.
 2. Before porting more kernels, the used `vec_dot` entries must be identified rather than assumed — the
    `Q4_K x Q8_K` dot may simply not run on this profile (`--cpu-moe`, Q4_K_M, 32K/128).
+
+## The used path: zero calls to every quantised dot kernel
+
+Instrumented six kernels at once (`q4_K`, `q6_K`, `q8_0`, `q2_K`, `q3_K`, `q5_K`) with entry detours that call
+the original through a trampoline and count calls. The patch is installed by scanning the loaded objects for
+`ggml-cpu` and confirming the symbol, so it lands on whichever copy the process really has:
+
+    FG411S_LIB .../stage-run/libggml-cpu.so.0 0x770d91cf41c0
+    FG411S_DETOURS done
+    FG411S_COUNT q4_K=0 q6_K=0 q8_0=0 q2_K=0 q3_K=0 q5_K=0
+
+while the run still yields `e68df05b...` with equal probabilities and a successful restore.
+`libggml-cpu.so.0.27.0` and `libggml-cpu-shared-dd5a40e47065.so.0.27.0` are byte-identical (same sha256), so the
+patch did land on the real library.
+
+Conclusion so far: on this accepted profile no quantised `vec_dot` runs at all, so preloading or patching the
+Q4_K dot cannot be exercised by it, and the item cannot be accepted on this evidence. The next measurement must
+establish which kernels are on the used path at all (float `vec_dot`s included) before more kernels are ported.
