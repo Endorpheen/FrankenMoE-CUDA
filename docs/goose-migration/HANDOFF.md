@@ -843,10 +843,15 @@ most dangerous and is worth checking first in any new fixture.
    half), but `llama_memory_hybrid_context::apply`/`next` are never called on the Apex 32K/128 request:
    the batch takes the single-ubatch path. Needs `n_ubatch < n_tokens`; forcing it would be a new
    acceptance rule. Recorded, not counted.
-100. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+100. Cancel resilience measured — EXP379 drops a streaming client after 8 events on the reconstructed
+   tree: the server logs `cancel task`, the next request is served normally (32 768 prompt tokens), and
+   its completion is `e68df05b…`, identical to the reference, with 37 live witnesses in the same run.
+   Closes the "cancel leaves the cache usable" half of P5-09. Not covered: unload during an active
+   request, and a cancel arriving mid-batch rather than mid-stream.
+101. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-101. Downstream phases P4–P11.
+102. Downstream phases P4–P11.
 
 ## Disk
 
