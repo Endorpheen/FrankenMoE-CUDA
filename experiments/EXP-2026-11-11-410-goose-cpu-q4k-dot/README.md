@@ -132,3 +132,23 @@ comparison is the right one and only the inter-block residue remains.
 `ggml_vec_dot_q4_K_q8_K` is a dispatcher: on this CPU it resolves to AVX2. Bit-identity with "whatever runs"
 therefore means matching AVX2, which is a different accumulation, not a bug in the current module. This is a
 scoping question for the item, not a defect to keep chasing blind.
+
+## Ninth measurement: a concrete two-block case matches exactly
+
+Reproduced the gate's own generator for the first two-block case and compared both sides on identical
+memory:
+
+    goose = -77172.0859
+    want  = -77172.0859
+
+bit-identical, with the instrumented internals agreeing (d=0.149577275, sumi=-56148, sums0=-18656.9512,
+first iteration scale=25 qv=7 xv=94).
+
+So the residue is **rare**, not systematic: the same code path is exact here and one ulp off in 49 of 160
+randomised cases. That points at specific input combinations — most plausibly where a lane product or the
+block total crosses a float rounding boundary — rather than at a structural mistake.
+
+## Next
+
+Bisect the failing cases from the gate by their inputs (largest |sumi|, largest per-lane acc, and the case
+with the biggest d) and check whether the one-ulp difference appears only when one of them crosses 2^24.
