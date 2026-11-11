@@ -663,3 +663,15 @@ protecting against. The guard is restored, so the library falls back to native a
 The remaining work is a real feature in the Goose kernel: multi-column support (the native kernel allocates
 `tmp_shared[nwarps-1][ncols_dst][rows_per_block][warp_size]`, i.e. an extra dimension the generated code does not
 carry), not a tuning detail.
+
+## Multi-column by looping over columns: tried and wrong
+
+Attempted the simplest way to support `ncols_dst > 1` without touching the device code: for such calls, loop over
+columns and run the single-column kernel once per column, shifting `src1`/`dst` by `c * nb[1]`.
+
+Result in the harness: no crash, but **DIFF** at (2,16), (2,256) and (2,8192). So a per-column decomposition is not
+equivalent to the native multi-column kernel — as expected in hindsight, since the native kernel shares one column
+of `src0` reads across all destinations and its staging layout carries `ncols_dst` as a dimension.
+
+Reverted. Correct support needs the extra staging dimension in the generated device code, which is a real feature
+of the port, not a wrapper.
