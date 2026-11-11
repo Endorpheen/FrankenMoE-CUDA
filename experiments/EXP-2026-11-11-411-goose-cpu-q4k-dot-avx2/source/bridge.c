@@ -65,6 +65,7 @@ float fg410s_dot(int64_t nb, const void * q4, const void * q8) {
         { int32_t u; memcpy(&u, (char*)sc + 1300, 4); memcpy(&ddbg, &u, 4);
           memcpy(&u, (char*)sc + 1316, 4); memcpy(&s0dbg, &u, 4);
           memcpy(&sib, (char*)sc + 1308, 8); }
+        fprintf(stderr, "DBG hs=%.9g ms=%.9g\n", *(float*)((char*)sc+1700), *(float*)((char*)sc+1708));
         fprintf(stderr, "DBG nb=%lld raw=%lld d=%.9g sumi=%lld sums0=%.9g\n",
                 (long long) nb, (long long) pkt[2*16+0], ddbg, (long long) sib, s0dbg);
         { int64_t a0; memcpy(&a0,(char*)sc+1500,8); fprintf(stderr, "DBG acc0=%lld", (long long)a0); }

@@ -143,6 +143,8 @@ fn run(packet:i64)->bool {
     let hsum:f32 = (r0 + r2) + (r1 + r3);
     // acc_m: movehl then movehdup
     let msum:f32 = (accm[0] + accm[2]) + (accm[1] + accm[3]);
+    stw(sc, 1700 as i64, f32b(hsum));
+    stw(sc, 1708 as i64, f32b(msum));
     sumf = hsum + msum;
     put(packet,2,0, f32b(sumf) as u64);
     return true;

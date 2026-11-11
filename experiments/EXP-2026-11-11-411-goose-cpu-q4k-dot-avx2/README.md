@@ -20,3 +20,13 @@ Reference: the **library's own** `ggml_vec_dot_q4_K_q8_K` (the dispatched symbol
     FG410S_ADAPTOR cases=160 checks=161 failures=0
 
 160 of 160 bit-exact, nb = 1, 2, 3, 7.
+
+## Mutation status: needs a clean re-run
+
+The gate is 160/160 against the library's dispatched symbol. The mutation loop, however, did not produce a
+trustworthy verdict: a sign mutation of the min term changed the result in one probe while the probe's own
+reference changed with it, which means the probe was not measuring a single fixed reference.
+
+Recorded honestly rather than counted: mutations must be re-run against `tests/adaptor.cpp`, where the
+reference symbol is fixed in the same binary as the module, and each mutation must be shown to change the
+output before it can be called caught or missed.

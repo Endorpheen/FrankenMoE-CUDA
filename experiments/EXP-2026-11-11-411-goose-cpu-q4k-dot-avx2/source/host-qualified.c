@@ -1089,14 +1089,24 @@ static uint8_t fg410ds_gg_function_1(int64_t p0, int64_t base) {
   float * t453;
   float t454;
   float t455;
-  float t456;
-  float t457;
-  int64_t t458;
+  uint64_t t456;
+  int64_t t457;
+  float t458;
   int64_t t459;
   int64_t t460;
-  float t461;
+  uint64_t t461;
   int64_t t462;
-  uint64_t t463;
+  float t463;
+  int64_t t464;
+  int64_t t465;
+  float t466;
+  float t467;
+  int64_t t468;
+  int64_t t469;
+  int64_t t470;
+  float t471;
+  int64_t t472;
+  uint64_t t473;
   int64_t v0;
   int64_t v1;
   uint64_t v2;
@@ -1919,22 +1929,46 @@ label8:;
   t454 = ((float)((*t453)));
   t455 = ((float)(((t451) + (t454))));
   v42 = ((float)(((t448) + (t455))));
-  t456 = ((float)(v41));
-  t457 = ((float)(v42));
-  v5 = ((float)(((t456) + (t457))));
-  t458 = ((int64_t)(v0));
-  t459 = ((int64_t)(((int64_t)UINT64_C(2))));
-  t460 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t461 = ((float)(v5));
+  t456 = ((uint64_t)(v4));
+  t457 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1700))))));
+  t458 = ((float)(v41));
 #ifndef __cplusplus
   extern int64_t (fg410k_f32bits)(float);
 #endif
-  t462 = fg410k_f32bits(t461);
-  t463 = ((uint64_t)(((uint64_t)(t462))));
+  t459 = fg410k_f32bits(t458);
+  t460 = ((int64_t)(t459));
+#ifndef __cplusplus
+  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stw(t456, t457, t460);
+  t461 = ((uint64_t)(v4));
+  t462 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1708))))));
+  t463 = ((float)(v42));
+#ifndef __cplusplus
+  extern int64_t (fg410k_f32bits)(float);
+#endif
+  t464 = fg410k_f32bits(t463);
+  t465 = ((int64_t)(t464));
+#ifndef __cplusplus
+  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stw(t461, t462, t465);
+  t466 = ((float)(v41));
+  t467 = ((float)(v42));
+  v5 = ((float)(((t466) + (t467))));
+  t468 = ((int64_t)(v0));
+  t469 = ((int64_t)(((int64_t)UINT64_C(2))));
+  t470 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t471 = ((float)(v5));
+#ifndef __cplusplus
+  extern int64_t (fg410k_f32bits)(float);
+#endif
+  t472 = fg410k_f32bits(t471);
+  t473 = ((uint64_t)(((uint64_t)(t472))));
 #ifndef __cplusplus
   extern void (fg410k_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg410k_put(t458, t459, t460, t463);
+  fg410k_put(t468, t469, t470, t473);
   t0 = ((uint8_t)UINT64_C(1));
   goto fg410ds_gg_done;
   }
