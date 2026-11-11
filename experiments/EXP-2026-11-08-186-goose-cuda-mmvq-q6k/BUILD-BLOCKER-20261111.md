@@ -269,3 +269,22 @@ Stopping active work on this path here, deliberately:
 
 Registered as BLOCKED with this diagnosis. The concrete next instrument is an ASan build whose module is
 guaranteed to be reached (single-call harness instead of a full server), which is a separate, self-contained task.
+
+## Single-call harness built; ASan cannot coexist with CUDA init here
+
+Built `tests/harness.cpp`: initializes the CUDA backend, allocates Q6_K x F32 tensors, fills them, and calls
+`ggml_cuda_mul_mat_vec_q` exactly once. Compiled through nvcc plus a g++ link step with
+`-fsanitize=address` (427,384 bytes), because nvcc rejects the flag directly.
+
+Running it fails before the call:
+
+    ggml_cuda_init: failed to initialize CUDA: out of memory
+    ggml_backend_cuda_init: invalid device 0
+
+with **8418 MiB free** on the card, and `allocator_may_return_null=1` / `max_allocation_size_mb` change nothing.
+So AddressSanitizer's allocator cannot coexist with CUDA's virtual-memory reservation in this environment, which
+also explains why the earlier ASan run of the server never reached the module.
+
+Consequence: the harness is ready and useful (it calls the kernel directly, no server, no model), but the
+instrument must be Valgrind memcheck or CUDA's own API-error checking, not ASan. Recorded so the next attempt does
+not repeat this dead end.
