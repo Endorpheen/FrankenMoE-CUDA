@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "q1_m half pattern s3 mask 0xf000 -> 0x0f00",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "q1_m qh index drops il/2 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "mxfp4 E8M0 shift 23 -> 22 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "mxfp4 drops the 0.5 factor (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion (q1_m body)",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
