@@ -608,10 +608,17 @@ most dangerous and is worth checking first in any new fixture.
    stage from EXP244, run one Apex request under rule 1, accept only on exact text/tokens/
    probabilities with non-zero counters, revert the stage otherwise. No new OFF_PATH module
    was added; the next step is a build-and-run, not another port.
-68. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+68. State-write adapter — EXP347 is step 1 of the integration note: a bridge that widens the
+   cell arrays, runs the EXP345 decision and translates its journal back into per-stream counts
+   and ranges. 15 342 checks, 4/4 mutations. Recorded: the module signals a refusal by writing
+   **nothing** (both exits share one return code), so an adapter that looks for a return code
+   would write an empty section instead of skipping the write.
+   Still not called: production and the compiler are untouched, and calling it needs the stage
+   build plus one approved run.
+69. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-69. Downstream phases P4–P11.
+70. Downstream phases P4–P11.
 
 ## Disk
 
