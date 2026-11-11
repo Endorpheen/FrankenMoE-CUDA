@@ -103,8 +103,24 @@ The first run after rebuilding still failed with the same `FG205G` code 21 — b
 held a **hard link** to the previous DSO. The path was right and the content was stale, exactly as in
 EXP357. The run directory now uses symlinks, so a rebuild is always picked up.
 
+## Promotion attempt on the reconstructed tree
+
+The batch area turned out to be **already Goose-owned** in the accepted runtime: the staged
+`llama-batch.cpp` (EXP243) calls `fg240q` (set building), `fg241u` (classification), `fg242o` (output
+ids) and `fg243c` (positions). Our EXP349/350/352 modules duplicate those routes, so overlaying them
+adds a second Goose implementation where one already runs — that overlay was dropped.
+
+What is genuinely new is the KV pair (`fg345w` write selection, `fg367s` clear plan): neither appears
+among the accepted runtime's witnesses.
+
+With the KV pair wired into the reconstructed tree, the DSO (5 415 656 bytes) reproduces the accepted
+answer exactly and shows the accepted witnesses (`FG227N`, `FG228E`, `FG233C`, `FG237S`, `FG241U`,
+`FG242O`), but **neither `FG345W` nor `FG367S` fires** on save/restore. So on this tree the save does
+not reach `llama_kv_cache::state_write` the way it does on the flint-side stage of EXP363. Next step is
+to find which memory implementation the save goes through here — the accepted tree's `llama-context`
+calls `memory->state_write`, and the memory object may be the hybrid one, whose `state_write` delegates.
+
 ## Status
 
-Usable as a development and promotion base with one documented gap. The decision asked for above is now
-narrower: accept the reconstructed tree as the base (with native `find_slot` on this host) or recover
-the lost bridge revision first.
+The reconstructed tree is a working base that reproduces the accepted answer; the KV promotion needs
+one more diagnosis (which `state_write` the save reaches). The decision asked for above stays the same.
