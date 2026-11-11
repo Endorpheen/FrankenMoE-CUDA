@@ -257,3 +257,20 @@ reaches them. Each has its measured reason above, so none of them is an open que
 
 The sampler's probability path — softmax, selection, early exits, chain walk — is now Goose-owned and
 bit-identical; only the RNG primitive remains native, by design.
+
+## Map of what remains, and why it is not a port
+
+After the sampler and loader work, the open items are not "more of the same". Each one hits a boundary
+of the bridge or of the language, and pretending otherwise would produce gates without witnesses.
+
+| item | remainder | boundary |
+|---|---|---|
+| APEX.MODEL_GRAPH | graph-builder and decode orchestration | `build_moe_ffn` alone is 504 lines with 104 `ggml_*` calls that create and connect tensors. The bridge carries scalars and flat arrays only; a tensor handle cannot cross, and the node graph is not a flat array. Porting the decisions that are scalar (hparams, geometry, MoE choice) is done — `FG200G`. The node creation itself needs a tensor API on the Goose side. |
+| APEX.CPU_MATH | SIMD dot products and expert matrices | Goose has scalar `f32`/`f64` and no vector types or intrinsics (compiler-limitations item 3). A scalar transcription would not be the used path and would be slower by construction. |
+| APEX.CORE | backend/async lifecycle ownership | The scheduler, allocator, streams and registry decisions are already ported (EXP155–165, ten live witnesses). What remains is ownership of the backend object lifecycle, which is a C/CUDA API surface, not a decision. |
+| APEX.REQUEST / APEX.SESSION | HTTP server, queue, slots | This lives in `tools/server`, outside `libllama`. The bridge has no HTTP or socket surface, and inventing one would be a new component rather than a port. |
+| APEX.SOURCE_CLOSURE | native source closure | The candidate is a C++ DSO with Goose modules linked in. Full closure means removing the C++ implementations, which is the end state, not a step. |
+| APEX.FINAL | everything above | Depends on the five rows above. |
+
+So the honest statement today: every route the profile executes that has a Goose module is live, and the
+remainder is named with its boundary rather than left as a percentage.
