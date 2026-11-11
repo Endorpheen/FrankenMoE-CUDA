@@ -562,10 +562,21 @@ most dangerous and is worth checking first in any new fixture.
    the port received the post-operation state and three mutations passed at 0. A gate that
    builds its input from its own expectation cannot fail and looks exactly like a passing
    gate; the fix is copying the model before the switch.
-62. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+62. K-pool layout, whole pass — EXP342 completes `kpool_layout_update`: resume only when
+   clean, non-empty and the first position matches, appending strictly after the previous
+   last **(position, cell)** pair; rebuild on stale, empty, changed first position **or** a
+   count that no longer matches, and a rebuild re-takes length and minimum. The stream bound
+   resets sequences at or beyond the stream count in a non-unified cache. 63 506 checks, 9/9
+   mutations.
+   The gate was green while both sides shared one defect: the resume length survived a
+   rebuild, so pools were scanned past the real cells. It only appeared after the generator
+   started producing previous layouts that are not true prefixes — a prefix can never exercise
+   the count rule or the position tie-break. The transcription is the oracle, so it was fixed
+   first and the port had to match.
+63. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-63. Downstream phases P4–P11.
+64. Downstream phases P4–P11.
 
 ## Disk
 

@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "the previous last cell is ignored when resuming",
+    "status": "CAUGHT",
+    "failures": 694,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a changed first position does not force a rebuild",
+    "status": "CAUGHT",
+    "failures": 5367,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a stale sequence keeps its layout",
+    "status": "CAUGHT",
+    "failures": 3205,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a count mismatch does not force a rebuild",
+    "status": "CAUGHT",
+    "failures": 10312,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the stream bound is inclusive",
+    "status": "CAUGHT",
+    "failures": 3274,
+    "exit_code": 1
+  },
+  {
+    "mutation": "order mode advances one cell at a time",
+    "status": "CAUGHT",
+    "failures": 15354,
+    "exit_code": 1
+  },
+  {
+    "mutation": "position mode ignores the pool alignment",
+    "status": "CAUGHT",
+    "failures": 3479,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a rebuild keeps the length and minimum from the resume attempt",
+    "status": "CAUGHT",
+    "failures": 37914,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a resumed sequence starts its scan at zero",
+    "status": "CAUGHT",
+    "failures": 6522,
+    "exit_code": 1
+  }
+]
