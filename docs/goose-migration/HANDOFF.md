@@ -643,10 +643,17 @@ most dangerous and is worth checking first in any new fixture.
    are embeddings, embeddings unless none are), the state payload independent of mixed, the
    payload sizes, `out_ids` in row order and `seq_id_unq` scanned in increasing sequence id.
    122 968 checks, 7/7 mutations. Payload copies stay native.
-73. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+73. Batch set selection — EXP350 transfers the opening block of `split_equal`: skip used rows,
+   skip sets overlapping a chosen one, enforce increasing sequence ids in sequential mode, and
+   break one **past** the ubatch limit. Cursors then start at zero and stop at the first unused
+   row of each set. 45 307 checks, 7/7 mutations.
+   The first generator built arbitrary set lists and walked off the offset table when more sets
+   were chosen than existed — a shape native cannot produce; sets are now built from distinct
+   masks, as native does.
+74. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-74. Downstream phases P4–P11.
+75. Downstream phases P4–P11.
 
 ## Disk
 
