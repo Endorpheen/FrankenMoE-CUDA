@@ -102,11 +102,11 @@ fn run(packet:i64)->bool{
   n_keep=1 as i64;
  }
 
- // deferred sets return their tokens
+ // deferred sets return the tokens they had already taken in this ubatch -- not their whole lists
  var s:i64=n_keep;
  while s<n_seqs{
   var k:i64=0;
-  let cnt:i64=at(off,s+(1 as i64))-at(off,s);
+  let cnt:i64=at(cur,s);
   while k<cnt{
    let idx:i64=at(idxs,at(off,s)+k);
    emit(out,cntp,2 as i64,s,idx);
@@ -118,10 +118,11 @@ fn run(packet:i64)->bool{
  }
 
  // concat the surviving per-set lists
+ // the concatenation is over the taken lists, exactly as the deferred release was
  var t:i64=0;
  while t<n_keep{
   var k2:i64=0;
-  let cnt2:i64=at(off,t+(1 as i64))-at(off,t);
+  let cnt2:i64=at(cur,t);
   while k2<cnt2{
    emit(out,cntp,3 as i64,t,at(idxs,at(off,t)+k2));
    k2=k2+1 as i64;

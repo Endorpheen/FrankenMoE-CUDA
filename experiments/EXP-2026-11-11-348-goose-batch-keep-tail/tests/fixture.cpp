@@ -103,15 +103,18 @@ int main(void) {
                 // the surviving first set is the (possibly modified) list
                 off[0] = 0; (void)my;
             }
+            // only what the set already took in this ubatch goes back to the pool
             for (int64_t s = n_keep; s < n_seqs; ++s)
-                for (int64_t k = off[(size_t)s]; k < off[(size_t)s+1]; ++k) {
-                    want.push_back({2, s, idxs[(size_t)k]});
-                    rused[(size_t)idxs[(size_t)k]] = 0; --rn_used;
+                for (int64_t k = 0; k < rcur[(size_t)s]; ++k) {
+                    const int64_t idx = idxs[(size_t)(off[(size_t)s] + k)];
+                    want.push_back({2, s, idx});
+                    rused[(size_t)idx] = 0; --rn_used;
                 }
             for (int64_t s = 0; s < n_keep; ++s)
-                for (int64_t k = off[(size_t)s]; k < off[(size_t)s+1]; ++k) {
-                    want.push_back({3, s, idxs[(size_t)k]});
-                    final_idxs.push_back(idxs[(size_t)k]);
+                for (int64_t k = 0; k < rcur[(size_t)s]; ++k) {
+                    const int64_t idx = idxs[(size_t)(off[(size_t)s] + k)];
+                    want.push_back({3, s, idx});
+                    final_idxs.push_back(idx);
                 }
             want.push_back({4, n_keep, 0});
             r_keep = n_keep;

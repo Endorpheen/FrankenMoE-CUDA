@@ -18,14 +18,15 @@ constraint that keeps recurrent rollback snapshots valid.
 - **Resolve the first set** when even it violates the rule: extend it to completion if the whole
   set fits in `n_ubatch`, otherwise truncate from the back until exactly `n_keep_tail` tokens
   remain. Truncation **returns** tokens to the pool, so `used` and the counter decrease.
-- **Defer**: every set after the kept prefix returns all of its tokens to the pool.
-- **Concatenate** only the kept sets, in set order.
+- **Defer**: every set after the kept prefix returns the tokens it had **already taken in this
+  ubatch** — its taken prefix, not its whole list.
+- **Concatenate** the taken prefixes of the kept sets, in set order.
 
 ## Gate
 
 | check | result |
 |---|---|
-| 5 000 draws over 1–4 sets, tails 0–4, near-capacity ubatches | 99 626 checks / 0 failures |
+| 5 000 draws over 1–4 sets, tails 0–4, near-capacity ubatches | 83 999 checks / 0 failures |
 
 The gate compares the record stream **and** the final `used` array, which is where the pool
 accounting lives. Two layout mistakes were found and fixed on the way: `used` is an `int64`
