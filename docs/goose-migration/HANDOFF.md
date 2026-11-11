@@ -696,10 +696,19 @@ most dangerous and is worth checking first in any new fixture.
    The probe also caught a real defect in EXP348 (deferred release and concatenation used the whole
    per-set lists instead of the taken prefixes); it was invisible to that experiment's own gate
    because the transcription repeated the model. Fixed in `eae4a56`.
-80. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+80. LINE CHECK before integration — the working candidate is built from
+   `work/llama.cpp-integration`, and its `llama-batch.cpp` is **not** the same file as
+   `llama.cpp-flint-cuda/src/llama-batch.cpp` (987 vs 1493 lines). The working version has no
+   `mixed` / `is_embd_vec` / `decision_order` / `state_vec`; its `ubatch_add` is the simpler one.
+   So EXP349 (ubatch_add with mixed) and EXP352 (init content types) describe a line the candidate
+   does not run, and must not be integrated here. Rule going forward: check the target line before
+   wiring a module; a gated module from the other line is not evidence about this one.
+   What does exist in the working line and is worth wiring: `ubatch_add`'s output ids and unique
+   sequence list, `split_simple`, `split_equal` selection, and `state_write` ranges.
+81. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-81. Downstream phases P4–P11.
+82. Downstream phases P4–P11.
 
 ## Disk
 
