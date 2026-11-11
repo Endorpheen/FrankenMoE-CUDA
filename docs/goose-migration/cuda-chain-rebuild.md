@@ -207,3 +207,22 @@ instead of the connection drop, and compare the object list of the old build tre
 `fattn-vec-instance-*`) with the library the accepted runtime actually ships (220 MB, which does contain
 them). That difference means the old `build-cuda` tree is itself incomplete, so the object set has to be
 taken from the accepted library's lineage rather than from that stale build directory.
+
+## The real cause: the old build tree is missing instance objects
+
+The start failure is not a link error in my reconstruction, it is a missing definition:
+
+    undefined symbol: mul_mat_q_case<GGML_TYPE_Q6_K, GGML_PREC_DEFAULT>
+
+`mmq.cu.o` in the old `build-cuda` tree defines no `mul_mat_q_case` at all, and the tree contains no
+`mmq-instance-*` objects, although `compile_commands.json` lists **22** such translation units (the same is
+true of the four `fattn-vec-instance-*` files handled above).
+
+So the old build directory is an incomplete build of the source tree: it was configured without the MMQ and
+FA instance variants. The accepted 220 MB library does contain them, which is why it works.
+
+## Next, concrete
+
+Compile the 22 `mmq-instance-*` translation units (plus the FA instances already done) with nvcc, add them
+to the link, and re-run the off-switch gate. Only after that library answers `e68df05b` with every goose
+route disabled is the reconstruction faithful, and only then do the routes get enabled one at a time.
