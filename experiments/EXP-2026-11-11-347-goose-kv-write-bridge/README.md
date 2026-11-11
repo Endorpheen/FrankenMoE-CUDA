@@ -36,8 +36,29 @@ into "zero ranges", which would have written an empty section instead of skippin
 | ranges are exported with swapped ends | yes |
 | the sequence mask is dropped | yes |
 
+## Integration check (no model run)
+
+`integration/llama-kv-cache.cpp` is the working-tree file with the selection block replaced by the
+bridge call, compiled with the exact flags the working build uses
+(`/usr/bin/c++ ... -O3 -DNDEBUG -fPIC -Wall -Wextra -Wpedantic ...`). `check_integration.py` proves
+three things without touching a model:
+
+| check | result |
+|---|---|
+| compiles clean (no warnings) | yes |
+| defined-symbol set unchanged | 418 = 418 |
+| only new undefined dependencies | `fg345w_enabled`, `fg345w_select` |
+
+The native block is still in the file behind the same guard, so `GGML_GOOSE_KV_STATE_WRITE=0`
+restores it. A cell count above 64 sequences keeps the native path, because the bridge carries the
+sequence set in a 64-bit mask.
+
+Not done here, and deliberately: the stage link and the run. The first needs every other object of
+the working build, the second needs rule-1 approval.
+
 ## Files
 
 - `source/bridge.c` — adapter plus the generated module it includes.
+- `integration/llama-kv-cache.cpp` — the call site, compiled but not linked.
 - `tests/adaptor.cpp` — comparison driver.
-- `test_local.py`, `mutate.py` — build/gate and mutation drivers.
+- `test_local.py`, `mutate.py`, `check_integration.py` — adaptor gate, mutations, call-site check.

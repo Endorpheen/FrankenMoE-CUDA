@@ -615,10 +615,18 @@ most dangerous and is worth checking first in any new fixture.
    would write an empty section instead of skipping the write.
    Still not called: production and the compiler are untouched, and calling it needs the stage
    build plus one approved run.
-69. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+69. State-write call site — EXP347 got its integration half: `integration/llama-kv-cache.cpp`
+   compiles with the working build's exact flags and its defined-symbol set is **identical**
+   (418 = 418), with `fg345w_enabled` / `fg345w_select` as the only new undefined
+   dependencies. The native block stays behind the same guard, and more than 64 sequences
+   keeps the native path because the bridge carries the set in a 64-bit mask.
+   `check_integration.py` reproduces all three checks without a model run. The stage link and
+   the run are still open: the first needs every other object of the working build, the second
+   needs rule-1 approval.
+70. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-70. Downstream phases P4–P11.
+71. Downstream phases P4–P11.
 
 ## Disk
 
