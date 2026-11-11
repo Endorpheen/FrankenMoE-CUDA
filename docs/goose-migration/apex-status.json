@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T22:04:08.855027+00:00",
+  "updated_at": "2026-11-11T22:12:27.498745+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -70,19 +70,6 @@
       "at": "2026-11-11T19:08:07.842244+00:00"
     },
     {
-      "item": "APEX.MODEL_GRAPH",
-      "state": "BLOCKED",
-      "implemented": "Only the decision layer is ported (EXP408).",
-      "remaining": "Node creation is not a transcription: build_moe_ffn alone is 504 lines with 104 ggml_* calls creating and connecting tensors, and the bridge carries scalars and flat arrays only, so a tensor handle cannot cross. Needs a tensor API in Goose or a criteria change, which is not mine to make.",
-      "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
-      "by": {
-        "name": "Runtime worker",
-        "harness": "Command Code",
-        "model": "claude-sonnet-4.5"
-      },
-      "at": "2026-11-11T19:45:35.929880+00:00"
-    },
-    {
       "item": "APEX.SOURCE_CLOSURE / APEX.FINAL",
       "state": "BLOCKED",
       "implemented": "End states only.",
@@ -146,6 +133,19 @@
         "model": "claude-sonnet-4.5"
       },
       "at": "2026-11-11T22:04:08.855027+00:00"
+    },
+    {
+      "item": "APEX.MODEL_GRAPH",
+      "state": "PARTIAL",
+      "implemented": "The expert-gating decision of build_moe_ffn is Goose and live: the module selects among softmax, sigmoid, softmax-weight pass-through and sqrt(softplus) with the same abort on NONE, calling ggml primitives through the bridge. Gate by the accepted profile: e68df05b, equal probabilities, restore ok; a defect test turning SOFTMAX into SIGMOID changed the completion to e32fb895 and restoring returned e68df05b. The first attempt used enum values 0..3 instead of 1..4 and was caught by exactly this check.",
+      "remaining": "The rest of build_moe_ffn (expert selection bias, top-k routing, expert matmuls, weighted aggregation) is native and needs a wider tensor surface in the bridge: handles cross today, but only for the four gating primitives.",
+      "evidence": "experiments/EXP-2026-11-12-253-goose-graph-gating",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T22:12:27.498745+00:00"
     }
   ]
 }
