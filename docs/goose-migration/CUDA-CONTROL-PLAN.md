@@ -28,3 +28,20 @@ device code, build, verify with the harness and then on the profile.
 
 Both are checked the same way as Q6_K: correctness against native, then a controlled defect test to prove execution,
 then the accepted-profile completion.
+
+## Status: FG196P done, FG195V next
+
+FG196P is integrated and verified. The four replaced functions of `ggml-cuda.cu` carry the Goose bodies
+(`*_native` keeps the originals), the Goose host unit is linked through `fg196p-bridge.c`, and the whole thing is
+reproducible from scratch with `experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh`.
+
+Measured on the accepted profile:
+
+    FG196P_CUDA_PINNED host_plan=2 host_fail=0 fallback=0 reg_plan=0 reg_fail=0 unreg=0 native=0
+    first_sha e68df05b, probs_equal, restore_ok, 636 Q6_K sub-calls
+
+Two build details that cost time and are now in the script: the policy bodies must live inside `ggml-cuda.cu`
+because they use file-static helpers (`ggml_cuda_env_flag`, the buffer-free helper), and two forward declarations
+are needed before the buffer-type table.
+
+Next: FG195V (device VMM pool), same route.

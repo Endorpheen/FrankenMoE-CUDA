@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T20:29:47.550024+00:00",
+  "updated_at": "2026-11-11T20:48:47.003311+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -70,19 +70,6 @@
       "at": "2026-11-11T19:08:07.842244+00:00"
     },
     {
-      "item": "APEX.CUDA_CONTROL",
-      "state": "BLOCKED",
-      "implemented": "The mandatory routes FG195V/FG196P live in libggml-cuda (63 Goose symbols in the staged build) and are live in the accepted runtime.",
-      "remaining": "Their own decisions cannot be finished or re-verified here: the CUDA chain that builds them (EXP170..186) has no build scripts at EXP170-172 and its artefacts were never committed, so the library cannot be rebuilt from this tree. Rebuilding the backend from the flint sources works (EXP186) but produces a backend whose context state is not equivalent (see CUDA_MATVEC).",
-      "evidence": "docs/goose-migration/apex-remaining-boundaries.md, experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/BUILD-BLOCKER-20261111.md",
-      "by": {
-        "name": "Runtime worker",
-        "harness": "Command Code",
-        "model": "claude-sonnet-4.5"
-      },
-      "at": "2026-11-11T19:45:35.929880+00:00"
-    },
-    {
       "item": "APEX.CUDA_MMQ",
       "state": "BLOCKED",
       "implemented": "Dispatch (FG203D) is live; the Q8_1 quantizer was accepted as an opt-in module earlier.",
@@ -146,6 +133,19 @@
         "model": "claude-sonnet-4.5"
       },
       "at": "2026-11-11T20:29:47.550024+00:00"
+    },
+    {
+      "item": "APEX.CUDA_CONTROL",
+      "state": "PARTIAL",
+      "implemented": "FG196P (pinned-memory and host-registration policy) is now built into the backend: the four replaced functions of ggml-cuda.cu (host_malloc, host_buffer_type_alloc_buffer, register_host_buffer, unregister_host_buffer) carry the Goose bodies, the originals live on as *_native, and the Goose host unit is linked in via fg196p-bridge.c. On the accepted profile the module executes (FG196P_CUDA_PINNED host_plan=2, host_fail=0, fallback=0) and the completion is unchanged: e68df05b, probabilities equal, restore ok, 636 Q6_K sub-calls still in Goose. Reproducible from scratch with build_integrated.sh.",
+      "remaining": "FG195V (VMM pool, device side) is not yet integrated; that is the second mandatory route of this item.",
+      "evidence": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh, docs/goose-migration/CUDA-CONTROL-PLAN.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T20:48:47.003311+00:00"
     }
   ]
 }
