@@ -93,6 +93,24 @@
       "completion_4_tokens_seconds_median_of_3": 4.26,
       "method": "wall clock around HTTP /completion, temperature 0, top_k 1, cache_prompt false; no CUDA, no background load from this session",
       "note": "functional checkpoint only; the accepted GPU profile does not call these kernels"
+    },
+    {
+      "item": "APEX.CUDA_MATVEC",
+      "experiment": "EXP186",
+      "measured_at": "2026-11-11T20:36:58.467714+00:00",
+      "compiler": "v61 b87af17a (runtime/compiler/current.json)",
+      "profile": "accepted 32K/128, /tmp/build-cuda-fg backend with the Goose Q6_K matvec linked in",
+      "prefill_tok_s": 1658.94,
+      "decode_tok_s": 23.82,
+      "wall_s": 25.11,
+      "peak_rss_mib": 22861.0,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9707,
+      "completion_sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "content_equal": true,
+      "coverage": "636 single-column sub-calls = all 324 Q6_K matvec calls",
+      "method": "run_metrics.py with LD_LIBRARY_PATH pointing at the integrated backend; no preload",
+      "note": "functional stage measurement; acceptable slowdowns are recorded, not treated as a veto"
     }
   ]
 }
