@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "seq_cp ignores cell zero",
+    "status": "CAUGHT",
+    "failures": 241,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_cp keeps the destination bit",
+    "status": "CAUGHT",
+    "failures": 2057,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_cp does not move the destination tail",
+    "status": "CAUGHT",
+    "failures": 1003,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_cp forgets to drop the used count",
+    "status": "CAUGHT",
+    "failures": 2838,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_keep leaves the other tails in place",
+    "status": "CAUGHT",
+    "failures": 46255,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_keep does not move the head",
+    "status": "CAUGHT",
+    "failures": 7754,
+    "exit_code": 1
+  },
+  {
+    "mutation": "range test includes p0",
+    "status": "CAUGHT",
+    "failures": 9,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_div divides by one more",
+    "status": "CAUGHT",
+    "failures": 269,
+    "exit_code": 1
+  }
+]

@@ -206,10 +206,17 @@ most dangerous and is worth checking first in any new fixture.
    rule here is the sequence set, not the position. And a trap: using `src0` as
    scratch for the reference count clobbers cells outside the range, which native
    leaves at -1 — the gate caught it.
-14. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+14. Recurrent sequence operations — EXP294 transfers `seq_cp`, `seq_keep`,
+   `seq_add` and `seq_div` for recurrent state: 1 170 000 checks against a
+   transcription and 8/8 mutations caught. A recurrent cache owns one cell per
+   sequence, so the position bounds clamp and select a cell instead of walking a
+   range — and `seq_cp` clamps bounds it never reads, which the port preserves
+   rather than "fixing". Still open in P5-04: state write/read, rollback, stream
+   ordering, and the live recurrent witnesses.
+15. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-15. Downstream phases P4–P11.
+16. Downstream phases P4–P11.
 
 ## Disk
 
