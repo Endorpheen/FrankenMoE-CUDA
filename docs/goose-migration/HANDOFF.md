@@ -1022,3 +1022,14 @@ orientation 2700/27 and ~3400 MiB VRAM is a memory of the baseline, not a refere
 from the saved original runs before any acceptance. No invented RAM threshold. Final conclusions only
 from comparable A/B→B/A on a quiet host. Details in `apex-deferred-optimization.md`.
 Optimization is not started now.
+
+## Standing order (Igor, 2026-11-11): functional first, performance afterwards
+
+Speed no longer vetoes a functionally complete, correct and safe transfer. The small-path items are closed
+per item, one at a time, with one short checkpoint after each DONE. Measured slowdowns are recorded as
+material for the separate optimisation stage, not used to block acceptance and not raised with the
+compiler side as urgent dependencies.
+
+A real functional or compiler blocker — a missing operation or type, a miscompile, ABI or memory safety —
+still goes to the compiler side first with a minimal repro. Do not call a barrier proven while the current
+compiler supports it; check first.
