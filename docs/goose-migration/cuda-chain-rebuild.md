@@ -148,3 +148,36 @@ native result exactly on this profile.
 
 Step 1 is the test that should have run first: a rebuilt library that differs with everything off is a
 build defect, not a route problem.
+
+## Result of the two experiments: the rebuilt library is not numerically equivalent
+
+Three builds, three different answers, all with every goose CUDA switch **off**:
+
+| build | completion sha256 |
+|---|---|
+| inherited (nvcc, in place) | `e68df05b…` |
+| rebuilt chain through clang | **`e818303c…`** |
+| rebuilt chain through clang with `-ffast-math` (nvcc's `-use_fast_math` translated) | **`048eb178…`** |
+
+With the routes switched off, the only difference is the compiler that produced the kernels. So this is not
+a routing problem: a clang-built `libggml-cuda` does not reproduce nvcc's arithmetic on this model, with or
+without fast-math. The inherited library was restored again and the run gives `e68df05b…`.
+
+## The blocker, stated exactly
+
+The item needs the Q6_K matvec inside a library that is numerically identical to the accepted one. That
+requires building the CUDA kernels with the **same toolchain** (nvcc) that produced the accepted library.
+nvcc 12.6 does not compile against this system glibc:
+
+    bits/mathcalls.h: error: exception specification is incompatible with that of previous function
+                       "cospi" / "sinpi" / "rsqrt"
+
+`-ccbin g++-12`, `g++-13`, `-std=c++03/11` and `-D__GLIBC_USE_IEC_60559_FUNCS_EXT_C23=0` all fail the same
+way. This is a functional/correctness blocker, not a performance one, so it is the one class of issue that
+still goes to the compiler side with a minimal repro.
+
+## What is not the problem
+
+The Goose modules are fine: they compile, they link, and they export the expected routes. The reconstruction
+tool is fine: it now privatises by the names the modules expect and preserves the fg entry points the
+per-module `.so` files consume. The missing piece is only the toolchain that reproduces nvcc's numbers.

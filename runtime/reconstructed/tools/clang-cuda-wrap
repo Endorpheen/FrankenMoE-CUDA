@@ -3,6 +3,7 @@ args=""
 for a in "$@"; do
   case "$a" in
     -extended-lambda) continue ;;
+    -use_fast_math) args="$args \"-ffast-math\"" ;;
     -DGGML_CUDA_FA_QUANTS=*) args="$args \"-DGGML_CUDA_FA_QUANTS=\\\"${a#-DGGML_CUDA_FA_QUANTS=}\\\"\"" ;;
     *) args="$args \"$a\"" ;;
   esac
