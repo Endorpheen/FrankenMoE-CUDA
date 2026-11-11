@@ -21,12 +21,12 @@
     },
     {
       "path": "artifact/libggml-cpu-goose.so.0.27.0",
-      "sha256": "9129e7d52d7b5e720f508b865097754b3603ae3630279f447298d932ced743b1",
+      "sha256": "7962342b99a19a982d484e2a96d84ae268b4a69db195ba77ed78b19030b977b2",
       "bytes": 1443888
     },
     {
       "path": "artifact/libggml-cpu.so.0.27.0",
-      "sha256": "57755a577eed21ec5feb30fb841f5e9771019ac911570c1e1735c5db6b97eac9",
+      "sha256": "fffdea78fb3a944a28049d72f7a99637a12403724a3c7cffd81b3e49a534c233",
       "bytes": 1439136
     },
     {
@@ -54,5 +54,6 @@
       "sha256": "5ae8a883ea7ca5d79813706ae78ea7a9511e8300867823b3ea25f9d5290cfe3e",
       "bytes": 2528
     }
-  ]
+  ],
+  "independence": "both Goose and native CPU libraries had RUNPATH /tmp/build-cpu-goose/bin (or build-cpu-avx2); patched to $ORIGIN/ and libggml-base copied alongside; ldd reports no /tmp entry"
 }
