@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "qh high-bit shift 2 -> 1",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scale index +2 -> +1",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "offset constant -32 -> -31",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "destination 128*ip -> 127*ip",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "scale group il/16 -> il/8",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
