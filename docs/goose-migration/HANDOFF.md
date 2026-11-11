@@ -140,13 +140,23 @@ most dangerous and is worth checking first in any new fixture.
    idea recorded there is to precompute all address arithmetic host-side so the
    kernel only does `base + i0`. Six attempts were made; the blocker rule was
    reached.
-5. CUDA shared-memory kernels — unblocked by EXP279. The cumsum fallback kernel
-   (the native path here, since no `GGML_CUDA_USE_CUB`) is now fully Goose with
-   explicit primitives: dynamic shared base, shared load/store, `__syncthreads`
-   and `shfl_up`. The statement order is preserved, so the float results are
-   bit-identical. This is the pattern to reuse for `softmax` and the `argsort`
-   bitonic kernel, which were the other members of this class.
-6. Downstream phases P4–P11.
+5. CUDA shared-memory kernels — unblocked by EXP279 and closed by EXP280–285
+   (softmax forward mask-free/mask/sinks, backward, cooperative) and EXP283
+   (bitonic argsort). The pattern: explicit shared base/load/store/
+   `__syncthreads`/shuffles plus a statement-by-statement port.
+6. CUDA recurrent kernels (RWKV6/7 `wkv.cu`, GLA `gla.cu`) — **blocked on local
+   arrays**. Each thread keeps `float state[head_size]` with `head_size` 64 or
+   128 in registers, and Goose has no local array type; the device backend was
+   deliberately kept free of the stack allocator (the emit gate asserts no
+   `gg_allocate`). Two honest options, neither taken blindly yet: an explicit
+   scratch-memory contract for the state (values identical, memory pattern
+   different, needs its own gate) or a language array feature (the compiler is
+   read-only). EXP172 already covers the GDN scalar/MMA path, so this is the
+   remaining recurrent scope only.
+7. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+   subsystem; this host has one GPU, so no arm can exercise it. It belongs to
+   P3-18's hardware-unverified ledger rather than to blind porting.
+8. Downstream phases P4–P11.
 
 ## Disk
 
