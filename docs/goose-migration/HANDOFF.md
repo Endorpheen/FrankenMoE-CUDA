@@ -719,10 +719,18 @@ most dangerous and is worth checking first in any new fixture.
    Also re-read the earlier line note (item 80) in this light: EXP349's `mixed` block belongs to the
    accepted line, not to `work`, so it is not "the other line" after all — the target line is the one
    with `llama_batch_ext`.
-82. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+82. Stage method fixed — EXP358 builds the stage from `llama.cpp-flint-cuda/build-cuda`, the line
+   the accepted runtime comes from: 44 objects, every `llama_` symbol `libllama-common` needs is
+   exported, all three library names replaced. The run is exact (tokens, 128 probabilities, hash) and
+   logs **zero** accepted-runtime witnesses, which is how we now know the substitution is real.
+   Prefill/decode are 1586.5 / 24.1 — the floors belong to the accepted Goose-built runtime, this
+   stage is the plain line by construction.
+   Next: add call sites to this line, starting with `ubatch_add` (its module matches this line's
+   `mixed` block), and only then read a witness.
+83. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-83. Downstream phases P4–P11.
+84. Downstream phases P4–P11.
 
 ## Disk
 
