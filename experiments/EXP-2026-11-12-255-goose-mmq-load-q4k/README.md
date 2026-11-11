@@ -24,3 +24,21 @@ where `sc32/m32 = unpack_scales_q45_K(scales, ksc + 0 / +2)` and `sc8/m8` are it
 
 Not gated yet. Next: the A/B harness at kernel level (one thread pair computing native and Goose staging for the same
 block), then substitution and the accepted-profile check.
+
+## First harness run: compiled, but the kernel faults
+
+`source/cuda-runtime.cu` now carries both sides: `native_load` (the MMA-branch body copied verbatim) and the Goose
+call, into separately zeroed staging arrays, compared element by element.
+
+Build and run:
+
+    nvcc -c ... -> /tmp/fg255.o (160,440 bytes)
+    FG255Q_AB mismatches=0 cuda=700
+
+`cuda=700` is `cudaErrorIllegalAddress`: the kernel faults, so "0 mismatches" is not a result -- the comparison
+either did not run to completion or read garbage after the fault. Recorded as a failed first run rather than a pass.
+
+Most likely causes, in order: the `half2` staging arrays are not 4-byte aligned after my pointer arithmetic, or the
+shared-memory request (2*64*32 + 2*64*16 ints) exceeds what a single block can reserve without opt-in.
+
+Next: align the staging arrays explicitly, size the request conservatively, and only then read the mismatch count.

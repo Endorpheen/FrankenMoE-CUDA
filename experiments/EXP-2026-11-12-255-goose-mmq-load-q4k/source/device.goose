@@ -43,4 +43,4 @@ fn load_row(x:u64, qs_stage:u64, dm_stage:u64, kbx0:i64, stride:i64, i:i64, txi:
     true
 }
 
-fn main(){ }
+fn main(){ load_row(0 as u64,0 as u64,0 as u64,0 as i64,0 as i64,0 as i64,0 as i64,0 as i64,0 as i64); }
