@@ -190,3 +190,17 @@ from a foreign DSO.
 Next probe: call `ctx.pool()` once earlier (before any other work) and print its address, and also try
 `ggml_cuda_pool_alloc` from a native peer at the same point, to see whether the difference is the timing of the
 first pool creation rather than the call site.
+
+## Layout verified against the right headers, and the crash precedes the library call
+
+Dependency check with `nvcc -M` confirms the module really compiles against
+`llama.cpp-flint-cuda/ggml/src/ggml-cuda/common.cuh` and `ggml/include/ggml-cuda.h`, so the context layout is the
+one the running backend uses — the "wrong struct offsets" hypothesis is ruled out.
+
+gdb then shows the fault address inside the module, with **no frame** for `new_pool_for_device`, and the symbol is
+`T` in the backend and resolves. So the crash happens while evaluating `ctx.pool()`, before the backend member is
+entered: the access `pools[device][curr_stream_no]` on a context that is valid from the backend's point of view.
+
+Next probe: print `&ctx` and call `ctx.pool()` once at the very top of the function, before any other use of the
+context, to separate "the object is fine but this expression faulting" from "the first pool creation is the
+problem".
