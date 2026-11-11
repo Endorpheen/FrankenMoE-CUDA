@@ -235,3 +235,27 @@ Consequence for this item: the server never reaches the compute path, so `FG410S
 (`grep FG410S server.log` = 0) and no completion can be compared. This is an environment blocker — free VRAM
 below what the accepted profile needs — not a defect of the port. The item stays open until a run reaches
 completion `e68df05b` with equal probabilities and a restore.
+
+## Fifteenth measurement: the GPU can allocate, the run still cannot
+
+A standalone probe with the CUDA runtime, in a fresh process:
+
+    free=5874 MiB total=11871 MiB
+    alloc 0..3 (900 MiB each): ok      -> 3.6 GiB of contiguous allocations succeed
+
+So the card is not out of memory in general. The server still fails at `graph_reserve` asking for 3314.03 MiB,
+which means the residue left after the model's own GPU tensors are placed is smaller than the compute buffers
+need. `GGML_CUDA_NO_VMM=1` does not change it.
+
+Practical consequence: the run needs roughly 2.5 GiB more free VRAM than the machine currently offers while
+`whisper-cli` (2478 MiB) and the desktop/browser GPU processes are resident. Nothing in the port can change
+that, and stopping someone else's process is not mine to do.
+
+Meanwhile the dispatch question is the real remaining work and does not need the GPU:
+
+- `ggml_vec_dot_q4_K_q8_K` (what the server calls) returns 15579.2627 on a captured case;
+- `_generic` in the same binary returns 15579.2627 too;
+- the Goose kernel returns 15579.2646, matching the portable source.
+
+So on this machine the dispatched kernel is **not** the portable algorithm, and hooking it with the portable
+port would change the numbers. The AVX2 grouping has to be reproduced for a faithful replacement.
