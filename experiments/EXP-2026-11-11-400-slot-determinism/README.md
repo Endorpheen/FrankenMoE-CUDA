@@ -42,7 +42,28 @@ So turning the Goose routes off does not change a single byte of the state file.
 statement than run-to-run determinism: it means the ported decisions reproduce the native file exactly,
 because the native path and the Goose path agree.
 
-## Limit, with the exact blocker
+## The accepted binary writes the same file
+
+The blocker below was solved, not accepted. The accepted DSO only needs the goose ggml build that lives in
+`runtime/run`, which its own run directory does not ship:
+
+    LD_LIBRARY_PATH=/…/runtime/run:/…/runtime/exp244/measured-apex-or244-or-goose/run \
+    LD_PRELOAD=/…/…/run/libllama.so.0  llama-server … --slot-save-path …
+
+With that, the **accepted runtime** writes
+
+| writer | size | sha256 |
+|---|---|---|
+| reconstructed tree (Goose routes on) | 387 989 920 | `3e216c49…` |
+| accepted runtime `libllama.so.0` | 387 989 920 | `3e216c49…` |
+
+**Byte-identical.** Both also answer `e68df05b` and restore exactly. So the Goose metadata selection,
+layout arithmetic, recurrent payload spans and hybrid delegation reproduce the accepted binary's file
+bit for bit, not merely "restore fine".
+
+## The blocker as it stood
+
+
 
 Byte identity against a file written by the **accepted runtime binary** is still not measured. I tried:
 `runtime/exp244/measured-apex-or244-or-goose/run/libllama.so.0` does not start in that directory —
