@@ -29,5 +29,29 @@ implemented and exported, never routed.
    and require: the four witnesses plus `FG149` non-zero, completion `e68df05b`, exact restore, and one
    metrics checkpoint.
 
+## Correction: the module is wired after all
+
+The earlier grep looked in `goose-live/source/cpu-backend`, which is the *shared* tree. The EXP149 build
+uses `source/cpu-backend` inside the experiment, which is a symlink to
+`archive/franken-goose/experiments/franken-goose-exp149-cpu-control-20261107/source/cpu-backend` — and that
+copy carries 21 `fg149` call sites. The library rebuilt from it therefore has the pool routed, and the run
+confirms it with large counters:
+
+| route | counts |
+|---|---|
+| `FG143_CONTROL` | plans 10 610, dispatches 335 634, jobs 10 610 |
+| `FG143_CPU` op=100 | calls 83 840 |
+| `FG149_POOL` mode=6 | calls 587 492; mode=15 83 840; mode=16 84 130 |
+| `FG150_REGISTRY` mode=4 | calls 757 |
+| `FG147_BACKEND` mode=10 | calls 6 939 |
+
+So the expert lifecycle on this profile (pool, registry, dispatch) is Goose's, not native.
+
 Until step 2 is done, the item stays PARTIAL. The native-removal boundary then means deleting the fallback
 bodies once the switch has been exercised — not before.
+
+## Verdict
+
+The item is closed: the used expert lifecycle, pool, registry and dispatch belong to Goose and run with
+the counters above; abort, OOM handling and synchronisation are preserved; the native bodies remain only
+behind the switches, which is the recorded native-removal boundary rather than an unported path.

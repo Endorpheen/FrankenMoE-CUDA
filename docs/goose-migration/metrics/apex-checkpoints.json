@@ -61,6 +61,26 @@
         "equal_to_reference": true
       },
       "delta_note": "1647.0 / 23.75 against 1621.3 / 22.72 and 1640.2 / 23.52 at earlier checkpoints: spread inside run noise"
+    },
+    {
+      "schema": 1,
+      "item": "APEX.CPU_CONTROL (eighth closed item)",
+      "when": "2026-11-11T19:42:21.203805+03:00",
+      "series": "candidate all-CPU (--cpu-moe), separate from the baseline placement",
+      "candidate_status": "candidate tree with the rebuilt Goose libggml-cpu (326 symbols), not the accepted control",
+      "profile": "Apex 32K/128, temp 1.0, top_k 20, top_p 0.95, min_p 0, seed 123, n_probs 5",
+      "prefill_tok_s": 1573.61,
+      "decode_tok_s": 21.93,
+      "peak_rss_mib": 22850.9,
+      "peak_vram_mib_attributed": 6408,
+      "gpu_total_used_mib_max": 9827,
+      "memory_method": "RSS: sum of VmRSS over the server tree at 1 Hz; VRAM: nvidia-smi per-process query filtered to the tree",
+      "background_load": "compiler line and other workers active; single run",
+      "correctness": {
+        "completion_sha": "e68df05b…",
+        "equal_to_reference": true
+      },
+      "delta_note": "1573.6/21.93 against 1647.0/23.75 at the previous point: outside nothing, but still a single run under load; trend only"
     }
   ]
 }
