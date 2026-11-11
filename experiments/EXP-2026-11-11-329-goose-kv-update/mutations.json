@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "a mirrored cache does work",
+    "status": "CAUGHT",
+    "failures": 556,
+    "exit_code": 1
+  },
+  {
+    "mutation": "values are copied even where none exist",
+    "status": "CAUGHT",
+    "failures": 2645,
+    "exit_code": 1
+  },
+  {
+    "mutation": "only one layer is copied",
+    "status": "CAUGHT",
+    "failures": 3637,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the shift counters are not reset",
+    "status": "CAUGHT",
+    "failures": 1407,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a shift runs without RoPE",
+    "status": "CAUGHT",
+    "failures": 1304,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a shift runs without any layer using RoPE",
+    "status": "CAUGHT",
+    "failures": 1116,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed compute still reports an update",
+    "status": "CAUGHT",
+    "failures": 245,
+    "exit_code": 1
+  },
+  {
+    "mutation": "Step35 is allowed to shift",
+    "status": "CAUGHT",
+    "failures": 657,
+    "exit_code": 1
+  }
+]

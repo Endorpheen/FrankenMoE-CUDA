@@ -456,10 +456,16 @@ most dangerous and is worth checking first in any new fixture.
    Recorded: "empty cells count as positions" in the maximum is provably unobservable —
    an empty cell is -1, the running maximum starts far below it, and the fallback is -1 —
    so it was replaced by dropping the sequence-bit check.
-49. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+49. KV update — EXP329 transfers `update`: stream copies first (keys always, values only
+   where a value tensor exists, per layer), then the shift pass guarded by `can_shift`
+   (Step35 and multi-position models cannot shift) with `-7` standing in for the native
+   abort, a graph that runs only when RoPE is enabled, some layer uses it, allocation and
+   compute succeed, and shift counters reset on every stream either way. The return value
+   means a shift graph actually ran, so a pure copy returns false. 26 320 checks, 8/8.
+50. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-50. Downstream phases P4–P11.
+51. Downstream phases P4–P11.
 
 ## Disk
 
