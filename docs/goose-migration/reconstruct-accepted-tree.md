@@ -190,7 +190,7 @@ Counted by Goose calls inside each function of the staged `llama-kv-cache.cpp`:
 | `apply_ubatch` | 6 |
 | `prepare` | 4 |
 | `seq_rm` | 4 |
-| `state_read_sinfo` | **0** |
+| `state_read_sinfo` | guards 3 (EXP373) |
 | `state_write` / `state_clear` | added by us (EXP371/372) |
 
 So the read orchestration is the one KV block the accepted runtime left native, and it is also the

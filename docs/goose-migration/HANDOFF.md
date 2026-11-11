@@ -821,10 +821,17 @@ most dangerous and is worth checking first in any new fixture.
    Also recorded: the batch area is already Goose-owned in the accepted runtime (fg240q/fg241u/fg242o/
    fg243c), so EXP349/350/352 duplicate existing routes and must not be stacked on top.
    The tree is a side tree; promoting it as the active candidate is the owner's decision.
-96. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+96. KV read guards LIVE on the reconstructed tree — EXP373 wires the three `state_read_sinfo` guards
+   (mirror layout size, section stream count, zero-cell mirror emptiness) into the reconstructed tree:
+   gate 41 checks / 0 failures, and on a **successful** restore round trip the log shows
+   `FG373S_KV_READ_SINFO` once alongside `FG345W_KV_STATE_WRITE` and the accepted `FG241U`, with both
+   completions at `e68df05b` and all probabilities equal.
+   Complementary to EXP367 (the clear on the failure path). Not transferred: the per-stream body
+   (meta/data order and clear-before-throw) — same interleaving constraint as EXP366.
+97. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-97. Downstream phases P4–P11.
+98. Downstream phases P4–P11.
 
 ## Disk
 
