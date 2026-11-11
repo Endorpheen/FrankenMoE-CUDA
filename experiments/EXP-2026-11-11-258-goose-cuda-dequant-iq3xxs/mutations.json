@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "q3 stride 8*ib -> 4*ib",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "gas offset 66+4*ib -> 66+2*ib",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "exponent shift 28 -> 27",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "second grid group j+4 -> j+8",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "sign index shift 7*il -> 6*il",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
