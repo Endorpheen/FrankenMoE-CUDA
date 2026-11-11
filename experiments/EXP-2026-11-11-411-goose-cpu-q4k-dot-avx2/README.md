@@ -87,3 +87,24 @@ The defect: lane grouping. The portable kernel assigns lane `l` the elements `l,
     FG410S_ADAPTOR cases=160 checks=161 failures=0
 
 160 of 160 bit-exact against `ggml_vec_dot_q4_K_q8_K` for nb = 1, 2, 3, 7.
+
+## Run: the environment reproduces e68df05b, but the hook is not reached
+
+With free VRAM restored (8540 MiB) the accepted profile runs to completion twice, both with the reference
+result:
+
+    first_sha = e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9
+    tokens_equal = true, probs_equal = true, content_equal = true, restore_ok = true
+    leftover_children = []
+
+But `FG410S` appears **0 times** in the log, so the drop-in library was never called. The first attempt had a
+wrong `LD_PRELOAD` path (the file was in the 411 directory, the path pointed at 410); the second, corrected
+attempt still shows zero witnesses.
+
+Cause: `LD_PRELOAD` interposes external references only. Calls from inside `libggml-cpu` to its own
+`ggml_vec_dot_q4_K_q8_K` are bound internally, so preloading cannot redirect them. An `objcopy --redefine-sym`
+on a copy of the library also left the symbol unchanged.
+
+Consequence: the e68df05b run proves the profile and the machine reproduce the reference, but it does **not**
+prove the Goose kernel took part. Acceptance needs the patched library (or the Goose-built `libggml-cpu`) where
+the symbol is genuinely replaced, plus a non-zero witness.
