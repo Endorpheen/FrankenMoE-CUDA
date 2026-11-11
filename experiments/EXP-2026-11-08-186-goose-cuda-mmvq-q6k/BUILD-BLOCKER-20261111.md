@@ -123,3 +123,16 @@ blocker: the build route works end to end (backend from flint, module compiled u
 resolution, call routed).
 
 Active runtime untouched; native kernel still used there.
+
+## compute-sanitizer is clean: the fault is host-side
+
+    compute-sanitizer --tool memcheck ./llama-server ...
+    ========= ERROR SUMMARY: 0 errors      (process still exits 11)
+
+So no device memory error is reported, and the crash is in host code inside the module, before or around the
+kernel launch. The exact instruction requires the module's own address map (the gdb frame was at an offset that
+does not map one-to-one here).
+
+Next probe: add stage prints to `cuda-runtime.cu`'s host part (packet fill, quantize call, launch, read-back) and
+rebuild; the last print before the crash names the step. This is the same incremental approach that closed the CPU
+items, and it costs one rebuild per step.
