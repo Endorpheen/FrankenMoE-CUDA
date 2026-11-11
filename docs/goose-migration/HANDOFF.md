@@ -852,10 +852,15 @@ most dangerous and is worth checking first in any new fixture.
    `build/bridge-377.o` still compiled from the last mutant while `host.goose` had been restored, so the
    adaptor reported 607 failures against a correct module; a rebuild returns 2161/0. Same family as the
     EXP353 driver leaving applied mutations behind: the artifact outlives the edit.
-102. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+102. The sampler's softmax family cannot be ported — Goose has no `exp`/`log`/`pow` for `f32` (probe
+   `var y:f32=exp(x);` fails with `unknown function 'exp'`). `softmax`, `dist`, `xtc`, `typical`,
+   `top-n-sigma`, `mirostat` all need `exp`; `rsqrt` exists only as an `extern` host call, which is not
+   a port. Recorded in compiler-limitations item 13. Sampler blocks stay native by necessity, not by
+   omission.
+103. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-103. Downstream phases P4–P11.
+104. Downstream phases P4–P11.
 
 ## Disk
 

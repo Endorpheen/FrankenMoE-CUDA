@@ -312,3 +312,22 @@ hazard that has already produced two wrong-constant bugs and will keep doing so 
 fixed, because every bridge renames `main`.
 
 Items 5, 7, 8, 10, 11 and 12 are friction or moderate cost and do not stop the port.
+
+## 13. No transcendental functions for `f32`/`f64`
+
+**Status:** open.
+
+`exp`, `log`, `sin`, `cos` and `pow` are not builtins. A one-line probe
+
+    fn main()->i64{ var x:f32=0.5 as f32; var y:f32=exp(x); return (y*1000000 as f32) as i64; }
+
+fails with `error: unknown function 'exp'`. Today the only way to get such a value is an `extern` call
+into the host, which is not a port.
+
+**Consequence.** `llama_sampler_softmax_impl` and everything downstream of it (`dist`, `xtc`, `typical`,
+`top-n-sigma`, `mirostat`) cannot be ported without changing the numerics: the normaliser is a sum of
+`exp(logit - max)`. Reproducing libstdc++'s `discrete_distribution` exactly is a second, independent
+obstacle. Both sampler blocks therefore stay native, recorded here rather than approximated.
+
+`rsqrt` is available only because it is declared `extern "fg_rms_rsqrt"`, i.e. the same host-call escape
+hatch, so it does not contradict the above.
