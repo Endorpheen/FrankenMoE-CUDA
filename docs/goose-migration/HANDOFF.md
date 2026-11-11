@@ -784,10 +784,17 @@ most dangerous and is worth checking first in any new fixture.
    truncated 1 MiB copy, server rejects it, and `FG367S_KV_STATE_CLEAR` fires. The completion before
    the failure stays `e68df05b`. Open: the whole-cache `seq_id == -1` branch and the hybrid drop path,
    which need a cancellation or an unload.
-91. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+91. KV write and clear together — EXP368 links both KV call sites plus both batch blocks in one
+   stage (5 305 536 bytes, ABI complete; the KV object gains only local `.LC` labels, 438 → 446).
+   The completion stays `e68df05b`; the save fires `FG345W_KV_STATE_WRITE`, the truncated restore is
+   rejected and fires `FG367S_KV_STATE_CLEAR`; both batch witnesses stay live.
+   Neither KV route is on completion — one is on save, the other on a failed restore — so this proves
+   coexistence, not a new path. KV remaining: `state_read_data` (format, EXP366), the whole-cache
+   clear branch, the hybrid drop, and separate live routes for meta/data.
+92. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-92. Downstream phases P4–P11.
+93. Downstream phases P4–P11.
 
 ## Disk
 
