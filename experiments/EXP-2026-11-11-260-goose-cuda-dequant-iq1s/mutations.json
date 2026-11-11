@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "block stride 50 -> 51",
+    "status": "CAUGHT",
+    "failures": 3
+  },
+  {
+    "mutation": "qh offset 34+2*ib -> 34+ib",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "grid index shift 3*il -> 2*il",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "delta bit 0x8000 -> 0x4000",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scale drops the +1",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
