@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "dot product drops the gradient factor",
+    "status": "CAUGHT",
+    "failures": 14363
+  },
+  {
+    "mutation": "warp ladder starts at 8",
+    "status": "CAUGHT",
+    "failures": 14346
+  },
+  {
+    "mutation": "final expression drops the dstf factor",
+    "status": "CAUGHT",
+    "failures": 14355
+  },
+  {
+    "mutation": "dot loop strides by 16 instead of 32",
+    "status": "CAUGHT",
+    "failures": 14344
+  },
+  {
+    "mutation": "host block 32 -> 64",
+    "status": "CAUGHT",
+    "failures": 3
+  }
+]
