@@ -24,6 +24,7 @@ extern "fg410k_ldf" fn ldf(base:u64,byte:i64)->f32;
 extern "fg410k_f16f32" fn f16f32(h:i64)->f32;
 extern "fg410k_ldi16" fn ldi16(base:u64,byte:i64)->i64;
 extern "fg410k_ldu32" fn ldu32(base:u64,byte:i64)->i64;
+extern "fg410k_stb" fn stb(base:u64,byte:i64,v:i64);
 extern "fg410k_fail" fn fail(code:i64);
 
 fn ensure(v:bool,c:i64){if !v{fail(c);}}
@@ -101,6 +102,9 @@ fn run(packet:i64)->bool {
             li = li + 1 as i64;
         }
         sumf = sumf - dmin * (sumi as f32);
+        stw(sc, 1300 as i64, f32b(d));
+        stw(sc, 1308 as i64, sumi);
+        stw(sc, 1316 as i64, f32b(sums[0]));
         i = i + 1 as i64;
     }
     li = 0 as i64;
@@ -114,7 +118,7 @@ fn run(packet:i64)->bool {
 
 fn byte_out(base:u64, off:i64, v:i64) {
     for bi in 4 {
-        stw(base, off + bi as i64, (v >> ((bi*8) as i64)) & 0xff);
+        stb(base, off + bi as i64, (v >> ((bi*8) as i64)) & 0xff);
     }
 }
 

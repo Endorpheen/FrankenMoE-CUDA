@@ -586,9 +586,9 @@ label0:;
   t11 = ((int64_t)(((int64_t)UINT64_C(255))));
   t12 = ((int64_t)(((t10) & (t11))));
 #ifndef __cplusplus
-  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+  extern void (fg410k_stb)(uint64_t, int64_t, int64_t);
 #endif
-  fg410k_stw(t2, t5, t12);
+  fg410k_stb(t2, t5, t12);
   }
 label1:;
   t0++; goto label0;
@@ -872,22 +872,37 @@ static uint8_t fg410ds_gg_function_1(int64_t p0, int64_t base) {
   float t249;
   float t250;
   float t251;
-  int64_t t252;
+  uint64_t t252;
   int64_t t253;
-  int64_t t254;
+  float t254;
   int64_t t255;
-  float t256;
-  int64_t t257;
-  float * t258;
-  float t259;
-  int64_t t260;
+  int64_t t256;
+  uint64_t t257;
+  int64_t t258;
+  int64_t t259;
+  uint64_t t260;
   int64_t t261;
   int64_t t262;
-  int64_t t263;
-  int64_t t264;
-  float t265;
+  float * t263;
+  float t264;
+  int64_t t265;
   int64_t t266;
-  uint64_t t267;
+  int64_t t267;
+  int64_t t268;
+  int64_t t269;
+  int64_t t270;
+  float t271;
+  int64_t t272;
+  float * t273;
+  float t274;
+  int64_t t275;
+  int64_t t276;
+  int64_t t277;
+  int64_t t278;
+  int64_t t279;
+  float t280;
+  int64_t t281;
+  uint64_t t282;
   int64_t v0;
   int64_t v1;
   uint64_t v2;
@@ -1341,43 +1356,77 @@ label23:;
   t250 = ((float)(((float)(v17))));
   t251 = ((float)(((t249) * (t250))));
   v5 = ((float)(((t248) - (t251))));
-  t252 = ((int64_t)(v9));
-  t253 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v9 = ((int64_t)(((int64_t)((uint64_t)(t252) + (uint64_t)(t253)))));
+  t252 = ((uint64_t)(v4));
+  t253 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1300))))));
+  t254 = ((float)(v10));
+#ifndef __cplusplus
+  extern int64_t (fg410k_f32bits)(float);
+#endif
+  t255 = fg410k_f32bits(t254);
+  t256 = ((int64_t)(t255));
+#ifndef __cplusplus
+  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stw(t252, t253, t256);
+  t257 = ((uint64_t)(v4));
+  t258 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1308))))));
+  t259 = ((int64_t)(v17));
+#ifndef __cplusplus
+  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stw(t257, t258, t259);
+  t260 = ((uint64_t)(v4));
+  t261 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1316))))));
+  /* FG_DIRECT_SLICE_INDEX */
+  t262 = ((int64_t)UINT64_C(0));
+  t263 = ((float *)(v6).data) + fg410ds_gg_index(t262, ((int64_t)UINT64_C(8)));
+  t264 = ((float)((*t263)));
+#ifndef __cplusplus
+  extern int64_t (fg410k_f32bits)(float);
+#endif
+  t265 = fg410k_f32bits(t264);
+  t266 = ((int64_t)(t265));
+#ifndef __cplusplus
+  extern void (fg410k_stw)(uint64_t, int64_t, int64_t);
+#endif
+  fg410k_stw(t260, t261, t266);
+  t267 = ((int64_t)(v9));
+  t268 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v9 = ((int64_t)(((int64_t)((uint64_t)(t267) + (uint64_t)(t268)))));
   }
   goto label4;
 label5:;
   v7 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
 label25:;
-  t254 = ((int64_t)(v7));
-  t255 = ((int64_t)(((int64_t)UINT64_C(8))));
-  if (!(((t254) < (t255)))) goto label26;
+  t269 = ((int64_t)(v7));
+  t270 = ((int64_t)(((int64_t)UINT64_C(8))));
+  if (!(((t269) < (t270)))) goto label26;
   {
-  t256 = ((float)(v5));
+  t271 = ((float)(v5));
   /* FG_DIRECT_SLICE_INDEX */
-  t257 = v7;
-  t258 = ((float *)(v6).data) + fg410ds_gg_index(t257, ((int64_t)UINT64_C(8)));
-  t259 = ((float)((*t258)));
-  v5 = ((float)(((t256) + (t259))));
-  t260 = ((int64_t)(v7));
-  t261 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-  v7 = ((int64_t)(((int64_t)((uint64_t)(t260) + (uint64_t)(t261)))));
+  t272 = v7;
+  t273 = ((float *)(v6).data) + fg410ds_gg_index(t272, ((int64_t)UINT64_C(8)));
+  t274 = ((float)((*t273)));
+  v5 = ((float)(((t271) + (t274))));
+  t275 = ((int64_t)(v7));
+  t276 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
+  v7 = ((int64_t)(((int64_t)((uint64_t)(t275) + (uint64_t)(t276)))));
   }
   goto label25;
 label26:;
-  t262 = ((int64_t)(v0));
-  t263 = ((int64_t)(((int64_t)UINT64_C(2))));
-  t264 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t265 = ((float)(v5));
+  t277 = ((int64_t)(v0));
+  t278 = ((int64_t)(((int64_t)UINT64_C(2))));
+  t279 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t280 = ((float)(v5));
 #ifndef __cplusplus
   extern int64_t (fg410k_f32bits)(float);
 #endif
-  t266 = fg410k_f32bits(t265);
-  t267 = ((uint64_t)(((uint64_t)(t266))));
+  t281 = fg410k_f32bits(t280);
+  t282 = ((uint64_t)(((uint64_t)(t281))));
 #ifndef __cplusplus
   extern void (fg410k_put)(int64_t, int64_t, int64_t, uint64_t);
 #endif
-  fg410k_put(t262, t263, t264, t267);
+  fg410k_put(t277, t278, t279, t282);
   t0 = ((uint8_t)UINT64_C(1));
   goto fg410ds_gg_done;
   }

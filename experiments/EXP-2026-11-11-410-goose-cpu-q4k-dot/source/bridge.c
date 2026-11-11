@@ -6,6 +6,7 @@
 #include <stdatomic.h>
 #include <math.h>
 static _Atomic unsigned long long g_calls;
+static void   g_stb(uint64_t b,int64_t o,int64_t v){ *(uint8_t*)(uintptr_t)(b+(uint64_t)o)=(uint8_t)v; }
 static void   g_stw(uint64_t b,int64_t o,int64_t v){ *(int64_t*)(uintptr_t)(b+(uint64_t)o)=v; }
 static int64_t g_ld(uint64_t b,int64_t o){ return *(const int64_t*)(uintptr_t)(b+(uint64_t)o); }
 static void   g_put(int64_t p,int64_t k,int64_t i,uint64_t v){ ((int64_t*)(uintptr_t)p)[k*16+i]=(int64_t)v; }
@@ -25,6 +26,7 @@ static void g_fail(int64_t c){ fprintf(stderr, "FG410S validation code %lld\n", 
 #define fg410k_get  g_get
 #define fg410k_put  g_put
 #define fg410k_stw  g_stw
+#define fg410k_stb  g_stb
 #define fg410k_ld_i64 g_ld
 #define fg410k_ldu8 g_ldu8
 #define fg410k_ldi8 g_ldi8
@@ -49,7 +51,14 @@ float fg410s_dot(int64_t nb, const void * q4, const void * q8) {
     pkt[0*16+0]=nb; pkt[0*16+1]=(int64_t)(uintptr_t)q4; pkt[0*16+2]=(int64_t)(uintptr_t)q8;
     pkt[1*16+0]=(int64_t)(uintptr_t)sc; pkt[2*16+0]=0;
     (void) fg410ds_gg_function_1((int64_t)(uintptr_t)pkt, 1);
-    if (getenv("FG410_DEBUG")) fprintf(stderr, "DBG nb=%lld raw=%lld\n", (long long) nb, (long long) pkt[2*16+0]);
+    if (getenv("FG410_DEBUG")) {
+        float ddbg, s0dbg; int64_t sib;
+        { int32_t u; memcpy(&u, (char*)sc + 1300, 4); memcpy(&ddbg, &u, 4);
+          memcpy(&u, (char*)sc + 1316, 4); memcpy(&s0dbg, &u, 4);
+          memcpy(&sib, (char*)sc + 1308, 8); }
+        fprintf(stderr, "DBG nb=%lld raw=%lld d=%.9g sumi=%lld sums0=%.9g\n",
+                (long long) nb, (long long) pkt[2*16+0], ddbg, (long long) sib, s0dbg);
+    }
     float r; { int32_t u = (int32_t) pkt[2*16+0]; memcpy(&r, &u, 4); }
     free(pkt); free(sc);
     return r;
