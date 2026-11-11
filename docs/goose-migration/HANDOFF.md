@@ -776,10 +776,18 @@ most dangerous and is worth checking first in any new fixture.
    files the accepted runtime already wrote.
    So this block is not a live candidate under the current format. The write side, which has no such
    interleaving, is live (EXP363/EXP364).
-90. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+90. KV state clearing LIVE — EXP367 wires the EXP344 clear plan: contiguous cells get one call per
+   tensor, scattered one per cell, keys for every layer, values only where a tensor exists, transposed
+   values per embedding row; the bridge returns (kind, layer, offset, size) and llama performs the
+   calls. Bridge gate 51 077 checks / 0 failures.
+   Witnessed on the only path that reaches it — a failed restore: save (387 989 920 bytes), restore a
+   truncated 1 MiB copy, server rejects it, and `FG367S_KV_STATE_CLEAR` fires. The completion before
+   the failure stays `e68df05b`. Open: the whole-cache `seq_id == -1` branch and the hybrid drop path,
+   which need a cancellation or an unload.
+91. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-91. Downstream phases P4–P11.
+92. Downstream phases P4–P11.
 
 ## Disk
 
