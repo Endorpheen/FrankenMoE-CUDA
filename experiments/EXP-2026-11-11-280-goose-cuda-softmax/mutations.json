@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "block max tracks the last value instead of the maximum",
+    "status": "CAUGHT",
+    "failures": 2730
+  },
+  {
+    "mutation": "warp max ladder adds instead of taking the maximum",
+    "status": "CAUGHT",
+    "failures": 27894
+  },
+  {
+    "mutation": "exp pass forgets to subtract the row max",
+    "status": "CAUGHT",
+    "failures": 9463
+  },
+  {
+    "mutation": "inverse sum uses 2.0 instead of 1.0",
+    "status": "CAUGHT",
+    "failures": 9541
+  },
+  {
+    "mutation": "host doubling cap 1024 -> 2048",
+    "status": "CAUGHT",
+    "failures": 1
+  }
+]
