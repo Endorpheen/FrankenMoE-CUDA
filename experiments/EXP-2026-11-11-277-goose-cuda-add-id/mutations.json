@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "device src1 row uses nb01 instead of nb11",
+    "status": "CAUGHT",
+    "failures": 74
+  },
+  {
+    "mutation": "device dst row drops the batch term",
+    "status": "CAUGHT",
+    "failures": 7600
+  },
+  {
+    "mutation": "device adds src0 twice",
+    "status": "CAUGHT",
+    "failures": 10364
+  },
+  {
+    "mutation": "device loop drops the last column",
+    "status": "CAUGHT",
+    "failures": 22
+  },
+  {
+    "mutation": "host thread cap 768 -> 767",
+    "status": "CAUGHT",
+    "failures": 1
+  }
+]
