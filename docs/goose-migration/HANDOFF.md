@@ -222,10 +222,18 @@ most dangerous and is worth checking first in any new fixture.
    dead; and a uniform position draw never reaches the rollback branch, which is
    why three mutations first looked harmless. The gate now aims half the removals
    at the sequence's own cell and probes the exact snapshot bound.
-16. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+16. Recurrent state metadata — EXP296 transfers `state_write_meta` and the
+   whole-cache branch of `state_read_meta`: 44 480 checks, 8/8 mutations caught,
+   write compared byte for byte and read fed the exact bytes the transcription
+   produced. The tensor payload around the metadata stays native. Note: the
+   single-sequence read branch calls `find_slot`, already covered by EXP293, and is
+   not duplicated. Gate lesson: injecting the rejected cases everywhere made the
+   exact-capacity boundary untestable, so every sixteenth trial now draws a clean
+   stream.
+17. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-17. Downstream phases P4–P11.
+18. Downstream phases P4–P11.
 
 ## Disk
 
