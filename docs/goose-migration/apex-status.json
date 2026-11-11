@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T18:18:24.537074+03:00",
+  "updated_at": "2026-11-11T18:21:37.961745+03:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -11,19 +11,19 @@
     {
       "item": "APEX.KV",
       "state": "AWAITING_PRIMARY_REVIEW",
-      "implemented": "metadata write selection (EXP393) and read decisions (EXP395); slot placement walk (EXP392) over the fg199k predicate; tensor layout arithmetic on write and read for K/V/transposed V (EXP394); updates via EXP199. Buffer primitives separated: io.write_tensor/read_tensor and backend allocation.; disable contract verified for every new route (EXP399); state file is byte-identical across runs and between switches on and off (EXP400, sha256 3e216c49...)",
+      "implemented": "metadata write selection (EXP393) and read decisions (EXP395); slot placement walk (EXP392) over the fg199k predicate; tensor layout arithmetic on write and read for K/V/transposed V (EXP394); updates via EXP199. Buffer primitives separated: io.write_tensor/read_tensor and backend allocation.; disable contract verified for every new route (EXP399); the accepted runtime binary writes a byte-identical state file: 387989920 bytes, sha256 3e216c49..., the same digest this tree writes with every Goose route on (EXP400)",
       "remaining": "none against the stated criterion. Gates 43/0, 103/0, 53703/0, 875/0; 23 mutations. Run: completion e68df05b, save 387989920 bytes, restore exact; witnesses FG392S/FG393S/FG394S/FG395S/FG345W/FG373S/FG367S/FG199K"
     },
     {
       "item": "APEX.RECURRENT_MEMORY",
       "state": "AWAITING_PRIMARY_REVIEW",
-      "implemented": "transitions and stream ordering (FG232R accepted + FG382S); tensor state I/O spans on write and read for R/PLE/S and transposed S (FG396S); hybrid delegation order and rollback (FG397S); hybrid combinators and context (FG375S, FG376S). Buffer primitives: io.write_tensor/read_tensor.; disable contract verified for every new route (EXP399); state file is byte-identical across runs and between switches on and off (EXP400, sha256 3e216c49...)",
+      "implemented": "transitions and stream ordering (FG232R accepted + FG382S); tensor state I/O spans on write and read for R/PLE/S and transposed S (FG396S); hybrid delegation order and rollback (FG397S); hybrid combinators and context (FG375S, FG376S). Buffer primitives: io.write_tensor/read_tensor.; disable contract verified for every new route (EXP399); the accepted runtime binary writes a byte-identical state file: 387989920 bytes, sha256 3e216c49..., the same digest this tree writes with every Goose route on (EXP400)",
       "remaining": "none against the stated criterion. Gates 34/0, 875/0, 33/0, 76/0, 35/0; 20 mutations. Run: completion e68df05b, restore exact. Correction applied: EXP375/376 zeros were caused by llama-memory-hybrid.cpp not being compiled, not by reachability."
     },
     {
       "item": "APEX.BATCH",
       "state": "AWAITING_PRIMARY_REVIEW",
-      "implemented": "used paths live: classify FG352S, selection FG350S, ubatch_add FG349S, outids FG242O, set building FG240Q, split FG237S/FG239B; container composition FG383S; container fill/index layout FG398S (live, 527 report lines). Real-request match: completion e68df05b, restore exact.; disable contract verified for every new route (EXP399); state file is byte-identical across runs and between switches on and off (EXP400, sha256 3e216c49...)",
+      "implemented": "used paths live: classify FG352S, selection FG350S, ubatch_add FG349S, outids FG242O, set building FG240Q, split FG237S/FG239B; container composition FG383S; container fill/index layout FG398S (live, 527 report lines). Real-request match: completion e68df05b, restore exact.; disable contract verified for every new route (EXP399); the accepted runtime binary writes a byte-identical state file: 387989920 bytes, sha256 3e216c49..., the same digest this tree writes with every Goose route on (EXP400)",
       "remaining": "storage of the ubatch containers still lives in llama (std::vector inside llama_ubatch), the same way the io primitive stays with llama on the KV payload path. Moving it would replace llama_ubatch containers with Goose-owned arrays and change every reader for no behavioural difference; proposed as a decision, not done silently. Dormant splitters (keep-tail split_equal, split_simple) are unreachable on this profile and are not claimed."
     }
   ]
