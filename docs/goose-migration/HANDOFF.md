@@ -540,10 +540,20 @@ most dangerous and is worth checking first in any new fixture.
    is **not** the read order (`state_read_data` writes recurrent, PLE, state) even though
    the native comment says the ranges mirror the write pattern — the ranges mirror, the
    order does not, and order is observable only in a journal. 31 380 checks, 8/8 mutations.
-60. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+60. Recurrent accessors — EXP340 finishes the recurrent module at plan level: `seq_pos_min`
+   (falls back to -1), `seq_pos_max` (starts at -1 and never falls back, so empty and
+   position -1 are indistinguishable), `set_rs_idx` (negative zeroes all, inclusive index
+   bound), `memory_breakdown` (sum per backend type, reported once), `get_can_shift` (always
+   true), `is_empty` (the buffer list decides; zero-sized buffers make that observable) and
+   the r/s/p size sums. 53 886 checks, 9/9 mutations.
+   The `is_empty` gate first never produced a zero-sized buffer, so "list" and "total"
+   agreed on every draw and the mutation passed at 0; zero sizes now appear at 75%.
+   P5-04 stays IN_PROGRESS only because its acceptance also names live recurrent witnesses,
+   which need a model run under rule 1.
+61. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-61. Downstream phases P4–P11.
+62. Downstream phases P4–P11.
 
 ## Disk
 
