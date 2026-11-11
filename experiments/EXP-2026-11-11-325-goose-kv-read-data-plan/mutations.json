@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "keys are split into single-cell runs",
+    "status": "CAUGHT",
+    "failures": 44012,
+    "exit_code": 1
+  },
+  {
+    "mutation": "plain values are split into single-cell runs",
+    "status": "CAUGHT",
+    "failures": 2834,
+    "exit_code": 1
+  },
+  {
+    "mutation": "key offsets drop the row size",
+    "status": "CAUGHT",
+    "failures": 5174,
+    "exit_code": 1
+  },
+  {
+    "mutation": "plain value offsets use the key row size",
+    "status": "CAUGHT",
+    "failures": 2906,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed offsets forget the cache stride",
+    "status": "CAUGHT",
+    "failures": 35966,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed sizes drop the element size",
+    "status": "CAUGHT",
+    "failures": 34127,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the layer count is not validated",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the V layout is not validated",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 1
+  }
+]

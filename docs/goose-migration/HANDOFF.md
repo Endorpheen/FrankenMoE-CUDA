@@ -432,10 +432,16 @@ most dangerous and is worth checking first in any new fixture.
    exact one-id records, mirrored layout or search, extension restored after the batch)
    and the whole-cache path (cells from zero, count-only mirror check, id range check,
    head reset). 6 715 checks, 9/9 mutations. Still open in P5-08: `state_read_data`.
-45. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+45. KV data restore — EXP325 closes P5-08 with `state_read_data`: contiguous-run
+   batching of the destination indices, the header validation order and codes, and the
+   record order (layer outermost, then embedding row for a transposed V, then runs).
+   50 384 checks, 8/8 mutations. The first run failed because the transcription had runs
+   outermost while native has layers outermost — the transcription was corrected, not
+   the module. Two validation mutations are caught by the run aborting.
+46. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-46. Downstream phases P4–P11.
+47. Downstream phases P4–P11.
 
 ## Disk
 
