@@ -13,3 +13,14 @@ source flag was changed from opt-in to opt-out (`GGML_GOOSE_CUDA_MMVQ_Q6K=0` dis
 
 Next: reconstruct the exp185 build chain (native-mmvq.o + host.o + base library) from the surviving
 `measured/.../run/libggml-cuda.so` and the sources, then enable and verify.
+
+## Reconstruction progress
+
+`EXP-2026-11-08-185-goose-cuda-mmvq-q4k/build_runtime.py` does run here and produced
+`runtime/exp185/build/cuda-mmvq-q4k.o` and `runtime/exp185/build/host.o` before stopping, because it consumes
+`runtime/exp184/build/commands.json`, which is also missing.
+
+So the dependency chain is 180 -> 181 -> 182 -> 183 -> 184 -> 185 -> 186, each experiment's `build_runtime.py`
+relying on the previous one's artefacts. Each link must be rebuilt in order (nvcc), starting at EXP180, before the
+Q6_K module can be relinked into the active library. The sources and scripts for every link are present; only
+their build outputs are missing.
