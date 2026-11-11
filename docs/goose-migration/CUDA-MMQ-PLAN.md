@@ -81,3 +81,20 @@ this device does not take - not to MMQ as a whole.
 
 That also re-frames the remainder measured earlier: `mmq.cuh` + `mmq-load-tiles.cuh` (3,375 lines of templates) is
 live code on the accepted path, not dead weight. Porting it is the real body of this item.
+
+## Next piece identified precisely: the MMA dot's scheduling, not the MMA itself
+
+For Q4_K on this device the route is: `ggml_cuda_mmq_load_tiles_q4_K` (now Goose) then the **shared**
+`ggml_cuda_mmq_vec_dot_q8_1_q8_1_mma`, then `write_back_mma`. Note it is not a Q4_K-specific dot: after staging, every
+K-quant type goes through the same generic MMA dot.
+
+That function has exactly the shape already handled twice in this plan:
+
+| part | nature | owner |
+|---|---|---|
+| loop nesting (`k01`, `j0`, `n`), tile offsets, `i0`, `ntx`, which A/B tiles are touched and in what order | decisions over indices | **portable to Goose** |
+| `load_ldmatrix`, `mma(C, A, B)` | tensor-core instructions | primitives, like the allocator and the memcpys |
+
+So the next port is the scheduling around those two primitives: the same method as EXP255 (A/B harness comparing the
+emitted offsets against the native loop, then substitution and the accepted-profile check). The MMA instruction itself
+is not arithmetic Goose can express, exactly as `dp4a` was expressed but `mma.sync` is a single hardware operation.
