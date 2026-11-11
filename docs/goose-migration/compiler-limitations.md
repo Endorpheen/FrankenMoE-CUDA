@@ -366,3 +366,14 @@ Toolchain note: nvcc 12.6 cannot build this check here — system glibc declares
 with an exception specification that clashes with CUDA's `math_functions`, and every `--ccbin`/`-std`
 combination failed identically. The device check was built with clang 21 (`--cuda-gpu-arch=sm_89`,
 libdevice). The compiler side was asked for the exact nvcc command they used.
+
+## 3a. This blocks APEX.CPU_MATH specifically
+
+The Apex profile runs with `--cpu-moe`, so the expert matrices — the item's own wording — are computed on
+the CPU by ggml's vectorised dot products. Its criterion asks that Goose own those computations. That is
+impossible without vector types or intrinsics: a scalar transcription is a different computation (slower
+by construction) and would not be the used path.
+
+Minimum dependency to unblock: vector types and at least the AVX2 intrinsics Goose would need to express a
+dot product and a matrix-vector product, or a documented way for a module to emit vectorised C. Until
+then the item stays PARTIAL with this reason, and the work moves to the next available item.
