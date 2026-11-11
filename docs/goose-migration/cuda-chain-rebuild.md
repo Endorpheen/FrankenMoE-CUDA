@@ -118,3 +118,33 @@ built library.
 Collect the remaining ten or so modules in their own shapes and add them to the link, then run the gate:
 symbol superset of 63, completion `e68df05b`, Q6_K routed by default. The library is not installed until
 that passes — it currently has fewer routes than the one it would replace.
+
+## The rebuilt library changed the answer — rejected, rolled back
+
+Linking succeeded and the server started, but the completion hash moved:
+
+| library | completion sha256 |
+|---|---|
+| inherited (in place) | `e68df05b…` |
+| rebuilt chain | **`e818303c…`** |
+
+Two consecutive completions with the rebuilt library agreed with each other, so it is not noise: the
+library computes something different. That is a correctness regression and the library was **not**
+installed; the inherited file was restored and the run again gives `e68df05b…`.
+
+### Likely cause, to be confirmed
+
+The chain now switches on routes that were opt-in in their own experiments. The per-experiment scripts
+enabled a route only for their A/B pair; linking them all makes several active at once by default (the
+flash-attention instance, the quantize paths and others), and at least one of them does not reproduce the
+native result exactly on this profile.
+
+### What the next attempt must do
+
+1. link the chain but force every goose CUDA switch **off** (the disable contract), and require
+   `e68df05b…` — this proves the reconstruction itself is faithful;
+2. then enable them one at a time, each with the exact-answer gate, and keep only those that preserve it;
+3. only then check that Q6_K is among the enabled routes, and accept the item.
+
+Step 1 is the test that should have run first: a rebuilt library that differs with everything off is a
+build defect, not a route problem.

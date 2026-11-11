@@ -40,6 +40,12 @@ def defined(path, kinds=('T','W')):
 
 priv = {}
 link_objs = []
+# names the modules expect for the privatised natives, collected from their sources
+EXPECT = {}
+for src in F.glob('experiments/EXP-*/source/cuda-runtime.cu'):
+    for m in re.finditer(r'\b(fg[0-9a-z]+_native_([A-Za-z0-9_]+))', src.read_text()):
+        EXPECT[m.group(2)] = m.group(1)
+print('expected native names:', len(EXPECT))
 # every public name any module defines: a native object that also defines one of these must be privatised,
 # even if that particular module does not overlap with it (convert.cu carries both fp32 and fp16)
 pub = set()
@@ -63,7 +69,19 @@ for t in targets:
     for sym in sorted(defined(nat)):
         if sym.endswith('.cold'): continue
         if sym not in pub: continue
-        subprocess.run(['objcopy','--redefine-sym',f'{sym}={sym}.priv',str(dst)],check=True)
+        if sym.startswith('fg'): continue   # goose entry points are consumed by the per-module .so files
+        # The modules call the privatised native symbol by an agreed name, e.g.
+        # fg185q_native_ggml_cuda_mul_mat_vec_q, so the rename must use that name rather than a suffix.
+        m = re.match(r'_Z(\d+)', sym)
+        if not m: continue
+        n = int(m.group(1)); name = sym[m.end():m.end()+n]; rest = sym[m.end()+n:]
+        newname = EXPECT.get(name)
+        if newname is None:
+            # no module calls this native symbol back; a plain suffix keeps the definition out of the way
+            new = sym + '.priv'
+        else:
+            new = '_Z' + str(len(newname)) + newname + rest
+        subprocess.run(['objcopy','--redefine-sym',f'{sym}={new}',str(dst)],check=True)
         renamed += 1
     priv[t] = renamed
     link_objs.append(str(dst))
