@@ -40,3 +40,15 @@ and the fix is column-aware staging plus block-to-destination mapping in the gen
    bridge.
 3. REQUEST/SESSION: decide whether the HTTP layer is in scope; if yes it is a new Goose component, not a port.
 4. CUDA_MATVEC full: column-aware staging in the generated device code (mechanical but substantial).
+
+## Measured size of what remains in the three PARTIAL items
+
+| item | remainder, measured | why it is not a decision to port |
+|---|---|---|
+| CUDA_MMQ | the tensor-core matmul body: `mmq.cuh` + `mmq-load-tiles.cuh` = **3,375 lines** of templates, plus the `mma` fragments | this is compute, not a decision: it has to be ported for the MMA route to be Goose |
+| MODEL_GRAPH | **32** `ggml_*` calls inside `build_moe_ffn` (mul_mat, add_id, glu, weighted sum) | these are the graph primitives the plan itself declares out of scope, like the allocator and the backend calls; the three decisions on top of them are already Goose and live |
+| REQUEST/SESSION | the JSON surface: **164** `json` references in `server-context.cpp` | JSON is a vendor library, not inference logic; the four decisions on top of it (slot budget, request bounds, context shift, sampler choice) are already Goose, three of them defect-tested live |
+
+So the honest shape of the remaining work: one large compute port (CUDA_MMQ's tensor-core route) and two
+boundaries that are primitive/libraries by the plan's own definition. Nothing here is waiting on a missing
+artefact or an unanswered question.
