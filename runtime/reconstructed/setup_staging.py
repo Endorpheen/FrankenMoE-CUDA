@@ -1029,3 +1029,4 @@ subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_unicode_mo
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_loader_align.py')], check=True)
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_weight_placement.py')], check=True)
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_sched_decisions.py')], check=True)
+subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_transfer_policy.py')], check=True)
