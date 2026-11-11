@@ -485,10 +485,22 @@ most dangerous and is worth checking first in any new fixture.
    by assert: slots beyond the stream's cells, duplicate ids inside a token, and writing a
    cell that already holds two sequences. Out-of-range slot indices first appeared as heap
    corruption, not as a failed comparison.
-53. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+53. KV shift input and rotation copy — EXP333 transfers `set_input_k_shift` (journal per
+   cell, zero for empty, the stream's own cell count as stride) and `set_input_k_rot` /
+   `set_input_v_rot` (whole `width² × 4` copy; a missing width or a mismatched destination
+   reports -1 because native asserts). 46 985 checks, 8/8 mutations.
+   BLOCKER, deferred: `set_input_pos_bucket`. Its arithmetic mixes float and double —
+   `logf` on a double quotient, float multiply, double division by `log(128/max_exact)`,
+   `floorf` on a double sum — and Goose has `f32` with no `double`, so an all-f32 port
+   could cross an integer boundary where floorf lands. Needs a double path in Goose or an
+   exactness argument, whichever comes first; do not approximate it.
+   Also recorded: records are a walk-order journal, not an index-addressed buffer. The
+   first gate compared by cell index and read a neighbouring record as soon as the streams
+   had different widths.
+54. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-54. Downstream phases P4–P11.
+55. Downstream phases P4–P11.
 
 ## Disk
 
