@@ -341,10 +341,16 @@ most dangerous and is worth checking first in any new fixture.
    resuming from an empty layout at scan point zero scans the same as rebuilding.
    Replaced by observable ones — an extra pad block and a rebuild that keeps the old
    scan point.
-31. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+31. Hybrid indexed state ordering — EXP311 transfers the write suffix order, the
+   mirrored restore order with the layout hand-over, the failure transaction that
+   drops the sequence from all three caches, `state_drop` clearing directly, and the
+   ubatch stream count: 22 290 checks, 8/8 mutations. Gate lesson: a "does nothing"
+   mutation is only visible if the output buffer is sentinel-filled between calls,
+   otherwise it reads back the previous result.
+32. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-32. Downstream phases P4–P11.
+33. Downstream phases P4–P11.
 
 ## Disk
 
