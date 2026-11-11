@@ -76,3 +76,20 @@ and the remaining error is in the per-lane accumulation.
 
 `acc[0]` still reads -3.4e12 while its plausible magnitude is ~4e6, so the next probe is the first
 iteration's `scale`, `qv` and `xv` values.
+
+## Sixth measurement: single block is bit-exact, multi-block differs in float order
+
+The decisive defect was the **nibble order**: the reference unpacks each group of 32 as all low nibbles
+first, then all high nibbles, while the module interleaved low/high per byte. With that fixed:
+
+| case | result |
+|---|---|
+| single block (nb=1) | **bit-exact**, 225.75 = 225.75 |
+| nb = 2, 3, 7 | 49 of 160 cases differ |
+
+The multi-block differences are tiny and one-sided, e.g. `15579.2646` vs `15579.2627` — about 2e-7 relative,
+which is float rounding, not a wrong value. So the remaining question is the accumulation order between
+blocks, not the data layout.
+
+Cause of the earlier "acc0 = -3.4e12": my own reader used `sc[1500/8]`, which is byte 1496 — the same
+off-by-alignment class as the code it was diagnosing. Read by byte offset, `acc0 = -792`, a plausible value.

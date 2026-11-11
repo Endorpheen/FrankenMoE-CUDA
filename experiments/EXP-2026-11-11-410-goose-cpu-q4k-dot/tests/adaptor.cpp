@@ -47,6 +47,8 @@ int main(void) {
             ggml_vec_dot_q4_K_q8_K_generic(256 * nb, &want, 0, x.data(), 0, y.data(), 0, 1);
             const float got = fg410s_dot(nb, x.data(), y.data());
             ++cases;
+            if (bits(got) != bits(want) && failures < 3)
+                std::fprintf(stderr, "MISMATCH nb=%d trial=%d got=%.9g want=%.9g\n", nb, trial, got, want);
             check(bits(got) == bits(want), "bit-exact");
             (void) f16;
         }

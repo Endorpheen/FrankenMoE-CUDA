@@ -75,12 +75,17 @@ fn run(packet:i64)->bool {
         }
 
         // unpack the nibbles, then accumulate scale * q8 * q4 into eight lanes
-        var k:i64 = 0 as i64;
-        while k < 256 {
-            let b:i64 = ldu8(q4 + (i*144) as u64, 16 as i64 + (k/2 as i64)) as i64;
-            let v:i64 = if (k % 2) == 0 { b & 0x0f } else { (b >> 4) & 0x0f };
-            stb(sc, 64 as i64 + k, v);
-            k = k + 1 as i64;
+        // the reference unpacks in groups of 32: all low nibbles of the group, then all high ones
+        var gj:i64 = 0 as i64;
+        while gj < 4 {
+            var gl:i64 = 0 as i64;
+            while gl < 32 {
+                let bb:i64 = ldu8(q4 + ((i*144) as u64), 16 as i64 + gj*32 as i64 + gl as i64);
+                stb(sc, 64 as i64 + gj*64 as i64 + gl as i64, bb & 0x0f);
+                stb(sc, 64 as i64 + gj*64 as i64 + 32 as i64 + gl as i64, (bb >> 4) & 0x0f);
+                gl = gl + 1 as i64;
+            }
+            gj = gj + 1 as i64;
         }
         var acc:i64[8] = default<i64[8]>();
         while li < 8 { acc[li] = 0 as i64; li = li + 1 as i64; }
@@ -93,6 +98,9 @@ fn run(packet:i64)->bool {
                 let qv:i64 = ldu8(sc, 64 as i64 + idx);
                 let xv:i64 = ldi8(q8 + (i*292) as u64, 4 as i64 + idx) as i64;
                 let lane:i64 = li % 8;
+                if j == 0 as i64 && li == 0 as i64 {
+                    stw(sc, 1600 as i64, scale); stw(sc, 1608 as i64, qv); stw(sc, 1616 as i64, xv);
+                }
                 acc[lane] = acc[lane] + scale * qv * xv;
                 li = li + 1 as i64;
             }
