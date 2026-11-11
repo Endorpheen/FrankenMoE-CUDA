@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "an all-output batch splits equally",
+    "status": "CAUGHT",
+    "failures": 6400,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the unified flag is inverted",
+    "status": "CAUGHT",
+    "failures": 1541,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the rollback window is one short",
+    "status": "CAUGHT",
+    "failures": 1022,
+    "exit_code": 1
+  },
+  {
+    "mutation": "attention prepares before recurrent",
+    "status": "CAUGHT",
+    "failures": 4529,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a refusing recurrent cache still runs attention",
+    "status": "CAUGHT",
+    "failures": 2042,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the mutation pair runs recurrent first",
+    "status": "CAUGHT",
+    "failures": 500,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed restore leaves attention populated",
+    "status": "CAUGHT",
+    "failures": 472,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the total minimum takes the smaller of the two",
+    "status": "CAUGHT",
+    "failures": 3790,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the breakdown forgets recurrent-only keys",
+    "status": "CAUGHT",
+    "failures": 931,
+    "exit_code": 1
+  }
+]

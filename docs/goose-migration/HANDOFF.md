@@ -504,10 +504,19 @@ most dangerous and is worth checking first in any new fixture.
    Two mutations proved unobservable and were replaced: `k >= 0` vs `k > 0` (at k == 0 the
    pre-chunk branch computes the same position) and "look up a negative target anyway" (an
    empty cell's mask is empty, so the answer is null either way).
-55. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+55. Hybrid memory policy — EXP335 transfers `llama_memory_hybrid`: the split choice (by
+   sequence for all-output, equal otherwise with the unified flag inverted and the rollback
+   window), recurrent prepare before attention, recurrent `seq_rm` before attention *because
+   it can refuse without mutating*, attention-then-recurrent for every mutation and state
+   half, total extrema as max-of-mins and min-of-maxes, and `state_read` clearing the
+   attention half when the recurrent half throws. 37 928 checks, 9/9 mutations.
+   The gate itself caught two generator defects: both breakdown sides are maps so keys are
+   unique within a side while sides may overlap, and the port double-counted the first
+   recurrent row of a recurrent-only key.
+56. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-56. Downstream phases P4–P11.
+57. Downstream phases P4–P11.
 
 ## Disk
 
