@@ -533,10 +533,17 @@ most dangerous and is worth checking first in any new fixture.
    entirely, zero-length sections validate but read nothing). 43 689 checks, 9/9 mutations.
    Native's `s_trans == true` branch is unreachable after its own header check and is left
    unreachable in the port too.
-59. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+59. Recurrent state clearing and context steps — EXP339 transfers `state_clear` (negative
+   id clears everything and returns; otherwise the sequence is removed, a zero-length
+   section stops after that removal, then tensors clear per layer in the order recurrent,
+   **state**, PLE) and the context's `next`/`apply`/`get_status`. Recorded: the clear order
+   is **not** the read order (`state_read_data` writes recurrent, PLE, state) even though
+   the native comment says the ranges mirror the write pattern — the ranges mirror, the
+   order does not, and order is observable only in a journal. 31 380 checks, 8/8 mutations.
+60. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-60. Downstream phases P4–P11.
+61. Downstream phases P4–P11.
 
 ## Disk
 

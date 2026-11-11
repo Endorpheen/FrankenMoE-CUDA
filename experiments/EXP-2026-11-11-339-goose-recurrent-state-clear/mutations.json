@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "a whole-cache clear also walks the tensors",
+    "status": "CAUGHT",
+    "failures": 1342,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sequence is not removed before clearing",
+    "status": "CAUGHT",
+    "failures": 9901,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a zero-length section clears the whole row range",
+    "status": "CAUGHT",
+    "failures": 1023,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the state tensor is cleared before the recurrent one",
+    "status": "CAUGHT",
+    "failures": 1904,
+    "exit_code": 1
+  },
+  {
+    "mutation": "null tensors are cleared anyway",
+    "status": "CAUGHT",
+    "failures": 3223,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the cursor does not advance",
+    "status": "CAUGHT",
+    "failures": 3814,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the end of the ubatches is not reported",
+    "status": "CAUGHT",
+    "failures": 1814,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an update is treated as a batch",
+    "status": "CAUGHT",
+    "failures": 1000,
+    "exit_code": 1
+  }
+]
