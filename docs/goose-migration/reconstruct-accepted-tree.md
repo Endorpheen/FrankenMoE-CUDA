@@ -163,6 +163,23 @@ Next attempt should stage the whole flint checkout (`src`, `ggml`, `include`, `c
 patch set in a fixed order, checking the build after each patch. Covered so far read-only: at least 12
 patches report zero conflicts against the `src` tree alone, which is promising but not sufficient.
 
+## Why throughput cannot be restored from these artefacts
+
+Neither available line contains everything the accepted build needs:
+
+| tree | `llama_batch_ext` | `llama-expert-tier.cpp` | `llama-mmap-expert-pin.h` |
+|---|---|---|---|
+| `llama.cpp-flint-cuda` | yes (36 references) | absent | absent |
+| `work/llama.cpp-integration` | absent | present | absent |
+| accepted build | yes | yes | yes |
+
+The accepted runtime was built from a **hybrid** of the two, and that hybrid is not on disk. The
+patches that carry the expert-tier and mmap-pin work also target files that exist in only one of the
+lines, which is why they report "No file to patch" here.
+
+So correctness can be reproduced (it is, exactly) but throughput cannot, and the gap must be expected
+until the hybrid tree or its image is recovered.
+
 ## Status
 
 The reconstructed tree is a **correctness** base, not a performance equivalent. Two gaps documented:
