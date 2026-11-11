@@ -1008,5 +1008,17 @@ assert old_pos in bsrc
 bsrc = bsrc.replace(old_pos, new_pos, 1)
 bch.write_text(bsrc)
 
+# detokenisation decisions (EXP401)
+decl26 = '// Goose detokenisation decisions (EXP401). GGML_GOOSE_DETOK_DECISIONS=0 restores the native tests.\nextern "C" int fg401s_enabled(void);\nextern "C" int64_t fg401s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t * out2);\n\n'
+anchor26 = 'int32_t llama_vocab::impl::token_to_piece(llama_token token, char * buf, int32_t length, int32_t lstrip, bool special) const {'
+assert anchor26 in vsrc
+vsrc = vsrc.replace(anchor26, decl26 + anchor26, 1)
+old_skip = '    if (!special && (attr & attr_special)) {'
+new_skip = ('    if (fg401s_enabled() ? fg401s_decide(0, special ? 1 : 0, (attr & attr_special) ? 1 : 0, 0, 0, 0, nullptr) != 0\n'
+            '                         : (!special && (attr & attr_special))) {')
+assert old_skip in vsrc
+vsrc = vsrc.replace(old_skip, new_skip, 1)
+voc.write_text(vsrc)
+
 p.write_text(src)
-print('staging rebuilt ... + batch container layout')
+print('staging rebuilt ... + detok decisions')
