@@ -25,6 +25,8 @@ calls on the Apex profile. This is a route fact, not a porting failure.
 | 4 000 draws over 1–16 tokens, 1–5 size limit, all `used` patterns | 49 824 checks / 0 failures |
 | symbol set of the integrated object | 123 = 123, two new undefined dependencies only |
 
+## Apex run — **NOT VALID** (loaded EXP244, see EXP357)
+
 ## Apex run on the stage (32K/128)
 
 | check | result |

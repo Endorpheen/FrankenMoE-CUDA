@@ -66,6 +66,12 @@ The stage is a separate file under the ignored `build/`; the working build and `
 untouched. One extra symbol is exported by the module itself (`fg345w_generated_main`); it is the
 generated entry point and is harmless, but worth knowing if a symbol audit is ever exact-match.
 
+## Apex run on the stage — **NOT VALID** (see EXP357)
+
+The runs below loaded the accepted EXP244 DSO by the name `libllama.so.0`, which stayed a hard link
+in the run directory; `/proc/maps` showed the expected path, but the content was the old library.
+They are kept for the record and must not be read as validation of this stage.
+
 ## Apex run on the stage (one run, fixed profile 32K/128)
 
 Owner authorization 2026-11-11 removed the per-run approval gate for periodic validation after a

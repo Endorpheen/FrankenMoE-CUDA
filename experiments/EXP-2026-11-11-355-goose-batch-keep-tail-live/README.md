@@ -25,6 +25,8 @@ the Apex profile because `n_keep_tail` is zero there.
 | 4 000 draws, actions + cursors + used + n_used | 67 619 checks / 0 failures |
 | symbol set of the integrated object | 123 = 123 |
 
+## Apex run — **NOT VALID** (loaded EXP244, see EXP357)
+
 ## Apex run on the stage (32K/128)
 
 | check | result |
