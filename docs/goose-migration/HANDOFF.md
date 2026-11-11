@@ -296,10 +296,18 @@ most dangerous and is worth checking first in any new fixture.
    legal id falls outside the stream range, and wrong from the first such batch.
    One candidate mutation was rejected as unobservable (the prefix condition at
    equality is zero either way).
-25. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+25. DSV4 compressed-state operations — EXP305 transfers `clear`, `seq_cp`,
+   `apply_copies`, the stream-range helpers and the stream ids `state_write`
+   computes: 17 780 checks, 8/8 mutations. Native throws on every rejection and the
+   FFI contract is -1. Two harness slips, one of them a repeat: the dispatcher's `op`
+   was never written into the packet, so every call ran op 0; and the apply records
+   were written at `2*i*8` through a helper that already scales by 8. **Rule now
+   recorded: a helper that takes an index must never receive a byte-scaled offset** —
+   this is the second occurrence (EXP297 was the first).
+26. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-26. Downstream phases P4–P11.
+27. Downstream phases P4–P11.
 
 ## Disk
 

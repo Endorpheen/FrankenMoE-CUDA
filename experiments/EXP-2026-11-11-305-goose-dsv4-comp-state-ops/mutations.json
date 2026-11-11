@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "sequence stream range widens to two streams",
+    "status": "CAUGHT",
+    "failures": 949,
+    "exit_code": 1
+  },
+  {
+    "mutation": "whole-state range collapses to one stream",
+    "status": "CAUGHT",
+    "failures": 265,
+    "exit_code": 1
+  },
+  {
+    "mutation": "destination range accepts a mismatched stream count",
+    "status": "CAUGHT",
+    "failures": 719,
+    "exit_code": 1
+  },
+  {
+    "mutation": "clear column ids drop the stream stride",
+    "status": "CAUGHT",
+    "failures": 427,
+    "exit_code": 1
+  },
+  {
+    "mutation": "clear-all plane count loses one depth",
+    "status": "CAUGHT",
+    "failures": 96,
+    "exit_code": 1
+  },
+  {
+    "mutation": "copying a sequence onto itself still queues",
+    "status": "CAUGHT",
+    "failures": 461,
+    "exit_code": 1
+  },
+  {
+    "mutation": "apply copies swap source and destination",
+    "status": "CAUGHT",
+    "failures": 2978,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write ids reject the deepest legal rollback",
+    "status": "CAUGHT",
+    "failures": 1327,
+    "exit_code": 1
+  }
+]
