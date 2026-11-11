@@ -135,8 +135,25 @@ and the answer is unchanged: completion `e68df05b`, save 387 989 920 bytes, trun
 
 This is the first candidate where the accepted runtime's Goose routes and ours execute together.
 
+## Throughput is not equivalent
+
+Same profile, one run each, no parallel work:
+
+| metric | accepted EXP244 | reconstructed | delta |
+|---|---:|---:|---:|
+| prefill tok/s | 2500.05 | 1623.23 | **−35.1 %** |
+| decode tok/s | 24.51 | 25.16 | +2.7 % (within noise) |
+
+Correctness is exact, so the gap is not a defect in the ported code — it is missing **performance work
+that lives in patches, not in the integration copies**: expert tier, pinned ring, mmap expert
+registration and the rest of `patches/*.patch` are part of the accepted build's tree and none of them
+were overlaid. `llama_model::pin_mmap_experts` being absent is the visible symptom of exactly that.
+
+Consequence: this tree may be used to verify routes and correctness, but it must not be promoted as the
+candidate until the patches are applied and the throughput is re-measured.
+
 ## Status
 
-The reconstructed tree is the working base. It still lacks `fg205g` (lost bridge, native walk used) and
-`llama_model::pin_mmap_experts` (absent patch), and it is a side tree, not the promoted candidate —
-promotion itself is the owner's call.
+The reconstructed tree is a **correctness** base, not a performance equivalent. Two gaps documented:
+`fg205g` (lost bridge, native walk used) and the patch set (throughput). Promoting it is the owner's
+decision and needs the patches first.
