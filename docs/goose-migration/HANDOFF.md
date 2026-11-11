@@ -865,10 +865,18 @@ most dangerous and is worth checking first in any new fixture.
    6/6 mutations, **NOT VALIDATED**: `llama-server` never builds a `penalties` sampler — it tracks the
    sampled tokens itself and does not call `llama_sampler_init_penalties`, so `accept` is never invoked.
    The default chain in `common/common.h` lists penalties, but this server does not use that chain.
-104. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+104. APEX.KV whole-cache branch closed — EXP381 makes the `state_clear(seq_id = -1)` decision live
+   (clears once, before the per-stream loop), plus the meta-due rule on `state_write` and the
+   hybrid-drop path. Gate 22/0, 7/7 mutations. On a successful save/restore the log shows
+   `FG381S_KV_WHOLE_CLEAR` next to `FG373S`/`FG345W`/`FG241U`, with both completions at `e68df05b`
+   and all probabilities equal. Hybrid drop is integrated but unreachable here (Apex does not build
+   the indexed hybrid memory); `state_read_data` stays out of scope (EXP366). APEX.PATH status files
+   live in the dashboard, so the evidence is recorded here and in the experiment, not by hand-editing
+   that JSON.
+105. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-105. Downstream phases P4–P11.
+106. Downstream phases P4–P11.
 
 ## Disk
 
