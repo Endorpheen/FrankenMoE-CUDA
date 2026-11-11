@@ -742,10 +742,16 @@ most dangerous and is worth checking first in any new fixture.
    Apex run exact, `FG350S_SPLIT_SELECT` first call / 100 / 200, prefill 1599.2, decode 25.22.
    With EXP359 this closes both batch blocks Apex actually enters; keep-tail and split_simple stay
    dormant (EXP354/EXP355) and would add no witness.
-85. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+85. Both batch call sites in one stage — EXP362 links the combined `llama-batch.cpp.o` (selection
+   from EXP361 plus `ubatch_add` from EXP359) with both bridges: 5 292 512 bytes, ABI complete.
+   The Apex run is exact and logs both witnesses — `FG350S_SPLIT_SELECT` first/100/200 and
+   `FG349S_UBATCH_ADD` first/100 — with prefill 1589.0 and decode 25.69. They do not interfere: the
+   selection fills sets and cursors, `ubatch_add` consumes the resulting index list.
+   Remaining batch items: container ownership and the splitter parts this profile never reaches.
+86. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-86. Downstream phases P4–P11.
+87. Downstream phases P4–P11.
 
 ## Disk
 
