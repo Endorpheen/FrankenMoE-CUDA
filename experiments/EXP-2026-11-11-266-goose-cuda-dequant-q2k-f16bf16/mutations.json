@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "dmin offset 82 -> 80 (reuses d)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "qs offset 16 -> 17",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "second field shift 2 -> 1",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "destination 128*n -> 127*n (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]
