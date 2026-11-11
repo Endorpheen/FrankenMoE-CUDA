@@ -53,11 +53,11 @@ fn run(packet:i64)->bool {
         var ut0:i64 = ldu32(q4 + ((i*144) as u64), 4 as i64);
         var ut1:i64 = ldu32(q4 + ((i*144) as u64), 8 as i64);
         var ut2:i64 = ldu32(q4 + ((i*144) as u64), 12 as i64);
-        let ut3:i64 = ((ut2 >> 4) & 0x0f0f0f0f) | (((ut1 >> 6) & 0x03030303) << 4);
-        let uaux:i64 = ut1 & 0x3f3f3f3f;
-        ut1 = (ut2 & 0x0f0f0f0f) | (((ut0 >> 6) & 0x03030303) << 4);
+        let ut3:i64 = ((ut2 >> 4) & (0x0f0f0f0f as i64)) | (((ut1 >> 6) & (0x03030303 as i64)) << 4);
+        let uaux:i64 = ut1 & (0x3f3f3f3f as i64);
+        ut1 = (ut2 & (0x0f0f0f0f as i64)) | (((ut0 >> 6) & (0x03030303 as i64)) << 4);
         ut2 = uaux;
-        ut0 = ut0 & 0x3f3f3f3f;
+        ut0 = ut0 & (0x3f3f3f3f as i64);
         byte_out(sc, 0 as i64, ut0);
         byte_out(sc, 4 as i64, ut1);
         byte_out(sc, 8 as i64, ut2);

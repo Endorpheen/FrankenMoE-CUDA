@@ -45,3 +45,20 @@ Nothing is integrated until the gate is 0 failures.
 
 Fix the synthetic block first so the reference gives a non-zero, then re-check the unpack. The gate stays
 bit-exact: an approximate match is not a port.
+
+## Fourth measurement: the scale/min bytes are right, the min term is not
+
+Dumped the unpacked bytes for the probe block:
+
+    sc[0..15] = 11 22 33 04 09 0a 0b 1c 15 26 37 08 19 1a 1b 2c
+
+Compared against the reference's `utmp` arithmetic by hand for this block: `ut0 & 0x3f3f3f3f` keeps `04`
+because `0x04 & 0x3f = 0x04`, so my earlier suspicion that the mask was dropped was wrong — the bytes are as
+the reference computes them.
+
+Hand-computing `sumi` for this block from those mins and the probe's `bsums = i-8` gives about **-172**, but
+the module reports **35182**. So the per-subblock min term is where the disagreement now sits, and the next
+probe is to dump `bsums[0..3]` and `mins[0..3]` as the loop sees them.
+
+Byte stores are fixed (a 64-bit store per byte was overwriting neighbours), the reference is initialised
+with `ggml_cpu_init()`, and `d` is confirmed (0.125 x 0.5 = 0.0625).
