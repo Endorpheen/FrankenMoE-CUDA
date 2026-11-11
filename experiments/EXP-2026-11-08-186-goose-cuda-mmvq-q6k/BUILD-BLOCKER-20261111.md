@@ -725,3 +725,24 @@ Next probe: print, for (2,8) and (1,8), the packet's y-side values (`v[2][1]`, `
 `v[6][1]`) and the ybase each block computes; the difference between the two cases is the defect.
 
 Multi-column support is my responsibility, as instructed, and this narrowing is the way in.
+
+## ACCEPTED: multi-destination works, all Q6_K calls run in Goose
+
+Root cause of the earlier per-column DIFF: the harness was run with **both** the preloaded module and the library
+that already contains it, i.e. the kernel was replaced twice. Re-running the per-column build **without** the
+preload:
+
+    ncols_dst=1 nrows=8  -> IDENTICAL
+    ncols_dst=2 nrows=8  -> IDENTICAL
+
+and on the accepted profile:
+
+    first_sha = e68df05b..., probs_equal, restore_ok
+    636 single-column sub-calls = 168 + 78*2 + 78*4 = every one of the 324 Q6_K calls
+    GGML_GOOSE_CUDA_MMVQ_Q6K=0 -> 0 Goose calls, same sha
+
+Controlled defect test (A -> B -> A): multiplying the kernel's stored value by 0.5 changed the completion to
+`e4e90876...`; restoring the file and rebuilding returned `e68df05b...`.
+
+So the item is complete: every Q6_K matvec on this path executes in Goose with an unchanged completion, and the
+off-switch is verified.
