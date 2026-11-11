@@ -1,23 +1,24 @@
-# EXP256: MMA-dot coefficient arithmetic, host gate first
+# EXP256: MMA-dot accumulation arithmetic -- gated, then deliberately not wired in
 
-The shared MMA dot has exactly one piece of float arithmetic outside `mma()` itself:
+The shared MMA dot's only float arithmetic outside `mma()` is:
 
-    float2 dmA = __half22float2(x_dm[i*sram_stride + k0/QI8_1]);
-    float2 dsB = __half22float2(y_dm[j*MMQ_TILE_Y_K + k01/QI8_1]);
     sum[...] += dmA.x*dsB.x*C.x[l];
     sum[...] += dmA.y*dsB.y;
 
-## Gate
+## Gate (kept)
 
-    FG256S_GATE cases=20000 failures=0
+    FG256S_GATE cases=20000 failures=0       (host form, bit-exact vs float*float)
+    device form emitted                     (fg256d_gg_function_1: acc, acc2)
 
-Twenty thousand random bit patterns for both operand pairs, compared bit for bit against `float*float` in C.
+## Why it is not wired in
 
-## The mistake worth recording
+`dmA`, `dsB` and `C.x[l]` live in **registers** inside the MMA loop. A Goose module cannot hold registers across
+calls, so the values would have to travel through memory -- four extra loads and two stores per accumulated element,
+inside the innermost loop of the hot kernel, to replace **two multiply-adds**.
 
-This module is **host-side**, and the code it is meant to replace runs in a **device** function. A host function cannot
-be called from there. So this gate proves the arithmetic, but it cannot be wired in as written: the same body has to
-be emitted as device code, exactly as EXP255 did, before substitution.
+That is not a portability gain; it is a slowdown with a correctness risk and no new coverage: the surrounding
+`mma()` and `load_ldmatrix` remain primitives either way, so the decision boundary of this loop does not move.
 
-That is not a wasted step -- the arithmetic is now pinned down and its gate exists -- but pretending it is integrated
-would be false. Next: emit the same body as a device unit and call it from `mmq-vec-dot.cuh`.
+Recorded as a deliberate stop with the reasoning, not as a silent omission. If this becomes worth doing, it needs a
+Goose-side notion of register-resident values first -- otherwise it is the same kind of "mobile memory round-trip"
+that EXP410 already rejected once for being slower with no benefit.

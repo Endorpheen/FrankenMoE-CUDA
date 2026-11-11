@@ -19,7 +19,7 @@ for name in ['host','device']:
     q=subprocess.run([str(C),'-o',str(out),str(S/(name+'.goose'))],capture_output=True,text=True)
     assert q.returncode==0,q.stderr
     g=out.read_text()
-    prefix='fg256s_' if name=='host' else 'fg256d_'
+    prefix='fg256h_' if name=='host' else 'fg256d_'
     qual=lambda s:re.sub(r'\b(gg_)',lambda m:prefix+m[1],s)
     main=g[g.rfind('static void gg_function_0('):]
     entries=[x for x in re.findall(r'\b(gg_function_\d+)\(',main) if x!='gg_function_0']

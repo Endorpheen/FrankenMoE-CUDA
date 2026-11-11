@@ -38,29 +38,29 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
-typedef struct { void *data; int64_t len; } fg256s_gg_slice;
-typedef struct { unsigned char *base; int64_t len; } fg256s_gg_header;
-typedef struct { unsigned char *base; size_t top, committed; } fg256s_gg_stack;
-typedef struct { fg256s_gg_header *header; fg256s_gg_stack *stack; } fg256s_gg_reference;
+typedef struct { void *data; int64_t len; } fg256h_gg_slice;
+typedef struct { unsigned char *base; int64_t len; } fg256h_gg_header;
+typedef struct { unsigned char *base; size_t top, committed; } fg256h_gg_stack;
+typedef struct { fg256h_gg_header *header; fg256h_gg_stack *stack; } fg256h_gg_reference;
 #ifndef GG_STACK_RESERVE
 #define GG_STACK_RESERVE 268435456ULL
 #endif
 #if GG_STACK_RESERVE < 65536 || GG_STACK_RESERVE % 65536 != 0
 #error GG_STACK_RESERVE_must_be_a_positive_multiple_of_65536
 #endif
-typedef char fg256s_gg_reservation_size_fits[(GG_STACK_RESERVE <= SIZE_MAX - 65536) ? 1 : -1];
+typedef char fg256h_gg_reservation_size_fits[(GG_STACK_RESERVE <= SIZE_MAX - 65536) ? 1 : -1];
 #define GG_RESERVATION ((size_t)GG_STACK_RESERVE)
 #define GG_STACK_COUNT 8192
-static fg256s_gg_stack fg256s_gg_stacks[GG_STACK_COUNT];
-static int fg256s_gg_argc;
-static char **fg256s_gg_argv;
-static void fg256s_gg_fail(const char *message) {
+static fg256h_gg_stack fg256h_gg_stacks[GG_STACK_COUNT];
+static int fg256h_gg_argc;
+static char **fg256h_gg_argv;
+static void fg256h_gg_fail(const char *message) {
     fprintf(stderr, "goose runtime error: %s\n", message); exit(1);
 }
-static fg256s_gg_stack *fg256s_gg_get_stack(int64_t id) {
-    fg256s_gg_stack *s;
-    if (id < 0 || id >= GG_STACK_COUNT) fg256s_gg_fail("data stack limit exceeded");
-    s = &fg256s_gg_stacks[id];
+static fg256h_gg_stack *fg256h_gg_get_stack(int64_t id) {
+    fg256h_gg_stack *s;
+    if (id < 0 || id >= GG_STACK_COUNT) fg256h_gg_fail("data stack limit exceeded");
+    s = &fg256h_gg_stacks[id];
     if (!s->base) {
 #ifdef _WIN32
         s->base = VirtualAlloc(NULL, GG_RESERVATION + 65536, MEM_RESERVE, PAGE_NOACCESS);
@@ -68,37 +68,37 @@ static fg256s_gg_stack *fg256s_gg_get_stack(int64_t id) {
         s->base = mmap(NULL, GG_RESERVATION + 65536, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (s->base == MAP_FAILED) s->base = NULL;
 #endif
-        if (!s->base) fg256s_gg_fail("cannot reserve data stack");
+        if (!s->base) fg256h_gg_fail("cannot reserve data stack");
     }
     return s;
 }
 /* The stack owning an array region, found from the header's data base.
    The header may be an unaligned field of a packed struct, so the base is
-   read by memcpy and never through a fg256s_gg_header lvalue. */
-static fg256s_gg_stack *fg256s_gg_stack_of(const void *header) {
+   read by memcpy and never through a fg256h_gg_header lvalue. */
+static fg256h_gg_stack *fg256h_gg_stack_of(const void *header) {
     unsigned char *base; uintptr_t q; int64_t i;
     memcpy(&base, header, sizeof base); q = (uintptr_t)base;
     for (i = 0; i < GG_STACK_COUNT; i++) {
-        fg256s_gg_stack *s = &fg256s_gg_stacks[i];
+        fg256h_gg_stack *s = &fg256h_gg_stacks[i];
         if (s->base && q >= (uintptr_t)s->base && q < (uintptr_t)s->base + GG_RESERVATION) return s;
     }
-    fg256s_gg_fail("array data is not in a data stack"); return 0;
+    fg256h_gg_fail("array data is not in a data stack"); return 0;
 }
 /* A pool-relative reference narrowed to a smaller offset width: refuse a
    value that would not survive the store instead of truncating it. */
-static uint64_t fg256s_gg_ref_offset_fits(uint64_t v, uint64_t max) {
-    if (v > max) fg256s_gg_fail("relative reference offset overflow");
+static uint64_t fg256h_gg_ref_offset_fits(uint64_t v, uint64_t max) {
+    if (v > max) fg256h_gg_fail("relative reference offset overflow");
     return v;
 }
 /* ULEB128 length prefix of a serialization image (spec 3.6). */
-static int64_t fg256s_gg_uleb(uint8_t *b, uint64_t n) {
+static int64_t fg256h_gg_uleb(uint8_t *b, uint64_t n) {
     int64_t k = 0;
     do { uint8_t c = (uint8_t)(n & 0x7f); n >>= 7; if (n) c |= 0x80; b[k++] = c; } while (n);
     return k;
 }
 /* Bounded ULEB128 read (spec 3.6): 1 and the value, or 0 when the bytes
    are truncated or past 64 bits. */
-static int fg256s_gg_uleb_read(const uint8_t *p, int64_t n, int64_t *at, uint64_t *out) {
+static int fg256h_gg_uleb_read(const uint8_t *p, int64_t n, int64_t *at, uint64_t *out) {
     uint64_t v = 0; int shift = 0, i;
     for (i = 0; i < 10; i++) {
         uint8_t c;
@@ -111,61 +111,61 @@ static int fg256s_gg_uleb_read(const uint8_t *p, int64_t n, int64_t *at, uint64_
     }
     return 0;
 }
-static void *fg256s_gg_allocate(fg256s_gg_stack *s, size_t size) {
+static void *fg256h_gg_allocate(fg256h_gg_stack *s, size_t size) {
     size_t end, committed;
     void *result;
-    if (size > GG_RESERVATION - s->top) fg256s_gg_fail("data stack reservation exceeded");
+    if (size > GG_RESERVATION - s->top) fg256h_gg_fail("data stack reservation exceeded");
     result = s->base + s->top; end = s->top + size;
     if (end > s->committed) {
         committed = (end + 65535) & ~(size_t)65535;
 #ifdef _WIN32
-        if (!VirtualAlloc(s->base + s->committed, committed - s->committed, MEM_COMMIT, PAGE_READWRITE)) fg256s_gg_fail("cannot commit data stack");
+        if (!VirtualAlloc(s->base + s->committed, committed - s->committed, MEM_COMMIT, PAGE_READWRITE)) fg256h_gg_fail("cannot commit data stack");
 #else
-        if (mprotect(s->base + s->committed, committed - s->committed, PROT_READ | PROT_WRITE)) fg256s_gg_fail("cannot commit data stack");
+        if (mprotect(s->base + s->committed, committed - s->committed, PROT_READ | PROT_WRITE)) fg256h_gg_fail("cannot commit data stack");
 #endif
         s->committed = committed;
     }
     s->top = end; return result;
 }
-static fg256s_gg_reference fg256s_gg_ref(fg256s_gg_header *h, fg256s_gg_stack *s) { fg256s_gg_reference r; r.header=h; r.stack=s; return r; }
-static fg256s_gg_slice fg256s_gg_view(void *p, int64_t n) { fg256s_gg_slice v; v.data=p; v.len=n; return v; }
-static fg256s_gg_slice fg256s_gg_byte_view(fg256s_gg_slice a, size_t width) {
-    if (a.len < 0 || (width && (uint64_t)a.len > (uint64_t)INT64_MAX / width)) fg256s_gg_fail("byte view size overflow");
-    return fg256s_gg_view(a.data, (int64_t)((uint64_t)a.len * width));
+static fg256h_gg_reference fg256h_gg_ref(fg256h_gg_header *h, fg256h_gg_stack *s) { fg256h_gg_reference r; r.header=h; r.stack=s; return r; }
+static fg256h_gg_slice fg256h_gg_view(void *p, int64_t n) { fg256h_gg_slice v; v.data=p; v.len=n; return v; }
+static fg256h_gg_slice fg256h_gg_byte_view(fg256h_gg_slice a, size_t width) {
+    if (a.len < 0 || (width && (uint64_t)a.len > (uint64_t)INT64_MAX / width)) fg256h_gg_fail("byte view size overflow");
+    return fg256h_gg_view(a.data, (int64_t)((uint64_t)a.len * width));
 }
-static fg256s_gg_slice fg256s_gg_sub(fg256s_gg_slice a, int64_t lo, int64_t hi, size_t element) {
-    if (lo < 0 || hi < lo || hi > a.len) fg256s_gg_fail("slice out of bounds");
-    return fg256s_gg_view((unsigned char *)a.data + (size_t)lo * element, hi - lo);
+static fg256h_gg_slice fg256h_gg_sub(fg256h_gg_slice a, int64_t lo, int64_t hi, size_t element) {
+    if (lo < 0 || hi < lo || hi > a.len) fg256h_gg_fail("slice out of bounds");
+    return fg256h_gg_view((unsigned char *)a.data + (size_t)lo * element, hi - lo);
 }
-static int64_t fg256s_gg_index(int64_t i, int64_t len) { if ((uint64_t)i >= (uint64_t)len) fg256s_gg_fail("array index out of bounds"); return i; }
-static void fg256s_gg_append(fg256s_gg_reference a, const void *p, int64_t n, size_t element) {
+static int64_t fg256h_gg_index(int64_t i, int64_t len) { if ((uint64_t)i >= (uint64_t)len) fg256h_gg_fail("array index out of bounds"); return i; }
+static void fg256h_gg_append(fg256h_gg_reference a, const void *p, int64_t n, size_t element) {
     void *to;
-    if (n < 0 || (uint64_t)n > GG_RESERVATION / (element ? element : 1)) fg256s_gg_fail("invalid array size");
-    to=fg256s_gg_allocate(a.stack, (size_t)n * element);
+    if (n < 0 || (uint64_t)n > GG_RESERVATION / (element ? element : 1)) fg256h_gg_fail("invalid array size");
+    to=fg256h_gg_allocate(a.stack, (size_t)n * element);
     if (n && element) memmove(to, p, (size_t)n * element);
     a.header->len += n;
 }
-static void fg256s_gg_resize(fg256s_gg_reference a, int64_t n, size_t element, const void *fill) {
+static void fg256h_gg_resize(fg256h_gg_reference a, int64_t n, size_t element, const void *fill) {
     int64_t old=a.header->len, i;
-    if (n < 0) fg256s_gg_fail("negative array length");
+    if (n < 0) fg256h_gg_fail("negative array length");
     if (n > old) {
         unsigned char *p;
-        if (!fill) fg256s_gg_fail("resize without fill may only shrink");
-        if ((uint64_t)(n-old) > GG_RESERVATION / (element ? element : 1)) fg256s_gg_fail("invalid array size");
-        p=fg256s_gg_allocate(a.stack, (size_t)(n-old)*element);
+        if (!fill) fg256h_gg_fail("resize without fill may only shrink");
+        if ((uint64_t)(n-old) > GG_RESERVATION / (element ? element : 1)) fg256h_gg_fail("invalid array size");
+        p=fg256h_gg_allocate(a.stack, (size_t)(n-old)*element);
         for (i=0; i<n-old; i++) if(element) memcpy(p+(size_t)i*element, fill, element);
     } else { a.stack->top = (size_t)(a.header->base-a.stack->base) + (size_t)n*element; }
     a.header->len=n;
 }
-static int64_t fg256s_gg_div(int64_t a, int64_t b) { if (!b) fg256s_gg_fail("division by zero"); if (a==INT64_MIN && b==-1) fg256s_gg_fail("division overflow"); return a/b; }
-static int64_t fg256s_gg_mod(int64_t a, int64_t b) {
-    int64_t r; if (!b) fg256s_gg_fail("division by zero"); if (b==-1) return 0;
+static int64_t fg256h_gg_div(int64_t a, int64_t b) { if (!b) fg256h_gg_fail("division by zero"); if (a==INT64_MIN && b==-1) fg256h_gg_fail("division overflow"); return a/b; }
+static int64_t fg256h_gg_mod(int64_t a, int64_t b) {
+    int64_t r; if (!b) fg256h_gg_fail("division by zero"); if (b==-1) return 0;
     r=a%b; if(r<0) return (int64_t)((uint64_t)r + (b<0 ? (uint64_t)0-(uint64_t)b : (uint64_t)b)); return r;
 }
-static uint64_t fg256s_gg_udiv(uint64_t a,uint64_t b) { if(!b)fg256s_gg_fail("division by zero");return a/b; }
-static uint64_t fg256s_gg_umod(uint64_t a,uint64_t b) { if(!b)fg256s_gg_fail("division by zero");return a%b; }
-static int fg256s_gg_equal(fg256s_gg_slice a, fg256s_gg_slice b, size_t element) { return a.len==b.len && (!a.len || !memcmp(a.data,b.data,(size_t)a.len*element)); }
-static void fg256s_gg_text(fg256s_gg_reference out, fg256s_gg_slice v) { fg256s_gg_append(out,v.data,v.len,1); }
+static uint64_t fg256h_gg_udiv(uint64_t a,uint64_t b) { if(!b)fg256h_gg_fail("division by zero");return a/b; }
+static uint64_t fg256h_gg_umod(uint64_t a,uint64_t b) { if(!b)fg256h_gg_fail("division by zero");return a%b; }
+static int fg256h_gg_equal(fg256h_gg_slice a, fg256h_gg_slice b, size_t element) { return a.len==b.len && (!a.len || !memcmp(a.data,b.data,(size_t)a.len*element)); }
+static void fg256h_gg_text(fg256h_gg_reference out, fg256h_gg_slice v) { fg256h_gg_append(out,v.data,v.len,1); }
 /* std's find_any and find_pair over a slice; a set points at std's packed
    ByteSet (members[256], kind, invert, bytes[3], lo[16], hi[16]). This is
    the scalar path of the pinned runtime, kept for compatibility. */
@@ -197,15 +197,15 @@ static int64_t gs_scan_pair(const uint8_t *p, int64_t n, const gs_abi_byteset *a
 #define gs_find_any(s, set) gs_scan_any((const uint8_t *)(s).data, (s).len, (const gs_abi_byteset *)(set))
 #define gs_find_pair(s, a, d, b) gs_scan_pair((const uint8_t *)(s).data, (s).len, (const gs_abi_byteset *)(a), (d), (const gs_abi_byteset *)(b))
 
-static void fg256s_gg_integer(fg256s_gg_reference out,int64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%lld",(long long)n);fg256s_gg_append(out,b,k,1); }
-static void fg256s_gg_unsigned(fg256s_gg_reference out,uint64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%llu",(unsigned long long)n);fg256s_gg_append(out,b,k,1); }
-static double fg256s_gg_double_bits(uint64_t bits) { double d; memcpy(&d, &bits, sizeof d); return d; }
+static void fg256h_gg_integer(fg256h_gg_reference out,int64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%lld",(long long)n);fg256h_gg_append(out,b,k,1); }
+static void fg256h_gg_unsigned(fg256h_gg_reference out,uint64_t n) { char b[32]; int k=snprintf(b,sizeof b,"%llu",(unsigned long long)n);fg256h_gg_append(out,b,k,1); }
+static double fg256h_gg_double_bits(uint64_t bits) { double d; memcpy(&d, &bits, sizeof d); return d; }
 static int64_t ggf_fmt_f64(uint8_t *out,double n);
 static int64_t ggf_fmt_f32(uint8_t *out,float n);
 /* Only the in-range fast path uses a C float-to-integer cast. The tail
    projects the finite IEEE significand modulo 2^64 without UB or libm.
    Nonfinite unchecked inputs produce zero; checked inputs reject them. */
-static uint64_t fg256s_gg_float_integer_wrap(double d) {
+static uint64_t fg256h_gg_float_integer_wrap(double d) {
     uint64_t bits, magnitude; int exponent;
     if(d>=-9223372036854775808.0 && d<9223372036854775808.0)
         return (uint64_t)(int64_t)d;
@@ -218,63 +218,63 @@ static uint64_t fg256s_gg_float_integer_wrap(double d) {
     return bits>>63 ? (uint64_t)0-magnitude : magnitude;
 }
 #if defined(GS_DEBUG) && GS_DEBUG
-static void fg256s_gg_float_integer_fail(double d,int f32,const char *type,const char *file,int line,const char *why) {
+static void fg256h_gg_float_integer_fail(double d,int f32,const char *type,const char *file,int line,const char *why) {
     uint8_t text[64];int64_t n=f32?ggf_fmt_f32(text,(float)d):ggf_fmt_f64(text,d);
     fprintf(stderr,"goose runtime error: conversion %s to %s (%.*s) at %s:%d\\n",why,type,(int)n,(const char*)text,file,line);
     exit(1);
 }
 #endif
-static uint64_t fg256s_gg_float_integer(double d,int width,int unsign,int checked,int f32,const char *type,const char *file,int line) {
+static uint64_t fg256h_gg_float_integer(double d,int width,int unsign,int checked,int f32,const char *type,const char *file,int line) {
 #if defined(GS_DEBUG) && GS_DEBUG
     if(checked) {
         int64_t value,lo,hi;
         if(unsign && width==64) {
             uint64_t u;
             if(!(d>=0.0 && d<18446744073709551616.0))
-                fg256s_gg_float_integer_fail(d,f32,type,file,line,"out of range");
+                fg256h_gg_float_integer_fail(d,f32,type,file,line,"out of range");
             u=(uint64_t)d;
-            if((double)u!=d)fg256s_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
+            if((double)u!=d)fg256h_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
             return u;
         }
         if(!(d>=-9223372036854775808.0 && d<9223372036854775808.0))
-            fg256s_gg_float_integer_fail(d,f32,type,file,line,"out of range");
+            fg256h_gg_float_integer_fail(d,f32,type,file,line,"out of range");
         value=(int64_t)d;
         hi=(int64_t)((UINT64_C(1)<<(width-(unsign?0:1)))-1);
         lo=unsign?0:-1-hi;
-        if(value<lo || value>hi)fg256s_gg_float_integer_fail(d,f32,type,file,line,"out of range");
-        if((double)value!=d)fg256s_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
+        if(value<lo || value>hi)fg256h_gg_float_integer_fail(d,f32,type,file,line,"out of range");
+        if((double)value!=d)fg256h_gg_float_integer_fail(d,f32,type,file,line,"changes the value");
         return (uint64_t)value;
     }
 #else
     (void)width;(void)unsign;(void)checked;(void)f32;(void)type;(void)file;(void)line;
 #endif
-    return fg256s_gg_float_integer_wrap(d);
+    return fg256h_gg_float_integer_wrap(d);
 }
-static void fg256s_gg_float(fg256s_gg_reference out,double n) { uint8_t b[64];int64_t k=ggf_fmt_f64(b,n);fg256s_gg_append(out,b,k,1); }
-static void fg256s_gg_float32(fg256s_gg_reference out,float n) { uint8_t b[64];int64_t k=ggf_fmt_f32(b,n);fg256s_gg_append(out,b,k,1); }
-static void fg256s_gg_bool(fg256s_gg_reference out,uint8_t n) { fg256s_gg_append(out,n?"true":"false",n?4:5,1); }
-static void fg256s_gg_write(FILE *file,fg256s_gg_slice text) { if(text.len && fwrite(text.data,1,(size_t)text.len,file)!=(size_t)text.len)fg256s_gg_fail("write failed"); }
-static char *fg256s_gg_cstring(fg256s_gg_slice path) {
-    char *s=malloc((size_t)path.len+1); if(!s)fg256s_gg_fail("out of memory in file shim");
+static void fg256h_gg_float(fg256h_gg_reference out,double n) { uint8_t b[64];int64_t k=ggf_fmt_f64(b,n);fg256h_gg_append(out,b,k,1); }
+static void fg256h_gg_float32(fg256h_gg_reference out,float n) { uint8_t b[64];int64_t k=ggf_fmt_f32(b,n);fg256h_gg_append(out,b,k,1); }
+static void fg256h_gg_bool(fg256h_gg_reference out,uint8_t n) { fg256h_gg_append(out,n?"true":"false",n?4:5,1); }
+static void fg256h_gg_write(FILE *file,fg256h_gg_slice text) { if(text.len && fwrite(text.data,1,(size_t)text.len,file)!=(size_t)text.len)fg256h_gg_fail("write failed"); }
+static char *fg256h_gg_cstring(fg256h_gg_slice path) {
+    char *s=malloc((size_t)path.len+1); if(!s)fg256h_gg_fail("out of memory in file shim");
     if(path.len)memcpy(s,path.data,(size_t)path.len);s[path.len]=0;return s;
 }
-static int fg256s_gg_os_path_ok(fg256s_gg_slice p) { int64_t i; if(p.len<0||p.len>=4096)return 0; for(i=0;i<p.len;i++)if(((const unsigned char*)p.data)[i]==0)return 0; return 1; }
-static uint8_t gs_os_read_file(fg256s_gg_slice path,fg256s_gg_reference out) {
-    if(!fg256s_gg_os_path_ok(path))return 0;
-    char *p=fg256s_gg_cstring(path);FILE *f=fopen(p,"rb");unsigned char b[16384];size_t n;int ok;free(p);
-    if(!f)return 0;while((n=fread(b,1,sizeof b,f))!=0)fg256s_gg_append(out,b,(int64_t)n,1);ok=!ferror(f);fclose(f);return (uint8_t)ok;
+static int fg256h_gg_os_path_ok(fg256h_gg_slice p) { int64_t i; if(p.len<0||p.len>=4096)return 0; for(i=0;i<p.len;i++)if(((const unsigned char*)p.data)[i]==0)return 0; return 1; }
+static uint8_t gs_os_read_file(fg256h_gg_slice path,fg256h_gg_reference out) {
+    if(!fg256h_gg_os_path_ok(path))return 0;
+    char *p=fg256h_gg_cstring(path);FILE *f=fopen(p,"rb");unsigned char b[16384];size_t n;int ok;free(p);
+    if(!f)return 0;while((n=fread(b,1,sizeof b,f))!=0)fg256h_gg_append(out,b,(int64_t)n,1);ok=!ferror(f);fclose(f);return (uint8_t)ok;
 }
-static uint8_t gs_os_write_file(fg256s_gg_slice path,fg256s_gg_slice data) {
-    if(!fg256s_gg_os_path_ok(path))return 0;
-    char *p=fg256s_gg_cstring(path);FILE *f=fopen(p,"wb");int ok;free(p);if(!f)return 0;
+static uint8_t gs_os_write_file(fg256h_gg_slice path,fg256h_gg_slice data) {
+    if(!fg256h_gg_os_path_ok(path))return 0;
+    char *p=fg256h_gg_cstring(path);FILE *f=fopen(p,"wb");int ok;free(p);if(!f)return 0;
     ok=!data.len || fwrite(data.data,1,(size_t)data.len,f)==(size_t)data.len;if(fclose(f))ok=0;return (uint8_t)ok;
 }
-static uint8_t gs_os_file_exists(fg256s_gg_slice path) { if(!fg256s_gg_os_path_ok(path))return 0; char*p=fg256s_gg_cstring(path);FILE*f=fopen(p,"rb");int bad;free(p);if(!f)return 0;{char b;if(fread(&b,1,1,f)==0){}bad=ferror(f);}fclose(f);return bad?0:1; }
-static void gs_os_write_stdout(fg256s_gg_slice s) { fg256s_gg_write(stdout,s); }
-static void gs_os_write_stderr(fg256s_gg_slice s) { fg256s_gg_write(stderr,s); }
+static uint8_t gs_os_file_exists(fg256h_gg_slice path) { if(!fg256h_gg_os_path_ok(path))return 0; char*p=fg256h_gg_cstring(path);FILE*f=fopen(p,"rb");int bad;free(p);if(!f)return 0;{char b;if(fread(&b,1,1,f)==0){}bad=ferror(f);}fclose(f);return bad?0:1; }
+static void gs_os_write_stdout(fg256h_gg_slice s) { fg256h_gg_write(stdout,s); }
+static void gs_os_write_stderr(fg256h_gg_slice s) { fg256h_gg_write(stderr,s); }
 static void gs_os_flush_stdout(void) { fflush(stdout); }
-static int64_t gs_os_arg_count(void) { return fg256s_gg_argc; }
-static void gs_os_arg(int64_t i,fg256s_gg_reference out) { if(i>=0 && i<fg256s_gg_argc)fg256s_gg_append(out,fg256s_gg_argv[i],(int64_t)strlen(fg256s_gg_argv[i]),1); }
+static int64_t gs_os_arg_count(void) { return fg256h_gg_argc; }
+static void gs_os_arg(int64_t i,fg256h_gg_reference out) { if(i>=0 && i<fg256h_gg_argc)fg256h_gg_append(out,fg256h_gg_argv[i],(int64_t)strlen(fg256h_gg_argv[i]),1); }
 /* math's sqrt (stdlib/math.goose). Goose has no errno, and C's sqrt has to
    set it for a negative argument: clang and gcc then guard the square root
    instruction with a test and a library call at every use, and will not
@@ -606,246 +606,90 @@ static int64_t ggf_fmt_f32(uint8_t *dst, float v) {
 }
 
 
-typedef int64_t fg256s_gg_unaligned_1 GG_ALIGN1;
-typedef float fg256s_gg_unaligned_3 GG_ALIGN1;
-typedef uint64_t fg256s_gg_unaligned_4 GG_ALIGN1;
-typedef uint8_t fg256s_gg_unaligned_5 GG_ALIGN1;
-static void fg256s_gg_quote(fg256s_gg_reference out,fg256s_gg_slice text) { int64_t i; unsigned char c; fg256s_gg_append(out,"\"",1,1); for(i=0;i<text.len;i++){c=((unsigned char*)text.data)[i]; if(c=='\"'||c=='\\'){fg256s_gg_append(out,"\\",1,1);fg256s_gg_append(out,&c,1,1);} else if(c=='\n')fg256s_gg_append(out,"\\n",2,1);else if(c=='\r')fg256s_gg_append(out,"\\r",2,1);else if(c=='\t')fg256s_gg_append(out,"\\t",2,1);else fg256s_gg_append(out,&c,1,1);}fg256s_gg_append(out,"\"",1,1);}
-static uint8_t fg256s_gg_eq_1(int64_t a, int64_t b);
-static uint8_t fg256s_gg_equal_elements_1(fg256s_gg_slice a, fg256s_gg_slice b);
-static void fg256s_gg_render_1(fg256s_gg_reference out, int64_t value);
-static uint8_t fg256s_gg_eq_2(uint8_t a, uint8_t b);
-static uint8_t fg256s_gg_equal_elements_2(fg256s_gg_slice a, fg256s_gg_slice b);
-static void fg256s_gg_render_2(fg256s_gg_reference out, uint8_t value);
-static uint8_t fg256s_gg_eq_3(float a, float b);
-static uint8_t fg256s_gg_equal_elements_3(fg256s_gg_slice a, fg256s_gg_slice b);
-static void fg256s_gg_render_3(fg256s_gg_reference out, float value);
-static uint8_t fg256s_gg_eq_4(uint64_t a, uint64_t b);
-static uint8_t fg256s_gg_equal_elements_4(fg256s_gg_slice a, fg256s_gg_slice b);
-static void fg256s_gg_render_4(fg256s_gg_reference out, uint64_t value);
-static uint8_t fg256s_gg_eq_5(uint8_t a, uint8_t b);
-static uint8_t fg256s_gg_equal_elements_5(fg256s_gg_slice a, fg256s_gg_slice b);
-static void fg256s_gg_render_5(fg256s_gg_reference out, uint8_t value);
-static uint8_t fg256s_gg_equal_elements_1(fg256s_gg_slice a,fg256s_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256s_gg_eq_1(((GG_UNALIGNED fg256s_gg_unaligned_1*)a.data)[i],((GG_UNALIGNED fg256s_gg_unaligned_1*)b.data)[i]))return 0;return 1;}
-static uint8_t fg256s_gg_eq_1(int64_t a, int64_t b) {
+typedef int64_t fg256h_gg_unaligned_1 GG_ALIGN1;
+typedef uint8_t fg256h_gg_unaligned_3 GG_ALIGN1;
+static void fg256h_gg_quote(fg256h_gg_reference out,fg256h_gg_slice text) { int64_t i; unsigned char c; fg256h_gg_append(out,"\"",1,1); for(i=0;i<text.len;i++){c=((unsigned char*)text.data)[i]; if(c=='\"'||c=='\\'){fg256h_gg_append(out,"\\",1,1);fg256h_gg_append(out,&c,1,1);} else if(c=='\n')fg256h_gg_append(out,"\\n",2,1);else if(c=='\r')fg256h_gg_append(out,"\\r",2,1);else if(c=='\t')fg256h_gg_append(out,"\\t",2,1);else fg256h_gg_append(out,&c,1,1);}fg256h_gg_append(out,"\"",1,1);}
+static uint8_t fg256h_gg_eq_1(int64_t a, int64_t b);
+static uint8_t fg256h_gg_equal_elements_1(fg256h_gg_slice a, fg256h_gg_slice b);
+static void fg256h_gg_render_1(fg256h_gg_reference out, int64_t value);
+static uint8_t fg256h_gg_eq_2(uint8_t a, uint8_t b);
+static uint8_t fg256h_gg_equal_elements_2(fg256h_gg_slice a, fg256h_gg_slice b);
+static void fg256h_gg_render_2(fg256h_gg_reference out, uint8_t value);
+static uint8_t fg256h_gg_eq_3(uint8_t a, uint8_t b);
+static uint8_t fg256h_gg_equal_elements_3(fg256h_gg_slice a, fg256h_gg_slice b);
+static void fg256h_gg_render_3(fg256h_gg_reference out, uint8_t value);
+static uint8_t fg256h_gg_equal_elements_1(fg256h_gg_slice a,fg256h_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256h_gg_eq_1(((GG_UNALIGNED fg256h_gg_unaligned_1*)a.data)[i],((GG_UNALIGNED fg256h_gg_unaligned_1*)b.data)[i]))return 0;return 1;}
+static uint8_t fg256h_gg_eq_1(int64_t a, int64_t b) {
 return a == b;
 }
-static void fg256s_gg_render_1(fg256s_gg_reference out, int64_t value) {
-fg256s_gg_integer(out,value);
+static void fg256h_gg_render_1(fg256h_gg_reference out, int64_t value) {
+fg256h_gg_integer(out,value);
 }
-static uint8_t fg256s_gg_equal_elements_2(fg256s_gg_slice a,fg256s_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256s_gg_eq_2(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
-static uint8_t fg256s_gg_eq_2(uint8_t a, uint8_t b) {
+static uint8_t fg256h_gg_equal_elements_2(fg256h_gg_slice a,fg256h_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256h_gg_eq_2(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
+static uint8_t fg256h_gg_eq_2(uint8_t a, uint8_t b) {
 return a == b;
 }
-static void fg256s_gg_render_2(fg256s_gg_reference out, uint8_t value) {
-fg256s_gg_bool(out,value);
+static void fg256h_gg_render_2(fg256h_gg_reference out, uint8_t value) {
+fg256h_gg_bool(out,value);
 }
-static uint8_t fg256s_gg_equal_elements_3(fg256s_gg_slice a,fg256s_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256s_gg_eq_3(((GG_UNALIGNED fg256s_gg_unaligned_3*)a.data)[i],((GG_UNALIGNED fg256s_gg_unaligned_3*)b.data)[i]))return 0;return 1;}
-static uint8_t fg256s_gg_eq_3(float a, float b) {
+static uint8_t fg256h_gg_equal_elements_3(fg256h_gg_slice a,fg256h_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256h_gg_eq_3(((GG_UNALIGNED fg256h_gg_unaligned_3*)a.data)[i],((GG_UNALIGNED fg256h_gg_unaligned_3*)b.data)[i]))return 0;return 1;}
+static uint8_t fg256h_gg_eq_3(uint8_t a, uint8_t b) {
 return a == b;
 }
-static void fg256s_gg_render_3(fg256s_gg_reference out, float value) {
-fg256s_gg_float32(out,value);
-}
-static uint8_t fg256s_gg_equal_elements_4(fg256s_gg_slice a,fg256s_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256s_gg_eq_4(((GG_UNALIGNED fg256s_gg_unaligned_4*)a.data)[i],((GG_UNALIGNED fg256s_gg_unaligned_4*)b.data)[i]))return 0;return 1;}
-static uint8_t fg256s_gg_eq_4(uint64_t a, uint64_t b) {
-return a == b;
-}
-static void fg256s_gg_render_4(fg256s_gg_reference out, uint64_t value) {
-fg256s_gg_unsigned(out,value);
-}
-static uint8_t fg256s_gg_equal_elements_5(fg256s_gg_slice a,fg256s_gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!fg256s_gg_eq_5(((GG_UNALIGNED fg256s_gg_unaligned_5*)a.data)[i],((GG_UNALIGNED fg256s_gg_unaligned_5*)b.data)[i]))return 0;return 1;}
-static uint8_t fg256s_gg_eq_5(uint8_t a, uint8_t b) {
-return a == b;
-}
-static void fg256s_gg_render_5(fg256s_gg_reference out, uint8_t value) {
-fg256s_gg_unsigned(out,value);
+static void fg256h_gg_render_3(fg256h_gg_reference out, uint8_t value) {
+fg256h_gg_unsigned(out,value);
 }
 static struct {
   unsigned char dummy;
-} fg256s_gg_globals;
-static void fg256s_gg_function_0(int64_t base);
-static uint8_t fg256s_gg_function_1(int64_t p0, int64_t base);
-static uint8_t fg256s_gg_function_1(int64_t p0, int64_t base) {
+} fg256h_gg_globals;
+static void fg256h_gg_function_0(int64_t base);
+static uint8_t fg256h_gg_function_1(int64_t p0, int64_t base);
+static uint8_t fg256h_gg_function_1(int64_t p0, int64_t base) {
   _Alignas(8) uint8_t t0;
   _Alignas(8) int64_t t1;
-  _Alignas(8) int64_t t2;
-  _Alignas(8) int64_t t3;
-  _Alignas(8) uint64_t t4;
-  _Alignas(8) int64_t t5;
-  _Alignas(8) int64_t t6;
-  _Alignas(8) int64_t t7;
-  _Alignas(8) uint64_t t8;
-  _Alignas(8) int64_t t9;
-  _Alignas(8) int64_t t10;
-  _Alignas(8) int64_t t11;
-  _Alignas(8) uint64_t t12;
-  _Alignas(8) int64_t t13;
-  _Alignas(8) int64_t t14;
-  _Alignas(8) int64_t t15;
-  _Alignas(8) uint64_t t16;
-  _Alignas(8) int64_t t17;
-  _Alignas(8) float t18;
-  _Alignas(8) float t19;
-  _Alignas(8) int64_t t20;
-  _Alignas(8) float t21;
-  _Alignas(8) float t22;
-  _Alignas(8) float t23;
-  _Alignas(8) int64_t t24;
-  _Alignas(8) float t25;
-  _Alignas(8) float t26;
-  _Alignas(8) int64_t t27;
-  _Alignas(8) float t28;
-  _Alignas(8) float t29;
-  _Alignas(8) float t30;
-  _Alignas(8) int64_t t31;
-  _Alignas(8) int64_t t32;
-  _Alignas(8) int64_t t33;
-  _Alignas(8) float t34;
-  _Alignas(8) int64_t t35;
-  _Alignas(8) uint64_t t36;
-  _Alignas(8) int64_t t37;
-  _Alignas(8) int64_t t38;
-  _Alignas(8) int64_t t39;
-  _Alignas(8) float t40;
-  _Alignas(8) int64_t t41;
-  _Alignas(8) uint64_t t42;
   _Alignas(8) int64_t v0;
-  _Alignas(8) int64_t v1;
-  _Alignas(8) int64_t v2;
-  _Alignas(8) int64_t v3;
-  _Alignas(8) int64_t v4;
-  _Alignas(8) float v5;
-  _Alignas(8) float v6;
   v0 = p0;
   {
-  t1 = ((int64_t)(v0));
-  t2 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t3 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t1 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
 #ifndef __cplusplus
-  extern uint64_t (fg256s_get)(int64_t, int64_t, int64_t);
+  extern void (fg256h_fail)(int64_t);
 #endif
-  t4 = fg256s_get(t1, t2, t3);
-  v1 = ((int64_t)(((int64_t)(t4))));
-  t5 = ((int64_t)(v0));
-  t6 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
-  extern uint64_t (fg256s_get)(int64_t, int64_t, int64_t);
-#endif
-  t8 = fg256s_get(t5, t6, t7);
-  v2 = ((int64_t)(((int64_t)(t8))));
-  t9 = ((int64_t)(v0));
-  t10 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t11 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
-  extern uint64_t (fg256s_get)(int64_t, int64_t, int64_t);
-#endif
-  t12 = fg256s_get(t9, t10, t11);
-  v3 = ((int64_t)(((int64_t)(t12))));
-  t13 = ((int64_t)(v0));
-  t14 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t15 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
-  extern uint64_t (fg256s_get)(int64_t, int64_t, int64_t);
-#endif
-  t16 = fg256s_get(t13, t14, t15);
-  v4 = ((int64_t)(((int64_t)(t16))));
-  t17 = ((int64_t)(v1));
-#ifndef __cplusplus
-  extern float (fg256s_b2f)(int64_t);
-#endif
-  t18 = fg256s_b2f(t17);
-  t19 = ((float)(t18));
-  t20 = ((int64_t)(v3));
-#ifndef __cplusplus
-  extern float (fg256s_b2f)(int64_t);
-#endif
-  t21 = fg256s_b2f(t20);
-  t22 = ((float)(t21));
-#ifndef __cplusplus
-  extern float (fg256s_mul)(float, float);
-#endif
-  t23 = fg256s_mul(t19, t22);
-  v5 = ((float)(t23));
-  t24 = ((int64_t)(v2));
-#ifndef __cplusplus
-  extern float (fg256s_b2f)(int64_t);
-#endif
-  t25 = fg256s_b2f(t24);
-  t26 = ((float)(t25));
-  t27 = ((int64_t)(v4));
-#ifndef __cplusplus
-  extern float (fg256s_b2f)(int64_t);
-#endif
-  t28 = fg256s_b2f(t27);
-  t29 = ((float)(t28));
-#ifndef __cplusplus
-  extern float (fg256s_mul)(float, float);
-#endif
-  t30 = fg256s_mul(t26, t29);
-  v6 = ((float)(t30));
-  t31 = ((int64_t)(v0));
-  t32 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t33 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t34 = ((float)(v5));
-#ifndef __cplusplus
-  extern int64_t (fg256s_f2b)(float);
-#endif
-  t35 = fg256s_f2b(t34);
-  t36 = ((uint64_t)(((uint64_t)(t35))));
-#ifndef __cplusplus
-  extern void (fg256s_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
-  fg256s_put(t31, t32, t33, t36);
-  t37 = ((int64_t)(v0));
-  t38 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t39 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t40 = ((float)(v6));
-#ifndef __cplusplus
-  extern int64_t (fg256s_f2b)(float);
-#endif
-  t41 = fg256s_f2b(t40);
-  t42 = ((uint64_t)(((uint64_t)(t41))));
-#ifndef __cplusplus
-  extern void (fg256s_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
-  fg256s_put(t37, t38, t39, t42);
+  fg256h_fail(t1);
   t0 = ((uint8_t)UINT64_C(1));
   }
   return t0;
 }
-static void fg256s_gg_function_0(int64_t base) {
+static void fg256h_gg_function_0(int64_t base) {
   _Alignas(8) int64_t t0;
   _Alignas(8) uint8_t t1;
   {
   t0 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t1 = fg256s_gg_function_1(t0, base + 0);
+  t1 = fg256h_gg_function_1(t0, base + 0);
   (void)(t1);
   }
 }
 #ifdef _MSC_VER
-static volatile LONG fg256s_gg_globals_state;
-static __declspec(thread) int fg256s_gg_globals_owner;
-static int fg256s_gg_globals_ready(void) { return InterlockedCompareExchange(&fg256s_gg_globals_state, 0, 0) == 2; }
-static int fg256s_gg_globals_claim(void) { return InterlockedCompareExchange(&fg256s_gg_globals_state, 1, 0) == 0; }
-static void fg256s_gg_globals_publish(void) { InterlockedExchange(&fg256s_gg_globals_state, 2); }
+static volatile LONG fg256h_gg_globals_state;
+static __declspec(thread) int fg256h_gg_globals_owner;
+static int fg256h_gg_globals_ready(void) { return InterlockedCompareExchange(&fg256h_gg_globals_state, 0, 0) == 2; }
+static int fg256h_gg_globals_claim(void) { return InterlockedCompareExchange(&fg256h_gg_globals_state, 1, 0) == 0; }
+static void fg256h_gg_globals_publish(void) { InterlockedExchange(&fg256h_gg_globals_state, 2); }
 #else
 #include <stdatomic.h>
-static atomic_int fg256s_gg_globals_state;
-static _Thread_local int fg256s_gg_globals_owner;
-static int fg256s_gg_globals_ready(void) { return atomic_load_explicit(&fg256s_gg_globals_state, memory_order_acquire) == 2; }
-static int fg256s_gg_globals_claim(void) { int expected = 0; return atomic_compare_exchange_strong_explicit(&fg256s_gg_globals_state, &expected, 1, memory_order_acq_rel, memory_order_acquire); }
-static void fg256s_gg_globals_publish(void) { atomic_store_explicit(&fg256s_gg_globals_state, 2, memory_order_release); }
+static atomic_int fg256h_gg_globals_state;
+static _Thread_local int fg256h_gg_globals_owner;
+static int fg256h_gg_globals_ready(void) { return atomic_load_explicit(&fg256h_gg_globals_state, memory_order_acquire) == 2; }
+static int fg256h_gg_globals_claim(void) { int expected = 0; return atomic_compare_exchange_strong_explicit(&fg256h_gg_globals_state, &expected, 1, memory_order_acq_rel, memory_order_acquire); }
+static void fg256h_gg_globals_publish(void) { atomic_store_explicit(&fg256h_gg_globals_state, 2, memory_order_release); }
 #endif
 #ifndef _WIN32
 #include <sched.h>
 #endif
-int64_t fg256s_gg_init_globals(int argc, char **argv) {  if (argc < 0 || (argc && !argv)) fg256s_gg_fail("invalid module arguments");
-  if (fg256s_gg_globals_ready()) return 0;
-  if (fg256s_gg_globals_owner) fg256s_gg_fail("recursive global initialization");
-  if (!fg256s_gg_globals_claim()) {
-    while (!fg256s_gg_globals_ready()) {
+int64_t fg256h_gg_init_globals(int argc, char **argv) {  if (argc < 0 || (argc && !argv)) fg256h_gg_fail("invalid module arguments");
+  if (fg256h_gg_globals_ready()) return 0;
+  if (fg256h_gg_globals_owner) fg256h_gg_fail("recursive global initialization");
+  if (!fg256h_gg_globals_claim()) {
+    while (!fg256h_gg_globals_ready()) {
 #ifdef _WIN32
       SwitchToThread();
 #else
@@ -854,26 +698,26 @@ int64_t fg256s_gg_init_globals(int argc, char **argv) {  if (argc < 0 || (argc &
     }
     return 0;
   }
-  fg256s_gg_globals_owner = 1;
+  fg256h_gg_globals_owner = 1;
   struct { int64_t base; } frame;
   frame.base = 0;
-  fg256s_gg_argc = argc; fg256s_gg_argv = argv;
-  fg256s_gg_globals_owner = 0;
-  fg256s_gg_globals_publish();
+  fg256h_gg_argc = argc; fg256h_gg_argv = argv;
+  fg256h_gg_globals_owner = 0;
+  fg256h_gg_globals_publish();
   return 0;
 }
-static int fg256s_gg_program(int argc, char **argv) {
-  int64_t base = fg256s_gg_init_globals(argc, argv);
-  fg256s_gg_function_0(base);
+static int fg256h_gg_program(int argc, char **argv) {
+  int64_t base = fg256h_gg_init_globals(argc, argv);
+  fg256h_gg_function_0(base);
   return 0;
 }
 int main(int argc, char **argv) {
 #ifdef _MSC_VER
-  __try { return fg256s_gg_program(argc, argv); }
+  __try { return fg256h_gg_program(argc, argv); }
   __except (GetExceptionCode() == EXCEPTION_STACK_OVERFLOW ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
-    _resetstkoflw(); fg256s_gg_fail("native call stack overflow"); return 1;
+    _resetstkoflw(); fg256h_gg_fail("native call stack overflow"); return 1;
   }
 #else
-  return fg256s_gg_program(argc, argv);
+  return fg256h_gg_program(argc, argv);
 #endif
 }

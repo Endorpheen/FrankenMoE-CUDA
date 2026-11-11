@@ -607,14 +607,21 @@ static int64_t ggf_fmt_f32(uint8_t *dst, float v) {
 
 
 typedef int64_t gg_unaligned_1 GG_ALIGN1;
-typedef uint8_t gg_unaligned_2 GG_ALIGN1;
+typedef float gg_unaligned_2 GG_ALIGN1;
+typedef uint8_t gg_unaligned_4 GG_ALIGN1;
 static void gg_quote(gg_reference out,gg_slice text) { int64_t i; unsigned char c; gg_append(out,"\"",1,1); for(i=0;i<text.len;i++){c=((unsigned char*)text.data)[i]; if(c=='\"'||c=='\\'){gg_append(out,"\\",1,1);gg_append(out,&c,1,1);} else if(c=='\n')gg_append(out,"\\n",2,1);else if(c=='\r')gg_append(out,"\\r",2,1);else if(c=='\t')gg_append(out,"\\t",2,1);else gg_append(out,&c,1,1);}gg_append(out,"\"",1,1);}
 static uint8_t gg_eq_1(int64_t a, int64_t b);
 static uint8_t gg_equal_elements_1(gg_slice a, gg_slice b);
 static void gg_render_1(gg_reference out, int64_t value);
-static uint8_t gg_eq_2(uint8_t a, uint8_t b);
+static uint8_t gg_eq_2(float a, float b);
 static uint8_t gg_equal_elements_2(gg_slice a, gg_slice b);
-static void gg_render_2(gg_reference out, uint8_t value);
+static void gg_render_2(gg_reference out, float value);
+static uint8_t gg_eq_3(uint8_t a, uint8_t b);
+static uint8_t gg_equal_elements_3(gg_slice a, gg_slice b);
+static void gg_render_3(gg_reference out, uint8_t value);
+static uint8_t gg_eq_4(uint8_t a, uint8_t b);
+static uint8_t gg_equal_elements_4(gg_slice a, gg_slice b);
+static void gg_render_4(gg_reference out, uint8_t value);
 static uint8_t gg_equal_elements_1(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_1(((GG_UNALIGNED gg_unaligned_1*)a.data)[i],((GG_UNALIGNED gg_unaligned_1*)b.data)[i]))return 0;return 1;}
 static uint8_t gg_eq_1(int64_t a, int64_t b) {
 return a == b;
@@ -623,24 +630,198 @@ static void gg_render_1(gg_reference out, int64_t value) {
 gg_integer(out,value);
 }
 static uint8_t gg_equal_elements_2(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_2(((GG_UNALIGNED gg_unaligned_2*)a.data)[i],((GG_UNALIGNED gg_unaligned_2*)b.data)[i]))return 0;return 1;}
-static uint8_t gg_eq_2(uint8_t a, uint8_t b) {
+static uint8_t gg_eq_2(float a, float b) {
 return a == b;
 }
-static void gg_render_2(gg_reference out, uint8_t value) {
+static void gg_render_2(gg_reference out, float value) {
+gg_float32(out,value);
+}
+static uint8_t gg_equal_elements_3(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_3(((uint8_t*)a.data)[i],((uint8_t*)b.data)[i]))return 0;return 1;}
+static uint8_t gg_eq_3(uint8_t a, uint8_t b) {
+return a == b;
+}
+static void gg_render_3(gg_reference out, uint8_t value) {
+gg_bool(out,value);
+}
+static uint8_t gg_equal_elements_4(gg_slice a,gg_slice b) {int64_t i; if(a.len!=b.len)return 0;for(i=0;i<a.len;i++)if(!gg_eq_4(((GG_UNALIGNED gg_unaligned_4*)a.data)[i],((GG_UNALIGNED gg_unaligned_4*)b.data)[i]))return 0;return 1;}
+static uint8_t gg_eq_4(uint8_t a, uint8_t b) {
+return a == b;
+}
+static void gg_render_4(gg_reference out, uint8_t value) {
 gg_unsigned(out,value);
 }
 static struct {
   unsigned char dummy;
 } gg_globals;
 static void gg_function_0(int64_t base);
+static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base);
+static int64_t gg_function_6(int64_t p0, int64_t p1, int64_t p2, int64_t base);
+static int64_t gg_function_6(int64_t p0, int64_t p1, int64_t p2, int64_t base) {
+  _Alignas(8) int64_t t0;
+  _Alignas(8) int64_t t1;
+  _Alignas(8) float t2;
+  _Alignas(8) float t3;
+  _Alignas(8) int64_t t4;
+  _Alignas(8) float t5;
+  _Alignas(8) float t6;
+  _Alignas(8) float t7;
+  _Alignas(8) int64_t t8;
+  _Alignas(8) float t9;
+  _Alignas(8) float t10;
+  _Alignas(8) float t11;
+  _Alignas(8) float t12;
+  _Alignas(8) float t13;
+  _Alignas(8) int64_t t14;
+  _Alignas(8) int64_t v0;
+  _Alignas(8) int64_t v1;
+  _Alignas(8) int64_t v2;
+  _Alignas(8) float v3;
+  v0 = p0;
+  v1 = p1;
+  v2 = p2;
+  {
+  t1 = ((int64_t)(v0));
+#ifndef __cplusplus
+  extern float (fg256d_b2f)(int64_t);
+#endif
+  t2 = fg256d_b2f(t1);
+  t3 = ((float)(t2));
+  t4 = ((int64_t)(v1));
+#ifndef __cplusplus
+  extern float (fg256d_b2f)(int64_t);
+#endif
+  t5 = fg256d_b2f(t4);
+  t6 = ((float)(t5));
+#ifndef __cplusplus
+  extern float (fg256d_mul)(float, float);
+#endif
+  t7 = fg256d_mul(t3, t6);
+  v3 = ((float)(t7));
+  t8 = ((int64_t)(v2));
+#ifndef __cplusplus
+  extern float (fg256d_b2f)(int64_t);
+#endif
+  t9 = fg256d_b2f(t8);
+  t10 = ((float)(t9));
+  t11 = ((float)(v3));
+#ifndef __cplusplus
+  extern float (fg256d_add)(float, float);
+#endif
+  t12 = fg256d_add(t10, t11);
+  t13 = ((float)(t12));
+#ifndef __cplusplus
+  extern int64_t (fg256d_f2b)(float);
+#endif
+  t14 = fg256d_f2b(t13);
+  t0 = ((int64_t)(t14));
+  }
+  return t0;
+}
+static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base) {
+  _Alignas(8) int64_t t0;
+  _Alignas(8) int64_t t1;
+  _Alignas(8) float t2;
+  _Alignas(8) float t3;
+  _Alignas(8) int64_t t4;
+  _Alignas(8) float t5;
+  _Alignas(8) float t6;
+  _Alignas(8) float t7;
+  _Alignas(8) float t8;
+  _Alignas(8) int64_t t9;
+  _Alignas(8) float t10;
+  _Alignas(8) float t11;
+  _Alignas(8) float t12;
+  _Alignas(8) int64_t t13;
+  _Alignas(8) float t14;
+  _Alignas(8) float t15;
+  _Alignas(8) float t16;
+  _Alignas(8) float t17;
+  _Alignas(8) float t18;
+  _Alignas(8) int64_t t19;
+  _Alignas(8) int64_t v0;
+  _Alignas(8) int64_t v1;
+  _Alignas(8) int64_t v2;
+  _Alignas(8) int64_t v3;
+  _Alignas(8) float v4;
+  _Alignas(8) float v5;
+  _Alignas(8) float v6;
+  v0 = p0;
+  v1 = p1;
+  v2 = p2;
+  v3 = p3;
+  {
+  t1 = ((int64_t)(v0));
+#ifndef __cplusplus
+  extern float (fg256d_b2f)(int64_t);
+#endif
+  t2 = fg256d_b2f(t1);
+  t3 = ((float)(t2));
+  t4 = ((int64_t)(v1));
+#ifndef __cplusplus
+  extern float (fg256d_b2f)(int64_t);
+#endif
+  t5 = fg256d_b2f(t4);
+  t6 = ((float)(t5));
+#ifndef __cplusplus
+  extern float (fg256d_mul)(float, float);
+#endif
+  t7 = fg256d_mul(t3, t6);
+  v4 = ((float)(t7));
+  t8 = ((float)(v4));
+  t9 = ((int64_t)(v2));
+#ifndef __cplusplus
+  extern float (fg256d_b2f)(int64_t);
+#endif
+  t10 = fg256d_b2f(t9);
+  t11 = ((float)(t10));
+#ifndef __cplusplus
+  extern float (fg256d_mul)(float, float);
+#endif
+  t12 = fg256d_mul(t8, t11);
+  v5 = ((float)(t12));
+  t13 = ((int64_t)(v3));
+#ifndef __cplusplus
+  extern float (fg256d_b2f)(int64_t);
+#endif
+  t14 = fg256d_b2f(t13);
+  t15 = ((float)(t14));
+  t16 = ((float)(v5));
+#ifndef __cplusplus
+  extern float (fg256d_add)(float, float);
+#endif
+  t17 = fg256d_add(t15, t16);
+  v6 = ((float)(t17));
+  t18 = ((float)(v6));
+#ifndef __cplusplus
+  extern int64_t (fg256d_f2b)(float);
+#endif
+  t19 = fg256d_f2b(t18);
+  t0 = ((int64_t)(t19));
+  }
+  return t0;
+}
 static void gg_function_0(int64_t base) {
   _Alignas(8) int64_t t0;
+  _Alignas(8) int64_t t1;
+  _Alignas(8) int64_t t2;
+  _Alignas(8) int64_t t3;
+  _Alignas(8) int64_t t4;
+  _Alignas(8) int64_t t5;
+  _Alignas(8) int64_t t6;
+  _Alignas(8) int64_t t7;
+  _Alignas(8) int64_t t8;
   {
-  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
-#ifndef __cplusplus
-  extern void (fg256d_fail)(int64_t);
-#endif
-  fg256d_fail(t0);
+  t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t1 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t2 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t3 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t4 = gg_function_1(t0, t1, t2, t3, base + 0);
+  (void)(t4);
+  t5 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t6 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t7 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t8 = gg_function_6(t5, t6, t7, base + 0);
+  (void)(t8);
   }
 }
 #ifdef _MSC_VER
