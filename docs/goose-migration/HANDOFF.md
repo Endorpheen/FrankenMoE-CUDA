@@ -802,10 +802,19 @@ most dangerous and is worth checking first in any new fixture.
    `FG349S_UBATCH_ADD` first+100, `FG345W_KV_STATE_WRITE` once (save) and
    `FG367S_KV_STATE_CLEAR` once (rejected restore).
    The counts match the shape: three routes per batch, one per save, one per failed restore.
-94. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+94. Path to promotion — the accepted DSO's source tree is gone; `work/llama.cpp-integration` is another
+   line (no `llama_batch_ext`) and cannot even start against the accepted `libllama-common`. What was
+   verified read-only: 47 integration directories, 51 files, and the copies are **cumulative**
+   (EXP243's llama-batch has 34 `FG` references, 242 has 18, 241 has 11, 240 has 7), and the latest
+   copy compiles against the flint tree with flint flags (133 664-byte object). Plan written in
+   `docs/goose-migration/reconstruct-accepted-tree.md`: stage the flint tree, overlay the latest copy
+   per file name, build, then prove identity against `libllama-exp244` by symbol set **and** witness
+   lines before adding any call site there. This is the prerequisite for promoting EXP359–EXP370 out of
+   a side stage.
+95. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-95. Downstream phases P4–P11.
+96. Downstream phases P4–P11.
 
 ## Disk
 
