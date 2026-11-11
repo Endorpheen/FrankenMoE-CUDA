@@ -690,3 +690,23 @@ So the crash was one real defect and is fixed, while the arithmetic is still wro
 indexes its staging as `buf[w*32+l]` with no column dimension, so with two columns the values of the two
 destinations collide. The remaining work is exactly that indexing (a column stride in the staging accesses),
 which is a change in the generated code, not in the launch wrapper.
+
+## Column-by-column comparison: both destinations differ, process still unstable
+
+With ncols_dst=2, nrows=8, the harness prints both sides and compares element by element:
+
+    idx  native        goose
+    0    172402496     -63610976     DIFF
+    1    29503472      86044864      DIFF
+    ... (16 values, all DIFF)
+    Segmentation fault (core dumped)
+
+So it is not "column 0 is right and column 1 is wrong": both destinations are wrong from the first element, and the
+process still dies after the copy. The staging collision hypothesis is necessary but not sufficient; the column
+mapping itself (which destination a block computes, and how `channel_ratio`/`stride_col_dst` are derived for
+`blockIdx.y`) does not match the native kernel.
+
+Closing position for this item: the integration is solved and 168 of 324 calls already run through the Goose kernel
+with an unchanged completion; the remaining 156 need multi-column support, which is a substantial change to the
+generated device code (column-aware staging and block-to-destination mapping), not a wrapper fix. That is recorded
+as the concrete next task.
