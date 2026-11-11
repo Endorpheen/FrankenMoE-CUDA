@@ -526,10 +526,17 @@ most dangerous and is worth checking first in any new fixture.
    whole state, asks each ubatch for a slot, and restores **also on success** — success
    means "could be placed", not "was placed" — and `init_update`, which reports no-update
    rather than a context. 30 022 checks, 8/8 mutations.
-58. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+58. Recurrent state restore — EXP338 transfers `state_read_meta` (single sequence: zero-id
+   records, empty section stops before reading, slot search, self-source; whole cache:
+   clear before reading, id range, one tail per sequence) and `state_read_data` (header
+   checks including the transposed-state refusal before any write, null layers skipped
+   entirely, zero-length sections validate but read nothing). 43 689 checks, 9/9 mutations.
+   Native's `s_trans == true` branch is unreachable after its own header check and is left
+   unreachable in the port too.
+59. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-59. Downstream phases P4–P11.
+60. Downstream phases P4–P11.
 
 ## Disk
 
