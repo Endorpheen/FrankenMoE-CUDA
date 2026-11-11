@@ -43,7 +43,7 @@ the same file and none contains the others:
 |---|---|
 | `quantize.cu` | EXP178, EXP180, EXP208 |
 | `mmvq.cu` | EXP186 (has 185), EXP188 |
-| `fattn-vec-instance-q4_0-q4_0.cu` | EXP173 — compiles with one error, needs its own include set |
+| `fattn-vec-instance-q4_0-q4_0.cu` | EXP173 — **fixed**: the module needs the parent directory on the include path |
 
 ## Order
 
@@ -55,3 +55,28 @@ the same file and none contains the others:
 5. Only then accept APEX.CUDA_MATVEC and move to MMQ.
 
 Until step 4 passes, the current library stays in place — a library with a single route is not a candidate.
+
+## All sixteen modules compile now
+
+With the parent include path added, EXP173 compiles too. The full set builds against the clang build with
+rc 0: 173, 174, 175, 176, 177, 179, 181, 182, 183, 184, 186, plus the host units, and the remaining
+per-experiment objects that need their own target (178, 180, 188, 208).
+
+## How the collaboration works, so the link can be rebuilt
+
+Each stage does not replace a native object wholesale. It **privatises** the native symbols with `objcopy
+--redefine-sym` (for example `ggml_cuda_mul_mat_vec_q` becomes `fg186_native_ggml_cuda_mul_mat_vec_q`), adds
+its own Goose object that defines the public name, and links the library again. The recorded link line of
+the previous stage is the composition.
+
+Those previous-stage build directories were deleted, so the link must be reconstructed rather than replayed:
+for each target file, privatise exactly the symbol names each experiment's `build_runtime.py` lists (they
+skip the `.cold` companions on purpose), add the Goose objects, and link with the visibility map.
+
+## Verification gate for the new library
+
+1. every Goose symbol the current library exports is still exported (superset of 63);
+2. the candidate runs and answers `e68df05b`;
+3. `FG186Q` (and the Q4_K witness) report non-zero, with Q6_K routed by default;
+4. only then replace `libggml-cuda.so.0.27.0` in the stage run directory, keeping the current file for
+   rollback.
