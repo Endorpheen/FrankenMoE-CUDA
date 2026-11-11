@@ -98,3 +98,25 @@ That function has exactly the shape already handled twice in this plan:
 So the next port is the scheduling around those two primitives: the same method as EXP255 (A/B harness comparing the
 emitted offsets against the native loop, then substitution and the accepted-profile check). The MMA instruction itself
 is not arithmetic Goose can express, exactly as `dp4a` was expressed but `mma.sync` is a single hardware operation.
+
+## What is left is instructions, not decisions
+
+Walking the executed route for both types this profile uses:
+
+| piece | state |
+|---|---|
+| dispatch `ggml_cuda_should_use_mmq` (EXP203) | Goose, 8550 calls on the profile |
+| Q8_1 quantizer (EXP180) | Goose, paths=0x3 |
+| `ggml_cuda_mmq_load_tiles_q4_K` (EXP255) | **Goose**, 0 mismatches in A/B, defect test `1a8543b0` |
+| `ggml_cuda_mmq_load_tiles_q6_K` qs part (EXP257) | **Goose**, 0 mismatches, defect test `22ea97d3` |
+| `load_ldmatrix`, `mma(C,A,B)` | tensor-core instructions |
+| `write_back_mma` | index computation plus one multiply and a store |
+| `df`/`sc` rows of the Q6_K loader | a load and a store, no arithmetic |
+
+The remaining items in that table are hardware instructions and memory traffic. `mma.sync` is a single operation Goose
+cannot express (unlike `dp4a`, which was expressed); `write_back_mma`'s only float op is `y_scale[j]*sum[...]`, and
+wiring it through Goose would move register-resident values through memory in the innermost loop -- the trade already
+rejected in EXP256 for the same reason.
+
+So for the two types this profile exercises, every decision and every piece of staging arithmetic is Goose, and what
+remains is the same class as cuBLAS calls, memcpys and the allocator.
