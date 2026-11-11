@@ -167,10 +167,19 @@ most dangerous and is worth checking first in any new fixture.
    different, needs its own gate) or a language array feature (the compiler is
    read-only). EXP172 already covers the GDN scalar/MMA path, so this is the
    remaining recurrent scope only.
-9. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+9. KV cell maintenance — EXP289 closes the `pos_add`/`pos_div`/`seq_pos`
+   remainder of P5-01 that EXP199 and EXP204 left open: 957 717 checks against a
+   transcription of `llama_kv_cells`, 8/8 mutations caught (two of them by an
+   invariant abort, so the driver counts exit status as a channel). The module is
+   gated but not integrated — the source tree is read-only. Two traps recorded
+   there: `seq_pos` as `std::set<std::pair<pos,uint32_t>>` needs an *unsigned*
+   index or the `upper_bound({p, UINT32_MAX})` sentinel becomes -1 and skips
+   cells at exactly `p`; and a `const` in a Goose module reads as zero unless
+   `gg_program` ran, so compile-time constants are literals.
+10. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-10. Downstream phases P4–P11.
+11. Downstream phases P4–P11.
 
 ## Disk
 
