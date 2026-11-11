@@ -1021,5 +1021,3 @@ int main(int argc, char **argv) {
   return fg251ds_gg_program(argc, argv);
 #endif
 }
-
-uint8_t fg251ds_run(int64_t p){return fg251ds_gg_function_1(p,1);}
