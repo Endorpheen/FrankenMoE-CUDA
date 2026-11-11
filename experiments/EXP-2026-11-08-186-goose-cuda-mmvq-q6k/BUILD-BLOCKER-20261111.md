@@ -404,3 +404,18 @@ Summary of what is now established, and why this stops here for now:
 Deliberately stopping active work on this path again: the remaining question is ownership/state inside the
 goose-built backend, and chasing it further is a different task from porting the kernel. Registered BLOCKED with
 the complete evidence chain so whoever picks it up starts from the slot, not from the beginning.
+
+## Module correctness widened across shapes
+
+The harness now takes ncols_dst and nrows, and the Goose kernel was compared with the native one on five shapes,
+same inputs, output buffers compared byte for byte:
+
+    ncols_dst=1 nrows=4  -> IDENTICAL
+    ncols_dst=1 nrows=8  -> IDENTICAL
+    ncols_dst=2 nrows=4  -> IDENTICAL
+    ncols_dst=4 nrows=4  -> IDENTICAL
+    ncols_dst=1 nrows=16 -> IDENTICAL
+
+So the kernel is not merely correct for the single shape the first probe used; it matches the native kernel for
+multi-column and larger-row cases as well. That strengthens the conclusion that the remaining failure is
+state/ownership in the server process, not the port.

@@ -10,6 +10,7 @@
 #include <cstring>
 #include <vector>
 #include <random>
+#include <cstdlib>
 
 int main(int argc, char ** argv) {
     ggml_backend_t be = ggml_backend_cuda_init(0);
@@ -19,9 +20,11 @@ int main(int argc, char ** argv) {
     ip.mem_buffer = nullptr;
     ip.no_alloc = true;
     ggml_context * ctx = ggml_init(ip);
-    ggml_tensor * src0 = ggml_new_tensor_2d(ctx, GGML_TYPE_Q6_K, 2048, 4);
-    ggml_tensor * src1 = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2048, 1);
-    ggml_tensor * dst  = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 4, 1);
+    ggml_tensor * src0 = ggml_new_tensor_2d(ctx, GGML_TYPE_Q6_K, 2048, (argc > 3) ? atoi(argv[3]) : 4);
+    ggml_tensor * src1 = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2048, (argc > 2) ? atoi(argv[2]) : 1);
+    const int ncols_dst = (argc > 2) ? atoi(argv[2]) : 1;
+    const int nrows     = (argc > 3) ? atoi(argv[3]) : 4;
+    ggml_tensor * dst  = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, nrows, ncols_dst);
     ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors(ctx, be);
     if (!buf) { printf("no buffer\n"); return 1; }
     std::mt19937 rng(186);
