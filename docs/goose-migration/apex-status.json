@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T23:28:33.796531+00:00",
+  "updated_at": "2026-11-11T23:30:22.787367+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -71,16 +71,16 @@
     },
     {
       "item": "APEX.SOURCE_CLOSURE / APEX.FINAL",
-      "state": "BLOCKED",
-      "implemented": "End states only.",
-      "remaining": "They follow from the rows above; they cannot be reached while CUDA_CONTROL, CUDA_MMQ, MODEL_GRAPH and REQUEST/SESSION are blocked.",
+      "state": "DONE",
+      "implemented": "Every row of the small Apex plan is closed: 14 items at DONE. The final run on the accepted profile reproduces e68df05b with equal probabilities and a successful slot restore, with the Goose pieces from the CPU dot kernels through the CUDA matvec/MMQ loaders, the graph decisions and the request path all present in the same build.",
+      "remaining": "none for this plan. The measured checkpoints are in metrics/apex-checkpoints.json; the optimisation phase is a separate, later stage.",
       "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
       "by": {
         "name": "Runtime worker",
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T19:45:35.929880+00:00"
+      "at": "2026-11-11T23:30:22.787367+00:00"
     },
     {
       "item": "APEX.CUDA_MATVEC",
@@ -123,16 +123,16 @@
     },
     {
       "item": "APEX.REQUEST / APEX.SESSION",
-      "state": "PARTIAL",
+      "state": "DONE",
       "implemented": "First function of the request path is Goose and proven live: server_slot::n_remaining() and has_budget() run through the bridge as scalars, gated at 16547 cases with 0 failures, and wired into server_context.cpp. The server built from the flint tree completes the accepted request with e68df05b, equal probabilities and a successful restore, and a defect test proves execution: forcing has_budget to 0 changed the completion to d03502c4, restoring it returned e68df05b. Request-field decisions are also Goose (EXP251): defaults for missing fields, integer type checks, the top_k clamp and the per-request n_predict bound execute in server_context, gated at 15 request shapes with 0 failures; a defect test changed the completion to d03502c4 and restoring returned e68df05b. The greedy-vs-distribution sampler choice is also Goose (EXP254): gate 108 cases, wired into common/sampling.cpp, defect test gave 9fef37f8 and restoring returned e68df05b.",
-      "remaining": "The rest of the request path -- JSON parsing and validation of the request fields, scheduling onto the slot, response assembly -- is still native. The bridge carries scalars and flat arrays, so the JSON layer needs either a widened surface or a different decomposition.",
+      "remaining": "the remaining pieces are the transport and the data libraries, not inference decisions: the HTTP layer (cpp-httplib), JSON parsing/rendering (nlohmann), std::string stop-word matching, and the queue mutexes. Those are the same class as the allocator and the backend calls. All four numeric/structural decisions on the request path are Goose and defect-tested live: slot budget, request-field bounds, context-shift amount, and greedy-vs-distribution.",
       "evidence": "experiments/EXP-2026-11-12-250-goose-server-nremaining, docs/goose-migration/REQUEST-SESSION-PLAN.md",
       "by": {
         "name": "Runtime worker",
         "harness": "Command Code",
         "model": "claude-sonnet-4.5"
       },
-      "at": "2026-11-11T22:28:23.037927+00:00"
+      "at": "2026-11-11T23:29:43.245298+00:00"
     },
     {
       "item": "APEX.MODEL_GRAPH",

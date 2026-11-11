@@ -160,6 +160,21 @@
       "content_equal": true,
       "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated build; no preload",
       "note": "single quick checkpoint"
+    },
+    {
+      "item": "APEX.REQUEST / APEX.SESSION",
+      "experiment": "EXP250/251/252/254",
+      "measured_at": "2026-11-11T23:30:22.765200+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, request-path decisions in Goose",
+      "prefill_tok_s": 1667.21,
+      "decode_tok_s": 23.77,
+      "wall_s": 25.03,
+      "peak_rss_mib": 22861.3,
+      "peak_vram_attributed_mib": 6412,
+      "content_equal": true,
+      "method": "run_metrics.py via LD_LIBRARY_PATH; no preload",
+      "note": "single quick checkpoint"
     }
   ]
 }
