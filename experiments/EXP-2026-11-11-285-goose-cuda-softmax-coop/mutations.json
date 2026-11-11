@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "grid stride drops blockDim",
+    "status": "CAUGHT",
+    "failures": 200000
+  },
+  {
+    "mutation": "global max load misses the last CTA",
+    "status": "CAUGHT",
+    "failures": 142141
+  },
+  {
+    "mutation": "exp pass subtracts the CTA max instead of the global max",
+    "status": "CAUGHT",
+    "failures": 200000
+  },
+  {
+    "mutation": "divide pass skips the division",
+    "status": "CAUGHT",
+    "failures": 64672
+  },
+  {
+    "mutation": "host block 256 -> 128",
+    "status": "CAUGHT",
+    "failures": 1
+  }
+]
