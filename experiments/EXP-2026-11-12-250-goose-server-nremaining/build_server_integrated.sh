@@ -51,6 +51,27 @@ patch('tools/server/server-context.cpp',
       '    bool has_budget() const {\n        return n_predict_max == -1 || n_remaining() > 0;\n    }',
       '    bool has_budget() const {\n        return fg250s_has_budget(n_predict_max, (int64_t) stats.n_gen) != 0;\n    }',
       'fg250s_has_budget(n_predict_max')
+
+# 251: per-request n_predict bound
+patch('tools/server/server-context.cpp',
+      '        slot.n_predict_max = task.params.n_predict != -1 ? task.params.n_predict : params_base.n_predict;',
+      '        {\n            int64_t fg251_out[2] = {0};\n            fg251s_apply(task.params.n_predict != -1 ? task.params.n_predict : params_base.n_predict,\n                         task.params.sampling.top_k, 0, fg251_out);\n            slot.n_predict_max = (int32_t) fg251_out[0];\n        }',
+      'fg251s_apply(task.params')
+
+# 252: context-shift amount
+patch('tools/server/server-context.cpp',
+      '                int       n_discard = slot.task->params.n_discard ? slot.task->params.n_discard : (n_left / 2);',
+      '                int       n_discard = (int) fg252s_discard(n_keep, n_left, slot.task->params.n_discard);',
+      'fg252s_discard(n_keep')
+
+# 254: greedy vs distribution
+patch('common/sampling.cpp',
+      '            const bool greedy = params.n_probs == 0 && !params.samplers.empty() &&\n                ((params.samplers.back() == COMMON_SAMPLER_TYPE_TEMPERATURE && params.temp == 0.0f && params.dynatemp_range == 0.0f) ||\n                 (params.samplers.back() == COMMON_SAMPLER_TYPE_TOP_K && params.top_k == 1));',
+      '            const int64_t fg254_last = params.samplers.empty() ? -1 :\n                (params.samplers.back() == COMMON_SAMPLER_TYPE_TEMPERATURE ? 0 :\n                 (params.samplers.back() == COMMON_SAMPLER_TYPE_TOP_K ? 1 : 2));\n            const bool greedy = fg254s_greedy(params.n_probs, (int64_t) params.samplers.size(),\n                                              fg254_last, params.top_k) != 0;',
+      'fg254s_greedy(params.n_probs')
+
+
+\n# NOTE: the three EXP253 graph patches (gating, weight normalisation, top-k) are applied by hand;\n# they are recorded in experiments/EXP-2026-11-12-253-goose-graph-gating/README.md and are the\n# next thing to encode here.\n
 print('server patches applied idempotently')
 PY
 
