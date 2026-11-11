@@ -675,3 +675,18 @@ of `src0` reads across all destinations and its staging layout carries `ncols_ds
 
 Reverted. Correct support needs the extra staging dimension in the generated device code, which is a real feature
 of the port, not a wrapper.
+
+## One cause of the multi-column crash found: shared memory sized without ncols_dst
+
+The launch computed the dynamic shared size as `(nwarps-1) * warp_size * 4`, but the native staging layout is
+`[nwarps-1][ncols_dst][rows_per_block][warp_size]`. For two columns that is half the space the kernel writes, hence
+the SIGSEGV.
+
+Sizing it as `(nwarps-1) * ncols_dst * warp_size * 4` removes the crash:
+
+    ncols_dst=2 nrows=256 -> no crash, but DIFF
+
+So the crash was one real defect and is fixed, while the arithmetic is still wrong: the generated device code
+indexes its staging as `buf[w*32+l]` with no column dimension, so with two columns the values of the two
+destinations collide. The remaining work is exactly that indexing (a column stride in the staging accesses),
+which is a change in the generated code, not in the launch wrapper.
