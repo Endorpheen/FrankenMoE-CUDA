@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "head reset tolerance is wider",
+    "status": "CAUGHT",
+    "failures": 2866,
+    "exit_code": 1
+  },
+  {
+    "mutation": "shared sequences keep their tail",
+    "status": "CAUGHT",
+    "failures": 18668,
+    "exit_code": 1
+  },
+  {
+    "mutation": "next-empty scan skips every second cell",
+    "status": "CAUGHT",
+    "failures": 1204,
+    "exit_code": 1
+  },
+  {
+    "mutation": "ownership test accepts a shared cell",
+    "status": "CAUGHT",
+    "failures": 2825,
+    "exit_code": 1
+  },
+  {
+    "mutation": "swap does not move the sequence words to the source cell",
+    "status": "CAUGHT",
+    "failures": 1165,
+    "exit_code": 1
+  },
+  {
+    "mutation": "final pass keeps the previous position",
+    "status": "CAUGHT",
+    "failures": 2050,
+    "exit_code": 1
+  },
+  {
+    "mutation": "zero-state scan starts above the range",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "range check rejects an exact fit",
+    "status": "CAUGHT",
+    "failures": 296,
+    "exit_code": 1
+  }
+]

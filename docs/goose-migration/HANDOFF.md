@@ -198,10 +198,18 @@ most dangerous and is worth checking first in any new fixture.
    copy itself: native queues it in sc_info, and the port reports the pair. With
    this, P5-01 has no open cell-metadata item left; only the live run remains, and
    that needs a model run and Igor's approval under rule 1.
-13. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+13. Recurrent slot placement — EXP293 transfers `llama_memory_recurrent::find_slot`
+   whole (P5-04): head reset, shared-sequence sweep, ring search, slot assignment
+   with tail copying, the re-order pass with tail retargeting, final position and
+   set write, source-reference staging, and the range/used recount. 131 200 checks,
+   8/8 mutations caught, re-order exercised 1 233 times. Note the cell emptiness
+   rule here is the sequence set, not the position. And a trap: using `src0` as
+   scratch for the reference count clobbers cells outside the range, which native
+   leaves at -1 — the gate caught it.
+14. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-14. Downstream phases P4–P11.
+15. Downstream phases P4–P11.
 
 ## Disk
 
