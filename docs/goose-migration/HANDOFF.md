@@ -191,10 +191,17 @@ most dangerous and is worth checking first in any new fixture.
    port defect. Cross-stream `seq_cp` stays open — it enqueues a buffer copy
    (sc_info) and rebuilds the destination cells, which is buffer work, not cell
    metadata. It is recorded, not approximated.
-12. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+12. Cross-stream `seq_cp` — closed by EXP292: the full-buffer test, the reset of
+   the destination stream, the per-cell rebuild (undo the shift, pos_set, seq_add,
+   re-apply the shift through pos_add, copy ext) and the head handover, 130 370
+   checks / 0 failures, 9/9 mutations caught. The only unported part is the buffer
+   copy itself: native queues it in sc_info, and the port reports the pair. With
+   this, P5-01 has no open cell-metadata item left; only the live run remains, and
+   that needs a model run and Igor's approval under rule 1.
+13. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-13. Downstream phases P4–P11.
+14. Downstream phases P4–P11.
 
 ## Disk
 

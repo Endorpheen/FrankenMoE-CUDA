@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "restored position adds the shift",
+    "status": "CAUGHT",
+    "failures": 807,
+    "exit_code": 1
+  },
+  {
+    "mutation": "copied cell is not marked used",
+    "status": "CAUGHT",
+    "failures": 465,
+    "exit_code": 1
+  },
+  {
+    "mutation": "initial position is off by one",
+    "status": "CAUGHT",
+    "failures": 102,
+    "exit_code": 1
+  },
+  {
+    "mutation": "shift is not re-applied after the copy",
+    "status": "CAUGHT",
+    "failures": 755,
+    "exit_code": 1
+  },
+  {
+    "mutation": "reset forgets the sequence counts",
+    "status": "CAUGHT",
+    "failures": 1756,
+    "exit_code": 1
+  },
+  {
+    "mutation": "reset keeps the ext block",
+    "status": "CAUGHT",
+    "failures": 6700,
+    "exit_code": 1
+  },
+  {
+    "mutation": "destination head is left alone",
+    "status": "CAUGHT",
+    "failures": 125,
+    "exit_code": 1
+  },
+  {
+    "mutation": "copy filters on the destination sequence",
+    "status": "CAUGHT",
+    "failures": 6849,
+    "exit_code": 1
+  },
+  {
+    "mutation": "full-buffer test is off by one",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  }
+]
