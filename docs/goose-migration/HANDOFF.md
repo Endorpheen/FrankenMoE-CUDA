@@ -838,10 +838,15 @@ most dangerous and is worth checking first in any new fixture.
    combinators are reached only from the M-RoPE branch of `llama_batch_allocr::init`, and the Apex
    32K/128 profile is not M-RoPE. Answer unchanged, `FG375S` never fires. Not counted as closed; needs
    an M-RoPE request or a recurrent-only restore failure, neither of which exists in the agreed profile.
-99. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+99. Hybrid context decisions — EXP376 integrated (`apply` conjunction without short-circuit, `next`
+   boundary), gate 35/0, **NOT VALIDATED**. Hybrid memory is built (the startup log shows the recurrent
+   half), but `llama_memory_hybrid_context::apply`/`next` are never called on the Apex 32K/128 request:
+   the batch takes the single-ubatch path. Needs `n_ubatch < n_tokens`; forcing it would be a new
+   acceptance rule. Recorded, not counted.
+100. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-100. Downstream phases P4–P11.
+101. Downstream phases P4–P11.
 
 ## Disk
 
