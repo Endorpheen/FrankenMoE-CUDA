@@ -468,10 +468,17 @@ most dangerous and is worth checking first in any new fixture.
    vector is snapshotted, because a later ubatch may move heads the earlier one did not
    touch. 49 702 checks, 9/9 mutations — including one that restores from the other end of
    the offset table, so reverse order is verified rather than assumed.
-51. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+51. KV batch initialisation — EXP331 transfers `init_batch`: the split strategy (simple for
+   one stream, by sequence for a single-assignment multi-stream batch, equal otherwise), the
+   drain to the zero-token ubatch, and the two failure paths (unplaced tokens, refused
+   preparation) that both yield failed-to-prepare. 28 322 checks, 8/8 mutations.
+   The gate first missed the early exit entirely — it never generated a zero-token ubatch,
+   so two mutations passed uncounted; the generator now inserts zero at 25%. A gate that
+   cannot reach a branch looks exactly like a gate that passes.
+52. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-52. Downstream phases P4–P11.
+53. Downstream phases P4–P11.
 
 ## Disk
 

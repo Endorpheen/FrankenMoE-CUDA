@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "a single stream splits by sequence",
+    "status": "CAUGHT",
+    "failures": 1651,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a single-assignment batch splits equally",
+    "status": "CAUGHT",
+    "failures": 1661,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the drain ignores the zero ubatch",
+    "status": "CAUGHT",
+    "failures": 5183,
+    "exit_code": 1
+  },
+  {
+    "mutation": "unplaced tokens are accepted",
+    "status": "CAUGHT",
+    "failures": 3957,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a refused preparation is accepted",
+    "status": "CAUGHT",
+    "failures": 1778,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed batch reports success",
+    "status": "CAUGHT",
+    "failures": 1435,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the zero ubatch is counted as taken",
+    "status": "CAUGHT",
+    "failures": 1189,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the strategy is never reported",
+    "status": "CAUGHT",
+    "failures": 3312,
+    "exit_code": 1
+  }
+]
