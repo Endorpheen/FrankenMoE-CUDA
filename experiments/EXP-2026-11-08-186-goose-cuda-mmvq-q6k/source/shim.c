@@ -65,6 +65,21 @@ static void segv_probe(int sig, siginfo_t * si, void * uc) {
     raise(SIGSEGV);
 }
 
+typedef void * (*dev_init_fn)(void *, const char *);
+static dev_init_fn g_dev_orig;
+void * ggml_backend_dev_init(void * dev, const char * params) {
+    if (!g_dev_orig) {
+        void * h = dlopen("libggml-base.so.0", RTLD_NOW | RTLD_NOLOAD);
+        if (h) g_dev_orig = (dev_init_fn) dlsym(h, "ggml_backend_dev_init");
+    }
+    void * be = g_dev_orig ? g_dev_orig(dev, params) : NULL;
+    if (be && getenv("FG186S_WITNESS")) {
+        void * c = *(void **) ((char *) be + 0x90);
+        fprintf(stderr, "FG186S_DEVINIT backend=%p ctx=%p slot0=%p\n", be, c, c ? *(void **) ((char *) c + 0xcf0) : NULL);
+    }
+    return be;
+}
+
 typedef void * (*init_fn)(size_t);
 static init_fn g_init_orig;
 void * ggml_backend_cuda_init(size_t n) {

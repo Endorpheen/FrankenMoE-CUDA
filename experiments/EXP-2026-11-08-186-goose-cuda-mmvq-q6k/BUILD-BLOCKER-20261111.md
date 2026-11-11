@@ -498,3 +498,27 @@ module is handed was never constructed on the path we were inspecting.
 
 Next: enumerate contexts as they are used (print ctx at each entry) and map each to the library copy that created
 it, to confirm the second context's origin.
+
+## Symbol wrapping cannot see the second context's creation
+
+Verified the layout first (this matters for everything else):
+
+    pools_offset=3312 (0xcf0)  streams_offset=48  device_offset=0  size=4336
+
+so 0xcf0 is correct and the module reads the right field.
+
+Then tried to catch the second creation from outside. `ggml_backend_cuda_init` is wrapped (fires once, with
+`slot0=(nil)`), but the context the kernel gets is a different object. Wrapping the next layer out —
+`ggml_backend_dev_init` (defined in libggml-base, called from libllama) — produced **no output at all**, i.e. our
+exported symbol was never used.
+
+Conclusion: the calls that create the second context are bound directly inside libggml-base/libggml-cuda in this
+build, so no LD_PRELOAD wrapper can observe them. Either the library is linked with local binding for these calls,
+or it calls through a table it filled at startup.
+
+Therefore the next instrument is not a wrapper but either:
+- patching the code that creates the context (as done for the kernel entry), or
+- rebuilding libggml-base with instrumentation, or
+- an interactive gdb session with a watchpoint on the slot, started from a breakpoint that actually resolves.
+
+That is a separate task from porting the kernel, and it is where this item now honestly stands.
