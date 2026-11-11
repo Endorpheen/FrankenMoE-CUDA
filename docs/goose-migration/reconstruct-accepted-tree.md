@@ -180,6 +180,23 @@ lines, which is why they report "No file to patch" here.
 So correctness can be reproduced (it is, exactly) but throughput cannot, and the gap must be expected
 until the hybrid tree or its image is recovered.
 
+## What is still native on this tree
+
+Counted by Goose calls inside each function of the staged `llama-kv-cache.cpp`:
+
+| function | Goose calls |
+|---|---:|
+| `find_slot` | 5 |
+| `apply_ubatch` | 6 |
+| `prepare` | 4 |
+| `seq_rm` | 4 |
+| `state_read_sinfo` | **0** |
+| `state_write` / `state_clear` | added by us (EXP371/372) |
+
+So the read orchestration is the one KV block the accepted runtime left native, and it is also the
+block we have a gated plan for (EXP344). It is the natural next call site, and it is reachable with a
+**successful** restore — the opposite of the truncated file used to witness the clear.
+
 ## Status
 
 The reconstructed tree is a **correctness** base, not a performance equivalent. Two gaps documented:
