@@ -736,10 +736,16 @@ most dangerous and is worth checking first in any new fixture.
    full accepted runtime.
    Not closed by this: the batch sub-system as a whole, and all KV state paths (they need a request
    that saves or restores state).
-84. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+84. split_equal selection LIVE — EXP361 wires the EXP350 module through a bridge that passes used
+   flags, set masks, first ids, the limit and the mask→rows map, and gets back the accepted rows and
+   cursors; `cur_seq_set` is rebuilt on the llama side. Bridge gate 18 453 checks / 0 failures.
+   Apex run exact, `FG350S_SPLIT_SELECT` first call / 100 / 200, prefill 1599.2, decode 25.22.
+   With EXP359 this closes both batch blocks Apex actually enters; keep-tail and split_simple stay
+   dormant (EXP354/EXP355) and would add no witness.
+85. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-85. Downstream phases P4–P11.
+86. Downstream phases P4–P11.
 
 ## Disk
 
