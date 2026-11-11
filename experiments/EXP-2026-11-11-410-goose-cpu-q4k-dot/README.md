@@ -259,3 +259,23 @@ Meanwhile the dispatch question is the real remaining work and does not need the
 
 So on this machine the dispatched kernel is **not** the portable algorithm, and hooking it with the portable
 port would change the numbers. The AVX2 grouping has to be reproduced for a faithful replacement.
+
+## Sixteenth measurement: the AVX2 source was found, and it is a different algorithm
+
+`/home/end0/AI/LlamaServerMTP/ggml/src/ggml-cpu/arch/x86/quants.c` contains the dispatched kernel. Its
+structure differs from the portable one in four places that all affect the float result:
+
+1. `dmin = -y[i].d * f16(x[i].dmin)` — the sign is folded into the constant, then accumulated, instead of being
+   subtracted at the end.
+2. The min term is built from **four** products: `q8s` is the pairwise `hadd` of `bsums`, then
+   `prod = madd_epi16(mins_hi, q8s)`, i.e. `mins[i]*(bsums[2i]+bsums[2i+1])` for i = 0..3, not the portable
+   16-term sum.
+3. `acc = fmadd(d, cvtepi32_ps(sumi), acc)` — fused multiply-add over 8 lanes.
+4. Two separate accumulators are summed at the very end: `acc_m` (mins, 128-bit) and `acc` (scales, 256-bit),
+   with `*s = hsum_float_8(acc) + acc_m_scalar`.
+
+Reproducing the horizontal orders by hand already moved the match rate (138 -> 121 mismatches out of 200), which
+confirms the direction: the difference is float association, not the integer products.
+
+So the portable port is correct for the portable algorithm, but replacing the dispatched symbol with it would
+change the numbers. A faithful replacement needs this exact AVX2 association reproduced in Goose.
