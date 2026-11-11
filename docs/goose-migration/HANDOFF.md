@@ -347,10 +347,20 @@ most dangerous and is worth checking first in any new fixture.
    ubatch stream count: 22 290 checks, 8/8 mutations. Gate lesson: a "does nothing"
    mutation is only visible if the output buffer is sentinel-filled between calls,
    otherwise it reads back the previous result.
-32. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+32. Hybrid k-pool state marking — EXP312 transfers `kpool_build_state`: the
+   generation-stamped marks, the stale pass (pools ending after an edited position),
+   the token pass in both modes, the representative-row uniqueness, and the graph-size
+   bound. 23 587 checks, 8/8 mutations. Four defects of mine, all in the interface
+   rather than the rules: `POS_CLEAN` is the maximum position (I used -1, which made
+   the stale pass run every step), `kpool_rank` searches cells and I passed the pool
+   count, the pool-offset table and the pool array were one pointer, and a vector
+   sized with `assign` then filled with `push_back` keeps its zeros at the front. The
+   bound mutations only became visible once the generator made the bound actually
+   bind.
+33. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-33. Downstream phases P4–P11.
+34. Downstream phases P4–P11.
 
 ## Disk
 

@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "clean sentinel becomes a negative position",
+    "status": "CAUGHT",
+    "failures": 10443,
+    "exit_code": 1
+  },
+  {
+    "mutation": "representative-row uniqueness is skipped",
+    "status": "CAUGHT",
+    "failures": 38,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stale boundary includes an earlier pool",
+    "status": "CAUGHT",
+    "failures": 147,
+    "exit_code": 1
+  },
+  {
+    "mutation": "position lookup skips an equal first cell",
+    "status": "CAUGHT",
+    "failures": 1594,
+    "exit_code": 1
+  },
+  {
+    "mutation": "token outside the pool still marks it",
+    "status": "CAUGHT",
+    "failures": 399,
+    "exit_code": 1
+  },
+  {
+    "mutation": "order mode maps rank to the wrong pool",
+    "status": "CAUGHT",
+    "failures": 549,
+    "exit_code": 1
+  },
+  {
+    "mutation": "graph bound ignores the unused padding slot",
+    "status": "CAUGHT",
+    "failures": 477,
+    "exit_code": 1
+  },
+  {
+    "mutation": "graph bound ignores the sequence count",
+    "status": "CAUGHT",
+    "failures": 1942,
+    "exit_code": 1
+  }
+]
