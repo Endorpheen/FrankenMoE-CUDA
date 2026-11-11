@@ -182,10 +182,19 @@ most dangerous and is worth checking first in any new fixture.
    mutations caught; one candidate mutation was rejected because no output could
    observe it. `seq_pos_max` is a scan here rather than the cached set — same
    value by the set invariant, different cost, and this module is not timed.
-11. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+11. KV range operations — EXP291 closes the CP/idxs remainder: `seq_rm(seq_id,p0,p1)`
+   in both branches, `seq_keep(seq_id)` and the same-stream `seq_cp`, all with the
+   head-move rule. 3 937 168 checks over 120 trials x 40 operations, 8/8 mutations
+   caught. The native `seq_add` precondition (destination bit absent) had to be
+   modelled explicitly: a random state carrying both sequences is undefined
+   behaviour, and the 14-vs-12 pair mismatch that appeared first was that, not a
+   port defect. Cross-stream `seq_cp` stays open — it enqueues a buffer copy
+   (sc_info) and rebuilds the destination cells, which is buffer work, not cell
+   metadata. It is recorded, not approximated.
+12. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-12. Downstream phases P4–P11.
+13. Downstream phases P4–P11.
 
 ## Disk
 
