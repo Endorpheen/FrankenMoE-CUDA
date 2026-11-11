@@ -1026,3 +1026,5 @@ print('staging rebuilt ... + detok decisions')
 # byte fallback (EXP402); the patch is idempotent only on a freshly rebuilt tree, which is the case here
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_byte_fallback.py')], check=True)
 subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_unicode_modules.py')], check=True)
+subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_loader_align.py')], check=True)
+subprocess.run([sys.executable, str(BASE/'runtime/reconstructed/patch_weight_placement.py')], check=True)
