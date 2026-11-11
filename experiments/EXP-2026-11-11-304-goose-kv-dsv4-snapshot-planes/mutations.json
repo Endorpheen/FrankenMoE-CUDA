@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "rollback lookup bounds by the stream count",
+    "status": "CAUGHT",
+    "failures": 203,
+    "exit_code": 1
+  },
+  {
+    "mutation": "rollback plane is not scaled by the row count",
+    "status": "CAUGHT",
+    "failures": 2818,
+    "exit_code": 1
+  },
+  {
+    "mutation": "restore destination ignores the stream offset",
+    "status": "CAUGHT",
+    "failures": 15711,
+    "exit_code": 1
+  },
+  {
+    "mutation": "snapshot prefix uses every token of the sequence",
+    "status": "CAUGHT",
+    "failures": 2011,
+    "exit_code": 1
+  },
+  {
+    "mutation": "snapshot prefix takes one token too many",
+    "status": "CAUGHT",
+    "failures": 1565,
+    "exit_code": 1
+  },
+  {
+    "mutation": "scratch override loses the token index",
+    "status": "CAUGHT",
+    "failures": 1009,
+    "exit_code": 1
+  },
+  {
+    "mutation": "empty sequence never self-copies",
+    "status": "CAUGHT",
+    "failures": 41355,
+    "exit_code": 1
+  },
+  {
+    "mutation": "unified stream ignores its single sequence",
+    "status": "CAUGHT",
+    "failures": 1009,
+    "exit_code": 1
+  }
+]

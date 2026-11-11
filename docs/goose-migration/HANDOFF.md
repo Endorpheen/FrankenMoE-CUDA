@@ -289,10 +289,17 @@ most dangerous and is worth checking first in any new fixture.
    text substitution missed two dummy sites because their indentation differed, so
    they kept writing to the shared list. Compare counts first in every plan gate.
    Still open in this plan: the restore/snapshot planes (`n_rs_seq > 0`).
-24. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+24. DSV4 rollback planes — EXP304 closes the comp plan: the restore/snapshot tail
+   for `n_rs_seq > 0`, emitted for every layout stream so graph widths never depend
+   on the batch. 162 768 checks, 8/8 mutations. The trap: `rs_idx` is looked up by
+   sequence id against the *table length*, not the stream count — equal until a
+   legal id falls outside the stream range, and wrong from the first such batch.
+   One candidate mutation was rejected as unobservable (the prefix condition at
+   equality is zero either way).
+25. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-25. Downstream phases P4–P11.
+26. Downstream phases P4–P11.
 
 ## Disk
 
