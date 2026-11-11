@@ -58,3 +58,11 @@ void fg253s_topk(int64_t selection, int64_t probs, int64_t n_used, int64_t n_exp
     (void) fg253ds_gg_function_1((int64_t)(uintptr_t)pkt,1);
     out[0]=pkt[16+0]; out[1]=pkt[16+1];
 }
+
+// EXP253 mode 4: should the expert weights be scaled? (w_scale != 0 && w_scale != 1)
+void fg253s_scale(int64_t wbits, int64_t * out) {
+    int64_t pkt[2*16] = {0};
+    pkt[0] = wbits; pkt[2] = 4;   // mode slot
+    (void) fg253ds_gg_function_1((int64_t)(uintptr_t) pkt, 1);
+    out[0] = pkt[16+0];
+}

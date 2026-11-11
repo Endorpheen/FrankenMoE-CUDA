@@ -29,7 +29,18 @@ extern "fg253s_reshape_3d" fn reshape_3d(t:i64,a:i64,b:i64,c:i64)->i64;
 extern "fg253s_argsort_top_k" fn argsort_top_k(t:i64,k:i64)->i64;
 extern "fg253s_get_rows" fn get_rows(a:i64,b:i64)->i64;
 
+// mode 4: should the expert weights be scaled? native: w_scale != 0 && w_scale != 1
+extern "fg253s_f2b" fn f2b(x:f32)->i64;
 fn run(packet:i64)->bool {
+    let mode4:i64 = get(packet,0,2) as i64;
+    if mode4 == 4 as i64 {
+        let wbits:i64 = get(packet,0,0) as i64;
+        let zero:i64 = 0 as i64;
+        let one:i64 = 0x3f800000 as i64;
+        let apply:i64 = if wbits != zero && wbits != one { 1 as i64 } else { 0 as i64 };
+        put(packet,1,0, apply as u64);
+        return true;
+    }
     let mode:i64 = get(packet,0,2) as i64;
     if mode == 3 as i64 {
         let selection:i64 = get(packet,0,0) as i64;
