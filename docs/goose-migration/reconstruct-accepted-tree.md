@@ -50,7 +50,36 @@ runtime uses, or it cannot be promoted.
 - Still to resolve: `llama-kv-cache.cpp` and `llama-model-loader.cpp` did not make it through the
   automated pass; the kv file was verified by hand instead.
 
+## Attempt and result
+
+Overlay done (`runtime/reconstructed/overlay.py`), all 27 called modules assembled from
+`experiments/*/source/*.c`, DSO linked at 5 403 256 bytes with **zero** undefined `fg` symbols. Then the
+run failed:
+
+    FG205G validation code 21
+
+Code 21 in that module is `ensure(cont == 0 || cont == 1)`: the integration copy of
+`llama-kv-cache.cpp` (EXP233) passes a `cont` value the EXP205 bridge considers illegal. The two
+artefacts are from different revisions — the bridge and the call site were each updated in later
+experiments, and the revision that went into the accepted DSO is not the one preserved here.
+Supporting evidence: the accepted DSO defines 218 `fg` symbols, the reconstruction 198, and the accepted
+one also exports `llama_model::pin_mmap_experts`, which comes from a patch not present in the flint tree.
+
+## Conclusion
+
+Exact reconstruction from the preserved artefacts is **not possible**: the call sites and the bridges
+were versioned independently and only their *last* states survive. The staging tree still builds and
+links, so it is usable as a *development* tree, but it is not the accepted runtime and cannot be used to
+prove equivalence with it.
+
+Two honest options for promotion, both needing the owner's decision:
+
+1. Treat the reconstructed tree as a new line, accept it on its own runs, and keep the accepted DSO as
+   the rollback — this changes the baseline and must be an explicit decision.
+2. Keep promoting nothing until the accepted tree or its exact bridge revisions are recovered from a
+   backup or an archived image.
+
 ## Status
 
-Staging and selection done; overlay and the identity build are next. This is the prerequisite for
-promoting any of the live routes of EXP359–EXP370 out of a side stage.
+Blocked on that decision. The reconstruction tools (`select_reconstruction_copies.py`, `overlay.py`,
+`build.py`) are kept because they will be needed either way.
