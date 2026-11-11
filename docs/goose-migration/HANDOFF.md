@@ -230,10 +230,20 @@ most dangerous and is worth checking first in any new fixture.
    not duplicated. Gate lesson: injecting the rejected cases everywhere made the
    exact-capacity boundary untestable, so every sixteenth trial now draws a clean
    stream.
-17. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+17. Recurrent payload plan — EXP297 transfers the transfer-record arithmetic of
+   `state_write_data`/`state_read_data` (which tensor, which offset, which size,
+   in which order, plus every type/row/header check): 16 692 checks, 8/8 mutations
+   caught, 120 rejected streams. The bytes stay native. Two lessons: a helper that
+   multiplies its index by the slot size must not be called with an
+   already-scaled index — the error showed only in `size` because the first cell's
+   offset stayed right — and a cursor counted in fields in one arm and bytes in the
+   other reports eight times too much. One candidate mutation was rejected as
+   unobservable: accepting a larger layer count cannot be seen because field
+   consumption follows the model, not the header.
+18. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-18. Downstream phases P4–P11.
+19. Downstream phases P4–P11.
 
 ## Disk
 
