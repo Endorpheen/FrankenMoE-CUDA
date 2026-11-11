@@ -655,10 +655,17 @@ most dangerous and is worth checking first in any new fixture.
    `split_seq` (one sequence set and its subsets, the size test runs **before** the look-ahead
    scan, and the set is replaced by the one landed on). They report different sequence counts:
    one per token versus one. 75 280 checks, 7/7 mutations.
-75. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+75. Batch entry classification — EXP352 transfers the content-type section of `init`: refuse an
+   entry with neither token nor embedding, require state uniformity with **entry zero** as the
+   reference, refuse half-both batches, refuse a mixed batch when the model forbids it, then derive
+   `mixed` / `has_token` / `has_embd`; plus the token-id bound (skipped for an embedding-marked
+   entry) and the sequence-id bound. 27 839 checks, 7/7 mutations.
+   The gate had the bug first: it compared the state embedding against an external notion of the
+   batch instead of entry zero. Native takes entry zero.
+76. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-76. Downstream phases P4–P11.
+77. Downstream phases P4–P11.
 
 ## Disk
 

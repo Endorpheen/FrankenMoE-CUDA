@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "an entry with neither token nor embedding is accepted",
+    "status": "CAUGHT",
+    "failures": 2374,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a non-uniform state batch is accepted",
+    "status": "CAUGHT",
+    "failures": 3370,
+    "exit_code": 1
+  },
+  {
+    "mutation": "both-token-and-embedding entries may be mixed",
+    "status": "CAUGHT",
+    "failures": 2379,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a mixed batch is accepted where it is forbidden",
+    "status": "CAUGHT",
+    "failures": 100,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a token id out of range is accepted",
+    "status": "CAUGHT",
+    "failures": 724,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an embedding-marked entry reads its token id",
+    "status": "CAUGHT",
+    "failures": 80,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a sequence id out of range is accepted",
+    "status": "CAUGHT",
+    "failures": 684,
+    "exit_code": 1
+  }
+]
