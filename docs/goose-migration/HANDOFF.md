@@ -318,10 +318,17 @@ most dangerous and is worth checking first in any new fixture.
    inequality rejection needs a probe on both sides — a fixture that only corrupts
    upward leaves `!=` weakened to `>` undetected, and this is the second occurrence
    (EXP306 was the first).
-28. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+28. DSV4 cache construction policy — EXP308 transfers what the five pieces are
+   made of: K-only copies for raw/CSA/HCA/indexer, the indexer's one key head at the
+   indexer width on NeoX rope, the two ratio filters, the padded compressed sizes, the
+   three compressor-state shapes, and the two deliberate `false` flags (raw and
+   compressed stay per-sequence even in unified mode). 31 432 checks, 8/8 mutations.
+   The flags are the part worth guarding: a later "simplification" that follows the
+   public setting would show here instead of at a recall regression.
+29. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-29. Downstream phases P4–P11.
+30. Downstream phases P4–P11.
 
 ## Disk
 
