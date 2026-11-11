@@ -1041,3 +1041,10 @@ closed item for this task. Do not ask for a separate "yes" before each run; re-r
 `docs/goose-migration/RUN_AUTHORIZATION.md` instead of assuming the permission is missing. A loop continuation
 means: finish the current item end to end, then move to the next. Production and the compiler stay untouched;
 colleagues' processes are not stopped.
+
+## Own-server lifecycle (required)
+
+Check saved PIDs with their identity, the tree, the port, executable/cwd and GPU compute PIDs before starting a
+test server; finish the previous own server and wait for real exit and GPU release; repeat the cleanup after
+every error or timeout. No `killall`/broad `pkill`, no touching others' or production processes, and keep "my
+memory" separate from "total GPU".

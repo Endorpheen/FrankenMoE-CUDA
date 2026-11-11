@@ -20,3 +20,14 @@ symbol exists.
 continuation means *do the current item completely, its checks, and self-acceptance, then the next one*. It is
 not a reason to re-ask permission and not a reason to drift into unrelated work. Re-read the saved
 authorization instead of declaring it missing. Also save this into HANDOFF and the working instructions.
+
+## Own-server lifecycle (required)
+
+Before every test server: check saved PIDs and their process identity, the process tree, the port, the
+executable and cwd, and the GPU compute PID list. A previous own server must be finished and truly gone (parent
+and children, GPU memory released) before a new one starts. After every test, error or timeout, run the same
+cleanup — a signal alone is not enough. Never use broad `pkill`/`killall` by name, never stop other people's or
+production processes, and treat "my process's memory" and "total GPU occupancy" as separate numbers.
+
+Checked at the time of writing: no `llama-server`/`llama-cli` process belongs to this account; the GPU holders
+are all other applications, so the 3314 MiB failure is not a leftover of my runs.
