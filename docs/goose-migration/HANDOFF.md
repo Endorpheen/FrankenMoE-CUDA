@@ -686,10 +686,20 @@ most dangerous and is worth checking first in any new fixture.
    SIGINT shutdown does not run destructors and an exit-only witness is indistinguishable from
    "never called"; and "wired but zero calls" must be read as a route fact, not a porting failure.
    Next live route: `split_equal`, which needs a journal-to-actions bridge.
-79. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+79. Split-equal tail probe — EXP355 adds the journal-to-actions bridge for the EXP348 block, its
+   `split_equal` call site, and a stage with three call sites (4 840 352 bytes, every previously
+   exported symbol kept). Bridge gate 67 619 checks / 0 failures; Apex run exact, prefill 2514.6 and
+   decode 25.30 tok/s; `FG348S` witness **0 calls** — Apex has no rollback sequences, so
+   `n_keep_tail` is zero and the branch is never entered.
+   With EXP354 this settles the picture: the splitter's recurrent paths are dormant for this
+   profile; what Apex runs is `split_equal`'s set selection and `ubatch_add`.
+   The probe also caught a real defect in EXP348 (deferred release and concatenation used the whole
+   per-set lists instead of the taken prefixes); it was invisible to that experiment's own gate
+   because the transcription repeated the model. Fixed in `eae4a56`.
+80. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-80. Downstream phases P4–P11.
+81. Downstream phases P4–P11.
 
 ## Disk
 
