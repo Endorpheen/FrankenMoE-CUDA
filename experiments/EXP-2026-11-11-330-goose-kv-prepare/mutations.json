@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "the undo never runs",
+    "status": "CAUGHT",
+    "failures": 1033,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed prepare returns a partial result",
+    "status": "CAUGHT",
+    "failures": 1825,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the head is not restored",
+    "status": "CAUGHT",
+    "failures": 3025,
+    "exit_code": 1
+  },
+  {
+    "mutation": "every ubatch restores the last head snapshot",
+    "status": "CAUGHT",
+    "failures": 1583,
+    "exit_code": 1
+  },
+  {
+    "mutation": "cells are not snapshotted",
+    "status": "CAUGHT",
+    "failures": 23141,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the ubatch is never applied",
+    "status": "CAUGHT",
+    "failures": 26296,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the loop continues past a failed search",
+    "status": "CAUGHT",
+    "failures": 4921,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the undo restores the newest cells first",
+    "status": "CAUGHT",
+    "failures": 2895,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a successful search is not recorded",
+    "status": "CAUGHT",
+    "failures": 37468,
+    "exit_code": 1
+  }
+]

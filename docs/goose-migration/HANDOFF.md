@@ -462,10 +462,16 @@ most dangerous and is worth checking first in any new fixture.
    abort, a graph that runs only when RoPE is enabled, some layer uses it, allocation and
    compute succeed, and shift counters reset on every stream either way. The return value
    means a shift graph actually ran, so a pure copy returns false. 26 320 checks, 8/8.
-50. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+50. KV batch preparation — EXP330 transfers `prepare` as a transaction: slots first, then
+   cells copied aside, then the ubatch applied; any empty search undoes everything in
+   reverse order and returns an empty result, not a partial one. The whole per-stream head
+   vector is snapshotted, because a later ubatch may move heads the earlier one did not
+   touch. 49 702 checks, 9/9 mutations — including one that restores from the other end of
+   the offset table, so reverse order is verified rather than assumed.
+51. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-51. Downstream phases P4–P11.
+52. Downstream phases P4–P11.
 
 ## Disk
 
