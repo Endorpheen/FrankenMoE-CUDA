@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T21:13:42.995262+00:00",
+  "updated_at": "2026-11-11T21:55:45.572969+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -83,19 +83,6 @@
       "at": "2026-11-11T19:45:35.929880+00:00"
     },
     {
-      "item": "APEX.REQUEST / APEX.SESSION",
-      "state": "BLOCKED",
-      "implemented": "nothing -- the HTTP server, queue and slots live in tools/server, outside libllama.",
-      "remaining": "The bridge has no HTTP or socket surface; this needs a server-side Goose component, a new artefact.",
-      "evidence": "docs/goose-migration/apex-remaining-boundaries.md",
-      "by": {
-        "name": "Runtime worker",
-        "harness": "Command Code",
-        "model": "claude-sonnet-4.5"
-      },
-      "at": "2026-11-11T19:45:35.929880+00:00"
-    },
-    {
       "item": "APEX.SOURCE_CLOSURE / APEX.FINAL",
       "state": "BLOCKED",
       "implemented": "End states only.",
@@ -146,6 +133,19 @@
         "model": "claude-sonnet-4.5"
       },
       "at": "2026-11-11T21:13:42.995262+00:00"
+    },
+    {
+      "item": "APEX.REQUEST / APEX.SESSION",
+      "state": "PARTIAL",
+      "implemented": "First function of the request path is Goose and proven live: server_slot::n_remaining() and has_budget() run through the bridge as scalars, gated at 16547 cases with 0 failures, and wired into server_context.cpp. The server built from the flint tree completes the accepted request with e68df05b, equal probabilities and a successful restore, and a defect test proves execution: forcing has_budget to 0 changed the completion to d03502c4, restoring it returned e68df05b.",
+      "remaining": "The rest of the request path -- JSON parsing and validation of the request fields, scheduling onto the slot, response assembly -- is still native. The bridge carries scalars and flat arrays, so the JSON layer needs either a widened surface or a different decomposition.",
+      "evidence": "experiments/EXP-2026-11-12-250-goose-server-nremaining, docs/goose-migration/REQUEST-SESSION-PLAN.md",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T21:55:45.572969+00:00"
     }
   ]
 }
