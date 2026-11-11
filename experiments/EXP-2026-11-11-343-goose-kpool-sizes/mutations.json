@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "the full context reports the worst case",
+    "status": "CAUGHT",
+    "failures": 3000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an untracked context lays out anyway",
+    "status": "CAUGHT",
+    "failures": 1518,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the worst case is not floored by the layout",
+    "status": "CAUGHT",
+    "failures": 4759,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the graph bound may be zero",
+    "status": "CAUGHT",
+    "failures": 317,
+    "exit_code": 1
+  },
+  {
+    "mutation": "n_new is not set to the raised count",
+    "status": "CAUGHT",
+    "failures": 2177,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the worst case drops the sequence factor",
+    "status": "CAUGHT",
+    "failures": 6262,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the padded count does not reserve the trailing slot",
+    "status": "CAUGHT",
+    "failures": 108,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the new-count accessor returns the real count",
+    "status": "CAUGHT",
+    "failures": 3000,
+    "exit_code": 1
+  }
+]

@@ -573,10 +573,17 @@ most dangerous and is worth checking first in any new fixture.
    started producing previous layouts that are not true prefixes — a prefix can never exercise
    the count rule or the position tie-break. The transcription is the oracle, so it was fixed
    first and the port had to match.
-63. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+63. K-pool context sizes — EXP343 transfers the three sizing paths: the full context fills
+   only `n_pool_real` (so `get_n_kpool` works during graph reservation), the batch context
+   raises it to `(size/kpool)*n_seq_max` with `n_new` equal to it and `n_new_g` at least one
+   (the graph always pools one entry), and the accessors pad `n_pool_real` while returning
+   the stable bound rather than this step's count. 28 482 checks, 8/8 mutations.
+   The "bound may be zero" case needed an explicit zero draw: with layout and cache both
+   empty the bound must still be 1, and only an explicit draw reaches that path.
+64. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-64. Downstream phases P4–P11.
+65. Downstream phases P4–P11.
 
 ## Disk
 
