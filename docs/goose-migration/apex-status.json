@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "from_agent": "runtime",
-  "updated_at": "2026-11-11T19:42:21.224800+03:00",
+  "updated_at": "2026-11-11T18:41:26.176284+00:00",
   "updated_by": {
     "name": "Runtime worker",
     "harness": "Command Code",
@@ -55,6 +55,19 @@
       "state": "DONE",
       "implemented": "Expert lifecycle on the used --cpu-moe path is Goose-owned and live: FG143 control plan (plans 10610, dispatches 335634), FG143_CPU op=100 calls 83840, FG149 job pool (mode=6 587492, mode=15 83840), FG150 registry (mode=4 757), FG147 backend (mode=10 6939). Goose libggml-cpu rebuilds from source with an identical 326-symbol set; completion e68df05b, exact restore.",
       "remaining": "none against the stated criterion; fallback bodies kept behind the switches"
+    },
+    {
+      "item": "APEX.CPU_MATH",
+      "state": "PARTIAL",
+      "implemented": "Q4_K x Q8_K super-block dot ported twice: the portable algorithm (EXP410) and the dispatched AVX2 association (EXP411). AVX2 gate: 160/160 bit-exact against the library's own ggml_vec_dot_q4_K_q8_K for nb=1,2,3,7; 7/7 mutations caught. Entry-patch detour verified on a stand-alone caller (returns the AVX2 value).",
+      "remaining": "No run can witness the kernel: on the accepted 32K/128 profile every quantised and float vec_dot counter stays at 0 (work runs on the GPU), and the CPU-only profile aborts with goose assertion failures in this staging build. Only the Q4_K x Q8_K kernel is ported; the rest of CPU_MATH is untouched.",
+      "evidence": "experiments/EXP-2026-11-11-410-goose-cpu-q4k-dot, experiments/EXP-2026-11-11-411-goose-cpu-q4k-dot-avx2",
+      "by": {
+        "name": "Runtime worker",
+        "harness": "Command Code",
+        "model": "claude-sonnet-4.5"
+      },
+      "at": "2026-11-11T18:41:26.176266+00:00"
     }
   ]
 }

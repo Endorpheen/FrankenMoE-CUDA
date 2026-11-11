@@ -152,3 +152,25 @@ patch did land on the real library.
 Conclusion so far: on this accepted profile no quantised `vec_dot` runs at all, so preloading or patching the
 Q4_K dot cannot be exercised by it, and the item cannot be accepted on this evidence. The next measurement must
 establish which kernels are on the used path at all (float `vec_dot`s included) before more kernels are ported.
+
+## Why a run cannot witness this kernel right now
+
+Two profiles were tried, and neither can exercise the port:
+
+| profile | result |
+|---|---|
+| accepted 32K/128 (`-ngl all`, `--cpu-moe`) | completion `e68df05b...`, probabilities equal, restore ok — **0 calls** to q4_K, q6_K, q8_0, q2_K, q3_K, q5_K, f32, f16, bf16 |
+| CPU-only (`-ngl 0`, `-c 2048`, no `--cpu-moe`) | server aborts with `goose runtime error: assertion failed` before serving |
+
+So on the accepted profile the work runs on the GPU and no CPU dot kernel is called, and the CPU-only profile is
+not supported by this staging build at all. A witness for the Goose Q4_K kernel therefore cannot be produced
+with the current bench, and the item cannot be closed on a run.
+
+What is proven independently of the bench:
+
+- bit-exact against the library's dispatched AVX2 kernel, 160/160, nb = 1, 2, 3, 7;
+- 7/7 mutations caught by that gate;
+- the entry-patch detour works and returns the AVX2 value on a stand-alone caller.
+
+What is not proven: that the kernel participates in a real server run. That is a bench limitation (no CPU-path
+profile in this staging build), not a property of the port, and it is recorded as such.

@@ -16,7 +16,8 @@
 typedef void (*dot_fn)(int, float *, size_t, const void *, size_t, const void *, size_t, int);
 
 #define NAMES(X) \
-    X(q4_K_q8_K) X(q6_K_q8_K) X(q8_0_q8_0) X(q2_K_q8_K) X(q3_K_q8_K) X(q5_K_q8_K)
+    X(q4_K_q8_K) X(q6_K_q8_K) X(q8_0_q8_0) X(q2_K_q8_K) X(q3_K_q8_K) X(q5_K_q8_K) \
+    X(f32) X(f16) X(bf16)
 
 #define DECL(n) static dot_fn nat_##n; static void * tgt_##n; static unsigned long cnt_##n; \
                static unsigned char sav_##n[16]; static int det_##n;
@@ -55,6 +56,7 @@ static int install(void * target, void (*wrapper)(void), unsigned char * saved) 
     ((dot_fn) tramp_##n)(a, s, bs, vx, bx, vy, by, nrc); }
 static void * tramp_q4_K_q8_K; static void * tramp_q6_K_q8_K; static void * tramp_q8_0_q8_0;
 static void * tramp_q2_K_q8_K; static void * tramp_q3_K_q8_K; static void * tramp_q5_K_q8_K;
+static void * tramp_f32; static void * tramp_f16; static void * tramp_bf16;
 NAMES(WRAP)
 
 static void patch_object(const char * path) {
@@ -114,11 +116,11 @@ __attribute__((unused)) static void init_old(void) {
     } while (0);
     NAMES(SETUP)
     if (getenv("FG411S_WITNESS"))
-        fprintf(stderr, "FG411S_DETOURS q4_K=%d q6_K=%d q8_0=%d q2_K=%d q3_K=%d q5_K=%d\n",
-                det_q4_K_q8_K, det_q6_K_q8_K, det_q8_0_q8_0, det_q2_K_q8_K, det_q3_K_q8_K, det_q5_K_q8_K);
+        fprintf(stderr, "FG411S_DETOURS installed\n");
 }
 
 __attribute__((destructor)) static void fini(void) {
-    fprintf(stderr, "FG411S_COUNT q4_K=%lu q6_K=%lu q8_0=%lu q2_K=%lu q3_K=%lu q5_K=%lu\n",
-            cnt_q4_K_q8_K, cnt_q6_K_q8_K, cnt_q8_0_q8_0, cnt_q2_K_q8_K, cnt_q3_K_q8_K, cnt_q5_K_q8_K);
+    fprintf(stderr, "FG411S_COUNT q4_K=%lu q6_K=%lu q8_0=%lu q2_K=%lu q3_K=%lu q5_K=%lu f32=%lu f16=%lu bf16=%lu\n",
+            cnt_q4_K_q8_K, cnt_q6_K_q8_K, cnt_q8_0_q8_0, cnt_q2_K_q8_K, cnt_q3_K_q8_K, cnt_q5_K_q8_K,
+            cnt_f32, cnt_f16, cnt_bf16);
 }
