@@ -1404,7 +1404,7 @@
     "src/llama-kv-cache.cpp"
    ],
    "acceptance": "F32/F16/BF16/Q8/Q4 supported K/V layouts and CPU/GPU allocation/data movement match; no reduced context/precision for pass.",
-   "evidence": "",
+   "evidence": "EXP316 transfers llama_kv_cache::set_input_kq_mask for the float path: the empty, sequence, causal and sliding-window drops for all three SWA types, and the row-reuse shortcut with its recorded set (cells within n_swa+32 of the sequence minimum). The oracle is a full pass per token, so the shortcut is tested against what it optimises away. Gate: 132 213 checks / 0 failures, 8/8 mutations caught. Still open in this area: ALiBi values, the 2-D/M-RoPE causal comparison, the half-precision path and the non-causal SWA-full span.",
    "depends_on": [],
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 46,

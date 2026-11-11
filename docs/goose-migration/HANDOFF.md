@@ -381,10 +381,18 @@ most dangerous and is worth checking first in any new fixture.
    non-sequential form for a non-unified attention cache and the rollback window kept
    inside one ubatch), and the prepare order (recurrent first, because it can refuse and
    the attention preparation is the expensive one). 23 582 checks, 8/8 mutations.
-36. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+36. KV attention mask — EXP316 transfers the float path of `set_input_kq_mask`:
+   the empty/sequence/causal/SWA drops for all three window types, plus the row-reuse
+   shortcut with its recorded set. The oracle is a full pass per token, so the shortcut
+   is tested against what it optimises away rather than against itself. 132 213 checks,
+   8/8 mutations. One candidate mutation was measured and rejected: weakening the
+   recorded-window comparison is unobservable because a boundary cell's verdict is the
+   same for every token of its sequence. Still open in this area: ALiBi, 2-D/M-RoPE,
+   the half path, and the non-causal SWA-full span.
+37. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-37. Downstream phases P4–P11.
+38. Downstream phases P4–P11.
 
 ## Disk
 

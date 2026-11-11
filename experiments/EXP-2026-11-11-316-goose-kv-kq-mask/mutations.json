@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "no cell is recorded for reuse",
+    "status": "CAUGHT",
+    "failures": 11754,
+    "exit_code": 1
+  },
+  {
+    "mutation": "row reuse skips the first cell",
+    "status": "CAUGHT",
+    "failures": 4106,
+    "exit_code": 1
+  },
+  {
+    "mutation": "causal mask keeps the token itself out of range",
+    "status": "CAUGHT",
+    "failures": 10431,
+    "exit_code": 1
+  },
+  {
+    "mutation": "sliding window is not applied",
+    "status": "CAUGHT",
+    "failures": 8733,
+    "exit_code": 1
+  },
+  {
+    "mutation": "cells without the sequence still match",
+    "status": "CAUGHT",
+    "failures": 15717,
+    "exit_code": 1
+  },
+  {
+    "mutation": "row reuse copies one element everywhere",
+    "status": "CAUGHT",
+    "failures": 8691,
+    "exit_code": 1
+  },
+  {
+    "mutation": "sequence minimum becomes the maximum",
+    "status": "CAUGHT",
+    "failures": 11754,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the recorded count is not stored",
+    "status": "CAUGHT",
+    "failures": 11754,
+    "exit_code": 1
+  }
+]
