@@ -9,7 +9,7 @@ extern "C" void ggml_cpu_init(void);          // without it the reference return
 extern "C" void ggml_vec_dot_q6_K_q8_K(int, float *, size_t, const void *, size_t, const void *, size_t, int);
 extern "C" float fg410s_dot(int64_t nb, const void * x, const void * y);
 
-struct block_q6_K { uint16_t d; uint8_t ql[128]; uint8_t qh[64]; int8_t scales[16]; };
+struct block_q6_K { uint8_t ql[128]; uint8_t qh[64]; int8_t scales[16]; uint16_t d; };
 struct block_q8_K { float d; int8_t qs[256]; int16_t bsums[16]; };
 static_assert(sizeof(block_q6_K) == 210, "q6_K size");
 static_assert(sizeof(block_q8_K) == 292, "q8_K size");

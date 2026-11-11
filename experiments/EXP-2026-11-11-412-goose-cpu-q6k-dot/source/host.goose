@@ -33,7 +33,7 @@ fn run(packet:i64)->bool {
     while i < nb {
         let xb:u64 = x + (i*210) as u64;
         let yb:u64 = y + (i*292) as u64;
-        let dh:i64 = ldi16(xb, 0 as i64) & 0xffff;
+        let dh:i64 = ldi16(xb, 208 as i64) & 0xffff;
         let d:f32 = ldf(yb, 0 as i64) * f16f32(dh);
 
         // q8sclsub[k] = (bsums[2k]*scales[2k] + bsums[2k+1]*scales[2k+1]) << 5
@@ -42,8 +42,8 @@ fn run(packet:i64)->bool {
         while k < 8 {
             let bs0:i64 = ldi16(yb, 260 as i64 + k*4 as i64);
             let bs1:i64 = ldi16(yb, 262 as i64 + k*4 as i64);
-            let sc0:i64 = ldi8(xb, 194 as i64 + k*2 as i64);
-            let sc1:i64 = ldi8(xb, 195 as i64 + k*2 as i64);
+            let sc0:i64 = ldi8(xb, 192 as i64 + k*2 as i64);
+            let sc1:i64 = ldi8(xb, 193 as i64 + k*2 as i64);
             sub[k] = (bs0*sc0 + bs1*sc1) << 5 as i64;
             k = k + 1 as i64;
         }
@@ -54,14 +54,11 @@ fn run(packet:i64)->bool {
 
         var j:i64 = 0 as i64;
         while j < 2 {
-            let ql1:u64 = xb + (2 as i64 + j*64 as i64) as u64;
+            let ql1:u64 = xb + (j*64 as i64) as u64;
             let ql2:u64 = ql1 + 32 as u64;
-            let qh:u64 = xb + (130 as i64 + j*32 as i64) as u64;
+            let qh:u64 = xb + (128 as i64 + j*32 as i64) as u64;
             let q8b:u64 = yb + (4 as i64 + j*128 as i64) as u64;
-            let s0:i64 = ldi8(xb, 194 as i64 + j*4 as i64 + 0 as i64);
-            let s1:i64 = ldi8(xb, 194 as i64 + j*4 as i64 + 1 as i64);
-            let s2:i64 = ldi8(xb, 194 as i64 + j*4 as i64 + 2 as i64);
-            let s3:i64 = ldi8(xb, 194 as i64 + j*4 as i64 + 3 as i64);
+
             var t:i64 = 0 as i64;
             while t < 32 {
                 let b1:i64 = ldu8(ql1, t);
@@ -72,6 +69,11 @@ fn run(packet:i64)->bool {
                 let q2:i64 = ((b1 >> 4 as i64) & 15 as i64) | (bh & 48 as i64);
                 let q3:i64 = ((b2 >> 4 as i64) & 15 as i64) | ((bh & 192 as i64) >> 2 as i64);
                 let lane:i64 = t / 4 as i64;
+                let half:i64 = if lane >= 4 as i64 { 1 as i64 } else { 0 as i64 };
+                let s0:i64 = ldi8(xb, 192 as i64 + (j*4 as i64 + 0 as i64)*2 as i64 + half);
+                let s1:i64 = ldi8(xb, 192 as i64 + (j*4 as i64 + 1 as i64)*2 as i64 + half);
+                let s2:i64 = ldi8(xb, 192 as i64 + (j*4 as i64 + 2 as i64)*2 as i64 + half);
+                let s3:i64 = ldi8(xb, 192 as i64 + (j*4 as i64 + 3 as i64)*2 as i64 + half);
                 let x0:i64 = ldi8(q8b, t) as i64;
                 let x1:i64 = ldi8(q8b, 32 as i64 + t) as i64;
                 let x2:i64 = ldi8(q8b, 64 as i64 + t) as i64;

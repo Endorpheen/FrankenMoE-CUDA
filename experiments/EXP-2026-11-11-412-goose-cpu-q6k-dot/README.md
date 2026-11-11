@@ -63,3 +63,20 @@ still wrong; the transcription is now the tool to find it, and the module will b
 transcription matches.
 
 Not accepted, not integrated.
+
+## Two defects found, gate now clean 240/240
+
+1. **Block layout.** `block_q6_K` is `ql[128], qh[64], scales[16], d` — the super-block scale is **last**, not
+   first. Everything was shifted, and on the isolated test the kernel returned 0 for every single-scale input
+   because the scale read landed on zero bytes. With the correct offsets (`ql@0, qh@128, scales@192, d@208`)
+   the single-scale probe returns -496 as it must.
+
+2. **Two scales per 6-bit group.** `get_scale_shuffle` gives `scales[2i]` to lanes 0-3 and `scales[2i+1]` to
+   lanes 4-7, so the module has to pick the scale per half.
+
+The scalar transcription, built as an instrument, matches the dispatched kernel exactly (0 of 20 differing per
+nb). The module was then aligned to it:
+
+    FG412_ADAPTOR cases=240 failures=0
+
+240 of 240 bit-exact for nb = 1, 2, 3, 7, 8, 16.
