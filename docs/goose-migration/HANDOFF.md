@@ -662,10 +662,18 @@ most dangerous and is worth checking first in any new fixture.
    entry) and the sequence-id bound. 27 839 checks, 7/7 mutations.
    The gate had the bug first: it compared the state embedding against an external notion of the
    batch instead of entry zero. Native takes entry zero.
-76. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+76. Batch initialisation stats — EXP353 transfers the output override (all flags, not only the
+   missing ones), the lazily existing decision-order array, coupling (`s1` marked against `s0`,
+   reverse pair deliberately not tracked) and the set map with unique ids in increasing order.
+   175 680 checks, 7/7 mutations.
+   Two mutations were unusable and recorded: "fill only the missing entries" is equivalent (the
+   override only fires when a zero exists), and a decreasing-order variant kept its increment and
+   looped forever — a hanging mutation is not a detection, and killing the driver left the source
+   mutated until it was restored by hand.
+77. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-77. Downstream phases P4–P11.
+78. Downstream phases P4–P11.
 
 ## Disk
 

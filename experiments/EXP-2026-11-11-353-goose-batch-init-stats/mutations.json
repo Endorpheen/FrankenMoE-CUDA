@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "the override spares the last entry",
+    "status": "CAUGHT",
+    "failures": 4584,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an all-output request is ignored",
+    "status": "CAUGHT",
+    "failures": 76338,
+    "exit_code": 1
+  },
+  {
+    "mutation": "decision order is emitted when it is empty",
+    "status": "CAUGHT",
+    "failures": 30416,
+    "exit_code": 1
+  },
+  {
+    "mutation": "only the first sequence of a token is seen",
+    "status": "CAUGHT",
+    "failures": 84022,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the reverse coupling is recorded too",
+    "status": "CAUGHT",
+    "failures": 14535,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a repeated mask is reported as new",
+    "status": "CAUGHT",
+    "failures": 34302,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the first unique sequence is skipped",
+    "status": "CAUGHT",
+    "failures": 22709,
+    "exit_code": 1
+  }
+]
