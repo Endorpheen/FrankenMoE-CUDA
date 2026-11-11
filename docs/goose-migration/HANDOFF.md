@@ -248,10 +248,18 @@ most dangerous and is worth checking first in any new fixture.
    belongs with the batch allocator. Gate defect worth remembering: a breakdown
    fixture that draws duplicate keys describes an input the native map cannot
    produce, so the merge comparison was testing the wrong thing.
-19. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+19. MSA cache policy — EXP299 adds the main+indexer pair: derived indexer
+   hyperparameters (one key head per layer, indexer head width, rope unchanged),
+   `n_stream = unified ? 1 : n_seq_max`, two independent filters, and the delegation
+   rules. The contrast with iswa is the point: position observers read the *main*
+   cache here, because the indexer is not a superset of anything, while iswa reads
+   the SWA cache because its base is. 14 099 checks, 7/7 mutations. The position
+   check passes values, not a constant, so reading the wrong cache shows as a wrong
+   number.
+20. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-20. Downstream phases P4–P11.
+21. Downstream phases P4–P11.
 
 ## Disk
 

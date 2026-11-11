@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "indexer keeps two key heads",
+    "status": "CAUGHT",
+    "failures": 6345,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer head size is off by one",
+    "status": "CAUGHT",
+    "failures": 1000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stream count ignores the unified flag",
+    "status": "CAUGHT",
+    "failures": 487,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer uses the main filter",
+    "status": "CAUGHT",
+    "failures": 1326,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_rm succeeds if either cache does",
+    "status": "CAUGHT",
+    "failures": 94,
+    "exit_code": 1
+  },
+  {
+    "mutation": "position observers read the indexer",
+    "status": "CAUGHT",
+    "failures": 200,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the two filters are swapped",
+    "status": "CAUGHT",
+    "failures": 1326,
+    "exit_code": 1
+  }
+]
