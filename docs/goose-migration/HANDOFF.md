@@ -240,10 +240,18 @@ most dangerous and is worth checking first in any new fixture.
    other reports eight times too much. One candidate mutation was rejected as
    unobservable: accepting a larger layer count cannot be seen because field
    consumption follows the model, not the header.
-18. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+18. SWA cache policy — EXP298 opens P5-03 with the iswa pair: the padded SWA size
+   (unified scaling, `swa_full` override), the base/SWA layer filters, the
+   delegation rules (`seq_rm` is an AND, position observers read the SWA cache
+   because the base is a superset) and the memory-breakdown merge in key order.
+   10 412 checks, 8/8 mutations. `init_batch` is not part of it: the ubatch split
+   belongs with the batch allocator. Gate defect worth remembering: a breakdown
+   fixture that draws duplicate keys describes an input the native map cannot
+   produce, so the merge comparison was testing the wrong thing.
+19. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-19. Downstream phases P4–P11.
+20. Downstream phases P4–P11.
 
 ## Disk
 
