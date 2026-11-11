@@ -313,21 +313,36 @@ fixed, because every bridge renames `main`.
 
 Items 5, 7, 8, 10, 11 and 12 are friction or moderate cost and do not stop the port.
 
-## 13. No transcendental functions for `f32`/`f64`
+## 13. `exp` is available through the standard library, not as a builtin (corrected)
 
-**Status:** open.
+**Status:** closed — my earlier note here was wrong.
 
-`exp`, `log`, `sin`, `cos` and `pow` are not builtins. A one-line probe
+`exp` is not a builtin, but `stdlib/math.goose` declares both overloads
 
-    fn main()->i64{ var x:f32=0.5 as f32; var y:f32=exp(x); return (y*1000000 as f32) as i64; }
+    extern "gs_exp"  fn exp(x: f64) -> f64
+    extern "gs_expf" fn exp(x: f32) -> f32
 
-fails with `error: unknown function 'exp'`. Today the only way to get such a value is an `extern` call
-into the host, which is not a port.
+and the emitter supplies them as aliases onto libm (`GS_LIBM double gs_exp(double x) GS_LIBM1(exp)`),
+so on the CPU the values are the libm values bit for bit. Two conditions apply, and both caught me out:
 
-**Consequence.** `llama_sampler_softmax_impl` and everything downstream of it (`dist`, `xtc`, `typical`,
-`top-n-sigma`, `mirostat`) cannot be ported without changing the numerics: the normaliser is a sum of
-`exp(logit - max)`. Reproducing libstdc++'s `discrete_distribution` exactly is a second, independent
-obstacle. Both sampler blocks therefore stay native, recorded here rather than approximated.
+1. the program must `import math;`
+2. the compiler must be started from the Fried Goose root, because `stdlib` is resolved relative to
+   the working directory (`compiler/main.goose: load_program(ctx, path, "stdlib")`).
 
-`rsqrt` is available only because it is declared `extern "fg_rms_rsqrt"`, i.e. the same host-call escape
-hatch, so it does not contradict the above.
+Verified on the pinned compiler `subset-84f31960f9f3031e`:
+
+    import math;
+    fn main(){ print(exp(1.0 as f64), " ", exp(1.0 as f32)); }
+
+gives `2.718281828459045 2.7182817`, matching libm exactly.
+
+**Consequence for the port.** The sampler's softmax family is therefore portable after all, with `exp`
+reached as an `extern` the same way `rsqrt` already is in the attention module. The earlier conclusion
+that these blocks could not be ported was based on a repro without the import and with the wrong working
+directory — a harness defect, not a language gap.
+
+`log` and `pow` should be re-checked the same way before any claim is made about them.
+
+**CUDA.** Device code was the real gap: under `__CUDACC__` the pinned block declared these as host-only,
+so a kernel could not call them. That is the compiler side's task and is being handled in their channel;
+it does not affect the CPU softmax port.

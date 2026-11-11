@@ -852,11 +852,15 @@ most dangerous and is worth checking first in any new fixture.
    `build/bridge-377.o` still compiled from the last mutant while `host.goose` had been restored, so the
    adaptor reported 607 failures against a correct module; a rebuild returns 2161/0. Same family as the
     EXP353 driver leaving applied mutations behind: the artifact outlives the edit.
-102. The sampler's softmax family cannot be ported — Goose has no `exp`/`log`/`pow` for `f32` (probe
-   `var y:f32=exp(x);` fails with `unknown function 'exp'`). `softmax`, `dist`, `xtc`, `typical`,
-   `top-n-sigma`, `mirostat` all need `exp`; `rsqrt` exists only as an `extern` host call, which is not
-   a port. Recorded in compiler-limitations item 13. Sampler blocks stay native by necessity, not by
-   omission.
+102. CORRECTION — the sampler's softmax family **is** portable. My earlier claim that Goose has no
+   `exp` was a harness defect: `exp` lives in `stdlib/math.goose` as `extern "gs_exp"/"gs_expf"`
+   aliased onto libm, and it works on the pinned compiler once the program does `import math;` **and**
+   the compiler is started from the Fried Goose root (`stdlib` is relative to the working directory).
+   Verified: `exp(1.0)` = 2.718281828459045, `exp(1.0 as f32)` = 2.7182817, exact libm values.
+   So `softmax`/`dist` can be ported with `exp` reached as an `extern`, exactly as `rsqrt` already is.
+   `log`/`pow` must be re-checked the same way before any claim. The CUDA device path is the compiler
+   side's task and does not block the CPU port. Lesson: a one-line probe is only a probe if it is run
+   the way a real program is run — import and working directory included.
 103. Penalty bookkeeping — EXP380 integrated (window disabled, ring eviction, counter erase), gate 92/0,
    6/6 mutations, **NOT VALIDATED**: `llama-server` never builds a `penalties` sampler — it tracks the
    sampled tokens itself and does not call `llama_sampler_init_penalties`, so `accept` is never invoked.
