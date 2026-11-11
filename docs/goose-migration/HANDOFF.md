@@ -796,10 +796,16 @@ most dangerous and is worth checking first in any new fixture.
    `GGML_GOOSE_KV_STATE_CLEAR`). The completion is still `e68df05b`, save and a rejected truncated
    restore behave the same, and **no** witness fires. The switches therefore only turn features off,
    and a rollback does not need a rebuild.
-93. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+93. Five routes live in one candidate — EXP370 adds batch classification (`init`, EXP352) to the
+   four live routes and links all five: 5 309 904 bytes, ABI complete. The completion stays
+   `e68df05b`; the log carries `FG352S_BATCH_CLASSIFY` first+100, `FG350S_SPLIT_SELECT` first+100+200,
+   `FG349S_UBATCH_ADD` first+100, `FG345W_KV_STATE_WRITE` once (save) and
+   `FG367S_KV_STATE_CLEAR` once (rejected restore).
+   The counts match the shape: three routes per batch, one per save, one per failed restore.
+94. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-94. Downstream phases P4–P11.
+95. Downstream phases P4–P11.
 
 ## Disk
 
