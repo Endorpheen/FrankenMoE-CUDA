@@ -403,10 +403,17 @@ most dangerous and is worth checking first in any new fixture.
    reshape choice for a transposed V, the width pad, and the flattening to one element
    per row; plus the V index shape (one per token, or per token and value element when
    transposed). 30 201 checks, 8/8 mutations.
-40. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+40. KV rotation matrices — EXP320 transfers the Walsh-Hadamard generator (Sylvester
+   recursion, signs compared and orthonormality checked on the reconstruction) and the
+   `n_rot_k`/`n_rot_v` policy (K doubles from 64 while the key width is a multiple of
+   twice the size; V is fixed at 64 for quantised V with a 64-multiple head width; the
+   indexer architectures rotate when the key width equals the indexer head size).
+   5 819 576 checks, 8/8 mutations. The narrow one is the factor-two test (19 checks):
+   it needs a width divisible by the size but not by twice it.
+41. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-41. Downstream phases P4–P11.
+42. Downstream phases P4–P11.
 
 ## Disk
 

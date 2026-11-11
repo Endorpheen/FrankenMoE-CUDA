@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "corner starts negative",
+    "status": "CAUGHT",
+    "failures": 5627084,
+    "exit_code": 1
+  },
+  {
+    "mutation": "bottom-right quadrant is not negated",
+    "status": "CAUGHT",
+    "failures": 2952579,
+    "exit_code": 1
+  },
+  {
+    "mutation": "right quadrant is never written",
+    "status": "CAUGHT",
+    "failures": 4960638,
+    "exit_code": 1
+  },
+  {
+    "mutation": "doubling step advances by one",
+    "status": "CAUGHT",
+    "failures": 2952383,
+    "exit_code": 1
+  },
+  {
+    "mutation": "rotation size test uses the size without the factor two",
+    "status": "CAUGHT",
+    "failures": 19,
+    "exit_code": 1
+  },
+  {
+    "mutation": "rotation size starts at 32",
+    "status": "CAUGHT",
+    "failures": 997,
+    "exit_code": 1
+  },
+  {
+    "mutation": "value rotation ignores the head-width multiple",
+    "status": "CAUGHT",
+    "failures": 1880,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer architectures rotate without the width match",
+    "status": "CAUGHT",
+    "failures": 1914,
+    "exit_code": 1
+  }
+]
