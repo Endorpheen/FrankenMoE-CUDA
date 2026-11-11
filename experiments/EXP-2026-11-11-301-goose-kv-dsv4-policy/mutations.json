@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "comp_size rounds down",
+    "status": "CAUGHT",
+    "failures": 1899,
+    "exit_code": 1
+  },
+  {
+    "mutation": "comp_size may be zero",
+    "status": "CAUGHT",
+    "failures": 1,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stream offset accepts the first id past the range",
+    "status": "CAUGHT",
+    "failures": 75,
+    "exit_code": 1
+  },
+  {
+    "mutation": "coupled means any sequence id at all",
+    "status": "CAUGHT",
+    "failures": 98,
+    "exit_code": 1
+  },
+  {
+    "mutation": "token membership skips the last id",
+    "status": "CAUGHT",
+    "failures": 139,
+    "exit_code": 1
+  },
+  {
+    "mutation": "single-unique-sequence fan-out is allowed",
+    "status": "CAUGHT",
+    "failures": 65,
+    "exit_code": 1
+  },
+  {
+    "mutation": "K-only tweak leaves the value width alone",
+    "status": "CAUGHT",
+    "failures": 500,
+    "exit_code": 1
+  },
+  {
+    "mutation": "used rows ignore the cache size clamp",
+    "status": "CAUGHT",
+    "failures": 24,
+    "exit_code": 1
+  }
+]

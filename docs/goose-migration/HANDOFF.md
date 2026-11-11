@@ -263,10 +263,18 @@ most dangerous and is worth checking first in any new fixture.
    when the indexer read throws. 16 495 checks, 8/8 mutations. Harness lesson: an
    operation that writes through an omitted output buffer segfaults instead of
    mismatching, so a gate that can crash is not measuring the module.
-21. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+21. DSV4 policy helpers — EXP301 transfers the compressed-state decision helpers
+   (comp size, used key rows, stream offset with the native rejection, coupled
+   detection, token membership, graph stream fan-out, K-only hparams, plane count)
+   from the dsv4 cache: 9 000 checks, 8/8 mutations. Two notes: the native
+   stream-offset function throws, and an FFI entry cannot, so the contract is -1
+   and the gate pins it; and a comparison written as `x>(1 as i64)` does not parse
+   -- the bracket is read as a generic and the parser wants a closing `>`; write
+   `x > 1 as i64`.
+22. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-22. Downstream phases P4–P11.
+23. Downstream phases P4–P11.
 
 ## Disk
 
