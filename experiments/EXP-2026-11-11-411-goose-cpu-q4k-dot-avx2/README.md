@@ -30,3 +30,24 @@ reference changed with it, which means the probe was not measuring a single fixe
 Recorded honestly rather than counted: mutations must be re-run against `tests/adaptor.cpp`, where the
 reference symbol is fixed in the same binary as the module, and each mutation must be shown to change the
 output before it can be called caught or missed.
+
+## The first "160/160" was false, and how it was false
+
+The gate builds `bridge.c`, which contained the drop-in hook exporting `ggml_vec_dot_q4_K_q8_K`. The gate calls
+that same symbol as its reference, so it compared the module **with itself**. Every mutation passed, which is
+what exposed it: a `high nibble not shifted` mutation cannot survive an honest comparison.
+
+Fix: the hook moved to `source/hook.c`, separate from the bridge. Gate = `adaptor.cpp` + `bridge.o` only; the
+drop-in library = `bridge.o` + `hook.o`.
+
+With the honest gate the real numbers appeared, and two genuine AVX2 differences were found and fixed:
+
+| defect | signal | fix |
+|---|---|---|
+| min term built from one product per lane | 160/160 -> 96/160 | `madd_epi16` sums pairs: `prod[i] = mins[2i]*(bs[4i]+bs[4i+1]) + mins[2i+1]*(bs[4i+2]+bs[4i+3])` |
+| assumed one scale per 32-block | no change (equivalent) | AVX2 applies `scale_l` to the low half and `scale_h` to the high half, which is index `sc[j]` either way |
+
+Current: **96 of 160 fail**, differences are ~3e-6 relative, e.g. `-611.969666` vs `-611.971619`. Larger than
+one ulp, so a term still differs rather than only its association.
+
+Lesson recorded: a reference must not be the same symbol the module defines.
