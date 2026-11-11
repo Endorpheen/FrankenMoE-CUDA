@@ -1,0 +1,34 @@
+# EXP377: aligned-read arithmetic -- gated, integrated, unreachable by this load path
+
+## Verdict
+
+**GATED, INTEGRATED, NOT VALIDATED.** No live witness; the point is not counted as closed.
+
+## Transferred
+
+`read_aligned_chunk` opening arithmetic: `aligned_offset`, `offset_from_alignment` (the skip),
+`bytes_to_read` (rounded up) and the capped staging `buffer_size`.
+
+## Gate
+
+| check | result |
+|---|---|
+| 2161 draws over offsets 0..40, sizes 0..40, alignments 1..32, three caps, four fields each | 2161 checks / 0 failures |
+| mutations | **7/7 caught** |
+
+Mutations: rounding-up dropped, skip set to the absolute offset, buffer ignoring the cap, mask off by
+one, no rounding down, cap compared against `size`, unaligned byte count.
+
+## Why no witness
+
+`read_aligned_chunk` is the DirectIO branch. The model is loaded through `mmap` on this host, so the
+branch never runs; the single `mmap` line in the log is the loader's own notice, not a call into this
+code. Reaching it needs DirectIO enabled, which is not part of the agreed profile.
+
+## Run
+
+| check | result |
+|---|---|
+| completion before / after restore | `e68df05b…` both |
+| `FG377S_FILE_ALIGN` | **0 occurrences** |
+| `FG373S` / `FG345W` / `FG241U` | live |

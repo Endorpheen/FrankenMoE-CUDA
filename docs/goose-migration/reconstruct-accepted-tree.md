@@ -207,10 +207,21 @@ fired because the profile does not reach the code.
 | KV read guards (EXP373) | 41/0 | **live** | runs on every restore |
 | hybrid memory decisions (EXP375) | 76/0 | 0 | reached only from the M-RoPE branch |
 | hybrid context apply/next (EXP376) | 35/0 | 0 | needs `n_ubatch < n_tokens` |
+| aligned-read arithmetic (EXP377) | 2161/0, 7/7 mutations | 0 | DirectIO branch, this host uses `mmap` |
 
 So the rule for the next blocks is: establish the reachability path from the profile **before** writing
 the port, not after. A block whose only entry point is a branch this profile never takes is not a
 candidate, however clean its gate is.
+
+## What the profile actually executes
+
+The run log carries **41 live witnesses**: the accepted runtime's own 39 (`FG169T` … `FG242O`) plus our
+two (`FG345W_KV_STATE_WRITE`, `FG373S_KV_READ_SINFO`). Every executed block that has a module is already
+Goose; the blocks left native are exactly the ones this profile does not reach.
+
+So within the agreed profile the port is effectively closed, and the remaining open items need a
+scenario rather than code: cancellation/unload (P5-09), lazy reservation (P5-06), a recurrent-only
+restore failure, or the lost hybrid tree for throughput.
 
 ## Status
 
