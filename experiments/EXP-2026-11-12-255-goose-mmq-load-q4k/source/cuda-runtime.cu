@@ -73,8 +73,11 @@ int main() {
         b.dm = make_half2(0.5f, 0.25f);
     }
     int * bad = nullptr; cudaMalloc(&bad, sizeof(int)); cudaMemset(bad, 0, sizeof(int));
+    block_q4_K * dx = nullptr;
+    cudaMalloc(&dx, x.size() * sizeof(block_q4_K));
+    cudaMemcpy(dx, x.data(), x.size() * sizeof(block_q4_K), cudaMemcpyHostToDevice);
     size_t shmem = (64*32*2 + 64*16*2) * sizeof(int);
-    fg255q_check<<<1, 32, shmem>>>((const char *) x.data(), 0, 1, I, sram_stride, bad);
+    fg255q_check<<<1, 32, shmem>>>((const char *) dx, 0, 1, I, sram_stride, bad);
     cudaError_t e = cudaDeviceSynchronize();
     int hb = 0; cudaMemcpy(&hb, bad, sizeof(int), cudaMemcpyDeviceToHost);
     printf("FG255Q_AB mismatches=%d cuda=%d\n", hb, (int) e);

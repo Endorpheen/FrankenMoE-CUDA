@@ -42,3 +42,16 @@ Most likely causes, in order: the `half2` staging arrays are not 4-byte aligned 
 shared-memory request (2*64*32 + 2*64*16 ints) exceeds what a single block can reserve without opt-in.
 
 Next: align the staging arrays explicitly, size the request conservatively, and only then read the mismatch count.
+
+## Second run: the harness works, the port does not
+
+The `cuda=700` was mine, not the kernel's: the harness passed a **host** `std::vector` into the kernel as if it were a
+device pointer. With a `cudaMalloc` + `cudaMemcpy` buffer:
+
+    FG255Q_AB mismatches=18432 cuda=0
+
+So the comparison now runs end to end and the Goose loader disagrees with the native one on both the `qs` staging and
+the `dm` rows. That is the honest state: the measuring instrument is sound, the thing it measures is wrong.
+
+Next: print the first differing index per array, which separates "wrong slot arithmetic" (`sram_stride`, `16*(txi/8)`,
+`txi%8`) from "wrong source bytes" (`qs@16`, `scales@4`, `dm@0`).
