@@ -767,10 +767,19 @@ most dangerous and is worth checking first in any new fixture.
    yet: the call site in `state_read_data` is next, and one difference is recorded by design — the
    caller reads all headers before asking, so a rejection leaves the IO stream further along, while
    the observable restore result is unchanged because a rejection aborts.
-89. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+89. KV state-read header: format constraint — EXP366 gates the KV read header decisions (layer
+   count, capacity, V layout, key/value rotation, then per-layer type and row checks; `v_trans` here,
+   `s_trans` in the recurrent variant) at 5 072 checks / 0 failures, and records why it cannot be a
+   single live call site: native interleaves headers and payloads per layer, so one decision call
+   would move every payload read after every header and land payloads in the wrong tensors. A call
+   per layer degenerates into a duplicate of the four comparisons; changing the layout would break
+   files the accepted runtime already wrote.
+   So this block is not a live candidate under the current format. The write side, which has no such
+   interleaving, is live (EXP363/EXP364).
+90. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-90. Downstream phases P4–P11.
+91. Downstream phases P4–P11.
 
 ## Disk
 
