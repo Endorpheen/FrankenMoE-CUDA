@@ -151,6 +151,38 @@ if 'fg195v-bridge.c' not in ct:
 print('fg195v prepared')
 PY3
 
+
+# --- EXP180 (CUDA_MMQ Q8_1 quantizer), same pattern ---
+export E180_DIR="$ROOT/experiments/EXP-2026-11-08-180-goose-cuda-mmq-q8-1"
+python3 - <<'PY4'
+import os
+from pathlib import Path
+flint = Path('/tmp/flint-goose/ggml/src/ggml-cuda')
+e = Path(os.environ['E180_DIR']) / 'source'
+src = (e / 'cuda-runtime.cu').read_text()
+src = src.replace('#include "device-functions-generated.cuh"', '#include "fg180q-device.cuh"')
+src = src.replace('if(!(flag&&strcmp(flag,"1")==0)){', 'if(flag&&strcmp(flag,"0")==0){')
+src = src.replace('return flag&&strcmp(flag,"1")==0;', 'return !(flag&&strcmp(flag,"0")==0);')
+if 'extern "C" int fg180qh_run' not in src:
+    src = src.replace('#include "fg180q-device.cuh"', '#include "fg180q-device.cuh"\nextern "C" int fg180qh_run(int64_t);')
+(flint / 'fg180q-runtime.cu').write_text(src)
+(flint / 'fg180q-device.cuh').write_text((e / 'device-functions-generated.cuh').read_text())
+(flint / 'fg180q-host-qualified.c').write_text((e / 'host-qualified.c').read_text())
+(flint / 'fg180q-host-ffi.h').write_text((e / 'host-ffi.h').read_text())
+hu = (e / 'host-unit.c').read_text().replace('#include "host-ffi.h"', '#include "fg180q-host-ffi.h"').replace('#include "host-qualified.c"', '#include "fg180q-host-qualified.c"')
+(flint / 'fg180q-host-unit.c').write_text(hu)
+q = flint / 'quantize.cu'; s = q.read_text()
+s = s.replace('void quantize_mmq_q8_1_cuda(\n', 'void fg180q_native_quantize_mmq_q8_1_cuda(\n', 1)
+s = s.replace('void quantize_scatter_mmq_q8_1_cuda(\n', 'void fg180q_native_quantize_scatter_mmq_q8_1_cuda(\n', 1)
+q.write_text(s)
+cm = flint / 'CMakeLists.txt'; ct = cm.read_text()
+if 'fg180q-host-unit.c' not in ct:
+    ct = ct.replace('    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg195v-bridge.c")',
+                    '    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg195v-bridge.c")\n    list(APPEND GGML_SOURCES_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/fg180q-host-unit.c")')
+    cm.write_text(ct)
+print('fg180q prepared')
+PY4
+
 cmake -S "$WORK" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON \
       -DCMAKE_CUDA_COMPILER=/usr/bin/nvcc -DLLAMA_BUILD_TESTS=OFF \
       -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF >/dev/null
