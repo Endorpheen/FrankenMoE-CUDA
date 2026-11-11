@@ -650,10 +650,15 @@ most dangerous and is worth checking first in any new fixture.
    The first generator built arbitrary set lists and walked off the offset table when more sets
    were chosen than existed — a shape native cannot produce; sets are now built from distinct
    masks, as native does.
-74. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+74. Simple and sequential splits — EXP351 transfers `split_simple` (consecutive tokens from the
+   first free one; the size test runs after the add, so a full ubatch is exactly n_ubatch) and
+   `split_seq` (one sequence set and its subsets, the size test runs **before** the look-ahead
+   scan, and the set is replaced by the one landed on). They report different sequence counts:
+   one per token versus one. 75 280 checks, 7/7 mutations.
+75. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-75. Downstream phases P4–P11.
+76. Downstream phases P4–P11.
 
 ## Disk
 
