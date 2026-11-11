@@ -1507,7 +1507,7 @@
     "src/llama-io.cpp"
    ],
    "acceptance": "Native<->Goose session/state read/write where format permits; version/endian/truncation/error corpus and deterministic continuation.",
-   "evidence": "EXP321 transfers the cell selection of llama_kv_cache::state_write: a cell is written when it is non-empty, carries the requested sequence (all cells when the sequence is -1), and is not excluded by the sliding window at the sequence's highest position; consecutive cells are coalesced into ranges whose lengths must equal the per-stream counts, and the partial-only flag drops the section for a cache without a window. Gate: 40 670 checks / 0 failures, 8/8 mutations caught. Still open: the metadata payload and the tensor data of the same write/read pair.",
+   "evidence": "EXP321 transfers the cell selection of llama_kv_cache::state_write: a cell is written when it is non-empty, carries the requested sequence (all cells when the sequence is -1), and is not excluded by the sliding window at the sequence's highest position; consecutive cells are coalesced into ranges whose lengths must equal the per-stream counts, and the partial-only flag drops the section for a cache without a window. Gate: 40 670 checks / 0 failures, 8/8 mutations caught. EXP322 adds state_write_meta: per cell the position, id count, extension when present and the ids in increasing order, with a named sequence writing only itself and an unnamed write carrying all; 109 429 checks / 0 failures, 8/8 mutations caught. Still open: the tensor data of the write and both halves of the read.",
    "depends_on": [],
    "workstream": "APEX_COMMON",
    "source_phase_files_at_audit": 46,

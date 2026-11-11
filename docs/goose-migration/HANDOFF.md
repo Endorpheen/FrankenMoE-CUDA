@@ -416,10 +416,15 @@ most dangerous and is worth checking first in any new fixture.
    lengths must equal the per-stream counts; and the partial-only section drop for a
    cache without a window. 40 670 checks, 8/8 mutations. Still open in P5-08: the
    metadata payload and the tensor data of the same write/read pair.
-42. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+42. KV state metadata — EXP322 transfers `state_write_meta`: per cell the position, the
+   id count, the extension when present, and the ids in increasing order, with a named
+   sequence writing only itself and an unnamed write carrying all of them. 109 429
+   checks, 8/8 mutations. One candidate mutation was unobservable with a single bit
+   word and was replaced. Still open in P5-08: the tensor data and the read side.
+43. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-43. Downstream phases P4–P11.
+44. Downstream phases P4–P11.
 
 ## Disk
 

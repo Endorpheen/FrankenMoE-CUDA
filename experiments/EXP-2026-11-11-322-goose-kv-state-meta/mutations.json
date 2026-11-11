@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "a named sequence is not matched",
+    "status": "CAUGHT",
+    "failures": 55653,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an unnamed write carries nothing",
+    "status": "CAUGHT",
+    "failures": 29218,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the cell extension is not written",
+    "status": "CAUGHT",
+    "failures": 38031,
+    "exit_code": 1
+  },
+  {
+    "mutation": "each written id is shifted by one",
+    "status": "CAUGHT",
+    "failures": 17170,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the position is not written",
+    "status": "CAUGHT",
+    "failures": 23873,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the id count ignores the filter",
+    "status": "CAUGHT",
+    "failures": 13658,
+    "exit_code": 1
+  },
+  {
+    "mutation": "range ends are inclusive",
+    "status": "CAUGHT",
+    "failures": 62314,
+    "exit_code": 1
+  },
+  {
+    "mutation": "ids start where the position is",
+    "status": "CAUGHT",
+    "failures": 66820,
+    "exit_code": 1
+  }
+]
