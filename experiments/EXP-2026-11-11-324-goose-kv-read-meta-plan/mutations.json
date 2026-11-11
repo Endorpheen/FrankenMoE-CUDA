@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "an exactly full cache is rejected",
+    "status": "CAUGHT",
+    "failures": 466,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a record with no ids is accepted",
+    "status": "CAUGHT",
+    "failures": 1133,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a short mirrored layout is accepted",
+    "status": "CAUGHT",
+    "failures": 57,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a mirrored cell past the cache is accepted",
+    "status": "CAUGHT",
+    "failures": 16,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed search is accepted",
+    "status": "CAUGHT",
+    "failures": 232,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an id past the range is accepted",
+    "status": "CAUGHT",
+    "failures": 69,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the destination sequence is not removed",
+    "status": "CAUGHT",
+    "failures": 1922,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the extension is never restored",
+    "status": "CAUGHT",
+    "failures": 91,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the head is not reset on a whole-cache restore",
+    "status": "CAUGHT",
+    "failures": 136,
+    "exit_code": 1
+  }
+]

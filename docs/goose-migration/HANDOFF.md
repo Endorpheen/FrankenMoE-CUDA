@@ -427,10 +427,15 @@ most dangerous and is worth checking first in any new fixture.
    where the embedding dimension is the outer loop and the offset is
    `(first + j*kv_size) * element_size`. 65 202 checks, 8/8 mutations. Still open in
    P5-08: both halves of the read.
-44. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+44. KV metadata restore — EXP324 transfers `state_read_meta` in both branches with
+   its six rejection codes: the single-sequence path (fit check, destination removal,
+   exact one-id records, mirrored layout or search, extension restored after the batch)
+   and the whole-cache path (cells from zero, count-only mirror check, id range check,
+   head reset). 6 715 checks, 9/9 mutations. Still open in P5-08: `state_read_data`.
+45. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-45. Downstream phases P4–P11.
+46. Downstream phases P4–P11.
 
 ## Disk
 
