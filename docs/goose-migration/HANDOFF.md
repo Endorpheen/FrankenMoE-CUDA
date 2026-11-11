@@ -705,10 +705,24 @@ most dangerous and is worth checking first in any new fixture.
    wiring a module; a gated module from the other line is not evidence about this one.
    What does exist in the working line and is worth wiring: `ubatch_add`'s output ids and unique
    sequence list, `split_simple`, `split_equal` selection, and `state_write` ranges.
-81. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+81. STAGE RUNS WERE NOT VALID — found while wiring `ubatch_add`. Two independent faults:
+   (a) the run directory kept `libllama.so.0` as a hard link to the accepted EXP244 DSO, so every
+   "stage" run actually loaded EXP244 by that name; the path in `/proc/maps` looked right while the
+   content was the old library. Fix: replace all three names (`libllama.so`, `.so.0`, `.so.0.7.0`)
+   and compare the *hash* of the loaded file, not the path.
+   (b) with the substitution really in place the server fails at startup: `libllama-common.so.0`
+   wants `llama_batch_ext_init`, which the objects of `build/expert-tier-franken-cuda` (built from
+   `work/llama.cpp-integration`) do not provide. That build is the native line; the accepted runtime
+   is built from the line that has `llama_batch_ext` (the integration files of EXP238/240/243).
+   Consequence: EXP347, EXP354, EXP355 and EXP357 runs prove nothing. They are marked NOT VALIDATED,
+   and no scoped item moves on their basis. The gates and bridges stand on their own.
+   Also re-read the earlier line note (item 80) in this light: EXP349's `mixed` block belongs to the
+   accepted line, not to `work`, so it is not "the other line" after all — the target line is the one
+   with `llama_batch_ext`.
+82. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
    subsystem; this host has one GPU, so no arm can exercise it. It belongs to
    P3-18's hardware-unverified ledger rather than to blind porting.
-82. Downstream phases P4–P11.
+83. Downstream phases P4–P11.
 
 ## Disk
 
