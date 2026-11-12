@@ -60,3 +60,7 @@ experiments/*/build-copy/
 
 # EXP421 unified baseline run (assembled artifact, not source).
 /runtime/exp421/unified/
+
+# P3-07 layout experiments: build outputs, not source.
+/runtime/exp430/
+/runtime/exp431/
