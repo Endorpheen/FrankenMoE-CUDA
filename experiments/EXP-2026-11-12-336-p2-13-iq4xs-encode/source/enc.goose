@@ -165,10 +165,24 @@ fn fg336q_block(x:u64,y:u64,i:i64,scr:u64)->i64{
 fn fg336q_scales(x:u64,out:u64,scr:u64)->i64{
  let scales:u64=scr;
  let L:u64=scr+(64 as u64);
+ var amax_scale:f32=0 as f32;
+ var max_scale:f32=0 as f32;
  var ib:i64=0 as i64;
  while ib<(8 as i64) {
   fg336q_scale(x+(ib as u64)*(128 as u64),L,scales,ib);
-  st_f32(out+(ib as u64)*(4 as u64),ld_f32(scales+(ib as u64)*(4 as u64)));
+  let d:f32=ld_f32(scales+(ib as u64)*(4 as u64));
+  st_f32(out+(ib as u64)*(4 as u64),d);
+  let ad:f32=absf(d);
+  if ad>amax_scale {amax_scale=ad;max_scale=d;}
+  ib=ib+(1 as i64);
+ }
+ let dsup:f32=(0 as f32-max_scale)/(32 as f32);
+ st_f32(out+(16 as u64)*(4 as u64),dsup);
+ let idsup:f32=if dsup!=(0 as f32) {(1 as f32)/dsup} else {0 as f32};
+ ib=0 as i64;
+ while ib<(8 as i64) {
+  let l0:i64=mn_i(31 as i64,mx_i(0 as i64-(32 as i64),nearest(idsup*ld_f32(scales+(ib as u64)*(4 as u64)))));
+  st_f32(out+(8 as u64)*(4 as u64)+(ib as u64)*(4 as u64),(l0 as f32));
   ib=ib+(1 as i64);
  }
  return 0 as i64;

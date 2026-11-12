@@ -88,3 +88,18 @@ With that wiring the diagnostic says the block search is **correct**:
 So the 126 remaining gate failures are not in the per-block scale search at all. The fault is in the super-scale step: `dsup`,
 `l0`, or the `scales_l`/`scales_h` packing. That is a much smaller surface than the earlier notes implied, and it is measured rather
 than guessed.
+
+## Block scales, dsup and l0 all match on a fixed input
+
+The export was extended to `l0` and the super-scale, and the same harness compares them:
+
+    dsup ref=0.00080357393 ours=0.00080357393
+    ib=0..7  l0 ref == ours (31, -32, -30, -31, 31, -31, 31, 31)
+
+So the per-block search, the super-scale and the clamped `nearest` are all correct on this input. The remaining gate failures therefore
+sit in the **second level pass** (re-levelling at the quantised scale with `idl`) or in the quant-byte packing -- not in anything
+measured so far.
+
+The next pass must reproduce an actual *failing* gate input instead of a synthetic one, because every component checks out on the
+synthetic case. That is the difference between this failure and the previous ones: the surface is now three steps, two of which are
+proven correct.
