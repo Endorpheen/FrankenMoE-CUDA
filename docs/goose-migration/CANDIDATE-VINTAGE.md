@@ -53,3 +53,22 @@ The Apex milestone, the restore and the throughput numbers were measured on the 
 Until a build merges the patched sources into a candidate and relinks, the second half of the migration is unproven in the runtime. That
 merge is a build, then an Apex run to confirm `e68df05b` still holds or to record a legitimate new baseline, which is exactly the kind of run
 that needs agreement first.
+
+## Correction: the module sources exist, the assembly definition does not
+
+A first pass at this looked like a provenance hole -- `fg157` appears in the candidate only inside the modular
+`libggml-base-*.so` files, and no `.c` or `.cpp` in this repository defines it. That reading was too pessimistic, and the evidence corrects
+it:
+
+    experiments/EXP-2026-11-08-157-goose-context-core/
+        context.goose  context-policy.goose  context-generated.c  context-qualified.c  core-api.h
+        build.py  build-commands.json
+
+So each composition module is reproducible from its own experiment directory: the `.goose` source, the qualified compiler output, the
+bridge, and a recorded build command. `runtime/exp157/` holding only `measured/` and `results/` is a leftover of the measurement step, not a
+missing source.
+
+What is genuinely missing is a single build definition that assembles the *current* set of modules into one candidate. Today that set is
+implicit: it is whatever the accepted runtime happened to contain, and the later experiments were never folded into it. Rebuilding means
+walking the experiment set, applying each module's recorded build command, and relinking -- mechanical, but a project-sized step rather than a
+one-liner, and it has to end in an Apex run to check whether the accumulated changes still reproduce `e68df05b`.
