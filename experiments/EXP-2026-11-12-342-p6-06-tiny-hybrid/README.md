@@ -171,3 +171,26 @@ merits.
 - Fixture (hybrid): loads, serves, and the gate asserts five properties -- `checks=5 failures=0`.
 - Mutant (all-attention): tensor set accepted (55/55), then aborted in `fg162`.
 - Gate sensitivity: still unproven, now with a named reason and a named module.
+
+## The mutant is rejected by the native line too -- so it is a bad model, not a divergence
+
+The obvious check before blaming `fg162`: does flint load the same file? It does not.
+
+    native: GGML_ASSERT(buffer) failed at ggml/src/ggml-backend.cpp:345
+    ours:   ggml_abort <- fg162_fail <- fg162_gg_function_1
+
+Both lines refuse the model, at different assertion sites with different messages. So this is not a Goose divergence -- my synthetic
+all-attention model is malformed in a way that the buffer allocation rejects: the tensor set passes name and shape checks, but the
+allocation derived from it is not valid.
+
+That is worth stating plainly because the previous note called the abort "the first time the synthetic model exercises a Goose check the
+Apex model does not". It does exercise a Goose check, but the same file also fails natively, so nothing about the port is implicated.
+
+It also adds a small parity observation consistent with P4-03: the same invalid input is rejected by both lines, with different text
+(native names the failing assert and file position, ours names a module and a code).
+
+## Consequence for the sensitivity proof
+
+The gate still has no proven mutation. A valid mutant needs a *correctly formed* all-attention model, and the generator is not there
+yet: the tensor list and shapes now pass, but the resulting model does not allocate. The next step is to find why the allocation fails
+-- likely a size or per-layer consistency rule -- rather than to look for a port defect, since both lines agree on the rejection.
