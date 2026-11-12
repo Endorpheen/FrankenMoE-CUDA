@@ -127,3 +127,37 @@ of the per-axis checks fires.
 
 A fix, if the hypothesis holds, is a size model that knows block-quantized kinds (type size and block size per kind) rather
 than extending the scalar table with made-up byte counts.
+
+## Root cause, located exactly
+
+`entry()` in `source/entry.goose` validates the secondary sources without asking whether they are scalar:
+
+    if (!scalar_type(p.x) || !scalar_type(p.d)) { return false; }   // x and dst are checked
+    validate(p.d, dst.len); validate(p.x, x.len);
+    if (p.y.bytes > 0) { validate(p.y, y.len); }                    // k -- not checked first
+    if (p.z.bytes > 0) { validate(p.z, z.len); }                    // v -- not checked first
+
+and `validate()` starts with `assert(scalar_bytes(t.kind) > 0)`, where `scalar_bytes` returns zero for every
+block-quantized kind. For `flash_attn_ext`, `x` is q and `d` is the F32 result, so both pass the scalar check, `y` is the
+q8_0 K cache and `z` the V cache, and the validation of `y` asserts.
+
+The C-side gate does not catch it either: `fg143_try` in `native-bridge.cpp:40` only checks
+
+    if (!fg143_enabled || params->use_ref || !fg143_scalar(t->type)) return 0;
+
+that is, the *destination* type. Sources one and two are never examined before the call.
+
+## Fix
+
+The module does not port flash attention at all -- there is no `flash_attn` in its Goose sources -- so the right behaviour
+for a quantized K/V is to decline and let the native implementation run, exactly as the flint line does. Because rebuilding
+the Goose module is not a step available here, the minimal correct change is at the gate we own:
+
+    if (t->src[1] && !fg143_scalar(t->src[1]->type)) return 0;
+    if (t->src[2] && !fg143_scalar(t->src[2]->type)) return 0;
+
+Only the secondary sources are guarded, so quantized weights -- which arrive as `src[0]` and are handled by the codec path
+that runs before the scalar check -- keep their current treatment.
+
+This has to be rebuilt into `libggml-cpu` and gated: the accepted profile must stay at `e68df05b`, and q8_0/q4_0 K/V must
+then serve on our line with the same continuation as native (`1da0f499`).
