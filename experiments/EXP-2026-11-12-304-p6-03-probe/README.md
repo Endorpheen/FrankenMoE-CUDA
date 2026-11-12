@@ -55,3 +55,22 @@ never reaches this split, which is why the first request succeeds.
 That reframes the defect: it is not weight placement (P6-02's attachment decision) and not the recurrent checkpoint, but the
 scheduler's backend assignment for a split graph. The next step is to see what fg164 returns for that node -- a valid backend
 index or something out of range -- rather than to guess from the tensor side.
+
+## Isolation: our libggml-base is the faulty half
+
+The same reproducer with **our libllama and the flint libggml-base** answers the long prompt and logs zero CUDA errors. With
+our libggml-base it aborts. So the fault is the scheduler replacement in our base library, not the model, not the loader, not
+the KV path.
+
+Two further facts narrow it:
+
+- Every switch tried (`GGML_GOOSE_SCHEDULER=0`, `GGML_GOOSE_CPU_BACKEND_API=0`) still aborts, so this is not a hook decision
+  -- the replacement file itself behaves differently.
+- `ggml_backend_tensor_copy` and `ggml_backend_sched_backend_id_from_cur` are textually identical to the flint originals, so
+  the divergence is not in those two functions.
+- The replacement is not the same revision as the code it replaces: our `backend-scheduler.cpp` uses `sched->expert_pipeline`
+  in 16 places, while the flint `ggml-backend.cpp` that ships in the build has no such field at all. A port that swaps in a
+  newer scheduler cannot assume the surrounding behaviour is preserved.
+
+Under `-ngl 0` the split that reaches CUDA should not exist. The next step is therefore to compare the split-assignment passes
+(two and three) between the two revisions and find where ours assigns a CUDA backend where flint assigns the CPU one.
