@@ -108,3 +108,27 @@ Scanned all open requirements for FrankenMoE mechanism markers (`ring`, `pinned 
 
 Caution recorded for the next pass: a keyword match is a hint, not a finding. Of 15 hits only one survived reading, and
 reporting the other 14 as stale would have been exactly the kind of inflation this audit is supposed to prevent.
+
+## Pattern across P1-09, P1-10, P3-17: planning is Goose, lifecycle is native
+
+Three items were inventoried individually and produced the same shape, so it is worth stating once instead of three times:
+
+| | Goose-owned and witnessed | still native | stale clause |
+|---|---|---|---|
+| P1-09 | FG143 control/cpu/executor, FG147 backend, FG149 pool | physical allocation, OS placement, non-OpenMP path | `fg140/141_claim` has no call site in this substrate |
+| P1-10 | device-cache bank/slot planning (EXP-150), graph scratch policy (EXP-145) | cache constructor, tensor allocation, full upload-copy, resource lifecycle | pinned-ring staging does not exist here |
+| P3-17 | `fg195v_plan_alloc`, `fg196p_plan_host_alloc` (both witnessed) | pool growth/reuse beyond planning, OOM, reset, async lifetimes | "pinned ring" does not exist here |
+
+The common conclusion: **the decision layer is largely ported, the lifetime layer is not**, and each item also carries one
+clause that refers to a mechanism removed with the old tree.
+
+That has two practical consequences:
+
+1. The remainder of all three is **one class of work**, not three: move lifetime decisions (create/destroy/reuse/fail/reset)
+   into Goose with the failure-injection checks the criteria name. Doing it once with a shared fixture serves all three -
+   which is exactly the "reusable component needed by several targets" priority.
+2. The stale clause in each needs an owner decision (restate for this substrate, or reintroduce the mechanism). Until then
+   those clauses cannot be completed no matter how much porting is done, and counting them as work in progress would be
+   misleading.
+
+No status changes here; this is a reading of three inventories together.
