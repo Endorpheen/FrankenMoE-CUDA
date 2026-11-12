@@ -79,3 +79,16 @@ Server started with `LLAMA_ARG_TEMP=0.2` and `--temp 0.7`, then `/props` read:
   grammar/tool configuration -- is identical.
 
 That single random marker is the only thing standing between the two payloads being byte-identical apart from key order.
+
+## Memory fit: not reachable with this model, and a correction
+
+I first read `-c 65536 -fit on` giving `n_ctx_slot = 2048` as fit having adjusted the context. The control run corrects that: with
+`-fit off` the same invocation also reports 2048, and the log says why --
+
+    W srv load_model: the slot context (65536) exceeds the training context of the model (2048) - capping
+
+So the number comes from the model's training context, not from the memory-fit policy. Both lines produce that warning identically and cap
+identically, which is worth having as evidence about the cap, but it says nothing about fit.
+
+`stories260K` therefore cannot exercise the memory-fit policy at all: its 2048-token training context caps every request before fit gets a
+say. Reaching it needs a model with a large training context -- Apex -- which is a run that has to be agreed first.
