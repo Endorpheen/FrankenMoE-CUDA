@@ -67,3 +67,15 @@ identical up to the 70-character window captured.
 
 A malformed `--grammar 'root ::= ['` produced no matching line in either log within the first eight seconds, so that case is
 inconclusive as captured rather than equal: the error may surface later, and it is not claimed as parity.
+
+## Sampling precedence and the whole /props payload
+
+Server started with `LLAMA_ARG_TEMP=0.2` and `--temp 0.7`, then `/props` read:
+
+- `default_generation_settings.params` is **fully equal** between the lines, not merely equal on the fields checked. Temperature is
+  `0.699999988079071` on both -- the command line won over the environment variable, and even the float's decimal expansion matches.
+- Walking the entire `/props` document field by field gives **one** difference in total: `media_marker`, which is a per-process random
+  string (`__media_...__`). Everything else -- model metadata, context parameters, the whole chat template text, sampler defaults, the
+  grammar/tool configuration -- is identical.
+
+That single random marker is the only thing standing between the two payloads being byte-identical apart from key order.
