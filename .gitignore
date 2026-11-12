@@ -54,3 +54,6 @@ experiments/*/build-copy/
 *.so.*.0
 *.o
 *.bin
+
+# EXP421 staged log library (build output, not source).
+/runtime/exp421/stage/
