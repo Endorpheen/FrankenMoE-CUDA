@@ -770,3 +770,22 @@ swaps, and on this machine profiling is limited (perf_event_paranoid, no attach)
 Practical consequence: ~6% decode is not worth risky restructuring of the ported path. It is recorded as a known,
 bounded difference with the measurements to back it, and the effort stays on the balanced configuration where the cache
 delivers 37.7-39.3 decode.
+
+## The decode spread is ~1.2 tok/s, so this bisection cannot resolve 6%
+
+Compiled the modules at -O3 instead of -O2 to test the build-level hypothesis, three runs: 23.51 / 23.54 / 24.06
+(mean 23.70) against a baseline mean of 24.66. Looked like a regression, so I reverted to -O2 and re-measured: 23.02 /
+24.19 / 23.87 (library size back to the exact baseline 5533896). The reverted build should be identical to the baseline,
+yet it now reads 23.7 on average.
+
+Conclusion, and it is a methodological one: decode on this profile varies by up to ~1.2 tok/s between runs, so:
+- the "-O3 is worse" reading is **not** established either, and is withdrawn as a claim;
+- no single-file or flag bisection can resolve a 6% (about 1.5 tok/s) gap with this noise;
+- the earlier baseline mean of 24.66 was a favourable series, not a fixed constant.
+
+What stands: the correct configuration is restored (-O2 for modules, 36 modules, baseline library size, content equal in
+every run), and the balance point with cache 3072 is measured over many runs and remains 37.7-39.3. The exact-path
+decode should be quoted as "about 24 tok/s, spread 23.0-24.8", not as a single figure.
+
+Further decode bisection on this machine is not worth the measurement error without a profiler; that is recorded as a
+stopped line, not as a solved one.
