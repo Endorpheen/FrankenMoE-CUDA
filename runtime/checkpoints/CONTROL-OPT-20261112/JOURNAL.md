@@ -902,3 +902,31 @@ than the native one on this profile, and there is no code work to justify there.
 This is the fourth candidate today that dissolved under proper repetition (detok, sampler, -O3, now CUDA kernels). The
 methodological conclusion is solid even though the engineering result is negative: on this machine, prefill and decode
 comparisons below ~5% need alternating repeats, otherwise they produce false leads.
+
+## Consolidated state of the profile
+
+One place for the numbers, all measured on the same build (full 3072-config port, pinning, EXP087, EXP101), same GGUF,
+same 32K prompt, repeats where it matters:
+
+| configuration | prefill | decode | RAM | VRAM | exact |
+|---|---|---|---|---|---|
+| exact path (no cache) | 2311-2345 | 23.0-24.8 | 21319 | 3190 | e68df05b |
+| cache 1280 | 2327-2342 | 30.63-31.58 | 21320 | 4476 | differs |
+| cache 2048 | 2334-2348 | 34.03-35.35 | 21320 | 5242 | differs |
+| cache 3072 (approved base) | 2318-2348 | 37.79-39.10 | 21320 | 6266 | differs |
+| cache 3584 (candidate) | 2324-2327 | 37.89-41.94 | 21320 | 6778 | differs |
+| cache 4096 (max) | 2324 | 40.78 | 21320 | 7292 | differs |
+| upstream dd6b945b, no cache | 1900-2047 | 29.62 | 22672 | 6408 | differs |
+| upstream dd6b945b, cache 2048 | 2047 | 25.70 | 22682 | 8458 | differs |
+
+Established facts:
+- the port itself costs nothing (native body 1636/26.66 versus full port in the same band);
+- pinning is worth +41% prefill and is independent of the allocator work;
+- EXP087 and EXP101 removed 1978 + 1240 MiB of VRAM with speed and exactness untouched;
+- the expert cache is a decode lever only (prefill moves 0.2% between exact and 3584 in one window) and its output is
+  decided by GPU-side evaluation, not capacity;
+- prefill is a band of ~2200-2350 that follows background load; 3000 needs a different profile;
+- comparisons below ~5% on this machine require alternating repeats.
+
+What remains open: the acceptance decision on the cached path, and the ~5.5-7.5% decode difference to the native body
+that could not be resolved with the available profiling.
