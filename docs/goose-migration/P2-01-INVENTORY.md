@@ -38,3 +38,26 @@ correctness claim.
 
 Next: build a generated matrix (op x type x stride) with a bit-exact comparison against the native reference, plus a NaN
 payload probe, and accept P2-01 only on that evidence.
+
+## Measured map (2026-11-12): 37 contract cases, Goose vs untouched native build
+
+Tool: `tools/p2-01-contract/fixture.c`, built twice (accepted `libggml-cpu` with 326 `fg` symbols, and the flint build with
+0), raw bytes compared. Reproduction and byte evidence: `tools/p2-01-contract/RESULT.md`.
+
+| class | operations | evidence |
+|---|---|---|
+| bit-identical | add, sub, mul, div, sqr, sqrt, log, concat, rms_norm, get_rows, sum_rows, swiglu (+swapped, +oai), softmax-with-causal-mask | 0 differing bytes |
+| ULP-close | norm 30/64 (<=2.4e-7), softmax 42/64 (<=1.5e-8), mul_mat 23/48 (<=2.4e-7), rope 19/128 (<=6.0e-8), silu 247/1000 (1-2 ULP) | byte diffs |
+| semantics on special values | clamp(NaN) returns the opposite bound (-0.5 vs +0.5); scale(-0) loses the zero sign | byte diffs at 1 and 8 threads |
+
+Cause of each finding is located in the Goose source and in the native code:
+- clamp: native `MAX(MIN(x,max),min)` vs Goose `min(max(a,lo),hi)` - reverse order, differs only for NaN;
+- scale: native skips the addend when bias is 0 (plain multiply, keeps -0); Goose evaluates `a*k+0` and `(-0)+(+0)=+0`;
+- silu: wide part uses the bit-exact `avx2_exp_compat`, the scalar tail falls back to libm `expf`.
+
+All three fixes live in `pointwise.goose` and need a permissioned regenerate-and-rebuild pass; the compiler agent is not to
+be invoked without Igor's permission. Two harness defects of my own were found and fixed on the way (sum_rows over-read,
+RoPE ranks) and are recorded in RESULT.md rather than hidden.
+
+Apex exposure: `qwen35moe` declares `LLM_FFN_SILU` with `LLM_FFN_PAR`, so it takes the bit-exact GLU path; `clamp/scale`
+have no Goose module and execute natively there. That is why `e68df05b` holds while these findings stay open.

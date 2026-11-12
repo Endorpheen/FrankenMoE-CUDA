@@ -453,7 +453,7 @@
         "ggml/src/ggml-cpu/ops.cpp"
       ],
       "acceptance": "Every binary/unary/GLU variant,type,stride and special-value contract implemented; NaN payload discrepancy resolved or explicit compatibility contract agreed.",
-      "evidence": "EXP138 plus EXP143 selected scalar/binary/unary/GLU. Original AVX2 SWIGLU math now Goose,9/9wide cases byte-exact;signed-zero clamp/OAI selection fixed. EXP144 one fixed Apex32768/128 request exactly matches original text/IDs/all saved top5. Full type/stride/NaN payload/ISA closure remains incomplete.",
+      "evidence": "Measured 2026-11-12 with tools/p2-01-contract (37 cases, Goose vs untouched native, byte compare): 13 operations bit-identical; norm/softmax/mul_mat/rope ULP-close; two semantics defects (clamp NaN, scale -0) and the SILU scalar tail, all located to specific lines in pointwise.goose and all needing a permissioned regenerate-and-rebuild pass. Apex takes the bit-exact GLU path, so the accepted profile is unaffected.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -4325,7 +4325,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T04:17:00.911429+00:00",
+  "updated_at": "2026-11-12T04:26:11.673119+00:00",
   "status_totals": {
     "DONE": 20,
     "IN_PROGRESS": 50,
