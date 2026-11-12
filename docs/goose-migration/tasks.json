@@ -3641,6 +3641,10 @@
     {
       "event": "P9-02 third slice (EXP459): shard path formatting, capacity rule, first-split/count/index/tensor validations and the LE-only magic/version guard are Goose with a snprintf-transcribed gate (234 cases, 0 failures), clean sanitizers and 8/8 mutations.",
       "checkpoint": "131025cd"
+    },
+    {
+      "event": "Toolchain switch to goose-2026.3-string (runtime 1e714e6146bc), binary sha256 664d4de4, release archive checksum verified; pin updated in runtime/compiler/current.json with the previous pin kept as rollback. EXP459 migrated to the export/header/standalone pattern and re-gated (234 cases, 8/8 mutations); EXP446 needed an explicit u64 argument where the old compiler accepted an implicit conversion. The remaining experiments keep their previous-pin artifacts; migrating their emit step is the next infrastructure task (documented in COMPILER-2026-3-STRING.md).",
+      "checkpoint": "d09c8110"
     }
   ],
   "batches": [
@@ -4531,7 +4535,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T23:30:21.985874+00:00",
+  "updated_at": "2026-11-12T23:34:46.642746+00:00",
   "status_totals": {
     "DONE": 96,
     "IN_PROGRESS": 5,

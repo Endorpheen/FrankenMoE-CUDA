@@ -15,7 +15,7 @@ extern "fg459_st_i64" fn st_i64(p:u64,o:u64,v:i64);
 
 fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }
 
-fn digits(v:i64)->i64{
+export fn digits(v:i64)->i64{
  if v<=0 as i64 { return 1 as i64; }
  var d:i64=1 as i64;
  var t:i64=v;
@@ -24,7 +24,7 @@ fn digits(v:i64)->i64{
 }
 
 // width is at least five: %05d
-fn width(v:i64)->i64{
+export fn width(v:i64)->i64{
  let d:i64=digits(v);
  if d>5 as i64 { return d; }
  return 5 as i64;
@@ -57,7 +57,7 @@ fn put_num(v:i64,w:i64,out:u8[:],o0:i64)->i64{
 }
 
 // Returns the written length, or 0 when it would not fit (native snprintf check).
-fn split_path(prefix:const u8[:],split_no:i64,count:i64,out:u8[:])->i64{
+export fn split_path(prefix:const u8[:],split_no:i64,count:i64,out:u8[:])->i64{
  if split_no<0 as i64 || count<0 as i64 { return 0 as i64; }
  let n:i64=split_no+1 as i64;
  let wa:i64=width(n);
@@ -91,25 +91,25 @@ fn split_path(prefix:const u8[:],split_no:i64,count:i64,out:u8[:])->i64{
 }
 
 // 1 when the model is opened on the first split.
-fn first_shard_ok(idx:i64)->i64{
+export fn first_shard_ok(idx:i64)->i64{
  if idx==0 as i64 { return 1 as i64; }
  return 0 as i64;
 }
 
 // 1 when the listed split count matches split.count.
-fn split_count_ok(n_split:i64,listed:i64)->i64{
+export fn split_count_ok(n_split:i64,listed:i64)->i64{
  if n_split==listed { return 1 as i64; }
  return 0 as i64;
 }
 
 // 1 when an additional file declares its own position.
-fn shard_index_ok(expected:i64,actual:i64)->i64{
+export fn shard_index_ok(expected:i64,actual:i64)->i64{
  if expected==actual { return 1 as i64; }
  return 0 as i64;
 }
 
 // 1 when the accumulated tensor count equals split.tensors.count.
-fn tensor_count_ok(expected:i64,loaded:i64)->i64{
+export fn tensor_count_ok(expected:i64,loaded:i64)->i64{
  if expected==loaded { return 1 as i64; }
  return 0 as i64;
 }
@@ -117,26 +117,13 @@ fn tensor_count_ok(expected:i64,loaded:i64)->i64{
 // Endian: the container is little-endian only. The magic is compared as a u32
 // read little-endian, so a big-endian file is rejected here; native gguf.cpp has
 // no byte-swap path either.
-fn magic_ok(v:i64)->i64{
+export fn magic_ok(v:i64)->i64{
  if v==1179993927 as i64 { return 1 as i64; }
  return 0 as i64;
 }
 
-fn version_ok(v:i64)->i64{
+export fn version_ok(v:i64)->i64{
  if v==2 as i64 { return 1 as i64; }
  if v==3 as i64 { return 1 as i64; }
  return 0 as i64;
-}
-
-fn main(){
- digits(1 as i64);
- width(1 as i64);
- var buf:u8[64] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
- split_path("m",0 as i64,2 as i64,buf);
- first_shard_ok(0 as i64);
- split_count_ok(2 as i64,2 as i64);
- shard_index_ok(1 as i64,1 as i64);
- tensor_count_ok(1 as i64,1 as i64);
- magic_ok(1179993927 as i64);
- version_ok(3 as i64);
 }

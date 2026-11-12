@@ -1,14 +1,15 @@
 {
-  "compiler": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
-  "sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
-  "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
-  "qualification": "runtime qualification on the used path: Q6_K CPU module gate 240/240; Q6_K CUDA harness IDENTICAL at ncols_dst=1,2; accepted profile e68df05b with equal probabilities, restore ok, 636 single-column sub-calls; revert via runtime/compiler/current-v58-backup.json",
-  "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
-  "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
-  "ready_compiler_watch": true,
-  "previous_compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
-  "previous_sha256": "84f31960f9f3031e5fba6b767f775dfaf79448a736169fdef006072d7deccf6c",
-  "previous": "/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/versions/subset-84f31960f9f3031e/compiler",
-  "source_commit": "d710bb0920de7caaf4bf5a49eb0a457bd6af43ce",
-  "qualified_at": "2026-11-11T20:34:11.127811+00:00"
+  "compiler": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+  "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+  "status": "RELEASE_2026_3_STRING",
+  "version": "goose-2026.3-string",
+  "runtime_version": "1e714e6146bc",
+  "release_sha256": "5c6fdf169408f687a49f3f9ce3ebc0804ece16da0320bbbcb893721f5422558b",
+  "release_file": "/tmp/opencode/release/goose-2026.3-string-linux-x86_64.tar.gz",
+  "source_commit": "e0501dc7dee4522428a46f813cebbce0ad62736e",
+  "qualification": "Compatibility re-run of the EXP445..EXP459 gates on this binary; see docs/goose-migration/COMPILER-2026-3-STRING.md",
+  "rollback": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+  "rollback_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+  "previous_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+  "qualified_at": "2026-11-12T23:31:07.783674+00:00"
 }

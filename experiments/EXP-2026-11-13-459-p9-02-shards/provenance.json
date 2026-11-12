@@ -1,0 +1,7 @@
+{
+  "compiler": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+  "compiler_sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+  "version": "goose runtime 1e714e6146bc",
+  "source_sha256": "74d8e2d6a2114ce051336cd70dba8caaa976e39994ad7b13148d3093b75d1428",
+  "generated_sha256": "4f8af268229c3e975b280606a78a39078ecba695816853bb25e97a40b0b442b2"
+}

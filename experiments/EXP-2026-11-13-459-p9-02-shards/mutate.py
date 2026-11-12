@@ -32,7 +32,7 @@ def run():
     line = [x for x in r.stdout.splitlines() if x.startswith('FG459_SHARDS')]
     if line:
         return r.returncode, line[-1]
-    if 'PASS shards emission' not in r.stdout:
+    if 'wrote ' not in r.stdout:
         return None, 'emission failed'
     # the module compiled but the fixture trapped (Goose bounds check, assert or
     # signal) before printing a summary: a caught mutation, not a build failure

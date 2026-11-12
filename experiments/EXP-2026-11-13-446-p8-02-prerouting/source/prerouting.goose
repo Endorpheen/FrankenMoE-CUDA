@@ -113,11 +113,11 @@ fn key_matches(a:u64,an:i64,b:u64,bn:i64,k:u64,kn:i64)->i64{
  if len>=7 as i64 {
   if (ld_u8(src,0 as u64) as i64)==66 as i64 {
    if (ld_u8(src,1 as u64) as i64)==101 as i64 {
-    if (ld_u8(src,2 as i64) as i64)==97 as i64 {
-     if (ld_u8(src,3 as i64) as i64)==114 as i64 {
-      if (ld_u8(src,4 as i64) as i64)==101 as i64 {
-       if (ld_u8(src,5 as i64) as i64)==114 as i64 {
-        if (ld_u8(src,6 as i64) as i64)==32 as i64 { src=src+7 as u64; len=len-7 as i64; }
+    if (ld_u8(src,2 as u64) as i64)==97 as i64 {
+     if (ld_u8(src,3 as u64) as i64)==114 as i64 {
+      if (ld_u8(src,4 as u64) as i64)==101 as i64 {
+       if (ld_u8(src,5 as u64) as i64)==114 as i64 {
+        if (ld_u8(src,6 as u64) as i64)==32 as i64 { src=src+7 as u64; len=len-7 as i64; }
        }
       }
      }
