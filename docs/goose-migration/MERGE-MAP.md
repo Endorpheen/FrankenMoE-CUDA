@@ -100,3 +100,16 @@ next full rebuild.
 2. Rebuild `libggml-base`/`libggml-cpu` from the staged patch set (EXP248-265) and relink a candidate.
 3. Hand-integrate the four `server-context.cpp` forks and the `server-queue.cpp` patch.
 4. Only then re-run the Apex profile, with Igor's agreement, to see whether `e68df05b` still holds.
+
+## Correction on `llama-moe-cache.cpp` and `fg150`
+
+The earlier line said the newest copy "has lost `fg150_`". Half of that was a measurement artefact of my own: the EXP150 integration uses
+`fg150_cache_call`, and my symbol scan required a letter directly after the three digits, so it never matched `fg150_cache`. The EXP150 variant
+is real and integrates the same loops through a whole-cache RPC call.
+
+What decides the question is the deployed candidate, and it settles it: `libggml-cpu` and `libllama` in the stage contain **zero** references to
+`fg150_cache` as well as zero `fg150_`. So the older integration was never in the candidate, and adopting the EXP262/263 copy removes nothing
+that shipped -- it adds admission and copy decisions where the candidate had none.
+
+That is what was done: `src/llama-moe-cache.cpp` now carries the EXP265 copy, and the library gained `fg262a` (2 entry points) and `fg263c`
+(6), with the gates read from `GGML_GOOSE_MOE_CACHE_ADMIT` and `GGML_GOOSE_MOE_CACHE_COPY`.
