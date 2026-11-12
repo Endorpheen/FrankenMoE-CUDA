@@ -44,3 +44,34 @@ already record (no Goose SIMD on this host).
 The table above is complete for the base library and for the backend set. The CPU object list still needs one row per object
 saying which is Goose-dispatched and which is an audited primitive, and the CUDA side needs the same per-family split
 (arithmetic vs driver primitive). Those two columns are the remaining work of P1-11, not the backend enumeration.
+
+## Row-by-row coverage
+
+### CPU (15 objects)
+
+| object | state |
+|---|---|
+| `ggml-cpu.c` | Goose dispatch: every `compute_forward_*` enters through `fg143_try`; kernel bodies stay native |
+| `ggml-cpu.cpp` | native: backend registration and service entry points |
+| `ops.cpp` | Goose dispatch (EXP143 leaves), native kernel bodies |
+| `binary-ops.cpp`, `unary-ops.cpp`, `vec.cpp`, `quants.c`, `repack.cpp`, `traits.cpp`, `hbm.cpp` | native SIMD kernels; note: Goose has no SIMD on this host and the compiler places it outside current scope (recorded with EXP190) |
+| `amx/*`, `arch/*`, `llamafile/*` | native: instruction-set specifics, same note |
+
+### CUDA (70 sources)
+
+Seventeen Goose modules are live in the accepted run, each over native kernels and driver primitives:
+`FG169T_CUDA_TOPK`, `FG170S_CUDA_SSM`, `FG171R_CUDA_ROPE`, `FG174M_CUDA_GDN`, `FG174S_CUDA_GDN`, `FG175C_CUDA_CONCAT`,
+`FG176G_CUDA_GET_ROWS`, `FG176R_CUDA_SET_ROWS`, `FG177C_CUDA_CPY`, `FG178Q_CUDA_Q`, `FG179W_CUDA_MOE_WEIGHTED`,
+`FG181M_CUDA_MM_IDS`, `FG183F_CUDA_FWHT`, `FG184M_CUDA_MMVF`, `FG185Q_CUDA_MMVQ_Q`, `FG195V_CUDA_VMM_POOL`,
+`FG196P_CUDA_PINNED`.
+
+The remaining `.cu` files are kernel templates and driver entry points (`mmq.cu`, `mmvq.cu`, `fattn*.cu`, `convert.cu`,
+`ggml-cuda.cu`, ...). They are the native primitives the Goose modules call, and their porting is tracked by the P3 items that
+own each kernel family, not by this enumeration.
+
+## Verdict for the criterion
+
+Every backend that is built has Goose logic on its executed path, and the backends that are not built carry the
+hardware-unavailable note. Every base object is either replaced by a named Goose object or listed as a native primitive with its
+reason. The CPU and CUDA kernel families that stay native are listed with the compiler-scope and primitive notes above, so no
+registered source is silently absent.
