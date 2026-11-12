@@ -8,7 +8,7 @@ pin = json.loads((F / 'runtime/compiler/current.json').read_text())
 C = Path(pin['compiler'])
 assert hashlib.sha256(C.read_bytes()).hexdigest() == pin['sha256'], 'compiler pin mismatch'
 
-NAMES = ['run_from_slot', 'run_from_fills', 'stats_class', 'fill_bytes']
+NAMES = ['run_from_slot', 'run_from_fills', 'run_from_pairs', 'stats_class', 'fill_bytes']
 
 
 def body(g, m):
@@ -53,7 +53,7 @@ for name, fn in zip(NAMES, called):
     wire = [n for n in names if n != 'base']
     call = ', '.join(wire + (['0'] if names[-1] == 'base' else []))
     wparams = ', '.join(p for p in params if p.split()[-1] != 'base')
-    wrappers.append(f'static int64_t {prefix}{name}({wparams}){{return {prefix}{fn}({call});}}')
+    wrappers.append(f'int64_t {prefix}{name}({wparams}){{return {prefix}{fn}({call});}}')
 
 (S / 'copy_decisions-functions.c').write_text(text + '\n' + '\n'.join(wrappers) + '\n')
 (E / 'emission.json').write_text(json.dumps(dict(

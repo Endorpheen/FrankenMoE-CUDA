@@ -1,0 +1,11 @@
+{
+  "added": [
+    "fg263c_enabled",
+    "fg263c_run_from_pairs",
+    "fg263c_run_from_slot",
+    "fg263c_stats_class"
+  ],
+  "removed": [],
+  "native_count": 69,
+  "goose_count": 73
+}

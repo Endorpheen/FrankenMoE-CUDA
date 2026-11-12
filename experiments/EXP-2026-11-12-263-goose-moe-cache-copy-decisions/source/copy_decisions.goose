@@ -41,6 +41,18 @@ fn run_from_fills(expert:u64, slot:u64, i:i64, n_fills:i64) -> i64 {
     n
 }
 
+// copy: same run over the interleaved fill records the native code keeps, expert at +0 and slot at +4.
+fn run_from_pairs(pairs:u64, i:i64, n_fills:i64) -> i64 {
+    ensure(i >= 0 as i64 && i < n_fills, 14);
+    let e0:i64 = ld_i32(pairs, i*8 as i64);
+    let s0:i64 = ld_i32(pairs, i*8 as i64 + 4 as i64);
+    var n:i64 = 1 as i64;
+    while i + n < n_fills && ld_i32(pairs, (i + n)*8 as i64) == e0 + n && ld_i32(pairs, (i + n)*8 as i64 + 4 as i64) == s0 + n {
+        n = n + 1 as i64;
+    }
+    n
+}
+
 // stats bucket: 0 = small, 1 = large.
 fn stats_class(n_ids:i64, n_expert_used:i64) -> i64 {
     ensure(n_ids >= 0 as i64 && n_expert_used >= 0 as i64, 12);
@@ -64,6 +76,7 @@ fn fill_bytes(expert:u64, slot:u64, n_fills:i64, expert_size:i64) -> i64 {
 fn main(){
     run_from_slot(0 as u64, 0 as i64, 0 as i64);
     run_from_fills(0 as u64, 0 as u64, 0 as i64, 1 as i64);
+    run_from_pairs(0 as u64, 0 as i64, 1 as i64);
     stats_class(0 as i64, 1 as i64);
     fill_bytes(0 as u64, 0 as u64, 1 as i64, 1 as i64);
 }

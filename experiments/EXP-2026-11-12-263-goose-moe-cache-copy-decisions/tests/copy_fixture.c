@@ -29,6 +29,12 @@ static int64_t ref_run_fills(const int32_t * expert, const int32_t * slot, int64
     return n;
 }
 
+static int64_t ref_run_pairs(const int32_t * pairs, int64_t i, int64_t n) {
+    int64_t k = 1;
+    while (i + k < n && pairs[(i + k)*2] == pairs[i*2] + k && pairs[(i + k)*2 + 1] == pairs[i*2 + 1] + k) k++;
+    return k;
+}
+
 static int64_t ref_stats(int64_t n_ids, int64_t n_expert_used) { return n_ids <= 8 * n_expert_used ? 0 : 1; }
 
 static int64_t ref_fill_bytes(const int32_t * expert, const int32_t * slot, int64_t n_fills, int64_t expert_size) {
@@ -80,6 +86,14 @@ int main(void) {
         case_fills("fills last",         ex, sl, 6, 5, 1);
         eq("fill_bytes 60", fg263c_fill_bytes((uint64_t) (uintptr_t) ex, (uint64_t) (uintptr_t) sl, 6, 10), 60);
         eq("fill_bytes 30 ref", ref_fill_bytes(ex, sl, 6, 10), 60);
+    }
+    {
+        struct { int32_t expert; int32_t slot; } pr[5] = { {2,0}, {3,1}, {4,2}, {9,7}, {10,9} };
+        eq("pairs run of three", fg263c_run_from_pairs((uint64_t)(uintptr_t) pr, 0, 5), 3);
+        eq("pairs expert jump",  fg263c_run_from_pairs((uint64_t)(uintptr_t) pr, 3, 5), 1);
+        eq("pairs slot gap",     fg263c_run_from_pairs((uint64_t)(uintptr_t) pr, 4, 5), 1);
+        eq("pairs ref", ref_run_pairs((const int32_t *) pr, 0, 5), 3);
+        eq("pairs ref jump", ref_run_pairs((const int32_t *) pr, 3, 5), 1);
     }
     eq("stats small at bound", fg263c_stats_class(8, 1), 0);
     eq("stats large above",    fg263c_stats_class(9, 1), 1);
