@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:14:40.377230+00:00",
+  "updated_at": "2026-11-12T01:17:58.259272+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
@@ -327,6 +327,36 @@
       "source": "runtime/reconstructed/build/run-metrics-pinoff/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r20-pinning-on-repeat",
+      "label": "Pinning on, repeat 1 (accepted)",
+      "at": "2026-11-12T01:16:13.208528+00:00",
+      "prefill_tok_s": 2369.8,
+      "decode_tok_s": 23.56,
+      "ram_mib": null,
+      "vram_mib": 6408,
+      "configuration": "same argv; pinning on",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-ab-on1/metrics.json",
+      "diagnostic": false,
+      "accepted": true
+    },
+    {
+      "id": "r21-pinning-off-repeat",
+      "label": "Pinning off control, repeat 1",
+      "at": "2026-11-12T01:16:43.946408+00:00",
+      "prefill_tok_s": 1655.6,
+      "decode_tok_s": 23.96,
+      "ram_mib": null,
+      "vram_mib": 6408,
+      "configuration": "same argv; GGML_MMAP_EXPERT_PIN=0",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-ab-off1/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -406,6 +436,14 @@
       "kind": "speedup",
       "detail": "pin_mmap_experts ported into the full 307-module candidate. Paired A/B: 1619.6 without, 2337.3 with. No C++ fallback, no module dropped.",
       "run_id": "r18-pinning-on"
+    },
+    {
+      "id": "e11",
+      "at": "2026-11-12T01:17:58.259272+00:00",
+      "title": "Эффект pinning воспроизведён",
+      "kind": "speedup",
+      "detail": "Repeat: on 2369.8 / 2361.2, off 1655.6 / 1645.9. +43-44% prefill. The INFO log line is absent, so only the paired A/B counts.",
+      "run_id": "r20-pinning-on-repeat"
     }
   ]
 }
