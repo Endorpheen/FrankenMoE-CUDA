@@ -914,14 +914,14 @@
       "id": "P3-10",
       "phase": "P3",
       "title": "Port dense CUDA GEMM/vector and cuBLAS dispatch policy",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/mmf*",
         "ggml/src/ggml-cuda/mmvf*",
         "ggml/src/ggml-cuda/out-prod*"
       ],
       "acceptance": "Dense kernels and shape/precision/dispatch policy Goose; cuBLAS allowed only audited external primitive with all owned orchestration ported.",
-      "evidence": "EXP203 transfers the dense-path dispatch decision ggml_cuda_should_use_mmq (mmq.cu:355-481) and mmq_type_supported to Goose: the 22-type support set, NVIDIA/AMD/MUSA branches, the 48 KiB shared-memory floor, the 64/128/256 batch boundaries and the two GGML_CUDA_FORCE_* switches. Device facts arrive as arguments. Live: `FG203D_MMQ_DISPATCH calls=4679`, 2539.36/25.65, tokens and all 128 probabilities equal. Gate 593,237 checks/0 failures against a transcription of the native body; it caught VEGA returning 0 instead of n_experts>0. Remaining: cuBLAS dispatch policy, out-prod, and the dense kernels themselves. Dense vector path now closed: EXP184 transferred `mul_mat_vec_f` for float sources (one destination column, no fusion), EXP287 added the half and bfloat16 branches to the same Goose body -- 3 696 destination values bit-identical against a verbatim native copy, host block-size/shared/grid plan gated separately, 8/8 mutations caught. EXP288 closes the last dense item, out-prod: its 20-line pointer kernel is bit-identical on 3 519 pointers and its three-branch cuBLAS policy (branch, lda/ldb/ldc, op, batch, strides, pointer geometry, seven asserts) is gated separately, 10/10 mutations caught; cuBLAS stays an external primitive. All of it is OFF_PATH and not linked into the shipped DSO.",
+      "evidence": "EXP203 transfers the dense-path dispatch decision ggml_cuda_should_use_mmq (mmq.cu:355-481) and mmq_type_supported to Goose: the 22-type support set, NVIDIA/AMD/MUSA branches, the 48 KiB shared-memory floor, the 64/128/256 batch boundaries and the two GGML_CUDA_FORCE_* switches. Device facts arrive as arguments. Live: `FG203D_MMQ_DISPATCH calls=4679`, 2539.36/25.65, tokens and all 128 probabilities equal. Gate 593,237 checks/0 failures against a transcription of the native body; it caught VEGA returning 0 instead of n_experts>0. Remaining: cuBLAS dispatch policy, out-prod, and the dense kernels themselves. Dense vector path now closed: EXP184 transferred `mul_mat_vec_f` for float sources (one destination column, no fusion), EXP287 added the half and bfloat16 branches to the same Goose body -- 3 696 destination values bit-identical against a verbatim native copy, host block-size/shared/grid plan gated separately, 8/8 mutations caught. EXP288 closes the last dense item, out-prod: its 20-line pointer kernel is bit-identical on 3 519 pointers and its three-branch cuBLAS policy (branch, lda/ldb/ldc, op, batch, strides, pointer geometry, seven asserts) is gated separately, 10/10 mutations caught; cuBLAS stays an external primitive. All of it is OFF_PATH and not linked into the shipped DSO. 2026-11-13 CLOSED (EXP427): the two remaining dispatch predicates, ggml_cuda_should_use_mmf and _mmvf, are Goose in source/dispatch.goose. Oracle is the exported native function in libggml-cuda.so, not a transcription: 400000 cases, 0 failures across F32/F16/BF16/Q4_K/Q8_0, NVIDIA 890/900 and CDNA1/2/3/RDNA3/3.5/4, random shapes/ne11/alignment/ids; 5/5 mutations (164/145/1096/108/16). Dense vector EXP184/287, out-prod/cuBLAS policy EXP288, should_use_mmq EXP203. The predicates are OFF_PATH for the current shipped DSO, ready for the next unified rebuild. mma/ldmatrix and cuBLAS remain the declared primitive boundary.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3487,6 +3487,10 @@
     {
       "event": "P8-10 closed on the Apex route corpus: all audited routes/methods have evidence, 501 routes are explicit contracts, end-to-end request/stream/cancel/reuse and concurrency pass; Qwen assigned C1-05.",
       "checkpoint": "81ce8665"
+    },
+    {
+      "event": "P3-10 closed (EXP427): should_use_mmf/_mmvf ported to Goose and gated 400000/0 against the exported native functions, 5/5 mutations; dense vector/out-prod/cuBLAS evidence retained, MMA/cuBLAS stay primitive.",
+      "checkpoint": "81057a0a"
     }
   ],
   "batches": [
@@ -4377,10 +4381,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T21:27:30.438000+00:00",
+  "updated_at": "2026-11-12T21:35:01.295828+00:00",
   "status_totals": {
-    "DONE": 69,
-    "IN_PROGRESS": 24,
+    "DONE": 70,
+    "IN_PROGRESS": 23,
     "PARTIAL": 3,
     "TODO": 56
   }
