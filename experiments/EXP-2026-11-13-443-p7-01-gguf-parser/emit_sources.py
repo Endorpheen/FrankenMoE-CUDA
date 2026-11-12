@@ -17,10 +17,13 @@ qual = qual.replace('int main(', 'int fg443_generated_main(')
 (S / 'gguf-qualified.c').write_text(qual)
 
 entries = [x for x in re.findall(r'\b(gg_function_\d+)\(', g[g.rfind('static void gg_function_0('):]) if x != 'gg_function_0']
-assert len(entries) >= 1, entries
+assert len(entries) == 2, entries
+lookup_fn = entries[0]
+parse_fn = entries[1]
 (S / 'gguf-unit.c').write_text(
     '#include <stdint.h>\n#include "gguf-qualified.c"\n'
-    'int64_t fg443_parse(uint64_t buf,int64_t len,uint64_t out,int64_t cap){return fg443_' + entries[0][3:] + '(buf,len,out,cap,0);}\n')
+    'int64_t fg443_lookup(uint64_t buf,int64_t len,uint64_t kp,int64_t kl,uint64_t out,int64_t cap){return fg443_' + lookup_fn[3:] + '(buf,len,kp,kl,out,cap,0);}\n'
+    'int64_t fg443_parse(uint64_t buf,int64_t len,uint64_t out,int64_t cap){return fg443_' + parse_fn[3:] + '(buf,len,out,cap,0);}\n')
 (E / 'emission.json').write_text(json.dumps(dict(
     status='PASS', compiler=pin, entries=entries,
     generated_sha256=hashlib.sha256(g.encode()).hexdigest()), indent=2) + '\n')

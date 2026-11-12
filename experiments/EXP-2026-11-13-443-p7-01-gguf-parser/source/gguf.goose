@@ -149,4 +149,90 @@ fn parse(buf:u64,len:i64,out:u64,cap:i64)->i64{
  return o/(8 as i64);
 }
 
-fn main(){parse(0 as u64,0 as i64,0 as u64,0 as i64);}
+
+fn key_eq(buf:u64,pos:i64,n:i64,kp:u64,kl:i64)->bool{
+ if n!=kl {return false;}
+ var i:i64=0 as i64;
+ while i<n{
+  if ld_u8(buf,(pos+i) as u64)!=ld_u8(kp,(i as u64)){return false;}
+  i=i+(1 as i64);
+ }
+ return true;
+}
+
+// Returns 1 and writes five words: type, value offset, length/count, elem type, 0.
+// Returns 0 if the key is absent, negative on malformed input.
+fn lookup(buf:u64,len:i64,kp:u64,kl:i64,out:u64,cap:i64)->i64{
+ if len < 24 as i64 {return -(1 as i64);}
+ if ld_u32(buf,0 as u64) != 1179993927 as u32 {return -(2 as i64);}
+ let version:i64=(ld_u32(buf,(4 as i64) as u64) as i64);
+ if version != 2 as i64 && version != 3 as i64 {return -(3 as i64);}
+ let kv_count:i64=ld_u64(buf,(16 as i64) as u64) as i64;
+ if kv_count < 0 as i64 {return -(4 as i64);}
+ if kv_count > 10000000 as i64 {return -(4 as i64);}
+ var pos:i64=24 as i64;
+ var k:i64=0 as i64;
+ while k<kv_count{
+  if pos+(8 as i64) > len {return -(10 as i64);}
+  let n:i64=ld_u64(buf,pos as u64) as i64;
+  if n < 0 as i64 {return -(11 as i64);}
+  if pos+(8 as i64)+n+(4 as i64) > len {return -(11 as i64);}
+  if key_eq(buf,pos+(8 as i64),n,kp,kl){
+   pos=pos+(8 as i64)+n;
+   let vt:i64=(ld_u32(buf,pos as u64) as i64);
+   pos=pos+(4 as i64);
+   if vt == 8 as i64 {
+    if pos+(8 as i64) > len {return -(12 as i64);}
+    let sl:i64=ld_u64(buf,pos as u64) as i64;
+    if sl < 0 as i64 {return -(12 as i64);}
+    if pos+(8 as i64)+sl > len {return -(12 as i64);}
+    w64(out,cap,0 as i64,8 as u64);
+    w64(out,cap,8 as i64,(pos+(8 as i64)) as u64);
+    w64(out,cap,16 as i64,sl as u64);
+    w64(out,cap,24 as i64,0 as u64);
+    w64(out,cap,32 as i64,0 as u64);
+    return 1 as i64;
+   }
+   if vt == 9 as i64 {
+    if pos+(12 as i64) > len {return -(13 as i64);}
+    let et:i64=(ld_u32(buf,pos as u64) as i64);
+    let cnt:i64=ld_u64(buf,(pos+(4 as i64)) as u64) as i64;
+    if cnt < 0 as i64 {return -(13 as i64);}
+    if cnt > 100000000 as i64 {return -(13 as i64);}
+    w64(out,cap,0 as i64,9 as u64);
+    w64(out,cap,8 as i64,(pos+(12 as i64)) as u64);
+    w64(out,cap,16 as i64,cnt as u64);
+    w64(out,cap,24 as i64,et as u64);
+    w64(out,cap,32 as i64,0 as u64);
+    return 1 as i64;
+   }
+   var sz:i64=0 as i64;
+   if vt == 0 as i64 || vt == 1 as i64 || vt == 7 as i64 {sz=1 as i64;}
+   if vt == 2 as i64 || vt == 3 as i64 {sz=2 as i64;}
+   if vt == 4 as i64 || vt == 5 as i64 || vt == 6 as i64 {sz=4 as i64;}
+   if vt == 10 as i64 || vt == 11 as i64 || vt == 12 as i64 {sz=8 as i64;}
+   if sz == 0 as i64 {return -(14 as i64);}
+   if pos+sz > len {return -(14 as i64);}
+   w64(out,cap,0 as i64,vt as u64);
+   w64(out,cap,8 as i64,pos as u64);
+   w64(out,cap,16 as i64,sz as u64);
+   w64(out,cap,24 as i64,0 as u64);
+   w64(out,cap,32 as i64,0 as u64);
+   return 1 as i64;
+  }
+  pos=pos+(8 as i64)+n;
+  let vt:i64=(ld_u32(buf,pos as u64) as i64);
+  pos=pos+(4 as i64);
+  if vt == 9 as i64 {
+   pos=skip_array(buf,len,pos);
+   if pos < 0 as i64 {return pos;}
+  }else{
+   pos=skip_one(buf,len,pos,vt);
+   if pos < 0 as i64 {return pos;}
+  }
+  k=k+(1 as i64);
+ }
+ return 0 as i64;
+}
+
+fn main(){lookup(0 as u64,0 as i64,0 as u64,0 as i64,0 as u64,0 as i64); parse(0 as u64,0 as i64,0 as u64,0 as i64);}
