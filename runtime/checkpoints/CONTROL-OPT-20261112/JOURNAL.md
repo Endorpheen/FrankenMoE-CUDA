@@ -205,3 +205,22 @@ Since disabling every Goose decision group changed nothing, the cost is most lik
 guarded by an `enabled()` switch - i.e. in the copied sources themselves or in how they are compiled. Next step: build
 the same `changed` list straight from the flint tree (no copied sources) and compare, then swap the list back one file
 at a time.
+
+## Root cause: the expert-pinning mechanism is missing from the working candidate
+
+Symbol-level comparison of the three libraries settled it: `llama_model::pin_mmap_experts` and the
+`llama_mmap_expert_pin` helpers are present in `libllama-exp244` and **absent** in both our full port (`exp371`) and in
+the native build from the flint objects. That is the whole asymmetry - it is not the Goose modules, not the ggml stack,
+and not the compiler.
+
+The mechanism lives in `LlamaServer/franken-exp090-deepseek41/source/src/llama-model.cpp` (also `exp091-pinned-moe-tail`)
+and is gated by `GGML_MMAP_EXPERT_PIN` (on by default). It walks `tensors_by_name`, keeps only tensors with
+`ne[2] == n_expert` that live in a host/mmap buffer, merges the ranges to page boundaries, and registers them as host
+buffers with the GPU backend. With `--cpu-moe` the expert pages then stay resident and the CPU no longer takes faults on
+every expert read; our candidate silently lost that, which matches +58% prefill and 1818 MiB of VRAM at once.
+
+This is a restoration of lost work, not a rollback: the fix is to port `pin_mmap_experts` plus its helpers into our SRC
+and rebuild, keeping all 307 Goose modules. `GGML_MMAP_EXPERT_PIN=0` will remain the disable switch, per the default-on
+rule.
+
+Next: port the mechanism (llama-model.h/.cpp, llama-context.cpp call site, llama-model-loader pieces) and measure.
