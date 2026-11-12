@@ -38,3 +38,28 @@ Igor, not something to switch on silently.
 Nothing in the build changed for this variant - it is one CLI flag. Remove `--moe-cache-mib` to return to the accepted
 profile. Build backups for the other work: `build/libllama-exp371-prepin.so.0.7.0`, `/tmp/libggml-base.pre087`,
 `/tmp/libggml-cuda.pre101`, `/tmp/llama-kv-cache.cpp.pre101`.
+
+## Numeric analysis (why the two paths separate)
+
+Measured with two clean arms on the same build (the earlier comparison had a script bug that leaked the flag into both
+arms; that reading is discarded).
+
+Token-level: the first 20 chosen tokens are **identical** in both arms; they separate at position 20. Logit distance on
+the identical prefix:
+
+    idx  max|dlogp| over shared top-5   chosen token
+      0        1.2848                     same
+      2        2.0766                     same
+      5        0.5878                     same
+     10        0.6099                     same
+     15        0.2705                     same
+     19        1.1545                     same
+
+So the difference is not noise and not a storage-precision loss: `llama-moe-cache` keeps experts in the original tensor
+type (`g.ref.back()->type`), not fp16. What changes is the **compute engine**: without the cache the expert matvec runs
+on our CPU kernels, with the cache on the GPU kernels. Different summation order over 40 layers x 256 experts compounds
+to a 0.2-2.0 logit spread, which at `temperature=1.0` eventually selects the neighbouring branch.
+
+That is the same class as `--n-cpu-moe 34` (device placement changes rounding), which was rejected for the same reason.
+This does not prove quality loss, and it does not prove quality preservation either - it is an established cause, not a
+waiver.
