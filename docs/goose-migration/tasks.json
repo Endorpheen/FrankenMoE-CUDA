@@ -2067,7 +2067,7 @@
         "tools/server/server-schema.cpp"
       ],
       "acceptance": "Every registered endpoint has schema/status/body differential test; embeddings/rerank numerical contract and tokenizer bytes checked.",
-      "evidence": "",
+      "evidence": "2026-11-12 inventory with a live probe (EXP-282, docs/goose-migration/P8-05-INVENTORY.md): /tokenize returns [9419,1814] for 'Hello world' and /detokenize round-trips exactly -- the tokenizer core is already Goose (APEX.TOKENIZER), the endpoint is JSON marshalling; /apply-template serves ChatML through the vendored Jinja engine; /infill serves but the model is not FIM so that branch is not exercised; /props reports n_ctx 262144 and a template. /embeddings and /rerank return 501 (flags off, and the model has no pooling/reranker head), so those parts are dormant for this profile. Closing needs a scope decision: tokenize-only, or bring an embedding model and flag.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
