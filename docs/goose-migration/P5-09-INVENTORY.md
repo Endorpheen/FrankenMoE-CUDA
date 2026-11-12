@@ -55,3 +55,18 @@ Checked before starting, so the cost is known:
 
 So the remaining work is: copy-in/copy-out bridge, call sites behind a default-on switch, relink, and an A/B at a small
 context. That is the same shape as EXP-264/265, with the extra first step of marshalling the cell arrays.
+
+## Decision 2026-11-12: shift wiring deferred, with the cost written down
+
+The integration is not a copy of the EXP-264/265 pattern. The module EXP-327 publishes a *journal* (cells shifted, head
+written, per-sequence index unlinked/relinked), and replaying it needs access to three private structures: `pos`,
+`shift`, and the `seq_pos` index (`llama-kv-cells.h:493-532`, `std::set<std::pair<llama_pos, uint32_t>>` per sequence).
+A faithful integration therefore needs new accessors on `llama_kv_cells` plus either journal replay or an index rebuild
+after the call -- a change to a core class, not a call-site swap.
+
+Against that cost: the path is dormant on the accepted profile (`-c 262144`, 32K prompt, no shift), so the work would
+not change any measured Apex result. The decision is to defer it until the profile that exercises shift (a small-context
+configuration) is part of an accepted setup, rather than change a core class for a path the product does not run.
+
+What would unban it: an agreed small-context profile, or a decision that shift ownership is required for a future
+configuration. Both are owner decisions; the module itself is gated (EXP-327, 8/8 mutations) and stays ready.
