@@ -2050,7 +2050,7 @@
         "tools/server/server-context.cpp"
       ],
       "acceptance": "Native API compatibility suite for stream/nonstream completion/chat/responses,token usage,finish reasons,errors and cancellation.",
-      "evidence": "",
+      "evidence": "2026-11-12: the per-token stop decision is ported and gated (EXP-276) -- find_stopping_strings' tail-window search with the earliest-position rule and word recording, plus string_find_partial_stop's prefix-length walk. Fixture 9 checks, 0 failures; a latest-position mutation is caught once a discriminating case is present, and two fixture lessons are recorded (a match outside the tail window proves nothing; the earliest/latest distinction needs two words matching at different positions). Integration into find_stopping_strings, relink and an A/B with an anti-prompt request are next; the accepted request does not stop on a sequence.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
