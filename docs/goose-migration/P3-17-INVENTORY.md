@@ -87,3 +87,33 @@ Revised remainder for P3-17:
 
 So the item is closer than the registry says, and the remaining native part is now narrow and specific: reset and async
 lifetimes, plus the stale clause.
+
+## Free/unregister are Goose by code, unproven by witness
+
+Checked the teardown side:
+
+| symbol | call site |
+|---|---|
+| `fg196p_plan_unregister` | `shared-cuda.cu:6039` and `:6054` inside `ggml_backend_cuda_unregister_host_buffer` |
+| `fg195v_plan_free` | `shared-cuda.cu:764`, computing `pool_used` from the freed pointer |
+
+So the return path is also decided by Goose: both the host-buffer deregistration and the VMM free accounting go through plan
+functions, not native bookkeeping.
+
+**But**: the accepted run log shows only `FG195V_CUDA_VMM_POOL` and `FG196P_CUDA_PINNED`, each once. There is no witness for
+`fg195v_plan_free` or `fg196p_plan_unregister` in the captured run, which is consistent with teardown output being lost when
+the server is stopped, but it means the free side is "in Goose by code, not proven by execution".
+
+Revised remainder for P3-17, final for this pass:
+
+| aspect | owner | evidence |
+|---|---|---|
+| reserve/mapping/actual size (pinned host) | Goose | witness |
+| fail decision (zero plan) | Goose | code |
+| pool extent and usage (VMM) | Goose | witness |
+| free accounting and host deregistration | Goose | code only |
+| device reset, asynchronous lifetimes | native | - |
+| "pinned ring" clause | absent | not present |
+
+Nothing reclassified to done: the free side needs a teardown witness, reset and async lifetimes are still native, and the
+stale clause needs a decision.
