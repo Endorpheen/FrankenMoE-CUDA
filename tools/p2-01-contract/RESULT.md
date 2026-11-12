@@ -80,3 +80,24 @@ same association as the wide part, then regenerate and rerun this probe. No nati
 
 Why it was not rushed here: regenerating the module needs the generator plus a rebuild, and this must be followed by the
 same 19-case probe and an Apex regression. P2-01 stays PARTIAL with a precise, small, reusable fix identified.
+
+## Blocker for the SILU fix: no regeneration script in the tree
+
+Checked before touching anything:
+
+- `pointwise.goose` holds the fix point (`silu()` falls back to `expf`; `silu_compat` uses `avx2_exp_compat`),
+- the experiment ships only generated artefacts (`generated/cpu-backend.c`, `cpu-control.c`, ...), and `cpu-backend.c`
+  contains no `silu` symbol at all - the activation is inlined as `expf` expressions (e.g. line 3779),
+- no generator script for this module exists under the experiment (`fg143_generate.py` is not present; earlier listing
+  shows only fixtures, contract scripts and the generated outputs).
+
+So the one-expression fix cannot be produced locally without re-running the Goose compiler to regenerate
+`cpu-backend.c`. The compiler binary (v61) is available, but regenerating and rebuilding `libggml-cpu` touches the accepted
+Apex path, and per the standing rules the compiler agent is not to be invoked without Igor's permission.
+
+Recorded as a blocker with two exits:
+1. permission to run a regenerate-and-rebuild pass (isolated copy first, probe after), then P2-01 can reach 19/19;
+2. otherwise record the explicit contract "SILU scalar tail may differ by 1 ULP from native; the wide 8-lane path is
+   byte-exact" and accept that as the compatibility contract the criterion allows.
+
+Until one of these is chosen, P2-01 stays PARTIAL and no claim of exactness is made for SILU.
