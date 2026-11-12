@@ -25,3 +25,32 @@ So the failure is most likely in the Hadamard/FWHT area (EXP320 generator, EXP33
 than in the layout arithmetic, and the immediate next step is to identify which module raises the assertion rather than to
 guess. A selective switch bisect is the tool: the FWHT and rotation switches can be turned off one at a time, which the
 earlier "all switches off" experiment could not do because the server refuses to start with everything disabled.
+
+## Localization: the asserting module is fg143 in libggml-cpu
+
+A first attempt under gdb appeared to succeed, but it was false evidence: without `LD_LIBRARY_PATH` the binary's RPATH
+resolved to an older variant directory (`franken-goose-exp150-expert-registry-20261107/variants/cpu-backend/run`), a
+different build entirely. With `LD_LIBRARY_PATH` pinned to the stage, the failure reproduces and the backtrace is:
+
+    gg_fail                              libggml-cpu.so.0
+    gg_function_11.constprop             libggml-cpu.so.0
+    gg_function_1.constprop              libggml-cpu.so.0
+    fg143_compute                        libggml-cpu.so.0
+    fg143_try.part                       libggml-cpu.so.0
+
+Sixteen identical failures appear because sixteen worker threads reach the assertion, and each `gg_fail` calls `exit(1)`
+-- which is also why the server dies without printing a bind message.
+
+## Which side triggers it
+
+| cache K / V | assertions | listening |
+|---|---|---|
+| q8_0 / q8_0 | 16 | no |
+| q8_0 / f16 | 16 | no |
+
+Quantized **K** alone is enough. That points at the K rotation path, which is built only when K is quantized
+(`attn_rot_k` requires `ggml_is_quantized(type_k)`), rather than at the V layout.
+
+The next step is to identify the assertion inside fg143's compute for that op -- either by rebuilding the CPU module with
+symbols and mapping the failing program counter to its generated function, or by dumping the op name that fg143 dispatches
+when the rotation tensor first appears.
