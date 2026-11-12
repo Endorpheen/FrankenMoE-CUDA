@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:08:03.682311+00:00",
+  "updated_at": "2026-11-12T02:09:39.387398+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: cache is the decode lever (2048 34.03/5242, 4096 40.78/7292), prefill flat. Divergence is prompt-dependent: on an unrelated prompt the branches split at token 1 while logprob stays level, so the paths are numerically close but not bit-identical.",
+  "current": "Stage 2: cache remains the decode lever (2048 34.03/5242, 4096 40.78/7292). MMQ precision q4/q8 both give the same divergent hash, so bit equality is not recoverable by tuning; divergence is inherent to GPU-side experts.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -799,6 +799,13 @@
       "title": "Расхождение зависит от промпта",
       "kind": "insight",
       "detail": "Second prompt: common prefix 1 of 128, mean logprob -0.0111 vs -0.0096 (cache level/better). The 20-token prefix was a property of the repetitive 32K prompt. Not bit-identical, but no quality loss measured."
+    },
+    {
+      "id": "e26",
+      "at": "2026-11-12T02:09:39.387398+00:00",
+      "title": "Бит-совместимость недостижима настройкой",
+      "kind": "insight",
+      "detail": "GGML_CUDA_MMQ_PREC q4/q8/default all produce 9d90a010 with the cache on. Precision is not the cause; GPU-side expert evaluation is. Branch closed."
     }
   ]
 }
