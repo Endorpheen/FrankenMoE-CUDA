@@ -256,3 +256,15 @@ So the accepted effect is +43-44% prefill and holds across repeats; decode stays
 `registered ... mapped expert ranges` INFO line does not appear in the captured log even though the switch demonstrably
 changes throughput, so the log line is not usable as evidence here - the paired measurement is. This is recorded so the
 absence of that line is not misread later as "the mechanism did nothing".
+
+## Decode: not the Goose CPU kernels, not mmap
+
+Two checks on the accepted build:
+- `GGML_GOOSE_CPU_Q4K_DOT=0` -> 2378.1 / 24.48 and `GGML_GOOSE_CPU_Q6K_DOT=0` -> 2361.4 / 23.75, i.e. inside noise of
+  2365 / 23.9. The ported CPU dots are therefore not what holds decode back.
+- `--no-mmap` does not complete on this machine (the 35B model no longer fits without mmap); decode cannot be tested
+  that way here and the idea is dropped rather than forced.
+
+So decode in this profile is bounded by the `--cpu-moe` arrangement itself (expert GEMV over host memory at 8 threads),
+not by ported code. The one variant that raised decode (hybrid `--n-cpu-moe 34`, 27.76) was already rejected because it
+changes the numbers on the content check.
