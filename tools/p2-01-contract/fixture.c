@@ -151,6 +151,45 @@ int main(int argc, char ** argv) {
         ggml_free(ctx);
     }
 
+    // 5) other elementwise ops on the same special-value set
+    {
+        const int threads2[] = { 1, 8 };
+        for (int ti = 0; ti < 2; ++ti) {
+            struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+            struct ggml_context * ctx = ggml_init(p);
+            if (!ctx) abort();
+            struct ggml_tensor * ta = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, NSPEC);
+            memcpy(ta->data, a, NSPEC*sizeof(float));
+            struct ggml_tensor * cl = ggml_clamp(ctx, ta, -0.5f, 0.5f);
+            struct ggml_tensor * sc = ggml_scale(ctx, ta, 1.75f);
+            struct ggml_cgraph * g = ggml_new_graph(ctx);
+            ggml_build_forward_expand(g, cl);
+            ggml_build_forward_expand(g, sc);
+            if (ggml_graph_compute_with_ctx(ctx, g, threads2[ti]) != GGML_STATUS_SUCCESS) abort();
+            char nm[64];
+            snprintf(nm, sizeof nm, "clamp_t%d", threads2[ti]); emit(nm, (const float *) cl->data, NULL, NSPEC);
+            snprintf(nm, sizeof nm, "scale_t%d", threads2[ti]); emit(nm, (const float *) sc->data, NULL, NSPEC);
+            ggml_free(ctx);
+        }
+    }
+
+    // 6) concatenation order and padding-free copy
+    {
+        struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        struct ggml_tensor * x = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, NSPEC);
+        struct ggml_tensor * y = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, NSPEC);
+        memcpy(x->data, a, NSPEC*sizeof(float));
+        memcpy(y->data, b, NSPEC*sizeof(float));
+        struct ggml_tensor * cat = ggml_concat(ctx, x, y, 0);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, cat);
+        if (ggml_graph_compute_with_ctx(ctx, g, 8) != GGML_STATUS_SUCCESS) abort();
+        emit("concat_special", (const float *) cat->data, NULL, 2*NSPEC);
+        ggml_free(ctx);
+    }
+
     fclose(out);
     return 0;
 }

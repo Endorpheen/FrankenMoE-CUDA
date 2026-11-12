@@ -146,3 +146,30 @@ Consequence, stated plainly:
 - Any architecture that uses a bare SiLU FFN without a gate *is* exposed to the 247/1000 divergence.
 - P2-01 therefore remains PARTIAL and is now also a prerequisite for those architectures, which is exactly the
   "readiness for other models" priority rather than an Apex detail.
+
+## Second pass: two semantics defects, not ULP noise
+
+Extended the probe to CLAMP, SCALE and CONCAT (29 cases total). New findings:
+
+| case | Goose bytes | native bytes | meaning |
+|---|---|---|---|
+| clamp NaN | `000000bf` (-0.5) | `0000003f` (+0.5) | clamp picks the **opposite bound** for NaN |
+| clamp NaN (2nd payload) | `000000bf` | `0000003f` | same |
+| scale(-0) | `00000000` (+0) | `00000080` (-0) | **signed zero is lost** |
+
+Both differ at both 1 and 8 threads. CONCAT is exact.
+
+These are not rounding differences:
+- the NaN cases return a different constant with a different sign, which is a semantic divergence in the clamp selection;
+- `scale` loses the sign of zero, which breaks the IEEE-754 signed-zero contract that EXP-143's own note claims to have
+  fixed "for the clamp/OAI selection" - it evidently does not cover the scale path.
+
+## Why this matters beyond P2-01
+
+Signed zero and NaN handling are exactly the "special-value contract" the acceptance criterion names. A model that
+propagates a NaN through a clamp can see it become a finite bound value instead of staying NaN, i.e. an error silently
+turns into a number. That is a correctness issue worth recording even though no observed Apex run hits it.
+
+## Reproduce
+
+Same two binaries as above; `clamp_t1`, `clamp_t8`, `scale_t1`, `scale_t8` are the failing case names in the raw stream.
