@@ -334,14 +334,14 @@
       "id": "P1-07",
       "phase": "P1",
       "title": "Replace repacked expert matrices and all packing layouts",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cpu/repack.cpp",
         "ggml/src/ggml-cpu/arch/*/repack.cpp",
         "ggml/src/ggml-cpu/traits.cpp"
       ],
       "acceptance": "Each registered pack/trait layout round-trips and matmul matches native; raw/repack/fused dispatch liveness and tails covered.",
-      "evidence": "",
+      "evidence": "2026-11-12 ARTIFACT ROUND-TRIP (EXP-345): for every type whose quantizer is exported, quantized with the NATIVE encoder and compared the NATIVE decoder's output against the GOOSE decoder's on exactly those bytes -- artifact against port, no transcription in between. Results: Q4_K/Q5_K/Q6_K/Q2_K/Q3_K/IQ4_XS/TQ1_0/TQ2_0/IQ3_XXS/IQ2_S/IQ3_S 3328 checks each 0 failures; NVFP4 832/0; IQ4_NL and MXFP4 416/0 -- fourteen types, 37000+ comparisons, zero failures. Method note: IQ types need ggml_quantize_init first, without it the native quantizer asserts (cost one round). NOT covered: IQ2_XXS, IQ2_XS, IQ1_S, IQ1_M have no exported quantizer, so their decoders are validated only decoder-versus-decoder on random bytes (EXP320/321/325/326), which is weaker. Remaining P1-07 scope: matmul agreement across those layouts and the raw/repack/fuse variants.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 58,
@@ -4325,7 +4325,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T11:47:27.334755+00:00",
+  "updated_at": "2026-11-12T11:49:38.563637+00:00",
   "status_totals": {
     "DONE": 38,
     "IN_PROGRESS": 38,
