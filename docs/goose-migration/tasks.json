@@ -1574,13 +1574,13 @@
       "id": "P6-02",
       "phase": "P6",
       "title": "Port model object and tensor binding lifecycle",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "src/llama-model.cpp",
         "src/llama-model.h"
       ],
       "acceptance": "All model tensor ownership,backend attachment,metadata queries and unload/error cleanup implemented with ABI parity.",
-      "evidence": "2026-11-12 INVENTORY (docs/goose-migration/P6-02-INVENTORY.md). State: llama-model.cpp has no Goose hooks at all; its only differences from flint are the expert-pin include block and pin owner/mutex members (96 added, 0 removed). Surface size: 94 buft/buffer_type references, 39 ggml_backend_buffer references with 5 allocation sites, 5 metadata entry points, and the destructor/free/pin-ordering cleanup. Slices in order: (1) unload and error cleanup -- smallest, most bug-prone, testable with a failing load and the existing unload path; (2) tensor ownership and backend attachment -- the real work, extending the already-live loader decisions EXP403/EXP404 (FG404S_WEIGHT_PLACEMENT); (3) metadata queries -- pure but ABI-sensitive (snprintf would-be length, -1 with buf[0]=0, unordered index order), most likely to close as a stated native boundary. Done means each area has a module or a recorded boundary with a reason, a gate that fails under mutation, and a live witness or an explicit dormancy statement.",
+      "evidence": "2026-11-12 INVENTORY (docs/goose-migration/P6-02-INVENTORY.md). State: llama-model.cpp has no Goose hooks at all; its only differences from flint are the expert-pin include block and pin owner/mutex members (96 added, 0 removed). Surface size: 94 buft/buffer_type references, 39 ggml_backend_buffer references with 5 allocation sites, 5 metadata entry points, and the destructor/free/pin-ordering cleanup. Slices in order: (1) unload and error cleanup -- smallest, most bug-prone, testable with a failing load and the existing unload path; (2) tensor ownership and backend attachment -- the real work, extending the already-live loader decisions EXP403/EXP404 (FG404S_WEIGHT_PLACEMENT); (3) metadata queries -- pure but ABI-sensitive (snprintf would-be length, -1 with buf[0]=0, unordered index order), most likely to close as a stated native boundary. Done means each area has a module or a recorded boundary with a reason, a gate that fails under mutation, and a live witness or an explicit dormancy statement. 2026-11-12 CLOSED (EXP-303). Backend attachment is ported and live: llama-model-loader.cpp:1122-1138 asks fg404s_decide for both the no-op first-buffer case and the per-device probe loop, with weight_buft_supported as the native predicate; FG404S_WEIGHT_PLACEMENT appears in the accepted run. Tensor ownership is native by design (alloc_ctx_tensors_from_buft, no_alloc dummy buffer, host-pointer mapping, mlock) and exercised by the full 40-block load. Metadata parity measured with a direct C-API probe on both lines: 47 entries, identical FNV hash d4e54caca421a3c8 over every key/value in index order, miss -1 with buf[0]=0, truncation returns 9 with 'qwe', buf_size 0 returns 9. Cleanup parity measured: load+free exits 0 on both lines, the three invalid-GGUF fixtures give identical messages and exit 1, and the expert-pin owner is released before buffers and mmaps with buffers held by ggml_backend_buffer_ptr. Boundary: ownership, cleanup and string formatting stay native -- the categories the migration rule keeps native -- and are recorded with measured parity; the one area with a real decision is ported and live.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 416,
@@ -4325,10 +4325,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T09:46:14.211864+00:00",
+  "updated_at": "2026-11-12T09:47:39.239888+00:00",
   "status_totals": {
-    "DONE": 35,
-    "IN_PROGRESS": 38,
+    "DONE": 36,
+    "IN_PROGRESS": 37,
     "TODO": 79
   }
 }
