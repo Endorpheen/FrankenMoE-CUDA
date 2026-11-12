@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:48:53.023018+00:00",
+  "updated_at": "2026-11-12T01:56:21.273956+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2/3: accepted profile 2306/24.3 at VRAM 3190. Experimental expert-cache variant preserved: 2048 MiB gives decode 34.03 at VRAM 5242; content differs by a logit shift, cause established, awaiting a correctness decision.",
+  "current": "Stage 2: prefill plateau confirmed on this profile (fa/ubatch/batch-threads all noise around 2306). Decode 34.03 available via the experimental cache at VRAM 5242; accepted profile stays 2306/24.3/3190 with the exact output.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -22,7 +22,7 @@
       "title": "Prefill и decode",
       "state": "partial",
       "implemented": "Full port retained (307 modules). Root cause of the regression found and fixed: expert mmap pinning was missing. Paired A/B 1619.6 -> 2337.3 prefill (+44%), decode inside noise.",
-      "remaining": "Prefill 3000 and decode 30 not reached. Decode is cpu-moe bound; prefill needs the remaining ~22% from the graph/quantizer path.",
+      "remaining": "Prefill plateau at ~2306 on the agreed profile; reaching 3000 requires changing the profile (context/quantisation/hardware). Decode 30+ exists in the experimental cache variant, pending the correctness decision.",
       "dependencies": "full port preserved"
     },
     {
@@ -638,6 +638,13 @@
       "title": "Decode 34.03 при VRAM 5242",
       "kind": "insight",
       "detail": "Cache 2048 now costs 5242 MiB after EXP087/EXP101 (was 8456). Content differs by a logit shift; both continuations coherent; each arm stable. Variant saved, not enabled."
+    },
+    {
+      "id": "e18",
+      "at": "2026-11-12T01:56:21.273956+00:00",
+      "title": "Плато prefill измерено",
+      "kind": "insight",
+      "detail": "fa off 2296.3, ubatch 8192 2315.4, 16384 2310.6, tb32 2309.5 vs 2306. No switch moves prefill on this profile; 3000 needs a different profile, not tuning."
     }
   ]
 }
