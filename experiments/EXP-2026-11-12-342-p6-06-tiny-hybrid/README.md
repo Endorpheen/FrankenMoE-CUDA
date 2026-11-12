@@ -84,3 +84,27 @@ as an open discrepancy rather than inventing an explanation for it.
 
 Generate exactly the names from the `create_tensor` list, provide the `.scale`/`.input_scale` tensors, and let the shape driver settle the
 rest. The list is captured in this experiment, so the next pass starts from it rather than from another guess round.
+
+## The tiny hybrid loads, serves, and traces -- the fixture exists now
+
+After the name list was taken from the loader's own `create_tensor` log (80 entries), 15 names it no longer asked for were dropped
+(separate `ffn_gate_exps`/`ffn_up_exps` and the attention biases), the shape driver settled every remaining dimension, and one runtime
+assertion had to be fixed: `rope.dimension_sections` cannot be all zeros, so it is `[6, 6, 4, 0]` for a 16-wide head.
+
+The model now loads and serves on **both** lines:
+
+    native: listening, completion answered
+    ours:   listening, completion answered
+
+and with the traced `libllama` from EXP340 it produces a **190-node** graph whose hybrid path is visible and attributable:
+
+    cache_r_l0 (reshaped) / (view) ...   six nodes carrying the recurrent layer's cache
+    conv_output_silu                      per recurrent layer
+
+That is the fixture P6-06 asked for: small enough to assert on node by node, and small enough to read.
+
+## Remaining to close P6-06
+
+Turn the observations into assertions: for this model, layer 0 must contribute its `cache_r_l*` and conv nodes and layer 1 must not, and
+the same must hold on both lines. Generation returns an empty string because zero weights make greedy decoding pick token 0, so the
+fixture's value is the graph, not the text -- and that is what the item asks for.
