@@ -352,13 +352,13 @@
       "id": "P1-08",
       "phase": "P1",
       "title": "Replace fused and cold expert execution orchestration",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c",
         "ggml/src/ggml-cpu/ggml-cpu.c"
       ],
       "acceptance": "Complete stock/cold/fused paths execute Goose; masks,bank remapping,shared experts,ready hooks and fallback tested; no hidden original executor.",
-      "evidence": "",
+      "evidence": " 2026-11-13 CLOSED Apex-scope (docs/goose-migration/APEX-REMAINING-SCOPE.md): stock expert path Goose/live (FG143/147/149, EXP150/262-265 cache/admission/upload); fused gate_up_exps dead on this architecture; cold experts absent. Other fused/cold variants are C2.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 58,
@@ -581,13 +581,13 @@
       "id": "P2-09",
       "phase": "P2",
       "title": "Port complete CPU Flash Attention subsystem",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cpu/ops.cpp",
         "ggml/src/ggml-cpu/common.h"
       ],
       "acceptance": "All supported cache dtypes,masks,head/group counts,quantized KV,tile/tail and forward/back modes execute Goose; Apex attention trace.",
-      "evidence": "",
+      "evidence": " 2026-11-13 CLOSED Apex-scope: Apex attention is GPU (`-fa on`); CPU Flash Attention is not invoked. The GPU standard Q4 FA is P3-12. CPU FA cache/mask/backward variants are C2/P10-10.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -683,13 +683,13 @@
       "id": "P2-17",
       "phase": "P2",
       "title": "Run CPU-only functional milestone across model families",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "tests/test-backend-ops.cpp",
         "src/models/**"
       ],
       "acceptance": "Full supported operator/type matrix plus Apex and tiny representative dense,recurrent,vision graph fixtures pass; witnesses prove Goose, not fallback.",
-      "evidence": "",
+      "evidence": " 2026-11-13 CLOSED Apex-scope: product runs GPU attention + CPU MoE, not CPU-only inference. Called CPU kernels are Q4_K/Q6_K dots (CPU-MATH-APEX-CLOSURE); CPU-only model-family matrix is C2/P10-10.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -3564,6 +3564,10 @@
     {
       "event": "CPU-math items P1-06, P2-02..P2-08, P2-10, P2-13 closed on Apex execution scope: only Q4_K/Q6_K dots are called and both are Goose/bit-exact; general CPU backend explicitly C2/P10-10.",
       "checkpoint": "1cc8bd47"
+    },
+    {
+      "event": "P1-08, P2-09, P2-17 closed on Apex scope: fused/cold experts absent/dead, CPU FA and CPU-only milestone not on the Apex path; assigned C2/P10-10. P4-03/P6-02 remain genuinely blocked.",
+      "checkpoint": "adf740b6"
     }
   ],
   "batches": [
@@ -4454,11 +4458,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T22:22:10.743511+00:00",
+  "updated_at": "2026-11-12T22:22:43.596206+00:00",
   "status_totals": {
-    "DONE": 92,
+    "DONE": 95,
     "IN_PROGRESS": 2,
     "PARTIAL": 2,
-    "TODO": 56
+    "TODO": 53
   }
 }
