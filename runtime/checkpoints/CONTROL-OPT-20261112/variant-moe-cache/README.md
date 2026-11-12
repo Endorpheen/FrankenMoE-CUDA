@@ -69,3 +69,17 @@ to a 0.2-2.0 logit spread, which at `temperature=1.0` eventually selects the nei
 That is the same class as `--n-cpu-moe 34` (device placement changes rounding), which was rejected for the same reason.
 This does not prove quality loss, and it does not prove quality preservation either - it is an established cause, not a
 waiver.
+
+## Quality measurement, beyond "the answer reads fine"
+
+On the common 20-token prefix (both arms choose the same tokens there):
+
+| quantity | accepted (CPU experts) | cache (GPU experts) | delta |
+|---|---|---|---|
+| mean logprob of chosen token | -0.2040 | -0.2134 | -0.0094 |
+| perplexity (exp of that) | 1.226 | 1.238 | +1.0% |
+| mean abs logprob delta of the chosen token | - | 0.0954 | max 0.7767 |
+| mean abs delta over shared top-5 | - | 0.3893 | max 2.0766 |
+
+So the path is not merely coherent: on the tokens both arms agree about, it is within 1% on mean logprob. That is a
+measured equivalence of quality, not a proof of bit equality - and it is still not a waiver of the acceptance criterion.
