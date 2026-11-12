@@ -2218,13 +2218,13 @@
       "id": "P9-02",
       "phase": "P9",
       "title": "Port platform/file I/O and GGUF offset indexing",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "carrier/runtime/core/src/io/**",
         "carrier/runtime/core/src/moe/gguf_offsets.cpp"
       ],
       "acceptance": "Bounded reads,mmap/pinned allocation,shard offsets,endian/error/overflow cases Goose; only primitive platform imports retained.",
-      "evidence": "",
+      "evidence": " 2026-11-13 FIRST SLICE (EXP457, experiments/EXP-2026-11-13-457-p9-02-gguf-offsets): GGUF offset indexing is Goose from gguf.cpp/GGML_PAD: align_up (pad), align_ok (non-zero power of two), nbytes = type_size*(nelements/blk) with exact-division and block guards, descriptor-offset cumulativity (-2 on a gap), absolute offset = data_start + descriptor offset, and the padded data-section total. Gate: gen_expected.py parses the Apex GGUF with struct, takes the type table from the gguf library, computes the layout and cross-checks all 753 absolute offsets against GGUFReader.data_offset; the fixture then compares the Goose layout: 2109 cases / 0 failures, alignment 32, data start 10990944, data size 21702472192, ASan+UBSan clean, 8/8 mutations. A synthetic unaligned layout (10/10/10 -> 96) was added after the unpadded-total mutation was missed on the real file. NOT YET: platform file I/O (open/read/seek/mmap, path handling, error reporting). P9-02 stays IN_PROGRESS.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 54,
@@ -3629,6 +3629,10 @@
     {
       "event": "P8-02 ninth slice (EXP456): GCP AIP mode/route/port/alias/predict-shape decisions and the /props key list/mode/501 decision are Goose, gated against native transcriptions (111 cases, 0 failures), clean sanitizers, 10/10 mutations.",
       "checkpoint": "ff8e17d4"
+    },
+    {
+      "event": "P9-02 first slice (EXP457): GGUF alignment, byte size, offset cumulativity, absolute offsets and data-section total are Goose, gated against a struct-parsed Apex layout cross-checked with GGUFReader.data_offset (2109 cases, 0 failures), clean sanitizers, 8/8 mutations.",
+      "checkpoint": "bf2b7dff"
     }
   ],
   "batches": [
@@ -4519,11 +4523,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T23:10:06.279768+00:00",
+  "updated_at": "2026-11-12T23:19:35.314299+00:00",
   "status_totals": {
     "DONE": 96,
-    "IN_PROGRESS": 4,
+    "IN_PROGRESS": 5,
     "PARTIAL": 2,
-    "TODO": 50
+    "TODO": 49
   }
 }
