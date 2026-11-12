@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:15:27.499970+00:00",
+  "updated_at": "2026-11-12T02:16:59.731600+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: balance point verified -- cache 3072 gives 37.79/37.80/39.10 decode (128/128/256 tokens) at 6266 MiB, about -3 tok/s and -1 GiB against 4096. Exact path 2311-2320/23.8-24.3/3190 with e68df05b.",
+  "current": "Golden rule adopted. Balanced base is cache 3072 (39.10 decode at 256 tokens, 6266 MiB). Warm-up measured across the ladder: 1280 31.58/4476, 2048 35.35/5242, 3072 39.10/6266. No-cache remains the exact control.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -657,6 +657,36 @@
       "source": "runtime/reconstructed/build/run-b3072_256/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r42-mc1280-256",
+      "label": "Cheapest 30+ point, 256 tokens",
+      "at": "2026-11-12T02:16:59.731600+00:00",
+      "prefill_tok_s": 2327.5,
+      "decode_tok_s": 31.58,
+      "ram_mib": 21320.0,
+      "vram_mib": 4476,
+      "configuration": "same argv + --moe-cache-mib 1280, 256 tokens",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-mc1280_256/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r43-mc2048-256",
+      "label": "Mid cache point, 256 tokens",
+      "at": "2026-11-12T02:16:59.731600+00:00",
+      "prefill_tok_s": 2334.1,
+      "decode_tok_s": 35.35,
+      "ram_mib": 21320.0,
+      "vram_mib": 5242,
+      "configuration": "same argv + --moe-cache-mib 2048, 256 tokens",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-mc2048_256/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -879,6 +909,13 @@
       "title": "Баланс 3072 проверен тремя прогонами",
       "kind": "speedup",
       "detail": "37.79, 37.80 and 39.10 decode at 6266 MiB for 128/128/256 tokens. Stable; decode rises as the cache warms, so short runs understate it."
+    },
+    {
+      "id": "e31",
+      "at": "2026-11-12T02:16:59.731600+00:00",
+      "title": "Прогрев кэша измерён",
+      "kind": "insight",
+      "detail": "256 vs 128 tokens: 1280 31.58, 2048 35.35, 3072 39.10. All rise with length, ranking unchanged. 3072 confirmed as balanced base."
     }
   ]
 }
