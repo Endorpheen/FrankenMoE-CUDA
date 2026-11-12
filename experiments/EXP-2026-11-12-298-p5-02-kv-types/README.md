@@ -79,3 +79,23 @@ Two limits found:
 Next: inspect the dispatch helper's model of the op at the failing assertion -- the helper walks four per-dimension
 values against a limit -- and compare it with the native `flash_attn_ext` preconditions for a quantized K type (block
 size 32, type size 34).
+
+## The failing condition, read from the disassembly
+
+At the catchpoint the failing instruction is `gg_function_11.constprop.0+96`, and the code just before it is:
+
+    0+27   test %rax,%rax ; je  +96                     (a value must be non-zero)
+    0+32   cmp  $0x1e,%rax ; setne %sil                 (30 = BF16)
+    0+40   cmp  $0x1,%rax  ; setne %dl                  (1  = F16)
+    0+52   cmp  $0x19,%rax ; jne +224                   (25 = another id)
+    0+62   mov  (%rcx),%rax
+    0+70   test %rax,%rax ; jns +109                    (a field must be >= 0)
+    0+91   call gg_fail  <-- taken
+
+So the helper first dispatches on a type id and then requires a field to be non-negative; with q8_0 K the field is
+negative. The dispatch only names three ids explicitly (1, 25, 30), which is the shape of a type table that was written for
+the types the accepted profile used, with everything else falling through to a branch that does not expect a block-quantized
+row.
+
+That is the concrete hypothesis to test next: find the matching Goose function -- a type switch followed by a non-negative
+check on a row/stride field -- and extend it for block-quantized K, rather than patching the wrapper blindly.
