@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-11-12T04:01:27.743593+00:00",
+  "library": "runtime/reconstructed/build/libllama-exp371.so.0.7.0",
+  "library_sha256": "9bdf9a6dae566d72fd6f8a89aa3c78b2b411d819d8307322dcd5d48c423733fd",
+  "declarations": {
+    "count": 165,
+    "all_typed": true,
+    "without_return_type": 0,
+    "duplicate_names": {},
+    "duplicates_identical": []
+  },
+  "exports": {
+    "count": 307,
+    "sample": [
+      "fg199k_can_shift",
+      "fg199k_can_use",
+      "fg199k_enabled",
+      "fg199k_generated_main",
+      "fg199k_head_after",
+      "fg199k_head_after_place",
+      "fg199k_head_after_rm",
+      "fg199k_head_start"
+    ]
+  },
+  "primitive_imports": {
+    "count": 948,
+    "top": {
+      "ggml_set_name": 71,
+      "ggml_row_size": 57,
+      "ggml_nbytes": 55,
+      "ggml_build_forward_expand": 43,
+      "ggml_backend_buffer_is_host": 38,
+      "ggml_nelements": 36,
+      "ggml_add": 36,
+      "ggml_set_input": 33,
+      "ggml_backend_tensor_set": 30,
+      "ggml_type_name": 29
+    },
+    "note": "ggml_/llama_ calls are the declared primitives of the port; counted per use site, not inventoried as owned source."
+  },
+  "checks": {
+    "no_implicit_declarations": true,
+    "duplicate_signatures_conflict": false
+  }
+}
