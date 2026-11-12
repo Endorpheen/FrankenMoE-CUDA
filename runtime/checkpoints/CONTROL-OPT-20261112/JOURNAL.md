@@ -949,3 +949,18 @@ Conclusion: five files checked (sampler, batch, vocab, context, graph), none car
 native body. Combined with the measurement noise this makes the remaining difference unresolvable by file bisection
 without a profiler. It is recorded as a bounded, unexplained difference - not as something fixed, and not as something
 that does not exist.
+
+## Reproduction gap closed: the CPU library was not in the checkpoint
+
+While checking that the P2-01 probe can be rebuilt from preserved artefacts, the link failed: the checkpoint held
+`libllama`, `libggml-base` and `libggml-cuda`, but **not `libggml-cpu`** - the one library that carries the 326 Goose symbols
+the probe is actually measuring. It existed only in the staging directory. Copied it in; the checkpoint now holds all four
+libraries plus `SHA256SUMS` (211 MiB total).
+
+Verified after copying: the saved `libggml-cpu.so.0.27.0` has 326 `fg` symbols and sha256 `63ad49848812...`, and it is
+byte-identical to the file named `.inherited` in staging. That also corrects an earlier assumption of mine: `.inherited` is
+not a pristine native library, it is the same Goose build. The mislabel had no effect on any measurement (the historic-CPU
+test that used it returned the same numbers), but the name was misleading and is now recorded as such.
+
+Consequence: the probe is reproducible from the checkpoint alone, which is the condition for its numbers to mean anything
+outside this session.
