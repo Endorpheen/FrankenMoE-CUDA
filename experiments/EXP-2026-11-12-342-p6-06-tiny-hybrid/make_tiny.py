@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Generate a minimal hybrid qwen35moe GGUF: two layers, one recurrent and one full-attention."""
+import sys, gguf, numpy as np
+from gguf import GGUFWriter
+
+out = sys.argv[1] if len(sys.argv) > 1 else "tiny-hybrid.gguf"
+w = GGUFWriter(out, "qwen35moe")
+
+n_layer, n_embd, n_vocab = 2, 32, 64
+n_head, n_head_kv = 2, 1
+n_ff, n_expert, n_used = 16, 4, 2
+n_embd_head = 16
+
+w.add_block_count(n_layer)
+w.add_context_length(256)
+w.add_embedding_length(n_embd)
+w.add_head_count(n_head)
+w.add_head_count_kv(n_head_kv)
+w.add_key_length(n_embd_head)
+w.add_value_length(n_embd_head)
+w.add_feed_forward_length(n_ff)
+w.add_expert_count(n_expert)
+w.add_expert_used_count(n_used)
+w.add_expert_feed_forward_length(n_ff)
+w.add_expert_shared_feed_forward_length(n_ff)
+w.add_layer_norm_rms_eps(1e-6)
+w.add_rope_freq_base(10000.0)
+w.add_rope_dimension_count(n_embd_head)
+w.add_uint32("qwen35moe.rope.dimension_sections", 0)
+w.add_array("qwen35moe.rope.dimension_sections", [0,0,0,0])
+w.add_uint32("qwen35moe.nextn_predict_layers", 0)
+w.add_uint32("qwen35moe.full_attention_interval", 2)
+w.add_uint32("qwen35moe.ssm.conv_kernel", 4)
+w.add_uint32("qwen35moe.ssm.state_size", 8)
+w.add_uint32("qwen35moe.ssm.group_count", 2)
+w.add_uint32("qwen35moe.ssm.time_step_rank", 4)
+w.add_uint32("qwen35moe.ssm.inner_size", 32)
+w.add_array("qwen35moe.attention.recurrent_layers", [True, False])
+w.add_tokenizer_model("gpt2")
+w.add_tokenizer_pre("qwen35")
+toks = [f"t{i}" for i in range(n_vocab)]
+w.add_token_list(toks)
+w.add_token_types([1]*n_vocab)
+w.add_token_merges(["t 0"])
+w.add_eos_token_id(0)
+w.add_pad_token_id(1)
+
+def T(name, shape, dtype=np.float32):
+    w.add_tensor(name, np.zeros(tuple(reversed(shape)), dtype=dtype))
+
+T("token_embd.weight", (n_embd, n_vocab))
+T("output_norm.weight", (n_embd,))
+T("output.weight", (n_embd, n_vocab))
+for il in range(n_layer):
+    rec = (il == 0)
+    pre = f"blk.{il}."
+    T(pre+"attn_norm.weight", (n_embd,))
+    if not rec:
+        T(pre+"attn_q.weight", (n_embd, n_head*n_embd_head))
+        T(pre+"attn_k.weight", (n_embd, n_head_kv*n_embd_head))
+        T(pre+"attn_v.weight", (n_embd, n_head_kv*n_embd_head))
+        T(pre+"attn_output.weight", (n_head*n_embd_head, n_embd))
+    T(pre+"post_attention_norm.weight", (n_embd,))
+    T(pre+"ffn_gate_inp.weight", (n_expert, n_embd))
+    for e in ("ffn_gate_exps.weight", "ffn_up_exps.weight"):
+        T(pre+e, (n_expert, n_embd, n_ff))
+    T(pre+"ffn_down_exps.weight", (n_expert, n_ff, n_embd))
+    T(pre+"ffn_gate_shexp.weight", (n_embd, n_ff))
+    T(pre+"ffn_up_shexp.weight", (n_embd, n_ff))
+    T(pre+"ffn_down_shexp.weight", (n_ff, n_embd))
+w.write_header_to_file(); w.write_kv_data_to_file(); w.write_tensors_to_file(); w.close()
+print("written", out)
