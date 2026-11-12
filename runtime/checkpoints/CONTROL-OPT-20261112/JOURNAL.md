@@ -49,3 +49,27 @@ measurement and is recorded so it is not repeated.
 
 Rollback: `stage-run/libllama.so*` back to `libllama-exp371.so.0.7.0` (a copy is kept as
 `libllama-exp371-optrollback.so.0.7.0`).
+
+## Stage 3: memory
+
+`--no-kv-offload` moves the KV cache to RAM: VRAM 4590 -> 3194 (-1396) but prefill 1913 (-25%) and decode 3.77 (-85%),
+with the content check failing. So the KV cache must stay on the GPU for this profile, and 4590 MiB is close to the
+floor here. Against the 6408 MiB starting point the accepted change already saved 1818 MiB of VRAM and 1546 MiB of RSS.
+
+## Stage 4: final A/B -> B/A on identical argv
+
+Two repeats each, alternating order, same machine (browser load present and noted; an interfering GPU load from other
+users was cleared before this series):
+
+| run | prefill tok/s | decode tok/s | RSS MiB | VRAM own MiB | content equal |
+|---|---|---|---|---|---|
+| A1 (control, exp371) | 1621.1 | 22.72 | 22856 | 6408 | yes |
+| B1 (result, exp244) | 2574.2 | 25.91 | 21318 | 4590 | yes |
+| A2 (control, exp371) | 1613.2 | 21.47 | 22856 | 6408 | yes |
+| B2 (result, exp244) | 2568.2 | 24.77 | 21317 | 4590 | yes |
+
+Accepted change: prefill 1617 -> 2571 (+59%), decode 22.1 -> 25.3 (+15%, spread 24.8-25.9), RSS -1538 MiB,
+VRAM -1818 MiB, correctness unchanged at `e68df05b`.
+
+Limits of the measurement: browser and desktop GPU activity is part of the baseline; the target of 3000 tok/s prefill and
+30 tok/s decode is **not** reached yet; the series is a short paired one, the clean long series is still to be run.
