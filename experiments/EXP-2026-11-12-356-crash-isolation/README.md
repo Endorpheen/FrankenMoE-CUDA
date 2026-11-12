@@ -85,3 +85,25 @@ So neither of the two largest rewrites is responsible. Remaining candidates by c
 A pattern is worth noting: the functions that fail to explain it are the ones whose rewrites are *pure* wrappers around a bridge, and the ones
 still untested include the state-save and clear paths -- which is consistent with a defect in how a zero-length generation leaves the cell state,
 rather than in slot selection or batch application.
+
+## Correction: my "ungated arena" claim was wrong
+
+The previous section said the arena reads ignored their gate. They do not: `goose_arena_for()` itself starts with
+
+    if (!fg209i_enabled()) { return nullptr; }
+
+so every read-through-arena path was already behind the gate, and the edit I described as a correctness fix was a no-op. It has been reverted.
+The claim is withdrawn, and the reason it looked true is recorded here so the mistake is not repeated: I patched the four call sites in
+`seq_pos_min`/`seq_pos_max` without reading the helper they call.
+
+## What that does to the file-swap bisection
+
+It also weakens the swap method, which needs saying before it is relied on again. With flint's `llama-kv-cache.cpp` in the build, the header is
+still ours, the arena is still lazily created on first read, and its entries start at `-1`. A tree in that state answers `seq_pos_min` from an
+arena no one maintains, so "the crash disappeared" there does not prove the state was correct -- it may only prove the abort branch was not
+reached. File swaps show which object owns a behaviour; they do not show that the resulting behaviour is right.
+
+So the current facts are narrower than they looked: the crash happens with our `llama-kv-cache.cpp` plus our header, it does not happen with
+flint's `llama-kv-cache.cpp` plus our header, and disabling the gates does not remove it. Attribution inside the pair is still open, and the next
+step should compare *state* rather than assert-free behaviour -- for example by printing `seq_pos_min` and the cell set size for the same
+sequence under both libraries.
