@@ -54,3 +54,28 @@ Quantized **K** alone is enough. That points at the K rotation path, which is bu
 The next step is to identify the assertion inside fg143's compute for that op -- either by rebuilding the CPU module with
 symbols and mapping the failing program counter to its generated function, or by dumping the op name that fg143 dispatches
 when the rotation tensor first appears.
+
+## The operator: CPU flash attention with quantized K
+
+A deeper backtrace names the native operation the Goose dispatch wraps:
+
+    gg_fail <- gg_function_11 <- gg_function_1 <- fg143_compute <- fg143_try.part
+            <- ggml_compute_forward_flash_attn_ext <- fg143_cpu_control <- fg143_control_dispatch
+            <- ggml_graph_compute_thread
+
+So the failing path is CPU `flash_attn_ext`, not the graph construction or the K layout arithmetic. `fg143` does not port
+flash attention -- there is no `flash_attn` function in its Goose sources -- it wraps the native call, and the assertion is
+in its dispatch helper.
+
+Two limits found:
+
+- The assertion cannot be bypassed with `-fa off`: the context then fails for a different, native reason ("failed to
+  create context with model"), so flash attention is effectively mandatory for this substrate and the combination
+  q8_0 K + no FA is not a supported configuration.
+- No Goose switch exists for the flash-attention dispatch: the 61 names in the DSO contain none for fwht, rotation or
+  flash attention, so a switch bisect cannot isolate this path; the isolation has to come from the backtrace, which it now
+  has.
+
+Next: inspect the dispatch helper's model of the op at the failing assertion -- the helper walks four per-dimension
+values against a limit -- and compare it with the native `flash_attn_ext` preconditions for a quantized K type (block
+size 32, type size 34).
