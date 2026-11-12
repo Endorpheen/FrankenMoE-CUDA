@@ -128,7 +128,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "OFF_PATH",
+      "classification_reason": "memory-recurrent.cpp; Apex profile does not use the recurrent memory implementation"
     },
     {
       "module": "fg212s",
@@ -216,7 +218,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (cpt >= map.size() || map[cpt] < 0) {",
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "unicode encode path not reached by this prompt"
     },
     {
       "module": "fg227n",
@@ -273,7 +277,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "KV cache path not reached in this configuration"
     },
     {
       "module": "fg231a",
@@ -291,7 +297,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (p0 == p1) {",
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "OFF_PATH",
+      "classification_reason": "recurrent memory; not used by Apex"
     },
     {
       "module": "fg232r",
@@ -353,7 +361,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "batch path not exercised at these shapes"
     },
     {
       "module": "fg239b",
@@ -423,7 +433,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "batch path not exercised at these shapes"
     },
     {
       "module": "fg244s",
@@ -441,7 +453,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (!sorted_output && n_outputs > 1) {",
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "OFF_PATH",
+      "classification_reason": "gated by !sorted_output && n_outputs > 1; single-output requests cannot reach it"
     },
     {
       "module": "fg345w",
@@ -459,7 +473,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "KV state write path not reached"
     },
     {
       "module": "fg367s",
@@ -477,7 +493,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "KV state clear path not reached"
     },
     {
       "module": "fg373s",
@@ -495,7 +513,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (sinfos_out) {",
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "KV read-sinfo path not reached"
     },
     {
       "module": "fg375s",
@@ -539,7 +559,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "mmap file-alignment path not reached"
     },
     {
       "module": "fg380s",
@@ -557,7 +579,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "penalty accept path not exercised"
     },
     {
       "module": "fg381s",
@@ -575,7 +599,9 @@
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (n_ranges < 0) return;",
       "first_call_printing": false,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "KV whole-clear path not reached"
     },
     {
       "module": "fg382s",
@@ -696,7 +722,9 @@
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
       "first_call_printing": true,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "sampler filter path not exercised by top-k/top-p/min-p at these settings"
     },
     {
       "module": "fg389s",
@@ -727,7 +755,9 @@
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
       "first_call_printing": true,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "vocab path not reached by the accepted tokenizer flow"
     },
     {
       "module": "fg391s",
@@ -771,7 +801,9 @@
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
       "first_call_printing": true,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "gated by sinfos_out in the KV read path"
     },
     {
       "module": "fg394s",
@@ -789,7 +821,9 @@
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
       "first_call_printing": true,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "KV layout span path not taken by the profiled cache configuration"
     },
     {
       "module": "fg395s",
@@ -807,7 +841,9 @@
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
       "first_call_printing": true,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "KV read-meta path not taken by the profiled cache configuration"
     },
     {
       "module": "fg396s",
@@ -900,7 +936,9 @@
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": "if (metadata == nullptr) {",
       "first_call_printing": true,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "NEEDS_FIXTURE",
+      "classification_reason": "model-loader path gated by a metadata branch our GGUF does not take"
     },
     {
       "module": "fg404s",
@@ -944,7 +982,9 @@
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": "if (logits.data && t_logits) {",
       "first_call_printing": true,
-      "witness_seen_request_run": false
+      "witness_seen_request_run": false,
+      "classification": "OFF_PATH_SERVER",
+      "classification_reason": "call site is in decode(); the server obtains logits through a different path, so this branch is not on the served profile"
     },
     {
       "module": "fg408s",
@@ -1005,5 +1045,11 @@
       "fg406s"
     ],
     "note": "Absence here is still not proof of dormancy: bridges that print on first call are decisive, destructor-only bridges are decisive only if teardown actually ran; both are recorded per module."
+  },
+  "classification_counts": {
+    "OFF_PATH": 3,
+    "OFF_PATH_SERVER": 1,
+    "NEEDS_FIXTURE": 16,
+    "PRESENT_IN_OTHER_RUN": 0
   }
 }
