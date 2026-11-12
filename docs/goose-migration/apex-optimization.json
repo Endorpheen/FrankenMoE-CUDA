@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T03:04:30.489905+00:00",
+  "updated_at": "2026-11-12T03:10:40.680131+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Same-window test: cache 3584 changes decode by +66% (23.34 -> 38.86) and prefill by 0.2%. The cache is not a prefill lever; prefill is a band (~2200-2350) that follows background load. 3000 requires a profile change.",
+  "current": "CUDA expert kernels are not the prefill cost: A/B/A/B gives 2299 vs 2329 (+1.3%), so the initial +3.7% is withdrawn. Fourth candidate dissolved under repetition today; sub-5% comparisons need alternating repeats on this machine.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -1246,6 +1246,13 @@
       "title": "Кэш не влияет на prefill",
       "kind": "insight",
       "detail": "One window: exact 2220.8/23.34 vs cache 2226.0/38.86. Decode +66%, prefill +0.2%. Prefill is a band driven by background load."
+    },
+    {
+      "id": "e47",
+      "at": "2026-11-12T03:10:40.680131+00:00",
+      "title": "CUDA-ядра не виноваты в prefill",
+      "kind": "insight",
+      "detail": "A/B/A/B: on 2299 vs off 2329 (+1.3%), inside spread. The +3.7% first reading is withdrawn. Prefill levers remain exhausted at configuration level."
     }
   ]
 }
