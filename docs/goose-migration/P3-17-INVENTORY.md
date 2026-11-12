@@ -131,3 +131,35 @@ produce the free/unregister witness; it needs a 32K request followed by a clean 
 Recorded as an inconclusive attempt rather than a negative result, and with the reason: the missing witness is about the
 workload, not about the code being absent. The free side therefore remains "Goose by code, not yet witnessed", and P3-17
 keeps its status.
+
+## Teardown witness obtained: alloc/free balance, zero native calls
+
+Third attempt, with the runner's `LD_LIBRARY_PATH` (the first two lacked it and therefore did not load the same backend),
+32K request, clean SIGINT. The witnesses print counters, not just a name:
+
+    FG195V_CUDA_VMM_POOL alloc=9526 free=9526 grow=5 native=0
+    FG196P_CUDA_PINNED   host_plan=3 host_fail=0 fallback=0 reg_plan=120 reg_fail=0 unreg=240 native=0
+
+Reading them plainly:
+
+| counter | value | meaning |
+|---|---|---|
+| VMM alloc / free | 9526 / 9526 | every mapping was released - balanced lifecycle, no leak |
+| VMM grow | 5 | the pool grew five times, all through the Goose plan |
+| VMM native | **0** | no native fallback call at all |
+| pinned host_plan | 3 | three host-allocation plans |
+| pinned host_fail / fallback | 0 / 0 | no failures, no fallback taken |
+| pinned reg_plan / unreg | 120 / 240 | registrations and deregistrations executed |
+| pinned native | **0** | no native path taken |
+
+So for **both** pools the full lifecycle - plan, allocate, grow, register, free, deregister - executes in Goose with zero
+native calls, and the alloc/free counts balance exactly. That is stronger than the "by code" reading I had before, and it
+is measured on the accepted profile, not a fixture.
+
+What this closes and what it does not:
+- **closed**: lifecycle ownership for the VMM and pinned-host pools, with counting evidence;
+- **not closed**: device reset and asynchronous lifetime tracking (no witness, and no fixture yet), plus the stale
+  "pinned ring" clause which needs an owner decision.
+
+An earlier conclusion of mine is corrected again: I had listed "free accounting and host deregistration" as code-only; it is
+in fact witnessed, balanced, and native-free.
