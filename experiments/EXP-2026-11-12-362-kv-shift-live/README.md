@@ -25,3 +25,18 @@ the native path is doing the work.
 
 Find an input that actually reaches `llama_kv_cache` shifting -- the call site is guarded by `fg230s_enabled() && n_stream <= 64` and a `fits`
 condition -- and only then compare. Until such an input exists, P5-07's shift claim stays where it is.
+
+## Why the shift path is unreachable here
+
+`set_input_k_shift` is only called when the graph carries a k-shift input, which happens when a context shift is actually applied. Two attempts to reach
+it failed:
+
+- **server**: generating 150-200 tokens past a 64-token context makes the server stop at the limit rather than shift, so the call site is never
+  reached (breakpoint stayed pending);
+- **CLI**: `llama-cli` is not present in `build-cuda/bin`, and gdb reported "No executable file specified", so a CLI run was not possible at all.
+
+So with the binaries available, the shift port cannot be exercised. That is a statement about the tooling, not about the port: the port is neither
+proven nor disproven, and P5-07's shift claim cannot move until something can drive a context shift -- a CLI build, or a server option that shifts
+instead of stopping.
+
+It also explains why the earlier session note deferred shift ownership: the code path is dormant in every configuration this project runs.
