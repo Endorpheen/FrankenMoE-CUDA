@@ -930,3 +930,22 @@ Established facts:
 
 What remains open: the acceptance decision on the cached path, and the ~5.5-7.5% decode difference to the native body
 that could not be resolved with the available profiling.
+
+## Bisection closed: context and graph are not the decode difference
+
+Separating "code" from "residency" by swapping the two hottest files for the flint originals:
+
+| build | prefill | decode (3 runs) | note |
+|---|---|---|---|
+| baseline | 2311-2345 | 23.0-24.8 | reference |
+| llama-context.cpp = flint | 1578-1646 | 24.16 / 23.24 / 23.36 | pinning lost, prefill collapses; decode unchanged |
+| llama-graph.cpp = flint | 2268-2280 | 22.72 / 23.24 / 23.11 | pinning kept; decode unchanged |
+
+Both restored; the library size is back to the exact baseline (5533896) and content is equal in every run. During the
+final verification the desktop was using 39% of the GPU, so those particular numbers (1936-2223 prefill) are load
+artefacts and are not used for any conclusion - the size check and content equality are what establish the restore.
+
+Conclusion: five files checked (sampler, batch, vocab, context, graph), none carries the ~5.5-7.5% decode difference to the
+native body. Combined with the measurement noise this makes the remaining difference unresolvable by file bisection
+without a profiler. It is recorded as a bounded, unexplained difference - not as something fixed, and not as something
+that does not exist.
