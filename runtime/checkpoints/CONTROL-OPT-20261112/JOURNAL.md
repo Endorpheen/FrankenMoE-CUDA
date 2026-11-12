@@ -515,3 +515,20 @@ State of the two points, unchanged and reproducible:
 - optimisation baseline: cache 2048 -> 2348 prefill / 34.03 decode / 5242 MiB; largest that starts is 4096 -> 40.78 at
   7292 MiB.
 - correctness control only: no cache -> 2310 / 24.1 / 3190 MiB with the exact `e68df05b`.
+
+## Rejected: hybrid placement on top of the cache
+
+`--n-cpu-moe 36` (4 expert layers on the GPU) together with cache 2048:
+
+| variant | prefill | decode | VRAM | content |
+|---|---|---|---|---|
+| cache 2048 (baseline) | 2348.3 | 34.03 | 5242 | differs |
+| cache 4096 (largest that starts) | 2324.3 | 40.78 | 7292 | differs |
+| n-cpu-moe 36 + cache 2048 | 2404.8 | 36.79 | 7234 | differs |
+
+It spends nearly the same VRAM as cache 4096 (7234 against 7292) for a worse decode (36.79 against 40.78) and only +2.4%
+prefill, which is inside the noise band we have measured repeatedly. Not adopted: the cache is the cheaper way to buy
+the same memory, and stacking placement on top of it just adds a second rounding change for nothing.
+
+So the search space for this profile is now genuinely explored: the cache is the decode lever, prefill is flat, and the
+no-cache path stays the correctness control.
