@@ -524,6 +524,7 @@ public:
         assert(seq_id >= 0);
         assert(seq_id < LLAMA_MAX_SEQ);
 
+        if (fg209i_enabled())
         if (int64_t * gb = goose_bounds_ptr()) {
             return (llama_pos) gb[seq_id];
         }
@@ -541,6 +542,7 @@ public:
         assert(seq_id >= 0);
         assert(seq_id < LLAMA_MAX_SEQ);
 
+        if (fg209i_enabled())
         if (int64_t * gb = goose_bounds_ptr()) {
             return (llama_pos) gb[LLAMA_MAX_SEQ + seq_id];
         }
@@ -718,6 +720,7 @@ private:
         GGML_UNUSED(n);
         // EXP209: keep the incremental bound in step. A bound hit asks the host to rescan, which
         // happens here and only here -- never on the query path.
+        if (fg209i_enabled())
         if (int64_t * gb = goose_bounds_ptr()) {
             const int64_t r = fg209i_on_remove((uint64_t)(uintptr_t) gb, s,
                                                (int64_t) LLAMA_MAX_SEQ, (int64_t) pos_before);
@@ -729,6 +732,7 @@ private:
 
     void seq_pos_inc(llama_seq_id s, uint32_t i) {
         seq_pos[s].insert({ pos[i], i });
+        if (fg209i_enabled())
         if (int64_t * gb = goose_bounds_ptr()) {
             fg209i_on_insert((uint64_t)(uintptr_t) gb, s,
                              (int64_t) LLAMA_MAX_SEQ, (int64_t) pos[i]);

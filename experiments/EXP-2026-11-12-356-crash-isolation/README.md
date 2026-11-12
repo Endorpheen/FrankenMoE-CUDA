@@ -52,3 +52,20 @@ That points at version skew rather than at a port: our copy of the file descends
 `pos_min == -1` path landed upstream afterwards. Supporting evidence is thin but consistent -- the non-bridge differences are mostly continuation
 lines of multi-line `extern` declarations, so the file is not a rewrite, it is an older revision with bridges added. Settling it properly needs
 the upstream revision our copy was taken from, which is what the next step should find.
+
+## Attempted fix: the arena reads had no gate
+
+`llama-kv-cells.h` answers `seq_pos_min` and `seq_pos_max` from an incrementally maintained arena whenever the arena exists:
+
+    if (int64_t * gb = goose_bounds_ptr()) {
+        return (llama_pos) gb[seq_id];
+    }
+
+There is no gate on that read, so the "gate off means native behaviour" contract was broken by construction: an experiment that switched the
+incremental bookkeeping off still consumed its (possibly stale) values.
+
+The four arena reads are now behind `fg209i_enabled()`. That is a correctness fix regardless of the crash, but it does **not** resolve it: with the
+gate off, and again with it on, the two-request sequence still aborts.
+
+So the arena is not the whole story, and the remaining difference inside `llama-kv-cache.cpp` is still to be found. What is already established
+stands: replacing that one file with flint's version removes the crash, and disabling all fourteen KV gates does not.
