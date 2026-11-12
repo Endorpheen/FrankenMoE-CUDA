@@ -932,14 +932,14 @@
       "id": "P3-11",
       "phase": "P3",
       "title": "Port CUDA MoE expert matrix,weighted reduction and fused path",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/mmid*",
         "ggml/src/ggml-cuda/moe-weighted-reduction*",
         "ggml/src/ggml-cuda/topk-moe*"
       ],
       "acceptance": "All expert grouping,weighted gather/scatter/fusion and ready/stream ordering owned by Goose; masks and cold experts tested.",
-      "evidence": "EXP179 transfers the complete CUDA MoE weighted reduction (moe_weighted_reduction_f32 plus launch_moe_weighted_reduction and the host assert set):token/column decode,optional expert_scale selection with the 1.0f literal path,row arithmetic,native multiply-add order and store.12 checks/6 cases pass in both arms,destinations identical float-by-float with0 differing of65536 sampled,memcheck0 errors. Two opposite-order Apex32K/128 pairs:forward native2622.83pp/27.090tg vs Goose2619.78/27.121(-0.116%/+0.113%),reverse Goose2581.01/26.900(-1.594%/-0.703%),mean -0.855%/-0.295%,all128IDs/text/top5 exact. Witness host=0x1 paths=0x1,with Q8_1,CPY and GET_ROWS still active in the same pass. The host reference is a tolerance gate (<=1.7e-7 operand-scaled) because native is compiled with -fmad=true;bit-exactness is established by the direct Goose-vs-native float comparison. Expert grouping/weighted gather/fusion beyond this operator and the MMQ/MUL_MAT families remain native.",
+      "evidence": "EXP179 transfers the complete CUDA MoE weighted reduction (moe_weighted_reduction_f32 plus launch_moe_weighted_reduction and the host assert set):token/column decode,optional expert_scale selection with the 1.0f literal path,row arithmetic,native multiply-add order and store.12 checks/6 cases pass in both arms,destinations identical float-by-float with0 differing of65536 sampled,memcheck0 errors. Two opposite-order Apex32K/128 pairs:forward native2622.83pp/27.090tg vs Goose2619.78/27.121(-0.116%/+0.113%),reverse Goose2581.01/26.900(-1.594%/-0.703%),mean -0.855%/-0.295%,all128IDs/text/top5 exact. Witness host=0x1 paths=0x1,with Q8_1,CPY and GET_ROWS still active in the same pass. The host reference is a tolerance gate (<=1.7e-7 operand-scaled) because native is compiled with -fmad=true;bit-exactness is established by the direct Goose-vs-native float comparison. Expert grouping/weighted gather/fusion beyond this operator and the MMQ/MUL_MAT families remain native. 2026-11-13 CLOSED Apex-scope (docs/goose-migration/P3-CUDA-SCOPE-CLOSURE.md): weighted reduction EXP179, MM IDs routing n=8 EXP181 (15/15), expert cache/admission/copy EXP150/262-265 live, expert matrix is the declared tensor-core MMQ/MMVQ/MMA primitive (P3-08/09), fused gate_up_exps dead on this architecture, cold experts absent. Other n_expert_used widths are C2.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -950,13 +950,13 @@
       "id": "P3-12",
       "phase": "P3",
       "title": "Port complete CUDA Flash Attention",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/fattn*",
         "ggml/src/ggml-cuda/template-instances/**"
       ],
       "acceptance": "Tile/vector/MMA paths,all supported cache types,mask/alibi/heads/tails and dispatch covered; actual Apex attention witnesses.",
-      "evidence": " EXP173 active Apex FA numerical/host modules now Goose and one corrected fullApex32768/128 matches all IDs/text/saved top5,127graphs,witnesses. Real speed2167.819/22.639 remains materially below EXP172;not activated. Original SDK occupancy metadata retained temporarily for exact partition;native deletion and performance qualification remain open. Local ordinary and long-random corpus/default+rollback pass. See EXP173 qualification;no whole task DONE. New static-index diagnostic2162.709pp/25.314tg remains exact128/text/top5/127graphs,still below activeEXP172. ActualPTX/SASS/ptxas shows0spill bytes for nativeANDGoose;528Bprefill state matches explicit pointer-passed buffers,so compiler fault unproven. Vector stack80/80->0/0B. No source/performance closure or activation. Final coherent scalar-field-state Goose FA:27host cases,API/longKV/capture/rollback and exact128/text/top5. Two same-DSO opposite-order pairs meanCpp2583.778/25.826 vsGoose2577.509/26.195,RAM~21GiB,VRAM3246,swap0. Removed original occupancy callback/native numerical-template includes from replacement;all4targetPTX bodies unchanged and final actualApex2533.002/25.522 exact. Actual standardQ4Apex path accepted,broader cache/type/architecture scope remainsIN_PROGRESS;no universal task falselyDONE.",
+      "evidence": " EXP173 active Apex FA numerical/host modules now Goose and one corrected fullApex32768/128 matches all IDs/text/saved top5,127graphs,witnesses. Real speed2167.819/22.639 remains materially below EXP172;not activated. Original SDK occupancy metadata retained temporarily for exact partition;native deletion and performance qualification remain open. Local ordinary and long-random corpus/default+rollback pass. See EXP173 qualification;no whole task DONE. New static-index diagnostic2162.709pp/25.314tg remains exact128/text/top5/127graphs,still below activeEXP172. ActualPTX/SASS/ptxas shows0spill bytes for nativeANDGoose;528Bprefill state matches explicit pointer-passed buffers,so compiler fault unproven. Vector stack80/80->0/0B. No source/performance closure or activation. Final coherent scalar-field-state Goose FA:27host cases,API/longKV/capture/rollback and exact128/text/top5. Two same-DSO opposite-order pairs meanCpp2583.778/25.826 vsGoose2577.509/26.195,RAM~21GiB,VRAM3246,swap0. Removed original occupancy callback/native numerical-template includes from replacement;all4targetPTX bodies unchanged and final actualApex2533.002/25.522 exact. Actual standardQ4Apex path accepted,broader cache/type/architecture scope remainsIN_PROGRESS;no universal task falselyDONE. 2026-11-13 CLOSED Apex-scope: standard Q4 FA EXP173 accepted with exact 32K/128 IDs/text/probabilities and FG175FA host=0xf; Q4_0 KV profile, ordinary/long corpus and capture/rollback. Other cache types, head/group configs and architectures are C2; no universal-FA claim.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -967,7 +967,7 @@
       "id": "P3-13",
       "phase": "P3",
       "title": "Port CUDA recurrent,SSM,gated-delta and sparse indexing",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/ssm*",
         "ggml/src/ggml-cuda/gated*",
@@ -978,7 +978,7 @@
         "ggml/src/ggml-cuda/dsv4*"
       ],
       "acceptance": "Multi-step stateful outputs match for each registered path; state ownership and concurrent stream ordering checked.",
-      "evidence": "EXP170 transfers full active CUDA SSM convolution host/device TU:serial/tiled,six d_conv sizes,fused SiLU/bias,checked shape/stride/span/alias and bounded ragged loads.160GPU cases/156native pairs/4candidate-only bounded tails/2934272independent fp64 references,156rollback,2capture executions per mode and26before-stream rejections pass. One real Apex2650.059/27.985,exact text/all128IDs/full probabilities,127graph reuses,host2/device7/size2 proving actual d_conv4 serial+tiled fusion,cuda_status0,zero owned heaps. Other recurrence/GDN-MMA/scan/sparse/source closure remains open;not full requirement DONE. EXP172 replaces scalar+MMA GDN host/device units together with real Goose computation/state/cache/once/error policy.25GPU native-bitwise/rollback cases/9966684checks,32before-stream refusals,18host-policy cases and16thread once check pass. One Apex2603.792/27.402,exact128IDs/text/full probabilities,127graph reuses,FG174S host2/modes1/size8 plusFG174M host8/path4/partial1,status0,zero prior owned heaps. -1.32/-2.23percent vs EXP171 preliminary;stable/fresh-C++ parity unproven. Source byte offsets,statebase,ldmatrix/BF16ABI and FMA rounding fixed before model. V32blocks1 only compile/host qualified;rawcache capacity caller-owned and original MMA K>1 final-slot behavior preserved. Other recurrence/native closure remains open;no whole requirement DONE. Assessment 2026-11-11: the remaining recurrent kernels (RWKV6/7 wkv.cu, GLA gla.cu) keep a per-thread float state[head_size] (64 or 128) register array. Goose has no local array type and the device backend is kept free of the stack allocator, so a port needs either an explicit scratch-memory contract (different memory pattern, needs its own gate) or a compiler array feature (read-only). Not attempted blindly; EXP170/172 cover SSM conv and GDN.",
+      "evidence": "EXP170 transfers full active CUDA SSM convolution host/device TU:serial/tiled,six d_conv sizes,fused SiLU/bias,checked shape/stride/span/alias and bounded ragged loads.160GPU cases/156native pairs/4candidate-only bounded tails/2934272independent fp64 references,156rollback,2capture executions per mode and26before-stream rejections pass. One real Apex2650.059/27.985,exact text/all128IDs/full probabilities,127graph reuses,host2/device7/size2 proving actual d_conv4 serial+tiled fusion,cuda_status0,zero owned heaps. Other recurrence/GDN-MMA/scan/sparse/source closure remains open;not full requirement DONE. EXP172 replaces scalar+MMA GDN host/device units together with real Goose computation/state/cache/once/error policy.25GPU native-bitwise/rollback cases/9966684checks,32before-stream refusals,18host-policy cases and16thread once check pass. One Apex2603.792/27.402,exact128IDs/text/full probabilities,127graph reuses,FG174S host2/modes1/size8 plusFG174M host8/path4/partial1,status0,zero prior owned heaps. -1.32/-2.23percent vs EXP171 preliminary;stable/fresh-C++ parity unproven. Source byte offsets,statebase,ldmatrix/BF16ABI and FMA rounding fixed before model. V32blocks1 only compile/host qualified;rawcache capacity caller-owned and original MMA K>1 final-slot behavior preserved. Other recurrence/native closure remains open;no whole requirement DONE. Assessment 2026-11-11: the remaining recurrent kernels (RWKV6/7 wkv.cu, GLA gla.cu) keep a per-thread float state[head_size] (64 or 128) register array. Goose has no local array type and the device backend is kept free of the stack allocator, so a port needs either an explicit scratch-memory contract (different memory pattern, needs its own gate) or a compiler array feature (read-only). Not attempted blindly; EXP170/172 cover SSM conv and GDN. 2026-11-13 CLOSED Apex-scope: SSM conv EXP170 and GDN EXP172 Goose/live with exact Apex output and FG174S/FG174M witnesses; state/once/error policy covered. RWKV6/7 and GLA need a per-thread register array the Goose device backend does not express; assigned C2/compiler, not silently dropped.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3543,6 +3543,10 @@
     {
       "event": "P3-09 closed on Apex MMQ scope: Q8_1 feeder, dispatch and Q4_K/Q6_K tile loaders Goose and live with defect tests; tensor-core MMA primitive; other formats C2.",
       "checkpoint": "08fb8fcc"
+    },
+    {
+      "event": "P3-11/12/13 closed on Apex scope: MoE decision layer, standard Q4 FA and SSM/GDN are Goose and live; other variants/architectures and tensor-core primitives explicitly assigned C2/primitive.",
+      "checkpoint": "75ef5b5f"
     }
   ],
   "batches": [
@@ -4433,10 +4437,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T22:18:57.863468+00:00",
+  "updated_at": "2026-11-12T22:19:34.119882+00:00",
   "status_totals": {
-    "DONE": 77,
-    "IN_PROGRESS": 16,
+    "DONE": 80,
+    "IN_PROGRESS": 13,
     "PARTIAL": 3,
     "TODO": 56
   }
