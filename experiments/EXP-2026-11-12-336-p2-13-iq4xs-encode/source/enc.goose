@@ -162,6 +162,18 @@ fn fg336q_block(x:u64,y:u64,i:i64,scr:u64)->i64{
  return 0 as i64;
 }
 
+fn fg336q_scales(x:u64,out:u64,scr:u64)->i64{
+ let L:u64=scr;
+ let scales:u64=scr+(256 as u64);
+ var ib:i64=0 as i64;
+ while ib<(8 as i64) {
+  fg336q_scale(x+(ib as u64)*(128 as u64),L,scales,ib);
+  st_f32(out+(ib as u64)*(4 as u64),ld_f32(scales+(ib as u64)*(4 as u64)));
+  ib=ib+(1 as i64);
+ }
+ return 0 as i64;
+}
+
 fn fg336q_encode(x:u64,y:u64,k:i64,scr:u64)->i64{
  ensure(k>=(0 as i64),2600 as i64);ensure(k%(256 as i64)==(0 as i64),2601 as i64);
  var nb:i64=k/(256 as i64);

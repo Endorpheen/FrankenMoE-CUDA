@@ -51,6 +51,9 @@ static void g_st_f16(uint64_t a, float v) {
 #include "enc-generated.c"
 #undef main
 static uint8_t g_scratch[512];
+void fg336q_scales_enter(const float * x, float * out) {
+    fg336q_fn_5((uint64_t)(uintptr_t)x, (uint64_t)(uintptr_t)out, (uint64_t)(uintptr_t)g_scratch, 0, 0);
+}
 void fg336q_enter(const float * x, uint8_t * y, int64_t k) {
     fg336q_fn_1((uint64_t)(uintptr_t)x, (uint64_t)(uintptr_t)y, k, (uint64_t)(uintptr_t)g_scratch, 0);
 }

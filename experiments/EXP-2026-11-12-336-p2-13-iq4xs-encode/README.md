@@ -39,3 +39,20 @@ in place.
 Decoding the 2-bit fields, the reference has 3,0,3,3,0,3,3,3 and the port has 0,3,0,0,3,0,0,0 -- almost exactly complements, which
 means `l0` differs by about 16 for those blocks while `scales_l` now matches. The block scale values or the clamp step are the next
 place to look, and the gate stays red until that is resolved.
+
+## Diagnostic export: the block-scale path reads the wrong bytes
+
+A debug entry point (`fg336q_scales_enter`) now exposes the eight per-block scales the port computes. Compared with a transcription
+of the same block search on a fixed 256-element input:
+
+    ib=0 ref=0.0256217103 ours=2.35113416e-38   DIFF
+    ib=1 ref=-0.0257143658 ours=7.00326282e-30  DIFF
+    ... all eight blocks differ
+
+The port's values are on the order of 1e-38 to 1e-30, which is the range you get by reinterpreting small integers as floats. On the
+increase, the block-scale path is reading level bytes where it expects floats -- the scratch layout (levels at `scr`, scales at
+`scr + 256`) or the offset arithmetic inside `fg336q_scale` is addressing the wrong place.
+
+That also explains the 126 remaining gate failures without invoking the super-scale at all: the scales feeding it were already wrong.
+The next step is to verify the scratch addressing directly rather than guessing at the super-scale, which is what the earlier note
+suggested and what this measurement replaces.
