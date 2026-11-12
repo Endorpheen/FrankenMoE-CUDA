@@ -128,3 +128,23 @@ The lesson is the same as elsewhere in this session: the model's tensor names ar
 flag alone produces an unloadable model rather than a changed graph. A valid mutant has to be generated with the matching tensor set --
 for example a two-layer all-attention model with `attn_q/k/v` on both layers -- and that is the next step. Until then the green result
 above shows the fixture works, not that the check can fail.
+
+## Sensitivity attempt: the all-attention mutant, and how far it got
+
+The first two mutants were unloadable, so the next attempt builds a proper one: the same two-layer model with
+`recurrent_layers = [false, false]`, no `ssm_*` tensors, and `attn_qkv` on both layers -- because the account above learned that this
+architecture uses the fused `attn_qkv` on every layer regardless of the recurrent flag.
+
+Driving it against the loader settled several details the hybrid model never needed:
+
+- a non-recurrent layer expects `attn_qkv` with width 96 (three projections) instead of 64;
+- it also expects `attn_output.weight`, and per-layer `attn_q_norm` / `attn_k_norm` of width 16;
+- the final count is 55, and the current builder produces 52.
+
+The `create_tensor` diff names the rest precisely:
+
+    blk.0.attn_k.bias, blk.0.attn_q.bias, blk.0.attn_qkv.bias, blk.0.attn_v.bias,
+    blk.0.attn_output.scale, blk.0.attn_output.input_scale
+
+So the mutant is two steps from loadable: add those six names, drop whatever is extra, and the gate can be run against it. That is
+where this pass stops -- the mutant is not yet a mutation, and the gate's sensitivity remains unproven until it loads.
