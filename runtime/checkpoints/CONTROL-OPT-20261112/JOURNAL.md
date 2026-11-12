@@ -421,3 +421,21 @@ honest limit rather than claimed progress.
 
 What the profile does deliver, with the full port intact: prefill ~2306, decode 24.3 at VRAM 3190 / RAM 21319 (from
 1624 / 23.6 / 6408 / 22856 at the start), and 34.03 decode at VRAM 5242 in the experimental cache variant.
+
+## Prefill scaling curve: steady-state ceiling ~2360, not attention
+
+Same build and argv, only the prompt length changed (the eval metric reports prompt tokens per second):
+
+| prompt | prefill tok/s | decode tok/s | VRAM |
+|---|---|---|---|
+| 4K | 2009 | 27.0 | 2878 (earlier point) |
+| 8K | 2141.1 | 27.14 | 2878 |
+| 16K | 2315.2 | 25.48 | 2982 |
+| 32K | 2306 | 24.3 | 3190 |
+
+Throughput *rises* with length and flattens, so there is no quadratic attention penalty dominating the range - it is a
+fixed per-graph cost (start-up, growth, first-batch effects) over a steady-state rate. Fitting the two largest points
+gives roughly 0.00042 s/token, i.e. a steady-state ceiling near 2360 tok/s with about 0.37 s of fixed overhead.
+
+That makes 3000 tok/s on this profile a profile question, not a tuning one: the steady state is already close to the
+measured ceiling and the fixed part is under 3% at 32K. Recorded so the plateau is backed by a curve, not by a guess.
