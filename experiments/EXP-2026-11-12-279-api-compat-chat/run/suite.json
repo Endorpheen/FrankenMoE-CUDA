@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "checks": {
+    "chat_nonstream_finish": {
+      "ok": true,
+      "detail": "length"
+    },
+    "chat_nonstream_content": {
+      "ok": true,
+      "detail": "65 chars (content or reasoning)"
+    },
+    "chat_stream_equal": {
+      "ok": true,
+      "detail": "17 chunks"
+    },
+    "chat_stream_finish": {
+      "ok": true,
+      "detail": "length"
+    },
+    "chat_stop_finish": {
+      "ok": true,
+      "detail": "stop"
+    },
+    "usage_present": {
+      "ok": true,
+      "detail": {
+        "completion_tokens": 16,
+        "prompt_tokens": 13,
+        "total_tokens": 29,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    "usage_consistent": {
+      "ok": true,
+      "detail": "13+16=29"
+    },
+    "chat_invalid_rejected": {
+      "ok": true,
+      "detail": "400"
+    }
+  }
+}
