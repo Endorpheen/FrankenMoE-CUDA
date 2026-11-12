@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:20:00.239992+00:00",
+  "updated_at": "2026-11-12T01:26:39.248092+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: pinning accepted (+43-44% prefill, 2365/23.9). Decode proven bounded by the cpu-moe host-memory GEMV profile, not by ported kernels; --no-mmap is not viable on this machine.",
+  "current": "Stage 2 on the full port: pinning accepted (2365/23.9). Batch, KV, graph and CUDA quantizer switches are all noise, so the remaining gap to the exp244 body (2575) is not a module switch; next is the llama graph/body itself.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -357,6 +357,36 @@
       "source": "runtime/reconstructed/build/run-ab-off1/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r22-mmq-off",
+      "label": "CUDA MMQ Q8_1 off",
+      "at": "2026-11-12T01:25:58.938489+00:00",
+      "prefill_tok_s": 2377.5,
+      "decode_tok_s": 24.2,
+      "ram_mib": null,
+      "vram_mib": 6408,
+      "configuration": "same argv; one Goose switch off",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-q-mmq/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r23-mvq6-off",
+      "label": "CUDA Q6_K matvec off",
+      "at": "2026-11-12T01:26:25.691329+00:00",
+      "prefill_tok_s": 2360.3,
+      "decode_tok_s": 23.96,
+      "ram_mib": null,
+      "vram_mib": 6408,
+      "configuration": "same argv; one Goose switch off",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-q-mvq6/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -451,6 +481,13 @@
       "title": "Decode ограничен профилем cpu-moe",
       "kind": "insight",
       "detail": "Q4K/Q6K goose dots off leave 2378.1/24.48 and 2361.4/23.75 (noise). --no-mmap does not complete. Decode is host GEMV bound at 8 threads."
+    },
+    {
+      "id": "e13",
+      "at": "2026-11-12T01:26:39.248092+00:00",
+      "title": "Квантайзер CUDA исключён",
+      "kind": "insight",
+      "detail": "MMQ Q8_1 off 2377.5 and Q6_K matvec off 2360.3, both in noise. Together with batch/KV/graph tests, no switch explains the remaining 9%."
     }
   ]
 }
