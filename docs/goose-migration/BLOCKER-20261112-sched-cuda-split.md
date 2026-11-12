@@ -107,3 +107,43 @@ oracles:
 So the signed-zero defect is **not** an artefact of the broken rounding helper; it survives a correct one. The blocker stands, with a
 smaller count. Both fixtures and both bridges now use the fork's formula, which also means the earlier numbers for these two
 experiments are superseded rather than merely annotated.
+
+---
+
+# Third blocker: IQ4_XS encoder super-scale does not match the reference (P2-13)
+
+Status: parked for the same senior-helper consultation.
+
+## Expected
+
+Byte-identical encoding against the exported `quantize_row_iq4_xs_ref`, as the five other encoders achieve.
+
+## Actual
+
+`EXP336_IQ4XS_ENC checks=3944 failures=126`. First failure: s=1 (k=512), block 0. The block's stored `d` differs:
+
+    native 0x204c -> +0.00839
+    port   0xa052 -> -0.00844
+
+Same magnitude class, opposite sign and a slightly different magnitude.
+
+## What was tested
+
+1. The per-block scale search matches a transcription bit for bit on this input (all eight block scales).
+2. `max_scale = 0.270113` and `dsup = -0.008441` from the port and from the transcription, identically.
+3. Neither sign convention for the initial `d0` reproduces the native value: `sgn=0` gives `dsup=-0.008441`, `sgn=1` gives
+   `-0.008593`, while the native byte implies a negative `max_scale` of about `-0.2685`.
+4. The 256-element case passes entirely; the failure starts at 512, so it is not a general sign inversion.
+5. Earlier instrumentation attempts in this branch were themselves broken twice (a debug export that was never emitted because `main`
+   did not reference it, and a comparison that used the port's own arrays as the reference), both now corrected.
+
+## Why it is parked
+
+Three attempts on the same branch, each producing a measurement rather than a guess, and the remaining difference is a specific
+numeric relationship (`|max_scale|` 0.2685 versus 0.2701 with a sign flip) that reading the source has not explained. The end-to-end
+gate cannot be made green by patching bytes at this point without knowing which of the two values the reference actually computes.
+
+## Paths
+
+- `experiments/EXP-2026-11-12-336-p2-13-iq4xs-encode/` (Goose source, bridge with the debug export, fixture, README with the full
+  trail of corrections)
