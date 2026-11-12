@@ -1,0 +1,18 @@
+{
+  "native-q8_0": {
+    "sha": "1da0f49942ac7858",
+    "text": " over the lazy dog.\\n\\nThe quick"
+  },
+  "goose-q8_0": {
+    "error": "not ready",
+    "rc": 1
+  },
+  "native-q4_0": {
+    "sha": "1da0f49942ac7858",
+    "text": " over the lazy dog.\\n\\nThe quick"
+  },
+  "goose-q4_0": {
+    "error": "not ready",
+    "rc": 1
+  }
+}
