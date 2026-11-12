@@ -28,3 +28,27 @@ and what is not, which is more useful than a percentage.
 For each uncovered family: establish whether it is reachable by any retained architecture. If not, record it as explicit
 non-coverage (the criterion allows unsupported coverage to be declared). If yes, it needs a Goose implementation plus a
 bit-exact corpus, which is stage-2 work rather than a single probe.
+
+## Reachability check (2026-11-12)
+
+Checked whether TQ/FP4/legacy types can be declared out of scope by being unreachable:
+
+| type | referenced by a model source | references in ggml-cpu |
+|---|---|---|
+| TQ1_0, TQ2_0, IQ4_NL, MXFP4, Q5_1, Q4_1, Q3_K | 0 | 1 (type registry only) |
+
+They are not mentioned by model code at all because tensor types come from the GGUF file, not from the architecture source.
+So the honest conclusion is the opposite of convenient: these types are **reachable in principle** by any model whose
+GGUF is quantised with them, and P1-06 cannot be narrowed by declaring them unsupported.
+
+Consequence: finishing P1-06 means implementing the dots and building a bit-exact corpus per family. That is stage-2 work,
+not a probe, and it cannot be closed inside an audit pass. Recorded so the item is neither inflated nor quietly dropped.
+
+## Current honest status of the three open items
+
+| item | state | what it needs |
+|---|---|---|
+| P2-01 | PARTIAL | permissioned regenerate+rebuild of the SILU association, or an explicit 1-ULP/25% contract |
+| P1-06 | IN_PROGRESS | implementations plus corpora for TQ/FP4/legacy families |
+| P1-09 | IN_PROGRESS | Goose ownership of physical allocation/OS placement/expert chunk claims |
+| P1-10 | IN_PROGRESS | cache constructor, tensor allocation, full upload-copy and resource lifecycle |
