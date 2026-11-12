@@ -1938,7 +1938,7 @@
         "common/fit.cpp"
       ],
       "acceptance": "All maintained flags/env/defaults/config precedence and memory-fit policy ported; --help/invalid args and model profile compatibility checked.",
-      "evidence": "PARTIAL 2026-11-12 (EXP-350). DONE: --help and invalid-arg surfaces (750 vs 755 lines, the 5 extra being witnesses; defect #5 recorded for a witness written mid-line without a leading newline, compiler-side fix); flag-vs-env precedence identical in five cases (threads, ctx, parallel quirk where LLAMA_ARG_PARALLEL has NO effect on either line); verbosity precedence identical in four cases including the character-identical '-lv abc' error; chat-template missing-path error identical; whole /props document differs in ONE field (random media_marker) with default_generation_settings.params fully equal including the float decimal expansion; startup logs match except the ephemeral port and one additive informational line about RAM-only prefix checkpoints; training-context cap warning identical. REMAINING: the memory-fit policy cannot be exercised on stories260K (its 2048-token training context caps every request before fit acts) and needs an Apex run, which must be approved first -- scripts/run-fit-apex.sh is prepared and inert. Also inconclusive: a malformed --grammar produced no matching log line within 8s on either line.",
+      "evidence": "PARTIAL 2026-11-12 (EXP-350). DONE: --help and invalid-arg surfaces (750 vs 755 lines, the 5 extra being witnesses; defect #5 recorded for a witness written mid-line without a leading newline, compiler-side fix); flag-vs-env precedence identical in five cases (threads, ctx, parallel quirk where LLAMA_ARG_PARALLEL has NO effect on either line); verbosity precedence identical in four cases including the character-identical '-lv abc' error; chat-template missing-path error identical; whole /props document differs in ONE field (random media_marker) with default_generation_settings.params fully equal including the float decimal expansion; startup logs match except the ephemeral port and one additive informational line about RAM-only prefix checkpoints; training-context cap warning identical. REMAINING: the memory-fit policy cannot be exercised on stories260K (its 2048-token training context caps every request before fit acts) and needs an Apex run, which must be approved first -- scripts/run-fit-apex.sh is prepared and inert. Also inconclusive: a malformed --grammar produced no matching log line within 8s on either line. 2026-11-13 APEX FIT EVIDENCE (EXP422): four server starts, native vs unified, -fit on/off, Apex 35B, -c 32768, -lv 4. All reached health and exited cleanly. -fit off is line-identical. -fit on gives the same decisions on both lines: projected 2893 MiB vs 8150/8126 MiB free, leave 5256/5232 >= 1024, no changes needed; the 24 MiB free-memory difference is measurement noise. Fit changes placement on both lines. The missing evidence clause is closed, but common/fit.cpp is still native C++; the item remains PARTIAL until the fit algorithm itself is ported to Goose.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -3467,6 +3467,10 @@
     {
       "event": "P6-10 closed (EXP420): ignore_eos and adaptive_p made observable and cross-line equal; RNG scoped as native primitive and grammar assigned to P7-09.",
       "checkpoint": "70e73388"
+    },
+    {
+      "event": "P7-10 Apex fit policy qualified (EXP422): native and unified agree on -fit on decisions and are line-identical with -fit off; fit is active. Status stays PARTIAL because common/fit.cpp is still native.",
+      "checkpoint": "44e2ac29"
     }
   ],
   "batches": [
@@ -4357,7 +4361,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T20:44:57.796333+00:00",
+  "updated_at": "2026-11-12T21:21:53.716882+00:00",
   "status_totals": {
     "DONE": 64,
     "IN_PROGRESS": 26,
