@@ -964,3 +964,24 @@ test that used it returned the same numbers), but the name was misleading and is
 
 Consequence: the probe is reproducible from the checkpoint alone, which is the condition for its numbers to mean anything
 outside this session.
+
+## Reproduction is a set, not four files - and there are dangling links
+
+Trying to link the probe from the checkpoint alone exposed two things the earlier "copied the libraries" step had hidden:
+
+1. **The staging directory holds 98 real libraries (1.6 GiB)**, not four: many `libggml-base-<topic>-<hash>.so` variants and
+   `libggml-cpu` builds. Copying only the four sonames is not the configuration that runs.
+2. **`libggml-cpu.so.0.27.0` has undefined references to `fg160_fusion_enabled` / `fg160_query`**, and the active
+   `libggml-base.so.0.27.0` does not define them (the `-allocator`, `-buffers`, `-builders`, ... variants do). The server
+   still runs because undefined symbols in a shared object are resolved lazily and those entry points are not called on the
+   accepted path.
+
+That is a real fragility, recorded plainly: the accepted build works, but it carries unresolved symbols that would abort at
+first use of those fusion paths, and a rebuild from the four checkpoint files cannot even link the probe.
+
+Consequences:
+- the checkpoint is enough to **run** the accepted profile (it runs today), not enough to **relink** tooling against it;
+- for the plan's "reproducible build" requirement, the right artefact is the whole staging set with a manifest, or a build
+  script that regenerates it - not four renamed copies;
+- the dangling `fg160` references should be resolved or the fusion path removed before this configuration is offered as a
+  base for other architectures.
