@@ -25,7 +25,7 @@ int main(void) {
             uint8_t * b = x + i * 210;
             for (int j = 0; j < 1; ++j) { uint16_t h = (uint16_t)(next() & 0x3fff) | (j == 0 ? 0x0c00 : 0); memcpy(b + j*2, &h, 2); }
             for (int j = 4; j < 210; ++j) b[j] = (uint8_t)(next() & 0xff);
-            if (i == nb - 1) memset(b, 0, 144);                  // degenerate super-block
+            if (i == nb - 1) memset(b, 0, 210);                  // degenerate super-block
         }
         memset(ours, 0x7f, (size_t) k * 4);
         dequantize_row_q6_K(x, ref, k);
