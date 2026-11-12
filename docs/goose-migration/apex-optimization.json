@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:05:47.214106+00:00",
+  "updated_at": "2026-11-12T02:06:40.351537+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2 from the cache baseline: 2048 gives 2348/34.03/5242, 4096 gives 2324/40.78/7292 (largest that starts). No interaction with ubatch or batch threads; 16K prompt gives 37.66 decode. No-cache profile is the correctness control only.",
+  "current": "Stage 2: cache is the decode lever (2048 -> 34.03/5242, 4096 -> 40.78/7292); prefill flat ~2324-2367. Hybrid placement on top was rejected. No-cache profile remains the correctness control at 2310/24.1/3190.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -597,6 +597,21 @@
       "source": "runtime/reconstructed/build/run-mc4096b/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r38-ncpu36-mc2048",
+      "label": "Rejected: hybrid placement + cache 2048",
+      "at": "2026-11-12T02:06:27.600037+00:00",
+      "prefill_tok_s": 2404.8,
+      "decode_tok_s": 36.79,
+      "ram_mib": null,
+      "vram_mib": 7234,
+      "configuration": "--n-cpu-moe 36 --moe-cache-mib 2048",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs",
+      "source": "runtime/reconstructed/build/run-ncpu36mc/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -770,6 +785,13 @@
       "title": "Кэш не открывает новых осей",
       "kind": "insight",
       "detail": "On the 2048 baseline, ubatch 8192 and tb32 stay in noise (2351.7/34.08 and 2342.0/34.14). 16K prompt gives 2367.4/37.66: cache value follows unique expert traffic."
+    },
+    {
+      "id": "e24",
+      "at": "2026-11-12T02:06:40.351537+00:00",
+      "title": "Гибрид с кэшем отклонён",
+      "kind": "regression",
+      "detail": "Nearly the same VRAM as cache 4096 (7234 vs 7292) but worse decode (36.79 vs 40.78) and prefill +2.4% in noise."
     }
   ]
 }
