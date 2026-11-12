@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:21:31.443554+00:00",
+  "updated_at": "2026-11-12T02:32:01.775026+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Golden rule; base cache 3072 (37.69-37.90 at 6266). Hybrid placement closed: 34 layers+cache3072 OOM, 36+cache2048 costs more memory for less decode. All configuration-level prefill levers are measured; further prefill needs code.",
+  "current": "Upstream control built (dd6b945b, 0.9.0-dev, Release/CUDA, separate dir). Comparison: Goose ahead on prefill ~20-22% and half the VRAM; upstream ahead on decode without a cache (29.62 vs 23.78); Goose cache 3072 gives 39.29 at 6266 while upstream cache 3072 cannot start.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -717,6 +717,66 @@
       "source": "runtime/reconstructed/build/run-mc1280_64/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r46-up-nocache-256",
+      "label": "Upstream control comparison (same GGUF/argv/256 tokens)",
+      "at": "2026-11-12T02:29:27.280359+00:00",
+      "prefill_tok_s": 1900.2,
+      "decode_tok_s": 29.62,
+      "ram_mib": 22672,
+      "vram_mib": 6408,
+      "configuration": "identical argv and request; upstream dd6b945b vs full Goose path",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "outputs differ between implementations",
+      "source": "runtime/reconstructed/build/up_256_nocache/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r47-up-mc2048-256",
+      "label": "Upstream control comparison (same GGUF/argv/256 tokens)",
+      "at": "2026-11-12T02:30:52.440022+00:00",
+      "prefill_tok_s": 2047.1,
+      "decode_tok_s": 25.7,
+      "ram_mib": 22682,
+      "vram_mib": 8458,
+      "configuration": "identical argv and request; upstream dd6b945b vs full Goose path",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "outputs differ between implementations",
+      "source": "runtime/reconstructed/build/up_256_mc2048/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r48-up-mc1024-256",
+      "label": "Upstream control comparison (same GGUF/argv/256 tokens)",
+      "at": "2026-11-12T02:31:26.666476+00:00",
+      "prefill_tok_s": 2018.9,
+      "decode_tok_s": 20.26,
+      "ram_mib": 22682,
+      "vram_mib": 7434,
+      "configuration": "identical argv and request; upstream dd6b945b vs full Goose path",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "outputs differ between implementations",
+      "source": "runtime/reconstructed/build/up_256_mc1024/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r49-goose-mc3072-256",
+      "label": "Goose balance base, 256 tokens (comparison)",
+      "at": "2026-11-12T02:29:57.331718+00:00",
+      "prefill_tok_s": 2317.7,
+      "decode_tok_s": 39.29,
+      "ram_mib": 21320,
+      "vram_mib": 6266,
+      "configuration": "identical argv and request; upstream dd6b945b vs full Goose path",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "outputs differ between implementations",
+      "source": "runtime/reconstructed/build/goose_256_mc3072/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -974,6 +1034,13 @@
       "title": "Гибрид закрыт на базе кэша",
       "kind": "deferred",
       "detail": "n-cpu-moe 34 + cache 3072 OOM; 36 + cache 2048 is 7234 MiB for +2.5% prefill in noise and -1.1 decode. Capacity better spent on the cache."
+    },
+    {
+      "id": "e36",
+      "at": "2026-11-12T02:32:01.775026+00:00",
+      "title": "Сравнение с актуальным upstream",
+      "kind": "insight",
+      "detail": "dd6b945b: upstream 1900.2/29.62/6408, its cache 3072 does not start. Goose 2317.7/39.29/6266 with cache, 2311/23.78/3190 exact. Goose ahead prefill and VRAM; upstream ahead on uncached decode. Details in docs/goose-migration/upstream-comparison.md."
     }
   ]
 }
