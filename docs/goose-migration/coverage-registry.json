@@ -18,7 +18,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg200g",
@@ -30,7 +31,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg201l",
@@ -42,7 +44,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg202t",
@@ -54,7 +57,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 30,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg204x",
@@ -66,7 +70,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg205g",
@@ -78,7 +83,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 30,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg206d",
@@ -90,7 +96,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg209i",
@@ -102,7 +109,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg210k",
@@ -119,7 +127,8 @@
       "call_site_line": "if (fg210k_enabled() && size > 0) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg212s",
@@ -136,7 +145,8 @@
       "call_site_line": "k = fg212s_enabled()",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (fg385s_enabled() ? fg385s_decide(3, (int64_t) k, 0) != 0 : k <= 0) {",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg213p",
@@ -148,7 +158,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg215u",
@@ -160,7 +171,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 30,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg216e",
@@ -172,7 +184,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 30,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg217c",
@@ -184,7 +197,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 30,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg218t",
@@ -201,7 +215,8 @@
       "call_site_line": "if (fg218t_enabled()) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (cpt >= map.size() || map[cpt] < 0) {",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg227n",
@@ -213,7 +228,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg228e",
@@ -225,7 +241,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg229i",
@@ -237,7 +254,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg230s",
@@ -254,7 +272,8 @@
       "call_site_line": "if (fg230s_enabled() && n_stream <= 64) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg231a",
@@ -271,7 +290,8 @@
       "call_site_line": "if (fg231a_enabled()) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (p0 == p1) {",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg232r",
@@ -288,7 +308,8 @@
       "call_site_line": "if (fg232r_enabled() && size <= 65536) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg233c",
@@ -300,7 +321,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg237s",
@@ -312,7 +334,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg238q",
@@ -329,7 +352,8 @@
       "call_site_line": "if (fg238q_enabled() && get_n_tokens() <= 65536 && n_ubatch <= 64) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg239b",
@@ -341,7 +365,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg240q",
@@ -353,7 +378,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg241u",
@@ -365,7 +391,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg242o",
@@ -377,7 +404,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 33,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg243c",
@@ -394,7 +422,8 @@
       "call_site_line": "if (fg243c_enabled() && batch_inp.n_tokens > 0 && batch_inp.n_tokens <= 65536) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg244s",
@@ -411,7 +440,8 @@
       "call_site_line": "if (fg244s_enabled() && n_outputs <= 65536 && output_ids.size() <= 65536) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (!sorted_output && n_outputs > 1) {",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg345w",
@@ -428,7 +458,8 @@
       "call_site_line": "if (fg345w_enabled() && n_seq_max <= 64) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg367s",
@@ -445,7 +476,8 @@
       "call_site_line": "if (fg367s_enabled() && layers.size() <= 64) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg373s",
@@ -462,7 +494,8 @@
       "call_site_line": "if (fg373s_enabled()) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (sinfos_out) {",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg375s",
@@ -474,7 +507,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 25,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg376s",
@@ -486,7 +520,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 25,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg377s",
@@ -503,7 +538,8 @@
       "call_site_line": "if (fg377s_enabled()) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg380s",
@@ -520,7 +556,8 @@
       "call_site_line": "const bool g_on = fg380s_enabled();",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg381s",
@@ -537,7 +574,8 @@
       "call_site_line": "const bool meta_due = fg381s_enabled() ? fg381s_decide(1, (int64_t) cell_count) != 0",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (n_ranges < 0) return;",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg382s",
@@ -554,7 +592,8 @@
       "call_site_line": "if (fg382s_enabled() ? fg382s_decide(0, r_l[il] ? 1 : 0) != 0 : r_l[il] == nullptr) continue;",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg383s",
@@ -566,7 +605,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 25,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg384s",
@@ -583,7 +623,8 @@
       "call_site_line": "if (fg384s_enabled()) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (do_sort && !cur_p->sorted) {",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg385s",
@@ -600,7 +641,8 @@
       "call_site_line": "if (fg385s_enabled() ? fg385s_decide(3, (int64_t) k, 0) != 0 : k <= 0) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg386s",
@@ -617,7 +659,8 @@
       "call_site_line": "if (fg386s_enabled()) {",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": "if (cur_p->size == 1) {",
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg387s",
@@ -634,7 +677,8 @@
       "call_site_line": "chain->n_sample = fg387s_enabled() ? (uint32_t) fg387s_decide(3, (int64_t) chain->n_sample, 0)",
       "liveness_status": "not_observed_reporting_condition_unknown",
       "gate": null,
-      "first_call_printing": false
+      "first_call_printing": false,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg388s",
@@ -651,7 +695,8 @@
       "call_site_line": "if (fg388s_enabled() ? (fg388s_decide(3, (int64_t) (ctx->probability * 1000000.0f), (int64_t) cur_p-",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg389s",
@@ -663,7 +708,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 25,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg390s",
@@ -680,7 +726,8 @@
       "call_site_line": "const bool g_vocab = fg390s_enabled();",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg391s",
@@ -692,7 +739,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 25,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg392s",
@@ -704,7 +752,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 24,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg393s",
@@ -721,7 +770,8 @@
       "call_site_line": "const bool take = fg393s_enabled()",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg394s",
@@ -738,7 +788,8 @@
       "call_site_line": "if (fg394s_enabled()) {",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg395s",
@@ -755,7 +806,8 @@
       "call_site_line": "if (fg395s_enabled() ? fg395s_decide(0, (int64_t) n_seq_id, 0, 0, 0, 0, nullptr) != 0 : n_seq_id != ",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg396s",
@@ -772,7 +824,8 @@
       "call_site_line": "if (fg396s_enabled()) { int64_t g2 = 0; g_off = (size_t) fg396s_decide(0, (int64_t) (range.first), (",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg397s",
@@ -789,7 +842,8 @@
       "call_site_line": "if (fg397s_enabled()) {",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": null,
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg398s",
@@ -801,7 +855,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 24,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg401s",
@@ -813,7 +868,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 24,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg402s",
@@ -825,7 +881,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 24,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg403s",
@@ -842,7 +899,8 @@
       "call_site_line": "const bool g_unaligned = fg403s_enabled()",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": "if (metadata == nullptr) {",
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg404s",
@@ -854,7 +912,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 24,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg405s",
@@ -866,7 +925,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 24,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     },
     {
       "module": "fg406s",
@@ -883,7 +943,8 @@
       "call_site_line": "if (fg406s_enabled() ? fg406s_decide(0, (int64_t) (n_tokens*n_vocab*sizeof(float)), 0, 0, 0, 0, null",
       "liveness_status": "not_executed_first_call_witness_absent",
       "gate": "if (logits.data && t_logits) {",
-      "first_call_printing": true
+      "first_call_printing": true,
+      "witness_seen_request_run": false
     },
     {
       "module": "fg408s",
@@ -895,7 +956,8 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 23,
-      "witness_seen_teardown_run": true
+      "witness_seen_teardown_run": true,
+      "witness_seen_request_run": true
     }
   ],
   "conflicts": [],
@@ -906,7 +968,8 @@
     "witness_seen": 42,
     "witness_seen_any_log": 48,
     "no_witness_anywhere": 14,
-    "witness_seen_teardown_run": 33
+    "witness_seen_teardown_run": 33,
+    "witness_seen_request_run": 42
   },
   "liveness_gap": {
     "modules_without_current_log_witness": 20,
@@ -916,23 +979,31 @@
     "teardown_run_note": "A clean SIGINT run with the accepted argv printed 33 of 62 witnesses. Modules that never print are branch- or teardown-condition specific; absence is a visibility limit, not proof of dormancy."
   },
   "liveness_findings": {
-    "first_call_printers_absent": [
+    "corrected": "The earlier teardown run did a health check without a completion request, so sampler/tokenizer paths could not execute. Liveness is judged from the request run (run-ab-on1).",
+    "witness_seen_request_run": 42,
+    "modules": 62,
+    "absent_in_request_run": [
+      "fg210k",
+      "fg218t",
+      "fg230s",
+      "fg231a",
+      "fg238q",
+      "fg243c",
+      "fg244s",
+      "fg345w",
+      "fg367s",
+      "fg373s",
+      "fg377s",
+      "fg380s",
+      "fg381s",
       "fg388s",
       "fg390s",
       "fg393s",
       "fg394s",
       "fg395s",
-      "fg396s",
-      "fg397s",
       "fg403s",
       "fg406s"
     ],
-    "meaning": "These bridges print on their very first call, so their absence means the module did not execute in the Apex profile (for fg406s the switch previously looked effective, but that reading was inside noise).",
-    "gated_examples": {
-      "fg244s": "!sorted_output && n_outputs > 1",
-      "fg384s": "do_sort && !cur_p->sorted",
-      "fg386s": "cur_p->size == 1"
-    },
-    "open": 20
+    "note": "Absence here is still not proof of dormancy: bridges that print on first call are decisive, destructor-only bridges are decisive only if teardown actually ran; both are recorded per module."
   }
 }
