@@ -25,3 +25,17 @@ value. So the remaining step is an explicit negation primitive in the bridge (or
 arithmetic identity, and the gate must stay at zero failures before this helper is considered done.
 
 This is the state at the end of the session slice: port complete, one corner-case class open, next step named.
+
+## Update: the sign is lost upstream, not at the final negation
+
+An explicit negation primitive was added (`fg330q_neg`, which returns `-v` and preserves `-0`), the generated C was verified to
+call it in all three places, and the gate still reports the same 55 failures. So the final `-min` is not where the sign goes
+wrong: our `min` itself already has the opposite zero sign from the reference's.
+
+That moves the fault to `this_min = (sum_l2*sum_x - sum_l*sum_xl)/D` and to the assignments that follow it. The values compare
+equal, and the only difference is which zero they are, so the remaining work is to reproduce the exact arithmetic of that
+expression (including the `this_min > 0` clamp writing a positive zero) rather than to patch the last line again.
+
+The end-to-end encoder gate will show whether this matters in practice: a `-0` versus `+0` dmin produces identical decoded floats
+unless the scale multiplies a signed value, so it may be invisible there. It is recorded now because byte equality is the standard
+used for every other gate in this series.

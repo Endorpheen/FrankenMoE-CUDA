@@ -11,6 +11,7 @@ extern "fg330q_st_u8"   fn st_u8(a:u64,v:i64);
 extern "fg330q_st_f32"  fn st_f32(a:u64,v:f32);
 extern "fg330q_nearest" fn nearest(v:f32)->i64;
 extern "fg330q_abs"     fn absf(v:f32)->f32;
+extern "fg330q_neg"     fn neg(v:f32)->f32;
 extern "fg330q_fail"    fn fail(code:i64);
 
 fn ensure(v:bool,c:i64){if !v{fail(c);}}
@@ -42,7 +43,7 @@ fn fg330q_make_qkx3(n:i64,nmax:i64,x:u64,w:u64,hasw:i64,L:u64,the_min:u64,Laux:u
  if max<=min {
   i=0 as i64;
   while i<n {st_u8(L+(i as u64),0);i=i+(1 as i64);}
-  st_f32(the_min,min*(0 as f32-(1 as f32)));
+  st_f32(the_min,neg(min));
   return 0 as f32;
  }
  var iscale:f32=(nmax as f32)/(max-min);
@@ -59,7 +60,7 @@ fn fg330q_make_qkx3(n:i64,nmax:i64,x:u64,w:u64,hasw:i64,L:u64,the_min:u64,Laux:u
   i=i+(1 as i64);
  }
  if nstep<(1 as i64) {
-  st_f32(the_min,min*(0 as f32-(1 as f32)));
+  st_f32(the_min,neg(min));
   return scale;
  }
  var is:i64=0 as i64;
@@ -101,7 +102,7 @@ fn fg330q_make_qkx3(n:i64,nmax:i64,x:u64,w:u64,hasw:i64,L:u64,the_min:u64,Laux:u
   }
   is=is+(1 as i64);
  }
- st_f32(the_min,min*(0 as f32-(1 as f32)));
+ st_f32(the_min,neg(min));
  return scale;
 }
 
