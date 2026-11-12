@@ -278,8 +278,8 @@
       "gate": null,
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV path not reached with the profiled cache configuration"
+      "classification": "OFF_PATH_KV_CONFIG",
+      "classification_reason": "KV path not reached with this cache configuration; the bridge reports at exit and silence means zero calls"
     },
     {
       "module": "fg231a",
@@ -362,8 +362,8 @@
       "gate": null,
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "batch plan path not exercised at one sequence / 32K / ubatch 4096"
+      "classification": "OFF_PATH_COMPAT",
+      "classification_reason": "batch compat/plan path not used by the served batch construction"
     },
     {
       "module": "fg239b",
@@ -434,8 +434,8 @@
       "gate": null,
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "batch path not exercised at these shapes"
+      "classification": "OFF_PATH_COMPAT",
+      "classification_reason": "entry point is llama_batch_compat::init, which the served batch path does not use; the bridge reports at exit and SIGINT was delivered, so silence means zero calls"
     },
     {
       "module": "fg244s",
@@ -561,7 +561,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "file-alignment decision reached only on an unaligned GGUF data section; this GGUF is aligned"
+      "classification_reason": "requires an unaligned GGUF data section to reach the check"
     },
     {
       "module": "fg380s",
@@ -600,8 +600,8 @@
       "gate": "if (n_ranges < 0) return;",
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV whole-clear path not reached"
+      "classification": "OFF_PATH_RAM_ONLY_CHECKPOINTS",
+      "classification_reason": "call site is state_write (io path); checkpoints are RAM-only in this profile"
     },
     {
       "module": "fg382s",
@@ -1053,8 +1053,10 @@
   "classification_counts": {
     "OFF_PATH": 3,
     "OFF_PATH_TOKENIZER": 1,
-    "NEEDS_FIXTURE": 6,
-    "OFF_PATH_RAM_ONLY_CHECKPOINTS": 6,
+    "OFF_PATH_KV_CONFIG": 1,
+    "OFF_PATH_COMPAT": 2,
+    "OFF_PATH_RAM_ONLY_CHECKPOINTS": 7,
+    "NEEDS_FIXTURE": 1,
     "OFF_PATH_SAMPLING": 2,
     "OFF_PATH_LOAD_PATH": 1,
     "OFF_PATH_SERVER": 1
