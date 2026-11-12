@@ -25,6 +25,10 @@ Run: `python3 runtime/reconstructed/run_metrics.py` (metrics in `build/run-mc204
 
 Note that EXP087/EXP101 changed the cache's price: the same 2048 setting now costs 5242 MiB VRAM instead of 8456.
 
+Balance point (Igor's preference): on the **same 32K prompt**, cache 3072 gives 37.79 at 6266 MiB, which is about
+-3 tok/s and about -1 GiB against cache 4096 (40.78 at 7292). The 37.66 / 5050 entry below was measured on a 16K prompt
+and must not be quoted as a 2 GiB saving at equal load.
+
 Best compromise for "decode 30+ at the lowest VRAM" measured so far: **1280 MiB -> 30.63 tok/s at 4476 MiB**, i.e. 766 MiB
 cheaper than the 2048 setting for 3.4 tok/s less. 1024 lands just under the target (29.22), so 1280 is the smallest
 cache that clears 30.
