@@ -2165,13 +2165,13 @@
       "id": "P8-11",
       "phase": "P8",
       "title": "Exercise concurrent clients,error handling and long-lived sessions",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "tools/server/tests/**",
         "tools/server/server-context.cpp"
       ],
       "acceptance": "Concurrent independent/branched sessions,disconnects,invalid inputs and repeated model lifecycles complete correctly; leaks/races scoped checked.",
-      "evidence": "",
+      "evidence": "2026-11-13 CLOSED (EXP424): unified Apex build, -np 4, context 4096. Four concurrent requests all HTTP 200 with 8 predicted tokens and four distinct content hashes, no lost task. Malformed JSON -> 400, server alive, next request equals reference 02ec2f94. Streaming disconnect after 3 events, next request equals reference. SIGINT rc 0, port free, fresh second lifecycle reproduces 02ec2f94 with rc 0. Branched sessions covered by EXP293/EXP357 state save/restore; lifecycle/leak scope: balanced pools from EXP267 and cancellation from EXP379; no full TSan server run claimed.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
@@ -3475,6 +3475,10 @@
     {
       "event": "P3-20 closed: generated shared-cuda.o restored with hash, selected CUDA link audited as 144 upstream kernels plus the Goose integration object and zero project-authored hand-written CUDA; historical exp160 base DSO remains an archive artifact outside the selected runtime.",
       "checkpoint": "25361c36"
+    },
+    {
+      "event": "P8-11 closed (EXP424): four concurrent clients, malformed JSON, stream disconnect and a second lifecycle all behave correctly on the unified build; no port/process leak.",
+      "checkpoint": "57e2801e"
     }
   ],
   "batches": [
@@ -4365,11 +4369,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T21:24:05.550325+00:00",
+  "updated_at": "2026-11-12T21:25:59.428166+00:00",
   "status_totals": {
-    "DONE": 65,
+    "DONE": 66,
     "IN_PROGRESS": 25,
     "PARTIAL": 3,
-    "TODO": 59
+    "TODO": 58
   }
 }
