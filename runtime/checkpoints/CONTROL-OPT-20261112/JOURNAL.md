@@ -728,3 +728,23 @@ is not established. The original file was restored immediately, the build is bac
 Recorded as a negative result: the decode gap is real (native 26.66, exp244 body 26.13, ours 23.78) but it is not in this
 file. Next files to bisect, one at a time: `llama-vocab.cpp`, `llama-batch.cpp`, then the `changed` list's graph/context
 entries, each with a repeat because single runs in this range are clearly not decisive.
+
+## Baseline correction: decode is 24.66, not 23.78
+
+Before chasing the decode gap further I measured the accepted build three times in a row:
+
+| run | prefill | decode |
+|---|---|---|
+| 1 | 2345.1 | 24.73 |
+| 2 | 2348.1 | 24.44 |
+| 3 | 2336.7 | 24.82 |
+| mean | 2343.3 | **24.66** |
+
+The 23.78 used earlier was a single low sample, and the "10% decode gap" against native (26.66) and the exp244 body
+(26.13) therefore shrinks to about 5.5-7.5%. That matters for how the gap is described: it is real but modest, and the
+earlier figure overstated it.
+
+The lesson is recorded rather than quietly fixed: for decode on this profile the run-to-run spread (~0.4 tok/s) is large
+enough that single measurements must not be used for comparisons - this is exactly the mistake already caught twice today
+(detok and sampler). All later comparisons in this journal use repeats, and earlier single-run decode numbers should be
+read as approximate.
