@@ -109,8 +109,8 @@ fn fg336q_block(x:u64,y:u64,i:i64,scr:u64)->i64{
  let ui:u64=i as u64;
  let xb:u64=x+ui*(1024 as u64);
  let yb:u64=y+ui*(136 as u64);
- let L:u64=scr;                 // 256 levels
- let scales:u64=scr+(256 as u64); // 8 floats
+ let scales:u64=scr;            // 8 floats first
+ let L:u64=scr+(64 as u64);     // 256 levels after them
  var amax_scale:f32=0 as f32;
  var max_scale:f32=0 as f32;
  var shacc:i64=0 as i64;
@@ -163,8 +163,8 @@ fn fg336q_block(x:u64,y:u64,i:i64,scr:u64)->i64{
 }
 
 fn fg336q_scales(x:u64,out:u64,scr:u64)->i64{
- let L:u64=scr;
- let scales:u64=scr+(256 as u64);
+ let scales:u64=scr;
+ let L:u64=scr+(64 as u64);
  var ib:i64=0 as i64;
  while ib<(8 as i64) {
   fg336q_scale(x+(ib as u64)*(128 as u64),L,scales,ib);
@@ -182,4 +182,4 @@ fn fg336q_encode(x:u64,y:u64,k:i64,scr:u64)->i64{
  return 0 as i64;
 }
 
-fn main(){fg336q_encode(0 as u64,0 as u64,0 as i64,0 as u64);}
+fn main(){fg336q_encode(0 as u64,0 as u64,0 as i64,0 as u64);fg336q_scales(0 as u64,0 as u64,0 as u64);}

@@ -72,3 +72,19 @@ function calls `fg336q_scale`, and which is called from `main`), and verify the 
 conclusion from its output.
 
 Nothing in this experiment is claimed working: the gate is red at 126 failures and the diagnostic is not trustworthy yet.
+
+
+## Corrected diagnostic: the function was never generated, and the block scales are right
+
+Following the call graph instead of guessing indices settled it. `fg336q_scales` was **absent from the generated C** because `main`
+never called it, so every index tried earlier was some other helper -- which is exactly why the output looked like level bytes
+reinterpreted as floats. Making `main` reference the function produced it as `fg336q_fn_18`, identified by the fact that it calls
+`fg336q_fn_5` (the block search) and is called from `main`.
+
+With that wiring the diagnostic says the block search is **correct**:
+
+    ib=0..7  ref == ours, bit for bit (0.0256217103, -0.0257143658, ...)
+
+So the 126 remaining gate failures are not in the per-block scale search at all. The fault is in the super-scale step: `dsup`,
+`l0`, or the `scales_l`/`scales_h` packing. That is a much smaller surface than the earlier notes implied, and it is measured rather
+than guessed.
