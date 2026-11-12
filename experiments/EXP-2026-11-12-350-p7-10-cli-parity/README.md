@@ -30,3 +30,23 @@ the parallel variable works, only as proof that both lines treat it the same way
 
 The memory-fit policy needs a model large enough to trigger it; `stories260K` cannot. The wider flag matrix (sampling, grammar, template,
 logging precedence) is also still ahead.
+
+## Startup log, same invocation
+
+`-m stories260K.gguf -c 256 -fit on --port 0`, timestamps stripped, witness lines removed:
+
+    diff native ours -> 6 lines
+    10a11  > I srv load_model: RAM-only prefix checkpoints (SWA): disabled, budget 256.0 MiB
+    12c13  < listening on http://127.0.0.1:37139   vs   http://127.0.0.1:33119
+
+So the start-up log matches except for the ephemeral port and **one additive informational line** about RAM-only prefix checkpoints. That
+line is ours alone; it is informational, not a behavioural difference, but it is a byte-level divergence in the log stream and is recorded as
+such.
+
+Both lines also agree on the device decisions: `layer 0 is assigned to device CUDA0`, `Flash Attention not supported, set to disabled`,
+`n_threads = 16` (no env in this run), `n_slots = 4`.
+
+## `-fit` is not observable at this size
+
+`-fit on` produces no fit plan at verbosity 3 with either line on this model, because nothing needs adjusting. The memory-fit policy
+therefore still needs a model large enough to force an adjustment, which means a run Igor has to approve first.
