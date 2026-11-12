@@ -58,3 +58,32 @@ That is a concrete advance over the earlier "planning only" reading, and it narr
 Nothing is reclassified: P3-17 stays IN_PROGRESS because growth/reuse/reset/lifetimes are still native, but the failure
 decision no longer belongs on the "not ported" list, and I would have missed that by scanning symbols instead of reading the
 call site.
+
+## VMM: the plan carries pool growth too
+
+Same read applied to `fg195v_plan_alloc` (`EXP-195/source/shared-cuda.cu:645`):
+
+    fg195v_plan_alloc(size, pool_used, pool_size, granularity, plan);
+    reserve_size = plan[0];  ptr_off = plan[1];   pool_size = plan[2];
+    pool_used    = plan[3];  actual_size = plan[4]; map_off = plan[5];
+
+Six outputs, and they include `pool_size` and `pool_used` - i.e. **the new pool extent and the updated usage are Goose
+decisions**, not native bookkeeping. The native `else` branch is the no-Goose path with its own 128-byte alignment and
+`size > avail` test.
+
+That corrects my own earlier listing: I had put "pool growth/reuse bookkeeping" in the native column. For the VMM pool it is
+not - growth is computed by the Goose plan and only the `cuMemMap`/`cuMemCreate` calls are primitives.
+
+Revised remainder for P3-17:
+
+| aspect | owner |
+|---|---|
+| reserve size, mapping offset, actual size (pinned host) | Goose |
+| fail/no-fail decision (zero plan -> nullptr) | Goose |
+| pool extent and updated usage (VMM) | Goose |
+| the allocation/mapping calls themselves | primitives |
+| device reset, asynchronous lifetime tracking | native |
+| the "pinned ring" clause | absent from this substrate |
+
+So the item is closer than the registry says, and the remaining native part is now narrow and specific: reset and async
+lifetimes, plus the stale clause.
