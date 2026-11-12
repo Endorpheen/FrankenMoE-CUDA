@@ -5,12 +5,12 @@ Runs our line with FG_TRACE_GRAPH=1 (the flint line has no hook and must not be 
 and compares against the counts implied by the model's recurrent_layers array. A mutation (three layers, two recurrent) must change
 the conv count to 2, otherwise the check proves nothing.
 """
-import json, re, signal, socket, subprocess, sys, time, urllib.request
+import json, os, re, signal, socket, subprocess, sys, time, urllib.request
 from pathlib import Path
 
 E = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-342-p6-06-tiny-hybrid')
 STAGE = E.parent/'EXP-2026-11-12-340-p6-03-request-trace'/'stage'
-MODEL = E/'tiny-hybrid.gguf'
+MODEL = Path(os.environ.get('MODEL', str(E/'tiny-hybrid.gguf')))
 
 def trace(model, port=8056):
     if socket.socket().connect_ex(('127.0.0.1', port)) == 0:

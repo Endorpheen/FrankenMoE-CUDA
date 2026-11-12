@@ -1,14 +1,4 @@
 {
- "blk.0.attn_gate.input_scale": [
-  1
- ],
- "blk.0.attn_gate.scale": [
-  1
- ],
- "blk.0.attn_gate.weight": [
-  32,
-  32
- ],
  "blk.0.attn_norm.weight": [
   32
  ],
@@ -241,5 +231,14 @@
  ],
  "blk.0.attn_k_norm.weight": [
   16
+ ],
+ "blk.0.attn_qkv.bias": [
+  96
+ ],
+ "blk.0.attn_output.scale": [
+  1
+ ],
+ "blk.0.attn_output.input_scale": [
+  1
  ]
 }

@@ -148,3 +148,26 @@ The `create_tensor` diff names the rest precisely:
 
 So the mutant is two steps from loadable: add those six names, drop whatever is extra, and the gate can be run against it. That is
 where this pass stops -- the mutant is not yet a mutation, and the gate's sensitivity remains unproven until it loads.
+
+## The all-attention mutant loads past every name check and then aborts in a Goose buffer module
+
+The remaining names were settled the same way -- width 96 for the fused `attn_qkv`, `attn_qkv.bias` of 96, `attn_output.scale` and
+`.input_scale` of 1, `attn_q_norm`/`attn_k_norm` of 16 -- and three names that are not used on a non-recurrent layer were dropped
+(`attn_k/q/v.bias` and `attn_gate*`). The tensor count now matches at 55.
+
+The model then passes all name and shape checks and aborts later, in a Goose module rather than in the loader:
+
+    ggml_abort <- fg162_fail <- fg162_gg_function_1
+
+so `fg162` (the buffer module) rejects something about this all-attention model during setup. That is a different and more interesting
+result than an unloadable file: it is the first time the synthetic model has exercised a Goose validation that the Apex model does not.
+
+It is **not** a sensitivity proof yet, because the gate cannot run against a server that never starts. But it is a concrete lead: the
+all-attention configuration reaches a Goose check that the hybrid configuration does not, and that check is worth reading on its own
+merits.
+
+## Where this leaves the item
+
+- Fixture (hybrid): loads, serves, and the gate asserts five properties -- `checks=5 failures=0`.
+- Mutant (all-attention): tensor set accepted (55/55), then aborted in `fg162`.
+- Gate sensitivity: still unproven, now with a named reason and a named module.
