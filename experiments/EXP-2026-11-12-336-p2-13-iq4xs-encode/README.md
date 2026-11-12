@@ -122,3 +122,19 @@ What is now established: the divergence is upstream of `l0`, in the per-block `d
 itself on this data, or the `max_scale`/`amax_scale` selection that produces `d = -max_scale/32`.
 
 The next step is a transcription compared against the *native* block bytes on this exact input, not against the port's own arrays.
+
+## The first failing case is not the first size
+
+A harness that reproduces the fixture's input generation for the 256-element case shows the port matching the transcription exactly:
+
+    ib=0..7  ref == ours (0.26519233, -0.259101689, -0.230306298, ...)
+    native d bytes 3e a0  (0xa03e, about -0.0083, matching dsup from those scales)
+
+Yet the fixture's first failure reported `ref=4c 20 ours=52 a0`, a different `d` altogether. The only consistent explanation is that the
+first failing case is **not** the 256-element one: the fixture consumes the RNG across four sizes, so the block that fails first belongs
+to a later case whose input the harness above did not reproduce.
+
+So the earlier conclusion "the divergence is in the block scale for this input" is only true for *that* input; on the 256-element case the
+block scales and the super-scale agree with the reference. The next step is to reproduce the exact case the fixture fails on (consume
+the RNG in the same order and size) before comparing anything further -- otherwise the comparison is against the wrong data, which is
+the third time in this experiment that a measurement was taken on inputs other than the failing one.
