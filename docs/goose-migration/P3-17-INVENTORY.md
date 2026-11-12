@@ -117,3 +117,17 @@ Revised remainder for P3-17, final for this pass:
 
 Nothing reclassified to done: the free side needs a teardown witness, reset and async lifetimes are still native, and the
 stale clause needs a decision.
+
+## Teardown witness attempt: inconclusive for these two modules
+
+Ran the accepted profile, issued one short request, stopped the server with SIGINT and captured the log (384 lines). Teardown
+output does print - `FG155_GEOMETRY`, `FG156_CONSTRUCTORS`, `FG157_CONTEXT_CORE`, `FG158_GRAPH_BUILDERS`, `FG160_SHARED`
+all appear at the end - so the capture path works.
+
+But `FG195V` and `FG196P` appear **zero** times in that short run, while they appear once each in the 32K run. The VMM/pinned
+paths are exercised by the large allocation that a 32K prefill makes, not by a 4-token request. So this attempt did not
+produce the free/unregister witness; it needs a 32K request followed by a clean shutdown.
+
+Recorded as an inconclusive attempt rather than a negative result, and with the reason: the missing witness is about the
+workload, not about the code being absent. The free side therefore remains "Goose by code, not yet witnessed", and P3-17
+keeps its status.
