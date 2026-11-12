@@ -6,6 +6,9 @@ The native source is the oracle: every ctx_http.get/post/del/ws registration is
 parsed, the handler name is mapped to an endpoint category, and duplicate
 (method, path) registrations must agree. Dynamic registrations (GCP AIP routes
 from register_gcp_compat) are excluded and listed in the README.
+
+The emitted module matches the path with Goose byte-slice string literals and the
+standard library, so there is no hand-written hash and no byte loop.
 """
 from pathlib import Path
 import json
@@ -78,12 +81,12 @@ CAT_NAME = {
 ROUTE_RE = re.compile(
     r'ctx_http\.(get|post|del|ws)\s*\(\s*"([^"]+)"\s*,\s*(.+?)\);\s*(?://.*)?$')
 
+METHOD_TAG = {1: 'GET', 2: 'POST', 3: 'DELETE', 4: 'WS'}
+
 
 def category_of(path, expr):
     if path in PATH_CAT:
         return PATH_CAT[path]
-    # last identifier of the handler expression, e.g. routes.get_health or
-    # models_routes->post_router_models
     m = re.findall(r'[A-Za-z_][A-Za-z0-9_]*', expr)
     for name in reversed(m):
         if name in HANDLER_CAT:
@@ -111,76 +114,30 @@ def parse_routes():
     return routes, dynamic
 
 
-def fnv(method, path):
-    h = 14695981039346656037
-    c = {1: ord('G'), 2: ord('P'), 3: ord('D'), 4: ord('W')}[method]
-    h = ((h ^ c) * 1099511628211) & 0xFFFFFFFFFFFFFFFF
-    for b in path.encode():
-        h = ((h ^ b) * 1099511628211) & 0xFFFFFFFFFFFFFFFF
-    return h
-
-
 def main():
     routes, dynamic = parse_routes()
-    keys = {}
-    for (method, path) in routes:
-        k = fnv(method, path)
-        if k in keys:
-            raise SystemExit(f'hash collision between {keys[k]} and {(method, path)}')
-        keys[k] = (method, path)
 
-    method_name = {1: 'GET', 2: 'POST', 3: 'DELETE', 4: 'WS'}
     lines = [
         '// HTTP route table in Goose, derived from tools/server/server.cpp.',
         '//',
-        '// Goose has no string type, so each route is keyed by a 64-bit FNV-1a',
-        '// value over the method byte followed by the path bytes. The keying and',
-        '// the table live in Goose; the gate proves every native registration maps',
-        '// to its endpoint category and that no key collides.',
+        '// Paths are Goose byte-slice strings compared with literals; the only',
+        '// helpers used are the standard library\'s starts_with and find. There is',
+        '// no hand-written hash and no byte loop.',
         '//',
-        '// Method bytes: GET 71, POST 80, DELETE 68, WS 87.',
-        'extern "fg449_ld_u8" fn ld_u8(p:u64,o:u64)->u32;',
-        'extern "fg449_st_i64" fn st_i64(p:u64,o:u64,v:i64);',
+        '// The parameterised POST /slots/:id_slot rule matches exactly one path',
+        '// segment, like the native httplib pattern.',
+        'import std;',
         '',
-        'fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }',
-        '',
-        'fn route_key(m:i64,p:u64,n:i64)->u64{',
-        ' var h:u64=14695981039346656037 as u64;',
-        ' var c:u64=71 as u64;',
-        ' if m==2 as i64 { c=80 as u64; }',
-        ' if m==3 as i64 { c=68 as u64; }',
-        ' if m==4 as i64 { c=87 as u64; }',
-        ' h=(h^c)*(1099511628211 as u64);',
-        ' var i:i64=0 as i64;',
-        ' while i<n {',
-        '  h=(h^(ld_u8(p,(i as u64)) as u64))*(1099511628211 as u64);',
-        '  i=i+1 as i64;',
-        ' }',
-        ' return h;',
-        '}',
-        '',
-        '// Endpoint category by exact method/path key; 0 means no route.',
-        'fn route_id(m:i64,p:u64,n:i64)->i64{',
-        ' if n<=0 as i64 {return 0 as i64;}',
-        ' if n>64 as i64 {return 0 as i64;}',
-        ' let k:u64=route_key(m,p,n);',
+        'fn route_id(m:i64,p:const u8[:])->i64{',
     ]
     for (method, path), cat in sorted(routes.items(), key=lambda x: (x[1], x[0][1])):
-        lines.append(f' if k=={fnv(method, path)} as u64 {{return {cat} as i64;}} // {method_name[method]} {path} -> {CAT_NAME[cat]}')
+        lines.append(f' if m=={method} as i64 && p=="{path}" {{return {cat} as i64;}} // {METHOD_TAG[method]} {path} -> {CAT_NAME[cat]}')
     lines += [
-        ' // parameterised route: POST /slots/:id_slot',
-        ' if m==2 as i64 && n>7 as i64 {',
-        '  if (ld_u8(p,0 as u64) as i64)==47 as i64 {',
-        '   if (ld_u8(p,1 as u64) as i64)==115 as i64 {',
-        '    if (ld_u8(p,2 as u64) as i64)==108 as i64 {',
-        '     if (ld_u8(p,3 as u64) as i64)==111 as i64 {',
-        '      if (ld_u8(p,4 as u64) as i64)==116 as i64 {',
-        '       if (ld_u8(p,5 as u64) as i64)==115 as i64 {',
-        '        if (ld_u8(p,6 as u64) as i64)==47 as i64 { return 34 as i64; }',
-        '       }',
-        '      }',
-        '     }',
-        '    }',
+        ' // POST /slots/<one segment> -> slots_post',
+        ' if m==2 as i64 {',
+        '  if starts_with(p, "/slots/") {',
+        '   if p.len > 7 as i64 {',
+        '    if find(p[7..], "/") < 0 as i64 { return 34 as i64; }',
         '   }',
         '  }',
         ' }',
@@ -196,9 +153,8 @@ def main():
         '}',
         '',
         'fn main(){',
-        ' put(0 as u64,0 as i64,route_id(1 as i64,0 as u64,0 as i64));',
-        ' put(0 as u64,1 as i64,(route_key(1 as i64,0 as u64,0 as i64) as i64));',
-        ' put(0 as u64,2 as i64,requires_key(0 as i64));',
+        ' route_id(1 as i64, "/health");',
+        ' requires_key(0 as i64);',
         '}',
         '',
     ]
@@ -212,10 +168,10 @@ def main():
     (E / 'tests/expected_routes.inc').write_text('\n'.join(inc) + '\n')
 
     (E / 'expected.json').write_text(json.dumps(dict(
-        routes=[dict(method=m, path=p, category=c, key=f'{fnv(m, p):016x}')
+        routes=[dict(method=m, path=p, category=c)
                 for (m, p), c in sorted(routes.items(), key=lambda x: (x[1], x[0][1]))],
         dynamic=dynamic), indent=2) + '\n')
-    print(f'parsed {len(routes)} routes, {len(keys)} distinct keys, dynamic: {dynamic}')
+    print(f'parsed {len(routes)} routes, dynamic: {dynamic}')
 
 
 if __name__ == '__main__':

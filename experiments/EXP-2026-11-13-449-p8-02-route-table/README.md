@@ -21,10 +21,12 @@ source text is the oracle, not a hand copy). It owns:
   everything else passes the key middleware (frontend assets are classified
   outside this table).
 
-Goose has no string type, so each route is keyed by a 64-bit FNV-1a value over a
-method byte (GET 71, POST 80, DELETE 68, WS 87) followed by the path bytes. The
-keying and the table are Goose; the language limitation is recorded rather than
-worked around with C strings.
+Paths are Goose byte-slice strings (`const u8[:]`), compared with literals. The
+module uses the standard library's `starts_with` and `find` for the
+parameterised route, and it needs `import std;` for them. An earlier draft keyed
+routes by a hand-written 64-bit FNV-1a over a method byte and the path bytes,
+which duplicated the standard library's `hash` for no reason; that draft was
+replaced, not kept as a fallback.
 
 ## Gate
 
@@ -34,21 +36,21 @@ worked around with C strings.
 | method mismatch routes only when that (method, path) pair is registered | 159 pairs |
 | unknown and near-miss paths (33 shapes x 4 methods: prefixes, trailing slash, `//`, case, query string, `:id` literal, over-long segments) | 0 routes |
 | `requires_key` for all 40 categories and for every route | health public, rest gated |
-| key properties | 53 distinct non-zero keys, no collision with any unknown path key |
-| total | **8 220 cases, 8 220 values, 0 failures** |
-| Python cross-check of the compiled Goose keys (`check.py`) | keys match an independent FNV-1a implementation, categories match the parsed native source |
+| total | **429 cases, 0 failures** |
+| `check.py` | re-parses the native source, compares the committed table with it, and compares the compiled Goose classification route by route |
 | ASan + UBSan host build | 0 failures, rc 0 |
 
 The expected table is regenerated from `server.cpp` on every build, so drift
 between the native source and the committed table fails the gate. `check.py`
-additionally re-parses the native source and compares it with the committed
-`expected.json`, then compares the compiled Goose keys with Python's own FNV.
+additionally re-parses the native source, compares it with the committed
+`expected.json`, and verifies the classification the compiled Goose module
+produced for every route.
 
 Mutations 6/6 caught (applied to the generator's Goose template so only the
-emitted module diverges): FNV prime changed (68 failures), POST method byte
-wrong (43), health loses the public exemption (3), parameterised `/slots`
-prefix broken (3), emitted category off by one (70), unknown path returns health
-(259).
+emitted module diverges): emitted category off by one (70 failures), method
+shifted to the next one (118), slots segment length not checked (1), slots rule
+matches nested paths (3), health loses the public exemption (3), one route not
+emitted (1).
 
 ## Duplicate registrations
 
@@ -67,6 +69,13 @@ Not part of this slice, so P8-02 stays IN_PROGRESS:
 - per-content-type body parsing, multipart and the request schema;
 - GCP AIP routes from `register_gcp_compat()` (paths come from environment
   variables) and the `/props` middleware payload.
+
+## Build note
+
+The compiler resolves `import std;` relative to its working directory, so the
+build links the canonical standard library into the build directory:
+
+    ln -s /home/end0/AI/Fried-Goose/stdlib runtime/exp449/build/stdlib
 
 ## Reproduce
 

@@ -18,12 +18,9 @@
     "route_id": [
       "gg_function_1"
     ],
-    "route_key": [
-      "gg_function_2"
-    ],
     "requires_key": [
-      "gg_function_6"
+      "gg_function_4"
     ]
   },
-  "generated_sha256": "b1c9ac0c766cef6cc955d7966e48db547811b47a92b7b7ee21cd0cde434863ba"
+  "generated_sha256": "64709564171513b9beef7d4124df1dd27f446052b0b509bc2a97b017555b63ef"
 }

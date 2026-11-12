@@ -3,320 +3,267 @@
     {
       "method": 1,
       "path": "/health",
-      "category": 1,
-      "key": "91bbd721736f8aad"
+      "category": 1
     },
     {
       "method": 1,
       "path": "/v1/health",
-      "category": 1,
-      "key": "947b7afed0b69861"
+      "category": 1
     },
     {
       "method": 1,
       "path": "/metrics",
-      "category": 2,
-      "key": "a997343d6ea5e1cc"
+      "category": 2
     },
     {
       "method": 1,
       "path": "/props",
-      "category": 3,
-      "key": "6970ec9adb2e590f"
+      "category": 3
     },
     {
       "method": 2,
       "path": "/props",
-      "category": 4,
-      "key": "449aeb10c11e94f6"
+      "category": 4
     },
     {
       "method": 1,
       "path": "/models",
-      "category": 5,
-      "key": "6f1d185889807d61"
+      "category": 5
     },
     {
       "method": 1,
       "path": "/v1/models",
-      "category": 5,
-      "key": "65391ead3de308a5"
+      "category": 5
     },
     {
       "method": 2,
       "path": "/models",
-      "category": 6,
-      "key": "2838533055b8823a"
+      "category": 6
     },
     {
       "method": 2,
       "path": "/models/load",
-      "category": 7,
-      "key": "87e39abc01d2cbc7"
+      "category": 7
     },
     {
       "method": 2,
       "path": "/models/unload",
-      "category": 8,
-      "key": "bbb1960b02fc7c9c"
+      "category": 8
     },
     {
       "method": 1,
       "path": "/models/sse",
-      "category": 9,
-      "key": "48c3eb4484683f87"
+      "category": 9
     },
     {
       "method": 3,
       "path": "/models",
-      "category": 10,
-      "key": "8f57f2e5d19fc6d6"
+      "category": 10
     },
     {
       "method": 2,
       "path": "/completion",
-      "category": 11,
-      "key": "97020221e1593bce"
+      "category": 11
     },
     {
       "method": 2,
       "path": "/completions",
-      "category": 11,
-      "key": "f1a55c91eaa08227"
+      "category": 11
     },
     {
       "method": 2,
       "path": "/v1/completions",
-      "category": 12,
-      "key": "30bcfbeee0c6e2e1"
+      "category": 12
     },
     {
       "method": 2,
       "path": "/chat/completions",
-      "category": 13,
-      "key": "819f8561813ec722"
+      "category": 13
     },
     {
       "method": 2,
       "path": "/v1/chat/completions",
-      "category": 13,
-      "key": "f700af74252cc890"
+      "category": 13
     },
     {
       "method": 2,
       "path": "/v1/chat/completions/control",
-      "category": 14,
-      "key": "7ed1bdace15dd636"
+      "category": 14
     },
     {
       "method": 2,
       "path": "/responses",
-      "category": 15,
-      "key": "65872a0c5b095284"
+      "category": 15
     },
     {
       "method": 2,
       "path": "/v1/responses",
-      "category": 15,
-      "key": "e6421282afe16442"
+      "category": 15
     },
     {
       "method": 2,
       "path": "/audio/transcriptions",
-      "category": 16,
-      "key": "cc1c3dfcf898d3ee"
+      "category": 16
     },
     {
       "method": 2,
       "path": "/v1/audio/transcriptions",
-      "category": 16,
-      "key": "e70a593b62dc88a0"
+      "category": 16
     },
     {
       "method": 2,
       "path": "/tts",
-      "category": 17,
-      "key": "3d9e50af06d0c211"
+      "category": 17
     },
     {
       "method": 4,
       "path": "/v1/realtime",
-      "category": 18,
-      "key": "9be7737f9499cd2a"
+      "category": 18
     },
     {
       "method": 2,
       "path": "/v1/messages",
-      "category": 19,
-      "key": "48210dfa23d3399e"
+      "category": 19
     },
     {
       "method": 2,
       "path": "/infill",
-      "category": 20,
-      "key": "6b657c3d25b99be6"
+      "category": 20
     },
     {
       "method": 2,
       "path": "/embedding",
-      "category": 21,
-      "key": "6f1516d63f81e04d"
+      "category": 21
     },
     {
       "method": 2,
       "path": "/embeddings",
-      "category": 21,
-      "key": "42b60c0de9b0095a"
+      "category": 21
     },
     {
       "method": 2,
       "path": "/v1/embeddings",
-      "category": 22,
-      "key": "c477d09f5e710364"
+      "category": 22
     },
     {
       "method": 2,
       "path": "/rerank",
-      "category": 23,
-      "key": "16554bf9c7b26973"
+      "category": 23
     },
     {
       "method": 2,
       "path": "/reranking",
-      "category": 23,
-      "key": "ecc4209ca71dcec5"
+      "category": 23
     },
     {
       "method": 2,
       "path": "/v1/rerank",
-      "category": 23,
-      "key": "aaa250c17db22f1d"
+      "category": 23
     },
     {
       "method": 2,
       "path": "/v1/reranking",
-      "category": 23,
-      "key": "7ca03b7c63bf4823"
+      "category": 23
     },
     {
       "method": 2,
       "path": "/v1/systemone",
-      "category": 24,
-      "key": "fc653a09b54097e9"
+      "category": 24
     },
     {
       "method": 2,
       "path": "/tokenize",
-      "category": 25,
-      "key": "1e204e7d785417dd"
+      "category": 25
     },
     {
       "method": 2,
       "path": "/detokenize",
-      "category": 26,
-      "key": "eee4752559767aca"
+      "category": 26
     },
     {
       "method": 2,
       "path": "/apply-template",
-      "category": 27,
-      "key": "0e62d0c6e0800fa9"
+      "category": 27
     },
     {
       "method": 2,
       "path": "/chat/completions/input_tokens",
-      "category": 28,
-      "key": "b51ec693b80198c8"
+      "category": 28
     },
     {
       "method": 2,
       "path": "/v1/chat/completions/input_tokens",
-      "category": 28,
-      "key": "3a00e621e55e7bf6"
+      "category": 28
     },
     {
       "method": 2,
       "path": "/responses/input_tokens",
-      "category": 29,
-      "key": "129ea1862d37b6aa"
+      "category": 29
     },
     {
       "method": 2,
       "path": "/v1/responses/input_tokens",
-      "category": 29,
-      "key": "75dcedd4c3461428"
+      "category": 29
     },
     {
       "method": 2,
       "path": "/v1/messages/count_tokens",
-      "category": 30,
-      "key": "28b53b257208d43d"
+      "category": 30
     },
     {
       "method": 1,
       "path": "/lora-adapters",
-      "category": 31,
-      "key": "bcd6ba967c522292"
+      "category": 31
     },
     {
       "method": 2,
       "path": "/lora-adapters",
-      "category": 32,
-      "key": "975eb0ecffff5c4f"
+      "category": 32
     },
     {
       "method": 1,
       "path": "/slots",
-      "category": 33,
-      "key": "d1301075be1f658c"
+      "category": 33
     },
     {
       "method": 2,
       "path": "/slots/:id_slot",
-      "category": 34,
-      "key": "83b8f2f45e821f16"
+      "category": 34
     },
     {
       "method": 1,
       "path": "/v1/stream",
-      "category": 35,
-      "key": "2be3979be0ff2187"
+      "category": 35
     },
     {
       "method": 2,
       "path": "/v1/streams/lookup",
-      "category": 36,
-      "key": "8ba54870097eb322"
+      "category": 36
     },
     {
       "method": 3,
       "path": "/v1/stream",
-      "category": 37,
-      "key": "abd082d6ea54938e"
+      "category": 37
     },
     {
       "method": 1,
       "path": "/cors-proxy",
-      "category": 38,
-      "key": "9b7d36fe7dd1abf3"
+      "category": 38
     },
     {
       "method": 2,
       "path": "/cors-proxy",
-      "category": 38,
-      "key": "2d3b72d6fbd70aec"
+      "category": 38
     },
     {
       "method": 1,
       "path": "/tools",
-      "category": 39,
-      "key": "34766424610afec2"
+      "category": 39
     },
     {
       "method": 2,
       "path": "/tools",
-      "category": 39,
-      "key": "dfa77c1310ca77ab"
+      "category": 39
     }
   ],
   "dynamic": [
