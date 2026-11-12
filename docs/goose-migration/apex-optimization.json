@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:42:19.732571+00:00",
+  "updated_at": "2026-11-12T02:52:54.282463+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Baseline corrected: exact path is 2343.3 prefill / 24.66 decode over three runs (23.78 was a low sample). Decode gap to native (26.66) and exp244 (26.13) is ~5.5-7.5%. Balanced cache base 3072 unchanged at 37.69-37.90.",
+  "current": "Decode spread is ~1.2 tok/s, so per-file/flag bisection cannot resolve the ~6% gap; the -O3 regression claim was withdrawn after the revert read the same range. Config restored (-O2, 36 modules). Exact decode quoted as ~24 (23.0-24.8); balance base 3072 remains 37.7-39.3.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -1070,6 +1070,13 @@
       "title": "База decode уточнена: 24.66",
       "kind": "insight",
       "detail": "Three runs 24.73/24.44/24.82, mean 24.66. The 23.78 was a low sample; gap to native/exp244 is 5.5-7.5%, not 10%."
+    },
+    {
+      "id": "e39",
+      "at": "2026-11-12T02:52:54.282463+00:00",
+      "title": "Разброс decode ~1.2 tok/s",
+      "kind": "insight",
+      "detail": "-O3 modules 23.70 mean; after revert the identical build reads 23.02-24.19. The regression claim is withdrawn and single-file bisection is stopped as unresolvable at this noise."
     }
   ]
 }
