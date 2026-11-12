@@ -12,8 +12,8 @@ transformations. This experiment moves them into Goose.
    are hex, everything else is copied literally. There is no `+` -> space
    conversion, because that is query-string semantics and lives in httplib.
 2. **Multipart form grouping**: the first occurrence of a text field becomes a
-   JSON string, later occurrences of the same key append to an array, comparing
-   raw key bytes. File parts are not part of that JSON object; they populate the
+   JSON string, later occurrences of the same key append to an array. Keys are
+   `const u8[:]` slices compared with the language's slice equality. File parts are not part of that JSON object; they populate the
    `uploaded_file` map with their filename and content type.
 3. **Parameter precedence**: a path parameter overrides a query parameter of the
    same name, and only the path value is percent-decoded.

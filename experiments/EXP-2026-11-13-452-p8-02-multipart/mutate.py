@@ -14,18 +14,10 @@ MUTATIONS = [
     ('invalid escape is decoded anyway',
      '    if hi>=0 as i64 { if lo>=0 as i64 { ok=1 as i64; } }',
      '    ok=1 as i64;'),
-    ('repeated form keys never group', '  if same!=0 as i64 { return 1 as i64; }',
-     '  if same!=0 as i64 { return 0 as i64; }'),
-    ('key comparison ignores bytes',
-     ''' if an!=bn {return 0 as i64;}
- var i:i64=0 as i64;
- while i<an {
-  if ld_u8(keys,((ao+i) as u64))!=ld_u8(keys,((bo+i) as u64)){return 0 as i64;}
-  i=i+1 as i64;
- }
- return 1 as i64;''',
-     ''' if an!=bn {return 0 as i64;}
- return 1 as i64;'''),
+    ('repeated form keys never group', '  if same { return 1 as i64; }',
+     '  if same { return 0 as i64; }'),
+    ('key comparison ignores bytes', ' if an==0 as i64 {return true;}\n return keys[ao..ao+an]==keys[bo..bo+bn];',
+     ' return true;'),
     ('path parameter loses to the query value', ' if has_path!=0 as i64 { return 2 as i64; }',
      ' if has_path!=0 as i64 { return 1 as i64; }'),
 ]

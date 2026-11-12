@@ -4,8 +4,9 @@
 //
 // The module answers one question: given an endpoint category from EXP449 and a
 // bitmask of the fields present in the request, which required fields are
-// missing. The wrapper maps each bit to the native message text; the messages
-// themselves stay native because Goose has no string type.
+// missing. The wrapper maps each bit to the native message text; keeping the
+// messages there is a slice boundary, not a language limitation, since Goose has
+// byte-slice strings.
 //
 // Field bits:
 //   1 prompt, 2 messages, 4 input, 8 input_prefix, 16 input_suffix,

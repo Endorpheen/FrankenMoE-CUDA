@@ -14,8 +14,9 @@
 // a per-handler audit and is the next slice.
 //
 // The error-type strings ("invalid_request_error", ...) and the JSON document
-// itself stay native: Goose has no string type, so the module returns the
-// numeric type and the wrapper maps it to the message.
+// itself stay native in this slice: the module returns the numeric type and the
+// wrapper maps it to the message. Goose strings are byte slices, so a later
+// slice can move the message table too.
 extern "fg450_st_i64" fn st_i64(p:u64,o:u64,v:i64);
 
 fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }

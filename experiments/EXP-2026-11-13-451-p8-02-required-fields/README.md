@@ -38,7 +38,8 @@ rather than presence.
 mask of missing required fields. Field bits: prompt 1, messages 2, input 4,
 input_prefix 8, input_suffix 16, content 32, query 64, documents/texts 128,
 model 256, control id 512, array body 1024, multipart file 2048. The wrapper maps
-each bit to the native message text; the strings stay native.
+each bit to the native message text; keeping the strings there is a slice
+boundary, not a language limitation.
 
 ## Gate
 

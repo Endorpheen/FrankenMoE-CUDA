@@ -19,8 +19,9 @@ experiment moves that policy into Goose.
    the fallback.
 
 The error-type strings (`invalid_request_error`, ...) and the JSON document stay
-native: Goose has no string type, so the module returns the numeric type and the
-wrapper maps it to the message.
+native in this slice: the module returns the numeric type and the wrapper maps it
+to the message. Goose does have byte-slice strings (`const u8[:]`), so moving the
+message table is a later mechanical step, not a language limitation.
 
 ## Finding: there is no request Content-Type validation
 

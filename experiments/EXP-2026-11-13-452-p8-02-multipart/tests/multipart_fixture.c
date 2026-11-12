@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 int64_t fg452_decode(uint64_t p, int64_t n, uint64_t out, int64_t cap);
-int64_t fg452_actions(int64_t n, uint64_t keys, uint64_t koffs, uint64_t klens, uint64_t out);
+int64_t fg452_actions(int64_t n, const char * keys, int64_t klen, const int64_t * koffs, const int64_t * klens, int64_t * out);
 int64_t fg452_source(int64_t has_query, int64_t has_path);
 
 uint32_t fg452_ld_u8(uint64_t p, uint64_t o) { return ((const uint8_t *) (uintptr_t) p)[o]; }
@@ -142,8 +142,7 @@ static void check_forms(void) {
             }
             int ref[8] = {0};
             native_actions(keys, n, ref);
-            fg452_actions(n, (uint64_t) (uintptr_t) kbuf, (uint64_t) (uintptr_t) koffs,
-                          (uint64_t) (uintptr_t) klens, (uint64_t) (uintptr_t) got);
+            fg452_actions(n, kbuf, (int64_t) pos, koffs, klens, got);
             ++cases; ++checks; ++total;
             for (int i = 0; i < n; ++i) {
                 ++checks;
