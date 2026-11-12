@@ -189,3 +189,19 @@ deleted, and no counters were changed.
 Direction stays as the measurements established it: the port itself is free (native libllama 1636.0/26.04 against full
 port 1624.1/23.64), the gap sits in the ggml stack and in the llama body, and the next step is the concrete cause inside
 the full candidate - starting with an object-level comparison of our staging ggml against the flint build.
+
+## The ggml stack is innocent; the regression is inside our libllama body
+
+The separating measurement: the exp244 libllama run **on our own staging ggml stack** measures **2574.9 / 24.6**, content
+equal. So neither the ggml stack nor the CUDA/CPU libraries cost anything - the same ggml that gives our full port 1624.1
+gives the exp244 body 2574.9. The difference is in the llama translation units themselves.
+
+That leaves two candidates inside our candidate, and both are ours, not Igor's port:
+1. the `changed` list in `build.py` - llama-graph/context/sampler/vocab/kv-cache/memory/model-loader/unicode copied from
+   `runtime/reconstructed/src`;
+2. the link step (`/usr/bin/c++`, `-O3`, no LTO) against the flint object set built by CMake.
+
+Since disabling every Goose decision group changed nothing, the cost is most likely in differential code that is not
+guarded by an `enabled()` switch - i.e. in the copied sources themselves or in how they are compiled. Next step: build
+the same `changed` list straight from the flint tree (no copied sources) and compare, then swap the list back one file
+at a time.
