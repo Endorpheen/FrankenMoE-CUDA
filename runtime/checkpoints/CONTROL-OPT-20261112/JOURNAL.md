@@ -268,3 +268,23 @@ Two checks on the accepted build:
 So decode in this profile is bounded by the `--cpu-moe` arrangement itself (expert GEMV over host memory at 8 threads),
 not by ported code. The one variant that raised decode (hybrid `--n-cpu-moe 34`, 27.76) was already rejected because it
 changes the numbers on the content check.
+
+## Method reused: the remaining ~9% is not in the decision modules
+
+Following Igor's method (compare old fast and current implementations, one hypothesis, on/off control on the same
+build), each remaining module family was switched off individually on the accepted build:
+
+| switch off | prefill | decode |
+|---|---|---|
+| BATCH_CONTAINER_LAYOUT | 2376.6 | 23.74 |
+| BATCH_CLASSIFY | 2372.7 | 23.67 |
+| KV_SET | 2372.1 | 24.36 |
+| KV_READ_SINFO | 2379.6 | 24.07 |
+| (reference, all on) | ~2365 | ~23.9 |
+
+All inside noise, content equal everywhere. Combined with the earlier group tests this closes the "a decision module is
+the cost" branch: no single ported decision carries the remaining gap between our 2365 and the exp244-body 2575 on the
+same ggml. So the next prefill work is not in module switches at all - it is in the graph/quantizer path.
+
+Memory side unchanged so far: pinning keeps experts pageable in RAM (RSS 22857, VRAM 6408). Any change now has to be
+judged on all four metrics, per the balanced-target instruction.
