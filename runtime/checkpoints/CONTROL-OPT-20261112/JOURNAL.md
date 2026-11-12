@@ -326,3 +326,33 @@ both stay. Backups: `/tmp/libggml-base.pre087` and `/tmp/llama-context.cpp.pre08
 
 Next mechanism from the same history: EXP101 lazy KV mapping via CUDA VMM (switch `GGML_KV_LAZY_VMM`), historically
 4428 -> 3188.
+
+## Restored EXP101: lazy KV mapping via CUDA VMM (VRAM 4430 -> 3190)
+
+Second historical mechanism from the same pointer. `GGML_KV_LAZY_VMM` was absent from every candidate we had. Applied
+`patches/kv-lazy-vmm.patch` (CUDA lazy buffer type + `llama-kv-cache` use), rebuilt `libggml-cuda` and `libllama`.
+
+| switch | prefill | decode | RSS MiB | VRAM MiB | correctness |
+|---|---|---|---|---|---|
+| `GGML_KV_LAZY_VMM=0` | 2304.4 | 24.04 | 21318 | 4430 | e68df05b |
+| **lazy VMM on (restored)** | 2305.9 | 24.26 | 21319 | **3190** | e68df05b |
+
+-1240 MiB, exactly the historical 4428 -> 3188, with speed and the exact output unchanged. The full 307-module port,
+the restored pinning and EXP087 all stay. Backups: `/tmp/libggml-cuda.pre101`, `/tmp/llama-kv-cache.cpp.pre101`,
+`/tmp/llama-kv-cache.h.pre101`.
+
+## Memory: both historical wins reproduce, and the target is beaten
+
+| stage | RSS MiB | VRAM MiB |
+|---|---|---|
+| start of optimisation | 22857 | 6408 |
+| + EXP087 lazy compute reservation | 21318 | 4430 |
+| + EXP101 lazy KV VMM | 21319 | **3190** |
+
+That is -1538 MiB RAM and -3218 MiB VRAM (-50%) against the start, with prefill ~2310-2365, decode 23.9-24.3 and the
+accepted `e68df05b` unchanged. The historical ~3400 MiB reference was an orientation, not a limit: 3190 is below it on
+the same profile.
+
+Caveat recorded per the source: EXP101 is a saved candidate, not a universal production acceptance - the broad
+compatibility/failure-mode matrix is incomplete, and a map failure aborts. Both switches (`GGML_LAZY_PP_RESERVE`,
+`GGML_KV_LAZY_VMM`) exist to disable, and both are on by default.
