@@ -93,3 +93,18 @@ What is **not** stale and must not be confused with the above:
 - EXP-087/EXP-101 are live C++ in our tree and are what removed 3218 MiB of VRAM.
 
 Nothing in this section changes a status; it changes what the remaining work means.
+
+## Sweep for further stale clauses: one more found, and a caution about the search
+
+Scanned all open requirements for FrankenMoE mechanism markers (`ring`, `pinned ring`, `tier`, `bank`, `EHS`, `staging`,
+`claim`). 15 open items matched. Reading them rather than trusting the match:
+
+- **P3-17 "Port GPU/pinned/VMM pools and transfer/residency policy"** - genuinely partly stale: it names the "pinned ring",
+  which does not exist here. The VMM/residency half is live and partly ours already (FG195V VMM arithmetic, EXP-101 lazy KV
+  mapping). Same treatment as P1-09/P1-10: restate or reintroduce.
+- **P5-01, P5-04, P1-11, P3-05, P3-07, P3-08, P3-19, P4-07, P4-08, P1-08, P10-10, C1-03** - the marker came from wording
+  such as "during", "staging buffer" in a generic sense, or "bank"/"claim" in a context unrelated to the old mechanism.
+  No stale clause established for these by inspection; they are ordinary open work.
+
+Caution recorded for the next pass: a keyword match is a hint, not a finding. Of 15 hits only one survived reading, and
+reporting the other 14 as stale would have been exactly the kind of inflation this audit is supposed to prevent.
