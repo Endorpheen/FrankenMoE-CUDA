@@ -132,3 +132,30 @@ layers or the V section -- not in the header, not in the token list, and not in 
 Next step: finish mapping the state offset (the bytes at 72 show another token-like value, so a second list or a
 per-checkpoint section is still unaccounted for), then compare the per-layer boundaries between the two files to find the
 first size divergence.
+
+## Sixth probe: the +780 bytes are one extra empty checkpoint
+
+Both files carry the checkpoint appendix (`SCKP` magic) at the **same offset 66 110 808**, so the main sequence state
+has the same size in both lines. Parsing the appendix:
+
+    native: count=1   [ n_tokens=5, pos 4..4, data_tgt=65 864 428 bytes ]
+    goose : count=2   [ n_tokens=0, pos 0..-1, data_tgt=740 bytes ]
+                      [ n_tokens=5, pos 4..4, data_tgt=65 864 428 bytes ]
+
+The second entry is byte-for-byte the native checkpoint. The extra first entry is an **empty checkpoint at zero
+tokens**: 8 (n_tokens) + 8 (pos_min/pos_max) + 24 (three buffer sizes) + 740 (data_tgt) = exactly 780 bytes.
+
+So the file-size delta is not a serialization defect and not a layout difference. It is one extra checkpoint that our
+line creates before any token has been added, and the state format itself is identical, as the shared appendix offset
+already showed.
+
+Why a zero-token checkpoint exists is a server-side question, not a serialization one: the checkpoint trigger decides
+`n_tokens_new = prompt.n_tokens() - n_tokens_cur`, and our line evidently reaches `create_checkpoint` once with
+`n_tokens_cur == prompt.n_tokens()`. Candidate causes are the batch splitting (FG237S) or the checkpoint policy
+(EXP268) -- whichever makes the first chunk cover the whole prompt. The native line simply never stores an empty
+checkpoint.
+
+Consequence for P5-08: the serialization criterion is met on both directions (formats parse identically, main state
+same size, checkpoint state byte-identical); the remaining differences are an empty checkpoint created by the server and
+the one-ULP KV sensitivity between compute lines. The former is worth fixing as waste, the latter is a property of two
+different kernels.
