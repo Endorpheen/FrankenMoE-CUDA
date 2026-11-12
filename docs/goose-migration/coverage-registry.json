@@ -17,7 +17,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg200g",
@@ -28,7 +29,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg201l",
@@ -39,7 +41,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg202t",
@@ -50,7 +53,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 30
+      "witness_log_count": 30,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg204x",
@@ -61,7 +65,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg205g",
@@ -72,7 +77,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 30
+      "witness_log_count": 30,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg206d",
@@ -83,7 +89,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg209i",
@@ -94,7 +101,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg210k",
@@ -105,7 +113,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg212s",
@@ -116,7 +125,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 25
+      "witness_log_count": 25,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg213p",
@@ -127,7 +137,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg215u",
@@ -138,7 +149,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 30
+      "witness_log_count": 30,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg216e",
@@ -149,7 +161,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 30
+      "witness_log_count": 30,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg217c",
@@ -160,7 +173,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 30
+      "witness_log_count": 30,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg218t",
@@ -171,7 +185,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg227n",
@@ -182,7 +197,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg228e",
@@ -193,7 +209,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg229i",
@@ -204,7 +221,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg230s",
@@ -215,7 +233,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg231a",
@@ -226,7 +245,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg232r",
@@ -237,7 +257,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 32
+      "witness_log_count": 32,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg233c",
@@ -248,7 +269,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg237s",
@@ -259,7 +281,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg238q",
@@ -270,7 +293,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg239b",
@@ -281,7 +305,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg240q",
@@ -292,7 +317,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg241u",
@@ -303,7 +329,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg242o",
@@ -314,7 +341,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 33
+      "witness_log_count": 33,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg243c",
@@ -325,7 +353,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg244s",
@@ -336,7 +365,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg345w",
@@ -347,7 +377,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 5
+      "witness_log_count": 5,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg367s",
@@ -358,7 +389,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg373s",
@@ -369,7 +401,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 5
+      "witness_log_count": 5,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg375s",
@@ -380,7 +413,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 25
+      "witness_log_count": 25,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg376s",
@@ -391,7 +425,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 25
+      "witness_log_count": 25,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg377s",
@@ -402,7 +437,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg380s",
@@ -413,7 +449,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg381s",
@@ -424,7 +461,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 4
+      "witness_log_count": 4,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg382s",
@@ -435,7 +473,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 24
+      "witness_log_count": 24,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg383s",
@@ -446,7 +485,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 25
+      "witness_log_count": 25,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg384s",
@@ -457,7 +497,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 23
+      "witness_log_count": 23,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg385s",
@@ -468,7 +509,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 23
+      "witness_log_count": 23,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg386s",
@@ -479,7 +521,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 23
+      "witness_log_count": 23,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg387s",
@@ -490,7 +533,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 23
+      "witness_log_count": 23,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg388s",
@@ -501,7 +545,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg389s",
@@ -512,7 +557,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 25
+      "witness_log_count": 25,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg390s",
@@ -523,7 +569,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg391s",
@@ -534,7 +581,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 25
+      "witness_log_count": 25,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg392s",
@@ -545,7 +593,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 24
+      "witness_log_count": 24,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg393s",
@@ -556,7 +605,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 3
+      "witness_log_count": 3,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg394s",
@@ -567,7 +617,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 3
+      "witness_log_count": 3,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg395s",
@@ -578,7 +629,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 3
+      "witness_log_count": 3,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg396s",
@@ -589,7 +641,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 23
+      "witness_log_count": 23,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg397s",
@@ -600,7 +653,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 23
+      "witness_log_count": 23,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg398s",
@@ -611,7 +665,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 24
+      "witness_log_count": 24,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg401s",
@@ -622,7 +677,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 24
+      "witness_log_count": 24,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg402s",
@@ -633,7 +689,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 24
+      "witness_log_count": 24,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg403s",
@@ -644,7 +701,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg404s",
@@ -655,7 +713,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 24
+      "witness_log_count": 24,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg405s",
@@ -666,7 +725,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 24
+      "witness_log_count": 24,
+      "witness_seen_teardown_run": true
     },
     {
       "module": "fg406s",
@@ -677,7 +737,8 @@
       "witness_seen_in_live_log": false,
       "in_accepted_library": true,
       "witness_seen_any_log": false,
-      "witness_log_count": 0
+      "witness_log_count": 0,
+      "witness_seen_teardown_run": false
     },
     {
       "module": "fg408s",
@@ -688,7 +749,8 @@
       "witness_seen_in_live_log": true,
       "in_accepted_library": true,
       "witness_seen_any_log": true,
-      "witness_log_count": 23
+      "witness_log_count": 23,
+      "witness_seen_teardown_run": true
     }
   ],
   "conflicts": [],
@@ -698,12 +760,14 @@
     "traced_to_source": 62,
     "witness_seen": 42,
     "witness_seen_any_log": 48,
-    "no_witness_anywhere": 14
+    "no_witness_anywhere": 14,
+    "witness_seen_teardown_run": 33
   },
   "liveness_gap": {
     "modules_without_current_log_witness": 20,
     "modules_without_any_witness": 14,
     "note": "Witness presence is evidence of execution, absence is not evidence of dormancy: several modules print only on teardown, on a specific decision branch, or when their feature is enabled by profile.",
-    "next_step": "run the accepted profile with the affected feature paths enabled, or capture teardown logs, before claiming liveness for the rest"
+    "next_step": "run the accepted profile with the affected feature paths enabled, or capture teardown logs, before claiming liveness for the rest",
+    "teardown_run_note": "A clean SIGINT run with the accepted argv printed 33 of 62 witnesses. Modules that never print are branch- or teardown-condition specific; absence is a visibility limit, not proof of dormancy."
   }
 }
