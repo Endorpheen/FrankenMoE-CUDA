@@ -102,7 +102,7 @@ for mod, out_name in (('EXP-2026-11-11-347-goose-kv-write-bridge', 'b345.o'),
     if q.returncode: print('bridge failed', mod); print(q.stderr[:800]); sys.exit(1)
     bridge_objs.append(str(o))
 
-extra_mod = [W/'fx291pic.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o']
+extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o']
 bridge_objs += [str(x) for x in extra_mod if x.exists()]
 flint_objs = sorted(str(x) for x in (FL/'build-cuda/src/CMakeFiles/llama.dir').rglob('*.o')
                     if x.name not in [c + '.o' for c in changed])
