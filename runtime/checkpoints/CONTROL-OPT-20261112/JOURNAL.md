@@ -862,3 +862,20 @@ Two readings, kept separate on purpose:
 - prefill drops to 2255 from 2326 measured under a quieter window. That is a load artefact, not a regression of the
   candidate: the environment occupied up to 10.8 of 12.3 GiB. It is recorded rather than hidden, and the quiet-window
   figure remains the reference for profile comparisons.
+
+## Same-window comparison: the cache does not move prefill
+
+Both configurations measured back to back in one window (desktop idle during the runs, 4-12% GPU utilisation):
+
+| variant | prefill | decode | own VRAM | total GPU use peak |
+|---|---|---|---|---|
+| exact path | 2220.8 | 23.34 | 3190 | 7103 |
+| cache 3584 | 2226.0 | 38.86 | 6778 | 10815 |
+
+Prefill differs by 0.2% while decode differs by 66% in the same window. That settles the question from the other side:
+the expert cache is not a prefill lever at all, not even indirectly through memory pressure, and the prefill ceiling
+(~2220 here, 2326 in a quieter window) moves with the environment rather than with our configuration.
+
+So the honest summary of prefill on this profile is a band, not a number: roughly 2200-2350 depending on background
+load, with the quiet-window figure used for comparisons. Reaching 3000 needs a profile change, and no configuration
+lever has moved it in the whole sweep.
