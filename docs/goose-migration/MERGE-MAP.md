@@ -69,3 +69,34 @@ four, `llama-batch.cpp` with three siblings, `llama-kv-cache.cpp` with one), one
 
 That is the real size of the step between "the patch exists and its own gate passes" and "the candidate contains it", and it explains cleanly
 why the deployed stage stops around EXP244: after that point the copies stopped being cumulative and each experiment became its own branch.
+
+## Merge progress that already exists
+
+`runtime/reconstructed/build.py` is the assembly mechanism: it compiles the patched files in `runtime/reconstructed/src`, discovers which
+`fgNNN*` modules the objects reference, builds each module from its experiment directory and links
+`runtime/reconstructed/build/libllama-exp371.so.0.7.0`.
+
+That library, built today at 06:17, contains `fg237s`, `fg238q`, `fg239b`, `fg240q`, `fg241u`, `fg242o`, `fg243c`, `fg244s`, `fg383s`,
+`fg398s`, `fg200g`, `fg212s`, `fg213p` and `fg202t` -- that is, the batch chain, the context reorder, the batch-container plan, the graph,
+sampler and vocab work, all merged into one DSO. Measured absent from it: `fg291b` (batch reject) and `fg286m` (lazy/mmap).
+
+So the merge is further along than the stage suggests: **`libllama` is merged through about EXP398**, while `libggml-base`, `libggml-cpu` and
+`libllama-common` are still the older libraries, and the server-side ports (`fg268p`, `fg270q`, `fg272s`, `fg274b`, `fg276t`) exist only as
+patched copies.
+
+## What a merged batch file needs, measured
+
+Compiling `EXP-291/llama-batch-patched.cpp` with the reconstructed build flags succeeds (143,776-byte object, no warnings) and references
+ten modules: `fg237s fg238q fg239b fg240q fg241u fg242o fg243c fg291b fg383s fg398s`.
+
+Module sources were located for eight of them (`sp-`, `sq-`, `cl-`, `ss4-`, `uc-`, `oi-`, `cp-generated.c` and `batch_reject-functions.c`).
+`fg383s` and `fg398s` have no source file in the experiment tree, only prebuilt objects `b383.o` and `b398.o` in
+`runtime/reconstructed/build` -- so those two modules are currently available as binaries only, which is a provenance gap to close before the
+next full rebuild.
+
+## The shortest correct path from here
+
+1. Add `fg291b` and `fg286m` to `runtime/reconstructed/src` and rebuild, linking `b383.o`/`b398.o` as build.py already does.
+2. Rebuild `libggml-base`/`libggml-cpu` from the staged patch set (EXP248-265) and relink a candidate.
+3. Hand-integrate the four `server-context.cpp` forks and the `server-queue.cpp` patch.
+4. Only then re-run the Apex profile, with Igor's agreement, to see whether `e68df05b` still holds.
