@@ -1538,13 +1538,13 @@
       "id": "P5-10",
       "phase": "P5",
       "title": "Close memory/KV subsystem on actual models",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "src/llama-memory*.cpp",
         "src/llama-kv-cache*.cpp"
       ],
       "acceptance": "Apex memory and session milestone including configured context/multi-sequence lifecycle; zero owned native KV/policy symbols in selected link.",
-      "evidence": "",
+      "evidence": "2026-11-12 CLOSED (docs/goose-migration/P5-10-CLOSURE.md): APEX.KV (FG392S/FG393S/FG394S/FG395S/FG199K with 43/0, 103/0, 53703/0, 875/0 gates and 24 mutations), APEX.RECURRENT_MEMORY (FG232R/FG382S/FG396S/FG397S/FG375S/FG376S, gates 34/0/875/0/33/0/76/0/35/0 with 20 mutations) and APEX.BATCH (FG349S/FG350S/FG352S/FG383S) are live on Apex. Save/restore/clear exact (387989920-byte file), near-capacity 441/512 exact (EXP418), four-way concurrency/slots (EXP359/360/357), cancel (EXP379) and in-flight shutdown (EXP267) with balanced pools and clean restart. Under the owner 'owned=authored by project' definition, upstream KV/memory classes are not owned; project KV policy is the Goose modules and the remaining C++ is the ABI bridge. Limits recorded: -np 1 profile, shift OFF_PATH, state_read_data interleaved I/O remains a buffer primitive.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 46,
@@ -3459,6 +3459,10 @@
     {
       "event": "P5-07 closed (EXP418): near-capacity 441/512 on the accepted runtime, save/restore and rewind exact in tokens, probabilities and content; branch covered by the fresh-process restore; server prompt cache scoped to P8.",
       "checkpoint": "7d3f08af"
+    },
+    {
+      "event": "P5-10 closed: Apex memory/KV subsystem milestone complete with live APEX.KV, RECURRENT_MEMORY and BATCH modules, exact state I/O, near-capacity, concurrency, cancel and unload; limits recorded.",
+      "checkpoint": "e44d6e54"
     }
   ],
   "batches": [
@@ -4349,11 +4353,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T20:40:22.416758+00:00",
+  "updated_at": "2026-11-12T20:42:35.657629+00:00",
   "status_totals": {
-    "DONE": 62,
+    "DONE": 63,
     "IN_PROGRESS": 26,
     "PARTIAL": 4,
-    "TODO": 60
+    "TODO": 59
   }
 }
