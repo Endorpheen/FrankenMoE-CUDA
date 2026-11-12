@@ -151,6 +151,35 @@ int main(int argc, char ** argv) {
         ggml_free(ctx);
     }
 
+    // 4b) the operations fixed in EXP261 on the same non-contiguous view: the unary SILU path, clamp and a binary op.
+    // The destination of each is contiguous, so the flat index maps to (row, col) exactly as the native per-row vector
+    // loop assumes; a strided *source* is what the kernels' loaders have to honour. SCALE is excluded on purpose:
+    // native asserts full contiguity for both operands (ops.cpp:4970), so a strided scale input is not a contract.
+    {
+        struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        struct ggml_tensor * t = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 16, 4);
+        float * d = (float *) t->data;
+        for (int r = 0; r < 4; ++r) for (int c = 0; c < 16; ++c) d[r*16+c] = (float)((r*16+c) % 13) * 0.21f;
+        struct ggml_tensor * v = ggml_view_2d(ctx, t, 8, 4, t->nb[1], 2*sizeof(float));
+        struct ggml_tensor * w = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 8, 4);
+        float * wd = (float *) w->data;
+        for (int i = 0; i < 32; ++i) wd[i] = (float)((i*5) % 11) * 0.13f - 0.7f;
+        struct ggml_tensor * si = ggml_silu(ctx, v);
+        struct ggml_tensor * cl = ggml_clamp(ctx, v, -0.5f, 0.5f);
+        struct ggml_tensor * ad = ggml_add(ctx, v, w);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, si);
+        ggml_build_forward_expand(g, cl);
+        ggml_build_forward_expand(g, ad);
+        if (ggml_graph_compute_with_ctx(ctx, g, 4) != GGML_STATUS_SUCCESS) abort();
+        emit("silu_view_stride",  (const float *) si->data, NULL, 32);
+        emit("clamp_view_stride", (const float *) cl->data, NULL, 32);
+        emit("add_view_stride",   (const float *) ad->data, NULL, 32);
+        ggml_free(ctx);
+    }
+
     // 5) other elementwise ops on the same special-value set
     {
         const int threads2[] = { 1, 8 };
@@ -164,8 +193,7 @@ int main(int argc, char ** argv) {
             struct ggml_tensor * sc = ggml_scale(ctx, ta, 1.75f);
             struct ggml_cgraph * g = ggml_new_graph(ctx);
             ggml_build_forward_expand(g, cl);
-            ggml_build_forward_expand(g, sc);
-            if (ggml_graph_compute_with_ctx(ctx, g, threads2[ti]) != GGML_STATUS_SUCCESS) abort();
+                if (ggml_graph_compute_with_ctx(ctx, g, threads2[ti]) != GGML_STATUS_SUCCESS) abort();
             char nm[64];
             snprintf(nm, sizeof nm, "clamp_t%d", threads2[ti]); emit(nm, (const float *) cl->data, NULL, NSPEC);
             snprintf(nm, sizeof nm, "scale_t%d", threads2[ti]); emit(nm, (const float *) sc->data, NULL, NSPEC);

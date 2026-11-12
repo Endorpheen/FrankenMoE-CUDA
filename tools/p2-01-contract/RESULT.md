@@ -357,3 +357,19 @@ Validation of the substitution: Apex 32K/128 with the rebuilt library gives `e68
 restore exact, slot file 387989920 bytes.
 
 Remaining coverage gap for a full P2-01 closure: strided views are still not exercised by this probe.
+
+## Update 2026-11-12 (second pass): strided cases added, one clamp residual isolated to signalling NaN
+
+The probe now also runs SILU, CLAMP and ADD on a non-contiguous 2-D view (row stride 16, 8 columns, offset 2
+floats), which closes the "no strided views" gap for the operations this item owns. `scale` cannot be probed
+strided: native asserts full contiguity for both operands (`ops.cpp:4970`), so that is not a contract input.
+
+All four strided cases are bit-identical. `silu_*` stays fixed. `clamp_t*` still differs on **one** input:
+index 8 of the special-value set, the signalling NaN `0x7f800001`. Goose returns -0.5, native returns +0.5.
+The two quiet-NaN payloads at indices 6 and 7 now match.
+
+This is recorded as an open residual with a narrowed cause: the emitted clamp branch evaluates
+`fmaxf(fminf(a, hi), lo)`, and a direct test of exactly that expression with the module's flags
+(`-O3 -march=native -ffp-contract=off`) returns +0.5 for `0x7f800001`. So the value cannot come from that
+branch, and the next step is to trace which module actually serves OP_CLAMP for this input rather than to
+change the expression again.
