@@ -584,3 +584,18 @@ is the one case where a slower-and-exact option is trivially the right one.
 
 That exhausts the compute-engine switches available on this profile. Prefill stands at ~2311-2320 with the exact output,
 and every remaining lever is a memory/speed trade that has already been measured and recorded.
+
+## Balance point 3072: stable, and better on longer generations
+
+| run | prefill | decode | VRAM | note |
+|---|---|---|---|---|
+| cache 3072 (first) | 2335.0 | 37.79 | 6266 | 128 tokens generated |
+| cache 3072 (repeat) | 2315.3 | 37.80 | 6266 | same, confirms stability |
+| cache 3072, 256 tokens | 2318.8 | **39.10** | 6266 | longer generation |
+
+Repeat lands within 0.01 tok/s of the first measurement, so this is not a lucky sample. With a longer generation decode
+rises to 39.1: the cache warms as more experts become resident, which is the expected shape and also the reason a
+short-run number understates steady-state decode.
+
+Recommendation on the agreed 32K load therefore stands on three runs: cache 3072 -> 37.8-39.1 decode at 6266 MiB, about
+-3 tok/s and -1 GiB against cache 4096, well above the 30 tok/s floor, prefill unchanged, exactness caveat unchanged.
