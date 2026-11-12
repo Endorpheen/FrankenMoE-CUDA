@@ -220,7 +220,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "unicode encode path not reached by this prompt"
+      "classification_reason": "unicode encode path not reached by this prompt text"
     },
     {
       "module": "fg227n",
@@ -279,7 +279,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV path not reached in this cache configuration"
+      "classification_reason": "KV path not reached with the profiled cache configuration"
     },
     {
       "module": "fg231a",
@@ -363,7 +363,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "batch path not exercised at these shapes (single sequence, 32K prompt)"
+      "classification_reason": "batch plan path not exercised at one sequence / 32K / ubatch 4096"
     },
     {
       "module": "fg239b",
@@ -561,7 +561,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "file-alignment path; this GGUF passes the alignment check elsewhere"
+      "classification_reason": "file-alignment decision reached only on an unaligned GGUF data section; this GGUF is aligned"
     },
     {
       "module": "fg380s",
@@ -757,7 +757,7 @@
       "first_call_printing": true,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "vocab partition path; the accepted tokenizer flow does not reach it"
+      "classification_reason": "call site is inside the special-token cache loop; the accepted request carries no special tokens, so the loop body is not entered"
     },
     {
       "module": "fg391s",
@@ -1053,5 +1053,17 @@
     "OFF_PATH_SAMPLING": 2,
     "OFF_PATH_LOAD_PATH": 1,
     "OFF_PATH_SERVER": 1
+  },
+  "fixture_plan": {
+    "note": "Each NEEDS_FIXTURE module has a concrete trigger recorded; a fixture run is required before any of them can be called live.",
+    "triggers": {
+      "fg390s": "request with special tokens / parse_special",
+      "fg377s": "unaligned GGUF fixture",
+      "fg230s": "alternative KV configuration",
+      "fg238q": "multi-sequence or different batch shape",
+      "fg243c": "different batch shape",
+      "fg397s": "hybrid cache settings",
+      "fg218t": "prompt that reaches the unicode encoder"
+    }
   }
 }
