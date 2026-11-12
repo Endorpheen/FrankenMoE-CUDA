@@ -172,3 +172,20 @@ Consequence: the remaining speed work has to target **our staging ggml stack**, 
 A first datapoint: full port on the flint ggml stack measures 1787.7 / 25.99 (+10% prefill, +10% decode over 1624.1 /
 23.64), content equal. Note the rule: those libraries are native, so they cannot be shipped as the accepted
 optimisation; their job is to tell us what to look for in ours.
+
+## Correction of the record (history kept)
+
+The section "Stage 2, accepted change 1" above is **wrong and withdrawn**. Igor does not accept replacing the current
+libllama with the older EXP244 as an optimisation: that is a rollback of ported work, and the mere fact that both
+libraries contain Goose code does not prove that every later ported section is preserved (214 modules against 307).
+The 2563-2574 / 25.9 numbers stay in the table and in the dashboard as a **diagnostic control only**. They are never to
+be reported as a recovery of the full path and never as an accepted optimisation. The commit that carried the
+`#accepted` tag for that switch (063de29) is superseded by this correction.
+
+The working candidate is the full port: staging symlinks point at `libllama-exp371` (307 modules), verified again after
+this correction, and every measurement from here on uses it. Rollback copies of both libraries are kept, nothing was
+deleted, and no counters were changed.
+
+Direction stays as the measurements established it: the port itself is free (native libllama 1636.0/26.04 against full
+port 1624.1/23.64), the gap sits in the ggml stack and in the llama body, and the next step is the concrete cause inside
+the full candidate - starting with an object-level comparison of our staging ggml against the flint build.
