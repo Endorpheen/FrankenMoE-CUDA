@@ -57,7 +57,7 @@ for c in CASES:
         print(f"   native: {a[n]!r}")
         print(f"   ours  : {b[n]!r}")
 import json as _j
-_j.dump({"native": a, "ours": b}, open("outputs.json", "w"), indent=1)
+_j.dump({"native": a, "ours": b}, open("outputs-matrix1.json", "w"), indent=1)
 uniq = {}
 for n, v in a.items(): uniq.setdefault(v, []).append(n)
 print("distinct outputs:", len(uniq), "of", len(CASES))

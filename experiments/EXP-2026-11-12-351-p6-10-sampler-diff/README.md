@@ -56,3 +56,15 @@ A hotter, longer matrix fixes the measurement:
 Six distinct outputs across eight cases, zero cross-line differences. DRY and top-n-sigma are **not demonstrated**: they produced the
 baseline text, so agreement there is agreement about nothing. That is the same trap as the unobservable Q5_K mutation earlier in the
 project -- a test that cannot fail is not evidence.
+
+## Making DRY and top-n-sigma bite
+
+Both were moved off "not demonstrated" with the right stimulus rather than a louder claim.
+
+- **DRY**: a repetitive prompt (`the the the the the the`) at `temperature 1.2`, `dry_multiplier 3.0`, `dry_allowed_length 1`,
+  `dry_penalty_last_n 64` changes the continuation (`rep_dry` differs from `rep_base`, first difference after the opening words), and the
+  two lines produce the **same** changed text. So DRY now has a case that can fail and does not.
+- **top-n-sigma**: `top_n_sigma 1.0` and `0.0` both leave the baseline text untouched, but `0.5` changes it (`sig_low` differs from
+  `sig_base`) and again both lines agree.
+- Parameter lesson: `dry_penalty_last_n: -1` and a negative `top_n_sigma` are rejected by the API with HTTP 400 before any sampling happens.
+  The probe now uses in-range values.
