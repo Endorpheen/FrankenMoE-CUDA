@@ -36,3 +36,22 @@ counters but not exercised as a scenario of its own.
 2. A near-capacity run (shared with P5-07) that reaches the cache bound and then reuses.
 3. An unload scenario: shut a server down while a request is in flight and after a completed one, then check the pool
    teardown counters and that no cache file or buffer survives.
+
+## Scope of wiring the shift modules into the live cache
+
+Checked before starting, so the cost is known:
+
+1. **The cell storage is private.** `llama_kv_cells` keeps `pos`, `ext`, `shift` and `seq` in a private section
+   (`llama-kv-cells.h:493-520`) behind public per-cell accessors. A Goose module that receives flat arrays therefore
+   needs either a small non-invasive copy-in/copy-out bridge or new accessors on the class. The copy is O(n_cells)
+   `memcpy` per shift, and shifts are rare, so the copy is the cheaper and safer option: it leaves the class API and its
+   invariants untouched.
+2. **The accepted profile never shifts.** Its argv is `-c 262144` with a 32 768-token prompt, so `seq_add` is not
+   reached. A live test needs a smaller context on the test server (for example `-c 4096` with a ~5 000-token prompt),
+   which is a test-server change, not a profile change.
+3. **The comparison for that test cannot be `e68df05b`.** A shifted context legitimately changes the answer. The gate has
+   to be an A/B on one DSO -- `GGML_GOOSE_KV_SHIFT=1` versus `0` -- with identical content, tokens and probabilities,
+   plus the shift witness non-zero only in the Goose arm.
+
+So the remaining work is: copy-in/copy-out bridge, call sites behind a default-on switch, relink, and an A/B at a small
+context. That is the same shape as EXP-264/265, with the extra first step of marshalling the cell arrays.
