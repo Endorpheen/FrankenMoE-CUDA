@@ -69,3 +69,19 @@ gate off, and again with it on, the two-request sequence still aborts.
 
 So the arena is not the whole story, and the remaining difference inside `llama-kv-cache.cpp` is still to be found. What is already established
 stands: replacing that one file with flint's version removes the crash, and disabling all fourteen KV gates does not.
+
+## Bisection inside the file so far
+
+Two of the most-changed functions were substituted with flint's versions, one at a time, rebuilt and tested on the same two-request sequence:
+
+| function replaced with flint's | lines | result |
+|---|---|---|
+| `apply_ubatch` | 92 vs our 136 | **still aborts** |
+| `find_slot` | 198 vs our 218 | **still aborts** |
+
+So neither of the two largest rewrites is responsible. Remaining candidates by change size: `prepare` (51 lines), `state_clear` (42),
+`state_write_data` (33), `state_write` (32), `state_read` (28), `clear` (27), `state_read_data` (26), `set_input_k_shift` (24).
+
+A pattern is worth noting: the functions that fail to explain it are the ones whose rewrites are *pure* wrappers around a bridge, and the ones
+still untested include the state-save and clear paths -- which is consistent with a defect in how a zero-length generation leaves the cell state,
+rather than in slot selection or batch application.
