@@ -39,3 +39,24 @@ ULP of SILU at a single finite input, not a NaN or signed-zero problem.
 Single-threaded and 8-thread runs only; element counts were small (12 and 24); no strided views yet (my first fixture
 planned strides but the cases use contiguous 1-D tensors, so the stride dimension is still untested). These limits are
 stated so the 17/19 result is not read as full-matrix evidence.
+
+## Cause of the SILU 1 ULP, located
+
+- native: `ggml_vec_silu_f32` uses the AVX2 path `ggml_v_silu()`, i.e. the FMA polynomial + float-bit exponent
+  construction (`ggml/src/ggml-cpu/vec.cpp:380`, `vec.h`),
+- Goose: `fn silu(x:f32)->f32 { return x/((1 as f32)+exp32(-x)); }` with `exp32` bound to libm `expf`
+  (`EXP-143/source/glu-rejected-contextual-u32.goose:8,89`).
+
+So the difference is not a logic error and not a NaN problem: it is libm `expf` against the SIMD polynomial. One ULP at
+x = -1 is the expected size of that gap; other inputs happen to agree.
+
+## Repair route (reuse, not a rewrite)
+
+EXP-143 already carries a byte-exact SIMD association for SWIGLU ("same FMA polynomial / float-bit exponent construction",
+`glu-numerical-contract.json`, 9/9 wide cases). The same exponent construction can back SILU, since SILU is
+`x * sigmoid(x)` and SWIGLU already computes exactly that sigmoid. That would make SILU byte-exact against native without
+touching the native path or weakening any gate - it is a change inside the Goose module, followed by a rebuild and this
+same probe.
+
+Not done in this iteration: it is a Goose-source change plus regeneration, and it must not be rushed inside a measurement
+pass. P2-01 stays PARTIAL with the cause and the route recorded.
