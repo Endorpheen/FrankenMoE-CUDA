@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:54:39.971446+00:00",
+  "updated_at": "2026-11-12T02:56:49.822269+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Cache ladder refined: 3584 gives 39.61 decode at 6778 MiB (three runs, stable to 0.1), i.e. 3.6 tok/s per GiB versus 2.3 for the next step to 4096. Approved base remains 3072; 3584 recorded as the measured candidate to move to.",
+  "current": "Cache 3584 verified at 64/128/256 tokens: 37.89/39.61/41.01 versus base 3072 at 37.23/37.79/39.10, VRAM 6778 fixed. Best-evidenced candidate to replace the base; decision with Igor. Exact path ~24 (23.0-24.8) at 3190.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -837,6 +837,36 @@
       "source": "runtime/reconstructed/build/mc3584-2/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r54-mc3584-256",
+      "label": "Expert cache 3584 across generation lengths",
+      "at": "2026-11-12T02:56:49.822269+00:00",
+      "prefill_tok_s": 2326.5,
+      "decode_tok_s": 41.01,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/mc3584_256-0/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r55-mc3584-64",
+      "label": "Expert cache 3584 across generation lengths",
+      "at": "2026-11-12T02:56:49.822269+00:00",
+      "prefill_tok_s": 2325.2,
+      "decode_tok_s": 37.89,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/mc3584_64-0/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -1129,6 +1159,13 @@
       "title": "3584 — лучший decode на МиБ",
       "kind": "insight",
       "detail": "39.55/39.65/39.62 decode at 6778 MiB: +1.82 tok/s for +512 MiB (3.6/GiB), better than the next step to 4096 (2.3/GiB). Candidate to move the base."
+    },
+    {
+      "id": "e41",
+      "at": "2026-11-12T02:56:49.822269+00:00",
+      "title": "3584 впереди на всех длинах",
+      "kind": "insight",
+      "detail": "37.89/39.61/41.01 at 64/128/256 vs 37.23/37.79/39.10 for 3072, VRAM fixed 6778. Tightest spread in the ladder; margin grows as the cache warms."
     }
   ]
 }
