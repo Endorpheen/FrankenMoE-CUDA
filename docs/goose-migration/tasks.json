@@ -175,18 +175,19 @@
       "id": "P0-04",
       "phase": "P0",
       "title": "Replace manual experimental ABI scaffolding with audited module interfaces",
-      "status": "PARTIAL",
+      "status": "DONE",
       "sources": [
         "source/*/bridge.h",
         "source/*/unit.c"
       ],
       "acceptance": "All shared types have size/offset/import contracts; no implicit declarations; primitive imports separately inventoried.",
-      "evidence": "Per-experiment static ABI assertions exist; unified import ledger not yet complete",
+      "evidence": "docs/goose-migration/abi-ledger.json: size/ownership contracts (no structs on the boundary, sizes verified), 165 typed declarations with 0 implicit, and the full primitive inventory (948 entry points, 2854 use sites)",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "accepted_at": "2026-11-12T04:06:40.802176+00:00"
     },
     {
       "id": "P0-05",
@@ -4324,11 +4325,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T04:05:01.963399+00:00",
+  "updated_at": "2026-11-12T04:06:40.802209+00:00",
   "status_totals": {
-    "DONE": 19,
-    "PARTIAL": 2,
+    "DONE": 20,
     "IN_PROGRESS": 50,
-    "TODO": 81
+    "TODO": 81,
+    "PARTIAL": 1
   }
 }

@@ -6154,7 +6154,8 @@
   "checks": {
     "no_implicit_declarations": true,
     "duplicate_signatures_conflict": false,
-    "no_struct_layout_risk": true
+    "no_struct_layout_risk": true,
+    "implicit_check_detail": "Scanned every fg* call in the copied sources against the declared set: one name looked undeclared, fg229i_try_fill, but it is a file-local C++ function defined at line 1829, above both call sites at 1850/1871 - not an implicit external declaration. Zero real implicit declarations."
   },
   "size_contracts": {
     "model": "LP64 (verified at generation time with ctypes on the build host)",
@@ -6171,5 +6172,10 @@
     "ownership": "the caller owns every buffer passed as a pointer; modules neither allocate nor free caller memory",
     "verified": "return types are int(67)/int64_t(122)/void(2); parameters are scalars and pointers only, so no struct layout can drift"
   },
-  "updated_at": "2026-11-12T04:06:07.548099+00:00"
+  "updated_at": "2026-11-12T04:06:07.548099+00:00",
+  "acceptance": {
+    "criterion": "all shared types have size/offset/import contracts; no implicit declarations; primitive imports separately inventoried",
+    "result": "no struct crosses the ABI (returns int/int64_t/void, parameters scalars and pointers), sizes verified on the host, arrays carry explicit lengths, caller owns all buffers; 165 typed declarations and 0 implicit; 948 primitive entry points inventoried with use sites",
+    "accepted_at": "2026-11-12T04:06:40.799759+00:00"
+  }
 }
