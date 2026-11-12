@@ -372,3 +372,31 @@ decision, not behind a technical blocker.
 Conclusion for this stage: the memory branch is closed (VRAM 3190, RSS 21319). The remaining prefill gap to the exp244
 body is a version difference in the llama body, and the only measured route to prefill above ~2400/decode above ~24 in
 this profile runs through the device expert cache, which is a correctness trade-off for Igor to decide.
+
+## Expert cache: cause of the mismatch established, variant preserved
+
+Re-measured on the current build (EXP087 + EXP101 + pinning), matching the argv exactly and adding one flag:
+
+| variant | prefill | decode | RSS MiB | VRAM MiB | content |
+|---|---|---|---|---|---|
+| accepted | 2306 | 24.3 | 21319 | 3190 | e68df05b |
+| moe-cache 512 | 2331.7 | 22.38 | 21320 | 3706 | differs |
+| moe-cache 1024 | 2327.0 | 29.22 | 21320 | 4218 | differs |
+| moe-cache 2048 | 2348.3 | **34.03** | 21320 | 5242 | differs |
+| moe-cache 4096 | OOM | - | - | - | - |
+
+EXP087/EXP101 did not merely add headroom: the same 2048 cache now costs 5242 MiB instead of 8456, so 34.03 tok/s
+decode fits comfortably while the total stays below the pre-optimisation 6408.
+
+Cause of `content_equal=false`, established and **not** waived: it is a logit shift, not a fault. At position 20 the
+accepted run ranks " line" first (-0.917) with " sentence" second (-1.244); with the cache " sentence" leads (-0.796) and
+" line" is second (-0.943). Both texts are coherent and on topic; the sampler simply takes a neighbouring branch at
+`temperature=1.0`. Repeats: without cache `e68df05b` twice; with cache `9d90a010` twice - each stable.
+
+A false trail is recorded too: an earlier comparison suggested ref and cache produced identical text, but the script
+inherited the cache flag into both arms of the loop. The measured truth is above; the wrong reading is noted so it is not
+repeated.
+
+Variant saved with command, numbers, cause and rollback in
+`runtime/checkpoints/CONTROL-OPT-20261112/variant-moe-cache/README.md`. It stays a diagnostic possibility until the
+correctness criterion decision is made explicitly.
