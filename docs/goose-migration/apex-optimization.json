@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:29:11.076327+00:00",
+  "updated_at": "2026-11-12T01:33:20.147080+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: pinning accepted (2365/23.9). New lead: --moe-cache-mib 2048 gives decode 32.81 and prefill 2409.6 at +2048 MiB VRAM, but the content check fails, so it is held out pending a decision on the correctness criterion.",
+  "current": "Stage 3 memory: EXP087 lazy compute reservation restored. VRAM 6408 -> 4430 (-1978), RSS 22857 -> 21318 (-1539), prefill/decode inside noise, exact output kept.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -29,7 +29,7 @@
       "id": "memory",
       "title": "RAM и VRAM",
       "state": "partial",
-      "implemented": "On the diagnostic library set VRAM falls 6408 -> 4590 and RSS 22856 -> 21310. KV on CPU (--no-kv-offload) reaches VRAM 3194 but decode collapses to 3.77, so KV stays on the GPU. --ctx-checkpoints 0 saves only 140 MiB and changes the output reproducibly.",
+      "implemented": "EXP087 lazy prompt compute reservation restored (VRAM 4430, RSS 21318) with pinning retained. KV-on-CPU and ctx-checkpoints variants rejected earlier.",
       "remaining": "Reduce memory on the full-port path, not the diagnostic one.",
       "dependencies": "speed restored on the full port"
     },
@@ -304,8 +304,8 @@
       "at": "2026-11-12T01:13:11.481875+00:00",
       "prefill_tok_s": 2337.3,
       "decode_tok_s": 23.14,
-      "ram_mib": 22857.0,
-      "vram_mib": 6408,
+      "ram_mib": 21318,
+      "vram_mib": 4430,
       "configuration": "same argv; full 307-module libllama with pin_mmap_experts (GGML_MMAP_EXPERT_PIN default on)",
       "conditions": "RTX 4070, browser load present",
       "correctness": "content equal, e68df05b",
@@ -400,6 +400,36 @@
       "conditions": "RTX 4070, browser load present",
       "correctness": "content NOT equal",
       "source": "runtime/reconstructed/build/run-mc2048/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r25-exp087-on",
+      "label": "EXP087 lazy compute reservation restored (accepted)",
+      "at": "2026-11-12T01:33:20.147080+00:00",
+      "prefill_tok_s": 2313.1,
+      "decode_tok_s": 23.93,
+      "ram_mib": 21318.0,
+      "vram_mib": 4430,
+      "configuration": "same argv; GGML_LAZY_PP_RESERVE default on",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "e68df05b",
+      "source": "runtime/reconstructed/build/run-exp087/metrics.json",
+      "diagnostic": false,
+      "accepted": true
+    },
+    {
+      "id": "r26-exp087-off",
+      "label": "Control: GGML_LAZY_PP_RESERVE=0",
+      "at": "2026-11-12T01:33:20.147080+00:00",
+      "prefill_tok_s": 2377.5,
+      "decode_tok_s": 24.06,
+      "ram_mib": 22857.0,
+      "vram_mib": 6408,
+      "configuration": "same argv; reservation off",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-exp087off/metrics.json",
       "diagnostic": true,
       "accepted": false
     }
@@ -510,6 +540,14 @@
       "title": "Decode 32.8 достижим через moe-cache",
       "kind": "insight",
       "detail": "--moe-cache-mib 2048: decode 32.81, prefill 2409.6, VRAM 8456. Content check differs, so it is a lead, not an accepted default. 4096 is OOM."
+    },
+    {
+      "id": "e15",
+      "at": "2026-11-12T01:33:20.147080+00:00",
+      "title": "EXP087 восстановлен: VRAM -1978",
+      "kind": "speedup",
+      "detail": "Lazy compute reservation was lost from the candidate; restored. VRAM 6408 -> 4430, RSS 22857 -> 21318, speed and exact output unchanged.",
+      "run_id": "r25-exp087-on"
     }
   ]
 }
