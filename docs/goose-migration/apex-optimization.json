@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:02:31.149968+00:00",
+  "updated_at": "2026-11-12T02:04:06.050014+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: prefill ~2310/3190 exact; decode ladder measured with the expert cache. Quality quantified: mean logprob within 1% on the shared prefix (ppl 1.226 vs 1.238). Smallest 30+ point is cache 1280 -> 30.63 at 4476 MiB. Criterion unchanged, variant experimental.",
+  "current": "Stage 2 from the cache baseline: 4096 MiB now fits and gives decode 40.78 at VRAM 7292; 6144+ OOM. Decode scales with the cache, prefill stays 2324-2348. No-cache profile remains the correctness control.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -567,6 +567,36 @@
       "source": "runtime/reconstructed/build/run-mc1536/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r36-mc3072",
+      "label": "Expert cache baseline extended",
+      "at": "2026-11-12T02:03:08.346306+00:00",
+      "prefill_tok_s": 2335.0,
+      "decode_tok_s": 37.79,
+      "ram_mib": 21320.0,
+      "vram_mib": 6266,
+      "configuration": "same argv + --moe-cache-mib 3072",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-mc3072/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r37-mc4096",
+      "label": "Expert cache baseline extended",
+      "at": "2026-11-12T02:03:30.878645+00:00",
+      "prefill_tok_s": 2324.3,
+      "decode_tok_s": 40.78,
+      "ram_mib": 21320.0,
+      "vram_mib": 7292,
+      "configuration": "same argv + --moe-cache-mib 4096",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-mc4096b/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -726,6 +756,13 @@
       "title": "Качество кэша измерено",
       "kind": "insight",
       "detail": "Shared 20-token prefix: mean logprob -0.2040 vs -0.2134, perplexity 1.226 vs 1.238 (+1%). Not a coherence argument; the criterion is still not waived."
+    },
+    {
+      "id": "e22",
+      "at": "2026-11-12T02:04:06.050014+00:00",
+      "title": "Decode 40.78 на кэше 4096",
+      "kind": "insight",
+      "detail": "4096 MiB fits after EXP087/EXP101 and gives 40.78 decode at 7292 MiB; 6144+ OOM. Prefill stays 2324-2348, so the cache is a decode lever only."
     }
   ]
 }
