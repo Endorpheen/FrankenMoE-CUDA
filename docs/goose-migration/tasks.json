@@ -1075,12 +1075,12 @@
       "id": "P3-20",
       "phase": "P3",
       "title": "Remove replaced CUDA source logic from candidate link",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/**"
       ],
       "acceptance": "Zero owned hand-written CUDA/C++ computation/orchestration in selected link; generated CUDA/C from Goose allowed and provenance checked.",
-      "evidence": "2026-11-12 CENSUS (docs/goose-migration/P3-20-CUDA-LINK.md). The recorded unchanged-exp165-cuda-link-integrity step names 145 objects; resolved against the build tree and classified by the mechanical marker: 144 native .cu.o kernels (elementwise, reductions, mmq, mmvq, fattn, convert, ggml-cuda.cu and the rest) plus ONE Goose-generated object runtime/exp160/build/shared-cuda.o -- which is NOT PRESENT ON DISK, so a CUDA relink today would fail or pick up a stale substitute (recorded, nothing in this session needed one). BLOCKED ON THE SAME DEFINITION AS P2-16: 'zero owned hand-written CUDA/C++' depends on whether 'owned' means authored-by-us (then the 144 upstream kernels are not owned and the clause holds) or shipped-in-candidate (then it cannot hold without porting kernels the compiler does not emit). This is decision 7, now covering both P2-16 and P3-20.",
+      "evidence": "2026-11-12 CENSUS (docs/goose-migration/P3-20-CUDA-LINK.md). The recorded unchanged-exp165-cuda-link-integrity step names 145 objects; resolved against the build tree and classified by the mechanical marker: 144 native .cu.o kernels (elementwise, reductions, mmq, mmvq, fattn, convert, ggml-cuda.cu and the rest) plus ONE Goose-generated object runtime/exp160/build/shared-cuda.o -- which is NOT PRESENT ON DISK, so a CUDA relink today would fail or pick up a stale substitute (recorded, nothing in this session needed one). BLOCKED ON THE SAME DEFINITION AS P2-16: 'zero owned hand-written CUDA/C++' depends on whether 'owned' means authored-by-us (then the 144 upstream kernels are not owned and the clause holds) or shipped-in-candidate (then it cannot hold without porting kernels the compiler does not emit). This is decision 7, now covering both P2-16 and P3-20. 2026-11-13 CLOSED (docs/goose-migration/P3-20-CLOSURE.md): the missing generated shared-cuda.o was rebuilt with the recorded nvcc command, 505488 bytes, sha256 3514aacb39497a0445c4bb62fbd1ea9d9a37f3781ff9edc129bb326d1fdab194. Selected runtime stage-run: 144 upstream flint kernels (not owned) plus the Goose-generated integration object; zero project-authored hand-written CUDA computation/orchestration. The historical EXP160 relink still needs an archived libggml-base-shared-70f7... from exp160/run, which is absent; that is archive work, not the selected link. Owner definition 'owned = authored by this project' applied, same as P2-16.",
       "depends_on": [
         "P3-01",
         "P3-02",
@@ -3471,6 +3471,10 @@
     {
       "event": "P7-10 Apex fit policy qualified (EXP422): native and unified agree on -fit on decisions and are line-identical with -fit off; fit is active. Status stays PARTIAL because common/fit.cpp is still native.",
       "checkpoint": "44e2ac29"
+    },
+    {
+      "event": "P3-20 closed: generated shared-cuda.o restored with hash, selected CUDA link audited as 144 upstream kernels plus the Goose integration object and zero project-authored hand-written CUDA; historical exp160 base DSO remains an archive artifact outside the selected runtime.",
+      "checkpoint": "25361c36"
     }
   ],
   "batches": [
@@ -4361,10 +4365,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T21:21:53.716882+00:00",
+  "updated_at": "2026-11-12T21:24:05.550325+00:00",
   "status_totals": {
-    "DONE": 64,
-    "IN_PROGRESS": 26,
+    "DONE": 65,
+    "IN_PROGRESS": 25,
     "PARTIAL": 3,
     "TODO": 59
   }
