@@ -789,3 +789,20 @@ decode should be quoted as "about 24 tok/s, spread 23.0-24.8", not as a single f
 
 Further decode bisection on this machine is not worth the measurement error without a profiler; that is recorded as a
 stopped line, not as a solved one.
+
+## Cache 3584: better decode per MiB than either neighbour
+
+Three runs, stable to 0.1 tok/s:
+
+| cache MiB | decode | VRAM | delta from previous |
+|---|---|---|---|
+| 3072 (base) | 37.79 | 6266 | - |
+| **3584** | **39.61** (39.55/39.65/39.62) | 6778 | +1.82 tok/s for +512 MiB |
+| 4096 | 40.78 | 7292 | +1.17 tok/s for +514 MiB |
+
+So the ladder is not linear: the step to 3584 buys 3.6 tok/s per GiB, the next step only 2.3. On Igor's balance rule
+(about 3 tok/s per 2 GiB is acceptable) the 3584 point is the more efficient buy, and it is also the most stable
+measurement in the whole ladder.
+
+The approved base stays 3072 until Igor says otherwise; 3584 is recorded as the measured candidate to move to, with the
+numbers behind it, and 4096 stays as the maximum-decoder point.
