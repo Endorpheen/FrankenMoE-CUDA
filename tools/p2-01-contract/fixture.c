@@ -213,6 +213,49 @@ int main(int argc, char ** argv) {
         ggml_free(ctx);
     }
 
+    // 8) per-layer operations the Apex graph actually runs: get_rows, sum_rows, mul_mat
+    {
+        struct ggml_init_params p = { 128u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        // get_rows over a 16x8 table with a fixed id list
+        struct ggml_tensor * tbl = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 16, 8);
+        float * td = (float *) tbl->data;
+        for (int i = 0; i < 16*8; ++i) td[i] = (float)(i % 17) * 0.13f - 0.8f;
+        struct ggml_tensor * ids = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 5);
+        int32_t * idp = (int32_t *) ids->data;
+        for (int i = 0; i < 5; ++i) idp[i] = (i*3) % 8;
+        struct ggml_tensor * gr = ggml_get_rows(ctx, tbl, ids);
+        // sum_rows over the same table
+        struct ggml_tensor * sr = ggml_sum_rows(ctx, tbl);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, gr);
+        ggml_build_forward_expand(g, sr);
+        if (ggml_graph_compute_with_ctx(ctx, g, 8) != GGML_STATUS_SUCCESS) abort();
+        emit("get_rows_16x8", (const float *) gr->data, NULL, (size_t)(16*5));
+        emit("sum_rows_16x8", (const float *) sr->data, NULL, (size_t) ggml_nelements(sr));
+        ggml_free(ctx);
+    }
+
+    // 9) a small dense matmul, the shape every layer uses
+    {
+        struct ggml_init_params p = { 256u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        const int K = 32, M = 8, N = 6;
+        struct ggml_tensor * w = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, K, M);
+        struct ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, K, N);
+        float * wp = (float *) w->data; float * xp = (float *) x->data;
+        for (int i = 0; i < K*M; ++i) wp[i] = (float)((i % 19) - 9) * 0.07f;
+        for (int i = 0; i < K*N; ++i) xp[i] = (float)((i % 23) - 11) * 0.05f;
+        struct ggml_tensor * mm = ggml_mul_mat(ctx, w, x);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, mm);
+        if (ggml_graph_compute_with_ctx(ctx, g, 8) != GGML_STATUS_SUCCESS) abort();
+        emit("mul_mat_32x8x6", (const float *) mm->data, NULL, (size_t)(M*N));
+        ggml_free(ctx);
+    }
+
     fclose(out);
     return 0;
 }

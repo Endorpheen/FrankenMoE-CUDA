@@ -226,3 +226,31 @@ Full picture of the 32-case probe:
 
 This is why the Apex profile can still be exact end to end: at temperature 1.0 with the accepted prompt, differences of
 this size did not flip a token. It is not evidence that they never can.
+
+## Fourth pass: per-layer ops, and one false positive of my own
+
+Added GET_ROWS, SUM_ROWS and a dense MUL_MAT (35 cases now).
+
+**False positive caught in my own fixture.** `sum_rows` first looked catastrophic: 2 of 16 elements differed, one by
+1.8e16. The cause was mine - `ggml_sum_rows` returns `ne1` values (8), while the fixture read 16, so the extra half was
+uninitialised memory. Fixed to `ggml_nelements()`, re-ran: `sum_rows` is now **bit-identical**. Repeating the lesson from
+the cache comparison earlier: a spectacular number is a reason to check the harness first, not a discovery.
+
+Final per-layer results:
+
+| case | verdict |
+|---|---|
+| get_rows (16x8 table, 5 ids) | bit-identical |
+| sum_rows (16x8) | bit-identical (after the fixture fix) |
+| mul_mat (32x8x6) | 23 of 48 differ, <=2.4e-7 (~1-2 ULP) |
+
+So `mul_mat`, the operation every layer runs, is ULP-close but not bit-exact - the same class as `norm` and `softmax`, and
+the reason a single Apex prompt can still reproduce `e68df05b` while the arithmetic underneath is not bit-identical.
+
+## Consolidated verdict of the 35-case probe
+
+| class | operations |
+|---|---|
+| bit-identical | add, sub, mul, div, sqr, sqrt, log, concat, rms_norm, get_rows, sum_rows, swiglu (+swapped, +oai) |
+| ULP-close (1-2) | norm, softmax, mul_mat, silu (silu worst: 247/1000) |
+| semantics on special values | clamp(NaN) picks the opposite bound; scale(-0) loses the zero sign |
