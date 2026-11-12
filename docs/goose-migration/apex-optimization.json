@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T03:55:00+00:00",
+  "updated_at": "2026-11-12T04:20:00+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: the exp371 libllama slowdown is localised; the exp244 libllama switch is being reclassified as diagnostic because it carries 214 fg modules against 307 in exp371 and therefore drops part of the port.",
+  "current": "Stage 2: full port restored in staging (1624.1/23.64); exp371 is a mixed GCC 15.2/13.4 build against a pure GCC 13.4 exp244, which is the lead for the 58% prefill gap.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -21,7 +21,7 @@
       "id": "speed",
       "title": "Prefill и decode",
       "state": "partial",
-      "implemented": "Regression localised to libllama (exp371 line vs exp244 line) on identical argv; CPU library, ubatch, threads, poll, KV types, goose CPU dots, CUDA modules and several module groups excluded. exp244 libllama reproduces 2563-2574 / 25.9-26.1 but at 214 fg modules instead of 307, so it is diagnostic until the skipped port is accounted for.",
+      "implemented": "Regression localised to libllama; full port restored in staging at 1624.1/23.64; exp244 diagnostic reaches 2563-2574 but with 214 of 307 modules. Lead: mixed GCC 15.2/13.4 build of exp371.",
       "remaining": "Find the specific cost inside the exp371 line without disabling ported work; prefill 3000 and decode 30 are not reached.",
       "dependencies": "full port preserved"
     },
@@ -237,6 +237,21 @@
       "source": "runtime/reconstructed/build/run-metrics-ck0/metrics.json",
       "diagnostic": false,
       "accepted": false
+    },
+    {
+      "id": "r14-fullport-restored",
+      "label": "Full port restored in staging (libllama exp371, 307 fg)",
+      "at": "2026-11-12T04:15:00+00:00",
+      "prefill_tok_s": 1624.1,
+      "decode_tok_s": 23.64,
+      "ram_mib": 22856.5,
+      "vram_mib": 6408,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json",
+      "conditions": "RTX 4070 12 GiB, browser/desktop GPU load present, own server only",
+      "correctness": "content equal, expected e68df05b",
+      "source": "runtime/reconstructed/build/run-metrics-fullport-baseline/metrics.json",
+      "diagnostic": false,
+      "accepted": false
     }
   ],
   "events": [
@@ -277,6 +292,14 @@
       "title": "Переключение на exp244 переклассифицировано",
       "kind": "deferred",
       "detail": "exp244 libllama has 214 fg modules against 307, so the speedup is diagnostic until the omitted port is accounted for."
+    },
+    {
+      "id": "e6",
+      "at": "2026-11-12T04:18:00+00:00",
+      "title": "Смешанная сборка GCC 15.2/13.4",
+      "kind": "insight",
+      "detail": "exp371 contains GCC 15.2.0 and 13.4.0 objects; exp244 is pure 13.4.0 with nearly equal .text. Kill-testing this needs a single-compiler rebuild, not env flags.",
+      "run_id": "r14-fullport-restored"
     }
   ]
 }
