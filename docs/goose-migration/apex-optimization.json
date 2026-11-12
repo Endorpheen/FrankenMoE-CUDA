@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:39:11.853576+00:00",
+  "updated_at": "2026-11-12T01:48:53.023018+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 3 memory: both historical mechanisms restored. VRAM 6408 -> 3190 (-50%), RSS 22857 -> 21319; prefill ~2310-2365, decode 23.9-24.3, exact output unchanged.",
+  "current": "Stage 2/3: accepted profile 2306/24.3 at VRAM 3190. Experimental expert-cache variant preserved: 2048 MiB gives decode 34.03 at VRAM 5242; content differs by a logit shift, cause established, awaiting a correctness decision.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -462,6 +462,51 @@
       "source": "runtime/reconstructed/build/run-exp101off/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r29-mc512",
+      "label": "Expert cache 512 MiB (experimental)",
+      "at": "2026-11-12T01:41:10.775703+00:00",
+      "prefill_tok_s": null,
+      "decode_tok_s": 22.38,
+      "ram_mib": 21320.0,
+      "vram_mib": 3706,
+      "configuration": "same argv + --moe-cache-mib 512",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (logit shift, cause established)",
+      "source": "runtime/reconstructed/build/run-mc512/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r30-mc1024",
+      "label": "Expert cache 1024 MiB (experimental, decode near 30)",
+      "at": "2026-11-12T01:41:34.565593+00:00",
+      "prefill_tok_s": null,
+      "decode_tok_s": 29.22,
+      "ram_mib": 21320.0,
+      "vram_mib": 4218,
+      "configuration": "same argv + --moe-cache-mib 1024",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (logit shift, cause established)",
+      "source": "runtime/reconstructed/build/run-mc1024/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r31-mc2048",
+      "label": "Expert cache 2048 MiB (decode 34, content differs)",
+      "at": "2026-11-12T01:41:57.611099+00:00",
+      "prefill_tok_s": null,
+      "decode_tok_s": 34.03,
+      "ram_mib": 21320.0,
+      "vram_mib": 5242,
+      "configuration": "same argv + --moe-cache-mib 2048",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (logit shift, cause established)",
+      "source": "runtime/reconstructed/build/run-mc2048b/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -586,6 +631,13 @@
       "kind": "achievement",
       "detail": "EXP101 lazy KV VMM restored (-1240 MiB), on top of EXP087 (-1978 MiB). RSS also -1538. Speed and exact output unchanged.",
       "run_id": "r27-exp101-on"
+    },
+    {
+      "id": "e17",
+      "at": "2026-11-12T01:48:53.023018+00:00",
+      "title": "Decode 34.03 при VRAM 5242",
+      "kind": "insight",
+      "detail": "Cache 2048 now costs 5242 MiB after EXP087/EXP101 (was 8456). Content differs by a logit shift; both continuations coherent; each arm stable. Variant saved, not enabled."
     }
   ]
 }
