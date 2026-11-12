@@ -45,3 +45,17 @@ artifact the Apex baseline is measured against -- the same trap recorded there -
 
 That is a deliberate boundary, not an omission: the divergence is understood, the one-line fix exists, and the reason it is not in the
 build is written down in the same place as the blocker.
+
+## The rest of the surface matches, once the known defect is avoided
+
+Two further probes close the gap between "one divergence found" and "the surface is understood":
+
+`probe-aligned.c` -- the original probe with `ne0 = 256` instead of 128 for the Q4_K `view_3d`, so the extra alignment check is not
+tripped. All fifteen lines match flint exactly: every constructor, view_1d/2d/3d, permute, transpose, reshape_2d/4d, row_size,
+element_size.
+
+`probe-ops.c` -- names and get_name, `cont`, `dup`, `set_zero`, `scale`, `add`, `mul_mat`, a 2-D view's `view_src` identity and
+`view_offs`, graph construction with two expanded nodes, `graph_n_nodes`, `graph_dump_dot`, and `used_mem`. All fourteen lines match.
+
+So on this surface the only divergence found is the extra block-alignment check, whose root cause and one-line fix are recorded above.
+Everything else in the probe set is bit-identical between the lines.
