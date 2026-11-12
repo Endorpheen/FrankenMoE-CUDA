@@ -37,3 +37,21 @@ P5-08 stays IN_PROGRESS with this defect located: compare `state_write` cell sel
 small prompt, find where the +780 bytes come from, and make a goose-written file restore identically on the native
 reader. Truncation and error paths are already covered (EXP363/364 rejected a truncated restore; EXP366 gates the header
 checks), so this write-direction mismatch is the remaining gap.
+
+## Narrowing the +780 bytes (second probe)
+
+Two more measurements, both cheap:
+
+1. **All 61 `GGML_GOOSE_*` switches off** -- the server does not even start ("not ready"), matching the earlier lesson
+   that a half-disabled staging is visible immediately. The blanket bisect is therefore not available; the KV-only
+   switches (`KV_STATE_WRITE`, `KV_META_PLAN`, `KV_LAYOUT_SPAN`, `KV_STATE_CLEAR`) were tried earlier and left the file
+   byte-identical, so the difference is not one of those four.
+2. **Delta versus prompt length**: a 2-token prompt gives native `65 946 744` / goose `65 947 536` (+792), the 12-token
+   prompt gives +780. The delta is essentially constant and does not scale with the number of cells.
+
+So the +780/792 is a **fixed-size section** that our writer emits and the native file does not (or emits differently), not
+a per-cell ordering effect. That rules out the cell-selection hypothesis and points at the data-section header: layout
+flag, layer count, rotation sizes and the per-layer descriptors.
+
+Next: parse both files' `state_write_data` headers with the writer's own layout and name the extra section, then make our
+writer match it. Only then can the goose-written file restore identically on the native reader.
