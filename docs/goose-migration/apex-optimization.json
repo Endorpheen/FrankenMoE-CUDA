@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T05:10:00+00:00",
+  "updated_at": "2026-11-12T05:30:00+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2 on the full candidate (307 modules). The EXP244 numbers are a diagnostic control only, explicitly rejected as an optimisation. Port is proven free; the gap is in the ggml stack and the llama body.",
+  "current": "Stage 2 on the full candidate: ggml stack ruled out (exp244 body runs 2574.9 on our staging ggml, full port 1624.1). The cost is inside the llama translation units - changed-list sources or the link step.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -282,6 +282,21 @@
       "source": "runtime/reconstructed/build/run-metrics-flintggml/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r17-e244body-stagingggml",
+      "label": "Diagnostic: exp244 libllama body on our own staging ggml",
+      "at": "2026-11-12T05:25:00+00:00",
+      "prefill_tok_s": 2574.9,
+      "decode_tok_s": 24.6,
+      "ram_mib": null,
+      "vram_mib": 4590,
+      "configuration": "same argv; exp244 libllama, staging ggml stack",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-e244s/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -345,6 +360,14 @@
       "title": "EXP244 отклонён как оптимизация",
       "kind": "deferred",
       "detail": "Igor: replacing the current libllama with EXP244 is a rollback of the port. 2570/25 stays diagnostic only; the full 307-module candidate is the working one."
+    },
+    {
+      "id": "e9",
+      "at": "2026-11-12T05:28:00+00:00",
+      "title": "ggml исключён",
+      "kind": "insight",
+      "detail": "Same staging ggml: full port 1624.1, exp244 body 2574.9. Cost is inside the llama translation units, not the library stack.",
+      "run_id": "r17-e244body-stagingggml"
     }
   ]
 }
