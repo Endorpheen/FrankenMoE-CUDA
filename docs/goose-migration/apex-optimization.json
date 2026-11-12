@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:17:58.259272+00:00",
+  "updated_at": "2026-11-12T01:20:00.239992+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2 accepted: expert mmap pinning restored into the full 307-module candidate. Paired A/B gives prefill 1619.6 -> 2337.3 (+44%), decode inside noise, correctness unchanged.",
+  "current": "Stage 2: pinning accepted (+43-44% prefill, 2365/23.9). Decode proven bounded by the cpu-moe host-memory GEMV profile, not by ported kernels; --no-mmap is not viable on this machine.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -22,7 +22,7 @@
       "title": "Prefill и decode",
       "state": "partial",
       "implemented": "Full port retained (307 modules). Root cause of the regression found and fixed: expert mmap pinning was missing. Paired A/B 1619.6 -> 2337.3 prefill (+44%), decode inside noise.",
-      "remaining": "Prefill 3000 and decode 30 still not reached; next candidates are the same mechanism's budget/coverage and the decode path.",
+      "remaining": "Prefill 3000 and decode 30 not reached. Decode is cpu-moe bound; prefill needs the remaining ~22% from the graph/quantizer path.",
       "dependencies": "full port preserved"
     },
     {
@@ -444,6 +444,13 @@
       "kind": "speedup",
       "detail": "Repeat: on 2369.8 / 2361.2, off 1655.6 / 1645.9. +43-44% prefill. The INFO log line is absent, so only the paired A/B counts.",
       "run_id": "r20-pinning-on-repeat"
+    },
+    {
+      "id": "e12",
+      "at": "2026-11-12T01:20:00.239992+00:00",
+      "title": "Decode ограничен профилем cpu-moe",
+      "kind": "insight",
+      "detail": "Q4K/Q6K goose dots off leave 2378.1/24.48 and 2361.4/23.75 (noise). --no-mmap does not complete. Decode is host GEMV bound at 8 threads."
     }
   ]
 }
