@@ -39,3 +39,21 @@ the `FG263C` witness and `stats_copy` counters.
 - `integration/llama-moe-cache.cpp` -- the modified copy
 - `bridge.c`, `copy_decisions-functions.c` -- the exported module and its primitives
 - `build_and_check.py`, `abi.json`, `compile.stderr`
+
+## Live A/B on the cache profile: identical, and the witness proves it ran
+
+`libllama` was relinked with the integrated object and the bridge using the same recipe as
+`runtime/reconstructed/build.py` (the native `llama-moe-cache.cpp.o` removed from the input set), staged beside the
+accepted set, and run twice with `--moe-cache-mib 3072` on the same DSO:
+
+| arm | content sha256 | tokens | probabilities | witness |
+|---|---|---|---|---|
+| `GGML_GOOSE_MOE_CACHE_COPY=1` | `9d90a010...` | equal | equal | `FG263C_MOE_CACHE_COPY runs=15855 pairs=46221 stats=5200` |
+| `GGML_GOOSE_MOE_CACHE_COPY=0` | `9d90a010...` | equal | equal | all zero |
+
+So the substitution is behaviourally exact under the cache profile, and the decisions are on the executed path -- not
+merely linked. The content differs from the accepted no-cache profile (`e68df05b`) because the cache itself changes the
+numerics; that is the known open GPU-cache question, independent of this switch, and it is why the gate here is an A/B
+on one DSO rather than a comparison with the accepted profile.
+
+The witness is a destructor report, so it also confirms the process shut down cleanly (rc 0 both arms).
