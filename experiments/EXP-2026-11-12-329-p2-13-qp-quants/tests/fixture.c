@@ -14,7 +14,7 @@
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define GROUP_MAX_EPS 1e-15f
 
-static int nearest_int(float fval) { float val = fval + 12582912.f; int i; memcpy(&i, &val, 4); return (i & 0x003fffff) - 0x200000; }
+static int nearest_int(float fval) { float val = fval + 12582912.f; int i; memcpy(&i, &val, 4); return (i & 0x007fffff) - 0x00400000; }
 
 static float make_qp_quants(int n, int nmax, const float * x, uint8_t * L, const float * quant_weights) {
     float max = 0;

@@ -95,3 +95,15 @@ show up in the end-to-end `quantize_row_q4_K_ref` comparison that is the real ac
 
 - `experiments/EXP-2026-11-12-330-p2-13-qkx3/` (Goose source, mechanically extracted oracle, fixture, README)
 - `experiments/EXP-2026-11-12-329-p2-13-qp-quants/` (the other helper, green with a stated blind spot)
+
+## Update: the rounding bug is fixed, and the signed-zero issue survives it
+
+After `nearest_int` was corrected to this fork's formula (`(bits & 0x007fffff) - 0x00400000`), both helpers were re-run with matching
+oracles:
+
+- `EXP329_QP checks=12400 failures=0` -- `make_qp_quants` is green with the correct rounding.
+- `EXP330_QKX3 checks=39600 failures=50` -- down from 55, still only the signed-zero class (`ref=-0 ours=0`).
+
+So the signed-zero defect is **not** an artefact of the broken rounding helper; it survives a correct one. The blocker stands, with a
+smaller count. Both fixtures and both bridges now use the fork's formula, which also means the earlier numbers for these two
+experiments are superseded rather than merely annotated.

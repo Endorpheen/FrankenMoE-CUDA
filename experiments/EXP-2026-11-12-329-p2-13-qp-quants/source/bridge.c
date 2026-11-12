@@ -9,7 +9,7 @@ static void g_st_u8(uint64_t a, int64_t v) { *(uint8_t *)(uintptr_t)a = (uint8_t
 static int64_t g_nearest(float v) {
     v += 12582912.f;
     int32_t i; memcpy(&i, &v, 4);
-    return (int64_t)(i & 0x003fffff) - 0x200000;
+    return (int64_t)(i & 0x007fffff) - 0x00400000;
 }
 #define fg329q_ld_f32  g_ld_f32
 #define fg329q_ld_u8   g_ld_u8

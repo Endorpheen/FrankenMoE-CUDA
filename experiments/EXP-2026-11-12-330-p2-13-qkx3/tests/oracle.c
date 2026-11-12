@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
-static int nearest_int(float f){float v=f+12582912.f;int i;memcpy(&i,&v,4);return (i&0x003fffff)-0x200000;}
+static int nearest_int(float f){float v=f+12582912.f;int i;memcpy(&i,&v,4);return (i&0x007fffff)-0x00400000;}
 static float make_qkx3_quants(int n, int nmax, const float * GGML_RESTRICT x, const float * GGML_RESTRICT weights,
         uint8_t * GGML_RESTRICT L, float * GGML_RESTRICT the_min, uint8_t * GGML_RESTRICT Laux,
         float rmin, float rdelta, int nstep, bool use_mad) {
