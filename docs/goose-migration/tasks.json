@@ -1555,14 +1555,14 @@
       "id": "P6-01",
       "phase": "P6",
       "title": "Port architecture,hparams,cparams and tensor-name registries",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "src/llama-arch.cpp",
         "src/llama-hparams.cpp",
         "src/llama-cparams.cpp"
       ],
       "acceptance": "Every audited architecture/tensor/config entry represented; unknown/invalid metadata errors preserved; no Apex-only hardcoding.",
-      "evidence": "",
+      "evidence": "EXP-302 record. Representation: llama-arch.cpp is byte-identical to flint (diff 0 lines), so architecture ids, tensor enumerations and layer tables are the same set by construction. Additive-only elsewhere: llama-model.cpp 96/0, llama-hparams.cpp 15/0; llama-model-loader.cpp 98/13, where the 13 removals are native expressions replaced by Goosed decisions (alignment, mmap mode, duplicate weight, reshape guard, buffer support) and each call site keeps its throw. No added line mentions a model name. Errors measured on three fixtures in both lines: invalid GGUF type 99 -> 'key ... has invalid GGUF type 99' + 'failed to read key-value pairs'; version 999 -> 'failed to read header'; truncated -> 'failed to read key-value pairs', all followed by identical load-failure lines. Live: the accepted run loads the real 40-block MoE model and prints FG389S_GGUF_INVENTORY.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 416,
@@ -4325,10 +4325,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T09:44:27.258310+00:00",
+  "updated_at": "2026-11-12T09:45:30.350742+00:00",
   "status_totals": {
-    "DONE": 34,
-    "IN_PROGRESS": 38,
+    "DONE": 35,
+    "IN_PROGRESS": 37,
     "TODO": 80
   }
 }
