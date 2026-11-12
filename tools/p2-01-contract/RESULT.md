@@ -197,3 +197,32 @@ permissioned compiler pass. Nothing is changed in the accepted tree.
 witness exists in the accepted run and no clamp/scale Goose module is present, which means the Apex path executes the
 **native** implementation for them. So the defects are real for future architectures but not live in the accepted profile -
 which is consistent with `e68df05b` still holding.
+
+## Third pass: normalisation and softmax are ULP-close, not bit-exact
+
+Added NORM, RMS_NORM and SOFT_MAX over 4x16 finite rows (32 cases total now):
+
+| case | differing | max abs diff | note |
+|---|---|---|---|
+| norm | 30 of 64 | 2.4e-07 | ~1-2 ULP at values near 1.4 |
+| rms_norm | 0 of 64 | - | identical |
+| softmax | 42 of 64 | 1.5e-08 | ~1 ULP at values near 0.02 |
+
+So the ported modules are numerically close on the operations every model runs, but not bit-exact for `norm` and
+`softmax`. That is a different class from the clamp/scale findings: those changed a value's meaning on special inputs,
+these differ in the last bits on ordinary inputs.
+
+Full picture of the 32-case probe:
+
+| operation | verdict |
+|---|---|
+| add, sub, mul, div, sqr, sqrt, log, concat, rms_norm | bit-identical |
+| swiglu, swiglu swapped, swiglu_oai | bit-identical |
+| norm | 30/64 differ, <=2.4e-7 |
+| softmax | 42/64 differ, <=1.5e-8 |
+| silu | 247/1000 differ, 1-2 ULP |
+| clamp(NaN) | opposite bound (semantics) |
+| scale(-0) | sign of zero lost (semantics) |
+
+This is why the Apex profile can still be exact end to end: at temperature 1.0 with the accepted prompt, differences of
+this size did not flip a token. It is not evidence that they never can.

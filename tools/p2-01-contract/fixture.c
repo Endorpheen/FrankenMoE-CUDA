@@ -190,6 +190,29 @@ int main(int argc, char ** argv) {
         ggml_free(ctx);
     }
 
+    // 7) normalisation and softmax on rows built from the special values
+    {
+        const int nr = 4, nc = 16;
+        struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        struct ggml_tensor * t = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, nc, nr);
+        float * d = (float *) t->data;
+        for (int r = 0; r < nr; ++r) for (int c = 0; c < nc; ++c) d[r*nc+c] = (float)((r*7 + c*3) % 11) * 0.19f - 1.0f;
+        struct ggml_tensor * nrm = ggml_norm(ctx, t, 1e-6f);
+        struct ggml_tensor * rms = ggml_rms_norm(ctx, t, 1e-6f);
+        struct ggml_tensor * sm  = ggml_soft_max(ctx, t);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, nrm);
+        ggml_build_forward_expand(g, rms);
+        ggml_build_forward_expand(g, sm);
+        if (ggml_graph_compute_with_ctx(ctx, g, 8) != GGML_STATUS_SUCCESS) abort();
+        emit("norm_finite", (const float *) nrm->data, NULL, (size_t)(nr*nc));
+        emit("rms_finite",  (const float *) rms->data, NULL, (size_t)(nr*nc));
+        emit("softmax_finite", (const float *) sm->data, NULL, (size_t)(nr*nc));
+        ggml_free(ctx);
+    }
+
     fclose(out);
     return 0;
 }
