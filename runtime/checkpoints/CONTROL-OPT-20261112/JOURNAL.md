@@ -29,3 +29,23 @@ of numbers, so 2500-2570 is a reproducible baseline on this machine, not a histo
 
 Next: find which code difference between the two libllama lines costs 62% of prefill, without reverting ported work to
 C++.
+
+## Stage 2, accepted change 1: staging uses the exp244 libllama
+
+Switching the `libllama.so*` symlinks in `stage-run` from `exp371` to `exp244` (both Goose builds; nothing reverted to
+C++) and keeping every other library as-is:
+
+| metric | before | after | delta |
+|---|---|---|---|
+| prefill tok/s | 1588.7 | **2563.2** | +61.3% |
+| decode tok/s | 21.93 | **26.09** | +19.0% |
+| peak RSS MiB | 22855.8 | **21309.6** | -1546 |
+| VRAM own MiB | 6408 | **4590** | -1818 |
+| correctness | `e68df05b`, probs equal, restore ok | same | unchanged |
+
+Note on the earlier 1616 measurement: only `libllama.so.0.7.0` had been repointed while `libllama.so.0` (the SONAME the
+loader actually opens) still pointed at exp371. Both symlinks must be changed together - that mistake cost one false
+measurement and is recorded so it is not repeated.
+
+Rollback: `stage-run/libllama.so*` back to `libllama-exp371.so.0.7.0` (a copy is kept as
+`libllama-exp371-optrollback.so.0.7.0`).
