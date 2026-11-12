@@ -107,3 +107,32 @@ So the current facts are narrower than they looked: the crash happens with our `
 flint's `llama-kv-cache.cpp` plus our header, and disabling the gates does not remove it. Attribution inside the pair is still open, and the next
 step should compare *state* rather than assert-free behaviour -- for example by printing `seq_pos_min` and the cell set size for the same
 sequence under both libraries.
+
+## Root cause found for one half, and a fix that holds in isolation
+
+Instrumenting `llama_kv_cells::seq_pos_min` (behind `FG_DEBUG_POS`) for the same two-request sequence gives:
+
+    ours:     FGPOS_MIN seq=0 set_empty=1 set_size=0 arena=0x...   then  set_size=4   -> abort
+    flint's:  FGPOS_MIN seq=0 set_empty=1 set_size=0 arena=0x...   then  set_size=4, set_size=1
+
+So the abort fires on a query where the *set* already holds four positions, which means the returned `-1` came from the arena, not from the cells.
+The incremental bounds missed a path -- a zero-length generation -- and the stale `-1` then overrode the correct set.
+
+The environment variable matters here and cost a detour: it is `GGML_GOOSE_KV_SEQPOS`, not `GGML_GOOSE_KV_SEQPOS_INCR`. With the correct name set
+to `0`, the sequence answers and does not abort -- which is what identified the arena rather than the set as the source.
+
+**Fix:** `seq_pos_min` and `seq_pos_max` now fall back to the set when the arena reports "absent" while the set is non-empty. The fast path is
+unchanged, and the fallback only runs on the path the arena missed. With the fix and the gate at its default, the sequence answers and the full
+edge sweep passes on the isolated stage.
+
+## A second, independent cause remains
+
+The same test against the **candidate** still aborts -- with all five server gates at `0`, and also after replacing its `libllama` with flint's.
+So the merged server implementation triggers the assert on its own, independently of the library fix.
+
+Two causes, then, not one: the stale arena (fixed, verified in isolation) and something in the merged server path (open).
+
+## Correction to an earlier inference
+
+A scan of the merged file suggested `fg274b_can_batch` was called without its gate. It is not: the `if (fg274b_enabled())` guard is fourteen
+lines above the call, and my twelve-line window missed it. No code change was made on that basis.

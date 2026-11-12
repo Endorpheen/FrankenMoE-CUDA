@@ -522,10 +522,18 @@ public:
     // return -1 if the sequence is not present
     llama_pos seq_pos_min(llama_seq_id seq_id) const {
         assert(seq_id >= 0);
+        if (getenv("FG_DEBUG_POS")) {
+            fprintf(stderr, "FGPOS_MIN seq=%d set_empty=%d set_size=%zu arena=%p\n",
+                    (int) seq_id, (int) seq_pos[seq_id].empty(), seq_pos[seq_id].size(), (void *) goose_bounds_ptr());
+        }
         assert(seq_id < LLAMA_MAX_SEQ);
 
         if (int64_t * gb = goose_bounds_ptr()) {
-            return (llama_pos) gb[seq_id];
+            // the arena is a cache: when it says "absent" but the set still holds positions,
+            // the bookkeeping missed a path (observed with a zero-length generation), so trust the set
+            if (gb[seq_id] >= 0 || seq_pos[seq_id].empty()) {
+                return (llama_pos) gb[seq_id];
+            }
         }
 
         if (seq_pos[seq_id].empty()) {
@@ -542,7 +550,9 @@ public:
         assert(seq_id < LLAMA_MAX_SEQ);
 
         if (int64_t * gb = goose_bounds_ptr()) {
-            return (llama_pos) gb[LLAMA_MAX_SEQ + seq_id];
+            if (gb[LLAMA_MAX_SEQ + seq_id] >= 0 || seq_pos[seq_id].empty()) {
+                return (llama_pos) gb[LLAMA_MAX_SEQ + seq_id];
+            }
         }
 
         if (seq_pos[seq_id].empty()) {
