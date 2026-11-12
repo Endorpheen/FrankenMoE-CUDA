@@ -35,11 +35,16 @@ A witness is the only thing that separates "linked" from "runs", so here is the 
 | `fg268p` | checkpoints | **observed** | witness line printed, no eviction at this size |
 | `fg262a` | MoE cache admission | **linked only** | needs a MoE model; no witness printer exists in its experiment |
 | `fg263c` | MoE cache copy | **linked only** | same |
-| `fg286m` | lazy/mmap bookkeeping | **linked only** | its experiment has no `bridge.c` and no printer |
+| `fg286m` | lazy/mmap bookkeeping | **observed** | `gdb` breakpoint on `fg286m_should_lock` hit during model load |
 
 "Observed" means the bridge counted a decision during a run. "Linked only" means the symbol resolves but nothing in this session proved it
 executed -- and for those three, that is not a formality: the batch-reject bridge was in exactly this state until it was linked from the wrong
 object and had to be fixed.
 
-Making `fg262a` and `fg263c` observed needs a MoE model, which means Apex. Making `fg286m` observed needs either a witness in its experiment or a
-loader-path probe that can distinguish the two behaviours. Both are honest reasons for the current state rather than mysteries.
+`fg286m` was promoted from "linked only" to "observed" without touching any generated code: `gdb` with a pending breakpoint on
+`fg286m_should_lock` stops inside the bridge during model load, which proves the call site is reached. The same probe on `fg262a_run`,
+`fg263c_run_from_slot` and `fg263c_run_from_pairs` produced no hit on a dense model, which matches the expectation that those paths are MoE-only
+rather than suggesting a mistake.
+
+So the breakpoint probe is the witness substitute when a module has no printer, and only the two MoE-cache bridges remain unobserved --
+because they need a MoE model, which means Apex.
