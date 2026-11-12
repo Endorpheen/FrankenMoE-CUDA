@@ -73,3 +73,18 @@ VRAM -1818 MiB, correctness unchanged at `e68df05b`.
 
 Limits of the measurement: browser and desktop GPU activity is part of the baseline; the target of 3000 tok/s prefill and
 30 tok/s decode is **not** reached yet; the series is a short paired one, the clean long series is still to be run.
+
+## Rejected: hybrid expert placement
+
+Replacing `--cpu-moe` with `--n-cpu-moe 34` (6 expert layers on the GPU) gives prefill 2651.1 (+3%) and decode 27.76
+(+9%) at the cost of VRAM 4590 -> 7578 (+2988), and the content check fails. `--n-cpu-moe 30` runs out of memory.
+Different device placement changes the rounding, so the output is no longer the accepted `e68df05b`. Since the
+correctness criterion is not negotiable, this variant is **rejected** and nothing was enabled by default.
+
+## Where the remaining ~17% is not
+
+Checked and excluded, all within noise of 2570/25.5: ubatch 2048 and 8192; batch threads 32 and CPU mask ffffffff;
+`--poll 1`; KV types f16 and q8_0; disabling the GoQ4_K/GoQ6_K CPU dots, the CUDA Q6_K matvec, the MMQ Q8_1
+quantizer or the pinned ring; `GRAPH_INPUT_PLAN`, `HYBRID_DELEGATION`, and the batch/detok/sampler group. A 4K prompt
+gives *lower* tok/s (2009) than a 32K prompt, so this is a fixed per-graph overhead plus steady-state throughput, not
+attention scaling.
