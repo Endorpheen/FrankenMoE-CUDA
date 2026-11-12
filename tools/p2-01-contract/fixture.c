@@ -118,6 +118,39 @@ int main(int argc, char ** argv) {
     run_glu("swiglu_swapped_t1", glu, 2*NSPEC, 1, true, false);
     run_glu("swiglu_oai_t1", glu, 2*NSPEC, 1, false, true);
 
+    // 3) larger sizes, to leave the tiny/tail regime of the kernels
+    {
+        enum { NBIG = 1000 };
+        static float big_a[NBIG], big_b[NBIG];
+        for (int i = 0; i < NBIG; ++i) {
+            big_a[i] = (float)((i % 97) - 48) * 0.37f;
+            big_b[i] = (float)((i % 53) + 1) * 0.11f;
+        }
+        char nm[64];
+        snprintf(nm, sizeof nm, "add_1000");  run_rr(nm, big_a, big_b, NBIG, 8, o_add);
+        snprintf(nm, sizeof nm, "mul_1000");  run_rr(nm, big_a, big_b, NBIG, 8, o_mul);
+        snprintf(nm, sizeof nm, "sqrt_1000"); run_unary(nm, big_a, NBIG, 8, o_sqrt);
+        snprintf(nm, sizeof nm, "silu_1000"); run_unary(nm, big_a, NBIG, 8, o_silu);
+    }
+
+    // 4) a non-contiguous view: a 2-D tensor read with a row stride
+    {
+        struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        struct ggml_tensor * t = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 16, 4);
+        float * d = (float *) t->data;
+        for (int r = 0; r < 4; ++r) for (int c = 0; c < 16; ++c) d[r*16+c] = (float)((r*16+c) % 13) * 0.21f;
+        struct ggml_tensor * v = ggml_view_2d(ctx, t, 8, 4, t->nb[1], 2*sizeof(float));
+        struct ggml_tensor * s = ggml_sqr(ctx, v);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, s);
+        if (ggml_graph_compute_with_ctx(ctx, g, 4) != GGML_STATUS_SUCCESS) abort();
+        // note: the result of a strided view is written contiguously by the kernel; record it as produced
+        emit("sqr_view_stride", (const float *) s->data, NULL, 32);
+        ggml_free(ctx);
+    }
+
     fclose(out);
     return 0;
 }

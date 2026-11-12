@@ -101,3 +101,30 @@ Recorded as a blocker with two exits:
    byte-exact" and accept that as the compatibility contract the criterion allows.
 
 Until one of these is chosen, P2-01 stays PARTIAL and no claim of exactness is made for SILU.
+
+## Correction: the SILU divergence is wider than the first probe suggested
+
+The first probe used 12 special values and found one differing element, which understated the problem. With the probe
+extended to 1000 ordinary values:
+
+| case | differing elements |
+|---|---|
+| silu, 12 special values, 1 thread | 1 of 12 (1 ULP) |
+| silu, 12 special values, 8 threads | 1 of 12 (1 ULP) |
+| **silu, 1000 values, 8 threads** | **247 of 1000**, differences of 1-2 ULP |
+
+Examples from the 1000-value run: `0xb4b89ace` vs `0xb4b89acd`, `0xb583496c` vs `0xb583496e` (two steps).
+
+So SILU does not match native on roughly a quarter of ordinary inputs, not on a single edge value. Everything else in the
+extended probe is exact:
+
+| case | verdict |
+|---|---|
+| add, mul at 1000 elements | identical |
+| sqrt at 1000 elements | identical |
+| sqr through a strided 2-D view | identical |
+| swiglu, swapped, oai | identical |
+
+That closes the "stride coverage" gap I flagged earlier and narrows the open problem to one activation. It also means the
+1-ULP-contract option is weaker than it looked: a 25% hit rate is not a rare tail case, and calling it an accepted
+compatibility contract would need that number stated explicitly.
