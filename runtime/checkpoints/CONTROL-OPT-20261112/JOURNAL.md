@@ -689,3 +689,23 @@ is better spent on the device cache, which raises decode instead of marginally n
 
 Prefill remains ~2311-2346 with every lever now measured - switches, placement, batch shape, launch overhead, compute
 type and memory residency. Raising it further is a code-level change, not a configuration one.
+
+## Upstream comparison exposes a decode gap; first candidate rejected on repeat
+
+The upstream control does more than rank the product - it revealed a real weakness on our side:
+
+| configuration | decode (128 tokens) |
+|---|---|
+| upstream dd6b945b, no cache | 29.62 |
+| native libllama on our ggml (no Goose code) | 26.66 |
+| exp244 body (214 modules) | 26.13 |
+| our full port (307 modules, exact path) | 23.78 |
+
+So ~10% of decode is lost between the native body and our full port, and it is not explained by any switch tried so far.
+The first candidate - detokenisation decisions, which run once per token - looked promising at 24.75 against 23.78, but
+the repeat inverted it (off 23.81, on 24.31), so it was noise and the candidate is rejected. Sampler modules off: 23.74,
+also noise. This is recorded because accepting the first number would have been a false lead and a false claim.
+
+Remaining candidate for the gap: the copied `changed` sources themselves (unconditional parts, not the `enabled()`
+branches) or the link step. Deciding that needs a per-file rebuild bisection of the `changed` list, which is the next
+step and is a code experiment, not a flag test.
