@@ -57,3 +57,6 @@ experiments/*/build-copy/
 
 # EXP421 staged log library (build output, not source).
 /runtime/exp421/stage/
+
+# EXP421 unified baseline run (assembled artifact, not source).
+/runtime/exp421/unified/

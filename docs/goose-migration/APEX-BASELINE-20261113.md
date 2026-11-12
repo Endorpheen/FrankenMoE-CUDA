@@ -38,6 +38,20 @@ record already documents that the cache changes the output while the answer
 remains coherent. Do not compare a cache run to `e68df05b` as if it were the
 same path.
 
+## Unified logging artifact
+
+`runtime/exp421/unified` is the baseline `stage-run` with only
+`libllama-common` replaced by the Goose logging build. All other Goose modules
+stay baseline. Measured with the canonical flags:
+
+| predicted tokens | prefill tok/s | decode tok/s | content sha |
+|---:|---:|---:|---|
+| 128 | 2259.28 | 39.24 | `9d90a010...` |
+| 512 | 2244.80 | **43.04** | `c2ff42cc...` |
+
+The 512-token result is at or above the historical 41.94 baseline, so the
+logging change is not a regression.
+
 ## Historical cache curve
 
 From `docs/goose-migration/apex-optimization.json`, same binary and profile with

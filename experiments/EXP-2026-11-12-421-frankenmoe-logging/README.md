@@ -95,11 +95,32 @@ prompt is noisy in both modes. The formatter runs once per log line at startup
 and teardown, never in a decode loop, so it cannot enter the hot path; this
 measurement is consistent with that.
 
+## Unified Apex run
+
+`build_unified.sh` assembles one run directory from the canonical baseline
+`runtime/reconstructed/build/stage-run` and replaces only `libllama-common` with
+the logging build. All other Goose modules, `libllama` and the server
+implementation stay byte-identical to the baseline. Manifest:
+`runtime/exp421/unified/MANIFEST.json`.
+
+Baseline flags (fixed exp244 argv plus `--moe-cache-mib 3584`), 32K prompt,
+franken mode:
+
+| predicted tokens | prefill tok/s | decode tok/s | content sha |
+|---:|---:|---:|---|
+| 128 | 2259.28 | 39.24 | `9d90a010...` |
+| 512 | 2244.80 | **43.04** | `c2ff42cc...` |
+
+The 512-token result matches the historical cache baseline (`41.94` at
+512 tokens in `apex-optimization.json`). This is one artifact with all Goose
+modules and the logger, not a separate experiment build.
+
 ## Limitations
 
-- The staged library is built from the flint `build-cuda` tree, not from the
-  accepted Goose runtime. Promotion to the accepted runtime needs a rebuild of
-  its `libllama-common` with the same three files.
+- `runtime/exp421/stage` is only a build intermediate. The deliverable is
+  `runtime/exp421/unified`.
+- The logger changes `libllama-common` only; a future promotion must fold those
+  three files into the canonical library recipe instead of replacing the DSO.
 - The mode is selected by `FRANKENMOE_LOG_MODE`; a `--log-mode` CLI flag is not
   added yet (the existing `--log-jsonl` still selects JSON).
 - Event classification is a byte-search heuristic over the existing text. It
@@ -108,7 +129,8 @@ measurement is consistent with that.
 
 ## Reproduce
 
-    bash experiments/EXP-2026-11-12-421-frankenmoe-logging/build_stage.sh
+    bash experiments/EXP-2026-11-12-421-frankenmoe-logging/build_unified.sh
     runtime/exp421/build/logfmt_fixture
+    python3 experiments/EXP-2026-11-12-421-frankenmoe-logging/run_unified_baseline.py
     python3 experiments/EXP-2026-11-12-421-frankenmoe-logging/run_modes.py
     python3 experiments/EXP-2026-11-12-421-frankenmoe-logging/run_pair.py classic franken franken classic
