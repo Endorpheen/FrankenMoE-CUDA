@@ -1,0 +1,10 @@
+{
+  "archive": "/home/end0/AI/LlamaServer/apex-preserved-20261112/apex-runtime-binaries-20261112.tar.gz",
+  "bytes": 278765546,
+  "sha256": "40ff1e3810539015ecdf0e817497757a3089977af990a36d2bb90d8a87815741",
+  "logical_files": 56,
+  "unique_objects": 24,
+  "uncompressed_bytes": 788965136,
+  "release_tag": "apex-goose-backup-20261112",
+  "draft": true
+}

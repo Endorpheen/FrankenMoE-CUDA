@@ -339,8 +339,8 @@
       "bytes": 14422
     },
     "docs/goose-migration/apex-optimization.json": {
-      "sha256": "424cf2053e117711a1437578d758b220239ff10bb6555e4c1ce0fc26ee59e415",
-      "bytes": 26468
+      "bytes": 28547,
+      "sha256": "c23835da3e0fda04d6ae27fb167963f89b50a0fa94dd90ba10a2a35fe207a688"
     },
     "docs/goose-migration/apex-remaining-boundaries.md": {
       "sha256": "98a6fbe773734b7e518613dc3b47d497392011bfa10ae79f4193f13916aea83c",
@@ -12583,8 +12583,8 @@
       "bytes": 1866
     },
     "runtime/checkpoints/CONTROL-OPT-20261112/config.json": {
-      "sha256": "b3f7722122196eac37e09ee852165f661f638ea45175a301414d9d515190f491",
-      "bytes": 2175
+      "bytes": 2175,
+      "sha256": "b3f7722122196eac37e09ee852165f661f638ea45175a301414d9d515190f491"
     },
     "runtime/checkpoints/exp186-cuda-matvec-v61-20261111/generated/exp186v61/cuda-runtime.cu": {
       "sha256": "99b3d4bb6121aa920c7adbca7f6bcd237047e8bec89255a8453d9b55cb449f00",
@@ -15150,6 +15150,19 @@
     "backup/apex-20261112/commit-index.txt": {
       "sha256": "1636f6087210e2ade89730da9592a2a8bf76960c3b463b8bf54819b857023168",
       "bytes": 108348
+    },
+    "runtime/checkpoints/CONTROL-OPT-20261112/JOURNAL.md": {
+      "bytes": 25284,
+      "sha256": "f5743b254b095afb4b6f007ce2a88efbd92f1cecbee4b3a1eba0aff2f7b91bd6"
+    },
+    "runtime/checkpoints/CONTROL-OPT-20261112/variant-moe-cache/README.md": {
+      "bytes": 2067,
+      "sha256": "ad88a75c0fdf9beeb12b3c1e831f83868cfd505f7302fa61dc0664392fe824e7"
+    },
+    "backup/apex-20261112/BINARY_BACKUP.json": {
+      "bytes": 355,
+      "sha256": "2cbab9e44dd96ec734a1bd28fce800423721a45688ed297711a74473476cf804"
     }
-  }
+  },
+  "reporting_commit": "8ce5fe2e336cf244a7a06e2f54de6d58f6fac4ea"
 }
