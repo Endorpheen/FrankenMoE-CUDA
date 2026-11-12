@@ -24,3 +24,22 @@ The recurrent layer's `ssm_*` set, then whatever the attention layer and the out
 Only after that does the model become the fixture P6-06 asks for -- and the node-by-node assertions are the point, not the file itself.
 
 The generator is committed as it stands so the loop can be resumed from the last discovered constraint instead of from the start.
+
+## Round two: the loop is automated, and where it stalls
+
+`iterate.py` now drives the cycle by itself: run the loader, parse `tensor 'X' has wrong shape; expected a, b, ...`, rewrite the
+generator's line for X (mapping `blk.N.suffix` to `pre+"suffix"`), regenerate, repeat.
+
+It settles the SSM shapes quickly -- `ssm_conv1d.weight` (4, 64), `ssm_dt.bias` (4,) -- and then stalls on
+`ffn_gate_exps.weight`, expecting (32, 16, 4). The stall is a limitation of the driver, not of the model: that tensor is written in the
+generator inside a loop over two names (`for e in ("ffn_gate_exps.weight", "ffn_up_exps.weight")`), so the rewriter cannot find a
+single line to fix and keeps reporting the same expectation.
+
+Two failures of my own are also fixed in this pass and worth recording: an earlier insertion branch had added duplicate
+explicitly-named tensors next to the `pre+` versions, so the file carried two definitions of the same tensor and the last write won; and
+the first version of the driver matched only literal names, so it never touched any per-layer tensor.
+
+## Next step
+
+Rewrite the generator to use one explicit `T(pre+"...")` line per tensor -- no loops over names -- and let `iterate.py` finish the
+remaining shapes. That is mechanical and bounded: each round is a few seconds because the file is 95 KB.
