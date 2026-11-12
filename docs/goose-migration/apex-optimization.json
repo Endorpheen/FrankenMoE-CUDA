@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T06:05:00+00:00",
+  "updated_at": "2026-11-12T01:14:40.377230+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
@@ -46,7 +46,7 @@
     {
       "id": "r1-control-exp371",
       "label": "Control: full-port staging (libllama exp371, 307 fg)",
-      "at": "2026-11-12T03:52:00+00:00",
+      "at": "2026-11-12T00:09:03.448855+00:00",
       "prefill_tok_s": 1588.7,
       "decode_tok_s": 21.93,
       "ram_mib": 22855.8,
@@ -61,7 +61,7 @@
     {
       "id": "r2-control-exp371-repeat",
       "label": "Control repeat, pure measurement without env overrides",
-      "at": "2026-11-12T03:53:00+00:00",
+      "at": "2026-11-12T00:24:06.687063+00:00",
       "prefill_tok_s": 1616.8,
       "decode_tok_s": 22.93,
       "ram_mib": 22856.2,
@@ -76,7 +76,7 @@
     {
       "id": "r3-exp244-llama-full",
       "label": "Diagnostic: exp244 libllama (214 fg) + current CPU library",
-      "at": "2026-11-12T03:53:40+00:00",
+      "at": "2026-11-12T00:24:47.513067+00:00",
       "prefill_tok_s": 2563.2,
       "decode_tok_s": 26.09,
       "ram_mib": 21309.6,
@@ -91,7 +91,7 @@
     {
       "id": "r4-exp244-llama-histcpu",
       "label": "Diagnostic: exp244 libllama + historical CPU library 63ad4984",
-      "at": "2026-11-12T03:50:30+00:00",
+      "at": "2026-11-12T00:17:33.610550+00:00",
       "prefill_tok_s": 2567.7,
       "decode_tok_s": 25.47,
       "ram_mib": null,
@@ -106,7 +106,7 @@
     {
       "id": "r5-histcpu-only",
       "label": "Control variant: exp371 libllama + historical CPU library",
-      "at": "2026-11-12T03:50:10+00:00",
+      "at": "2026-11-12T00:16:24.495466+00:00",
       "prefill_tok_s": 1588.1,
       "decode_tok_s": 22.83,
       "ram_mib": 22856.2,
@@ -121,7 +121,7 @@
     {
       "id": "r6-a1",
       "label": "Final series A1 (control exp371)",
-      "at": "2026-11-12T03:54:10+00:00",
+      "at": "2026-11-12T00:35:31.034736+00:00",
       "prefill_tok_s": 1621.1,
       "decode_tok_s": 22.72,
       "ram_mib": 22856.0,
@@ -136,7 +136,7 @@
     {
       "id": "r7-b1",
       "label": "Final series B1 (diagnostic exp244)",
-      "at": "2026-11-12T03:54:12+00:00",
+      "at": "2026-11-12T00:35:56.092767+00:00",
       "prefill_tok_s": 2574.2,
       "decode_tok_s": 25.91,
       "ram_mib": 21318.0,
@@ -151,7 +151,7 @@
     {
       "id": "r8-a2",
       "label": "Final series A2 (control exp371)",
-      "at": "2026-11-12T03:54:14+00:00",
+      "at": "2026-11-12T00:36:27.754942+00:00",
       "prefill_tok_s": 1613.2,
       "decode_tok_s": 21.47,
       "ram_mib": 22856.0,
@@ -166,7 +166,7 @@
     {
       "id": "r9-b2",
       "label": "Final series B2 (diagnostic exp244)",
-      "at": "2026-11-12T03:54:16+00:00",
+      "at": "2026-11-12T00:36:52.943012+00:00",
       "prefill_tok_s": 2568.2,
       "decode_tok_s": 24.77,
       "ram_mib": 21317.0,
@@ -181,7 +181,7 @@
     {
       "id": "r10-ub2048",
       "label": "Control variant: ubatch 2048",
-      "at": "2026-11-12T03:55:00+00:00",
+      "at": "2026-11-12T00:29:30.468830+00:00",
       "prefill_tok_s": 2550.8,
       "decode_tok_s": 25.87,
       "ram_mib": null,
@@ -196,7 +196,7 @@
     {
       "id": "r11-kv-on-cpu",
       "label": "Diagnostic: KV cache offloaded to RAM (--no-kv-offload)",
-      "at": "2026-11-12T03:55:20+00:00",
+      "at": "2026-11-12T00:34:43.849162+00:00",
       "prefill_tok_s": 1912.7,
       "decode_tok_s": 3.77,
       "ram_mib": 23074.5,
@@ -211,7 +211,7 @@
     {
       "id": "r12-ncpu34",
       "label": "Rejected: --n-cpu-moe 34 instead of --cpu-moe",
-      "at": "2026-11-12T03:55:40+00:00",
+      "at": "2026-11-12T00:39:15.933216+00:00",
       "prefill_tok_s": 2651.1,
       "decode_tok_s": 27.76,
       "ram_mib": 21037.6,
@@ -226,7 +226,7 @@
     {
       "id": "r13-ck0",
       "label": "Not accepted: --ctx-checkpoints 0",
-      "at": "2026-11-12T03:55:50+00:00",
+      "at": "2026-11-12T00:41:13.423766+00:00",
       "prefill_tok_s": 2588.2,
       "decode_tok_s": 26.05,
       "ram_mib": 21178.3,
@@ -241,7 +241,7 @@
     {
       "id": "r14-fullport-restored",
       "label": "Full port restored in staging (libllama exp371, 307 fg)",
-      "at": "2026-11-12T04:15:00+00:00",
+      "at": "2026-11-12T00:45:22.559319+00:00",
       "prefill_tok_s": 1624.1,
       "decode_tok_s": 23.64,
       "ram_mib": 22856.5,
@@ -256,7 +256,7 @@
     {
       "id": "r15-native-llama",
       "label": "Pure native libllama built from flint objects (no Goose source)",
-      "at": "2026-11-12T04:40:00+00:00",
+      "at": "2026-11-12T00:53:07.355664+00:00",
       "prefill_tok_s": 1636.0,
       "decode_tok_s": 26.04,
       "ram_mib": 22845.0,
@@ -271,7 +271,7 @@
     {
       "id": "r16-fullport-flintggml",
       "label": "Full port (exp371 libllama) on the flint ggml stack",
-      "at": "2026-11-12T04:50:00+00:00",
+      "at": "2026-11-12T00:54:24.006489+00:00",
       "prefill_tok_s": 1787.7,
       "decode_tok_s": 25.99,
       "ram_mib": 22860.1,
@@ -286,7 +286,7 @@
     {
       "id": "r17-e244body-stagingggml",
       "label": "Diagnostic: exp244 libllama body on our own staging ggml",
-      "at": "2026-11-12T05:25:00+00:00",
+      "at": "2026-11-12T01:02:23.456910+00:00",
       "prefill_tok_s": 2574.9,
       "decode_tok_s": 24.6,
       "ram_mib": null,
@@ -301,7 +301,7 @@
     {
       "id": "r18-pinning-on",
       "label": "Full port with expert mmap pinning restored (accepted)",
-      "at": "2026-11-12T06:00:00+00:00",
+      "at": "2026-11-12T01:13:11.481875+00:00",
       "prefill_tok_s": 2337.3,
       "decode_tok_s": 23.14,
       "ram_mib": 22857.0,
@@ -316,7 +316,7 @@
     {
       "id": "r19-pinning-off",
       "label": "Control: same build with GGML_MMAP_EXPERT_PIN=0",
-      "at": "2026-11-12T06:02:00+00:00",
+      "at": "2026-11-12T01:14:03.292605+00:00",
       "prefill_tok_s": 1619.6,
       "decode_tok_s": 22.91,
       "ram_mib": null,
@@ -332,7 +332,7 @@
   "events": [
     {
       "id": "e1",
-      "at": "2026-11-12T03:52:30+00:00",
+      "at": "2026-11-12T01:04:40.377230+00:00",
       "title": "Потеря локализована в libllama",
       "kind": "insight",
       "detail": "CPU library contributes nothing; exp371 line 1588.7 against exp244 line 2567.7 on identical argv.",
@@ -340,14 +340,14 @@
     },
     {
       "id": "e2",
-      "at": "2026-11-12T03:53:00+00:00",
+      "at": "2026-11-12T01:05:40.377230+00:00",
       "title": "Симлинк SONAME стоил ложного замера",
       "kind": "insight",
       "detail": "Repointing only libllama.so.0.7.0 while the loader opens libllama.so.0 produced 1616.8 instead of 2563.2."
     },
     {
       "id": "e3",
-      "at": "2026-11-12T03:54:20+00:00",
+      "at": "2026-11-12T01:06:40.377230+00:00",
       "title": "Гибрид экспертов отклонён",
       "kind": "regression",
       "detail": "--n-cpu-moe 34 gives +9% decode but breaks the content check and needs 7578 MiB VRAM.",
@@ -355,7 +355,7 @@
     },
     {
       "id": "e4",
-      "at": "2026-11-12T03:55:55+00:00",
+      "at": "2026-11-12T01:07:40.377230+00:00",
       "title": "Аномалия ctx-checkpoints",
       "kind": "insight",
       "detail": "--ctx-checkpoints 0 changes the output twice with cache_prompt false; kept out of the profile.",
@@ -363,14 +363,14 @@
     },
     {
       "id": "e5",
-      "at": "2026-11-12T03:55:58+00:00",
+      "at": "2026-11-12T01:08:40.377230+00:00",
       "title": "Переключение на exp244 переклассифицировано",
       "kind": "deferred",
       "detail": "exp244 libllama has 214 fg modules against 307, so the speedup is diagnostic until the omitted port is accounted for."
     },
     {
       "id": "e6",
-      "at": "2026-11-12T04:18:00+00:00",
+      "at": "2026-11-12T01:09:40.377230+00:00",
       "title": "Смешанная сборка GCC 15.2/13.4",
       "kind": "insight",
       "detail": "exp371 contains GCC 15.2.0 and 13.4.0 objects; exp244 is pure 13.4.0 with nearly equal .text. Kill-testing this needs a single-compiler rebuild, not env flags.",
@@ -378,7 +378,7 @@
     },
     {
       "id": "e7",
-      "at": "2026-11-12T04:52:00+00:00",
+      "at": "2026-11-12T01:10:40.377230+00:00",
       "title": "Причина найдена: rpath, а не порт",
       "kind": "insight",
       "detail": "exp244 libllama loads the flint ggml stack through rpath; a pure native libllama on our stack measures 1636/26.04, so the port costs nothing. Remaining work targets our staging ggml stack.",
@@ -386,14 +386,14 @@
     },
     {
       "id": "e8",
-      "at": "2026-11-12T05:10:00+00:00",
+      "at": "2026-11-12T01:11:40.377230+00:00",
       "title": "EXP244 отклонён как оптимизация",
       "kind": "deferred",
       "detail": "Igor: replacing the current libllama with EXP244 is a rollback of the port. 2570/25 stays diagnostic only; the full 307-module candidate is the working one."
     },
     {
       "id": "e9",
-      "at": "2026-11-12T05:28:00+00:00",
+      "at": "2026-11-12T01:12:40.377230+00:00",
       "title": "ggml исключён",
       "kind": "insight",
       "detail": "Same staging ggml: full port 1624.1, exp244 body 2574.9. Cost is inside the llama translation units, not the library stack.",
@@ -401,7 +401,7 @@
     },
     {
       "id": "e10",
-      "at": "2026-11-12T06:04:00+00:00",
+      "at": "2026-11-12T01:13:40.377230+00:00",
       "title": "Pinning восстановлен: +44% prefill",
       "kind": "speedup",
       "detail": "pin_mmap_experts ported into the full 307-module candidate. Paired A/B: 1619.6 without, 2337.3 with. No C++ fallback, no module dropped.",
