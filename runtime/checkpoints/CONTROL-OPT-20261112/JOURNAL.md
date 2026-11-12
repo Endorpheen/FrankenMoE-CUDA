@@ -620,3 +620,21 @@ the 30 tok/s floor (31.58), and 3072 remains the balance point.
 
 Variants kept for different trade-offs: 1280 (cheapest 30+), 2048 (mid), 3072 (base), 4096 (max decode), no cache
 (correctness control, exact e68df05b).
+
+## Short-generation check: no cliff at 64 tokens
+
+The useful question before recommending the cache was whether a short generation starves the warm-up and drops below the
+30 tok/s floor. Measured at 64 tokens:
+
+| cache MiB | decode 64 | decode 128 | decode 256 | VRAM |
+|---|---|---|---|---|
+| 1280 | 30.66 | 30.63 | 31.58 | 4476 |
+| 3072 | 37.23 | 37.79 | 39.10 | 6266 |
+
+No cliff: 1280 sits just above the floor and 3072 barely moves, so the cache does not need a long run to pay off. The
+practical statement is therefore "30+ from the first 64 tokens", not "30+ after warm-up", which is the more useful
+guarantee for interactive use.
+
+That closes the applicability question for the cache. Remaining caveat is unchanged and not waived: the cached path is
+not bit-identical to the exact path, cause established (GPU-side expert evaluation), quality measured level on two
+prompts.
