@@ -56,3 +56,19 @@ increase, the block-scale path is reading level bytes where it expects floats --
 That also explains the 126 remaining gate failures without invoking the super-scale at all: the scales feeding it were already wrong.
 The next step is to verify the scratch addressing directly rather than guessing at the super-scale, which is what the earlier note
 suggested and what this measurement replaces.
+
+## The diagnostic itself is mis-wired, and that is the lesson of this pass
+
+The export reported above was wired to a generated symbol chosen by its argument shape. All three indices tried produced the same
+garbage, which means either the call was never changed or the symbol is a different helper -- and the values being level bytes
+reinterpreted as floats fits the *block* helper being called with the output buffer where it expects the level buffer.
+
+Two earlier passes in this session failed the same way: an `LD_PRELOAD` hook that could not bind because of `-Bsymbolic`, and a
+trace hook that produced no output because the object under test was not the one running. The common cause is guessing which
+generated symbol or object is live instead of proving it.
+
+The rule for the next pass, recorded so it is not re-learned: identify the generated function by following the call graph (which
+function calls `fg336q_scale`, and which is called from `main`), and verify the object by a symbol or a marker before drawing any
+conclusion from its output.
+
+Nothing in this experiment is claimed working: the gate is red at 126 failures and the diagnostic is not trustworthy yet.
