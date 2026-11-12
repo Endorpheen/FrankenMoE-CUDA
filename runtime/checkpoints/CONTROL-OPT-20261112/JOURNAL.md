@@ -356,3 +356,19 @@ the same profile.
 Caveat recorded per the source: EXP101 is a saved candidate, not a universal production acceptance - the broad
 compatibility/failure-mode matrix is incomplete, and a map failure aborts. Both switches (`GGML_LAZY_PP_RESERVE`,
 `GGML_KV_LAZY_VMM`) exist to disable, and both are on by default.
+
+## Method applied to the remaining patches: most do not fit this profile
+
+Swept the other historical patches for the same kind of lost win. Checked for their switches in our build:
+`GGML_EXPERT_PINNED_RING`, `GGML_MOE_EXPERT_BOUND`, `GGML_EXPERT_OVERLAP` - all absent, so none is active.
+
+But reading the conditions shows why they are not the missing 9%: `expert-h2d-compute-overlap.patch` only engages when
+`sched->callback_copy` exists and the split copies expert weights to the device (`GGML_OP_MUL_MAT_ID`, src[2] rows >= 32);
+`pinned-ring` is a host->device staging path for those same copies. Our profile is pure `--cpu-moe`, so expert tensors
+stay in host memory and there is nothing to overlap or stage. Enabling them together with `--moe-cache-mib` would make
+them relevant, and moe-cache already changes the exact output - so that combination stays behind the correctness
+decision, not behind a technical blocker.
+
+Conclusion for this stage: the memory branch is closed (VRAM 3190, RSS 21319). The remaining prefill gap to the exp244
+body is a version difference in the llama body, and the only measured route to prefill above ~2400/decode above ~24 in
+this profile runs through the device expert cache, which is a correctness trade-off for Igor to decide.
