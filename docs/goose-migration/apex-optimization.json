@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T03:11:14.774747+00:00",
+  "updated_at": "2026-11-12T03:19:00.607752+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Consolidated: exact 2311-2345/23.0-24.8/3190 (e68df05b); cache ladder 1280 30.6-31.6/4476, 2048 34.0-35.4/5242, 3072 37.8-39.1/6266 (base), 3584 37.9-41.9/6778 (candidate), 4096 40.8/7292. Upstream 1900-2047/29.62/6408. Open: cache acceptance and the ~5.5-7.5% decode difference.",
+  "current": "Decode bisection closed: sampler, batch, vocab, context and graph all ruled out; the ~5.5-7.5% difference to the native body is bounded but unresolved without a profiler. Build restored to baseline size, exact output, cache ladder and comparison doc intact.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -1260,6 +1260,13 @@
       "title": "Сводка профиля закреплена",
       "kind": "achievement",
       "detail": "One table with every configuration, the established facts (port cost, pinning +41%, EXP087/101 -3218 MiB, cache as decode-only lever, prefill band) and the two open items."
+    },
+    {
+      "id": "e49",
+      "at": "2026-11-12T03:19:00.607752+00:00",
+      "title": "Бисекция decode закрыта",
+      "kind": "deferred",
+      "detail": "Five files checked, none carries the 5.5-7.5%. Restored to baseline. Unresolvable by bisection at this noise without a profiler; recorded as bounded and unexplained."
     }
   ]
 }
