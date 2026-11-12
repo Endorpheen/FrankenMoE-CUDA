@@ -109,3 +109,26 @@ takes the `v_trans == 0` branch, so the transposed layout is not part of this co
 What is still not named is which counted value differs. Reverse engineering it from bytes is the wrong tool; the next
 step is to instrument the writer: log `io.n_bytes()` after `state_write_meta` and after each layer of
 `state_write_data` in a patched copy, run both lines, and diff the section sizes directly.
+
+## Fifth probe: the slot file has its own framing (correcting the walk)
+
+The first byte is not a bare `llama_state_seq` blob. The slot file starts with its own header:
+
+    offset  0  magic 0x67677371
+    offset  4  seq/version = 4
+    offset  8  16
+    offset 12  0xFFFFFFFF
+    offset 16  1
+    offset 20  n_tokens = 12
+    offset 24  the 12 prompt token ids (760, 3841, 13477, 37550, 33075, ...)
+
+Both lines produce the same framing and the same token list for the same request. The earlier "walk to EOF-4" result is
+withdrawn: it was a wrong layout that happened to land near the end.
+
+The useful consequence: the 1-ULP difference sits at **absolute offset 480 in both files**, so the state region begins at
+the same place and stays aligned at least past the first K rows. The +780 bytes therefore appear further down -- later
+layers or the V section -- not in the header, not in the token list, and not in the cell metadata that follows it.
+
+Next step: finish mapping the state offset (the bytes at 72 show another token-like value, so a second list or a
+per-checkpoint section is still unaccounted for), then compare the per-layer boundaries between the two files to find the
+first size divergence.
