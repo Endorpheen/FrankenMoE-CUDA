@@ -123,3 +123,18 @@ Identical output hash in all three, so the precision mode is not the cause and c
 The divergence is inherent to evaluating the expert product on the GPU instead of the host: different summation order
 over the same values. Making the cached path bit-identical would require computing the experts on the CPU from the
 resident copy, which removes the speedup - so this branch is closed rather than left as a vague hope.
+
+## The divergence does not grow with cache size
+
+Measured the same request with three settings on the same build:
+
+| setting | completion sha | common prefix | perplexity (ref / cached) |
+|---|---|---|---|
+| no cache | e68df05b | - | 1.226 / - |
+| cache 2048 | 9d90a010 | 20 tokens | 1.22624 / 1.23782 |
+| cache 3584 | **9d90a010** | 20 tokens | 1.22624 / 1.23782 |
+
+2048 and 3584 produce the **same hash and the same perplexity to five decimals**. So the divergence is a binary property
+of *whether* the experts are computed on the GPU, not of *how much* is cached: making the cache larger neither heals nor
+worsens the numeric difference. That is a useful safety property for the candidate base - moving from 3072 to 3584 is a
+pure speed/memory change with no additional quality risk.
