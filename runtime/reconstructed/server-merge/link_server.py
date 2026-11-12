@@ -16,17 +16,31 @@ for a in args:
     if a in ('-o', '-c'): skip = True; continue
     if a.endswith('server-context.cpp'): continue
     out.append(a)
-obj = B / 'server-context-merged.o'
-out += ['-c', str(M / 'server-context.cpp'), '-o', str(obj)]
-q = subprocess.run(out, cwd=str(FL), capture_output=True, text=True)
-(B / 'compile.stderr').write_text(q.stderr)
-print('compile rc =', q.returncode)
-if q.returncode: print(q.stderr[-1500:]); sys.exit(1)
+
+def compile_with(src, flags_from, out_obj):
+    cc2 = json.loads((FL / 'build-cuda/compile_commands.json').read_text())
+    e = [x for x in cc2 if x['file'].endswith(flags_from)][0]
+    a = shlex.split(e['command']); o = []; sk = False
+    for t in a:
+        if sk: sk = False; continue
+        if t in ('-o', '-c'): sk = True; continue
+        if t.endswith(flags_from.split('/')[-1]): continue
+        o.append(t)
+    o += ['-c', str(M / src), '-o', str(out_obj)]
+    r = subprocess.run(o, cwd=str(FL), capture_output=True, text=True)
+    print('compile', src, 'rc =', r.returncode)
+    if r.returncode: print(r.stderr[-1500:]); sys.exit(1)
+
+obj  = B / 'server-context-merged.o'
+obj2 = B / 'server-queue-merged.o'
+compile_with('server-context.cpp', 'tools/server/server-context.cpp', obj)
+compile_with('server-queue.cpp',   'tools/server/server-queue.cpp',   obj2)
 
 src_ar = FL / 'build-cuda/tools/server/libserver-context.a'
 dst_ar = B / 'libserver-context.a'
 shutil.copy2(src_ar, dst_ar)
-for a in (['ar', 'd', str(dst_ar), 'server-context.cpp.o'], ['ar', 'r', str(dst_ar), str(obj)]):
+for a in (['ar', 'd', str(dst_ar), 'server-context.cpp.o'], ['ar', 'd', str(dst_ar), 'server-queue.cpp.o'],
+          ['ar', 'r', str(dst_ar), str(obj)], ['ar', 'r', str(dst_ar), str(obj2)]):
     r = subprocess.run(a, capture_output=True, text=True)
     if r.returncode: print('ar failed', r.stderr[:300]); sys.exit(1)
 
@@ -40,7 +54,7 @@ for i, a in enumerate(cmd):
     if a.endswith('tools/server/libserver-context.a'): cmd[i] = str(dst_ar)
     if a == 'bin/libllama-server-impl.so': cmd[i] = str(so)
 for e in ('269-goose-checkpoint-policy-live', '273-goose-slot-selection-live',
-          '275-goose-batch-compat-live', '277-goose-stop-strings-live'):
+          '275-goose-batch-compat-live', '277-goose-stop-strings-live', '271-goose-queue-live'):
     cmd.append(str(F / 'experiments' / ('EXP-2026-11-12-' + e) / 'bridge.o'))
 q = subprocess.run(cmd, cwd=str(FL / 'build-cuda'), capture_output=True, text=True)
 (B / 'link.stderr').write_text(q.stderr)

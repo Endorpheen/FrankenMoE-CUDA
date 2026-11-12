@@ -42,7 +42,19 @@ first.
 The `llama-server` binary was then linked against that library, 15,960 bytes, and `--help` runs and prints the parameter block -- so this is
 a real executable, not just a library that links. No model was loaded.
 
-## What is still missing
+## The queue, and the complete server set
 
-`server-queue.cpp` is merged but not yet substituted: the queue lives in `libllama-server-impl.so` itself rather than in a static archive whose
-member can be replaced by name, so it needs its own substitution step. Everything else on the server side is now in one binary.
+`server-queue.cpp.o` turned out to live in the same `libserver-context.a` as the context object, so it needed no special handling -- the script
+now compiles both merged files and replaces both members:
+
+    compile server-context.cpp rc = 0
+    compile server-queue.cpp   rc = 0
+    link rc = 0, libllama-server-impl.so = 7,633,696 bytes
+
+    fg268p 7 defined / 0 undefined    fg270q 5 / 0
+    fg272s 5 / 0                      fg274b 3 / 0
+    fg276t 4 / 0
+    undefined fg symbols in total: 0
+
+So all five server-side ports -- checkpoints, queue, slot selection, batch compatibility, stop strings -- are in one library and in one
+executable built from it, and `--help` runs.
