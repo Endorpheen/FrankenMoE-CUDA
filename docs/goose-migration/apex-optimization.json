@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T03:01:29.057324+00:00",
+  "updated_at": "2026-11-12T03:03:10.918788+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Cache-size neutrality reproduced on a second prompt (2048 and 3584 both 0f59d2e4 vs no-cache 8edde82c). Output is decided by GPU-side experts, not capacity, so 2048/3072/3584 are output-equivalent and differ only in speed/VRAM.",
+  "current": "3584 under real background load (card at 10.7/12.3 GiB): decode 39.12 mean, own VRAM fixed 6778, no eviction. Prefill 2255 in that window versus 2326 quiet - a load artefact, with the quiet figure kept as reference.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -882,6 +882,21 @@
       "source": "runtime/reconstructed/build/mc3584_512-0/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r57-mc3584-bg",
+      "label": "Expert cache 3584 under heavy background GPU load",
+      "at": "2026-11-12T03:03:10.918788+00:00",
+      "prefill_tok_s": 2255.2,
+      "decode_tok_s": 39.12,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584",
+      "conditions": "desktop GPU load, total use peaked 10.7/12.3 GiB",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/mc3584_bg0..2/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -1202,6 +1217,13 @@
       "title": "Нейтральность размера кэша подтверждена дважды",
       "kind": "insight",
       "detail": "Second prompt: 2048 and 3584 both 0f59d2e4, no-cache 8edde82c. Cache capacity does not change output; base selection is a pure speed/memory trade-off."
+    },
+    {
+      "id": "e45",
+      "at": "2026-11-12T03:03:10.918788+00:00",
+      "title": "3584 держит decode под фоном",
+      "kind": "insight",
+      "detail": "Card at 10.7/12.3 GiB from the environment: decode 39.12 mean, own VRAM fixed 6778 (no eviction). Prefill 2255 vs 2326 quiet - load artefact, stated plainly."
     }
   ]
 }
