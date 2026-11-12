@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:56:49.822269+00:00",
+  "updated_at": "2026-11-12T02:58:23.687537+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Cache 3584 verified at 64/128/256 tokens: 37.89/39.61/41.01 versus base 3072 at 37.23/37.79/39.10, VRAM 6778 fixed. Best-evidenced candidate to replace the base; decision with Igor. Exact path ~24 (23.0-24.8) at 3190.",
+  "current": "Cache 3584 curve: 37.89/39.61/41.01/41.94 decode at 64/128/256/512 tokens, VRAM fixed 6778, no eviction. Strongest measured option; decision on the base remains with Igor. Exact path ~24 at 3190.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -867,6 +867,21 @@
       "source": "runtime/reconstructed/build/mc3584_64-0/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r56-mc3584-512",
+      "label": "Expert cache 3584 at 512 tokens",
+      "at": "2026-11-12T02:58:23.687537+00:00",
+      "prefill_tok_s": 2326.8,
+      "decode_tok_s": 41.94,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584, 512 tokens",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/mc3584_512-0/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -1166,6 +1181,13 @@
       "title": "3584 впереди на всех длинах",
       "kind": "insight",
       "detail": "37.89/39.61/41.01 at 64/128/256 vs 37.23/37.79/39.10 for 3072, VRAM fixed 6778. Tightest spread in the ladder; margin grows as the cache warms."
+    },
+    {
+      "id": "e42",
+      "at": "2026-11-12T02:58:23.687537+00:00",
+      "title": "3584: 41.94 без вытеснения",
+      "kind": "insight",
+      "detail": "512 tokens give 41.95/41.93 at VRAM 6778, unchanged across lengths. Curve 37.89/39.61/41.01/41.94 - warm-up, not pressure."
     }
   ]
 }
