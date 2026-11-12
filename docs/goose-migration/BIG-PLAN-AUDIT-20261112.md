@@ -37,3 +37,23 @@ P0-05 (coverage registry) was the cheapest to advance with real value, because i
 depends on. Today's increment: 14 -> 62 modules with provenance and a witness column, generated from the built library
 rather than hand-maintained. Remaining for full closure: liveness for the 20 modules whose witness is not in the current
 log, which needs either their profile or their teardown path.
+
+## Update 2026-11-12: P0-05 accepted
+
+The coverage registry now carries a decision for every one of the 62 modules in the accepted library:
+
+| status | count | basis |
+|---|---|---|
+| proven live | 43 | 42 witnesses in the accepted request run + fg390s via a special-token fixture |
+| OFF_PATH, documented | 19 | gating condition or configuration recorded per module |
+| unclassified | 0 | - |
+
+Why silence counts as evidence: the bridges either print on their first call or report at exit, and the runner delivers
+SIGINT, so a missing line means zero calls. Examples settled this way: fg244s needs `n_outputs > 1`, fg403s is in the
+file-pointer load branch while the server loads by path, fg377s lives in the direct-I/O path while the profile uses mmap,
+six KV state modules sit behind io state_write which RAM-only checkpoints never reach.
+
+Acceptance criterion met: every supported mode has a witness, unsupported coverage is explicit, and nothing is claimed
+live from symbol presence. Apex regression after the work: prefill 2356.5, decode 24.31, VRAM 3190, content equal.
+
+Counters after this item: 19 DONE, 2 PARTIAL, 50 IN_PROGRESS, 81 TODO (152 total).
