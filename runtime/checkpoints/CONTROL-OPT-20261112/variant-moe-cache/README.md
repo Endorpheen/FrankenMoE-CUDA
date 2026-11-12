@@ -138,3 +138,20 @@ Measured the same request with three settings on the same build:
 of *whether* the experts are computed on the GPU, not of *how much* is cached: making the cache larger neither heals nor
 worsens the numeric difference. That is a useful safety property for the candidate base - moving from 3072 to 3584 is a
 pure speed/memory change with no additional quality risk.
+
+## Cache-size neutrality reproduced on a second prompt
+
+Unrelated prompt (queue/latency text), same build, same sampling:
+
+| setting | completion sha |
+|---|---|
+| no cache | 8edde82c |
+| cache 2048 | 0f59d2e4 |
+| cache 3584 | **0f59d2e4** |
+
+Same result as the first prompt: the two cache sizes are byte-identical to each other and both differ from the no-cache
+run. The property is therefore not a coincidence of one prompt - the numeric difference is decided by whether the experts
+run on the GPU, not by cache capacity.
+
+Consequence for choosing a base: 2048, 3072 and 3584 are interchangeable as far as output is concerned; they differ only
+in speed and VRAM. That removes quality from the base-selection question and leaves the balanced-rule trade-off.
