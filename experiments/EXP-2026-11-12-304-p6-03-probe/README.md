@@ -74,3 +74,23 @@ Two further facts narrow it:
 
 Under `-ngl 0` the split that reaches CUDA should not exist. The next step is therefore to compare the split-assignment passes
 (two and three) between the two revisions and find where ours assigns a CUDA backend where flint assigns the CPU one.
+
+## What is ruled out, and the trap in reverting
+
+Facts measured in this pass:
+
+- **The CUDA backend must be present for the abort.** With `CUDA_VISIBLE_DEVICES=""` the same 371-token request answers and logs
+  zero CUDA errors. Under `-ngl 0` the split that reaches CUDA therefore should not exist, which keeps the scheduler as the
+  suspect rather than the model path.
+- **The obvious algorithms are identical to flint.** Passes 2 to 4 of the split, `compute_splits`, `tensor_alloc` and both
+  `reserve` functions, `ggml_backend_tensor_copy`, `ggml_backend_sched_backend_from_buffer` and the `hv_tensor_copies` sizing
+  all match the flint source line for line once the hook lines are stripped. The whole-file diff is 253 changed lines out of
+  about 2600, so the divergence is in the remainder.
+- **Reverting the base library is not a fix.** The flint `libggml-base` does make the long prompt work and keeps Apex at
+  `e68df05b`, but the accepted profile takes **28.6 s instead of 22.8 s** -- roughly 25 % slower, far beyond the 2 % rule. The
+  replaced scheduler carries the expert pipeline, so it cannot simply be dropped.
+- **The expert switches do not change the abort.** `GGML_EXPERT_PINNED_RING=0` and `GGML_GOOSE_EXPERT_PIPELINE=0` both still
+  abort with two CUDA errors.
+
+So the task is narrowed to the 253-line remainder: find the hunk that makes a copy land in a CUDA buffer, without touching the
+pipeline that pays for itself.
