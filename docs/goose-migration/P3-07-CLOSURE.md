@@ -46,7 +46,7 @@ This is recorded, not hidden. A future universal runtime can implement a
 software NVFP4 quantizer (UE4M3 scale search, E2M1 LUT, `block_fp4_mmq` packing)
 and a BF16 dequant/GEMM fallback for non-Blackwell GPUs, gated against a CPU
 reference or a Blackwell machine. That work belongs to the cross-platform
-compatibility task P3-18/P10-10, not to the Apex functional path.
+compatibility task POST-05/P10-10, not to the Apex functional path.
 
 ## Verdict
 
