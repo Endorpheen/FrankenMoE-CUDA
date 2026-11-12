@@ -1,0 +1,34 @@
+{
+  "native": {
+    "content_sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c",
+    "tokens": [],
+    "saved": {
+      "id_slot": 0,
+      "filename": "state.bin",
+      "n_saved": 12,
+      "n_written": 131975288,
+      "timings": {
+        "save_ms": 48.973
+      }
+    },
+    "file": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-292-p5-08-state-interop/native/slots/state.bin",
+    "size": 131975288,
+    "file_sha": "16a4085bd0b2a7ede595a89ec1df4d912ce873bc16b9577632b39b07cbd27972"
+  },
+  "goose": {
+    "content_sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c",
+    "tokens": [],
+    "saved": {
+      "id_slot": 0,
+      "filename": "state.bin",
+      "n_saved": 12,
+      "n_written": 131976068,
+      "timings": {
+        "save_ms": 39.211
+      }
+    },
+    "file": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-292-p5-08-state-interop/goose/slots/state.bin",
+    "size": 131976068,
+    "file_sha": "982af1a095836cc5e8a438d2c8577ef60a5560bd51eb784c0dcbe6bfc0f9be30"
+  }
+}

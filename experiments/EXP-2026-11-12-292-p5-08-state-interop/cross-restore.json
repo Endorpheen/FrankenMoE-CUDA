@@ -1,0 +1,28 @@
+{
+  "native->goose": {
+    "restore": {
+      "id_slot": 0,
+      "filename": "state.bin",
+      "n_restored": 12,
+      "n_read": 131975288,
+      "timings": {
+        "restore_ms": 45.021
+      }
+    },
+    "content_sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c",
+    "tokens": []
+  },
+  "goose->native": {
+    "restore": {
+      "id_slot": 0,
+      "filename": "state.bin",
+      "n_restored": 12,
+      "n_read": 131976068,
+      "timings": {
+        "restore_ms": 43.877
+      }
+    },
+    "content_sha": "0b7d539190366ee5cdf1fe4923506c73c948b5a15f608263489086eb29518b5d",
+    "tokens": []
+  }
+}
