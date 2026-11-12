@@ -14,3 +14,20 @@ Five configurations, sixteen tokens each, zero differences. The two different se
 the seed and the equality is not an artifact of a degenerate distribution -- and greedy agrees with `top_k 1` as it should.
 
 Each case is a direct exercise of the sampler chain over the same logits: if the distributions differed, the seeds would diverge.
+
+## Extended matrix
+
+| case | settings | result |
+|---|---|---|
+| long | `temperature 0.9`, `top_k 50`, `top_p 0.95`, seed 5, 32 tokens | SAME |
+| biassame | `temperature 0.8`, `top_k 40`, seed 42, `logit_bias` penalising `e` by -5 | SAME |
+| repeat | identical to seed42, sent again in the same session | SAME -- and equal to seed42 on both lines, so sampling is reproducible within a process |
+| grammar | `temperature 0.8`, `top_k 40`, seed 42, GBNF `root ::= [a-z]+ (" " [a-z]+)*` | SAME |
+
+Nine configurations, zero differences. The grammar case is the interesting one: constrained decoding goes through the grammar sampler and
+still produces the same tokens, and `logit_bias` demonstrably changes nothing between the lines while changing the distribution.
+
+## Still open in P6-10
+
+Mirostat v1/v2, DRY, XTC, typical sampling, top-n-sigma and the RNG itself as an object (the seed path is covered, not `std::mt19937`
+equivalence) are not yet in the matrix. The covered set is the default chain plus grammar and bias.

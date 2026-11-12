@@ -10,6 +10,10 @@ CASES = [
     {"name": "seed43",   "temp": 0.8, "top_k": 40, "top_p": 0.9, "seed": 43},
     {"name": "topk1",    "temp": 1.0, "top_k": 1, "seed": 7},
     {"name": "minp",     "temp": 0.7, "top_k": 0, "min_p": 0.1, "seed": 11},
+    {"name": "long",     "temp": 0.9, "top_k": 50, "top_p": 0.95, "seed": 5, "n": 32},
+    {"name": "biassame", "temp": 0.8, "top_k": 40, "seed": 42, "bias": True},
+    {"name": "repeat",   "temp": 0.8, "top_k": 40, "top_p": 0.9, "seed": 42},
+    {"name": "grammar",  "temp": 0.8, "top_k": 40, "seed": 42, "grammar": "root ::= [a-z]+ (\" \" [a-z]+)*"},
 ]
 
 def run(arm, port):
@@ -24,10 +28,14 @@ def run(arm, port):
                 urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=1); break
             except Exception: time.sleep(0.5)
         for c in CASES:
-            body = {"prompt": "Once upon a time", "n_predict": 16, "temperature": c["temp"],
+            body = {"prompt": "Once upon a time", "n_predict": c.get("n", 16), "temperature": c["temp"],
                     "top_k": c["top_k"], "seed": c["seed"], "cache_prompt": False}
             for k in ("top_p", "min_p"):
                 if k in c: body[k] = c[k]
+            if c.get("bias"):
+                body["logit_bias"] = [[ord("e"), -5.0]]
+            if c.get("grammar"):
+                body["grammar"] = c["grammar"]
             req = urllib.request.Request(f"http://127.0.0.1:{port}/completion",
                                          data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=120) as r:
