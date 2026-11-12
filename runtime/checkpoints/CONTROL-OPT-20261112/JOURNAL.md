@@ -88,3 +88,11 @@ Checked and excluded, all within noise of 2570/25.5: ubatch 2048 and 8192; batch
 quantizer or the pinned ring; `GRAPH_INPUT_PLAN`, `HYBRID_DELEGATION`, and the batch/detok/sampler group. A 4K prompt
 gives *lower* tok/s (2009) than a 32K prompt, so this is a fixed per-graph overhead plus steady-state throughput, not
 attention scaling.
+
+## Observation: --ctx-checkpoints 0 changes the output (not accepted)
+
+With `--ctx-checkpoints 0` instead of 32, RSS drops by only 140 MiB (21318 -> 21178) and the content check fails, twice,
+reproducibly (2588.2/26.05 and 2587.2/25.34). The request uses `cache_prompt: false`, so a context checkpoint should not
+be able to change the completion. The accepted profile keeps 32 and stays correct, so nothing was changed; this is
+recorded as an anomaly of the accepted path that needs a separate look, together with the same class of question as the
+placement test above: which parameters are allowed to change the numbers and which are supposed to be exact.
