@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:33:20.147080+00:00",
+  "updated_at": "2026-11-12T01:39:11.853576+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 3 memory: EXP087 lazy compute reservation restored. VRAM 6408 -> 4430 (-1978), RSS 22857 -> 21318 (-1539), prefill/decode inside noise, exact output kept.",
+  "current": "Stage 3 memory: both historical mechanisms restored. VRAM 6408 -> 3190 (-50%), RSS 22857 -> 21319; prefill ~2310-2365, decode 23.9-24.3, exact output unchanged.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -28,9 +28,9 @@
     {
       "id": "memory",
       "title": "RAM и VRAM",
-      "state": "partial",
-      "implemented": "EXP087 lazy prompt compute reservation restored (VRAM 4430, RSS 21318) with pinning retained. KV-on-CPU and ctx-checkpoints variants rejected earlier.",
-      "remaining": "Reduce memory on the full-port path, not the diagnostic one.",
+      "state": "done",
+      "implemented": "Both historical mechanisms restored: EXP087 lazy compute reservation and EXP101 lazy KV VMM. VRAM 6408 -> 3190 (-3218, -50%), RSS 22857 -> 21319, correctness unchanged.",
+      "remaining": "Optional: width the compatibility matrix for EXP101; not required for this profile.",
       "dependencies": "speed restored on the full port"
     },
     {
@@ -432,6 +432,36 @@
       "source": "runtime/reconstructed/build/run-exp087off/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r27-exp101-on",
+      "label": "EXP101 lazy KV VMM restored (accepted)",
+      "at": "2026-11-12T01:39:11.853576+00:00",
+      "prefill_tok_s": 2305.9,
+      "decode_tok_s": 24.26,
+      "ram_mib": 21319.0,
+      "vram_mib": 3190,
+      "configuration": "same argv; GGML_KV_LAZY_VMM default on + EXP087 reservation",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "e68df05b",
+      "source": "runtime/reconstructed/build/run-exp101/metrics.json",
+      "diagnostic": false,
+      "accepted": true
+    },
+    {
+      "id": "r28-exp101-off",
+      "label": "Control: GGML_KV_LAZY_VMM=0",
+      "at": "2026-11-12T01:39:11.853576+00:00",
+      "prefill_tok_s": 2304.4,
+      "decode_tok_s": 24.04,
+      "ram_mib": 21318.0,
+      "vram_mib": 4430,
+      "configuration": "same argv; lazy VMM off",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-exp101off/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -548,6 +578,14 @@
       "kind": "speedup",
       "detail": "Lazy compute reservation was lost from the candidate; restored. VRAM 6408 -> 4430, RSS 22857 -> 21318, speed and exact output unchanged.",
       "run_id": "r25-exp087-on"
+    },
+    {
+      "id": "e16",
+      "at": "2026-11-12T01:39:11.853576+00:00",
+      "title": "VRAM 6408 -> 3190 (-50%)",
+      "kind": "achievement",
+      "detail": "EXP101 lazy KV VMM restored (-1240 MiB), on top of EXP087 (-1978 MiB). RSS also -1538. Speed and exact output unchanged.",
+      "run_id": "r27-exp101-on"
     }
   ]
 }
