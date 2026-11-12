@@ -1,0 +1,282 @@
+{
+  "schema": 1,
+  "updated_at": "2026-11-12T03:55:00+00:00",
+  "updated_by": {
+    "name": "runtime agent (Command Code)",
+    "harness": "Command Code",
+    "model": "Claude"
+  },
+  "current": "Stage 2: the exp371 libllama slowdown is localised; the exp244 libllama switch is being reclassified as diagnostic because it carries 214 fg modules against 307 in exp371 and therefore drops part of the port.",
+  "profile": "accepted 32K/128",
+  "stages": [
+    {
+      "id": "control",
+      "title": "Контрольная конфигурация",
+      "state": "done",
+      "implemented": "git 799a77e, compiler v61 bl87af17a, artifact SHA, build and run commands, model, request and expected e68df05b recorded in runtime/checkpoints/CONTROL-OPT-20261112/config.json; rollback described.",
+      "remaining": "",
+      "dependencies": ""
+    },
+    {
+      "id": "speed",
+      "title": "Prefill и decode",
+      "state": "partial",
+      "implemented": "Regression localised to libllama (exp371 line vs exp244 line) on identical argv; CPU library, ubatch, threads, poll, KV types, goose CPU dots, CUDA modules and several module groups excluded. exp244 libllama reproduces 2563-2574 / 25.9-26.1 but at 214 fg modules instead of 307, so it is diagnostic until the skipped port is accounted for.",
+      "remaining": "Find the specific cost inside the exp371 line without disabling ported work; prefill 3000 and decode 30 are not reached.",
+      "dependencies": "full port preserved"
+    },
+    {
+      "id": "memory",
+      "title": "RAM и VRAM",
+      "state": "partial",
+      "implemented": "On the diagnostic library set VRAM falls 6408 -> 4590 and RSS 22856 -> 21310. KV on CPU (--no-kv-offload) reaches VRAM 3194 but decode collapses to 3.77, so KV stays on the GPU. --ctx-checkpoints 0 saves only 140 MiB and changes the output reproducibly.",
+      "remaining": "Reduce memory on the full-port path, not the diagnostic one.",
+      "dependencies": "speed restored on the full port"
+    },
+    {
+      "id": "final",
+      "title": "Итоговая проверка",
+      "state": "unverified",
+      "implemented": "Short paired A/B -> B/A exists for control vs diagnostic set (A1 1621.1/22.72, A2 1613.2/21.47; B1 2574.2/25.91, B2 2568.2/24.77), every run content-equal.",
+      "remaining": "Repeat on the accepted full-port configuration and confirm correctness.",
+      "dependencies": "speed and memory closed on the full port"
+    }
+  ],
+  "runs": [
+    {
+      "id": "r1-control-exp371",
+      "label": "Control: full-port staging (libllama exp371, 307 fg)",
+      "at": "2026-11-12T03:52:00+00:00",
+      "prefill_tok_s": 1588.7,
+      "decode_tok_s": 21.93,
+      "ram_mib": 22855.8,
+      "vram_mib": 6408,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "e68df05b, probabilities equal, restore ok",
+      "source": "runtime/reconstructed/build/run-metrics-control/metrics.json",
+      "diagnostic": false,
+      "accepted": false
+    },
+    {
+      "id": "r2-control-exp371-repeat",
+      "label": "Control repeat, pure measurement without env overrides",
+      "at": "2026-11-12T03:53:00+00:00",
+      "prefill_tok_s": 1616.8,
+      "decode_tok_s": 22.93,
+      "ram_mib": 22856.2,
+      "vram_mib": 6408,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-opt1/metrics.json",
+      "diagnostic": false,
+      "accepted": false
+    },
+    {
+      "id": "r3-exp244-llama-full",
+      "label": "Diagnostic: exp244 libllama (214 fg) + current CPU library",
+      "at": "2026-11-12T03:53:40+00:00",
+      "prefill_tok_s": 2563.2,
+      "decode_tok_s": 26.09,
+      "ram_mib": 21309.6,
+      "vram_mib": 4590,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal, expected e68df05b",
+      "source": "runtime/reconstructed/build/run-metrics-opt1b/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r4-exp244-llama-histcpu",
+      "label": "Diagnostic: exp244 libllama + historical CPU library 63ad4984",
+      "at": "2026-11-12T03:50:30+00:00",
+      "prefill_tok_s": 2567.7,
+      "decode_tok_s": 25.47,
+      "ram_mib": null,
+      "vram_mib": 4590,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-e244/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r5-histcpu-only",
+      "label": "Control variant: exp371 libllama + historical CPU library",
+      "at": "2026-11-12T03:50:10+00:00",
+      "prefill_tok_s": 1588.1,
+      "decode_tok_s": 22.83,
+      "ram_mib": 22856.2,
+      "vram_mib": 6408,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-histcpu/metrics.json",
+      "diagnostic": false,
+      "accepted": false
+    },
+    {
+      "id": "r6-a1",
+      "label": "Final series A1 (control exp371)",
+      "at": "2026-11-12T03:54:10+00:00",
+      "prefill_tok_s": 1621.1,
+      "decode_tok_s": 22.72,
+      "ram_mib": 22856.0,
+      "vram_mib": 6408,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-final-A1/metrics.json",
+      "diagnostic": false,
+      "accepted": false
+    },
+    {
+      "id": "r7-b1",
+      "label": "Final series B1 (diagnostic exp244)",
+      "at": "2026-11-12T03:54:12+00:00",
+      "prefill_tok_s": 2574.2,
+      "decode_tok_s": 25.91,
+      "ram_mib": 21318.0,
+      "vram_mib": 4590,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-final-B1/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r8-a2",
+      "label": "Final series A2 (control exp371)",
+      "at": "2026-11-12T03:54:14+00:00",
+      "prefill_tok_s": 1613.2,
+      "decode_tok_s": 21.47,
+      "ram_mib": 22856.0,
+      "vram_mib": 6408,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-final-A2/metrics.json",
+      "diagnostic": false,
+      "accepted": false
+    },
+    {
+      "id": "r9-b2",
+      "label": "Final series B2 (diagnostic exp244)",
+      "at": "2026-11-12T03:54:16+00:00",
+      "prefill_tok_s": 2568.2,
+      "decode_tok_s": 24.77,
+      "ram_mib": 21317.0,
+      "vram_mib": 4590,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-final-B2/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r10-ub2048",
+      "label": "Control variant: ubatch 2048",
+      "at": "2026-11-12T03:55:00+00:00",
+      "prefill_tok_s": 2550.8,
+      "decode_tok_s": 25.87,
+      "ram_mib": null,
+      "vram_mib": 4590,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 2048 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-ub2048/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r11-kv-on-cpu",
+      "label": "Diagnostic: KV cache offloaded to RAM (--no-kv-offload)",
+      "at": "2026-11-12T03:55:20+00:00",
+      "prefill_tok_s": 1912.7,
+      "decode_tok_s": 3.77,
+      "ram_mib": 23074.5,
+      "vram_mib": 3194,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode + --no-kv-offload",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content NOT equal",
+      "source": "runtime/reconstructed/build/run-metrics-kvcpu/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r12-ncpu34",
+      "label": "Rejected: --n-cpu-moe 34 instead of --cpu-moe",
+      "at": "2026-11-12T03:55:40+00:00",
+      "prefill_tok_s": 2651.1,
+      "decode_tok_s": 27.76,
+      "ram_mib": 21037.6,
+      "vram_mib": 7578,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --n-cpu-moe 34 -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content NOT equal, placement changes rounding",
+      "source": "runtime/reconstructed/build/run-metrics-ncpu34/metrics.json",
+      "diagnostic": false,
+      "accepted": false
+    },
+    {
+      "id": "r13-ck0",
+      "label": "Not accepted: --ctx-checkpoints 0",
+      "at": "2026-11-12T03:55:50+00:00",
+      "prefill_tok_s": 2588.2,
+      "decode_tok_s": 26.05,
+      "ram_mib": 21178.3,
+      "vram_mib": 4592,
+      "configuration": "argv identical to runtime/exp244/results-apex-or244-or-goose/argv.json: -ngl all --cpu-moe -fa on -ctk/-ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 cpu-mask 0f0f cpu-mask-batch ffff, 32K prompt / 128 decode",
+      "conditions": "RTX 4070 12 GiB, 32 cores, browser and desktop GPU load present; own llama-server only, terminated after each run",
+      "correctness": "content NOT equal, reproducible with cache_prompt false",
+      "source": "runtime/reconstructed/build/run-metrics-ck0/metrics.json",
+      "diagnostic": false,
+      "accepted": false
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "at": "2026-11-12T03:52:30+00:00",
+      "title": "Потеря локализована в libllama",
+      "kind": "insight",
+      "detail": "CPU library contributes nothing; exp371 line 1588.7 against exp244 line 2567.7 on identical argv.",
+      "run_id": "r3-exp244-llama-full"
+    },
+    {
+      "id": "e2",
+      "at": "2026-11-12T03:53:00+00:00",
+      "title": "Симлинк SONAME стоил ложного замера",
+      "kind": "insight",
+      "detail": "Repointing only libllama.so.0.7.0 while the loader opens libllama.so.0 produced 1616.8 instead of 2563.2."
+    },
+    {
+      "id": "e3",
+      "at": "2026-11-12T03:54:20+00:00",
+      "title": "Гибрид экспертов отклонён",
+      "kind": "regression",
+      "detail": "--n-cpu-moe 34 gives +9% decode but breaks the content check and needs 7578 MiB VRAM.",
+      "run_id": "r12-ncpu34"
+    },
+    {
+      "id": "e4",
+      "at": "2026-11-12T03:55:55+00:00",
+      "title": "Аномалия ctx-checkpoints",
+      "kind": "insight",
+      "detail": "--ctx-checkpoints 0 changes the output twice with cache_prompt false; kept out of the profile.",
+      "run_id": "r13-ck0"
+    },
+    {
+      "id": "e5",
+      "at": "2026-11-12T03:55:58+00:00",
+      "title": "Переключение на exp244 переклассифицировано",
+      "kind": "deferred",
+      "detail": "exp244 libllama has 214 fg modules against 307, so the speedup is diagnostic until the omitted port is accounted for."
+    }
+  ]
+}

@@ -96,3 +96,20 @@ reproducibly (2588.2/26.05 and 2587.2/25.34). The request uses `cache_prompt: fa
 be able to change the completion. The accepted profile keeps 32 and stays correct, so nothing was changed; this is
 recorded as an anomaly of the accepted path that needs a separate look, together with the same class of question as the
 placement test above: which parameters are allowed to change the numbers and which are supposed to be exact.
+
+## Correction: the exp244 libllama switch is diagnostic, not an accepted optimisation
+
+The reporting contract states it plainly: a restored older library is a diagnostic result until preservation of the
+complete port is checked, and a reduced port must not be labelled as accepted full-path optimisation. Checked: exp244
+libllama carries 214 `fg` symbols, exp371 carries 307. The extra 34 modules (fg345w, fg367s, fg373s, fg375s/376s,
+fg377s, fg380s-397s, fg398s, fg401s-408s and fg212s) are the later ported decisions - KV, batch container, detok,
+scheduler, weight placement, hybrid. Switching to exp244 therefore *drops* ported work, which is exactly what must not
+be accepted.
+
+So the numbers stay as diagnostics: they prove the regression lives in the exp371 libllama line and that the CPU
+library is innocent, but they are not the optimisation. The accepted optimisation has to reach the same speed with all
+307 modules present.
+
+Commit 063de29 keeps its numbers but its `#accepted` tag is superseded by this correction; the dashboard feed marks the
+switch as diagnostic, and the staging symlinks still point at exp244 so measurements stay comparable while the cause is
+hunted - that is a working state, not a shipped default.
