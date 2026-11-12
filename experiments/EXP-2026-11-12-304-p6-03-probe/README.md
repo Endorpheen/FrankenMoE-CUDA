@@ -138,3 +138,28 @@ drifted after that build, the deployed object is not the code we have been readi
 
 The next step is therefore a plain rebuild of the base from the current source with the recorded recipe, followed by the
 reproducer, the Apex gate and a timing comparison against the 22.8 s baseline.
+
+## A rebuild from the recorded source is not the deployed library
+
+The base was rebuilt from the current experiment source with the recorded recipe, into a side file (never deployed):
+
+| artifact | sha256 (first 12) |
+|---|---|
+| deployed `libggml-base.so.0` | `e213fa19e169` |
+| rebuilt from current source | `95a29c7324d7` |
+
+and the rebuilt library behaves differently in two ways:
+
+- the 371-token prompt **still aborts** with two CUDA errors, so the crash is not stale deployment;
+- the 5-token prompt returns `9a26052793e8f970` instead of the accepted `1da0f49942ac7858`.
+
+The second is the more serious finding. Rebuilding from the recorded sources does not reproduce the deployed artifact, and the
+reproduced one changes numerical output on the same request. That means the artifact cannot be recreated from what is checked
+in, which is an integrity problem independent of the CUDA crash.
+
+Nothing was deployed: the rebuilt library lives beside the experiment as a diagnostic only, and the accepted profile still
+runs on `e213fa19e169`.
+
+Next: identify which build input differs. The link takes several goose objects and one scheduler object; comparing the rebuilt
+object against the ones the deployment used -- by hash and by the recorded step that produced each -- will show whether the
+drift is in the scheduler source, in a goose unit, or in an include that resolves differently now.
