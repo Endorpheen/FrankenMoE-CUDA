@@ -8,7 +8,7 @@ pin = json.loads((F / 'runtime/compiler/current.json').read_text())
 C = Path(pin['compiler'])
 assert hashlib.sha256(C.read_bytes()).hexdigest() == pin['sha256'], 'compiler pin mismatch'
 
-NAMES = ['check_continuity', 'check_walk']
+NAMES = ['check_continuity', 'check_walk', 'check_mrope']
 
 
 def body(g, m):

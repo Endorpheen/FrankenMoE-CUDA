@@ -67,6 +67,9 @@ extern "C" int64_t fg291b_check_continuity(int64_t n_tokens, uint64_t pos, uint6
                                            uint64_t seq_count, int64_t has_mem, uint64_t mem_max, int64_t n_seq);
 extern "C" int64_t fg291b_check_walk(int64_t n_tokens, uint64_t pos, uint64_t mask_of, int64_t n_seq,
                                      uint64_t cur_set, uint64_t cur_pos);
+extern "C" int64_t fg291b_check_mrope(int64_t n_tokens, uint64_t mask_of, uint64_t embd_of, int64_t mixed,
+                                      int64_t has_token, int64_t n_seq, uint64_t seq_min, uint64_t seq_count,
+                                      int64_t has_mem, uint64_t mem_max, uint64_t scratch_first, uint64_t scratch_seen);
 
 llama_batch_allocr::llama_batch_allocr(uint32_t n_pos_per_embd, bool allow_mixed) : n_pos_per_embd(n_pos_per_embd), allow_mixed(allow_mixed) {
     const char * LLAMA_BATCH_DEBUG = getenv("LLAMA_BATCH_DEBUG");
@@ -479,8 +482,32 @@ bool llama_batch_allocr::init(
             }
         }
 
+        if (fg291b_enabled() && n_seq_max <= 64) {
+            std::vector<int64_t> g_mask(batch.n_tokens, 0), g_embd(batch.n_tokens, 0);
+            for (int32_t i = 0; i < batch.n_tokens; ++i) {
+                g_mask[i] = (size_t) i < seq_set.size()     ? (int64_t) seq_set[i].to_ullong() : 0;
+                g_embd[i] = (size_t) i < is_embd_vec.size() ? (is_embd_vec[i] ? 1 : 0) : 0;
+            }
+            std::vector<int64_t> g_min(n_seq_max, 0), g_cnt(n_seq_max, 0), g_mem(n_seq_max, -1),
+                                  g_first(2*n_seq_max, 0), g_seen(2*n_seq_max, 0);
+            for (uint32_t s = 0; s < n_seq_max; ++s) {
+                g_cnt[s] = (int64_t) seq_pos[s].size();
+                if (!seq_pos[s].empty()) g_min[s] = seq_pos_min(s);
+                g_mem[s] = mem ? (int64_t) mem->seq_pos_max(s) : -1;
+            }
+            const int64_t bad = fg291b_check_mrope((int64_t) batch.n_tokens,
+                    (uint64_t) (uintptr_t) g_mask.data(), (uint64_t) (uintptr_t) g_embd.data(),
+                    mixed ? 1 : 0, batch.token ? 1 : 0, (int64_t) n_seq_max,
+                    (uint64_t) (uintptr_t) g_min.data(), (uint64_t) (uintptr_t) g_cnt.data(),
+                    mem ? 1 : 0, (uint64_t) (uintptr_t) g_mem.data(),
+                    (uint64_t) (uintptr_t) g_first.data(), (uint64_t) (uintptr_t) g_seen.data());
+            if (bad != 0) {
+                LLAMA_LOG_ERROR("%s: the tokens of the input batch have inconsistent sequence positions (M-RoPE)\n", __func__);
+                return false;
+            }
+        }
         // M-RoPE case: allow position to "jump" forward only (non-continuous positions are allowed)
-        for (uint32_t s = 0; s < n_seq_max; ++s) {
+        for (uint32_t s = 0; s < n_seq_max && !fg291b_enabled(); ++s) {
             if (seq_pos[s].empty()) {
                 continue;
             }

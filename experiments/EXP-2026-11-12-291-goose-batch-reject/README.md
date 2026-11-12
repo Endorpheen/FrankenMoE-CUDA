@@ -52,3 +52,28 @@ branch where continuity is still native -- and that branch is the one the accept
 So P6-07 stays IN_PROGRESS: the live position rule on this model is the M-RoPE variant (`X < Y` for token input,
 `X <= Y` for embedding input, per-sequence first-entry rule in mixed batches), and it is not ported. That is the next
 increment, and it is named here rather than hidden behind a green walk counter.
+
+## M-RoPE continuity wired -- and two defects of my own
+
+The M-RoPE variant is now ported: a sequence takes the strict rule (`X < Y`) when its first entry is a token and the
+equal-allowing rule (`X <= Y`) when it is an embedding; in a mixed batch the first occurrence in token order decides.
+
+Integration defects found by running it rather than by reading:
+
+1. the first attempt segmented on the M-RoPE path with `seq_set[i].to_ullong()` and `is_embd_vec[i]` read unconditionally.
+   `is_embd_vec` is sized for the new batch format and can be shorter than `batch.n_tokens` on the legacy path, so the
+   read ran past the end and the server died with SIGSEGV during the first decode. Both reads are now bounds-guarded
+   (`(size_t) i < vec.size()`), and an out-of-range entry contributes a zero mask / non-embedding flag.
+2. the bridge had to define `fg291b_check_mrope_impl` from a regenerated copy of the module: the copy the bridge included
+   predated the new entry, so the symbol was undefined and only lazy binding kept the failure out of the startup path.
+
+A/B after the fix, same DSO:
+
+| arm | content | witness |
+|---|---|---|
+| `GGML_GOOSE_BATCH_REJECT=1` | `e68df05b...`, tokens and probabilities equal | `continuity=0 walk=138 mrope=138 refused=0` |
+| `GGML_GOOSE_BATCH_REJECT=0` | same | all zero |
+
+`mrope=138` is the live proof: the accepted profile takes the M-RoPE branch, and both the set/position walk and the
+M-RoPE continuity rule run there. The plain continuity module stays gated but dormant on this model -- that branch is
+only taken by non-M-RoPE models.

@@ -73,7 +73,57 @@ fn check_walk(n_tokens:i64, pos:u64, mask_of:u64, n_seq:i64, cur_set:u64, cur_po
     0 as i64
 }
 
+
+// M-RoPE continuity: positions may jump forward, so the rule is stricter than plain continuity.
+// The per-sequence rule is chosen by the sequence's first entry: a token-first entry requires last < first
+// (X < Y), an embedding-first entry allows equality (X <= Y). In a mixed batch the first occurrence of a
+// sequence in token order decides; otherwise the whole batch does.
+fn check_mrope(n_tokens:i64, mask_of:u64, embd_of:u64, mixed:i64, has_token:i64, n_seq:i64,
+               seq_min:u64, seq_count:u64, has_mem:i64, mem_max:u64, scratch_first:u64, scratch_seen:u64) -> i64 {
+    ensure(n_tokens >= 0 as i64 && n_seq >= 0 as i64 && n_seq <= 64 as i64, 13);
+    var s:i64 = 0 as i64;
+    let def:i64 = if has_token != 0 as i64 {0 as i64} else {1 as i64};
+    while s < n_seq {
+        st_i64(scratch_first, s*8 as i64, def);
+        st_i64(scratch_seen,  s*8 as i64, 0 as i64);
+        s = s + 1 as i64;
+    }
+    if mixed != 0 as i64 {
+        var i:i64 = 0 as i64;
+        while i < n_tokens {
+            let m:i64 = atu(mask_of, i);
+            let e:i64 = at(embd_of, i);
+            var k:i64 = 0 as i64;
+            while k < n_seq {
+                if ((m >> k) & 1 as i64) != 0 as i64 && at(scratch_seen, k) == 0 as i64 {
+                    st_i64(scratch_seen,  k*8 as i64, 1 as i64);
+                    st_i64(scratch_first, k*8 as i64, e);
+                }
+                k = k + 1 as i64;
+            }
+            i = i + 1 as i64;
+        }
+    }
+    if has_mem == 0 as i64 {return 0 as i64;}
+    var s2:i64 = 0 as i64;
+    while s2 < n_seq {
+        if at(seq_count, s2) > 0 as i64 {
+            let p0:i64 = at(mem_max, s2);
+            if p0 >= 0 as i64 {
+                if at(scratch_first, s2) == 0 as i64 {
+                    if p0 >= at(seq_min, s2) {return 1 as i64;}
+                } else {
+                    if p0 > at(seq_min, s2) {return 1 as i64;}
+                }
+            }
+        }
+        s2 = s2 + 1 as i64;
+    }
+    0 as i64
+}
+
 fn main(){
     check_continuity(0 as i64, 0 as u64, 0 as u64, 0 as u64, 0 as u64, 0 as i64, 0 as u64, 0 as i64);
     check_walk(0 as i64, 0 as u64, 0 as u64, 0 as i64, 0 as u64, 0 as u64);
+    check_mrope(0 as i64, 0 as u64, 0 as u64, 0 as i64, 0 as i64, 0 as i64, 0 as u64, 0 as u64, 0 as i64, 0 as u64, 0 as u64, 0 as u64);
 }

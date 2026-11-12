@@ -45,6 +45,29 @@ static int64_t ref_walk(int64_t n_tok, const int64_t * pos, const int64_t * mask
     return 0;
 }
 
+static int64_t ref_mrope(int64_t n_tok, const int64_t * mask, const int64_t * embd, int64_t mixed, int64_t has_token,
+                         int64_t n_seq, const int64_t * mn, const int64_t * cnt, int64_t has_mem, const int64_t * mem) {
+    int64_t first[64], seen[64];
+    const int64_t def = has_token ? 0 : 1;
+    for (int64_t s = 0; s < n_seq; ++s) { first[s] = def; seen[s] = 0; }
+    if (mixed) {
+        for (int64_t i = 0; i < n_tok; ++i)
+            for (int64_t k = 0; k < n_seq; ++k)
+                if (((mask[i] >> k) & 1) && !seen[k]) { seen[k] = 1; first[k] = embd[i]; }
+    }
+    if (!has_mem) return 0;
+    for (int64_t s = 0; s < n_seq; ++s) {
+        if (cnt[s] > 0) {
+            const int64_t p0 = mem[s];
+            if (p0 >= 0) {
+                if (!first[s]) { if (p0 >= mn[s]) return 1; }
+                else            { if (p0 >  mn[s]) return 1; }
+            }
+        }
+    }
+    return 0;
+}
+
 static int failures, checks;
 static void expect(const char * nm, int64_t got, int64_t want) {
     checks++;
@@ -85,6 +108,36 @@ int main(void) {
             ref_walk(3, pos_bad, m_bad, 2));
         expect("walk: decreasing rejected", fg291b_check_walk(3, (uint64_t)(uintptr_t)pos_dec, (uint64_t)(uintptr_t)m_dec, 2, (uint64_t)(uintptr_t)scratch, (uint64_t)(uintptr_t)(scratch+32)),
             ref_walk(3, pos_dec, m_dec, 2));
+    }
+    {
+        int64_t sc1[64], sc2[64];
+        const int64_t m1[1] = { 0b1 }, e0[1] = { 0 }, e1[1] = { 1 };
+        const int64_t mn6[2] = { 6, 0 }, mn5[2] = { 5, 0 }, mn4[2] = { 4, 0 };
+        const int64_t cnt[2] = { 1, 0 }, mem5[2] = { 5, -1 };
+        expect("mrope: token strict ok", fg291b_check_mrope(1, (uint64_t)(uintptr_t)m1, (uint64_t)(uintptr_t)e0, 0, 1, 2,
+                (uint64_t)(uintptr_t)mn6, (uint64_t)(uintptr_t)cnt, 1, (uint64_t)(uintptr_t)mem5, (uint64_t)(uintptr_t)sc1, (uint64_t)(uintptr_t)sc2),
+                ref_mrope(1, m1, e0, 0, 1, 2, mn6, cnt, 1, mem5));
+        expect("mrope: token equality rejected", fg291b_check_mrope(1, (uint64_t)(uintptr_t)m1, (uint64_t)(uintptr_t)e0, 0, 1, 2,
+                (uint64_t)(uintptr_t)mn5, (uint64_t)(uintptr_t)cnt, 1, (uint64_t)(uintptr_t)mem5, (uint64_t)(uintptr_t)sc1, (uint64_t)(uintptr_t)sc2),
+                ref_mrope(1, m1, e0, 0, 1, 2, mn5, cnt, 1, mem5));
+        expect("mrope: embedding equality allowed", fg291b_check_mrope(1, (uint64_t)(uintptr_t)m1, (uint64_t)(uintptr_t)e1, 0, 0, 2,
+                (uint64_t)(uintptr_t)mn5, (uint64_t)(uintptr_t)cnt, 1, (uint64_t)(uintptr_t)mem5, (uint64_t)(uintptr_t)sc1, (uint64_t)(uintptr_t)sc2),
+                ref_mrope(1, m1, e1, 0, 0, 2, mn5, cnt, 1, mem5));
+        expect("mrope: embedding behind rejected", fg291b_check_mrope(1, (uint64_t)(uintptr_t)m1, (uint64_t)(uintptr_t)e1, 0, 0, 2,
+                (uint64_t)(uintptr_t)mn4, (uint64_t)(uintptr_t)cnt, 1, (uint64_t)(uintptr_t)mem5, (uint64_t)(uintptr_t)sc1, (uint64_t)(uintptr_t)sc2),
+                ref_mrope(1, m1, e1, 0, 0, 2, mn4, cnt, 1, mem5));
+        {
+            const int64_t m2[2] = { 0b1, 0b1 }, first_token[2] = { 0, 1 }, first_embd[2] = { 1, 0 };
+            expect("mrope: mixed first token wins", fg291b_check_mrope(2, (uint64_t)(uintptr_t)m2, (uint64_t)(uintptr_t)first_token, 1, 1, 2,
+                    (uint64_t)(uintptr_t)mn5, (uint64_t)(uintptr_t)cnt, 1, (uint64_t)(uintptr_t)mem5, (uint64_t)(uintptr_t)sc1, (uint64_t)(uintptr_t)sc2),
+                    ref_mrope(2, m2, first_token, 1, 1, 2, mn5, cnt, 1, mem5));
+            expect("mrope: mixed first embedding wins", fg291b_check_mrope(2, (uint64_t)(uintptr_t)m2, (uint64_t)(uintptr_t)first_embd, 1, 1, 2,
+                    (uint64_t)(uintptr_t)mn5, (uint64_t)(uintptr_t)cnt, 1, (uint64_t)(uintptr_t)mem5, (uint64_t)(uintptr_t)sc1, (uint64_t)(uintptr_t)sc2),
+                    ref_mrope(2, m2, first_embd, 1, 1, 2, mn5, cnt, 1, mem5));
+        }
+        expect("mrope: no memory", fg291b_check_mrope(1, (uint64_t)(uintptr_t)m1, (uint64_t)(uintptr_t)e0, 0, 1, 2,
+                (uint64_t)(uintptr_t)mn5, (uint64_t)(uintptr_t)cnt, 0, (uint64_t)(uintptr_t)mem5, (uint64_t)(uintptr_t)sc1, (uint64_t)(uintptr_t)sc2),
+                ref_mrope(1, m1, e0, 0, 1, 2, mn5, cnt, 0, mem5));
     }
     printf("checks: %d, failures: %d\n", checks, failures);
     return failures ? 1 : 0;

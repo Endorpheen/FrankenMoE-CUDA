@@ -19,9 +19,10 @@
       "module": "batch_reject",
       "entries": [
         "gg_function_1",
-        "gg_function_6"
+        "gg_function_6",
+        "gg_function_10"
       ],
-      "generated_c_sha256": "e5427e5ca2e373b778abdb5c192ed14e004adeb21dcd9a44035e2b2723d5a1b8"
+      "generated_c_sha256": "784e486dc6a627666344d02096288f32ac5ee25fc2842dc6af7f04774bd7023f"
     }
   ]
 }
