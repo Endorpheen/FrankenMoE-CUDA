@@ -709,3 +709,22 @@ also noise. This is recorded because accepting the first number would have been 
 Remaining candidate for the gap: the copied `changed` sources themselves (unconditional parts, not the `enabled()`
 branches) or the link step. Deciding that needs a per-file rebuild bisection of the `changed` list, which is the next
 step and is a code experiment, not a flag test.
+
+## Bisection step 1: llama-sampler.cpp is not the decode gap
+
+Swapped our `SRC/llama-sampler.cpp` (124 differing lines) for the flint original, rebuilt, measured three times:
+
+| build | decode | content |
+|---|---|---|
+| ours (full port) | 23.78 | e68df05b |
+| sampler = flint | 24.69 | equal |
+| sampler = flint (repeat) | 24.65 | equal |
+| sampler = flint (repeat) | 23.84 | equal |
+
+The third repeat lands back in the noise band, and our own baseline produced 24.31 in one repeat, so the apparent +3.8%
+is not established. The original file was restored immediately, the build is back to 36 modules and measures
+2320.1 / 24.11 with the exact output - nothing was left in a half-bisected state.
+
+Recorded as a negative result: the decode gap is real (native 26.66, exp244 body 26.13, ours 23.78) but it is not in this
+file. Next files to bisect, one at a time: `llama-vocab.cpp`, `llama-batch.cpp`, then the `changed` list's graph/context
+entries, each with a repeat because single runs in this range are clearly not decisive.
