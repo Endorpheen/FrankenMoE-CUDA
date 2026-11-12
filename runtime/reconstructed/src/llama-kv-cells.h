@@ -12,6 +12,9 @@
 #include <stdlib.h>
 
 // Incremental per-sequence min/max (EXP209). GGML_GOOSE_KV_SEQPOS_INCR=0 keeps the native set.
+extern "C" int fg199k_enabled(void);
+extern "C" int64_t fg199k_pos_in(int64_t pos, int64_t p0, int64_t p1);
+extern "C" void fg199k_pos_div(int64_t pos, int64_t shift, int64_t d, uint64_t out);
 extern "C" int fg209i_enabled(void);
 extern "C" int64_t fg209i_on_insert(uint64_t a, int64_t s, int64_t nseq, int64_t p);
 extern "C" int64_t fg209i_on_remove(uint64_t a, int64_t s, int64_t nseq, int64_t p);
@@ -576,6 +579,11 @@ public:
     bool pos_in(uint32_t i, llama_pos p0, llama_pos p1) const {
         assert(i < pos.size());
 
+        // the module traps on a negative lower bound, so it is only asked when the range is normalised
+        if (p0 >= 0 && fg199k_enabled()) {
+            return fg199k_pos_in((int64_t) pos[i], (int64_t) p0, (int64_t) p1) != 0;
+        }
+
         return pos[i] >= p0 && pos[i] < p1;
     }
 
@@ -632,6 +640,21 @@ public:
     void pos_div(uint32_t i, int d) {
         assert(i < pos.size());
         assert(pos[i] != -1);
+
+        if (d != 0 && fg199k_enabled()) {
+            int64_t o[2] = { 0, 0 };
+            fg199k_pos_div((int64_t) pos[i], (int64_t) shift[i], (int64_t) d, (uint64_t)(uintptr_t) o);
+
+            seq_pos_rm(i);
+
+            pos[i]   = (llama_pos) o[0];
+            shift[i] = (llama_pos) o[1];
+
+            seq_pos_add(i);
+
+            has_shift = true;
+            return;
+        }
 
         const llama_pos p_old = pos[i];
 
