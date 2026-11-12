@@ -748,3 +748,25 @@ The lesson is recorded rather than quietly fixed: for decode on this profile the
 enough that single measurements must not be used for comparisons - this is exactly the mistake already caught twice today
 (detok and sampler). All later comparisons in this journal use repeats, and earlier single-run decode numbers should be
 read as approximate.
+
+## Bisection steps 2-3: batch and vocab are not the gap either
+
+Three runs per variant, against the corrected baseline mean of 24.66:
+
+| variant | decode runs | mean | verdict |
+|---|---|---|---|
+| baseline (full port) | 24.73 / 24.44 / 24.82 | 24.66 | reference |
+| llama-batch.cpp = flint | 24.50 / 24.73 / 24.32 | 24.52 | no effect |
+| llama-vocab.cpp = flint | 25.13 / 24.73 / 24.92 | 24.93 | inside spread (baseline alone spans 24.44-24.82) |
+
+Both files were restored immediately after measuring; the build is back to the full 36-module configuration. Neither
+file carries the remaining ~6%.
+
+What this rules out is more useful than what it finds: the gap is not a single copied translation unit. It is either a
+combination, or a build-level effect (the modules are compiled by gcc-13 at -O2 while the flint objects come from CMake,
+and the link uses /usr/bin/c++), or a body-version difference. Distinguishing these needs profiling rather than more
+swaps, and on this machine profiling is limited (perf_event_paranoid, no attach).
+
+Practical consequence: ~6% decode is not worth risky restructuring of the ported path. It is recorded as a known,
+bounded difference with the measurements to back it, and the effort stays on the balanced configuration where the cache
+delivers 37.7-39.3 decode.
