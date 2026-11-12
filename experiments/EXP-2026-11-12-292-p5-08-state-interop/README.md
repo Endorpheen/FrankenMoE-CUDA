@@ -159,3 +159,34 @@ Consequence for P5-08: the serialization criterion is met on both directions (fo
 same size, checkpoint state byte-identical); the remaining differences are an empty checkpoint created by the server and
 the one-ULP KV sensitivity between compute lines. The former is worth fixing as waste, the latter is a property of two
 different kernels.
+
+## Root cause of the empty checkpoint: a process-wide bounds arena
+
+The checkpoint trigger in `server-context.cpp` defends itself:
+
+    if (do_checkpoint && pos_min < 0) do_checkpoint = false;   // "nothing to checkpoint yet"
+
+An empty sequence must report `seq_pos_min == -1`. `llama_kv_cells::seq_pos_min` does that in native, but the
+reconstructed header replaces the set lookup with an incremental bound maintained by EXP209:
+
+    static inline int64_t * goose_bounds = nullptr;   // llama-kv-cells.h:49
+
+    llama_pos seq_pos_min(seq_id) const {
+        if (fg209i_enabled() && goose_bounds) return (llama_pos) goose_bounds[seq_id];
+        ...
+    }
+
+Three properties of that arena produce the empty checkpoint:
+
+1. **It is one array for the whole process.** The comment explains why it is static -- adding a member would change
+   `sizeof(llama_kv_cells)` for the flint objects that are linked unchanged. But the price is that every cache instance
+   (target, draft, any other) reads and writes the same 2x256 slots, so a bound written by one instance is returned by
+   another.
+2. **`reset()` does not reset it.** The instance reset clears `pos`, `ext`, `shift`, `seq`, `used` and the per-sequence
+   sets, but leaves the arena untouched, so after a reset the stale value keeps being returned.
+3. Therefore `seq_pos_min` for a freshly reset slot can return `0` instead of `-1`; the guard passes and an empty
+   checkpoint is stored -- the +780 bytes.
+
+Fix direction, respecting the ABI constraint: key the arena by instance (small fixed table of `(cells*, arena)` with a
+linear scan, or a member pointer into a host-allocated per-instance arena) and zero it in `reset()`. Changing the class
+layout is not an option while unchanged flint objects are linked against the old `sizeof`.
