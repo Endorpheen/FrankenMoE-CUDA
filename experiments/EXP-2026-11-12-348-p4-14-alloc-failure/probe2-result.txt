@@ -1,0 +1,9 @@
+native:
+reuse used=27840 27840 ok=1 1
+rc=0
+
+ours (same numbers, plus witnesses):
+reuse used=27840 27840 ok=1 1
+rc=0
+FG157_CONTEXT_CORE goose_modes=0x400100f,live_context_heaps=0
+FG156_CONSTRUCTORS goose_modes=0x2
