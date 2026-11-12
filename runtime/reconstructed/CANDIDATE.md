@@ -48,3 +48,27 @@ rather than suggesting a mistake.
 
 So the breakpoint probe is the witness substitute when a module has no printer, and only the two MoE-cache bridges remain unobserved --
 because they need a MoE model, which means Apex.
+
+## The candidate was mixing eras, and that was the second crash
+
+The assembled candidate paired a server implementation built today from current flint sources with the **older** `libggml-*` libraries taken from
+the EXP340 stage. That mix is not viable: the current server expects current ggml behaviour, and on the `n_predict 0` path the mismatch trips the
+`pos_min == -1` assert.
+
+Three configurations separated it:
+
+| base libraries | libllama | server impl | result |
+|---|---|---|---|
+| stage (older) | flint's | ours, current source | **abort** |
+| stage (older) | flint's | native 2026-10-21 | both answered |
+| current flint | flint's | ours, current source | both answered |
+
+`assemble_matched.py` therefore builds `candidate-20261112-matched`: every library from the current flint build, with only `libllama` and the
+server implementation replaced by ours.
+
+Results on that candidate:
+
+- the six-case edge sweep matches native on all six, including the two cases that previously crashed;
+- the eight-case sampler differential matches native on all eight, with the same distinctness pattern as before.
+
+So the merged work runs correctly once the candidate is built from one era. The earlier assembly was the defect, not the ports.
