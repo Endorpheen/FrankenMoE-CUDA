@@ -163,3 +163,22 @@ runs on `e213fa19e169`.
 Next: identify which build input differs. The link takes several goose objects and one scheduler object; comparing the rebuilt
 object against the ones the deployment used -- by hash and by the recorded step that produced each -- will show whether the
 drift is in the scheduler source, in a goose unit, or in an include that resolves differently now.
+
+## The scheduler source is not the drift
+
+The deployment names its library after `sha256(H(object) + H(goose_unit))`. Recomputing that hash for the objects built now
+from the current source gives exactly `bafe3955c9ea` -- the deployed name. So the scheduler object and its Goose unit in the
+deployed library are byte-identical to what the current source produces; the drift, and the numeric difference of the rebuild,
+must come from the other objects the link consumes (`shared-core.o`, `shared-meta.o`, `allocator.o`, `buffers-goose.o`, all
+rebuilt today from their recorded steps because they were absent).
+
+Everything else in the scheduler comparison is inert:
+
+- `op_offload` exists in both revisions with the same four uses, and both call sites pass `cparams.op_offload`;
+- the substantive diff between the two files is the expert-pipeline block (102 non-blank changed lines), and it cannot run
+  without `ggml_backend_sched_set_expert_pipeline` being called, which nothing in this build does;
+- `GGML_SCHED_DEBUG` produces no output, so that instrument is compiled out.
+
+So the deployed base and the flint base differ not in the scheduler logic we can read, but in one of the other linked objects --
+which is also why a rebuild cannot be reproduced. The next step is a substitution bisect: relink the base with the deployed
+scheduler object but flint's version of each remaining object, one at a time, and see which combination stops the CUDA split.
