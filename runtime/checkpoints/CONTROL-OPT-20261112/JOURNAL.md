@@ -474,3 +474,23 @@ the ladder is monotonic in both decode and VRAM - no anomaly to chase.
 
 Every cache point still fails the exact-content check for the reason established earlier (CPU kernels vs GPU kernels,
 same storage type). The variant therefore remains experimental; nothing was enabled by default.
+
+## Cache baseline extended: 4096 MiB fits now and reaches 40.78 decode
+
+With EXP087/EXP101 in place the cache can grow to a size that previously aborted. Measured on the accepted build:
+
+| moe-cache MiB | prefill | decode | VRAM MiB | note |
+|---|---|---|---|---|
+| 0 (control only) | 2310 | 24.1 | 3190 | correctness control |
+| 1280 | 2334.2 | 30.63 | 4476 | smallest 30+ point |
+| 2048 | 2348.3 | 34.03 | 5242 | previous baseline |
+| 3072 | 2335.0 | 37.79 | 6266 | |
+| **4096** | 2324.3 | **40.78** | 7292 | largest that starts |
+| 6144 | OOM | - | - | fails to start |
+| 8192 | OOM | - | - | fails to start |
+
+Decode scales with cache size up to the memory limit (24.1 -> 30.63 -> 34.03 -> 37.79 -> 40.78) while prefill stays flat
+in the same 2324-2348 band, so the cache buys decode only - it is not a prefill lever and must not be sold as one.
+
+The 4096 point uses 7292 of 12282 MiB VRAM, leaving room for the desktop, and remains inside the exact-check caveat
+(compute-engine rounding). No default was changed.
