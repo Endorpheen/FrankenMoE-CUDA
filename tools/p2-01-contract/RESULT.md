@@ -60,3 +60,23 @@ same probe.
 
 Not done in this iteration: it is a Goose-source change plus regeneration, and it must not be rushed inside a measurement
 pass. P2-01 stays PARTIAL with the cause and the route recorded.
+
+## Refinement: the exact module already has a bit-exact path; the tail does not
+
+`EXP-143/source/pointwise.goose`:
+
+    fn silu_compat(p, x, col, width) {
+        if p.ip[12]!=0 && p.x.kind==0 && p.d.kind==0 && col < (width/8)*8 {
+            return x/(1 + avx2_exp_compat(-x));   // byte-exact SIMD association
+        }
+        return silu(x);                            // x/(1+expf(-x))  -> 1 ULP
+    }
+
+So the divergence is not an unknown: the bit-exact exponent construction is used for the wide part and the scalar tail
+falls back to libm `expf`. That matches the EXP-143 contract, which claims 9/9 wide cases and says nothing about the tail.
+
+Minimal repair, one expression in the Goose module: use `avx2_exp_compat` in the fallback too, i.e. make the tail take the
+same association as the wide part, then regenerate and rerun this probe. No native change, no gate weakened.
+
+Why it was not rushed here: regenerating the module needs the generator plus a rebuild, and this must be followed by the
+same 19-case probe and an Apex regression. P2-01 stays PARTIAL with a precise, small, reusable fix identified.
