@@ -494,3 +494,24 @@ in the same 2324-2348 band, so the cache buys decode only - it is not a prefill 
 
 The 4096 point uses 7292 of 12282 MiB VRAM, leaving room for the desktop, and remains inside the exact-check caveat
 (compute-engine rounding). No default was changed.
+
+## Cache baseline: no interaction with the remaining switches, and its own scaling
+
+On the 2048 cache baseline, the two switches that were still untested in combination:
+
+| variant | prefill | decode | VRAM |
+|---|---|---|---|
+| cache 2048 (baseline) | 2348.3 | 34.03 | 5242 |
+| cache 2048 + ubatch/batch 8192 | 2351.7 | 34.08 | 5242 |
+| cache 2048 + tb 32 / mask ffffffff | 2342.0 | 34.14 | 5242 |
+| cache 2048, 16K prompt | 2367.4 | 37.66 | 5050 |
+
+No interaction: both switches stay inside noise, so the cache does not open a new tuning axis. The 16K point is
+informative in a different way - decode rises to 37.66 because a shorter context leaves a larger effective share of the
+cache per step, while prefill stays in the same band. That confirms the cache is a decode lever whose value depends on
+how much unique expert traffic the run produces, not on prompt length directly.
+
+State of the two points, unchanged and reproducible:
+- optimisation baseline: cache 2048 -> 2348 prefill / 34.03 decode / 5242 MiB; largest that starts is 4096 -> 40.78 at
+  7292 MiB.
+- correctness control only: no cache -> 2310 / 24.1 / 3190 MiB with the exact `e68df05b`.
