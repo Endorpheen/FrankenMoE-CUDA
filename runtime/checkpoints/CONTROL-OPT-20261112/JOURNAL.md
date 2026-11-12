@@ -288,3 +288,22 @@ same ggml. So the next prefill work is not in module switches at all - it is in 
 
 Memory side unchanged so far: pinning keeps experts pageable in RAM (RSS 22857, VRAM 6408). Any change now has to be
 judged on all four metrics, per the balanced-target instruction.
+
+## moe-cache: the decode target is reachable, but not with the exact-check criterion
+
+The profile never uses `--moe-cache-mib`, and the build has the whole mechanism (`llama-moe-cache.cpp`, 23 symbols).
+Enabled addressolly:
+
+| variant | prefill | decode | RSS MiB | VRAM MiB | content equal |
+|---|---|---|---|---|---|
+| accepted (pinning) | ~2365 | 23.9 | 22857 | 6408 | yes |
+| `--moe-cache-mib 2048` | 2409.6 | **32.81** | 22858 | 8456 | **no** |
+| `--moe-cache-mib 4096` | fails | - | - | - | - |
+
+So decode 30+ is available on this machine, at +2048 MiB VRAM and with a different numerical result. The content check
+compares against the accepted `e68df05b`, and device-side expert caching changes rounding, exactly like the rejected
+`--n-cpu-moe 34` case. Per the standing rule the criterion is not weakened, so this is **not accepted**; it is recorded
+as the strongest known lead for the decode target and as a decision for Igor: keep bit-exact output and 23.9 decode, or
+accept a numerically different (but still valid) path to 32.8.
+
+`4096` exceeds the free VRAM and fails to start - noted so it is not retried blindly.
