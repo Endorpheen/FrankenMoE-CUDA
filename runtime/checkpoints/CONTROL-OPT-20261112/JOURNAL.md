@@ -152,3 +152,23 @@ Combined with the earlier group tests, this means the 58% gap is not produced by
 runtime. The remaining difference is in the compiled objects themselves: the `changed` list in `build.py`
 (llama-graph/context/sampler/vocab/...) or the flint object set. The next step is therefore a rebuild bisection - link
 the exp244 object set, then swap in our objects one file at a time - instead of more flag experiments.
+
+## The regression is not in the Goose code at all
+
+Two decisive measurements:
+
+1. A **pure native** `libllama` built here from the flint objects (no Goose source, 44 objects, linked with the same
+   rpath) measures **1636.0 / 26.04** - the same class as our full port (1624.1 / 23.64). The ported code is therefore
+   not what costs prefill.
+2. `lrpath` inspection explains the "magic" exp244 result: `libllama-exp244` carries an rpath to
+   `llama.cpp-flint-cuda/build-cuda/bin` and loads **that** ggml stack, not our staging one. All four libraries differ:
+   libggml, libggml-base, libggml-cpu, libggml-cuda (1e52e0dc/aa5274b5/b4ec8b3a/68681579 against our
+   9a9ea86a/e213fa19/ab6f61ea/219af975).
+
+So the 2563 figure was never "the old library is faster because it lacks the port" - it was a different ggml stack
+(and a different llama body) loaded through rpath.
+
+Consequence: the remaining speed work has to target **our staging ggml stack**, not libllama and not the Goose modules.
+A first datapoint: full port on the flint ggml stack measures 1787.7 / 25.99 (+10% prefill, +10% decode over 1624.1 /
+23.64), content equal. Note the rule: those libraries are native, so they cannot be shipped as the accepted
+optimisation; their job is to tell us what to look for in ours.
