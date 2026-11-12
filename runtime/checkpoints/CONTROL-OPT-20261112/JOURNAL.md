@@ -140,3 +140,15 @@ not called per token, and a linker version cannot slow a loop.
 What remains to test, in order: (1) the `-O2` used for the modules against `-O3`, now that the diagnostic build proves
 the same port runs 58% faster with a pure GCC 13.4.0 library; (2) the actual module bodies on the hot path, since every
 env-gated group turned out to be mandatory and could not be bisected at runtime.
+
+## All Goose graph switches excluded; the difference is in the build itself
+
+Disabling each Goose decision group inside exp371 changes nothing (all within noise of 1624):
+`MODEL_GRAPH` 1605.0, `OUTPUT_REORDER` 1591.8, `TRANSFER_POLICY` 1572.7, `SCHED_DECISIONS` 1621.9,
+`FUSED_OPS_RESOLVE` 1657.5, `HYBRID_MEMORY` 1613.9, `HYBRID_CONTEXT` 1636.9, both hybrid 1631.8. Every one keeps the
+content check green.
+
+Combined with the earlier group tests, this means the 58% gap is not produced by any decision the modules make at
+runtime. The remaining difference is in the compiled objects themselves: the `changed` list in `build.py`
+(llama-graph/context/sampler/vocab/...) or the flint object set. The next step is therefore a rebuild bisection - link
+the exp244 object set, then swap in our objects one file at a time - instead of more flag experiments.
