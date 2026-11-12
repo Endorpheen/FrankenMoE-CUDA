@@ -1859,7 +1859,9 @@ private:
         if (slot_prompt_similarity != 0.0f) {
             float f_sim_best = 0;
 
-            if (fg272s_enabled()) {
+            // the Goose picker requires a non-empty prompt (it validates n_tokens > 0); with no
+            // tokens there is nothing to compare, so the native path handles that case
+            if (fg272s_enabled() && !task.tokens.empty()) {
                 const size_t nsl = slots.size();
                 std::vector<int64_t> s_ok(nsl, 0), s_lcp(nsl, 0);
                 for (size_t k = 0; k < nsl; ++k) {
