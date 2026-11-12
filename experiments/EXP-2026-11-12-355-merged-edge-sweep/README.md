@@ -1,8 +1,11 @@
 # EXP355: edge-case sweep finds a pre-existing crash in the candidate
 
-> **WITHDRAWN in part (2026-11-12).** The claim that the EXP340 stage also aborts is **not proven**: by the time that control was run, the stage's
-> `libllama-server-impl.so` had already been overwritten by my own `cp -f` through a symlink, and the abort message named my merged source file.
-> See `docs/goose-migration/INCIDENT-20261112-STAGE-OVERWRITE.md`. What still stands is that the crash happens in merged code with every gate
+> **REINSTATED (2026-11-12, after restoration).** The claim was withdrawn while the stage's server library was known to have been overwritten by
+> my own copy. The original has since been restored from the project's backup and verified by its build path
+> (`llama.cpp-flint-apex-prefix/.../server-context.cpp:4136`); with that genuine original the crash still reproduces. The control is therefore
+> valid again and the conclusion stands: the crash predates the merge.
+>
+What still stands is that the crash happens in merged code with every gate
 > disabled; whether the accepted runtime had it before the merge is unknown until the original library is restored.
 
 Six request shapes sent in sequence to native and to the merged candidate: empty prompt, `n_predict 0`, a stop string, 64 tokens, `n_probs`, and

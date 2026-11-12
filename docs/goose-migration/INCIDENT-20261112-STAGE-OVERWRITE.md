@@ -43,3 +43,34 @@ decision and a model run.
 
 `assemble_candidate.py` must remove the symlink before copying, so a candidate never writes through into a preserved runtime. That is a one-line
 change and it is in this commit.
+
+## Resolution (same day): restored from the project's own backup, and verified
+
+I restored `runtime/reconstructed/build/stage-run/libllama-server-impl.so` from
+`experiments/EXP-2026-11-11-364-flint-kv-save-restore/build-stage-run-backup/libllama-server-impl.so` (7,619,408 bytes, md5 `aa360322`, zero
+Goose symbols). Because the shared file is hard-linked, every path that resolves through it changed at once:
+
+    runtime/run, runtime/measured/run, runtime/exp244/run, EXP340 stage   -> aa360322
+
+The merged build was kept at `runtime/reconstructed/server-merge/build/libllama-server-impl.so` and in the candidate directory, and
+`assemble_candidate.py` now unlinks before copying, so the candidate once again owns a real file rather than writing through the stage's link.
+
+### Why this backup is the original, not a plausible substitute
+
+The restored library reports its own build path when it aborts:
+
+    /home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/source/tools/server/server-context.cpp:4136
+
+That is the apex-prefix tree, not the current flint tree and not my merged file. A substitute could not produce that path, so the restoration
+returns the accepted stage to the code it was actually built from.
+
+### Consequence for EXP355
+
+With the genuine original in place, the crash sequence still aborts. So the "pre-existing" half of EXP355 is re-established -- this time with a
+valid control rather than with a library I had already replaced. The banner in that README has been updated to say so.
+
+### What remains open
+
+Our merged server, built from current flint sources plus the four ports, also aborts on that sequence, while `build-cuda/bin/llama-server` does
+not. Either the merged build inherits the older behaviour from somewhere I have not identified, or the `build-cuda` server library is stale
+relative to its own sources. That question is now separate from the incident and is the next thing to settle before the Apex gate.
