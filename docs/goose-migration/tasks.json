@@ -1998,7 +1998,7 @@
         "tools/server/server-common.cpp"
       ],
       "acceptance": "Startup/shutdown/config/model selection/errors/signals handled by Goose; health and lifecycle endpoints compatible.",
-      "evidence": " 2026-11-13 FIRST SLICE (EXP445, experiments/EXP-2026-11-13-445-p8-01-startup-policy): startup/config decisions ported to Goose from server.cpp (159-200) and server-context.cpp n_ctx_slot: router mode, embedding n_batch clamp, n_parallel auto (-1 -> 4, kv_unified=true), kv-unified-per-slot sizing outside the router guard, alias fallback, n_ctx_slot min chain, and the parse-time validity contract. Differential gate against a direct C transcription: 69132 cases / 553056 values / 0 failures, ASan+UBSan clean, 6/6 mutations. NOT YET: signal/graceful-shutdown lifecycle (SIGPIPE/SIGINT/SIGTERM, drain, exit codes), argument parsing/error text, model load order, health/lifecycle endpoint wiring, --connect checks. P8-01 stays IN_PROGRESS.",
+      "evidence": " 2026-11-13 FIRST SLICE (EXP445, experiments/EXP-2026-11-13-445-p8-01-startup-policy): startup/config decisions ported to Goose from server.cpp (159-200) and server-context.cpp n_ctx_slot: router mode, embedding n_batch clamp, n_parallel auto (-1 -> 4, kv_unified=true), kv-unified-per-slot sizing outside the router guard, alias fallback, n_ctx_slot min chain, and the parse-time validity contract. Differential gate against a direct C transcription: 69132 cases / 553056 values / 0 failures, ASan+UBSan clean, 6/6 mutations. NOT YET: signal/graceful-shutdown lifecycle (SIGPIPE/SIGINT/SIGTERM, drain, exit codes), argument parsing/error text, model load order, health/lifecycle endpoint wiring, --connect checks. P8-01 stays IN_PROGRESS. 2026-11-13 SECOND SLICE (EXP448, experiments/EXP-2026-11-13-448-p8-01-shutdown-policy): signal and shutdown policy in Goose: first interrupt runs the handler, second forces exit(1) with the message, no handler means no action; ordered shutdown plans for router and single-model (signal and clean_up) with session-GC/stopping/unload/mcp/backend-free/http-stop/ctx-terminate step ids; exit-code policy. Gate vs a native transcription: 340 cases / 940 values / 0 failures plus a plan-sanity property (known ids, no duplicates), ASan+UBSan clean, 8/8 mutations. NOT YET: live signal delivery on a running server (needs an approved run), OS handler registration/masking, --connect child/monitor lifecycle, argument parsing, model load order, health/lifecycle endpoints. P8-01 stays IN_PROGRESS.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
@@ -3589,6 +3589,10 @@
     {
       "event": "P8-02 first slice (EXP446): pre-routing CORS/OPTIONS/readiness/API-key policy plus Goose Origin host extraction, 352665-case differential gate, clean sanitizers, 7/7 mutations; transport, routing table, streaming and body parsing remain.",
       "checkpoint": "1614623e"
+    },
+    {
+      "event": "P8-01 second slice (EXP448): signal dispatch (first/second interrupt) and ordered shutdown plans per mode plus exit codes are Goose, 340-case differential gate, plan-sanity property, 8/8 mutations; live delivery and OS registration remain.",
+      "checkpoint": "f945959b"
     }
   ],
   "batches": [
@@ -4479,7 +4483,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T22:39:00.940668+00:00",
+  "updated_at": "2026-11-12T22:41:58.485590+00:00",
   "status_totals": {
     "DONE": 96,
     "IN_PROGRESS": 4,
