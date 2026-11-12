@@ -2863,6 +2863,24 @@ void llama_context::sched_graph_realloc(ggml_backend_sched_t sched, ggml_cgraph 
 ggml_status llama_context::graph_compute(
             ggml_cgraph * gf,
                    bool   batched) {
+    // FG_TRACE_GRAPH=N dumps the first N graphs of a real request (op codes and shapes). Tracing only: no behaviour change.
+    if (const char * tr = getenv("FG_TRACE_GRAPH")) {
+        static int n_dumps = 0;
+        const int limit = atoi(tr);
+        if (n_dumps < limit) {
+            n_dumps++;
+            const int nn = ggml_graph_n_nodes(gf);
+            fprintf(stderr, "FG_TRACE_GRAPH dump=%d n_nodes=%d batched=%d\n", n_dumps, nn, batched ? 1 : 0);
+            for (int i = 0; i < nn; ++i) {
+                const ggml_tensor * t = ggml_graph_node(gf, i);
+                fprintf(stderr, "G %d op=%d ne=%lld,%lld,%lld,%lld nb=%lld,%lld type=%d %s\n", i, (int) t->op,
+                        (long long) t->ne[0], (long long) t->ne[1], (long long) t->ne[2], (long long) t->ne[3],
+                        (long long) t->nb[0], (long long) t->nb[1], (int) t->type, t->name);
+            }
+            fflush(stderr);
+        }
+    }
+
     int n_threads        = batched ? cparams.n_threads_batch : cparams.n_threads;
     ggml_threadpool_t tp = batched ? threadpool_batch        : threadpool;
 
