@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:36:08.897759+00:00",
+  "updated_at": "2026-11-12T02:42:19.732571+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Upstream comparison exposed a ~10% decode gap in the exact path (23.78 vs native 26.66 / upstream 29.62). Detok and sampler candidates rejected on repeat as noise. Next is a per-file rebuild bisection of the copied sources.",
+  "current": "Baseline corrected: exact path is 2343.3 prefill / 24.66 decode over three runs (23.78 was a low sample). Decode gap to native (26.66) and exp244 (26.13) is ~5.5-7.5%. Balanced cache base 3072 unchanged at 37.69-37.90.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -777,6 +777,21 @@
       "source": "runtime/reconstructed/build/goose_256_mc3072/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r50-exact-repeat",
+      "label": "Exact path, three-run baseline correction",
+      "at": "2026-11-12T02:42:19.732571+00:00",
+      "prefill_tok_s": 2343.3,
+      "decode_tok_s": 24.66,
+      "ram_mib": 21319.0,
+      "vram_mib": 3190,
+      "configuration": "same argv, no cache; mean of three runs (2345.1/24.73, 2348.1/24.44, 2336.7/24.82)",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "e68df05b",
+      "source": "runtime/reconstructed/build/bs-base0..2/metrics.json",
+      "diagnostic": false,
+      "accepted": true
     }
   ],
   "events": [
@@ -1048,6 +1063,13 @@
       "title": "Найден разрыв decode ~10%",
       "kind": "regression",
       "detail": "Decode: upstream 29.62, native 26.66, exp244 body 26.13, full port 23.78. Detok candidate looked like +4% but the repeat inverted it, so it is noise. Needs per-file rebuild bisection."
+    },
+    {
+      "id": "e38",
+      "at": "2026-11-12T02:42:19.732571+00:00",
+      "title": "База decode уточнена: 24.66",
+      "kind": "insight",
+      "detail": "Three runs 24.73/24.44/24.82, mean 24.66. The 23.78 was a low sample; gap to native/exp244 is 5.5-7.5%, not 10%."
     }
   ]
 }
