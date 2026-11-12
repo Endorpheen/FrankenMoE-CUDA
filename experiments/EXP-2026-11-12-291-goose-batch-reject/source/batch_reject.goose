@@ -41,52 +41,39 @@ fn check_continuity(n_tokens:i64, pos:u64, seq_min:u64, seq_max:u64, seq_count:u
     0 as i64
 }
 
-// seq_of[token] is the first sequence id of the token; cur_pos is a scratch array of n_seq entries.
-// Returns 2 on a decreasing position, else 0.
-fn check_decreasing(n_tokens:i64, pos:u64, seq_of:u64, n_seq:i64, cur_pos:u64) -> i64 {
-    ensure(n_tokens >= 0 as i64 && n_seq >= 0 as i64, 11);
-    var s:i64 = 0 as i64;
-    while s < n_seq { st_i64(cur_pos, s*8 as i64, 0 as i64 - 1 as i64); s = s + 1 as i64; }
-    var i:i64 = 0 as i64;
-    while i < n_tokens {
-        let sid:i64 = at(seq_of, i);
-        if sid >= 0 as i64 {
-            let p:i64 = at(pos, i);
-            if p < at(cur_pos, sid) {return 2 as i64;}
-            st_i64(cur_pos, sid*8 as i64, p);
-        }
-        i = i + 1 as i64;
-    }
-    0 as i64
-}
-
-// masks[token] is a 64-bit set of the token's sequences; cur_set is scratch of n_seq entries initialised to all ones.
-// Returns 3 when an intersection empties, else 0.
-fn check_seq_sets(n_tokens:i64, mask_of:u64, n_seq:i64, cur_set:u64) -> i64 {
-    ensure(n_tokens >= 0 as i64 && n_seq >= 0 as i64 && n_seq <= 64 as i64, 12);
+// The native walk checks, for every token and every sequence it carries, both the running set intersection and the
+// non-decreasing position rule. mask_of[token] is the token's 64-bit sequence set, pos[token] its position; cur_set and
+// cur_pos are scratch arrays of n_seq entries. Returns 3 when an intersection empties, 2 on a decreasing position, else 0.
+fn check_walk(n_tokens:i64, pos:u64, mask_of:u64, n_seq:i64, cur_set:u64, cur_pos:u64) -> i64 {
+    ensure(n_tokens >= 0 as i64 && n_seq >= 0 as i64 && n_seq <= 64 as i64, 11);
     let all:i64 = 0 as i64 - 1 as i64;
     var s:i64 = 0 as i64;
-    while s < n_seq { st_i64(cur_set, s*8 as i64, all); s = s + 1 as i64; }
+    while s < n_seq {
+        st_i64(cur_set, s*8 as i64, all);
+        st_i64(cur_pos, s*8 as i64, 0 as i64 - 1 as i64);
+        s = s + 1 as i64;
+    }
     var i:i64 = 0 as i64;
     while i < n_tokens {
         let m:i64 = atu(mask_of, i);
-        var s2:i64 = 0 as i64;
-        while s2 < n_seq {
-            if ((m >> s2) & 1 as i64) != 0 as i64 {
-                let cur:i64 = at(cur_set, s2) & m;
+        let p:i64 = at(pos, i);
+        var k:i64 = 0 as i64;
+        while k < n_seq {
+            if ((m >> k) & 1 as i64) != 0 as i64 {
+                let cur:i64 = at(cur_set, k) & m;
                 if cur == 0 as i64 {return 3 as i64;}
-                st_i64(cur_set, s2*8 as i64, cur);
+                st_i64(cur_set, k*8 as i64, cur);
+                if p < at(cur_pos, k) {return 2 as i64;}
+                st_i64(cur_pos, k*8 as i64, p);
             }
-            s2 = s2 + 1 as i64;
+            k = k + 1 as i64;
         }
         i = i + 1 as i64;
     }
     0 as i64
 }
 
-
 fn main(){
     check_continuity(0 as i64, 0 as u64, 0 as u64, 0 as u64, 0 as u64, 0 as i64, 0 as u64, 0 as i64);
-    check_decreasing(0 as i64, 0 as u64, 0 as u64, 0 as i64, 0 as u64);
-    check_seq_sets(0 as i64, 0 as u64, 0 as i64, 0 as u64);
+    check_walk(0 as i64, 0 as u64, 0 as u64, 0 as i64, 0 as u64, 0 as u64);
 }
