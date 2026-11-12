@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:16:59.731600+00:00",
+  "updated_at": "2026-11-12T02:18:09.815852+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Golden rule adopted. Balanced base is cache 3072 (39.10 decode at 256 tokens, 6266 MiB). Warm-up measured across the ladder: 1280 31.58/4476, 2048 35.35/5242, 3072 39.10/6266. No-cache remains the exact control.",
+  "current": "Golden rule; balanced base cache 3072. Short-generation check passed: 64 tokens give 37.23 (3072) and 30.66 (1280), so 30+ holds from the first tokens. Exact control unchanged; cache divergence cause established and still not waived.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -687,6 +687,36 @@
       "source": "runtime/reconstructed/build/run-mc2048_256/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r44-mc3072-64",
+      "label": "Balance point, 64 tokens",
+      "at": "2026-11-12T02:18:09.815852+00:00",
+      "prefill_tok_s": 2331.4,
+      "decode_tok_s": 37.23,
+      "ram_mib": 21320.0,
+      "vram_mib": 6266,
+      "configuration": "same argv + --moe-cache-mib 3072, 64 tokens",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-mc3072_64/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r45-mc1280-64",
+      "label": "Cheapest 30+ point, 64 tokens",
+      "at": "2026-11-12T02:18:09.815852+00:00",
+      "prefill_tok_s": 2341.8,
+      "decode_tok_s": 30.66,
+      "ram_mib": 21320.0,
+      "vram_mib": 4476,
+      "configuration": "same argv + --moe-cache-mib 1280, 64 tokens",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-mc1280_64/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -916,6 +946,13 @@
       "title": "Прогрев кэша измерён",
       "kind": "insight",
       "detail": "256 vs 128 tokens: 1280 31.58, 2048 35.35, 3072 39.10. All rise with length, ranking unchanged. 3072 confirmed as balanced base."
+    },
+    {
+      "id": "e32",
+      "at": "2026-11-12T02:18:09.815852+00:00",
+      "title": "Порог 30+ держится с 64 токенов",
+      "kind": "insight",
+      "detail": "64 tokens: 3072 gives 37.23, 1280 gives 30.66. No warm-up requirement for the 30 tok/s floor."
     }
   ]
 }
