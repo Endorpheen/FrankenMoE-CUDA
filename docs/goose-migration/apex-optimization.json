@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:04:06.050014+00:00",
+  "updated_at": "2026-11-12T02:05:47.214106+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2 from the cache baseline: 4096 MiB now fits and gives decode 40.78 at VRAM 7292; 6144+ OOM. Decode scales with the cache, prefill stays 2324-2348. No-cache profile remains the correctness control.",
+  "current": "Stage 2 from the cache baseline: 2048 gives 2348/34.03/5242, 4096 gives 2324/40.78/7292 (largest that starts). No interaction with ubatch or batch threads; 16K prompt gives 37.66 decode. No-cache profile is the correctness control only.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -763,6 +763,13 @@
       "title": "Decode 40.78 на кэше 4096",
       "kind": "insight",
       "detail": "4096 MiB fits after EXP087/EXP101 and gives 40.78 decode at 7292 MiB; 6144+ OOM. Prefill stays 2324-2348, so the cache is a decode lever only."
+    },
+    {
+      "id": "e23",
+      "at": "2026-11-12T02:05:47.214106+00:00",
+      "title": "Кэш не открывает новых осей",
+      "kind": "insight",
+      "detail": "On the 2048 baseline, ubatch 8192 and tb32 stay in noise (2351.7/34.08 and 2342.0/34.14). 16K prompt gives 2367.4/37.66: cache value follows unique expert traffic."
     }
   ]
 }
