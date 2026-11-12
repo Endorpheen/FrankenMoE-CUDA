@@ -532,3 +532,19 @@ the same memory, and stacking placement on top of it just adds a second rounding
 
 So the search space for this profile is now genuinely explored: the cache is the decode lever, prefill is flat, and the
 no-cache path stays the correctness control.
+
+## Pinning still carries the exact path after EXP087/EXP101
+
+Re-checked on the current build so the earlier +43% is not assumed to have survived the allocator changes:
+
+| switch | prefill | decode | RSS | VRAM | content |
+|---|---|---|---|---|---|
+| pin on (accepted) | 2311.1 | 23.78 | 21319 | 3190 | e68df05b |
+| pin off | 1641.1 | 23.97 | 21319 | 3190 | e68df05b |
+
++40.8% prefill, RSS and VRAM unchanged, exact output in both arms. So the pinning win is independent of EXP087/EXP101
+rather than double-counted, and the exact path depends on it entirely.
+
+`--mlock` is not an alternative here: it fails to start (memlock limit), so host-buffer registration remains the only
+mechanism that keeps expert pages resident. That also explains why the exact path cannot be pushed further by page
+residency - it is already pinned; the remaining prefill cost is compute and traffic, not faults.
