@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:20:04.407525+00:00",
+  "updated_at": "2026-11-12T02:20:57.943669+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Golden rule; balanced base cache 3072 verified stable under real desktop load: five runs, decode 37.69-37.90 at 128 tokens, VRAM fixed 6266. 30+ holds from 64 tokens. Exact control unchanged; cache divergence cause established, not waived.",
+  "current": "Golden rule; balanced base cache 3072 (37.69-37.90 decode at 6266 MiB). RAM proven model-bound: --cache-ram has no effect (RSS 21320 either way, same with pinning on/off). VRAM 6408 -> 3190 exact / 6266 balanced by EXP087/EXP101.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -960,6 +960,13 @@
       "title": "База 3072 устойчива под фоном",
       "kind": "insight",
       "detail": "Five runs: decode 37.69-37.90 at 128 tokens (+/-0.3%), VRAM fixed 6266, no eviction drift. Reproducible under normal desktop load."
+    },
+    {
+      "id": "e34",
+      "at": "2026-11-12T02:20:57.943669+00:00",
+      "title": "RAM ограничена моделью",
+      "kind": "insight",
+      "detail": "--cache-ram 2048 leaves RSS at 21320 and decode 37.50 vs 37.90. Same RSS with pinning on/off: the 21.3 GiB is the resident 35B Q4_K, not a shrinkable cache."
     }
   ]
 }
