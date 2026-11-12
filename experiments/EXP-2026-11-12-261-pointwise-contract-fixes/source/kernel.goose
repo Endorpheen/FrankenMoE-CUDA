@@ -140,7 +140,7 @@ fn pointwise(p:const Node&,x:const u8[:],y:const u8[:],dst:u8[:])->bool {
             if p.op==2||p.op==4 {value=a+b;}
             else if p.op==6 {value=a-b;}else if p.op==7 {value=a*b;}else if p.op==8 {value=a/b;}
             else {let sig=(1 as f32)/((1 as f32)+exp32(-b));value=a*sig*((1 as f32)+b*((1 as f32)-sig));}
-        }else if p.op==32 {value=if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]};}
+        }else if p.op==32 {value=if p.d.kind==0 as i64 {if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]}} else {a*p.fp[0]+p.fp[1]};}
         else if p.op==9 {value=a*a;}else if p.op==10 {value=sqrt32(a);}
         else if p.op==12 {value=sin32(a);}else if p.op==13 {value=cos32(a);}else if p.op==11 {value=log32(a);}
         else if p.op==50 {value=native_max(native_min(a,p.fp[1]),p.fp[0]);}

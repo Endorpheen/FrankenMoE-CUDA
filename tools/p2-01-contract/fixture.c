@@ -90,6 +90,37 @@ static void run_glu(const char * name, const float * a, size_t n, int nth, bool 
     ggml_free(ctx);
 }
 
+// Non-F32 element types: the module loads and stores F16/BF16 through conversions, so the contract has to cover
+// them. Results are emitted as the raw 16-bit element value widened into a float bit pattern, which compares the
+// element bytes exactly and avoids any conversion difference in the emitter itself.
+static void run_typed(const char * name, enum ggml_type ty, const float * a, const float * b, size_t n, int nth,
+                      struct ggml_tensor * (*unary)(struct ggml_context *, struct ggml_tensor *),
+                      struct ggml_tensor * (*binary)(struct ggml_context *, struct ggml_tensor *, struct ggml_tensor *)) {
+    struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+    struct ggml_context * ctx = ggml_init(p);
+    if (!ctx) abort();
+    struct ggml_tensor * ta = ggml_new_tensor_1d(ctx, ty, (int64_t) n);
+    struct ggml_tensor * tb = binary ? ggml_new_tensor_1d(ctx, ty, (int64_t) n) : NULL;
+    if (ty == GGML_TYPE_F16) {
+        ggml_fp32_to_fp16_row(a, (ggml_fp16_t *) ta->data, (int64_t) n);
+        if (tb) ggml_fp32_to_fp16_row(b, (ggml_fp16_t *) tb->data, (int64_t) n);
+    } else {
+        ggml_fp32_to_bf16_row(a, (ggml_bf16_t *) ta->data, (int64_t) n);
+        if (tb) ggml_fp32_to_bf16_row(b, (ggml_bf16_t *) tb->data, (int64_t) n);
+    }
+    struct ggml_tensor * t = binary ? binary(ctx, ta, tb) : unary(ctx, ta);
+    struct ggml_cgraph * g = ggml_new_graph(ctx);
+    ggml_build_forward_expand(g, t);
+    if (ggml_graph_compute_with_ctx(ctx, g, nth) != GGML_STATUS_SUCCESS) abort();
+    float enc[16];
+    for (size_t i = 0; i < n; ++i) enc[i] = bits_f32((uint32_t) ((const uint16_t *) t->data)[i]);
+    emit(name, enc, NULL, n);
+    ggml_free(ctx);
+}
+
+static struct ggml_tensor * o_scale (struct ggml_context * c, struct ggml_tensor * a) { return ggml_scale(c, a, 1.75f); }
+static struct ggml_tensor * o_clamp2(struct ggml_context * c, struct ggml_tensor * a) { return ggml_clamp(c, a, -0.5f, 0.5f); }
+
 int main(int argc, char ** argv) {
     if (argc != 2) return 2;
     out = fopen(argv[1], "wb");
@@ -327,6 +358,24 @@ int main(int argc, char ** argv) {
         if (ggml_graph_compute_with_ctx(ctx, g, 8) != GGML_STATUS_SUCCESS) abort();
         emit("softmax_causal_mask", (const float *) s->data, NULL, (size_t) ggml_nelements(s));
         ggml_free(ctx);
+    }
+
+    // 8) non-F32 element types for the operations this item owns. The module converts on load and store, so the
+    // contract has to cover the conversion path and not only the F32 arithmetic.
+    {
+        const size_t nt = 12;
+        float ta[12] = { 0.0f, -0.0f, 1.0f, -1.0f, (float) INFINITY, (float) -INFINITY,
+                         (float) NAN, (float) -NAN, 3.0f, 0.5f, -2.5f, 5.9604645e-8f };
+        float tb[12];
+        for (size_t i = 0; i < nt; ++i) tb[i] = ta[(i*5) % nt];
+        run_typed("silu_f16",  GGML_TYPE_F16,  ta, NULL, nt, 8, o_silu,   NULL);
+        run_typed("add_f16",   GGML_TYPE_F16,  ta, tb,   nt, 8, NULL,     o_add);
+        run_typed("clamp_f16", GGML_TYPE_F16,  ta, NULL, nt, 8, o_clamp2, NULL);
+        // scale_f16 is not a contract: the native forward aborts for F16 (ops.cpp:5068 supports F32 and BF16).
+        run_typed("silu_bf16",  GGML_TYPE_BF16, ta, NULL, nt, 8, o_silu,   NULL);
+        run_typed("add_bf16",   GGML_TYPE_BF16, ta, tb,   nt, 8, NULL,     o_add);
+        // clamp_bf16 is not a contract either: the native clamp switch aborts for BF16 (ops.cpp:6256).
+        run_typed("scale_bf16", GGML_TYPE_BF16, ta, NULL, nt, 8, o_scale,  NULL);
     }
 
     fclose(out);

@@ -411,3 +411,30 @@ Apex 32K/128 with this library: `e68df05b`, probabilities equal, restore exact, 
 
 Remaining gap for a full P2-01 closure: the probe exercises F32 only. Other element types for these ops are not
 covered here.
+
+## F16 and BF16 coverage: one real defect found and fixed, item closes
+
+The probe now covers the non-F32 element types for the operations this item owns. Each typed case emits the raw
+16-bit element widened into a float bit pattern, so the comparison is on element bytes, not on a re-conversion.
+
+Native support decides what is a contract at all: `scale` handles F32 and BF16 only (`ops.cpp:5068`), `clamp`
+handles F32 and F16 only (`ops.cpp:6256`); those combinations abort, so F16 scale and BF16 clamp are excluded and
+recorded as non-contracts rather than failures.
+
+The first run found a real divergence in `scale_bf16`: at -0 the Goose arm produced `8000` where native produced
+`0000`. Cause: the two native scale kernels differ. The F32 forward skips the addend when the bias is zero
+(`memcpy` + `vec_scale`), which preserves -0; the BF16 forward always computes `s*x + b`, so `(-0) + (+0) = +0`.
+The port now follows that asymmetry per destination type.
+
+Final probe result with the rebuilt library:
+
+    cases: 46
+    bit-identical: 42
+    differing: norm_finite, softmax_finite, mul_mat_32x8x6, rope_16x2x4
+    probe exit code 0
+
+Every binary, unary and GLU case is bit-identical for F32, F16 and BF16 where native supports the combination,
+including both quiet-NaN payloads, the signalling NaN, signed zero, subnormals, threads 1/8, sizes up to 1000 and
+four strided cases. Apex 32K/128 with this library: `e68df05b`, probabilities equal, restore exact.
+
+P2-01 is closed against its criterion. The four remaining probe divergences belong to other items.

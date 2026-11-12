@@ -57,9 +57,12 @@ helpers = ('fn native_min(a:f32,b:f32)->f32 {return if a<b {a}else {b};}\n'
            'fn native_max(a:f32,b:f32)->f32 {return if a>b {a}else {b};}\n' + anchor_helpers)
 src = src.replace(anchor_helpers, helpers, 1)
 
-# --- fix 3: native skips the addend when the bias is zero, so the sign of zero survives.
+# --- fix 3: the two native scale kernels differ. The F32 forward skips the addend when the bias is zero
+# (memcpy + vec_scale), so -0 stays -0; the BF16 forward always computes s*x + b, so (-0)+(+0) becomes +0.
+# Measured: scale_bf16 on -0 gives native 0000 and the port 8000 before this change.
 old_scale = 'value=a*p.fp[0]+p.fp[1];'
-new_scale = 'value=if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]};'
+new_scale = ('value=if p.d.kind==0 as i64 {if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]}} '
+             'else {a*p.fp[0]+p.fp[1]};')
 assert src.count(old_scale) == 1
 src = src.replace(old_scale, new_scale, 1)
 

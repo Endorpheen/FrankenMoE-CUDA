@@ -59,7 +59,7 @@ fn pointwise(p:const Node&,x:const u8[:],y:const u8[:],dst:u8[:])->bool {
             if p.op==OP_ADD||p.op==OP_ADD1 {value=a+b;}
             else if p.op==OP_SUB {value=a-b;}else if p.op==OP_MUL {value=a*b;}else if p.op==OP_DIV {value=a/b;}
             else {let sig=(1 as f32)/((1 as f32)+exp32(-b));value=a*sig*((1 as f32)+b*((1 as f32)-sig));}
-        }else if p.op==OP_SCALE {value=if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]};}
+        }else if p.op==OP_SCALE {value=if p.d.kind==0 as i64 {if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]}} else {a*p.fp[0]+p.fp[1]};}
         else if p.op==OP_SQR {value=a*a;}else if p.op==OP_SQRT {value=sqrt32(a);}
         else if p.op==OP_SIN {value=sin32(a);}else if p.op==OP_COS {value=cos32(a);}else if p.op==OP_LOG {value=log32(a);}
         else if p.op==OP_CLAMP {value=native_max(native_min(a,p.fp[1]),p.fp[0]);}

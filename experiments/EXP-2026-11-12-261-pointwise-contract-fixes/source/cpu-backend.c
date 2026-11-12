@@ -7612,87 +7612,98 @@ static uint8_t gg_function_71(gg_type_20 p0, gg_slice p1, gg_slice p2, gg_slice 
   int64_t t141;
   uint8_t t142;
   int64_t t143;
-  float * t144;
-  float t145;
-  float t146;
-  uint8_t t147;
+  int64_t t144;
+  uint8_t t145;
+  int64_t t146;
+  float * t147;
   float t148;
-  int64_t t149;
-  float * t150;
+  float t149;
+  uint8_t t150;
   float t151;
-  float t152;
-  int64_t t153;
-  float * t154;
+  int64_t t152;
+  float * t153;
+  float t154;
   float t155;
-  float t156;
-  int64_t t157;
-  float * t158;
+  int64_t t156;
+  float * t157;
+  float t158;
   float t159;
   int64_t t160;
-  int64_t t161;
-  uint8_t t162;
+  float * t161;
+  float t162;
   float t163;
-  float t164;
-  int64_t t165;
-  int64_t t166;
-  uint8_t t167;
-  float t168;
-  float t169;
-  int64_t t170;
+  int64_t t164;
+  float * t165;
+  float t166;
+  float t167;
+  int64_t t168;
+  float * t169;
+  float t170;
   int64_t t171;
-  uint8_t t172;
-  float t173;
+  int64_t t172;
+  uint8_t t173;
   float t174;
-  int64_t t175;
+  float t175;
   int64_t t176;
-  uint8_t t177;
-  float t178;
+  int64_t t177;
+  uint8_t t178;
   float t179;
-  int64_t t180;
+  float t180;
   int64_t t181;
-  uint8_t t182;
-  float t183;
+  int64_t t182;
+  uint8_t t183;
   float t184;
-  int64_t t185;
+  float t185;
   int64_t t186;
-  uint8_t t187;
-  float t188;
-  int64_t t189;
-  float * t190;
-  float t191;
-  float t192;
-  int64_t t193;
-  float * t194;
+  int64_t t187;
+  uint8_t t188;
+  float t189;
+  float t190;
+  int64_t t191;
+  int64_t t192;
+  uint8_t t193;
+  float t194;
   float t195;
   int64_t t196;
   int64_t t197;
   uint8_t t198;
   float t199;
-  float t200;
-  uint8_t t201;
+  int64_t t200;
+  float * t201;
   float t202;
-  int64_t t203;
-  float * t204;
-  float t205;
-  gg_type_20 t206;
+  float t203;
+  int64_t t204;
+  float * t205;
+  float t206;
   int64_t t207;
-  int64_t * t208;
-  int64_t t209;
+  int64_t t208;
+  uint8_t t209;
   float t210;
-  int64_t t211;
-  int64_t t212;
-  int64_t * t213;
+  float t211;
+  uint8_t t212;
+  float t213;
   int64_t t214;
-  int64_t t215;
-  int64_t t216;
-  int64_t * t217;
+  float * t215;
+  float t216;
+  gg_type_20 t217;
   int64_t t218;
-  gg_type_31 t219;
-  gg_slice t220;
-  int64_t t221;
-  float t222;
+  int64_t * t219;
+  int64_t t220;
+  float t221;
+  int64_t t222;
   int64_t t223;
-  int64_t t224;
+  int64_t * t224;
+  int64_t t225;
+  int64_t t226;
+  int64_t t227;
+  int64_t * t228;
+  int64_t t229;
+  gg_type_31 t230;
+  gg_slice t231;
+  int64_t t232;
+  float t233;
+  int64_t t234;
+  int64_t t235;
   gg_type_20 v0;
   gg_slice v1;
   gg_slice v2;
@@ -7958,148 +7969,169 @@ label1:;
   t142 = ((t140) == (t141));
   if (t142) {
   {
-  /* FG_DIRECT_SLICE_INDEX */
-  t143 = ((int64_t)UINT64_C(1));
-  t144 = ((float *)(((*(v0))).f12).data) + gg_index(t143, ((int64_t)UINT64_C(8)));
-  t145 = ((float)((*t144)));
-  t146 = ((float)(((float)(((int64_t)UINT64_C(0))))));
-  t147 = ((t145) == (t146));
-  if (t147) {
+  t143 = ((int64_t)((((*(v0))).f7).f2));
+  t144 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
+  t145 = ((t143) == (t144));
+  if (t145) {
   {
-  t148 = ((float)(v6));
   /* FG_DIRECT_SLICE_INDEX */
-  t149 = ((int64_t)UINT64_C(0));
-  t150 = ((float *)(((*(v0))).f12).data) + gg_index(t149, ((int64_t)UINT64_C(8)));
-  t151 = ((float)((*t150)));
-  v7 = ((float)(((t148) * (t151))));
+  t146 = ((int64_t)UINT64_C(1));
+  t147 = ((float *)(((*(v0))).f12).data) + gg_index(t146, ((int64_t)UINT64_C(8)));
+  t148 = ((float)((*t147)));
+  t149 = ((float)(((float)(((int64_t)UINT64_C(0))))));
+  t150 = ((t148) == (t149));
+  if (t150) {
+  {
+  t151 = ((float)(v6));
+  /* FG_DIRECT_SLICE_INDEX */
+  t152 = ((int64_t)UINT64_C(0));
+  t153 = ((float *)(((*(v0))).f12).data) + gg_index(t152, ((int64_t)UINT64_C(8)));
+  t154 = ((float)((*t153)));
+  v7 = ((float)(((t151) * (t154))));
   }
   } else {
   {
-  t152 = ((float)(v6));
+  t155 = ((float)(v6));
   /* FG_DIRECT_SLICE_INDEX */
-  t153 = ((int64_t)UINT64_C(0));
-  t154 = ((float *)(((*(v0))).f12).data) + gg_index(t153, ((int64_t)UINT64_C(8)));
-  t155 = ((float)((*t154)));
-  t156 = ((float)(((t152) * (t155))));
+  t156 = ((int64_t)UINT64_C(0));
+  t157 = ((float *)(((*(v0))).f12).data) + gg_index(t156, ((int64_t)UINT64_C(8)));
+  t158 = ((float)((*t157)));
+  t159 = ((float)(((t155) * (t158))));
   /* FG_DIRECT_SLICE_INDEX */
-  t157 = ((int64_t)UINT64_C(1));
-  t158 = ((float *)(((*(v0))).f12).data) + gg_index(t157, ((int64_t)UINT64_C(8)));
-  t159 = ((float)((*t158)));
-  v7 = ((float)(((t156) + (t159))));
+  t160 = ((int64_t)UINT64_C(1));
+  t161 = ((float *)(((*(v0))).f12).data) + gg_index(t160, ((int64_t)UINT64_C(8)));
+  t162 = ((float)((*t161)));
+  v7 = ((float)(((t159) + (t162))));
   }
   }
   }
   } else {
-  t160 = ((int64_t)(((*(v0))).f8));
-  t161 = ((int64_t)(((int64_t)UINT64_C(9))));
-  t162 = ((t160) == (t161));
-  if (t162) {
   {
   t163 = ((float)(v6));
-  t164 = ((float)(v6));
-  v7 = ((float)(((t163) * (t164))));
-  }
-  } else {
-  t165 = ((int64_t)(((*(v0))).f8));
-  t166 = ((int64_t)(((int64_t)UINT64_C(10))));
-  t167 = ((t165) == (t166));
-  if (t167) {
-  {
-  t168 = ((float)(v6));
-  t169 = sqrtf(t168);
-  v7 = ((float)(t169));
-  }
-  } else {
-  t170 = ((int64_t)(((*(v0))).f8));
-  t171 = ((int64_t)(((int64_t)UINT64_C(12))));
-  t172 = ((t170) == (t171));
-  if (t172) {
-  {
-  t173 = ((float)(v6));
-  t174 = sinf(t173);
-  v7 = ((float)(t174));
-  }
-  } else {
-  t175 = ((int64_t)(((*(v0))).f8));
-  t176 = ((int64_t)(((int64_t)UINT64_C(13))));
-  t177 = ((t175) == (t176));
-  if (t177) {
-  {
-  t178 = ((float)(v6));
-  t179 = cosf(t178);
-  v7 = ((float)(t179));
-  }
-  } else {
-  t180 = ((int64_t)(((*(v0))).f8));
-  t181 = ((int64_t)(((int64_t)UINT64_C(11))));
-  t182 = ((t180) == (t181));
-  if (t182) {
-  {
-  t183 = ((float)(v6));
-  t184 = logf(t183);
-  v7 = ((float)(t184));
-  }
-  } else {
-  t185 = ((int64_t)(((*(v0))).f8));
-  t186 = ((int64_t)(((int64_t)UINT64_C(50))));
-  t187 = ((t185) == (t186));
-  if (t187) {
-  {
-  t188 = ((float)(v6));
   /* FG_DIRECT_SLICE_INDEX */
-  t189 = ((int64_t)UINT64_C(1));
-  t190 = ((float *)(((*(v0))).f12).data) + gg_index(t189, ((int64_t)UINT64_C(8)));
-  t191 = ((float)((*t190)));
-  t192 = gg_function_74(t188, t191, base + 0);
+  t164 = ((int64_t)UINT64_C(0));
+  t165 = ((float *)(((*(v0))).f12).data) + gg_index(t164, ((int64_t)UINT64_C(8)));
+  t166 = ((float)((*t165)));
+  t167 = ((float)(((t163) * (t166))));
   /* FG_DIRECT_SLICE_INDEX */
-  t193 = ((int64_t)UINT64_C(0));
-  t194 = ((float *)(((*(v0))).f12).data) + gg_index(t193, ((int64_t)UINT64_C(8)));
-  t195 = ((float)((*t194)));
-  v7 = gg_function_75(t192, t195, base + 0);
+  t168 = ((int64_t)UINT64_C(1));
+  t169 = ((float *)(((*(v0))).f12).data) + gg_index(t168, ((int64_t)UINT64_C(8)));
+  t170 = ((float)((*t169)));
+  v7 = ((float)(((t167) + (t170))));
+  }
+  }
+  }
+  } else {
+  t171 = ((int64_t)(((*(v0))).f8));
+  t172 = ((int64_t)(((int64_t)UINT64_C(9))));
+  t173 = ((t171) == (t172));
+  if (t173) {
+  {
+  t174 = ((float)(v6));
+  t175 = ((float)(v6));
+  v7 = ((float)(((t174) * (t175))));
+  }
+  } else {
+  t176 = ((int64_t)(((*(v0))).f8));
+  t177 = ((int64_t)(((int64_t)UINT64_C(10))));
+  t178 = ((t176) == (t177));
+  if (t178) {
+  {
+  t179 = ((float)(v6));
+  t180 = sqrtf(t179);
+  v7 = ((float)(t180));
+  }
+  } else {
+  t181 = ((int64_t)(((*(v0))).f8));
+  t182 = ((int64_t)(((int64_t)UINT64_C(12))));
+  t183 = ((t181) == (t182));
+  if (t183) {
+  {
+  t184 = ((float)(v6));
+  t185 = sinf(t184);
+  v7 = ((float)(t185));
+  }
+  } else {
+  t186 = ((int64_t)(((*(v0))).f8));
+  t187 = ((int64_t)(((int64_t)UINT64_C(13))));
+  t188 = ((t186) == (t187));
+  if (t188) {
+  {
+  t189 = ((float)(v6));
+  t190 = cosf(t189);
+  v7 = ((float)(t190));
+  }
+  } else {
+  t191 = ((int64_t)(((*(v0))).f8));
+  t192 = ((int64_t)(((int64_t)UINT64_C(11))));
+  t193 = ((t191) == (t192));
+  if (t193) {
+  {
+  t194 = ((float)(v6));
+  t195 = logf(t194);
+  v7 = ((float)(t195));
   }
   } else {
   t196 = ((int64_t)(((*(v0))).f8));
-  t197 = ((int64_t)(((int64_t)UINT64_C(71))));
+  t197 = ((int64_t)(((int64_t)UINT64_C(50))));
   t198 = ((t196) == (t197));
   if (t198) {
   {
   t199 = ((float)(v6));
-  t200 = ((float)(((float)(((int64_t)UINT64_C(0))))));
-  t201 = ((t199) > (t200));
-  if (t201) {
+  /* FG_DIRECT_SLICE_INDEX */
+  t200 = ((int64_t)UINT64_C(1));
+  t201 = ((float *)(((*(v0))).f12).data) + gg_index(t200, ((int64_t)UINT64_C(8)));
+  t202 = ((float)((*t201)));
+  t203 = gg_function_74(t199, t202, base + 0);
+  /* FG_DIRECT_SLICE_INDEX */
+  t204 = ((int64_t)UINT64_C(0));
+  t205 = ((float *)(((*(v0))).f12).data) + gg_index(t204, ((int64_t)UINT64_C(8)));
+  t206 = ((float)((*t205)));
+  v7 = gg_function_75(t203, t206, base + 0);
+  }
+  } else {
+  t207 = ((int64_t)(((*(v0))).f8));
+  t208 = ((int64_t)(((int64_t)UINT64_C(71))));
+  t209 = ((t207) == (t208));
+  if (t209) {
+  {
+  t210 = ((float)(v6));
+  t211 = ((float)(((float)(((int64_t)UINT64_C(0))))));
+  t212 = ((t210) > (t211));
+  if (t212) {
   {
   v7 = ((float)(v6));
   }
   } else {
   {
-  t202 = ((float)(v6));
+  t213 = ((float)(v6));
   /* FG_DIRECT_SLICE_INDEX */
-  t203 = ((int64_t)UINT64_C(0));
-  t204 = ((float *)(((*(v0))).f12).data) + gg_index(t203, ((int64_t)UINT64_C(8)));
-  t205 = ((float)((*t204)));
-  v7 = ((float)(((t202) * (t205))));
+  t214 = ((int64_t)UINT64_C(0));
+  t215 = ((float *)(((*(v0))).f12).data) + gg_index(t214, ((int64_t)UINT64_C(8)));
+  t216 = ((float)((*t215)));
+  v7 = ((float)(((t213) * (t216))));
   }
   }
   }
   } else {
   {
-  t206 = v0;
+  t217 = v0;
   /* FG_DIRECT_SLICE_INDEX */
-  t207 = ((int64_t)UINT64_C(0));
-  t208 = ((int64_t *)(((*(v0))).f11).data) + gg_index(t207, ((int64_t)UINT64_C(16)));
-  t209 = ((int64_t)((*t208)));
-  t210 = ((float)(v6));
-  t211 = ((int64_t)(v4));
+  t218 = ((int64_t)UINT64_C(0));
+  t219 = ((int64_t *)(((*(v0))).f11).data) + gg_index(t218, ((int64_t)UINT64_C(16)));
+  t220 = ((int64_t)((*t219)));
+  t221 = ((float)(v6));
+  t222 = ((int64_t)(v4));
   /* FG_DIRECT_SLICE_INDEX */
-  t212 = ((int64_t)UINT64_C(0));
-  t213 = ((int64_t *)((((*(v0))).f7).f0).data) + gg_index(t212, ((int64_t)UINT64_C(4)));
-  t214 = ((int64_t)((*t213)));
-  t215 = ((int64_t)(((int64_t)gg_mod(t211, t214))));
+  t223 = ((int64_t)UINT64_C(0));
+  t224 = ((int64_t *)((((*(v0))).f7).f0).data) + gg_index(t223, ((int64_t)UINT64_C(4)));
+  t225 = ((int64_t)((*t224)));
+  t226 = ((int64_t)(((int64_t)gg_mod(t222, t225))));
   /* FG_DIRECT_SLICE_INDEX */
-  t216 = ((int64_t)UINT64_C(0));
-  t217 = ((int64_t *)((((*(v0))).f7).f0).data) + gg_index(t216, ((int64_t)UINT64_C(4)));
-  t218 = ((int64_t)((*t217)));
-  v7 = gg_function_76(t206, t209, t210, t215, t218, base + 0);
+  t227 = ((int64_t)UINT64_C(0));
+  t228 = ((int64_t *)((((*(v0))).f7).f0).data) + gg_index(t227, ((int64_t)UINT64_C(4)));
+  t229 = ((int64_t)((*t228)));
+  v7 = gg_function_76(t217, t220, t221, t226, t229, base + 0);
   }
   }
   }
@@ -8110,14 +8142,14 @@ label1:;
   }
   }
   }
-  t219 = &(((*(v0))).f7);
-  t220 = v3;
-  t221 = ((int64_t)(v4));
-  t222 = ((float)(v7));
-  gg_function_37(t219, t220, t221, t222, base + 0);
-  t223 = v4;
-  t224 = ((int64_t)(((*(v0))).f10));
-  v4 = ((int64_t)((uint64_t)(t223) + (uint64_t)(t224)));
+  t230 = &(((*(v0))).f7);
+  t231 = v3;
+  t232 = ((int64_t)(v4));
+  t233 = ((float)(v7));
+  gg_function_37(t230, t231, t232, t233, base + 0);
+  t234 = v4;
+  t235 = ((int64_t)(((*(v0))).f10));
+  v4 = ((int64_t)((uint64_t)(t234) + (uint64_t)(t235)));
   }
   goto label1;
 label2:;
