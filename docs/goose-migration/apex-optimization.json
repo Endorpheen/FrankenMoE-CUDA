@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:32:01.775026+00:00",
+  "updated_at": "2026-11-12T02:36:08.897759+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Upstream control built (dd6b945b, 0.9.0-dev, Release/CUDA, separate dir). Comparison: Goose ahead on prefill ~20-22% and half the VRAM; upstream ahead on decode without a cache (29.62 vs 23.78); Goose cache 3072 gives 39.29 at 6266 while upstream cache 3072 cannot start.",
+  "current": "Upstream comparison exposed a ~10% decode gap in the exact path (23.78 vs native 26.66 / upstream 29.62). Detok and sampler candidates rejected on repeat as noise. Next is a per-file rebuild bisection of the copied sources.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -1041,6 +1041,13 @@
       "title": "Сравнение с актуальным upstream",
       "kind": "insight",
       "detail": "dd6b945b: upstream 1900.2/29.62/6408, its cache 3072 does not start. Goose 2317.7/39.29/6266 with cache, 2311/23.78/3190 exact. Goose ahead prefill and VRAM; upstream ahead on uncached decode. Details in docs/goose-migration/upstream-comparison.md."
+    },
+    {
+      "id": "e37",
+      "at": "2026-11-12T02:36:08.897759+00:00",
+      "title": "Найден разрыв decode ~10%",
+      "kind": "regression",
+      "detail": "Decode: upstream 29.62, native 26.66, exp244 body 26.13, full port 23.78. Detok candidate looked like +4% but the repeat inverted it, so it is noise. Needs per-file rebuild bisection."
     }
   ]
 }
