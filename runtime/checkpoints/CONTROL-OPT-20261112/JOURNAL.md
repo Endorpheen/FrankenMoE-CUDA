@@ -548,3 +548,22 @@ rather than double-counted, and the exact path depends on it entirely.
 `--mlock` is not an alternative here: it fails to start (memlock limit), so host-buffer registration remains the only
 mechanism that keeps expert pages resident. That also explains why the exact path cannot be pushed further by page
 residency - it is already pinned; the remaining prefill cost is compute and traffic, not faults.
+
+## Launch overhead is not the prefill cost either
+
+`GGML_CUDA_DISABLE_GRAPHS=1` on the accepted build:
+
+| variant | prefill | decode | VRAM | content |
+|---|---|---|---|---|
+| graphs on (accepted) | 2311.1 | 23.78 | 3190 | e68df05b |
+| graphs off | 2319.7 | 22.76 | 3176 | e68df05b |
+
+Prefill is unchanged (inside noise) while decode drops, so graph launch is not what holds prefill back - it is the
+opposite, graphs are earning their keep in decode. That closes the "sync/launch overhead" hypothesis, which was the last
+cheap explanation available: with pinning already removing faults, the remaining prefill time is arithmetic and weight
+traffic on both engines.
+
+Practical conclusion for this profile: the exact path sits at ~2311-2320 prefill / 23.8-24.3 decode / 3190 MiB with
+e68df05b; the cache path is the only measured way past 30 decode, and the balance point requested by Igor is cache 3072
+(37.79 / 6266) on the same 32K load. 3000 prefill is not reachable by a switch on this profile, and that is now backed by
+a sweep rather than an assumption.
