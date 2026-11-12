@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:14:13.241208+00:00",
+  "updated_at": "2026-11-12T02:15:27.499970+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: compute-engine switches exhausted. cuBLAS f32 neutral (2320.5/23.53, exact), fp16 breaks exactness for +0.2 decode and is rejected. Exact path ~2311-2320/23.8-24.3/3190; balance point cache 3072 at 37.79/6266.",
+  "current": "Stage 2: balance point verified -- cache 3072 gives 37.79/37.80/39.10 decode (128/128/256 tokens) at 6266 MiB, about -3 tok/s and -1 GiB against 4096. Exact path 2311-2320/23.8-24.3/3190 with e68df05b.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -627,6 +627,36 @@
       "source": "runtime/reconstructed/build/run-pinoff/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r40-b3072-repeat",
+      "label": "Balance point cache 3072 -- repeat at 128 tokens",
+      "at": "2026-11-12T02:14:47.662161+00:00",
+      "prefill_tok_s": 2315.3,
+      "decode_tok_s": 37.8,
+      "ram_mib": 21320.0,
+      "vram_mib": 6266,
+      "configuration": "same argv + --moe-cache-mib 3072",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-b3072_r2/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r41-b3072-256",
+      "label": "Balance point cache 3072 -- 256 tokens generated",
+      "at": "2026-11-12T02:15:13.677835+00:00",
+      "prefill_tok_s": 2318.8,
+      "decode_tok_s": 39.1,
+      "ram_mib": 21320.0,
+      "vram_mib": 6266,
+      "configuration": "same argv + --moe-cache-mib 3072",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/run-b3072_256/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -842,6 +872,13 @@
       "title": "Переключатели вычислителя исчерпаны",
       "kind": "insight",
       "detail": "cuBLAS f32 neutral and exact; fp16 breaks e68df05b for +0.2 tok/s decode, rejected. No FORCE_MMQ/FORCE_CUBLAS in this build."
+    },
+    {
+      "id": "e30",
+      "at": "2026-11-12T02:15:27.499970+00:00",
+      "title": "Баланс 3072 проверен тремя прогонами",
+      "kind": "speedup",
+      "detail": "37.79, 37.80 and 39.10 decode at 6266 MiB for 128/128/256 tokens. Stable; decode rises as the cache warms, so short runs understate it."
     }
   ]
 }
