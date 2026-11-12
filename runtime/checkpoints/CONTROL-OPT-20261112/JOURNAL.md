@@ -242,3 +242,17 @@ The narrow condition set in the ported call site (2 backends, flash-attn, single
 the agreed profile exactly.
 
 Rollback: `build/libllama-exp371-prepin.so.0.7.0` keeps the pre-pinning library.
+
+## Pinning: paired confirmation
+
+Repeated on/off with the switch, identical argv:
+
+| order | pin on | pin off |
+|---|---|---|
+| 1 | 2369.8 / 23.56 | 1655.6 / 23.96 |
+| 2 | 2361.2 / 24.54 | 1645.9 / 24.01 |
+
+So the accepted effect is +43-44% prefill and holds across repeats; decode stays in its usual band. Note: the
+`registered ... mapped expert ranges` INFO line does not appear in the captured log even though the switch demonstrably
+changes throughput, so the log line is not usable as evidence here - the paired measurement is. This is recorded so the
+absence of that line is not misread later as "the mechanism did nothing".
