@@ -39,3 +39,13 @@ expression (including the `this_min > 0` clamp writing a positive zero) rather t
 The end-to-end encoder gate will show whether this matters in practice: a `-0` versus `+0` dmin produces identical decoded floats
 unless the scale multiplies a signed value, so it may be invisible there. It is recorded now because byte equality is the standard
 used for every other gate in this series.
+
+## Instrumentation attempt (incomplete, recorded for the next pass)
+
+A tracing hook (`fg330q_trace`) was added to both the Goose source and the bridge to print `this_min` at the end of each `is`
+iteration and `min` before the final negation, then removed again because it produced **no output** under `FG_TRACE=1` while the
+fixture still reported the same 55 failures. `nm` on the bridge object showed no trace symbol, so the object or the binary was not
+the one the run used -- the hook was unverified, and an unverified diagnostic is not evidence.
+
+Next pass must, before reading anything into the trace: verify `nm` shows the hook in the object, verify the generated C calls it,
+and only then compare the two sequences. The tree is left without the hook so the next attempt starts from a clean state.
