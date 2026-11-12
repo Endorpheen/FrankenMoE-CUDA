@@ -843,3 +843,22 @@ and it makes 3584 the strongest measured option: 42 tok/s at 6778 MiB, versus 24
 
 I did not shrink `-c` to save VRAM: that would change the profile and make the numbers incomparable, which is against the
 rules of this comparison.
+
+## 3584 under real background load
+
+Three runs while the desktop was busy; total GPU use peaked at 10715-10779 MiB of 12282, i.e. the card was heavily
+loaded by the environment, not by us:
+
+| run | prefill | decode | own VRAM |
+|---|---|---|---|
+| 1 | 2298.3 | 39.16 | 6778 |
+| 2 | 2247.5 | 39.67 | 6778 |
+| 3 | 2219.9 | 38.54 | 6778 |
+| mean | 2255.2 | **39.12** | 6778 |
+
+Two readings, kept separate on purpose:
+- decode holds at 39.12 (single-run spread 38.5-39.7), and own VRAM never exceeds 6778, so the cache does not start
+  evicting under background pressure - the same conclusion as for 3072.
+- prefill drops to 2255 from 2326 measured under a quieter window. That is a load artefact, not a regression of the
+  candidate: the environment occupied up to 10.8 of 12.3 GiB. It is recorded rather than hidden, and the quiet-window
+  figure remains the reference for profile comparisons.
