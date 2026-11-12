@@ -4,9 +4,8 @@
 // location that justifies it, and audit.py re-reads those locations so the
 // table cannot drift from the source silently.
 #include <stdio.h>
+#include "ffi-adapter.h"
 #include <stdint.h>
-
-int64_t fg451_missing(int64_t cat, int64_t mask, uint64_t out);
 
 void fg451_st_i64(uint64_t p, uint64_t o, int64_t v) {
     *(int64_t *) ((char *) (uintptr_t) p + o) = v;
@@ -42,6 +41,7 @@ static int native_missing(int cat, int mask) {
 static int cases = 0, checks = 0, fails = 0;
 
 int main(void) {
+    goose_init(0, 0);
     // 1. full field-mask space for every category id used by the router
     for (int cat = 0; cat <= 39; ++cat)
     for (int mask = 0; mask < 4096; ++mask) {

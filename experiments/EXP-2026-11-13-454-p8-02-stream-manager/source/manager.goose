@@ -19,7 +19,7 @@ fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }
 
 // op: 1 create_or_replace (found), 2 evict (found), 3 evict_and_cancel (found).
 // Writes replace (0/1), cancel_old (0/1), finalize_old (0/1).
-fn retire_plan(op:i64,found:i64,out:u64)->i64{
+export fn retire_plan(op:i64,found:i64,out:u64)->i64{
  var replace:i64=0 as i64;
  var cancel:i64=0 as i64;
  var finalize:i64=0 as i64;
@@ -38,20 +38,20 @@ fn retire_plan(op:i64,found:i64,out:u64)->i64{
 }
 
 // stop_gc finalizes every live session, never cancels.
-fn stop_all_plan(out:u64)->i64{
+export fn stop_all_plan(out:u64)->i64{
  put(out,0 as i64,0 as i64);  // cancel
  put(out,1 as i64,1 as i64);  // finalize
  return 0 as i64;
 }
 
 // gc_cutoff(now, ttl) -> now - ttl
-fn gc_cutoff(now:i64,ttl:i64,out:u64)->i64{
+export fn gc_cutoff(now:i64,ttl:i64,out:u64)->i64{
  put(out,0 as i64,now-ttl);
  return 0 as i64;
 }
 
 // gc keeps a session while it is alive or not yet expired.
-fn gc_decision(completed:i64,now:i64,ttl:i64,out:u64)->i64{
+export fn gc_decision(completed:i64,now:i64,ttl:i64,out:u64)->i64{
  var drop:i64=0 as i64;
  if completed!=0 as i64 {
   if completed<=(now-ttl) { drop=1 as i64; }
@@ -60,9 +60,3 @@ fn gc_decision(completed:i64,now:i64,ttl:i64,out:u64)->i64{
  return 0 as i64;
 }
 
-fn main(){
- retire_plan(1 as i64,1 as i64,0 as u64);
- stop_all_plan(0 as u64);
- gc_cutoff(0 as i64,300 as i64,0 as u64);
- gc_decision(0 as i64,0 as i64,300 as i64,0 as u64);
-}

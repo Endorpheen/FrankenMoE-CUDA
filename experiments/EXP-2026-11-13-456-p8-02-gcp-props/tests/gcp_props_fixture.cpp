@@ -10,24 +10,7 @@
 #include <string>
 #include <vector>
 
-extern "C" {
-int64_t fg456_mode(const char * p, int64_t n, int64_t * out);
-int64_t fg456_route(int64_t has_value, const char * v, int64_t vn, const char * d, int64_t dn,
-                    char * out, int64_t cap);
-int64_t fg456_port(int64_t enabled, int64_t server_port, int64_t aip_port, int64_t * out);
-int64_t fg456_alias(const char * p, int64_t n, char * out, int64_t cap);
-int64_t fg456_pshape(int64_t is_object, int64_t has_array, int64_t count, int64_t * out);
-int64_t fg456_ishape(int64_t is_object, int64_t has_format, int64_t * out);
-int64_t fg456_keys(int64_t has_code, int64_t * out);
-int64_t fg456_pmode(int64_t sleeping, int64_t * out);
-int64_t fg456_post(int64_t enabled, int64_t * out);
-
-// externs required by the emitted modules; C linkage so the C objects resolve them
-uint32_t fg456_ld_u8(uint64_t p, uint64_t o) { return ((const uint8_t *) (uintptr_t) p)[o]; }
-void     fg456_st_u8(uint64_t p, uint64_t o, uint32_t v) { ((uint8_t *) (uintptr_t) p)[o] = (uint8_t) v; }
-void     fg456_st_i64(uint64_t p, uint64_t o, int64_t v) { *(int64_t *) ((char *) (uintptr_t) p + o) = v; }
-void     fg457_st_i64(uint64_t p, uint64_t o, int64_t v) { *(int64_t *) ((char *) (uintptr_t) p + o) = v; }
-}
+#include "ffi-adapter.h"
 
 static int cases = 0, checks = 0, fails = 0;
 
@@ -68,6 +51,8 @@ static const char * PROP_KEYS[] = {
 };
 
 int main(void) {
+    goose_init(0, 0);
+    goose_init_props(0, 0);
     // 1. AIP_MODE
     const std::string modes[] = {"PREDICTION", "prediction", "PREDICTION ", "PREDICTIO",
                                  "", "PREDICTIONS", "XPREDICTION", "PREDICTIONX"};

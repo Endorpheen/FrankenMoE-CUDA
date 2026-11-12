@@ -11,19 +11,8 @@
 #include <string>
 #include <random>
 
-extern "C" {
-int64_t fg458_fits(int64_t size, int64_t remain);
-int64_t fg458_arr(int64_t n, int64_t elem, int64_t remain, int64_t * out);
-int64_t fg458_str(int64_t size, int64_t remain, int64_t * out);
-int64_t fg458_seek(int64_t abs_off, int64_t off, int64_t remain, int64_t * out);
-int64_t fg458_raw(int64_t size, int64_t max_chunk, int64_t off, int64_t remain, int64_t end, int64_t * out);
-int64_t fg458_fremain(int64_t end, int64_t cur, int64_t * out);
-void    fg458_st_i64(uint64_t p, uint64_t o, int64_t v);
-}
+#include "ffi-adapter.h"
 
-void fg458_st_i64(uint64_t p, uint64_t o, int64_t v) {
-    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
-}
 
 static int cases = 0, checks = 0, fails = 0;
 
@@ -139,6 +128,7 @@ static bool goose_string(Goose & g, const uint8_t * file, int64_t & len) {
 }
 
 int main(void) {
+    goose_init(0, 0);
     const int64_t file_size = 4096;
     std::vector<uint8_t> file((size_t) file_size);
     for (int64_t i = 0; i < file_size; ++i) file[(size_t) i] = (uint8_t) (i * 37 + 11);

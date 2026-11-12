@@ -26,7 +26,7 @@ fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }
 // Error types follow the native enum: 0 invalid_request, 1 authentication,
 // 2 server, 3 not_found, 4 permission, 5 unavailable, 6 not_supported,
 // 7 exceed_context_size.
-fn classify_exception(kind:i64,out:u64)->i64{
+export fn classify_exception(kind:i64,out:u64)->i64{
  var t:i64=2 as i64;
  if kind==1 as i64 { t=0 as i64; }
  if kind==2 as i64 { t=0 as i64; }
@@ -34,7 +34,7 @@ fn classify_exception(kind:i64,out:u64)->i64{
  return 0 as i64;
 }
 
-fn error_code(t:i64,out:u64)->i64{
+export fn error_code(t:i64,out:u64)->i64{
  var code:i64=500 as i64;
  if t==0 as i64 { code=400 as i64; }
  if t==1 as i64 { code=401 as i64; }
@@ -50,15 +50,10 @@ fn error_code(t:i64,out:u64)->i64{
 
 // The response status is json_value(error_data, "code", 500); the caller says
 // whether the payload carried a code.
-fn status_from_payload(has_code:i64,payload_code:i64,out:u64)->i64{
+export fn status_from_payload(has_code:i64,payload_code:i64,out:u64)->i64{
  var s:i64=500 as i64;
  if has_code!=0 as i64 { s=payload_code; }
  put(out,0 as i64,s);
  return 0 as i64;
 }
 
-fn main(){
- classify_exception(1 as i64,0 as u64);
- error_code(0 as i64,0 as u64);
- status_from_payload(0 as i64,0 as i64,0 as u64);
-}

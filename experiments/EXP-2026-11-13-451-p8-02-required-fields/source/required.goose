@@ -45,7 +45,7 @@ fn req_mask(cat:i64)->i64{
 
 // Missing-field mask. The embeddings endpoints accept either "input" or
 // "content", so they are the only any-of cases.
-fn missing(cat:i64,mask:i64,out:u64)->i64{
+export fn missing(cat:i64,mask:i64,out:u64)->i64{
  let need:i64=req_mask(cat);
  var miss:i64=need ^ (mask & need);
  if cat==21 as i64 || cat==22 as i64 {
@@ -55,4 +55,4 @@ fn missing(cat:i64,mask:i64,out:u64)->i64{
  return 0 as i64;
 }
 
-fn main(){missing(11 as i64,0 as i64,0 as u64);}
+

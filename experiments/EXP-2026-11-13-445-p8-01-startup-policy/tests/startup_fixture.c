@@ -5,13 +5,10 @@
 // Left arm: the Goose module emitted by the pinned FrankenGoose compiler.
 // Both arms consume the same parameter tuple and write eight i64 words.
 #include <stdio.h>
+#include "ffi-adapter.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-
-int64_t fg445_decide(int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t f,
-                     int64_t g, int64_t h, int64_t i, int64_t j, int64_t k, int64_t l,
-                     int64_t m, uint64_t n);
 
 void fg445_st_i64(uint64_t p, uint64_t o, int64_t v) {
     *(int64_t *) ((char *) (uintptr_t) p + o) = v;
@@ -113,6 +110,7 @@ static void one(const struct P * p) {
 }
 
 int main(void) {
+    goose_init(0, 0);
     // Exhaustive grid over every branch of the three router/sizing decisions.
     const int64_t has_model[]  = {0, 1};
     const int64_t embedding[]  = {0, 1};

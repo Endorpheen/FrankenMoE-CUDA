@@ -8,7 +8,7 @@
 // segment, like the native httplib pattern.
 import std;
 
-fn route_id(m:i64,p:const u8[:])->i64{
+export fn route_id(m:i64,p:const u8[:])->i64{
  if m==1 as i64 && p=="/health" {return 1 as i64;} // GET /health -> health
  if m==1 as i64 && p=="/v1/health" {return 1 as i64;} // GET /v1/health -> health
  if m==1 as i64 && p=="/metrics" {return 2 as i64;} // GET /metrics -> metrics
@@ -75,13 +75,9 @@ fn route_id(m:i64,p:const u8[:])->i64{
 
 // Public endpoints skip the API-key middleware: /health and /v1/health.
 // Frontend assets are classified outside this table.
-fn requires_key(cat:i64)->i64{
+export fn requires_key(cat:i64)->i64{
  if cat==0 as i64 {return 0 as i64;}
  if cat==1 as i64 {return 0 as i64;}
  return 1 as i64;
 }
 
-fn main(){
- route_id(1 as i64, "/health");
- requires_key(0 as i64);
-}

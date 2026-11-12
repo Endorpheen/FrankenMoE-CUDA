@@ -17,7 +17,7 @@ extern "fg453_st_i64" fn st_i64(p:u64,o:u64,v:i64);
 fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }
 
 // append(done, buf_len, len, cap) -> accept, new_buf_len, dropped_delta, src_skip
-fn append(done:i64,buf_len:i64,len:i64,cap:i64,out:u64)->i64{
+export fn append(done:i64,buf_len:i64,len:i64,cap:i64,out:u64)->i64{
  var accept:i64=0 as i64;
  var nbuf:i64=buf_len;
  var delta:i64=0 as i64;
@@ -52,7 +52,7 @@ fn append(done:i64,buf_len:i64,len:i64,cap:i64,out:u64)->i64{
 
 // read_decision(offset, dropped, buf_len, done, stop)
 // -> status (0 wait, 1 chunk, 2 offset lost, 3 end, 4 stopped), bytes available
-fn read_decision(offset:i64,dropped:i64,buf_len:i64,done:i64,stop:i64,out:u64)->i64{
+export fn read_decision(offset:i64,dropped:i64,buf_len:i64,done:i64,stop:i64,out:u64)->i64{
  var status:i64=0 as i64;
  var n:i64=0 as i64;
  if stop!=0 as i64 {
@@ -75,4 +75,4 @@ fn read_decision(offset:i64,dropped:i64,buf_len:i64,done:i64,stop:i64,out:u64)->
  return 0 as i64;
 }
 
-fn main(){append(0 as i64,0 as i64,0 as i64,1 as i64,0 as u64); read_decision(0 as i64,0 as i64,0 as i64,0 as i64,0 as i64,0 as u64);}
+

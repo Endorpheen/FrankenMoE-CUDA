@@ -4,11 +4,8 @@
 // format_error_response's switch in server.cpp / server-common.cpp.
 // Left arm: the Goose module emitted by the pinned FrankenGoose compiler.
 #include <stdio.h>
+#include "ffi-adapter.h"
 #include <stdint.h>
-
-int64_t fg450_classify(int64_t kind, uint64_t out);
-int64_t fg450_code(int64_t type, uint64_t out);
-int64_t fg450_status(int64_t has_code, int64_t payload_code, uint64_t out);
 
 void fg450_st_i64(uint64_t p, uint64_t o, int64_t v) {
     *(int64_t *) ((char *) (uintptr_t) p + o) = v;
@@ -62,6 +59,7 @@ static void compare(const char * what, int a, int b, int64_t got, int64_t want) 
 }
 
 int main(void) {
+    goose_init(0, 0);
     // 1. exception classification, including classes the native catch chain
     //    does not name explicitly
     for (int kind = 0; kind <= 6; ++kind) {

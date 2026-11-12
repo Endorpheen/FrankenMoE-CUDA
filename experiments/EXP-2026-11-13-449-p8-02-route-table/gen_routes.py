@@ -128,7 +128,7 @@ def main():
         '// segment, like the native httplib pattern.',
         'import std;',
         '',
-        'fn route_id(m:i64,p:const u8[:])->i64{',
+        'export fn route_id(m:i64,p:const u8[:])->i64{',
     ]
     for (method, path), cat in sorted(routes.items(), key=lambda x: (x[1], x[0][1])):
         lines.append(f' if m=={method} as i64 && p=="{path}" {{return {cat} as i64;}} // {METHOD_TAG[method]} {path} -> {CAT_NAME[cat]}')
@@ -146,16 +146,12 @@ def main():
         '',
         '// Public endpoints skip the API-key middleware: /health and /v1/health.',
         '// Frontend assets are classified outside this table.',
-        'fn requires_key(cat:i64)->i64{',
+        'export fn requires_key(cat:i64)->i64{',
         ' if cat==0 as i64 {return 0 as i64;}',
         ' if cat==1 as i64 {return 0 as i64;}',
         ' return 1 as i64;',
         '}',
         '',
-        'fn main(){',
-        ' route_id(1 as i64, "/health");',
-        ' requires_key(0 as i64);',
-        '}',
         '',
     ]
     (E / 'source').mkdir(parents=True, exist_ok=True)

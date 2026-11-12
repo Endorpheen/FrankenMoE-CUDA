@@ -16,7 +16,7 @@ extern "fg445_st_i64" fn st_i64(p:u64,o:u64,v:i64);
 
 fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }
 
-fn decide(has_model:i64,embedding:i64,n_batch:i64,n_ubatch:i64,
+export fn decide(has_model:i64,embedding:i64,n_batch:i64,n_ubatch:i64,
           n_parallel:i64,kv_unified:i64,n_ctx:i64,kv_per_slot:i64,fit_min_ctx:i64,
           alias_empty:i64,model_name_len:i64,ctx_seq:i64,ctx_train:i64,out:u64)->i64{
  var valid:i64=1 as i64;
@@ -57,4 +57,4 @@ fn decide(has_model:i64,embedding:i64,n_batch:i64,n_ubatch:i64,
  return 0 as i64;
 }
 
-fn main(){decide(1 as i64,0 as i64,1 as i64,1 as i64,1 as i64,0 as i64,0 as i64,0 as i64,0 as i64,1 as i64,1 as i64,1 as i64,1 as i64,0 as u64);}
+

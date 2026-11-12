@@ -61,18 +61,49 @@ Modules without a `main` (`-o out.c` requires one) are built with
 
 ## Migration state of the gates
 
-- **EXP459 is fully migrated**: `export fn` entries, generated `shards-gen.c` and
-  `shards-gen.h`, a fixture that calls the exported names through `goose_init`,
-  and `provenance.json` recording compiler and artifact hashes. Gate re-run on
-  the new binary: `FG459_SHARDS cases=234 values=406 failures=0`, mutations 8/8.
-- **The other experiments still carry C emitted by the previous pin.** Those
-  artifacts remain valid and their recorded results stand (the release notes
-  guarantee old programs keep working), but re-running their gates now requires
-  the emit step migrated to `export fn` + `--header`. That migration is the next
-  infrastructure task and is tracked here rather than assumed done.
-- No result in the ledger is withdrawn by this switch: none of the recorded gates
-  depends on the new compiler's behaviour, and the acceptance evidence stays
-  attached to the binary it was produced with.
+All fourteen experiments of this session are migrated to `export fn` +
+`--header` + a shared `--emit-runtime` object, and every gate and mutation set
+was re-run on the new binary. The recorded numbers reproduce exactly:
+
+| experiment | gate | mutations |
+|---|---|---|
+| 445 startup | 69 132 cases / 553 056 values / 0 failures | 6/6 |
+| 446 pre-routing | 352 665 / 2 115 990 / 0 | 7/7 |
+| 448 shutdown | 340 / 940 / 0 | 8/8 |
+| 449 routes | 429 / 429 / 0 | 6/6 |
+| 450 request errors | 64 / 64 / 0 | 6/6 |
+| 451 required fields | 172 049 / 172 049 / 0 | 7/7 |
+| 452 multipart | 20 030 / 132 335 / 0 | 6/6 |
+| 453 stream policy | 1 464 / 5 064 / 0 | 8/8 |
+| 454 stream manager | 33 823 / 71 135 / 0 | 7/7 |
+| 455 SSE framing | 1 652 / 2 552 / 0 | 7/7 |
+| 456 GCP and props | 111 / 170 / 0 | 10/10 |
+| 457 GGUF offsets | 2 109 / 2 109 / 0 | 8/8 |
+| 458 file I/O | 8 275 / 19 629 / 0 | 7/7 |
+| 459 shards | 234 / 406 / 0 | 8/8 |
+
+Migration notes that will matter for the next module:
+
+- the generated C no longer contains `gg_function_N`; the harness adapters call
+  the exported names through a small `tests/ffi-adapter.h` that also supplies the
+  `fg*_st_*` extern stubs with C linkage (C++ fixtures need `extern "C"`);
+- an exported function needs a concrete signature: `string`/`u8[:]` become
+  `sl_u8 { uint8_t *data; int64_t len }`, `i64[:]` becomes `sl_i64`;
+- `main` must be gone, otherwise `goose_init` runs it with zero arguments and the
+  fixture crashes before the first check (that happened in five experiments and is
+  why the strip step now brace-matches instead of using a regex);
+- two program objects both define `goose_init`; the second is renamed with
+  `objcopy --redefine-sym` and called explicitly (`goose_init_props`) so each
+  module's initialiser runs once over the shared runtime;
+- 449's table generator now emits `export fn` and no `main`, so its
+  generator-level mutations still take effect;
+- the compiler rejects implicit argument conversions; `ld_u8(src, 2 as i64)`
+  became `2 as u64` in 446.
+
+All gated experiments now have a `build_fixture.sh` that emits into `source/`,
+compiles the shared runtime once per experiment, and links the fixture. The
+committed `*-gen.c` and `*-gen.h` are produced by the pinned binary recorded in
+`runtime/compiler/current.json`.
 
 ## Template for migrated experiments
 

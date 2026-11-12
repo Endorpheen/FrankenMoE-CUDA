@@ -5,18 +5,12 @@
 // Left arm: the Goose module emitted by the pinned FrankenGoose compiler.
 // check.py independently re-decodes the corpus with Python's urllib.
 #include <stdio.h>
+#include "ffi-adapter.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 
-int64_t fg452_decode(uint64_t p, int64_t n, uint64_t out, int64_t cap);
-int64_t fg452_actions(int64_t n, const char * keys, int64_t klen, const int64_t * koffs, const int64_t * klens, int64_t * out);
-int64_t fg452_source(int64_t has_query, int64_t has_path);
-
-uint32_t fg452_ld_u8(uint64_t p, uint64_t o) { return ((const uint8_t *) (uintptr_t) p)[o]; }
 int64_t  fg452_ld_i64(uint64_t p, uint64_t o) { return *(const int64_t *) ((const char *) (uintptr_t) p + o); }
-void     fg452_st_u8(uint64_t p, uint64_t o, uint32_t v) { ((uint8_t *) (uintptr_t) p)[o] = (uint8_t) v; }
-void     fg452_st_i64(uint64_t p, uint64_t o, int64_t v) { *(int64_t *) ((char *) (uintptr_t) p + o) = v; }
 
 static int cases = 0, checks = 0, fails = 0;
 
@@ -165,6 +159,7 @@ static int native_source(int has_query, int has_path) {
 }
 
 int main(void) {
+    goose_init(0, 0);
     FILE * log = fopen("decoded.txt", "w");
     if (!log) { perror("decoded.txt"); return 1; }
 

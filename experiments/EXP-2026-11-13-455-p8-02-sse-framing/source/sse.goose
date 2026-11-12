@@ -15,7 +15,7 @@ extern "fg455_st_i64" fn st_i64(p:u64,o:u64,v:i64);
 fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }
 
 // Writes the step count followed by the steps.
-fn frame(flavor:i64,has_event:i64,out:u64)->i64{
+export fn frame(flavor:i64,has_event:i64,out:u64)->i64{
  var n:i64=0 as i64;
  if flavor==1 as i64 {
   put(out,1 as i64,1 as i64);
@@ -72,7 +72,7 @@ fn frame(flavor:i64,has_event:i64,out:u64)->i64{
 }
 
 // Total byte length of a frame: literals plus the payload and event-name bytes.
-fn frame_size(steps:i64[:],payload:i64,event:i64,out:u64)->i64{
+export fn frame_size(steps:i64[:],payload:i64,event:i64,out:u64)->i64{
  var total:i64=0 as i64;
  var i:i64=0 as i64;
  while i<steps.len {
@@ -90,8 +90,4 @@ fn frame_size(steps:i64[:],payload:i64,event:i64,out:u64)->i64{
  return total;
 }
 
-fn main(){
- frame(1 as i64,0 as i64,0 as u64);
- var st:i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
- frame_size(st,0 as i64,0 as i64,0 as u64);
-}
+

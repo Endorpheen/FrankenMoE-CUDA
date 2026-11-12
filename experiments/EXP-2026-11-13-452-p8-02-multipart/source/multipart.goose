@@ -25,7 +25,7 @@ fn hexval(c:u32)->i64{
 }
 
 // Decode into out (capacity cap bytes) and return the full decoded length.
-fn decode_component(p:u64,n:i64,out:u64,cap:i64)->i64{
+export fn decode_component(p:u64,n:i64,out:u64,cap:i64)->i64{
  var o:i64=0 as i64;
  var i:i64=0 as i64;
  while i<n {
@@ -77,7 +77,7 @@ fn form_repeat(idx:i64,keys:const u8[:],koffs:i64[:],klens:i64[:])->i64{
 }
 
 // Writes one flag per field: 0 -> new JSON string, 1 -> append to the array.
-fn form_actions(n:i64,keys:const u8[:],koffs:i64[:],klens:i64[:],out:i64[:])->i64{
+export fn form_actions(n:i64,keys:const u8[:],koffs:i64[:],klens:i64[:],out:i64[:])->i64{
  var i:i64=0 as i64;
  while i<n {
   let r:i64=form_repeat(i,keys,koffs,klens);
@@ -88,17 +88,10 @@ fn form_actions(n:i64,keys:const u8[:],koffs:i64[:],klens:i64[:],out:i64[:])->i6
 }
 
 // Parameter source: 0 absent, 1 query value, 2 path value (decoded, wins).
-fn param_source(has_query:i64,has_path:i64)->i64{
+export fn param_source(has_query:i64,has_path:i64)->i64{
  if has_path!=0 as i64 { return 2 as i64; }
  if has_query!=0 as i64 { return 1 as i64; }
  return 0 as i64;
 }
 
-fn main(){
- decode_component(0 as u64,0 as i64,0 as u64,0 as i64);
- var kk:i64[4] = [0, 0, 0, 0];
- var ll:i64[4] = [0, 0, 0, 0];
- var oo:i64[4] = [0, 0, 0, 0];
- form_actions(0 as i64,"",kk,ll,oo);
- param_source(0 as i64,0 as i64);
-}
+

@@ -13,17 +13,8 @@
 #include <random>
 #include <string>
 
-extern "C" {
-int64_t fg454_retire(int64_t op, int64_t found, uint64_t out);
-int64_t fg454_stop(uint64_t out);
-int64_t fg454_cutoff(int64_t now, int64_t ttl, uint64_t out);
-int64_t fg454_gc(int64_t completed, int64_t now, int64_t ttl, uint64_t out);
-void    fg454_st_i64(uint64_t p, uint64_t o, int64_t v);
-}
+#include "ffi-adapter.h"
 
-void fg454_st_i64(uint64_t p, uint64_t o, int64_t v) {
-    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
-}
 
 struct Sess {
     int id;
@@ -201,6 +192,7 @@ static void compare(const Universe & n, const Universe & g, const char * where) 
 }
 
 int main(void) {
+    goose_init(0, 0);
     std::mt19937 rng(454001);
     const int64_t ttl = 300;   // STREAM_SESSION_TTL_SECONDS
 

@@ -4,11 +4,8 @@
 // shutdown_handler bodies, both clean_up bodies and the exit-code returns.
 // Left arm: the Goose module emitted by the pinned FrankenGoose compiler.
 #include <stdio.h>
+#include "ffi-adapter.h"
 #include <stdint.h>
-
-int64_t fg448_on_signal(int64_t a, int64_t b, uint64_t c);
-int64_t fg448_shutdown_plan(int64_t a, int64_t b, uint64_t c);
-int64_t fg448_exit_code(int64_t a, uint64_t c);
 
 void fg448_st_i64(uint64_t p, uint64_t o, int64_t v) {
     *(int64_t *) ((char *) (uintptr_t) p + o) = v;
@@ -74,6 +71,7 @@ static int plan_is_sane(const int64_t * p, int expect_n) {
 }
 
 int main(void) {
+    goose_init(0, 0);
     for (int term = 0; term < 2; ++term)
     for (int handler = 0; handler < 2; ++handler)
     for (int kind = 0; kind < 2; ++kind)

@@ -6,7 +6,7 @@ MODELS=["tiny-hybrid.gguf","tiny-rr.gguf","tiny-mutant.gguf"]
 def run(arm, model, port):
     b=os.path.join(NATIVE if arm=="native" else CAND,"llama-server")
     env={"PATH":"/usr/bin:/bin","HOME":"/tmp","LD_LIBRARY_PATH":os.path.dirname(b)}
-    p=subprocess.Popen([b,"-m",os.path.join(BASE,model),"-c","256","-np","1","--port",str(port),"-t","4"],
+    p=subprocess.Popen([b,"-m",os.path.join(BASE,model),"-c","256","-np","1","-ngl","0","--port",str(port),"-t","4"],
                        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=env)
     try:
         ok=False

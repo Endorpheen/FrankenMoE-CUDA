@@ -10,15 +10,8 @@
 #include <random>
 #include <string>
 
-extern "C" {
-int64_t fg453_session_append(int64_t done, int64_t buf_len, int64_t len, int64_t cap, uint64_t out);
-int64_t fg453_session_read(int64_t offset, int64_t dropped, int64_t buf_len, int64_t done, int64_t stop, uint64_t out);
-void    fg453_st_i64(uint64_t p, uint64_t o, int64_t v);
-}
+#include "ffi-adapter.h"
 
-void fg453_st_i64(uint64_t p, uint64_t o, int64_t v) {
-    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
-}
 
 // ---- native transcription --------------------------------------------------
 struct native_session {
@@ -102,6 +95,7 @@ static void fail(const char * what, const char * detail) {
 }
 
 int main(void) {
+    goose_init(0, 0);
     std::mt19937 rng(453001);
     const int64_t caps[] = {1, 7, 64, 1000, 4096, 4096 * 1024};
     const char * chunk_sizes = "zero,one,cap-1,cap,cap+1,2cap,random";

@@ -5,12 +5,9 @@
 // common_http_parse_url for the accepted inputs).
 // Left arm: the Goose module emitted by the pinned FrankenGoose compiler.
 #include <stdio.h>
+#include "ffi-adapter.h"
 #include <stdint.h>
 #include <string.h>
-
-int64_t fg446_preroute(int64_t a, int64_t b, int64_t c, uint64_t d, int64_t e, int64_t f,
-                       int64_t g, int64_t h, int64_t i, int64_t j, uint64_t k, int64_t l,
-                       uint64_t m, int64_t n, uint64_t o, int64_t p, uint64_t q);
 
 uint32_t fg446_ld_u8(uint64_t p, uint64_t o) { return ((const uint8_t *) (uintptr_t) p)[o]; }
 
@@ -118,6 +115,7 @@ static void one(const struct P * p) {
 }
 
 int main(void) {
+    goose_init(0, 0);
     const char * origins[] = {
         "", "http://localhost:8080", "https://localhost", "http://127.0.0.1:3000",
         "http://[::1]:8080", "https://example.com", "null", "localhost",

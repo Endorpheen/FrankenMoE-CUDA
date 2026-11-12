@@ -1,0 +1,20 @@
+{
+ "native": {
+  "base": " had a trick. He was very much fun playing in the park. E",
+  "repeat": " had an orance. He loved to help her grandmot every",
+  "presence": " had an orange bug in his room. He was very calm",
+  "freq": " had an orange bus. She lived in a big house with a big",
+  "stopsq": " h",
+  "ignoreeos": " had a trick. He was very much fun playing in the park. E",
+  "adaptive": " had a trick. He was very much fun playing in the park. E"
+ },
+ "ours": {
+  "base": " had a trick. He was very much fun playing in the park. E",
+  "repeat": " had an orance. He loved to help her grandmot every",
+  "presence": " had an orange bug in his room. He was very calm",
+  "freq": " had an orange bus. She lived in a big house with a big",
+  "stopsq": " h",
+  "ignoreeos": " had a trick. He was very much fun playing in the park. E",
+  "adaptive": " had a trick. He was very much fun playing in the park. E"
+ }
+}

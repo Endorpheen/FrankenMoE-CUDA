@@ -11,15 +11,8 @@
 #include <string>
 #include <vector>
 
-extern "C" {
-int64_t fg455_frame(int64_t flavor, int64_t has_event, int64_t * out);
-int64_t fg455_size(const int64_t * steps, int64_t n, int64_t payload, int64_t event, uint64_t out);
-void    fg455_st_i64(uint64_t p, uint64_t o, int64_t v);
-}
+#include "ffi-adapter.h"
 
-void fg455_st_i64(uint64_t p, uint64_t o, int64_t v) {
-    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
-}
 
 enum { F_OAI_CHAT = 1, F_OAI_RESP = 2, F_ANTHROPIC = 3, F_DONE = 4, F_PING = 5 };
 
@@ -65,6 +58,7 @@ static void fail(const char * what, int flavor, bool has_event, size_t pn, size_
 }
 
 int main(void) {
+    goose_init(0, 0);
     const std::string payloads[] = {"", "{}", "x", "{\"id\":1}", std::string(50, 'a')};
     const std::string events[] = {"", "message", "content_block_delta"};
     const int item_counts[] = {0, 1, 3};

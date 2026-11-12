@@ -134,7 +134,7 @@ fn key_matches(a:u64,an:i64,b:u64,bn:i64,k:u64,kn:i64)->i64{
  return 1 as i64;
 }
 
-fn preroute(cors_cred:i64,cors_mode:i64,cors_lit_len:i64,origin:u64,origin_len:i64,
+export fn preroute(cors_cred:i64,cors_mode:i64,cors_lit_len:i64,origin:u64,origin_len:i64,
             is_options:i64,is_ready:i64,is_frontend:i64,is_public:i64,n_keys:i64,
             auth:u64,auth_len:i64,xapi:u64,xapi_len:i64,key:u64,key_len:i64,out:u64)->i64{
  var action:i64=0 as i64;
@@ -182,4 +182,4 @@ fn preroute(cors_cred:i64,cors_mode:i64,cors_lit_len:i64,origin:u64,origin_len:i
  return 0 as i64;
 }
 
-fn main(){preroute(0 as i64,0 as i64,0 as i64,0 as u64,0 as i64,0 as i64,1 as i64,0 as i64,0 as i64,0 as i64,0 as u64,0 as i64,0 as u64,0 as i64,0 as u64,0 as i64,0 as u64);}
+

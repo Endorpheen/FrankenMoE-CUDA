@@ -16,7 +16,7 @@ const MAX_ARRAY:i64  = 1073741824 as i64;
 const I64_MAX:i64    = 9223372036854775807 as i64;
 
 // 1 when a scalar of `size` bytes fits in the remaining bytes.
-fn fits(size:i64,remain:i64)->i64{
+export fn fits(size:i64,remain:i64)->i64{
  if size<0 as i64 { return 0 as i64; }
  if remain<0 as i64 { return 0 as i64; }
  if size<=remain { return 1 as i64; }
@@ -24,7 +24,7 @@ fn fits(size:i64,remain:i64)->i64{
 }
 
 // 0 ok, 1 too many elements, 2 element count overflows, 3 not enough bytes.
-fn array_check(n:i64,elem:i64,remain:i64,out:u64)->i64{
+export fn array_check(n:i64,elem:i64,remain:i64,out:u64)->i64{
  var st:i64=0 as i64;
  if n<0 as i64 { st=1 as i64; }
  else{
@@ -44,7 +44,7 @@ fn array_check(n:i64,elem:i64,remain:i64,out:u64)->i64{
 }
 
 // 0 ok, 1 longer than the string limit, 2 longer than the remaining bytes.
-fn string_check(size:i64,remain:i64,out:u64)->i64{
+export fn string_check(size:i64,remain:i64,out:u64)->i64{
  var st:i64=0 as i64;
  if size<0 as i64 { st=1 as i64; }
  else{
@@ -58,7 +58,7 @@ fn string_check(size:i64,remain:i64,out:u64)->i64{
 }
 
 // seek: 1 accepted with the new remaining count, 0 rejected.
-fn seek(abs_off:i64,data_offset:i64,remain:i64,out:u64)->i64{
+export fn seek(abs_off:i64,data_offset:i64,remain:i64,out:u64)->i64{
  var ok:i64=0 as i64;
  var new_remain:i64=remain;
  if abs_off>=0 as i64 {
@@ -74,7 +74,7 @@ fn seek(abs_off:i64,data_offset:i64,remain:i64,out:u64)->i64{
 
 // Chunked transfer: writes total copied, new data_offset, new remain and the
 // reached-EOF flag. Returns the copied byte count.
-fn read_raw(size:i64,max_chunk:i64,data_offset:i64,remain:i64,file_end:i64,out:u64)->i64{
+export fn read_raw(size:i64,max_chunk:i64,data_offset:i64,remain:i64,file_end:i64,out:u64)->i64{
  var total:i64=0 as i64;
  var eof:i64=0 as i64;
  var off:i64=data_offset;
@@ -107,18 +107,10 @@ fn read_raw(size:i64,max_chunk:i64,data_offset:i64,remain:i64,file_end:i64,out:u
 }
 
 // Remaining bytes of a file: 0 when either position is unknown.
-fn file_remain(file_end:i64,cur:i64,out:u64)->i64{
+export fn file_remain(file_end:i64,cur:i64,out:u64)->i64{
  var r:i64=0 as i64;
  if cur>=0 as i64 && file_end>=cur { r=file_end-cur; }
  put(out,0 as i64,r);
  return r;
 }
 
-fn main(){
- fits(0 as i64,0 as i64);
- array_check(0 as i64,1 as i64,0 as i64,0 as u64);
- string_check(0 as i64,0 as i64,0 as u64);
- seek(0 as i64,0 as i64,0 as i64,0 as u64);
- read_raw(0 as i64,1 as i64,0 as i64,0 as i64,0 as i64,0 as u64);
- file_remain(0 as i64,0 as i64,0 as u64);
-}

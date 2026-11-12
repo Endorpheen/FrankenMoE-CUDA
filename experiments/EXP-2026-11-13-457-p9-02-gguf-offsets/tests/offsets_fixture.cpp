@@ -12,18 +12,8 @@
 
 #include "expected_layout.inc"
 
-extern "C" {
-int64_t fg457_up(int64_t x, int64_t n);
-int64_t fg457_ok(int64_t a);
-int64_t fg457_nbytes(int64_t tsize, int64_t blk, int64_t ne, int64_t * out);
-int64_t fg457_layout(const int64_t * rel, const int64_t * nbv, int64_t n, int64_t align,
-                     int64_t data_start, int64_t * out);
-void    fg457_st_i64(uint64_t p, uint64_t o, int64_t v);
-}
+#include "ffi-adapter.h"
 
-void fg457_st_i64(uint64_t p, uint64_t o, int64_t v) {
-    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
-}
 int64_t fg457_ld_i64(uint64_t p, uint64_t o) {
     return *(const int64_t *) ((const char *) (uintptr_t) p + o);
 }
@@ -38,6 +28,7 @@ static void fail(const char * what, const char * detail) {
 static int64_t native_up(int64_t x, int64_t n) { return (x + n - 1) & ~(n - 1); }
 
 int main(void) {
+    goose_init(0, 0);
     // 1. alignment must be a non-zero power of two
     for (int64_t a = -2; a <= 129; ++a) {
         int64_t got = fg457_ok(a);

@@ -6,11 +6,9 @@
 // emitted module, which matches byte-slice strings; check.py compares its
 // classification with the parsed native registrations.
 #include <stdio.h>
+#include "ffi-adapter.h"
 #include <stdint.h>
 #include <string.h>
-
-int64_t  fg449_route_id(int64_t m, const char * p, int64_t n);
-int64_t  fg449_requires_key(int64_t cat);
 
 struct route { int method; const char * path; int cat; };
 static const struct route ROUTES[] = {
@@ -44,6 +42,7 @@ static int category_in_table(int m, const char * p, int * cat) {
 }
 
 int main(void) {
+    goose_init(0, 0);
     // 1. every native registration maps to its category
     for (int i = 0; i < NROUTES; ++i) expect(ROUTES[i].method, ROUTES[i].path, ROUTES[i].cat, "route");
 

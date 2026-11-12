@@ -19,7 +19,7 @@ fn put(out:u64,i:i64,v:i64){ st_i64(out,(i*(8 as i64)) as u64,v); }
 // 9 endpoint_props, 10 endpoint_metrics, 11 ui, 12 ui_settings,
 // 13 chat_template, 14 chat_template_caps, 15 bos_token, 16 eos_token,
 // 17 build_info, 18 is_sleeping, 19 cors_proxy_enabled, 20 connect_code.
-fn props_keys(has_connect_code:i64,out:u64)->i64{
+export fn props_keys(has_connect_code:i64,out:u64)->i64{
  var i:i64=1 as i64;
  while i<=19 {
   put(out,i-1 as i64,i);
@@ -34,7 +34,7 @@ fn props_keys(has_connect_code:i64,out:u64)->i64{
 }
 
 // 1 cached snapshot, 2 live structure.
-fn props_mode(is_sleeping:i64,out:u64)->i64{
+export fn props_mode(is_sleeping:i64,out:u64)->i64{
  var mode:i64=2 as i64;
  if is_sleeping!=0 as i64 { mode=1 as i64; }
  put(out,0 as i64,mode);
@@ -42,15 +42,11 @@ fn props_mode(is_sleeping:i64,out:u64)->i64{
 }
 
 // 0 handled, 1 not supported (501) when POST /props is disabled.
-fn post_props_decision(endpoint_props:i64,out:u64)->i64{
+export fn post_props_decision(endpoint_props:i64,out:u64)->i64{
  var status:i64=0 as i64;
  if endpoint_props==0 as i64 { status=1 as i64; }
  put(out,0 as i64,status);
  return status;
 }
 
-fn main(){
- props_keys(0 as i64,0 as u64);
- props_mode(0 as i64,0 as u64);
- post_props_decision(1 as i64,0 as u64);
-}
+
