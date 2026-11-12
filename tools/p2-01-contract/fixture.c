@@ -280,6 +280,27 @@ int main(int argc, char ** argv) {
     // A first attempt aborted in BOTH arms (rc=134), i.e. the case's tensor ranks/position shape are wrong for this
     // ggml version, not a Goose defect. Left out until the case is written correctly rather than shipped as a red test.
 
+    // 11) attention scoring with a causal mask (soft_max_ext with -inf entries)
+    {
+        struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        const int n_tok = 4, n_head = 2;
+        struct ggml_tensor * a = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, n_tok, n_tok, n_head, 1);
+        float * ap = (float *) a->data;
+        for (int i = 0; i < n_tok*n_tok*n_head; ++i) ap[i] = (float)((i % 11) - 5) * 0.31f;
+        struct ggml_tensor * mask = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n_tok, n_tok);
+        float * mp = (float *) mask->data;
+        for (int r = 0; r < n_tok; ++r) for (int c = 0; c < n_tok; ++c)
+            mp[r*n_tok+c] = (c <= r) ? 0.0f : -INFINITY;
+        struct ggml_tensor * s = ggml_soft_max_ext(ctx, a, mask, 0.125f, 0.0f);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, s);
+        if (ggml_graph_compute_with_ctx(ctx, g, 8) != GGML_STATUS_SUCCESS) abort();
+        emit("softmax_causal_mask", (const float *) s->data, NULL, (size_t) ggml_nelements(s));
+        ggml_free(ctx);
+    }
+
     fclose(out);
     return 0;
 }

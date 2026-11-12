@@ -309,3 +309,29 @@ Conclusion for the plan: the ported arithmetic is faithful in structure - every 
 all but two produce bit-identical or ULP-identical results. The two semantics findings and the SILU tail are the concrete
 defects to fix before extending to other architectures, and all three live in the same module family, which is why the
 blocked regeneration pass matters more than any further probing.
+
+## Attention mask: bit-identical
+
+Added the causal soft-max case (`soft_max_ext` with -INFINITY on future positions, scale 0.125):
+
+| case | differing | note |
+|---|---|---|
+| softmax_causal_mask (4x4x2) | **0 of 32** | masked positions are exactly 0.0 in both arms |
+
+The scoring path that decides which tokens may attend is byte-exact, including the masked entries. That is the operation
+where a divergence would change *which* values are combined rather than their last bits, so it was the most important one
+to clear - and it is clean.
+
+## Coverage statement
+
+The probe now has 37 cases and covers every operation the Apex graph executes per layer: elementwise binary/unary/GLU,
+normalisation, softmax with and without mask, matmul, get_rows/sum_rows and RoPE. Nothing remains uncovered in that set.
+
+| class | operations |
+|---|---|
+| bit-identical | add, sub, mul, div, sqr, sqrt, log, concat, rms_norm, get_rows, sum_rows, swiglu (+swapped, +oai), softmax-with-mask |
+| ULP-close | norm, softmax (unmasked), mul_mat, rope, silu |
+| semantics on special values | clamp(NaN), scale(-0) |
+
+P2-01 therefore no longer lacks evidence: it lacks the permissioned regeneration pass that would let those three findings be
+fixed. Until then it stays PARTIAL and nothing here is called exact.
