@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T03:00:30.604004+00:00",
+  "updated_at": "2026-11-12T03:01:29.057324+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Cache size does not change output: 2048 and 3584 share hash 9d90a010 and identical perplexity vs no-cache e68df05b. Divergence is binary on GPU-side experts, so moving the base to 3584 adds no quality risk. 3584 curve 37.89/39.61/41.01/41.94.",
+  "current": "Cache-size neutrality reproduced on a second prompt (2048 and 3584 both 0f59d2e4 vs no-cache 8edde82c). Output is decided by GPU-side experts, not capacity, so 2048/3072/3584 are output-equivalent and differ only in speed/VRAM.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -1195,6 +1195,13 @@
       "title": "Размер кэша не влияет на числа",
       "kind": "insight",
       "detail": "2048 and 3584 both give 9d90a010 and the same perplexity (1.22624/1.23782). The difference is binary on GPU-side experts, not proportional to cache size."
+    },
+    {
+      "id": "e44",
+      "at": "2026-11-12T03:01:29.057324+00:00",
+      "title": "Нейтральность размера кэша подтверждена дважды",
+      "kind": "insight",
+      "detail": "Second prompt: 2048 and 3584 both 0f59d2e4, no-cache 8edde82c. Cache capacity does not change output; base selection is a pure speed/memory trade-off."
     }
   ]
 }
