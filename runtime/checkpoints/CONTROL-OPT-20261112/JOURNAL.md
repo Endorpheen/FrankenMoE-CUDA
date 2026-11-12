@@ -879,3 +879,26 @@ the expert cache is not a prefill lever at all, not even indirectly through memo
 So the honest summary of prefill on this profile is a band, not a number: roughly 2200-2350 depending on background
 load, with the quiet-window figure used for comparisons. Reaching 3000 needs a profile change, and no configuration
 lever has moved it in the whole sweep.
+
+## CUDA expert kernels: a promising first reading, not confirmed under alternation
+
+First pass, two runs each, suggested our CUDA kernels cost prefill (on 2290, off 2374, +3.7%). A second pass widened
+instead of confirming it (on mean 2135, off mean 2280, but individual runs spanned 2091-2466, i.e. the noise inside a
+group exceeded the difference between groups).
+
+Alternating A/B/A/B in one window, which is the method this profile requires:
+
+| arm | prefill | decode |
+|---|---|---|
+| on | 2312.0 | 23.95 |
+| off | 2287.1 | 23.28 |
+| on | 2285.8 | 23.11 |
+| off | 2370.8 | 23.81 |
+| mean | **2299** | **2329** |
+
++1.3%, well inside the spread. So the first reading is withdrawn: the ported CUDA matvec path is not measurably slower
+than the native one on this profile, and there is no code work to justify there.
+
+This is the fourth candidate today that dissolved under proper repetition (detok, sampler, -O3, now CUDA kernels). The
+methodological conclusion is solid even though the engineering result is negative: on this machine, prefill and decode
+comparisons below ~5% need alternating repeats, otherwise they produce false leads.
