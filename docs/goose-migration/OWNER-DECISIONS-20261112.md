@@ -34,3 +34,18 @@ agreed small-context configuration, or a statement that shift ownership is requi
 The three live increments of P8-03, the P8-04 suite, and the MoE cache integrations (EXP-264/265) are done and witnessed;
 they need no decision. The remaining 80 TODO and 50 IN_PROGRESS requirements are ordinary porting or depend on the eight
 decisions above; none of them is waiting on a clarification of this kind.
+
+## P6-03: how to obtain a reference graph trace
+
+The request-level node/shape differential needs the same trace on the flint line. This repository's rules make the flint tree the
+reference, and a patched reference is no longer a reference, so the hook was added only to our line (`FG_TRACE_GRAPH`, env-gated,
+print-and-return, inert by default, Apex still `e68df05b`).
+
+Options for the owner:
+
+1. **Allow a throwaway copy** of the flint tree in a temporary directory with nothing but this hook added, used once to produce the
+   reference trace and then deleted. Nothing in the reference tree itself is modified.
+2. **Accept the current evidence**: the API-level trace from EXP339 (identical op sequence and shapes on both lines) as the
+   differential, and EXP340 as structural evidence that the real-request graph matches the architecture layer for layer.
+
+Without one of these, P6-03's differential clause cannot be closed honestly.
