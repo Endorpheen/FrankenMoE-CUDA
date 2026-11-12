@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T04:55:00+00:00",
+  "updated_at": "2026-11-12T05:10:00+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: the Goose port costs nothing (native 1636.0/26.04 vs full port 1624.1/23.64). The exp244 result came from its rpath loading the flint ggml stack; on that stack our full port reaches 1787.7/25.99, so the remaining gap is inside our staging ggml stack.",
+  "current": "Stage 2 on the full candidate (307 modules). The EXP244 numbers are a diagnostic control only, explicitly rejected as an optimisation. Port is proven free; the gap is in the ggml stack and the llama body.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -21,8 +21,8 @@
       "id": "speed",
       "title": "Prefill и decode",
       "state": "partial",
-      "implemented": "Proven the port costs nothing (native 1636.0/26.04 vs full port 1624.1/23.64). The exp244 figure was an rpath artefact loading the flint ggml stack; on that stack our full port gives 1787.7/25.99. Gap is now pinned to our staging ggml stack.",
-      "remaining": "Close the gap inside the staging ggml stack (flint stack is +10% and is native, so it can only serve as a reference). Targets 3000/30 not reached.",
+      "implemented": "Full port is the working candidate. Port itself proven free: native libllama 1636.0/26.04 against full port 1624.1/23.64. EXP244 (2563-2574) is diagnostic only and rejected as an optimisation. Gap pinned to the ggml stack and llama body.",
+      "remaining": "Find the concrete cause inside the full candidate; targets 3000/30 not reached.",
       "dependencies": "full port preserved"
     },
     {
@@ -338,6 +338,13 @@
       "kind": "insight",
       "detail": "exp244 libllama loads the flint ggml stack through rpath; a pure native libllama on our stack measures 1636/26.04, so the port costs nothing. Remaining work targets our staging ggml stack.",
       "run_id": "r15-native-llama"
+    },
+    {
+      "id": "e8",
+      "at": "2026-11-12T05:10:00+00:00",
+      "title": "EXP244 отклонён как оптимизация",
+      "kind": "deferred",
+      "detail": "Igor: replacing the current libllama with EXP244 is a rollback of the port. 2570/25 stays diagnostic only; the full 307-module candidate is the working one."
     }
   ]
 }
