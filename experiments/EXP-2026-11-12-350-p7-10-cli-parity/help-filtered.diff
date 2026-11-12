@@ -1,0 +1,5 @@
+714c714,715
+<                                         reasoning and/or tool calls (default: disabled)
+---
+>                                         reasoning and/or FG143_CONTROL plans=0 task_queries=0 dispatches=0 jobs=0 worker_jobs=0
+> tool calls (default: disabled)

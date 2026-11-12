@@ -1930,7 +1930,7 @@
       "id": "P7-10",
       "phase": "P7",
       "title": "Port common configuration,args,presets,fit and startup",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "common/arg.cpp",
         "common/preset.cpp",
@@ -1938,7 +1938,7 @@
         "common/fit.cpp"
       ],
       "acceptance": "All maintained flags/env/defaults/config precedence and memory-fit policy ported; --help/invalid args and model profile compatibility checked.",
-      "evidence": "",
+      "evidence": "2026-11-12 CLI PARITY PROBE (EXP-350): llama-server --help 750 lines native, 755 ours, rc 0 both; the 5 extra lines are witness counters (FG143_CONTROL, FG143_EXECUTOR, FG195V_CUDA_VMM_POOL, FG196P_CUDA_PINNED, FG157_CONTEXT_CORE). After stripping lines that BEGIN with FG, exactly one difference remains: an inline witness splits the sentence 'reasoning and/or tool calls (default: disabled)' mid-line, i.e. a witness is written WITHOUT a leading newline. Invalid-argument path: identical exit code 1 and identical first line 'error: invalid argument: --definitely-not-a-flag', followed by witness lines on our side. Recorded as DEFECT #5 in FIX-LIST: the witness printer is emitted into generated modules, so moving it to stderr with an unconditional leading newline is a compiler-side change (compiler agent's territory, not modified here). Until then any byte comparison of CLI output must filter FG lines AND tolerate mid-line injection. Remaining P7-10 scope: flag/env/default precedence matrix and memory-fit policy.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -4325,7 +4325,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T11:55:16.435516+00:00",
+  "updated_at": "2026-11-12T11:55:55.426640+00:00",
   "status_totals": {
     "DONE": 41,
     "IN_PROGRESS": 40,
