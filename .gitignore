@@ -42,3 +42,15 @@ __pycache__/
 *.ncu-rep
 *.sqlite
 experiments/*/build-copy/
+
+# Build output anywhere in the tree (the leading-slash rule above only covers the repository root).
+**/build/
+**/build-*/
+**/stage-run/
+**/cmake-build-*/
+# Shared objects, object files and slot dumps produced by experiments.
+*.so.0
+*.so.0.*
+*.so.*.0
+*.o
+*.bin
