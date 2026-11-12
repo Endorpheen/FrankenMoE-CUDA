@@ -6,7 +6,7 @@
     "log_present": true
   },
   "generated_at": "2026-11-12T03:21:30.206531+00:00",
-  "method": "symbol scan of the accepted library + provenance match by fgNNNx_enabled in experiment sources; witness presence checked in the newest accepted run log. Symbol presence is not proof of execution.",
+  "method": "symbol scan of the accepted library + provenance match by fgNNNx_enabled in experiment sources; witness presence checked in the newest accepted run log. Symbol presence is not proof of execution. For modules whose witness never printed, call_site records the first real call (declarations excluded) so a later check can decide branch-gated vs genuinely unreachable.",
   "modules": [
     {
       "module": "fg199k",
@@ -114,7 +114,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-memory-recurrent.cpp:322",
+      "call_site_line": "if (fg210k_enabled() && size > 0) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg212s",
@@ -126,7 +129,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 25,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-sampler.cpp:354",
+      "call_site_line": "k = fg212s_enabled()",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg213p",
@@ -186,7 +192,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "unicode.cpp:1479",
+      "call_site_line": "if (fg218t_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg227n",
@@ -234,7 +243,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:1905",
+      "call_site_line": "if (fg230s_enabled() && n_stream <= 64) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg231a",
@@ -246,7 +258,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-memory-recurrent.cpp:403",
+      "call_site_line": "if (fg231a_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg232r",
@@ -258,7 +273,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 32,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-memory-recurrent.cpp:861",
+      "call_site_line": "if (fg232r_enabled() && size <= 65536) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg233c",
@@ -294,7 +312,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-batch.cpp:946",
+      "call_site_line": "if (fg238q_enabled() && get_n_tokens() <= 65536 && n_ubatch <= 64) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg239b",
@@ -354,7 +375,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-batch.cpp:1668",
+      "call_site_line": "if (fg243c_enabled() && batch_inp.n_tokens > 0 && batch_inp.n_tokens <= 65536) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg244s",
@@ -366,7 +390,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-context.cpp:2302",
+      "call_site_line": "if (fg244s_enabled() && n_outputs <= 65536 && output_ids.size() <= 65536) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg345w",
@@ -378,7 +405,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 5,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:2485",
+      "call_site_line": "if (fg345w_enabled() && n_seq_max <= 64) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg367s",
@@ -390,7 +420,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:3270",
+      "call_site_line": "if (fg367s_enabled() && layers.size() <= 64) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg373s",
@@ -402,7 +435,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 5,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:2600",
+      "call_site_line": "if (fg373s_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg375s",
@@ -438,7 +474,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-mmap.cpp:327",
+      "call_site_line": "if (fg377s_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg380s",
@@ -450,7 +489,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-sampler.cpp:3013",
+      "call_site_line": "const bool g_on = fg380s_enabled();",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg381s",
@@ -462,7 +504,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 4,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:2509",
+      "call_site_line": "const bool meta_due = fg381s_enabled() ? fg381s_decide(1, (int64_t) cell_count) != 0",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg382s",
@@ -474,7 +519,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 24,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-memory-recurrent.cpp:1047",
+      "call_site_line": "if (fg382s_enabled() ? fg382s_decide(0, r_l[il] ? 1 : 0) != 0 : r_l[il] == nullptr) continue;",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg383s",
@@ -498,7 +546,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 23,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-sampler.cpp:316",
+      "call_site_line": "if (fg384s_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg385s",
@@ -510,7 +561,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 23,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-sampler.cpp:350",
+      "call_site_line": "if (fg385s_enabled() ? fg385s_decide(3, (int64_t) k, 0) != 0 : k <= 0) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg386s",
@@ -522,7 +576,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 23,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-sampler.cpp:1217",
+      "call_site_line": "if (fg386s_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg387s",
@@ -534,7 +591,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 23,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-sampler.cpp:712",
+      "call_site_line": "chain->n_sample = fg387s_enabled() ? (uint32_t) fg387s_decide(3, (int64_t) chain->n_sample, 0)",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg388s",
@@ -546,7 +606,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-sampler.cpp:2435",
+      "call_site_line": "if (fg388s_enabled() ? (fg388s_decide(3, (int64_t) (ctx->probability * 1000000.0f), (int64_t) cur_p-",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg389s",
@@ -570,7 +633,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-vocab.cpp:3609",
+      "call_site_line": "const bool g_vocab = fg390s_enabled();",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg391s",
@@ -606,7 +672,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 3,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:2677",
+      "call_site_line": "const bool take = fg393s_enabled()",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg394s",
@@ -618,7 +687,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 3,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:2747",
+      "call_site_line": "if (fg394s_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg395s",
@@ -630,7 +702,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 3,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-kv-cache.cpp:2867",
+      "call_site_line": "if (fg395s_enabled() ? fg395s_decide(0, (int64_t) n_seq_id, 0, 0, 0, 0, nullptr) != 0 : n_seq_id != ",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg396s",
@@ -642,7 +717,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 23,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-memory-recurrent.cpp:1064",
+      "call_site_line": "if (fg396s_enabled()) { int64_t g2 = 0; g_off = (size_t) fg396s_decide(0, (int64_t) (range.first), (",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg397s",
@@ -654,7 +732,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": true,
       "witness_log_count": 23,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-memory-hybrid.cpp:209",
+      "call_site_line": "if (fg397s_enabled()) {",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg398s",
@@ -702,7 +783,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-model-loader.cpp:722",
+      "call_site_line": "const bool g_unaligned = fg403s_enabled()",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg404s",
@@ -738,7 +822,10 @@
       "in_accepted_library": true,
       "witness_seen_any_log": false,
       "witness_log_count": 0,
-      "witness_seen_teardown_run": false
+      "witness_seen_teardown_run": false,
+      "call_site": "llama-context.cpp:1774",
+      "call_site_line": "if (fg406s_enabled() ? fg406s_decide(0, (int64_t) (n_tokens*n_vocab*sizeof(float)), 0, 0, 0, 0, null",
+      "liveness_status": "not_observed_in_apex_profile"
     },
     {
       "module": "fg408s",
