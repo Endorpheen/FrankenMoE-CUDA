@@ -63,3 +63,25 @@ right family to port first rather than the exotic I-quants.
 
 The next step is the EXP148-shaped port: a Goose decoder for Q4_K (then Q6_K), a byte-exact gate against
 `dequantize_row_q4_K` over several sizes including a degenerate super-block, and a live witness on a path that calls it.
+
+## Correction: the authoritative list comes from the executed table
+
+Two errors in the earlier gap list are corrected here.
+
+First, the repack types are **not a gap**: `Q4_0_4_4`, `Q4_0_4_8`, `Q4_0_8_8`, `IQ4_NL_4_4`, `IQ4_NL_4_8` and `IQ4_NL_8_8` are
+marked `REMOVED, use ... with runtime repacking` in the type table and have no codec of their own. Listing them as remaining work
+was wrong.
+
+Second, the list of types that actually decode is read from the executed `libggml-base` rather than from source text. A probe
+calling `ggml_get_type_traits` for every entry reports 27 types with a non-null `to_float`:
+
+    f16 q4_0 q4_1 q5_0 q5_1 q8_0 q2_K q3_K q4_K q5_K q6_K iq2_xxs iq2_xs iq3_xxs iq1_s
+    iq4_nl iq3_s iq2_s iq4_xs iq1_m bf16 tq1_0 tq2_0 mxfp4 nvfp4 q1_0 q2_0
+
+Against that list, Goose decoders exist for sixteen types (the five K-quants, IQ4_NL, IQ4_XS, MXFP4, TQ1_0, TQ2_0, IQ2_XXS,
+IQ2_XS, IQ2_S, IQ3_XXS, IQ3_S, IQ1_S, IQ1_M), and EXP143 covers the scalar and simple block types through the CPY path (f16,
+bf16, q4_0, q4_1, q5_0, q5_1, q8_0, q1_0, q2_0). The one entry with no Goose decoder on either list is **nvfp4**, which uses the
+UE4M3 scale and the same doubled e2m1 table as MXFP4.
+
+So the remaining decoder work is exactly one type -- nvfp4 -- plus the encoder direction and the wiring, not seven repack
+variants that do not exist.
