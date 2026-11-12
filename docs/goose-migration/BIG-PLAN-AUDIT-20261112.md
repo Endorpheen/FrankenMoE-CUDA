@@ -132,3 +132,22 @@ That has two practical consequences:
    misleading.
 
 No status changes here; this is a reading of three inventories together.
+
+## Progress update: P3-17 lifecycle evidenced, three inventories complete
+
+Counters: **20 DONE, 1 PARTIAL, 50 IN_PROGRESS, 81 TODO** of 152.
+
+New measured facts since the previous update:
+
+- **P3-17**: teardown counters on the accepted profile - `FG195V alloc=9526 free=9526 grow=5 native=0`,
+  `FG196P reg_plan=120 unreg=240 fallback=0 native=0`. Both pools have a balanced lifecycle with zero native calls. The
+  item remains open only for device reset, asynchronous lifetimes and the stale ring clause.
+- **P1-09**: pool/executor/partition live and witnessed; claim/barrier dormant by construction (no call site); determinism
+  at 8/16/32 threads proven.
+- **P1-10**: ring staging clause stale; four live residency paths named.
+- **P2-01**: 37-case probe, reproducible by script, 26 bit-identical, three located findings blocked on the permissioned
+  regeneration.
+
+What the pattern means for planning: the remaining large items are no longer "unknown work". They are (a) permissioned
+Goose regeneration for three located fixes, (b) stage-2 porting with a shared failure-injection fixture for the lifetime
+layer, and (c) owner decisions on three stale clauses. Each is stated with evidence; none is ambiguous any more.
