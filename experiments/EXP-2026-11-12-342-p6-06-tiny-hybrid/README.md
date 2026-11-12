@@ -62,3 +62,25 @@ the earlier "43 written, 36 unique" confusion came from the loader's count, not 
 
 The file loads past metadata, past dtype and shape checks, and fails only on the final count. It is not yet a fixture: no token has been
 produced from it, and the seven name mismatches are known to exist but not yet identified.
+
+## Round four: the loader's own create_tensor log is the authoritative name list
+
+Running with `-v` makes the loader print one `create_tensor: loading tensor <name>` line per tensor it intends to create. That is the
+expected set, and comparing it against our GGUF is decisive:
+
+- **in our GGUF but never created** (seven): `blk.0.attn_k_norm.weight`, `blk.0.attn_q_norm.weight`, `blk.0.ssm_d`,
+  `blk.1.attn_gate.weight`, `blk.1.attn_k.weight`, `blk.1.attn_q.weight`, `blk.1.attn_v.weight`.
+- **created but absent from our GGUF**: the whole `.scale` / `.input_scale` family -- `blk.*.attn_qkv.scale`,
+  `blk.*.ffn_gate_exps.input_scale` and so on.
+
+Two conclusions follow. First, the architecture expects `attn_qkv` for every layer, not separate q/k/v in a non-recurrent layer, so my
+"one recurrent, one full-attention" split does not match how this arch is built. Second, it expects microscaling metadata tensors for
+every quantizable weight, which our F32-only generator never provides.
+
+The `expected 43, got 36` count is still not fully explained by these sets (the created list is longer than 43), and I am recording that
+as an open discrepancy rather than inventing an explanation for it.
+
+## Next step
+
+Generate exactly the names from the `create_tensor` list, provide the `.scale`/`.input_scale` tensors, and let the shape driver settle the
+rest. The list is captured in this experiment, so the next pass starts from it rather than from another guess round.
