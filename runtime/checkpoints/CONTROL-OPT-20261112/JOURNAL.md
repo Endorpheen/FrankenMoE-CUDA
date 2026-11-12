@@ -672,3 +672,20 @@ tuning knob.
 
 That closes the memory stage honestly: VRAM was cut 6408 -> 3190 exact / 6266 balanced by real mechanisms, RAM is
 model-bound, and no further RAM reduction is available inside this configuration.
+
+## Hybrid placement on the cache base: does not fit, and the fitting variant loses
+
+Two attempts to buy prefill by moving expert layers to the GPU while keeping a cache:
+
+| variant | prefill | decode | VRAM | verdict |
+|---|---|---|---|---|
+| cache 3072 (base) | 2346.2 | 37.90 | 6266 | reference |
+| n-cpu-moe 34 + cache 3072 | OOM | - | - | does not fit in 12282 MiB |
+| n-cpu-moe 36 + cache 2048 | 2404.8 | 36.79 | 7234 | worse decode at nearly the same memory |
+
+The one that fits spends 7234 MiB to gain 2.5% prefill (inside noise) and lose 1.1 tok/s decode against the base. On the
+balanced rule that is a clear loss, so the combination is closed: on this card, capacity that could hold expert layers
+is better spent on the device cache, which raises decode instead of marginally nudging prefill.
+
+Prefill remains ~2311-2346 with every lever now measured - switches, placement, batch shape, launch overhead, compute
+type and memory residency. Raising it further is a code-level change, not a configuration one.
