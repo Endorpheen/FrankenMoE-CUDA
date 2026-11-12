@@ -25,3 +25,24 @@ stop-string blocks at the first.
 These files are merged and compile, but no server binary has been built from them and nothing has been relinked, so the ports remain absent
 from any shipped artifact. Building `llama-server` from these copies and relinking is the next step; running it against Apex needs agreement
 first.
+
+## Built, and it runs
+
+`link_server.py` follows the recipe the live experiments used: compile the merged file with the recorded compile command, replace
+`server-context.cpp.o` inside a copy of `libserver-context.a`, relink `libllama-server-impl.so` and append all four bridge objects.
+
+    compile rc = 0
+    link rc    = 0, libllama-server-impl.so = 7,624,752 bytes
+    fg268p 7 defined / 0 undefined
+    fg272s 5 defined / 0 undefined
+    fg274b 3 defined / 0 undefined
+    fg276t 4 defined / 0 undefined
+    undefined fg symbols in total: 0
+
+The `llama-server` binary was then linked against that library, 15,960 bytes, and `--help` runs and prints the parameter block -- so this is
+a real executable, not just a library that links. No model was loaded.
+
+## What is still missing
+
+`server-queue.cpp` is merged but not yet substituted: the queue lives in `libllama-server-impl.so` itself rather than in a static archive whose
+member can be replaced by name, so it needs its own substitution step. Everything else on the server side is now in one binary.
