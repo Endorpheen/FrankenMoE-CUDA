@@ -43,11 +43,19 @@ new_call = 'value=unary_value(p,p.ip[0],a,i%p.d.ne[0],p.d.ne[0]);'
 assert src.count(old_call) == 1
 src = src.replace(old_call, new_call, 1)
 
-# --- fix 2: native evaluates MAX(MIN(x, hi), lo); the module did the opposite order, which decides NaN.
+# --- fix 2: native evaluates MAX(MIN(x, hi), lo) with the MIN/MAX macros. Macros are not fminf/fmaxf:
+# measured at run time, fminf(0x7f800001, 0.5) returns 0x7fc00001 (a quieted NaN) while the macro returns 0.5,
+# so clamp has to reproduce the macro form exactly, including the order that puts the second operand on NaN.
 old_clamp = 'value=min32(max32(a,p.fp[0]),p.fp[1]);'
-new_clamp = 'value=max32(min32(a,p.fp[1]),p.fp[0]);'
+new_clamp = 'value=native_max(native_min(a,p.fp[1]),p.fp[0]);'
 assert src.count(old_clamp) == 1
 src = src.replace(old_clamp, new_clamp, 1)
+
+anchor_helpers = 'fn cpp_min(a:f32,b:f32)->f32 {return if b<a {b}else {a};}'
+assert src.count(anchor_helpers) == 1
+helpers = ('fn native_min(a:f32,b:f32)->f32 {return if a<b {a}else {b};}\n'
+           'fn native_max(a:f32,b:f32)->f32 {return if a>b {a}else {b};}\n' + anchor_helpers)
+src = src.replace(anchor_helpers, helpers, 1)
 
 # --- fix 3: native skips the addend when the bias is zero, so the sign of zero survives.
 old_scale = 'value=a*p.fp[0]+p.fp[1];'

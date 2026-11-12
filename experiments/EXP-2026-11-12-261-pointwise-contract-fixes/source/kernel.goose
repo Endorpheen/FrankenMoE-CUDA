@@ -143,13 +143,15 @@ fn pointwise(p:const Node&,x:const u8[:],y:const u8[:],dst:u8[:])->bool {
         }else if p.op==32 {value=if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]};}
         else if p.op==9 {value=a*a;}else if p.op==10 {value=sqrt32(a);}
         else if p.op==12 {value=sin32(a);}else if p.op==13 {value=cos32(a);}else if p.op==11 {value=log32(a);}
-        else if p.op==50 {value=max32(min32(a,p.fp[1]),p.fp[0]);}
+        else if p.op==50 {value=native_max(native_min(a,p.fp[1]),p.fp[0]);}
         else if p.op==71 {value=if a>(0 as f32) {a} else {a*p.fp[0]};}
         else {value=unary_value(p,p.ip[0],a,i%p.d.ne[0],p.d.ne[0]);}
         store(p.d,dst,i,value);i+=p.nth;
     }
     return true;
 }
+fn native_min(a:f32,b:f32)->f32 {return if a<b {a}else {b};}
+fn native_max(a:f32,b:f32)->f32 {return if a>b {a}else {b};}
 fn cpp_min(a:f32,b:f32)->f32 {return if b<a {b}else {a};}
 fn cpp_max(a:f32,b:f32)->f32 {return if a<b {b}else {a};}
 fn glu(p:const Node&,x:const u8[:],y:const u8[:],dst:u8[:])->bool {

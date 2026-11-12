@@ -373,3 +373,41 @@ This is recorded as an open residual with a narrowed cause: the emitted clamp br
 (`-O3 -march=native -ffp-contract=off`) returns +0.5 for `0x7f800001`. So the value cannot come from that
 branch, and the next step is to trace which module actually serves OP_CLAMP for this input rather than to
 change the expression again.
+
+## Closing the clamp residual: the macro is not fminf
+
+The prior note narrowed the signalling-NaN case to "the value cannot come from that branch". It can now be
+explained exactly, with a trace of the emitted branch:
+
+    FGCLAMP_TRACE a=7f800001 hi=3f000000 fminf=7fc00001
+    FGCLAMP_TRACE a=7fc00000 hi=3f000000 fminf=3f000000
+    FGCLAMP_TRACE a=7fc00001 hi=3f000000 fminf=3f000000
+
+At run time `fminf` of a signalling NaN returns a **quieted NaN with the same payload**, not the numeric operand,
+while the native clamp uses the `MIN`/`MAX` macros, which return the second operand on any unordered comparison:
+
+    macro MIN(0x7f800001, 0.5)        = 3f000000
+    fminf(0x7f800001, 0.5)            = 7fc00001
+    fmaxf(fminf(sNaN, 0.5), -0.5)     = bf000000   (wrong bound)
+    macro MAX(MIN(...), -0.5)         = 3f000000   (native)
+
+A micro-test with constant inputs had returned 0.5 for the same expression, because the compiler folded it; with
+`volatile` inputs it reproduces the quieting and the wrong bound. That is why the earlier local check misled.
+
+Fix: clamp now uses helpers that reproduce the macro form exactly,
+`native_max(native_min(a, hi), lo)` with `native_min(a,b) = a<b ? a : b` and `native_max(a,b) = a>b ? a : b`.
+
+Result with the rebuilt library:
+
+    cases: 40
+    bit-identical: 36
+    differing: norm_finite, softmax_finite, mul_mat_32x8x6, rope_16x2x4
+    probe exit code 0 (the recorded set)
+
+So every binary, unary and GLU case in this probe is bit-identical, including the signalling NaN, both quiet-NaN
+payloads, signed zero, subnormals, threads 1/8 and four strided cases.
+
+Apex 32K/128 with this library: `e68df05b`, probabilities equal, restore exact, slot 387989920 bytes.
+
+Remaining gap for a full P2-01 closure: the probe exercises F32 only. Other element types for these ops are not
+covered here.

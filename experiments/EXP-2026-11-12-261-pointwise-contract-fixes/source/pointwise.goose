@@ -62,13 +62,15 @@ fn pointwise(p:const Node&,x:const u8[:],y:const u8[:],dst:u8[:])->bool {
         }else if p.op==OP_SCALE {value=if p.fp[1]==(0 as f32) {a*p.fp[0]} else {a*p.fp[0]+p.fp[1]};}
         else if p.op==OP_SQR {value=a*a;}else if p.op==OP_SQRT {value=sqrt32(a);}
         else if p.op==OP_SIN {value=sin32(a);}else if p.op==OP_COS {value=cos32(a);}else if p.op==OP_LOG {value=log32(a);}
-        else if p.op==OP_CLAMP {value=max32(min32(a,p.fp[1]),p.fp[0]);}
+        else if p.op==OP_CLAMP {value=native_max(native_min(a,p.fp[1]),p.fp[0]);}
         else if p.op==OP_LEAKY_RELU {value=if a>(0 as f32) {a} else {a*p.fp[0]};}
         else {value=unary_value(p,p.ip[0],a,i%p.d.ne[0],p.d.ne[0]);}
         store(p.d,dst,i,value);i+=p.nth;
     }
     return true;
 }
+fn native_min(a:f32,b:f32)->f32 {return if a<b {a}else {b};}
+fn native_max(a:f32,b:f32)->f32 {return if a>b {a}else {b};}
 fn cpp_min(a:f32,b:f32)->f32 {return if b<a {b}else {a};}
 fn cpp_max(a:f32,b:f32)->f32 {return if a<b {b}else {a};}
 fn glu(p:const Node&,x:const u8[:],y:const u8[:],dst:u8[:])->bool {
