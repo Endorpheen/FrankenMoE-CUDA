@@ -1350,13 +1350,13 @@
       "id": "P4-15",
       "phase": "P4",
       "title": "Run unified scheduler actual model milestone",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "src/llama-context.cpp",
         "ggml/src/ggml-backend.cpp"
       ],
       "acceptance": "Apex and Qwen real prefill/decode,prefix reuse,branch/restore/cancel match reference with Goose scheduler and allocator witnesses.",
-      "evidence": "EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted Goose:placement/compatibility/offload,splits/parallel copies,ordered allocator deps,reserve/reuse,compute/eval/event/expert orchestration and owned lifecycle.44native placement/reuse cases,2wide72input graphs,compute failure,10expert phase routes,12constructor OOM sites and32threaded independent lifecycles pass with rollback. One Apex2626.103prefill/27.267decode,RSS21315.086MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,new scheduler witness/zero heaps. Small single-sample speed variation;stable C++ parity unproven. Current fixed Apex gate covers 127graph reuses;branch/restore/cancel and future Qwen milestone remain open/deferred.",
+      "evidence": "EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted Goose:placement/compatibility/offload,splits/parallel copies,ordered allocator deps,reserve/reuse,compute/eval/event/expert orchestration and owned lifecycle.44native placement/reuse cases,2wide72input graphs,compute failure,10expert phase routes,12constructor OOM sites and32threaded independent lifecycles pass with rollback. One Apex2626.103prefill/27.267decode,RSS21315.086MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,new scheduler witness/zero heaps. Small single-sample speed variation;stable C++ parity unproven. Current fixed Apex gate covers 127graph reuses;branch/restore/cancel and future Qwen milestone remain open/deferred. 2026-11-13 CLOSED Apex-scope (docs/goose-migration/APEX-API-SCHED-CLOSURE.md): EXP164 32K/128 prefill 2626.1/decode 27.3, exact tokens/content/probabilities, 127 graph reuses, 37 scheduler/layout bodies and EXP161 allocator with witnesses/zero heaps. Prefix reuse EXP361/EXP308, branch/restore EXP293/EXP418, cancel EXP379/EXP424. Unified baseline 41.62 at 128 and 43.04 at 512 with cache 3584. Qwen clause not measured; assigned to C1-05/C1-06 in stage 11, same shared scheduler.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1751,14 +1751,14 @@
       "id": "P6-12",
       "phase": "P6",
       "title": "Close public inference API and complete Apex model lifecycle",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "include/llama.h",
         "include/llama-cpp.h",
         "src/**"
       ],
       "acceptance": "Every shared public C API implemented in Goose; full Apex load/graph/decode/state/unload works; remaining architecture builders explicitly assigned to compatibility tasks.",
-      "evidence": "",
+      "evidence": " 2026-11-13 CLOSED Apex-scope: P4-03 ABI parity llama 255/255, base 550/551 (one additive), cpu 6/6; Apex load/fit EXP422, graph/decode EXP164/EXP340, state EXP293/EXP357/EXP418, unload EXP267/EXP424. Public entries are ABI wrappers over the Goose modules; under the selected 'owned' definition they are glue, not computation. Remaining Qwen builders assigned C1-02..C1-05, other architectures C2-01..C2-04.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 416,
@@ -3479,6 +3479,10 @@
     {
       "event": "P8-11 closed (EXP424): four concurrent clients, malformed JSON, stream disconnect and a second lifecycle all behave correctly on the unified build; no port/process leak.",
       "checkpoint": "57e2801e"
+    },
+    {
+      "event": "P4-15 and P6-12 closed on the Apex milestone: scheduler, allocator, API surface, load/graph/decode/state/unload all evidenced; Qwen explicitly assigned to C1-05/C1-06 and other architectures to C2, not counted as tested.",
+      "checkpoint": "bad956b4"
     }
   ],
   "batches": [
@@ -4369,11 +4373,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T21:25:59.428166+00:00",
+  "updated_at": "2026-11-12T21:26:40.003627+00:00",
   "status_totals": {
-    "DONE": 66,
-    "IN_PROGRESS": 25,
+    "DONE": 68,
+    "IN_PROGRESS": 24,
     "PARTIAL": 3,
-    "TODO": 58
+    "TODO": 57
   }
 }
