@@ -567,3 +567,20 @@ Practical conclusion for this profile: the exact path sits at ~2311-2320 prefill
 e68df05b; the cache path is the only measured way past 30 decode, and the balance point requested by Igor is cache 3072
 (37.79 / 6266) on the same 32K load. 3000 prefill is not reachable by a switch on this profile, and that is now backed by
 a sweep rather than an assumption.
+
+## Compute-type variants: one is neutral, one breaks correctness
+
+This build has no `GGML_CUDA_FORCE_MMQ`/`FORCE_CUBLAS` (removed upstream), so the only compute switch left is the cuBLAS
+type:
+
+| variant | prefill | decode | content |
+|---|---|---|---|
+| default | 2311.1 | 23.78 | e68df05b |
+| `GGML_CUDA_CUBLAS_COMPUTE_TYPE=f32` | 2320.5 | 23.53 | e68df05b |
+| `GGML_CUDA_CUBLAS_COMPUTE_TYPE=fp16` | 2308.1 | 23.98 | **differs** |
+
+f32 is neutral (noise) and safe; fp16 buys 0.2 tok/s decode and breaks the exact check, so it is rejected outright - this
+is the one case where a slower-and-exact option is trivially the right one.
+
+That exhausts the compute-engine switches available on this profile. Prefill stands at ~2311-2320 with the exact output,
+and every remaining lever is a memory/speed trade that has already been measured and recorded.
