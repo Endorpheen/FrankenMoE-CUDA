@@ -700,12 +700,12 @@
       "id": "P2-18",
       "phase": "P2",
       "title": "Remove replaced CPU implementation from candidate production link",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cpu/**"
       ],
       "acceptance": "Candidate link map contains only Goose-emitted CPU logic plus audited primitives; frozen original remains outside candidate for rollback.",
-      "evidence": "",
+      "evidence": "2026-11-12 CLOSED (docs/goose-migration/P2-18-LINK-MAP.md). The recorded link step names 33 objects, each classified by a mechanical marker -- gg_function_N symbols exist only in Goose-emitted objects. Goose-emitted 13 (goose-controller 2, goose-q4 1, goose-q6 4, activation 2, goose-tiled 13, goose-tiled-perf 34, goose-element 23, controller 2, goose-cpu 42, executor 1, stateful 17, control 6, backend-goose 2 symbols); integration bridges 6 (core.o with 152 hook refs and no generated code, backend-cpp, backend-traits, bridge x2, cpu-bridge); audited native primitives 14 (repack base+arch, hbm, quants base+arch, amx, mmq, native-tiled, tiled-kernel, vec, sgemm, preserved-native-0, native-unary-ops, native-binary-ops) -- the same SIMD/arch kernels recorded as outside compiler scope in P1-11 plus one deliberately preserved original. Frozen original present and outside the candidate: variants/cpu-backend/run/libggml-cpu.so.0.27.0.pre-p502 (1917080 bytes), so rollback is a copy rather than a rebuild. No object is unaccounted for.",
       "depends_on": [
         "P2-01",
         "P2-02",
@@ -4325,10 +4325,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T11:43:00.852619+00:00",
+  "updated_at": "2026-11-12T11:46:13.070962+00:00",
   "status_totals": {
-    "DONE": 37,
-    "IN_PROGRESS": 37,
-    "TODO": 78
+    "DONE": 38,
+    "IN_PROGRESS": 38,
+    "TODO": 76
   }
 }
