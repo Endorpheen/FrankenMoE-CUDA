@@ -138,3 +138,24 @@ So the earlier conclusion "the divergence is in the block scale for this input" 
 block scales and the super-scale agree with the reference. The next step is to reproduce the exact case the fixture fails on (consume
 the RNG in the same order and size) before comparing anything further -- otherwise the comparison is against the wrong data, which is
 the third time in this experiment that a measurement was taken on inputs other than the failing one.
+
+## Exact failing case reproduced: only the sign of d differs
+
+Replicating the fixture's RNG across all four sizes finds the first failure at **s=1, k=512, block 0** -- and confirms the 256 case
+passes entirely, which explains the earlier confusion.
+
+Reading the fp16 bytes correctly this time:
+
+    native d = 0x204c -> exponent 8, mantissa 0x04c -> +0.00839
+    port   d = 0xa052 -> same exponent and mantissa           -> -0.00844
+
+Same magnitude, **opposite sign**. (An earlier note in this file read 0x204c as 0.00424 and claimed a factor of two; that reading was
+wrong and is corrected here.)
+
+Since the eight block scales of that super-block match the transcription bit for bit, `max_scale` -- the signed scale with the largest
+magnitude -- must also match, so the sign flip has to happen in the `dsup` step or in what the encode path feeds it: either the block
+scales used by `fg336q_block` are not the same values the export returns (a scratch/addressing difference between the two entry
+points), or the sign is lost in `-max_scale/32`.
+
+That is a two-line surface now, and both candidates are testable without new instrumentation: compare `fg336q_block`'s view of the
+scales against the export's.
