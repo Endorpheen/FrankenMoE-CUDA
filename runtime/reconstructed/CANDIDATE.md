@@ -89,3 +89,18 @@ fix from the merge step is visible in the assembled candidate rather than only i
 
 `run_apex_gate.sh` now points at the matched candidate, so the pending measurement would test the artefact that actually runs correctly rather than
 the era-mixed one.
+
+## Verification of the matched candidate, before any Apex run
+
+Everything that can be checked without the large model has been, and the results are consistent:
+
+| check | scope | result |
+|---|---|---|
+| edge-case sweep | 6 request shapes, including empty prompt and `n_predict 0` | **6 of 6 identical to native** |
+| sampler differential | 8 configurations with fixed seeds | **8 of 8 identical**, same distinctness pattern |
+| template rendering | 5 templates, filters, conditionals, loops, tool schema | **5 of 5 identical** |
+| tiny hybrid fixture | 1 model that loads (`-ngl 0`) | identical; the other two fail to load on both lines and are not counted |
+| server witnesses | one request | all six ports fire, batch compatibility deciding 15 times |
+
+Nothing here says anything about Apex behaviour, throughput or memory at 32K context; those need the gate. What it does say is that the merged
+artefact answers the same way as the native build on every surface a small model can reach, which is the precondition for spending an Apex run on it.
