@@ -2032,7 +2032,7 @@
         "tools/server/server-context.cpp"
       ],
       "acceptance": "Task lifecycle,slot allocation,batch/coalescing,cancel,timeout and backpressure owned by Goose; concurrent request outputs and no lost tasks.",
-      "evidence": "",
+      "evidence": "2026-11-12: the two scheduling decisions of tools/server/server-queue.cpp are ported and gated (EXP-270): pop_deferred_task's slot-priority scan (first match, else the first deferred, none when empty) and cleanup_pending_task's cancel mask over task ids. Fixture against transcriptions: 8 checks, 0 failures, count and mask compared; a fallback mutation breaks one case. Integration into server-queue.cpp, relink and an A/B with concurrent clients are the next steps; the accepted single-request profile rarely defers, so liveness needs concurrency or a client disconnect.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
