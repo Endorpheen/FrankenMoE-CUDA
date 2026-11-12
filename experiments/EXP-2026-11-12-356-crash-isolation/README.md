@@ -136,3 +136,17 @@ Two causes, then, not one: the stale arena (fixed, verified in isolation) and so
 
 A scan of the merged file suggested `fg274b_can_batch` was called without its gate. It is not: the `if (fg274b_enabled())` guard is fourteen
 lines above the call, and my twelve-line window missed it. No code change was made on that basis.
+
+## The second cause is not the merge either
+
+The candidate layout was rebuilt with a server implementation compiled from **flint's own unmodified `server-context.cpp`** -- no ports, no
+guards, no merged file -- and linked the same way our merged library is. It still aborts, with flint's `libllama` underneath.
+
+That rules the merge out as the second cause. The remaining difference between that build and the shipped `build-cuda/bin/llama-server` is the
+build and link environment: our implementation is compiled today from the same source, linked against the stage's older `libggml-*` libraries, and
+assembled with our own object set and link line, while the shipped binary was built on 2026-10-21 by the flint toolchain against its own
+libraries.
+
+So the picture is now: one real defect found and fixed (the stale arena value), and one behaviour that depends on how the server implementation
+is built rather than on what its source says. The next step is to build our implementation exactly as flint builds it -- same compiler flags, same
+link line, same libraries -- and see whether the difference disappears. If it does, the lesson is about our assembly, not about Goose.
