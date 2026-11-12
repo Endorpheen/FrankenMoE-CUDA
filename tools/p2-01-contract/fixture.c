@@ -256,6 +256,10 @@ int main(int argc, char ** argv) {
         ggml_free(ctx);
     }
 
+    // 10) RoPE is NOT covered by this fixture.
+    // A first attempt aborted in BOTH arms (rc=134), i.e. the case's tensor ranks/position shape are wrong for this
+    // ggml version, not a Goose defect. Left out until the case is written correctly rather than shipped as a red test.
+
     fclose(out);
     return 0;
 }

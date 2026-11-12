@@ -254,3 +254,32 @@ the reason a single Apex prompt can still reproduce `e68df05b` while the arithme
 | bit-identical | add, sub, mul, div, sqr, sqrt, log, concat, rms_norm, get_rows, sum_rows, swiglu (+swapped, +oai) |
 | ULP-close (1-2) | norm, softmax, mul_mat, silu (silu worst: 247/1000) |
 | semantics on special values | clamp(NaN) picks the opposite bound; scale(-0) loses the zero sign |
+
+## Fifth pass: RoPE not covered yet, and honesty about why
+
+A first RoPE case aborted in **both** arms with rc=134 while the other 34 cases pass. Since native aborts identically,
+the fault is the case's tensor ranks/position shape, not the Goose implementation. Removed the case and left a note in
+the fixture instead of shipping a red test or quietly deleting it. RoPE therefore remains **uncovered** by this probe.
+
+Stable state after the fix: 35 cases, both arms exit 0, differing set is exactly:
+
+    silu_t1, silu_t8, silu_1000, clamp_t1, clamp_t8, scale_t1, scale_t8,
+    norm_finite, softmax_finite, mul_mat_32x8x6
+
+## Probe scoreboard (final for this pass)
+
+| operation | verdict |
+|---|---|
+| add, sub, mul, div, sqr, sqrt, log, concat | bit-identical |
+| rms_norm, get_rows, sum_rows | bit-identical |
+| swiglu, swiglu swapped, swiglu_oai | bit-identical |
+| norm | 30/64 differ, <=2.4e-7 |
+| softmax | 42/64 differ, <=1.5e-8 |
+| mul_mat | 23/48 differ, <=2.4e-7 |
+| silu | 247/1000 differ, 1-2 ULP |
+| clamp(NaN) | opposite bound (semantics) |
+| scale(-0) | zero sign lost (semantics) |
+| rope, flash-attention mask | **not covered** |
+
+Two of my own harness defects were found and corrected along the way (sum_rows over-read, RoPE ranks). Both are recorded
+because a clean scoreboard that hides them would be worth less than this one.
