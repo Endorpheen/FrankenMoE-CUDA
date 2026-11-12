@@ -15,6 +15,7 @@
 #include "llama.h"
 
 #include <cinttypes>
+#include <cstdlib>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -739,6 +740,32 @@ static int llama_graph_n_input_tensors(ggml_cgraph * gf) {
     return (int) users.size();
 }
 
+// lazy worst-case PP reservation: the scheduler only splits the first and last
+// PP graph here instead of reserving a dedicated worst-case compute buffer;
+// the scheduler allocates and grows compute buffers for the real graphs later
+// in ggml_backend_sched_alloc_graph/alloc_splits
+static bool llama_lazy_pp_reserving_enabled(
+        const llama_cparams         &cparams,
+        const llama_hparams         &hparams,
+        const std::vector<ggml_backend_t> &backends) {
+    if (hparams.no_alloc) return false;
+    if (cparams.training) return false;
+    if (cparams.pipeline_parallel) return false;
+    if (!cparams.causal_attn) return false;
+    if (!cparams.flash_attn) return false;
+    if (cparams.ctx_type != LLAMA_CONTEXT_TYPE_DEFAULT) return false;
+    if (cparams.n_seq_max != 1) return false;
+
+    if (backends.size() != 2) return false;
+    if (ggml_backend_dev_type(ggml_backend_get_device(backends[0])) != GGML_BACKEND_DEVICE_TYPE_GPU) return false;
+    if (ggml_backend_dev_type(ggml_backend_get_device(backends[1])) != GGML_BACKEND_DEVICE_TYPE_CPU) return false;
+
+    // GGML_LAZY_PP_RESERVE=0 disables the mode, any other value leaves the
+    // default behavior untouched
+    const char *env = getenv("GGML_LAZY_PP_RESERVE");
+    return env == nullptr || atoi(env) != 0;
+}
+
 void llama_context::sched_new(size_t max_nodes, bool parallel) {
     sched.reset(ggml_backend_sched_new(
             backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, parallel, cparams.op_offload));
@@ -794,6 +821,16 @@ void llama_context::sched_reserve() {
 
     resolve_fused_ops(mctx.get(), n_seqs);
 
+    // lazy worst-case PP reservation: only split the graph here and leave the
+    // buffer allocation to the scheduler growing buffers for the real graphs
+    // (ggml_backend_sched_alloc_graph/alloc_splits), not reserving a dedicated
+    // worst-case buffer here
+    const bool lazy_pp = this->memory && llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs);
+
+    if (lazy_pp) {
+        LLAMA_LOG_INFO("%s: lazy worst-case PP reservation\n", __func__);
+    }
+
     // reserve worst-case graph
     int n_splits_pp        = -1;
     int n_nodes_pp         = -1;
@@ -807,10 +844,13 @@ void llama_context::sched_reserve() {
 
     const uint32_t n_outputs_pp = std::min(n_tokens, cparams.n_outputs_max);
 
+    std::vector<size_t> buffer_growth_limits(lazy_pp ? backend_ptrs.size() : 0);
+
     // reserve pp (prompt processing) graph first so that buffers are only allocated once
     {
         auto * gf = graph_reserve(n_tokens, n_seqs, n_outputs_pp, mctx.get(),
-                model.hparams.no_alloc, model.hparams.no_alloc ? backend_buf_exp_size.data() : nullptr);
+                model.hparams.no_alloc || lazy_pp, model.hparams.no_alloc ? backend_buf_exp_size.data() :
+                (lazy_pp ? buffer_growth_limits.data() : nullptr));
         if (!gf) {
             if (cparams.pipeline_parallel) {
                 LLAMA_LOG_WARN("%s: compute buffer allocation failed, retrying without pipeline parallelism\n", __func__);
@@ -829,6 +869,17 @@ void llama_context::sched_reserve() {
         n_input_tensors_pp = this->n_input_tensors;
 
         graph_has_logits = get_gf_res_reserve()->get_logits() != nullptr;
+    }
+
+    // The fresh scheduler has no physical buffers during the initial size query.
+    // Bound host headroom by the original worst-case plan; keep GPU allocation exact.
+    if (lazy_pp) {
+        for (size_t i = 0; i < backend_ptrs.size(); ++i) {
+            if (!ggml_backend_buft_is_host(backend_buft[i])) {
+                buffer_growth_limits[i] = 0;
+            }
+        }
+        ggml_backend_sched_set_buffer_growth_limits(sched.get(), buffer_growth_limits.data());
     }
 
     // reserve with tg (token generation) graph to get the number of splits and nodes
@@ -859,10 +910,10 @@ void llama_context::sched_reserve() {
                 // [TAG_RESERVE_DIAG_DECAY]
                 // the `inp_diag_decay` tensor size scales with `n_seq_tokens^2` which
                 // makes `n_seqs == 1` use more memory for the compute graph compared to `n_seqs > 1`
-                gf = graph_reserve(n_tokens, 1,      n_outputs_pp, mctx.get(), model.hparams.no_alloc);
+                gf = graph_reserve(n_tokens, 1,      n_outputs_pp, mctx.get(), model.hparams.no_alloc || lazy_pp);
                 break;
             default:
-                gf = graph_reserve(n_tokens, n_seqs, n_outputs_pp, mctx.get(), model.hparams.no_alloc);
+                gf = graph_reserve(n_tokens, n_seqs, n_outputs_pp, mctx.get(), model.hparams.no_alloc || lazy_pp);
         };
 
         if (!gf) {
@@ -1037,7 +1088,11 @@ bool llama_context::memory_update(bool optimize) {
 
         const uint32_t n_outputs_max = std::min(n_tokens, cparams.n_outputs_max);
 
-        auto * gf = graph_reserve(n_tokens, n_seqs, n_outputs_max, mctx.get());
+        // only split the graph here, the eager worst-case PP reservation was
+        // dropped: the scheduler allocates buffers for the real graphs later
+        const bool lazy_pp = llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs);
+
+        auto * gf = graph_reserve(n_tokens, n_seqs, n_outputs_max, mctx.get(), lazy_pp);
         if (!gf) {
             LLAMA_LOG_ERROR("%s: failed to reserve graph after the memory update\n", __func__);
         }
@@ -1592,6 +1647,13 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
             LLAMA_LOG_ERROR("%s: failed to allocate graph\n", __func__);
             ret = GGML_STATUS_ALLOC_FAILED;
             return nullptr;
+        }
+
+        // record the compute-buffer reserve per backend (worst-case estimate is kept even with no_alloc)
+        if (memory && llama_lazy_pp_reserving_enabled(cparams, model.hparams, backend_ptrs)) {
+            for (size_t i = 0; i < backend_ptrs.size(); ++i) {
+                backend_buf_exp_size[i] = ggml_backend_sched_get_buffer_size(sched.get(), backend_ptrs[i]);
+            }
         }
 
         gf_res_prev_active = res;
