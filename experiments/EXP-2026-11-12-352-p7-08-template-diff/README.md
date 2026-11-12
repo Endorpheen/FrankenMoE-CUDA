@@ -27,3 +27,23 @@ equalities are not the same output measured twice.
 One behaviour is worth recording because it looks surprising until explained: the conditional case renders `ONE` although two messages were
 sent, and the content shows the system text merged into the user text. That is the server folding a system message into the first user turn
 for a model whose default template has no system role -- and both lines do it identically, which is itself part of the parity claim.
+
+## chat_template_kwargs
+
+A custom template branching on `enable_thinking`, `add_generation_prompt` and a `custom_key`:
+
+| case | rendering | cross-line |
+|---|---|---|
+| `enable_thinking: true` | `<think>user:q;|GEN` | SAME |
+| `enable_thinking: false` | `user:q;|GEN` | SAME |
+| three kwargs at once | `<think>user:q;|GENK=v1` | SAME |
+| unknown kwarg only | `user:q;|GEN` -- silently ignored | SAME |
+
+The kwargs demonstrably change the output (`<think>` appears and disappears, `K=v1` is appended), so these four equalities are sensitive rather
+than vacuous. An unknown kwarg is ignored without error on both lines, which is itself a compatibility detail worth knowing: a client that
+misspells a kwarg gets a silent default, not a 400.
+
+## Still open in P7-08
+
+Tool-call parsing and reasoning extraction from *generated* text. Both need a model that actually emits the tool-call or thinking syntax;
+`stories260K` does not, so those paths are not demonstrated here rather than assumed.
