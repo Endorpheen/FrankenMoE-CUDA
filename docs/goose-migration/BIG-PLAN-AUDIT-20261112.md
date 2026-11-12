@@ -73,3 +73,23 @@ What changed since the first audit:
 
 The remaining work is dominated by two kinds of item: (a) items needing a permissioned Goose regeneration (P2-01's three
 fixes), and (b) stage-2-scale porting (P1-06, P1-09, P1-10 and everything behind them). No item is closed without evidence.
+
+## Stale clauses, with proofs (do not re-search these)
+
+Two requirements describe mechanisms that do not exist in the substrate that actually runs today (the flint tree). They are
+recorded so the next agent does not spend a session looking for them.
+
+| requirement | clause | proof | consequence |
+|---|---|---|---|
+| P1-10 | "expert staging ... upload grouping ... bank/slot ownership" as a pinned-ring mechanism | flint `ggml/src/ggml-backend.cpp` has no "group consecutive experts" path; `GGML_EXPERT_PINNED_RING` is absent from the build; the text exists only in old FrankenMoE patches | the ring clause cannot be completed as written; the live residency paths are `pin_mmap_experts`, the device cache (bank/slot planning already Goose), scratch policy (EXP-145) and KV lazy mapping |
+| P1-09 | "expert chunk claims ... barrier state" | `fg140_claim` / `fg141_claim` are defined in the Goose modules and used only by their own fixtures; there is **no call site anywhere in the flint tree** | the claim/barrier half is dormant by construction; the live half is FG143/147/149 pool/executor/partition, all witnessed |
+
+Two options exist for each, and neither is a porting task: restate the clause for the current substrate, or deliberately
+reintroduce the old mechanism. Choosing is an owner decision; the audit only proves the clauses are stale.
+
+What is **not** stale and must not be confused with the above:
+- `pin_mmap_experts` is live and is what gives +41% prefill;
+- the device cache is live and is the only measured lever past 30 tok/s decode;
+- EXP-087/EXP-101 are live C++ in our tree and are what removed 3218 MiB of VRAM.
+
+Nothing in this section changes a status; it changes what the remaining work means.
