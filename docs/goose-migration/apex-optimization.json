@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T04:20:00+00:00",
+  "updated_at": "2026-11-12T04:55:00+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: full port restored in staging (1624.1/23.64); exp371 is a mixed GCC 15.2/13.4 build against a pure GCC 13.4 exp244, which is the lead for the 58% prefill gap.",
+  "current": "Stage 2: the Goose port costs nothing (native 1636.0/26.04 vs full port 1624.1/23.64). The exp244 result came from its rpath loading the flint ggml stack; on that stack our full port reaches 1787.7/25.99, so the remaining gap is inside our staging ggml stack.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -21,8 +21,8 @@
       "id": "speed",
       "title": "Prefill и decode",
       "state": "partial",
-      "implemented": "Regression localised to libllama; full port restored in staging at 1624.1/23.64; exp244 diagnostic reaches 2563-2574 but with 214 of 307 modules. Lead: mixed GCC 15.2/13.4 build of exp371.",
-      "remaining": "Find the specific cost inside the exp371 line without disabling ported work; prefill 3000 and decode 30 are not reached.",
+      "implemented": "Proven the port costs nothing (native 1636.0/26.04 vs full port 1624.1/23.64). The exp244 figure was an rpath artefact loading the flint ggml stack; on that stack our full port gives 1787.7/25.99. Gap is now pinned to our staging ggml stack.",
+      "remaining": "Close the gap inside the staging ggml stack (flint stack is +10% and is native, so it can only serve as a reference). Targets 3000/30 not reached.",
       "dependencies": "full port preserved"
     },
     {
@@ -252,6 +252,36 @@
       "source": "runtime/reconstructed/build/run-metrics-fullport-baseline/metrics.json",
       "diagnostic": false,
       "accepted": false
+    },
+    {
+      "id": "r15-native-llama",
+      "label": "Pure native libllama built from flint objects (no Goose source)",
+      "at": "2026-11-12T04:40:00+00:00",
+      "prefill_tok_s": 1636.0,
+      "decode_tok_s": 26.04,
+      "ram_mib": 22845.0,
+      "vram_mib": 6408,
+      "configuration": "argv identical; libllama built locally from 44 flint objects, staging ggml",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-native/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r16-fullport-flintggml",
+      "label": "Full port (exp371 libllama) on the flint ggml stack",
+      "at": "2026-11-12T04:50:00+00:00",
+      "prefill_tok_s": 1787.7,
+      "decode_tok_s": 25.99,
+      "ram_mib": 22860.1,
+      "vram_mib": 6404,
+      "configuration": "same argv; ggml from llama.cpp-flint-cuda/build-cuda/bin",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-flintggml/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -300,6 +330,14 @@
       "kind": "insight",
       "detail": "exp371 contains GCC 15.2.0 and 13.4.0 objects; exp244 is pure 13.4.0 with nearly equal .text. Kill-testing this needs a single-compiler rebuild, not env flags.",
       "run_id": "r14-fullport-restored"
+    },
+    {
+      "id": "e7",
+      "at": "2026-11-12T04:52:00+00:00",
+      "title": "Причина найдена: rpath, а не порт",
+      "kind": "insight",
+      "detail": "exp244 libllama loads the flint ggml stack through rpath; a pure native libllama on our stack measures 1636/26.04, so the port costs nothing. Remaining work targets our staging ggml stack.",
+      "run_id": "r15-native-llama"
     }
   ]
 }
