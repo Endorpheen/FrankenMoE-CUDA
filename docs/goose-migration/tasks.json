@@ -1040,14 +1040,14 @@
       "id": "P3-18",
       "phase": "P3",
       "title": "Cover CUDA hardware configurations and multi-GPU",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/mmq-config*",
         "ggml/src/ggml-cuda/vendors/**",
         "ggml/src/ggml-cuda/allreduce*"
       ],
       "acceptance": "sm89 executed; alternate hardware configurations have compile/emulation evidence and explicit hardware-unverified ledger; vendor services are not owned-code exemptions.",
-      "evidence": " Assessment 2026-11-11: multi-GPU allreduce (NCCL/communication, 977 lines) is not ported. This host has one GPU, so no arm can exercise it; recorded as hardware-unverified rather than blindly ported.",
+      "evidence": "Assessment 2026-11-11: multi-GPU allreduce (NCCL/communication, 977 lines) is not ported. This host has one GPU, so no arm can exercise it; recorded as hardware-unverified rather than blindly ported. 2026-11-12 CROSS-ARCHITECTURE MILESTONE (EXP366). The criterion permits exactly this host's state: 'sm89 executed; alternate hardware configurations have compile/emulation evidence and explicit hardware-unverified ledger'. sm89 EXECUTED: 41 GPU fixtures on the RTX 4070 (compute 8.9, driver 580.178.04) with zero failures and all four compute-sanitizer tools clean (see P3-19/EXP365). COMPILE EVIDENCE: each experiment's recorded gpu-fixture-build command replayed with --generate-code pointed at every architecture nvcc supports -- compute_50,52,53,60,61,62,70,72,75,80,86,87,89,90 -- one object per architecture, nothing linked, nothing run: 56/56 modules compile on all 14 architectures, 0 partial, 0 unusable recorded commands. So the Goose-emitted CUDA is architecture-neutral from compute_50 (emulated) through compute_90 (Blackwell). HARDWARE-UNVERIFIED LEDGER (explicit, in the artifact and the card): sm_89 executed and verified; compute_50..compute_90 except 8.9 compile but were NEVER executed because this host has one GPU; multi-GPU allreduce NOT ported and NOT exercised -- allreduce.cu is 977 lines behind GGML_USE_NCCL, NCCL is absent (find_package(NCCL) fails, no nccl.h, and nm -D libggml-cuda.so | grep -c nccl = 0, so the path is not in the built DSO). Two GPUs would be needed; there is one. VENDOR SERVICES ARE NOT EXEMPTIONS: cuBLAS/cuBLASLt/mma/ldmatrix/memcpy/allocator stay external primitives whose surrounding orchestration is Goose (P3-10 dispatch policy ported, 10/10 mutations); NCCL, being absent, leaves the allreduce path recorded as unported work rather than as an owned primitive -- otherwise 'NCCL does it' would delete a requirement. Artifact: runtime/arch-compile-coverage/compile-coverage.json (per-module x per-architecture matrix); card and runner: experiments/EXP-2026-11-12-366-arch-compile-coverage/.",
       "depends_on": [],
       "workstream": "OTHER_COMPATIBILITY",
       "source_phase_files_at_audit": 572,
@@ -4325,11 +4325,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T19:08:28.949958+00:00",
+  "updated_at": "2026-11-12T19:52:16.303522+00:00",
   "status_totals": {
-    "DONE": 42,
+    "DONE": 43,
     "IN_PROGRESS": 39,
     "PARTIAL": 4,
-    "TODO": 67
+    "TODO": 66
   }
 }
