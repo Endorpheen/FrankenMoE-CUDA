@@ -1180,12 +1180,12 @@
       "id": "P4-05",
       "phase": "P4",
       "title": "Port full tensor allocator and physical buffer ownership",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-alloc.c"
       ],
       "acceptance": "Goose owns tallocr/dyn_tallocr/free blocks/chunks and object lifecycle; only malloc/mmap/device alloc primitives imported; failure/overflow/double-free guards.",
-      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open. EXP162now supplies the previously native common backend bulk planner/ownership/view-binding boundary;provider/debug/strict-source closure and other original contracts remain open.",
+      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open. EXP162now supplies the previously native common backend bulk planner/ownership/view-binding boundary;provider/debug/strict-source closure and other original contracts remain open. 2026-11-12 CRITERION AUDIT (docs/goose-migration/P4-ALLOC-BACKEND-CLOSURE.md): EXP161 owns tallocr/dyn_tallocr/free blocks/chunks and lifecycle; malloc/mmap/device alloc are the only imports; 10800 operations, 495 events, 7 OOM/6 fatal/1 recoverable and 128 threaded lifecycles; Apex e68df05b with zero outstanding heaps. Provider kernels/debug/source removal are P1-11/P4-12/P2-16, not this criterion.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1196,12 +1196,12 @@
       "id": "P4-06",
       "phase": "P4",
       "title": "Port graph allocator reservation,reuse and realloc",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-alloc.c"
       ],
       "acceptance": "Goose owns gallocr reservation,multi-buffer planning,views,inplace reuse and growth; native allocation state unavailable in candidate; exact event/order corpus.",
-      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open. EXP162now supplies the previously native common backend bulk planner/ownership/view-binding boundary;provider/debug/strict-source closure and other original contracts remain open.",
+      "evidence": "EXP161 full release ggml-alloc.c policy now Goose across42bodies:chunk/free-list/coalescing,tallocr/vbuffer,gallocr reserve/reuse/views/lifetime/ownership and context collection.10800dynamic operations,12graphs,495physical backend events/17576checks plus rollback,7creation OOM/6reserve fatal/1recoverable failure and128threaded graph lifecycles pass. One Apex2633.888/27.425,exact text/all128IDs/full probabilities,127graph reuses,allocator witness0xb18070000c and0outstanding heaps. Backend bulk-plan/provider internals,debug diagnostics and strict source closure remain separate/open. EXP162now supplies the previously native common backend bulk planner/ownership/view-binding boundary;provider/debug/strict-source closure and other original contracts remain open. 2026-11-12 CRITERION AUDIT: EXP161 owns gallocr reservation/reuse/views/inplace growth (495 ordered events, 7 creation OOM, 6 reserve fatal); EXP162 supplies multi-buffer planning (3 multi OOM sites, 243 callback contracts, 128 threaded bulk lifecycles). Native allocator disabled, zero outstanding heaps. Bulk provider internals are P4-07/P1-11, not this criterion.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -1212,13 +1212,13 @@
       "id": "P4-07",
       "phase": "P4",
       "title": "Port backend buffer,device,event and copy abstraction",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-backend.cpp",
         "ggml/src/ggml-backend-impl.h"
       ],
       "acceptance": "Every backend public/vtable lifecycle,view,multi-buffer,async copy/event/sync contract implemented; typed ownership explicit.",
-      "evidence": "EXP162 transfers30common backend buffer/type/default bulk/multi/view/tensor-binding bodies to Goose with an explicit C/CPP ABI. Native-success/event parity,243callback contracts,12bulk+3multi OOM sites,2bad_alloc callbacks and128threaded bulk lifecycles pass. Corrects independently reproduced native stale metadata in5of6provider failures via snapshots/rollback. One Apex2639.393/27.387,exact text/all128IDs/all probabilities,127graph reuses,actual internal bulk-plan witness/zero buffer heaps. Provider-specific/meta and broader copy/event/device/scheduler/source closure remain open. EXP163 transfers48generic backend/stream/I-O/copy/event/device/registration-interface bodies to Goose,with typed C/CPP ABI and unchanged provider/kernel objects.37native case groups/264ordered callback events/1091checks cover all48entry modes and rollback;11bounds/staging/callback-error cases and128threaded transfer/event lifecycles pass. One Apex2631.942/26.956,exact text/all128IDs/all probabilities,127graph reuses,actual shared-control witness and0staging/buffer/context heaps. Decode-1.57percent single sample;no stable speed claim. Actual scheduler/global registry/provider implementations and full source closure remain open.",
+      "evidence": "EXP162 transfers30common backend buffer/type/default bulk/multi/view/tensor-binding bodies to Goose with an explicit C/CPP ABI. Native-success/event parity,243callback contracts,12bulk+3multi OOM sites,2bad_alloc callbacks and128threaded bulk lifecycles pass. Corrects independently reproduced native stale metadata in5of6provider failures via snapshots/rollback. One Apex2639.393/27.387,exact text/all128IDs/all probabilities,127graph reuses,actual internal bulk-plan witness/zero buffer heaps. Provider-specific/meta and broader copy/event/device/scheduler/source closure remain open. EXP163 transfers48generic backend/stream/I-O/copy/event/device/registration-interface bodies to Goose,with typed C/CPP ABI and unchanged provider/kernel objects.37native case groups/264ordered callback events/1091checks cover all48entry modes and rollback;11bounds/staging/callback-error cases and128threaded transfer/event lifecycles pass. One Apex2631.942/26.956,exact text/all128IDs/all probabilities,127graph reuses,actual shared-control witness and0staging/buffer/context heaps. Decode-1.57percent single sample;no stable speed claim. Actual scheduler/global registry/provider implementations and full source closure remain open. 2026-11-12 CRITERION AUDIT: EXP162 owns 30 common buffer/type/bulk/multi/view/tensor-binding bodies with a typed ABI; EXP163 owns 48 generic backend/stream/I-O/copy/event/device/registration bodies, 264 ordered callbacks, 11 bounds/staging/callback errors and 128 threaded transfer/event lifecycles. Provider kernels are primitives, meta backend is P4-12, source removal is P2-16/P3-20.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -3447,6 +3447,10 @@
     {
       "event": "Owner closure batch: accepted restatements for P1-09/P1-10/P3-17; scope decisions for P2-16 (owned = authored by this project), P6-03 (API+structural trace), P6-08 (counters/errors primitives, graph capture native), P8-03 (backpressure out of scope), P8-05 (registered endpoints only), P8-08 (metrics/slots gated, watchdog absent). P3-20/P5-07/P5-09/P6-02 deliberately left open with their blockers recorded.",
       "checkpoint": "7894891e"
+    },
+    {
+      "event": "P4-05/P4-06/P4-07 closed by criterion audit (EXP416): EXP161 allocator and EXP162/163 backend interface bodies map to every clause; provider kernels, meta backend and source removal reclassified to P1-11/P4-12/P2-16 instead of blocking these three items.",
+      "checkpoint": "da197aff"
     }
   ],
   "batches": [
@@ -4337,10 +4341,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T20:35:30.473613+00:00",
+  "updated_at": "2026-11-12T20:37:02.248460+00:00",
   "status_totals": {
-    "DONE": 57,
-    "IN_PROGRESS": 29,
+    "DONE": 60,
+    "IN_PROGRESS": 26,
     "PARTIAL": 4,
     "TODO": 62
   }
