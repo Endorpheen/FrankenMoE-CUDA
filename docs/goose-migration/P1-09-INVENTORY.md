@@ -39,3 +39,26 @@ deterministic outputs at 1/2/8/16 threads. Current evidence:
 Establish where FG140/FG141 would be reached: either the current thread backend does not use the claim/barrier route (in
 which case the clause should be restated for this substrate, like P1-10's ring clause), or it is a genuine dormant port that
 needs wiring. That decision is cheap to make by reading the call sites; finishing the port is not.
+
+## Decision on the claim/barrier clause (checked, not assumed)
+
+Searched every call site:
+
+- `fg140_claim` / `fg141_claim` are **defined** inside the Goose modules (`ggml-cpu-apex-control.c:1946`,
+  `ggml-cpu-apex-tiled.c:1947`) and referenced by their own test fixtures;
+- there is **no call site in the flint tree at all** - neither `ggml-cpu/*.c` nor the backend calls them.
+
+So the claim/barrier half is dormant **by construction of the current substrate**, exactly like the pinned-ring clause in
+P1-10. The current thread backend partitions work differently and never asks for a per-expert chunk claim.
+
+Consequence, stated the same way as for P1-10: the clause cannot be completed as written without reintroducing the old
+coordination model. The honest options are
+
+1. restate the clause for the current substrate: Goose owns the live pool/executor/partition lifecycle (FG143/147/149, all
+   witnessed) and the atomic claim route is not part of it;
+2. or deliberately reintroduce a claim-based route and port it - a design decision, not a porting task.
+
+Determinism at 8/16/32 batch threads is already verified on the model (`e68df05b`), so the criterion's deterministic-output
+requirement is met by evidence regardless of which option is chosen.
+
+Recorded as a stale clause with proof, not as remaining work.
