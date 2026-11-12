@@ -822,3 +822,24 @@ tightest in the ladder. Prefill stays 2324-2327 in all runs, so the extra 512 Mi
 
 That makes 3584 the best-evidenced candidate to replace the approved base: same measurements, better numbers, +512 MiB.
 It stays a candidate - the base is Igor's call, and the exactness caveat applies equally to both cache points.
+
+## Cache 3584 at 512 tokens: 41.94, no eviction
+
+Two runs at 512 generated tokens: 41.95 and 41.93, VRAM 6778 both times (identical to the 64/128/256 points), prefill
+2325.9-2327.6.
+
+Full curve for the candidate, one profile, 32K prompt:
+
+| generated | decode |
+|---|---|
+| 64 | 37.89 |
+| 128 | 39.61 |
+| 256 | 41.01 |
+| 512 | **41.94** |
+
+Decode rises and flattens near 42, and VRAM never moves, so the cache does not start evicting within a 512-token
+generation - the earlier thin margins were warm-up, not pressure. This is the shape a stable configuration should have,
+and it makes 3584 the strongest measured option: 42 tok/s at 6778 MiB, versus 24 at 3190 on the exact path.
+
+I did not shrink `-c` to save VRAM: that would change the profile and make the numbers incomparable, which is against the
+rules of this comparison.
