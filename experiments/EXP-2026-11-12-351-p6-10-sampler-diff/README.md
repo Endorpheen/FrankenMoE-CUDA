@@ -31,3 +31,28 @@ still produces the same tokens, and `logit_bias` demonstrably changes nothing be
 
 Mirostat v1/v2, DRY, XTC, typical sampling, top-n-sigma and the RNG itself as an object (the seed path is covered, not `std::mt19937`
 equivalence) are not yet in the matrix. The covered set is the default chain plus grammar and bias.
+
+## Sensitivity check, and a correction to my own earlier reading
+
+Comparing the cases against each other showed that in the 15-case matrix only **six distinct outputs** appeared, grouped as
+`{greedy, seed43, topk1, minp, miro2, typical}`, `{seed42, repeat}`, `{biassame, xtc, dry, topsigma}`. So for most of those modes the
+equality between lines proved very little: on `stories260K` the next-token distribution is so peaked that different samplers walk the same
+path. My earlier statement that "the two seeds produce two different outputs, so the comparison is seed-sensitive" was true but misleading --
+seed 43 happened to coincide with greedily decoded text.
+
+A hotter, longer matrix fixes the measurement:
+
+| case | settings | cross-line | changed output vs baseline? |
+|---|---|---|---|
+| hot_base | temp 1.5, top_k 0, seed 42, 64 tokens | SAME | -- |
+| hot_other | same, seed 99 | SAME | yes |
+| hot_miro1 | mirostat 1, tau 5, eta 0.1 | SAME | yes |
+| hot_miro2 | mirostat 2, tau 5, eta 0.1 | SAME | yes |
+| hot_typ | typical_p 0.5 | SAME | yes |
+| hot_xtc | xtc_probability 1.0, threshold 0.1 | SAME | yes |
+| hot_dry | dry_multiplier 2.0, base 1.75 | SAME | **no** -- equals baseline |
+| hot_sigma | top_n_sigma 1.0 | SAME | **no** -- equals baseline |
+
+Six distinct outputs across eight cases, zero cross-line differences. DRY and top-n-sigma are **not demonstrated**: they produced the
+baseline text, so agreement there is agreement about nothing. That is the same trap as the unobservable Q5_K mutation earlier in the
+project -- a test that cannot fail is not evidence.

@@ -5,15 +5,14 @@ NATIVE = "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/bin"
 MODEL = "/home/end0/.unsloth/.cache/stories260K.gguf"
 
 CASES = [
-    {"name": "greedy",   "temp": 0.0, "top_k": 1, "seed": 42},
-    {"name": "seed42",   "temp": 0.8, "top_k": 40, "top_p": 0.9, "seed": 42},
-    {"name": "seed43",   "temp": 0.8, "top_k": 40, "top_p": 0.9, "seed": 43},
-    {"name": "topk1",    "temp": 1.0, "top_k": 1, "seed": 7},
-    {"name": "minp",     "temp": 0.7, "top_k": 0, "min_p": 0.1, "seed": 11},
-    {"name": "long",     "temp": 0.9, "top_k": 50, "top_p": 0.95, "seed": 5, "n": 32},
-    {"name": "biassame", "temp": 0.8, "top_k": 40, "seed": 42, "bias": True},
-    {"name": "repeat",   "temp": 0.8, "top_k": 40, "top_p": 0.9, "seed": 42},
-    {"name": "grammar",  "temp": 0.8, "top_k": 40, "seed": 42, "grammar": "root ::= [a-z]+ (\" \" [a-z]+)*"},
+    {"name": "hot_base",  "temp": 1.5, "top_k": 0, "seed": 42, "n": 64},
+    {"name": "hot_other", "temp": 1.5, "top_k": 0, "seed": 99, "n": 64},
+    {"name": "hot_miro1", "temp": 1.5, "top_k": 40, "seed": 42, "n": 64, "extra": {"mirostat": 1, "mirostat_tau": 5.0, "mirostat_eta": 0.1}},
+    {"name": "hot_miro2", "temp": 1.5, "top_k": 40, "seed": 42, "n": 64, "extra": {"mirostat": 2, "mirostat_tau": 5.0, "mirostat_eta": 0.1}},
+    {"name": "hot_typ",   "temp": 1.5, "top_k": 0, "seed": 42, "n": 64, "extra": {"typical_p": 0.5}},
+    {"name": "hot_xtc",   "temp": 1.5, "top_k": 0, "seed": 42, "n": 64, "extra": {"xtc_probability": 1.0, "xtc_threshold": 0.1}},
+    {"name": "hot_dry",   "temp": 1.5, "top_k": 0, "seed": 42, "n": 64, "extra": {"dry_multiplier": 2.0, "dry_base": 1.75, "dry_allowed_length": 2, "dry_penalty_last_n": 64}},
+    {"name": "hot_sigma", "temp": 1.5, "top_k": 0, "seed": 42, "n": 64, "extra": {"top_n_sigma": 1.0}},
 ]
 
 def run(arm, port):
@@ -34,6 +33,8 @@ def run(arm, port):
                 if k in c: body[k] = c[k]
             if c.get("bias"):
                 body["logit_bias"] = [[ord("e"), -5.0]]
+            if c.get("extra"):
+                body.update(c["extra"])
             if c.get("grammar"):
                 body["grammar"] = c["grammar"]
             req = urllib.request.Request(f"http://127.0.0.1:{port}/completion",
@@ -55,5 +56,12 @@ for c in CASES:
     if not same:
         print(f"   native: {a[n]!r}")
         print(f"   ours  : {b[n]!r}")
+import json as _j
+_j.dump({"native": a, "ours": b}, open("outputs.json", "w"), indent=1)
+uniq = {}
+for n, v in a.items(): uniq.setdefault(v, []).append(n)
+print("distinct outputs:", len(uniq), "of", len(CASES))
+for v, names in uniq.items():
+    if len(names) > 1: print("  identical group:", names)
 print("cases", len(CASES), "differences", bad)
 sys.exit(1 if bad else 0)
