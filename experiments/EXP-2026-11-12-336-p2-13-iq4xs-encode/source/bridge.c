@@ -6,7 +6,7 @@ static float g_ld_f32(uint64_t a) { return *(const float *)(uintptr_t)a; }
 static int64_t g_ld_u8(uint64_t a) { return *(const uint8_t *)(uintptr_t)a; }
 static void g_st_u16(uint64_t a, int64_t v) { uint16_t h=(uint16_t)v; memcpy((void *)(uintptr_t)a, &h, 2); }
 static void g_st_f32(uint64_t a, float v) { memcpy((void *)(uintptr_t)a, &v, 4); }
-static int64_t g_nearest(float v) { v += 12582912.f; int32_t i; memcpy(&i, &v, 4); return (int64_t)(i & 0x003fffff) - 0x200000; }
+static int64_t g_nearest(float v) { v += 12582912.f; int32_t i; memcpy(&i, &v, 4); return (int64_t)(i & 0x007fffff) - 0x00400000; }
 static void g_st_u8(uint64_t a, int64_t v) { *(uint8_t *)(uintptr_t)a = (uint8_t)v; }
 static float g_abs(float v) { return fabsf(v); }
 /* fp32 -> fp16, round to nearest even (the reference's GGML_FP32_TO_FP16) */

@@ -20,3 +20,22 @@ first.
 
 Nothing here is claimed as working. The port compiles and runs, the gate disagrees, and the first differing byte is recorded so the
 next pass starts at the right place instead of re-deriving it.
+
+## Root cause found: the rounding helper was wrong, and it invalidates two earlier experiments
+
+`nearest_int` in this fork is `((bits & 0x007fffff) - 0x00400000)` after adding 12582912.f. The helper used in this series was
+`((bits & 0x003fffff) - 0x200000)`, which is not the same operation: for a value of 2.0 the correct form returns 1 and the wrong one
+returns -2097151. Fixing it took the IQ4_XS gate from 3854 failures to 126, so the helper was the dominant cause here.
+
+That matters beyond this experiment. EXP329 (`make_qp_quants`) and EXP330 (`make_qkx3_quants`) used the same wrong helper, so their
+results are **not trustworthy** and must be re-run after the fix: EXP329's "12400 checks, 0 failures" and EXP330's "55 failures"
+were measured with a broken rounding primitive. The parked signed-zero blocker may also look different once the real rounding is
+in place.
+
+## Remaining divergence after the fix
+
+    first: byte 2 block 0, scales_h: ref=f3 ours=0c
+
+Decoding the 2-bit fields, the reference has 3,0,3,3,0,3,3,3 and the port has 0,3,0,0,3,0,0,0 -- almost exactly complements, which
+means `l0` differs by about 16 for those blocks while `scales_l` now matches. The block scale values or the clamp step are the next
+place to look, and the gate stays red until that is resolved.
