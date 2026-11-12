@@ -130,7 +130,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "OFF_PATH",
-      "classification_reason": "memory-recurrent.cpp; Apex profile does not use the recurrent memory implementation"
+      "classification_reason": "recurrent memory implementation not used by Apex"
     },
     {
       "module": "fg212s",
@@ -279,7 +279,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV cache path not reached in this configuration"
+      "classification_reason": "KV path not reached in this cache configuration"
     },
     {
       "module": "fg231a",
@@ -299,7 +299,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "OFF_PATH",
-      "classification_reason": "recurrent memory; not used by Apex"
+      "classification_reason": "recurrent memory implementation not used by Apex"
     },
     {
       "module": "fg232r",
@@ -363,7 +363,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "batch path not exercised at these shapes"
+      "classification_reason": "batch path not exercised at these shapes (single sequence, 32K prompt)"
     },
     {
       "module": "fg239b",
@@ -561,7 +561,7 @@
       "first_call_printing": false,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "mmap file-alignment path not reached"
+      "classification_reason": "file-alignment path; this GGUF passes the alignment check elsewhere"
     },
     {
       "module": "fg380s",
@@ -580,8 +580,8 @@
       "gate": null,
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "penalty accept path not exercised"
+      "classification": "OFF_PATH_SAMPLING",
+      "classification_reason": "penalty accept path; the request sets no presence/frequency penalties"
     },
     {
       "module": "fg381s",
@@ -723,8 +723,8 @@
       "gate": null,
       "first_call_printing": true,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "sampler filter path not exercised by top-k/top-p/min-p at these settings"
+      "classification": "OFF_PATH_SAMPLING",
+      "classification_reason": "sampler filter guard not taken at these settings"
     },
     {
       "module": "fg389s",
@@ -757,7 +757,7 @@
       "first_call_printing": true,
       "witness_seen_request_run": false,
       "classification": "NEEDS_FIXTURE",
-      "classification_reason": "vocab path not reached by the accepted tokenizer flow"
+      "classification_reason": "vocab partition path; the accepted tokenizer flow does not reach it"
     },
     {
       "module": "fg391s",
@@ -937,8 +937,8 @@
       "gate": "if (metadata == nullptr) {",
       "first_call_printing": true,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "model-loader path gated by a metadata branch our GGUF does not take"
+      "classification": "OFF_PATH_LOAD_PATH",
+      "classification_reason": "lives in the load-from-file-pointer branch; the server loads by path (-m), so that branch is not taken"
     },
     {
       "module": "fg404s",
@@ -1048,8 +1048,10 @@
   },
   "classification_counts": {
     "OFF_PATH": 3,
-    "NEEDS_FIXTURE": 10,
+    "NEEDS_FIXTURE": 7,
     "OFF_PATH_RAM_ONLY_CHECKPOINTS": 6,
+    "OFF_PATH_SAMPLING": 2,
+    "OFF_PATH_LOAD_PATH": 1,
     "OFF_PATH_SERVER": 1
   }
 }
