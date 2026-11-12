@@ -439,3 +439,17 @@ gives roughly 0.00042 s/token, i.e. a steady-state ceiling near 2360 tok/s with 
 
 That makes 3000 tok/s on this profile a profile question, not a tuning one: the steady state is already close to the
 measured ceiling and the fixed part is under 3% at 32K. Recorded so the plateau is backed by a curve, not by a guess.
+
+## Reproduction: the accepted build is preserved outside /tmp
+
+The accepted stack is now kept in `runtime/checkpoints/CONTROL-OPT-20261112/artifact/` with `SHA256SUMS`, so it no
+longer exists only in the staging directory or in `/tmp` backups:
+
+| file | sha256 (prefix) |
+|---|---|
+| libllama-exp371.so.0.7.0 (full 307-module port, pinning, EXP087, EXP101) | 8cce13c85f193300 |
+| libggml-base.so.0.27.0 (EXP087 alloc/backend) | b469d1c07c7625e7 |
+| libggml-cuda.so.0.27.0 (EXP101 lazy VMM) | 9bdf9a6dae566d72 |
+
+209 MiB total, which is the three libraries and nothing else - not a copy of the whole tree. The binaries are not
+committed (too large for the repository); `SHA256SUMS` plus the patches named above reproduce them.
