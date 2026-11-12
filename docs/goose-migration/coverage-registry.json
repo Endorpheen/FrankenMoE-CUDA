@@ -219,8 +219,8 @@
       "gate": "if (cpt >= map.size() || map[cpt] < 0) {",
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "unicode encode path not reached by this prompt text"
+      "classification": "OFF_PATH_TOKENIZER",
+      "classification_reason": "call site is unicode_tolower(); the SPM tokenizer used by this model does not perform case folding, and a targeted non-ASCII fixture (Cyrillic/Greek/CJK prompt) confirmed fg215u/216e/217c executing twice each while fg218t stayed silent"
     },
     {
       "module": "fg227n",
@@ -1048,7 +1048,8 @@
   },
   "classification_counts": {
     "OFF_PATH": 3,
-    "NEEDS_FIXTURE": 7,
+    "OFF_PATH_TOKENIZER": 1,
+    "NEEDS_FIXTURE": 6,
     "OFF_PATH_RAM_ONLY_CHECKPOINTS": 6,
     "OFF_PATH_SAMPLING": 2,
     "OFF_PATH_LOAD_PATH": 1,
@@ -1064,6 +1065,18 @@
       "fg243c": "different batch shape",
       "fg397s": "hybrid cache settings",
       "fg218t": "prompt that reaches the unicode encoder"
+    }
+  },
+  "fixture_runs": {
+    "unicode_non_ascii": {
+      "request": "Cyrillic/Greek/CJK prompt, 8 tokens, temp 0",
+      "witnesses": [
+        "FG215U x2",
+        "FG216E x2",
+        "FG217C x2"
+      ],
+      "fg218t": "absent",
+      "conclusion": "three unicode modules proven live; fg218t is OFF_PATH for the SPM tokenizer"
     }
   }
 }
