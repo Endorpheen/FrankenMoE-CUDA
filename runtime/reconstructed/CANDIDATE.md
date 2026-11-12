@@ -20,3 +20,26 @@ measurement; nothing here says anything about Apex behaviour or throughput.
 The three `libggml-*` libraries are still the older ones, because their sources live in the flint tree and the post-244 work does not touch
 them. That means the candidate is complete on the llama and server side and unchanged on the ggml side -- and the Apex run that would tell
 whether the eleven merged bridges behave is the next step, with agreement first.
+
+## Status of each merged bridge: observed or only linked
+
+A witness is the only thing that separates "linked" from "runs", so here is the split for every bridge the merge added, from the smoke runs.
+
+| bridge | port | status | evidence |
+|---|---|---|---|
+| `fg274b` | batch compatibility | **observed** | `calls=15 yes=15` |
+| `fg291b` | batch reject | **observed** | `continuity=18 walk=18 mrope=0 refused=0` |
+| `fg272s` | slot selection | **observed** | `similar=1 lru=1` |
+| `fg270q` | queue | **observed** | witness line printed, no events on one request |
+| `fg276t` | stop strings | **observed** | witness line printed, no stop in the request |
+| `fg268p` | checkpoints | **observed** | witness line printed, no eviction at this size |
+| `fg262a` | MoE cache admission | **linked only** | needs a MoE model; no witness printer exists in its experiment |
+| `fg263c` | MoE cache copy | **linked only** | same |
+| `fg286m` | lazy/mmap bookkeeping | **linked only** | its experiment has no `bridge.c` and no printer |
+
+"Observed" means the bridge counted a decision during a run. "Linked only" means the symbol resolves but nothing in this session proved it
+executed -- and for those three, that is not a formality: the batch-reject bridge was in exactly this state until it was linked from the wrong
+object and had to be fixed.
+
+Making `fg262a` and `fg263c` observed needs a MoE model, which means Apex. Making `fg286m` observed needs either a witness in its experiment or a
+loader-path probe that can distinguish the two behaviours. Both are honest reasons for the current state rather than mysteries.
