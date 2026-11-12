@@ -666,13 +666,13 @@
       "id": "P2-16",
       "phase": "P2",
       "title": "Close CPU architecture support and residual source inventory",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/ggml-cpu/**",
         "ggml/src/ggml-blas/**"
       ],
       "acceptance": "All CPU audit rows assigned and zero owned native executable logic remains in candidate; hardware-unavailable variants stay explicitly incomplete.",
-      "evidence": "",
+      "evidence": "2026-11-12 INVENTORY (docs/goose-migration/P2-16-INVENTORY.md). Three of four clauses already have evidence: all CPU audit rows assigned (P2-18 link map: 33 objects, 13 Goose-emitted, 6 bridges, 14 native primitives, classified by the mechanical gg_function_N marker); audited primitives with reasons (P1-11 backends plus SIMD/arch kernels with the compiler-scope reason); hardware-unavailable variants explicit (P1-11 table and the CUDA long-tail audit in remainder-audit.md, which ends with no unported work except CUTLASS/cuBLAS internals). The fourth clause -- 'zero OWNED native executable logic' -- is AMBIGUOUS because 'owned' is undefined in the plan: reading it as 'written by this project', the candidate's own C++ is six projection bridges and the clause holds; reading it as 'shipped in the candidate', the 14 native primitives are native executable logic and the clause cannot hold without porting unsupported kernels. P1-11 already used the first reading. Closing on my own reading would be a scope decision; the question is now in OWNER-DECISIONS-20261112.md.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 109,
@@ -4325,7 +4325,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T11:46:13.070962+00:00",
+  "updated_at": "2026-11-12T11:47:27.334755+00:00",
   "status_totals": {
     "DONE": 38,
     "IN_PROGRESS": 38,

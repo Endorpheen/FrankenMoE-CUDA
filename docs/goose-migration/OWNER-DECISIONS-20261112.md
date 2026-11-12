@@ -64,3 +64,16 @@ Without one of these, P6-03's differential clause cannot be closed honestly.
 | 6 | P6-06 | Генератор даёт ровно одну валидную мини-модель; любой мутант падает нативно. | (а) определить границы «kept set» (только архитектура Apex?); (б) признать отсутствие фикстур для прочих архитектур конфигурационной границей. |
 
 Общее во всех шести: работа остановлена на **фактах**, а не на догадках; в каждом случае известно, что именно проверено и чего не хватает.
+
+## P2-16: what does "owned" mean in "zero owned native executable logic"?
+
+The criterion is satisfiable or unsatisfiable depending on the reading, with identical evidence.
+
+Reading "owned = written by this project": the candidate's own C++ is six integration bridges that project native structures into the
+modules, so every computation is either Goose-emitted or upstream, and the clause holds.
+
+Reading "owned = shipped in the candidate": the fourteen native SIMD/architecture primitives counted in P2-18 are native executable
+logic in the candidate, and the clause cannot hold without porting kernels the compiler does not support.
+
+P1-11 already treated the backends this way -- naming every native kernel and its reason -- which matches the first reading. A one-line
+confirmation is enough to close P2-16; without it the item stays open on a definition rather than on work.
