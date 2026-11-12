@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:52:54.282463+00:00",
+  "updated_at": "2026-11-12T02:54:39.971446+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Decode spread is ~1.2 tok/s, so per-file/flag bisection cannot resolve the ~6% gap; the -O3 regression claim was withdrawn after the revert read the same range. Config restored (-O2, 36 modules). Exact decode quoted as ~24 (23.0-24.8); balance base 3072 remains 37.7-39.3.",
+  "current": "Cache ladder refined: 3584 gives 39.61 decode at 6778 MiB (three runs, stable to 0.1), i.e. 3.6 tok/s per GiB versus 2.3 for the next step to 4096. Approved base remains 3072; 3584 recorded as the measured candidate to move to.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -792,6 +792,51 @@
       "source": "runtime/reconstructed/build/bs-base0..2/metrics.json",
       "diagnostic": false,
       "accepted": true
+    },
+    {
+      "id": "r51-mc3584-0",
+      "label": "Expert cache 3584 MiB (candidate base)",
+      "at": "2026-11-12T02:54:39.971446+00:00",
+      "prefill_tok_s": 2329.2,
+      "decode_tok_s": 39.55,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/mc3584-0/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r52-mc3584-1",
+      "label": "Expert cache 3584 MiB (candidate base)",
+      "at": "2026-11-12T02:54:39.971446+00:00",
+      "prefill_tok_s": 2322.9,
+      "decode_tok_s": 39.65,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/mc3584-1/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r53-mc3584-2",
+      "label": "Expert cache 3584 MiB (candidate base)",
+      "at": "2026-11-12T02:54:39.971446+00:00",
+      "prefill_tok_s": 2323.3,
+      "decode_tok_s": 39.62,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/mc3584-2/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -1077,6 +1122,13 @@
       "title": "Разброс decode ~1.2 tok/s",
       "kind": "insight",
       "detail": "-O3 modules 23.70 mean; after revert the identical build reads 23.02-24.19. The regression claim is withdrawn and single-file bisection is stopped as unresolvable at this noise."
+    },
+    {
+      "id": "e40",
+      "at": "2026-11-12T02:54:39.971446+00:00",
+      "title": "3584 — лучший decode на МиБ",
+      "kind": "insight",
+      "detail": "39.55/39.65/39.62 decode at 6778 MiB: +1.82 tok/s for +512 MiB (3.6/GiB), better than the next step to 4096 (2.3/GiB). Candidate to move the base."
     }
   ]
 }
