@@ -92,3 +92,11 @@ identically, which is worth having as evidence about the cap, but it says nothin
 
 `stories260K` therefore cannot exercise the memory-fit policy at all: its 2048-token training context caps every request before fit gets a
 say. Reaching it needs a model with a large training context -- Apex -- which is a run that has to be agreed first.
+
+## Fit with unset arguments
+
+With the context left unset and a single slot, `-fit on` and `-fit off` both resolve to `n_ctx_slot = 2048` on both lines -- the model's
+training context again. So fit has nothing to adjust here either, and the four runs are identical.
+
+`run-fit-apex.sh` is prepared for the approved comparison: two loads per line (`-fit on` and `-fit off`), no generation, only the fit and
+buffer lines captured. It does nothing until `APEX_MODEL` is set and the run is agreed.
