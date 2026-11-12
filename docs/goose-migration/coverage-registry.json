@@ -474,8 +474,8 @@
       "gate": null,
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV state write path not reached"
+      "classification": "OFF_PATH_RAM_ONLY_CHECKPOINTS",
+      "classification_reason": "server log: 'RAM-only prefix checkpoints (recurrent): enabled, budget 2048.0 MiB'. The io/state_write/state_read path these modules live in is not taken in RAM-only mode."
     },
     {
       "module": "fg367s",
@@ -494,8 +494,8 @@
       "gate": null,
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV state clear path not reached"
+      "classification": "OFF_PATH_RAM_ONLY_CHECKPOINTS",
+      "classification_reason": "server log: 'RAM-only prefix checkpoints (recurrent): enabled, budget 2048.0 MiB'. The io/state_write/state_read path these modules live in is not taken in RAM-only mode."
     },
     {
       "module": "fg373s",
@@ -514,8 +514,8 @@
       "gate": "if (sinfos_out) {",
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV read-sinfo path not reached"
+      "classification": "OFF_PATH_RAM_ONLY_CHECKPOINTS",
+      "classification_reason": "server log: 'RAM-only prefix checkpoints (recurrent): enabled, budget 2048.0 MiB'. The io/state_write/state_read path these modules live in is not taken in RAM-only mode."
     },
     {
       "module": "fg375s",
@@ -802,8 +802,8 @@
       "gate": null,
       "first_call_printing": true,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "gated by sinfos_out in the KV read path"
+      "classification": "OFF_PATH_RAM_ONLY_CHECKPOINTS",
+      "classification_reason": "server log: 'RAM-only prefix checkpoints (recurrent): enabled, budget 2048.0 MiB'. The io/state_write/state_read path these modules live in is not taken in RAM-only mode."
     },
     {
       "module": "fg394s",
@@ -822,8 +822,8 @@
       "gate": null,
       "first_call_printing": true,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV layout span path not taken by the profiled cache configuration"
+      "classification": "OFF_PATH_RAM_ONLY_CHECKPOINTS",
+      "classification_reason": "server log: 'RAM-only prefix checkpoints (recurrent): enabled, budget 2048.0 MiB'. The io/state_write/state_read path these modules live in is not taken in RAM-only mode."
     },
     {
       "module": "fg395s",
@@ -842,8 +842,8 @@
       "gate": null,
       "first_call_printing": true,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "KV read-meta path not taken by the profiled cache configuration"
+      "classification": "OFF_PATH_RAM_ONLY_CHECKPOINTS",
+      "classification_reason": "server log: 'RAM-only prefix checkpoints (recurrent): enabled, budget 2048.0 MiB'. The io/state_write/state_read path these modules live in is not taken in RAM-only mode."
     },
     {
       "module": "fg396s",
@@ -1048,8 +1048,8 @@
   },
   "classification_counts": {
     "OFF_PATH": 3,
-    "OFF_PATH_SERVER": 1,
-    "NEEDS_FIXTURE": 16,
-    "PRESENT_IN_OTHER_RUN": 0
+    "NEEDS_FIXTURE": 10,
+    "OFF_PATH_RAM_ONLY_CHECKPOINTS": 6,
+    "OFF_PATH_SERVER": 1
   }
 }
