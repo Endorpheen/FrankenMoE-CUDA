@@ -57,3 +57,19 @@ Acceptance criterion met: every supported mode has a witness, unsupported covera
 live from symbol presence. Apex regression after the work: prefill 2356.5, decode 24.31, VRAM 3190, content equal.
 
 Counters after this item: 19 DONE, 2 PARTIAL, 50 IN_PROGRESS, 81 TODO (152 total).
+
+## Update (this session, after the verification work)
+
+Counters: **20 DONE, 1 PARTIAL, 50 IN_PROGRESS, 81 TODO** of 152.
+
+What changed since the first audit:
+- P0-05 accepted: 62 registered modules resolved into 43 live and 19 documented OFF_PATH, zero unclassified.
+- P0-04 accepted: boundary contracts (no structs cross, sizes verified), zero implicit declarations, full primitive inventory.
+- P1-09 gained model-level determinism evidence (batch threads 8/16/32 all give e68df05b) but stays IN_PROGRESS on its
+  native allocation/placement remainder.
+- P2-01 now has a measured 37-case map instead of an estimate; three findings located to lines, all blocked on the same
+  permissioned regeneration pass.
+- P1-06 has a verified inventory; TQ/FP4/legacy cannot be declared out of scope because types arrive via GGUF.
+
+The remaining work is dominated by two kinds of item: (a) items needing a permissioned Goose regeneration (P2-01's three
+fixes), and (b) stage-2-scale porting (P1-06, P1-09, P1-10 and everything behind them). No item is closed without evidence.
