@@ -43,3 +43,22 @@ the first version of the driver matched only literal names, so it never touched 
 
 Rewrite the generator to use one explicit `T(pre+"...")` line per tensor -- no loops over names -- and let `iterate.py` finish the
 remaining shapes. That is mechanical and bounded: each round is a few seconds because the file is 95 KB.
+
+## Round three: names, not shapes, are now the obstacle
+
+The generator writes 43 tensors and the GGUF reader confirms 43 unique names, but the loader reports `expected 43, got 36` -- it created
+only thirty-six, and it emitted no "unknown tensor" or "unused tensor" warning to say which seven it discarded. Shape errors are gone;
+what remains is a name mismatch between our set and the architecture's expected set.
+
+That makes the iterative method the wrong tool for this last step: the loader tells us the *count*, not the names, so each round only
+confirms that seven names are still wrong. The systematic fix is to derive the exact list from the architecture's tensor mapping in
+`llama-arch.cpp` / the model's tensor-creation code for `qwen35moe`, and generate against that list instead of guessing names and letting
+the loader count them.
+
+Also worth recording: a duplicate guard was added to `T()` during this pass, and it found **no** duplicates in the current generator --
+the earlier "43 written, 36 unique" confusion came from the loader's count, not from the file.
+
+## Honest status
+
+The file loads past metadata, past dtype and shape checks, and fails only on the final count. It is not yet a fixture: no token has been
+produced from it, and the seven name mismatches are known to exist but not yet identified.

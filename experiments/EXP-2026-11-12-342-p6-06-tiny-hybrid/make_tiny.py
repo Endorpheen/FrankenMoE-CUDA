@@ -45,7 +45,11 @@ w.add_token_merges(["t 0"])
 w.add_eos_token_id(0)
 w.add_pad_token_id(1)
 
+_seen = set()
 def T(name, shape, dtype=np.float32):
+    if name in _seen:
+        print("DUPLICATE", name)
+    _seen.add(name)
     w.add_tensor(name, np.zeros(tuple(reversed(shape)), dtype=dtype))
 
 T("token_embd.weight", (n_embd, n_vocab))
@@ -56,11 +60,13 @@ for il in range(n_layer):
     pre = f"blk.{il}."
     T(pre+"attn_norm.weight", (n_embd,))
     if not rec:
-        T(pre+"attn_q.weight", (n_embd, n_head*n_embd_head))
+        T(pre+"attn_q.weight", (32, 64))
         T(pre+"attn_k.weight", (n_embd, n_head_kv*n_embd_head))
         T(pre+"attn_v.weight", (n_embd, n_head_kv*n_embd_head))
         T(pre+"attn_output.weight", (n_head*n_embd_head, n_embd))
     T(pre+"post_attention_norm.weight", (n_embd,))
+    T(pre+"attn_qkv.weight", (32, 96 if not rec else 64))
+    T(pre+"attn_gate.weight", (n_embd, n_embd))
     if rec:
         T(pre+"ssm_conv1d.weight", (4, 64))
         T(pre+"ssm_dt.bias", (4,))
@@ -72,11 +78,13 @@ for il in range(n_layer):
         T(pre+"ssm_beta.weight", (32, 4))
     T(pre+"ffn_gate_exps.weight", (32, 16, 4))
     T(pre+"ffn_gate_inp.weight", (32, 4))
-    for e in ("ffn_gate_exps.weight", "ffn_up_exps.weight"):
-        T(pre+e, (n_expert, n_embd, n_ff))
+    T(pre+"ffn_up_exps.weight", (32, 16, 4))
     T(pre+"ffn_down_exps.weight", (16, 32, 4))
     T(pre+"ffn_gate_shexp.weight", (n_embd, n_ff))
     T(pre+"ffn_up_shexp.weight", (n_embd, n_ff))
+    T(pre+"ffn_gate_inp_shexp.weight", (n_embd,))
+    T(pre+"attn_q_norm.weight", (16,))
+    T(pre+"attn_k_norm.weight", (16,))
     T(pre+"ffn_down_shexp.weight", (n_ff, n_embd))
 w.write_header_to_file(); w.write_kv_data_to_file(); w.write_tensors_to_file(); w.close()
 print("written", out)

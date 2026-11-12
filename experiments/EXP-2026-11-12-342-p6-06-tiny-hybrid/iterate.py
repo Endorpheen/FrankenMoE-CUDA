@@ -23,6 +23,20 @@ for r in range(1, 16):
     print(f'round {r}: {kind} {name} {dims}')
     if kind == 'ok':
         print('MODEL LOADS'); break
+    if kind == 'missing':
+        s = GEN.read_text()
+        suffix = re.sub(r'^blk\.\d+\.', '', name)
+        if name.startswith('blk.'):
+            line = f'    T(pre+"{suffix}", (n_embd,))'
+            anchor = '    T(pre+"ffn_down_shexp.weight"'
+            s = s.replace(anchor, line + '\n' + anchor, 1)
+        else:
+            line = f'T("{name}", (n_embd,))'
+            anchor = 'for il in range(n_layer):'
+            s = s.replace(anchor, line + '\n' + anchor, 1)
+        GEN.write_text(s)
+        subprocess.run([sys.executable, str(GEN), str(GGUF)], capture_output=True)
+        continue
     if kind != 'shape':
         break
     s = GEN.read_text()
