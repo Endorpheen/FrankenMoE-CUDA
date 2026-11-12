@@ -36,3 +36,22 @@ and aborts. The item is reopened until this is explained and fixed; closing it a
 
 The probe itself is otherwise sound and will be rerun once the copy path is fixed, since the graph-shape comparison it was
 written for is still useful.
+
+## Localization: the scheduler decides the copy
+
+A breakpoint on `ggml_backend_tensor_copy` stops inside the scheduler, not the loader:
+
+    #1 fg164_component
+    #2 fg164_gg_function_84
+    #3 fg164_gg_function_1
+    #4 ggml_backend_sched_graph_compute_async
+    #5 llama_context::graph_compute
+    #6 llama_context::process_ubatch
+
+So the copy is part of graph scheduling for the 371-token ubatch: the scheduler module (EXP164) decides a tensor needs to move,
+and its destination is a CUDA buffer even though the run is `-ngl 0` and no CUDA device line is printed. The short prompt
+never reaches this split, which is why the first request succeeds.
+
+That reframes the defect: it is not weight placement (P6-02's attachment decision) and not the recurrent checkpoint, but the
+scheduler's backend assignment for a split graph. The next step is to see what fg164 returns for that node -- a valid backend
+index or something out of range -- rather than to guess from the tensor side.
