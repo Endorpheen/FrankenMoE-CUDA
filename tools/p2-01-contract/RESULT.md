@@ -128,3 +128,21 @@ extended probe is exact:
 That closes the "stride coverage" gap I flagged earlier and narrows the open problem to one activation. It also means the
 1-ULP-contract option is weaker than it looked: a 25% hit rate is not a rare tail case, and calling it an accepted
 compatibility contract would need that number stated explicitly.
+
+## Scope of the SILU divergence: which models are actually exposed
+
+Traced the graph builder (`llama.cpp-flint-cuda/src/llama-graph.cpp`, `build_ffn`):
+
+- `LLM_FFN_SILU` **with** a parallel gate -> `ggml_swiglu_split` / `ggml_swiglu`, i.e. the GLU path, which this probe shows
+  as **byte-identical**;
+- `LLM_FFN_SILU` **without** a gate -> `ggml_silu` directly, which is the divergent path.
+
+`qwen35moe` (Apex) declares `LLM_FFN_SILU` together with `LLM_FFN_PAR` (`models/qwen35moe.cpp:500,517,681,697`), so it
+takes the GLU path. That is why the accepted profile still produces `e68df05b` with equal probabilities despite the SILU
+difference - the divergent function is not on the Apex path.
+
+Consequence, stated plainly:
+- Apex is unaffected, and this is a structural reason, not luck.
+- Any architecture that uses a bare SiLU FFN without a gate *is* exposed to the 247/1000 divergence.
+- P2-01 therefore remains PARTIAL and is now also a prerequisite for those architectures, which is exactly the
+  "readiness for other models" priority rather than an Apex detail.
