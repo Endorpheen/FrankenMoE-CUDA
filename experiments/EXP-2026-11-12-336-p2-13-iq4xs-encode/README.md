@@ -103,3 +103,22 @@ measured so far.
 The next pass must reproduce an actual *failing* gate input instead of a synthetic one, because every component checks out on the
 synthetic case. That is the difference between this failure and the previous ones: the surface is now three steps, two of which are
 proven correct.
+
+## Correction: the l0 comparison was circular, and the real divergence is in the block scale
+
+Diagnostics on an actual failing gate input show it immediately:
+
+    block 0 bytes  ref: 4c 20 f3 fc 1d dc f0 ee
+    block 0 bytes  our: 52 a0 0c 03 e3 34 0f 12
+
+Bytes 0-1 are `d`. The reference stored `0x204c` (positive, about 0.00424) and the port stored `0xa052` (negative, about 0.00844), so
+the super-scale itself differs -- roughly a factor of two with the opposite sign.
+
+That invalidates the previous "dsup and l0 verified" claim as stated: the harness computed the reference `l0` **from the port's own
+scale array**, so both sides shared the port's numbers and could only agree. The check was circular, and the honest statement is
+that `l0` is consistent with the port's scales, not that it matches the reference.
+
+What is now established: the divergence is upstream of `l0`, in the per-block `d` values for this input -- either the block search
+itself on this data, or the `max_scale`/`amax_scale` selection that produces `d = -max_scale/32`.
+
+The next step is a transcription compared against the *native* block bytes on this exact input, not against the port's own arrays.
