@@ -1,0 +1,10 @@
+{
+  "added": [
+    "fg262a_enabled",
+    "fg262a_run",
+    "fg263c_enabled",
+    "fg263c_run_from_pairs",
+    "fg263c_run_from_slot",
+    "fg263c_stats_class"
+  ]
+}
