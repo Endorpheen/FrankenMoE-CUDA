@@ -638,3 +638,20 @@ guarantee for interactive use.
 That closes the applicability question for the cache. Remaining caveat is unchanged and not waived: the cached path is
 not bit-identical to the exact path, cause established (GPU-side expert evaluation), quality measured level on two
 prompts.
+
+## Balance point stability under the real desktop load
+
+Three more repeats with the browser and compositor running, which is the actual working condition on this machine:
+
+| run | prefill | decode | VRAM |
+|---|---|---|---|
+| v1 | 2330.9 | 37.83 | 6266 |
+| v2 | 2346.2 | 37.90 | 6266 |
+| v3 | 2328.6 | 37.69 | 6266 |
+
+Together with the earlier 37.79 and 37.80, five runs span 37.69-39.10 with the 128-token ones inside 37.69-37.90, i.e.
++/-0.3%. VRAM is pinned at 6266 in every run, so no eviction drift under background GPU load. Prefill spans
+2315-2346, also inside its noise band.
+
+Conclusion: the 3072 base is reproducible under normal desktop load, not only in a quiet window - which is the condition
+that matters for daily use. No new optimisation was claimed here; this is a stability record.
