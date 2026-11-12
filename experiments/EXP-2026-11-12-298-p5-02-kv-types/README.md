@@ -99,3 +99,31 @@ row.
 
 That is the concrete hypothesis to test next: find the matching Goose function -- a type switch followed by a non-negative
 check on a row/stride field -- and extend it for block-quantized K, rather than patching the wrapper blindly.
+
+## The function is validate(), and the type table is the suspect
+
+`gg_function_11` is `validate(t, available)` from `kernel.goose:32`:
+
+    fn validate(t:&Tensor, available:i64) {
+        assert(t.bytes>=0 && t.bytes<=available); let bytes=scalar_bytes(t.kind); assert(bytes>0);
+        var last:i64=bytes; var empty:bool=false;
+        for axis in 4 { assert(t.ne[axis]>=0&&t.nb[axis]>=0); if ne==0 {empty=true;} else {last=add_size(last,mul_size(ne-1,nb));} }
+        assert(empty||last<=t.bytes);
+    }
+
+and `scalar_bytes` is `kernel.goose:28`:
+
+    if kind==0||kind==26 {return 4;} if kind==1||kind==30||kind==25 {return 2;}
+    if kind==24 {return 1;} if kind==27||kind==28 {return 8;} return 0;
+
+The three ids in the disassembly (0x1, 0x19, 0x1e) are exactly the `1/30/25` arm of that table, and the table returns 0
+for every block-quantized kind -- q8_0 is 8, q4_0 is 2. So `assert(bytes>0)` is the leading suspect: `validate` was written
+for tensors whose element type has a scalar byte size, and a quantized K has a block layout instead.
+
+Register inspection after the fact is inconclusive: the addresses resolved inside the library are not stable enough to
+read the struct reliably without symbols (the breakpoints land in zeros because the module base moves between runs), so the
+next step is to rebuild this module with `-g`, catch the assert with line information, and confirm whether `bytes>0` or one
+of the per-axis checks fires.
+
+A fix, if the hypothesis holds, is a size model that knows block-quantized kinds (type size and block size per kind) rather
+than extending the scalar table with made-up byte counts.
