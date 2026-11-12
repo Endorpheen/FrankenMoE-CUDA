@@ -1846,7 +1846,7 @@
         "common/unicode.cpp"
       ],
       "acceptance": "All audited tables and Unicode normalization/category/byte conversion behavior differential across valid/invalid UTF8; no locale-dependent drift.",
-      "evidence": "",
+      "evidence": " 2026-11-12 differential (EXP-289), item stays IN_PROGRESS. Whole code-point range identical: 1 114 112 code points compared byte-for-byte through cpt_to_utf8, cpt_to_byte, tolower, the raw unicode_cpt_flags struct, is_han, flags_from_utf8 and len_utf8 -- 62 390 272 bytes, no first difference, surrogates included (both arms raise, the raise is compared). DEFECT FOUND on invalid UTF-8: native throws std::invalid_argument(\"invalid character\") and llama-vocab.cpp:1297-1299 catches exactly that to drive byte fallback; the ported module calls ensure -> trap (FG215U validation code 701), which aborts the process and skips the catch. Reproduce with a one-case corpus containing 0x80. Fix needed: module returns a refusal code instead of trapping, bridge rethrows std::invalid_argument, then this probe must reach zero differences before the item can close.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -4325,7 +4325,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T08:08:35.208817+00:00",
+  "updated_at": "2026-11-12T08:12:10.792527+00:00",
   "status_totals": {
     "DONE": 25,
     "IN_PROGRESS": 47,
