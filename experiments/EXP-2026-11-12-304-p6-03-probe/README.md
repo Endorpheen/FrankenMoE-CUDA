@@ -113,3 +113,28 @@ the two revisions are not the same code even though most functions match.
 Next instrument: compile that one object with `-g -O2` using the recorded EXP164 recipe, link a **diagnostic** base library
 (not for deployment), and read the split's `backend_id` and the input tensor name at `ggml_backend_sched_copy_input`. With
 types available, gdb prints the fields directly instead of my guessing offsets.
+
+## The failing copy, seen directly
+
+With a `-g` build of the scheduler object linked into a **diagnostic** base library, a breakpoint on
+`ggml_backend_tensor_copy` reports the exact pair:
+
+    COPY src=norm-0 dst=CUDA0#norm-0#0
+
+So the scheduler creates a split-input copy tensor **in the CUDA0 backend** and copies a CPU activation into it, under
+`-ngl 0`. The copy itself is the standard one; the destination is the surprise. The CUDA0 copy tensor is either sized for a
+ring slot that was never allocated or bound to a device buffer the copy does not fit, which is why the CUDA setter answers
+"invalid argument".
+
+That also explains why every switch and every interposer failed: the defect is not in a hook, it is which backend the split
+receives.
+
+## What is left to explain
+
+The assignment passes we compared are identical to the flint source, and the graph is built by the same libllama in both
+isolation arms. That leaves one uncomfortable possibility: the **deployed** base library may be older than the source in the
+experiment directory (it is named `libggml-base-scheduler-bafe3955c9ea`, a hash of its two inputs at build time). If the source
+drifted after that build, the deployed object is not the code we have been reading.
+
+The next step is therefore a plain rebuild of the base from the current source with the recorded recipe, followed by the
+reproducer, the Apex gate and a timing comparison against the 22.8 s baseline.
