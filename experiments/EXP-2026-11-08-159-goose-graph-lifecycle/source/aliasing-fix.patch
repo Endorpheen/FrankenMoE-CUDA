@@ -1,0 +1,15 @@
+--- a/source/graph.h
++++ b/source/graph.h
+@@ -18,8 +18,10 @@
+ static inline void fg159_graph_put(int64_t p,int64_t k,uint64_t v){struct ggml_cgraph*g=(void*)(intptr_t)p;switch(k){case 0:g->size=(int)v;return;case 1:g->n_nodes=(int)v;return;case 2:g->n_leafs=(int)v;return;case 3:g->nodes=(void*)(uintptr_t)v;return;case 4:g->leafs=(void*)(uintptr_t)v;return;case 5:g->use_counts=(void*)(uintptr_t)v;return;case 6:g->grads=(void*)(uintptr_t)v;return;case 7:g->grad_accs=(void*)(uintptr_t)v;return;case 8:g->order=(enum ggml_cgraph_eval_order)v;return;case 9:g->uid=v;return;default:GGML_ABORT("Invalid graph write");}}
+ static inline uint64_t fg159_hash(int64_t p,int64_t k){const struct ggml_hash_set*h=(const void*)(intptr_t)p;switch(k){case 0:return h->size;case 1:return (uintptr_t)h->used;case 2:return (uintptr_t)h->keys;default:GGML_ABORT("Invalid hash projection");}}
+ static inline void fg159_hash_put(int64_t p,int64_t k,uint64_t v){struct ggml_hash_set*h=(void*)(intptr_t)p;switch(k){case 0:h->size=v;return;case 1:h->used=(void*)(uintptr_t)v;return;case 2:h->keys=(void*)(uintptr_t)v;return;default:GGML_ABORT("Invalid hash write");}}
+-static inline uint64_t fg159_ptr(int64_t p,uint64_t i){return ((const uintptr_t*)(intptr_t)p)[i];}
+-static inline void fg159_ptr_put(int64_t p,uint64_t i,uint64_t v){((uintptr_t*)(intptr_t)p)[i]=(uintptr_t)v;}
++_Static_assert(sizeof(uintptr_t)==8&&sizeof(struct ggml_tensor*)==8,"64-bit graph storage ABI");
++// The same primitive accesses pointer arrays and numeric DFS frames without aliasing them.
++static inline uint64_t fg159_ptr(int64_t p,uint64_t i){uintptr_t v;memcpy(&v,(const unsigned char*)(intptr_t)p+i*sizeof(v),sizeof(v));return v;}
++static inline void fg159_ptr_put(int64_t p,uint64_t i,uint64_t value){uintptr_t v=(uintptr_t)value;memcpy((unsigned char*)(intptr_t)p+i*sizeof(v),&v,sizeof(v));}
+ static inline uint64_t fg159_u32(int64_t p,uint64_t i){return ((const uint32_t*)(intptr_t)p)[i];}
+ static inline void fg159_u32_put(int64_t p,uint64_t i,uint64_t v){((uint32_t*)(intptr_t)p)[i]=(uint32_t)v;}
+ static inline void fg159_zero(int64_t p,uint64_t n){memset((void*)(intptr_t)p,0,(size_t)n);}

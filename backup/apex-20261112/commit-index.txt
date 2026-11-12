@@ -1,0 +1,773 @@
+6aaa795e0b044fb9d834649741815478d934e191 2026-11-12T04:40:22+03:00 opt: remaining historical patches do not fit a pure cpu-moe profile #insight
+f907b99360c792a553a424033b65504a190a4e25 2026-11-12T04:39:11+03:00 docs: dashboard marks the memory stage done -- VRAM 3190, RSS 21319 #achievement
+e97f87b7d7c3b8383f620a77dbc038d6c41111d3 2026-11-12T04:39:11+03:00 opt: restore EXP101 lazy KV VMM -- VRAM 4430 -> 3190, total -3218 MiB (-50%) #speedup #accepted
+95027db664b42616de7e383c14b30a5df9af0e31 2026-11-12T04:33:20+03:00 docs: dashboard records the EXP087 restoration and its control #speedup
+e85eeb55debb6b27ce44c019b486148a1ced2786 2026-11-12T04:33:19+03:00 opt: restore EXP087 lazy compute reservation -- VRAM 6408 -> 4430, RSS 22857 -> 21318 #speedup #accepted
+c82e63bdced41ebdf17ce9227b6412f63689ff4c 2026-11-12T04:29:11+03:00 docs: dashboard records the moe-cache decode lead and its trade-off #insight
+108713a3bb8fdd55b173d215a17325a2ec30eb40 2026-11-12T04:29:10+03:00 opt: moe-cache 2048 reaches decode 32.8 but changes the exact output -- not accepted, recorded as lead #insight
+8edb16f64484245b1a0f28d5dba054382850b8ff 2026-11-12T04:26:39+03:00 docs: dashboard records the CUDA quantizer exclusion and the current stop point #insight
+83aa6b21dd265188cbea011f10ae7c795deaf8d7 2026-11-12T04:23:00+03:00 opt: method reused -- no single ported decision explains the remaining 9% #insight
+7a98373e6abd5e92fbc2764a391f84891a3a9480 2026-11-12T04:20:00+03:00 docs: dashboard notes the decode bound and the dropped no-mmap test #insight
+555f09bd8eec00666ff385572eff961ddacf1707 2026-11-12T04:20:00+03:00 opt: decode bounded by the cpu-moe profile, not by ported kernels or mmap #insight
+570b07104c2944d48431d3ea33d296ead829a1bb 2026-11-12T04:17:58+03:00 docs: dashboard records the repeated pinning confirmation #speedup
+f8a9a05e50f716ebec2cea3fa9c464c641bf42e6 2026-11-12T04:17:58+03:00 opt: pinning effect confirmed by repeat -- +43-44% prefill, log line not usable as evidence #speedup
+d38e039cc2c202e395302db524435e6934654f38 2026-11-12T04:14:57+03:00 docs: correct dashboard timestamps -- MSK was labelled UTC, no numbers changed #insight
+3fc81b4ba99a172ba3014d7d6e7633ff3a6f843f 2026-11-12T04:14:20+03:00 docs: dashboard records the accepted pinning restoration and its on/off control #speedup
+cb5180f463df9b8eebf982e14cdb3e8f493e1a5b 2026-11-12T04:14:19+03:00 opt: restore expert mmap pinning in the full port -- prefill 1624 -> 2337 (+44%) #speedup #accepted
+c8e73ae4758e8177c11f8f7a90a48fba06e6d134 2026-11-12T04:09:47+03:00 opt: root cause -- expert mmap pinning is missing from the working candidate #insight
+9bb4b48043647f04294531cedf0e4e3182c5bc4a 2026-11-12T04:03:05+03:00 docs: dashboard records the ggml exclusion and the exp244-body control #insight
+e4c28e859be2f3c0f0f9de245ea2496dcbc431a8 2026-11-12T04:03:05+03:00 opt: ggml stack is innocent -- exp244 libllama runs 2574.9 on our own ggml #insight
+faa1d1fd699709afe50627cf51c7c9a4b506b5f9 2026-11-12T03:57:52+03:00 docs: dashboard marks EXP244 runs as diagnostic only after Igor's rejection #deferred
+d422e68a1757995b3f2733cb62da48fa96f2a934 2026-11-12T03:57:52+03:00 opt: withdraw the exp244 "accepted" record -- it is a rollback, kept only as diagnostic #deferred
+f57b7b42064eff3707ff422fe04e282d8c639bae 2026-11-12T03:56:50+03:00 docs: dashboard feed records the rpath finding and the native-libllama control #insight
+69595da941dff8f72b59e3591ff18f09cb2a426f 2026-11-12T03:56:50+03:00 opt: regression is not in the Goose code -- exp244 loaded a different ggml stack via rpath #insight
+b1ae607e2d23d85e2b92fb271507380bfd2c7fa9 2026-11-12T03:52:16+03:00 opt: every Goose graph switch excluded; the gap is in the compiled objects, not the decisions #insight
+337faefc6eadb5f2d5cfd0608cd96f903ab31507 2026-11-12T03:46:57+03:00 opt: compiler-mix lead narrowed -- GCC 15 objects are the bridge and the link, not the per-call modules #insight
+0ab570b4b837e364c61216f7cbe9f5d5205cd511 2026-11-12T03:46:08+03:00 docs: dashboard feed records the restored full port and the compiler-mix lead #insight
+1123fffdfc93104b6f9e12a0642d1e0f645a5abd 2026-11-12T03:46:08+03:00 opt: full port restored in staging (1624.1/23.64); mixed GCC 15/13 objects in exp371 #insight
+26d95acfe5d0bc8b12a056234d2f3bc30d4ca7df 2026-11-12T03:43:33+03:00 opt: exp244 libllama switch reclassified as diagnostic; dashboard feed added #insight
+e420c1e4f1fe529c03930f537da3c880ce17e1f1 2026-11-12T03:42:12+03:00 opt: ctx-checkpoints 0 changes the output reproducibly -- recorded, not accepted #inspect
+41bdd8d6bde862e9136bac4bb6b1cbb2c06c6df7 2026-11-12T03:39:48+03:00 opt: hybrid expert placement rejected on correctness; negative results recorded #rejected
+b8f2c68a409eff8afbe758f8f0f9ead57237a8a5 2026-11-12T03:37:07+03:00 opt: final A/B -> B/A series; the accepted change holds at +59% prefill, +15% decode, -1818 MiB VRAM #accepted
+063de296dbaa4901b4636dbda47e4beec769d7fb 2026-11-12T03:25:00+03:00 opt: accepted change 1 -- exp244 libllama restores +61% prefill, +19% decode, -1818 MiB VRAM #accepted
+f179839824d6aa4478c007cebd5c79a19082f48c 2026-11-12T03:22:20+03:00 opt: control fixed; the prefill regression is localised to libllama, not the CPU library #inspect
+799a77e4b0087fae7dbbe87aae9eb9075575498e 2026-11-12T02:31:00+03:00 EXP251: regenerated host unit from the pinned v61 compiler #inspect
+cde61082078e56d4f9c5e6a3e9d04745e04e43e9 2026-11-12T02:30:51+03:00 docs: Apex small plan closed -- final state, boundaries and reproduction #insight
+e1c461d1c4c4947251eaeb7109b0c3b8ef4e0e4b 2026-11-12T02:30:22+03:00 Apex small plan closed: REQUEST/SESSION DONE and SOURCE_CLOSURE/FINAL DONE #accepted
+9f353d9c6fc37686a32f0fb5c12a51dc2ec314a0 2026-11-12T02:29:11+03:00 MODEL_GRAPH DONE: four decisions are Goose; the remainder is primitives and one dead branch #accepted
+31a7aeb19c2b37e3d3018c56258bdd795ebf5159 2026-11-12T02:25:58+03:00 EXP253: the w_scale decision is Goose and live -- fourth graph decision #accepted
+15fc12a85bb559dd3fd4be5dbb51681e853eb3d7 2026-11-12T02:20:50+03:00 CUDA_MMQ DONE: every decision and staging arithmetic is Goose; remainder is instructions #accepted
+a74e77f8cf62c4a0257e5aa4189a0cc59a2fccf3 2026-11-12T02:19:37+03:00 docs: CUDA_MMQ -- decisions and staging arithmetic are Goose; what remains is instructions #insight
+740e1727e44968c30e36bf555ea403723b9b94a8 2026-11-12T02:19:12+03:00 EXP257: Q6_K MMA tile loader qs part is Goose and live #accepted
+2a5880518d2b29f15d2bb820ef3a22f1fd6a01ce 2026-11-12T02:10:48+03:00 EXP256: MMA-dot accumulation gated, then deliberately not wired in -- with the reasoning #inspect
+78b1418ca4b34fe85647cdddbaed78c5ed193d35 2026-11-12T02:10:04+03:00 EXP256: MMA-dot coefficient arithmetic gated (20000/0), but host-side -- device emission is next #inspect
+d24593ba4fc0054bb917002beb5ff37e448ded38 2026-11-12T02:09:12+03:00 docs: CUDA_MMQ's next piece is the MMA dot's scheduling, with mma/ldmatrix as primitives #insight
+401b676b7b439e2aabee09090c8d9bcdbd680b45 2026-11-12T02:08:28+03:00 EXP255: Q4_K MMA tile loader is Goose and live on the accepted profile #accepted
+ab508a8d955fae3380fabd216980d79dfb2ba089 2026-11-12T02:00:20+03:00 EXP255: Q4_K MMA tile loader is bit-exact in Goose -- gate 0 mismatches #accepted
+4b9e1597a49409faf269232c9a196dceeebd474f 2026-11-12T01:59:14+03:00 EXP255: DM sign fixed (18432 -> 16384); QS still differs at the first index #inspect
+846f66a269011a3a947d6eb4e9df9df9ffd9b067 2026-11-12T01:58:20+03:00 EXP255: harness sound after fixing a host/device pointer bug; the Goose loader is wrong #inspect
+a3b218984a9cd45cb42de8545f183352c9433f95 2026-11-12T01:57:42+03:00 EXP255: A/B harness compiles but the kernel faults; the zero count is not a pass #inspect
+70a7dafb5ccd9bb255046decc7df3551673c2ac3 2026-11-12T01:56:32+03:00 EXP255: Q4_K MMA tile loader started in Goose, with the structural offsets pinned down #in-progress
+c407057c0566deae14936debb9a2c659d498e6ba 2026-11-12T01:55:26+03:00 CUDA_MMQ: the tensor-core route is executing, proven by a load-tiles probe #insight
+8006d2f9e2efd2743de3d599001dab57d804d2c5 2026-11-12T01:51:41+03:00 docs: measured remainder of the three PARTIAL items #insight
+38df048f3d8feab147bbdb910565db03b847e3d7 2026-11-12T01:51:06+03:00 EXP250: server rebuild script now covers all five modules and builds from scratch #insight
+17211374a1d87bf6cc5bf83fca59436394730daa 2026-11-12T01:29:13+03:00 EXP250: server rebuild script covers 250/251/252/254; the 253 graph patches are still manual #inspect
+d30f59adbc05f8cf487aec6adf3b908f80953804 2026-11-12T01:28:48+03:00 EXP250: reproducible script for the server-side integration #insight
+d1f88968a209d02d05008ec27ce60c2d6f7946c2 2026-11-12T01:28:23+03:00 EXP254: greedy-vs-distribution sampler choice is Goose and live #accepted
+6c0e8b8ab9d6670e24a9ea737f78be52d0b2bb6a 2026-11-12T01:24:05+03:00 docs: MODEL_GRAPH boundary now records the open tensor bridge and the three live decisions #insight
+4da0df5be12566322b690ce81b5132a333902785 2026-11-12T01:23:34+03:00 EXP253: top-k expert selection is Goose and live -- third graph decision #accepted
+42eb6993b58e0b97e6b21423aaafff98136eb9e7 2026-11-12T01:20:33+03:00 EXP253: norm_w corrected and live -- the earlier failure was my own special case #accepted
+8eb7d0b45a4adb625287bf03b4419a7f10febc9f 2026-11-12T01:17:20+03:00 EXP253: norm_w port attempt reverted after a wrong result; gating stays #inspect
+412e5c05beb64d48c18d84cb695a32b7d1b8eefd 2026-11-12T01:12:27+03:00 EXP253: model-graph gating decision is Goose and live, with a caught enum bug #accepted
+1137f5fd7a6b1ac147c39196296cd38c2667e003 2026-11-12T01:07:21+03:00 EXP252: context-shift policy ported and wired; not exercised by this workload #inspect
+dfd0fd97333d3c4e378079e4c4ad700cfa6a17e7 2026-11-12T01:04:08+03:00 EXP251: request-field decisions live in the server, proven by a defect test #accepted
+6a56d93d0f9dd0031d88f2c82c7d6efbcd9b185b 2026-11-12T00:59:42+03:00 EXP251: request-field decisions ported to Goose with a clean gate #in-progress
+2f441579395ebbff65f0d5138709eb2e6a06a847 2026-11-12T00:55:45+03:00 EXP250: first request-path function is Goose and proven live on a real server run #accepted
+da491ca3cbf9df1427cf8bd45f76e0c5e80709ea 2026-11-12T00:45:10+03:00 docs: REQUEST/SESSION scope and first target #inspect
+fc527497f5f64943078b9241a2d2c7e7c21aa839 2026-11-12T00:42:27+03:00 CUDA_MMQ: MMQ is chosen ~92% of the time, but the executed route is the tensor-core one, not the dp4a vec_dot #insight
+5639a3fbaf312d81b0d11975984931f1130d4cfb 2026-11-12T00:31:30+03:00 CUDA_MMQ: vec_dot Q4_K integrated as Goose, and proven dormant on this profile #insight
+7b0387aeccee6f7820a82daddde036693ecbe6ce 2026-11-12T00:15:24+03:00 docs: CUDA_MMQ state and the concrete MMA plan #inspect
+a4280c5de63a88f163ef24af53b76d0475037d70 2026-11-12T00:13:43+03:00 CUDA_MMQ: dispatch policy integrated and executing (8550 calls), script updated #in-progress
+ef735421b982fbaf36f26c4fa1d6fd1daa735f0c 2026-11-12T00:06:17+03:00 checkpoint: README describing both preserved checkpoints and their verification #insight
+96ad6edeeb3b8b2080e7d456bf3f27a76adacac6 2026-11-12T00:06:06+03:00 checkpoint: CPU artifacts made /tmp-independent (RUNPATH -> $ORIGIN, manifest refreshed) #inspect
+b8a41a663783f01cb6c9ca42181b28aad93bfef8 2026-11-12T00:05:30+03:00 checkpoint: preserve the CPU Q4_K/Q6_K builds and link recipe outside /tmp #insight
+13356297a035711609e37cf78d917243d04edd56 2026-11-12T00:05:08+03:00 checkpoint: preserve the CUDA_MATVEC/v61 build, sources and receipts outside /tmp #insight
+3f7e1dadbe194210fe0bcb467faa2a5bb36f9913 2026-11-12T00:03:09+03:00 registry: CUDA_MMQ PARTIAL -- Q8_1 quantizer executing, MMA path remains #in-progress
+d9db55f6800b6ec31bc2cd2048d81f5d8c31bb36 2026-11-11T23:59:12+03:00 EXP180: MMQ Q8_1 quantizer integrated and executing, build encoded in the script #insight
+fa6f28b9d752970f72584c654c5b448da850510c 2026-11-11T23:56:26+03:00 metrics: CUDA_CONTROL checkpoint -- prefill 1664.4 tok/s, decode 24.49 tok/s #accepted
+73cb0cba554bc4583f03fd7632f3a14edf2dada1 2026-11-11T23:55:42+03:00 CUDA_CONTROL DONE: FG196P executes on the profile, FG195V embedded and unit-verified #accepted
+7626cf54a9a53d8e2f9bf9799a7dff04ee5d990c 2026-11-11T23:49:07+03:00 docs: overnight autonomy rule recorded #insight
+38d87af10bbadf7e3cb0896b563a93f857b1b876 2026-11-11T23:48:47+03:00 CUDA_CONTROL: FG196P integrated and verified, FG195V remains #in-progress
+aadce910903ed1b9899b6bac37a571aa38f1db9f 2026-11-11T23:37:18+03:00 EXP411: first-call witnesses for the CPU kernel counter #insight
+ceed3c2e93545ecb4826c38947dcf0da588b97b9 2026-11-11T23:36:58+03:00 metrics: CUDA_MATVEC checkpoint on v61 -- prefill 1658.9 tok/s, decode 23.82 tok/s #accepted
+9091420b507948c58831e29286a8932df681f21b 2026-11-11T23:35:52+03:00 docs: CUDA_CONTROL integration plan, with FG196P originals renamed and bodies extracted #in-progress
+126d8ba0071a808d80b0f1488cf8c8b34fa5480f 2026-11-11T23:34:22+03:00 compiler: v61 qualified on the used path and pinned, with a one-copy rollback #insight
+210ca9e131d60f343abb2b6047dbf7efb040f021 2026-11-11T23:29:47+03:00 EXP186 + registry: CUDA_MATVEC DONE -- all Q6_K matvec calls run in Goose #accepted
+193cec48390550129359c9c4f012c2036d524d7e 2026-11-11T23:22:44+03:00 EXP186: per-column call still wrong on the first destination -- defect is in the y-side, not the columns #insight
+ec04c3016afcb3228d396fd5488f7b28f40a66df 2026-11-11T23:16:32+03:00 EXP186: reproducible script for the integrated backend build #insight
+c5733db91ebfa5682cf236d2518db8cca5079e0f 2026-11-11T23:15:38+03:00 docs: Apex state -- 9 closed, 1 partial, 5 blocked with what each needs #insight
+54f2801948cac8cba8c47c6915e2d70be83bd1a0 2026-11-11T23:15:10+03:00 EXP186: both destinations wrong at ncols_dst=2; multi-column needs device-code work #blocked
+6108605435809552f86a08881e9a99e6297d7271 2026-11-11T23:14:23+03:00 EXP186: multi-column crash traced to shared memory sized without ncols_dst #in-progress
+2afea0e9c5c8dba3be72a7ac994a99f45d55fa71 2026-11-11T23:12:59+03:00 registry: CUDA_MATVEC PARTIAL -- kernel executes on the profile for 168 of 324 calls #accepted
+baa3d8e8a00ae10f262030d2e9665b85cccce1a4 2026-11-11T23:10:53+03:00 EXP186: per-column decomposition is not equivalent to the multi-column kernel #in-progress
+b447d7506f5660c3df1cc03d313405f8f94ad4cf 2026-11-11T23:09:38+03:00 EXP186: kernel exact at ncols_dst=1 for all sizes, SIGSEGV at ncols_dst=2 #insight
+13355ca4dd37d7f82c7ec64783460a7d1ae6e5ec 2026-11-11T23:08:52+03:00 EXP186: module runs on the profile but is wrong, and dies on large shapes #in-progress
+ed2d9c908363473776c0eb045565ec4ea9122304 2026-11-11T23:05:47+03:00 EXP186: module linked into the backend; accepted run clean at e68df05b #insight
+c1c9d4c6d60f996bd5e98a788daf1acfa34e4a87 2026-11-11T22:59:06+03:00 EXP186: the preloaded DSO now breaks CUDA device enumeration; without it the run is clean #blocked
+f35d4912999d6d2bf4dc5b3a6ad54ea6f4ba53cd 2026-11-11T22:56:49+03:00 EXP186: the creation detour is unsafe for this function -- trampoline breaks initialisation #insight
+9d71e0ed2e96b5892bcd2cd9a02d3208459b6ca8 2026-11-11T22:55:54+03:00 EXP186: page guard catches the CUDA driver on the same page, not a slot writer #insight
+ed2a8b23c663e182df7d816a5f2d5aee16785b6a 2026-11-11T22:54:58+03:00 EXP186: one context after all -- corrupted between creation and first use #insight
+d7b504fcd8c277e5ccf6f92db6ad34d75f5039bf 2026-11-11T22:52:19+03:00 EXP186: second context is created through internally bound calls that no wrapper can see #blocked
+fd70cdef8f8eb97958ba65e77997095dde850d46 2026-11-11T22:50:44+03:00 EXP186: two different CUDA contexts in the process; the kernel sees the one we never wrapped #insight
+f2bc9d8962bbaddd0a85bbe1c05f4b0e82797ecd 2026-11-11T22:49:16+03:00 EXP186: gdb watchpoint attempt ended early under preload; recorded as a failed attempt #in-progress
+d11d187ba00d31f0bd8e0e49b88e913a6c72e995 2026-11-11T22:48:31+03:00 EXP186: backend creation observable; the context handed to the module is valid but its slot is already garbage #in-progress
+fe0bcd05e1b39e3ede0f7b0e058028490c08b23b 2026-11-11T22:47:23+03:00 EXP186: the pool slot points at unmapped memory and the goose CUDA modules are not the writer #blocked
+324678b2c6ccc02f6be341f8fd1b2a1ff9338f8d 2026-11-11T22:46:13+03:00 EXP186: kernel identical to native across five shapes, not just one #insight
+01b77a6c4dcf0616d9eae1cee138d615741d41f7 2026-11-11T22:45:35+03:00 registry: the five unlisted plan rows recorded with honest statuses #insight
+857db6429796d31648d19635504f00e8e6014745 2026-11-11T22:45:13+03:00 EXP186: slot pointer is unreadable in the server, valid in the harness -- evidence chain closed #blocked
+b7733c7bd3f7fd8a9f5e2bc54870da67ef8cadca 2026-11-11T22:44:15+03:00 EXP186: context fields valid in both processes, but the pool slot is already corrupt in the server #insight
+b572a53ff8b12a3f7e43a56682dda42d81224d3d 2026-11-11T22:42:41+03:00 EXP186: server uses stage-run's backend copy; swapping it changes nothing #in-progress
+a56fbccf85b157727063c0bcae5c1e09672473e9 2026-11-11T22:40:44+03:00 EXP186: swapping the backend build does not change the pool address #in-progress
+b28c0583f2ebfe0a6501874cc2180f12aa2240e1 2026-11-11T22:39:35+03:00 EXP186: module output bit-identical to native in the single-call harness #insight
+79759e621837a83d9aa881cfb1dd5bc196aba736 2026-11-11T22:38:06+03:00 EXP186: single-call harness built; ASan cannot coexist with CUDA init here #insight
+cdaa17915c35b13ca3b1cb42fd70e1c67f353ccc 2026-11-11T22:35:48+03:00 EXP186: fault confirmed to move between 4a and 4c -- host-side UB, active work stopped there #blocked
+42cf8099066118be2dee8e873cb526eb3f4081af 2026-11-11T22:35:00+03:00 EXP186: quantizer signature matches; launch geometry now the open question #in-progress
+bdd6b7f842fbc2b7dd94f6d9f0e9835a72a919b0 2026-11-11T22:34:17+03:00 registry: CUDA_MATVEC recorded as BLOCKED with the full integration diagnosis #blocked
+b4903634cba5aa58580cd2eeb1a9262c61dcd537 2026-11-11T22:32:44+03:00 EXP186: crash point moves with unrelated edits -- memory corruption, not one expression #insight
+793668e9d8666f2ce1af07a06ec1d001f0ab53c8 2026-11-11T22:31:48+03:00 EXP186: header layout ruled out; the fault precedes the backend call #in-progress
+b613cdaf12bf863c72f64fb1b301e0a9ca1eaf4a 2026-11-11T22:30:59+03:00 EXP186: context valid, fault inside lazy pool creation #in-progress
+3743e97d9eb30a66734ebc548816dd879500e8da 2026-11-11T22:30:05+03:00 EXP186: the staging allocation itself faults, and it is only 4608 bytes #in-progress
+44619c717a2e1f7b20be8ef99349c964803c5384 2026-11-11T22:28:37+03:00 EXP186: crash pinned between the packet fill and the quantize call #in-progress
+43e42e87b6fee0f6a1d1ea25d75f512758a23334 2026-11-11T22:26:49+03:00 EXP186: compute-sanitizer reports 0 errors, so the fault is host-side #in-progress
+88ef00f7955de51cda750d24c5efbac554bc311c 2026-11-11T22:25:48+03:00 EXP186: call reaches the Goose module and the module faults -- now an ordinary porting defect #in-progress
+0fb6ca091e4a8db11c415ae8eeb74da8d19e2dd1 2026-11-11T22:24:50+03:00 EXP186: loading the module DSO alone aborts the process, not the patch #in-progress
+0c97e70226bbf1810f2618e284fa8ad8f234cb62 2026-11-11T22:23:06+03:00 EXP186: shim installs the patch, but the process aborts in the patched path #in-progress
+24204c81fbe9c60c4a3fa033a5fcfe983505fb2d 2026-11-11T22:21:01+03:00 EXP186: CUDA backend rebuilds from flint sources and the module compiles unchanged #in-progress
+60fb5b3b77340b8ff6444551df354cd71801eccd 2026-11-11T22:16:16+03:00 EXP186: CUDA rebuild chain cannot be reconstructed from this tree #blocked
+aa816584449a6dd4273586af1602f7d5a0811a69 2026-11-11T22:13:08+03:00 EXP186: rebuild chain runs but needs every link from EXP180 upward #blocked
+0db1a7fa583fd2457ef0eb32cd2e9c1e48fd4b5f 2026-11-11T22:12:18+03:00 EXP186: Q6_K CUDA matvec is correct but not in the active library; rebuild chain missing #blocked
+4adf599219de0ee334a2e23e9a97ab6e15c2d89b 2026-11-11T22:08:44+03:00 metrics: CPU_MATH checkpoint on the CPU bench #accepted
+7ae9df15d0beed0171d0d6bcd04ca83e113132c7 2026-11-11T22:08:07+03:00 EXP412 + registry: CPU_MATH DONE -- Q4_K and Q6_K accepted on the CPU bench #accepted
+aa1ca555b2b78f9302dbeecf9e7841f661c76718 2026-11-11T22:05:13+03:00 EXP412: gate 240/240 and 6/6 mutations; the two-kernel library is still wrong #in-progress
+eecf584074416dbb222054286db42ae77bd6eeda 2026-11-11T22:02:58+03:00 EXP412: Q6_K gate clean 240/240 -- wrong block layout and per-half scales #fixed
+5a081af0007cfc00910f605527e4259c793abe13 2026-11-11T22:01:21+03:00 docs: controlled defect test recorded as the preferred proof of execution #insight
+0b3951fc1b94e95b8318820dfe7c2c6e07a01776 2026-11-11T22:01:01+03:00 EXP412: two scales per 6-bit group found; scalar transcription still off #in-progress
+b785d73fc6c18b144cbe56710bf67913c894052d 2026-11-11T21:59:12+03:00 EXP412: scope confirmed by measurement -- Q4_K and Q6_K complete CPU_MATH for this path #insight
+99f6894e75b80105cdcfdf4510c54842ce3bb59f 2026-11-11T21:59:02+03:00 docs: measured CPU_MATH inventory for the Apex path -- exactly Q4_K and Q6_K #insight
+7e218cf35751ba5a7c77b60ef4a6f980be296e3e 2026-11-11T21:57:37+03:00 EXP412: minimal case shows the offset term is wrong and my assumption about it was wrong #in-progress
+6c40ec7cee0531ab485e40f101f2f2e6aa2158a5 2026-11-11T21:57:02+03:00 EXP411: independent proof the Goose kernel executes, without relying on my counters #insight
+e1336d69232f0eb6d7a1d9017c0d365f0e239c76 2026-11-11T21:52:40+03:00 EXP412: Q6_K module and gate scaffolded; implementation not yet correct #in-progress
+a2ece07599ac5ee16b8599f47df5943247f715d2 2026-11-11T21:49:26+03:00 registry: Q4_K x Q8_K accepted on a CPU bench, CPU_MATH stays PARTIAL #accepted
+289590d6e84a2331234543548ebc79ff2c12b76b 2026-11-11T21:49:16+03:00 EXP411: kernel accepted on a CPU bench -- identical output with the Goose library #accepted
+e00ee13fc5d9d5a20a753bdf14c03f1a56d2fed0 2026-11-11T21:42:38+03:00 docs: libggml-cpu now builds from source out-of-tree, unblocking the CPU rows #insight
+230959942f88cdd9f9dde58f19e15d12c13737c7 2026-11-11T21:41:26+03:00 EXP411: CPU_MATH recorded as PARTIAL -- no bench can witness the kernel #blocked
+8b6b59d5bcd258035eb72505a251210a13d4ff67 2026-11-11T21:39:18+03:00 EXP411: zero calls to six quantised dot kernels on the accepted profile #blocked
+e898b4b64af9bfd89d35ff602243917803d428a5 2026-11-11T21:33:23+03:00 EXP411: entry patching works; the dispatched kernel is not on the used path #insight
+0da7f14ecd111a7d9499db5703e5aae8579ee712 2026-11-11T21:29:02+03:00 EXP411: environment reproduces e68df05b, but the preloaded hook is never reached #blocked
+c3bc8c942aa7ba853f4f1845ccd9b93bda9832dc 2026-11-11T21:25:43+03:00 EXP411: lane grouping was the last defect; gate clean 160/160 against the dispatched AVX2 #insight
+522596f930f32454be182a37ec4cbe081f34c63e 2026-11-11T21:23:58+03:00 EXP411: state recorded at 96/160; next probe compares members against an intrinsic transcription #in-progress
+1a385449e0eaf60b89919cc54a617257a0973bfb 2026-11-11T21:23:34+03:00 docs: own-server lifecycle rule recorded and enforced in the runner #insight
+dfdf47d12196351ba7c0120a146834343a97c295 2026-11-11T21:23:13+03:00 EXP411: hook split out; the earlier clean gate was comparing the module with itself #fixed
+04d325a1a219741ca34c7c857eeda26516b14514 2026-11-11T21:21:21+03:00 EXP411: gate 160/160 against the dispatched symbol; mutation verdict withheld #in-progress
+326940bfc0614746957268f15b8a4e07f5ab54cf 2026-11-11T21:19:21+03:00 EXP411: AVX2 q4_K x q8_K dot ported to Goose, gate clean 160/160 #in-progress
+3c9708bd9d35db94e6a2ebdfa8b058665f888e86 2026-11-11T21:18:12+03:00 docs: standing run authorization carried into the handoff #insight
+b346bd1dc01d8c5961ae8fa94c067c98c7d55222 2026-11-11T21:17:38+03:00 EXP410: the AVX2 source found; four differences explain the float split #insight
+ffbb6b269e58c29dcccf25231415fe4eaaa0b279 2026-11-11T21:16:09+03:00 EXP410: GPU can allocate 3.6 GiB, the run still fails after model placement #blocked
+1cb7dfb9b6deeab17491c4b12f4cdadfe86986ea 2026-11-11T21:15:33+03:00 docs: standing run authorization recorded, per Igor's direct confirmation #insight
+9fd7938437e6004051b4c9622dafd19469123adc 2026-11-11T21:13:51+03:00 EXP410: real run blocked on VRAM occupancy, not on the port #blocked
+94dbaed6193b68173344fc10af5393965371a669 2026-11-11T21:05:27+03:00 docs: CPU_MATH boundary now reflects the ported Q4_K dot and the withdrawn SIMD blocker #insight
+cfb51018fc03ca14c35db8bc0d1152c8d6ba5bb1 2026-11-11T21:04:53+03:00 EXP410: drop-in replacement built, enabled by default, bit-identical on a captured case #in-progress
+13ec3804e7b2d1ea3166c7834329aaf18e89aac1 2026-11-11T21:03:07+03:00 EXP410: 9 of 9 mutations caught #in-progress
+3932cb104c2f1e77cae13af1042b1ba4548cc5ec 2026-11-11T21:01:43+03:00 EXP410: gate clean 160/160 against this tree's quants.c #in-progress
+2cf70fba87da41bc94ac0454153e8130404c4ec9 2026-11-11T20:59:28+03:00 EXP410: the first failing input is captured for stepping #in-progress
+0ef86e60cc0e5355feb9c42c80f2539587c946a5 2026-11-11T20:58:37+03:00 EXP410: a concrete two-block case matches bit-exactly #in-progress
+cd79aedf0196f83e5a7fd24d032bd1c558ec7056 2026-11-11T20:57:30+03:00 EXP410: the port matches the generic order exactly; AVX2 is a different accumulation #insight
+598243e5ea04eb2c951a081a511d1dac1b2fd868 2026-11-11T20:57:02+03:00 EXP410: residue is one ulp between blocks; FMA ruled out #in-progress
+455755128a8c4e79b5a20774cba65e64ed6068cb 2026-11-11T20:56:06+03:00 EXP410: nibble order was the decisive defect; single block now bit-exact #in-progress
+e33e45a08c4eb1a53d187227f3700b662f2ef59c 2026-11-11T20:54:36+03:00 EXP410: bsums offset and nibble stores fixed; sumi now matches the hand calculation #in-progress
+7a9e6f87a69359aaa87c6797d7b6670192a28420 2026-11-11T20:53:32+03:00 EXP410: scale bytes verified by hand; the min term is the remaining gap #in-progress
+dc34f34ea929d1f3ffa0ad3c311e517c7904560b 2026-11-11T20:52:34+03:00 EXP410: byte stores corrected; the unpacked bytes are still not what the loop reads #in-progress
+b4679779ed8a6c0ee6bc6ef0a3551ff78d95566a 2026-11-11T20:50:46+03:00 EXP410: instrumented the mismatch down to the module's block loop #in-progress
+1af08717f16a5bc30eb5403c29d779ddafc28b8d 2026-11-11T20:50:08+03:00 EXP410: three gate defects fixed, one block still differs #in-progress
+207652759cbf4cea451d5caf3da70cc2edb9ac74 2026-11-11T20:48:14+03:00 EXP410: Q4_K dot module and bit-exact gate built, mismatch still open #in-progress
+ca1c73523be0235a0e8ea9ae23246915bf280a4c 2026-11-11T20:44:29+03:00 docs: the CPU_MATH vector blocker is disproved, with the Stage3 evidence #insight
+888c7099fc0dbaf177d0fa076441e73eed9b57e7 2026-11-11T20:43:27+03:00 docs: the accepted CUDA library comes from a tree that is not on disk #insight
+a8a964980d38b4ac431a85e854d16754480cf256 2026-11-11T20:31:55+03:00 docs: the old build tree lacks the MMQ/FA instance objects #insight
+37148e092854230b0c4807761aca83a423c1432e 2026-11-11T20:29:09+03:00 docs: nvcc 12.4 works; the rebuild reaches a running failure, not a toolchain one #insight
+4483b7599a57dc3d1cae5d69cc97e1c1d9cb94b2 2026-11-11T20:19:07+03:00 docs: a clang-built CUDA library is not numerically equivalent -- exact toolchain needed #insight
+58e94a4093a6a99e2697afaa441b48a345c0b60d 2026-11-11T20:13:55+03:00 docs: the rebuilt CUDA chain changed the answer -- rejected and rolled back #insight
+6e9a437aa15402d1580c13f5713dd5c92e185a5f 2026-11-11T20:06:03+03:00 tools: the CUDA chain links; 32 of 63 routes present #insight
+169eeba9f4c82e0158bac03b3a9e0133f8fffe4d 2026-11-11T20:04:14+03:00 tools: CUDA chain linker; one merge left before the library builds #insight
+036572b25a4758658b3fb06ebce52c965731fd1f 2026-11-11T20:00:04+03:00 docs: all sixteen CUDA modules compile; the link must be reconstructed #insight
+562dce7dbd882e30dec5f10444ea8a829d994b72 2026-11-11T19:58:35+03:00 docs: fifteen CUDA modules compile; three need merged sources #insight
+2af665fd0a773da88589b6965e47a4773cafe096 2026-11-11T19:56:42+03:00 docs: the CUDA route chain must be rebuilt from sources, plan recorded #insight
+fb52655bd1955d74c3ed562a61cba193b51476e4 2026-11-11T19:53:50+03:00 docs: functional first, performance recorded not vetoed #insight
+c9a125b6a42f8e36487a28616a32b24f439d66d8 2026-11-11T19:53:36+03:00 build: the Goose libggml-cuda builds here through a clang wrapper #accepted
+203027f86471860a2bd685f76cf5fb9893f315ed 2026-11-11T19:48:19+03:00 EXP408: graph input planning is Goose-owned #accepted
+a16125cd780ff3023b3b5381cc77394c8c68e9d3 2026-11-11T19:45:07+03:00 docs: both CUDA rejections share one cause -- a codegen gap, measured #insight
+ce18f00749dcb9a77b643e27ec1891848ce5796d 2026-11-11T19:44:12+03:00 docs: CUDA_MATVEC's remainder is a measured codegen gap #insight
+f6268e327f19227b25aaa3793e8890c7b4bbe583 2026-11-11T19:42:21+03:00 accept: APEX.CPU_CONTROL done, with its checkpoint #accepted
+c6dceab753dd23e4f27158d3afab6cfa92e8cfb1 2026-11-11T19:39:54+03:00 docs: the exact baseline profile does not fit in the GPU right now
+c8ab84c0a18a79842111ec2f096676b56e7493a5 2026-11-11T19:38:50+03:00 docs: CPU_CONTROL's remainder is the unwired job-pool module #insight
+74d3f717ebad6a4d55254cc99088cf08c7a1dae8 2026-11-11T19:36:35+03:00 docs: the Goose libggml-cpu now rebuilds from source in this tree #accepted
+ac70236e5a3bd039e85b9050b365b49cbbd9c08b 2026-11-11T19:32:41+03:00 docs: ggml-cpu build reproduces up to a lost rename recipe #insight
+e0a9ba32285f07d7b34ac49584edb468e14c058c 2026-11-11T19:30:30+03:00 docs: the candidate differs from the baseline in exactly one flag -- --cpu-moe
+db219ad5a3f9c6c6a59e4eccbcfd1e15c31113bd 2026-11-11T19:29:29+03:00 docs: the model really uses Q6_K -- 64 of 753 tensors
+c2e1c6800cdf433f7b47d17fd1a62548f9007629 2026-11-11T19:23:31+03:00 docs: 38 gates, 0 failures after the last integration
+0d5ce8e1ad720f7288bfee68a5ff782dadef3957 2026-11-11T19:22:49+03:00 docs: name the boundary of every remaining small-path item #insight
+1478e01ee41944ceade038031f0eb40c40a45f21 2026-11-11T19:21:55+03:00 EXP406: transfer policy integrated but not executed; CUDA_CONTROL boundary named #not-validated
+703f4c4a82cefc5a1e230a8c11965f61ab6a1706 2026-11-11T19:17:17+03:00 docs: CPU_MATH is blocked on vector types, with the dependency named #insight
+6e7f2a898e971d0ff17456ca22df7b78abd5cde1 2026-11-11T19:16:50+03:00 docs: record the deferred optimization stage and its precondition
+07c63a7d8cf63ddcd8d5d381361d348aa5c6a107 2026-11-11T19:16:26+03:00 accept: APEX.CORE done, with its metrics checkpoint
+6a64ee767617701d783b4740e962c5e5a42f9db3 2026-11-11T19:15:39+03:00 EXP405: scheduler decisions are Goose-owned #accepted
+f9321b2cc1b40c0f4a58dbf44896c5981ab148bd 2026-11-11T19:13:03+03:00 accept: APEX.LOAD done, with its metrics checkpoint
+497bfcd3c9701ee024eb820d2447c3bc6c5a8853 2026-11-11T19:10:10+03:00 EXP404: weight placement is Goose-owned; EXP403 recorded as unreachable #accepted
+c1d0aa9868d578a231a9f60b09ba1334911763b3 2026-11-11T19:04:22+03:00 docs: one metrics checkpoint per closed item, recorded here
+a01cce1dfff7322d024d4c39d40adb6b94498889 2026-11-11T19:03:52+03:00 tools: one-run metrics harness (timings, peak RSS of the process tree, VRAM by PID)
+3000f3de78324181af372b101faea402143b1a41 2026-11-11T19:02:36+03:00 docs: APEX.TOKENIZER accepted as DONE
+9bda133e4bef4e1515677d8e897678dd42453308 2026-11-11T19:02:29+03:00 EXP402 + unicode routes: the tokenizer path is live end to end #accepted
+c7af7f8bcbf93c95aaa5aa35a894dfd0798c87bb 2026-11-11T18:38:26+03:00 docs: APEX.OUTPUT accepted as DONE
+641abdfd2a92d65f1e9679b6e0a093885dcf63af 2026-11-11T18:38:19+03:00 EXP401: detokenisation decisions are Goose-owned #accepted
+9c46cb1f305611224b3eb45017d743d3c89dadb7 2026-11-11T18:35:30+03:00 docs: record the standing one-item-at-a-time order #insight
+178a374736d4b5a9afb20e2c23cf117221098d6f 2026-11-11T18:35:06+03:00 witness: every route reports a non-zero count on its first line
+8264e361d4c7311e19820ea424fc19887292f47f 2026-11-11T18:34:57+03:00 accept: KV, RECURRENT_MEMORY and BATCH are DONE #accepted
+c867f442a73239bc87e6cb028483ae69e280b0e9 2026-11-11T18:21:38+03:00 docs: report the byte-identical state file against the accepted binary
+b21df076cf311067c6038b609289b2cd445d4bcc 2026-11-11T18:21:30+03:00 EXP400: the accepted binary writes the same slot file, byte for byte #accepted
+c617db035c62e8d98c210a5ca3df426071d63a0b 2026-11-11T18:18:24+03:00 docs: status carries the byte-level evidence
+c6232ada39a6dd3f8e9828bbb0c979c84b4c0597 2026-11-11T18:18:19+03:00 EXP400: on/off switch agreement is the byte-level proof; accepted-binary comparison blocked
+acc7b7f2169259b754bb8c3f3480ca7198932e5f 2026-11-11T18:17:18+03:00 EXP400: the slot file is byte-identical across independent runs
+89930b8ec4f222b9436c3cef698a7a927b6bb80c 2026-11-11T18:15:52+03:00 docs: the status report carries the disable contract
+55eef8d64595af0296293f3138a794e8b77d4709 2026-11-11T18:15:45+03:00 EXP399: every new route in the three items switches off cleanly #accepted
+e2b60358ac8f8dbece95a885afc42b38b08cebed 2026-11-11T18:13:51+03:00 docs: report BATCH as awaiting primary review; storage boundary named
+c8789da2d2b008f5c1645e92ef9585e6c9989438 2026-11-11T18:13:39+03:00 EXP398: ubatch container layout is Goose-owned #accepted
+e65b40ed1e1ad86b5b2d5b25352745ba0df589d9 2026-11-11T18:10:51+03:00 docs: publish the small-path status report for the dashboard observer
+d4258cddcb96f62a95f5670eaa394b66dd0688e5 2026-11-11T18:10:03+03:00 docs: APEX.RECURRENT_MEMORY complete; correcting the false zeros #accepted
+b3dee0774e74f7dd84420cbb1521486f22f20008 2026-11-11T18:09:51+03:00 EXP396+EXP397: recurrent payload layout and hybrid delegation are Goose-owned #accepted
+38fd9dd1844cb76471138264c16de3ae853a033d 2026-11-11T18:09:42+03:00 fix: llama-memory-hybrid.cpp was never compiled; FG375S/FG376S are live #insight
+6924514e24683c46539efd97ee4f074e2e3551e7 2026-11-11T17:56:05+03:00 docs: APEX.KV complete against its criterion #accepted
+99d3ea2e24611d146f55ad046c9002377079438f 2026-11-11T17:55:55+03:00 EXP394+EXP395: KV tensor layout and metadata read are Goose-owned #accepted
+96159b2a62eafc83b7c29d9bc27f69f9bc4b03b2 2026-11-11T17:49:04+03:00 build: link the metadata-plan bridge
+f6278ee3e6a452d5bf79ff04a547a37e361dfe62 2026-11-11T17:48:50+03:00 EXP393: KV metadata field selection is Goose-owned #accepted
+8a1277249d9cd746b6606eb3b7917217b45fc74a 2026-11-11T17:46:29+03:00 EXP392: KV slot placement walks in Goose #accepted
+6a9dfa77548860e088dc86791cf44746f71246c6 2026-11-11T17:27:57+03:00 EXP391: fused-op resolution decisions are live #accepted
+6c3918ebbd36e068baeb6232a8d541c88a3f9877 2026-11-11T17:21:57+03:00 EXP390: special-token partition integrated, unreachable on this model #not-validated
+e571dfa7422410c7b4ffcba8ef04887425c58019 2026-11-11T17:18:45+03:00 docs: map the remainder to its boundary, not to a percentage #insight
+6cf1276455b1144bb22a7f4cc70be3fa2772ea6c 2026-11-11T17:17:28+03:00 docs: route status after the gate sweep #insight
+b9f95e412339df60f5d3d5e5d950c98cf18d911e 2026-11-11T17:16:58+03:00 EXP389: GGUF inventory decisions are live on the load path #accepted
+19e124b744986021119ce2d06c9a238b3ca2a6c4 2026-11-11T17:12:30+03:00 EXP388: sampler filter guards integrated, unreachable on this server #not-validated
+873fdccd19c7c4021f44e3136d33d131f98953ca 2026-11-11T17:09:39+03:00 EXP387: sampler chain orchestration is live #accepted
+89a843673e6148bd2d2ffa39064043d967168b21 2026-11-11T17:07:04+03:00 EXP386: token selection runs in Goose, bit for bit #accepted
+a934b2770d0cfa4fe55cbf9d5e2d3d3c3f142238 2026-11-11T16:55:59+03:00 EXP385: sampler early-exit guards are live #accepted
+80572e2cc28e618a5cc84af629daf4b6ac00698d 2026-11-11T16:51:17+03:00 EXP384: sampler softmax runs in Goose, bit for bit #accepted
+9e4781fc4ecbd12790ddc19d920b925ffdf5bc00 2026-11-11T16:47:58+03:00 docs: exp candidate v49 verified independently, with the subnormal rule corrected #insight
+349efbdcadf1078f0f700bbc8bc44a11963d313c 2026-11-11T16:45:41+03:00 EXP383: ubatch container composition is Goose-owned #accepted
+a4878728228e8e9c7b1b081cd63b8d967de213e3 2026-11-11T16:43:15+03:00 EXP382: recurrent state I/O plan is live next to FG232R #accepted
+ca347278c03b38faccd69ef8ef2795393785455f 2026-11-11T16:40:25+03:00 EXP381: KV whole-cache clear branch is live #accepted
+d1c2e1e2d8a7064bfc4f6c8f5f7cce698cc8c9b0 2026-11-11T16:35:47+03:00 docs: CORRECTION -- exp exists in the standard library, my probe was wrong #insight
+ce72c3966ed215018d56ba87e24057ba7fb8cf7f 2026-11-11T16:32:55+03:00 EXP380: penalty bookkeeping gated 92/0, unreachable through this server #not-validated
+fa178dd7fa0ddac863dcf047cf37e24f41c4fa95 2026-11-11T14:27:19+03:00 docs: the sampler softmax family cannot be ported -- Goose has no exp #insight
+13e17ca2876576d7edda93d60742eb914e9280df 2026-11-11T14:24:44+03:00 EXP377: keep build artifacts out of the tree
+6fd1e362dd2ce564a184257a0debc24bc7e39deb 2026-11-11T14:24:34+03:00 EXP377: mutation loop left a compiled mutant behind #insight
+9754d17cb8a3c7ca4aecee1a489dc9632bdb2c46 2026-11-11T14:20:28+03:00 EXP379: a dropped streaming client does not disturb the cache #accepted
+dfb2f5c64aec0b3b2848f7fb61fbe2d86ac4b3bc 2026-11-11T14:16:00+03:00 EXP378: the recurrent half cannot be failed alone by truncation #not-validated
+1559ad14025e6903b3c6ebb98c9650488741aa7c 2026-11-11T14:11:20+03:00 EXP377: aligned-read arithmetic gated 2161/0 with 7/7 mutations, unreachable here #not-validated
+70cbde00684c6e870691184b248029216bc1e721 2026-11-11T14:06:53+03:00 docs: establish reachability before porting #insight
+a47401a6181d444b8a4acae04df1a2f8780458b4 2026-11-11T14:05:46+03:00 EXP376: hybrid context decisions integrated, unreachable on this profile #not-validated
+e915624639138380128a7c59bd77608e1c1f5a61 2026-11-11T14:02:16+03:00 EXP375: hybrid memory decisions integrated, witness unreachable #not-validated
+cc612f51ebc5b8a0a601fd03ef7b4d7dc89b1db2 2026-11-11T13:56:32+03:00 EXP374: disable contract holds on the reconstructed tree #accepted
+53721aabbc9e2f5b4c9b782794efaa44e250e6e5 2026-11-11T13:54:31+03:00 EXP373: KV read-orchestration guards live on the reconstructed tree #accepted
+90c115144f58e8b30b155484a73cea84941c50dc 2026-11-11T13:49:41+03:00 docs: state_read_sinfo is the one KV block still native #insight
+63c5b39f5774f1417c61a49e12321b925d860d4b 2026-11-11T13:48:40+03:00 docs: the accepted build used a hybrid tree that is not on disk #insight
+1c672ba46ad74173c3e8e8dbef32a36cd9071f97 2026-11-11T13:45:40+03:00 docs: patch set needs a full tree, not just src #insight
+6ab447529a1fe100cd971c7c710d33e8f859bff8 2026-11-11T13:43:31+03:00 docs: reconstructed tree is correct but 35% slower on prefill #insight
+6760e30ece82f6386c313674dc26df9195dd2e4a 2026-11-11T13:40:00+03:00 docs: KV routes live on the reconstructed accepted tree #accepted
+81249670cad16b69bf21d90522ab87890ec69898 2026-11-11T13:35:04+03:00 EXP347 bridge: report the first call, not the exit
+3c9f7037518f1cf5108d54981cb4ad9a9f866d75 2026-11-11T13:34:38+03:00 docs: reconstruction reproduces the accepted runtime; batch area already Goose-owned #insight
+2f09b20400c20a47f1d35066224df2dd2ab7eaf3 2026-11-11T13:25:00+03:00 docs: reconstructed tree reproduces the accepted answer #accepted
+f91a9a3735d7c8f9113010d88ac96cd95d5914f8 2026-11-11T13:19:34+03:00 docs: reconstruction blocker narrowed to one lost bridge revision #insight
+572bf701e8a202b6533ae099d76be28c569dc593 2026-11-11T13:17:11+03:00 tools: keep the relaxed symbol filter in the reconstruction selector
+c0159c02de62b3b6156d9e1bf2eecc0224508881 2026-11-11T13:16:48+03:00 docs: reconstruction links but cannot reproduce the accepted runtime #blocked
+8e35cb85f40516ba3f9c72514254f334cfef51f1 2026-11-11T13:00:53+03:00 docs: reconstruction base confirmed, copy selection automated #insight
+4d3ec462d2890ddd909e85afa14fab5955903217 2026-11-11T12:54:40+03:00 docs: plan to reconstruct the accepted runtime's source tree #insight
+6f6029db6fdd49e12ee2f830729f2e7511a714c9 2026-11-11T12:51:08+03:00 EXP370: five Goose routes live in one candidate #accepted
+09bdf9c93b92ee2a0992719eac223c61d93ed801 2026-11-11T12:44:46+03:00 EXP369: disabling every Goose route returns the candidate to native #accepted
+f517a267d094e293c3e64a224d131f428b1f5e58 2026-11-11T12:42:53+03:00 EXP368: KV write and clear live in one candidate #accepted
+04dc01bd6de01e8ee4fb484a4262112e82c3732d 2026-11-11T12:39:53+03:00 EXP367: KV state clearing live on the failed-restore path #accepted
+b0fbe4e31cb6fe33ad2c69f0dc76cd3e840d8525 2026-11-11T12:33:58+03:00 EXP366: KV state-read header gated; format blocks a single live call site #deferred
+1c0ad080fca85d5a7668ac4114228d9acbf1f89b 2026-11-11T12:31:33+03:00 EXP365: KV state-read header decisions, bridge gated #accepted
+beb3bc3a6d0b20603284fb8e0d36bb03484cbcfc 2026-11-11T12:28:03+03:00 EXP364: the state written from Goose ranges restores and reproduces the answer #accepted
+0f8472b902d8536091ee5432fb4d5a1cedd5e3db 2026-11-11T12:23:45+03:00 EXP363: three call sites live; KV state-write exercised by a slot save #accepted
+f60c0f4375aba6e375096325e72411491cca838c 2026-11-11T12:19:58+03:00 EXP362: both batch call sites live in one stage #accepted
+41a1ce1c11a8806723e234427a4aa25a3918b4e2 2026-11-11T12:16:59+03:00 EXP361: split_equal selection live on the accepted line, output unchanged #accepted
+32953e9c2d1f2dababed04ffdb2ff1d626fff22c 2026-11-11T12:12:53+03:00 experiments: EXP353 mutation driver left the source mutated after an interrupt
+bfa8e2ca9541480ea7d9fb7122e2ed43f0a9a638 2026-11-11T12:11:37+03:00 EXP359: ubatch_add runs live on the accepted line, output unchanged #accepted
+33ab7536177d54da5b5680b583d756fec4c5da61 2026-11-11T12:07:03+03:00 EXP358: stage built from the accepted runtime's line #accepted
+4ec7a84812571f8c2ef64c1a295fee5d5fda7bf5 2026-11-11T12:03:30+03:00 experiments: mark EXP347/354/355 runs as not valid
+c91462a558e3558f48dee86dd09ae551609f8407 2026-11-11T12:03:16+03:00 EXP357: ubatch_add bridge gated; stage runs declared invalid #blocked
+acbfab3fb16c6548f13ceaa8092d29ba0da452c4 2026-11-11T11:45:18+03:00 docs: the working candidate's llama-batch.cpp is a different line #insight
+375e0ab66e647c4c09fbfbbb595d3cad68f0a287 2026-11-11T11:39:51+03:00 EXP355: split-equal tail wired, route probe shows the branch is dormant #deferred
+eae4a5623076f33d4ea0a72340d1a6dcd079200d 2026-11-11T11:34:36+03:00 EXP348 fix: deferred sets return their taken prefix, concatenation over taken prefixes
+cb039767ec821d00748d7058b0fcf5f6723c2e1d 2026-11-11T11:27:01+03:00 EXP354: split-simple wired into the candidate, route probe shows zero calls #deferred
+9b05e4debe733c53a914fdfa655afdab8420e676 2026-11-11T11:20:01+03:00 EXP347: stage validated on one Apex run -- tokens, probabilities and hash exact #accepted
+1567bb52a44bbef3f7a7f658db58c4780e5d318c 2026-11-11T11:14:12+03:00 EXP353: batch initialisation stats in Goose -- P6-07 #accepted
+d34e333ac8ccaee8a46a935cc302790b392fa898 2026-11-11T10:27:07+03:00 EXP352: batch entry classification in Goose -- P6-07 #accepted
+c39a26d288f46eaac580d80275e84a04bc9be966 2026-11-11T10:24:57+03:00 EXP351: simple and sequential batch splits in Goose -- P6-07 #accepted
+6ce544ee7dfd262c9e9afc233b9a470cb2d8318a 2026-11-11T10:23:27+03:00 EXP350: batch sequence-set selection in Goose -- P6-07 #accepted
+8a3c4df96df3c69cf17114a324fa5df5c5ad0430 2026-11-11T10:21:24+03:00 EXP349: ubatch assembly decisions in Goose -- P6-07 #accepted
+de65156a4a1acdff41dcfc172edc5146f609bbb3 2026-11-11T10:19:45+03:00 EXP348: batch split tail policy in Goose -- P6-07 #accepted
+28af52cde1f75ac40a469cbbdaabbc5ea906f058 2026-11-11T10:15:18+03:00 EXP347: state-write stage linked, no model run #accepted
+af40327c5fc9885e899f1c28c5024788eaf0d2e3 2026-11-11T10:13:21+03:00 EXP347: state-write call site compiled and symbol-checked #accepted
+229ddf12b8f436f913ceba1af29df2aac30fee34 2026-11-11T10:10:29+03:00 experiments: keep the EXP347 build output out of the tree
+132b0be8255945198a6fd8c46168731b5a627fcf 2026-11-11T10:10:20+03:00 EXP347: state-write adapter in Goose -- step 1 of APEX.KV integration #accepted
+0fd1f62429e86ce214e9727af9fcd4eaa7379e28 2026-11-11T10:06:40+03:00 docs: integration readiness for the small Apex KV path #insight
+5ca97621227c5f2855dd310872a02545023db728 2026-11-11T10:01:05+03:00 EXP346: recurrent state write and read in Goose -- P5-04 #accepted
+381990854f61cdd30d6f286892c33de3ca1bce6a 2026-11-11T09:58:51+03:00 EXP345: KV state write range collection in Goose -- P5-08 #accepted
+a9b4f84f5cadded144c34e8d134d3d86c174ee06 2026-11-11T09:57:30+03:00 EXP344: KV state read orchestration and clearing in Goose -- P5-08 #accepted
+c20681b83ce9b50c8897a667913e01c9791c6393 2026-11-11T09:55:53+03:00 EXP343: k-pool context sizes in Goose -- P5-05 #accepted
+fcc6b5c57d9af372fb45c4da208e3d40e6824b77 2026-11-11T09:54:39+03:00 EXP342: k-pool layout whole pass in Goose -- P5-05 #accepted
+02e45fb55877abc69622f34d75f6fa595d033a43 2026-11-11T09:50:29+03:00 EXP341: hybrid indexed operations in Goose -- P5-05 #accepted
+08cfa666fa9a126ba58f83e64c8fa3b6f3d6a414 2026-11-11T09:45:23+03:00 EXP340: recurrent accessors in Goose -- P5-04 #accepted
+3b4dd24ec0c82bd5a34c2770b89add2c81254eb7 2026-11-11T09:43:46+03:00 EXP339: recurrent state clearing and context steps in Goose -- P5-04 #accepted
+2dc7d1657ee211c31c18f13cc30e1701a05f8c22 2026-11-11T09:42:44+03:00 EXP338: recurrent state restore in Goose -- P5-04 #accepted
+f040e5485890e0be20f4127b9947a98835b9a560 2026-11-11T09:41:18+03:00 EXP337: recurrent initialisation and preparation in Goose -- P5-04 #accepted
+6f5f26e7bf5dfff8072bc37638296318d89006e6 2026-11-11T09:40:13+03:00 EXP336: hybrid indexed memory initialisation in Goose -- P5-05 #accepted
+192abcf84ed3e1b42c80561c8dfd078a37f67d4c 2026-11-11T09:39:08+03:00 EXP335: hybrid memory policy in Goose -- P5-05/P5-09 #accepted
+481152721966314f3b39fd3b4661d10ce0533b36 2026-11-11T09:37:00+03:00 EXP334: KV previous-token lookup in Goose -- P5-01 #accepted
+b552b57fd37e47508d077c9446b36de1a0c35491 2026-11-11T09:35:13+03:00 EXP333: KV shift input and rotation copy in Goose -- P5-01/P5-02 #accepted
+566a1d5c409b97f080b4d503271860044a42646c 2026-11-11T09:31:20+03:00 EXP332: KV ubatch application in Goose -- P5-06/P5-09 #accepted
+4b551589335e509b8ff3c1d4c09123355d862166 2026-11-11T09:28:06+03:00 EXP331: KV batch initialisation policy in Goose -- P5-09 #accepted
+1f390adec3ec7269efa40fa6e77edf3907b328c0 2026-11-11T09:26:59+03:00 EXP330: KV batch preparation transaction in Goose -- P5-09 #accepted
+c62782055477064ab747304a60b25c22d3d1181f 2026-11-11T09:24:52+03:00 EXP329: KV update in Goose -- P5-09 #accepted
+ecf9432408274caf2126a2f722b6e4d92a3c5fb2 2026-11-11T09:23:32+03:00 EXP328: KV sequence division and position extremes in Goose -- P5-01 #accepted
+dc2f7beaa3f19ed10a5882405a944ebc28bd61fc 2026-11-11T09:21:58+03:00 EXP327: KV sequence shift in Goose -- P5-01/P5-09 #accepted
+1be215e968451a1289179e525ebe5fb485b2aec8 2026-11-11T09:20:16+03:00 EXP326: lazy VMM KV buffer policy in Goose -- P5-06 #accepted
+9a41d14d46b9b9c99ea0a9d0e11a98b4b18244da 2026-11-11T09:17:43+03:00 EXP325: KV data restore plan in Goose -- P5-08 closed #accepted
+0b8fb502e7a22e1d28d1edeebfe82d4abef8e3c4 2026-11-11T09:14:32+03:00 EXP324: KV metadata restore plan in Goose -- P5-08 #accepted
+4c2e16fc10d1b4cf8572b60c48be09b5fda8742e 2026-11-11T09:12:47+03:00 EXP323: KV state data plan in Goose -- P5-08 #accepted
+341a0328487a7b2bef908115acc6c4b31e828040 2026-11-11T09:11:30+03:00 EXP322: KV state metadata in Goose -- P5-08 #accepted
+ccc9a453491f6e2750c557ad9f0da452b197a594 2026-11-11T09:09:51+03:00 EXP321: KV state ranges in Goose -- P5-08 opened #accepted
+f5c01af107764d2bfbe2d1452b10c707059f9992 2026-11-11T09:08:08+03:00 EXP320: KV rotation matrices in Goose -- P5-02 #accepted
+ea52e9784d3f1c180b86186c03bd6d43cab345ec 2026-11-11T09:06:27+03:00 EXP319: KV copy-in plan in Goose -- P5-02 #accepted
+d6d68d1a92939cbb717021bef1b3207b4cbc70ea 2026-11-11T09:05:03+03:00 EXP318: KV view shapes, strides and n_kv padding in Goose -- P5-02 #accepted
+c71ae9c7dbe84d93fc29fa99bec90a4955ef064a 2026-11-11T09:03:15+03:00 EXP317: KV attention mask, full float path in Goose -- P5-02 #accepted
+c2ca965c3e038a6c34b6f334b073ab8b2ba00516 2026-11-11T09:01:43+03:00 EXP316: KV attention mask in Goose -- P5-02 #accepted
+c99bc4ee82c3746948ccdb456384c98af841c275 2026-11-11T08:58:40+03:00 EXP314: hybrid indexed host pool inputs in Goose -- P5-05 #accepted
+a4cd6b503215a4c2878840a7b15dee630d8b4b63 2026-11-11T08:54:36+03:00 EXP315: base hybrid memory policy in Goose -- P5-05 #accepted
+f1946ae85ed7e93da95ff5e1e3f73de990763686 2026-11-11T08:52:40+03:00 docs: record the open set_input_kpool attempt #insight
+519b52bf56111798ec6fae111e8a7003cf6a6397 2026-11-11T08:49:48+03:00 EXP313: hybrid indexed context stepping in Goose -- P5-05 #accepted
+fcc87216bf0d3fefdc431cf7dcf7531dca4e1303 2026-11-11T08:48:24+03:00 EXP312: hybrid k-pool state marking in Goose -- P5-05 #accepted
+163389fbcc76c317b6cc67b811d6e8d72632eb33 2026-11-11T08:42:23+03:00 EXP311: hybrid indexed state ordering in Goose -- P5-05 #accepted
+10434882ae1b78e3e9d22d856fe5c1f484b693f9 2026-11-11T08:40:31+03:00 EXP310: hybrid indexed pool layout in Goose -- P5-05 #accepted
+03dbf68dcd944daa05855e6552bc1abc14be01e6 2026-11-11T08:36:01+03:00 EXP309: hybrid indexed memory pool staleness in Goose -- P5-05 opened #accepted
+26506faebe16dbfbc197ceafdcc0bcfe74137929 2026-11-11T08:34:26+03:00 EXP308: DSV4 cache construction policy in Goose -- P5-03 #accepted
+b7ad90adf8fa0a5ec2b56cfe7932b38fe3ff9603 2026-11-11T08:33:12+03:00 EXP307: DSV4 compressed-state restore plan in Goose -- P5-03 #accepted
+f389df98d6b540330a6a3a98e5869f69d8950550 2026-11-11T08:31:50+03:00 EXP306: DSV4 state tensor I/O plan in Goose -- P5-03 #accepted
+77b0aced12535a858cd02a4a8034506fae816907 2026-11-11T08:29:46+03:00 EXP305: DSV4 compressed-state operations in Goose -- P5-03 #accepted
+0b66dc9fef8a8da2d018e3839659cb10e297d5e6 2026-11-11T08:26:49+03:00 EXP304: DSV4 restore/snapshot planes in Goose -- P5-03 #accepted
+685dba5a397cb9703f648d7429f89f219ea78ade 2026-11-11T08:25:08+03:00 EXP303: DSV4 comp plan, overlap read layout in Goose -- P5-03 #accepted
+181ae26e661dc3d53805ad084ce559df6b50d98b 2026-11-11T08:22:57+03:00 EXP302: DSV4 comp plan (non-overlap, no rollback planes) in Goose -- P5-03 #accepted
+f857eb84a4685ef39941db661f5dd3e1d3b12e1a 2026-11-11T08:19:20+03:00 EXP301: DSV4 compressed-state policy helpers in Goose -- P5-03 #accepted
+05c1ebd4a7b54c3c91c2b5995d71ba61fbe77256 2026-11-11T08:16:18+03:00 EXP300: DSA KV cache policy in Goose -- P5-03 #accepted
+21e32251f59152018e10b8b6875df7ec7dd8779c 2026-11-11T08:14:01+03:00 EXP299: MSA KV cache policy in Goose -- P5-03 #accepted
+9700b6383047549f0e088645e85195d4b3fad126 2026-11-11T08:12:49+03:00 EXP298: SWA KV cache policy in Goose -- P5-03 opened #accepted
+66e2c3982cca9880404aea08b37b50baf5abb10c 2026-11-11T08:10:51+03:00 EXP297: recurrent state payload plan (write/read records) in Goose #accepted
+d872ac6ad14691f49ef7706d32d90a94ebf0eff9 2026-11-11T08:06:24+03:00 EXP296: recurrent state_write_meta and whole-cache state_read_meta in Goose #accepted
+ed09f50d5645c7adbc1cd351fa0d00c523e43595 2026-11-11T08:03:34+03:00 EXP295: recurrent seq_rm/set_rs_idx/clear/state_clear in Goose -- P5-04 #accepted
+a1b3f69519328649baedcebd249fd518c9eacb79 2026-11-11T08:00:54+03:00 EXP294: recurrent seq_cp/seq_keep/seq_add/seq_div in Goose -- P5-04 #accepted
+1b8a87c39fd7912058ecbe8fa0a392963c391d1b 2026-11-11T07:59:22+03:00 EXP293: recurrent find_slot in Goose -- P5-04 state placement #accepted
+899a83e7eae455d37089d6fe10bde243698d043a 2026-11-11T07:52:51+03:00 EXP292: cross-stream seq_cp in Goose -- P5-01 metadata closed #accepted
+ca9661c384b302700d40098a3662eb5df1b4e404 2026-11-11T07:51:03+03:00 EXP291: KV seq_rm range, seq_keep(seq) and same-stream seq_cp in Goose #accepted
+59188f0a8f575a7b5e4ecfd71d5f8825cf8609cf 2026-11-11T07:47:50+03:00 EXP290: KV find_slot and is_masked_swa in Goose -- P5-01 slot item closed #accepted
+eeeeaa4a41c30cbba3db0f27ede6c5e0f092d078 2026-11-11T07:43:19+03:00 EXP289: KV cell pos_add/pos_div and seq_pos in Goose -- P5-01 remainder #accepted
+ed18324c121db7710667354ab3fd981a28bd8372 2026-11-11T07:38:26+03:00 EXP288: out-prod pointer kernel and cuBLAS branch policy -- P3-10 dense closed #accepted
+e82801b4645839bdf5ffe22c5db38a695e8d19e3 2026-11-11T07:34:43+03:00 EXP287: mul_mat_vec_f half/bfloat16 sources -- P3-10 dense vector closed #accepted
+9a3dfd042f188fbd4565d559f3d25465212492fb 2026-11-11T07:21:24+03:00 docs: recurrent family blocked on local arrays; allreduce is hardware-unverified #insight
+56ddd37a341ecdeab0eb6f1c6c9a9eb18d904a4c 2026-11-11T07:19:53+03:00 EXP286: CUDA snake and softcap in Goose #deferred
+3f57a02f13662b9c45fa94a3de159851550c0a14 2026-11-11T07:16:49+03:00 EXP285: CUDA cooperative softmax in Goose -- softmax family complete #deferred
+2ac4aaa4a6741cbae08a0dd889866819a04f2f81 2026-11-11T07:12:17+03:00 EXP284: CUDA softmax backward in Goose #deferred
+6832a712800c79aa6cb95708e36748ade7304853 2026-11-11T07:09:11+03:00 EXP283: CUDA bitonic argsort in Goose #deferred
+d4b94558200d42ba2330fbfa51ee6978f34fc376 2026-11-11T07:04:30+03:00 EXP282: CUDA softmax sinks in Goose -- and two value-domain traps #deferred
+bb50d6de1f96aaf3eb82711a5146bf4fd0573325 2026-11-11T07:00:19+03:00 EXP281: CUDA softmax with a mask (F32/F16) in Goose #deferred
+d0ef2f8626d3ec46ccb106c3877df17eae753da3 2026-11-11T06:57:58+03:00 EXP280: CUDA softmax in Goose -- mask-free path, and a self-masking clamp #deferred
+02103666f992fd5242f8f1684c312fec5dcad748 2026-11-11T06:53:29+03:00 docs: shared-memory class unblocked by EXP279 #insight
+8c3835875ba8bc6d8c32cfb31effee69d56db9f1 2026-11-11T06:53:19+03:00 EXP279: CUDA cumsum in Goose -- shared-memory class unblocked #deferred
+cc87f836bab5593059ac3d126bf3ff2e74ba7aa6 2026-11-11T06:49:09+03:00 EXP278: CUDA acc in Goose #deferred
+09ebff5edac0d30cd1f1494a7c595042a7ae4584 2026-11-11T06:47:25+03:00 EXP277: CUDA add_id in Goose -- and a padded-stride fixture hole #deferred
+dd8c9a828e4dd92f3a4565aaf2e895c11388294c 2026-11-11T06:44:28+03:00 EXP276: CUDA timestep embedding in Goose #deferred
+eb979230554055fb5d53c6566021a2cfca1eb163 2026-11-11T06:42:23+03:00 EXP275: CUDA diag F32/F16 in Goose -- and two fixture holes #deferred
+3dd17b285807d1fcb68d0bc03675afcca9f6bd89 2026-11-11T06:39:10+03:00 docs: cumsum diagnosis -- no CUB in this build, fallback scan is order-sensitive #insight
+09a346c2b7c96f184f8274c9084ff28782be11f4 2026-11-11T06:38:58+03:00 EXP274: CUDA arange in Goose -- device value and host plan #deferred
+fac39ad74fcf126c18f0ac557a7b8f746df06278 2026-11-11T06:36:28+03:00 EXP273: CUDA count_equal device computation in Goose #deferred
+9176d262835175eec74a3dfac0857684861e1df4 2026-11-11T06:33:17+03:00 docs: F32/F16/BF16 dequantization matrix complete #insight
+c1d9de5a6255827f99f43744cc06f5af5250ad56 2026-11-11T06:32:46+03:00 EXP272: IQ1_M and MXFP4 to half/bf16 -- F32/F16/BF16 matrix complete #deferred
+b9a29590f55e436387550ed281395804aa362394 2026-11-11T06:30:10+03:00 EXP271: IQ3_S and IQ1_S dequantization to half and bfloat16 #deferred
+2917e452718162703e129fbfc9415f4058a26932 2026-11-11T06:28:34+03:00 EXP270: IQ2_S and IQ3_XXS dequantization to half and bfloat16 #deferred
+63aab4ca4e0af4d516b7240c0abb0042ce874910 2026-11-11T06:27:01+03:00 EXP269: IQ2_XXS and IQ2_XS dequantization to half and bfloat16 #deferred
+a748c340e4ff14d25a6547163df6eb9a25b8b593 2026-11-11T06:25:29+03:00 EXP268: IQ4_NL and IQ4_XS dequantization to half and bfloat16 #deferred
+112b2db4c92abfa27b424e9214546eb9ba5c2e89 2026-11-11T06:23:42+03:00 EXP267: Q3_K dequantization to half and bfloat16 in Goose #deferred
+a76a42afb20c2c264496bfe355136eaca0e3bbfa 2026-11-11T06:22:29+03:00 EXP266: Q2_K dequantization to half and bfloat16 in Goose #deferred
+16b9f1826ba78c733f0b704b649b6cad178ca650 2026-11-11T06:21:12+03:00 EXP265: Q5_K dequantization to half and bfloat16 in Goose #deferred
+d0d7aa752c0189793b2ad528299b780e05446aca 2026-11-11T06:19:55+03:00 EXP264: Q6_K dequantization to half and bfloat16 in Goose #deferred
+ab5620091e3824c1e53bda38375dea3d97360c26 2026-11-11T06:18:02+03:00 EXP263: Q4_K dequantization to half and bfloat16 in Goose #deferred
+eef2309e79fee75bbfc1cc532f3d67c0962ca78d 2026-11-11T06:16:01+03:00 docs: dequantisation block closed in the handoff; next is non-F32 destinations #insight
+f9825725939e5599bf723af59bf231628817ee38 2026-11-11T06:15:32+03:00 EXP262: 32-element legacy dequantization callbacks in Goose #deferred
+3f29a50636014c632f6c115063ac6f1fcd86382f 2026-11-11T06:07:55+03:00 EXP261: CUDA IQ1_M dequantization -- super-block family complete #deferred
+c12425e3d2f001848ce3d1479b1a56fb55da44b5 2026-11-11T06:06:10+03:00 EXP260: CUDA IQ1_S dequantization -- bit-exact after the stride fix #deferred
+e3a69c19b440b45a3a4b249f373a4efc21f069fc 2026-11-11T06:02:34+03:00 EXP259: CUDA IQ3_S dequantization -- bit-exact, off the Apex profile #deferred
+020e4af7113b0fb1a05fcdf842d826d4ddc75e3b 2026-11-11T06:01:27+03:00 EXP258: CUDA IQ3_XXS dequantization -- bit-exact, off the Apex profile #deferred
+4fba12116d9ecdd820f7c6dc3dd0a736ca81df9a 2026-11-11T06:00:06+03:00 EXP257: CUDA IQ2_S dequantization -- bit-exact, off the Apex profile #deferred
+3151bdb1cf22b35e4ed5a36fc22929694ff59407 2026-11-11T05:58:38+03:00 EXP256: CUDA IQ2_XS dequantization -- bit-exact, off the Apex profile #deferred
+76f071727bb76e2dc49c85669dc59345b9f1ed31 2026-11-11T05:57:33+03:00 EXP255: CUDA IQ2_XXS dequantization -- bit-exact, tables as data #deferred
+a317bc400e0fe19138dd899f0a8853cd7534fa44 2026-11-11T05:55:52+03:00 EXP254: CUDA MXFP4 dequantization -- bit-exact, two findings were mine #deferred
+2fd6596cac6402b6d8fc734df6651af227e17c91 2026-11-11T05:51:31+03:00 EXP253: CUDA IQ4_XS dequantization -- bit-exact, off the Apex profile #deferred
+2ade773e78ee16bc0398fe89636bc6bc4aeebe07 2026-11-11T05:50:11+03:00 EXP252: CUDA IQ4_NL dequantization -- bit-exact after the index fix #deferred
+db98e172c02865f7bc1022bb64473949967914a9 2026-11-11T05:46:20+03:00 EXP251: CUDA Q3_K dequantization -- bit-exact, off the Apex profile #deferred
+2914b1c6a8dbaa3dcd4a19ee2e0139134244d19c 2026-11-11T05:44:58+03:00 EXP250: CUDA Q2_K dequantization -- bit-exact after fixing the dm offset #deferred
+51921b836cbf00dc3a05badd5ff8002c715e1cee 2026-11-11T05:43:21+03:00 EXP249: CUDA Q5_K dequantization -- bit-exact, off the Apex profile #deferred
+6ad0bc602ad3f0d5f2075f2417bb75f05ab55e6e 2026-11-11T05:41:20+03:00 EXP248: CUDA Q6_K dequantization -- bit-exact, off the Apex profile #deferred
+605468ba8225d26d510bea6be2be2ab86e6f53c3 2026-11-11T05:35:35+03:00 chore: reclaim 85 GiB and point active state at EXP244
+4185f266d4e231ab0b98ce519ee0bc6a127703b1 2026-11-11T01:33:37+03:00 docs: other mm_ids_helper widths are dormant -- and the near-miss that looked like a contradiction #insight
+e27f0e2567623ddd7c2c66edc1e641b6fb6c3571 2026-11-11T01:32:44+03:00 EXP247: ROLL index mapping -- P3-03 now closed #deferred
+5d8a11fedc76bd95393d90d7168b6b27ed68b625 2026-11-11T01:31:12+03:00 docs: handoff carries the modulo finding and the ported-vs-shipped rule #insight
+8813e971949e392342cbf863390af455e88b7862 2026-11-11T01:30:51+03:00 docs: modulo sweep of the eight shipped routes -- one site, guarded #insight
+d2c9f1c929e8d21d298cc20b93479ae23ae26afe 2026-11-11T01:30:02+03:00 EXP246: PAD index map -- and Goose's % is Euclidean where C's truncates #insight
+fa491362979eb34763ec893ec8d5411818b9a311 2026-11-11T01:28:18+03:00 docs: P3-03 closed -- ported and shipped are not the same act #insight
+45f7ec561ec8119403c57d912cb583c9c19c75e9 2026-11-11T01:28:02+03:00 EXP245: SET destination view in Goose -- gated candidate, deliberately not integrated #deferred
+0f4ce388918eb89fbfe73c5c202d8a7e879c9524 2026-11-11T01:26:18+03:00 docs: handoff for the batch and output block, EXP237-244 #insight
+74eb98a450c8cbbbfe23f8377b048506892dc64b 2026-11-11T01:25:14+03:00 docs: EXP244 recorded; three dormant routes, three established reasons #insight
+c7417e5f7ed71d560544342844c6098ae911ee3f 2026-11-11T01:24:59+03:00 EXP244: swap-minimising output reorder in Goose -- integrated, gated, dormant #deferred
+27611b3d1e6d4bafd1ec64025fdc221ea5ea0f41 2026-11-11T01:21:43+03:00 docs: re-run the batch gate sweep against the shipped DSO #insight
+2edae30b89fb1bed265367112b4be6c926fba090 2026-11-11T01:21:23+03:00 docs: P6-07 has seven routes; record dormant reasons and the decode measurement limit #insight
+811273bb3b5c09bfd9cf0d7de2d8baa59834364c 2026-11-11T01:21:05+03:00 EXP243: compat position decision in Goose -- ported, gated, not exercised #deferred
+5de9a0ead9cee16077c48b865a991216a97231d1 2026-11-11T01:18:39+03:00 docs: the EXP239-242 pair now exists -- prefill clean, decode indeterminate #insight
+030201d5e5f60ef084015de33108b575ca75d864 2026-11-11T01:15:47+03:00 docs: record why the EXP239-242 pair could not be completed #insight
+1f3ba09a23e93c0339da900bfd437dd5707b4c3d 2026-11-11T01:02:37+03:00 EXP242: ubatch out_ids selection and seq_idx mapping in Goose #achievement
+7a4adbb5c173dbe17a89c728a8d68e268bbcaa5d 2026-11-11T00:49:56+03:00 docs: P6-07 has five live routes; record what is decision vs marshalling #insight
+94c36f2199b0cd3320379737807ab1591f1eaefa 2026-11-11T00:49:21+03:00 EXP241: ubatch_add classification in Goose #achievement
+d6b436d8c31b69e29f73902613b5925d8d5a9161 2026-11-11T00:25:17+03:00 EXP240: 256-bit sequence sets now LIVE -- after finding three of my own bugs #achievement
+dd8fc8437b4d552ec63f353c4093ff7c208468af 2026-11-10T23:37:33+03:00 EXP240: 256-bit sequence sets gated at 300008 checks, still not entered #deferred
+5ec24199f110dcb85c1bf7fc3f24d94d39a98770 2026-11-10T23:25:14+03:00 EXP240: sequence-set construction in Goose -- ported, gated, guard keeps it OFF #deferred
+d568272bbd800c6207efc5a5cb7914e2df65615a 2026-11-10T23:12:59+03:00 EXP239: batch entry classification in Goose #achievement
+f001045a8c870afbcf4a5954af0e515f6cb66e4c 2026-11-10T23:00:48+03:00 EXP238: split_seq selection in Goose -- ported, gated, not exercised #deferred
+24834bf374bb74a0fb8578f108f9c69947343012 2026-11-10T22:38:44+03:00 docs: record the fifth tag, deferred, and that it is already live
+76e1c4100590104242d4113fcb6efb4a6a4e9ed7 2026-11-10T22:37:38+03:00 EXP237: split_equal expansion step in Goose #achievement
+2e68d825f5806ebc4fd77c08a865c11cfa52212c 2026-11-10T22:22:08+03:00 docs: record the exact commit-tag rules read from the dashboard source
+61d5089a26a09eaec737c746f1b32183aad90293 2026-11-10T22:20:41+03:00 docs: mailbox is a standing checkpoint, not an optional courtesy
+a15407ba4bd8435c834d93c062e0cd33ba6916c8 2026-11-10T22:18:49+03:00 EXP236: replace the copied ggml-cuda tree with two patches
+e29b2466e60ab79737d049ae4e3aefe3facfb0b0 2026-11-10T22:17:10+03:00 docs: MMQ's 40% is MMA code, and MMA is not expressible here
+92ead2ff1882e4939d2ca44d2cd3032d82b41b7b 2026-11-10T22:16:39+03:00 docs: forced-dp4a configuration verified -- Goose is 32 instructions SMALLER than native
+61902ab2e77a906712ee95f6005b7bc9629f1a54 2026-11-10T22:14:52+03:00 docs: the dp4a path can be forced, and the Q6_K port binds
+04812e86db1f784e13c55a9caf9ffbbb17512cfa 2026-11-10T22:10:59+03:00 docs: why the MMA path of mul_mat_q is not portable with this module format
+d6105117991117b38a470d04fbc2c0d2f7530d60 2026-11-10T22:09:29+03:00 EXP236: the Q6_K port targets a path this GPU never takes
+17ac3d218afd79620fd7291253fcdf1e16467c40 2026-11-10T22:03:15+03:00 EXP236: why the override never bound -- three mechanisms, each ruled out
+dfaa0e0c149589ba07e16997e79adbbf152b4638 2026-11-10T21:58:44+03:00 EXP236: wiring attempt -- object changed, no SASS conclusion
+f74f48e27ec4dab3e9be98ff02d88859202c1ebc 2026-11-10T21:51:50+03:00 EXP236: Q6_K inner product in Goose -- bit-exact and at parity
+19d5d864c4357870ee24bf7378a1211be1cd0334 2026-11-10T21:48:52+03:00 docs: 25 fixtures, 1248346 checks, 0 failures
+3fa285e57a70efdaa17ecaf5bac7917375337328 2026-11-10T21:47:33+03:00 docs: MMQ's boundary is now measured, not estimated
+82b176b0c38336d909099dc0ff8bfd83f1a5c32f 2026-11-10T21:46:39+03:00 EXP235: redesign -- scratch removed, still 2.1x slower
+50950a0193615ee45c36c2d549bcaaa7d17f6aee 2026-11-10T21:44:33+03:00 EXP235: tile loop correct and 2.7x slower -- my design, not the compiler
+000ce1ffec6d3534112f0317fc03231645bf062d 2026-11-10T21:42:14+03:00 EXP235: tile loop verified -- 512 cases, 0 differences, after five defects
+a61909d6d32adc06af2a107e08180e37e5d1549b 2026-11-10T21:37:19+03:00 EXP235: tile loop started, compiles, NOT verified -- three defects found by inspection
+652ffa870b52d1394d63c2af946087c5017bc095 2026-11-10T21:35:02+03:00 EXP235: the fix is on my side -- declare dp4a as a primitive, and the gap closes
+26018331b00610c8eb755ba2c5e85e0993e2d397 2026-11-10T21:33:16+03:00 EXP235: located the 19% -- the emission never reaches IDP.4A
+ce087efbe474c06a8e87a4fd4628f01e85370105 2026-11-10T21:31:37+03:00 EXP235: wired, bit-exact on GPU, and +19.2% slower -- clearest measurement in this line
+4a04165ac165c72c6a7e7b1917d081921afd0f86 2026-11-10T21:25:52+03:00 EXP235: vec_dot_q4_K_q8_1_impl_mmq in Goose -- the inner kernel of the 30% block
+c71bfd3d92e36f56744d44a34d433b88ff9b7a14 2026-11-10T21:21:55+03:00 EXP234: MMQ Q8_1 kernel-level A/B, six alternations -- the route costs ~10%
+1d78d357c8d5e2ee0563882777443d67f3d18020 2026-11-10T21:19:21+03:00 docs: what is left, and why each remaining candidate is not a port
+c12756055721180962fb427611f5b14501848d37 2026-11-10T21:16:02+03:00 docs: why find_slot is deliberately not ported, and a ledger correction
+b7a94101912dbf786253243dea2862a2691fc44a 2026-11-10T21:14:21+03:00 EXP233: KV scanning helpers in Goose -- accepted on correctness
+9ccb2de2aab48b40a3fcbfce0ccb7577342408ad 2026-11-10T21:00:25+03:00 EXP232: recurrent state-write range grouping in Goose -- accepted, and it is live
+662d5b7cdc550656fef5d56864c75a821649c494 2026-11-10T20:46:46+03:00 docs: HANDOFF points at EXP231 and states the measurement caveats up front
+90b02055fe348929a462e3487d9bb6c4c78ba8b8 2026-11-10T20:46:26+03:00 docs: the KV line's ten routes, with the two dead ones called out
+12fd4b580968fae1b69ab297b0fe1cf099dfd1b0 2026-11-10T20:44:48+03:00 EXP231: llama_memory_recurrent::seq_add in Goose -- ported, gated, not exercised
+1ac19a07a1dba597e75504857e275fd3363f9faa 2026-11-10T20:31:21+03:00 EXP230: set_input_k_shift in Goose -- ported and gated, but dead in this profile
+f65d856c224f707fa2348e3e81db2afcddce3ce2 2026-11-10T19:37:29+03:00 docs: mark EXP224-226 withdrawn and correct the ledger
+1802b0b509a8acd5cde86d15a84e7de0b668fa09 2026-11-10T19:37:16+03:00 docs: my A/B Apex measurements were all the same configuration
+a340a949b66025e16fc7fc1e03566cab4f3869e0 2026-11-10T19:26:13+03:00 EXP229: graph-input index fill in Goose -- accepted on correctness
+9ff4b6f1275745efa8954b8aa971c15ab117bacf 2026-11-10T19:13:51+03:00 EXP228: llama_kv_cell_ext decision in Goose -- accepted on correctness, and it is hot
+0951e8025d1a43b3c4623ad7e8801458e2498dfd 2026-11-10T19:01:18+03:00 docs: ledger carries EXP227 and an assessed candidate list for the KV line
+72886fc39a761f3f120bde9fc6785f7abad38c86 2026-11-10T19:00:01+03:00 EXP227: llama_kv_cache::get_n_kv in Goose -- accepted on correctness, perf deferred
+61c470805900c8983ea5154a57070485ffe34e75 2026-11-10T18:36:37+03:00 EXP226: MMQ Apex series under the resource lock -- route loses, magnitude unmeasurable
+efbf49dfb57c4d9d395545c44926f22c6fa6dca6 2026-11-10T17:11:55+03:00 docs: the sampler is not a port target -- working set is 20, not 150k
+84d3717499f1d2cdc37588773989a75b6235c9af 2026-11-10T17:10:21+03:00 EXP180: fixture arm label corrected to match the dispatcher
+bd7b5634aa3fa9396f359d739736af1e344603a1 2026-11-10T17:09:23+03:00 EXP225: corrected alternating schedule attempted, aborted -- host contaminated
+42768cd0105a42068132dbfa72fd32e881c3581b 2026-11-10T16:34:49+03:00 EXP225: my own protocol was order-biased -- these numbers cannot decide a promotion
+bec60429e948f03c48aea985d230ff81f9454fdc 2026-11-10T15:54:25+03:00 docs: ledger carries the two Apex MMQ measurements and the two defects
+6383a6ba06c172b2e30e36532e919d9c60fc8dd0 2026-11-10T15:53:31+03:00 EXP225: u64+ne2 in-chain at Apex -- inside 2%, variant question unresolved
+2b34bc6bab1168b62fe923f51b2d2f915f72ce01 2026-11-10T15:12:50+03:00 EXP221: fifth compiler release tested, MMQ emission still 400/355
+b39bc0b8dccbef67c234543256d84c18adea763f 2026-11-10T15:12:09+03:00 docs: the chain ships the MMQ variant its own experiment rejected
+45ae835f524ff8a730f9b973515d2dbec798e9d4 2026-11-10T15:10:34+03:00 EXP224: MMQ Q8_1 measured at Apex on the current lineage -- inside noise
+3528c17f3aeee67dd42bb37553723ea46c3b2ec0 2026-11-10T14:29:19+03:00 EXP221: fourth compiler release tested, MMQ emission still 400/355
+8db098cc15bc738170b9c2e7328c024667263e08 2026-11-10T14:26:18+03:00 docs: MMQ ships dormant in the runtime, opted out against rule 10
+437826467a0fa079678dd298f57743282257a73b 2026-11-10T14:21:28+03:00 docs: MMQ rejection rested on a 5-point-spread measurement, never revisited
+26fb26f63cb465e7f8da40467ef88fbb8e6951bc 2026-11-10T14:20:06+03:00 docs: P1-06 documented by witness -- CPU MoE is already Goose
+2caeb67b88e05e2485a1029848e3cd136b1fecf3 2026-11-10T14:18:05+03:00 docs: P6-03 scope -- the builder DSL is an architecture question, not a port
+49c86dd0d057ed2f9b9315e5fe0aaf5f9835dcd2 2026-11-10T14:15:14+03:00 docs: P6-01 and P6-04 move to IN_PROGRESS with the exact boundary
+9aceca300f5aed7962582c4c73867d8dfd721542 2026-11-10T14:10:58+03:00 docs: switch audit -- all 18 default to enabled, one name is misleading
+b5cb59c5e3c73518046c873ab31feaeb8d373a7a 2026-11-10T14:07:31+03:00 EXP223: cutting instructions further changes nothing -- count is not a predictor
+5ddaac19e8b06b8c30d6196a67a373a193de4ca9 2026-11-10T14:06:57+03:00 EXP223: the ensure() guards are 36 and 149 instructions; timing inconclusive
+c5367bee3d5bf2dc858bff18631994b7714a2765 2026-11-10T14:05:40+03:00 docs: ledger carries the EXP222 result and the ordered next steps
+6de916ed7d7b197ce921b38ec83325af308427e5 2026-11-10T14:05:08+03:00 EXP222: located the remaining 128 scatter instructions -- six inlined traps
+a304bd6b40d6c5d06378b9666dc2654bf11d5a6f 2026-11-10T14:04:13+03:00 EXP222: the ne2-pinned variant is byte-exact on the shapes it claims
+5894b4338f19eeaa572f8ed8561c8bf496fca14e 2026-11-10T14:02:56+03:00 EXP222: pinning ne2 takes MMQ from 400 to 164 instructions and -3.7% time
+e89a2a610240a67b894bb82a91568948621e23d0 2026-11-10T14:00:52+03:00 docs: provenance audit -- every linked object has a committed source
+88a396346d07f28e21f36c79445d929c62909d91 2026-11-10T14:00:11+03:00 EXP209: commit the cumulative KV integration that the chain already ships
+8710e5f60d4d2b05e9372b0ddf4749e7b6a8ad5d 2026-11-10T13:59:09+03:00 docs: ledger records EXP219-221 and the concrete MMQ next step
+92b5338496bfb6bda08cb3c826c861211e36186a 2026-11-10T13:57:50+03:00 EXP221: method correction, and 22-vs-2 division instructions found but dead
+4142e00f254f479a884bde21106e5fe771e2bfaa 2026-11-10T13:54:28+03:00 EXP221: eliminate shifts and divisions as the weight, with counts
+a0a096b41f14b4a2eef39c0a2c4bdc6652887fe9 2026-11-10T13:53:22+03:00 docs: the mm_ids "other widths" item is moot for the Apex profile
+a662933bc00839d6f21381dc9c12d44f55337ecb 2026-11-10T13:46:47+03:00 EXP221: third compiler release tested, MMQ emission unchanged at 432/392
+46d63faff12a09ffad31f6e544a122b1fa22a65a 2026-11-10T13:45:54+03:00 docs: both GPU profilers are unavailable on this machine
+87a611b364134c42ce5012b00ed3b38445b6ec2f 2026-11-10T13:32:43+03:00 docs: full gate run against the shipped artifacts, 914112 checks, 0 failures
+9cf638e2a267d80ae82235039b7c76a93a0db805 2026-11-10T13:30:25+03:00 docs: update HANDOFF to EXP220 and record the chain-repair rule
+e2cb7faeedb48506d320c51c398270f16bc19d28 2026-11-10T13:29:26+03:00 EXP221: operator-level timing reproduced; ncu blocked by permissions
+aa3d4e760d167c0dd93899660f165490057a98a0 2026-11-10T13:26:27+03:00 EXP221 second correction: specialization was never the problem
+138ce68b6bb9e8cd5537ac70806c146ab93f3edd 2026-11-10T13:25:05+03:00 EXP221 correction: 824-vs-160 compared the wrong scopes
+401e469c01417286391950da5daf655e6e6a4d63 2026-11-10T13:23:29+03:00 EXP221: MMQ Q8_1 codegen retested on the newest compiler, no change
+4b1eccb471c093607434e3507a1a1364656f687a 2026-11-10T13:19:32+03:00 docs: record EXP220 as the current Apex checkpoint
+4190e8b100872029d9dc4f1501e5d43ce40b4bb2 2026-11-10T13:17:44+03:00 docs: audit every declared route against the active runtime
+c910402ddb9beeb4465af82315236c5610f2fb77 2026-11-10T13:15:57+03:00 EXP220: cumulative llama-vocab.cpp and unicode.cpp, second chain repair
+6eb942200933b7cc648ddcd4160c469233d5280d 2026-11-10T12:25:20+03:00 EXP219: cumulative Unicode routes, repairs a silent chain loss
+36c2e2f94460e076ada46594274554e109b1b22a 2026-11-10T11:33:53+03:00 docs: record EXP213-218 in the migration ledger
+4602d7aa70f3cf2005145f8d0ef15686f4b24565 2026-11-10T11:33:21+03:00 EXP218: Unicode lowercase mapping ported and gated, NOT promoted
+adbb8fd6f673c2973b9e4f10f581da2abb38b1e6 2026-11-10T10:32:41+03:00 EXP217: whole-string UTF-8 decoding with recovery in Goose, ACCEPTED
+a22c438183f1b9eb5daacee70ce7c7021b491984 2026-11-10T09:43:14+03:00 docs: verify the named-result fix and retract my own false alarm
+dd748e76011effa07207f001eb2a002a0057bb5a 2026-11-10T09:39:38+03:00 EXP216: UTF-8 codepoint encoding in Goose, ACCEPTED
+b3796bd8e562c7794de9dc795aa467975d9d6935 2026-11-10T08:47:26+03:00 docs: confirm no accepted module is exposed to the named-result defect
+5d7c84fdd38407ceef9ab0e0a5884754b1ea82d7 2026-11-10T08:45:07+03:00 docs: revalidate all accepted modules on subset-d5e9fdc5
+658148e2b8c4d9eb12a7fafef18ebe811db0d929 2026-11-10T08:39:11+03:00 EXP215: UTF-8 codepoint decoding in Goose, ACCEPTED
+6f2a334b8e21a56eb5ba21b54037d77101055ea1 2026-11-10T07:44:23+03:00 census: record the EXP214 attempt that did not complete
+520476846e737c58fab24f615682566fd43aaa1c 2026-11-10T07:14:53+03:00 ledger: EXP213 detokenization and EXP214 stock std.sort
+3f109c183ef84815f2573e14e6d26347bde45a05 2026-11-10T07:10:56+03:00 EXP214: stock std.sort replaces the hand-written loader sort, ACCEPTED
+fac44326fb5477f39ba2d568d6e4005ada572025 2026-11-10T06:15:44+03:00 EXP213: detokenization piece copy in Goose, ACCEPTED on interleaved parity
+7e70297c5444b2f55d012f9f28eca16eda7243f6 2026-11-10T05:25:14+03:00 EXP180: source is reproducible again on the fixed parser
+a288f74ef6792f0c113ab9510911b7fa41ec0792 2026-11-10T05:23:53+03:00 EXP208: re-evaluated on subset-acc916a4, guard claim retracted
+388ca6e578a70c9809bdbe1e1128711a5f8d21c9 2026-11-10T05:07:30+03:00 EXP212: correct my own rejection, interleaved delta is -1.81% not -3.35%
+6a3a28b62eb8542a39f866d563d07ff239ad160d 2026-11-10T04:19:21+03:00 EXP212: sampler thresholds in Goose, REJECTED on decode regression
+a8ab64a372eee731f23730ae6f34dee8cdcaf9d0 2026-11-10T03:44:36+03:00 ledger: P5-06 partial by fact
+016f6c6a25c62190a94496a73f3c5fdf5f752d3f 2026-11-10T03:41:39+03:00 ledger: EXP211 restores EXP199 and EXP203 to the chain
+fb26992eeb17f97a79ccd144567886d2605b0225 2026-11-10T03:40:54+03:00 EXP211: also restore FG203D, the MMQ dispatch module
+364bc9114fcfa7b593d39e8f4302af8821db765d 2026-11-10T03:21:21+03:00 tooling: check witness modules between stages, closing the EXP199 gap
+16d2544fee213b2fad50f5a0397f0d377429f5b0 2026-11-10T03:19:42+03:00 EXP211: restore EXP199 to the chain, a regression I introduced
+f9fe076b9bbe302c744394d2870439995a5beece 2026-11-10T03:04:23+03:00 EXP210: recurrent seq_keep in Goose, correct but not reachable in Apex
+5883047fcf1b6917003f10f0cac2f3136075b2b9 2026-11-10T02:50:16+03:00 ledger: EXP209 accepted (incremental KV sequence bounds)
+b3a9fabdcb4a217b4f64d3b2fe2e5c04670ddc49 2026-11-10T02:49:51+03:00 docs: record the role split agreed in the compiler mailbox
+c6588679237bea6fa2e3bc2b36666e7c5d419950 2026-11-10T02:48:06+03:00 EXP209: incremental KV sequence bounds, ACCEPTED at 2547.67 / 26.39
+c737c5484cf758df398a7635559c6a21ece5a763 2026-11-10T02:27:44+03:00 EXP207: reject the per-sequence scan, 59% decode loss
+bafc67a8d1027d2d6778f4e63355d35a742b988d 2026-11-10T02:26:02+03:00 docs: record the compiler coordination mailbox
+b0e349d8c75bb44b5709349be449bfea2e5837da 2026-11-10T02:05:58+03:00 EXP208: diagnose the +56 as exactly the alignment guards
+a8ae245d3cd6c4f5e91eaa9d97e1957e99552049 2026-11-10T02:02:20+03:00 EXP208: typed const f32& input address for MMQ Q8_1, no speedup claimed
+9fac875c6a4eb0f8862662f407b04b0aff38a886 2026-11-10T01:35:49+03:00 EXP207: per-sequence position index, gate green, wiring BLOCKED
+9aaea05600c29cd935774dd3fc8de52489d356c1 2026-11-10T01:21:08+03:00 EXP206: KV cell gather in Goose, plus a real marshalling defect found
+f311ac70bc9ef3c2bd99d2443d102abf809042fd 2026-11-10T01:01:33+03:00 EXP205: KV slot search in Goose, live at 2573.78 / 26.2
+008369bd0c45dcaf45817c5ecccf5ddb9eee2d67 2026-11-10T00:46:08+03:00 ledger: record EXP203 dispatch and EXP204 KV copy
+81e6be7d41488477a6434f5f93c8098b7689106e 2026-11-10T00:45:48+03:00 EXP204: KV cell state copy in Goose, now live at 2568.67 / 26.93
+fbc6e329d1970d522165be0df0f67a0af517737b 2026-11-10T00:21:45+03:00 EXP204: KV cell state copy in Goose, module verified, live wiring open
+60cfddc051efa5f9b964e1d25255bb6315bba71d 2026-11-10T00:04:53+03:00 EXP201: sort in Goose with bounded arrays, replacing the last std::sort
+4ce2b9f356af46f2aaa81bfda96bcb8c26b6e188 2026-11-09T23:46:47+03:00 EXP203: port the dense-path dispatch policy to Goose
+3e2aa7539e7eb7f3fad4b0650120762d1cfedff6 2026-11-09T23:17:49+03:00 census: re-take on the EXP202 runtime, 54.08% Goose / 45.92% native
+878888b1be5a71e73017d8c53060a0e14e8f2005 2026-11-09T22:40:48+03:00 P3-14: close FWHT as DONE after re-checking the census
+df1e0d7b4fd513aaeb5e8898bc887cb61ef2217f 2026-11-09T22:31:03+03:00 plan: drop legacy scope by owner directive, 160 -> 152 tasks
+4c61e9ca4c5be4ff04b4fc030090ac7d0c26e3c0 2026-11-09T21:37:49+03:00 docs: record FlashState idea and permanent acceptance criteria
+8c5f73113d17e97d7b9a12bb76845c8b65ab6cad 2026-11-09T21:28:16+03:00 EXP202: wire the GPT-2 BPE predicates Qwen actually uses
+10a0ebd16f405f8dbe050d4ef72fea36b267ca31 2026-11-09T21:14:51+03:00 docs: confirmed Fried Goose compiler limitations for the Apex port
+990e491afac77f982392292f72c0be680480e3c4 2026-11-09T21:11:26+03:00 EXP202: tokenizer decisions in Goose, utf8_len integrated and live
+7eb2717900de763653e6cd7efe0d13efef82d2ed 2026-11-09T20:55:27+03:00 EXP201: port merge_ranges and sub_ranges in full
+c78971f1f804da731a6f18040b719c363943a3d9 2026-11-09T20:42:50+03:00 EXP201: port get_key_or_arr and the load-mode decisions
+f68e69f266c73ab4dd2f7160dab489d3a3127ac1 2026-11-09T20:31:30+03:00 EXP201: loader shape checks in Goose, 753 tensors validated per load
+9575b1d72c5e39179122053ee2caa6f08bc7fbc4 2026-11-09T20:22:10+03:00 EXP199: port update()/get_can_shift decisions
+c1a5266b05a4d5ec859d1344455ad50284a3bfaa 2026-11-09T20:10:41+03:00 EXP200: port the MoE tail decisions and the merged gate split
+e2646e46c966f876120e1dab376d26c7c7982d63 2026-11-09T20:04:27+03:00 EXP200: port the load-time tensor-shape geometry
+4690d923528dc0181788c3a46a48260496b29e55 2026-11-09T19:57:07+03:00 EXP200: record the paired regression check against EXP199
+149cab943813b84e4251af42c245ea815e6415c5 2026-11-09T19:56:57+03:00 compiler: move the pin to subset-84f31960f9f3031e, old build kept for rollback
+3df3038361d476ae55ad91f878b6930daf934a42 2026-11-09T19:26:48+03:00 EXP200: port the recurrent-branch geometry, 1710 live calls per pass
+085dcf21eb2b378cba738a6e7b4a7dabf0cc4b6c 2026-11-09T19:14:09+03:00 EXP200: port and integrate the attention-layer decisions
+b613d102a9218a46b7f1ebcf865763b8ab98b179 2026-11-09T19:06:29+03:00 EXP200: port the MoE routing decisions, 760 live calls each per pass
+77c92844a3e41c63a10675a14ffd624142301506 2026-11-09T18:53:45+03:00 EXP200: Apex model-graph decisions in Goose, is_recr integrated and live
+d34398767b0d3d501c5f5b1354276f7445d33f1c 2026-11-09T18:34:09+03:00 EXP199: port get_n_kv, which decides the KV length the graph is built for
+ec1a8fa28803e46211e26eb62b815b02d4bf4fad 2026-11-09T18:26:38+03:00 EXP199: port seq_add/seq_div shifting; neither is exercised by the profile
+9eba2430dcc5a6fe04d75faf9c0005475d952bcc 2026-11-09T18:17:24+03:00 EXP199: port seq_cp decisions, recording that the path is unexercised
+910e5de4769592d8296c579a53999d2065248f3d 2026-11-09T18:08:24+03:00 EXP199: port cache-level seq_rm decisions, 2.6M live Goose calls per pass
+96faeabf46d66d173daab7119e6a7ca57b354d5e 2026-11-09T18:01:35+03:00 EXP199: port find_slot's decisions (head start, SWA mask, cell reuse)
+f2e945830ad48403a09ad769e3b6347b34d73402 2026-11-09T17:54:32+03:00 EXP199: purge branch is unreachable on the fixed Apex profile
+74d69c91c557c842e28cae8c215b41dcce9253d4 2026-11-09T17:53:52+03:00 compiler updates: read the authoritative Fried-Goose catalogue
+c11e9cbe572ba04c374e9a03e01381d3935c445e 2026-11-09T17:47:41+03:00 EXP199: route the purge condition and the head advance through Goose
+7cf673dd80c4b51da48a3f15702ac7cdb66509d8 2026-11-09T17:41:36+03:00 strategy: record compiler-update tracking and post-Apex staging plan
+57c10c1fb497446b1254d8407cf41bc901236a29 2026-11-09T17:40:06+03:00 EXP199: KV cell ownership integrated into libllama and proven in Apex
+3b0d1167aaa14b5a1a37730375db4aa41159e105 2026-11-09T17:25:14+03:00 EXP199: port apply_ubatch's per-token cell placement (APX KV control)
+14c1fd3cbd49cf59c6e6f35ab5a969ad422d9b2b 2026-11-09T17:23:19+03:00 EXP199: KV cell ownership passes its differential gate (37929 checks, 0 failures)
+6fefd961686238a1a400bfd9a2b5114ec3f1ea45 2026-11-09T17:19:43+03:00 EXP199: KV cell ownership implemented in Goose; gate caught three real defects
+6fb636cc69e60b57b3a31d90b40ea9ded7516a25 2026-11-09T16:37:20+03:00 records: EXP177 manifests after the CPY route change
+fd8f92d58ae4871b57ead4eed2cd1844f67c190b 2026-11-09T16:36:48+03:00 docs: verify Apex is unaffected by the CPY route change
+febbab8ee23269e3ff6fd5bef002472b51744ff3 2026-11-09T16:32:22+03:00 EXP-2026-11-08-177: decline the transposed CPY route, removing a 3.7x regression
+08dc670351eca52dd2cd2893282f1e2c6f28e302 2026-11-09T16:28:02+03:00 docs: perf check finds a 3.7x f32 transposed CPY regression
+e5e920b0c47e3541d4c4de8a9ac55ade12a6b3b1 2026-11-09T16:16:36+03:00 docs: perf mode passes but prints no timings; recorded as such
+f83a3aab68b8cf7d124287418f6f6747cf3269f6 2026-11-09T15:52:35+03:00 docs: CPU MoE is Goose control + native dot products, traced in the library
+99960a8999a3138fc32b4d7487c795f31ddae4ef 2026-11-09T15:47:03+03:00 docs: tracked copy of the address-typing feedback
+579e1a57303b9c6ca08fbe878f74d31fd0a6ee8d 2026-11-09T15:45:55+03:00 cleanup: remove stray probe copies mistakenly committed to EXP197
+841f9a49c106108e2779a52b4c0d03249c720939 2026-11-09T15:44:08+03:00 records: EXP186 artifact bookkeeping after the sanitizer re-run
+ab209f244524f087b745ae558f3f60d8d67a35b8 2026-11-09T15:43:48+03:00 docs: EXP186's sanitizer errors are in the native arm, not the sample_ratio change
+990ce0ab1d9aa98a9021bb8d66391f0c1629c3d1 2026-11-09T15:42:51+03:00 EXP198: both wrapper-side workarounds fail; the blocker is provenance
+147798b8019bb752b892be90d7fd0ad3e0e52c1b 2026-11-09T15:41:36+03:00 EXP198: minimal controlled test of the address-typing blocker
+c88b642470e72794b1414285085625efde115656 2026-11-09T15:35:46+03:00 EXP197: cpy_k/cpy_v are graph builders around an already-ported kernel
+1f53b8fb13d24f85f364cffd54c3e5252dc425a4 2026-11-09T15:35:16+03:00 EXP197: the KV subsystem is a different port shape from the CUDA modules
+da01e3fc53dbe0147659fe3d8a5f5d5723394862 2026-11-09T15:33:58+03:00 EXP197: measure which llama_kv_cache entry points the Apex pass executes
+3554fbdd7310efc613c40c6c4c140e2057a67774 2026-11-09T15:15:29+03:00 docs: P5 step 1 is feasible -- llama_kv_cache exports 571 symbols
+cde21cf1482e3ed21f8f2c7ff23f19cdda75b336 2026-11-09T15:14:29+03:00 docs: P5 entry plan, with the measurement that justifies its order
+c9345259ce3ac1b9c9089f3c9788420ee55c5b30 2026-11-09T15:12:35+03:00 docs: handoff document for the final install, and refresh active.json
+2b38c2e6772aa1b013163bdd323b08747660abfd 2026-11-09T15:07:32+03:00 records: EXP186 manifests after the sample_ratio fix
+29e795c2a94927f72691802c030b7d50e8f2ab2f 2026-11-09T15:07:27+03:00 docs: audit every module for the sample_ratio defect class
+782e24329e7e25a025c84db5ed268aa5ba4bd063 2026-11-09T15:07:03+03:00 EXP-2026-11-08-186: apply the sample_ratio fix to the Q6_K matvec too
+ce8576a95b6b424976c916af7a7a004dbe6356f3 2026-11-09T15:03:02+03:00 docs: measure the link composition instead of asserting P3-20
+ab3180490bf7115e22f07fc3add547a3caf784b8 2026-11-09T15:02:02+03:00 plan: P3-12 -- the executing attention paths are already Goose
+2b92b26b1ccf7caa9d61945a83a703142c2d26e3 2026-11-09T15:00:53+03:00 plan: P3-07 splits -- no live dequant path, quantize half is blocked
+38d361ef541ea7547e7bac0a4284bee0e816158b 2026-11-09T14:59:48+03:00 docs: audit the native long tail; it holds no unported work
+d413827b4b317a4ebe685b75eeb4c5763c0b2687 2026-11-09T14:56:55+03:00 census: 52.8% of kernel time is Goose, 45% is three blocked families
+ba52d0ad5ed573795638390091dcbf4f97c6a0c9 2026-11-09T14:54:48+03:00 census: the full list is 61 kernels, not 10
+13a553463dbd525a3ca0c4a13cccebb920f6985a 2026-11-09T14:51:38+03:00 docs: record what the correctness comparison actually covers
+c78d0e5cf92663d5d92e481a72b9b62d4f057e47 2026-11-09T14:49:49+03:00 docs: final coverage table for the kernels Apex executes
+56a06fe37f07c44498f96e9f9c1decdb51cf0a2f 2026-11-09T14:49:07+03:00 census: record both profiling attempts and where each one fails
+7c13612814a132e992f34715893ebc1e25b0b613 2026-11-09T14:44:28+03:00 docs: regression sweep across every rebuilt stage
+4e28367d1258ae157e75f03ad77a92224d344f64 2026-11-09T14:41:27+03:00 docs: grad-mode failures are pre-existing baseline behaviour, not the port
+f370ef3c09c9d4dff3437e5fdfe0fa3f9233ac5b 2026-11-09T14:40:28+03:00 docs: record the grad-mode failures and how far isolation got
+306eb472170b2eb12125023bb5ce6f0571b7e677 2026-11-09T14:36:57+03:00 plan+census: P3-19 done, and the last bound is gone rather than masking
+ab44478cac445c98946d014b88bc60dc5aca531f 2026-11-09T14:35:50+03:00 records: manifests after the EXP185 patch
+79a87130c046fdb93dcc3a0c3920363aff0057e2 2026-11-09T14:35:50+03:00 EXP-2026-11-08-185: implement sample_ratio in the q4_K matvec body too
+048668589f2dd645173e0b7e4b8e98eb41a41545 2026-11-09T14:19:44+03:00 records: manifests after the sample_ratio implementation
+bcdf5e0df893eeb597b9b548d6fb17d6c32ef3b7 2026-11-09T14:19:37+03:00 EXP-2026-11-08-184: implement sample_ratio, so the broadcast case is computed
+7ca9cb2bac3b34e981d649a4ee80776fd11d79f8 2026-11-09T14:06:55+03:00 EXP-2026-11-08-184/185: root cause is the missing sample_ratio; precise predicate
+41c068a6c5522d08536d15d06760ee94787baaf5 2026-11-09T14:01:31+03:00 docs: localise the MUL_MAT defect to sample 1
+3671215add6304d3f5c535e17a19fe93eb943903 2026-11-09T13:59:15+03:00 records: manifests after the input-capture rebuilds
+391f9650b810715199d5427b101cb3532d851ab7 2026-11-09T13:58:11+03:00 docs: the host dot matches Goose exactly; the native capture is unreliable
+76e2d478f41b50f63f84c7898b12e1f569b3e8ad 2026-11-09T13:56:13+03:00 records: manifests after the capture-tool rebuilds
+6434604aa86cfbc552aa04d12856460e307abc63 2026-11-09T13:56:08+03:00 EXP-2026-11-08-184: capture the harness's own tensors and diff the two routes
+9d8207cdb574696772f09e273a89e89a7925c190 2026-11-09T13:49:59+03:00 records: manifest after the wide-input fixture rebuild
+b3d3218a531b3cab7d11c298c29223f02d210a77 2026-11-09T13:49:54+03:00 EXP-2026-11-08-184: input magnitude is not the discriminator either
+028de902b45e3a3aa3a2a66cc9dcd582f25e0eb1 2026-11-09T13:48:53+03:00 EXP-2026-11-08-184: per-call argument witness; ids and fusion are both absent
+8c83a73d2d1c81badec58cc12fdb0bee8ee7e83f 2026-11-09T13:46:49+03:00 records: manifests after the trace rebuilds
+fbde4b711cb7cd4a22bfb598a65e849114758fd7 2026-11-09T13:46:41+03:00 docs: per-case trace — Goose launches and is wrong, native on the same case passes
+532976cf960fb3dc655074d4572523826c9766f1 2026-11-09T13:44:02+03:00 census: add a current-state summary at the top
+fb245b250a97fa243424b071b6d7bd9c079a3c07 2026-11-09T13:43:26+03:00 records: manifest after the fixture rebuild
+f8b84539d80255ade6fd2dc50efde9b7cae773b0 2026-11-09T13:43:21+03:00 EXP-2026-11-08-184: the harness's broadcast layout is bit-identical too
+e4931bb61b2acdefbd931e507ca65011612b59f6 2026-11-09T13:42:22+03:00 records: stage manifests and bookkeeping after the trace rebuilds
+dbb2f0b9b610b179f42c19e0bc63719d3393cf83 2026-11-09T13:42:18+03:00 docs: retract the MUL_MAT attribution and record the measurement defect
+d5a438948b4a4a918e6f02e526594ceb2fb0eb20 2026-11-09T13:34:06+03:00 EXP-2026-11-08-184: k=4 is bit-identical too, and what the evidence now says
+1faf952981c92a3bfe0cb064823bcd11c7d63ada 2026-11-09T13:33:23+03:00 records: remaining stage bookkeeping after the rebuilds
+f3caeb2923fc500dc4ea3a84747d1eb75ae38d49 2026-11-09T13:33:19+03:00 manifests: record the artifacts of the five rebuilt stages
+b370d8de92fb01f88c5ed69bf30be4b0b940aba2 2026-11-09T13:33:07+03:00 EXP-2026-11-08-184: channels and samples together are also bit-identical
+a6f35b1253c51d8e5b873fe8cf55859af2a0f0a2 2026-11-09T13:32:40+03:00 EXP-2026-11-08-184: overlap and padded layouts are bit-identical to native
+f62d3628cecc511d9199dc06a414066a93cc5d81 2026-11-09T13:31:36+03:00 docs: record that shape and padding do not reproduce the MUL_MAT failure
+cf381298a544a4b6c349e4b68522571394f14727 2026-11-09T13:31:22+03:00 EXP-2026-11-08-184: fixture can reach the failing MUL_MAT shape, per sample
+bb6531b4fbb0015aab5aafcc839bf1cec2f2d22e 2026-11-09T13:28:33+03:00 docs: separate what is known about the MUL_MAT mechanism from what is assumed
+139113838f1397e052c6b69e097b1321e801a068 2026-11-09T13:27:33+03:00 docs: test-backend-ops passes completely
+f507fd609c551a112794a0ccee3a3aba31ddd080 2026-11-09T13:27:22+03:00 EXP-2026-11-08-184/185: bound the matvec modules to a single batch dimension
+03af200eb835b3972ab2898f0e9e16c1899a418e 2026-11-09T13:17:29+03:00 docs: narrow the MUL_MAT discriminator to n=1 with a batched fourth dim
+838ae2d807163857df4a215e122da0fa2e3322c1 2026-11-09T13:15:14+03:00 docs: record the SILU_BACK verification
+126807e7fa690d5d09de5acc4dbf3e11cbdd64b3 2026-11-09T13:11:38+03:00 EXP-2026-11-08-166: route SILU_BACK to native, the Goose body never existed
+e7487af28785ac62b82d98e466f783277ed8c169 2026-11-09T13:03:58+03:00 docs: the MUL_MAT witness shows the Goose kernels did run
+c35588b39d97710f28c73d094527cc97565cde21 2026-11-09T13:03:10+03:00 docs: pin the MUL_MAT failures to exact shapes
+cac2c4284d2e7ba2cf2e244d5f809abb7cee37ee 2026-11-09T13:02:16+03:00 docs: record the CPY fix verification and the new failure count
+4b0e42cad1948ee858906694fdf4e2e4c42898d9 2026-11-09T12:58:52+03:00 EXP-2026-11-08-177: decline CPY when the source and destination types differ
+c3fa5a813c61e906a500452b544e59a85c4dd7ae 2026-11-09T12:51:53+03:00 census: two test-backend-ops defects fixed, three clusters mapped
+3970325d445c8c5da3260cf2a1734461f4752810 2026-11-09T12:51:45+03:00 EXP-2026-11-08-171: confirm Apex still runs Goose RoPE after the gate
+0beee79510a588b2d3e596fd92198069370bcf01 2026-11-09T12:42:12+03:00 EXP-2026-11-08-171: decline RoPE cases with a non-positive n_ctx_orig
+a9cc0c3657d2610c9895d7264b77fc3217382d4a 2026-11-09T12:35:34+03:00 EXP-2026-11-08-171: pin the RoPE trap to a specific validation
+cab91aac87fe1271a23904b10049d02757a9ae5c 2026-11-09T12:34:31+03:00 census: record the test-backend-ops result, one defect fixed and one open
+7cc69d74ee7596fc0f2ddf51a0f4be46607f477a 2026-11-09T12:31:13+03:00 EXP-2026-11-08-176: gate GET_ROWS on matching source and destination types
+83441b52f875aa048c7cc0e58706ad04090a6b56 2026-11-09T12:28:50+03:00 plan: flag the quantized GET_ROWS defect on P3-03
+23167b481ff2515f38e2ca64727fa3f6ac6f8921 2026-11-09T12:28:40+03:00 EXP-2026-11-08-176: record a reproduced, isolated defect in GET_ROWS
+ac7fc2b357e068a333d5999fff370b6b8142d422 2026-11-09T12:24:37+03:00 census: complete the sanitizer sweep with init, sync and race checks
+ef165e8d3966c308c1ef8d10da42f76b9386c4e8 2026-11-09T12:23:53+03:00 plan: P3-19 to IN_PROGRESS with the memcheck result
+db6d5582e404937d6e3ded8a0151b84b9bf5c3d9 2026-11-09T12:23:48+03:00 census: run compute-sanitizer memcheck across the GPU fixtures
+92d437e23f6e2a7bad17385be6091f94e10e0586 2026-11-09T12:21:58+03:00 EXP-2026-11-08-188: update the runtime manifest for the rebuilt DSO
+dbc5188a5cc15575a4da7ee0050f6c5b2e80fb14 2026-11-09T12:21:42+03:00 EXP-2026-11-08-196: record the DSO hash that both arms ran on
+08c0bb2d1bb30b83fa1d452155a9791a95fe1786 2026-11-09T12:20:58+03:00 census: account for the profile's q4_0 row instances
+17e3564571b089a2a79c0f7619ba4c033cbb327d 2026-11-09T12:20:42+03:00 census: replace the stale module count with the full witness inventory
+3f84438a35232a56b699632f1a9bc6cd6a855fe9 2026-11-09T12:19:53+03:00 plan: record the trap coverage on both pool stages
+7aee499ee8b1421f3010fe348d8210b133829d3a 2026-11-09T12:19:48+03:00 EXP-2026-11-08-196: cover the pinned-policy trap paths
+e4b6085750f3e81e8ac6a297f023f977403fff47 2026-11-09T12:19:13+03:00 EXP-2026-11-08-195: cover the pool's trap paths, and keep the probe with its stage
+6a4dd7fc5569d64a6e52e57ee7467e6361a94dc9 2026-11-09T12:16:56+03:00 EXP-2026-11-08-: measure the transfer/residency half of P3-17
+39b794307f41a31916041688db9acee92358bf2e 2026-11-09T12:09:19+03:00 EXP-2026-11-08-196: record the pinned/register closure in the plan and ledger
+109327762266bfc0ba96d55195e6f4589e88f555 2026-11-09T12:09:13+03:00 EXP-2026-11-08-196: pinned-memory and host-registration policy in Goose
+91a6f66acd4e080a3c07bc6ea852b3036fcd736e 2026-11-09T11:46:28+03:00 EXP-2026-11-08-188: fix the witness and settle the off-path verdict
+e682cdd646f424d578a6a072498678180445df11 2026-11-09T11:41:50+03:00 census: record the unresolved q4_0 row-dequantization seam
+10e05d0e8dfb4caec37f8a7331ebb438c9fc3432 2026-11-09T11:36:29+03:00 EXP-2026-11-08-195: record the VMM pool closure in the plan and active ledger
+3ac0df6671cbf33b33c7df32cf94a22f6ffee7b6 2026-11-09T11:35:49+03:00 EXP-2026-11-08-195: wire the VMM pool arithmetic into a live Apex pass
+b1f715bdf1023e46fb3d62018de066b193a6e279 2026-11-09T10:42:21+03:00 EXP-2026-11-08-195: VMM GPU pool arithmetic in Goose, 4800 differential checks
+9fa2b7c024c3159c09570348173e859d46abdeb7 2026-11-09T10:34:09+03:00 EXP-2026-11-08-190: mark as duplicate -- EXP148 already runs Q8_K quantization in Goose
+8e34b8bf99e3d068f09c161819ce40332e774c05 2026-11-09T10:25:43+03:00 EXP-2026-11-08-174: re-measure the baseline SET_ROWS stage in both orders
+61639e6d00b73e7ef29697ab240b726e0547ad38 2026-11-09T10:12:27+03:00 docs: consolidate the corrected timing figures and how they were obtained
+37e3180568f1f659287e317cf7e1269ce06999e2 2026-11-09T10:11:12+03:00 EXP-2026-11-08-181: re-measure mm_ids in isolation and state the resolution honestly
+31d7c8a3a6eb34213e1584a31b622114a59c42b1 2026-11-09T09:58:15+03:00 EXP-2026-11-08-178: re-measure Q8_1 quantize in isolation; the gain was five-fold inflated
+80795e942d5a7a01fa85442cdf7faba4cc648569 2026-11-09T09:37:43+03:00 EXP-2026-11-08-177: re-measure CPY in isolation; the recorded deltas had the wrong sign
+6783e31ef7c5ae77cbb226bb9cda81d4ed555daa 2026-11-09T09:23:25+03:00 EXP-2026-11-08-176: fix the inherited two-component runner; run order was the whole effect
+bc54c668d48fefad615a018afa5939af1a77d6a7 2026-11-09T08:58:15+03:00 EXP-2026-11-08-179: the recorded pair measured two components; re-measure in isolation
+63e3d58ad670298db0fd51617ca7df901293e588 2026-11-09T08:44:03+03:00 EXP-2026-11-08-193: scope the registry's log lookup to the active stage
+f124fed3dac868199ff710bd9068967c0f88bdb2 2026-11-09T08:43:32+03:00 EXP-2026-11-08-175: record the re-measurement behind the corrected CONCAT figures
+dc9f978c8d4a90f19398740170b3b6b6015dfa6f 2026-11-09T08:43:07+03:00 EXP-2026-11-08-175: replace the contaminated CONCAT figures with three valid pairs
+e68e4a04f12923e153cda20c45f0dce68b3aa92a 2026-11-09T08:34:32+03:00 EXP-2026-11-08-183: re-measure FWHT under stable load and record which pairs are valid
+22ca74b2d722a8d6db91ac79f139bd4e93925250 2026-11-09T08:29:05+03:00 EXP-2026-11-08-185: quote the seven-pair median, not the first pair
+cbb54d7a704074f94714cd47879673b6ae61f7bf 2026-11-09T08:21:48+03:00 EXP-2026-11-08-186: try __ldg for the read-only path; measured, reverted
+aa8973457e048695699641532468034e52e67d18 2026-11-09T08:19:11+03:00 registry: regenerate after the EXP188 verdict correction
+8de44a9d8f4e7a6b132c5afd2d53161d58febb4f 2026-11-09T08:18:40+03:00 EXP-2026-11-08-188: the q4_0 dequantization Apex runs was already Goose
+ca35eae0240f0cbe67c221a28dfb1d45c73d74c7 2026-11-09T08:15:38+03:00 docs: give every stage an explicit verdict and make the registry read it
+5616d0c72ee5cec28ad08028080fe9323fcc0b62 2026-11-09T08:12:39+03:00 EXP-2026-11-08-193: build the coverage registry and make it a gate (P0-05)
+c5c839f5d390a3faa0bb43d458c10a3dab59f190 2026-11-09T08:09:56+03:00 EXP-2026-11-08-192: verify runtime identity and module liveness
+7bce12b9e05ab3409f79e17af5106f4d2e0fbddf 2026-11-09T08:06:41+03:00 EXP-2026-11-08-191: extend the milestone to all thirteen fixtures
+2503200e5742eeea862297acaf90306ec9ba4514 2026-11-09T08:04:17+03:00 EXP-2026-11-08-181: the racecheck hazards were a fixture defect, not the algorithm
+0422a7e39456bebc172cd86948e946a99527b32a 2026-11-09T08:00:54+03:00 EXP-2026-11-08-191: make the milestone re-derive native parity instead of trusting a note
+2dbdb63c3b237a8d7c930ce98b50f8d727e22bc3 2026-11-09T07:59:58+03:00 EXP-2026-11-08-191: whole-backend sanitizer milestone over ten modules
+8c2ddb8ae0ba3912ffbf6989203f6c00f51fd7b9 2026-11-09T07:54:45+03:00 docs: verify every census kernel against a live run, correct the Flash Attention entry
+5937916a50ab7bcb205148cdcfed2a32e39db614 2026-11-09T07:52:02+03:00 EXP-2026-11-08-186: replace power-of-two divisions with shifts; measured, no gain
+b6cd7e073deee804644807fed4dd442aa4b2da04 2026-11-09T07:45:33+03:00 EXP-2026-11-08-186: localize the codegen gap to checked-arithmetic guards
+41882efc7fe4c0ec2b86b0933e07af82005e90e9 2026-11-09T07:38:38+03:00 chains: record the rebuilt runtime manifests after the EXP180 switch fix
+81e2e72f5471447bf25341a9eea791194bb6d864 2026-11-09T07:37:56+03:00 docs: correct seven experiment statuses that said IN_PROGRESS while accepted
+b67ebc6b4c721990a25be0c26c2d59a44d4713eb 2026-11-09T07:34:25+03:00 EXP-2026-11-08-186: make the rejected Q6_K candidate opt-in as well
+3655cf38782fa5d1b85fb906f0627b242c7dc8a4 2026-11-09T07:33:02+03:00 EXP-2026-11-08-180: a rejected candidate was default-on; make it opt-in
+f6ca30cc760f361e605ed5026a3f02ba0b0ffad7 2026-11-09T07:24:50+03:00 docs: record the CPU side of the census
+328969146d237d364f7efe320159fe8e23c7dfff 2026-11-09T07:24:21+03:00 EXP-2026-11-08-190: record that Apex does not reach the Q8_K quantizer, with the shim
+9f22fdf8f6f78b38e141085a6b3b4ac1ba7b1054 2026-11-09T07:18:28+03:00 EXP-2026-11-08-190: add the reproducible build script and generated source
+1995cf5b844dc648060444ac589c441600a08ccf 2026-11-09T07:17:43+03:00 EXP-2026-11-08-190: CPU Q8_K activation quantization in Goose, byte-exact
+1d154645349f119a2d679ca4c45c852e1d294f4e 2026-11-09T07:04:39+03:00 docs: record the nsys census-retake attempt and why it produced no data
+768aca4181a5ce3aa74ac87ef3eba6cfa53b61fe 2026-11-09T06:38:02+03:00 docs: correct P3-08 status to reflect what is actually done
+17d5669a0dce37b2948e3594c4e6cfdade7f0ec4 2026-11-09T06:35:28+03:00 EXP-2026-11-08-188: fix the export-visibility map for this stage
+5f9708fbc22f700513f85846fe3db08c6c12961b 2026-11-09T06:33:13+03:00 docs: consolidate Apex census transfer status
+325a8da9d79d2e03d3da979754daeb2fe46f6b75 2026-11-09T06:29:41+03:00 EXP-2026-11-08-188: Q4_0 dequantization in Goose, byte-exact but off the Apex path
+b2bdd9ca3223fb80fc74d0ac9576c2f0b49ad2e6 2026-11-09T06:08:51+03:00 EXP-2026-11-08-186: Q6_K mul_mat_vec_q in Goose, byte-exact but rejected on decode
+8ef4ad103d320a259694f548f00a0e0daed73e0e 2026-11-09T05:45:46+03:00 EXP-2026-11-08-185: mul_mat_vec_q for Q4_K in Goose, byte-exact and accepted
+b9f1fd5f2a44b0a404b390188d5471bbcf649086 2026-11-09T04:55:15+03:00 EXP-2026-11-08-184: mul_mat_vec_f in Goose, byte-exact and accepted
+8a5e39c786c1048726b9a854ca6a574bbee16f1e 2026-11-09T04:26:25+03:00 EXP-2026-11-08-183: FWHT warp path in Goose, accepted with no regression
+000d498cf1491a4a1b564e854095cf98c549c2a8 2026-11-09T03:30:24+03:00 EXP-2026-11-08-182: Q4_K dequantization in Goose, byte-exact but off the Apex path
+a03ddce1ea821c4092129248cd0792b3e8c7ebc0 2026-11-09T03:14:26+03:00 EXP-2026-11-08-181: qualify CUDA MM IDs helper on paired Apex inference
+b0677901cc3a79401985fed51532ff2752d23af1 2026-11-09T02:59:21+03:00 EXP-2026-11-08-181: MM IDs helper draft with blocker, not qualified
+32061dd688222f77ff7414e50065e9a2e9246c80 2026-11-09T02:44:29+03:00 EXP-2026-11-08-180: cut MMQ Q8_1 kernel overhead from 13.5% to 11.4%
+2cb0ba81e44a51820853bc1e9136970607b3f92c 2026-11-09T02:40:37+03:00 EXP-2026-11-08-180: MMQ Q8_1 quantizer correct but 13% slower, not promoted
+3e6883096e84a28b630cf5add7d41eab52e76199 2026-11-09T02:13:11+03:00 EXP-2026-11-08-179: qualify CUDA MoE weighted reduction on Apex
+0409bb15955a1b2e9ef9ebb1967f265f7a397770 2026-11-09T02:00:53+03:00 EXP-2026-11-08-178: qualify CUDA Q8_1 activation quantization on Apex
+a7e69fb32d80b5878de7edb442ac0cd1c17e625c 2026-11-09T01:41:48+03:00 EXP-2026-11-08-177: qualify CUDA CPY on paired Apex inference
+d732c8215ea5130f736d6026925001c191f17bce 2026-11-09T01:31:03+03:00 EXP-2026-11-08-176: qualify CUDA GET_ROWS on paired Apex inference
+2c7a315b264abe33d6d16f180c80561f6dc39b08 2026-11-09T00:11:58+03:00 EXP-2026-11-08-176: draft CUDA GET_ROWS in Goose, gate not yet passing
+d4868434fbe62e3aad463f4fda1d33cf316489d9 2026-11-08T23:30:20+03:00 EXP-2026-11-08-175: resolve the speed discrepancy by clean-condition reruns
+eb6ec24fd05050ee983009ebcb445d6be59f242d 2026-11-08T23:18:41+03:00 EXP-2026-11-08-175: record unresolved speed discrepancy and fix the harness
+52011a5824deb7e85a7db55f0020dc54e56143c7 2026-11-08T22:29:07+03:00 EXP-2026-11-08-175: port CUDA CONCAT device and host path to Goose
+4121ee9ad84822feddf45dcca82b5314e0d9449d 2026-11-08T20:58:34+03:00 Add isolated DeepSeek candidate controller and fault-injection gates
+d6c1226cacd634f47f7f12327d91abfe8fc8b5b2 2026-11-08T20:32:23+03:00 EXP-2026-11-08-174: qualify Goose SET_ROWS on paired Apex inference
+fa98d3178f63816e05f022d1a5f9be2a9573a2b3 2026-11-08T19:58:06+03:00 EXP-2026-11-08-173: recover paired Apex FA parity and own kernel planning
+107e17db71e5f345c6fa80d7de362582ebc6e19f 2026-11-08T18:21:45+03:00 EXP-2026-11-08-173: specialize Goose vector state and distinguish stack traffic from spills
+c46b72b2043b81531c8a78a761db5a10849c0fd2 2026-11-08T17:58:19+03:00 EXP-2026-11-08-173: preserve exact Apex attention and record pending speed regression
+97ca220c42c68dd654c4ca1226fc38cf05093ec1 2026-11-08T16:38:44+03:00 EXP-2026-11-08-173: checkpoint validated Goose FlashAttention components
+5067fe0bcfe39de49570416bdb2ade580963460d 2026-11-08T15:43:23+03:00 EXP-2026-11-08-172: Integrate actual Goose scalar and TensorCore GDN on Apex
+5c885dc3e1486b698b7caeed3bcb040c12578863 2026-11-08T14:50:08+03:00 EXP-2026-11-08-171: Port verified Apex IMRoPE host and device computation to Goose
+67ef2ecceb78355c11f3c3f2a74ecfe9fa75b398 2026-11-08T14:33:50+03:00 EXP-2026-11-08-170: Port active SSM convolution compute and planning to Goose
+fcfde167c18bfe454a49d60158879a7cc4086dc5 2026-11-08T14:22:11+03:00 EXP-2026-11-08-169: Integrate verified Goose fused MoE routing on Apex
+795931828ee4231b2df45c7d79d5d68007ae4ae9 2026-11-08T13:37:13+03:00 EXP-2026-11-08-169: Preserve verified reductions pending actual Apex routing integration
+8c2bf622f5f5f0616fcaf2d9a323439ebda90b44 2026-11-08T12:55:49+03:00 EXP-2026-11-08-168: Complete Goose CUDA normalization with reviewed GLM contributions
+d3c028f23acc4a7afc1006303a2fd5310db88f56 2026-11-08T12:23:32+03:00 EXP-2026-11-08-168: Pin normalization source checkpoint before GLM trial
+6dd3aae1fc5de7057eddda904f36584f5f15be3f 2026-11-08T12:06:13+03:00 EXP-2026-11-08-167: Transfer CUDA broadcast repeat and fused binary execution to Goose
+c90914afd8d11c4c04dd0f5a124f9c4ae91445c3 2026-11-08T11:35:44+03:00 EXP-2026-11-08-166: Transfer CUDA activation GLU scale and clamp execution to Goose
+3e295b20dbeaa5e00961a735584bf1ed9ec6d65f 2026-11-08T11:05:59+03:00 EXP-2026-11-08-165: Transfer Linux backend registry and loader policy to Goose
+2e8c05f5c3d5989922e9dacc762fa1f958542b70 2026-11-08T10:47:48+03:00 EXP-2026-11-08-164: Transfer actual shared backend scheduler to Goose
+6e9f415e76ec0886098def0208567dd12d78556f 2026-11-08T09:58:06+03:00 EXP-2026-11-08-163: Transfer shared stream copy event and device control to Goose
+50a82459b12c1d92f3ba7876819a11010e6f293d 2026-11-08T09:20:32+03:00 EXP-2026-11-08-162: Transfer backend buffer planning and ownership to Goose
+dc9c3e3a7c87429df7948743e833db32a861daec 2026-11-08T08:36:28+03:00 EXP-2026-11-08-161: Transfer release tensor and graph allocator policies to Goose
+59891c8348b49267297a8b9562ad52a629fe709f 2026-11-08T08:02:52+03:00 EXP-2026-11-08-160: Share Goose fusion and parameter policy across CPU and CUDA host
+66c132771edd87a61a52311cc092327a5e4a5b39 2026-11-08T07:33:57+03:00 EXP-2026-11-08-159: Move inference graph lifecycle and iterative traversal to Goose
+9fc449d06e31648e087ba4fdf4b3d3bf45a7cb9f 2026-11-08T07:14:13+03:00 EXP-2026-11-08-158: Transfer shared Apex graph operation builders to Goose
+489cf92145da672d0cb672804020d4d825b9039f 2026-11-08T06:59:42+03:00 EXP-2026-11-08-157: Move context lifetime and core metadata policies to Goose
+0c622a88ce389f35ecf1dffdce0f2644876ab2fb 2026-11-08T06:29:26+03:00 EXP-2026-11-08-156: Move tensor constructors and context arena policy to Goose
+d0a57158680770389f139282494fd6a8ab1daa02 2026-11-08T06:03:23+03:00 EXP-2026-11-08-155: Execute shared GGML tensor geometry in Goose
+10e98eb14db569ba6f0c8910f6bc504c181ec3cd 2026-11-08T05:46:55+03:00 EXP-2026-11-08-154: Restore and verify the measured EXP150 Apex baseline
+87c79741a0c1ec9261fa22f074e0ac3b19b89a65 2026-11-07T18:58:03+03:00 EXP-2026-11-07-150: migrate expert policies and CPU device registry
+2a0c4b77ae6d45e51c0ba664fdd7d3a0095a4d9a 2026-11-07T18:12:38+03:00 EXP-2026-11-07-149: complete Goose CPU graph and threadpool control
+3e901fe70b6b926f12259d5b735e80fe00fdb90c 2026-11-07T17:17:02+03:00 EXP-2026-11-07-148: unify Goose CPU quantization and type trait dispatch
+e7190ece4a12541cbb5e7a8600f30accab2a347a 2026-11-07T17:01:35+03:00 EXP-2026-11-07-147: audit EXP146 and execute CPU buffer policy in Goose
+2adb0ab30daed579a930a01dccd27c1a546afc67 2026-11-07T15:21:37+03:00 EXP-2026-11-07-145: migrate CPU backend API policy to Goose
+084d171a43823a9ed8ae1a2ad6b15fc0cf426297 2026-11-07T14:27:10+03:00 EXP-2026-11-07-144: verify exact post-GLU Apex response
+9c0a69848e3d1dc034f2e005d9e2f4c8bd59b9bb 2026-11-07T14:15:04+03:00 EXP-2026-11-07-143: checkpoint Goose CPU control and functional contracts
+71b539406937b7d8628e64ca91880f9378238c30 2026-11-07T12:04:39+03:00 EXP-2026-11-07-142: plan batched universal Goose migration and Apex history
+fe9d550cca21d5d64244b1f7f85f92681f84f479 2026-11-07T11:47:34+03:00 EXP-2026-11-07-141: migrate complete AVX2 tiled computation to Goose
+98bd56d9c456664076ff4ed9fce9bd6f6c94d27a 2026-11-07T09:53:49+03:00 EXP-2026-11-07-140: integrate common Goose CPU MoE control
+119a11c4b7f0b04fa4daf618c4caa8c0e284816a 2026-11-07T08:48:05+03:00 EXP-2026-11-07-139: checkpoint whole Goose quantized MoE computation
+ccde6f6148233fa9bcd1ef54938d6df50e228190 2026-11-07T06:35:46+03:00 EXP-2026-11-07-138: checkpoint whole Goose CPU compute modules
+879309b4e06980ec3af46b4ce6a67d4258afaed1 2026-11-07T04:03:31+03:00 EXP-2026-11-07-137: integrate full Goose CPU and CUDA compute blocks
+64f892849588d4a0bff2eb16cff46a7f5523e36f 2026-11-07T03:15:34+03:00 EXP-2026-11-07-136: checkpoint self-hosted Goose runtime integration

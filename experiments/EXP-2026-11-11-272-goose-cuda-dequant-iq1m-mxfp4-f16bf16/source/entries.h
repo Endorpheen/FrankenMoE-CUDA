@@ -1,0 +1,5 @@
+#pragma once
+#define FG272D_CB_q1_m_f16 fg272dd_gg_function_1
+#define FG272D_CB_q1_m_bf16 fg272dd_gg_function_9
+#define FG272D_CB_mxfp4_f16 fg272dd_gg_function_11
+#define FG272D_CB_mxfp4_bf16 fg272dd_gg_function_15

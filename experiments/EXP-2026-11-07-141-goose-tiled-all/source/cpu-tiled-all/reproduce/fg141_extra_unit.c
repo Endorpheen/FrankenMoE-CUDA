@@ -1,0 +1,6 @@
+void fg141_micro(int kind,void*w,int64_t row,int64_t col,int64_t out,int64_t nk,int64_t slab){struct fg141_plan p={0};p.mode=1;p.kind=kind;p.row0=row;p.col0=col;p.out0=out;p.nk=nk;p.slab=slab;fg141_entry(&p,NULL,0,NULL,0,NULL,0,w);}
+void fg141_gather(int kind,const void*y,int64_t ny,const void*routes,int64_t nr,int64_t first,int64_t count,int64_t slots,int64_t stride,int64_t start,int64_t nk,void*w){struct fg141_plan p={0};p.mode=2;p.kind=kind;p.route_first=first;p.count=count;p.slots=slots;p.y_stride=stride;p.start=start;p.nk=nk;fg141_entry(&p,NULL,0,y,ny,routes,nr,w);}
+int64_t fg141_execute(const struct fg141_plan*p,const void*x,int64_t nx,const void*y,int64_t ny,const void*routes,int64_t nr,void*w,float*dst,int64_t ndst){
+ return gg_function_1((gg_type_1*)p,gg_view((void*)x,nx),gg_view((void*)y,ny),gg_view((void*)routes,nr),(gg_type_16*)w,gg_view((void*)iq2xxs_grid,256),gg_view((void*)iq2xs_grid,512),gg_view((void*)iq2s_grid,1024),gg_view((void*)iq3xxs_grid,256),gg_view((void*)iq3s_grid,512),gg_view((void*)iq1s_grid,NGRID_IQ1S),gg_view((void*)ksigns_iq2xs,128),gg_view((void*)kvalues_iq4nl,16),gg_view(dst,ndst),0);
+}
+int64_t fg141_workspace_offset(const struct fg141_plan*source){struct fg141_plan p=*source;p.mode=5;return fg141_execute(&p,NULL,0,NULL,0,NULL,0,NULL,NULL,0);}

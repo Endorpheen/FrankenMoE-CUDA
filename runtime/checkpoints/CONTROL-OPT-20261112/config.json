@@ -1,0 +1,38 @@
+{
+  "control": "CONTROL-OPT-20261112",
+  "created_at": "2026-11-12T00:08:07.957291+00:00",
+  "git_head": "799a77e4b0087fae7dbbe87aae9eb9075575498e",
+  "git_branch": "codex/apex-exp150-restored-20261108",
+  "compiler": {
+    "path": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+    "sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf"
+  },
+  "artifacts": {
+    "server": "/tmp/build-server/bin/llama-server",
+    "cuda_backend": "/tmp/build-cuda-fg/bin/libggml-cuda.so.0.27.0",
+    "preserved_cuda": "runtime/checkpoints/exp186-cuda-matvec-v61-20261111/artifact/libggml-cuda.so.0.27.0",
+    "preserved_cpu": "runtime/checkpoints/exp412-cpu-q6k-v61-20261111/artifact/libggml-cpu-goose.so.0.27.0",
+    "sha_server": "16721e4401cb98827e91316f7eb2e9fc85f48b60b6bb745bea8295a96b7262f5",
+    "sha_cuda": "76572c50e1825bbc7fccda6dc562924e80be49380230c317cba6b450107c91eb",
+    "sha_preserved_cuda": "0160430f7fcac200fe36b261f56a59f2ca19656f21284f63a007439d2be5dea9",
+    "sha_preserved_cpu": "7962342b99a19a982d484e2a96d84ae268b4a69db195ba77ed78b19030b977b2"
+  },
+  "build_commands": {
+    "cuda": "experiments/EXP-2026-11-08-186-goose-cuda-mmvq-q6k/build_integrated.sh",
+    "server": "experiments/EXP-2026-11-12-250-goose-server-nremaining/build_server_integrated.sh"
+  },
+  "run": {
+    "profile": "accepted 32K/128",
+    "argv": "runtime/exp244/results-apex-or244-or-goose/argv.json (plus LD_LIBRARY_PATH=/tmp/build-server/bin:<stage-run>)",
+    "model": "/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf",
+    "request": "runtime/exp244/results-apex-or244-or-goose/request.json",
+    "runner": "runtime/reconstructed/run_restore.py and /tmp/metrics_q6k.py (LD_LIBRARY_PATH variant)"
+  },
+  "correctness": {
+    "expected_sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+    "probs_equal": true,
+    "restore_ok": true,
+    "content_equal": true
+  },
+  "rollback": "restore runtime/compiler/current.json from current-v58-backup.json if needed; the preserved checkpoints under runtime/checkpoints/ are /tmp-independent and carry SHA manifests; git checkout <git_head> for the tree"
+}

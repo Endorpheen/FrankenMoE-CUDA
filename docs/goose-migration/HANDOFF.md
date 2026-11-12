@@ -1,0 +1,1055 @@
+# Handoff — batch/output block, EXP237–244
+
+Written at the end of a long session. The next session starts from this file, not from conversation memory.
+
+## Where the work stands
+
+Eight Goose routes cover the batch and output path. Five are live at 146–292 calls per request; three are
+dormant, each with its reason taken from the guard in the source plus a zero witness — never inferred.
+
+| route | prefix | calls | state |
+|---|---|---:|---|
+| split_equal expansion | `fg237s_` | 146 | live |
+| split_seq selection | `fg238q_` | 0 | dormant: `embd_all` path not taken |
+| batch entry classification | `fg239b_` | 146 | live |
+| sequence-set construction (256-bit) | `fg240q_` | 146 | live |
+| ubatch_add classification | `fg241u_` | 146 | live |
+| out_ids + seq_idx | `fg242o_` | 292 | live |
+| compat positions | `fg243c_` | 0 | dormant: legacy `llama_batch` entry point |
+| output reorder | `fg244s_` | 0 | dormant: requires `n_outputs > 1` |
+| SET view | `fg245v_` | — | gated candidate, deliberately NOT in the DSO |
+| PAD index map | `fg246p_` | — | gated candidate, deliberately NOT in the DSO |
+
+All gates re-verified against the shipped DSO: 89920 / 61059 / 67640 / 300008 / 160048 / 1680413 / 261197 /
+325375 checks, zero failures.
+
+## The single most important finding: division and modulo differ from C
+
+Goose's `%` is Euclidean, C's keeps the sign of the dividend — `-5 % 10` is `5` in Goose and `-5` in C, and `/`
+diverges the same way. EXP246 caught this the honest way: a direct transcription of `pad.cu`'s
+`wrap_around(coord, size) = (coord + size) % size` produced **30 wrong indices in 10234 checks**, with the module
+returning `+5` where the reference returned `-5`.
+
+`docs/goose-migration/MODULO_SEMANTICS.md` holds the sweep of the eight shipped routes: seven have no `/` or `%`
+at all, and the single site (EXP240 `sid/(64 as i64)`) is **verified safe** because its guard sits one line above
+the division. That file also states the standing rule for new modules.
+
+Read that file before porting anything that indexes or wraps.
+
+## Verified performance
+
+`exp238` vs `exp242`, four-step pair (old → new → new → old), only `libllama.so.0.7.0` swapped:
+
+| | prefill tok/s | decode tok/s |
+|---|---:|---:|
+| old mean | 2493.52 | 24.547 |
+| new mean | 2497.46 | 24.664 |
+| delta | **+0.16%** | **+0.48%** |
+
+**Prefill verdict is sound; decode is not.** Within-series decode spread reached 6.87% — three times the 2%
+threshold. Four runs bound a decode regression at roughly ±4%, not ±2%. Do not quote a decode verdict from a
+single pair. Prefill spread stayed at 0.07–0.43% and is the only trustworthy signal available here.
+
+## How to run a measurement (learned the hard way)
+
+- one `FG_STAGE` per campaign and a distinct `FG_SUFFIX` per run; the runner must derive **both** the results
+  and measured roots from them — a hardcoded path made four runs overwrite one `summary.json`, and a fifth run
+  returning figures identical to two decimals is what exposed it;
+- switch DSOs by **symlink**, never by copying a `run` directory (648M, and a partial copy from a full disk is
+  invisible until the runner fails minutes later with `No such file: libggml.so`);
+- check `du -sh` against 648M before trusting a stage directory;
+- verify the port is free rather than trusting `setsid` — without `--wait` it returns immediately;
+- write link outputs **outside** the directory about to be rebuilt (I deleted one DSO that way).
+
+## Repeated mistake classes, with the check that catches each
+
+1. **Pristine-source rebuild drops the previous route.** Caught by `nm -u <object> | grep fg` before linking.
+2. **Derived runner keeps the old path.** Caught by grepping the generated script for the new stage name.
+3. **Fixture generator does not span the trap, so a real mutation passes.** Widening two generators raised the
+   same mutations from 2 and 0 failures to 5344 and 30855. When a mutation passes, first suspect the generator,
+   not the module.
+4. **Guessing instead of instrumenting.** Three theories about a linked-but-silent route were wrong; one
+   unconditional counter (`block=146 guard=146 flat=146`) settled it in a single run.
+
+## Dequantisation block, EXP248–262
+
+Every path in `ggml-cuda/dequantize.cuh` now has a Goose implementation, gated
+against the native template compiled from the read-only source into the same
+fixture:
+
+| group | experiments | destinations |
+|---|---|---|
+| K-quants | EXP182 Q4_K, EXP248 Q6_K, EXP249 Q5_K, EXP250 Q2_K, EXP251 Q3_K | F32 |
+| IQ lattice-free | EXP252 IQ4_NL, EXP253 IQ4_XS | F32 |
+| IQ grid tables | EXP255 IQ2_XXS, EXP256 IQ2_XS, EXP257 IQ2_S, EXP258 IQ3_XXS, EXP259 IQ3_S, EXP260 IQ1_S, EXP261 IQ1_M | F32 |
+| MX | EXP254 MXFP4 | F32 |
+| legacy 32-element | EXP262 q1_0, q2_0, q4_0, q4_1, q5_0, q5_1, q8_0 | F32 pair |
+| q4_0 8-block | EXP188 | F16 |
+
+All are **OFF_PATH** and deliberately not linked: the fixed 32K/128 profile never
+calls `ggml_get_to_fp32_cuda` for these types, because Q4_K_M executes through
+MMQ. Each module carries a differential gate (native oracle in the fixture,
+bitwise comparison), a host-plan gate where a row wrapper exists, and five
+mutations. The shared grid/sign tables (`iq2xxs_grid`, `iq2xs_grid`, `iq2s_grid`,
+`iq3xxs_grid`, `iq3s_grid`, `iq1s_grid_gpu`, `ksigns_iq2xs`) are imported as
+explicit device constant primitives — data, not code; every index and arithmetic
+operation is Goose.
+
+### Non-F32 destinations, EXP263–272
+
+The same templated functions were then reproduced for `half` and
+`nv_bfloat16`, two destinations per module: Q4_K (EXP263), Q6_K (264), Q5_K
+(265), Q2_K (266), Q3_K (267), IQ4_NL+IQ4_XS (268), IQ2_XXS+IQ2_XS (269),
+IQ2_S+IQ3_XXS (270), IQ3_S+IQ1_S (271), IQ1_M+MXFP4 (272). Only the store
+differs: `__float2half` for the implicit round-to-nearest-even conversion and
+`__float2bfloat16` for bf16. Every module is gated on both destinations against
+the native instantiations (83 200 values per destination) with five mutations,
+including one that swaps the bf16 store for the half conversion. The legacy
+32-element callbacks (EXP262) are destination-independent — the cast lives in
+the shared `dequantize_block_cuda` template — so they need no variants.
+
+The F32/F16/BF16 matrix for every templated dequantizer in `dequantize.cuh` is
+therefore complete. The activation quantizer (`quantize_mmq_q8_1`) is the only
+dequantisation-adjacent piece still native, and it is blocked on the same
+emitter address typing as MMQ.
+
+
+Defect classes found in this block, all by the gate rather than by reading the
+formula: block-layout conflation (Q2_K dm at the end of the block, IQ1_S stride
+50 not 66), guard-index vs block-index conflation (IQ4_NL), fixture
+under-allocation (MXFP4), an unaligned word read (q5_0), and a fixture whose
+failure counter was invisible to `cudaMemcpyFromSymbol`, which made every
+mutation report zero failures while the run looked green. The last one is the
+most dangerous and is worth checking first in any new fixture.
+
+## What is next, in order
+
+1. `ROLL` — closed by EXP247. `SET` (EXP245), `PAD` (EXP246) and ROLL stay
+   implemented and gated but not shipped: a route earns a place in the shipped
+   DSO by being reachable, not by being finished.
+2. Other `n_expert_used` widths for `mm_ids_helper`; only the `int)8`
+   specialisation is ported and the others are dormant for this profile.
+3. Dequantisation — closed: EXP248–262 cover every `dequantize.cuh` path for
+   F32, and EXP263–272 cover `half`/`nv_bfloat16` for every templated function.
+   The activation quantizer (`quantize_mmq_q8_1`) remains native and is blocked
+   on the EXP180 emitter typing, as is the shared `dequantize_block_cuda`
+   launch template.
+4. MMQ / MUL_MAT — the largest remaining native share (`mul_mat_q` Q4_K 30.3% +
+   Q6_K 9.7% ≈ 40% of GPU time). Blocked on EXP180's codegen gap: 824 SASS
+   instructions against native's 160, including 206 `IMAD` against ~20. The next
+   idea recorded there is to precompute all address arithmetic host-side so the
+   kernel only does `base + i0`. Six attempts were made; the blocker rule was
+   reached.
+5. Dense `out-prod` — closed by EXP288. The file is one 20-line pointer kernel
+   plus a host function that does nothing but pick one of three cuBLAS branches;
+   the kernel is bit-identical on 3 519 pointers and the branch decision,
+   `lda`/`ldb`/`ldc`, op, batch count, strides and 16x16 pointer geometry are
+   gated separately, 10/10 mutations caught. cuBLAS itself stays an external
+   primitive. Trap worth remembering: the native assert checks
+   `(src1_T ? nb11 : nb10) == 4` while `ldb` reads the other pair.
+6. Dense `mul_mat_vec_f` — closed for every source type this profile can carry.
+   EXP184 covered float (one destination column, no fusion); EXP287 adds half
+   and bfloat16 to the same body, 3 696 values bit-identical against a verbatim
+   native copy, eight mutations caught. The lesson that cost the first draft:
+   the native kernel advances `y` in floats and then indexes it as `float2`, so
+   `yb*4 + col2*8` is the pair offset — `(yb+col2)*8` is invisible while the
+   channel base is zero, which is why channel 0 passed and channel 1 did not.
+7. CUDA shared-memory kernels — unblocked by EXP279 and closed by EXP280–285
+   (softmax forward mask-free/mask/sinks, backward, cooperative) and EXP283
+   (bitonic argsort). The pattern: explicit shared base/load/store/
+   `__syncthreads`/shuffles plus a statement-by-statement port.
+8. CUDA recurrent kernels (RWKV6/7 `wkv.cu`, GLA `gla.cu`) — **blocked on local
+   arrays**. Each thread keeps `float state[head_size]` with `head_size` 64 or
+   128 in registers, and Goose has no local array type; the device backend was
+   deliberately kept free of the stack allocator (the emit gate asserts no
+   `gg_allocate`). Two honest options, neither taken blindly yet: an explicit
+   scratch-memory contract for the state (values identical, memory pattern
+   different, needs its own gate) or a language array feature (the compiler is
+   read-only). EXP172 already covers the GDN scalar/MMA path, so this is the
+   remaining recurrent scope only.
+9. KV cell maintenance — EXP289 closes the `pos_add`/`pos_div`/`seq_pos`
+   remainder of P5-01 that EXP199 and EXP204 left open: 957 717 checks against a
+   transcription of `llama_kv_cells`, 8/8 mutations caught (two of them by an
+   invariant abort, so the driver counts exit status as a channel). The module is
+   gated but not integrated — the source tree is read-only. Two traps recorded
+   there: `seq_pos` as `std::set<std::pair<pos,uint32_t>>` needs an *unsigned*
+   index or the `upper_bound({p, UINT32_MAX})` sentinel becomes -1 and skips
+   cells at exactly `p`; and a `const` in a Goose module reads as zero unless
+   `gg_program` ran, so compile-time constants are literals.
+10. KV slot search — EXP290 closes the `find_slot` item that EXP199/204/289 left open,
+   together with its SWA predicate. 39 032 predicate checks and 2 455 slot-search
+   checks against the native function and a transcription of the class, 7/7
+   mutations caught; one candidate mutation was rejected because no output could
+   observe it. `seq_pos_max` is a scan here rather than the cached set — same
+   value by the set invariant, different cost, and this module is not timed.
+11. KV range operations — EXP291 closes the CP/idxs remainder: `seq_rm(seq_id,p0,p1)`
+   in both branches, `seq_keep(seq_id)` and the same-stream `seq_cp`, all with the
+   head-move rule. 3 937 168 checks over 120 trials x 40 operations, 8/8 mutations
+   caught. The native `seq_add` precondition (destination bit absent) had to be
+   modelled explicitly: a random state carrying both sequences is undefined
+   behaviour, and the 14-vs-12 pair mismatch that appeared first was that, not a
+   port defect. Cross-stream `seq_cp` stays open — it enqueues a buffer copy
+   (sc_info) and rebuilds the destination cells, which is buffer work, not cell
+   metadata. It is recorded, not approximated.
+12. Cross-stream `seq_cp` — closed by EXP292: the full-buffer test, the reset of
+   the destination stream, the per-cell rebuild (undo the shift, pos_set, seq_add,
+   re-apply the shift through pos_add, copy ext) and the head handover, 130 370
+   checks / 0 failures, 9/9 mutations caught. The only unported part is the buffer
+   copy itself: native queues it in sc_info, and the port reports the pair. With
+   this, P5-01 has no open cell-metadata item left; only the live run remains, and
+   that needs a model run and Igor's approval under rule 1.
+13. Recurrent slot placement — EXP293 transfers `llama_memory_recurrent::find_slot`
+   whole (P5-04): head reset, shared-sequence sweep, ring search, slot assignment
+   with tail copying, the re-order pass with tail retargeting, final position and
+   set write, source-reference staging, and the range/used recount. 131 200 checks,
+   8/8 mutations caught, re-order exercised 1 233 times. Note the cell emptiness
+   rule here is the sequence set, not the position. And a trap: using `src0` as
+   scratch for the reference count clobbers cells outside the range, which native
+   leaves at -1 — the gate caught it.
+14. Recurrent sequence operations — EXP294 transfers `seq_cp`, `seq_keep`,
+   `seq_add` and `seq_div` for recurrent state: 1 170 000 checks against a
+   transcription and 8/8 mutations caught. A recurrent cache owns one cell per
+   sequence, so the position bounds clamp and select a cell instead of walking a
+   range — and `seq_cp` clamps bounds it never reads, which the port preserves
+   rather than "fixing". Still open in P5-04: state write/read, rollback, stream
+   ordering, and the live recurrent witnesses.
+15. Recurrent removal — EXP295 transfers `seq_rm`, `set_rs_idx`, `clear` and
+   `state_clear`: 951 126 checks, 8/8 mutations caught. The rollback branch is the
+   subtle part — single-use snapshot, bounded by `n_rs_seq`, refused for a cell
+   shared by several sequences, and position-only when the memory is empty. Two
+   notes worth keeping: native compares `seq_id` as unsigned against `n_seq_max`,
+   so negative ids are rejected before the `seq_id < 0` branch, which is therefore
+   dead; and a uniform position draw never reaches the rollback branch, which is
+   why three mutations first looked harmless. The gate now aims half the removals
+   at the sequence's own cell and probes the exact snapshot bound.
+16. Recurrent state metadata — EXP296 transfers `state_write_meta` and the
+   whole-cache branch of `state_read_meta`: 44 480 checks, 8/8 mutations caught,
+   write compared byte for byte and read fed the exact bytes the transcription
+   produced. The tensor payload around the metadata stays native. Note: the
+   single-sequence read branch calls `find_slot`, already covered by EXP293, and is
+   not duplicated. Gate lesson: injecting the rejected cases everywhere made the
+   exact-capacity boundary untestable, so every sixteenth trial now draws a clean
+   stream.
+17. Recurrent payload plan — EXP297 transfers the transfer-record arithmetic of
+   `state_write_data`/`state_read_data` (which tensor, which offset, which size,
+   in which order, plus every type/row/header check): 16 692 checks, 8/8 mutations
+   caught, 120 rejected streams. The bytes stay native. Two lessons: a helper that
+   multiplies its index by the slot size must not be called with an
+   already-scaled index — the error showed only in `size` because the first cell's
+   offset stayed right — and a cursor counted in fields in one arm and bytes in the
+   other reports eight times too much. One candidate mutation was rejected as
+   unobservable: accepting a larger layer count cannot be seen because field
+   consumption follows the model, not the header.
+18. SWA cache policy — EXP298 opens P5-03 with the iswa pair: the padded SWA size
+   (unified scaling, `swa_full` override), the base/SWA layer filters, the
+   delegation rules (`seq_rm` is an AND, position observers read the SWA cache
+   because the base is a superset) and the memory-breakdown merge in key order.
+   10 412 checks, 8/8 mutations. `init_batch` is not part of it: the ubatch split
+   belongs with the batch allocator. Gate defect worth remembering: a breakdown
+   fixture that draws duplicate keys describes an input the native map cannot
+   produce, so the merge comparison was testing the wrong thing.
+19. MSA cache policy — EXP299 adds the main+indexer pair: derived indexer
+   hyperparameters (one key head per layer, indexer head width, rope unchanged),
+   `n_stream = unified ? 1 : n_seq_max`, two independent filters, and the delegation
+   rules. The contrast with iswa is the point: position observers read the *main*
+   cache here, because the indexer is not a superset of anything, while iswa reads
+   the SWA cache because its base is. 14 099 checks, 7/7 mutations. The position
+   check passes values, not a constant, so reading the wrong cache shows as a wrong
+   number.
+20. DSA cache policy — EXP300 adds the MLA+lightning-indexer pair: indexer MQA
+   with one key head, indexer head width, rope forced to NeoX (unlike MSA), two
+   independent filters, position observers on the MLA cache, `can_shift` including
+   the size equality, and `state_read` as a transaction that clears the MLA part
+   when the indexer read throws. 16 495 checks, 8/8 mutations. Harness lesson: an
+   operation that writes through an omitted output buffer segfaults instead of
+   mismatching, so a gate that can crash is not measuring the module.
+21. DSV4 policy helpers — EXP301 transfers the compressed-state decision helpers
+   (comp size, used key rows, stream offset with the native rejection, coupled
+   detection, token membership, graph stream fan-out, K-only hparams, plane count)
+   from the dsv4 cache: 9 000 checks, 8/8 mutations. Two notes: the native
+   stream-offset function throws, and an FFI entry cannot, so the contract is -1
+   and the gate pins it; and a comparison written as `x>(1 as i64)` does not parse
+   -- the bracket is read as a generic and the parser wants a closing `>`; write
+   `x > 1 as i64`.
+22. DSV4 comp plan (non-overlap, no rollback planes) — EXP302 transfers
+   `dsv4_build_comp_plan` for `overlap == false` and `n_rs_seq == 0`: n_visible,
+   state_pos, n_kv, write/read lists with the three-way source, the CSA and HCA dummy
+   blocks, and the sorted persist rows. 87 911 checks, 8/8 mutations. Still open in
+   this plan: the overlap index layout and the restore/snapshot planes. Four traps
+   recorded: an output section sized "a few entries per token" overflows when a dummy
+   block writes `ratio` entries (use separate arrays); the native token lookup keeps
+   the *last* token for a duplicated (sequence, position); `GGML_PAD(n_kv, 256)` hides
+   "max" versus "last" unless a position above 1024 is drawn; and the HCA dummy's
+   assert (last slot must not be live) has to be modelled so invalid draws are skipped
+   instead of faked.
+23. DSV4 comp plan, overlap layout — EXP303 adds the `overlap == true` read layout:
+   previous-window halves for every block, then current-window halves, collected
+   separately and concatenated once, with dummy blocks appending to both. 124 118
+   checks, 8/8 mutations. My own slip, caught by the count before the contents: a
+   text substitution missed two dummy sites because their indentation differed, so
+   they kept writing to the shared list. Compare counts first in every plan gate.
+   Still open in this plan: the restore/snapshot planes (`n_rs_seq > 0`).
+24. DSV4 rollback planes — EXP304 closes the comp plan: the restore/snapshot tail
+   for `n_rs_seq > 0`, emitted for every layout stream so graph widths never depend
+   on the batch. 162 768 checks, 8/8 mutations. The trap: `rs_idx` is looked up by
+   sequence id against the *table length*, not the stream count — equal until a
+   legal id falls outside the stream range, and wrong from the first such batch.
+   One candidate mutation was rejected as unobservable (the prefix condition at
+   equality is zero either way).
+25. DSV4 compressed-state operations — EXP305 transfers `clear`, `seq_cp`,
+   `apply_copies`, the stream-range helpers and the stream ids `state_write`
+   computes: 17 780 checks, 8/8 mutations. Native throws on every rejection and the
+   FFI contract is -1. Two harness slips, one of them a repeat: the dispatcher's `op`
+   was never written into the packet, so every call ran op 0; and the apply records
+   were written at `2*i*8` through a helper that already scales by 8. **Rule now
+   recorded: a helper that takes an index must never receive a byte-scaled offset** —
+   this is the second occurrence (EXP297 was the first).
+26. DSV4 state tensor I/O — EXP306 transfers the per-stream transfer records and
+   metadata checks of the compressed state: 9 924 checks, 8/8 mutations. A
+   representation defect worth carrying: pointer-plus-length cannot tell a null map
+   from an empty one, and native does distinguish them; there is now an explicit
+   presence flag. **Length zero does not encode presence.** Still open in P5-03:
+   `init_batch` (belongs with the batch allocator) and the remaining dsv4 state
+   read path.
+27. DSV4 compressed-state restore plan — EXP307 transfers the header validation,
+   destination range and per-layer call order of `comp_state::state_read`, with
+   distinct rejection codes and a read count that exposes a skipped or duplicated
+   read: 5 000 checks, 8/8 mutations. The lesson is now written as a rule: every
+   inequality rejection needs a probe on both sides — a fixture that only corrupts
+   upward leaves `!=` weakened to `>` undetected, and this is the second occurrence
+   (EXP306 was the first).
+28. DSV4 cache construction policy — EXP308 transfers what the five pieces are
+   made of: K-only copies for raw/CSA/HCA/indexer, the indexer's one key head at the
+   indexer width on NeoX rope, the two ratio filters, the padded compressed sizes, the
+   three compressor-state shapes, and the two deliberate `false` flags (raw and
+   compressed stay per-sequence even in unified mode). 31 432 checks, 8/8 mutations.
+   The flags are the part worth guarding: a later "simplification" that follows the
+   public setting would show here instead of at a recall regression.
+29. Hybrid indexed memory — EXP309 opens P5-05 with the pool staleness rules:
+   minimum edited position, regroup-from-zero at or below the sequence's first
+   position, the recurrent-refusal short circuit in `seq_rm`, the shifted mark for a
+   negative `seq_add`, and the destination/all/sequence marks of
+   `seq_cp`/`seq_keep`/`seq_div`. 19 362 checks, 8/8 mutations. The narrow margins
+   are the two boundaries (edit exactly at the first position, shift that crosses it),
+   which is why the generator draws `p0` and `seq_min` from overlapping ranges.
+30. Hybrid pool layout — EXP310 transfers kpool_pad, kpool_rank and the
+   per-sequence layout update: resume from the stored scan point when clean and the
+   first position still matches, rebuild (dropping the scan point) when stale or
+   shrinking, and the two grouping modes (by order, by position with alignment and
+   consecutive positions). 32 147 checks, 8/8 mutations. Two candidate mutations were
+   rejected as unobservable, not missed: the `max(64, …)` floor is dead code and
+   resuming from an empty layout at scan point zero scans the same as rebuilding.
+   Replaced by observable ones — an extra pad block and a rebuild that keeps the old
+   scan point.
+31. Hybrid indexed state ordering — EXP311 transfers the write suffix order, the
+   mirrored restore order with the layout hand-over, the failure transaction that
+   drops the sequence from all three caches, `state_drop` clearing directly, and the
+   ubatch stream count: 22 290 checks, 8/8 mutations. Gate lesson: a "does nothing"
+   mutation is only visible if the output buffer is sentinel-filled between calls,
+   otherwise it reads back the previous result.
+32. Hybrid k-pool state marking — EXP312 transfers `kpool_build_state`: the
+   generation-stamped marks, the stale pass (pools ending after an edited position),
+   the token pass in both modes, the representative-row uniqueness, and the graph-size
+   bound. 23 587 checks, 8/8 mutations. Four defects of mine, all in the interface
+   rather than the rules: `POS_CLEAN` is the maximum position (I used -1, which made
+   the stale pass run every step), `kpool_rank` searches cells and I passed the pool
+   count, the pool-offset table and the pool array were one pointer, and a vector
+   sized with `assign` then filled with `push_back` keeps its zeros at the front. The
+   bound mutations only became visible once the generator made the bound actually
+   bind.
+33. Hybrid indexed context stepping — EXP313 transfers `next`, `apply` and
+   `kpool_track`: staleness marks are cleared only on the first step (the ubatch that
+   exists to consume them), apply ANDs both sides and only then extends the layout and
+   pins the pool step, and track is derived rather than cached. 19 405 checks, 8/8
+   mutations. The two track mutations are the narrowest because each disabled
+   condition needs a draw satisfying every other one, which is why flag combinations
+   are exhaustive.
+34. Hybrid host pool inputs — **closed by EXP314** after the rewrite the previous
+   handoff asked for. The arena now carries one `seqdesc` table (stream, cell range,
+   pool range) and both arms read it; the earlier divergence was the harness
+   describing the same facts three times. Transfers the pool tables (representative =
+   last member's row, member cells, sentinel for absent sequences, distinct padding
+   cells, M-RoPE positions) and the masks (visible prefix by rank or position,
+   selection slots, tail cells). 212 205 checks, 8/8 mutations. The position stride is
+   the real pool count here because `n_new_g` belongs to EXP312. Three further
+   harness defects: an empty sequence read past its cells, tokens naming sequences
+   without cells (native asserts a rank), and comparing the selection mask when the
+   graph had not asked for it.
+35. Base hybrid memory — EXP315 transfers the layer split between the attention and
+   recurrent caches (each with its own external filter, otherwise the recurrent pattern
+   decides), the batch split choice (all-output by sequence, else equal with the
+   non-sequential form for a non-unified attention cache and the rollback window kept
+   inside one ubatch), and the prepare order (recurrent first, because it can refuse and
+   the attention preparation is the expensive one). 23 582 checks, 8/8 mutations.
+36. KV attention mask — EXP316 transfers the float path of `set_input_kq_mask`:
+   the empty/sequence/causal/SWA drops for all three window types, plus the row-reuse
+   shortcut with its recorded set. The oracle is a full pass per token, so the shortcut
+   is tested against what it optimises away rather than against itself. 132 213 checks,
+   8/8 mutations. One candidate mutation was measured and rejected: weakening the
+   recorded-window comparison is unobservable because a boundary cell's verdict is the
+   same for every token of its sequence. Still open in this area: ALiBi, 2-D/M-RoPE,
+   the half path, and the non-causal SWA-full span.
+37. KV mask, full float path — EXP317 adds ALiBi (signed distance, and row reuse
+   disabled because the value depends on the query position), the 2-D/M-RoPE causal
+   comparison (same position, y then x), and the non-causal SWA-full span. 115 277
+   checks, 8/8 mutations. Still open for this function: the half-precision path only.
+38. KV view shapes and n_kv — EXP318 transfers the K/V view shapes, strides and the
+   stream offset, both V layouts, and the `n_kv` padding (`max(n_pad, 256)`, clamped to
+   the cache size, maximum over streams). 29 000 checks, 8/8 mutations. Note that the
+   plain-V token stride uses the GQA width, not `head_v * n_head_kv` — the variable-V
+   case, which is easy to "simplify" away.
+39. KV copy-in plan — EXP319 transfers `cpy_k`/`cpy_v` operation sequences: the head
+   merge, the cross-stream reshape for global indices, the contiguous-copy versus
+   reshape choice for a transposed V, the width pad, and the flattening to one element
+   per row; plus the V index shape (one per token, or per token and value element when
+   transposed). 30 201 checks, 8/8 mutations.
+40. KV rotation matrices — EXP320 transfers the Walsh-Hadamard generator (Sylvester
+   recursion, signs compared and orthonormality checked on the reconstruction) and the
+   `n_rot_k`/`n_rot_v` policy (K doubles from 64 while the key width is a multiple of
+   twice the size; V is fixed at 64 for quantised V with a 64-multiple head width; the
+   indexer architectures rotate when the key width equals the indexer head size).
+   5 819 576 checks, 8/8 mutations. The narrow one is the factor-two test (19 checks):
+   it needs a width divisible by the size but not by twice it.
+41. KV state ranges — EXP321 opens P5-08 with the cell selection of
+   `state_write`: non-empty, carries the sequence (all cells for -1), not excluded by
+   the sliding window at the sequence's highest position, coalesced into ranges whose
+   lengths must equal the per-stream counts; and the partial-only section drop for a
+   cache without a window. 40 670 checks, 8/8 mutations. Still open in P5-08: the
+   metadata payload and the tensor data of the same write/read pair.
+42. KV state metadata — EXP322 transfers `state_write_meta`: per cell the position, the
+   id count, the extension when present, and the ids in increasing order, with a named
+   sequence writing only itself and an unnamed write carrying all of them. 109 429
+   checks, 8/8 mutations. One candidate mutation was unobservable with a single bit
+   word and was replaced. Still open in P5-08: the tensor data and the read side.
+43. KV state data plan — EXP323 transfers `state_write_data`: the header (layout flag,
+   layer count, both rotation sizes), the per-layer key type and row size with one
+   transfer per range, the plain-V repetition of that shape, and the transposed-V walk
+   where the embedding dimension is the outer loop and the offset is
+   `(first + j*kv_size) * element_size`. 65 202 checks, 8/8 mutations. Still open in
+   P5-08: both halves of the read.
+44. KV metadata restore — EXP324 transfers `state_read_meta` in both branches with
+   its six rejection codes: the single-sequence path (fit check, destination removal,
+   exact one-id records, mirrored layout or search, extension restored after the batch)
+   and the whole-cache path (cells from zero, count-only mirror check, id range check,
+   head reset). 6 715 checks, 9/9 mutations. Still open in P5-08: `state_read_data`.
+45. KV data restore — EXP325 closes P5-08 with `state_read_data`: contiguous-run
+   batching of the destination indices, the header validation order and codes, and the
+   record order (layer outermost, then embedding row for a transposed V, then runs).
+   50 384 checks, 8/8 mutations. The first run failed because the transcription had runs
+   outermost while native has layers outermost — the transcription was corrected, not
+   the module. Two validation mutations are caught by the run aborting.
+46. Lazy VMM KV buffer — EXP326 opens P5-06 with the policy from
+   `patches/kv-lazy-vmm.patch`: the buffer is lazy only when offloaded, non-transposed
+   and actually offered by the backend; commits are one `(offset, row*n_kv)` per present
+   tensor and are a no-op for a plain buffer or a zero request; the three call sites use
+   the highest range end. 16 290 checks, 8/8 mutations. The registry lookup and the
+   commit itself stay native primitives.
+47. KV sequence shift — EXP327 transfers `seq_add(seq_id, p0, p1, shift)` with its four
+   early exits, the fixed order inside a shifted cell (unlink the per-sequence index, move,
+   relink unless freed) and the head rule that falls back to **zero**, not the cache size,
+   when nothing was freed. 17 656 checks, 8/8 mutations. P5-09 now has shift covered; the
+   cancellation/unload sweep is still open.
+48. KV sequence division and extremes — EXP328 transfers `seq_div` (a divided cell keeps
+   its bits, its shift grows by the position difference, index unlinked before and
+   relinked after) and `seq_pos_min`/`seq_pos_max` (mirrored caches delegate; an empty
+   sequence is -1, the same sentinel as an empty cell). 26 244 checks, 8/8 mutations.
+   Recorded: "empty cells count as positions" in the maximum is provably unobservable —
+   an empty cell is -1, the running maximum starts far below it, and the fallback is -1 —
+   so it was replaced by dropping the sequence-bit check.
+49. KV update — EXP329 transfers `update`: stream copies first (keys always, values only
+   where a value tensor exists, per layer), then the shift pass guarded by `can_shift`
+   (Step35 and multi-position models cannot shift) with `-7` standing in for the native
+   abort, a graph that runs only when RoPE is enabled, some layer uses it, allocation and
+   compute succeed, and shift counters reset on every stream either way. The return value
+   means a shift graph actually ran, so a pure copy returns false. 26 320 checks, 8/8.
+50. KV batch preparation — EXP330 transfers `prepare` as a transaction: slots first, then
+   cells copied aside, then the ubatch applied; any empty search undoes everything in
+   reverse order and returns an empty result, not a partial one. The whole per-stream head
+   vector is snapshotted, because a later ubatch may move heads the earlier one did not
+   touch. 49 702 checks, 9/9 mutations — including one that restores from the other end of
+   the offset table, so reverse order is verified rather than assumed.
+51. KV batch initialisation — EXP331 transfers `init_batch`: the split strategy (simple for
+   one stream, by sequence for a single-assignment multi-stream batch, equal otherwise), the
+   drain to the zero-token ubatch, and the two failure paths (unplaced tokens, refused
+   preparation) that both yield failed-to-prepare. 28 322 checks, 8/8 mutations.
+   The gate first missed the early exit entirely — it never generated a zero-token ubatch,
+   so two mutations passed uncounted; the generator now inserts zero at 25%. A gate that
+   cannot reach a branch looks exactly like a gate that passes.
+52. KV ubatch application — EXP332 transfers the plain `apply_ubatch` end to end: an
+   occupied destination is emptied and its **highest** position recorded per sequence, then
+   position, extension and sequences are written, then everything below each overwritten
+   position is purged (range end exclusive), then the head moves **past** the last slot.
+   The extension rule: an embedding batch carries no token id, PLE fills the gap from the
+   image token and from EOS when none is configured. 154 235 checks, 8/8 mutations.
+   Three invalid-input classes were removed from the generator because native rejects them
+   by assert: slots beyond the stream's cells, duplicate ids inside a token, and writing a
+   cell that already holds two sequences. Out-of-range slot indices first appeared as heap
+   corruption, not as a failed comparison.
+53. KV shift input and rotation copy — EXP333 transfers `set_input_k_shift` (journal per
+   cell, zero for empty, the stream's own cell count as stride) and `set_input_k_rot` /
+   `set_input_v_rot` (whole `width² × 4` copy; a missing width or a mismatched destination
+   reports -1 because native asserts). 46 985 checks, 8/8 mutations.
+   BLOCKER, deferred: `set_input_pos_bucket`. Its arithmetic mixes float and double —
+   `logf` on a double quotient, float multiply, double division by `log(128/max_exact)`,
+   `floorf` on a double sum — and Goose has `f32` with no `double`, so an all-f32 port
+   could cross an integer boundary where floorf lands. Needs a double path in Goose or an
+   exactness argument, whichever comes first; do not approximate it.
+   Also recorded: records are a walk-order journal, not an index-addressed buffer. The
+   first gate compared by cell index and read a neighbouring record as soon as the streams
+   had different widths.
+54. KV previous-token lookup — EXP334 transfers `get_prev_tokens`: target by position for a
+   token batch and by ubatch order for an embedding or mixed batch (where one image repeats
+   a position), and the nearest cell is the **last** cell at that position, because the
+   per-sequence index is ordered by (position, cell index). 46 566 checks, 8/8 mutations.
+   Two mutations proved unobservable and were replaced: `k >= 0` vs `k > 0` (at k == 0 the
+   pre-chunk branch computes the same position) and "look up a negative target anyway" (an
+   empty cell's mask is empty, so the answer is null either way).
+55. Hybrid memory policy — EXP335 transfers `llama_memory_hybrid`: the split choice (by
+   sequence for all-output, equal otherwise with the unified flag inverted and the rollback
+   window), recurrent prepare before attention, recurrent `seq_rm` before attention *because
+   it can refuse without mutating*, attention-then-recurrent for every mutation and state
+   half, total extrema as max-of-mins and min-of-maxes, and `state_read` clearing the
+   attention half when the recurrent half throws. 37 928 checks, 9/9 mutations.
+   The gate itself caught two generator defects: both breakdown sides are maps so keys are
+   unique within a side while sides may overlap, and the port double-counted the first
+   recurrent row of a recurrent-only key.
+56. Hybrid indexed initialisation — EXP336 transfers `llama_memory_hybrid_idx::init_batch`
+   (the hybrid split rules plus the rule that the indexer takes the attention slot layout
+   **verbatim** rather than searching its own cells), `init_update` (carries the optimize
+   flag, decides nothing) and `clear` (base halves, then indexer, then a zero staleness
+   reset). A failed batch yields no layout, never a partial one. 34 774 checks, 8/8
+   mutations — the pair "copy nothing" / "copy unconditionally" guards the layout rule from
+   both sides.
+57. Recurrent initialisation and preparation — EXP337 transfers recurrent `init_batch`
+   (all-output splits by sequence, anything else equally and **sequentially regardless of
+   the unified flag**, window `1 + n_rs_seq`), `prepare` as a dry run that snapshots the
+   whole state, asks each ubatch for a slot, and restores **also on success** — success
+   means "could be placed", not "was placed" — and `init_update`, which reports no-update
+   rather than a context. 30 022 checks, 8/8 mutations.
+58. Recurrent state restore — EXP338 transfers `state_read_meta` (single sequence: zero-id
+   records, empty section stops before reading, slot search, self-source; whole cache:
+   clear before reading, id range, one tail per sequence) and `state_read_data` (header
+   checks including the transposed-state refusal before any write, null layers skipped
+   entirely, zero-length sections validate but read nothing). 43 689 checks, 9/9 mutations.
+   Native's `s_trans == true` branch is unreachable after its own header check and is left
+   unreachable in the port too.
+59. Recurrent state clearing and context steps — EXP339 transfers `state_clear` (negative
+   id clears everything and returns; otherwise the sequence is removed, a zero-length
+   section stops after that removal, then tensors clear per layer in the order recurrent,
+   **state**, PLE) and the context's `next`/`apply`/`get_status`. Recorded: the clear order
+   is **not** the read order (`state_read_data` writes recurrent, PLE, state) even though
+   the native comment says the ranges mirror the write pattern — the ranges mirror, the
+   order does not, and order is observable only in a journal. 31 380 checks, 8/8 mutations.
+60. Recurrent accessors — EXP340 finishes the recurrent module at plan level: `seq_pos_min`
+   (falls back to -1), `seq_pos_max` (starts at -1 and never falls back, so empty and
+   position -1 are indistinguishable), `set_rs_idx` (negative zeroes all, inclusive index
+   bound), `memory_breakdown` (sum per backend type, reported once), `get_can_shift` (always
+   true), `is_empty` (the buffer list decides; zero-sized buffers make that observable) and
+   the r/s/p size sums. 53 886 checks, 9/9 mutations.
+   The `is_empty` gate first never produced a zero-sized buffer, so "list" and "total"
+   agreed on every draw and the mutation passed at 0; zero sizes now appear at 75%.
+   P5-04 stays IN_PROGRESS only because its acceptance also names live recurrent witnesses,
+   which need a model run under rule 1.
+61. Hybrid indexed operations — EXP341 transfers the hybrid-idx delegates: `seq_rm`
+   (recurrent refusal stops everything; the indexer is told the position, removed, then told
+   it again), `seq_cp` (whole sequences only, destination marked from zero), `seq_keep`
+   (every sequence marked), `seq_add` (p0 + shift for a negative shift), `seq_div`, plus
+   `state_write` (indexer section as a pure suffix), `state_read` (attention layout reused,
+   stale mark only for a non-empty copy, a throw drops from all three) and `state_drop`
+   (deliberately not via seq_rm). 44 122 checks, 9/9 mutations.
+   Gate defect worth remembering: the first version mutated its staleness model while
+   building the expectation and then handed that mutated model to the port as its input, so
+   the port received the post-operation state and three mutations passed at 0. A gate that
+   builds its input from its own expectation cannot fail and looks exactly like a passing
+   gate; the fix is copying the model before the switch.
+62. K-pool layout, whole pass — EXP342 completes `kpool_layout_update`: resume only when
+   clean, non-empty and the first position matches, appending strictly after the previous
+   last **(position, cell)** pair; rebuild on stale, empty, changed first position **or** a
+   count that no longer matches, and a rebuild re-takes length and minimum. The stream bound
+   resets sequences at or beyond the stream count in a non-unified cache. 63 506 checks, 9/9
+   mutations.
+   The gate was green while both sides shared one defect: the resume length survived a
+   rebuild, so pools were scanned past the real cells. It only appeared after the generator
+   started producing previous layouts that are not true prefixes — a prefix can never exercise
+   the count rule or the position tie-break. The transcription is the oracle, so it was fixed
+   first and the port had to match.
+63. K-pool context sizes — EXP343 transfers the three sizing paths: the full context fills
+   only `n_pool_real` (so `get_n_kpool` works during graph reservation), the batch context
+   raises it to `(size/kpool)*n_seq_max` with `n_new` equal to it and `n_new_g` at least one
+   (the graph always pools one entry), and the accessors pad `n_pool_real` while returning
+   the stable bound rather than this step's count. 28 482 checks, 8/8 mutations.
+   The "bound may be zero" case needed an explicit zero draw: with layout and cache both
+   empty the bound must still be 1, and only an explicit draw reaches that path.
+64. KV state read orchestration and clearing — EXP344 transfers `state_read_sinfo` (mirrored
+   and partial-only-on-non-SWA exits, layout and stream-count guards before any I/O, a **single
+   up-front clear** for a whole-context read, an empty mirrored layout per zero-cell stream, and
+   a clear-before-throw on failure) together with `state_clear(seq_id)` (cells only this
+   sequence holds) and the shared clear body (contiguous range or per cell, keys then values,
+   transposed values per embedding row). 42 287 checks, 9/9 mutations.
+65. KV state write ranges — EXP345 transfers `state_write`: a cell is written when non-empty,
+   holding the sequence, and — only for a real sequence — not SWA-masked against that
+   sequence's maximum position, so a whole-cache write never filters. Ranges coalesce and a
+   zero-cell stream is skipped with no meta and no data. All four masking rules are covered,
+   including the inclusive `p1 - p0 >= n_swa` boundary. 39 388 checks, 9/9 mutations.
+66. Recurrent state write and read — EXP346 transfers both halves. The write keeps two lists:
+   logical ranges over cells and data ranges over source rows `rs_idx[seq]*size + (src>=0?src:i)`,
+   so cells adjacent in cell order but not in row order stay separate. Two checks run **before
+   anything is written** even though both depend on the selection: a shared cell must resolve one
+   rollback index across all its sequences, and a device save refuses more than one range. The
+   section order is count, meta, data — not the order the lists are built in; the first two
+   versions got that wrong and only the record stream showed it. The read clears with the count
+   only when meta actually read one, then throws, and a success resets the rollback index.
+   44 871 checks, 9/9 mutations.
+67. Integration readiness for APEX.KV — new note `docs/goose-migration/integration-readiness-2026-11-11.md`
+   maps every gated module of EXP321–EXP334 to the native function it replaces, the live
+   witness it would add and the request that would exercise it; the hybrid rows are marked
+   dormant for Apex and must not be counted. It also records the one thing that cannot go
+   live (set_input_pos_bucket needs a double path in Goose) and the four-step plan: build a
+   stage from EXP244, run one Apex request under rule 1, accept only on exact text/tokens/
+   probabilities with non-zero counters, revert the stage otherwise. No new OFF_PATH module
+   was added; the next step is a build-and-run, not another port.
+68. State-write adapter — EXP347 is step 1 of the integration note: a bridge that widens the
+   cell arrays, runs the EXP345 decision and translates its journal back into per-stream counts
+   and ranges. 15 342 checks, 4/4 mutations. Recorded: the module signals a refusal by writing
+   **nothing** (both exits share one return code), so an adapter that looks for a return code
+   would write an empty section instead of skipping the write.
+   Still not called: production and the compiler are untouched, and calling it needs the stage
+   build plus one approved run.
+69. State-write call site — EXP347 got its integration half: `integration/llama-kv-cache.cpp`
+   compiles with the working build's exact flags and its defined-symbol set is **identical**
+   (418 = 418), with `fg345w_enabled` / `fg345w_select` as the only new undefined
+   dependencies. The native block stays behind the same guard, and more than 64 sequences
+   keeps the native path because the bridge carries the set in a 64-bit mask.
+   `check_integration.py` reproduces all three checks without a model run. The stage link and
+   the run are still open: the first needs every other object of the working build, the second
+   needs rule-1 approval.
+70. State-write stage linked — EXP347 now has a linked stage DSO: every object of the working
+   build except `llama-kv-cache.cpp.o`, the integrated object, and the bridge. 4.8 MB, all
+   5 249 exported symbols preserved, `dlopen` from outside llama calls the bridge and prints
+   `FG345W_KV_STATE_WRITE`. The working build and `runtime/exp244` are untouched; the stage
+   lives under the experiment's ignored `build/`.
+   Open, deliberately: the run (rule 1). Without it the stage can be neither accepted nor
+   rejected, so it carries no scoped credit.
+71. Batch split tail policy — EXP348 closes the `n_keep_tail` block of `split_equal`, which is
+   on the live batching path: keep the longest prefix of sets that are finished or have at least
+   the tail left, resolve the first set directly when it alone violates the rule (extend to
+   completion if it fits, otherwise truncate and give tokens back), defer the rest, concatenate
+   only the kept sets. 99 626 checks, 7/7 mutations.
+   Two layout mistakes were caught by the gate: `used` is an `int64` array (helpers need `i*8`),
+   and the per-set list holds the whole set while `cur_idx` says how much was taken — truncation
+   starts from the taken prefix, not the list length.
+72. Ubatch assembly — EXP349 transfers the decision half of `ubatch_add`: the three shape flags
+   (mixed only when the embedding-marked rows are neither none nor all, tokens unless all rows
+   are embeddings, embeddings unless none are), the state payload independent of mixed, the
+   payload sizes, `out_ids` in row order and `seq_id_unq` scanned in increasing sequence id.
+   122 968 checks, 7/7 mutations. Payload copies stay native.
+73. Batch set selection — EXP350 transfers the opening block of `split_equal`: skip used rows,
+   skip sets overlapping a chosen one, enforce increasing sequence ids in sequential mode, and
+   break one **past** the ubatch limit. Cursors then start at zero and stop at the first unused
+   row of each set. 45 307 checks, 7/7 mutations.
+   The first generator built arbitrary set lists and walked off the offset table when more sets
+   were chosen than existed — a shape native cannot produce; sets are now built from distinct
+   masks, as native does.
+74. Simple and sequential splits — EXP351 transfers `split_simple` (consecutive tokens from the
+   first free one; the size test runs after the add, so a full ubatch is exactly n_ubatch) and
+   `split_seq` (one sequence set and its subsets, the size test runs **before** the look-ahead
+   scan, and the set is replaced by the one landed on). They report different sequence counts:
+   one per token versus one. 75 280 checks, 7/7 mutations.
+75. Batch entry classification — EXP352 transfers the content-type section of `init`: refuse an
+   entry with neither token nor embedding, require state uniformity with **entry zero** as the
+   reference, refuse half-both batches, refuse a mixed batch when the model forbids it, then derive
+   `mixed` / `has_token` / `has_embd`; plus the token-id bound (skipped for an embedding-marked
+   entry) and the sequence-id bound. 27 839 checks, 7/7 mutations.
+   The gate had the bug first: it compared the state embedding against an external notion of the
+   batch instead of entry zero. Native takes entry zero.
+76. Batch initialisation stats — EXP353 transfers the output override (all flags, not only the
+   missing ones), the lazily existing decision-order array, coupling (`s1` marked against `s0`,
+   reverse pair deliberately not tracked) and the set map with unique ids in increasing order.
+   175 680 checks, 7/7 mutations.
+   Two mutations were unusable and recorded: "fill only the missing entries" is equivalent (the
+   override only fires when a zero exists), and a decreasing-order variant kept its increment and
+   looped forever — a hanging mutation is not a detection, and killing the driver left the source
+   mutated until it was restored by hand.
+77. Stage validated on a real run — first use of the owner's standing permission for periodic
+   validation: one Apex run (32K/128) on the EXP347 stage DSO. Tokens, all 128 saved probabilities
+   and the content hash (`e68df05b`) equal the accepted EXP244 control; the acceptance script
+   returns ACCEPTED with prefill 2588.9 and decode 25.88 tok/s at 17.58 s wall, no parallel work.
+   The `FG345W` witness logged **0** calls, as predicted: `state_write` is not on the completion
+   path. So the run proves the substitution is sound and proves nothing about the module being
+   live — a non-zero witness needs a route a completion actually calls.
+78. Split-simple route probe — EXP354 wires `split_simple` behind a bridge (EXP351 module) and links
+   a stage with two call sites; the adapter gate is 49 824 checks / 0 failures and the integrated
+   object keeps its 123-symbol set. The Apex run stays exact (tokens, 128 probabilities, hash) but
+   logs **zero** `FG351S` calls: with a non-unified attention cache Apex splits with `split_equal`,
+   not the simple walk.
+   Two traps recorded: the witness had to move from the destructor to the first call, because a
+   SIGINT shutdown does not run destructors and an exit-only witness is indistinguishable from
+   "never called"; and "wired but zero calls" must be read as a route fact, not a porting failure.
+   Next live route: `split_equal`, which needs a journal-to-actions bridge.
+79. Split-equal tail probe — EXP355 adds the journal-to-actions bridge for the EXP348 block, its
+   `split_equal` call site, and a stage with three call sites (4 840 352 bytes, every previously
+   exported symbol kept). Bridge gate 67 619 checks / 0 failures; Apex run exact, prefill 2514.6 and
+   decode 25.30 tok/s; `FG348S` witness **0 calls** — Apex has no rollback sequences, so
+   `n_keep_tail` is zero and the branch is never entered.
+   With EXP354 this settles the picture: the splitter's recurrent paths are dormant for this
+   profile; what Apex runs is `split_equal`'s set selection and `ubatch_add`.
+   The probe also caught a real defect in EXP348 (deferred release and concatenation used the whole
+   per-set lists instead of the taken prefixes); it was invisible to that experiment's own gate
+   because the transcription repeated the model. Fixed in `eae4a56`.
+80. LINE CHECK before integration — the working candidate is built from
+   `work/llama.cpp-integration`, and its `llama-batch.cpp` is **not** the same file as
+   `llama.cpp-flint-cuda/src/llama-batch.cpp` (987 vs 1493 lines). The working version has no
+   `mixed` / `is_embd_vec` / `decision_order` / `state_vec`; its `ubatch_add` is the simpler one.
+   So EXP349 (ubatch_add with mixed) and EXP352 (init content types) describe a line the candidate
+   does not run, and must not be integrated here. Rule going forward: check the target line before
+   wiring a module; a gated module from the other line is not evidence about this one.
+   What does exist in the working line and is worth wiring: `ubatch_add`'s output ids and unique
+   sequence list, `split_simple`, `split_equal` selection, and `state_write` ranges.
+81. STAGE RUNS WERE NOT VALID — found while wiring `ubatch_add`. Two independent faults:
+   (a) the run directory kept `libllama.so.0` as a hard link to the accepted EXP244 DSO, so every
+   "stage" run actually loaded EXP244 by that name; the path in `/proc/maps` looked right while the
+   content was the old library. Fix: replace all three names (`libllama.so`, `.so.0`, `.so.0.7.0`)
+   and compare the *hash* of the loaded file, not the path.
+   (b) with the substitution really in place the server fails at startup: `libllama-common.so.0`
+   wants `llama_batch_ext_init`, which the objects of `build/expert-tier-franken-cuda` (built from
+   `work/llama.cpp-integration`) do not provide. That build is the native line; the accepted runtime
+   is built from the line that has `llama_batch_ext` (the integration files of EXP238/240/243).
+   Consequence: EXP347, EXP354, EXP355 and EXP357 runs prove nothing. They are marked NOT VALIDATED,
+   and no scoped item moves on their basis. The gates and bridges stand on their own.
+   Also re-read the earlier line note (item 80) in this light: EXP349's `mixed` block belongs to the
+   accepted line, not to `work`, so it is not "the other line" after all — the target line is the one
+   with `llama_batch_ext`.
+82. Stage method fixed — EXP358 builds the stage from `llama.cpp-flint-cuda/build-cuda`, the line
+   the accepted runtime comes from: 44 objects, every `llama_` symbol `libllama-common` needs is
+   exported, all three library names replaced. The run is exact (tokens, 128 probabilities, hash) and
+   logs **zero** accepted-runtime witnesses, which is how we now know the substitution is real.
+   Prefill/decode are 1586.5 / 24.1 — the floors belong to the accepted Goose-built runtime, this
+   stage is the plain line by construction.
+   Next: add call sites to this line, starting with `ubatch_add` (its module matches this line's
+   `mixed` block), and only then read a witness.
+83. ubatch_add LIVE on the accepted line — EXP359 builds the stage from the flint objects with
+   `llama-batch.cpp.o` replaced by the EXP356-integrated copy and the bridge linked: ABI complete,
+   all three library names substituted. The Apex run is byte-identical to the control (tokens, 128
+   probabilities, `e68df05b`) and logs `FG349S_UBATCH_ADD first call` then `calls=100` — the first
+   Goose module proved to execute on the real path since the method was fixed. prefill 1547.4 /
+   decode 24.09, below the floors because this stage carries one module; the floors describe the
+   full accepted runtime.
+   Not closed by this: the batch sub-system as a whole, and all KV state paths (they need a request
+   that saves or restores state).
+84. split_equal selection LIVE — EXP361 wires the EXP350 module through a bridge that passes used
+   flags, set masks, first ids, the limit and the mask→rows map, and gets back the accepted rows and
+   cursors; `cur_seq_set` is rebuilt on the llama side. Bridge gate 18 453 checks / 0 failures.
+   Apex run exact, `FG350S_SPLIT_SELECT` first call / 100 / 200, prefill 1599.2, decode 25.22.
+   With EXP359 this closes both batch blocks Apex actually enters; keep-tail and split_simple stay
+   dormant (EXP354/EXP355) and would add no witness.
+85. Both batch call sites in one stage — EXP362 links the combined `llama-batch.cpp.o` (selection
+   from EXP361 plus `ubatch_add` from EXP359) with both bridges: 5 292 512 bytes, ABI complete.
+   The Apex run is exact and logs both witnesses — `FG350S_SPLIT_SELECT` first/100/200 and
+   `FG349S_UBATCH_ADD` first/100 — with prefill 1589.0 and decode 25.69. They do not interfere: the
+   selection fills sets and cursors, `ubatch_add` consumes the resulting index list.
+   Remaining batch items: container ownership and the splitter parts this profile never reaches.
+86. Three call sites live, KV state-write exercised — EXP363 links selection, `ubatch_add` and the
+   KV state-write range selection in one stage (5 297 008 bytes, ABI complete). The completion is
+   exact and both batch witnesses fire; `FG345W_KV_STATE_WRITE` fires **once**, from a slot save:
+   `POST /slots/0?action=save` with `--slot-save-path` produced a 387 989 920-byte file the server
+   accepted. prefill 1621.2, decode 26.09.
+   That settles the earlier zero-call question: the KV state path is not on completion, it is on
+   save. Not covered: `state_read`/restore, the meta/data halves as separate live routes, and
+   `state_clear`. Natural next check: restore the file just written and compare the state.
+87. Save/restore round trip — EXP364 runs completion, save, restore, completion on the same stage.
+   Save reports `n_saved` (387 989 920-byte file), restore reports `n_restored`, and the repeated
+   completion is byte-identical to the first: tokens, all 128 probabilities, `e68df05b`.
+   `FG345W_KV_STATE_WRITE` fires once (the save); restore goes through the read path, which has no
+   Goose call site yet. So this is a correctness result for the write selection, not a read witness.
+88. KV state-read header bridge — EXP365 transfers the read path's decisions (layer count, capacity,
+   transposed state, and per-layer key/PLE/value type and row checks) and returns three read masks,
+   so the caller performs exactly the native transfers. Gate 11 595 checks / 0 failures. Not wired
+   yet: the call site in `state_read_data` is next, and one difference is recorded by design — the
+   caller reads all headers before asking, so a rejection leaves the IO stream further along, while
+   the observable restore result is unchanged because a rejection aborts.
+89. KV state-read header: format constraint — EXP366 gates the KV read header decisions (layer
+   count, capacity, V layout, key/value rotation, then per-layer type and row checks; `v_trans` here,
+   `s_trans` in the recurrent variant) at 5 072 checks / 0 failures, and records why it cannot be a
+   single live call site: native interleaves headers and payloads per layer, so one decision call
+   would move every payload read after every header and land payloads in the wrong tensors. A call
+   per layer degenerates into a duplicate of the four comparisons; changing the layout would break
+   files the accepted runtime already wrote.
+   So this block is not a live candidate under the current format. The write side, which has no such
+   interleaving, is live (EXP363/EXP364).
+90. KV state clearing LIVE — EXP367 wires the EXP344 clear plan: contiguous cells get one call per
+   tensor, scattered one per cell, keys for every layer, values only where a tensor exists, transposed
+   values per embedding row; the bridge returns (kind, layer, offset, size) and llama performs the
+   calls. Bridge gate 51 077 checks / 0 failures.
+   Witnessed on the only path that reaches it — a failed restore: save (387 989 920 bytes), restore a
+   truncated 1 MiB copy, server rejects it, and `FG367S_KV_STATE_CLEAR` fires. The completion before
+   the failure stays `e68df05b`. Open: the whole-cache `seq_id == -1` branch and the hybrid drop path,
+   which need a cancellation or an unload.
+91. KV write and clear together — EXP368 links both KV call sites plus both batch blocks in one
+   stage (5 305 536 bytes, ABI complete; the KV object gains only local `.LC` labels, 438 → 446).
+   The completion stays `e68df05b`; the save fires `FG345W_KV_STATE_WRITE`, the truncated restore is
+   rejected and fires `FG367S_KV_STATE_CLEAR`; both batch witnesses stay live.
+   Neither KV route is on completion — one is on save, the other on a failed restore — so this proves
+   coexistence, not a new path. KV remaining: `state_read_data` (format, EXP366), the whole-cache
+   clear branch, the hybrid drop, and separate live routes for meta/data.
+92. Disable contract verified — EXP369 runs the EXP368 stage with all four switches at `0`
+   (`GGML_GOOSE_UBATCH_ADD`, `GGML_GOOSE_SPLIT_SELECT`, `GGML_GOOSE_KV_STATE_WRITE`,
+   `GGML_GOOSE_KV_STATE_CLEAR`). The completion is still `e68df05b`, save and a rejected truncated
+   restore behave the same, and **no** witness fires. The switches therefore only turn features off,
+   and a rollback does not need a rebuild.
+93. Five routes live in one candidate — EXP370 adds batch classification (`init`, EXP352) to the
+   four live routes and links all five: 5 309 904 bytes, ABI complete. The completion stays
+   `e68df05b`; the log carries `FG352S_BATCH_CLASSIFY` first+100, `FG350S_SPLIT_SELECT` first+100+200,
+   `FG349S_UBATCH_ADD` first+100, `FG345W_KV_STATE_WRITE` once (save) and
+   `FG367S_KV_STATE_CLEAR` once (rejected restore).
+   The counts match the shape: three routes per batch, one per save, one per failed restore.
+94. Path to promotion — the accepted DSO's source tree is gone; `work/llama.cpp-integration` is another
+   line (no `llama_batch_ext`) and cannot even start against the accepted `libllama-common`. What was
+   verified read-only: 47 integration directories, 51 files, and the copies are **cumulative**
+   (EXP243's llama-batch has 34 `FG` references, 242 has 18, 241 has 11, 240 has 7), and the latest
+   copy compiles against the flint tree with flint flags (133 664-byte object). Plan written in
+   `docs/goose-migration/reconstruct-accepted-tree.md`: stage the flint tree, overlay the latest copy
+   per file name, build, then prove identity against `libllama-exp244` by symbol set **and** witness
+   lines before adding any call site there. This is the prerequisite for promoting EXP359–EXP370 out of
+   a side stage.
+95. KV routes live on the reconstructed accepted tree — EXP371/372. The reconstructed DSO (5 415 656
+   bytes, 26 accepted modules + our two bridges) runs the fixed profile with `FG345W_KV_STATE_WRITE`
+   and `FG367S_KV_STATE_CLEAR` alongside ten accepted witnesses (`FG227N`, `FG228E`, `FG229I`,
+   `FG232R`, `FG233C`, `FG237S`, `FG239B`, `FG240Q`, `FG241U`, `FG242O`), answer unchanged
+   (`e68df05b`, save 387 989 920 bytes, truncated restore rejected).
+   Recorded cause of an earlier false zero: the run script inherited from EXP369 set every
+   `GGML_GOOSE_*` switch to 0 — the harness disabled the feature it was measuring.
+   Also recorded: the batch area is already Goose-owned in the accepted runtime (fg240q/fg241u/fg242o/
+   fg243c), so EXP349/350/352 duplicate existing routes and must not be stacked on top.
+   The tree is a side tree; promoting it as the active candidate is the owner's decision.
+96. KV read guards LIVE on the reconstructed tree — EXP373 wires the three `state_read_sinfo` guards
+   (mirror layout size, section stream count, zero-cell mirror emptiness) into the reconstructed tree:
+   gate 41 checks / 0 failures, and on a **successful** restore round trip the log shows
+   `FG373S_KV_READ_SINFO` once alongside `FG345W_KV_STATE_WRITE` and the accepted `FG241U`, with both
+   completions at `e68df05b` and all probabilities equal.
+   Complementary to EXP367 (the clear on the failure path). Not transferred: the per-stream body
+   (meta/data order and clear-before-throw) — same interleaving constraint as EXP366.
+97. Disable contract on the reconstructed tree — EXP374 turns off our three routes
+   (`GGML_GOOSE_KV_STATE_WRITE`, `_KV_STATE_CLEAR`, `_KV_READ_SINFO`) while leaving the accepted switches
+   alone. Both completions stay `e68df05b`, probabilities equal, restore works, our three witnesses
+   vanish and `FG241U`/`FG237S`/`FG227N` stay live. A build that enables them by default returns to
+   native on request, and the switch touches no neighbour.
+98. Hybrid memory decisions — EXP375 integrated (`seq_pos_min` = max of minima, `seq_pos_max` = min of
+   maxima, failed recurrent read clears the attention half), gate 76/0, but **NOT VALIDATED**: the
+   combinators are reached only from the M-RoPE branch of `llama_batch_allocr::init`, and the Apex
+   32K/128 profile is not M-RoPE. Answer unchanged, `FG375S` never fires. Not counted as closed; needs
+   an M-RoPE request or a recurrent-only restore failure, neither of which exists in the agreed profile.
+99. Hybrid context decisions — EXP376 integrated (`apply` conjunction without short-circuit, `next`
+   boundary), gate 35/0, **NOT VALIDATED**. Hybrid memory is built (the startup log shows the recurrent
+   half), but `llama_memory_hybrid_context::apply`/`next` are never called on the Apex 32K/128 request:
+   the batch takes the single-ubatch path. Needs `n_ubatch < n_tokens`; forcing it would be a new
+   acceptance rule. Recorded, not counted.
+100. Cancel resilience measured — EXP379 drops a streaming client after 8 events on the reconstructed
+   tree: the server logs `cancel task`, the next request is served normally (32 768 prompt tokens), and
+   its completion is `e68df05b…`, identical to the reference, with 37 live witnesses in the same run.
+   Closes the "cancel leaves the cache usable" half of P5-09. Not covered: unload during an active
+   request, and a cancel arriving mid-batch rather than mid-stream.
+101. Mutation loops must restore the object, not just the source — the EXP377 sweep found
+   `build/bridge-377.o` still compiled from the last mutant while `host.goose` had been restored, so the
+   adaptor reported 607 failures against a correct module; a rebuild returns 2161/0. Same family as the
+    EXP353 driver leaving applied mutations behind: the artifact outlives the edit.
+102. CORRECTION — the sampler's softmax family **is** portable. My earlier claim that Goose has no
+   `exp` was a harness defect: `exp` lives in `stdlib/math.goose` as `extern "gs_exp"/"gs_expf"`
+   aliased onto libm, and it works on the pinned compiler once the program does `import math;` **and**
+   the compiler is started from the Fried Goose root (`stdlib` is relative to the working directory).
+   Verified: `exp(1.0)` = 2.718281828459045, `exp(1.0 as f32)` = 2.7182817, exact libm values.
+   So `softmax`/`dist` can be ported with `exp` reached as an `extern`, exactly as `rsqrt` already is.
+   `log`/`pow` must be re-checked the same way before any claim. The CUDA device path is the compiler
+   side's task and does not block the CPU port. Lesson: a one-line probe is only a probe if it is run
+   the way a real program is run — import and working directory included.
+103. Penalty bookkeeping — EXP380 integrated (window disabled, ring eviction, counter erase), gate 92/0,
+   6/6 mutations, **NOT VALIDATED**: `llama-server` never builds a `penalties` sampler — it tracks the
+   sampled tokens itself and does not call `llama_sampler_init_penalties`, so `accept` is never invoked.
+   The default chain in `common/common.h` lists penalties, but this server does not use that chain.
+104. APEX.KV whole-cache branch closed — EXP381 makes the `state_clear(seq_id = -1)` decision live
+   (clears once, before the per-stream loop), plus the meta-due rule on `state_write` and the
+   hybrid-drop path. Gate 22/0, 7/7 mutations. On a successful save/restore the log shows
+   `FG381S_KV_WHOLE_CLEAR` next to `FG373S`/`FG345W`/`FG241U`, with both completions at `e68df05b`
+   and all probabilities equal. Hybrid drop is integrated but unreachable here (Apex does not build
+   the indexed hybrid memory); `state_read_data` stays out of scope (EXP366). APEX.PATH status files
+   live in the dashboard, so the evidence is recorded here and in the experiment, not by hand-editing
+   that JSON.
+105. APEX.RECURRENT_MEMORY I/O plan closed — EXP382 moves the layer-visit decisions of
+   `llama_memory_recurrent::state_write_data` into Goose (skip a layer with no R tensor; the S pass
+   covers exactly the layers that own one), making the fixed stream ordering explicit. Gate 34/0, 4/4
+   mutations. On save the log shows `FG382S_RECURRENT_IO_PLAN` twice (R pass, S pass) next to the
+   accepted `FG232R`, with `FG381S`/`FG373S`/`FG345W`/`FG241U` and both completions at `e68df05b`.
+   Boundary kept honest: payload bytes and tensor ownership stay in llama by bridge design.
+106. APEX.BATCH container composition closed — EXP383 moves the ubatch container sizing into Goose
+   (`type` only for a mixed batch, decision order only when given, sequence-id pool reserved for the
+   token count). Gate 37/0, 5/5 mutations. Live: `FG383S_BATCH_CONTAINER_PLAN` next to
+   `FG382S`×2/`FG381S`/`FG373S`/`FG345W`/`FG232R`/`FG241U`, both completions `e68df05b`.
+   Containers stay inside llama by bridge design; what moved is their composition. Dormant splitter
+   branches remain a profile fact with no witness obtainable.
+107. Sampler softmax ported and bit-identical — EXP384 runs the normaliser in Goose: max (from the
+   first element when sorted, else a scan), `exp(logit-max)` accumulated left to right, one division per
+   element. `exp` comes from `stdlib/math.goose` via `extern "gs_expf"`, the same libm function the
+   native loop calls, so identity is by construction. Gate: 243 sets, 3 769 comparisons, **bit for bit,
+   0 failures**, 6/6 mutations. On the profile `FG384S_SOFTMAX` fires ≈200 times and the completion stays
+   `e68df05b` with all probabilities equal.
+   Still native in this chain: `dist`, which uses `std::discrete_distribution` — reproducing it would pin
+   the port to one libstdc++ implementation, so that needs a deliberate decision, not a silent step.
+108. Sampler early-exit guards live — EXP385 moves four no-op tests into Goose (`min_p` at p<=0 or empty
+   list, `typical`/`top_p` at p>=1, `top_k` at k<=0). Gate 73/0, 5/5 mutations. On the profile
+   `FG385S_SAMPLER_GUARDS` fires about 200 times (min_p=0 and top_k=20 both hit), completion stays
+   `e68df05b`, probabilities equal. Known band, documented rather than hidden: `p` crosses as
+   `p * 1e6` as an integer, so a parameter within 1e-6 of a boundary would compare differently than the
+   native float test; the profile's values (0, 0.95, 1.0) are nowhere near it.
+109. Token selection ported and bit-identical — EXP386. My first attempt ported
+   `std::discrete_distribution`; reading the line showed this server does not use it.
+   `llama_sampler_dist_apply` takes the `#if 1` branch: one uniform draw, `target = sum_cum * rnd`, the
+   first index whose running float sum reaches the target, `p /= sum_cum` in the same pass. That is what
+   moved. Gate: 70 sets, 24 086 comparisons of the **index and every probability, bit for bit**, plus
+   draws landing exactly on thresholds, 0 failures; 7/7 mutations. On the profile `FG386S_DIST_PICK`
+   fires about 128 times and the completion stays `e68df05b` with all probabilities equal.
+   With EXP384 the sampler's probability path is Goose-owned end to end; the RNG primitive stays native.
+110. Sampler chain orchestration live — EXP387 moves the two skip decisions of `chain_apply` (backend
+   sampler only while the chain is in backend mode, and samplers without an apply hook) and the accept
+   counter into Goose. Gate 51/0, 5/5 mutations. On the profile `FG387S_SAMPLER_CHAIN` fires 715 times
+   (every sampler on both the walk and accept), completion `e68df05b`, probabilities equal.
+111. Sampler filter guards — EXP388 integrates the DRY / top-n-sigma / XTC no-op tests (gate 76/0, 5/5
+   mutations) but they are **NOT VALIDATED**: the server builds its chain from its own sampler list, and
+   `llama_sampler_init_dry` / `_top_n_sigma` / `_xtc` are only created when their types appear there.
+   Same category as penalties (EXP380): guard-correct code that this server never calls.
+112. GGUF inventory live on the load path — EXP389 moves the duplicate-name check and the dominant
+   file-type decision of `llama_model_loader` into Goose. Gate 31 117 checks (including 200 simulated
+   inventories compared against the loader's own loop), 0 failures, 5/5 mutations. `FG389S_GGUF_INVENTORY`
+   reports its first call on startup; the print interval is 5 000 because the inventory is a few thousand
+   calls for this model, so only the first line appears by design.
+113. Special-token partition — EXP390 integrates the skip/LSTRIP/RSTRIP decisions (gate 33/0, 5/5
+   mutations) but they are **NOT VALIDATED**: `tokenizer_st_partition` runs on every non-empty tokenize,
+   yet its work is the loop over `cache_special_tokens`, and the run log carries no special-token cache
+   line, so the cache is empty for this model and the loop body never executes. A chat-template request
+   or a model declaring special tokens would exercise it; the agreed profile does neither.
+114. Fused-op resolution live — EXP391 moves the probe gate, the probe graph width and the mismatch
+   verdict of `llama_context::resolve_fused_ops` into Goose. Gate 43/0, 5/5 mutations; `FG391S` reports
+   its first call at context creation, completion `e68df05b`.
+   Process note worth keeping: a script whose escaping does not match the file aborted the staging
+   rebuild half-way, and the next run executed without the lost-bridge disable and died with
+   `FG205G validation code 21` — a half-applied staging is visible immediately rather than silently
+   accepted.
+115. KV slot placement is Goose-owned — EXP392 ports the `find_slot` walk. The blocking premise was
+   false: the predicate was already Goose (`fg199k_can_use`), and the cells fit in three flat arrays, so
+   no `llama_kv_cells*` has to cross. Gate: 18 000 generated caches, **53 703 checks, 0 failures**,
+   8 mutations caught; three mutations were proven unobservable and replaced rather than waived.
+   On the profile `FG392S_KV_FIND_SLOT` and `FG199K` are both live and the completion stays `e68df05b`
+   with an exact restore.
+   Tooling fix: `build.py` chose a module's owner by "any file contains the prefix", so a bridge that
+   merely called `fg199k_can_use` took ownership and the link failed with duplicate symbols. The
+   criterion is now `<prefix>_enabled`.
+116. KV metadata selection is Goose-owned — EXP393 moves the field selection of `state_write_meta`:
+   which sequences a cell lists (all for a whole-context write, the requested one otherwise, and only when
+   the cell holds it) and whether the extension block is written. Gate 43/0, 5/5 mutations. On the profile
+   `FG393S_KV_META_PLAN` fires about 1 600 times and both the slot file and the post-restore answer are
+   unchanged. Remaining for APEX.KV: tensor layout arithmetic (row sizes and range offsets).
+117. APEX.KV complete against its criterion. All four named parts are Goose-owned on the used path:
+   metadata write selection (EXP393) and read decisions (EXP395), slot placement walk (EXP392), tensor
+   layout arithmetic on both sides (EXP394), and the update path (EXP199: prepare/apply_ubatch, live since
+   the accepted runtime). Gates: 43/0 + 103/0 + 53 703 + 875/0 with 5/5, 6/6, 8 and 5/5 mutations.
+   Live on the 32K/128 profile: FG392S, FG393S, FG394S, FG395S, FG345W, FG373S, FG367S, FG199K. Completion
+   `e68df05b`, save 387 989 920 bytes, restore exact.
+   Explicitly separated as buffer primitives, per the criterion: `write_tensor`/`read_tensor` and the
+   backend allocation. Not claimed and not needed for the criterion: `state_read_data` still refuses the
+   interleaved per-layer format at a coarser granularity than EXP394's per-span arithmetic (EXP366).
+118. APEX.RECURRENT_MEMORY complete against its criterion. Used recurrent/hybrid memory, state
+   transitions, stream ordering and tensor state I/O are all Goose-owned on the live path:
+   transitions and ordering (FG232R from the accepted runtime, FG382S live), payload layout on write and
+   read for R/PLE/S including the transposed case (FG396S live), hybrid delegation order and the
+   rollback rule (FG397S live), plus the hybrid combinators and context decisions (FG375S, FG376S live).
+   Gates: 34/0, 875/0, 33/0, 76/0, 35/0 with 20 mutations caught across them.
+   CORRECTION to items 98 and 99: those two were recorded NOT VALIDATED because their witnesses never
+   fired, and I explained that with the M-RoPE branch and `n_ubatch`. The real cause was that
+   **llama-memory-hybrid.cpp was not in the build's changed list**, so no hybrid decision code was in the
+   binary at all. With the file compiled, both witness routes fire on the ordinary profile. Lesson kept:
+   before explaining a zero by reachability, prove the code is in the artefact.
+119. Multi-GPU `allreduce` — not ported. It is a 977-line NCCL/communication
+   subsystem; this host has one GPU, so no arm can exercise it. It belongs to
+   P3-18's hardware-unverified ledger rather than to blind porting.
+120. Downstream phases P4–P11.
+
+## Disk
+
+The host was at 100 percent (3.1 GiB free) on 2026-11-11. About 85 GiB were
+reclaimed by deleting old stage `run`/`build` copies and archived agent builds
+after making EXP244 self-contained (87 external symlinks replaced with hard
+links first). The retention set is EXP244; `runtime/active.json` records the
+cleanup. Do not recreate stage copies.
+
+## Standing order (Igor, 2026-11-11): one small-path item at a time
+
+After the three-item focus (KV, RECURRENT_MEMORY, BATCH) was self-accepted, the working order for the
+small Apex path is fixed:
+
+1. name the item and its final remainder from the unchanged criterion;
+2. implement only what that item needs;
+3. integrate and run the required checks, including real Goose calls and the permitted model runs;
+4. self-accept against the original criterion, keep the evidence and the commit, and set DONE through
+   update_apex.py **and** apex-status.json with author and time;
+5. only then take the next item.
+
+Not allowed: jumping between independent items, substituting the large runtime plan, changing criteria to
+score, or hiding an open criterion behind DONE. Codex's later review never blocks self-acceptance or
+continuation. Any change in a shared subsystem must be tied explicitly to the current item's criterion.
+If a genuine external blocker appears, record the exact cause and what would unblock it, and only then
+take one other available item.
+
+## Standing order (Igor, 2026-11-11): one short metrics checkpoint per closed item
+
+After every item of the small Apex path is closed and self-accepted, run **one** short checkpoint of the
+verified configuration and record prefill tok/s, decode tok/s, peak RSS and peak VRAM, bound to the item
+id and the time, in `docs/goose-migration/metrics/apex-checkpoints.json`. Reuse an ordinary verification
+run when it already produced these numbers instead of adding load.
+
+Rules that stay: the same profile (32K/128), the real commit and binary, the correctness result, the
+memory method and units, and a note about parallel load. Device VRAM is not process VRAM; current memory
+is not peak; one noisy run does not prove a regression; no series for pretty numbers; no waiting for a
+clean host. If the collection breaks, save the error and continue the main work.
+
+No new automatic notifications, reminders or periodic observers are to be created: the numbers are only
+recorded, and Igor asks for them himself. The existing Telegram configuration is untouched.
+
+## Deferred plan (Igor, 2026-11-11): one optimization item after the small path
+
+Sequence fixed: finish every original small-path item by its own criterion (one item at a time, one short
+metrics checkpoint after each), then one final whole-path run, then exactly one optimization item.
+Its order: recover the pre-regression numbers first (restore the existing patches from the real
+inventory, then look for other causes), then prefill 3000+ / decode 30+ and less memory. Remembered
+orientation 2700/27 and ~3400 MiB VRAM is a memory of the baseline, not a reference; extract the baseline
+from the saved original runs before any acceptance. No invented RAM threshold. Final conclusions only
+from comparable A/B→B/A on a quiet host. Details in `apex-deferred-optimization.md`.
+Optimization is not started now.
+
+## Standing order (Igor, 2026-11-11): functional first, performance afterwards
+
+Speed no longer vetoes a functionally complete, correct and safe transfer. The small-path items are closed
+per item, one at a time, with one short checkpoint after each DONE. Measured slowdowns are recorded as
+material for the separate optimisation stage, not used to block acceptance and not raised with the
+compiler side as urgent dependencies.
+
+A real functional or compiler blocker — a missing operation or type, a miscompile, ABI or memory safety —
+still goes to the compiler side first with a minimal repro. Do not call a barrier proven while the current
+compiler supports it; check first.
+
+## Standing run authorization (2026-11-11)
+
+Igor has pre-authorized builds, isolated test-server runs, functional checks and one short measurement per
+closed item for this task. Do not ask for a separate "yes" before each run; re-read
+`docs/goose-migration/RUN_AUTHORIZATION.md` instead of assuming the permission is missing. A loop continuation
+means: finish the current item end to end, then move to the next. Production and the compiler stay untouched;
+colleagues' processes are not stopped.
+
+## Own-server lifecycle (required)
+
+Check saved PIDs with their identity, the tree, the port, executable/cwd and GPU compute PIDs before starting a
+test server; finish the previous own server and wait for real exit and GPU release; repeat the cleanup after
+every error or timeout. No `killall`/broad `pkill`, no touching others' or production processes, and keep "my
+memory" separate from "total GPU".
+
+## Preferred proof method: controlled defect test
+
+To prove a module executes, prefer A -> B -> A: correct build, one computational change, guaranteed restore.
+Test build only. Correctness is judged separately against an independent reference, never by this test.

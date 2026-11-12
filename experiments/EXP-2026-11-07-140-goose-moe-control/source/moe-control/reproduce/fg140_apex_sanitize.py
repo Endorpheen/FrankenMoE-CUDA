@@ -1,0 +1,16 @@
+from pathlib import Path
+import json,subprocess,os,hashlib
+r=Path('/home/end0/AI/LlamaServer/franken-goose-live-20261107');old=r/'variants/moe-control-apex';v=r/'variants/moe-control-apex-sanitize';(v/'build').mkdir(parents=True,exist_ok=True);(v/'run').mkdir(exist_ok=True);flags=['-O1','-g','-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer'];commands=[]
+for row in json.loads((old/'build/commands.json').read_text()):
+ cmd=[a.replace(str(old/'build'),str(v/'build')).replace(str(old/'run'),str(v/'run')) for a in row['argv'] if a!='-O3']+flags;p=subprocess.run(cmd,capture_output=True,text=True);(v/'build'/(row['label']+'.log')).write_text(p.stdout+p.stderr);print(row['label'],p.returncode,(p.stdout+p.stderr)[-1400:],flush=True);p.check_returncode();commands.append({'label':row['label'],'argv':cmd})
+for path in (old/'run').iterdir():
+ if path.name.startswith('libggml-cpu.so'):continue
+ target=v/'run'/path.name
+ if not target.exists() and not target.is_symlink():target.symlink_to(path)
+for suffix in ['.so','.so.0']:
+ path=v/'run'/('libggml-cpu'+suffix)
+ if not path.exists() and not path.is_symlink():path.symlink_to('libggml-cpu.so.0.27.0')
+cmd=['/usr/bin/gcc-13','-I'+str(r/'source/ggml/include'),str(r/'source/cpu-moe-tiled/fixture-expanded.c'),'-L'+str(v/'run'),'-lggml-cpu','-lggml-base','-lm','-lpthread','-Wl,-rpath,'+str(v/'run'),'-o',str(v/'build/fixture'),*flags];p=subprocess.run(cmd,capture_output=True,text=True);(v/'build/fixture-compile.log').write_text(p.stdout+p.stderr);p.check_returncode();commands.append({'label':'fixture','argv':cmd});reports={};data={}
+for mode in ['off','on']:
+ env=dict(os.environ);env.pop('LD_PRELOAD',None);env.update(LD_LIBRARY_PATH=str(v/'run'),GGML_GOOSE_MOE_CONTROL='1' if mode=='on' else '0',GGML_GOOSE_MOE='1',GGML_GOOSE_TILED='1',GGML_GOOSE_MOE_QUANT='1',GGML_GOOSE_ALLOC='0',GGML_GOOSE_COALESCE='0',GGML_GOOSE_LIFETIME='0',GGML_GOOSE_GRAPH_PLAN='0',ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1');path=r/'results'/f'moe-control-apex-sanitized-{mode}.bin';p=subprocess.run([str(v/'build/fixture'),str(path)],env=env,capture_output=True,text=True,timeout=180);(r/'results'/f'moe-control-apex-sanitized-{mode}.log').write_text(p.stdout+p.stderr);print(mode,p.returncode,p.stdout.strip(),p.stderr[-1400:],flush=True);p.check_returncode();reports[mode]=json.loads(p.stdout);data[mode]=path.read_bytes()
+native=(r/'results/moe-control-apex-expanded-native.bin').read_bytes();assert data['off']==data['on']==native;report={'status':'PASS_SCOPED_ASAN_UBSAN_LSAN_COMMON_MOE_APEX','runs':reports,'all_bytes_equal_original':True,'sha256':hashlib.sha256(native).hexdigest(),'instrumented':'New Goose controller and modified native CPU core including bridge/barrier/task code plus C graph fixture','uninstrumented':'Previously tested Goose math/tiled/elementwise/quant objects and inherited base/other CPU objects','not_claimed':'No full backend safety audit, no TSan or general race-free/superiority proof','production_changed':False};(r/'results/moe-control-apex-sanitizer-summary.json').write_text(json.dumps(report,indent=2)+'\n');(v/'build/commands.json').write_text(json.dumps(commands,indent=2)+'\n');print(json.dumps(report,indent=2))

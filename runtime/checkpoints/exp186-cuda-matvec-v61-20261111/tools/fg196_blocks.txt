@@ -1,0 +1,132 @@
+static void * ggml_cuda_host_malloc(size_t size) {
+    const bool goose = fg196p_enabled();
+    int64_t plan[4] = {0, 0, 0, 0};
+
+    if (goose) {
+        fg196p_plan_host_alloc(ggml_cuda_pinned_memory_disabled() ? 1 : 0, (int64_t) size,
+                               (uint64_t) (uintptr_t) plan);
+        if (plan[0] == 0) {
+            return nullptr;
+        }
+    } else {
+        fg196p_note_native();
+        if (ggml_cuda_pinned_memory_disabled()) {
+            return nullptr;
+        }
+    }
+
+    void * ptr = nullptr;
+    cudaError_t err = cudaMallocHost((void **) &ptr, size);
+
+    if (goose) {
+        fg196p_plan_host_alloc_result((int64_t) err, (uint64_t) (uintptr_t) plan);
+    }
+    const bool ok = goose ? plan[2] != 0 : err == cudaSuccess;
+
+    if (!ok) {
+        // clear the error
+        (void)cudaGetLastError();
+        GGML_LOG_DEBUG("%s: failed to allocate %.2f MiB of pinned memory: %s\n", __func__,
+                           goose ? (double) plan[1] / 1000.0 : size / 1024.0 / 1024.0,
+                           cudaGetErrorString(err));
+        return nullptr;
+    }
+
+    return ptr;
+}
+
+static ggml_backend_buffer_t ggml_backend_cuda_host_buffer_type_alloc_buffer(ggml_backend_buffer_type_t buft, size_t size) {
+    void * ptr = ggml_cuda_host_malloc(size);
+
+    // The fallback decision is Goose's; the allocation itself is ggml's.
+    int64_t fb[4] = {0, 0, 0, 0};
+    if (fg196p_enabled()) {
+        fg196p_plan_fallback(ptr == nullptr ? 1 : 0, (uint64_t) (uintptr_t) fb);
+    } else {
+        fg196p_note_native();
+        fb[0] = ptr == nullptr ? 1 : 0;
+    }
+
+    if (fb[0] != 0) {
+        // fallback to cpu buffer
+        return ggml_backend_buft_alloc_buffer(ggml_backend_cpu_buffer_type(), size);
+    }
+
+    ggml_backend_buffer_t buffer = ggml_backend_cpu_buffer_from_ptr(ptr, size);
+    buffer->buft = buft;
+    buffer->iface.free_buffer = ggml_backend_cuda_host_buffer_free_buffer;
+
+    return buffer;
+}
+
+bool ggml_backend_cuda_register_host_buffer(void * buffer, size_t size) {
+    const bool goose = fg196p_enabled();
+    int64_t plan[4] = {0, 0, 0, 0};
+
+    if (goose) {
+        fg196p_plan_register(ggml_cuda_register_host_enabled() ? 1 : 0, (int64_t) size,
+                             (uint64_t) (uintptr_t) plan);
+        if (plan[0] == 0) {
+            return false;
+        }
+    } else {
+        fg196p_note_native();
+        if (!ggml_cuda_register_host_enabled()) {
+            return false;
+        }
+    }
+
+#if CUDART_VERSION >= 11010 || defined(GGML_USE_MUSA) || defined(GGML_USE_HIP)
+    cudaError_t err = cudaHostRegister(buffer, size, cudaHostRegisterPortable | cudaHostRegisterReadOnly);
+    if (goose) {
+        fg196p_plan_register_result((int64_t) err, (uint64_t) (uintptr_t) plan);
+    }
+    const bool ok = goose ? plan[2] != 0 : err == cudaSuccess;
+
+    if (!ok) {
+        // clear the error
+        (void)cudaGetLastError();
+
+        GGML_LOG_DEBUG("%s: failed to register %.2f MiB of pinned memory: %s\n", __func__,
+                           goose ? (double) plan[1] / 1000.0 : size / 1024.0 / 1024.0,
+                           cudaGetErrorString(err));
+        return false;
+    }
+    return true;
+#else
+    GGML_UNUSED(buffer);
+    GGML_UNUSED(size);
+    return false;
+#endif // CUDART_VERSION >= 11010 || defined(GGML_USE_MUSA)
+}
+
+void ggml_backend_cuda_unregister_host_buffer(void * buffer) {
+    const bool goose = fg196p_enabled();
+    int64_t plan[4] = {0, 0, 0, 0};
+
+    if (goose) {
+        fg196p_plan_unregister(ggml_cuda_register_host_enabled() ? 1 : 0, 0,
+                               (uint64_t) (uintptr_t) plan);
+        if (plan[0] == 0) {
+            return;
+        }
+    } else {
+        fg196p_note_native();
+        if (!ggml_cuda_register_host_enabled()) {
+            return;
+        }
+    }
+
+    cudaError_t err = cudaHostUnregister(buffer);
+    if (goose) {
+        // The outcome of the call decides whether the error is cleared.
+        fg196p_plan_unregister(ggml_cuda_register_host_enabled() ? 1 : 0, (int64_t) err,
+                               (uint64_t) (uintptr_t) plan);
+    }
+    const bool clear = goose ? plan[3] != 0 : err != cudaSuccess;
+
+    if (clear) {
+        // clear the error
+        (void)cudaGetLastError();
+    }
+}

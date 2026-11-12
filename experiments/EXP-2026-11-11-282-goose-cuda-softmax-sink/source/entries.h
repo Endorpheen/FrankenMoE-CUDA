@@ -1,0 +1,3 @@
+#pragma once
+#define FG282D_CB_sink_f32 fg282dd_gg_function_1
+#define FG282D_CB_sink_f16 fg282dd_gg_function_20

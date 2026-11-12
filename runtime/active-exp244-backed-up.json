@@ -1,0 +1,34 @@
+{
+  "stage": "EXP244",
+  "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp244/run",
+  "base_commit": "4185f26",
+  "baseline_runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/run",
+  "correctness": "EXP237-244 batch/output block: eight Goose routes, five live; exact Apex text (sha256 e68df05b) and all saved completion probabilities",
+  "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp244/results-apex-or244-or-goose/summary.json",
+  "next": "mmvf half/bfloat16 source types (gated); recurrent RWKV/GLA blocked on per-thread state arrays; MMQ blocked on EXP180",
+  "solo": true,
+  "authorized_external_workers": 0,
+  "production_changed": false,
+  "previous_runtime": null,
+  "updated_at": 1794374000,
+  "commit": "56ddd37",
+  "performance_qualification": "EXP238 vs EXP242 pair: prefill +0.16 percent (spread 0.07-0.43) is sound; decode +0.48 percent is not, within-series decode spread reached 6.87 percent, three times the 2 percent threshold",
+  "producer_compiler_sha256": "84f31960f9f3031e5fba6b767f775dfaf79448a736169fdef006072d7deccf6c",
+  "compiler_for_next_work": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/current.json",
+  "dso_sha256_16": "2bc628a170a51dd1",
+  "cleanup_2026_11_11": {
+    "reason": "host disk was at 100 percent with 3.1 GiB free",
+    "freed_gib": 85,
+    "kept_runtime_stages": [
+      "exp244"
+    ],
+    "self_contained": "87 external symlinks in exp244/run replaced with hard links before other stage run directories were deleted",
+    "deleted": "runtime/exp*/run and build for every stage except exp244; archived agent candidate builds, workspace runtime copies, GLM attempt ndjson logs and archive build variants",
+    "untouched": [
+      "production /home/end0/AI/FrankenMoE-CUDA",
+      "compiler /home/end0/AI/Fried-Goose",
+      "runtime/compiler",
+      "git-tracked evidence under experiments/"
+    ]
+  }
+}

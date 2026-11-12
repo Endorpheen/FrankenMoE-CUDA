@@ -1,0 +1,3 @@
+#pragma once
+static __device__ __forceinline__ void fg175p_pdl_sync(){ggml_cuda_pdl_sync();}
+static __device__ __forceinline__ void fg175m_process_tile(uint64_t p0, uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4, uint64_t p5, uint64_t p6, float p7, float p8, int64_t p9, int32_t p10, int32_t p11, int64_t p12, int64_t p13, int64_t p14, int64_t p15, int64_t p16, int32_t p17, int32_t p18, int32_t p19, int32_t p20, int32_t p21, int32_t p22, uint8_t p23, uint8_t p24, int32_t p25, int32_t p26, int32_t p27, int32_t p28, uint64_t p29, uint64_t p30, uint64_t p31, uint64_t p32, uint64_t p33){FG175C_PROCESS(p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,p21,p22,p23,p24,p25,p26,p27,p28,p29,p30,p31,p32,p33,1);}

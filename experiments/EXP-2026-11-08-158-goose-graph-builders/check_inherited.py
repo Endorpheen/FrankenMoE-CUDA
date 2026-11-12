@@ -1,0 +1,8 @@
+from pathlib import Path
+import os,json,subprocess
+F=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');E=F/'experiments/EXP-2026-11-08-158-goose-graph-builders';B=F/'runtime/exp158/build';R=F/'runtime/exp158/run';lib=json.loads((E/'source/manifest.json').read_text())['library'];rows=json.loads((B/'commands.json').read_text());env=dict(os.environ,LD_LIBRARY_PATH=str(R),GGML_NO_BACKTRACE='1');extra={}
+for label,args in [('inherited-exp156-constructors',[F/'runtime/exp156/build/constructors-fixture',(F/'runtime/exp155/run/libggml-base.so').resolve(),lib]),('inherited-exp157-context-core',[F/'runtime/exp157/build/core-fixture',(F/'runtime/exp156/run/libggml-base.so').resolve(),lib])]:
+ args=list(map(str,args));p=subprocess.run(args,cwd=B,env=env,capture_output=True,text=True,timeout=120);rows.append(dict(label=label,argv=args,cwd=str(B),exit_code=p.returncode));(B/'commands.json').write_text(json.dumps(rows,indent=2)+'\n');(B/(label+'.stdout')).write_text(p.stdout);(B/(label+'.stderr')).write_text(p.stderr);print(label,p.returncode,p.stdout,flush=True);assert p.returncode==0,p.stderr[-3000:];extra[label]=p.stdout
+p=E/'local-results.json';d=json.loads(p.read_text());d['inherited']=extra;p.write_text(json.dumps(d,indent=2)+'\n')
+s=(E.parent/'EXP-2026-11-08-157-goose-context-core/run_apex.py').read_text().replace('exp157','exp158').replace('EXP157 solo Goose context lifetime/registry and metadata;inherited verified EXP155/156 and fast numerical kernels','EXP158 solo Goose common arithmetic/MoE/attention/recurrent graph builders;inherited EXP155/156/157 and fast numerical kernels');(E/'run_apex.py').write_text(s)
+print('redirected_native_bodies',len(json.loads((E/'source/recipes.json').read_text())))

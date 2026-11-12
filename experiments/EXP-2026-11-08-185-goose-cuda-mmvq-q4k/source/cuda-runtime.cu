@@ -1,0 +1,158 @@
+#include "common.cuh"
+#include "mmvq.cuh"
+#include "convert.cuh"
+#include "host-ffi.h"
+#include "quantize.cuh"
+#include "ggml-cuda.h"
+#include <atomic>
+#include <mutex>
+#include <cstdlib>
+#include <cstring>
+
+// Raw device services for the Goose mul_mat_vec_q. Integer loads, the half2 unpack,
+// dp4a, a float store, the shuffle/barrier pair and shared staging; nothing else.
+static __device__ unsigned long long fg185q_paths,fg185q_guards;
+static __device__ __forceinline__ int32_t fg185q_ld_i32(uint64_t p,uint64_t o){return *(const int32_t*)((const char*)(uintptr_t)p+o);}
+static __device__ __forceinline__ uint32_t fg185q_ld_u16(uint64_t p,uint64_t o){return *(const uint16_t*)((const char*)(uintptr_t)p+o);}
+static __device__ __forceinline__ float fg185q_ld_h2(uint64_t p,uint64_t o){return __low2float(*(const half2*)((const char*)(uintptr_t)p+o));}
+static __device__ __forceinline__ float fg185q_ld_h2b(uint64_t p,uint64_t o){return __high2float(*(const half2*)((const char*)(uintptr_t)p+o));}
+static __device__ __forceinline__ int32_t fg185q_dp4a(int32_t a,int32_t b,int32_t c){return __dp4a(a,b,c);}
+static __device__ __forceinline__ void fg185q_st_f32(uint64_t p,uint64_t o,float v){*(float*)((char*)(uintptr_t)p+o)=v;}
+static __device__ __forceinline__ float fg185q_shfl_xor(float v,int32_t o,int32_t w){return __shfl_xor_sync(0xFFFFFFFFu,v,o,w);}
+static __device__ __forceinline__ void fg185q_barrier(){__syncthreads();}
+static __device__ float * fg185q_buf;
+static __device__ __forceinline__ void fg185q_shm_put(int32_t w,int32_t l,float v){fg185q_buf[w*32+l]=v;}
+static __device__ __forceinline__ float fg185q_shm_get(int32_t w,int32_t l){return fg185q_buf[w*32+l];}
+static __device__ __forceinline__ void fg185q_fail(int64_t){atomicAdd(&fg185q_guards,1ULL);asm("trap;");}
+#define FG185Q_BODY fg185qd_gg_function_1
+#include "device-functions-generated.cuh"
+
+// Same grid as native: (ceil(nrows/rpb), nchannels_dst, nsamples) with block (32,nwarps).
+static __global__ __launch_bounds__(128) void fg185q_kernel(
+ const char * vx,const char * vy,const char * ids,float * dst,
+ int64_t ncols_x,int64_t blocks_per_row,int64_t blocks_per_iter,
+ int64_t stride_row_x,int64_t stride_col_y,int64_t stride_col_dst,
+ int64_t scx,int64_t scy,int64_t scd,int64_t ssx,int64_t ssy,int64_t ssd,
+ int64_t nchannels_y,int64_t channel_ratio,int64_t sample_ratio,int32_t use_ids,int64_t ids_stride,
+ int64_t nwarps){
+ if(blockIdx.x==0&&blockIdx.y==0&&blockIdx.z==0&&threadIdx.x==0&&threadIdx.y==0)atomicOr(&fg185q_paths,1);
+ extern __shared__ char fg185q_data[];
+ fg185q_buf=(float*)fg185q_data;
+ const uint64_t X=(uint64_t)(uintptr_t)vx,Y=(uint64_t)(uintptr_t)vy,D=(uint64_t)(uintptr_t)dst,I=(uint64_t)(uintptr_t)ids;
+ const bool u=use_ids!=0;
+ FG185Q_BODY(X,Y,I,D,ncols_x,blocks_per_row,blocks_per_iter,
+  stride_row_x,stride_col_y,stride_col_dst,scx,scy,scd,ssx,ssy,ssd,
+  nchannels_y,channel_ratio,sample_ratio,u,ids_stride,nwarps,
+  (int64_t)blockIdx.x,(int64_t)threadIdx.x,(int64_t)threadIdx.y,
+  (int64_t)blockIdx.y,(int64_t)blockIdx.z,0);
+}
+
+struct fg185q_packet{cudaStream_t stream{};uint64_t v[8][32]{};bool launched=false;};
+static std::atomic<uint64_t>fg185q_host_seen{0};
+static fg185q_packet&fg185q_p(int64_t p){GGML_ASSERT(p);return*(fg185q_packet*)(uintptr_t)p;}
+
+extern "C" int64_t fg185h_arg(int64_t p,int64_t k){GGML_UNUSED(k);return p;}
+extern "C" int64_t fg185h_plan(int64_t p){return p;}
+extern "C" void fg185h_put(int64_t p,int64_t k,int64_t i,uint64_t x){GGML_ASSERT(k>=0&&k<8&&i>=0&&i<32);fg185q_p(p).v[k][i]=x;}
+extern "C" uint64_t fg185h_get(int64_t p,int64_t k,int64_t i){GGML_ASSERT(k>=0&&k<8&&i>=0&&i<32);return fg185q_p(p).v[k][i];}
+extern "C" void fg185h_fail(int64_t c){GGML_ABORT("Goose mul_mat_vec_q validation code %lld",(long long)c);}
+extern "C" int64_t fg185h_launch(int64_t pp){
+ auto&q=fg185q_p(pp);q.launched=true;auto&v=q.v;
+ const auto stream=q.stream;
+ GGML_ASSERT(stream!=nullptr);
+ const dim3 grid((unsigned)v[7][0],(unsigned)v[7][1],(unsigned)v[7][2]);
+ const dim3 block((unsigned)v[7][5],(unsigned)v[7][6],1u);
+ // native shared size: (nwarps-1)*ncols_dst*rows_per_block*warp_size*4
+ const int nbytes=(int)((v[7][6]-1)*v[7][5]*sizeof(float));
+ const auto lp=ggml_cuda_kernel_launch_params(grid,block,(size_t)nbytes,stream);
+ ggml_cuda_kernel_launch(fg185q_kernel,lp,
+   (const char*)(uintptr_t)v[0][0],(const char*)(uintptr_t)v[0][1],
+   v[0][3]?(const char*)(uintptr_t)v[0][3]:nullptr,(float*)(uintptr_t)v[0][2],
+   (int64_t)v[1][0],(int64_t)v[7][4],(int64_t)v[7][3],
+   (int64_t)v[1][1],(int64_t)v[1][2],(int64_t)v[1][3],
+   (int64_t)v[2][0],(int64_t)v[2][1],(int64_t)v[2][2],
+   (int64_t)v[3][0],(int64_t)v[3][1],(int64_t)v[3][2],
+   (int64_t)v[4][3],(int64_t)v[5][4],(int64_t)v[5][5],(int32_t)v[5][2],(int64_t)v[5][3],
+   (int64_t)v[7][6]);
+ return cudaGetLastError();
+}
+extern "C" uint64_t fg185q_cuda_host_seen(){return fg185q_host_seen.load(std::memory_order_relaxed);}
+extern "C" int fg185q_cuda_device_read(uint64_t*out){
+ if(!out)return cudaErrorInvalidValue;
+ auto e=cudaMemcpyFromSymbol(out,fg185q_paths,sizeof(uint64_t));if(e!=cudaSuccess)return e;
+ return cudaMemcpyFromSymbol(out+1,fg185q_guards,sizeof(uint64_t));
+}
+static void fg185q_report(){
+ uint64_t x[2]={};int e=fg185q_cuda_device_read(x);
+ fprintf(stderr,"FG185Q_CUDA_MMVQ_Q4K host=0x%llx,cuda_status=%d,paths=0x%llx,guards=%llu\n",
+  (unsigned long long)fg185q_cuda_host_seen(),e,(unsigned long long)x[0],(unsigned long long)x[1]);
+}
+
+void fg185q_native_ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context&,const ggml_tensor*,const ggml_tensor*,
+ const ggml_tensor*,ggml_tensor*,const ggml_cuda_mm_fusion_args_host*);
+void ggml_cuda_mul_mat_vec_q(ggml_backend_cuda_context &ctx,const ggml_tensor*src0,const ggml_tensor*src1,
+ const ggml_tensor*ids,ggml_tensor*dst,const ggml_cuda_mm_fusion_args_host*fusion){
+ const char*flag=getenv("GGML_GOOSE_CUDA_MMVQ_Q4K");
+ if(flag&&strcmp(flag,"0")==0){fg185q_native_ggml_cuda_mul_mat_vec_q(ctx,src0,src1,ids,dst,fusion);return;}
+ static std::once_flag once;std::call_once(once,[]{std::atexit(fg185q_report);});
+ const int dev=ggml_cuda_get_device();
+ const int warp=ggml_cuda_info().devices[dev].warp_size;
+ GGML_TENSOR_BINARY_OP_LOCALS;
+ fg185q_packet p{};
+ p.stream=ctx.stream();
+ p.v[0][0]=(uint64_t)(uintptr_t)src0->data;
+ // src1 arrives as F32 and must be quantized to q8_1 first; native does this into a
+ // padded staging buffer. The quantizer is already a qualified Goose module (EXP178),
+ // so reusing it here keeps the quantization itself in Goose.
+ const int64_t ne10_padded=GGML_PAD(ne00,MATRIX_ROW_PADDING);
+ ggml_cuda_pool_alloc<char> src1_q8(ctx.pool(),ne13*ne12*ne11*ne10_padded*sizeof(block_q8_1)/QK8_1);
+ {
+  const int64_t t11=src1->nb[1]/4,t12=src1->nb[2]/4,t13=src1->nb[3]/4;
+  quantize_row_q8_1_cuda((const float*)src1->data,nullptr,src1_q8.get(),src0->type,
+   ne10,t11,t12,t13,ne10_padded,ne11,ne12,ne13,ctx.stream());
+ }
+ p.v[0][1]=(uint64_t)(uintptr_t)src1_q8.get();
+ p.v[0][2]=(uint64_t)(uintptr_t)dst->data;
+ p.v[0][3]=ids?(uint64_t)(uintptr_t)ids->data:0ULL;
+ p.v[1][0]=(uint64_t)ne00;
+ p.v[1][1]=(uint64_t)(src0->nb[1]/ggml_type_size(src0->type));
+ // native quantizes src1 into a padded q8_1 staging buffer:
+ // stride_col_y = PAD(ncols, MATRIX_ROW_PADDING)/QK8_1.
+ p.v[1][2]=(uint64_t)(ne10_padded/QK8_1);
+ p.v[1][3]=(uint64_t)(ids?dst->nb[2]/4:dst->nb[1]/4);
+ p.v[2][0]=(uint64_t)(src0->nb[2]/ggml_type_size(src0->type));
+ // native derives the y channel stride from the padded q8_1 staging layout:
+ // s11 = ne10_padded/QK8_1, s12 = ne11*s11 -- in BLOCKS, not elements.
+ const int64_t s11q=ne10_padded/QK8_1;
+ p.v[2][1]=(uint64_t)(ids?s11q:ne11*s11q);
+ p.v[2][2]=(uint64_t)(ids?dst->nb[1]/4:dst->nb[2]/4);
+ p.v[3][0]=(uint64_t)(src0->nb[3]/ggml_type_size(src0->type));
+ p.v[3][1]=(uint64_t)(ne12*ne11*s11q);
+ p.v[3][2]=(uint64_t)(dst->nb[3]/4);
+ p.v[4][0]=(uint64_t)ne01;
+ p.v[4][1]=(uint64_t)(ids?ne1:ne2);
+ p.v[4][2]=(uint64_t)(ids?ne2:ne3);
+ p.v[4][3]=(uint64_t)(ids?ne11:ne12);
+ p.v[5][0]=(uint64_t)warp;
+ p.v[5][1]=(uint64_t)4;   // nwarps for Q4_K, ncols_dst=1 on the SM86+ table
+ p.v[5][2]=ids?1ULL:0ULL;
+ p.v[5][3]=(uint64_t)(ids?ids->nb[1]/4:0);
+ p.v[5][4]=(uint64_t)(ids?0:(ne2/src0->ne[2]));
+ // nsamples_dst / nsamples_x, as mmvf.cu:434 builds it.
+ p.v[5][5]=(uint64_t)(src0->ne[3]?(dst->ne[3]/src0->ne[3]):1);
+ p.v[6][1]=(uint64_t)(ids?ne2:ne1);
+ p.v[6][2]=(src0->type==GGML_TYPE_Q4_K)?1ULL:0ULL;
+ const bool eligible = src0->type==GGML_TYPE_Q4_K && src1->type==GGML_TYPE_F32 &&
+  dst->type==GGML_TYPE_F32 && (!ids||ids->type==GGML_TYPE_I32) &&
+  (!ids||dst->ne[2]==1) && (ids||dst->ne[1]==1) &&
+  (fusion==nullptr||(fusion->gate==nullptr&&fusion->x_bias==nullptr&&fusion->gate_bias==nullptr&&
+                     fusion->x_scale==nullptr&&fusion->gate_scale==nullptr)) &&
+  ne13==ne3 && src0->ne[3]>0 && dst->ne[3]%src0->ne[3]==0;
+ p.v[6][0]=eligible?1ULL:0ULL;
+ if(fg185qh_run((int64_t)(uintptr_t)&p)&&eligible){
+  fg185q_host_seen.fetch_or(p.launched?1ULL:16ULL,std::memory_order_relaxed);
+  return;
+ }
+ fg185q_host_seen.fetch_or(32ULL,std::memory_order_relaxed);
+ fg185q_native_ggml_cuda_mul_mat_vec_q(ctx,src0,src1,ids,dst,fusion);
+}

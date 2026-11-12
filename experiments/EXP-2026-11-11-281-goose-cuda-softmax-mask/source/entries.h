@@ -1,0 +1,3 @@
+#pragma once
+#define FG281D_CB_mask_f32 fg281dd_gg_function_1
+#define FG281D_CB_mask_f16 fg281dd_gg_function_20
