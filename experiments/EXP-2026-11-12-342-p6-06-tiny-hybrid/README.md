@@ -194,3 +194,25 @@ It also adds a small parity observation consistent with P4-03: the same invalid 
 The gate still has no proven mutation. A valid mutant needs a *correctly formed* all-attention model, and the generator is not there
 yet: the tensor list and shapes now pass, but the resulting model does not allocate. The next step is to find why the allocation fails
 -- likely a size or per-layer consistency rule -- rather than to look for a port defect, since both lines agree on the rejection.
+
+## Second mutant (both layers recurrent): same native rejection
+
+The all-attention mutant was rejected by both lines, so a second one was built the other way: both layers recurrent (`recurrent_layers =
+[true, true]`), layer 1 given the `ssm_*` set copied from layer 0, `attn_qkv` at width 64, and the six tensors a recurrent layer does not
+use dropped. Names and shapes now match the loader's expectations (73 tensors), and the result is the same native abort:
+
+    GGML_ASSERT(buffer) failed at ggml/src/ggml-backend.cpp:345
+
+So both synthetic mutants fail allocation on the native line, in the same place, which means the deficiency is in my generator rather than
+in the port. The hybrid model -- built the same way but from a name list the loader itself produced on its first successful run -- loads
+and serves.
+
+## What that leaves
+
+The gate's sensitivity remains unproven, and the reason is now precise: I cannot yet produce a second *valid* model to run it against.
+Both attempts die at `ggml_backend_buffer_get_usage(NULL)`, which means some tensor ends up without a buffer; the likely culprits are the
+`.scale`/`.input_scale` placeholders, which are plain F32 of shape 1 in our generator and may not satisfy the loader's expectations once
+the layer mix changes.
+
+That is a generator problem with a clear next step -- compare the tensor metadata of the working hybrid model against the failing mutant,
+property by property -- rather than a port question.

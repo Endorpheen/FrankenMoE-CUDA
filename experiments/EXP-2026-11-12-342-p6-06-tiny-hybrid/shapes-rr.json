@@ -1,0 +1,251 @@
+{
+ "blk.0.attn_gate.input_scale": [
+  1
+ ],
+ "blk.0.attn_gate.scale": [
+  1
+ ],
+ "blk.0.attn_gate.weight": [
+  32,
+  32
+ ],
+ "blk.0.attn_norm.weight": [
+  32
+ ],
+ "blk.0.attn_qkv.input_scale": [
+  1
+ ],
+ "blk.0.attn_qkv.scale": [
+  1
+ ],
+ "blk.0.attn_qkv.weight": [
+  32,
+  64
+ ],
+ "blk.0.ffn_down_exps.input_scale": [
+  4
+ ],
+ "blk.0.ffn_down_exps.scale": [
+  4
+ ],
+ "blk.0.ffn_down_exps.weight": [
+  16,
+  32,
+  4
+ ],
+ "blk.0.ffn_down_shexp.input_scale": [
+  1
+ ],
+ "blk.0.ffn_down_shexp.scale": [
+  1
+ ],
+ "blk.0.ffn_down_shexp.weight": [
+  16,
+  32
+ ],
+ "blk.0.ffn_gate_inp.weight": [
+  32,
+  4
+ ],
+ "blk.0.ffn_gate_inp_shexp.weight": [
+  32
+ ],
+ "blk.0.ffn_gate_shexp.input_scale": [
+  1
+ ],
+ "blk.0.ffn_gate_shexp.scale": [
+  1
+ ],
+ "blk.0.ffn_gate_shexp.weight": [
+  32,
+  16
+ ],
+ "blk.0.ffn_gate_up_exps.weight": [
+  32,
+  32,
+  4
+ ],
+ "blk.0.ffn_up_shexp.input_scale": [
+  1
+ ],
+ "blk.0.ffn_up_shexp.scale": [
+  1
+ ],
+ "blk.0.ffn_up_shexp.weight": [
+  32,
+  16
+ ],
+ "blk.0.post_attention_norm.weight": [
+  32
+ ],
+ "blk.0.ssm_a": [
+  4
+ ],
+ "blk.0.ssm_alpha.input_scale": [
+  1
+ ],
+ "blk.0.ssm_alpha.scale": [
+  1
+ ],
+ "blk.0.ssm_alpha.weight": [
+  32,
+  4
+ ],
+ "blk.0.ssm_beta.input_scale": [
+  1
+ ],
+ "blk.0.ssm_beta.scale": [
+  1
+ ],
+ "blk.0.ssm_beta.weight": [
+  32,
+  4
+ ],
+ "blk.0.ssm_conv1d.weight": [
+  4,
+  64
+ ],
+ "blk.0.ssm_dt.bias": [
+  4
+ ],
+ "blk.0.ssm_norm.weight": [
+  8
+ ],
+ "blk.0.ssm_out.input_scale": [
+  1
+ ],
+ "blk.0.ssm_out.scale": [
+  1
+ ],
+ "blk.0.ssm_out.weight": [
+  32,
+  32
+ ],
+ "blk.1.attn_norm.weight": [
+  32
+ ],
+ "blk.1.attn_qkv.input_scale": [
+  1
+ ],
+ "blk.1.attn_qkv.scale": [
+  1
+ ],
+ "blk.1.attn_qkv.weight": [
+  32,
+  64
+ ],
+ "blk.1.ffn_down_exps.input_scale": [
+  4
+ ],
+ "blk.1.ffn_down_exps.scale": [
+  4
+ ],
+ "blk.1.ffn_down_exps.weight": [
+  16,
+  32,
+  4
+ ],
+ "blk.1.ffn_down_shexp.input_scale": [
+  1
+ ],
+ "blk.1.ffn_down_shexp.scale": [
+  1
+ ],
+ "blk.1.ffn_down_shexp.weight": [
+  16,
+  32
+ ],
+ "blk.1.ffn_gate_inp.weight": [
+  32,
+  4
+ ],
+ "blk.1.ffn_gate_inp_shexp.weight": [
+  32
+ ],
+ "blk.1.ffn_gate_shexp.input_scale": [
+  1
+ ],
+ "blk.1.ffn_gate_shexp.scale": [
+  1
+ ],
+ "blk.1.ffn_gate_shexp.weight": [
+  32,
+  16
+ ],
+ "blk.1.ffn_gate_up_exps.weight": [
+  32,
+  32,
+  4
+ ],
+ "blk.1.ffn_up_shexp.input_scale": [
+  1
+ ],
+ "blk.1.ffn_up_shexp.scale": [
+  1
+ ],
+ "blk.1.ffn_up_shexp.weight": [
+  32,
+  16
+ ],
+ "blk.1.post_attention_norm.weight": [
+  32
+ ],
+ "output.weight": [
+  32,
+  64
+ ],
+ "output_norm.weight": [
+  32
+ ],
+ "token_embd.weight": [
+  32,
+  64
+ ],
+ "blk.1.ssm_a": [
+  4
+ ],
+ "blk.1.ssm_alpha.input_scale": [
+  1
+ ],
+ "blk.1.ssm_alpha.scale": [
+  1
+ ],
+ "blk.1.ssm_alpha.weight": [
+  32,
+  4
+ ],
+ "blk.1.ssm_beta.input_scale": [
+  1
+ ],
+ "blk.1.ssm_beta.scale": [
+  1
+ ],
+ "blk.1.ssm_beta.weight": [
+  32,
+  4
+ ],
+ "blk.1.ssm_conv1d.weight": [
+  4,
+  64
+ ],
+ "blk.1.ssm_dt.bias": [
+  4
+ ],
+ "blk.1.ssm_norm.weight": [
+  8
+ ],
+ "blk.1.ssm_out.input_scale": [
+  1
+ ],
+ "blk.1.ssm_out.scale": [
+  1
+ ],
+ "blk.1.ssm_out.weight": [
+  32,
+  32
+ ],
+ "blk.1.attn_gate.weight": [
+  32,
+  32
+ ]
+}
