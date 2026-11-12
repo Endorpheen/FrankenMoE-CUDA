@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:01:53.172035+00:00",
+  "updated_at": "2026-11-12T02:02:31.149968+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: prefill plateau ~2310 at VRAM 3190 with the exact output; decode 30+ now available at the lowest measured cost -- moe-cache 1280 gives 30.63 tok/s at 4476 MiB (experimental, content differs by compute-engine rounding).",
+  "current": "Stage 2: prefill ~2310/3190 exact; decode ladder measured with the expert cache. Quality quantified: mean logprob within 1% on the shared prefix (ppl 1.226 vs 1.238). Smallest 30+ point is cache 1280 -> 30.63 at 4476 MiB. Criterion unchanged, variant experimental.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -719,6 +719,13 @@
       "title": "30+ decode при 4476 МиБ",
       "kind": "insight",
       "detail": "1280 MiB cache gives 30.63 decode at 4476 MiB VRAM, 766 MiB below the first 32.8 point. 1024 misses at 29.22. Ladder is monotonic; content still differs by compute engine."
+    },
+    {
+      "id": "e21",
+      "at": "2026-11-12T02:02:31.149968+00:00",
+      "title": "Качество кэша измерено",
+      "kind": "insight",
+      "detail": "Shared 20-token prefix: mean logprob -0.2040 vs -0.2134, perplexity 1.226 vs 1.238 (+1%). Not a coherence argument; the criterion is still not waived."
     }
   ]
 }
