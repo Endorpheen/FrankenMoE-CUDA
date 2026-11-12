@@ -1858,12 +1858,12 @@
       "id": "P7-06",
       "phase": "P7",
       "title": "Port vocabulary loader and Apex tokenizer through a general tokenizer interface",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "src/llama-vocab.cpp"
       ],
       "acceptance": "Apex tokenizer/pretokenizer/special-token policy exact on complete native differential corpus; interface supports future tokenizer implementations without a separate runtime.",
-      "evidence": "",
+      "evidence": " 2026-11-12 CLOSED (EXP-287). Differential corpus of 2216 cases against the untouched flint library: the native driver loads vocab_only and calls common_tokenize(add_bos=false, parse_special=true), the accepted runtime answers /tokenize with add_special=false, parse_special=true; 2216 cases, 0 mismatches. Corpus is deterministic (seed 287): 17 systematic edges (empty, whitespace runs, single characters, CJK, snowman, the three special-token literals, 300-char run, 50 spaces, 100 zeros), 2000 random strings over printable ASCII, Latin-1, CJK, Cyrillic and typographic punctuation, and 200 mixed-alphabet strings. The interface clause holds: llama_vocab with its pre-tokenizer/decoder enums is unchanged, the modules replace decisions inside llama-vocab.cpp and add no second runtime.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -4325,10 +4325,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T08:02:00.620222+00:00",
+  "updated_at": "2026-11-12T08:05:32.262930+00:00",
   "status_totals": {
-    "DONE": 23,
-    "IN_PROGRESS": 49,
+    "DONE": 24,
+    "IN_PROGRESS": 48,
     "TODO": 80
   }
 }
