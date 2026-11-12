@@ -307,3 +307,22 @@ as the strongest known lead for the decode target and as a decision for Igor: ke
 accept a numerically different (but still valid) path to 32.8.
 
 `4096` exceeds the free VRAM and fails to start - noted so it is not retried blindly.
+
+## Restored EXP087: lazy prompt compute reservation (VRAM -1978, RSS -1539)
+
+Igor's historical pointer checked: EXP087 `c3c52dc` (lazy prompt compute reservation + bounded host growth, switch
+`GGML_LAZY_PP_RESERVE`) was **absent** from our candidate and present in the exp244 body - which is why our VRAM sat at
+6408, the exact pre-EXP087 figure. Applied `patches/lazy-pp-reservation.patch` to our `SRC/llama-context.cpp` and to the
+flint `ggml` alloc/backend, rebuilt `libggml-base` and `libllama`.
+
+| switch | prefill | decode | RSS MiB | VRAM MiB | correctness |
+|---|---|---|---|---|---|
+| reservation off (`GGML_LAZY_PP_RESERVE=0`) | 2377.5 | 24.06 | 22857 | 6408 | e68df05b |
+| **reservation on (restored)** | 2313.1 | 23.93 | **21318** | **4430** | e68df05b |
+
+So VRAM -1978 MiB and RSS -1539 MiB with speed inside noise and the exact output unchanged - the historical figures
+(6404 -> 4428) reproduce on this machine. Nothing was rolled back: the full 307-module port and the restored pinning
+both stay. Backups: `/tmp/libggml-base.pre087` and `/tmp/llama-context.cpp.pre087`.
+
+Next mechanism from the same history: EXP101 lazy KV mapping via CUDA VMM (switch `GGML_KV_LAZY_VMM`), historically
+4428 -> 3188.
