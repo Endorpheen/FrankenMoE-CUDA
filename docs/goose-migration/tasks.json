@@ -1367,13 +1367,13 @@
       "id": "P4-16",
       "phase": "P4",
       "title": "Remove owned GGML core/native scheduler implementation",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml*.c",
         "ggml/src/ggml*.cpp"
       ],
       "acceptance": "Candidate GGML core link contains only Goose-generated logic plus declared primitives; all API symbols and original rollback retained externally.",
-      "evidence": "",
+      "evidence": "2026-11-12 CLOSED (docs/goose-migration/P4-16-CORE-LINK.md). The recorded scheduler-base-link step names 13 objects, classified by the same mechanical marker as P2-18 (gg_function_N only in Goose-emitted objects) plus hook-reference counts: Goose-emitted 6 (shared-core 26 generated/107 hooks, allocator 26/46, scheduler-goose 22/54, buffers-goose 9/38, stream-goose 8/28, backend-base-goose 4/6); hand-written replacement 1 (backend-scheduler.o from backend-scheduler.cpp, rebuilt on demand, currently absent from disk); integration shim 1 (shared-meta.o, 0 generated, 3 hooks); declared native primitives 5 (base-ggmlcpp = ggml.c as C++, base-opt, base-threading, base-quants, base-gguf -- the GGUF parser kept native deliberately per P7-01). API symbols: the P4-03 parity covers this surface -- libggml-base 550 flint vs 551 ours (one additive symbol), libllama 255 vs 255, libggml-cpu 6 vs 6, nothing missing. Caveats recorded and standing: the deployed base cannot be reproduced from source (P6-02) and signature-level compatibility is not proven by a symbol table.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -4325,10 +4325,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T11:50:12.429608+00:00",
+  "updated_at": "2026-11-12T11:50:54.137197+00:00",
   "status_totals": {
-    "DONE": 39,
+    "DONE": 40,
     "IN_PROGRESS": 39,
-    "TODO": 74
+    "TODO": 73
   }
 }
