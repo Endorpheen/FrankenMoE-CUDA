@@ -985,3 +985,28 @@ Consequences:
   script that regenerates it - not four renamed copies;
 - the dangling `fg160` references should be resolved or the fusion path removed before this configuration is offered as a
   base for other architectures.
+
+## Correction: no dangling symbols at runtime - it was the linker, not the build
+
+The previous entry called the `fg160_*` references "dangling" and the configuration "fragile". That was wrong, and the
+correction is more useful than the alarm:
+
+- `FG160_SHARED` appears 3 times in the accepted run log, so the fusion entry points **are** resolved and executed at run
+  time;
+- the failure was `ld` refusing to link the probe because it does not follow the runtime search path of the libraries it is
+  handed - a link-time visibility issue, not an unresolved-symbol defect;
+- rebuilding the probe with `-Wl,--allow-shlib-undefined` links cleanly (rc=0), two runs are byte-identical, and the result
+  matches the staging-built probe exactly: **same 37 cases, zero differences**.
+
+So the checkpoint is sufficient after all, provided the probe is linked with that flag. Verified end to end:
+
+| check | result |
+|---|---|
+| link from checkpoint | OK with `--allow-shlib-undefined` |
+| run from checkpoint build | rc=0, deterministic across two runs |
+| same case set as the staging build | yes, 37/37 |
+| same bytes per case | yes, 0 differences |
+
+What remains true from the earlier note: the staging directory is a 98-library set (1.6 GiB), so a four-file copy is enough
+to run and to reproduce these measurements, but a full rebuild of the whole set still needs the build script rather than
+copies. That part stands; the "dangling symbols" part does not.
