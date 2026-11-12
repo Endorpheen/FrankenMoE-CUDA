@@ -1224,12 +1224,18 @@ llama_ubatch llama_batch_allocr::ubatch_add(const std::vector<int32_t> & idxs, u
 
     {
         bool done = false;
-        if (fg242o_enabled() && !idxs.empty() && idxs.size() <= 65536) {
+        if (fg242o_enabled() && n_seq_max == 1 && !idxs.empty() && idxs.size() <= 65536) {
             std::vector<int32_t> ixv(idxs.begin(), idxs.end()), ov(idxs.size(), 0);
             for (int32_t k = 0; k < (int32_t) idxs.size(); ++k) ov[k] = udata->output[k] ? 1 : 0;
             std::vector<int32_t> picked(idxs.size() + 1, -1);
             const int64_t n = fg242o_pick_outids((int64_t) idxs.size(), ixv.data(), ov.data(), picked.data());
-            if (n >= 0) {
+            // the port answers for the whole ubatch; with more than one sequence it has been observed to
+            // return a different count than the tokens marked as output (two concurrent slots tripped
+            // GGML_ASSERT(out_ids.size() == n_outputs) in llama-context). Accept it only when it agrees
+            // with the native rule, otherwise fall through to the native walk below.
+            size_t n_native = 0;
+            for (size_t i = 0; i < idxs.size(); ++i) if (udata->output[i]) n_native++;
+            if (n >= 0 && (size_t) n == n_native) {
                 out_ids.clear();
                 for (int64_t k = 0; k < n; ++k) out_ids.push_back(picked[(size_t) k]);
                 done = true;
@@ -1248,7 +1254,7 @@ llama_ubatch llama_batch_allocr::ubatch_add(const std::vector<int32_t> & idxs, u
 
     {
         bool done = false;
-        if (fg242o_enabled() && n_seq_max > 0 && n_seq_max <= 256) {
+        if (fg242o_enabled() && n_seq_max == 1) {
             // to_ullong() THROWS once any bit above 63 is set, and shifting its result cannot reach
             // those bits anyway. Build the four words by walking the bitset -- 256 iterations, no throw.
             int64_t u[4] = {0,0,0,0};
