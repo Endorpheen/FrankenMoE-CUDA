@@ -83,3 +83,23 @@ On the common 20-token prefix (both arms choose the same tokens there):
 
 So the path is not merely coherent: on the tokens both arms agree about, it is within 1% on mean logprob. That is a
 measured equivalence of quality, not a proof of bit equality - and it is still not a waiver of the acceptance criterion.
+
+## Second, independent prompt: the divergence is prompt-dependent
+
+The 1% perplexity result came from one prompt. Repeated with an unrelated prompt (queue/latency text, 8x repeated,
+same sampling parameters):
+
+| metric | accepted (CPU) | cache (GPU) | delta |
+|---|---|---|---|
+| common chosen-token prefix | 1 of 128 | - | - |
+| mean logprob on that prefix | -0.0111 | -0.0096 | +0.0015 |
+| perplexity | 1.011 | 1.010 | - |
+
+So the *quality* reading holds (the cache path is not worse; it is marginally better on this sample), but the *text*
+diverges from the very first token on this prompt. The earlier "20-token common prefix" was a property of the
+repetitive 32K prompt, not a general guarantee.
+
+That matters for the decision: the two paths are not "bit-identical with a tiny perturbation" - they are two numerically
+close but distinct samplers, and on ordinary prompts they will produce different answers. Nothing here shows a quality
+loss, and nothing here shows quality preservation across arbitrary prompts either. This is the honest state: one
+measured prompt shows +1% perplexity, one shows parity, and both diverge textually.
