@@ -335,3 +335,25 @@ normalisation, softmax with and without mask, matmul, get_rows/sum_rows and RoPE
 
 P2-01 therefore no longer lacks evidence: it lacks the permissioned regeneration pass that would let those three findings be
 fixed. Until then it stays PARTIAL and nothing here is called exact.
+
+## Update 2026-11-12: the four located defects are fixed and the probe is clean for P2-01 ops
+
+The three pointwise defects plus the pinned zero-size defect were fixed, the CPU module was regenerated with the
+compiler that produced the accepted artifact, `libggml-cpu` was rebuilt in an isolated directory and the probe was
+re-run against it:
+
+    differing: norm_finite, softmax_finite, mul_mat_32x8x6, rope_16x2x4
+    silu_t1, silu_t8, silu_1000, clamp_t1, clamp_t8, scale_t1, scale_t8 -- no longer reproduce
+
+So every binary, unary and GLU case in this probe is now bit-identical, including the special-value set (NaN payloads,
+signed zero, subnormals) and the `clamp(NaN)` bound order. The four remaining divergences belong to other items
+(normalisation, softmax, matmul, rope), are ULP-close, and stay in the expected set.
+
+Correcting the earlier diagnosis in `docs/goose-migration/FIX-LIST-20261112.md`: defect 1 was not the scalar tail. The
+standalone SILU op never used the AVX2-compatible association (only the GLU path did), so 247 of 1000 values diverged
+across the whole vectorised head.
+
+Validation of the substitution: Apex 32K/128 with the rebuilt library gives `e68df05b`, all probabilities equal,
+restore exact, slot file 387989920 bytes.
+
+Remaining coverage gap for a full P2-01 closure: strided views are still not exercised by this probe.

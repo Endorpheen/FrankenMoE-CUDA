@@ -90,8 +90,7 @@ print("differing:")
 for k in diff:
     print("  " + k)
 # The known findings, so a new one cannot slip in unnoticed.
-expected = {"silu_t1", "silu_t8", "silu_1000", "clamp_t1", "clamp_t8", "scale_t1", "scale_t8",
-            "norm_finite", "softmax_finite", "mul_mat_32x8x6", "rope_16x2x4"}
+expected = {"norm_finite", "softmax_finite", "mul_mat_32x8x6", "rope_16x2x4"}
 extra = sorted(set(diff) - expected)
 missing = sorted(expected - set(diff))
 if extra:
