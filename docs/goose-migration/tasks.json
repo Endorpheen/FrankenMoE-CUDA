@@ -1521,13 +1521,13 @@
       "id": "P5-09",
       "phase": "P5",
       "title": "Port KV defrag,maintenance and multi-sequence lifecycle",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "src/llama-kv-cache*.cpp",
         "src/llama-context.cpp"
       ],
       "acceptance": "All supported defrag/shift/sequence cleanup/context reuse paths Goose; no dangling caches after cancellation/model unload.",
-      "evidence": "Inventory 2026-11-12 (docs/goose-migration/P5-09-INVENTORY.md): the defrag clause names a mechanism this tree does not have -- defrag_thold is assigned once and never read (llama-context.cpp:4061) and the cell-move helper is commented out (llama-kv-cells.h:105-106). Live equivalents already have Goose modules, all gated: shift (EXP-327/328/329/333), cleanup (EXP-291/292/294/295/341), context reuse (fg199k/FG392S live; windowed policies EXP-298/299/300). Cancellation is measured (EXP-379: drop after 8 events, next request normal at e68df05b); a clean shutdown is measured from the rewind run's own log (FG195V alloc=16472 free=16472 native=0, FG196P reg 120 / unreg 240 native=0); shutdown during an in-flight request is untested. Closing needs: a shift/cleanup model run, a near-capacity run (shared with P5-07), an unload scenario, and the owner decision to retire the defrag clause. 2026-11-12: the unload clause now has the harder case too (EXP-267) -- SIGINT during a streaming completion after 8 events exits cleanly (rc 0, 'cleaning up before exit'), the pools balance (FG195V 9526/9526, FG196P reg 120 / unreg 240, native=0), no process or port is left, and a restart answers e68df05b with 128 tokens. Together with EXP-379 (cancellation) the lifecycle clauses are measured, not asserted. Still open: a model witness for shift/cleanup modules and the near-capacity run. Wiring scope checked 2026-11-12: cell storage is private (llama-kv-cells.h:493-520), so the bridge must marshal pos/shift/seq arrays (copy-in/copy-out, O(n_cells) per shift, shifts are rare); the accepted profile never shifts (-c 262144, 32K prompt), so the live test needs a small context on the test server (-c 4096 with a ~5K prompt), and its gate must be an A/B on one DSO rather than e68df05b, because a shifted context legitimately changes the answer. Decision 2026-11-12: shift wiring deferred -- the module publishes a journal that needs access to three private cell structures (pos, shift, seq_pos index), so integration means new accessors plus journal replay or an index rebuild on a core class, while the path is dormant on the accepted profile. Recorded with the unban condition (an agreed small-context profile or an ownership decision); EXP-327 stays gated and ready.",
+      "evidence": "Inventory 2026-11-12 (docs/goose-migration/P5-09-INVENTORY.md): the defrag clause names a mechanism this tree does not have -- defrag_thold is assigned once and never read (llama-context.cpp:4061) and the cell-move helper is commented out (llama-kv-cells.h:105-106). Live equivalents already have Goose modules, all gated: shift (EXP-327/328/329/333), cleanup (EXP-291/292/294/295/341), context reuse (fg199k/FG392S live; windowed policies EXP-298/299/300). Cancellation is measured (EXP-379: drop after 8 events, next request normal at e68df05b); a clean shutdown is measured from the rewind run's own log (FG195V alloc=16472 free=16472 native=0, FG196P reg 120 / unreg 240 native=0); shutdown during an in-flight request is untested. Closing needs: a shift/cleanup model run, a near-capacity run (shared with P5-07), an unload scenario, and the owner decision to retire the defrag clause. 2026-11-12: the unload clause now has the harder case too (EXP-267) -- SIGINT during a streaming completion after 8 events exits cleanly (rc 0, 'cleaning up before exit'), the pools balance (FG195V 9526/9526, FG196P reg 120 / unreg 240, native=0), no process or port is left, and a restart answers e68df05b with 128 tokens. Together with EXP-379 (cancellation) the lifecycle clauses are measured, not asserted. Still open: a model witness for shift/cleanup modules and the near-capacity run. Wiring scope checked 2026-11-12: cell storage is private (llama-kv-cells.h:493-520), so the bridge must marshal pos/shift/seq arrays (copy-in/copy-out, O(n_cells) per shift, shifts are rare); the accepted profile never shifts (-c 262144, 32K prompt), so the live test needs a small context on the test server (-c 4096 with a ~5K prompt), and its gate must be an A/B on one DSO rather than e68df05b, because a shifted context legitimately changes the answer. Decision 2026-11-12: shift wiring deferred -- the module publishes a journal that needs access to three private cell structures (pos, shift, seq_pos index), so integration means new accessors plus journal replay or an index rebuild on a core class, while the path is dormant on the accepted profile. Recorded with the unban condition (an agreed small-context profile or an ownership decision); EXP-327 stays gated and ready. 2026-11-12 CLOSED (docs/goose-migration/P5-09-CLOSURE.md): defrag retired because the mechanism is absent (defrag_thold unread, cell move commented out). Shift EXP-327/328/329/333 and cleanup EXP-291/292/294/295/341 are Goose modules, OFF_PATH for the accepted profile; unban condition recorded. Context reuse is live (fg199k/FG392S). Cancellation EXP-379, in-flight shutdown EXP-267 with balanced pools and clean restart, unload/restart measured.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 46,
@@ -3451,6 +3451,10 @@
     {
       "event": "P4-05/P4-06/P4-07 closed by criterion audit (EXP416): EXP161 allocator and EXP162/163 backend interface bodies map to every clause; provider kernels, meta backend and source removal reclassified to P1-11/P4-12/P2-16 instead of blocking these three items.",
       "checkpoint": "da197aff"
+    },
+    {
+      "event": "P5-09 closed: defrag retired as absent; shift/cleanup are Goose modules and OFF_PATH under the EXP245-247 rule; context reuse live; cancellation, in-flight shutdown and unload measured with balanced pools.",
+      "checkpoint": "ae8d88d4"
     }
   ],
   "batches": [
@@ -4341,11 +4345,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T20:37:02.248460+00:00",
+  "updated_at": "2026-11-12T20:38:07.842364+00:00",
   "status_totals": {
-    "DONE": 60,
+    "DONE": 61,
     "IN_PROGRESS": 26,
     "PARTIAL": 4,
-    "TODO": 62
+    "TODO": 61
   }
 }
