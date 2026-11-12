@@ -47,3 +47,30 @@ misspells a kwarg gets a silent default, not a 400.
 
 Tool-call parsing and reasoning extraction from *generated* text. Both need a model that actually emits the tool-call or thinking syntax;
 `stories260K` does not, so those paths are not demonstrated here rather than assumed.
+
+## The ownership clause is not met, and the parity result explains itself
+
+P7-08 requires the shared Jinja/template/filter/parser/tool/reasoning logic to be Goose. Checked mechanically:
+
+    nm stage/libllama-common.so.0.7.0 | grep -c gg_function_    -> 0
+    nm stage/libllama-common.so.0.7.0 | grep -c fg1[0-9]        -> 0
+    nm ... | grep -c 'common_chat_templates_apply\|minja'       -> 10
+
+`libllama-common` carries the chat-template machinery and contains **no Goose-emitted functions and no bridge references**. The Jinja engine
+is native C++, so every rendering equality above is the same engine measured against itself -- which is exactly why it is byte-identical, and
+it is also why those equalities say nothing about ownership.
+
+The same holds for the sampler: `llama-sampler.cpp.o` has zero `gg_function_` symbols.
+
+## What that means for P7-08
+
+Two honest statements, both true at once:
+
+1. Behavioural parity of the template surface is measured and strong: five templates, filters, conditionals, loops, tool schemas, kwargs,
+   and the whole template text inside `/props` are identical.
+2. The criterion "All shared Jinja/template/filter/parser/tool/reasoning logic Goose" is **unmet**. Porting minja to Goose is a large
+   standalone task -- a Jinja subset with its own parser, expression evaluator and filters -- and it is not something this session started
+   or can claim.
+
+Tool-call parsing and reasoning extraction from generated text remain untested for the separate reason that `stories260K` never emits
+either syntax.
