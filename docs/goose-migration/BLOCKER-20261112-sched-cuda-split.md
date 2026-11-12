@@ -62,3 +62,36 @@ so the scheduler creates a split-input copy tensor in the CUDA0 backend and copi
 - diagnostic build: `experiments/EXP-2026-11-12-307-sched-debug/` (`-g` object, debug library, gdb script)
 - probe log and evidence: `experiments/EXP-2026-11-12-304-p6-03-probe/README.md`
 - isolation stage: `experiments/EXP-2026-11-12-305-sched-isolation/`
+
+---
+
+# Second blocker: signed zero in the ported make_qkx3_quants (P2-13, encoder direction)
+
+Status: parked after three attempts, for the same senior-helper consultation as the scheduler blocker above.
+
+## Expected
+
+The Goose port of `make_qkx3_quants` reproduces the reference bit for bit, as every other ported quantizer does.
+
+## Actual
+
+`EXP330_QKX3 checks=39600 failures=55`, and every failure is one class: the returned minimum is `-0` in the reference and `+0` in
+the port. Scales and all 32 levels match in every case.
+
+## What was tested
+
+1. The port's final line was `0 - min`, which yields `+0` for `min = +0` under IEEE; replaced with an explicit negation primitive
+   `fg330q_neg` that returns `-v` and preserves `-0`, and the call was verified present in the generated C in all three places.
+2. The gate still reports the same 55 failures after that change, so the final negation is not the source.
+3. By elimination the sign is already lost upstream, in `this_min = (sum_l2*sum_x - sum_l*sum_xl)/D` or in the assignments that
+   follow it, including the `this_min > 0` clamp.
+
+## Why it is not papered over
+
+The encoded block stores `dmin` as fp16, where `-0` and `+0` differ in bytes (`0x8000` versus `0x0000`), so this corner would
+show up in the end-to-end `quantize_row_q4_K_ref` comparison that is the real acceptance for this helper.
+
+## Paths
+
+- `experiments/EXP-2026-11-12-330-p2-13-qkx3/` (Goose source, mechanically extracted oracle, fixture, README)
+- `experiments/EXP-2026-11-12-329-p2-13-qp-quants/` (the other helper, green with a stated blind spot)
