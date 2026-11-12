@@ -39,3 +39,27 @@ contains no vector instructions and is a plain scalar algorithm, it is a clean p
 compiler-scope exclusion instead of being ported badly.
 
 That decision per family is the remaining work, not the enumeration.
+
+## The K-quant decoders are scalar in the executed build
+
+The EXP190 check was applied to the K-quant family before deciding whether it may be ported. The symbols live in
+`ggml/src/ggml-quants.c`, which is linked into `libggml-base` as `base-quants.o`, so that object is the executed implementation:
+
+| symbol | vector instructions in the object |
+|---|---|
+| `dequantize_row_q2_K` | 0 |
+| `dequantize_row_q3_K` | 0 |
+| `dequantize_row_q4_K` | 0 |
+| `dequantize_row_q5_K` | 0 |
+| `dequantize_row_q6_K` | 0 |
+| `dequantize_row_iq4_nl` | 0 |
+
+Counting `%xmm`, `%ymm` and `%zmm` over each function body gives zero, so these are plain scalar algorithms in the build that
+runs, and they are legitimate port candidates under the same rule that EXP190 used. The compiler-scope exclusion does not apply
+to them.
+
+They are also the types Apex actually uses: the model is Q4_K_M, so Q4_K and Q6_K are on the executed path, which makes them the
+right family to port first rather than the exotic I-quants.
+
+The next step is the EXP148-shaped port: a Goose decoder for Q4_K (then Q6_K), a byte-exact gate against
+`dequantize_row_q4_K` over several sizes including a degenerate super-block, and a live witness on a path that calls it.
