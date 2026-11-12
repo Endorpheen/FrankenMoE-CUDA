@@ -283,3 +283,29 @@ Stable state after the fix: 35 cases, both arms exit 0, differing set is exactly
 
 Two of my own harness defects were found and corrected along the way (sum_rows over-read, RoPE ranks). Both are recorded
 because a clean scoreboard that hides them would be worth less than this one.
+
+## RoPE now covered (corrected case)
+
+The earlier abort was the case, not the port: a 4-D activation tensor `[n_embd, n_head, n_tok, 1]` with 1-D positions
+runs cleanly in both arms (rc=0). Result:
+
+| case | differing | max abs diff |
+|---|---|---|
+| rope (16 x 2 heads x 4 tokens) | 19 of 128 | 5.96e-08 |
+
+So RoPE belongs to the ULP-close class, not to the semantics class. The probe now has 36 cases and the per-layer map is
+complete apart from flash-attention masking.
+
+## Final scoreboard (36 cases, both arms exit 0)
+
+| class | operations |
+|---|---|
+| bit-identical | add, sub, mul, div, sqr, sqrt, log, concat, rms_norm, get_rows, sum_rows, swiglu (+swapped, +oai) |
+| ULP-close | norm (<=2.4e-7), softmax (<=1.5e-8), mul_mat (<=2.4e-7), rope (<=6.0e-8), silu (247/1000, 1-2 ULP) |
+| semantics on special values | clamp(NaN) opposite bound, scale(-0) lost sign |
+| not covered | flash-attention mask |
+
+Conclusion for the plan: the ported arithmetic is faithful in structure - every operation produces the same value class and
+all but two produce bit-identical or ULP-identical results. The two semantics findings and the SILU tail are the concrete
+defects to fix before extending to other architectures, and all three live in the same module family, which is why the
+blocked regeneration pass matters more than any further probing.

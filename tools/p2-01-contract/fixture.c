@@ -256,6 +256,26 @@ int main(int argc, char ** argv) {
         ggml_free(ctx);
     }
 
+    // 10) RoPE with a 4-D activation tensor [n_embd, n_head, n_tok, 1] and 1-D positions
+    {
+        struct ggml_init_params p = { 64u*1024u*1024u, NULL, false };
+        struct ggml_context * ctx = ggml_init(p);
+        if (!ctx) abort();
+        const int n_embd = 16, n_head = 2, n_tok = 4;
+        struct ggml_tensor * x = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, n_embd, n_head, n_tok, 1);
+        float * xp = (float *) x->data;
+        for (int i = 0; i < n_embd*n_head*n_tok; ++i) xp[i] = (float)((i % 27) - 13) * 0.037f;
+        struct ggml_tensor * pos = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, n_tok);
+        for (int i = 0; i < n_tok; ++i) ((int32_t *) pos->data)[i] = i * 7;
+        struct ggml_tensor * r = ggml_rope_ext(ctx, x, pos, NULL,
+                n_embd, GGML_ROPE_TYPE_NORMAL, 4096, 10000.0f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
+        struct ggml_cgraph * g = ggml_new_graph(ctx);
+        ggml_build_forward_expand(g, r);
+        if (ggml_graph_compute_with_ctx(ctx, g, 8) != GGML_STATUS_SUCCESS) abort();
+        emit("rope_16x2x4", (const float *) r->data, NULL, (size_t) ggml_nelements(r));
+        ggml_free(ctx);
+    }
+
     // 10) RoPE is NOT covered by this fixture.
     // A first attempt aborted in BOTH arms (rc=134), i.e. the case's tensor ranks/position shape are wrong for this
     // ggml version, not a Goose defect. Left out until the case is written correctly rather than shipped as a red test.
