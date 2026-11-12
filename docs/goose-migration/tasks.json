@@ -1332,14 +1332,14 @@
       "id": "P4-14",
       "phase": "P4",
       "title": "Check full graph/allocator lifecycle under failures",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "tests/test-backend-ops.cpp",
         "tests/test-alloc.cpp",
         "ggml/src/ggml-alloc.c"
       ],
       "acceptance": "Allocation failure injection,invalid-size/view/copy,abort/reset/reuse and concurrent independent contexts pass scoped sanitizers; no new leaks.",
-      "evidence": "",
+      "evidence": "2026-11-12 ALLOC-FAILURE SLICE (EXP-348): injected malloc/calloc failures via LD_PRELOAD (FAIL_AT=N). Identical on both lines at every point that fires: FAIL_AT=2 libgomp out-of-memory rc134; 30/60/300 'memory allocation of 416 bytes failed' rc134; 120 'of 22 bytes failed' rc134; 1 -> init ok. Same exit codes and messages throughout. The sweep also shows tensor creation does NOT malloc -- 200 tensors never reach injection points past a few hundred because tensors are carved from the context arena -- so this slices covers context creation, not the tensor loop (stated as scope, not a gap). Method note: the first version lost stdout on abort due to block-buffering (same trap as EXP339); now sets _IONBF -- second time this session a buffered pipe hid evidence. P4-14 status: allocation failure covered and identical; invalid size/view/copy covered in P4-03 (6 of 7 identical, 7th is the known block-alignment divergence); still open: abort/reset/reuse ordering and concurrent independent contexts.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -4325,7 +4325,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T11:52:11.941610+00:00",
+  "updated_at": "2026-11-12T11:53:58.006099+00:00",
   "status_totals": {
     "DONE": 40,
     "IN_PROGRESS": 39,
