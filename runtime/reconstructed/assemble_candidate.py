@@ -17,9 +17,13 @@ for p in (LLAMA, IMPL, SERVER):
 if OUT.exists():
     shutil.rmtree(OUT)
 shutil.copytree(BASE, OUT, symlinks=True)
-shutil.copy2(LLAMA, OUT / 'libllama.so.0.7.0')
-shutil.copy2(IMPL, OUT / 'libllama-server-impl.so')
-shutil.copy2(SERVER, OUT / 'llama-server')
+# never write through a symlink: the stage's libraries link into a shared runtime directory,
+# and cp followed those links once already, overwriting the accepted runtime
+for name, src in (('libllama.so.0.7.0', LLAMA), ('libllama-server-impl.so', IMPL), ('llama-server', SERVER)):
+    dst = OUT / name
+    if dst.is_symlink() or dst.exists():
+        dst.unlink()
+    shutil.copy2(src, dst)
 (OUT / 'llama-server').chmod(0o755)
 
 def defined(path, prefix):
