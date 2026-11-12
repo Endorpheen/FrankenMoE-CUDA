@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:11:14.797578+00:00",
+  "updated_at": "2026-11-12T02:12:48.468362+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: pinning re-confirmed (2311.1 vs 1641.1, +40.8%, exact output, RSS/VRAM unchanged); the win is independent of EXP087/EXP101. --mlock unavailable. Cache remains the decode lever at 34.03-40.78.",
+  "current": "Stage 2: launch overhead ruled out (graphs off: prefill unchanged 2319.7, decode worse 22.76). Exact path ~2311-2320/23.8-24.3/3190 with e68df05b; balance point cache 3072 at 37.79/6266 on the same 32K load.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -828,6 +828,13 @@
       "title": "Pinning подтверждён после EXP087/101",
       "kind": "speedup",
       "detail": "pin on 2311.1 vs off 1641.1 (+40.8%), RSS/VRAM unchanged, exact output both arms. Win is independent of the allocator changes; --mlock unavailable."
+    },
+    {
+      "id": "e28",
+      "at": "2026-11-12T02:12:48.468362+00:00",
+      "title": "Оверхед запуска графов исключён",
+      "kind": "insight",
+      "detail": "DISABLE_GRAPHS keeps prefill (2319.7 vs 2311.1) and loses decode (22.76 vs 23.78). Remaining prefill cost is arithmetic and weight traffic, not faults or launch."
     }
   ]
 }
