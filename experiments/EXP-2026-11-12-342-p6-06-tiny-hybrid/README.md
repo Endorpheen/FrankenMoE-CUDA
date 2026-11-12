@@ -108,3 +108,23 @@ That is the fixture P6-06 asked for: small enough to assert on node by node, and
 Turn the observations into assertions: for this model, layer 0 must contribute its `cache_r_l*` and conv nodes and layer 1 must not, and
 the same must hold on both lines. Generation returns an empty string because zero weights make greedy decoding pick token 0, so the
 fixture's value is the graph, not the text -- and that is what the item asks for.
+
+## The gate exists and is green; its sensitivity is not yet proven
+
+`check_fixture.py` runs our line against the tiny model with `FG_TRACE_GRAPH=1` and asserts five things: the trace was produced, the
+graph has more than a hundred nodes, layer 0 contributes exactly one `conv_output_silu`, layer 0 has `cache_r_l0` nodes, and layer 1 has
+none of them.
+
+    checks=5 failures=0
+
+Two attempts to prove the check is sensitive both **failed to load**, so neither counts as a mutation:
+
+- three layers with two recurrent ones (107 tensors) -- the replicated names and the `recurrent_layers` array disagree, and the loader
+  rejects the model before any graph exists;
+- two layers with `recurrent_layers = [false, false]` -- the loader then wants `attn_q/k/v` on layer 0 where the original model has
+  `attn_qkv`, so the tensor set no longer matches.
+
+The lesson is the same as elsewhere in this session: the model's tensor names are coupled to its recurrent flags, so a mutation of the
+flag alone produces an unloadable model rather than a changed graph. A valid mutant has to be generated with the matching tensor set --
+for example a two-layer all-attention model with `attn_q/k/v` on both layers -- and that is the next step. Until then the green result
+above shows the fixture works, not that the check can fail.
