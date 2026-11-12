@@ -599,3 +599,24 @@ short-run number understates steady-state decode.
 
 Recommendation on the agreed 32K load therefore stands on three runs: cache 3072 -> 37.8-39.1 decode at 6266 MiB, about
 -3 tok/s and -1 GiB against cache 4096, well above the 30 tok/s floor, prefill unchanged, exactness caveat unchanged.
+
+## Golden rule accepted; cache warm-up measured across the ladder
+
+Igor approved balanced optimisation and chose cache 3072 as the experimental base. Recorded as the operating rule:
+judge the combined result over prefill, decode, RAM and VRAM on one representative profile; reasoned trade-offs are
+allowed; correctness and the full port are not negotiable.
+
+Warm-up effect, same 32K prompt, 256 tokens generated instead of 128:
+
+| cache MiB | decode at 128 | decode at 256 | VRAM | prefill |
+|---|---|---|---|---|
+| 1280 | 30.63 | **31.58** | 4476 | 2327.5 |
+| 2048 | 34.03 | **35.35** | 5242 | 2334.1 |
+| 3072 (base) | 37.79 | **39.10** | 6266 | 2318.8 |
+
+Every point improves with generation length as more experts become resident, so short runs understate steady state
+uniformly - the ranking is unchanged, which is what matters for choosing a base. 1280 remains the cheapest way to hold
+the 30 tok/s floor (31.58), and 3072 remains the balance point.
+
+Variants kept for different trade-offs: 1280 (cheapest 30+), 2048 (mid), 3072 (base), 4096 (max decode), no cache
+(correctness control, exact e68df05b).
