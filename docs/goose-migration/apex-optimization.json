@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:58:10.717404+00:00",
+  "updated_at": "2026-11-12T02:01:53.172035+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: prefill scaling curve measured (4K 2009, 8K 2141, 16K 2315, 32K 2306); steady-state ceiling ~2360 with ~0.37 s fixed overhead, no attention cliff. Decode 34.03 available in the experimental cache variant.",
+  "current": "Stage 2: prefill plateau ~2310 at VRAM 3190 with the exact output; decode 30+ now available at the lowest measured cost -- moe-cache 1280 gives 30.63 tok/s at 4476 MiB (experimental, content differs by compute-engine rounding).",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -537,6 +537,36 @@
       "source": "runtime/reconstructed/build/run-p16384/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r34-mc1280",
+      "label": "Expert cache ladder point (experimental)",
+      "at": "2026-11-12T02:01:10.564308+00:00",
+      "prefill_tok_s": 2334.2,
+      "decode_tok_s": 30.63,
+      "ram_mib": 21320.0,
+      "vram_mib": 4476,
+      "configuration": "same argv + --moe-cache-mib 1280",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding, cause established)",
+      "source": "runtime/reconstructed/build/run-mc1280/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r35-mc1536",
+      "label": "Expert cache ladder point (experimental)",
+      "at": "2026-11-12T02:01:33.914979+00:00",
+      "prefill_tok_s": 2344.0,
+      "decode_tok_s": 31.74,
+      "ram_mib": 21320.0,
+      "vram_mib": 4730,
+      "configuration": "same argv + --moe-cache-mib 1536",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "differs (compute-engine rounding, cause established)",
+      "source": "runtime/reconstructed/build/run-mc1536/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -682,6 +712,13 @@
       "title": "Кривая prefill: потолок ~2360",
       "kind": "insight",
       "detail": "4K 2009, 8K 2141, 16K 2315, 32K 2306; steady state ~2360 tok/s with ~0.37 s fixed cost. No attention cliff, so 3000 needs a different profile."
+    },
+    {
+      "id": "e20",
+      "at": "2026-11-12T02:01:53.172035+00:00",
+      "title": "30+ decode при 4476 МиБ",
+      "kind": "insight",
+      "detail": "1280 MiB cache gives 30.63 decode at 4476 MiB VRAM, 766 MiB below the first 32.8 point. 1024 misses at 29.22. Ladder is monotonic; content still differs by compute engine."
     }
   ]
 }
