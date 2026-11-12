@@ -1686,7 +1686,7 @@
         "src/llama.cpp"
       ],
       "acceptance": "Goose owns context construction,warmup,evaluation,graph reuse,output/embedding/logit APIs,performance counters and error propagation.",
-      "evidence": "",
+      "evidence": "2026-11-12 inventory from one accepted run (EXP-281 log, 91 distinct FG witnesses). Goose and witnessed: context construction (FG155/156/157/159/161/162/163/164), warmup decisions (FG158/160/391S), evaluation (FG405S/408S/404S/200G), output APIs (FG384S/385S/386S/387S/242O/401S). Split: graph reuse -- Goose decides what to schedule (FG405S), the CUDA-graph capture/replay automaton is ggml-cuda's (recorded native since EXP-050). Native and argued as primitives: performance counters (clock + accumulator) and error propagation (throw/abort/return codes). Closing needs the owner decision to treat those two as primitives and to keep the automaton native, or a design change to move capture/replay into Goose. Details in docs/goose-migration/P6-08-INVENTORY.md.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 416,
