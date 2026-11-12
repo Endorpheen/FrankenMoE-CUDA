@@ -1770,13 +1770,13 @@
       "id": "P7-01",
       "phase": "P7",
       "title": "Port complete GGUF parser and metadata accessors",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "ggml/src/gguf.cpp",
         "ggml/include/gguf.h"
       ],
       "acceptance": "Every GGUF version/value type,alignment/endian/tensor descriptor and accessor roundtrip; truncated,overflow,malformed and multi-shard corpus rejected safely.",
-      "evidence": "",
+      "evidence": "2026-11-13 FIRST SLICE (EXP443): GGUF structural parser in Goose for v2/v3: header, metadata key/type, value skipping for all scalar types/strings/arrays, tensor descriptors (name/type/ndims/dims/offset), bounds checks. Apex GGUF: 7040 record words exact match against an independent Python parser; 14/14 truncations rejected; corrupt magic/counts rejected. NOT YET: typed value accessors, GGUF v1/endian, multi-shard, tensor-data alignment. P7-01 stays IN_PROGRESS.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -2901,6 +2901,11 @@
       "id": "POST-06",
       "title": "Goose port of the startup memory-fit policy (common/fit.cpp)",
       "gate": "Host configuration only; fixed profile sets all args and uses -fit off. Port the memory projection, layer/context search and tensor-split/buffer-override decisions to Goose, gate against the shared native utility on Apex and at least one additional device shape; no inference-path claim."
+    },
+    {
+      "id": "POST-07",
+      "title": "Final migration audit after 152/152",
+      "gate": "Trigger only when all 152 requirements are DONE. Full source/library/dependency/link audit of the working runtime; classify every remaining C++ function as used/obsolete; re-check C2/POST and Apex-scope closures; port all still-needed components; remove unjustified code; prove no hidden C++ paths/fallbacks/duplicates; final Apex correctness/safety/integration/performance against the saved baseline under the golden rule; publish allowed external dependencies and support boundaries. Migration is not declared complete before this audit."
     }
   ],
   "history": [
@@ -3568,6 +3573,10 @@
     {
       "event": "P1-08, P2-09, P2-17 closed on Apex scope: fused/cold experts absent/dead, CPU FA and CPU-only milestone not on the Apex path; assigned C2/P10-10. P4-03/P6-02 remain genuinely blocked.",
       "checkpoint": "adf740b6"
+    },
+    {
+      "event": "P7-01 first slice (EXP443): GGUF structural parser Goose, 7040 records exact vs Python, 14/14 truncations and corrupt magic/counts rejected; typed accessors/other versions/shards remain.",
+      "checkpoint": "2e384fdd"
     }
   ],
   "batches": [
@@ -4458,11 +4467,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T22:22:43.596206+00:00",
+  "updated_at": "2026-11-12T22:29:23.227199+00:00",
   "status_totals": {
     "DONE": 95,
-    "IN_PROGRESS": 2,
+    "IN_PROGRESS": 3,
     "PARTIAL": 2,
-    "TODO": 53
+    "TODO": 52
   }
 }
