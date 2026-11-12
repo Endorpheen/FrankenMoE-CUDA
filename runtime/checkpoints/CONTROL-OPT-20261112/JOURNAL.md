@@ -113,3 +113,18 @@ library is innocent, but they are not the optimisation. The accepted optimisatio
 Commit 063de29 keeps its numbers but its `#accepted` tag is superseded by this correction; the dashboard feed marks the
 switch as diagnostic, and the staging symlinks still point at exp244 so measurements stay comparable while the cause is
 hunted - that is a working state, not a shipped default.
+
+## Full port restored in staging; the compiler-mix clue
+
+Staging is back on `libllama-exp371` (307 fg modules), measured again as the working baseline: **1624.1 / 23.64**,
+RSS 22856.5, VRAM 6408, content equal. So the diagnostic set (2563-2574 / 25.9) is +58% prefill against the full port,
+and the gap is real, not a measurement artefact.
+
+`.comment` gives the first concrete clue: `libllama-exp244` is built entirely by GCC 13.4.0, while `libllama-exp371`
+contains objects from **both** GCC 15.2.0 and 13.4.0. The `.text` sizes are nearly equal (861.8 KB vs 857.9 KB), so this
+is not code bloat - it is a mixed-provenance build, and a module compiled by a different compiler is the prime suspect
+for a 58% prefill loss. Env-level bisection cannot test this: every KV group I tried is mandatory (the server segfaults
+when they are disabled), so the next step is a rebuild with one compiler and one optimisation level, not more flag
+fiddling.
+
+KV must stay on the GPU: `--no-kv-offload` reaches VRAM 3194 but decode collapses to 3.77.
