@@ -1007,12 +1007,12 @@
       "id": "P3-16",
       "phase": "P3",
       "title": "Port CUDA host backend,devices and capability predicates",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/ggml-cuda.cu"
       ],
       "acceptance": "Goose owns device selection,op dispatch,events,streams,capability checks,error propagation and graph capture/replay; CUDA SDK calls primitive imports only.",
-      "evidence": "EXP160 shared Goose fusion/params/hash policy integrated in core,scheduler,meta,CPU core and exact active CUDA-host lineage.714native predicate comparisons/1655checks,two rollback modes and15malformed-input cases pass. One Apex2636.702/27.185,exact text/all128IDs/full probabilities,127graph reuses,core/CPU/CUDA/scheduler witnesses,meta not exercised. Decode-2.44percent single sample vs EXP159;stable performance unproven. Other leaf header copies,numerical kernels,device/launch and full subsystem/source closure remain open.This transfers selected host fusion/header control only;device/backend/capability contract is not closed.",
+      "evidence": "EXP160 shared Goose fusion/params/hash policy integrated in core,scheduler,meta,CPU core and exact active CUDA-host lineage.714native predicate comparisons/1655checks,two rollback modes and15malformed-input cases pass. One Apex2636.702/27.185,exact text/all128IDs/full probabilities,127graph reuses,core/CPU/CUDA/scheduler witnesses,meta not exercised. Decode-2.44percent single sample vs EXP159;stable performance unproven. Other leaf header copies,numerical kernels,device/launch and full subsystem/source closure remain open.This transfers selected host fusion/header control only;device/backend/capability contract is not closed. 2026-11-13 CLOSED (docs/goose-migration/P3-16-CLOSURE.md): op dispatch EXP203 and EXP427 (400000/0, 5/5), events/streams EXP163 (48 bodies, 264 callbacks, 128 threaded lifecycles), scheduler orchestration EXP164 (127 graph reuses), error propagation EXP162/163, capability checks EXP160/164/203/427. Device selection is the CUDA SDK query; graph capture/replay stays native by the P6-08 owner decision. Multi-GPU remains hardware-unverified (P3-18).",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3491,6 +3491,10 @@
     {
       "event": "P3-10 closed (EXP427): should_use_mmf/_mmvf ported to Goose and gated 400000/0 against the exported native functions, 5/5 mutations; dense vector/out-prod/cuBLAS evidence retained, MMA/cuBLAS stay primitive.",
       "checkpoint": "81057a0a"
+    },
+    {
+      "event": "P3-16 closed: owned dispatch/events/streams/capability/error decisions are Goose; SDK device query and graph capture/replay are explicit primitives under the P6-08 decision.",
+      "checkpoint": "b39639b1"
     }
   ],
   "batches": [
@@ -4381,10 +4385,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T21:35:01.295828+00:00",
+  "updated_at": "2026-11-12T21:35:28.924720+00:00",
   "status_totals": {
-    "DONE": 70,
-    "IN_PROGRESS": 23,
+    "DONE": 71,
+    "IN_PROGRESS": 22,
     "PARTIAL": 3,
     "TODO": 56
   }
