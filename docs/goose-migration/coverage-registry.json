@@ -15,7 +15,9 @@
       "source": "experiments/EXP-2026-11-08-199-goose-kv-cells/source/bridge.c",
       "witness": "FG199K",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg200g",
@@ -24,7 +26,9 @@
       "source": "experiments/EXP-2026-11-08-200-goose-model-graph/source/bridge.c",
       "witness": "FG200G",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg201l",
@@ -33,7 +37,9 @@
       "source": "experiments/EXP-2026-11-08-201-goose-model-loader/source/bridge.c",
       "witness": "FG201L",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg202t",
@@ -42,7 +48,9 @@
       "source": "experiments/EXP-2026-11-08-202-goose-tokenizer/source/bridge.c",
       "witness": "FG202T",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 30
     },
     {
       "module": "fg204x",
@@ -51,7 +59,9 @@
       "source": "experiments/EXP-2026-11-09-204-goose-kv-set/source/bridge3.c",
       "witness": "FG204X",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg205g",
@@ -60,7 +70,9 @@
       "source": "experiments/EXP-2026-11-09-205-goose-kv-find-slot/source/bridge2.c",
       "witness": "FG205G",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 30
     },
     {
       "module": "fg206d",
@@ -69,7 +81,9 @@
       "source": "experiments/EXP-2026-11-09-206-goose-kv-cp/source/bridge2.c",
       "witness": "FG206D",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg209i",
@@ -78,7 +92,9 @@
       "source": "experiments/EXP-2026-11-10-209-goose-kv-seqpos-incr/source/bridge.c",
       "witness": "FG209I",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg210k",
@@ -87,7 +103,9 @@
       "source": "experiments/EXP-2026-11-10-210-goose-recurrent-seqkeep/source/bridge.c",
       "witness": "FG210K",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg212s",
@@ -96,7 +114,9 @@
       "source": "experiments/EXP-2026-11-10-212-goose-sampler-thresholds/source/bridge.c",
       "witness": "FG212S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 25
     },
     {
       "module": "fg213p",
@@ -105,7 +125,9 @@
       "source": "experiments/EXP-2026-11-10-213-goose-piece-copy/source/bridge.c",
       "witness": "FG213P",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg215u",
@@ -114,7 +136,9 @@
       "source": "experiments/EXP-2026-11-10-215-goose-unicode-cpt/source/bridge.c",
       "witness": "FG215U",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 30
     },
     {
       "module": "fg216e",
@@ -123,7 +147,9 @@
       "source": "experiments/EXP-2026-11-10-216-goose-unicode-encode/source/bridge.c",
       "witness": "FG216E",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 30
     },
     {
       "module": "fg217c",
@@ -132,7 +158,9 @@
       "source": "experiments/EXP-2026-11-10-217-goose-unicode-cpts/source/bridge.c",
       "witness": "FG217C",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 30
     },
     {
       "module": "fg218t",
@@ -141,7 +169,9 @@
       "source": "experiments/EXP-2026-11-10-218-goose-unicode-tolower/source/bridge.c",
       "witness": "FG218T",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg227n",
@@ -150,7 +180,9 @@
       "source": "experiments/EXP-2026-11-10-227-goose-kv-n-kv/source/bridge.c",
       "witness": "FG227N",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg228e",
@@ -159,7 +191,9 @@
       "source": "experiments/EXP-2026-11-10-228-goose-kv-cell-ext/source/bridge.c",
       "witness": "FG228E",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg229i",
@@ -168,7 +202,9 @@
       "source": "experiments/EXP-2026-11-10-229-goose-kv-input-idxs/source/bridge.c",
       "witness": "FG229I",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg230s",
@@ -177,7 +213,9 @@
       "source": "experiments/EXP-2026-11-10-230-goose-kv-k-shift/source/bridge.c",
       "witness": "FG230S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg231a",
@@ -186,7 +224,9 @@
       "source": "experiments/EXP-2026-11-10-231-goose-kv-seq-add/source/bridge.c",
       "witness": "FG231A",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg232r",
@@ -195,7 +235,9 @@
       "source": "experiments/EXP-2026-11-10-232-goose-recr-state-ranges/source/bridge.c",
       "witness": "FG232R",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 32
     },
     {
       "module": "fg233c",
@@ -204,7 +246,9 @@
       "source": "experiments/EXP-2026-11-10-233-goose-kv-scan-helpers/source/bridge.c",
       "witness": "FG233C",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg237s",
@@ -213,7 +257,9 @@
       "source": "experiments/EXP-2026-11-10-237-goose-batch-split/source/bridge.c",
       "witness": "FG237S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg238q",
@@ -222,7 +268,9 @@
       "source": "experiments/EXP-2026-11-10-238-goose-batch-split-seq/source/bridge.c",
       "witness": "FG238Q",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg239b",
@@ -231,7 +279,9 @@
       "source": "experiments/EXP-2026-11-10-239-goose-batch-classify/source/bridge.c",
       "witness": "FG239B",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg240q",
@@ -240,7 +290,9 @@
       "source": "experiments/EXP-2026-11-10-240-goose-batch-seqset/source/bridge4.c",
       "witness": "FG240Q",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg241u",
@@ -249,7 +301,9 @@
       "source": "experiments/EXP-2026-11-10-241-goose-ubatch-classify/source/bridge.c",
       "witness": "FG241U",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg242o",
@@ -258,7 +312,9 @@
       "source": "experiments/EXP-2026-11-10-242-goose-ubatch-outids/source/bridge.c",
       "witness": "FG242O",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 33
     },
     {
       "module": "fg243c",
@@ -267,7 +323,9 @@
       "source": "experiments/EXP-2026-11-10-243-goose-compat-positions/source/bridge.c",
       "witness": "FG243C",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg244s",
@@ -276,7 +334,9 @@
       "source": "experiments/EXP-2026-11-11-244-goose-output-reorder/source/bridge.c",
       "witness": "FG244S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg345w",
@@ -285,7 +345,9 @@
       "source": "experiments/EXP-2026-11-11-347-goose-kv-write-bridge/source/bridge.c",
       "witness": "FG345W",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 5
     },
     {
       "module": "fg367s",
@@ -294,7 +356,9 @@
       "source": "experiments/EXP-2026-11-11-367-flint-kv-state-clear-live/source/bridge.c",
       "witness": "FG367S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg373s",
@@ -303,7 +367,9 @@
       "source": "experiments/EXP-2026-11-11-373-flint-read-sinfo-live/source/bridge.c",
       "witness": "FG373S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 5
     },
     {
       "module": "fg375s",
@@ -312,7 +378,9 @@
       "source": "experiments/EXP-2026-11-11-375-flint-hybrid-memory-live/source/bridge.c",
       "witness": "FG375S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 25
     },
     {
       "module": "fg376s",
@@ -321,7 +389,9 @@
       "source": "experiments/EXP-2026-11-11-376-flint-hybrid-context-live/source/bridge.c",
       "witness": "FG376S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 25
     },
     {
       "module": "fg377s",
@@ -330,7 +400,9 @@
       "source": "experiments/EXP-2026-11-11-377-flint-file-alignment-live/source/bridge.c",
       "witness": "FG377S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg380s",
@@ -339,7 +411,9 @@
       "source": "experiments/EXP-2026-11-11-380-flint-penalties-accept-live/source/bridge.c",
       "witness": "FG380S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg381s",
@@ -348,7 +422,9 @@
       "source": "experiments/EXP-2026-11-11-381-flint-kv-whole-clear-live/source/bridge.c",
       "witness": "FG381S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 4
     },
     {
       "module": "fg382s",
@@ -357,7 +433,9 @@
       "source": "experiments/EXP-2026-11-11-382-flint-recurrent-io-plan-live/source/bridge.c",
       "witness": "FG382S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 24
     },
     {
       "module": "fg383s",
@@ -366,7 +444,9 @@
       "source": "experiments/EXP-2026-11-11-383-flint-batch-container-plan-live/source/bridge.c",
       "witness": "FG383S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 25
     },
     {
       "module": "fg384s",
@@ -375,7 +455,9 @@
       "source": "experiments/EXP-2026-11-11-384-goose-sampler-softmax-live/source/bridge.c",
       "witness": "FG384S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 23
     },
     {
       "module": "fg385s",
@@ -384,7 +466,9 @@
       "source": "experiments/EXP-2026-11-11-385-goose-sampler-guards-live/source/bridge.c",
       "witness": "FG385S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 23
     },
     {
       "module": "fg386s",
@@ -393,7 +477,9 @@
       "source": "experiments/EXP-2026-11-11-386-goose-sampler-dist-pick-live/source/bridge.c",
       "witness": "FG386S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 23
     },
     {
       "module": "fg387s",
@@ -402,7 +488,9 @@
       "source": "experiments/EXP-2026-11-11-387-goose-sampler-chain-live/source/bridge.c",
       "witness": "FG387S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 23
     },
     {
       "module": "fg388s",
@@ -411,7 +499,9 @@
       "source": "experiments/EXP-2026-11-11-388-goose-sampler-filters-guard-live/source/bridge.c",
       "witness": "FG388S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg389s",
@@ -420,7 +510,9 @@
       "source": "experiments/EXP-2026-11-11-389-goose-gguf-inventory-live/source/bridge.c",
       "witness": "FG389S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 25
     },
     {
       "module": "fg390s",
@@ -429,7 +521,9 @@
       "source": "experiments/EXP-2026-11-11-390-goose-vocab-partition-live/source/bridge.c",
       "witness": "FG390S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg391s",
@@ -438,7 +532,9 @@
       "source": "experiments/EXP-2026-11-11-391-goose-fused-ops-resolve-live/source/bridge.c",
       "witness": "FG391S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 25
     },
     {
       "module": "fg392s",
@@ -447,7 +543,9 @@
       "source": "experiments/EXP-2026-11-11-392-goose-kv-find-slot-walk/source/bridge.c",
       "witness": "FG392S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 24
     },
     {
       "module": "fg393s",
@@ -456,7 +554,9 @@
       "source": "experiments/EXP-2026-11-11-393-goose-kv-meta-plan/source/bridge.c",
       "witness": "FG393S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 3
     },
     {
       "module": "fg394s",
@@ -465,7 +565,9 @@
       "source": "experiments/EXP-2026-11-11-394-goose-kv-layout-span/source/bridge.c",
       "witness": "FG394S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 3
     },
     {
       "module": "fg395s",
@@ -474,7 +576,9 @@
       "source": "experiments/EXP-2026-11-11-395-goose-kv-read-meta/source/bridge.c",
       "witness": "FG395S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 3
     },
     {
       "module": "fg396s",
@@ -483,7 +587,9 @@
       "source": "experiments/EXP-2026-11-11-396-goose-recurrent-payload-span/source/bridge.c",
       "witness": "FG396S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 23
     },
     {
       "module": "fg397s",
@@ -492,7 +598,9 @@
       "source": "experiments/EXP-2026-11-11-397-goose-hybrid-delegation/source/bridge.c",
       "witness": "FG397S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 23
     },
     {
       "module": "fg398s",
@@ -501,7 +609,9 @@
       "source": "experiments/EXP-2026-11-11-398-goose-batch-container-layout/source/bridge.c",
       "witness": "FG398S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 24
     },
     {
       "module": "fg401s",
@@ -510,7 +620,9 @@
       "source": "experiments/EXP-2026-11-11-401-goose-detok-decisions/source/bridge.c",
       "witness": "FG401S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 24
     },
     {
       "module": "fg402s",
@@ -519,7 +631,9 @@
       "source": "experiments/EXP-2026-11-11-402-goose-byte-fallback/source/bridge.c",
       "witness": "FG402S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 24
     },
     {
       "module": "fg403s",
@@ -528,7 +642,9 @@
       "source": "experiments/EXP-2026-11-11-403-goose-loader-align-version/source/bridge.c",
       "witness": "FG403S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg404s",
@@ -537,7 +653,9 @@
       "source": "experiments/EXP-2026-11-11-404-goose-weight-placement/source/bridge.c",
       "witness": "FG404S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 24
     },
     {
       "module": "fg405s",
@@ -546,7 +664,9 @@
       "source": "experiments/EXP-2026-11-11-405-goose-sched-decisions/source/bridge.c",
       "witness": "FG405S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 24
     },
     {
       "module": "fg406s",
@@ -555,7 +675,9 @@
       "source": "experiments/EXP-2026-11-11-406-goose-transfer-policy/source/bridge.c",
       "witness": "FG406S",
       "witness_seen_in_live_log": false,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": false,
+      "witness_log_count": 0
     },
     {
       "module": "fg408s",
@@ -564,7 +686,9 @@
       "source": "experiments/EXP-2026-11-11-408-goose-graph-input-plan/source/bridge.c",
       "witness": "FG408S",
       "witness_seen_in_live_log": true,
-      "in_accepted_library": true
+      "in_accepted_library": true,
+      "witness_seen_any_log": true,
+      "witness_log_count": 23
     }
   ],
   "conflicts": [],
@@ -572,6 +696,14 @@
   "counts": {
     "modules": 62,
     "traced_to_source": 62,
-    "witness_seen": 42
+    "witness_seen": 42,
+    "witness_seen_any_log": 48,
+    "no_witness_anywhere": 14
+  },
+  "liveness_gap": {
+    "modules_without_current_log_witness": 20,
+    "modules_without_any_witness": 14,
+    "note": "Witness presence is evidence of execution, absence is not evidence of dormancy: several modules print only on teardown, on a specific decision branch, or when their feature is enabled by profile.",
+    "next_step": "run the accepted profile with the affected feature paths enabled, or capture teardown logs, before claiming liveness for the rest"
   }
 }
