@@ -400,3 +400,24 @@ repeated.
 Variant saved with command, numbers, cause and rollback in
 `runtime/checkpoints/CONTROL-OPT-20261112/variant-moe-cache/README.md`. It stays a diagnostic possibility until the
 correctness criterion decision is made explicitly.
+
+## Prefill: the profile plateau, measured rather than assumed
+
+One change at a time on the accepted build (EXP087 + EXP101 + pinning), argv otherwise identical:
+
+| variant | prefill | decode | VRAM | content |
+|---|---|---|---|---|
+| accepted | 2306 | 24.3 | 3190 | e68df05b |
+| `--fa off` | 2296.3 | 24.50 | 3190 | equal |
+| ubatch/batch 8192 | 2315.4 | 24.05 | 3190 | equal |
+| ubatch/batch 16384 | 2310.6 | 24.08 | 3190 | equal |
+| tb 32 + cpu-mask-batch ffffffff | 2309.5 | 24.05 | 3190 | equal |
+
+All inside noise. Together with the earlier switch sweep (batch/KV/graph/CUDA quantizer) and the device-cache result
+(prefill 2348 while decode jumps to 34), this says prefill on this profile is not limited by anything we can toggle: the
+remaining headroom sits in the 32K prompt itself over a 35B Q4_K model with experts on the host and a 4070's compute.
+Reaching 3000 would mean changing the profile (context, quantisation, hardware), not tuning it - that is recorded as the
+honest limit rather than claimed progress.
+
+What the profile does deliver, with the full port intact: prefill ~2306, decode 24.3 at VRAM 3190 / RAM 21319 (from
+1624 / 23.6 / 6408 / 22856 at the start), and 34.03 decode at VRAM 5242 in the experimental cache variant.
