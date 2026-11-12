@@ -560,8 +560,8 @@
       "gate": null,
       "first_call_printing": false,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "requires an unaligned GGUF data section to reach the check"
+      "classification": "OFF_PATH_MMAP",
+      "classification_reason": "call site is read_aligned_chunk (direct I/O); the accepted profile loads with mmap, so the O_DIRECT path is never taken. Bridge prints on the first call, so silence is zero calls."
     },
     {
       "module": "fg380s",
@@ -1013,7 +1013,9 @@
     "no_witness_anywhere": 14,
     "witness_seen_teardown_run": 33,
     "witness_seen_request_run": 42,
-    "proven_live": 43
+    "proven_live": 43,
+    "off_path_documented": 19,
+    "unclassified": 0
   },
   "liveness_gap": {
     "modules_without_current_log_witness": 20,
@@ -1096,5 +1098,11 @@
     "fg243c",
     "fg377s",
     "fg381s"
-  ]
+  ],
+  "acceptance": {
+    "criterion": "every supported operation/mode has an executable check and witness; unsupported coverage explicit",
+    "result": "43 modules have a witness on the executed path (42 in the request run, 1 via a targeted fixture); the remaining 19 are documented OFF_PATH with the gating condition or configuration recorded per module; nothing is claimed live on symbol presence alone.",
+    "accepted_at": "2026-11-12T04:04:51.068561+00:00",
+    "limitation": "OFF_PATH means unreachable under the accepted Apex profile and the recorded configurations; it is not a claim that the module is wrong. Re-entering any of those configurations requires the corresponding fixture to be re-run."
+  }
 }
