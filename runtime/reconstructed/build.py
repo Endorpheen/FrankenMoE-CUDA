@@ -15,7 +15,7 @@ FLAGS = ['-DGGML_BACKEND_SHARED','-DGGML_SHARED','-DGGML_USE_CPU','-DGGML_USE_CU
          f'-I{FL}/ggml/include', '-O3','-DNDEBUG','-fPIC','-w']
 CXX = ['/usr/bin/g++-13'] + FLAGS
 
-changed = ['llama-batch.cpp','llama-context.cpp','llama-graph.cpp','llama-hparams.cpp','llama-kv-cache.cpp',
+changed = ['llama-batch.cpp','llama-context.cpp','llama-graph.cpp','llama-hparams.cpp','llama-kv-cache.cpp','llama-model.cpp',
            'llama-memory-recurrent.cpp','llama-memory-hybrid.cpp','llama-model-loader.cpp','llama-sampler.cpp',
            'llama-vocab.cpp','unicode.cpp']
 objs = []

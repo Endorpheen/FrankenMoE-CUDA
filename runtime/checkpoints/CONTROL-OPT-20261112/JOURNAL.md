@@ -224,3 +224,21 @@ and rebuild, keeping all 307 Goose modules. `GGML_MMAP_EXPERT_PIN=0` will remain
 rule.
 
 Next: port the mechanism (llama-model.h/.cpp, llama-context.cpp call site, llama-model-loader pieces) and measure.
+
+## Accepted: expert mmap pinning restored into the full 307-module candidate
+
+Ported `llama_model::pin_mmap_experts`, `llama_mmap_expert_pin` and the `llama-context` call site into our SRC, added
+`llama-model.cpp` to the `changed` list, and rebuilt. All 307 Goose modules stay in the library - nothing was reverted to
+C++ fallback, and `GGML_MMAP_EXPERT_PIN=0` remains the disable switch per the default-on rule.
+
+| measurement | prefill tok/s | decode tok/s | RSS MiB | VRAM MiB | correctness |
+|---|---|---|---|---|---|
+| before (full port, no pinning) | 1624.1 | 23.64 | 22856 | 6408 | e68df05b |
+| pinning off (`GGML_MMAP_EXPERT_PIN=0`) | 1619.6 | 22.91 | - | - | equal |
+| **pinning on (accepted)** | **2337.3** | 23.14 | 22857 | 6408 | e68df05b |
+
+The paired on/off comparison on identical argv isolates the effect at **+44% prefill**; decode is inside the noise band.
+The narrow condition set in the ported call site (2 backends, flash-attn, single sequence, no op-offload change) matches
+the agreed profile exactly.
+
+Rollback: `build/libllama-exp371-prepin.so.0.7.0` keeps the pre-pinning library.
