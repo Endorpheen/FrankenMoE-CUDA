@@ -2120,7 +2120,7 @@
         "tools/server/server-common.cpp"
       ],
       "acceptance": "Metrics/counters/watchdog/status and administrative controls match; simulated pressure/failure corpus, no stopping other workloads.",
-      "evidence": "",
+      "evidence": "2026-11-12 inventory (docs/goose-migration/P8-08-INVENTORY.md): on the accepted profile /health and /props serve, while /metrics and /slots return 501 because --metrics/--slots are not in the accepted argv (server-context.cpp:5598 and :5660). There is no watchdog subsystem at all: grep over tools/server and common finds nothing, and cancellation exists only via client disconnect or shutdown (EXP267, EXP379). If enabled, /metrics renders Prometheus text from server_metrics (server_task.cpp:1557-1651); the decisions are the item list and bucket boundaries. Closing needs either an agreed configuration with those flags or a recorded decision that they are flag-gated serialisation and the watchdog clause is absent.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
