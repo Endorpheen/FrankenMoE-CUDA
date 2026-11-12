@@ -103,3 +103,19 @@ That matters for the decision: the two paths are not "bit-identical with a tiny 
 close but distinct samplers, and on ordinary prompts they will produce different answers. Nothing here shows a quality
 loss, and nothing here shows quality preservation across arbitrary prompts either. This is the honest state: one
 measured prompt shows +1% perplexity, one shows parity, and both diverge textually.
+
+## Bit-compatibility: tested, not achievable this way
+
+Hypothesis: our GPU kernels were bit-identical to the CPU ones in the earlier gates, so the divergence might come from
+the MMQ precision mode rather than from moving the work to the GPU. Tested with the cache on:
+
+| MMQ precision | prefill | decode | completion sha | exact match |
+|---|---|---|---|---|
+| `GGML_CUDA_MMQ_PREC=q4` | 2325.9 | 34.11 | 9d90a010 | no |
+| `GGML_CUDA_MMQ_PREC=q8` | 2327.3 | 33.98 | 9d90a010 | no |
+| default | 2348.3 | 34.03 | 9d90a010 | no |
+
+Identical output hash in all three, so the precision mode is not the cause and cannot be used to recover bit equality.
+The divergence is inherent to evaluating the expert product on the GPU instead of the host: different summation order
+over the same values. Making the cached path bit-identical would require computing the experts on the CPU from the
+resident copy, which removes the speedup - so this branch is closed rather than left as a vague hope.
