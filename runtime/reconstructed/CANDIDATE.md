@@ -72,3 +72,20 @@ Results on that candidate:
 - the eight-case sampler differential matches native on all eight, with the same distinctness pattern as before.
 
 So the merged work runs correctly once the candidate is built from one era. The earlier assembly was the defect, not the ports.
+
+## All six merged server ports run in the matched candidate
+
+One request against `candidate-20261112-matched` produces every witness:
+
+    FG270Q_SERVER_QUEUE      pick=0 cleanup=0
+    FG276T_STOP_STRINGS      full=0 hits=0
+    FG274B_BATCH_COMPAT      calls=15 yes=15
+    FG272S_SLOT_SELECT       similar=1 lru=1
+    FG268P_CTX_CHECKPOINTS   near=0 room=0 supersede=0
+    FG291B_BATCH_REJECT      continuity=18 walk=18 mrope=0 refused=0
+
+Note that the batch-reject bridge is the one that was inert when it was linked from a test fixture; here it counts eighteen continuity walks, so the
+fix from the merge step is visible in the assembled candidate rather than only in the library.
+
+`run_apex_gate.sh` now points at the matched candidate, so the pending measurement would test the artefact that actually runs correctly rather than
+the era-mixed one.

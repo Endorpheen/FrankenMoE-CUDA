@@ -6,7 +6,7 @@
 # Runs: 1 by default; MODE=both adds the native arm (2 total).
 set -u
 ROOT=/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108
-CAND=$ROOT/runtime/reconstructed/candidate-20261112
+CAND=$ROOT/runtime/reconstructed/candidate-20261112-matched
 NATIVE=/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/bin
 REC=$ROOT/runtime/results/restore-exp150-32k128
 OUT=$ROOT/runtime/reconstructed/apex-gate
