@@ -72,8 +72,17 @@ Sample franken output:
 
 ## Performance
 
+**Baseline correction (2026-11-13).** This staged logger runs on the flint
+`build-cuda` tree with `-c 512` and no GPU expert cache, so its 30-33 tok/s is a
+functional rig, not the Apex baseline. The canonical baseline is
+`runtime/reconstructed/build/stage-run` plus `--moe-cache-mib 3584`, 32K/128:
+prefill **2228.76 tok/s**, decode **41.62 tok/s**, content `9d90a010...`
+(`docs/goose-migration/APEX-BASELINE-20261113.md`). Do not compare this
+experiment's tok/s with 41.94.
+
 Paired A/B/B/A on the same staged library and model, 128 decode tokens:
 `classic -> franken -> franken -> classic`.
+
 
 | mode | decode tok/s runs | mean |
 |---|---|---:|
