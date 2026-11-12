@@ -68,3 +68,10 @@ Both were moved off "not demonstrated" with the right stimulus rather than a lou
   `sig_base`) and again both lines agree.
 - Parameter lesson: `dry_penalty_last_n: -1` and a negative `top_n_sigma` are rejected by the API with HTTP 400 before any sampling happens.
   The probe now uses in-range values.
+
+## Correction: the grammar case is identity, not a port
+
+Measured later: `llama-grammar.cpp.o` in the candidate carries **zero** `gg_function_` symbols, and `json_schema_to_grammar` lives in
+`libllama-common`, which has none either. Grammar parsing and constrained decoding are native code on both lines, so the grammar case in this
+experiment compares the same implementation with itself. It is a fine regression check that the sampler chain does not disturb grammar
+handling, but it is not evidence of a port, and it should not be counted as one.
