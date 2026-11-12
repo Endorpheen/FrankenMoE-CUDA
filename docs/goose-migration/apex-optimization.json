@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:09:39.387398+00:00",
+  "updated_at": "2026-11-12T02:11:14.797578+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: cache remains the decode lever (2048 34.03/5242, 4096 40.78/7292). MMQ precision q4/q8 both give the same divergent hash, so bit equality is not recoverable by tuning; divergence is inherent to GPU-side experts.",
+  "current": "Stage 2: pinning re-confirmed (2311.1 vs 1641.1, +40.8%, exact output, RSS/VRAM unchanged); the win is independent of EXP087/EXP101. --mlock unavailable. Cache remains the decode lever at 34.03-40.78.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -612,6 +612,21 @@
       "source": "runtime/reconstructed/build/run-ncpu36mc/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r39-pin-off-current",
+      "label": "Control: pinning off on the current build",
+      "at": "2026-11-12T02:11:14.797578+00:00",
+      "prefill_tok_s": 1641.1,
+      "decode_tok_s": 23.97,
+      "ram_mib": 21319.0,
+      "vram_mib": 3190,
+      "configuration": "same argv; GGML_MMAP_EXPERT_PIN=0",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "e68df05b",
+      "source": "runtime/reconstructed/build/run-pinoff/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -806,6 +821,13 @@
       "title": "Бит-совместимость недостижима настройкой",
       "kind": "insight",
       "detail": "GGML_CUDA_MMQ_PREC q4/q8/default all produce 9d90a010 with the cache on. Precision is not the cause; GPU-side expert evaluation is. Branch closed."
+    },
+    {
+      "id": "e27",
+      "at": "2026-11-12T02:11:14.797578+00:00",
+      "title": "Pinning подтверждён после EXP087/101",
+      "kind": "speedup",
+      "detail": "pin on 2311.1 vs off 1641.1 (+40.8%), RSS/VRAM unchanged, exact output both arms. Win is independent of the allocator changes; --mlock unavailable."
     }
   ]
 }
