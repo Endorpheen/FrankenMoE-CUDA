@@ -806,3 +806,19 @@ measurement in the whole ladder.
 
 The approved base stays 3072 until Igor says otherwise; 3584 is recorded as the measured candidate to move to, with the
 numbers behind it, and 4096 stays as the maximum-decoder point.
+
+## 3584 now has the same evidence base as 3072
+
+Two runs per length, same 32K prompt, VRAM 6778 in every run:
+
+| generated tokens | cache 3072 | cache 3584 | delta |
+|---|---|---|---|
+| 64 | 37.23 | 37.89 (38.12 / 37.65) | +0.66 |
+| 128 | 37.79 | 39.61 (39.55 / 39.65 / 39.62) | +1.82 |
+| 256 | 39.10 | 41.01 (40.93 / 41.09) | +1.91 |
+
+3584 is ahead at every length, the margin grows with generation length as the cache warms, and its spread is the
+tightest in the ladder. Prefill stays 2324-2327 in all runs, so the extra 512 MiB buys decode only.
+
+That makes 3584 the best-evidenced candidate to replace the approved base: same measurements, better numbers, +512 MiB.
+It stays a candidate - the base is Igor's call, and the exactness caveat applies equally to both cache points.
