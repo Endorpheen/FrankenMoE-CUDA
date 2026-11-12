@@ -71,3 +71,5 @@ blk.1.ssm_out.input_scale
 blk.1.ssm_out.scale
 blk.1.ssm_out.weight
 blk.1.attn_gate.weight
+blk.1.attn_gate.scale
+blk.1.attn_gate.input_scale

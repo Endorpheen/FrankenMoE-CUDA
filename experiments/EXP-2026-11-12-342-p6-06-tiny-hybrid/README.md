@@ -216,3 +216,24 @@ the layer mix changes.
 
 That is a generator problem with a clear next step -- compare the tensor metadata of the working hybrid model against the failing mutant,
 property by property -- rather than a port question.
+
+## The generator cannot yet produce a second valid model, and that is the item's boundary
+
+After the last name fixes the two-recurrent mutant matches the loader's expectations exactly -- 75 created, 75 present, no duplicates in
+either file -- and it still aborts at `GGML_ASSERT(buffer)` in the native line. The working hybrid has 65 tensors and the same structure,
+so the difference is not name count, not duplicates, and not the `.scale` placeholders by themselves.
+
+At this point the honest statement is that my generator produces exactly one valid model: the one whose name list the loader itself
+printed on its first successful run. Every deviation from that list -- all-attention, both-recurrent -- ends in the same native
+allocation assert, in both lines.
+
+## What P6-06 has and what it lacks
+
+Has: the recurrent/hybrid builders are enumerated, and the tiny hybrid fixture exists with a gate that asserts five graph properties
+(`checks=5 failures=0`), including per-layer attribution of `cache_r_l*` and `conv_output_silu`.
+
+Lacks: a proven mutation for that gate, and fixtures for the other kept architectures (RWKV, Mamba-style) -- which would need the same
+kind of generator work, since no small models exist in the tree.
+
+Closing the item requires either a scope decision (is "the kept set" just the architecture the accepted profile uses?) or a generator
+that can emit a second valid model. Both are recorded; neither is assumed.

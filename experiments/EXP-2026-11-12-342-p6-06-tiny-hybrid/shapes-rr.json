@@ -247,5 +247,11 @@
  "blk.1.attn_gate.weight": [
   32,
   32
+ ],
+ "blk.1.attn_gate.scale": [
+  1
+ ],
+ "blk.1.attn_gate.input_scale": [
+  1
  ]
 }
