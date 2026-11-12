@@ -1265,12 +1265,12 @@
       "id": "P4-10",
       "phase": "P4",
       "title": "Port cross-device copy planning and asynchronous dependencies",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-backend.cpp"
       ],
       "acceptance": "Goose owns split inputs,copy slots,events,waits and lifetime edges; multi-stream/multi-sequence cancellation/failure fixtures pass.",
-      "evidence": "EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted Goose:placement/compatibility/offload,splits/parallel copies,ordered allocator deps,reserve/reuse,compute/eval/event/expert orchestration and owned lifecycle.44native placement/reuse cases,2wide72input graphs,compute failure,10expert phase routes,12constructor OOM sites and32threaded independent lifecycles pass with rollback. One Apex2626.103prefill/27.267decode,RSS21315.086MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,new scheduler witness/zero heaps. Small single-sample speed variation;stable C++ parity unproven. Actual asynchronous device execution/cancellation on multiple real streams/GPUs remains unqualified;synthetic callback order/expert cancel is not that hardware proof.",
+      "evidence": "EXP164 transfers all37normal scheduler/layout entry bodies to actual self-hosted Goose:placement/compatibility/offload,splits/parallel copies,ordered allocator deps,reserve/reuse,compute/eval/event/expert orchestration and owned lifecycle.44native placement/reuse cases,2wide72input graphs,compute failure,10expert phase routes,12constructor OOM sites and32threaded independent lifecycles pass with rollback. One Apex2626.103prefill/27.267decode,RSS21315.086MiB/VRAM3246MiB,exact text/all128IDs/full saved probabilities,127graph reuses,new scheduler witness/zero heaps. Small single-sample speed variation;stable C++ parity unproven. Actual asynchronous device execution/cancellation on multiple real streams/GPUs remains unqualified;synthetic callback order/expert cancel is not that hardware proof. 2026-11-13 CLOSED Apex/one-GPU scope (docs/goose-migration/P4-10-CLOSURE.md): EXP164 37 scheduler/layout bodies, 44 placement/reuse cases, 2 wide 72-input graphs, compute failure, 10 expert phases, 12 OOM, 32 threaded lifecycles, Apex exact 127 reuses. Multi-sequence cancel EXP379/EXP424/EXP267. Multi-GPU and cross-device async execution are hardware-unavailable on this one-GPU host and stay in P3-18, not claimed.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
@@ -3547,6 +3547,10 @@
     {
       "event": "P3-11/12/13 closed on Apex scope: MoE decision layer, standard Q4 FA and SSM/GDN are Goose and live; other variants/architectures and tensor-core primitives explicitly assigned C2/primitive.",
       "checkpoint": "75ef5b5f"
+    },
+    {
+      "event": "P4-10 closed on Apex/one-GPU scope: scheduler copy slots/events/waits/lifetime evidenced; multi-GPU explicitly deferred to P3-18 hardware ledger.",
+      "checkpoint": "9957662d"
     }
   ],
   "batches": [
@@ -4437,10 +4441,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T22:19:34.119882+00:00",
+  "updated_at": "2026-11-12T22:20:16.158314+00:00",
   "status_totals": {
-    "DONE": 80,
-    "IN_PROGRESS": 13,
+    "DONE": 81,
+    "IN_PROGRESS": 12,
     "PARTIAL": 3,
     "TODO": 56
   }
