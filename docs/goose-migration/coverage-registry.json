@@ -752,12 +752,15 @@
       "witness_seen_teardown_run": false,
       "call_site": "llama-vocab.cpp:3609",
       "call_site_line": "const bool g_vocab = fg390s_enabled();",
-      "liveness_status": "not_executed_first_call_witness_absent",
+      "liveness_status": "LIVE (fixture)",
       "gate": null,
       "first_call_printing": true,
       "witness_seen_request_run": false,
-      "classification": "NEEDS_FIXTURE",
-      "classification_reason": "call site is inside the special-token cache loop; the accepted request carries no special tokens, so the loop body is not entered"
+      "classification": "PROVEN_LIVE",
+      "classification_reason": "call site is inside the special-token cache loop; the accepted request carries no special tokens, so the loop body is not entered",
+      "proven_live_by_fixture": true,
+      "fixture": "request containing <|im_start|>/<|im_end|>/<|endoftext|>",
+      "witness_in_fixture": "FG390S_VOCAB_PARTITION (1 call)"
     },
     {
       "module": "fg391s",
@@ -1009,7 +1012,8 @@
     "witness_seen_any_log": 48,
     "no_witness_anywhere": 14,
     "witness_seen_teardown_run": 33,
-    "witness_seen_request_run": 42
+    "witness_seen_request_run": 42,
+    "proven_live": 43
   },
   "liveness_gap": {
     "modules_without_current_log_witness": 20,
@@ -1077,6 +1081,18 @@
       ],
       "fg218t": "absent",
       "conclusion": "three unicode modules proven live; fg218t is OFF_PATH for the SPM tokenizer"
+    },
+    "special_tokens": {
+      "request": "prompt with special tokens, 8 tokens, temp 0",
+      "witness": "FG390S_VOCAB_PARTITION (1 call)",
+      "conclusion": "fg390s is live when special tokens are parsed"
     }
-  }
+  },
+  "remaining_fixtures": [
+    "fg230s",
+    "fg238q",
+    "fg243c",
+    "fg377s",
+    "fg381s"
+  ]
 }
