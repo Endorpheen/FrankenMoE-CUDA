@@ -85,3 +85,23 @@ UE4M3 scale and the same doubled e2m1 table as MXFP4.
 
 So the remaining decoder work is exactly one type -- nvfp4 -- plus the encoder direction and the wiring, not seven repack
 variants that do not exist.
+
+## Encoder direction: the executed from_float list
+
+A probe against `libggml-cpu` reports 24 types with a non-null `from_float`:
+
+    f32 f16 q4_0 q4_1 q5_0 q5_1 q8_0 q8_1 q2_K q3_K q4_K q5_K q6_K q8_K iq4_nl iq4_xs
+    i32 bf16 tq1_0 tq2_0 mxfp4 nvfp4 q1_0 q2_0
+
+EXP148 covers ten of them (Q1_0, Q2_0, Q4_0, Q4_1, Q5_0, Q5_1, Q8_1, Q8_0, Q8_K and the Q8 special slot). Four more are trivial
+casts rather than quantizers: F32, F16, BF16 and I32. That leaves eleven real encoders:
+
+    q2_K q3_K q4_K q5_K q6_K iq4_nl iq4_xs tq1_0 tq2_0 mxfp4 nvfp4
+
+The decoders for the same eleven types are already ported and gated in this series, so each encoder port has a partner to check
+against: encode a block, decode it with the Goose decoder, and require the result to match decoding the native encoder's output
+byte for byte. That is a stronger gate than comparing the packed bytes alone, because it catches a compensating pair of errors in
+packing and unpacking.
+
+Order of work: start with Q4_K because the Apex model is Q4_K_M, then Q6_K, then the remaining K-quants, then the IQ/TQ/NVFP4
+encoders.
