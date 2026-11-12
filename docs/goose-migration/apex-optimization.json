@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T03:03:10.918788+00:00",
+  "updated_at": "2026-11-12T03:04:30.489905+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "3584 under real background load (card at 10.7/12.3 GiB): decode 39.12 mean, own VRAM fixed 6778, no eviction. Prefill 2255 in that window versus 2326 quiet - a load artefact, with the quiet figure kept as reference.",
+  "current": "Same-window test: cache 3584 changes decode by +66% (23.34 -> 38.86) and prefill by 0.2%. The cache is not a prefill lever; prefill is a band (~2200-2350) that follows background load. 3000 requires a profile change.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -897,6 +897,21 @@
       "source": "runtime/reconstructed/build/mc3584_bg0..2/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r58-same-window",
+      "label": "Same-window: exact vs cache 3584",
+      "at": "2026-11-12T03:04:30.489905+00:00",
+      "prefill_tok_s": 2226.0,
+      "decode_tok_s": 38.86,
+      "ram_mib": 21320.0,
+      "vram_mib": 6778,
+      "configuration": "same argv + --moe-cache-mib 3584, measured back to back with the exact path",
+      "conditions": "desktop idle during runs, 4-12% GPU utilisation",
+      "correctness": "differs (compute-engine rounding)",
+      "source": "runtime/reconstructed/build/win_3584/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -1224,6 +1239,13 @@
       "title": "3584 держит decode под фоном",
       "kind": "insight",
       "detail": "Card at 10.7/12.3 GiB from the environment: decode 39.12 mean, own VRAM fixed 6778 (no eviction). Prefill 2255 vs 2326 quiet - load artefact, stated plainly."
+    },
+    {
+      "id": "e46",
+      "at": "2026-11-12T03:04:30.489905+00:00",
+      "title": "Кэш не влияет на prefill",
+      "kind": "insight",
+      "detail": "One window: exact 2220.8/23.34 vs cache 2226.0/38.86. Decode +66%, prefill +0.2%. Prefill is a band driven by background load."
     }
   ]
 }
