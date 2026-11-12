@@ -655,3 +655,20 @@ Together with the earlier 37.79 and 37.80, five runs span 37.69-39.10 with the 1
 
 Conclusion: the 3072 base is reproducible under normal desktop load, not only in a quiet window - which is the condition
 that matters for daily use. No new optimisation was claimed here; this is a stability record.
+
+## RAM: bounded by the resident model, not by a cache setting
+
+On the 3072 base, `--cache-ram 2048` instead of 0:
+
+| variant | prefill | decode | RSS | VRAM |
+|---|---|---|---|---|
+| cache-ram 0 (base) | 2346.2 | 37.90 | 21320 | 6266 |
+| cache-ram 2048 | 2339.9 | 37.50 | **21320** | 6266 |
+
+RSS is identical to the megabyte, and it is the same with pinning on or off (measured earlier: 21319 both ways). So the
+21.3 GiB is the resident 35B Q4_K model itself - mapped pages that the run touches - not a cache we can shrink, and not
+a side effect of pinning. Lowering RAM on this profile means a different quantisation, which is a profile decision, not a
+tuning knob.
+
+That closes the memory stage honestly: VRAM was cut 6408 -> 3190 exact / 6266 balanced by real mechanisms, RAM is
+model-bound, and no further RAM reduction is available inside this configuration.
