@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T01:56:21.273956+00:00",
+  "updated_at": "2026-11-12T01:58:10.717404+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2: prefill plateau confirmed on this profile (fa/ubatch/batch-threads all noise around 2306). Decode 34.03 available via the experimental cache at VRAM 5242; accepted profile stays 2306/24.3/3190 with the exact output.",
+  "current": "Stage 2: prefill scaling curve measured (4K 2009, 8K 2141, 16K 2315, 32K 2306); steady-state ceiling ~2360 with ~0.37 s fixed overhead, no attention cliff. Decode 34.03 available in the experimental cache variant.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -507,6 +507,36 @@
       "source": "runtime/reconstructed/build/run-mc2048b/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r32-p8k",
+      "label": "Prefill scaling: prompt shortened (diagnostic)",
+      "at": "2026-11-12T01:57:26.848078+00:00",
+      "prefill_tok_s": 2141.1,
+      "decode_tok_s": 27.14,
+      "ram_mib": null,
+      "vram_mib": 2878,
+      "configuration": "same argv, prompt truncated",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "different prompt, not a content check",
+      "source": "runtime/reconstructed/build/run-p8192/metrics.json",
+      "diagnostic": true,
+      "accepted": false
+    },
+    {
+      "id": "r33-p16k",
+      "label": "Prefill scaling: prompt shortened (diagnostic)",
+      "at": "2026-11-12T01:57:44.257513+00:00",
+      "prefill_tok_s": 2315.2,
+      "decode_tok_s": 25.48,
+      "ram_mib": null,
+      "vram_mib": 2982,
+      "configuration": "same argv, prompt truncated",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "different prompt, not a content check",
+      "source": "runtime/reconstructed/build/run-p16384/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -645,6 +675,13 @@
       "title": "Плато prefill измерено",
       "kind": "insight",
       "detail": "fa off 2296.3, ubatch 8192 2315.4, 16384 2310.6, tb32 2309.5 vs 2306. No switch moves prefill on this profile; 3000 needs a different profile, not tuning."
+    },
+    {
+      "id": "e19",
+      "at": "2026-11-12T01:58:10.717404+00:00",
+      "title": "Кривая prefill: потолок ~2360",
+      "kind": "insight",
+      "detail": "4K 2009, 8K 2141, 16K 2315, 32K 2306; steady state ~2360 tok/s with ~0.37 s fixed cost. No attention cliff, so 3000 needs a different profile."
     }
   ]
 }
