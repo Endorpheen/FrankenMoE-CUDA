@@ -173,3 +173,27 @@ turns into a number. That is a correctness issue worth recording even though no 
 ## Reproduce
 
 Same two binaries as above; `clamp_t1`, `clamp_t8`, `scale_t1`, `scale_t8` are the failing case names in the raw stream.
+
+## Root causes of the two semantics defects (both one-line fixes, both blocked on regeneration)
+
+**CLAMP ��� opposite bound for NaN.** Native (`ggml/src/ggml-cpu/ops.cpp:6164`) computes
+`dst = MAX(MIN(x, max), min)`, i.e. clamps the upper bound first. The Goose module (`pointwise.goose:65`) computes
+`min32(max32(a, fp[0]), fp[1])`, the reverse order. For ordinary values both give the same answer; for NaN the macro
+selection differs, which is exactly the `-0.5` vs `+0.5` seen.
+
+**SCALE → lost sign of zero.** Native (`ops.cpp:4997`) takes a fast path when the bias is 0: it copies and calls
+`ggml_vec_scale_f32`, a plain multiply, which preserves `-0`. The Goose module (`pointwise.goose:62`) evaluates
+`a*fp[0] + fp[1]`; with the bias at +0 the IEEE result of `(-0 * k) + (+0)` is `+0`, so the sign is lost.
+
+Both are form-of-expression differences, not arithmetic errors, and both are fixable by matching the native form:
+swap the clamp order, and skip the addend when the bias is zero.
+
+Blocked for the same reason as SILU: the fixes live in `pointwise.goose`, and regenerating `cpu-backend.c` needs a
+permissioned compiler pass. Nothing is changed in the accepted tree.
+
+## Apex exposure
+
+`ggml_clamp`/`ggml_scale` appear 27 times in `llama-graph.cpp`, so the operations are on the graph. But no CLAMP/SCALE
+witness exists in the accepted run and no clamp/scale Goose module is present, which means the Apex path executes the
+**native** implementation for them. So the defects are real for future architectures but not live in the accepted profile -
+which is consistent with `e68df05b` still holding.
