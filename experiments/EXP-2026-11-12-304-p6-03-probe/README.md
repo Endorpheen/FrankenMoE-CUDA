@@ -94,3 +94,22 @@ Facts measured in this pass:
 
 So the task is narrowed to the 253-line remainder: find the hunk that makes a copy land in a CUDA buffer, without touching the
 pipeline that pays for itself.
+
+## The remaining unknowns, and the next instrument
+
+Two more probes failed to separate the cause and are recorded so they are not repeated:
+
+- **Every Goose switch in the base library still aborts**: `GGML_GOOSE_BACKEND_BUFFERS=0`, `GGML_GOOSE_STREAM_CONTROL=0`,
+  `GGML_GOOSE_ALLOCATOR=0`, `GGML_GOOSE_CPU_BACKEND_API=0`, `GGML_GOOSE_SCHEDULER=0`. So the defect is not behind any hook.
+- **An `LD_PRELOAD` interposer on `ggml_backend_tensor_copy` never fires** (zero `COPY` lines) while the crash backtrace goes
+  through that exact symbol, which means the call is bound locally inside `libggml-base` and cannot be intercepted from
+  outside.
+
+The base library exports only 24 symbols that flint's does not, and all of them are `fg*` counters and helpers -- no ggml
+function is overridden. Together with the near-identical source, this means the difference is a *build-level* one: our
+`libggml-base` is linked with an object compiled from `backend-scheduler.cpp` in place of the original scheduler object, and
+the two revisions are not the same code even though most functions match.
+
+Next instrument: compile that one object with `-g -O2` using the recorded EXP164 recipe, link a **diagnostic** base library
+(not for deployment), and read the split's `backend_id` and the input tensor name at `ggml_backend_sched_copy_input`. With
+types available, gdb prints the fields directly instead of my guessing offsets.
