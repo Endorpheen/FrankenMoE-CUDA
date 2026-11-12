@@ -59,3 +59,26 @@ element_size.
 
 So on this surface the only divergence found is the extra block-alignment check, whose root cause and one-line fix are recorded above.
 Everything else in the probe set is bit-identical between the lines.
+
+## Error paths: the decisions match in six of seven cases, the text never does, and one decision diverges
+
+`probe-errors.c` takes a case number and drives one failing call; each case is run once per line and the abort line is compared.
+
+| case | flint | ours | decision |
+|---|---|---|---|
+| 1 invalid type | `GGML_ASSERT(type >= 0 && type < GGML_TYPE_COUNT)` at ggml.c:1785 | `validation failed:code=10` | same |
+| 2 negative ne | `GGML_ASSERT(GGML_TENSOR_SIZE <= SIZE_MAX - obj_alloc_size)` at :1822 | `code=13` | same |
+| 3 overflow | `GGML_ASSERT(INT64_MAX / ne[i] > current_nelements)` at :1798 | `code=14` | same |
+| 4 view past end | `GGML_ASSERT(... data_size + view_offs <= ggml_nbytes(view_src))` at :1808 | `code=16` | same |
+| 5 reshape mismatch | `GGML_ASSERT(ggml_nelements(a) == ne0*ne1)` at :3751 | `code=21` | same |
+| 6 duplicate permute axis | `GGML_ASSERT(axis0 != axis1)` at :3911 | `code=31` | same |
+| 7 non-block-aligned view_3d | **no abort** | `code=15` | **differs** |
+
+Two findings, and the first is broader than the case that started this:
+
+1. **Every constructor error message differs in text.** The Goose unit reports a numeric code from one helper; native reports
+   `GGML_ASSERT(<expression>) failed` with the source location. The *decision* agrees in cases 1-6, but any consumer that greps the
+   abort text -- a test suite, a wrapper, a log parser -- sees a different string. This is not ABI, but it is behaviour, and the
+   migration rule says ports reproduce native semantics including ugly details. It is recorded as an open compatibility gap, not
+   absorbed into "errors handled".
+2. Case 7 is a genuine decision divergence, already root-caused to the extra `n0 % blck` check with a prepared patch.
