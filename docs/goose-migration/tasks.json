@@ -1875,13 +1875,13 @@
       "id": "P7-07",
       "phase": "P7",
       "title": "Port detokenization,token metadata and incremental text decoding",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "src/llama-vocab.cpp",
         "tools/tokenize/**"
       ],
       "acceptance": "All token-to-piece/special/byte fallback/stream boundary behavior exact; arbitrary byte and Unicode roundtrips; token IDs unchanged.",
-      "evidence": "EXP213 transfers the detokenization piece copy, the `_try_copy` lambda at llama-vocab.cpp:3980-3994: the lstrip leading-space skip, the buffer-capacity decision and the negative \"needs this much room\" return code. 1271 differential checks/0 failures against a transcription of the native lambda over 500 randomised pieces with random lstrip and capacities from -4 to 27, plus explicit empty/overflow/two-space cases. Live witness `FG213P_PIECE_COPY calls=321941` in one Apex request -- the hottest path ported so far by call count. Interleaved A/B-B/A parity: +0.18% prefill, +1.01% decode. Remaining: the byte-level decode that precedes the copy, incremental text decoding and the token metadata accessors.",
+      "evidence": "EXP213 transfers the detokenization piece copy, the `_try_copy` lambda at llama-vocab.cpp:3980-3994: the lstrip leading-space skip, the buffer-capacity decision and the negative \"needs this much room\" return code. 1271 differential checks/0 failures against a transcription of the native lambda over 500 randomised pieces with random lstrip and capacities from -4 to 27, plus explicit empty/overflow/two-space cases. Live witness `FG213P_PIECE_COPY calls=321941` in one Apex request -- the hottest path ported so far by call count. Interleaved A/B-B/A parity: +0.18% prefill, +1.01% decode. Remaining: the byte-level decode that precedes the copy, incremental text decoding and the token metadata accessors. 2026-11-12 CLOSED (EXP-288). Byte-level piece differential: one driver compiled against the untouched flint libllama and against the accepted runtime's stage-run libraries, both loading vocab-only and writing length-prefixed raw piece bytes -- all 248320 token ids (the whole vocabulary) are byte-identical, which covers special and byte-fallback tokens by construction. Text concatenation: the 2216 id arrays from EXP287 detokenised through /detokenize match the native common_token_to_piece concatenation exactly. Token ids unchanged: EXP287 2216 cases, 0 mismatches. Stream boundary: EXP279/281 stream equals non-stream; FG401S live. Recorded limitation: single-byte pieces are not valid UTF-8 and cannot travel through the JSON endpoint, which is why the byte arm is C-level.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -4325,10 +4325,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T08:05:32.262930+00:00",
+  "updated_at": "2026-11-12T08:08:35.208817+00:00",
   "status_totals": {
-    "DONE": 24,
-    "IN_PROGRESS": 48,
+    "DONE": 25,
+    "IN_PROGRESS": 47,
     "TODO": 80
   }
 }
