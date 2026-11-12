@@ -50,3 +50,20 @@ Both lines also agree on the device decisions: `layer 0 is assigned to device CU
 
 `-fit on` produces no fit plan at verbosity 3 with either line on this model, because nothing needs adjusting. The memory-fit policy
 therefore still needs a model large enough to force an adjustment, which means a run Igor has to approve first.
+
+## Logging verbosity
+
+| case | native | ours |
+|---|---|---|
+| `LLAMA_ARG_LOG_VERBOSITY=5` only | `verbosity = 5` | same |
+| `LLAMA_ARG_LOG_VERBOSITY=1` only | the info line is suppressed | same |
+| `LLAMA_ARG_LOG_VERBOSITY=1` + `-lv 5` | `verbosity = 5` -- CLI wins | same |
+| `-lv abc` | `error while handling argument "-lv": stoi` | identical, character for character |
+
+## Template and grammar
+
+`--chat-template-file /nope.jinja` gives `error while handling argument "--chat-template-file": error: failed to ...` on both lines,
+identical up to the 70-character window captured.
+
+A malformed `--grammar 'root ::= ['` produced no matching line in either log within the first eight seconds, so that case is
+inconclusive as captured rather than equal: the error may surface later, and it is not claimed as parity.
