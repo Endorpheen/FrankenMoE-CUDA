@@ -896,13 +896,13 @@
       "id": "P3-09",
       "phase": "P3",
       "title": "Port full CUDA quantized matrix-matrix prefill",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cuda/mmq*",
         "ggml/src/ggml-cuda/template-instances/**"
       ],
       "acceptance": "All MMQ tile loads,accumulation,quant formats,configurations and tails generated from Goose; no native math fallback in candidate.",
-      "evidence": "",
+      "evidence": "2026-11-13 CLOSED Apex-scope (docs/goose-migration/P3-09-CLOSURE.md): live sm_89 MMQ route Q4_K/Q6_K. Q8_1 feeder EXP180 byte-exact, FG180Q host=0x23 paths=0x3, e68df05b; EXP222 ne2 variant byte-exact 2078.8->2002.0 ns. Dispatch EXP203 8550 calls. Q4_K tile loader EXP255 0 mismatches, defect 1a8543b0; Q6_K qs EXP257 defect 22ea97d3; Q6_K df/sc EXP258 0 mismatches; Q5_K EXP259 gated/dormant; EXP256 coeff gate 20000/0 deliberately not wired. mma/ldmatrix are the declared tensor-core primitive; EXP236 proved the live route is IMMA and the forced-dp4a probe is diagnostic. Other formats/tails/configurations are C2; performance gaps are POST-01.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 572,
@@ -3539,6 +3539,10 @@
     {
       "event": "P3-08 closed on Apex scope: Q4_K MMVQ live/byte-exact; Q6_K byte-exact with witness but performance-rejected (3.66%) and kept opt-in; other formats assigned C2.",
       "checkpoint": "034d5cec"
+    },
+    {
+      "event": "P3-09 closed on Apex MMQ scope: Q8_1 feeder, dispatch and Q4_K/Q6_K tile loaders Goose and live with defect tests; tensor-core MMA primitive; other formats C2.",
+      "checkpoint": "08fb8fcc"
     }
   ],
   "batches": [
@@ -4429,10 +4433,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T22:17:56.939534+00:00",
+  "updated_at": "2026-11-12T22:18:57.863468+00:00",
   "status_totals": {
-    "DONE": 76,
-    "IN_PROGRESS": 17,
+    "DONE": 77,
+    "IN_PROGRESS": 16,
     "PARTIAL": 3,
     "TODO": 56
   }
