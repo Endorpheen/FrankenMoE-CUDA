@@ -55,3 +55,33 @@ flag, layer count, rotation sizes and the per-layer descriptors.
 
 Next: parse both files' `state_write_data` headers with the writer's own layout and name the extra section, then make our
 writer match it. Only then can the goose-written file restore identically on the native reader.
+
+## Third probe: the first difference is numeric, not structural
+
+Reading the size-probe files (2-token prompt, both lines) byte by byte:
+
+    first difference at offset 480
+    native: 74 35 00 c0   (float 0xC0003574)
+    goose : 75 35 00 c0   (float 0xC0003575)
+
+The bytes after it continue identically for a long stretch. So the earliest divergence is **one ULP in a KV value**, not
+a cell, a range or a section header. The header (`qsgg` magic, sequence id, per-stream counts) matches.
+
+That reframes the goose->native result: the native reader does parse our file (same `n_restored`), but it restores KV
+values that differ in the last bit, and its continuation then flips a token. Numeric sensitivity to one ULP, not a
+malformed file.
+
+The +780-byte size difference is still open and is a separate question: it is not explained by the numeric difference
+(which changes no size) and not by cell count (it did not scale with prompt length). Candidates are the data-section
+header fields our line writes -- layout flag, layer count, rotation sizes -- or padding of the data section.
+
+## Consequences for the criterion
+
+- Formats are mutually readable: header, sequence id, stream counts and cell metadata all parse.
+- Bit-exact continuation across lines is not achievable while the two lines compute attention with different kernels; a
+  one-ULP KV difference can flip a token at temperature 0. That part is a property of the two compute lines, not of the
+  serialization.
+- The remaining *format* gap is the fixed ~780 bytes. Until it is named, "write where format permits" is not proven.
+
+Next: parse the data-section header of both files with the writer's layout (`v_trans`, `n_layer`, `n_rot_k`, `n_rot_v`,
+then per-layer type and row size) and account for the 780 bytes exactly.
