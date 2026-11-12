@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T05:30:00+00:00",
+  "updated_at": "2026-11-12T06:05:00+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Stage 2 on the full candidate: ggml stack ruled out (exp244 body runs 2574.9 on our staging ggml, full port 1624.1). The cost is inside the llama translation units - changed-list sources or the link step.",
+  "current": "Stage 2 accepted: expert mmap pinning restored into the full 307-module candidate. Paired A/B gives prefill 1619.6 -> 2337.3 (+44%), decode inside noise, correctness unchanged.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -21,8 +21,8 @@
       "id": "speed",
       "title": "Prefill и decode",
       "state": "partial",
-      "implemented": "Full port is the working candidate. Port itself proven free: native libllama 1636.0/26.04 against full port 1624.1/23.64. EXP244 (2563-2574) is diagnostic only and rejected as an optimisation. Gap pinned to the ggml stack and llama body.",
-      "remaining": "Find the concrete cause inside the full candidate; targets 3000/30 not reached.",
+      "implemented": "Full port retained (307 modules). Root cause of the regression found and fixed: expert mmap pinning was missing. Paired A/B 1619.6 -> 2337.3 prefill (+44%), decode inside noise.",
+      "remaining": "Prefill 3000 and decode 30 still not reached; next candidates are the same mechanism's budget/coverage and the decode path.",
       "dependencies": "full port preserved"
     },
     {
@@ -297,6 +297,36 @@
       "source": "runtime/reconstructed/build/run-metrics-e244s/metrics.json",
       "diagnostic": true,
       "accepted": false
+    },
+    {
+      "id": "r18-pinning-on",
+      "label": "Full port with expert mmap pinning restored (accepted)",
+      "at": "2026-11-12T06:00:00+00:00",
+      "prefill_tok_s": 2337.3,
+      "decode_tok_s": 23.14,
+      "ram_mib": 22857.0,
+      "vram_mib": 6408,
+      "configuration": "same argv; full 307-module libllama with pin_mmap_experts (GGML_MMAP_EXPERT_PIN default on)",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal, e68df05b",
+      "source": "runtime/reconstructed/build/run-metrics-pin/metrics.json",
+      "diagnostic": false,
+      "accepted": true
+    },
+    {
+      "id": "r19-pinning-off",
+      "label": "Control: same build with GGML_MMAP_EXPERT_PIN=0",
+      "at": "2026-11-12T06:02:00+00:00",
+      "prefill_tok_s": 1619.6,
+      "decode_tok_s": 22.91,
+      "ram_mib": null,
+      "vram_mib": 6408,
+      "configuration": "same argv; GGML_MMAP_EXPERT_PIN=0",
+      "conditions": "RTX 4070, browser load present",
+      "correctness": "content equal",
+      "source": "runtime/reconstructed/build/run-metrics-pinoff/metrics.json",
+      "diagnostic": true,
+      "accepted": false
     }
   ],
   "events": [
@@ -368,6 +398,14 @@
       "kind": "insight",
       "detail": "Same staging ggml: full port 1624.1, exp244 body 2574.9. Cost is inside the llama translation units, not the library stack.",
       "run_id": "r17-e244body-stagingggml"
+    },
+    {
+      "id": "e10",
+      "at": "2026-11-12T06:04:00+00:00",
+      "title": "Pinning восстановлен: +44% prefill",
+      "kind": "speedup",
+      "detail": "pin_mmap_experts ported into the full 307-module candidate. Paired A/B: 1619.6 without, 2337.3 with. No C++ fallback, no module dropped.",
+      "run_id": "r18-pinning-on"
     }
   ]
 }
