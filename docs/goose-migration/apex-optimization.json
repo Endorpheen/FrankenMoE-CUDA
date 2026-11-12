@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "updated_at": "2026-11-12T02:18:09.815852+00:00",
+  "updated_at": "2026-11-12T02:20:04.407525+00:00",
   "updated_by": {
     "name": "runtime agent (Command Code)",
     "harness": "Command Code",
     "model": "Claude"
   },
-  "current": "Golden rule; balanced base cache 3072. Short-generation check passed: 64 tokens give 37.23 (3072) and 30.66 (1280), so 30+ holds from the first tokens. Exact control unchanged; cache divergence cause established and still not waived.",
+  "current": "Golden rule; balanced base cache 3072 verified stable under real desktop load: five runs, decode 37.69-37.90 at 128 tokens, VRAM fixed 6266. 30+ holds from 64 tokens. Exact control unchanged; cache divergence cause established, not waived.",
   "profile": "accepted 32K/128",
   "stages": [
     {
@@ -953,6 +953,13 @@
       "title": "Порог 30+ держится с 64 токенов",
       "kind": "insight",
       "detail": "64 tokens: 3072 gives 37.23, 1280 gives 30.66. No warm-up requirement for the 30 tok/s floor."
+    },
+    {
+      "id": "e33",
+      "at": "2026-11-12T02:20:04.407525+00:00",
+      "title": "База 3072 устойчива под фоном",
+      "kind": "insight",
+      "detail": "Five runs: decode 37.69-37.90 at 128 tokens (+/-0.3%), VRAM fixed 6266, no eviction drift. Reproducible under normal desktop load."
     }
   ]
 }
