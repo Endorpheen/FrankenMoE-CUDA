@@ -1892,7 +1892,7 @@
       "id": "P7-08",
       "phase": "P7",
       "title": "Port chat templates,Jinja and reasoning parsing",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "sources": [
         "src/llama-chat.cpp",
         "common/chat*.cpp",
@@ -1900,7 +1900,7 @@
         "common/parsers/**"
       ],
       "acceptance": "All shared Jinja/template/filter/parser/tool/reasoning logic Goose; Apex golden prompt bytes and structured output exact; no minja arithmetic/parsing wrapper left.",
-      "evidence": "",
+      "evidence": "2026-11-12 TEMPLATE RENDERING DIFFERENTIAL (EXP-352), via /apply-template so no generation is involved. FIRST ATTEMPT WAS INVALID: /apply-template IGNORES a per-request chat_template field and a tools array, returning the default template -- three of those 'SAME' results were the default agreeing with itself, caught by checking rendered prompts were distinct. REBUILT with templates passed through --chat-template, one server per template: 5 templates, 0 differences -- default (system+user, 99B); custom with upper/trim/replace filters ('[SYSTEM] be terse\\n[USER] hello WORLD'); custom with if/|length conditionals; custom with for/loop.index/loop.last ('1:a,2:b'); custom rendering a tool schema (tools|length, parameters|properties|list|join -> '1 TOOL get_weather(city)'). Renderings are genuinely distinct (29-99 bytes, different shapes) so the equalities are not one output measured twice. Recorded behaviour: the conditional case renders ONE for two messages and merges system into user text -- the server folding a system message into the first user turn for a model without a system role; both lines do it identically. Also from EXP-350: the whole template text inside /props is byte-identical.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -4325,7 +4325,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T12:14:48.927972+00:00",
+  "updated_at": "2026-11-12T12:15:37.207607+00:00",
   "status_totals": {
     "DONE": 41,
     "IN_PROGRESS": 40,
