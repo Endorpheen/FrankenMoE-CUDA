@@ -29,3 +29,32 @@ already Goose-owned and observed executing.
    asserting that the planning functions exist.
 
 Nothing here is claimed done: symbols plus witnesses show planning ownership, not lifecycle ownership.
+
+## Failure path: the decision is already Goose's
+
+Read the integrating source (`EXP-196/source/shared-cuda.cu`, which `build_integrated.sh` places into the CUDA backend):
+
+    if (goose) {
+        fg196p_plan_host_alloc(..., plan);
+        if (plan[0] == 0) { return nullptr; }        // Goose decided against allocating
+        ...
+    }
+    // "The fallback decision is Goose's; the allocation itself is ggml's."
+
+So for the pinned-host path the failure decision is **already owned by Goose**: a zero plan short-circuits to `nullptr` and
+the host allocation never happens. The module even documents the split - decisions in Goose, the `cudaMallocHost` /
+`cudaHostRegister` calls themselves are primitives.
+
+That is a concrete advance over the earlier "planning only" reading, and it narrows the remainder:
+
+| aspect | owner |
+|---|---|
+| how much to reserve / pin (plan) | Goose, witnessed |
+| whether to fail (zero plan -> nullptr) | Goose, by code |
+| the allocation call itself | ggml primitive |
+| pool growth/reuse bookkeeping | native |
+| device reset, async lifetimes | native |
+
+Nothing is reclassified: P3-17 stays IN_PROGRESS because growth/reuse/reset/lifetimes are still native, but the failure
+decision no longer belongs on the "not ported" list, and I would have missed that by scanning symbols instead of reading the
+call site.
