@@ -453,3 +453,24 @@ longer exists only in the staging directory or in `/tmp` backups:
 
 209 MiB total, which is the three libraries and nothing else - not a copy of the whole tree. The binaries are not
 committed (too large for the repository); `SHA256SUMS` plus the patches named above reproduce them.
+
+## Cache ladder: the cheapest way to hold decode 30+
+
+Measured on the accepted build, one flag only:
+
+| moe-cache MiB | prefill | decode | VRAM MiB | vs accepted VRAM |
+|---|---|---|---|---|
+| 0 (accepted) | 2310 | 24.1 | 3190 | - |
+| 512 | 2332 | 22.38 | 3706 | +516 |
+| 1024 | 2327 | 29.22 | 4218 | - |
+| **1280** | 2334.2 | **30.63** | **4476** | +1286 |
+| 1536 | 2344.0 | 31.74 | 4730 | +1540 |
+| 2048 | 2348.3 | 34.03 | 5242 | +2052 |
+| 4096 | OOM | - | - | - |
+
+So the answer to "30+ decode with less VRAM" is 1280 MiB: **30.63 tok/s at 4476 MiB**, 766 MiB cheaper than the 2048
+setting that first showed 32.81. 1024 misses the target at 29.22, which is why 1280 is the smallest usable point, and
+the ladder is monotonic in both decode and VRAM - no anomaly to chase.
+
+Every cache point still fails the exact-content check for the reason established earlier (CPU kernels vs GPU kernels,
+same storage type). The variant therefore remains experimental; nothing was enabled by default.

@@ -18,10 +18,16 @@ Run: `python3 runtime/reconstructed/run_metrics.py` (metrics in `build/run-mc204
 | accepted (no cache) | 2306 | 24.3 | 21319 | 3190 | e68df05b |
 | --moe-cache-mib 512 | 2332 | 22.4 | 21320 | 3706 | differs |
 | --moe-cache-mib 1024 | 2327 | 29.2 | 21320 | 4218 | differs |
+| --moe-cache-mib 1280 | 2334.2 | **30.63** | 21320 | **4476** | differs |
+| --moe-cache-mib 1536 | 2344.0 | 31.74 | 21320 | 4730 | differs |
 | --moe-cache-mib 2048 | 2348 | 34.03 | 21320 | 5242 | differs |
 | --moe-cache-mib 4096 | OOM | - | - | - | - |
 
 Note that EXP087/EXP101 changed the cache's price: the same 2048 setting now costs 5242 MiB VRAM instead of 8456.
+
+Best compromise for "decode 30+ at the lowest VRAM" measured so far: **1280 MiB -> 30.63 tok/s at 4476 MiB**, i.e. 766 MiB
+cheaper than the 2048 setting for 3.4 tok/s less. 1024 lands just under the target (29.22), so 1280 is the smallest
+cache that clears 30.
 
 ## Why the content check differs (cause established, not waived)
 
