@@ -1609,14 +1609,14 @@
       "id": "P6-04",
       "phase": "P6",
       "title": "Port complete Apex architecture graph and shared MoE graph interface",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "sources": [
         "src/models/qwen35moe.cpp",
         "src/models/qwen35.cpp",
         "src/llama-graph.cpp"
       ],
       "acceptance": "Apex graph construction and real prefill/decode/state lifecycle execute Goose using general shared interfaces; no model-specific native graph callback.",
-      "evidence": "",
+      "evidence": "2026-11-12 CLOSED (docs/goose-migration/P6-04-EVIDENCE.md). Model: qwen35moe 35B-A3B, 40 repeating layers (block_count 41 with nextn), n_embd 2048, 256 experts with 8 used, full_attention_interval 4, recurrent_layers bit array -> hybrid. What executes Goose: FG200G_MODEL_GRAPH is_recr=800 recurrent=600 native=0 (every layer's recurrent decision from the module, zero native fallbacks), FG200G_MOE group_select=680 scale_check=680, FG408S_GRAPH_INPUT_PLAN live, FG382S/FG396S/FG232R live with the recurrent prefix checkpoint path writing during the run. Real prefill/decode: 32K prefill + 128 decoded tokens returning e68df05b with equal probabilities, including after relinking libllama with the trace hook; state lifecycle witnessed by the 131975288-byte state restored and continued identically. No model-specific native graph callback: qwen35moe's builder is part of the shared graph code in llama-graph.cpp, and the EXP340 request trace shows the composition matching the architecture (40 layers, two MoE gate nodes per layer, conv/recurrent path on 30 of 40 layers). BOUNDARY STATED: builder bodies are the shared C++ of this line, not Goose-emitted code -- P6-03 measures the builders; this item measures that Apex runs through them with Goosed decisions and no per-model native callback.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 416,
@@ -4325,10 +4325,10 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-12T11:23:08.903049+00:00",
+  "updated_at": "2026-11-12T11:24:09.996433+00:00",
   "status_totals": {
-    "DONE": 36,
+    "DONE": 37,
     "IN_PROGRESS": 37,
-    "TODO": 79
+    "TODO": 78
   }
 }
