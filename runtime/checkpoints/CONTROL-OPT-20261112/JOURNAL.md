@@ -128,3 +128,15 @@ when they are disabled), so the next step is a rebuild with one compiler and one
 fiddling.
 
 KV must stay on the GPU: `--no-kv-offload` reaches VRAM 3194 but decode collapses to 3.77.
+
+## Refinement: where the GCC 15 objects come from
+
+`runtime/reconstructed/build.py` explains the mix: the generated modules go through `gcc-13`/`g++-13` at `-O2`
+(lines 16 and 63), while `bridge.c` is compiled with plain `gcc -O3` and the shared object is linked with
+`/usr/bin/c++` (lines 100 and 107) - both of which resolve to GCC 15.2.0 on this machine. So the GCC 15 objects are the
+bridge and the link step, not the per-call modules. That weakens the compiler-mix lead for the hot path: `bridge.c` is
+not called per token, and a linker version cannot slow a loop.
+
+What remains to test, in order: (1) the `-O2` used for the modules against `-O3`, now that the diagnostic build proves
+the same port runs 58% faster with a pure GCC 13.4.0 library; (2) the actual module bodies on the hot path, since every
+env-gated group turned out to be mandatory and could not be bisected at runtime.
