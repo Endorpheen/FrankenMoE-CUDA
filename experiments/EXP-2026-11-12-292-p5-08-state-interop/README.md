@@ -85,3 +85,27 @@ header fields our line writes -- layout flag, layer count, rotation sizes -- or 
 
 Next: parse the data-section header of both files with the writer's layout (`v_trans`, `n_layer`, `n_rot_k`, `n_rot_v`,
 then per-layer type and row size) and account for the 780 bytes exactly.
+
+## Fourth probe: structural walk of both files
+
+Wrote a parser from the writers' own layout (`state_write` / `state_write_meta` / `state_write_data`):
+
+    magic u32, seq_id i32, n_stream u32
+    per stream: cell_count u32; if 0 continue
+                per cell: pos i32, n_seq_id u32, [ext 12 B], ids i32 x n_seq_id
+                v_trans u32, n_layer u32, n_rot_k u32, n_rot_v u32
+                per layer: k_type i32, k_size_row u64, cell_count x k_size_row bytes
+                if !v_trans: per layer: v_type i32, v_size_row u64, cell_count x v_size_row bytes
+                if  v_trans: per layer: v_type i32, v_size_el u32, n_embd_v_gqa u32,
+                             n_embd_v_gqa x cell_count x v_size_el bytes
+
+With that layout both files walk end to end under the same field sequence and land 4 bytes short of their own size,
+which is a common trailer. So the format is structurally identical between the lines, and the earlier "fixed section"
+guess is corrected: the size delta is *counted content*, not a section that one line writes and the other does not.
+
+The parser's second variant (transposed-V assumption) diverged mid-file, which is itself useful: it shows the corpus file
+takes the `v_trans == 0` branch, so the transposed layout is not part of this comparison.
+
+What is still not named is which counted value differs. Reverse engineering it from bytes is the wrong tool; the next
+step is to instrument the writer: log `io.n_bytes()` after `state_write_meta` and after each layer of
+`state_write_data` in a patched copy, run both lines, and diff the section sizes directly.
