@@ -63,6 +63,28 @@ An attempt to run the canonical profile against the diagnostic base was made and
 correctly failed; an earlier run that appeared to succeed had silently used the
 baseline stage, and that result is discarded, not reported.
 
+## Deployed base inspected (2026-11-13)
+
+The preserved base contains the constructor unit and the other Goose modules:
+
+    fg156 symbols: 15 (constructor entry plus witnesses)
+    fg159: 22, fg160: 17, fg163: 39, fg164: 65
+
+The EXP338 probe linked directly against the preserved base reports **no abort**
+for case 7 (non-block-aligned `view_3d`), matching flint, and the result does not
+change with `GGML_GOOSE_TENSOR_CONSTRUCTORS=0` or `=1`. So the strict check the
+patch removes is not firing in the accepted base: either that build already lacks
+it, or the view path does not reach that constructor entry. The numeric error-code
+text gap recorded in EXP338 is likewise not observable there.
+
+## Why Apex cannot run on a rebuilt base yet
+
+The diagnostic base built from flint objects needs only two symbols from EXP160
+(`fg160_fusion_enabled`, `fg160_query`); the CPU library has none. EXP160's run
+artifacts are gone (`runtime/exp160/run` is empty) and its build recipe depends on
+`runtime/exp159/build/ggml-graph.o`, which is also missing. Reproducing that
+composite unit from source is the base-rebuild task recorded under P10-06/P10-11.
+
 ## Next step
 
 Reconstruct the base link from the flint CMake build (`build-cuda` compile
