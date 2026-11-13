@@ -92,6 +92,46 @@ Diagnostic plan (own work, in order):
 - decode stays within the 2 % rule of the accepted 41.62 / 43.04 tok/s and VRAM
   does not grow beyond the recorded figure.
 
+## Fresh reproduction (2026-11-13, own run)
+
+Our line, `-c 2048 -ngl 0 -np 1`, 1 800-character prompt, port 18094:
+
+    READY=1
+    ALIVE_AFTER_REQUEST=1
+    SERVER_EXIT=134
+    HTTP_TAIL=HTTP=000
+    CUDA_ERRORS=2
+    ABORT=1
+    LEFT_PROC=0
+
+The backtrace is the same one recorded before: `ggml_backend_cuda_buffer_set_tensor`
+→ `fg163_io` → `fg163_gg_function_21` → `ggml_backend_tensor_copy` →
+`fg164_component` → `ggml_backend_sched_graph_compute_async`. The copy runs through
+the Goose scheduler module, so the defect is in our scheduler code, not in the
+C++ wrapper around it.
+
+Script and result: `experiments/EXP-2026-11-13-465-p6-02-repro/`.
+
+## Where the search stands
+
+`ggml_backend_sched_backend_from_buffer` in both revisions returns the first
+backend that supports the buffer *type* and the op, and the Goose port
+(`fg164` `from_buffer`) mirrors it through the exact bridge
+`ggml_backend_supports_buft` + `ggml_backend_supports_op`. The failing copy tensor
+is named `CUDA0#…`, so either the buffer type passed in is not the one the tensor
+holds, or the backend order makes CUDA0 the first match.
+
+Next probe, in this order:
+
+1. At the breakpoint from EXP307, print `sched->n_backends`, each backend's name,
+   and the offending tensor's `buffer->buft` plus the name returned by
+   `ggml_backend_buft_name`. If CUDA0 answers true for a CPU buft, the bridge or
+   the field offset for `buft` is wrong.
+2. Print `sched->backend_ids` for the source and the created copy to see which
+   index `from_buffer` returned and for which buffer.
+3. Only after that, decide between a field-offset bug in the Goose ABI and an
+   ordering bug in `ggml_backend_sched_new`.
+
 ## Status
 
 Open, worked locally. The next instrument is the split-assignment log described
