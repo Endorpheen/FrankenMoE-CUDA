@@ -1587,7 +1587,7 @@
       "source_phase_files_at_audit": 416,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B3",
-      "notes": "2026-11-13 ESCALATION PACKAGE (docs/goose-migration/P6-02-ESCALATION.md): investigation carried out locally, no external consultation. The note packages the repro (-ngl 0 -c 2048 -np 1, 371 tokens), the COPY src=norm-0 dst=CUDA0#norm-0#0 observation, the isolation matrix (flint base fixes it; CUDA_VISIBLE_DEVICES empty fixes it; every Goose switch still aborts; LD_PRELOAD cannot bind), the 253-line remainder, the 16 expert_pipeline sites, the artifact paths and the diagnostic plan (split-assignment log, then a scheduler-only harness). The scheduler-only minimal C reproducer is the next instrument; the fix must keep c5ca940b for the long prompt, e68df05b on Apex, and the 2 percent performance rule."
+      "notes": "2026-11-13 ESCALATION PACKAGE (docs/goose-migration/P6-02-ESCALATION.md): investigation carried out locally, no external consultation. The note packages the repro (-ngl 0 -c 2048 -np 1, 371 tokens), the COPY src=norm-0 dst=CUDA0#norm-0#0 observation, the isolation matrix (flint base fixes it; CUDA_VISIBLE_DEVICES empty fixes it; every Goose switch still aborts; LD_PRELOAD cannot bind), the 253-line remainder, the 16 expert_pipeline sites, the artifact paths and the diagnostic plan (split-assignment log, then a scheduler-only harness). The scheduler-only minimal C reproducer is the next instrument; the fix must keep c5ca940b for the long prompt, e68df05b on Apex, and the 2 percent performance rule. 2026-11-13 FIX (EXP466, experiments/EXP-2026-11-13-466-p6-02-offload-fix): root cause proven by an LD_PRELOAD wrapper forcing op_offload=false on ggml_backend_sched_new - the 371-token prompt then serves with HTTP=200 EXIT=0 CUDA=0 ABORT=0. Cause: backend_id_from_cur moves ops whose weight is in a host buffer to the first backend claiming offload_op (CUDA0) even with -ngl 0, creating one CUDA island per layer and split-input copies. Fix: llama_context::sched_new now passes op_offload = cparams.op_offload && model.n_gpu_layers() > 0, so the accepted -ngl all profile is unchanged and a CPU-only placement keeps those ops on CPU. Gates: long prompt clean (no CUDA errors), Apex 32K/128 content sha 9d90a010 and 32K/512 c2ff42cc - identical to baseline. Performance measured under a parallel compiler build (loadavg 5.3-7.7): 128 -> 37.14 tok/s, 512 -> 38.40, so the perf verdict is measured-under-load and pending an idle-host repeat; P6-02 stays IN_PROGRESS until then."
     },
     {
       "id": "P6-03",
@@ -3674,6 +3674,10 @@
     {
       "event": "P9-02 sixth slice (EXP464): buffered/direct read planning, errno fallback, EOF zero-fill, alignment and mmap-vs-file selection are Goose with a scripted-errno gate (501 cases, 0 failures), clean sanitizers and 9/9 mutations.",
       "checkpoint": "88a2e373"
+    },
+    {
+      "event": "P6-02 fixed functionally (EXP466): with -ngl 0 the scheduler no longer moves host-weight elementwise ops to CUDA; the 371-token prompt serves with zero CUDA errors and Apex 128/512 content hashes match the baseline exactly. Performance is measured-under-load (37.14/38.40 vs 39.24/43.04 at loadavg 5-7) and awaits a clean repeat before the item closes.",
+      "checkpoint": "9e488c1a"
     }
   ],
   "batches": [
@@ -4564,7 +4568,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-13T00:15:05.314596+00:00",
+  "updated_at": "2026-11-13T00:39:33.788750+00:00",
   "status_totals": {
     "DONE": 97,
     "IN_PROGRESS": 4,

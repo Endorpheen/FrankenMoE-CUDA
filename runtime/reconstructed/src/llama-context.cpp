@@ -767,8 +767,13 @@ static bool llama_lazy_pp_reserving_enabled(
 }
 
 void llama_context::sched_new(size_t max_nodes, bool parallel) {
+    // Moving host-weight ops to a device only makes sense when at least one layer
+    // is offloaded. With -ngl 0 it creates a CUDA island per layer (split-input
+    // copies into CUDA buffers) that llama.cpp never intended under a CPU-only
+    // placement; see docs/goose-migration/P6-02-INVESTIGATION.md.
+    const bool op_offload = cparams.op_offload && model.n_gpu_layers() > 0;
     sched.reset(ggml_backend_sched_new(
-            backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, parallel, cparams.op_offload));
+            backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, parallel, op_offload));
 
     ggml_backend_sched_set_copy_callback(sched.get(), sched_copy_experts, this);
     ggml_backend_sched_set_realloc_callback(sched.get(), sched_graph_realloc, this);
