@@ -2542,6 +2542,27 @@ recursive fn eval_test(
             }
             i = i + 1;
         }
+    } else if filter_name_is(tname, "lt") || filter_name_is(tname, "lessthan") ||
+        filter_name_is(tname, "gt") || filter_name_is(tname, "greaterthan") ||
+        filter_name_is(tname, "ge") {
+        if argc < 1 {
+            return fail_node(K_TEST, apos(A, st, id), "test expects two values", E, st);
+        }
+        var op: i64 = 0;
+
+        if filter_name_is(tname, "lt") || filter_name_is(tname, "lessthan") {
+            op = 3;
+        } else if filter_name_is(tname, "gt") || filter_name_is(tname, "greaterthan") {
+            op = 2;
+        } else {
+            op = 1;
+        }
+        let r = vcompare(A, B, F, st, v, argv[0], op, out, E);
+
+        if r < 0 {
+            return fail_node(K_TEST, apos(A, st, id), E[0..st[2]], E, st);
+        }
+        res = r;
     } else if filter_name_is(tname, "eq") || filter_name_is(tname, "equalto") || filter_name_is(tname, "ne") {
         if argc < 1 {
             return fail_node(K_TEST, apos(A, st, id), "test expects two values", E, st);
@@ -3289,6 +3310,38 @@ recursive fn eval_filter(
             acc = 0 - acc;
         }
         return mk_int(A, F, st, acc);
+    }
+
+    if filter_name_is(fname, "startswith") || filter_name_is(fname, "endswith") {
+        if vk(A, st, sval) != V_STRING || argc < 1 || vk(A, st, argv[0]) != V_STRING {
+            return fail_node(K_FILTER, apos(A, st, id), "filter expects String values", E, st);
+        }
+        let src = vstr(B, A, st, sval);
+        let pat = vstr(B, A, st, argv[0]);
+        var hit: bool = false;
+
+        if pat.len <= src.len {
+            hit = true;
+            var i: i64 = 0;
+
+            while i < pat.len {
+                if filter_name_is(fname, "startswith") {
+                    if src[i] != pat[i] {
+                        hit = false;
+                    }
+                } else {
+                    if src[src.len - pat.len + i] != pat[i] {
+                        hit = false;
+                    }
+                }
+                i = i + 1;
+            }
+        }
+
+        if hit {
+            return mk_bool(A, F, st, 1);
+        }
+        return mk_bool(A, F, st, 0);
     }
 
     var p = apps(E, 0, "Unknown (built-in) filter '");
