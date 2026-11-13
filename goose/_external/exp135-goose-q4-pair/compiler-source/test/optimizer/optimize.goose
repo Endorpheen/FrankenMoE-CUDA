@@ -1,0 +1,907 @@
+// Optimizer coverage: inlining, constant folding, and propagation shapes.
+// Runtime results must agree across optimization levels. The runner also
+// checks representative transformed bodies in --specs output.
+
+// --- inlining fodder ---------------------------------------------------------
+
+fn tiny_add(a: i64, b: i64) -> i64 { a + b }         // Multi-use, below NC.
+fn tiny_flt(x: f64) -> f64 { x * 2.0 }
+fn once_used(n: i64) -> i64 {                        // Single use, large body.
+    var s = 0;
+    for i in n { s += i * i; }
+    if s > 100 { s = s - 100; }
+    while s > 17 { s -= 17; }
+    s
+}
+fn medium(v: i64, w: i64) -> i64 {                   // Lands in NCU territory.
+    let a = v * 2 + w;
+    let b = a - v / 3;
+    if a > b { a } else { b }
+}
+fn big_not_inlined(n: i64) -> i64 {                  // Over every threshold.
+    var s = 1;
+    for i in n { s += i; s *= 3; s -= i / 2; s += i % 5; }
+    for j in n { s += j * j; s -= j * 2; s += 1; }
+    if s < 0 { s = 0 - s; }
+    while s > 1000 { s /= 7; s -= 3; }
+    s
+}
+fn returns_early(n: i64) -> i64 {                    // Return statements in loops.
+    if n < 0 { return -1; }
+    for i in n { if i == 3 { return i * 10; } }
+    n
+}
+fn void_helper(v: i64) {                             // Void result + bare guard.
+    guard v > 0;
+    print(v);
+}
+fn var_param(var x: i64) -> i64 { x += 1; x * 2 }    // Written param: no const subst.
+fn two_rets(a: i64) -> i64, i64 { return a, a + 1; } // Multi-value: never inlined.
+recursive fn fact_op(n: i64) -> i64 { if n <= 1 { 1 } else { n * fact_op(n - 1) } }
+
+fn use_inlining() {
+    print(tiny_add(1, 2) + tiny_add(3, 4));          // Constant args cascade to 10.
+    print(tiny_flt(2.5));
+    print(once_used(9));
+    print(medium(1, 2) + medium(3, 4) + medium(5, 6));
+    print(big_not_inlined(4));
+    print(returns_early(7));
+    void_helper(0);
+    void_helper(5);
+    print(var_param(41));
+    let a, b = two_rets(1);
+    print(a + b);
+    print(fact_op(5));
+}
+
+// --- reference/slice/nonfixed parameters through inlining --------------------
+
+fn bump(r: i64&) { r += 1; }                         // Reference binds; writes pointee.
+fn doubled(v: i64) -> i64 { v * 2 }
+fn total_op(xs: i64[:]) -> i64 {
+    var s = 0;
+    for x in xs { s += x; }
+    s
+}
+fn takes_string(s: u8[]) -> i64 { s.len }            // Variable-size by value.
+fn grow(v: i64[>..]&) { v.push(1); v.push(2); }      // Growing through a reference.
+fn make_str(n: i64) -> u8[>..] {                     // Nonfixed return (NRVO shape).
+    var s: u8[>..] = "x";
+    for i in n { s.append("y"); }
+    return s;
+}
+
+fn use_params() {
+    var x = 10;
+    bump(x);
+    x = x.doubled();                                 // UFCS receiver becomes param 0.
+    let arr = [1, 2, 3, 4];
+    print(total_op(arr) + arr.len);                     // .len of a fixed array folds.
+    print(takes_string("hello"));
+    var v: i64[>..] = [];
+    grow(v);
+    print(v.len);
+    print(x);
+    let s = make_str(3);
+    print(s.len);
+}
+
+// --- constant folding and propagation ----------------------------------------
+
+let G = 6;                                           // let global: propagates.
+var gv = 100;                                        // Written below: stays a load.
+
+fn folding() {
+    let a = 2 + 3 * 4 - 1;                           // 13.
+    let b = (a << 2) | 1;                            // a propagates, then folds.
+    let c = ~b ^ 0xF0;
+    let d = -a + (100 / 7) % 3;
+    let e = 2.5 * 4.0 - 1.0 / 8.0;
+    let f = 1 < 2 && 3 >= 3 || false;
+    let g2 = !(1 == 2) && !false;
+    let h = G * 7;                                   // Global constant propagation.
+    print(a + b + c + d);
+    print(e);
+    print(f && g2);
+    print(h);
+    gv += 1;
+    print(gv);
+    // A runtime abort survives folding: overflow wraps in release, so this
+    // stays an addition rather than becoming a constant.
+    print(9223372036854775807 + a);
+}
+
+// --- casts_op -------------------------------------------------------------------
+
+struct Bytes { b: u8, w: u16, f: f32 }
+
+fn casts_op() {
+    var s = Bytes { 1, 2, 0.5 };
+    s.b = 300 as! u8;                                // Wraps: folds to 44.
+    s.w = 70000 as! u16;
+    s.f = s.f * 2.0 + 0.25;                          // f32 math, not constant.
+    let i = 3.0 as i64;                              // Integral: folds.
+    let f2 = 7 as f64;
+    let g3 = 2.5 as! i64;                            // as! truncation folds.
+    let h2 = 1.5 as f32;                             // Exact in f32: folds.
+    let big = 10000000000000000000.5 as! i64;        // Out of range: left alone.
+    print(s.b + s.w + i + g3 + big);
+    print(f2 + h2 + s.f);
+}
+
+// --- control-flow folding ----------------------------------------------------
+
+fn controlflow() -> i64 {
+    let t = true;
+    if t { print(1); } else { print(2); }            // Else branch dropped.
+    if 1 > 2 { print(3); }                           // Whole statement dropped.
+    let v = if G == 6 { 10 } else { 20 };            // Value if folds to 10.
+    while false { print(4); }                        // Dropped.
+    var i = 0;
+    while i < 3 { i += 1; }                          // Kept.
+    guard 1 < 2 else { return -1; }                  // True guard folds away.
+    match 5 { 0 => print(0), 1..9 => print(1), _ => print(2) }
+    let m = match G { 6 => 60, _ => 0 };             // Constant match value.
+    assert(true);                                    // Removed.
+    assert(m > 0);                                   // Condition folds, then removed.
+    loop {
+        guard i < 6 else { break; }                  // Leaves the loop.
+        i += 1;
+    }
+    block {
+        guard m == 60;                               // Folds true inside a block.
+        print(m);
+    }
+    if false { return 99; }                          // Dropped; flow continues.
+    m + v
+}
+
+// --- propagation limits ------------------------------------------------------
+
+fn limits() {
+    var w = 5;
+    w = 6;                                           // Written: not propagated.
+    let addr = 7;
+    let r = &addr;                                   // Address taken: not propagated.
+    print(w + addr + r);
+    let cap: i64[..4] = [1, 2];
+    print(cap.cap + cap.len);                        // .cap folds; .len stays dynamic.
+}
+
+// --- HOFs, function values, captures -----------------------------------------
+
+fn apply<F>(x: i64) -> i64 { F(x) }
+fn twice<F>(x: i64) -> i64 { F(F(x)) }
+fn bigger_hof<F>(n: i64) -> i64 {
+    var s = 0;
+    for i in n {
+        s += F(i);
+        if s > 50 { s -= 25; }
+        while s > 40 { s -= 7; }
+    }
+    s
+}
+
+fn hofs_op() {
+    let base = 3;                                    // Captured let: decl must stay.
+    print(apply(4) { it + base });
+    print(twice(2) { x => x * x });
+    print(bigger_hof(10) { it * 2 + base });
+    var acc = 0;                                     // Captured and written in a block.
+    apply(1) { acc += it; it };
+    print(acc);
+}
+
+fn nested_host(n: i64) -> i64 {
+    fn helper(k: i64) -> i64 { k * 3 }               // Nested, no captures.
+    var t = 0;
+    fn addt(k: i64) { t += k; }                      // Captures t.
+    addt(helper(n));
+    addt(2);
+    t
+}
+
+// --- case functions and match binders ----------------------------------------
+
+enum Shape_op {
+    Circle { r: f64 },
+    Rect { w: f64, h: f64 },
+    Point,
+}
+
+fn area_op(c: Shape_op.Circle) -> f64 { c.r * c.r * 3.14159 }
+fn area_op(r: Shape_op.Rect) -> f64 { r.w * r.h }
+fn area_op(p: Shape_op.Point) -> f64 { 0.0 }
+
+fn shapes() {
+    var s: Shape_op = Shape_op.Rect { w: 2.0, h: 3.0 };
+    print(area_op(s));                                  // Tag dispatch: not inlined.
+    let c = Shape_op.Circle { r: 1.0 };
+    print(area_op(c));                                  // Direct variant call: inlinable.
+    match s {
+        Circle cc => print(cc.r),
+        Rect rr   => print(rr.w * rr.h),
+        Point     => print(0.0),
+    }
+}
+
+// --- long-distance returns ---------------------------------------------------
+
+fn deep_fail(x: i64) -> i64 {
+    guard x >= 0 else { return -1 from outer_op; }
+    x * 2
+}
+fn outer_op(x: i64) -> i64 {
+    let v = deep_fail(x);                            // Callee unwinds to outer_op.
+    v + 1
+}
+fn longdistance_op() {
+    print(outer_op(5));
+    print(outer_op(0 - 5));
+}
+
+// --- function-value returns exit the defining function -----------------------
+
+fn each<F>(n: i64) { for i in n { F(i); } }
+fn finder(n: i64) -> i64 {
+    each(n) { if it == 2 { return it * 100; } };     // Exits finder, through each.
+    -1
+}
+
+// --- early blocks as values --------------------------------------------------
+
+fn earlyblocks(n: i64) -> i64 {
+    let r = block {
+        guard n > 0 else { break -1; }
+        if n > 100 { break 100; }
+        n * 2
+    };
+    r
+}
+
+// --- inlining into a global initializer, defaults folding --------------------
+
+fn init_helper(a: i64) -> i64 { a * 5 + 1 }
+let ginit = init_helper(4);
+
+struct Defaulted { a: i64 = 2 + 3, b: f64 = 1.0 / 4.0, c: i64 = 0 }
+
+fn defaults() {
+    let d = Defaulted { c: 9 };
+    print(d.a + d.c);
+    print(d.b);
+}
+
+// --- bodies that must stay real frames ---------------------------------------
+
+// A big HOF bound to the same named nested function twice: one specialization,
+// two uses, over threshold — the call survives, so its funval body still
+// references this function's locals and this function must stay a real frame.
+fn big_hof<F>(n: i64) -> i64 {
+    var s = 0;
+    for i in n { s += F(i); s *= 2; s -= 1; s += i % 3; s /= 1 + (i & 1); }
+    for j in n { s += F(j) * 2; s -= j; s += 1; s *= 1 + (j & 3); }
+    s
+}
+fn uses_big_hof() -> i64 {
+    let mul = 3;
+    fn scale(k: i64) -> i64 { k * mul }
+    let a = big_hof(6, scale);
+    let b = big_hof(7, scale);
+    a + b
+}
+
+// A big capturing nested function called twice: not inlined, so the host keeps
+// owning the captured local.
+fn cap_host(n: i64) -> i64 {
+    var t = 0;
+    fn work(k: i64) {
+        for i in k { t += i; t *= 2; t -= 1; t += i % 3; t /= 1 + (i & 1); }
+        for j in k { t += j; t -= 1; }
+    }
+    work(n);
+    work(n + 1);
+    t
+}
+
+// A big function unwinding to outer2_op stays a call, so outer2_op must stay a frame.
+fn deep_big(x: i64) -> i64 {
+    var s = x;
+    for i in 10 { s += i; s *= 2; s -= i / 2; s += i % 3; }
+    for j in 10 { s -= j; s += 1; }
+    guard s >= 0 else { return -1 from outer2_op; }
+    s
+}
+fn outer2_op(x: i64) -> i64 { deep_big(x) + deep_big(x + 1) }
+
+// --- inline blocks in every expression position ------------------------------
+
+fn step(i: i64&) -> bool { i += 1; i < 5 }
+fn whilecond() -> i64 {
+    var i = 0;
+    while step(i) { }                               // Inlined body inside the condition.
+    i
+}
+
+fn pick_op() -> i64 { 2 }
+fn indexpos() -> i64 {
+    let a = [10, 20, 30];
+    a[pick_op()]                                        // Collapses to a constant index.
+}
+
+// --- accumulator tail-recursion elimination ----------------------------------
+// A leading local keeps base-case inlining from rewriting these self calls
+// before the independent tail-recursion pass sees them.
+
+// `E + self(x)`: becomes a loop, with the base return folding the accumulator
+// in on the way out.
+recursive fn tre_add(n: i64) -> i64 {
+    let before_basecase = 0;
+    if n <= 0 { return 0; }
+    return (n * 2) + tre_add(n - 1);
+}
+
+// `self(x) ^ E` with an inert operand, which may move ahead of the call.
+recursive fn tre_rev(n: i64) -> i64 {
+    let before_basecase = 0;
+    if n <= 0 { return 0; }
+    return tre_rev(n - 1) ^ 3;
+}
+
+// `%` is not associative, so this is not a fold and nothing is rewritten.
+recursive fn tre_mod(n: i64) -> i64 {
+    let before_basecase = 0;
+    if n <= 0 { return 1; }
+    return (7 + tre_mod(n - 1)) % 1000;
+}
+
+// Two operators: the first tail becomes the loop, the other stays a call
+// whose result folds in the way a base value does.
+recursive fn tre_mixed(n: i64) -> i64 {
+    let before_basecase = 0;
+    if n <= 0 { return 1; }
+    if n % 2 == 0 { return 2 + tre_mixed(n - 1); }
+    return 3 * tre_mixed(n - 1);
+}
+
+// No operator: plain tail recursion, looped without an accumulator. Both
+// parameters change and the new `k` reads the old `n`.
+recursive fn tre_plain(n: i64, k: i64) -> i64 {
+    let before_basecase = 0;
+    if n <= 0 { return k; }
+    return tre_plain(n - 1, k + n);
+}
+
+// Floats are left alone: regrouping them changes the answer.
+recursive fn tre_flt(n: i64, x: f64) -> f64 {
+    let before_basecase = 0;
+    if n <= 0 { return x; }
+    return 0.5 + tre_flt(n - 1, x);
+}
+
+// A callee that can `return ... from` us lands in the innermost active frame
+// (§7.9), so this one keeps a frame per level.
+fn tre_leaf(n: i64) -> i64 {
+    if n == 4 { return 100 from tre_from; }
+    n
+}
+recursive fn tre_from(n: i64) -> i64 {
+    let before_basecase = 0;
+    if n <= 0 { return 0; }
+    return tre_leaf(n) + tre_from(n - 1);
+}
+
+// A tail return inside a loop of its own: the rewrite's `continue` would
+// restart that loop instead, so this one keeps its calls.
+recursive fn tre_inloop(n: i64) -> i64 {
+    let before_basecase = 0;
+    var i = 0;
+    while i < 3 {
+        i += 1;
+        if i == 2 && n > 0 { return 10 + tre_inloop(n - 1); }
+    }
+    return n;
+}
+
+fn tailrec_op() {
+    print(tre_add(6) + tre_rev(5) + tre_mod(4));      // 42 + 3 + 29 = 74
+    print(tre_mixed(5) + tre_plain(4, 0));            // 51 + 10 = 61
+    print(tre_flt(3, 0.125));                         // 1.625
+    print(tre_from(6));                               // 6 + 5 + 100 = 111
+    print(tre_inloop(3));                             // 10 + 10 + 10 + 0 = 30
+}
+
+// --- variable-mode ADT payloads by reference through inlining ----------------
+
+enum Node2 {
+    Leaf { v: i64 },
+    Pair { name: u8[] },
+}
+fn firstlen(n: Node2..&) -> i64 {
+    match n {
+        Leaf l  => l.v,
+        Pair &p => p.name.len,
+    }
+}
+fn varmode() {
+    var pool: Node2..[>..] = [];
+    let r: Node2..& = pool.push(Node2.Pair { name: "abc" });
+    print(firstlen(r));
+}
+
+// --- base-case inlining of self-recursive functions --------------------------
+
+struct RecNode { v: i64, l: RecNode&<u32>?, r: RecNode&<u32>? }
+
+var rec_marks = 0;
+
+// The first statement is a base case reading only the parameters: both
+// self-call sites get it spliced in ahead of the call.
+recursive fn rec_build(pool: RecNode[>..]&, depth: i64, v: i64) -> RecNode& {
+    if depth == 0 { return pool.push(RecNode { v: v }); }
+    let l: RecNode& = rec_build(pool, depth - 1, v * 2);
+    let r: RecNode& = rec_build(pool, depth - 1, v * 2 + 1);
+    return pool.push(RecNode { v: v, l: l, r: r });
+}
+
+// The `guard` spelling of the same shape; the second call has a constant
+// argument, which substitutes instead of binding.
+recursive fn rec_sum(n: RecNode&, d: i64) -> i64 {
+    guard d > 0 else { return n.v; }
+    var t = n.v;
+    let l = n.l;
+    if l { t += rec_sum(l, d - 1); }
+    let r = n.r;
+    if r { t += rec_sum(r, 0); }
+    t
+}
+
+recursive fn rec_mark(n: RecNode&, d: i64) {         // Valueless base case.
+    if d == 0 { return; }
+    rec_marks += 1;
+    let l = n.l;
+    if l { rec_mark(l, d - 1); }
+}
+
+// UFCS self-calls, the receiver an array viewed as a slice at the outer
+// call and a slice parameter at the inner ones.
+recursive fn rec_half(xs: i64[:], lo: i64, hi: i64) -> i64 {
+    if hi - lo == 1 { return xs[lo]; }
+    let mid = (lo + hi) / 2;
+    return xs.rec_half(lo, mid) * 2 + xs.rec_half(mid, hi);
+}
+
+// Left alone: the test reads a local, which the call site cannot see.
+recursive fn rec_local(n: RecNode&, d: i64) -> i64 {
+    let stop = d <= 0;
+    if stop { return n.v; }
+    let l = n.l;
+    guard l else { return n.v; }
+    return rec_local(l, d - 1);
+}
+
+// Left alone: a mutual cycle has no self-call site to rewrite.
+recursive fn rec_even(k: i64) -> i64 { if k == 0 { return 1; } return rec_odd(k - 1); }
+recursive fn rec_odd(k: i64) -> i64 { if k == 0 { return 0; } return rec_even(k - 1); }
+
+fn recursion_op() {
+    var pool: RecNode[>..] = [];
+    let root: RecNode& = rec_build(pool, 3, 1);
+    print(pool.len);                                 // 15
+    print(rec_sum(root, 3));                         // 32
+    rec_mark(root, 3);
+    print(rec_marks);                                // 3
+    print(rec_local(root, 3));                       // 8
+    print(rec_even(7) + rec_odd(7));                 // 0 + 1
+    var bits: i64[8] = [1, 0, 1, 1, 0, 0, 1, 0];
+    print(bits.rec_half(0, 8));                      // 16
+}
+
+// --- guarded base-case inlining ---------------------------------------------
+// The other languages' shape: every self-call inside an `if` with no else
+// that compares parameters. Each self-call site gets the body without the
+// if, for where the test fails. The `gb_visits += 1` that each body starts
+// with shows how many copies of it there are (run_tests.py).
+
+var gb_visits = 0;
+var gb_limit = 0;
+var gb_pool: RecNode[>..];
+
+recursive fn gb_build(depth: i64, v: i64) -> RecNode& {
+    gb_visits += 1;
+    let n .= gb_pool.push(RecNode { v: v });
+    if depth > 0 {
+        n.l .= gb_build(depth - 1, v * 2);
+        n.r .= gb_build(depth - 1, v * 2 + 1);
+    }
+    return n;
+}
+
+recursive fn gb_walk(n: RecNode&, d: i64) {          // Valueless.
+    gb_visits += 1;
+    if d > 0 {
+        let l = n.l;
+        if l { gb_walk(l, d - 1); }
+    }
+}
+
+recursive fn gb_count(n: RecNode&, d: i64) -> i64 {  // The result as the tail.
+    gb_visits += 1;
+    var t = n.v;
+    if d != 0 {
+        let l = n.l;
+        if l { t += gb_count(l, d - 1); }
+        let r = n.r;
+        if r { t += gb_count(r, d - 1); }
+    }
+    t
+}
+
+// Left alone: the test reads a global or a node, which the statements before
+// it may change before the callee tests it, or it does arithmetic, which may
+// abort, or the body assigns the parameter it reads.
+recursive fn gb_global(n: RecNode&, d: i64) -> i64 {
+    gb_visits += 1;
+    var t = n.v;
+    if d > gb_limit {
+        let l = n.l;
+        if l { t += gb_global(l, d - 1); }
+        let r = n.r;
+        if r { t += gb_global(r, d - 1); }
+    }
+    return t;
+}
+
+recursive fn gb_field(n: RecNode&, d: i64) -> i64 {
+    gb_visits += 1;
+    var t = n.v;
+    if n.v < 8 && d > 0 {
+        let l = n.l;
+        if l { t += gb_field(l, d - 1); }
+        let r = n.r;
+        if r { t += gb_field(r, d - 1); }
+    }
+    return t;
+}
+
+recursive fn gb_arith(n: RecNode&, d: i64) -> i64 {
+    gb_visits += 1;
+    var t = n.v;
+    if d - 1 >= 0 {
+        let l = n.l;
+        if l { t += gb_arith(l, d - 1); }
+        let r = n.r;
+        if r { t += gb_arith(r, d - 1); }
+    }
+    return t;
+}
+
+// UFCS self-calls, the receiver a reference parameter: an arena by index,
+// pushed through the reference, and nodes walked through optional links.
+struct GbSlot { v: i64, l: i64 = -1, r: i64 = -1 }
+
+recursive fn gb_arena(arena: GbSlot[>..]&, depth: i64, v: i64) -> i64 {
+    gb_visits += 1;
+    let idx = arena.len;
+    arena.push(GbSlot { v: v });
+    if depth > 0 {
+        let l = arena.gb_arena(depth - 1, v * 2);
+        let r = arena.gb_arena(depth - 1, v * 2 + 1);
+        let s .= arena[idx];
+        s.l = l;
+        s.r = r;
+    }
+    return idx;
+}
+
+recursive fn gb_method(n: RecNode&, d: i64) -> i64 {
+    gb_visits += 1;
+    var t = n.v;
+    if d > 0 {
+        let l = n.l;
+        if l { t += l.gb_method(d - 1); }
+        let r = n.r;
+        if r { t += r.gb_method(d - 1); }
+    }
+    return t;
+}
+
+recursive fn gb_var(n: RecNode&, var d: i64) -> i64 {
+    gb_visits += 1;
+    var t = n.v;
+    d -= 1;
+    if d >= 0 {
+        let l = n.l;
+        if l { t += gb_var(l, d); }
+        let r = n.r;
+        if r { t += gb_var(r, d); }
+    }
+    return t;
+}
+
+fn guarded_op() {
+    let root .= gb_build(3, 1);
+    print(gb_pool.len, " ", gb_visits);              // 15 15
+    gb_walk(root, 2);
+    print(gb_visits);                                // 18
+    print(gb_count(root, 3), " ", gb_count(root, 1)); // 120 6
+    print(gb_global(root, 3), " ", gb_field(root, 3)); // 120 120
+    print(gb_arith(root, 3), " ", gb_var(root, 3));  // 120 120
+    print(gb_visits);                                // 96
+    var arena: GbSlot[>..] = [];
+    arena.gb_arena(3, 1);
+    var sum = 0;
+    for s in arena { sum += s.v + s.l + s.r; }
+    print(arena.len, " ", sum, " ", arena[0].l, " ", arena[0].r); // 15 209 1 8
+    print(root.gb_method(3), " ", gb_visits);        // 120 126
+}
+
+// --- min/max chains -------------------------------------------------------------
+// A chain of integer min or max with an operand the loop carries from the last
+// iteration combines that operand last (optimize_reassoc.h): ra_edit's
+// insertion cost, its second operand, binds as operand2 and is the outer
+// call's last argument. A chain already combining it last, one outside a
+// loop and one over floats stay as they are. The pass goes by the shape of
+// std's min and max, which these have.
+
+fn ra_min<T>(a: T, b: T) -> T { if b < a { return b; } return a; }
+fn ra_max<T>(a: T, b: T) -> T { if a < b { return b; } return a; }
+
+fn ra_edit(s: u8[:], t: u8[:]) -> u32 {
+    var prev_row: u32[>..] = [];
+    var curr_row: u32[>..] = [];
+    for i in s.len + 1 {
+        prev_row.push(i as u32);
+        curr_row.push(0);
+    }
+    var prev: u32[:] = prev_row;
+    var curr: u32[:] = curr_row;
+    for c, j in t {
+        curr[0] = (j + 1) as u32;
+        for i in s.len {
+            let cost: u32 = if s[i] != c { 1 } else { 0 };
+            curr[i + 1] = ra_min(ra_min(prev[i + 1] + 1, curr[i] + 1), prev[i] + cost);
+        }
+        let done = curr;
+        curr = prev;
+        prev = done;
+    }
+    return prev[s.len];
+}
+
+fn ra_last(xs: i64[:]) -> i64 {
+    var acc = 1000;
+    for x in xs { acc = ra_min(ra_min(x * 3, x + 50), acc - 1); }
+    return acc;
+}
+
+fn ra_noloop(a: i64, b: i64, c: i64) -> i64 { ra_max(ra_max(a, b), c) }
+
+fn ra_float(xs: f64[:]) -> f64 {
+    var acc = 0.0;
+    for x in xs { acc = ra_max(ra_max(x, acc + 0.5), x * 2.0); }
+    return acc;
+}
+
+fn reassoc_op() {
+    print(ra_edit("kitten", "sitting"), " ", ra_edit("sunday", "saturday")); // 3 3
+    let xs: i64[4] = [40, 7, 90, -2];
+    print(ra_last(xs), " ", ra_noloop(4, 9, 2));     // -6 9
+    let fs: f64[3] = [1.0, 0.25, -3.0];
+    print(ra_float(fs));                             // 3.0
+}
+
+// --- inlining heuristics ------------------------------------------------------
+// A callee whose one call is in a cold branch -- the else of a guard, the body
+// of an early return -- and that only the single-use rule would inline stays
+// out of line. A wrapper called twice from loops is inlined where the use rule
+// alone would leave it a call, as it does its twin called twice outside loops.
+// A callee used once on a branch of a small function called from several
+// loops stays out of line, so that the function stays small enough to be
+// inlined there; one it calls on every run is inlined into it, which then
+// stays a call (run_tests.py checks which bodies are left).
+
+fn ih_rare(x: i64) -> i64 {
+    var t = 0;
+    for i in 1..20 {
+        if i % 3 == 0 { t += x * i; } else if i % 5 == 0 { t -= x / i; } else { t ^= i; }
+        if t > 1000 { t = t % 997 + x; }
+        if t < -1000 { t = -(t % 991) - x; }
+    }
+    for i in 1..9 {
+        if (t + i) % 4 == 1 { t += x; } else if i % 3 == 2 { t = t / 2 - i; } else { t -= i * 3; }
+        if t > 2000 { t = t % 1999 + i; }
+    }
+    return t;
+}
+fn ih_early(x: i64) -> i64 {
+    var t = 1;
+    for i in 1..20 {
+        if i % 2 == 0 { t = t * 3 + x; } else if i % 7 == 0 { t -= x * i; } else { t += i; }
+        if t > 5000 { t = t % 4999 - x; }
+        if t < -5000 { t = -(t % 4993) + x; }
+    }
+    for i in 1..9 {
+        if (t - i) % 4 == 3 { t -= x; } else if i % 3 == 1 { t = t / 3 + i; } else { t += i * 5; }
+        if t < -3000 { t = t % 2999 - i; }
+    }
+    return t;
+}
+fn ih_check(x: i64) -> i64 {
+    guard x >= 0 else { return ih_rare(x); }
+    if x > 100 { return ih_early(x); }
+    return x * 2;
+}
+
+fn ih_wrap(a: i64[:], k: i64) -> i64 {
+    let i = k % a.len;
+    var v = a[i];
+    if v < 0 { v = -v; }
+    if v > 10 { v = v % 10 + k % 3; }
+    if v == 7 { v = k % 5 + 1; }
+    if (v + i) % 2 == 1 { v += a[0] % 4; }
+    return v * 2 + i;
+}
+fn ih_twin(a: i64[:], k: i64) -> i64 {
+    let i = k % a.len;
+    var v = a[i];
+    if v < 0 { v = -v; }
+    if v > 10 { v = v % 10 + k % 3; }
+    if v == 7 { v = k % 5 + 1; }
+    if (v + i) % 2 == 1 { v += a[0] % 4; }
+    return v * 2 + i;
+}
+
+fn ih_slow(x: i64) -> i64 {
+    var t = x;
+    for i in 1..20 {
+        if i % 3 == 0 { t += x * i; } else if i % 5 == 0 { t -= x / i; } else { t ^= i; }
+        if t > 1000 { t = t % 997 + x; }
+        if t < -1000 { t = -(t % 991) - x; }
+    }
+    for i in 1..9 {
+        if (t + i) % 4 == 1 { t += x; } else if i % 3 == 2 { t = t / 2 - i; } else { t -= i * 3; }
+        if t > 2000 { t = t % 1999 + i; }
+    }
+    return t;
+}
+fn ih_key(a: i64[:], k: i64) -> i64 {
+    var v = a[k % a.len];
+    if v >= 0 { v = v * 2 + k; } else { v = ih_slow(v); }
+    return v + k;
+}
+fn ih_work(x: i64) -> i64 {
+    var t = x;
+    for i in 1..20 {
+        if i % 2 == 0 { t = t * 3 + x; } else if i % 7 == 0 { t -= x * i; } else { t += i; }
+        if t > 5000 { t = t % 4999 - x; }
+        if t < -5000 { t = -(t % 4993) + x; }
+    }
+    for i in 1..9 {
+        if (t - i) % 4 == 3 { t -= x; } else if i % 3 == 1 { t = t / 3 + i; } else { t += i * 5; }
+        if t < -3000 { t = t % 2999 - i; }
+    }
+    return t;
+}
+fn ih_front(a: i64[:], k: i64) -> i64 {
+    let v = ih_work(a[k % a.len]);
+    return v + k;
+}
+
+fn heuristics_op() {
+    let xs = [-4, 5, 300];
+    for x in xs { print(ih_check(x)); }              // -87, 10, -490
+    let a = [5, -12, 7, 30];
+    var s = 0;
+    for i in 10 { s += ih_wrap(a, i); }
+    for i in 10 { s += ih_wrap(a, i + 1); }
+    print(s + ih_twin(a, 10) + ih_twin(a, 11));      // 183
+    var t = 0;
+    for i in 4 { t += ih_key(a, i); }
+    for i in 4 { t += ih_key(a, i + 1); }
+    for i in 4 { t += ih_key(a, i + 2); }
+    for i in 4 { t += ih_key(a, i + 3); }
+    for i in 4 { t += ih_front(a, i); }
+    for i in 4 { t += ih_front(a, i + 1); }
+    for i in 4 { t += ih_front(a, i + 2); }
+    for i in 4 { t += ih_front(a, i + 3); }
+    print(t);                                        // 7428
+}
+
+// --- inline fn ------------------------------------------------------------------
+// An `inline fn` is inlined at every call whatever its size, where its twin
+// without the keyword stays a call. One returning two values stays a call
+// in Goose and is declared GS_INLINE in the C, for the C compiler to inline
+// (run_tests.py checks which bodies are left, and the C).
+
+inline fn il_big(x: i64) -> i64 {
+    var t = x;
+    for i in 1..20 {
+        if i % 3 == 0 { t += x * i; } else if i % 5 == 0 { t -= x / i; } else { t ^= i; }
+        if t > 1000 { t = t % 997 + x; }
+        if t < -1000 { t = -(t % 991) - x; }
+    }
+    for i in 1..9 {
+        if (t + i) % 4 == 1 { t += x; } else if i % 3 == 2 { t = t / 2 - i; } else { t -= i * 3; }
+        if t > 2000 { t = t % 1999 + i; }
+    }
+    return t;
+}
+fn il_plain(x: i64) -> i64 {
+    var t = x;
+    for i in 1..20 {
+        if i % 3 == 0 { t += x * i; } else if i % 5 == 0 { t -= x / i; } else { t ^= i; }
+        if t > 1000 { t = t % 997 + x; }
+        if t < -1000 { t = -(t % 991) - x; }
+    }
+    for i in 1..9 {
+        if (t + i) % 4 == 1 { t += x; } else if i % 3 == 2 { t = t / 2 - i; } else { t -= i * 3; }
+        if t > 2000 { t = t % 1999 + i; }
+    }
+    return t;
+}
+inline fn il_pair(x: i64) -> i64, i64 {
+    if x < 0 { return -x, 1; }
+    return x / 3, x % 3;
+}
+// A function value passed by name, as well as one passed as a block, leaves
+// the call inlinable.
+inline fn il_apply<F>(x: i64) -> i64 {
+    if x < 0 { return F(-x); }
+    return F(x) + 1;
+}
+fn il_sq(x: i64) -> i64 { x * x }
+
+fn inline_op() {
+    let inline = 7;                                  // still a name
+    print(il_big(inline) + il_big(-3) + il_big(250));    // 607
+    print(il_plain(inline) + il_plain(-3) + il_plain(250));    // 607
+    var s = 0;
+    for i in -5..30 {
+        let q, r = il_pair(i);
+        s += q * 10 + r;
+    }
+    let q, r = il_pair(100);
+    print(s + q + r);                                // 1569
+    inline fn twice_plus(v: i64) -> i64 { v * 2 + inline }
+    print(twice_plus(4));                            // 15
+    print(il_apply(inline, il_sq) + il_apply(-3) { it * 2 });    // 56
+}
+
+fn main_optimize() {
+    use_inlining();
+    use_params();
+    folding();
+    casts_op();
+    print(controlflow());
+    limits();
+    hofs_op();
+    print(nested_host(4));
+    shapes();
+    longdistance_op();
+    print(finder(5));
+    print(earlyblocks(3));
+    defaults();
+    print(uses_big_hof());
+    print(cap_host(5));
+    print(outer2_op(1));
+    print(whilecond() + indexpos());
+    tailrec_op();
+    varmode();
+    recursion_op();
+    guarded_op();
+    heuristics_op();
+    inline_op();
+    reassoc_op();
+    print(ginit + G);
+    var acc = 0;
+    acc += gv;
+    print(acc);
+    // Division by zero survives folding and is kept as a runtime abort; it
+    // ends the program, so it comes last.
+    let z = G - 6;                                   // 0 after propagation.
+    print(100 / z);
+}
+
+// Standalone entry; ignored when this file is imported (§11.1).
+fn main() { main_optimize(); }

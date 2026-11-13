@@ -1,0 +1,938 @@
+// Bounds-check elimination coverage. Every elide/keep annotation comment is
+// verified by `goose --bce-test` (see test/run_tests.py): all checks on such a
+// line must have exactly the annotated outcome. The file also runs as a
+// normal codegen test, so a wrongly elided check would corrupt its output;
+// every kept check passes at runtime. Keep-cases index with values loaded
+// from array contents, which the analysis never tracks — and which no other
+// test asserts or guards, since facts flow across inlined calls.
+
+// --- fixed-size arrays -----------------------------------------------------
+
+fn fixed_const() -> i64 {
+    let a: i64[4] = [1, 2, 3, 4];
+    return a[0] + a[3];                       // bce:elide
+}
+
+fn fixed_loop() -> i64 {
+    let a: i64[4] = [1, 2, 3, 4];
+    var s = 0;
+    for i in a.len {
+        s += a[i];                            // bce:elide
+    }
+    return s;
+}
+
+fn fixed_guarded(k: i64) -> i64 {
+    let a: i64[4] = [5, 6, 7, 8];
+    if k >= 0 && k < 4 {
+        return a[k];                          // bce:elide
+    }
+    return 0;
+}
+
+fn fixed_match(k: i64) -> i64 {
+    let a: i64[4] = [3, 5, 7, 9];
+    match k {
+        0..4 => a[k],                         // bce:elide
+        _ => 0,
+    }
+}
+
+// A fixed array's length is part of its type, so an index that shifts the
+// variable it reads cannot change it.
+fn fixed_shifting_index() -> i64 {
+    let a: i64[4] = [1, 2, 3, 4];
+    var k = 0;
+    var s = 0;
+    while k < 3 {
+        s += a[{ k += 1; k }];                // bce:elide
+    }
+    return s;
+}
+
+// --- loops over dynamic arrays ---------------------------------------------
+
+fn grow_loops() -> i64 {
+    var v: i64[>..] = [];
+    for i in 8 { v.push(i + 1); }
+    var s = 0;
+    for i in v.len {
+        s += v[i];                            // bce:elide
+    }
+    for x, i in v {
+        s += v[i] + x;                        // bce:elide
+    }
+    var j = 0;
+    while j < v.len {
+        s += v[j];                            // bce:elide
+        j++;
+    }
+    var d = v.len;
+    while d > 0 {
+        d--;
+        s += v[d];                            // bce:elide
+    }
+    return s;
+}
+
+// Growing during iteration: push cannot shrink the array, so bounds
+// established before it stay established.
+fn grow_during_loop() -> i64 {
+    var v: i64[>..] = [];
+    v.push(1);
+    v.push(2);
+    var s = 0;
+    for i in v.len {
+        v.push(0);
+        s += v[i];                            // bce:elide
+    }
+    guard v.len > 3 else { return s; }
+    v.push(9);
+    s += v[3];                                // bce:elide
+    return s;
+}
+
+// --- facts from conditions -------------------------------------------------
+
+fn last_elem(s: i64[:]) -> i64 {
+    guard s.len > 0 else { return 0; }
+    return s[s.len - 1];                      // bce:elide
+}
+
+fn asserted(s: i64[:], k: i64) -> i64 {
+    assert(k >= 0);
+    assert(k < s.len);
+    return s[k];                              // bce:elide
+}
+
+fn unsigned_idx(s: i64[:], u: u16) -> i64 {
+    if u < s.len {
+        return s[u];                          // bce:elide
+    }
+    return 0;
+}
+
+fn early_out(s: i64[:], k: i64) -> i64 {
+    if k < 0 || k >= s.len {
+        return 0;
+    }
+    return s[k];                              // bce:elide
+}
+
+fn two_arrays(v: i64[:], w: i64[:]) -> i64 {
+    let n = v.len;
+    guard w.len == n else { return 0; }
+    var s = 0;
+    for i in n {
+        s += v[i];                            // bce:elide
+        s += w[i];                            // bce:elide
+    }
+    return s;
+}
+
+// --- slices ----------------------------------------------------------------
+
+fn slice_whole(v: i64[:]) -> i64 {
+    let a = v[0..v.len];                      // bce:elide
+    let b = v[..];                            // bce:elide
+    return a.len + b.len;
+}
+
+fn slice_guarded(s: i64[:], a: i64, b: i64) -> i64 {
+    if a >= 0 && a <= b && b <= s.len {
+        let t = s[a..b];                      // bce:elide
+        return t.len;
+    }
+    return 0;
+}
+
+fn slice_unknown(s: i64[:], a: i64, b: i64) -> i64 {
+    let t = s[a..b];                          // bce:keep
+    return t.len;
+}
+
+// The spec's A.1 word scan: index and slice checks all disappear.
+fn slice_word_scan(text: u8[:]) -> i64 {
+    var chars = 0;
+    var i = 0;
+    while i < text.len {
+        let start = i;
+        while i < text.len && text[i] != ' ' {   // bce:elide
+            i++;
+        }
+        let w = text[start..i];               // bce:elide
+        chars += w.len;
+        while i < text.len && text[i] == ' ' {   // bce:elide
+            i++;
+        }
+    }
+    return chars;
+}
+
+// A slice is exactly `hi - lo` long, so a row taken as `s[lo..lo + 4]` is four
+// long whatever lo is, and indexing it needs no fact about the source.
+fn slice_span_len(s: i64[:], lo: i64) -> i64 {
+    if lo >= 0 && lo <= s.len - 4 {
+        let row = s[lo..lo + 4];              // bce:elide
+        return row[0] + row[3];               // bce:elide
+    }
+    return 0;
+}
+
+// A constant lower bound leaves the length as an offset from the upper one.
+fn slice_head_len(s: i64[:], k: i64) -> i64 {
+    if k >= 1 && k <= s.len {
+        let head = s[0..k];                   // bce:elide
+        return head[k - 1];                   // bce:elide
+    }
+    return 0;
+}
+
+// Two unrelated bounds: their difference is not a term the domain can name,
+// so the result's length is unknown and every index into it stays checked.
+fn slice_len_untracked(s: i64[:], a: i64, b: i64) -> i64 {
+    let t = s[a..b];                          // bce:keep
+    return t[0];                              // bce:keep (length unknown)
+}
+
+// --- products and interval sums --------------------------------------------
+
+// Row-major indexing: `y * 4 + x` is a constant range against a length the
+// push loop stated, so the whole nine-point neighbourhood is provable.
+fn row_major() -> i64 {
+    var g: i64[>..] = [];
+    for i in 16 { g.push(i); }                // A 4x4 image.
+    var s = 0;
+    for y in 1..3 {
+        for x in 1..3 {
+            let i = y * 4 + x;
+            s += g[i - 4 - 1] + g[i] + g[i + 4 + 1];   // bce:elide
+        }
+    }
+    return s;
+}
+
+// The row-slice spelling of the same kernel: the row's length comes from the
+// slice, so the inner indices need nothing from the outer counter.
+fn row_slices() -> i64 {
+    var img: i64[>..] = [];
+    for i in 16 { img.push(i); }
+    var s = 0;
+    for y in 1..3 {
+        let lo = (y - 1) * 4;
+        let r = img[lo..lo + 4];              // bce:elide
+        for x in 1..3 {
+            s += r[x - 1] + r[x] + r[x + 1];  // bce:elide
+        }
+    }
+    return s;
+}
+
+// The four corner products bracket a signed factor's range: d in [-2, 2]
+// against 3 gives [-6, 6], which 8 recentres inside a 16-element array.
+fn product_signed() -> i64 {
+    var g: i64[>..] = [];
+    for i in 16 { g.push(i); }
+    var s = 0;
+    for j in 0..5 {
+        let d = j - 2;
+        s += g[8 + d * 3];                    // bce:elide
+    }
+    return s;
+}
+
+// Two moving operands: the difference domain has no term for `a + b`, but
+// their intervals add.
+fn sum_two_counters() -> i64 {
+    var g: i64[>..] = [];
+    for i in 16 { g.push(i); }
+    var s = 0;
+    for a in 4 {
+        for b in 4 {
+            s += g[a + b];                    // bce:elide
+        }
+    }
+    return s;
+}
+
+// A factor with no upper bound has no interval, so neither has the product.
+fn product_unbounded(k: i64) -> i64 {
+    var g: i64[>..] = [];
+    for i in 16 { g.push(i); }
+    if k >= 0 {
+        return g[k * 2];                      // bce:keep (no upper bound on k)
+    }
+    return 0;
+}
+
+// A sum needs both sides bounded; one open end and the interval is gone.
+fn sum_unbounded(k: i64) -> i64 {
+    var g: i64[>..] = [];
+    for i in 16 { g.push(i); }
+    var s = 0;
+    for y in 4 {
+        s += g[y * 2 + k];                    // bce:keep (k is unbounded)
+    }
+    return s;
+}
+
+// --- limited and grow-shrink arrays ----------------------------------------
+
+fn limited_ops(extra: i64) -> i64 {
+    var l: i64[..8] = [1, 2, 3, 4];
+    if extra > 0 { l.push(extra); }           // Length now unknown statically.
+    var s = 0;
+    for i in l.len {
+        s += l[i];                            // bce:elide
+    }
+    l.pop();
+    if l.len > 1 {
+        s += l[1];                            // bce:elide
+    }
+    guard l.len > 0 else { return s; }
+    l.pop();
+    s += l[0];                                // bce:keep (the guard predates the pop)
+    return s;
+}
+
+fn limited_conditional_shrink() -> i64 {
+    var l: i64[..8] = [2, 4, 6, 8];
+    var s = 0;
+    for i in l.len {
+        if l.len > 99 {
+            l.pop();
+        }
+        s += l[i];                            // bce:keep (a body path may shrink l)
+    }
+    return s;
+}
+
+fn growshrink_loop() -> i64 {
+    var g: i64[>..<] = [];
+    g.push(4);
+    g.push(5);
+    g.push(6);
+    var s = 0;
+    for x, i in g {
+        s += g[i] + x;                        // bce:elide
+    }
+    while g.len > 0 {
+        s += g[g.len - 1];                    // bce:elide
+        g.pop();
+    }
+    return s;
+}
+
+// --- growth and shrink vs established facts --------------------------------
+
+fn append_bridge() -> i64 {
+    var v: i64[>..] = [];
+    v.push(7);
+    v.push(8);
+    v.push(9);
+    v.push(10);
+    guard v.len > 3 else { return 0; }
+    v.push(11);
+    return v[3];                              // bce:elide (growth keeps the bound)
+}
+
+// Exact lengths: literals, counted push loops, push/append deltas, resize.
+fn exact_lengths() -> i64 {
+    var v: i64[>..] = [];
+    for i in 5 { v.push(i * 2); }
+    var s = v[4];                             // bce:elide (five counted pushes)
+    var l: i64[..8] = [1, 2, 3];
+    s += l[2];                                // bce:elide (literal length)
+    l.resize(6, 9);
+    s += l[5];                                // bce:elide (resize sets the length)
+    l.clear();
+    if l.len == 0 { s += 1; }
+    v.push(7);
+    s += v[5];                                // bce:elide (push adds exactly one)
+    let f: i64[3] = [4, 5, 6];
+    v.append(f);
+    s += v[8];                                // bce:elide (append adds exactly f.len)
+    return s;
+}
+
+fn shrink_invalidates(extra: i64) -> i64 {
+    var l: i64[..8] = [1, 2, 3, 4, 5];
+    if extra > 0 { l.push(extra); }           // Length now unknown statically.
+    guard l.len > 3 else { return 0; }
+    l.pop();
+    return l[3];                              // bce:keep (the pop may undo the guard)
+}
+
+// A grow-only array shrinks at a `clear` (§5.1), so both its length facts and
+// the `j <= len` invariant a cursor rests on die there.
+fn grow_clear_invalidates(extra: i64) -> i64 {
+    var v: i64[>..] = [];
+    for i in 6 { v.push(i); }
+    var j = 0;
+    while j < v.len {
+        j++;
+        if extra > 0 && j == 3 { v.clear(); }
+    }
+    let n = v[0..j].len;                      // bce:keep (a clear may have cut the length)
+    v.clear();
+    for i in 4 { v.push(i); }
+    return n + v[3];                          // bce:elide (four counted pushes after it)
+}
+
+// A grow-only local shrinks at a `pop` too (§5.1): a length fact from before
+// it does not survive.
+fn grow_pop_invalidates(extra: i64) -> i64 {
+    var v: i64[>..] = [];
+    for i in 6 { v.push(i); }
+    let n = v.len;
+    if extra > 0 { v.pop(); }
+    return v[n - 2];                          // bce:keep (the pop may have shortened it)
+}
+
+fn whole_assign_kills(extra: i64) -> i64 {
+    var v: i64[>..] = [];
+    v.push(1);
+    v.push(2);
+    v.push(3);
+    var w: i64[>..] = [];
+    if extra > 0 { w.push(60); }              // Length of w unknown statically.
+    w.push(5);
+    w.push(6);
+    guard v.len > 1 else { return 0; }
+    v = copy(w);
+    return v[1];                              // bce:keep (assignment resizes v)
+}
+
+// --- value ranges from the operation itself --------------------------------
+
+// `%` is Euclidean (§6.2), so the reduction is in range for any dividend --
+// no guard, and nothing left for a check to catch.
+fn modulo_index(s: i64[:], k: i64) -> i64 {
+    guard s.len > 0 else { return 0; }
+    return s[k % s.len];                      // bce:elide
+}
+
+// A negative divisor bounds the result by its magnitude, which the analysis
+// can state when the divisor is a constant...
+fn modulo_negative_const(s: i64[:], k: i64) -> i64 {
+    guard s.len > 3 else { return 0; }
+    return s[k % -4];                         // bce:elide
+}
+
+// ...but not when it is a symbolic negation: |b| is not expressible as an
+// offset from b's own term. The access is in fact safe.
+fn modulo_negative(s: i64[:], k: i64) -> i64 {
+    guard s.len > 0 else { return 0; }
+    let n = 0 - s.len;
+    return s[k % n];                          // bce:keep
+}
+
+fn mask_index() -> i64 {
+    var t: i64[>..] = [];
+    for i in 64 { t.push(i); }
+    var s = 0;
+    var h: u64 = 0x9e3779b97f4a7c15;
+    for i in 8 {
+        h = h * 6364136223846793005 + 1442695040888963407;
+        s += t[(h & 63) as! i64];             // bce:elide (a mask bounds its result)
+    }
+    return s;
+}
+
+fn unsigned_modulo(s: i64[:], r: u64) -> i64 {
+    guard s.len > 0 else { return 0; }
+    let i = (r % s.len as u64) as! i64;       // The idiomatic random-index reduction.
+    return s[i];                              // bce:elide
+}
+
+// --- calls: what a callee can and cannot reach ------------------------------
+
+recursive fn pure_call(x: i64) -> i64 {
+    if x <= 0 {
+        return 0;
+    }
+    return pure_call(x - 1) + 1;
+}
+
+// A callee can never reach a local whose address is not taken.
+fn call_local_loop() -> i64 {
+    var v: i64[>..] = [];
+    for i in 6 { v.push(i); }
+    var s = 0;
+    for i in v.len {
+        s += pure_call(v[i]);                 // bce:elide (the call cannot reach v)
+    }
+    return s;
+}
+
+// Whole assignment through a reference may empty the array (§5.1, §5.2).
+fn reset_it(p: i64[>..<]&) {
+    p = [];
+}
+
+fn call_shrink_loop() -> i64 {
+    var v: i64[>..<] = [];
+    for i in 6 { v.push(i + 2); }
+    var s = 0;
+    for i in v.len {
+        s += v[i];                            // bce:keep (reset_it may empty v)
+        if v.len > 99 { reset_it(v); }
+    }
+    return s;
+}
+
+var gv: i64[>..] = [];
+
+fn global_loop() -> i64 {
+    gv.push(11);
+    gv.push(22);
+    var s = 0;
+    for i in gv.len {
+        s += gv[i];                           // bce:elide (no calls in the body)
+    }
+    for i in gv.len {
+        s += pure_call(gv[i]);                // bce:elide (pure_call touches no global)
+    }
+    return s;
+}
+
+// --- globals as cursor state ------------------------------------------------
+
+// A cursor whose lower bound exists nowhere in the function: it comes from
+// the whole-program invariant that gpos is never assigned a negative value.
+var gpos = 0;
+var gtext: u8[>..] = [];
+
+fn gscan() -> i64 {
+    var words = 0;
+    while gpos < gtext.len {
+        var n = 0;
+        while gpos < gtext.len && gtext[gpos] != ' ' {   // bce:elide
+            n++;
+            gpos++;
+        }
+        if n > 0 { words++; }
+        while gpos < gtext.len && gtext[gpos] == ' ' { gpos++; }   // bce:elide
+    }
+    return words;
+}
+
+// A global the program can drive negative keeps its checks everywhere.
+var gcursor = 0;
+
+fn gcursor_back(back: i64) {
+    gcursor = gcursor - back;
+}
+
+fn gcursor_read(s: i64[:]) -> i64 {
+    if gcursor < s.len {
+        return s[gcursor];                    // bce:keep (gcursor may be negative)
+    }
+    return 0;
+}
+
+// --- growth does not invalidate an index invariant --------------------------
+
+fn grown_then_scanned() -> i64 {
+    var buf: u8[>..] = [];
+    buf.append("ab cd  e");
+    var count = 0;
+    var i = 0;
+    while i < buf.len {
+        let start = i;
+        while i < buf.len && buf[i] != ' ' { i++; }   // bce:elide
+        let w = buf[start..i];                        // bce:elide
+        count += w.len;
+        while i < buf.len && buf[i] == ' ' { i++; }   // bce:elide
+    }
+    return count;
+}
+
+fn sum_through_ref(p: i64[>..]&) -> i64 {
+    var s = 0;
+    for i in p.len {
+        s += p[i];                            // bce:elide
+    }
+    return s;
+}
+
+// --- calls: what a callee may do to the caller's arrays ---------------------
+// The callees here return two values, which keeps them calls (the inliner
+// leaves such a function out of line, also at a call in a loop), so their
+// callers see them through their effect summaries, not as spliced bodies.
+
+// Reads and writes elements only: its callers' length facts survive it.
+fn scale_shift(a: i64[>..]&, m: i64, d: i64) -> i64, bool {
+    for i in a.len {
+        a[i] = a[i] * m + d;                      // bce:elide
+    }
+    for i in a.len {
+        if a[i] < 0 { a[i] = 0; }                 // bce:elide
+    }
+    return a.len, true;
+}
+
+// Resizes its argument: a caller knows nothing about the length afterwards.
+fn grow_by(a: i64[>..]&, k: i64) -> i64, bool {
+    for i in k {
+        a.push(i * 2);
+        a.push(i * 2 + 1);
+    }
+    for i in a.len {
+        if a[i] > 1000 { a[i] = 1000; }           // bce:elide
+    }
+    return a.len, true;
+}
+
+var gcount: i64[>..] = [];
+
+// Resizes a global: a caller iterating that global loses its bound.
+fn count_one(x: i64) -> i64, bool {
+    gcount.push(x);
+    for i in gcount.len {
+        if gcount[i] < 0 { gcount[i] = 0; }       // bce:elide
+    }
+    for i in gcount.len {
+        if gcount[i] > 1000 { gcount[i] = 1000; } // bce:elide
+    }
+    return gcount.len, true;
+}
+
+fn callee_effects(extra: i64) -> i64 {
+    var v: i64[>..] = [];
+    for i in 8 { v.push(i + 1); }
+    scale_shift(v, 2, 0);
+    var s = v[7];                                 // bce:elide (scale_shift cannot resize v)
+    grow_by(v, extra);
+    s += v[7];                                    // bce:keep (grow_by resizes v; the summary has no direction)
+    var w: i64[>..] = [];
+    for i in 4 { w.push(i); }
+    scale_shift(w, 1, 1);
+    grow_by(w, extra);
+    for i in w.len {
+        scale_shift(w, 2, 0);
+        s += w[i];                                // bce:elide (the body's call cannot resize w)
+    }
+    for i in w.len {
+        grow_by(w, 1);
+        s += w[i];                                // bce:keep (the body's call may resize w)
+    }
+    gcount.push(5);
+    gcount.push(6);
+    count_one(7);
+    for i in gcount.len {
+        s += gcount[i] + pure_call(i);            // bce:elide (pure_call touches no global)
+    }
+    for i in gcount.len {
+        count_one(i);
+        s += gcount[i];                           // bce:keep (count_one resizes gcount)
+    }
+    return s;
+}
+
+// A nested function's writes to the enclosing locals are its effects. Both
+// return two values, which keeps them calls (the inliner leaves such a
+// function out of line).
+fn nested_effects() -> i64 {
+    var v: i64[>..] = [];
+    for i in 8 { v.push(i); }
+    fn grow_v(k: i64) -> i64, bool {
+        for j in k {
+            v.push(j * 2);
+            v.push(j * 2 + 1);
+        }
+        for j in v.len {
+            if v[j] > 1000 { v[j] = 1000; }
+        }
+        return v.len, true;
+    }
+    fn sum_v(k: i64) -> i64, bool {
+        var t = 0;
+        for j in k {
+            for x in v { t += x * j; }
+            for x in v { t += x; }
+        }
+        return t, true;
+    }
+    var s = 0;
+    for i in v.len {
+        s += sum_v(1) + sum_v(2);
+        s += v[i];                                // bce:elide (sum_v cannot resize v)
+    }
+    for i in v.len {
+        grow_v(1);
+        grow_v(2);
+        s += v[i];                                // bce:keep (grow_v resizes v)
+    }
+    return s;
+}
+
+// --- calls: lengths carried into the callee ---------------------------------
+// What a kernel sees at entry is the meet of what its call sites proved
+// about the arguments, so every site has to agree for a fact to arrive.
+
+// Every site passes sixteen elements: `a.len == 16` holds at entry, and the
+// row-major stencil needs nothing else.
+fn stencil(a: i64[>..]&) -> i64 {
+    var s = 0;
+    for y in 1..3 {
+        for x in 1..3 {
+            let i = y * 4 + x;
+            s += a[i - 4 - 1] + a[i] + a[i + 4 + 1];   // bce:elide (every site passes 16 elements)
+        }
+    }
+    return s;
+}
+
+// One site's length is unknown, so the meet proves nothing.
+fn stencil_unknown(a: i64[>..]&) -> i64 {
+    var s = 0;
+    for y in 1..3 {
+        for x in 1..3 {
+            let i = y * 4 + x;
+            s += a[i - 4 - 1] + a[i] + a[i + 4 + 1];   // bce:keep (one site's length is unknown)
+        }
+    }
+    return s;
+}
+
+// Parameters relate to each other: `n` is the array's length at every site.
+fn fill_to(a: i64[>..]&, n: i64) -> i64 {
+    var s = 0;
+    for i in n {
+        a[i] = i * 3;                             // bce:elide (n == a.len at every site)
+    }
+    for i in n {
+        s += a[i];                                // bce:elide
+    }
+    return s;
+}
+
+// Different lengths meet in a lower bound: sixteen at one site, eight at
+// the other.
+fn at_least_eight(a: i64[>..]&) -> i64 {
+    var s = a[a.len - 8];                         // bce:elide (every site passes at least 8)
+    for i in 8 {
+        s += a[i];                                // bce:elide
+    }
+    if a.len > 8 {
+        s += a[15];                               // bce:keep (more than 8 is not 16)
+    }
+    return s;
+}
+
+// A recursive callee's own call site is analyzed after the callee, so the
+// meet is never complete and it gets nothing.
+recursive fn rec_sum(a: i64[>..]&, i: i64) -> i64 {
+    if i >= 8 { return 0; }
+    return a[i] + rec_sum(a, i + 1);              // bce:keep (a site inside the cycle is not yet analyzed)
+}
+
+fn carried_lengths(extra: i64) -> i64 {
+    var g: i64[>..] = [];
+    for i in 16 { g.push(i); }
+    var h: i64[>..] = [];
+    for i in 16 { h.push(i * 2); }
+    var u: i64[>..] = [];
+    for i in 16 { u.push(i); }
+    if extra > 0 { u.push(1); }                   // Length unknown from here on.
+    var e: i64[>..] = [];
+    for i in 8 { e.push(i + 1); }
+    var s = stencil(g) + stencil(h);
+    s += stencil_unknown(g) + stencil_unknown(u);
+    s += fill_to(g, g.len) + fill_to(e, e.len);
+    s += at_least_eight(g) + at_least_eight(e);
+    s += rec_sum(e, 0);
+    return s;
+}
+
+// --- places beyond plain locals --------------------------------------------
+
+struct Holder {
+    a: i64[..8],
+    tag: i64,
+}
+
+fn field_place() -> i64 {
+    var h = Holder { [1, 2, 3], 7 };
+    var s = 0;
+    for i in h.a.len {
+        s += h.a[i];                          // bce:elide
+    }
+    return s + h.tag;
+}
+
+fn pool_loop() -> i64 {
+    reusable var pool: i64[>..] = [];
+    let i0 = pool.alloc_index(10);
+    let i1 = pool.alloc_index(20);
+    pool.free(i0);
+    let i2 = pool.alloc_index(30);
+    var s = i0 + i1 + i2;
+    for i in pool.len {
+        s += pool[i];                         // bce:elide (alloc/free never shrink)
+    }
+    return s;
+}
+
+fn slice_pool_loop() -> i64 {
+    reusable[] var pool: i64[>..] = [];
+    let a = pool.alloc_slice(3);
+    for i in a.len {
+        a[i] = i + 1;                         // bce:elide
+    }
+    pool.free_slice(a[1..]);
+    let b = pool.realloc_slice(pool.alloc_slice(1), 4);
+    var s = b.len;
+    for i in pool.len {
+        s += pool[i];                         // bce:elide (slice pools never shrink either)
+    }
+    return s;
+}
+
+// --- known limitations and plain keeps -------------------------------------
+
+fn keep_unknown(s: i64[:], k: i64) -> i64 {
+    return s[k];                              // bce:keep
+}
+
+fn keep_upper_only(s: i64[:], k: i64) -> i64 {
+    if k < s.len {
+        return s[k];                          // bce:keep (no lower bound on k)
+    }
+    return 0;
+}
+
+fn keep_lower_only(s: i64[:], k: i64) -> i64 {
+    if k >= 0 {
+        return s[k];                          // bce:keep (no upper bound on k)
+    }
+    return 0;
+}
+
+fn keep_off_by_one(s: i64[:], k: i64) -> i64 {
+    if k >= 0 && k <= s.len {
+        return s[k];                          // bce:keep (k == len would be out of bounds)
+    }
+    return 0;
+}
+
+fn keep_cross_array(v: i64[:], w: i64[:]) -> i64 {
+    var s = 0;
+    for i in v.len {
+        s += w[i];                            // bce:keep (bounded by the other array)
+    }
+    return s;
+}
+
+// `i + 1 < len` is a fact once `i + 1` provably did not wrap: here `i`
+// never exceeds the length, which is at most 2^48.
+fn plus_one_condition(s: i64[:]) -> i64 {
+    var r = 0;
+    var i = 0;
+    while i + 1 < s.len {
+        r += s[i + 1];                        // bce:elide
+        i++;
+    }
+    return r;
+}
+
+// With nothing bounding `k` from above, `k + 1` may have wrapped to a
+// negative number that passes the compare, so it states nothing.
+fn plus_one_unbounded(s: i64[:], k: i64) -> i64 {
+    if k >= 0 && k + 1 < s.len {
+        return s[k + 1];                      // bce:keep
+    }
+    return 0;
+}
+
+fn plus_one_provable(s: i64[:]) -> i64 {
+    var r = 0;
+    for i in s.len - 1 {
+        r += s[i + 1];                        // bce:elide
+    }
+    return r;
+}
+
+// --- driver ----------------------------------------------------------------
+
+fn main() {
+    var data: i64[>..] = [];
+    for i in 8 { data.push(i + 1); }          // 1..8
+    var data2: i64[>..] = [];
+    for i in 8 { data2.push(i * 2); }         // 0..14
+    let ks = data[1];                         // 2, opaque to the analysis
+    let ke = data[4];                         // 5, opaque to the analysis
+    let kk = data2[1];                        // 2, opaque; keep-cases only
+    let ka = data2[1];                        // 2, opaque; keep-cases only
+    let kb = data2[2];                        // 4, opaque; keep-cases only
+    let kz = data2[0];                        // 0, opaque; keep-cases only
+
+    print(fixed_const());                     // 5
+    print(fixed_loop());                      // 10
+    print(fixed_guarded(ks));                 // 7
+    print(fixed_match(ks));                   // 7
+    print(fixed_shifting_index());            // 9
+    print(grow_loops());                      // 180
+    print(grow_during_loop());                // 3
+    print(last_elem(data));                   // 8
+    print(asserted(data, ks));                // 3
+    print(unsigned_idx(data, 2));             // 3
+    print(early_out(data, ks));               // 3
+    print(two_arrays(data, data2));           // 92
+    print(slice_whole(data));                 // 16
+    print(slice_guarded(data, ks, ke));       // 3
+    print(slice_unknown(data, ka, kb));       // 2
+    print(slice_word_scan("hello world  x")); // 11
+    print(slice_span_len(data, ks));          // 9
+    print(slice_head_len(data, ke));          // 5
+    print(slice_len_untracked(data, ks, ke)); // 3
+    print(row_major());                       // 90
+    print(row_slices());                      // 42
+    print(product_signed());                  // 40
+    print(sum_two_counters());                // 48
+    print(product_unbounded(kk));             // 4
+    print(sum_unbounded(kk));                 // 20
+    print(limited_ops(kz));                   // 13
+    print(limited_conditional_shrink());      // 20
+    print(growshrink_loop());                 // 45
+    print(append_bridge());                   // 10
+    print(exact_lengths());                   // 34
+    print(shrink_invalidates(kz));            // 4
+    print(grow_clear_invalidates(kz));        // 9
+    print(grow_pop_invalidates(kz));          // 4
+    print(whole_assign_kills(kz));            // 6
+    let kneg = 0 - data[2];                   // -3, opaque to the analysis
+    print(modulo_index(data, ke));            // 6
+    print(modulo_index(data, kneg));          // 6 (Euclidean: -3 % 8 == 5)
+    print(modulo_negative_const(data, kneg)); // 2 (-3 % -4 == 1)
+    print(modulo_negative(data, ke));         // 6
+    print(mask_index());                      // 228
+    print(unsigned_modulo(data, 20));         // 5
+    print(call_local_loop());                 // 15
+    print(call_shrink_loop());                // 27
+    print(global_loop());                     // 66
+    gtext.append("one two  three ");
+    print(gscan());                           // 3
+    gcursor_back(kz);
+    print(gcursor_read(data));                // 1
+    print(grown_then_scanned());              // 5
+    print(sum_through_ref(data));            // 36
+    print(callee_effects(kz));                // 329
+    print(nested_effects());                  // 952
+    print(carried_lengths(kz));               // 1215
+    print(field_place());                     // 13
+    print(pool_loop());                       // 51
+    print(slice_pool_loop());                 // 5
+    // A completed check proves its index in range from then on, so each of
+    // these takes a fresh load rather than reusing kk.
+    print(keep_unknown(data, kk));            // 3
+    print(keep_upper_only(data, data2[1]));   // 3
+    print(keep_lower_only(data, data2[1]));   // 3
+    print(keep_off_by_one(data, data2[1]));   // 3
+    let short = data2[0..3];
+    print(keep_cross_array(short, data));     // 6
+    print(plus_one_condition(data));          // 35
+    print(plus_one_unbounded(data, data2[1])); // 4
+    print(plus_one_provable(data));           // 35
+}

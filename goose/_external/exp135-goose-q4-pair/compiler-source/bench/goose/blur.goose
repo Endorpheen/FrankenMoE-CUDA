@@ -1,0 +1,47 @@
+// An image kernel: a 3x3 Gaussian blur over a WxW 8-bit image, ping-ponged
+// between two buffers for a number of passes. Flat scalar data, a stencil
+// of nine loads per pixel, and nothing for Goose's memory model to win on:
+// this row is here to lose, and to measure by how much. Each access is
+// `src[y * W + x]` with x and y loop counters, which is what everyone writes
+// first. The bounds-check analysis proves all nine from two facts it carries
+// into the kernel from its call sites: both buffers are W * W long, which
+// `main`'s push loop established, and neither call changes that, since
+// `blur` only reads and writes elements. blur_rows.goose is the same kernel
+// written over row slices, blur_assert.goose the same with the length fact
+// stated inside the kernel, which used to be the only way to reach it.
+
+import rng;
+
+let W = 2048;                            // BENCH_N
+let PASSES = 16;
+
+checkfree fn blur(src: u8[>..]&, dst: u8[>..]&) {
+    for y in 1..W - 1 {
+        for x in 1..W - 1 {
+            let i = y * W + x;
+            let s = src[i - W - 1] + src[i - W] as u16 * 2 + src[i - W + 1]
+                  + src[i - 1] as u16 * 2 + src[i] as u16 * 4 + src[i + 1] as u16 * 2
+                  + src[i + W - 1] + src[i + W] as u16 * 2 + src[i + W + 1];
+            dst[i] = (s >> 4) as! u8;
+        }
+    }
+}
+
+fn main() {
+    var a: u8[>..] = [];
+    var b: u8[>..] = [];
+    var r: u64 = 12345;
+    for i in W * W {
+        r = xs_next(r);
+        a.push(xs_mod(r, 256) as! u8);
+        b.push(0);
+    }
+    for p in PASSES / 2 {
+        blur(a, b);
+        blur(b, a);
+    }
+    var total = 0;
+    for v in a { total += v; }
+    print(W);
+    print(total);
+}

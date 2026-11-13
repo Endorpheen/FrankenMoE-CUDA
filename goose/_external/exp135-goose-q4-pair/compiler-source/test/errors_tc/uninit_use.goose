@@ -1,0 +1,7 @@
+// error: variable x may be used before it is assigned
+// Definite assignment: no reads of uninitialized locals (§4.4).
+fn main() {
+    var x: i64;
+    if x > 0 { x = 1; }
+    print(x);
+}

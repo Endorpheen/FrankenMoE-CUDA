@@ -1,0 +1,10 @@
+// error: thread programs may access only flat globals
+// error: views holds references and is a var (reached from thread_fn worker)
+// A worker's program copies the globals it uses at spawn (§11.2), which a
+// value holding references cannot be.
+var views: const u8[:][>..] = [];
+thread_fn worker() { print(views.len); }
+fn main() {
+    views.push("abc");
+    thread_wait(thread_spawn(worker));
+}

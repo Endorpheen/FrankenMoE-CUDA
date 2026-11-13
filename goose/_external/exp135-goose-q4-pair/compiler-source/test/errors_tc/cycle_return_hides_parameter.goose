@@ -1,0 +1,36 @@
+// error: storing a reference rooted at pool, which does not outlive the destination
+// The back edge's result may be x, or an element of the pool, a local of
+// run that kept outlives (§7.8): it may not be kept in kept.
+struct Cell { v: i64 }
+var gcells: Cell[>..] = [];
+var gcells2: Cell[>..] = [];
+var kept: Cell&? = null;
+var flag = true;
+
+recursive fn f(pool: Cell[>..]&, x: Cell&, n: i64) -> Cell& {
+    if n == 0 { return x; }
+    if n == 2 {
+        let g: Cell& = if flag { gcells[0] } else { gcells2[0] };
+        let res: Cell& = f(pool, g, 1);
+        kept .= res;
+        return x;
+    }
+    return if n > 5 { x } else { pool[0] };
+}
+
+fn run() {
+    var pool: Cell[>..] = [];
+    pool.push(Cell { v: 9 });
+    {
+        var cell = Cell { v: 1 };
+        print(f(pool, cell, 2).v);
+    }
+}
+
+fn main() {
+    gcells.push(Cell { v: 5 });
+    gcells2.push(Cell { v: 6 });
+    run();
+    let k = kept;
+    if k { print(k.v); }
+}

@@ -2,6 +2,19 @@
 
 FrankenMoE-CUDA is an experimental project for running Mixture-of-Experts models that are larger than both system RAM and GPU VRAM.
 
+## Goose migration
+
+The runtime is being ported to Goose, the project's own language. The live Goose
+sources are in one place: [`goose/`](goose/README.md), which mirrors the
+llama.cpp tree file for file (`common/jinja/lexer.goose` replaces
+`common/jinja/lexer.cpp`, and so on). Start with [`GOOSE.md`](GOOSE.md) for the
+map and `goose/MANIFEST.json` for the native path, experiment and gate of every
+ported file. Accepted slices, their differential gates and the migration ledger
+are in [`docs/goose-migration/`](docs/goose-migration/).
+
+The results below predate the migration and describe the C++ runtime; the root
+README is queued for a rewrite.
+
 The repository currently contains two distinct runtime paths:
 
 - a standalone research runtime derived from [BigMoeOnEdge](https://github.com/Helldez/BigMoeOnEdge), available as `bmoe-cli`;
