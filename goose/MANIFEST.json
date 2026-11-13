@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-13T19:57:08.434436+00:00",
+  "updated_at": "2026-11-13T22:02:44.740992+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -70,11 +70,11 @@
       "native_targets": [
         "common/jinja/runtime.cpp"
       ],
-      "experiment": "EXP-2026-11-13-510-p7-08-jinja-macro-call",
+      "experiment": "EXP-2026-11-13-512-p7-08-jinja-filters",
       "task": "",
       "status": "ported",
-      "sha256": "f0543287e36591644b1743b560c1ca66da12a8c8618677bbe1551212d146be5d",
-      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro+caller+kwargs 81/162, 13/13 mutations"
+      "sha256": "fe4a91e0d36548ced2b32ac8622814c04cf0561a8bf3da16530d33ddd7858648",
+      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 88/176, 5/5 mutations"
     },
     {
       "goose": "cpu/goose-runtime/allocator-coalesce/kernel-v1.goose",
@@ -10736,6 +10736,20 @@
       "task": "",
       "status": "slice",
       "sha256": "29442dab8129465adfee5dd3c0c5977ea461420b3e93f13c0cdc2b38bcdf76a9"
+    },
+    {
+      "goose": "jinja/jinja-filters.goose",
+      "native": "src/llama-chat.cpp",
+      "native_targets": [
+        "src/llama-chat.cpp",
+        "common/chat*.cpp",
+        "common/jinja/**",
+        "common/parsers/**"
+      ],
+      "experiment": "EXP-2026-11-13-512-p7-08-jinja-filters",
+      "task": "P7-08",
+      "status": "slice",
+      "sha256": "fe4a91e0d36548ced2b32ac8622814c04cf0561a8bf3da16530d33ddd7858648"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",

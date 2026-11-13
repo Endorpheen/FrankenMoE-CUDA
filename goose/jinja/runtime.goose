@@ -1913,6 +1913,7 @@ const K_SELECT: i64 = 25;
 const K_FOR: i64 = 2;
 const K_MACRO: i64 = 7;
 const K_CALL: i64 = 21;
+const K_FILTER: i64 = 23;
 const K_CALLSTMT: i64 = 8;
 const K_KWARG: i64 = 22;
 const K_MEMBER: i64 = 20;
@@ -2062,6 +2063,10 @@ fn node_name(k: i64) -> const u8[:] {
 
     if k == K_CALL {
         return "CallExpression";
+    }
+
+    if k == K_FILTER {
+        return "FilterExpression";
     }
 
     if k == K_CALLSTMT {
@@ -2338,6 +2343,169 @@ recursive fn invoke_func(
     return mk_str(A, F, B, st, text);
 }
 
+fn filter_name_is(n: const u8[:], want: const u8[:]) -> bool {
+    if n.len != want.len {
+        return false;
+    }
+    var i: i64 = 0;
+
+    while i < n.len {
+        if n[i] != want[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+fn text_filter(n: const u8[:]) -> bool {
+    return filter_name_is(n, "upper") || filter_name_is(n, "lower") ||
+        filter_name_is(n, "capitalize") || filter_name_is(n, "strip") ||
+        filter_name_is(n, "title") || filter_name_is(n, "wordcount");
+}
+
+fn ascii_lower(c: u8) -> u8 {
+    if c >= 65 && c <= 90 {
+        return c + 32;
+    }
+    return c;
+}
+
+fn ascii_upper(c: u8) -> u8 {
+    if c >= 97 && c <= 122 {
+        return c - 32;
+    }
+    return c;
+}
+
+fn ws_byte(c: u8) -> bool {
+    return c == 32 || c == 9 || c == 10 || c == 11 || c == 12 || c == 13;
+}
+
+recursive fn eval_filter(
+    id: i64,
+    ctxc: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let v = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+    let f = ac1(A, st, id);
+    var fname: const u8[:] = "";
+    var argc: i64 = 0;
+    var argv: i64[4] = [0, 0, 0, 0];
+
+    if ak(A, st, f) == K_IDENT {
+        fname = astr(B, A, st, f);
+    } else if ak(A, st, f) == K_CALL {
+        let callee = ac0(A, st, f);
+
+        if ak(A, st, callee) != K_IDENT {
+            return fail_node(K_FILTER, apos(A, st, id), "Filter callee must be an identifier", E, st);
+        }
+        fname = astr(B, A, st, callee);
+        argc = al0c(A, st, f);
+
+        if argc > 4 {
+            return fail_node(K_FILTER, apos(A, st, id), "Too many filter arguments", E, st);
+        }
+        var ai: i64 = 0;
+
+        while ai < argc {
+            let argn = A[apool(A, st) + al0s(A, st, f) + ai];
+            let av = eval_node(argn, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+            argv[ai] = av;
+            ai = ai + 1;
+        }
+    } else {
+        return fail_node(K_FILTER, apos(A, st, id), "Invalid filter expression", E, st);
+    }
+
+    if filter_name_is(fname, "count") {
+        fname = "length";
+    } else if filter_name_is(fname, "trim") {
+        fname = "strip";
+    }
+    var sval = v;
+
+    if vk(A, st, sval) != V_STRING && vk(A, st, sval) != V_UNDEF && text_filter(fname) {
+        let base = st[7];
+        let n = as_string_into(A, B, F, st, sval, out[base..], 0, E);
+
+        if n < 0 || st[1] != 0 {
+            return -1;
+        }
+        sval = mk_str(A, F, B, st, out[base .. base + n]);
+        st[7] = base;
+    }
+
+    if filter_name_is(fname, "upper") || filter_name_is(fname, "lower") || filter_name_is(fname, "capitalize") {
+        if vk(A, st, sval) != V_STRING {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let src = vstr(B, A, st, sval);
+        let base = st[7];
+        var i: i64 = 0;
+
+        while i < src.len {
+            var c = src[i];
+
+            if filter_name_is(fname, "upper") {
+                c = ascii_upper(c);
+            } else if filter_name_is(fname, "lower") {
+                c = ascii_lower(c);
+            } else {
+                if i == 0 {
+                    c = ascii_upper(c);
+                } else {
+                    c = ascii_lower(c);
+                }
+            }
+            out[base + i] = c;
+            i = i + 1;
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + src.len]);
+        st[7] = base;
+        return res;
+    }
+
+    if filter_name_is(fname, "length") {
+        if vk(A, st, sval) == V_STRING {
+            return mk_int(A, F, st, vstr(B, A, st, sval).len);
+        }
+        var p = apps(E, 0, "Unknown (built-in) filter '");
+        p = app(E, p, fname, 0, fname.len);
+        p = apps(E, p, "' for type ");
+        let tn = type_name(A, B, st, sval, E[p..]);
+        p = p + tn;
+        return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+    }
+    var p = apps(E, 0, "Unknown (built-in) filter '");
+    p = app(E, p, fname, 0, fname.len);
+    p = apps(E, p, "' for type ");
+    let tn = type_name(A, B, st, sval, E[p..]);
+    p = p + tn;
+    return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+}
+
 recursive fn eval_call(
     id: i64,
     ctxc: i64,
@@ -2565,6 +2733,10 @@ recursive fn eval_node(
 
     if k == K_CALL {
         return eval_call(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+    }
+
+    if k == K_FILTER {
+        return eval_filter(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
     }
 
     if k == K_SELECT {
