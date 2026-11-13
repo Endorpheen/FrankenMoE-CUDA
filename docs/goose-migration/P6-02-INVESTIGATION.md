@@ -132,6 +132,42 @@ Next probe, in this order:
 3. Only after that, decide between a field-offset bug in the Goose ABI and an
    ordering bug in `ggml_backend_sched_new`.
 
+## Probe results (2026-11-13, diagnostic base EXP307)
+
+`ggml_backend_sched_new` reports two backends in this order:
+
+    backend[0] = CUDA0
+    backend[1] = CPU
+
+`ggml_backend_tensor_copy` on the failing request shows the source buffer of every
+offending copy is a CUDA buffer even though the run is `-ngl 0`:
+
+    TENSOR_COPY src=norm-0 dst=CUDA0#norm-0#0        sbuf=CUDA_Host  dbuf=CUDA0
+    TENSOR_COPY src=blk.0.ssm_norm.weight dst=...    sbuf=CPU_Mapped dbuf=CUDA0
+    TENSOR_COPY src=node_55 dst=CPU#node_55#0        sbuf=CUDA0       dbuf=CUDA_Host
+
+So the scheduler is not inventing a CUDA destination: `norm-0` is already stored in
+a **CUDA_Host** buffer, the CUDA backend supports that buffer type, and
+`backend_from_buffer` therefore returns CUDA0. Per-layer SSM norms are correctly in
+`CPU_Mapped`; the global/output norms are the ones placed in CUDA host memory.
+
+This moves the target: the question is not "why does the scheduler pick CUDA" but
+"why does weight placement put `norm-*` in a CUDA host buffer with `-ngl 0`". The
+placement decision is the Goose module behind `FG404S_WEIGHT_PLACEMENT`, and the
+buffer-type support answer comes from the base library's device traits - the half
+the isolation test already identified as faulty.
+
+Next probes, in this order:
+
+1. Enable the placement diagnostics and log the decision (and the device/buft it
+   names) for `norm-0` and `output_norm.weight` under `-ngl 0`.
+2. Compare the same log against the flint base: if flint also reports CUDA_Host for
+   those tensors, the divergence is in the scheduler; if flint reports CPU_Mapped,
+   the divergence is in the placement decision or the device trait table.
+3. Once the wrong decision is identified, fix it in the module (or in the trait
+   mapping), rebuild the diagnostic base, and require both prompt shapes plus the
+   Apex acceptance.
+
 ## Status
 
 Open, worked locally. The next instrument is the split-assignment log described
