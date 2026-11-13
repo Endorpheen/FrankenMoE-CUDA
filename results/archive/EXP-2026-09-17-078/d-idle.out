@@ -1,0 +1,15 @@
+CHECK PASS idle: enqueue stream stayed continuous (every gap < idle threshold)
+CHECK PASS idle: worker issued no batch while the request stream was active
+CHECK PASS idle: worker drained the queue after the stream went quiet
+CHECK PASS idle: worker issued batches after the idle gate opened
+CHECK PASS idle: first batch waited at least the idle threshold
+CHECK PASS idle: first batch opened only after the stream plus the idle window
+CHECK PASS idle: post-drain pass served every range directly
+CHECK PASS idle: pass 1 and pass 2 hash lists are identical
+{"mode":"idle","ranges":1000,"idle_ms":750,"stream_ms":1845.8,"max_gap_ms":27.5,"batches_during_stream":0,"batches_after":23,"first_batch_ms":2565.1}
+CHECK PASS idle: release counters captured
+CHECK PASS idle: teardown leaves no registered byte
+CHECK PASS idle: worker joined before unregister
+CHECK PASS idle: at least one idle-gate deferral was counted
+CHECK PASS idle: VmSwap stays 0
+{"mode":"idle-teardown","counters_seen":true,"direct":1000,"fallback":1000,"intervals":1000,"regions":1000,"bytes_released":1546723328,"bytes_still_pinned":0,"queued":1000,"worker_registered":1000,"batches":23,"idle_deferrals":1,"release_first_batch_ms":2565,"joined":1,"saturated":0,"swap_during_kib":0,"swap_after_free_kib":0}

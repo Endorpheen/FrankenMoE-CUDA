@@ -1,0 +1,15 @@
+{"status":"PASS_REAL_POOL_LIFECYCLE_FAILURE_REUSE_ABORT","cases":81,"pthread":true,"pool_allocs":13,"pool_frees":13,"worker_allocs":11,"worker_frees":11,"scope":"Real graph/runtime/threads with injected system allocation or start failures; not OS OOM"}
+FG149_POOL mode=0 calls=17
+FG149_POOL mode=1 calls=9
+FG149_POOL mode=4 calls=24
+FG149_POOL mode=5 calls=24
+FG149_POOL mode=6 calls=432
+FG149_POOL mode=12 calls=49
+FG149_POOL mode=13 calls=64
+FG149_POOL mode=16 calls=432
+FG149_POOL mode=17 calls=64
+FG147_BACKEND mode=13 calls=1
+FG147_BACKEND mode=30 calls=432
+FG147_BACKEND mode=31 calls=9
+FG143_CONTROL plans=9 task_queries=0 dispatches=432 jobs=66 worker_jobs=0
+FG143_EXECUTOR worker_graphs=432 worker_steps=432 worker_fusions=0

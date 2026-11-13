@@ -1,0 +1,123 @@
+{
+  "status": "PASS_REAL_GGML_QWEN_ALL_FIVE_COMPUTE_DEQUANT_FUSED",
+  "runs": {
+    "native": {
+      "graph_cases": 290,
+      "values": 335780,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    },
+    "off": {
+      "graph_cases": 290,
+      "values": 335780,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    },
+    "on": {
+      "graph_cases": 290,
+      "values": 335780,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    }
+  },
+  "witness": {
+    "native": [],
+    "off": [],
+    "on": [
+      {
+        "component": "cpu",
+        "mode": 1,
+        "kind": 4,
+        "calls": 24,
+        "rows": 60,
+        "blocks": 600
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 0,
+        "calls": 666,
+        "rows": 42966,
+        "blocks": 429660
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 1,
+        "calls": 666,
+        "rows": 42966,
+        "blocks": 859320
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 2,
+        "calls": 666,
+        "rows": 42966,
+        "blocks": 859320
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 3,
+        "calls": 642,
+        "rows": 42006,
+        "blocks": 420060
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 4,
+        "calls": 618,
+        "rows": 41946,
+        "blocks": 419460
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 0,
+        "calls": 16,
+        "rows": 16,
+        "blocks": 76
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 1,
+        "calls": 16,
+        "rows": 16,
+        "blocks": 116
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 2,
+        "calls": 16,
+        "rows": 16,
+        "blocks": 116
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 3,
+        "calls": 16,
+        "rows": 16,
+        "blocks": 76
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 4,
+        "calls": 16,
+        "rows": 16,
+        "blocks": 76
+      }
+    ]
+  },
+  "all_bytes_equal_unmodified_native": true,
+  "output_sha256": "9c31c19c0ab2723ada2df5ce0f8c6c71d8b5466909d5435cd8f02b211f75527f",
+  "bytes_compared": 1345440,
+  "preserved": "Original explicit verification window, cold/bank/tiled/thread scheduling; all five CPU and base dequant computations execute Goose",
+  "real_model_inference": "Not yet tested in this stage",
+  "production_changed": false
+}

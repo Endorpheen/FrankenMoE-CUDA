@@ -1,0 +1,8 @@
+{
+  "added": [
+    "fg268p_enabled",
+    "fg268p_make_room",
+    "fg268p_near_evict",
+    "fg268p_supersede"
+  ]
+}

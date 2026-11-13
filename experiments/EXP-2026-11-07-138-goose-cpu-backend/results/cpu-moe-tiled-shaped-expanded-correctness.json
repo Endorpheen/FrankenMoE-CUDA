@@ -1,0 +1,45 @@
+{
+  "status": "PASS_COMPLETE_TILED_EXPANDED_REAL_GGML",
+  "runs": {
+    "off": {
+      "graph_cases": 114,
+      "values": 2171536,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 114,
+      "values": 2171536,
+      "actual_ggml_compute": true
+    }
+  },
+  "witness": {
+    "off": {
+      "q4_microtiles": 0,
+      "q6_microtiles": 0,
+      "native_tiled_delegations": 1922
+    },
+    "on": {
+      "q4_microtiles": 36556,
+      "q6_microtiles": 36556,
+      "native_tiled_delegations": 0
+    }
+  },
+  "all_output_bytes_equal_native_cpp": true,
+  "output_sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+  "bytes_compared": 8687056,
+  "coverage": [
+    "Original58cases",
+    "Hot expert counts8/16/17/255/256/257/273",
+    "Widths256/512/2048/4096",
+    "Output tails1/17/65/129",
+    "Slots1/2/4 and threads1/2/8",
+    "Noncontiguous F32, prequantized contiguous Q8_K, zero activations",
+    "Narrow and standard windows including tail after256 rows"
+  ],
+  "pending": [
+    "ASan/UBSan/LSan for new tiled unit",
+    "Actual Apex tiled execution",
+    "Counter-free operation and model timing",
+    "Other quant formats/repack/physical buffer ownership"
+  ]
+}

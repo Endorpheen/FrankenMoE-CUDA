@@ -1,0 +1,17 @@
+{
+  "status": "FIXED_BEFORE_MODEL",
+  "operator": "CUDA xIELU",
+  "observed": {
+    "kind": "F32",
+    "variant": 0,
+    "pattern": 0,
+    "byte": 160,
+    "native_bits": "0x450aceb8",
+    "initial_goose_bits": "0x450aceb9"
+  },
+  "cause": "NVCC contracted opposite products in alpha_p*x*x+beta*x. Native multiplies alpha_p*x*x then FMA(x,beta,product);initial emitted SSA contracted the alpha product with rounded beta*x.",
+  "fix": "Explicit fmaf calls in Goose preserve native positive/negative/final-selection contraction;primitive is CUDA FMA,not original C++ activation.",
+  "other_fix": "Move device witness reporting to first-use atexit registration;ELF destructor ran after CUDA teardown and returned cuda_status4.",
+  "final_corpus": "896real GPU cases,1059072values,58252checks,all40host entries/all10device modes,NaN/signed-zero/subnormals,F16/BF16,padded/strided/packed-swapped/fused/inplace/tails and native rollback bit-exact",
+  "compiler_changed": false
+}

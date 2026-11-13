@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "single_thread_tile_cases": 64,
+  "eight_thread_tile_calls": 512,
+  "widths": [
+    256,
+    512,
+    2048,
+    4096
+  ],
+  "rows": [
+    1,
+    2,
+    7,
+    16
+  ],
+  "all_bitwise_equal": true,
+  "tile_body_global_stack_use": false
+}

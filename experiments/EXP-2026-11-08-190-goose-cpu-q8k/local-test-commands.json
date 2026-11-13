@@ -1,0 +1,70 @@
+[
+  {
+    "label": "generate",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp190/build/device-raw.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-190-goose-cpu-q8k/source/device.goose"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "bridge-build",
+    "argv": [
+      "gcc-13",
+      "-O2",
+      "-fno-strict-aliasing",
+      "-ffp-contract=off",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-190-goose-cpu-q8k/source",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-190-goose-cpu-q8k/source/bridge.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp190/build/bridge.o"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "fixture-build",
+    "argv": [
+      "gcc-13",
+      "-O2",
+      "-fno-strict-aliasing",
+      "-ffp-contract=off",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-190-goose-cpu-q8k/source",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-190-goose-cpu-q8k/tests/fixture.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp190/build/fixture.o"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "fixture-link",
+    "argv": [
+      "g++-13",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp190/build/fixture.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp190/build/bridge.o",
+      "-L/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/bin",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/bin",
+      "-lggml-base",
+      "-lm",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp190/build/fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "fixture",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp190/build/fixture"
+    ],
+    "exit_code": 0
+  }
+]

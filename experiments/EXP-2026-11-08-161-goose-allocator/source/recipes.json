@@ -1,0 +1,399 @@
+{
+  "aligned_offset": {
+    "mode": 0,
+    "args": [
+      "buffer",
+      "offset",
+      "alignment"
+    ],
+    "kind": "size_t",
+    "pre": null
+  },
+  "ggml_op_can_inplace": {
+    "mode": 1,
+    "args": [
+      "op"
+    ],
+    "kind": "bool",
+    "pre": null
+  },
+  "ggml_tallocr_new": {
+    "mode": 2,
+    "args": [
+      "&fg_result",
+      "buffer"
+    ],
+    "kind": "struct ggml_tallocr",
+    "pre": "struct ggml_tallocr fg_result={0};"
+  },
+  "ggml_tallocr_alloc": {
+    "mode": 3,
+    "args": [
+      "talloc",
+      "tensor"
+    ],
+    "kind": "enum ggml_status",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_insert_block": {
+    "mode": 4,
+    "args": [
+      "chunk",
+      "offset",
+      "size"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_remove_block": {
+    "mode": 5,
+    "args": [
+      "chunk",
+      "idx"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_new_chunk": {
+    "mode": 6,
+    "args": [
+      "alloc",
+      "min_size"
+    ],
+    "kind": "int",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_alloc": {
+    "mode": 7,
+    "args": [
+      "alloc",
+      "size",
+      "&fg_result"
+    ],
+    "kind": "struct buffer_address",
+    "pre": "struct buffer_address fg_result={0};"
+  },
+  "ggml_dyn_tallocr_free_bytes": {
+    "mode": 8,
+    "args": [
+      "alloc",
+      "addr.chunk",
+      "addr.offset",
+      "size"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_reset": {
+    "mode": 9,
+    "args": [
+      "alloc"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_new": {
+    "mode": 10,
+    "args": [
+      "alignment",
+      "max_buffer_size"
+    ],
+    "kind": "ptr",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_free": {
+    "mode": 11,
+    "args": [
+      "alloc"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_dyn_tallocr_max_size": {
+    "mode": 12,
+    "args": [
+      "alloc",
+      "chunk"
+    ],
+    "kind": "size_t",
+    "pre": null
+  },
+  "ggml_vbuffer_free": {
+    "mode": 13,
+    "args": [
+      "buf"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_vbuffer_chunk_size": {
+    "mode": 14,
+    "args": [
+      "buf",
+      "chunk"
+    ],
+    "kind": "size_t",
+    "pre": null
+  },
+  "ggml_vbuffer_size": {
+    "mode": 15,
+    "args": [
+      "buf"
+    ],
+    "kind": "size_t",
+    "pre": null
+  },
+  "ggml_vbuffer_alloc_grow_size": {
+    "mode": 16,
+    "args": [
+      "buft",
+      "chunk_size",
+      "growth_limit"
+    ],
+    "kind": "size_t",
+    "pre": null
+  },
+  "ggml_vbuffer_alloc": {
+    "mode": 17,
+    "args": [
+      "buft",
+      "talloc",
+      "usage",
+      "growth_limit"
+    ],
+    "kind": "ptr",
+    "pre": null
+  },
+  "ggml_vbuffer_tensor_alloc": {
+    "mode": 18,
+    "args": [
+      "buf",
+      "tensor",
+      "buf_addr.chunk",
+      "buf_addr.offset"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_vbuffer_reset": {
+    "mode": 19,
+    "args": [
+      "buf"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_new_n": {
+    "mode": 20,
+    "args": [
+      "bufts",
+      "n_bufs"
+    ],
+    "kind": "ptr",
+    "pre": null
+  },
+  "ggml_gallocr_set_buffer_growth_limits": {
+    "mode": 21,
+    "args": [
+      "galloc",
+      "limits"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_free": {
+    "mode": 22,
+    "args": [
+      "galloc"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_hash_get": {
+    "mode": 23,
+    "args": [
+      "galloc",
+      "t"
+    ],
+    "kind": "ptr",
+    "pre": null
+  },
+  "ggml_gallocr_is_own": {
+    "mode": 24,
+    "args": [
+      "galloc",
+      "t"
+    ],
+    "kind": "bool",
+    "pre": null
+  },
+  "ggml_gallocr_is_allocated": {
+    "mode": 25,
+    "args": [
+      "galloc",
+      "t"
+    ],
+    "kind": "bool",
+    "pre": null
+  },
+  "ggml_gallocr_free_extra_space": {
+    "mode": 26,
+    "args": [
+      "galloc",
+      "node",
+      "parent"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_allocate_node": {
+    "mode": 27,
+    "args": [
+      "galloc",
+      "node",
+      "buffer_id"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_free_node": {
+    "mode": 28,
+    "args": [
+      "galloc",
+      "node"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "get_node_buffer_id": {
+    "mode": 29,
+    "args": [
+      "node_buffer_ids",
+      "i"
+    ],
+    "kind": "int",
+    "pre": null
+  },
+  "ggml_gallocr_alloc_graph_impl": {
+    "mode": 30,
+    "args": [
+      "galloc",
+      "graph",
+      "node_buffer_ids",
+      "leaf_buffer_ids"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_reserve_n_impl": {
+    "mode": 31,
+    "args": [
+      "galloc",
+      "graph",
+      "node_buffer_ids",
+      "leaf_buffer_ids",
+      "no_alloc"
+    ],
+    "kind": "bool",
+    "pre": null
+  },
+  "ggml_gallocr_reserve_n_size": {
+    "mode": 32,
+    "args": [
+      "galloc",
+      "graph",
+      "node_buffer_ids",
+      "leaf_buffer_ids",
+      "sizes"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_init_tensor": {
+    "mode": 33,
+    "args": [
+      "galloc",
+      "tensor",
+      "tensor_alloc"
+    ],
+    "kind": "void",
+    "pre": null
+  },
+  "ggml_gallocr_node_needs_realloc": {
+    "mode": 34,
+    "args": [
+      "galloc",
+      "node",
+      "talloc"
+    ],
+    "kind": "bool",
+    "pre": null
+  },
+  "ggml_gallocr_needs_realloc": {
+    "mode": 35,
+    "args": [
+      "galloc",
+      "graph"
+    ],
+    "kind": "bool",
+    "pre": null
+  },
+  "ggml_gallocr_alloc_graph": {
+    "mode": 36,
+    "args": [
+      "galloc",
+      "graph"
+    ],
+    "kind": "bool",
+    "pre": null
+  },
+  "ggml_gallocr_get_buffer_size": {
+    "mode": 37,
+    "args": [
+      "galloc",
+      "buffer_id"
+    ],
+    "kind": "size_t",
+    "pre": null
+  },
+  "ggml_backend_alloc_ctx_tensors_from_buft_collect": {
+    "mode": 38,
+    "args": [
+      "ctx",
+      "n_tensors"
+    ],
+    "kind": "ptr",
+    "pre": null
+  },
+  "ggml_backend_alloc_ctx_tensors_from_buft": {
+    "mode": 39,
+    "args": [
+      "ctx",
+      "buft",
+      "&fg_count"
+    ],
+    "kind": "ptr",
+    "pre": "int32_t fg_count=0;"
+  },
+  "ggml_backend_alloc_ctx_tensors_from_buft_size": {
+    "mode": 40,
+    "args": [
+      "ctx",
+      "buft",
+      "&fg_count"
+    ],
+    "kind": "size_t",
+    "pre": "int32_t fg_count=0;"
+  },
+  "ggml_buffer_address_less": {
+    "mode": 41,
+    "args": [
+      "a.chunk",
+      "a.offset",
+      "b.chunk",
+      "b.offset"
+    ],
+    "kind": "bool",
+    "pre": null
+  }
+}

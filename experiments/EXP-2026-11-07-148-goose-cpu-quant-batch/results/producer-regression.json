@@ -1,0 +1,26 @@
+{
+  "status": "PASS_PINNED_NEW_PRODUCER_OLD_COMMON_GOLDENS",
+  "checks": {
+    "composite": {
+      "byte_exact_previous_producer": true,
+      "previous_sha256": "f5aa54e0c630b6fe6c2474f5f38232226152c92ba59bb3e85aa09491979dadbb",
+      "current_sha256": "f5aa54e0c630b6fe6c2474f5f38232226152c92ba59bb3e85aa09491979dadbb"
+    },
+    "apex-contract": {
+      "byte_exact_previous_producer": true,
+      "previous_sha256": "e40c0b9cad712d5120e8f8ca10d92b3089679d8836f46a584b28d7296a6ac00f",
+      "current_sha256": "e40c0b9cad712d5120e8f8ca10d92b3089679d8836f46a584b28d7296a6ac00f"
+    },
+    "planning": {
+      "byte_exact_previous_producer": true,
+      "previous_sha256": "54b7764c3bad93391a2db7fbf1126d7f2a4a9d4a272f54799203955103c4475d",
+      "current_sha256": "54b7764c3bad93391a2db7fbf1126d7f2a4a9d4a272f54799203955103c4475d"
+    },
+    "backend-buffer": {
+      "byte_exact_previous_producer": true,
+      "previous_sha256": "7367a792b26f818e8983a74371d539e480f4c535f60fea5e3979340ed296999f",
+      "current_sha256": "7367a792b26f818e8983a74371d539e480f4c535f60fea5e3979340ed296999f"
+    }
+  },
+  "limits": "Existing common corpora only;not blanket compiler qualification"
+}

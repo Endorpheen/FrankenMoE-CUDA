@@ -1,0 +1,2 @@
+PASS: SWA and recurrent bounds, prefix rejection, 262K budget, eviction, disable and unsupported modes
+PASS: default/disable, count pruning margin, byte bounds, overflow, restore and legacy anchor

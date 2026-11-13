@@ -1,0 +1,55 @@
+{
+  "status": "PASS_MOCKED_HOST_WITH_REAL_RESERVE_SINGLETON_STRIDE",
+  "runs": [
+    {
+      "label": "large-mask-host-C-build",
+      "argv": [
+        "gcc-13",
+        "-std=gnu11",
+        "-O3",
+        "-DNDEBUG",
+        "-fPIC",
+        "-fvisibility=hidden",
+        "-Werror=implicit-int",
+        "-Werror=implicit-function-declaration",
+        "-c",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/source/host-unit.c",
+        "-o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/host.o"
+      ],
+      "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "large-mask-host-fixture-build",
+      "argv": [
+        "g++-13",
+        "-std=c++17",
+        "-O2",
+        "-include",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/source/host-ffi.h",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-08-173-goose-cuda-flash-attention/source/host-fixture.cpp",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/host.o",
+        "-lm",
+        "-o",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/host-fixture"
+      ],
+      "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "large-mask-host-fixture-run",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build/host-fixture"
+      ],
+      "cwd": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp173/build",
+      "exit_code": 0,
+      "stdout": "PASS host cases=27 checks=17406 locked_once_pairs=7; mocked SDK only; concurrency not claimed\n",
+      "stderr": ""
+    }
+  ]
+}

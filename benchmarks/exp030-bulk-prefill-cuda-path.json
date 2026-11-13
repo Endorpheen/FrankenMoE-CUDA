@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-05-030-bulk-prefill-cuda-path",
+  "status": "ACCEPTED",
+  "kind": "measurement_infrastructure",
+  "question": "Which backend executes the bulk MoE prefill and what token batch does it receive?",
+  "workload": "One deterministic 395-token prompt, Qwen3.8 Flash Next UD-IQ3_XXS with MTP draft, 12 CPU threads, EHS off, CPU MoE, 32K context used only because the diagnostic build fit that VRAM state.",
+  "result": {
+    "bulk_prefill_tokens": 391,
+    "backend": "CUDA MMQ",
+    "mul_mat_id_invocations": 144,
+    "invocations_by_weight_type": {
+      "IQ4_NL": 48,
+      "IQ3_S": 2,
+      "IQ2_S": 94
+    },
+    "tail_checkpoint_tokens": 4
+  },
+  "correctness": {
+    "request_completed": true,
+    "prompt_tokens": 395,
+    "prompt_ms": 3954.073,
+    "generated_tokens": 16,
+    "generation_tokens_per_second": 21.796908
+  },
+  "decision_note": "Bulk prefill is already a 391-token CUDA MMQ operation. The separate four-token tail is a server checkpoint for MTP rollback and cache safety. Do not change batch or ubatch size to pursue CPU-side group reuse. Any future prefill optimization must target the CUDA MMQ path or demonstrate that checkpoint removal preserves context safety."
+}

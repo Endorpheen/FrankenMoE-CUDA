@@ -1,0 +1,36 @@
+2026-09-16T03:43:07+03:00
+--- nvidia-smi ---
+NVIDIA GeForce RTX 4070, 580.178.04, 12282 MiB
+--- nvcc ---
+Cuda compilation tools, release 12.6, V12.6.85
+Build cuda_12.6.r12.6/compiler.35059454_0
+--- g++ ---
+g++-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0
+--- uname ---
+Linux end0-B550-AORUS-ELITE-V2 6.8.0-84-generic #84-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  5 22:36:38 UTC 2025 x86_64 GNU/Linux
+--- mem ---
+MemTotal:       63643556 kB
+MemAvailable:   47456304 kB
+SwapTotal:      33554428 kB
+--- memlock ---
+8192
+--- ranges ---
+8b58328ed61b0bfea88021e7f0a895233a9a56f078fc65a9ababe4da6b3f6f79  results/archive/EXP-2026-09-16-070/exp070_ranges.txt
+--- build binaries ---
+4aec1132ec4febae68e050aa93a58397dcb09feec4e640f130d8cedcb32bdafb  build/exp076-pin-async/bin/llama-server
+8ecc3a7102aa1c6aea97830eae8d2b198e85bfad7bd94fef13e14a124038d30f  build/exp076-pin-async/bin/libggml-cuda.so.0.22.0
+--- reference exp075 lib (untouched) ---
+27137a1a3ea0308c7712a3c15b944438e8c5ff2741d681f2ec685bd331ecd45a  build/exp075-pinsrc-overlap/bin/libggml-cuda.so.0.22.0
+
+--- EXP-076 harness ---
+1bd975aba4d122eedda17b33002385627a50c55a295bac84702c908e19f8627f  results/archive/EXP-2026-09-16-076/test-exp076-pinsrc
+bd3c2672902805b5f20d1a6eeb9791b19f89a657d95b5a026255ca581e6469aa  results/archive/EXP-2026-09-16-076/test-exp074-sched
+--- harness sources ---
+f12aab2f61bc51a427f93289680084d94b64f645fa40f0b7d9803cb6c0fd7c34  results/archive/EXP-2026-09-16-076/test-exp076-pinsrc.cpp
+7d3b549680601a33af4a3dc8555fab0beb9569396a8c0784d74f551d1a2e1aa3  results/archive/EXP-2026-09-16-076/test-exp074-sched.cpp
+--- patch ---
+1c7d093b524468cd0c2ca2958648e7675e637ec464ae63318a5cf585a0799ba5  results/archive/EXP-2026-09-16-076/pinsrc-async.patch
+--- baseline (pre-edit) full-list hash-list ---
+5bbf98f3f18049105f5fe7e758a6bda033c67d2fc1accf3bf5b7b528e90dcde8  results/archive/EXP-2026-09-16-076/baseline-rev-hash.txt
+--- baseline scheduler ---
+39505119b144ea286e865119b397eecff75578881c24c4aa1cec9bd642e91510  results/archive/EXP-2026-09-16-076/baseline-sched.bin

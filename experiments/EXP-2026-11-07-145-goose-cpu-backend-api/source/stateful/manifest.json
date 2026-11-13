@@ -1,0 +1,20 @@
+{
+  "status": "PASS_52_SELECTED_RECURRENT_CASES_SCOPED_SANITIZERS_MODEL_EQUIVALENCE_OPEN",
+  "producer": {
+    "stage": "self-hosted EXP300 C11 frame-default Stage3",
+    "sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-454151b3449b",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp300-frame-scope-state/frame-default-bootstrap-v1",
+    "status": "PASS_CURRENT_C11_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "scope": "Current C11 scope/block source snapshot: Current production source serial bootstrap/fixed point after C11 scope/block integration. Confirms preservation of the working compiler, not full C11 scope/block producer/lifecycle acceptance.",
+    "compiler_source_changed": false
+  },
+  "goose_sha256": "f0e7c519ede6c165f2214c8f708ea96a77673f4c46af99628725623c701f10e0",
+  "scope": "Portable GDN/KDA,SSM scan,RWKV6/7 and gated linear attention; arithmetic and state loops in Goose. Remaining recurrent operations still open.",
+  "production_changed": false,
+  "compiler_changed": false,
+  "qwen_development": false,
+  "differential_cases": 52,
+  "composite_cases": 278,
+  "actual_model_witness": false
+}

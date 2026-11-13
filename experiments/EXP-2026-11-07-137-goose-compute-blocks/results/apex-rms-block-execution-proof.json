@@ -1,0 +1,91 @@
+{
+  "status": "PASS_FULL_GOOSE_RMS_IN_APEX",
+  "comparison": {
+    "rms-trace-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-trace-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-trace-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-trace-off-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-off-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-on-repeat": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-off-repeat": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    }
+  },
+  "witness": [
+    {
+      "mode": "rms-trace-on",
+      "rows": 1191981,
+      "vec": 1191981,
+      "mul": 666861,
+      "add": 0,
+      "scale": 525120,
+      "CUDA_STATUS": 0
+    },
+    {
+      "mode": "rms-trace-on",
+      "rows": 72870442,
+      "vec": 72870442,
+      "mul": 40766122,
+      "add": 0,
+      "scale": 32104320,
+      "CUDA_STATUS": 0
+    },
+    {
+      "mode": "rms-trace-off",
+      "rows": 0,
+      "vec": 0,
+      "mul": 0,
+      "add": 0,
+      "scale": 0,
+      "CUDA_STATUS": 0
+    }
+  ],
+  "fixture": {
+    "kind": "correctness",
+    "cases": 180,
+    "values_bitwise_checked": 10208376,
+    "input_and_output_canaries": true,
+    "status": "PASS"
+  }
+}

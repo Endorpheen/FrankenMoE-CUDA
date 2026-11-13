@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "previous window walks backwards",
+    "status": "CAUGHT",
+    "failures": 6067,
+    "exit_code": 1
+  },
+  {
+    "mutation": "current window overwrites the previous half",
+    "status": "CAUGHT",
+    "failures": 44157,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read count keeps only the previous half",
+    "status": "CAUGHT",
+    "failures": 1238,
+    "exit_code": 1
+  },
+  {
+    "mutation": "dummy blocks fill only one half",
+    "status": "CAUGHT",
+    "failures": 193,
+    "exit_code": 1
+  },
+  {
+    "mutation": "previous half is never collected",
+    "status": "CAUGHT",
+    "failures": 10004,
+    "exit_code": 1
+  },
+  {
+    "mutation": "previous window starts at the current block",
+    "status": "CAUGHT",
+    "failures": 8515,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write index uses the block offset instead of the block number",
+    "status": "CAUGHT",
+    "failures": 1672,
+    "exit_code": 1
+  },
+  {
+    "mutation": "duplicate token positions take the first token",
+    "status": "CAUGHT",
+    "failures": 898,
+    "exit_code": 1
+  }
+]

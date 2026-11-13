@@ -1,0 +1,252 @@
+{
+  "status": "CORRECT_EXPERIMENTAL_CHECKPOINT_PERFORMANCE_OPEN",
+  "scope": "Full CUDA RMSNorm row algorithm, scalar/vector paths, warp/block sum, fused multiply/add/scale. Native outer address/launch loop and primitive intrinsic bridge remain. Not a complete CUDA backend.",
+  "producer": {
+    "stage": "self-hosted EXP299 v2 bound Stage3",
+    "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "receipt": "bootstrap-exp299-v2-receipt.json",
+    "applies_to": "new generation only"
+  },
+  "fixture": {
+    "kind": "correctness",
+    "cases": 180,
+    "values_bitwise_checked": 10208376,
+    "input_and_output_canaries": true,
+    "status": "PASS"
+  },
+  "micro": {
+    "1": {
+      "native_ms_median": 0.00209919992,
+      "goose_ms_median": 0.00219519995,
+      "goose_time_change_percent": 4.5731723351056575
+    },
+    "512": {
+      "native_ms_median": 0.00719519984,
+      "goose_ms_median": 0.00747520011,
+      "goose_time_change_percent": 3.891487050066411
+    },
+    "4096": {
+      "native_ms_median": 0.150441602,
+      "goose_ms_median": 0.150476798,
+      "goose_time_change_percent": 0.023395124441694115
+    }
+  },
+  "comparison": {
+    "rms-trace-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-trace-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-trace-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-trace-off-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-on-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-on-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-off-512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-off-32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-on-repeat": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "rms-perf-off-repeat": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    }
+  },
+  "gpu_witness": [
+    {
+      "mode": "rms-trace-on",
+      "rows": 1191981,
+      "vec": 1191981,
+      "mul": 666861,
+      "add": 0,
+      "scale": 525120,
+      "CUDA_STATUS": 0
+    },
+    {
+      "mode": "rms-trace-on",
+      "rows": 72870442,
+      "vec": 72870442,
+      "mul": 40766122,
+      "add": 0,
+      "scale": 32104320,
+      "CUDA_STATUS": 0
+    },
+    {
+      "mode": "rms-trace-off",
+      "rows": 0,
+      "vec": 0,
+      "mul": 0,
+      "add": 0,
+      "scale": 0,
+      "CUDA_STATUS": 0
+    }
+  ],
+  "perf": {
+    "goose": [
+      {
+        "name": "rms-perf-on-32k128",
+        "wall_seconds": 15.918464319081977,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11369.689,
+          "prompt_per_token_ms": 0.34697537231445313,
+          "prompt_per_second": 2882.048928515107,
+          "predicted_n": 128,
+          "predicted_ms": 4525.244,
+          "predicted_per_token_ms": 35.63184251968504,
+          "predicted_per_second": 28.064785014907486
+        },
+        "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+        "sampled_rss_peak_mib": 21305.67578125,
+        "process_hwm_mib": 21305.67578125,
+        "process_swap_peak_kib": 0,
+        "sampled_anon_peak_mib": 711.35546875,
+        "sampled_file_peak_mib": 19940.50390625,
+        "sampled_gpu_peak_mib": 3348,
+        "system_swapout_pages_delta": 202,
+        "loadavg": [
+          4.13330078125,
+          3.58837890625,
+          3.24755859375
+        ],
+        "preliminary": true,
+        "concurrent_download": false,
+        "controlled_quiet_run": false
+      },
+      {
+        "name": "rms-perf-on-repeat-32k128",
+        "wall_seconds": 15.336914437939413,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10881.165,
+          "prompt_per_token_ms": 0.33206680297851565,
+          "prompt_per_second": 3011.442249060647,
+          "predicted_n": 128,
+          "predicted_ms": 4429.922,
+          "predicted_per_token_ms": 34.881275590551176,
+          "predicted_per_second": 28.66867633335305
+        },
+        "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+        "sampled_rss_peak_mib": 21312.28125,
+        "process_hwm_mib": 21312.28125,
+        "process_swap_peak_kib": 0,
+        "sampled_anon_peak_mib": 717.9609375,
+        "sampled_file_peak_mib": 19940.50390625,
+        "sampled_gpu_peak_mib": 3354,
+        "system_swapout_pages_delta": 0,
+        "loadavg": [
+          3.576171875,
+          3.494140625,
+          3.2275390625
+        ],
+        "preliminary": true,
+        "concurrent_download": false,
+        "controlled_quiet_run": false
+      }
+    ],
+    "native": [
+      {
+        "name": "rms-perf-off-32k128",
+        "wall_seconds": 15.703685683081858,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11335.69,
+          "prompt_per_token_ms": 0.34593780517578127,
+          "prompt_per_second": 2890.6930235389286,
+          "predicted_n": 128,
+          "predicted_ms": 4343.483,
+          "predicted_per_token_ms": 34.20065354330709,
+          "predicted_per_second": 29.239207336600604
+        },
+        "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+        "sampled_rss_peak_mib": 21326.8359375,
+        "process_hwm_mib": 21326.8359375,
+        "process_swap_peak_kib": 0,
+        "sampled_anon_peak_mib": 711.3359375,
+        "sampled_file_peak_mib": 19961.68359375,
+        "sampled_gpu_peak_mib": 3348,
+        "system_swapout_pages_delta": 147,
+        "loadavg": [
+          3.08349609375,
+          3.27685546875,
+          3.169921875
+        ],
+        "preliminary": true,
+        "concurrent_download": false,
+        "controlled_quiet_run": false
+      },
+      {
+        "name": "rms-perf-off-repeat-32k128",
+        "wall_seconds": 15.261142937932163,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10930.096,
+          "prompt_per_token_ms": 0.33356005859375,
+          "prompt_per_second": 2997.960859630144,
+          "predicted_n": 128,
+          "predicted_ms": 4305.308,
+          "predicted_per_token_ms": 33.90006299212598,
+          "predicted_per_second": 29.498470260432008
+        },
+        "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+        "sampled_rss_peak_mib": 21332.98828125,
+        "process_hwm_mib": 21332.98828125,
+        "process_swap_peak_kib": 0,
+        "sampled_anon_peak_mib": 717.98828125,
+        "sampled_file_peak_mib": 19961.43359375,
+        "sampled_gpu_peak_mib": 3354,
+        "system_swapout_pages_delta": 0,
+        "loadavg": [
+          2.87060546875,
+          3.13671875,
+          3.12353515625
+        ],
+        "preliminary": true,
+        "concurrent_download": false,
+        "controlled_quiet_run": false
+      }
+    ]
+  },
+  "verdict": "No final speed or no-regression acceptance. Preliminary under uncontrolled competing load/system paging; retain candidate and continue larger experiments per owner instruction.",
+  "negative_results": [
+    "v1 scalar fused multiply-add differed by 1 ULP; v2 expresses final FMA explicitly in Goose and passes all 180 cases.",
+    "Diagnostic missing cstring and quoting build failures retained; premature server start after diagnostic build failure stopped before requests, no accepted result from stale library."
+  ],
+  "rollback": "GGML_GOOSE_RMS=0 selects the unchanged original RMS kernel; trace-off count zero. Timing library excludes FG_RMS_TRACE.",
+  "qwen_policy": "No reload for this stage. Apex primary; Qwen at major checkpoints or model-specific changes."
+}

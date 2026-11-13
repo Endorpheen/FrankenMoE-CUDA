@@ -1,0 +1,25 @@
+{
+  "status": "DELIVERED",
+  "reference_project_commit": "8224fd371969e39d3e644e853de0f5ade0e0aa69",
+  "feature_patch": "patches/mmap-expert-available-memory.patch",
+  "feature_patch_sha256": "b39a65f6000f0f09855a652fab4ec1bbaaee1c0706ca585c41291d5e6d91b4ad",
+  "apply_after": [
+    "patches/flint-apex-prefix-baseline.patch",
+    "patches/lazy-pp-reservation.patch",
+    "patches/mmap-expert-registration.patch"
+  ],
+  "compiled_source_sha256": {
+    "src/llama-mmap-expert-pin.h": "06d70d71eba1aead2293caccd4c0623bcd8ced5a2b9f7a31574f3451c8a04d50",
+    "src/llama-model.cpp": "35cbd5165440f9a9bf55178e1e114e964b8077621b65c59786f0e4fb665681ee"
+  },
+  "patch_replay_exact": true,
+  "only_changed_runtime_component": "libllama.so.0.7.0",
+  "model_runs": 0,
+  "server_restarts": 0,
+  "live_server_modified": false,
+  "exp089_build_preserved": true,
+  "validation": "compile/link and ASan/UBSan budget/alignment/rollback/exception cases PASS",
+  "speed_claim": "No new speed claim; EXP089 measurements retain their original scope",
+  "remaining_policy": "Use MemAvailable>=registered union+8GiB, union<=half physical RAM; keep resident-page/ownership/mode/error checks. MemFree is not read or tested.",
+  "manual_user_launch_evidence": "manual-launch.json"
+}

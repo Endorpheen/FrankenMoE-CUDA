@@ -1,0 +1,8 @@
+{
+  "status": "PASS_LIVE_QWEN_COMMON_MOE_CONTROLLER",
+  "cpu_sha256": "3435323481a5421248151c884787c5c3ea0f6601f93223fc9f5af5679d0e3cdd",
+  "change": "Disable only new-controller diagnostic witnesses/counters; same prior EXP139 math/quant diagnostic objects are preserved identically in both model arms",
+  "production_changed": false,
+  "model_report": "results/moe-control-qwen-model-stage-summary.json",
+  "graph_report": "results/moe-control-qwen-expanded-summary.json"
+}

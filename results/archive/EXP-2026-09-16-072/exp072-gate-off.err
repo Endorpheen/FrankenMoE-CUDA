@@ -1,0 +1,10 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+env GGML_CPU_IQ4NL_FUSED: off ("0")
+case B start
+case C start
+case D start
+case E start
+case F start
+case F done
+IQ4NL_FUSED_STATS groups[c1,c2,c3,c4+]=247,8,3,2 fused_groups=0,0,0,0 tokens[c1,c2,c3,c4+]=10,95,81,74 iq4nl_groups_seen=260 window_opens=8 fused_dispatches=0

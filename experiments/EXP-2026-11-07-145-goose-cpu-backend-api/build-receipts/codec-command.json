@@ -1,0 +1,14 @@
+[
+  "/usr/bin/gcc-13",
+  "-O3",
+  "-march=native",
+  "-fPIC",
+  "-fno-strict-aliasing",
+  "-ffp-contract=off",
+  "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+  "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+  "-c",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-backend/codec/unit.c",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-backend/build/codec.o"
+]

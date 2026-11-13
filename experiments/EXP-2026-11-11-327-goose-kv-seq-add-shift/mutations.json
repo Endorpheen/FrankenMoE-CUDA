@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "a zero shift still walks the cells",
+    "status": "CAUGHT",
+    "failures": 964,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a mirrored cache is shifted",
+    "status": "CAUGHT",
+    "failures": 558,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the range end is inclusive",
+    "status": "CAUGHT",
+    "failures": 757,
+    "exit_code": 1
+  },
+  {
+    "mutation": "cells without the sequence are shifted",
+    "status": "CAUGHT",
+    "failures": 7058,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a cell that lands on zero is freed",
+    "status": "CAUGHT",
+    "failures": 241,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the head always resets to zero",
+    "status": "CAUGHT",
+    "failures": 170,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the head keeps the cache size when nothing is freed",
+    "status": "CAUGHT",
+    "failures": 2482,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the per-sequence index is relinked before the shift is emitted",
+    "status": "CAUGHT",
+    "failures": 4850,
+    "exit_code": 1
+  }
+]

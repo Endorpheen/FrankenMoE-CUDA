@@ -1,0 +1,49 @@
+{
+  "name": "element-fma-cpu-on-2048",
+  "wall_seconds": 20.912604963988997,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 2048,
+    "prompt_ms": 19387.415,
+    "prompt_per_token_ms": 9.46651123046875,
+    "prompt_per_second": 105.63553728024081,
+    "predicted_n": 16,
+    "predicted_ms": 1514.863,
+    "predicted_per_token_ms": 100.99086666666668,
+    "predicted_per_second": 9.901885517040155
+  },
+  "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+  "tokens": [
+    13,
+    198,
+    760,
+    18922,
+    11173,
+    1500,
+    369,
+    264,
+    1777,
+    314,
+    264,
+    10548,
+    21979,
+    6136,
+    25,
+    279
+  ],
+  "sampled_rss_peak_mib": 21036.94921875,
+  "process_hwm_mib": 21036.94921875,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 786.15234375,
+  "sampled_file_peak_mib": 20250.796875,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    7.892578125,
+    4.2021484375,
+    4.083984375
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

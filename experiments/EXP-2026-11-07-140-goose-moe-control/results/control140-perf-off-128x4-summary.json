@@ -1,0 +1,37 @@
+{
+  "name": "control140-perf-off-128x4",
+  "wall_seconds": 1.6936709790024906,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 1385.831,
+    "prompt_per_token_ms": 10.8268046875,
+    "prompt_per_second": 92.36335455044663,
+    "predicted_n": 4,
+    "predicted_ms": 298.342,
+    "predicted_per_token_ms": 99.44733333333333,
+    "predicted_per_second": 10.055573804559868
+  },
+  "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+  "tokens": [
+    58558,
+    13,
+    198,
+    760
+  ],
+  "sampled_rss_peak_mib": 19445.43359375,
+  "process_hwm_mib": 19707.94140625,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 424.67578125,
+  "sampled_file_peak_mib": 19020.7578125,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    2.79443359375,
+    3.2451171875,
+    3.11962890625
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

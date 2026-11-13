@@ -1,0 +1,30 @@
+{
+  "experiment": "EXP-2026-10-30-099",
+  "status": "READY_FOR_REVIEW",
+  "base": {
+    "composite": "/home/end0/AI/LlamaServer/exp090-mmap-available/source over /home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/source",
+    "read_rule": "exp090 source first, prefix source otherwise"
+  },
+  "candidate_patch": "candidate.patch",
+  "tests_patch": "tests.patch",
+  "changed_files": [
+    { "path": "ggml/src/ggml-cuda/fattn.cu", "kind": "modified", "functions": ["ggml_cuda_fattn_mma_sm89_wide_gqa", "ggml_cuda_flash_attn_ext_mma_f16_switch_ncols2"] }
+  ],
+  "read_source_sha256": {
+    "exp090-mmap-available/source/ggml/src/ggml-cuda/fattn.cu": "b286c1ac71064d43003d34d8cebfe2fa9627657d22a5ca4eb83f60d0ef0fd44e",
+    "exp090-mmap-available/source/ggml/src/ggml-cuda/fattn-mma-f16.cuh": "17fd122555460f7c762d119b8ccb1d90221e7d003b9952acd0fa87e0fed05ef9",
+    "exp090-mmap-available/source/ggml/src/ggml-cuda/fattn-tile.cuh": "ae731e173cd519ea099ddbc68d86c2c2836bb88c149480c564f05b9e50b23ce0",
+    "exp090-mmap-available/source/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_16-ncols2_4.cu": "16a8d5d9db3a5f1ebb7abf284fd6ebc1a2ac28a29454b4b9ffe18c0e2337201b",
+    "exp090-mmap-available/source/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_8.cu": "3eaa34096cba75511c7108367ace96c1d74dba9a25f9f9d631d407adead73f1a"
+  },
+  "dependencies": {
+    "requires_other_candidates": false,
+    "notes": "Independent of EXP096/097/098/100 and of EXP093/094/095. Uses only an existing template instantiation."
+  },
+  "not_modified": [
+    "working source tree",
+    "accepted builds and launchers",
+    "ROADMAP.md", "experiments/EXPERIMENTS.md", "AGENTS.md", "CLAUDE.md",
+    "work/llama.cpp-integration"
+  ]
+}

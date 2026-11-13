@@ -1,0 +1,590 @@
+diff -Naur a/ggml/src/ggml-cuda/ggml-cuda.cu overlay/ggml/src/ggml-cuda/ggml-cuda.cu
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu	2026-10-30 22:49:50.637477497 +0300
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu	2026-10-30 23:16:07.641213365 +0300
+@@ -1394,6 +1394,411 @@
+     return &ggml_backend_cuda_buffer_type_host;
+ }
+ 
++
++// Lazy VMM buffer used by the KV cache.
++//
++// The full virtual range is reserved up front so that tensor addresses, shapes
++// and strides never change, but physical pages are committed only for the byte
++// range that is actually used. The range is grown from llama-kv-cache before a
++// graph runs and before a state is read or written; pages are zeroed when they
++// are committed, which keeps the previous "zeroed padding" behavior.
++//
++// This buffer is opt-in per allocation: only the KV cache asks for this buffer
++// type. It is disabled with GGML_KV_LAZY_VMM=0 and is never used when the
++// driver has no VMM support or when the V cache is transposed (V transposition
++// spreads a cell across the whole tensor, so a prefix range is not enough).
++#if defined(GGML_USE_VMM) && !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++
++static const char * ggml_backend_cuda_lazy_buffer_type_get_name(ggml_backend_buffer_type_t buft);
++
++struct ggml_backend_cuda_lazy_buffer_context {
++    int    device;
++    CUdeviceptr ptr;
++    size_t size;        // logical size requested by the allocator
++    size_t reserved;    // granularity-aligned virtual reservation
++    size_t granularity;
++    std::vector<std::pair<size_t, size_t>> mapped; // sorted, non-overlapping [begin, end)
++};
++
++static void ggml_backend_cuda_lazy_map(ggml_backend_cuda_lazy_buffer_context * ctx, size_t begin, size_t end) {
++    if (end <= begin) {
++        return;
++    }
++    GGML_ASSERT(begin % ctx->granularity == 0 && end % ctx->granularity == 0);
++
++    ggml_cuda_set_device(ctx->device);
++
++    CUmemAllocationProp prop = {};
++    prop.type = CU_MEM_ALLOCATION_TYPE_PINNED;
++    prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
++    prop.location.id = ggml_cuda_get_physical_device(ctx->device);
++
++    CUmemGenericAllocationHandle handle;
++    CU_CHECK(cuMemCreate(&handle, end - begin, &prop, 0));
++    CU_CHECK(cuMemMap(ctx->ptr + begin, end - begin, 0, handle, 0));
++    CU_CHECK(cuMemRelease(handle));
++
++    CUmemAccessDesc access = {};
++    access.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
++    access.location.id = ggml_cuda_get_physical_device(ctx->device);
++    access.flags = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
++    CU_CHECK(cuMemSetAccess(ctx->ptr + begin, end - begin, &access, 1));
++
++    // the KV cache previously cleared the whole buffer on allocation; preserve
++    // the zero-filled contract for the pages that are committed now
++    CU_CHECK(cuMemsetD8(ctx->ptr + begin, 0, end - begin));
++}
++
++static void ggml_backend_cuda_lazy_prepare(ggml_backend_buffer_t buffer, size_t offset, size_t size) {
++    if (buffer == nullptr || size == 0) {
++        return;
++    }
++    if (buffer->buft->iface.get_name != ggml_backend_cuda_lazy_buffer_type_get_name) {
++        return; // not a lazy buffer, nothing to do
++    }
++
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    const size_t granularity = ctx->granularity;
++    const size_t end_req     = offset + size;
++
++    if (end_req > ctx->size) {
++        GGML_ABORT("%s: range [%zu, %zu) exceeds the lazy buffer size %zu\n", __func__, offset, end_req, ctx->size);
++    }
++
++    const size_t map_begin = (offset / granularity) * granularity;
++    const size_t map_end   = ((end_req + granularity - 1) / granularity) * granularity;
++
++    for (const auto & iv : ctx->mapped) {
++        if (iv.first <= offset && end_req <= iv.second) {
++            return;
++        }
++    }
++
++    // map only the gaps inside [map_begin, map_end) that are not mapped yet
++    size_t cur = map_begin;
++    for (const auto & iv : ctx->mapped) {
++        if (iv.second <= cur) {
++            continue;
++        }
++        if (iv.first >= map_end) {
++            break;
++        }
++        if (iv.first > cur) {
++            ggml_backend_cuda_lazy_map(ctx, cur, iv.first);
++        }
++        cur = std::max(cur, iv.second);
++    }
++    if (cur < map_end) {
++        ggml_backend_cuda_lazy_map(ctx, cur, map_end);
++    }
++
++    ctx->mapped.push_back({map_begin, map_end});
++    std::sort(ctx->mapped.begin(), ctx->mapped.end());
++    std::vector<std::pair<size_t, size_t>> merged;
++    merged.reserve(ctx->mapped.size());
++    for (const auto & iv : ctx->mapped) {
++        if (merged.empty() || iv.first > merged.back().second) {
++            merged.push_back(iv);
++        } else {
++            merged.back().second = std::max(merged.back().second, iv.second);
++        }
++    }
++    ctx->mapped.swap(merged);
++}
++
++static bool ggml_backend_cuda_lazy_is_own_buffer(ggml_backend_buffer_t buffer) {
++    return buffer != nullptr && buffer->buft->iface.get_name == ggml_backend_cuda_lazy_buffer_type_get_name;
++}
++
++static size_t ggml_backend_cuda_lazy_offset(ggml_backend_buffer_t buffer, const void * data) {
++    return (size_t) ((const char *) data - (const char *) ggml_backend_buffer_get_base(buffer));
++}
++
++static void ggml_backend_cuda_lazy_buffer_free_buffer(ggml_backend_buffer_t buffer) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    if (ctx->ptr != 0) {
++        for (const auto & iv : ctx->mapped) {
++            if (iv.second > iv.first) {
++                (void) cuMemUnmap(ctx->ptr + iv.first, iv.second - iv.first);
++            }
++        }
++        (void) cuMemAddressFree(ctx->ptr, ctx->reserved);
++    }
++
++    delete ctx;
++    // ggml_backend_buffer_free() deletes the buffer object itself
++}
++
++static void * ggml_backend_cuda_lazy_buffer_get_base(ggml_backend_buffer_t buffer) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++    return (void *) ctx->ptr;
++}
++
++static enum ggml_status ggml_backend_cuda_lazy_buffer_init_tensor(ggml_backend_buffer_t buffer, ggml_tensor * tensor) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    if (tensor->view_src != NULL) {
++        GGML_ASSERT(tensor->view_src->buffer->buft == buffer->buft);
++        return GGML_STATUS_SUCCESS;
++    }
++
++    if (ggml_is_quantized(tensor->type) && tensor->view_src == NULL &&
++            ggml_backend_buffer_get_usage(buffer) != GGML_BACKEND_BUFFER_USAGE_COMPUTE) {
++        // initialize padding to 0 to avoid possible NaN values, as the normal
++        // CUDA buffer does
++        const size_t original_size = ggml_nbytes(tensor);
++        const size_t padded_size   = ggml_backend_buft_get_alloc_size(buffer->buft, tensor);
++
++        if (padded_size > original_size) {
++            ggml_backend_cuda_lazy_prepare(buffer, ggml_backend_cuda_lazy_offset(buffer, tensor->data) + original_size,
++                    padded_size - original_size);
++            ggml_cuda_set_device(ctx->device);
++            CUDA_CHECK(cudaMemsetAsync((char *) tensor->data + original_size, 0, padded_size - original_size, cudaStreamPerThread));
++            CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++        }
++    }
++
++    return GGML_STATUS_SUCCESS;
++}
++
++static void ggml_backend_cuda_lazy_buffer_memset_tensor(ggml_backend_buffer_t buffer, ggml_tensor * tensor,
++        uint8_t value, size_t offset, size_t size) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    ggml_backend_cuda_lazy_prepare(buffer, ggml_backend_cuda_lazy_offset(buffer, tensor->data) + offset, size);
++
++    ggml_cuda_set_device(ctx->device);
++    CUDA_CHECK(cudaMemsetAsync((char *) tensor->data + offset, value, size, cudaStreamPerThread));
++    CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++}
++
++static void ggml_backend_cuda_lazy_buffer_set_tensor(ggml_backend_buffer_t buffer, ggml_tensor * tensor,
++        const void * data, size_t offset, size_t size) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    ggml_backend_cuda_lazy_prepare(buffer, ggml_backend_cuda_lazy_offset(buffer, tensor->data) + offset, size);
++
++    ggml_cuda_set_device(ctx->device);
++    CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, cudaStreamPerThread));
++    CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++}
++
++static void ggml_backend_cuda_lazy_buffer_get_tensor(ggml_backend_buffer_t buffer, const ggml_tensor * tensor,
++        void * data, size_t offset, size_t size) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    ggml_backend_cuda_lazy_prepare(buffer, ggml_backend_cuda_lazy_offset(buffer, tensor->data) + offset, size);
++
++    ggml_cuda_set_device(ctx->device);
++    CUDA_CHECK(cudaMemcpyAsync(data, (const char *) tensor->data + offset, size, cudaMemcpyDeviceToHost, cudaStreamPerThread));
++    CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++}
++
++static void ggml_backend_cuda_lazy_buffer_set_tensor_2d(ggml_backend_buffer_t buffer, ggml_tensor * tensor,
++        const void * data, size_t offset, size_t size, size_t n_copies, size_t stride_tensor, size_t stride_data) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    const size_t span = size + (n_copies > 0 ? (n_copies - 1)*stride_tensor : 0);
++    ggml_backend_cuda_lazy_prepare(buffer, ggml_backend_cuda_lazy_offset(buffer, tensor->data) + offset, span);
++
++    ggml_cuda_set_device(ctx->device);
++    CUDA_CHECK(cudaMemcpy2DAsync((char *) tensor->data + offset, stride_tensor, data, stride_data, size, n_copies,
++            cudaMemcpyHostToDevice, cudaStreamPerThread));
++    CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++}
++
++static void ggml_backend_cuda_lazy_buffer_get_tensor_2d(ggml_backend_buffer_t buffer, const ggml_tensor * tensor,
++        void * data, size_t offset, size_t size, size_t n_copies, size_t stride_tensor, size_t stride_data) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    const size_t span = size + (n_copies > 0 ? (n_copies - 1)*stride_tensor : 0);
++    ggml_backend_cuda_lazy_prepare(buffer, ggml_backend_cuda_lazy_offset(buffer, tensor->data) + offset, span);
++
++    ggml_cuda_set_device(ctx->device);
++    CUDA_CHECK(cudaMemcpy2DAsync(data, stride_data, (const char *) tensor->data + offset, stride_tensor, size, n_copies,
++            cudaMemcpyDeviceToHost, cudaStreamPerThread));
++    CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++}
++
++static bool ggml_backend_cuda_lazy_buffer_cpy_tensor(ggml_backend_buffer_t buffer, const ggml_tensor * src, ggml_tensor * dst) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    ggml_backend_buffer_t src_buf = src->view_src ? src->view_src->buffer : src->buffer;
++    if (src_buf == nullptr) {
++        return false;
++    }
++
++    const bool src_is_cuda = src_buf->buft == buffer->buft || ggml_backend_buft_is_cuda(src_buf->buft);
++    if (!src_is_cuda) {
++        return false;
++    }
++
++    ggml_backend_cuda_lazy_prepare(buffer, ggml_backend_cuda_lazy_offset(buffer, dst->data), ggml_nbytes(dst));
++    if (src_buf->buft == buffer->buft) {
++        ggml_backend_cuda_lazy_prepare(src_buf, ggml_backend_cuda_lazy_offset(src_buf, src->data), ggml_nbytes(src));
++    }
++
++    ggml_cuda_set_device(ctx->device);
++    CUDA_CHECK(cudaMemcpyAsync(dst->data, src->data, ggml_nbytes(src), cudaMemcpyDeviceToDevice, cudaStreamPerThread));
++    CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++    return true;
++}
++
++static void ggml_backend_cuda_lazy_buffer_clear(ggml_backend_buffer_t buffer, uint8_t value) {
++    auto * ctx = (ggml_backend_cuda_lazy_buffer_context *) buffer->context;
++
++    if (ctx->mapped.empty()) {
++        return;
++    }
++
++    ggml_cuda_set_device(ctx->device);
++    for (const auto & iv : ctx->mapped) {
++        if (iv.second > iv.first) {
++            CUDA_CHECK(cudaMemsetAsync((void *) (ctx->ptr + iv.first), value, iv.second - iv.first, cudaStreamPerThread));
++        }
++    }
++    CUDA_CHECK(cudaStreamSynchronize(cudaStreamPerThread));
++}
++
++static const ggml_backend_buffer_i ggml_backend_cuda_lazy_buffer_interface = {
++    /* .free_buffer     = */ ggml_backend_cuda_lazy_buffer_free_buffer,
++    /* .get_base        = */ ggml_backend_cuda_lazy_buffer_get_base,
++    /* .init_tensor     = */ ggml_backend_cuda_lazy_buffer_init_tensor,
++    /* .memset_tensor   = */ ggml_backend_cuda_lazy_buffer_memset_tensor,
++    /* .set_tensor      = */ ggml_backend_cuda_lazy_buffer_set_tensor,
++    /* .get_tensor      = */ ggml_backend_cuda_lazy_buffer_get_tensor,
++    /* .set_tensor_2d   = */ ggml_backend_cuda_lazy_buffer_set_tensor_2d,
++    /* .get_tensor_2d   = */ ggml_backend_cuda_lazy_buffer_get_tensor_2d,
++    /* .cpy_tensor      = */ ggml_backend_cuda_lazy_buffer_cpy_tensor,
++    /* .clear           = */ ggml_backend_cuda_lazy_buffer_clear,
++    /* .reset           = */ NULL,
++};
++
++static const char * ggml_backend_cuda_lazy_buffer_type_get_name(ggml_backend_buffer_type_t buft) {
++    ggml_backend_cuda_buffer_type_context * ctx = (ggml_backend_cuda_buffer_type_context *) buft->context;
++    return ctx->name.c_str();
++}
++
++static ggml_backend_buffer_t ggml_backend_cuda_lazy_buffer_type_alloc_buffer(ggml_backend_buffer_type_t buft, size_t size) {
++    ggml_backend_cuda_buffer_type_context * buft_ctx = (ggml_backend_cuda_buffer_type_context *) buft->context;
++
++    if (size == 0 || !ggml_cuda_info().devices[buft_ctx->device].vmm) {
++        return nullptr;
++    }
++
++    const size_t granularity = ggml_cuda_info().devices[buft_ctx->device].vmm_granularity;
++    if (granularity == 0) {
++        return nullptr;
++    }
++
++    const size_t reserved = ((size + granularity - 1) / granularity) * granularity;
++    if (reserved < size) {
++        return nullptr;
++    }
++
++    ggml_cuda_set_device(buft_ctx->device);
++
++    CUdeviceptr ptr = 0;
++    CUresult res = cuMemAddressReserve(&ptr, reserved, granularity, 0, 0);
++    if (res != CUDA_SUCCESS) {
++        (void) cudaGetLastError();
++        return nullptr;
++    }
++
++    auto * ctx = new ggml_backend_cuda_lazy_buffer_context{buft_ctx->device, ptr, size, reserved, granularity, {}};
++
++    return ggml_backend_buffer_init(buft, ggml_backend_cuda_lazy_buffer_interface, ctx, size);
++}
++
++static size_t ggml_backend_cuda_lazy_buffer_type_get_alignment(ggml_backend_buffer_type_t buft) {
++    GGML_UNUSED(buft);
++    return 128;
++}
++
++static size_t ggml_backend_cuda_lazy_buffer_type_get_alloc_size(ggml_backend_buffer_type_t buft, const ggml_tensor * tensor) {
++    return ggml_backend_cuda_buffer_type_get_alloc_size(buft, tensor);
++}
++
++static const ggml_backend_buffer_type_i ggml_backend_cuda_lazy_buffer_type_interface = {
++    /* .get_name            = */ ggml_backend_cuda_lazy_buffer_type_get_name,
++    /* .alloc_buffer        = */ ggml_backend_cuda_lazy_buffer_type_alloc_buffer,
++    /* .alloc_buffer_n      = */ NULL,
++    /* .get_alignment       = */ ggml_backend_cuda_lazy_buffer_type_get_alignment,
++    /* .get_max_size        = */ NULL,
++    /* .get_alloc_size      = */ ggml_backend_cuda_lazy_buffer_type_get_alloc_size,
++    /* .get_alloc_size_n    = */ NULL,
++    /* .is_host             = */ NULL,
++};
++
++static ggml_backend_buffer_type_t ggml_backend_cuda_lazy_buffer_type(int device) {
++    static std::mutex mutex;
++    std::lock_guard<std::mutex> lock(mutex);
++
++    if (device < 0 || device >= ggml_backend_cuda_get_device_count()) {
++        return nullptr;
++    }
++
++    static ggml_backend_buffer_type bufts[GGML_CUDA_MAX_DEVICES];
++    static bool initialized = false;
++
++    if (!initialized) {
++        for (int i = 0; i < ggml_backend_cuda_get_device_count(); i++) {
++            bufts[i] = {
++                /* .iface   = */ ggml_backend_cuda_lazy_buffer_type_interface,
++                /* .device  = */ ggml_backend_reg_dev_get(ggml_backend_cuda_reg(), i),
++                /* .context = */ new ggml_backend_cuda_buffer_type_context{i, GGML_CUDA_NAME + std::to_string(i) + "_lazy"},
++            };
++        }
++        initialized = true;
++    }
++
++    return &bufts[device];
++}
++
++static ggml_backend_buffer_type_t ggml_backend_cuda_lazy_buffer_type_for_dev(ggml_backend_dev_t dev) {
++    const char * flag = getenv("GGML_KV_LAZY_VMM");
++    if (flag != nullptr && strcmp(flag, "0") == 0) {
++        return nullptr;
++    }
++
++    for (int i = 0; i < ggml_backend_cuda_get_device_count(); i++) {
++        if (ggml_backend_reg_dev_get(ggml_backend_cuda_reg(), i) == dev) {
++            if (!ggml_cuda_info().devices[i].vmm) {
++                return nullptr;
++            }
++            return ggml_backend_cuda_lazy_buffer_type(i);
++        }
++    }
++
++    return nullptr;
++}
++
++static bool ggml_backend_buft_is_cuda_lazy(ggml_backend_buffer_type_t buft) {
++    return buft != nullptr && buft->iface.get_name == ggml_backend_cuda_lazy_buffer_type_get_name;
++}
++
++#else // VMM not available
++
++static ggml_backend_buffer_type_t ggml_backend_cuda_lazy_buffer_type_for_dev(ggml_backend_dev_t dev) {
++    GGML_UNUSED(dev);
++    return nullptr;
++}
++
++static void ggml_backend_cuda_lazy_prepare(ggml_backend_buffer_t buffer, size_t offset, size_t size) {
++    GGML_UNUSED(buffer);
++    GGML_UNUSED(offset);
++    GGML_UNUSED(size);
++}
++
++static bool ggml_backend_buft_is_cuda_lazy(ggml_backend_buffer_type_t buft) {
++    GGML_UNUSED(buft);
++    return false;
++}
++
++#endif // GGML_USE_VMM
++
+ //static bool ggml_backend_buffer_is_cuda_host(ggml_backend_buffer_t buffer) {
+ //    return buffer->buft->iface.get_name == ggml_backend_cuda_host_buffer_type_name;
+ //}
+@@ -6014,7 +6419,8 @@
+ static bool ggml_backend_cuda_device_supports_buft(ggml_backend_dev_t dev, ggml_backend_buffer_type_t buft) {
+     ggml_backend_cuda_device_context * dev_ctx = (ggml_backend_cuda_device_context *) dev->context;
+     const bool integrated = ggml_cuda_info().devices[dev_ctx->device].integrated;
+-    return (ggml_backend_buft_is_cuda(buft) && buft->device == dev) || (integrated && ggml_backend_buft_is_cuda_host(buft));
++    const bool is_cuda_buft = ggml_backend_buft_is_cuda(buft) || ggml_backend_buft_is_cuda_lazy(buft);
++    return (is_cuda_buft && buft->device == dev) || (integrated && ggml_backend_buft_is_cuda_host(buft));
+ }
+ 
+ static int64_t get_op_batch_size(const ggml_tensor * op) {
+@@ -6186,6 +6592,12 @@
+     if (strcmp(name, "ggml_backend_get_features") == 0) {
+         return (void *)ggml_backend_cuda_get_features;
+     }
++    if (strcmp(name, "ggml_backend_cuda_lazy_buffer_type") == 0) {
++        return (void *) ggml_backend_cuda_lazy_buffer_type_for_dev;
++    }
++    if (strcmp(name, "ggml_backend_cuda_lazy_prepare") == 0) {
++        return (void *) ggml_backend_cuda_lazy_prepare;
++    }
+     return nullptr;
+ }
+ 
+diff -Naur a/src/llama-kv-cache.cpp overlay/src/llama-kv-cache.cpp
+--- a/src/llama-kv-cache.cpp	2026-10-30 22:49:50.639825355 +0300
++++ b/src/llama-kv-cache.cpp	2026-10-30 22:48:59.144139827 +0300
+@@ -18,6 +18,38 @@
+     return (n & (n - 1)) == 0;
+ }
+ 
++// Optional lazy VMM buffer for the KV cache (CUDA backend).
++// The buffer type and the range commit are exposed by the backend registry, so
++// the core code does not depend on CUDA headers or on a specific backend.
++typedef ggml_backend_buffer_type_t (*llama_kv_lazy_buft_fn)(ggml_backend_dev_t);
++typedef void (*llama_kv_lazy_prepare_fn)(ggml_backend_buffer_t, size_t, size_t);
++
++static ggml_backend_buffer_type_t llama_kv_lazy_buft(ggml_backend_dev_t dev) {
++    if (dev == nullptr) {
++        return nullptr;
++    }
++    ggml_backend_reg_t reg = ggml_backend_dev_backend_reg(dev);
++    auto fn = (llama_kv_lazy_buft_fn) ggml_backend_reg_get_proc_address(reg, "ggml_backend_cuda_lazy_buffer_type");
++    if (fn == nullptr) {
++        return nullptr;
++    }
++    return fn(dev);
++}
++
++static void llama_kv_prepare(ggml_backend_buffer_t buf, size_t offset, size_t size) {
++    if (buf == nullptr || size == 0) {
++        return;
++    }
++    ggml_backend_reg_t reg = ggml_backend_dev_backend_reg(ggml_backend_buft_get_device(ggml_backend_buffer_get_type(buf)));
++    if (reg == nullptr) {
++        return;
++    }
++    auto fn = (llama_kv_lazy_prepare_fn) ggml_backend_reg_get_proc_address(reg, "ggml_backend_cuda_lazy_prepare");
++    if (fn != nullptr) {
++        fn(buf, offset, size);
++    }
++}
++
+ // orthonormal Walsh-Hadamard rotation matrix
+ // note: res^2 == I
+ static void ggml_gen_hadamard(ggml_tensor * tensor) {
+@@ -217,6 +249,16 @@
+             auto * dev = model.dev_layer(il);
+             buft = ggml_backend_dev_buffer_type(dev);
+ 
++            // the lazy VMM buffer only covers the contiguous cell layout of a
++            // non-transposed V cache; a transposed V spreads each cell across
++            // the whole tensor, so the full tensor would have to be committed
++            if (!v_trans) {
++                if (ggml_backend_buffer_type_t lazy = llama_kv_lazy_buft(dev)) {
++                    buft = lazy;
++                    vmm_lazy = true;
++                }
++            }
++
+             dev_name = ggml_backend_dev_name(dev);
+         }
+ 
+@@ -1298,6 +1340,30 @@
+     return result;
+ }
+ 
++void llama_kv_cache::ensure_mapped(uint32_t n_kv) const {
++    if (!vmm_lazy || n_kv == 0) {
++        return;
++    }
++
++    for (const auto & layer : layers) {
++        for (uint32_t s = 0; s < n_stream; ++s) {
++            ggml_tensor * tensors[2] = { layer.k_stream[s], layer.v_stream[s] };
++            for (ggml_tensor * t : tensors) {
++                if (t == nullptr || t->buffer == nullptr) {
++                    continue;
++                }
++                void * base = ggml_backend_buffer_get_base(t->buffer);
++                if (base == nullptr) {
++                    continue;
++                }
++                const size_t row = ggml_row_size(t->type, t->ne[0]);
++                const size_t off = (size_t) ((const char *) t->data - (const char *) base);
++                llama_kv_prepare(t->buffer, off, row * n_kv);
++            }
++        }
++    }
++}
++
+ ggml_tensor * llama_kv_cache::get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const {
+     const int32_t ikv = map_layer_ids.at(il);
+ 
+@@ -2267,6 +2333,14 @@
+     io.write(&n_rot_k, sizeof(n_rot_k));
+     io.write(&n_rot_v, sizeof(n_rot_v));
+ 
++    if (vmm_lazy && !cr.data.empty()) {
++        uint32_t max_cell = 0;
++        for (const auto & range : cr.data) {
++            max_cell = std::max(max_cell, range.second);
++        }
++        ensure_mapped(max_cell);
++    }
++
+     // Iterate and write all the keys first, each row is a cell
+     // Get whole range at a time
+     for (const auto & layer : layers) {
+@@ -2556,6 +2630,14 @@
+         }
+     }
+ 
++    if (vmm_lazy && !runs.empty()) {
++        uint32_t max_cell = 0;
++        for (const auto & run : runs) {
++            max_cell = std::max(max_cell, run.to);
++        }
++        ensure_mapped(max_cell);
++    }
++
+     uint32_t v_trans;
+     uint32_t n_layer;
+     uint32_t n_rot_k_ref;
+@@ -2875,6 +2957,9 @@
+     kv->apply_ubatch(sinfos[i_cur], ubatches[i_cur]);
+     n_kv = kv->get_n_kv(sinfos[i_cur]);
+ 
++    // commit the physical pages that this ubatch can read or write
++    kv->ensure_mapped(n_kv);
++
+     return true;
+ }
+ 
+diff -Naur a/src/llama-kv-cache.h overlay/src/llama-kv-cache.h
+--- a/src/llama-kv-cache.h	2026-10-30 22:49:50.639939841 +0300
++++ b/src/llama-kv-cache.h	2026-10-30 22:49:12.159961478 +0300
+@@ -192,6 +192,10 @@
+ 
+     uint32_t get_n_kv(const slot_info & sinfo) const;
+ 
++    // commit physical pages for the first n_kv cells of every KV tensor; this
++    // is a no-op unless the cache was allocated from a lazy VMM buffer
++    void ensure_mapped(uint32_t n_kv) const;
++
+     // get views of the current state of the cache
+     ggml_tensor * get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const;
+     ggml_tensor * get_v(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const;
+@@ -267,6 +271,7 @@
+     };
+ 
+     bool v_trans = true;  // the value tensor is transposed
++    bool vmm_lazy = false; // the KV buffer reserves virtual memory and commits pages on demand
+ 
+     const uint32_t n_seq_max = 1;
+     const uint32_t n_stream  = 1;

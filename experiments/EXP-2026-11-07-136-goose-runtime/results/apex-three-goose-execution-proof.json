@@ -1,0 +1,28 @@
+{
+  "status": "PASS_ALL_THREE_EXECUTE_IN_APEX",
+  "counters": {
+    "SILU": {
+      "samples": [
+        138,
+        1245
+      ],
+      "increment": 1107
+    },
+    "norm": {
+      "samples": [
+        1528,
+        26732
+      ],
+      "increment": 25204
+    },
+    "scale": {
+      "samples": [
+        120,
+        180
+      ],
+      "increment": 60
+    }
+  },
+  "numerical_result": "content, tokens, probabilities exactly equal original",
+  "performance_claim": false
+}

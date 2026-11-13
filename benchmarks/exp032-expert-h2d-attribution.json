@@ -1,0 +1,39 @@
+{
+  "experiment_id": "EXP-2026-09-05-032-expert-h2d-attribution",
+  "status": "ACCEPTED_MEASUREMENT",
+  "commit": "3c02e5de56061c7c30c45ec325a0d8845639c825",
+  "purpose": "Attribute CUDA H2D traffic during bulk MoE prefill to named tensors and verify its request-time boundary.",
+  "runtime": {
+    "binary": "build/exp032-expert-copy-trace/bin/llama-server",
+    "context_size": 32000,
+    "threads": 12,
+    "ehs_slots": 0,
+    "cpu_moe": true,
+    "mtp": true,
+    "mtp_n_max": 2,
+    "prompt_input_sha256": "9fc8652f5ab616073d95ae301afa80cbefe7e604e6a59532fd5f11d716f14184",
+    "prompt_tokens": 395,
+    "generated_tokens": 0
+  },
+  "result": {
+    "prompt_ms": 4029.308,
+    "prompt_tokens_per_second": 98.03172157601256,
+    "h2d_calls": 17886,
+    "h2d_bytes": 23237041920,
+    "h2d_mib": 22160.56,
+    "h2d_span_ms": 3634.692,
+    "expert_weight_calls": 17886,
+    "expert_weight_mib": 22160.56,
+    "expert_weight_share_percent": 100.0,
+    "mean_copy_kib": 1268.7,
+    "median_copy_kib": 900,
+    "p90_copy_kib": 2700,
+    "p99_copy_kib": 5400,
+    "by_tensor_role": {
+      "ffn_gate_exps": { "calls": 5962, "mib": 5920.53 },
+      "ffn_up_exps":   { "calls": 5962, "mib": 5920.53 },
+      "ffn_down_exps": { "calls": 5962, "mib": 10319.50 }
+    }
+  },
+  "conclusion": "All measured H2D traffic is selected MoE expert weights. Timestamped CUDA submissions begin after request launch and span 3634.692 ms inside the 3780 ms bulk-prefill window. The prompt throughput is recorded only as a completed-request check, not an optimization claim."
+}

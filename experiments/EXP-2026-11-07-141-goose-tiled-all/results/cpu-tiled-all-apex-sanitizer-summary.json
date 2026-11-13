@@ -1,0 +1,47 @@
+{
+  "status": "PASS_NEW_GOOSE_TILED_SCOPED_SANITIZERS",
+  "profile": "apex",
+  "runs": {
+    "force0-off": {
+      "exit_code": 1,
+      "log": "results/cpu-tiled-all-apex-sanitized-force0-off.log",
+      "diagnostic_tail": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:402:32: runtime error: load of misaligned address 0x7b6a6a7fe9b2 for type 'const uint32_t', which requires 4 byte alignment\n0x7b6a6a7fe9b2: note: pointer points here\n 46 00  dd 6f c7 f1 e2 97 3c a0  02 a2 e4 da 55 4b e9 a3  0a 52 9d 8e a3 c7 f8 b1  ae 7d 80 d9 34 e7\n              ^ \n    #0 0x7f6a72d61460 in tiled_unpack_src0 /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:402\n    #1 0x7f6a72d6323a in ggml_compute_forward_mul_mat_tiled_one_chunk<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:992\n    #2 0x7f6a72d934d2 in ggml_compute_forward_mul_mat_tiled_driver<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1136\n    #3 0x7f6a72d934d2 in tiled_matmul_dispatch<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1156\n    #4 0x7f6a72d934d2 in ggml_tiled_matmul_type_dispatch /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1190\n    #5 0x7f6a72d9774f in fg141_native_dense_tiled /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1222\n    #6 0x7f6a72eb8ccc in ggml_compute_forward_mul_mat_tiled /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/native-bridge.cpp:81\n    #7 0x7f6a72d0119b in ggml_compute_forward_mul_mat /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:1274\n    #8 0x7f6a72d07059 in ggml_compute_forward /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:2101\n    #9 0x7f6a72d07059 in ggml_graph_compute_thread /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:3381\n    #10 0x7f6a72d0b503 in ggml_graph_compute /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:3675\n    #11 0x5c9c1dfa7329 in compute /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:22\n    #12 0x5c9c1dfa8843 in dense /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:23\n    #13 0x5c9c1dfa8843 in main /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:25\n    #14 0x7f6a71e2a600 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:59\n    #15 0x7f6a71e2a717 in __libc_start_main_impl ../csu/libc-start.c:360\n    #16 0x5c9c1dfa6744 in _start (/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/tiled-all-apex-sanitize/build/fixture+0x6744) (BuildId: 56b5082a71a82d349c815fe22608a163a5a8f571)\n\n"
+    },
+    "force0-on": {
+      "exit_code": 0,
+      "log": "results/cpu-tiled-all-apex-sanitized-force0-on.log",
+      "graphs": {
+        "graphs": 104,
+        "values": 4946253,
+        "dense": 52,
+        "moe": 52,
+        "formats": 13
+      },
+      "all_bytes_equal_original": true,
+      "sha256": "20057a4c970b9225e2a2e41a4bd904a0da9d6f0583c3ee51461f1f9bfcf5a8e2"
+    },
+    "force1-off": {
+      "exit_code": 1,
+      "log": "results/cpu-tiled-all-apex-sanitized-force1-off.log",
+      "diagnostic_tail": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:402:32: runtime error: load of misaligned address 0x7a53c07fe9b2 for type 'const uint32_t', which requires 4 byte alignment\n0x7a53c07fe9b2: note: pointer points here\n 46 00  dd 6f c7 f1 e2 97 3c a0  02 a2 e4 da 55 4b e9 a3  0a 52 9d 8e a3 c7 f8 b1  ae 7d 80 d9 34 e7\n              ^ \n    #0 0x7e53c8b61460 in tiled_unpack_src0 /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:402\n    #1 0x7e53c8b6323a in ggml_compute_forward_mul_mat_tiled_one_chunk<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:992\n    #2 0x7e53c8b934d2 in ggml_compute_forward_mul_mat_tiled_driver<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1136\n    #3 0x7e53c8b934d2 in tiled_matmul_dispatch<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1156\n    #4 0x7e53c8b934d2 in ggml_tiled_matmul_type_dispatch /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1190\n    #5 0x7e53c8b9774f in fg141_native_dense_tiled /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1222\n    #6 0x7e53c8cb8ccc in ggml_compute_forward_mul_mat_tiled /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/native-bridge.cpp:81\n    #7 0x7e53c8b0119b in ggml_compute_forward_mul_mat /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:1274\n    #8 0x7e53c8b07059 in ggml_compute_forward /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:2101\n    #9 0x7e53c8b07059 in ggml_graph_compute_thread /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:3381\n    #10 0x7e53c8b0b503 in ggml_graph_compute /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-apex-tiled.c:3675\n    #11 0x602282221329 in compute /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:22\n    #12 0x602282222843 in dense /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:23\n    #13 0x602282222843 in main /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:25\n    #14 0x7e53c7e2a600 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:59\n    #15 0x7e53c7e2a717 in __libc_start_main_impl ../csu/libc-start.c:360\n    #16 0x602282220744 in _start (/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/tiled-all-apex-sanitize/build/fixture+0x6744) (BuildId: 56b5082a71a82d349c815fe22608a163a5a8f571)\n\n"
+    },
+    "force1-on": {
+      "exit_code": 0,
+      "log": "results/cpu-tiled-all-apex-sanitized-force1-on.log",
+      "graphs": {
+        "graphs": 104,
+        "values": 4946253,
+        "dense": 52,
+        "moe": 52,
+        "formats": 13
+      },
+      "all_bytes_equal_original": true,
+      "sha256": "f1bbffdcb387cb1281d95115fe36fb63db50ae858b9873f72dca204a91152247"
+    }
+  },
+  "all_native_fallback_runs_pass": false,
+  "instrumented": "Whole new Goose tiled unit, modified CPU core, bridge, renamed native tiled fallback and C fixture",
+  "uninstrumented": "Earlier math/quant/base/other CPU objects including native microkernel object; no TSan/full comparative memory-safety claim",
+  "production_changed": false,
+  "compiler_changed": false
+}

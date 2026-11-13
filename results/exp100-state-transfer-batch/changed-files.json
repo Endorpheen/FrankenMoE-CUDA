@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-2026-10-30-100",
+  "status": "READY_FOR_REVIEW",
+  "base": {
+    "composite": "/home/end0/AI/LlamaServer/exp090-mmap-available/source over /home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/source",
+    "read_rule": "exp090 source first, prefix source otherwise"
+  },
+  "candidate_patch": "candidate.patch",
+  "tests_patch": "tests.patch",
+  "changed_files": [
+    { "path": "src/llama-context.h", "kind": "modified", "functions": ["llama_context::backend_for_tensor", "llama_context::backend_for_tensor_cb"] },
+    { "path": "src/llama-context.cpp", "kind": "modified", "functions": ["llama_state_transfer_batch_enabled", "llama_context::backend_for_tensor", "llama_context::backend_for_tensor_cb", "llama_io_write_host::~llama_io_write_host/flush", "llama_io_read_host::~llama_io_read_host/flush", "state_get_data", "state_set_data", "state_seq_get_data", "state_seq_set_data"] }
+  ],
+  "read_source_sha256": {
+    "exp090-mmap-available/source/src/llama-context.h": "c5123eb0b1b4426737a70a3a616d8ba48b646143b596fa3f42d20ab57b2fb9e5",
+    "exp090-mmap-available/source/src/llama-context.cpp": "83fb3b178be8143794cd8711d25c53b971b44c76ef417e7b209174b4ffcf7cb6",
+    "exp090-mmap-available/source/src/llama-memory-recurrent.cpp": "51172be188d0eece2267c9105dc5a8d2c3ef7ebd58e88a6f562ac6ee36326f98"
+  },
+  "dependencies": {
+    "requires_other_candidates": false,
+    "notes": "Independent of EXP096. The full effect may be larger if EXP096 is also applied (pinned destination/source), but EXP096 is not included here. Does not touch the KV allocator or EXP095."
+  },
+  "not_modified": [
+    "working source tree",
+    "accepted builds and launchers",
+    "ROADMAP.md", "experiments/EXPERIMENTS.md", "AGENTS.md", "CLAUDE.md",
+    "work/llama.cpp-integration"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "source": "ggml_get_type_traits in preserved Apex ggml.c",
+  "native_public_to_float_missing": [
+    "Q8_1",
+    "Q8_K"
+  ],
+  "policy": "Do not create unsupported native GGML public conversions. Same runtime trait predicate in both arms; skipped cases explicitly logged. Internal activation formats require separate valid quantized-math fixtures,not a fabricated public oracle.",
+  "native_failures_preserved": true,
+  "tolerance_unchanged": true
+}

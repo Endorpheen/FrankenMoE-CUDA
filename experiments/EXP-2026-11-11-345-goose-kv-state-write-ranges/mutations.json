@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "a mirrored cache writes state too",
+    "status": "CAUGHT",
+    "failures": 382,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a partial write of a non-SWA cache proceeds",
+    "status": "CAUGHT",
+    "failures": 1093,
+    "exit_code": 1
+  },
+  {
+    "mutation": "empty cells are written",
+    "status": "CAUGHT",
+    "failures": 9244,
+    "exit_code": 1
+  },
+  {
+    "mutation": "cells of other sequences are written",
+    "status": "CAUGHT",
+    "failures": 9390,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the whole-cache write applies the SWA filter",
+    "status": "CAUGHT",
+    "failures": 1358,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the standard window is exclusive at the boundary",
+    "status": "CAUGHT",
+    "failures": 338,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the chunk start uses p0",
+    "status": "CAUGHT",
+    "failures": 2231,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the symmetric half is doubled",
+    "status": "CAUGHT",
+    "failures": 558,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a stream with no cells is not skipped",
+    "status": "CAUGHT",
+    "failures": 4244,
+    "exit_code": 1
+  }
+]

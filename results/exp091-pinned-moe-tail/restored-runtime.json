@@ -1,0 +1,11 @@
+{
+  "ready": true,
+  "pid": 2725947,
+  "port": 8081,
+  "runtime": "EXP090",
+  "all_nine_runtime_hashes_match": true,
+  "policy_log": [
+    "0.03.502.009 I pin_mmap_experts: registered 120 mapped expert ranges (18600.47 MiB), no weight copy"
+  ],
+  "client_test_requests": 0
+}

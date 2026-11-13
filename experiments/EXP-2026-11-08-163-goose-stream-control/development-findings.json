@@ -1,0 +1,7 @@
+{
+  "host_to_view": "Review corrected an initially over-eager dst->buffer assertion:host source uses view-owner buffer even before direct view binding;native parity explicitly covers both synchronous and fallback-async paths",
+  "zero_and_order": "Sync zero-size calls,async zero-size callbacks and missing-2D per-row fallbacks preserve different original semantics;the matrix validates callback order",
+  "preflight": "All nonzero 2D fallback spans are now checked before first row;invalid requests reject without partial payload mutation",
+  "staging": "Checked staging allocation and caught I/O bad_alloc release staging before fail;owned resources verified zero",
+  "model_runs_before_final_checks": 0
+}

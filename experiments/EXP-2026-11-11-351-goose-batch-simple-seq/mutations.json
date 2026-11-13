@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "used tokens are taken again",
+    "status": "CAUGHT",
+    "failures": 7660,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the simple split stops one token early",
+    "status": "CAUGHT",
+    "failures": 6842,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the simple split runs to the end regardless of size",
+    "status": "CAUGHT",
+    "failures": 15156,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sequential split accepts non-subsets",
+    "status": "CAUGHT",
+    "failures": 9582,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sequential split keeps the first set after moving",
+    "status": "CAUGHT",
+    "failures": 1663,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sequential split ignores the size limit",
+    "status": "CAUGHT",
+    "failures": 2217,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an exhausted batch reports a token",
+    "status": "CAUGHT",
+    "failures": 207,
+    "exit_code": 1
+  }
+]

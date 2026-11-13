@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "k copy skips the cross-stream reshape",
+    "status": "CAUGHT",
+    "failures": 2624,
+    "exit_code": 1
+  },
+  {
+    "mutation": "k cross-stream reshape covers one stream only",
+    "status": "CAUGHT",
+    "failures": 1312,
+    "exit_code": 1
+  },
+  {
+    "mutation": "plain-v view keeps one head per row",
+    "status": "CAUGHT",
+    "failures": 1986,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed v copies when it could reshape",
+    "status": "CAUGHT",
+    "failures": 1985,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed v pads one element early",
+    "status": "CAUGHT",
+    "failures": 1556,
+    "exit_code": 1
+  },
+  {
+    "mutation": "transposed v pads the whole cache width",
+    "status": "CAUGHT",
+    "failures": 1596,
+    "exit_code": 1
+  },
+  {
+    "mutation": "v indices count one per token",
+    "status": "CAUGHT",
+    "failures": 1722,
+    "exit_code": 1
+  },
+  {
+    "mutation": "k view drops the token row",
+    "status": "CAUGHT",
+    "failures": 2000,
+    "exit_code": 1
+  }
+]

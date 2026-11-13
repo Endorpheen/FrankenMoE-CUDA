@@ -1,0 +1,161 @@
+{
+  "status": "PASS_EXACT_SOURCE_OPTIMIZATION_NOT_NATIVE_PARITY",
+  "operation_comparisons": [
+    {
+      "kind": 0,
+      "rows": 1,
+      "cols": 1,
+      "before_us": 2.098744,
+      "after_us": 1.850873,
+      "goose_time_ratio": 1.133921128029854,
+      "native_before_us": 0.093973,
+      "native_after_us": 0.092325
+    },
+    {
+      "kind": 0,
+      "rows": 640,
+      "cols": 1,
+      "before_us": 1348.67061,
+      "after_us": 1190.988609,
+      "goose_time_ratio": 1.1323958934690364,
+      "native_before_us": 60.646595,
+      "native_after_us": 59.377142
+    },
+    {
+      "kind": 0,
+      "rows": 640,
+      "cols": 3,
+      "before_us": 4298.337873,
+      "after_us": 3515.201439,
+      "goose_time_ratio": 1.2227856490132714,
+      "native_before_us": 180.420058,
+      "native_after_us": 174.418623
+    },
+    {
+      "kind": 1,
+      "rows": 1,
+      "cols": 1,
+      "before_us": 9.069549,
+      "after_us": 3.962448,
+      "goose_time_ratio": 2.288875210475948,
+      "native_before_us": 0.16049,
+      "native_after_us": 0.114518
+    },
+    {
+      "kind": 1,
+      "rows": 640,
+      "cols": 1,
+      "before_us": 8549.658061,
+      "after_us": 2581.856188,
+      "goose_time_ratio": 3.31143853044072,
+      "native_before_us": 98.558936,
+      "native_after_us": 73.285781
+    },
+    {
+      "kind": 1,
+      "rows": 640,
+      "cols": 3,
+      "before_us": 23498.660121,
+      "after_us": 7648.134939,
+      "goose_time_ratio": 3.0724693416657307,
+      "native_before_us": 221.088871,
+      "native_after_us": 221.639188
+    },
+    {
+      "kind": 2,
+      "rows": 1,
+      "cols": 1,
+      "before_us": 5.510196,
+      "after_us": 2.117628,
+      "goose_time_ratio": 2.602060418543767,
+      "native_before_us": 0.099391,
+      "native_after_us": 0.098392
+    },
+    {
+      "kind": 2,
+      "rows": 640,
+      "cols": 1,
+      "before_us": 6692.123814,
+      "after_us": 1368.520781,
+      "goose_time_ratio": 4.89004179323456,
+      "native_before_us": 66.082499,
+      "native_after_us": 62.908031
+    },
+    {
+      "kind": 2,
+      "rows": 640,
+      "cols": 3,
+      "before_us": 20045.170815,
+      "after_us": 4061.440188,
+      "goose_time_ratio": 4.935483446050936,
+      "native_before_us": 191.993131,
+      "native_after_us": 188.258564
+    },
+    {
+      "kind": 3,
+      "rows": 1,
+      "cols": 1,
+      "before_us": 1.186439,
+      "after_us": 1.177179,
+      "goose_time_ratio": 1.007866263329536,
+      "native_before_us": 0.146709,
+      "native_after_us": 0.146871
+    },
+    {
+      "kind": 3,
+      "rows": 640,
+      "cols": 1,
+      "before_us": 765.894405,
+      "after_us": 755.415906,
+      "goose_time_ratio": 1.0138711654292332,
+      "native_before_us": 95.851003,
+      "native_after_us": 93.852814
+    },
+    {
+      "kind": 3,
+      "rows": 640,
+      "cols": 3,
+      "before_us": 2262.479873,
+      "after_us": 2260.284877,
+      "goose_time_ratio": 1.0009711147574076,
+      "native_before_us": 282.520617,
+      "native_after_us": 281.513625
+    },
+    {
+      "kind": 4,
+      "rows": 1,
+      "cols": 1,
+      "before_us": 1.275772,
+      "after_us": 1.282954,
+      "goose_time_ratio": 0.9944019816766618,
+      "native_before_us": 0.158136,
+      "native_after_us": 0.158248
+    },
+    {
+      "kind": 4,
+      "rows": 640,
+      "cols": 1,
+      "before_us": 818.885906,
+      "after_us": 804.714782,
+      "goose_time_ratio": 1.0176101201531054,
+      "native_before_us": 102.114438,
+      "native_after_us": 101.21828
+    },
+    {
+      "kind": 4,
+      "rows": 640,
+      "cols": 3,
+      "before_us": 2455.013862,
+      "after_us": 2463.203506,
+      "goose_time_ratio": 0.9966752060964305,
+      "native_before_us": 304.346991,
+      "native_after_us": 304.839021
+    }
+  ],
+  "preliminary": true,
+  "controlled_quiet_run": false,
+  "model_candidate_tested": false,
+  "source_sha256": "6222dccb0e06997c11b888a4e8b8d8d7bc15a7cfa0d3b06cb472724fefe23561",
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "current_candidate_scope": "Branchless sign logic, constant-shift Q2 unpack, single IQ4 palette duplication. No compiler change."
+}

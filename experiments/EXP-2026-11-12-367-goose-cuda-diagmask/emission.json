@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "compiler": {
+    "compiler": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+    "sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+    "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+    "qualification": "runtime qualification on the used path: Q6_K CPU module gate 240/240; Q6_K CUDA harness IDENTICAL at ncols_dst=1,2; accepted profile e68df05b with equal probabilities, restore ok, 636 single-column sub-calls; revert via runtime/compiler/current-v58-backup.json",
+    "rollback": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+    "applies_to": "Next implementation cycles;EXP173 existing binaries were built with f849 and remain immutable.",
+    "ready_compiler_watch": true,
+    "previous_compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+    "previous_sha256": "84f31960f9f3031e5fba6b767f775dfaf79448a736169fdef006072d7deccf6c",
+    "previous": "/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/versions/subset-84f31960f9f3031e/compiler",
+    "source_commit": "d710bb0920de7caaf4bf5a49eb0a457bd6af43ce",
+    "qualified_at": "2026-11-11T20:34:11.127811+00:00"
+  },
+  "modules": [
+    {
+      "module": "host",
+      "entries": [
+        "gg_function_1"
+      ],
+      "generated_c_sha256": "66e546385f7abb7673bf4a7e91733bc7384e2343e25630790b6007fa65eb3e13"
+    },
+    {
+      "module": "device",
+      "entries": [
+        "gg_function_1"
+      ],
+      "generated_c_sha256": "73003502dd81ac4107d6996711fd1617da29dfea3f8608d6cb1e6ea845b3deeb"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "q4": {
+    "bytes": 3145728,
+    "sha256": "0111c58e61bf69a4e1e0410d6b7517923de21f4fb33b37a4cf170165153a9219",
+    "exact": true,
+    "release_reallocate_exact": true
+  },
+  "q6": {
+    "bytes": 3145728,
+    "sha256": "c3b01d56cc1f9600b7a0c2087252629273c130ccb6695f389ce19d0eaec03d26",
+    "exact": true,
+    "release_reallocate_exact": true
+  },
+  "cuda_graph_launches": 21,
+  "q6_memcheck": "0 errors (release/reallocate + capture/replay)"
+}

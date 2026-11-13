@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "mark-all keeps the larger position",
+    "status": "CAUGHT",
+    "failures": 3180,
+    "exit_code": 1
+  },
+  {
+    "mutation": "single-sequence mark overwrites instead of minimising",
+    "status": "CAUGHT",
+    "failures": 871,
+    "exit_code": 1
+  },
+  {
+    "mutation": "first-position test is exclusive",
+    "status": "CAUGHT",
+    "failures": 44,
+    "exit_code": 1
+  },
+  {
+    "mutation": "negative sequence does not regroup from zero",
+    "status": "CAUGHT",
+    "failures": 256,
+    "exit_code": 1
+  },
+  {
+    "mutation": "recurrent refusal does not stop the chain",
+    "status": "CAUGHT",
+    "failures": 383,
+    "exit_code": 1
+  },
+  {
+    "mutation": "negative shift marks the unshifted position",
+    "status": "CAUGHT",
+    "failures": 37,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_cp does not mark the destination",
+    "status": "CAUGHT",
+    "failures": 460,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_keep marks only one sequence",
+    "status": "CAUGHT",
+    "failures": 1197,
+    "exit_code": 1
+  }
+]

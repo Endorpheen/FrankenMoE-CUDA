@@ -1,0 +1,470 @@
+diff -Naur a/common/checkpoint-buffer.h b/common/checkpoint-buffer.h
+--- a/common/checkpoint-buffer.h	1970-01-01 03:00:00.000000000 +0300
++++ b/common/checkpoint-buffer.h	2026-10-30 22:08:22.231278603 +0300
+@@ -0,0 +1,259 @@
++#pragma once
++
++// Host memory used to hold a serialized prompt or checkpoint state.
++//
++// The bytes are handed to llama_state_seq_set_data_ext()/get_data_ext(), which
++// copy them between host memory and the model tensors. Allocating this storage
++// from a device host buffer type (when one is available) lets the backend use
++// pinned memory for those copies without adding a second copy of the state and
++// without introducing a CUDA dependency into the common code.
++//
++// The wrapper owns exactly one allocation. If no suitable host buffer type is
++// registered, or if the allocation fails, it falls back to an ordinary
++// std::vector<uint8_t> with the same logical size. size() is always the number
++// of serialized bytes, so every existing boundary, length prefix and budget
++// calculation keeps its meaning. capacity() is the size of the actual
++// allocation and is used only for memory accounting.
++//
++// The type is copyable because prompt checkpoints are copied into the RAM prompt
++// cache today; a copy performs a deep copy of the logical bytes.
++
++#include "ggml-backend.h"
++
++#include <cstddef>
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++#include <utility>
++#include <vector>
++
++class common_checkpoint_buffer {
++public:
++    common_checkpoint_buffer() = default;
++
++    ~common_checkpoint_buffer() {
++        release();
++    }
++
++    common_checkpoint_buffer(const common_checkpoint_buffer & other) {
++        copy_from(other);
++    }
++
++    common_checkpoint_buffer & operator=(const common_checkpoint_buffer & other) {
++        if (this != &other) {
++            release();
++            copy_from(other);
++        }
++        return *this;
++    }
++
++    common_checkpoint_buffer(common_checkpoint_buffer && other) noexcept {
++        *this = std::move(other);
++    }
++
++    common_checkpoint_buffer & operator=(common_checkpoint_buffer && other) noexcept {
++        if (this == &other) {
++            return *this;
++        }
++
++        release();
++
++        buffer        = other.buffer;
++        data_vector   = std::move(other.data_vector);
++        data_ptr      = other.data_ptr;
++        size_bytes    = other.size_bytes;
++        data_capacity = other.data_capacity;
++        pinned        = other.pinned;
++
++        other.buffer        = nullptr;
++        other.data_ptr      = nullptr;
++        other.size_bytes    = 0;
++        other.data_capacity = 0;
++        other.pinned        = false;
++
++        return *this;
++    }
++
++    // Allocate storage for exactly `size` serialized bytes. Throws std::bad_alloc
++    // only on the ordinary-vector fallback, matching the previous behavior.
++    void resize(size_t size) {
++        if (size == 0) {
++            release();
++            return;
++        }
++
++        // allocate before releasing the previous contents so that a failed
++        // allocation leaves the buffer unchanged, like std::vector::resize()
++        ggml_backend_buffer_t new_buffer   = nullptr;
++        uint8_t *             new_ptr      = nullptr;
++        size_t                new_capacity = 0;
++
++        if (ggml_backend_buffer_type_t buft = pinned_host_buffer_type()) {
++            const size_t alignment = alignment_of(buft);
++            const size_t capacity  = align_up(size, alignment);
++
++            if (capacity >= size && capacity <= ggml_backend_buft_get_max_size(buft)) {
++                ggml_backend_buffer_t buf = ggml_backend_buft_alloc_buffer(buft, capacity);
++                if (buf != nullptr) {
++                    void * base = ggml_backend_buffer_get_base(buf);
++                    // never hold more than capacity_for() predicted: the budget
++                    // was checked against that value before this allocation
++                    const size_t buffer_size = ggml_backend_buffer_get_size(buf);
++                    if (base != nullptr && buffer_size <= capacity) {
++                        new_buffer   = buf;
++                        new_ptr      = static_cast<uint8_t *>(base);
++                        new_capacity = buffer_size;
++                    } else {
++                        ggml_backend_buffer_free(buf);
++                    }
++                }
++            }
++        }
++
++        if (new_buffer == nullptr) {
++            std::vector<uint8_t> new_vector(size); // may throw, old contents kept
++            release();
++            data_vector   = std::move(new_vector);
++            data_ptr      = data_vector.data();
++            size_bytes    = size;
++            data_capacity = size;
++            pinned        = false;
++            return;
++        }
++
++        release();
++        buffer        = new_buffer;
++        data_ptr      = new_ptr;
++        size_bytes    = size;
++        data_capacity = new_capacity;
++        pinned        = true;
++    }
++
++    // Allocation size that resize() is expected to use for `size` bytes. Used
++    // before allocating so that memory budgets are checked against the real
++    // allocation size. If the pinned allocation later fails and resize() falls
++    // back to a vector, the actual capacity is smaller, never larger.
++    static size_t capacity_for(size_t size) {
++        if (size == 0) {
++            return 0;
++        }
++
++        if (ggml_backend_buffer_type_t buft = pinned_host_buffer_type()) {
++            const size_t alignment = alignment_of(buft);
++            const size_t capacity  = align_up(size, alignment);
++            if (capacity >= size && capacity <= ggml_backend_buft_get_max_size(buft)) {
++                return capacity;
++            }
++        }
++
++        return size;
++    }
++
++    void release() {
++        if (buffer != nullptr) {
++            ggml_backend_buffer_free(buffer);
++            buffer = nullptr;
++        } else if (!data_vector.empty()) {
++            std::vector<uint8_t>().swap(data_vector);
++        }
++
++        data_ptr      = nullptr;
++        size_bytes    = 0;
++        data_capacity = 0;
++        pinned        = false;
++    }
++
++    uint8_t *       data()       { return data_ptr; }
++    const uint8_t * data() const { return data_ptr; }
++
++    // number of serialized bytes
++    size_t size() const { return size_bytes; }
++
++    // number of bytes actually allocated
++    size_t capacity() const { return data_capacity; }
++
++    bool empty() const { return size_bytes == 0; }
++
++    // True when the storage was allocated from a device host buffer type. The
++    // backend may still have served the request with pageable memory when
++    // pinning was unavailable; this flag describes the allocation class only.
++    bool is_pinned() const { return pinned; }
++
++private:
++    void copy_from(const common_checkpoint_buffer & other) {
++        if (other.size_bytes == 0) {
++            return;
++        }
++
++        resize(other.size_bytes);
++        std::memcpy(data_ptr, other.data_ptr, other.size_bytes);
++    }
++
++    static size_t align_up(size_t value, size_t alignment) {
++        if (alignment <= 1) {
++            return value;
++        }
++        const size_t remainder = value % alignment;
++        if (remainder == 0) {
++            return value;
++        }
++        const size_t padding = alignment - remainder;
++        if (value > SIZE_MAX - padding) {
++            return 0;
++        }
++        return value + padding;
++    }
++
++    static size_t alignment_of(ggml_backend_buffer_type_t buft) {
++        const size_t alignment = ggml_backend_buft_get_alignment(buft);
++        return alignment > 0 ? alignment : 1;
++    }
++
++    // Pick the first registered device host buffer type that is not the
++    // ordinary pageable CPU buffer type. On the current single-GPU build this
++    // is the CUDA pinned host buffer type; on a CPU-only build there is none.
++    static ggml_backend_buffer_type_t pinned_host_buffer_type() {
++        static const bool enabled = []() {
++            const char * flag = std::getenv("GGML_PROMPT_CHECKPOINT_PINNED");
++            return !(flag != nullptr && std::strcmp(flag, "0") == 0);
++        }();
++
++        if (!enabled) {
++            return nullptr;
++        }
++
++        static ggml_backend_buffer_type_t cached = []() -> ggml_backend_buffer_type_t {
++            const size_t n_devices = ggml_backend_dev_count();
++            for (size_t i = 0; i < n_devices; ++i) {
++                ggml_backend_dev_t dev = ggml_backend_dev_get(i);
++                if (dev == nullptr) {
++                    continue;
++                }
++
++                ggml_backend_buffer_type_t buft = ggml_backend_dev_host_buffer_type(dev);
++                if (buft == nullptr) {
++                    continue;
++                }
++                if (buft == ggml_backend_cpu_buffer_type()) {
++                    continue;
++                }
++                if (!ggml_backend_buft_is_host(buft)) {
++                    continue;
++                }
++
++                return buft;
++            }
++
++            return nullptr;
++        }();
++
++        return cached;
++    }
++
++    ggml_backend_buffer_t buffer        = nullptr;
++    std::vector<uint8_t>  data_vector;
++    uint8_t *             data_ptr      = nullptr;
++    size_t                size_bytes    = 0;
++    size_t                data_capacity = 0;
++    bool                  pinned        = false;
++};
+diff -Naur a/common/common.cpp b/common/common.cpp
+--- a/common/common.cpp	2026-10-30 22:00:43.519209827 +0300
++++ b/common/common.cpp	2026-10-30 22:01:02.932127330 +0300
+@@ -2362,6 +2362,10 @@
+     return data_tgt.size() + data_dft.size() + data_spec.size();
+ }
+ 
++size_t common_prompt_checkpoint::capacity() const {
++    return data_tgt.capacity() + data_dft.capacity() + data_spec.size();
++}
++
+ bool common_prompt_checkpoint::empty() const {
+     return data_tgt.empty();
+ }
+@@ -2372,8 +2376,8 @@
+     pos_min = 0;
+     pos_max = 0;
+ 
+-    data_tgt.clear();
+-    data_dft.clear();
++    data_tgt.release();
++    data_dft.release();
+     data_spec.clear();
+ }
+ 
+@@ -2455,10 +2459,10 @@
+ }
+ 
+ void common_prompt_checkpoint::clear_tgt() {
+-    data_tgt.clear();
++    data_tgt.release();
+ }
+ 
+ void common_prompt_checkpoint::clear_dft() {
+-    data_dft.clear();
++    data_dft.release();
+     data_spec.clear();
+ }
+diff -Naur a/common/common.h b/common/common.h
+--- a/common/common.h	2026-10-30 22:00:43.519073550 +0300
++++ b/common/common.h	2026-10-30 22:00:58.842509085 +0300
+@@ -8,6 +8,8 @@
+ #include "ggml.h"
+ #include "llama.h"
+ 
++#include "checkpoint-buffer.h"
++
+ #include <array>
+ #include <list>
+ #include <set>
+@@ -1289,15 +1291,19 @@
+     llama_pos pos_min;
+     llama_pos pos_max;
+ 
+-    std::vector<uint8_t> data_tgt;
+-    std::vector<uint8_t> data_dft;
++    common_checkpoint_buffer data_tgt;
++    common_checkpoint_buffer data_dft;
+ 
+     // (optional) speculative-decoding implementation state stashed with the checkpoint
+     // (e.g. eagle3's deferred-boundary g_embd row)
+     std::vector<uint8_t> data_spec;
+ 
++    // number of serialized bytes
+     size_t size() const;
+ 
++    // number of bytes actually allocated for the serialized state
++    size_t capacity() const;
++
+     bool empty() const;
+     void clear();
+ 
+diff -Naur a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+--- a/tools/server/server-context.cpp	2026-10-30 22:00:43.522581074 +0300
++++ b/tools/server/server-context.cpp	2026-10-30 22:01:13.970990083 +0300
+@@ -2697,7 +2697,7 @@
+     void reserve_prefix_checkpoint(server_slot & slot, size_t incoming) {
+         auto used = [&]() {
+             size_t total = 0;
+-            for (const auto & c : slot.prompt.checkpoints) { total += c.size(); }
++            for (const auto & c : slot.prompt.checkpoints) { total += c.capacity(); }
+             return total;
+         };
+         while (!slot.prompt.checkpoints.empty() && !prefix_policy.fits(used(), incoming)) {
+@@ -2709,7 +2709,8 @@
+     void create_checkpoint(server_slot & slot, const int64_t n_tokens_cur, llama_pos pos_min, llama_pos pos_max) {
+         const int id_task = slot.task->id;
+         const bool bounded = prefix_checkpoints_enabled();
+-        const size_t incoming = bounded ? llama_state_seq_get_size_ext(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY) : 0;
++        const size_t incoming = bounded ? common_checkpoint_buffer::capacity_for(
++                llama_state_seq_get_size_ext(ctx_tgt, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY)) : 0;
+         if (bounded && !prefix_policy.fits(0, incoming)) {
+             SLT_WRN(slot, "%s", "SWA checkpoint exceeds RAM budget, skipping\n");
+             return;
+@@ -2816,6 +2817,16 @@
+         return n == 0 || ckpt_read(ifs, buf.data(), n, n_read);
+     }
+ 
++    static bool ckpt_read_buf(std::ifstream & ifs, common_checkpoint_buffer & buf, size_t n_avail, size_t & n_read) {
++        uint64_t n = 0;
++        // check the size against the bytes left in the file before allocating, the size field may be corrupted
++        if (!ckpt_read(ifs, &n, sizeof(n), n_read) || n > n_avail - n_read) {
++            return false;
++        }
++        buf.resize(n);
++        return n == 0 || ckpt_read(ifs, buf.data(), n, n_read);
++    }
++
+     static void ckpt_write(std::ofstream & ofs, const void * src, size_t size, size_t & n_written) {
+         ofs.write((const char *) src, size);
+         n_written += size;
+@@ -2825,6 +2836,14 @@
+         const uint64_t n = buf.size();
+         ckpt_write(ofs, &n, sizeof(n), n_written);
+         if (n > 0) {
++            ckpt_write(ofs, buf.data(), n, n_written);
++        }
++    }
++
++    static void ckpt_write_buf(std::ofstream & ofs, const common_checkpoint_buffer & buf, size_t & n_written) {
++        const uint64_t n = buf.size();
++        ckpt_write(ofs, &n, sizeof(n), n_written);
++        if (n > 0) {
+             ckpt_write(ofs, buf.data(), n, n_written);
+         }
+     }
+diff -Naur a/tools/server/server-task.cpp b/tools/server/server-task.cpp
+--- a/tools/server/server-task.cpp	2026-10-30 22:00:43.522377430 +0300
++++ b/tools/server/server-task.cpp	2026-10-30 22:01:08.854445330 +0300
+@@ -1757,10 +1757,15 @@
+     // calculate checkpoints size to see if it will fit with the prompt
+     size_t checkpoints_size = 0;
+     for (const auto & ckpt : prompt.checkpoints) {
+-        checkpoints_size += ckpt.size();
++        checkpoints_size += ckpt.capacity();
+     }
+ 
+-    const size_t state_size_new = state_size_tgt + state_size_dft + checkpoints_size;
++    // account for the actual storage capacity before allocating: a pinned host
++    // buffer may round the request up to its alignment, and the checkpoint
++    // budget must not grow silently because of that padding
++    const size_t state_size_new = common_checkpoint_buffer::capacity_for(state_size_tgt) +
++                                  common_checkpoint_buffer::capacity_for(state_size_dft) +
++                                  checkpoints_size;
+ 
+     // skip over-limit entries to avoid disturbing the cache
+     if (limit_size > 0 && state_size_new > limit_size) {
+@@ -1792,8 +1797,8 @@
+         }
+     }
+ 
+-    std::vector<uint8_t> state_data_tgt;
+-    std::vector<uint8_t> state_data_dft;
++    common_checkpoint_buffer state_data_tgt;
++    common_checkpoint_buffer state_data_dft;
+ 
+     // check if we can allocate enough memory for the new state
+     try {
+@@ -1871,8 +1876,7 @@
+                 return false;
+             }
+ 
+-            data.clear();
+-            data.shrink_to_fit();
++            data.release();
+         }
+ 
+         {
+@@ -1889,8 +1893,7 @@
+                     return false;
+                 }
+ 
+-                data.clear();
+-                data.shrink_to_fit();
++                data.release();
+             }
+         }
+ 
+diff -Naur a/tools/server/server-task.h b/tools/server/server-task.h
+--- a/tools/server/server-task.h	2026-10-30 22:00:43.522292239 +0300
++++ b/tools/server/server-task.h	2026-10-30 22:05:16.727058843 +0300
+@@ -670,11 +670,13 @@
+ };
+ 
+ struct server_prompt_data {
+-    std::vector<uint8_t> main;
+-    std::vector<uint8_t> drft;
++    common_checkpoint_buffer main;
++    common_checkpoint_buffer drft;
+ 
++    // memory accounting: the serialized length is main.size()/drft.size(),
++    // but the budget is charged for the actual allocation
+     size_t size() const {
+-        return main.size() + drft.size();
++        return main.capacity() + drft.capacity();
+     }
+ };
+ 
+@@ -686,7 +688,7 @@
+         size_t res = data.size();
+ 
+         for (const auto & ckpt : prompt.checkpoints) {
+-            res += ckpt.size();
++            res += ckpt.capacity();
+         }
+ 
+         return res;

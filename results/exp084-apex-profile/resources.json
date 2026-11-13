@@ -1,0 +1,58 @@
+{
+  "resources-before": {
+    "pid": 2245029,
+    "wall_ns": 1793341671612235505,
+    "monotonic_ns": 139622764465683,
+    "status": {
+      "VmHWM": "23618368 kB",
+      "VmRSS": "23618368 kB",
+      "VmSwap": "0 kB"
+    },
+    "vmstat": {
+      "pswpin": 3889155,
+      "pswpout": 7714264
+    }
+  },
+  "resources-after-branch": {
+    "wall_ns": 1793341786199724284,
+    "monotonic_ns": 139737351951405,
+    "status": {
+      "VmHWM": "24428272 kB",
+      "VmRSS": "24428272 kB",
+      "VmSwap": "0 kB"
+    },
+    "vmstat": {
+      "pswpin": 3889205,
+      "pswpout": 7714264
+    }
+  },
+  "resources-after-repeat": {
+    "wall_ns": 1793341802523582046,
+    "monotonic_ns": 139753675809218,
+    "status": {
+      "VmHWM": "24441504 kB",
+      "VmRSS": "24441504 kB",
+      "VmSwap": "0 kB"
+    },
+    "vmstat": {
+      "pswpin": 3889205,
+      "pswpout": 7714264
+    }
+  },
+  "resources-after-cold": {
+    "wall_ns": 1793341759468357741,
+    "monotonic_ns": 139710620585133,
+    "status": {
+      "VmHWM": "24414756 kB",
+      "VmRSS": "24414756 kB",
+      "VmSwap": "0 kB"
+    },
+    "vmstat": {
+      "pswpin": 3889204,
+      "pswpout": 7714264
+    }
+  },
+  "earlier_preparation_pswpout": 7439122,
+  "generation_pswpout": 7714264,
+  "limit": "Earlier preparation pswpout increased; no attribution or whole-preparation zero-swap claim. Request-window process swap is zero and global pswpout is unchanged."
+}

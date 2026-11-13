@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "write skips the ple tensor",
+    "status": "CAUGHT",
+    "failures": 3347,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write offsets the s tensor without its row stride",
+    "status": "CAUGHT",
+    "failures": 1431,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write transposed element offsets are doubled",
+    "status": "CAUGHT",
+    "failures": 1605,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write miscounts the layers",
+    "status": "CAUGHT",
+    "failures": 600,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read accepts a higher tensor type",
+    "status": "CAUGHT",
+    "failures": 39,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read rejects an exactly full cache",
+    "status": "CAUGHT",
+    "failures": 3,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read offsets the r tensor by one byte",
+    "status": "CAUGHT",
+    "failures": 915,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read transposed rows lose the cell stride",
+    "status": "CAUGHT",
+    "failures": 460,
+    "exit_code": 1
+  }
+]

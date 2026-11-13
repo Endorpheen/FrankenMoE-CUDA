@@ -1,0 +1,14 @@
+{
+ "native": {
+  "kw_true": "<think>user:q;|GEN",
+  "kw_false": "user:q;|GEN",
+  "kw_extra": "<think>user:q;|GENK=v1",
+  "kw_bad": "user:q;|GEN"
+ },
+ "ours": {
+  "kw_true": "<think>user:q;|GEN",
+  "kw_false": "user:q;|GEN",
+  "kw_extra": "<think>user:q;|GENK=v1",
+  "kw_bad": "user:q;|GEN"
+ }
+}

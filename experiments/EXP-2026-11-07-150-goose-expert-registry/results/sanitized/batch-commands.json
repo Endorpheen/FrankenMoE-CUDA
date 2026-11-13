@@ -1,0 +1,55 @@
+[
+  {
+    "label": "compile-cache",
+    "argv": [
+      "/usr/bin/g++-13",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "-g",
+      "-O1",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/include",
+      "-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/expert-cache",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/expert-cache/fixture.cpp",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/build/cache-goose.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/build/budget-services.o",
+      "-L/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/run",
+      "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/run",
+      "-lggml-base",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/build/cache-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "cache-differential",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/build/cache-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "compile-registry",
+    "argv": [
+      "/usr/bin/gcc-13",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "-g",
+      "-O1",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/registry/fixture.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/build/registry.o",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/build/registry-fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "registry-policy",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/variants/sanitized/build/registry-fixture"
+    ],
+    "exit_code": 0
+  }
+]

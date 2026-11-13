@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "indexer keeps two key heads",
+    "status": "CAUGHT",
+    "failures": 4483,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer SWA value width uses the key head",
+    "status": "CAUGHT",
+    "failures": 994,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer rope is not NeoX",
+    "status": "CAUGHT",
+    "failures": 1000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "CSA filter takes the HCA ratio",
+    "status": "CAUGHT",
+    "failures": 2463,
+    "exit_code": 1
+  },
+  {
+    "mutation": "CSA cache is sized with the HCA ratio",
+    "status": "CAUGHT",
+    "failures": 1761,
+    "exit_code": 1
+  },
+  {
+    "mutation": "HCA compressor state halves its rows",
+    "status": "CAUGHT",
+    "failures": 500,
+    "exit_code": 1
+  },
+  {
+    "mutation": "raw cache becomes unified",
+    "status": "CAUGHT",
+    "failures": 500,
+    "exit_code": 1
+  },
+  {
+    "mutation": "K-only leaves the value width alone",
+    "status": "CAUGHT",
+    "failures": 500,
+    "exit_code": 1
+  }
+]

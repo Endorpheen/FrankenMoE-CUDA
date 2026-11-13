@@ -1,0 +1,80 @@
+{
+  "module": "apex-fattn-vector/device.goose",
+  "prefix": "fg175v_",
+  "language": "Goose (dialect of inputs/device.goose and inputs/compiled-gdn-mma-device.goose): structs, extern primitives, pure fns, let/var, if/else expressions, while, fixed f32/i32 arrays via default<T[n]>(), as-casts (always parenthesized), no heap/VM, u64 byte addresses computed in-source.",
+  "sources": {
+    "kernel": "apex-fattn-vector/inputs/fattn-vec.cuh flash_attn_ext_vec (FLASH_ATTN_AVAILABLE body)",
+    "helpers": "apex-fattn-vector/inputs/fattn-common.cuh: quantize_q8_1_to_shared<float2,32>, vec_dot_fattn_vec_KQ_q4_0<256,32>, dequantize_V_q4_0<float,4>, flash_attn_combine_results<256>, FATTN_KQ_MAX_OFFSET=3*0.6931f",
+    "support": "apex-fattn-vector/inputs/common.cuh: warp_reduce_sum/max<32>, get_alibi_slope, ggml_cuda_memcpy_1<4,2>/tpy_sizes, WARP_SIZE=32"
+  },
+  "target": {
+    "D": 256,
+    "Q_type": "GGML_TYPE_F32",
+    "K_type": "GGML_TYPE_Q4_0",
+    "V_type": "GGML_TYPE_Q4_0",
+    "ncols": "runtime parameter, 1 or 2 (cols_per_block from ggml_cuda_flash_attn_ext_vec_case)",
+    "warp_size": 32,
+    "nthreads": 128,
+    "nwarps": 4,
+    "accumulation": "f32 (V_DOT2_F32_F16_AVAILABLE undefined on CUDA; half/HIP branches not applicable)",
+    "use_logit_softcap": false
+  },
+  "derived_constants": {
+    "nthreads_KQ": 32,
+    "nthreads_V": 32,
+    "V_rows_per_thread": 4,
+    "V_cols_per_iter": 1,
+    "cpy": "ggml_cuda_memcpy_1<4,alignment=2> for Q4_0 qs words (18-byte blocks are 2-mod-4 aligned): two u16 loads",
+    "QI8_1": 8,
+    "QI4_0": 4,
+    "QK4_0": 32,
+    "QK8_1": 32,
+    "block_q4_0": "18 bytes: ggml_half d at byte 0, uint8 qs[16] at byte 2 (packed, no padding)",
+    "D_over_4": 64,
+    "D_over_QK8_1": 8,
+    "correction": "(8/QI8_1) == 1 exact integer division; K nibbles stay raw (0..15) inside dp4a exactly as the source passes (v>>shift)&0x0F0F0F0F"
+  },
+  "missing_include": "ggml-common.h (block_q4_0/block_q8_1 definitions and QK4_0/QI4_0/QK8_1/QI8_1) is not among the provided inputs; the constants above are derived from the self-consistent usage in the provided fattn-common.cuh (ib=k_KQ/QI8_1, iqs4=k_KQ%QI4_0, dequant i0/QK4_0 and i0%(QK4_0/2), quantize ds layout D/QK8_1) and MUST be verified by the parent against the real ggml-common.h before codegen; no ABI was reconstructed beyond what these sources fix.",
+  "entries": [
+    {
+      "name": "fattn_vec",
+      "maps": "flash_attn_ext_vec<256,GGML_TYPE_Q4_0,GGML_TYPE_Q4_0,false>",
+      "abi": "params in fattn_kernel_t order: 8 raw pointers (Q,K,V,mask,sinks,KV_max,dst,dst_meta as u64 byte bases), scale/max_bias/m0/m1 (f32), n_head_log2 (i32), logit_softcap (f32, unused in this instance), ne00, ne01_z (=uint3 ne01.z fastdiv divisor field, used as int(ne01.z)), ne02, ne03, nb01,nb02,nb03 (byte strides), ne10,ne11,ne12,ne13, nb11,nb12,nb13, nb21,nb22,nb23, ne31,ne32,ne33, nb31,nb32,nb33, ncols (1 or 2), then bx,by,bz,gx,gy,tx,ty (blockIdx.xyz, gridDim.x/y, threadIdx.x/y) and smem (shared base, u64). All strides taken as i64 (source types int32/int64; i64 is value-identical and avoids C int-overflow UB). Unused-by-body ABI params retained: ne00, ne10, ne13, ne31, ne32, nb32, logit_softcap.",
+      "geometry": "block (32,4,1); grid (ntiles_x, parallel_blocks, ntiles_z_gqa*K->ne[2]*Q->ne[3]) per launch_fattn non-stream-k branch; gx=gridDim.x (used for KV_max indexing), gy=gridDim.y",
+      "dst_plan": "gridDim.y==1: dst is KQV->data directly, dst_val/=KQ_sum; gridDim.y>1: dst is dst_tmp with layout [((sequence*ne01+col)*ne02+head)*gridDim.y+blockIdx.y]*D and dst_meta float2 (KQ_max,KQ_sum) at the same index; combine runs afterwards",
+      "KV_max": "when kv_max_p!=0 reads KV_max[sequence*gridDim.x+blockIdx.x] (int32) as the KV loop limit, else ne11; mask/sinks null-checked exactly as the source"
+    },
+    {
+      "name": "combine",
+      "maps": "flash_attn_combine_results<256>",
+      "abi": "parts_p (dst_tmp float base), meta_p (dst_tmp_meta float2 base), dst_p (KQV->data), pb=parallel_blocks, bx,by,bz (=Q->ne[1],Q->ne[2],Q->ne[3] grid), gx=gridDim.x=ne01, gy=gridDim.y=ne02, tx in [0,256), smem = dynamic shared base of pb*8 bytes",
+      "geometry": "block (256,1,1); shared parallel_blocks*sizeof(float2)"
+    }
+  ],
+  "extern_primitives": [
+    "fg175v_ld_f32(p:u64,a:u64)->f32: global f32 load at byte offset a (Q elements, sinks[head], VKQ_parts)",
+    "fg175v_st_f32(p:u64,a:u64,v:f32): global f32 store (dst partition, dst_meta float2 halves at *8/*8+4, combine dst)",
+    "fg175v_ld_u16(p:u64,a:u64)->u32: global 16-bit load, zero-extended (Q4_0 qs halves, mask halves, K/V block d halves)",
+    "fg175v_ld_i32(p:u64,a:u64)->i32: global int32 load (KV_max)",
+    "fg175v_h2f(w:u32)->f32: __half2float of a 16-bit half given zero-extended",
+    "fg175v_dp4a(a:i32,b:i32,c:i32)->i32: raw __dp4a on the two 32-bit words exactly as the source feeds them (a = raw K nibble word, b = Q q8_1 bytes)",
+    "fg175v_expf(x:f32)->f32: expf (softmax scales/probs)",
+    "fg175v_powf(b:f32,e:i32)->f32: powf(base,exph) of get_alibi_slope (source libm call, kept as primitive, not approximated)",
+    "fg175v_fmaxf(a:f32,b:f32)->f32: fmaxf semantics",
+    "fg175v_round_i8(x:f32)->i32: composite of source roundf(x) followed by int8_t conversion (returns value in [-127,127])",
+    "fg175v_shfl_xor(v:f32,o:i32)->f32: __shfl_xor_sync(0xffffffff,v,o,32)",
+    "fg175v_syncwarp(): __syncwarp after KQ stores and after the V sweep",
+    "fg175v_barrier(): __syncthreads",
+    "fg175v_sm_f32(p:u64,i:u64)->f32 / fg175v_sm_st_f32: shared f32 word at word index i from shared base p",
+    "fg175v_sm_i32(p:u64,i:u64)->i32 / fg175v_sm_st_i32: shared 32-bit word (raw bit pattern) at word index i"
+  ],
+  "shared_layout": "static shared of the fattn_vec entry, 1152 words = 4608 bytes: words [0,1024) the KQ float buffer shared exactly as in the source (Q q8_1 staging per column j: 64 i32 words at j*256 + 16 f32 words of (d,sum) pairs at j*256+64..+79; probs KQ[j*128+tid]; combine staging: warp ty slice words ty*256..ty*256+255 holding (2i,2i+1) element pairs); words [1024,1088) KQ_max_shared[ncols][32] (column j at 1024+j*32); words [1088,1152) KQ_sum_shared. Parent allocates 4608 bytes and passes the base as smem (source uses static __shared__; dynamic opt-in is parent codegen).",
+  "deferred": [
+    "use_logit_softcap=true template instance (tanhf branch) — separate entry if needed; logit_softcap param retained in ABI",
+    "ggml_cuda_pdl_lc/pdl_sync — parent owns PDL launch attributes; no-ops without them",
+    "flash_attn_mask_to_KV_max scan kernel and stream-K fixup kernels (host-side companions; parent owns kernel selection and must not be changed by this module)",
+    "other K/V types, F16/BF16 paths, V_DOT2/HIP variants, ncols>2 — explicitly out of scope for this target",
+    "prefill MMA path is parent work (mma.cuh); this module does not touch kernel selection"
+  ],
+  "notes": "Nibble extraction/packing uses unsigned div/mod plus disjoint Horner reassembly, bit-identical to (v>>shift)&0x0F0F0F0F and to int8 byte aliasing; __vsub4+int8 view equals per-lane n-8. dp4a operands are passed as raw 32-bit patterns; signedness handling of the dp4a instruction is parent codegen per the source semantics. main() calls both entries with zero arguments and is never executed. No runtime or performance claims are made; parent owns codegen, CUDA/GPU and Apex checks."
+}

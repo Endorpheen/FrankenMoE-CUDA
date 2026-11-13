@@ -1,0 +1,17 @@
+{
+  "all_allocatable_sections_identical": true,
+  "only_changed_section": ".strtab",
+  "old_only_symbol_strings": [
+    "_GLOBAL__sub_I_tmpxft_00244475_00000000_6_ggml_cuda.cudafe1.cpp",
+    "tmpxft_00244475_00000000-6_ggml-cuda.cudafe1.cpp"
+  ],
+  "new_only_symbol_strings": [
+    "_GLOBAL__sub_I_tmpxft_002854ee_00000000_6_ggml_cuda.cudafe1.cpp",
+    "tmpxft_002854ee_00000000-6_ggml-cuda.cudafe1.cpp"
+  ],
+  "kernel_fatbin_sha256": {
+    ".nv_fatbin": "2a07a1e4e1dc569ead78066ec62df735cfc8cfcdae74d0f64c4659fb1bf4be35",
+    ".nvFatBinSegment": "8d9b65c40e2717f4078b89ae4b8a508609acf8dcbfa63f29a7db70e81e12d973",
+    ".rela.nvFatBinSegment": "e063cc63463992fb28394bca855f494313c2719af094463a5322783ad55c300e"
+  }
+}

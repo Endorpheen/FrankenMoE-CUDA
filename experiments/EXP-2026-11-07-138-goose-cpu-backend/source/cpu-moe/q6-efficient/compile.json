@@ -1,0 +1,12 @@
+[
+  "/usr/bin/gcc",
+  "-O3",
+  "-march=native",
+  "-fPIC",
+  "-fno-strict-aliasing",
+  "-shared",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-moe/q6-efficient/unit.c",
+  "-lm",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libgoose-moe-q6-efficient.so"
+]

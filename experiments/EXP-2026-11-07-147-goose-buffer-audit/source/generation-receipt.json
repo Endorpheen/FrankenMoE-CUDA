@@ -1,0 +1,10 @@
+{
+  "status": "SOURCE_GENERATED_NOT_INTEGRATED_OR_VALIDATED",
+  "producer_sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+  "goose_sha256": "83ebe9d8fab7e17cfa00dc888b6d968bfc934a5d2580253559355d15bfe16e0d",
+  "generated_c_sha256": "e40f0a85ddfed4da61a86e701928e83809120e01c1f9e556ffde65a19e7a97e9",
+  "mapped_operators": 93,
+  "no_original_compute_import": true,
+  "compiler_source_changed": false,
+  "production_changed": false
+}

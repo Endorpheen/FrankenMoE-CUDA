@@ -1,0 +1,22 @@
+{
+  "status": "PASS_SCOPED_BACKEND_ASAN_UBSAN_LSAN_AND_ALLOCATION_POLICY",
+  "checks": {
+    "api": {
+      "exit_code": 0,
+      "records": 167,
+      "bytes_equal_release": true
+    },
+    "release": {
+      "exit_code": 0,
+      "cases": 9
+    },
+    "sanitized": {
+      "exit_code": 0,
+      "cases": 9
+    }
+  },
+  "scope": "Instrumented new backend Goose/C++ metadata API,core,new Goose modules and API fixture; original retained objects/vendor libraries uninstrumented. Allocation failure cases use a mock resource provider for the actual Goose policy,not an OS OOM test.",
+  "production_changed": false,
+  "compiler_changed": false,
+  "model_loaded": false
+}

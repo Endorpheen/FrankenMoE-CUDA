@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "indexer keeps two key heads",
+    "status": "CAUGHT",
+    "failures": 6513,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer rope is not NeoX",
+    "status": "CAUGHT",
+    "failures": 1000,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer uses the MLA filter",
+    "status": "CAUGHT",
+    "failures": 1397,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_rm succeeds if either cache does",
+    "status": "CAUGHT",
+    "failures": 105,
+    "exit_code": 1
+  },
+  {
+    "mutation": "position observers read the indexer",
+    "status": "CAUGHT",
+    "failures": 200,
+    "exit_code": 1
+  },
+  {
+    "mutation": "can_shift ignores the size match",
+    "status": "CAUGHT",
+    "failures": 82,
+    "exit_code": 1
+  },
+  {
+    "mutation": "failed restore leaves the MLA part behind",
+    "status": "CAUGHT",
+    "failures": 93,
+    "exit_code": 1
+  },
+  {
+    "mutation": "failed restore also loses the MLA read",
+    "status": "CAUGHT",
+    "failures": 93,
+    "exit_code": 1
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "tag": "p602new-128",
+  "n_predict": 128,
+  "prefill_tok_s": 2164.653587714481,
+  "decode_tok_s": 37.13911816526908,
+  "prompt_tokens": 32768,
+  "predicted": 128,
+  "content_sha256": "9d90a010775f2e72fbea3fec7e0d34b8e57b52aab9dd16e90eb9cd5151ba7560",
+  "server_exit": 0,
+  "loadavg_before": "6.88 5.67 5.23",
+  "loadavg_at_request": "6.73 5.66 5.23",
+  "cpu_threads": 32,
+  "parallel_compilers_before": 0
+}

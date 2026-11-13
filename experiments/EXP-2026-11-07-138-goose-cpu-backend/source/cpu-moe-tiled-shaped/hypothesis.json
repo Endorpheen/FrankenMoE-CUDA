@@ -1,0 +1,6 @@
+{
+  "hypothesis": "Group quantized byte planes and scale arrays by typed block so the compiler can hoist bounds checks out of the SIMD subblock loop. Keep all checks and arithmetic semantics; no compiler modification.",
+  "baseline": "cpu-moe-tiled",
+  "production_change": false,
+  "producer_sha256": "2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b"
+}

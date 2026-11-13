@@ -1,0 +1,20 @@
+{
+  "source/faults.cpp": "45cb43ba5537fa422d9160e9927eefde27d7b3024797e9b8eb6608d387692c65",
+  "source/native-allocator.c": "add873fb1dd96d7bbc696f78a12aa3e278d14830670f1776fa16fe353eeeda6f",
+  "source/fixture.cpp": "6dabc09cf9c4951b951cf68dbf8f91accc6e9a653c7f8c589e9f088fd47a6e22",
+  "source/allocator.h": "d70bceba3bd391e2ed8dfaa7f47fad093c8a80284ec0f3b57dd7940e8e92063f",
+  "source/allocator-api.h": "31e6c832a172eafe5bc74b02d1321e750b25528ff9102413a1e45a866f546ebd",
+  "source/concurrency.cpp": "33c53aa6fc843cc3ee73309f985fe42626b65ca2e94639684679ead81c3a1e68",
+  "source/test-exports.h": "87e8194ad93881aabe63686509ef5372be275a0aa96c7dea3ecdacacd784b2b0",
+  "source/probe-native.c": "30690120cb18d16f8e809b12668d3ac047e62b68b33458898269d04f1f9b8358",
+  "source/probe-candidate.c": "78e011de73c468af5c6170823b7828f407060a62235dd126a1a507b1b1c0acd4",
+  "source/allocator-generated.c": "a146f602e683bba5c93fd34dc0a96782964c665deda0c64c9226e7fa3dbabdc5",
+  "source/ggml-allocator.c": "ebda2cbcfa49d094dcbbcdb6558b187a4a8fce6b52475e15f970918e0bbad85a",
+  "source/manifest.json": "61a156a9092ae22935e1d3474f91c4e8150ad80299a32508ac8592d3a3f5b068",
+  "source/recipes.json": "f38853ab947c55fae79e107bcae15e0748a89e49fc523f65f0a21be98bd969ca",
+  "source/allocator.goose": "3c00697c4d4b80228ab9ddde82759962d8ef96164b7d0f1e18712009c790cd26",
+  "source/allocator-qualified.c": "4c159c30f99f1225c5611aa2eaf920a7af1e542175da40053cf76d898298a9fa",
+  "source/prior-design/allocator-reuse.goose": "271836b4682bd7641d5d7308a033d0deade4eb5110317948663e56cb3166a288",
+  "source/prior-design/allocator-coalesce.goose": "50b7e19159eb5e888eb09469b656ba39ecf6d90e9e2714fbcef6a8b0abafb19c",
+  "source/prior-design/tensor-lifetime.goose": "c32a2888ad884ff8ded4ff51c62000f44c7f371129e200ca05028b71f76287c1"
+}

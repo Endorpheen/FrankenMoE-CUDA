@@ -1,0 +1,45 @@
+EXP-2026-09-07-043 STAGE 1 — diagnostic build + model-free verification (no model, no server)
+
+Build
+- Source: copy of accepted EXP-041 tree (work/llama.cpp-exp041) -> work/llama.cpp-exp043-diag.
+- Patch: exp043-diag.patch (applies clean on EXP-041 base). Edits: common.cuh (3 diag counters,
+  placed AFTER curr_stream_no to keep the harness context-mirror ABI valid), ggml-cuda.cu
+  (env-gated NVTX ranges expert_gather/submit/slotwait + clock counters + teardown log),
+  ggml/src/ggml-cuda/CMakeLists.txt (link libnvToolsExt with -Wl,--no-as-needed).
+- Build dir: build/exp043-diag (Release, shared, GGML_CUDA, CUDA arch 89). Env gate:
+  GGML_EXPERT_DIAG=1 enables NVTX+counters; =0/unset = baseline behavior.
+
+Correctness preserved (harness EXP-041, rebuilt against diag lib)
+- ring mode: 9/9 CHECK PASS, exit 0, for GGML_EXPERT_DIAG=1 AND unset.
+- sched mode: output sha256 = 39505119b144ea286e865119b397eecff75578881c24c4aa1cec9bd642e91510
+  (identical to accepted EXP-041 runtime), for default/ON/OFF. Instrumentation is behavior-neutral.
+- Regression found+fixed: first patch inserted diag fields before streams/device in the struct, which
+  broke the harness cuda_ctx_mirror (capture-guard crashed). Fixed by moving counters after all
+  layout-sensitive fields.
+
+NVTX intervals visible in common CUDA/NVTX trace (nsys -t cuda,nvtx, harness ring, DIAG=1)
+- expert_gather : 8 instances, total 9.198 ms (avg 1.150 ms)
+- expert_slotwait: 6 instances, total 0.738 ms (avg 0.123 ms)
+- expert_submit : 8 instances, total 0.129 ms (avg 0.016 ms)
+- Requires: link libnvToolsExt (header-only nvtx3 alone emitted nothing under nsys: ldd had no
+  libnvToolsExt because --as-needed dropped it; --no-as-needed fixed it).
+
+Instrumentation overhead (numeric, primitives, no profiler)
+- tests/ovh_probe.c: clock pair = ~39 ns/op; nvtx push/pop pair = ~0 ns/op (no profiler attached).
+  total instrumentation ~ 38 ns/op.
+- Upper bound for the real 395-token prefill (<= 3 * 17886 instrumented ops): ~2.0 ms CPU-side added.
+- Context: target 3-5% of ~7.24 s = ~217-362 ms; EXP-037 gather estimate 1080-2700 ms. Overhead is
+  >100x below the target, so scheme B does NOT need to be lightened before the model run.
+  NOTE: nvtx pair cost under live nsys is higher than the no-profiler micro; re-verify once during
+  the model profile (expect a few ms, still negligible vs target).
+
+Window boundaries (status)
+- Stage 1 shows expert_gather/submit/slotwait as a contiguous burst that bounds the staging window.
+- Explicit per-request expert_prefill start/end NVTX markers are still to be placed at scheduler/server
+  level immediately before the model profile (small follow-up in the diag tree). Not done in stage 1.
+
+Not committed: build/ and work/ (gitignored), harness .bin outputs and nsys .sqlite/.nsys-rep (binary,
+per repo policy). Kept: patch, logs, probe source, this note.
+
+Next (stage 2, needs rule-1 approval): one model profile EXP-043-diag = 1 warmup + 1 studied 395-token
+request, cache_prompt=false, nsys -t cuda,nvtx; add expert_prefill window markers first.

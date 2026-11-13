@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "runs": [
+    {
+      "label": "partition-host-fixture-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "partition-host-fixture-run",
+      "exit_code": 0,
+      "stdout": "PASS host cases=27 checks=17406 locked_once_pairs=7; mocked SDK only; concurrency not claimed\n",
+      "stderr": ""
+    },
+    {
+      "label": "partition-long-fixture-relink",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "partition-long-native-parity",
+      "exit_code": 0,
+      "stdout": "WITNESS hostf vec7 features3 prefill1ec\nPASS cases=8 checks=110 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG175FA_CUDA host=0xf,cuda_status=0,vector=0x7,features=0x3,prefill=0x1ec\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    },
+    {
+      "label": "partition-long-original-rollback",
+      "exit_code": 0,
+      "stdout": "WITNESS host0 vec0 features0 prefill0\nPASS cases=8 checks=108 captures=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x807\n"
+    }
+  ]
+}

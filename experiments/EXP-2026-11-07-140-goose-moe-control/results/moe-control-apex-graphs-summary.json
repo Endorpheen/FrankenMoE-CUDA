@@ -1,0 +1,31 @@
+{
+  "status": "PASS_REAL_APEX_GGML_COMMON_MOE_CONTROL",
+  "runs": {
+    "native": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    },
+    "off": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    }
+  },
+  "all_bytes_equal_original_and_previous": true,
+  "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+  "bytes_compared": 1346320,
+  "live_controller_and_prior_goose_q4_q6": [
+    218,
+    3112,
+    3112
+  ],
+  "cold_bank_scope": "Not present in Apex native baseline; synthetic controls passed, Qwen integration pending",
+  "actual_model": "pending",
+  "production_changed": false
+}

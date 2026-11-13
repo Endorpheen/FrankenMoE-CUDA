@@ -1,0 +1,20 @@
+{
+  "stage": "EXP392-399 (reconstructed tree, KV / RECURRENT / BATCH)",
+  "runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build/stage-run",
+  "base_commit": "c867f44",
+  "baseline_runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/run",
+  "correctness": "KV, RECURRENT_MEMORY and BATCH routes are Goose-owned and live: slot placement (FG205G/FG392S), metadata write and read (FG393S/FG395S), tensor layout (FG394S), recurrent payload spans (FG396S), hybrid delegation (FG397S), container composition and layout (FG383S/FG398S). Completion e68df05b, all saved probabilities equal, restore exact, slot file byte-identical to the file the accepted runtime writes (sha256 3e216c49...).",
+  "summary": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build/run-restore/summary.json",
+  "next": "primary review of the three items; BATCH storage boundary decision if the reviewer wants it moved",
+  "solo": true,
+  "authorized_external_workers": 0,
+  "production_changed": false,
+  "previous_runtime": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp244/run",
+  "updated_at": 1794411264,
+  "commit": "c867f44",
+  "performance_qualification": "no new performance claim: this stage carries additional Goose routes on the reconstructed tree, whose prefill is known to be below the accepted build because the patch set is not in it",
+  "producer_compiler_sha256": "84f31960f9f3031e5fba6b767f775dfaf79448a736169fdef006072d7deccf6c",
+  "compiler_for_next_work": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/current.json",
+  "dso_sha256_16": "ce4f004bc83caecd",
+  "note": "summary and server.log in the pointed directory are the verified artefact: 47 FG routes live, completion e68df05b"
+}

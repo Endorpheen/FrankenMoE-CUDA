@@ -1,0 +1,44 @@
+{
+  "status": "PASS_LIVE_APEX_COMMON_V8_QUANTIZER",
+  "equal_original_cpu_reference": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "witness": {
+    "off": [
+      {
+        "kind": 0,
+        "calls": 0,
+        "blocks": 0,
+        "enabled": 0
+      },
+      {
+        "kind": 1,
+        "calls": 0,
+        "blocks": 0,
+        "enabled": 0
+      }
+    ],
+    "on": [
+      {
+        "kind": 0,
+        "calls": 0,
+        "blocks": 0,
+        "enabled": 1
+      },
+      {
+        "kind": 1,
+        "calls": 833760,
+        "blocks": 168672,
+        "enabled": 1
+      }
+    ]
+  },
+  "preliminary": true,
+  "profile": "CPU128/4 functional probe, not a throughput verdict",
+  "Q8_0_live_on_Apex": false,
+  "Q8_0_full_Qwen_integration_pending": true,
+  "compiler_changed": false,
+  "production_changed": false
+}

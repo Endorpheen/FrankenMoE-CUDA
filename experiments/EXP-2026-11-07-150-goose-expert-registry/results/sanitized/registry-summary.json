@@ -1,0 +1,5 @@
+{
+  "status": "PASS_REGISTRY_AND_HBM_POLICY",
+  "cases": 210,
+  "hardware_hbm": false
+}

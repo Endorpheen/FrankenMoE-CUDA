@@ -1,0 +1,10 @@
+{
+  "status": "BUILT_GRAPH_AND_MODEL_PENDING",
+  "goose_sha256": "6222dccb0e06997c11b888a4e8b8d8d7bc15a7cfa0d3b06cb472724fefe23561",
+  "emitted_c_sha256": "524f9e1043f291b8de2bb12e2735a5b3caa0f63dab2ca3c46311a1149fb46b59",
+  "cpu_sha256": "ff8c22bcdac227824206b01ef57982d04876a51af2758853d666484ec95c3498",
+  "base_sha256": "5f1ebc9544e792852f5e625ac0ab035537adf992732c1f83be6d83985c337083",
+  "parent": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-moe-quantized",
+  "changed": "Only new Goose math objects; reuse exact native/fallback/activation/controller/allocator/CUDA objects",
+  "production_changed": false
+}

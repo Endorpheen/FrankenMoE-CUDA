@@ -1,0 +1,39 @@
+{
+  "experiment": "EXP-2026-11-07-145",
+  "source": "New isolated Goose CPU backend API,registry and context/plan/workspace lifecycle",
+  "cpu_sha256": "de3e727c099da6c8c365ae27559ea5528e9529c06a8eb7ec497dd889ed55fec6",
+  "identical_original_response": {
+    "content": true,
+    "tokens128": true,
+    "top5": true
+  },
+  "identical_previous_response": true,
+  "new_module_model_trace": [
+    "FG145_BACKEND mode=0 calls=1",
+    "FG145_BACKEND mode=1 calls=1",
+    "FG145_BACKEND mode=5 calls=5346",
+    "FG145_BACKEND mode=6 calls=138",
+    "FG145_BACKEND mode=7 calls=138",
+    "FG145_BACKEND mode=8 calls=1",
+    "FG145_BACKEND mode=10 calls=4421",
+    "FG145_BACKEND mode=11 calls=5582",
+    "FG145_BACKEND mode=13 calls=1",
+    "FG145_BACKEND mode=14 calls=1",
+    "FG145_BACKEND mode=15 calls=155",
+    "FG145_BACKEND mode=16 calls=1",
+    "FG145_BACKEND mode=17 calls=2",
+    "FG143_CONTROL plans=5346 task_queries=0 dispatches=170378 jobs=5346 worker_jobs=42706",
+    "FG143_EXECUTOR worker_graphs=42706 worker_steps=170410 worker_fusions=0",
+    "FG143_CPU op=40 calls=138 values=67377152",
+    "FG143_CPU op=100 calls=42560 values=187105280",
+    "FG_SELFHOST_GRAPH enabled=1 walks=12 nodes=51876 leafs=9912 alloc_requests=141360 release_requests=17640 checks=0,0,0,0",
+    "FG_SELFHOST_LIFETIME enabled=1 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0",
+    "FG_SELFHOST_COALESCE enabled=1 calls=17628 shadow_checks=0 digest=10572808032351027271",
+    "FG_SELFHOST_ALLOC enabled=1 calls=17652 reuse_hits=14176 shadow_checks=0 digest=14202186473766031291"
+  ],
+  "counters_scope": "Include normal startup warmup plus one measured request; not every API mode/path executed by model",
+  "parent_scope": "B1/P2-14 incomplete; physical buffers,HBM,CPU description,ABI storage,extra providers and other compute still native/residual",
+  "no_b1_acceptance": true,
+  "no_optimization": true,
+  "no_repeat_series": true
+}

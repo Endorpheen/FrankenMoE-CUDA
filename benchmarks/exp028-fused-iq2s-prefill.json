@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-05-028-fused-iq2s-prefill",
+  "status": "REJECTED",
+  "kind": "isolated_cpu_prefill_kernel",
+  "hypothesis": "Reusing IQ2_S weight-block dequantization across multiple token rows speeds up CPU MoE prefill while leaving single-token decode unchanged.",
+  "workload": "Qwen3.8 Flash Next UD-IQ3_XXS with MTP draft, 64K context, 12 CPU threads, EHS off, CPU MoE and CPU embedding overrides; one fixed 395-token prompt plus deterministic 16-token completion.",
+  "control": {
+    "binary": "build/exp023-mtp-sidecar/bin/llama-server",
+    "warm_prompt_ms": [3584.959, 3046.840, 2954.157, 2937.822],
+    "warm_prompt_tok_s": [110.182571, 129.642515, 133.709887, 134.453347],
+    "warm_prompt_tok_s_median": 131.676201,
+    "warm_prompt_ms_median": 3000.4985
+  },
+  "candidate": {
+    "binary": "build/exp028-fused-mmid/bin/llama-server",
+    "environment": "GGML_CPU_IQ2S_FUSED=1",
+    "warm_prompt_ms": [3078.979, 3014.432, 3053.820, 3001.020],
+    "warm_prompt_tok_s": [128.289280, 131.036295, 129.346196, 131.621915],
+    "warm_prompt_tok_s_median": 130.191245,
+    "warm_prompt_ms_median": 3034.126,
+    "change_pct": -1.127732
+  },
+  "correctness": {
+    "content_sha256": "24122785e34e88b37d241f7c4f1f303575ab88c7065d05cbc6c0f9a7c60085b7",
+    "matching_control_runs": 5,
+    "matching_candidate_runs": 5,
+    "unit_gate": "13644/13644 test-backend-ops cases passed on CUDA0"
+  },
+  "stability": {
+    "first_candidate_attempt": "three matching responses followed by CUDA graph instantiation OOM on request four",
+    "retry": "five of five requests completed without an OOM",
+    "decision": "The retry is numerically stable, but the speed signal is negative and below noise; the initial OOM prevents accepting the implementation as a runtime change."
+  },
+  "decision_note": "Do not merge. The direct fused AVX2 implementation adds register pressure and loses about 1.1% on the actual 395-token prefill workload. Retain only the isolated worktree for future analysis."
+}

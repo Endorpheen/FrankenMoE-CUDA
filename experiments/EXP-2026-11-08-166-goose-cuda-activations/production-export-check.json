@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "exports": [
+    "fg166_cuda_device_read",
+    "fg166_cuda_host_seen"
+  ],
+  "private_native_oracles_hidden": true,
+  "mutable_control_exports": false
+}

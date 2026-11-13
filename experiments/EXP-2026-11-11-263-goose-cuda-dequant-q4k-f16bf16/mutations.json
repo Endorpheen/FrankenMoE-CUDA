@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "scale_min m uses q[j+4] -> q[j+3]",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "q offset 32*il -> 16*il (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "second half offset +32 -> +16 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "affine sign -m1 -> +m1 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "loop stride 32 -> 16",
+    "status": "CAUGHT",
+    "failures": 25
+  },
+  {
+    "mutation": "chunk end drops the last element",
+    "status": "CAUGHT",
+    "failures": 17
+  },
+  {
+    "mutation": "equality inverted",
+    "status": "CAUGHT",
+    "failures": 32
+  },
+  {
+    "mutation": "reduction ladder starts at 8",
+    "status": "CAUGHT",
+    "failures": 25
+  },
+  {
+    "mutation": "atomic adds twice the count",
+    "status": "CAUGHT",
+    "failures": 28
+  }
+]

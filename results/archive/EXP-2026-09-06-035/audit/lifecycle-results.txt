@@ -1,0 +1,51 @@
+== EXP-035 lifecycle suite ==
+
+## original scripts/run_qwen38_server.sh
+launcher exited rc=0
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  server exit 0 -> launcher exit 0, no leftovers
+launcher exited rc=7
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  server exit 7 -> launcher exit 7
+launcher exited rc=130
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  SIGINT to launcher -> exits 130, server not running
+launcher exited rc=143
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  SIGTERM to launcher -> exits 143, server not running
+pass=4 fail=0
+rc=0
+
+## candidate (launcher-swap-watchdog.candidate.patch applied to temporary copy)
+launcher exited rc=0
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  server exit 0 -> launcher exit 0, no leftovers
+launcher exited rc=7
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  server exit 7 -> launcher exit 7
+launcher exited rc=130
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  SIGINT to launcher -> exits 130, server not running
+launcher exited rc=143
+server state after: gone
+live process-group members after: []
+RESULT PASS
+PASS  SIGTERM to launcher -> exits 143, server not running
+PASS  SWAP_WATCHDOG=1 adds --swap-watchdog
+PASS  default profile omits --swap-watchdog
+pass=6 fail=0
+rc=0

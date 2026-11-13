@@ -1,0 +1,8 @@
+case=3r rows=3 ids=1x3+1x2+25x1 threads=12 n_expert_used=10 D=640 NROW=2560 NE=512 seed=42
+env GGML_CPU_IQ4NL_FUSED: on (default) | n_warmup=10 n_measured=100 pairs=3 (OFF,ON alternating)
+arms: OFF = window closed, ON = window open; fused proof: fused_dispatches_delta = 0 on OFF arms, > 0 on ON arms when env on
+exactness: OFF vs ON dst bytes identical=yes (0/307200 differing bytes)
+pair1 OFF median=295.847us min=223.344us max=413.045us fused_dispatches_delta=0 | ON median=231.279us min=226.590us max=275.644us fused_dispatches_delta=2640 | ratio median(OFF)/median(ON)=1.2792x
+pair2 OFF median=233.103us min=227.221us max=285.523us fused_dispatches_delta=0 | ON median=230.077us min=224.497us max=277.437us fused_dispatches_delta=2640 | ratio median(OFF)/median(ON)=1.0131x
+pair3 OFF median=230.318us min=222.984us max=280.343us fused_dispatches_delta=0 | ON median=231.580us min=225.188us max=288.218us fused_dispatches_delta=2640 | ratio median(OFF)/median(ON)=0.9946x
+summary case=3r threads=12 ratios=1.2792x 1.0131x 0.9946x median=1.0131x

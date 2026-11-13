@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "sink term dropped from the denominator",
+    "status": "CAUGHT",
+    "failures": 5672
+  },
+  {
+    "mutation": "sink exponent adds the max instead of subtracting",
+    "status": "CAUGHT",
+    "failures": 15584
+  },
+  {
+    "mutation": "f16 mask offset divides by 4 instead of 2",
+    "status": "CAUGHT",
+    "failures": 4868
+  },
+  {
+    "mutation": "mask term drops the alibi slope",
+    "status": "CAUGHT",
+    "failures": 3072
+  },
+  {
+    "mutation": "f32 entry passes bx as the sink index",
+    "status": "CAUGHT",
+    "failures": 1024
+  }
+]

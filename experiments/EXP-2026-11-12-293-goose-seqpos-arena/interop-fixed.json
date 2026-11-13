@@ -1,0 +1,18 @@
+{
+  "native": {
+    "sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c",
+    "size": 131975288
+  },
+  "goose": {
+    "sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c",
+    "size": 131975288
+  },
+  "native->goose": {
+    "restored": 12,
+    "sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c"
+  },
+  "goose->native": {
+    "restored": 12,
+    "sha": "0b7d539190366ee5cdf1fe4923506c73c948b5a15f608263489086eb29518b5d"
+  }
+}

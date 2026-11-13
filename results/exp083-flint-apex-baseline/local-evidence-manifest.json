@@ -1,0 +1,220 @@
+{
+  "local_directory": "/home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/results",
+  "files": [
+    {
+      "name": "apex-a-branch32.sse",
+      "bytes": 183221,
+      "sha256": "e2a815bd259c67d74a8f159235c276a35abaa6a343cec11c43e854d6c5bc42d2"
+    },
+    {
+      "name": "apex-a-branch32.trace",
+      "bytes": 355973,
+      "sha256": "293608c101eaeaa09cef17832968d5f612c2e0eb1b125244328e61b2b20198a3"
+    },
+    {
+      "name": "apex-a-branch64.sse",
+      "bytes": 281324,
+      "sha256": "91dbc6c64160e7410fb1a467808a701bfa5323bc19c0a1337fa76fc423534d1d"
+    },
+    {
+      "name": "apex-a-branch64.trace",
+      "bytes": 607901,
+      "sha256": "5f885f40c28b42dc941a01f23ffb6d6e50a46e3dbec84b0427d312b53026eff6"
+    },
+    {
+      "name": "apex-a-cold32.sse",
+      "bytes": 184675,
+      "sha256": "16821d549d542f04bdc7e9b510d8107b1bf4eaf3afd30bc0ef0a02cb3d362a8b"
+    },
+    {
+      "name": "apex-a-cold32.trace",
+      "bytes": 357599,
+      "sha256": "95bf9aff922820620da822b12b34cb2ab2ff9bc48d1ab666bc6be8f254b53921"
+    },
+    {
+      "name": "apex-a-cold64.sse",
+      "bytes": 280108,
+      "sha256": "46ecf4323e3f04ac797b80bbcb41fe5d936cd384c078800fa7b140f68174c9fd"
+    },
+    {
+      "name": "apex-a-cold64.trace",
+      "bytes": 606514,
+      "sha256": "cf5acf8022237d4918ae4911e8762286873b4fa6510e849b042e513df13035db"
+    },
+    {
+      "name": "apex-a-server.log",
+      "bytes": 13951,
+      "sha256": "66bfec1cde8c116f405685b8fbd1bc4c2e76ff16fa701f0d7a9a050b4051067e"
+    },
+    {
+      "name": "apex-b-branch32.sse",
+      "bytes": 183222,
+      "sha256": "93482fe602744230f0e840e490a7d94c051aa4641a5baa53b5f132c6aed36e32"
+    },
+    {
+      "name": "apex-b-branch32.trace",
+      "bytes": 355974,
+      "sha256": "d1803a1dc085f680cb30ffcd458d6b6c98d7929301d5f29feade6d99f7423f49"
+    },
+    {
+      "name": "apex-b-branch64.sse",
+      "bytes": 281324,
+      "sha256": "63973af83bf8986acb7a1c91393f031ff765db476267c5d0ad957ba03ba6a11c"
+    },
+    {
+      "name": "apex-b-branch64.trace",
+      "bytes": 607842,
+      "sha256": "659852913cdb0160d891b3780540531bdcd5d29328559ca8fcfd205621f4a59e"
+    },
+    {
+      "name": "apex-b-cold32.sse",
+      "bytes": 184675,
+      "sha256": "74bdd7c35b2534d3d6a44e8d4d4b5383044c6aba016b41c9274dacd4def6e131"
+    },
+    {
+      "name": "apex-b-cold32.trace",
+      "bytes": 357599,
+      "sha256": "21227c398588ff1470b1db5dba72b995a1baf2309a06a8d337f43d33ba4083cb"
+    },
+    {
+      "name": "apex-b-cold64.sse",
+      "bytes": 280109,
+      "sha256": "682a556f5bdbf9c7b0f63d8e2d8e6d1cc7d2dde7ccd2fd9ae6630987448c70a7"
+    },
+    {
+      "name": "apex-b-cold64.trace",
+      "bytes": 606515,
+      "sha256": "ed57708feb443c9f120abd3145bf21d014d8fe3cf0a6ffd5c87c316c9187aced"
+    },
+    {
+      "name": "apex-b-full.sse",
+      "bytes": 774216,
+      "sha256": "e2f584474f88f6f9114e7c7115f94e3afec772b5b0f007939244a3d3931aa233"
+    },
+    {
+      "name": "apex-b-full.trace",
+      "bytes": 2002791,
+      "sha256": "c402d9dec83f4c62d09f0d65932927665f57d834f16e2f7a92fcf95b90cde646"
+    },
+    {
+      "name": "apex-b-server.log",
+      "bytes": 36692,
+      "sha256": "7f6dd7910be7bd7f99ff9c78d7b38e53bd525d6f1e029e8c05494370c001af8b"
+    },
+    {
+      "name": "apex-chat-check.json",
+      "bytes": 698,
+      "sha256": "d421fac6b562e5e300f241bbb1dd5c553087862c2f766dbd8b12d4f64e9fcd5b"
+    },
+    {
+      "name": "apex-final-branch32.sse",
+      "bytes": 183219,
+      "sha256": "38724333bf408802fc2bd6b9400b7860f8a49839c0929adbd1ae9cc603a76861"
+    },
+    {
+      "name": "apex-final-code4k.sse",
+      "bytes": 38369,
+      "sha256": "cc87bda6a1ed143357f35d90dc6c8a45cc4d63e676a0cc559c9e89d1416945cf"
+    },
+    {
+      "name": "apex-final-cold32.sse",
+      "bytes": 184676,
+      "sha256": "71bd7e890f2e0689358cd964774502849d3b274f0a79afda1cbb0d624c3ca92d"
+    },
+    {
+      "name": "apex-final-ru4k.sse",
+      "bytes": 32729,
+      "sha256": "45075f4122ef66973dacead038859a88fc5a80fd5de87db386803b5e813cb457"
+    },
+    {
+      "name": "apex-final-server.log",
+      "bytes": 10187,
+      "sha256": "da651f808bde33039661ad427bd7e7b2c9e1357dd8c8fb0ba5d715bfefa1c258"
+    },
+    {
+      "name": "apex-launch-command.txt",
+      "bytes": 551,
+      "sha256": "26a0e0a1bc91c557fb0c573dae7bcc7a61b4405779effbd73830bf577a7b4604"
+    },
+    {
+      "name": "apex-models.json",
+      "bytes": 685,
+      "sha256": "4cc68f6ee68293d392ded313bb4b359c364f8a0d09acbbf06c5bedde4420a3fb"
+    },
+    {
+      "name": "apex-state-roundtrip.log",
+      "bytes": 2855,
+      "sha256": "99ba45c3ba8208ab627f49da2f9a2c02afe678dc69c24323f109a10b7ca2084e"
+    },
+    {
+      "name": "apex-tool-check.json",
+      "bytes": 913,
+      "sha256": "0f4a973c69bd98e7906ba67a2783252ded98b17ef80dea97d1258bb6c7fd1739"
+    },
+    {
+      "name": "baseline-binary-hashes.json",
+      "bytes": 944,
+      "sha256": "0831618113b708c52198abaac6e3e62e1e3e272445b8d84da9b72254efb223a7"
+    },
+    {
+      "name": "cold-ranking.json",
+      "bytes": 9513,
+      "sha256": "3bf53b32e6b90aeecceb26916417fbaba4007575c94e3420a4d7ed4120c8f01d"
+    },
+    {
+      "name": "final-provenance.json",
+      "bytes": 1348,
+      "sha256": "ea92abdf271d95ef1c55ff37dfd40d067ff5545c309c898367c5cac05c91e806"
+    },
+    {
+      "name": "flint-final-branch32.sse",
+      "bytes": 270218,
+      "sha256": "daadd80a45e9235abaf8634182db8b75e0b385098f2a476aa583643c734e2606"
+    },
+    {
+      "name": "flint-final-branch32.trace",
+      "bytes": 519059,
+      "sha256": "2fc00660d023aaf430e5c2071217c691137236fe3fd3baf251e708d9a563022a"
+    },
+    {
+      "name": "flint-final-cold32.sse",
+      "bytes": 272059,
+      "sha256": "5a5f9aff63dd0ac815bc9327fc15ab7db79de6a4245ff853ac8ecdd2f541030a"
+    },
+    {
+      "name": "flint-final-cold32.trace",
+      "bytes": 520674,
+      "sha256": "081414f0b2467df28babbe02b9269a4ffe75c8d623e68df6215a4b5f5ade06a1"
+    },
+    {
+      "name": "flint-final-early32.sse",
+      "bytes": 181221,
+      "sha256": "ac532f0b4c5a2dc8abff04bb61af9413dd59116730c70e01898676ffdcd505e0"
+    },
+    {
+      "name": "flint-final-early32.trace",
+      "bytes": 315015,
+      "sha256": "a31ce44aa5d3158541912e798a166c051dc6626f833deaa21faa13517b87201e"
+    },
+    {
+      "name": "flint-final-server.log",
+      "bytes": 6516,
+      "sha256": "47edd55908ce52cc3f684d20bedf8f656034d7dd1c8a8afd368ae61aac59b1f0"
+    },
+    {
+      "name": "flint-state-roundtrip.log",
+      "bytes": 855,
+      "sha256": "d8fe06b4f6a5195ccff40e1d90215d093d4aa80c2661acfdf074019eb83ebebe"
+    },
+    {
+      "name": "measurements.json",
+      "bytes": 7116,
+      "sha256": "d41de051670c92d5bfe8b4be8b67425f07b33616f5d30475c755264dae6d6d69"
+    },
+    {
+      "name": "tool-check-request.json",
+      "bytes": 519,
+      "sha256": "79e511b17544ab5445bde34f7a087a59202d6318d3c83d5bb3716d96d0f0356f"
+    }
+  ]
+}

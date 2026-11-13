@@ -1,0 +1,12 @@
+[
+  "/usr/bin/gcc",
+  "-O3",
+  "-march=native",
+  "-fno-strict-aliasing",
+  "-fPIC",
+  "-c",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-moe-tiled/unit.c",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/build/goose-tiled.o",
+  "-DFG_TILED_TRACE=1"
+]

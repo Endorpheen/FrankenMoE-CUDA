@@ -1,0 +1,42 @@
+{
+  "host_plan_words": [
+    10,
+    32
+  ],
+  "type_query_table": {
+    "1": "GGML_TYPE_F32",
+    "3": "GGML_TYPE_Q4_0",
+    "8": "GGML_TYPE_I32",
+    "9": "GGML_TYPE_I64"
+  },
+  "op_query": {
+    "0": "GGML_OP_SET_ROWS"
+  },
+  "fastdiv_fields": [
+    "f0",
+    "f1",
+    "f2"
+  ],
+  "fastdiv_units": [
+    "uint32 multiplier",
+    "uint32 shift",
+    "uint32 logical divisor"
+  ],
+  "launch_routes": [
+    "F32/I32",
+    "F32/I64",
+    "Q4_0/I32",
+    "Q4_0/I64"
+  ],
+  "has_cap": true,
+  "index_guard": "Negative or >=dst.ne1 index skips the destination store and increments the observable invalid-thread counter;valid graph index uniqueness/capacity is caller-owned,no host GPU synchronization.",
+  "strides": {
+    "src0": "F32elements",
+    "src1": "indexelements",
+    "dstQ4": "bytes",
+    "dstF32": "F32elements"
+  },
+  "raw_conversion": "Exact same C++ scalar (int8_t) cast as native,inlined as hardware conversion;float->integer language lowering still pending in compiler.",
+  "source_algorithms": "Actual Goose,not original C++ callbacks",
+  "rollback": "GGML_GOOSE_CUDA_SET_ROWS=0;other formats preserved native"
+}

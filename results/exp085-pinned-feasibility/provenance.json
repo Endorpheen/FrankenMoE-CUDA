@@ -1,0 +1,15 @@
+{
+  "reference_commit": "7e7c5bc4f792ee71a9a259c41a15332c0a5d036c",
+  "working_runtime_unchanged": true,
+  "probe_binary": "/home/end0/AI/LlamaServer/exp085-pinned-feasibility/transfer-probe",
+  "probe_sha256": "fe6d2f219a2819328143d03e051ab1674295a99b9f2e7afef4ff37d5d1e04913",
+  "probe_source_sha256": "f29f60a5420f939596023dcd198c7a84c99fdebede61f45b16b18f557183738e",
+  "geometry_sha256": "291289915168c851ab8c733b49390609b0bce57d3dc6525e3b2eb3979500e973",
+  "working_restart": {
+    "pid": 2279680,
+    "port": 8081,
+    "original_args_restored": true
+  },
+  "compile": "g++-13 -std=c++17 -O3 -Wall -Wextra -Wpedantic; CUDA runtime 12; existing vendored nlohmann header",
+  "scope": "standalone feasibility only; no engine source or old build changed"
+}

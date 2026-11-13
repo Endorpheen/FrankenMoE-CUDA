@@ -1,0 +1,23 @@
+#pragma once
+template<int N>static __global__ __launch_bounds__(128,2) void fg175m_kernel(
+        const char * Q_ptr,
+        const char * K_ptr,
+        const char * V_ptr,
+        const char * mask_ptr,
+        const char * sinks_ptr,
+        const int  * KV_max_ptr,
+        float      * dst_ptr,
+        float2     * dst_meta_ptr,
+        const float scale,
+        const float max_bias,
+        const float m0,
+        const float m1,
+        const uint32_t n_head_log2,
+        const float logit_softcap,
+        const int32_t ne00, const uint3   ne01, const int32_t ne02, const int32_t ne03,
+                            const int32_t nb01, const int32_t nb02, const int32_t nb03,
+        const int32_t ne10, const int32_t ne11, const int32_t ne12, const int32_t ne13,
+                            const int32_t nb11, const int32_t nb12, const int64_t nb13,
+                            const int32_t nb21, const int32_t nb22, const int64_t nb23,
+                            const int32_t ne31, const int32_t ne32, const int32_t ne33,
+                            const int32_t nb31, const int32_t nb32, const int64_t nb33){extern __shared__ half2 smem[];uint32_t qregs[64],vregs[64];float kmax[2],rowsums[2];FG175M_ENTRY((uint64_t)(uintptr_t)Q_ptr,(uint64_t)(uintptr_t)K_ptr,(uint64_t)(uintptr_t)V_ptr,(uint64_t)(uintptr_t)mask_ptr,(uint64_t)(uintptr_t)sinks_ptr,(uint64_t)(uintptr_t)KV_max_ptr,(uint64_t)(uintptr_t)dst_ptr,(uint64_t)(uintptr_t)dst_meta_ptr,scale,max_bias,m0,m1,n_head_log2,logit_softcap,ne00,ne01.z,ne02,ne03,nb01,nb02,nb03,ne10,ne11,ne12,ne13,nb11,nb12,nb13,nb21,nb22,nb23,ne31,ne32,ne33,nb31,nb32,nb33,N,blockIdx.x,gridDim.x,threadIdx.x,threadIdx.y,(uint64_t)(uintptr_t)qregs,(uint64_t)(uintptr_t)vregs,(uint64_t)(uintptr_t)kmax,(uint64_t)(uintptr_t)rowsums,(uint64_t)(uintptr_t)smem,1);}

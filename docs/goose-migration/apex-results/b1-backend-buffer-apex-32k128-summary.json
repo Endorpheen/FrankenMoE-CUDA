@@ -1,0 +1,47 @@
+{
+  "status": "COMPLETED_SINGLE_DIAGNOSTIC_NOT_B1_ACCEPTANCE",
+  "name": "b1-backend-buffer-apex-32k128",
+  "wall_seconds": 22.150439740973525,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 15247.259,
+    "prompt_per_token_ms": 0.4653094177246094,
+    "prompt_per_second": 2149.1075871407443,
+    "predicted_n": 128,
+    "predicted_ms": 6872.216,
+    "predicted_per_token_ms": 54.11193700787402,
+    "predicted_per_second": 18.480210750069556
+  },
+  "exact": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "matching_token_positions": 128,
+  "sampled_rss_peak_mib": 21318.6328125,
+  "process_hwm_mib": 21318.6328125,
+  "sampled_anon_peak_mib": 700.61328125,
+  "sampled_file_peak_mib": 19964.203125,
+  "process_swap_peak_kib": 0,
+  "sampled_gpu_peak_mib": 3348,
+  "system_swapout_pages_delta": 0,
+  "loadavg_start": [
+    30.90380859375,
+    26.4970703125,
+    24.39892578125
+  ],
+  "loadavg_end": [
+    33.275390625,
+    27.3115234375,
+    24.71142578125
+  ],
+  "preliminary": true,
+  "controlled_quiet_run": false,
+  "baseline": "Saved original C++ measurement, identical request and workload argv",
+  "quality_scope": "One fixed-prompt response equivalence only; not a general quality benchmark",
+  "no_optimization": true,
+  "no_microbenchmarks": true,
+  "no_repeated_series": true,
+  "no_b1_acceptance": true
+}

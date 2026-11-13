@@ -1,0 +1,89 @@
+{
+  "verdict": "REJECTED",
+  "reason": "Candidate batch6144 failed initial CUDA compute-buffer allocation before any request",
+  "control": {
+    "batch": 4096,
+    "ubatch": 4096,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 22208.067,
+      "prompt_per_token_ms": 0.6777364196777343,
+      "prompt_per_second": 1475.4998712855108,
+      "predicted_n": 128,
+      "predicted_ms": 4175.959,
+      "predicted_per_token_ms": 32.881566929133854,
+      "predicted_per_second": 30.412175981612847
+    },
+    "resources_before": {
+      "pid": 2378745,
+      "wall_ns": 1793352135427718663,
+      "monotonic_ns": 150086579947338,
+      "status": {
+        "VmHWM": "23053964 kB",
+        "VmRSS": "23053964 kB",
+        "VmSwap": "0 kB"
+      },
+      "vmstat": {
+        "pswpin": 4123947,
+        "pswpout": 8411993
+      },
+      "gpu_total_used_free_mib": "12282, 10789, 1084",
+      "minor_faults": 997959,
+      "major_faults": 0
+    },
+    "resources_after": {
+      "pid": 2378745,
+      "wall_ns": 1793352195154411470,
+      "monotonic_ns": 150146306641276,
+      "status": {
+        "VmHWM": "23782356 kB",
+        "VmRSS": "23782356 kB",
+        "VmSwap": "0 kB"
+      },
+      "vmstat": {
+        "pswpin": 4123953,
+        "pswpout": 8411993
+      },
+      "gpu_total_used_free_mib": "12282, 10883, 990",
+      "minor_faults": 1174912,
+      "major_faults": 0
+    },
+    "response_sha256": "4a9327e167e4e8004137e1b0da933690ff5f043359754a1fc2a8256e6467831b",
+    "client_ttft_s": 22.21797399999923,
+    "client_total_s": 26.397844
+  },
+  "candidate": {
+    "batch": 6144,
+    "ubatch": 6144,
+    "process_exit_code": 1,
+    "requested_compute_buffer_bytes": 4582326400,
+    "requested_compute_buffer_mib": 4370.05,
+    "inference_requests": 0,
+    "error": "cudaMalloc failed: out of memory; failed to allocate compute pp buffers",
+    "settled_retry": {
+      "exit_code": 1,
+      "requested_compute_buffer_bytes": 4582326400,
+      "requested_compute_buffer_mib": 4370.05,
+      "inference_requests": 0,
+      "previous_server_exit_confirmed": true,
+      "gpu_before": {
+        "wall_ns": 1793352379458233991,
+        "gpu_total_used_free_mib": "12282, 4472, 7401"
+      }
+    },
+    "failed_startups": 2
+  },
+  "formal_pairs": 0,
+  "speedup_claim": null,
+  "runtime_source_changes": false,
+  "existing_profiles_changed": false,
+  "eos_respected": true,
+  "legacy_builds_unchanged": true,
+  "notes": [
+    "One control is qualification evidence only, not a new performance baseline median.",
+    "The 262144 context and existing quantization/placement were retained. No competing helper inference or build ran during the control request.",
+    "No branch checks or five-pair confirmation were run because qualification failed.",
+    "Official upstream helper server is restored after this finite block."
+  ]
+}

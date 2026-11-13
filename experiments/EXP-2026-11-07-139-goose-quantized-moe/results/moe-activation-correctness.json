@@ -1,0 +1,18 @@
+{
+  "status": "PASS_EXACT_NATIVE_Q8_0_AND_Q8_K",
+  "single_cases": {
+    "Q8_0": 252,
+    "Q8_K": 126
+  },
+  "values_checked": {
+    "Q8_0": 402656,
+    "Q8_K": 437760
+  },
+  "eight_thread_cases": 256,
+  "eight_thread_values": 589824,
+  "full_block_bytes_equal": true,
+  "inputs_and_canaries_unchanged": true,
+  "q8_0_nonfinite_subnormal_signed_zero_nearest_even_cases": true,
+  "q8_k_zero_block_original_bsums_preserved": true,
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846"
+}

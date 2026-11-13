@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "q1_0 sign drops the -1",
+    "status": "CAUGHT",
+    "failures": 512
+  },
+  {
+    "mutation": "q2_0 code offset -1 removed",
+    "status": "CAUGHT",
+    "failures": 224
+  },
+  {
+    "mutation": "q4_0 bias 8 -> 7",
+    "status": "CAUGHT",
+    "failures": 112
+  },
+  {
+    "mutation": "q5_0 qs offset 6 -> 7",
+    "status": "CAUGHT",
+    "failures": 112
+  },
+  {
+    "mutation": "q8_0 signed byte read as unsigned",
+    "status": "CAUGHT",
+    "failures": 59
+  }
+]

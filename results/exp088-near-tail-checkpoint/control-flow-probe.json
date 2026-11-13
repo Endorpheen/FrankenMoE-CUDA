@@ -1,0 +1,32 @@
+{
+  "input_tokens": 32768,
+  "offsets": [
+    4100,
+    4,
+    1
+  ],
+  "final_steps": [
+    {
+      "state_before_decode": 28668,
+      "n_tokens_cur": 4096,
+      "checkpoint_tokens_before_decode": 28668,
+      "state_after_decode": 32764
+    },
+    {
+      "state_before_decode": 32764,
+      "n_tokens_cur": 3,
+      "checkpoint_tokens_before_decode": 32764,
+      "state_after_decode": 32767
+    },
+    {
+      "state_before_decode": 32767,
+      "n_tokens_cur": 1,
+      "checkpoint_tokens_before_decode": 32767,
+      "state_after_decode": 32768
+    }
+  ],
+  "both_anchors_reached": true,
+  "last_token_still_decoded": true,
+  "measured_partial_state_bytes_from_EXP087": 65864428,
+  "scope": "source control-flow probe, not a model timing or proof of numeric equivalence"
+}

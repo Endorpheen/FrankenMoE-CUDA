@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "checks": {
+    "responses_status": {
+      "ok": true,
+      "detail": "completed"
+    },
+    "responses_output": {
+      "ok": true,
+      "detail": "59 + 0 chars"
+    },
+    "responses_usage": {
+      "ok": true,
+      "detail": {
+        "input_tokens": 15,
+        "output_tokens": 20,
+        "total_tokens": 35,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    "responses_limit_binds": {
+      "ok": true,
+      "detail": "output_tokens=4, status=completed"
+    },
+    "concurrent_both_answered": {
+      "ok": true,
+      "detail": "158/101 chars"
+    },
+    "concurrent_distinct": {
+      "ok": true,
+      "detail": "distinct"
+    },
+    "concurrent_usage": {
+      "ok": true,
+      "detail": "51/48"
+    }
+  }
+}

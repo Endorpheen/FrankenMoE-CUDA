@@ -1,0 +1,38 @@
+{
+  "status": "LINKED_PENDING_CORRECTNESS",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "row-device": [
+      "fg169r_gg_function_1",
+      "fg169r_gg_function_4",
+      "fg169r_gg_function_11",
+      "fg169r_gg_function_12",
+      "fg169r_gg_function_14"
+    ],
+    "arg-device": [
+      "fg169a_gg_function_1"
+    ],
+    "host": [
+      "fg169h_gg_function_1"
+    ]
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp169/run/libggml-cuda-reductions-11995566adba.so.0.27.0",
+  "sha256": "713117047488430f88cd21a1fccd192a15d0ff0095a67f5b09c7d4264ee8c890",
+  "native_prefixed_functions": [
+    "ggml_cuda_argmax",
+    "ggml_cuda_op_mean",
+    "ggml_cuda_op_sum",
+    "ggml_cuda_op_sum_rows",
+    "sum_f32_cuda",
+    "sum_rows_f32_cuda"
+  ],
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/argmax.cu.o",
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mean.cu.o",
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/sum.cu.o",
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/sumrows.cu.o"
+  ],
+  "external_numerical_primitive": "NVIDIA CUB DeviceReduce::Sum for original device-wide paths;Goose owns selection/temp lifecycle and mean post-division",
+  "rollback": "GGML_GOOSE_CUDA_REDUCTIONS=0 or immutable EXP168 runtime",
+  "production_changed": false
+}

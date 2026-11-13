@@ -1,0 +1,15 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+ggml_cuda_expert_ring_init: expert ring enabled: 3 pinned host slots x 16 MiB
+ggml_cuda_expert_pin_source_try: expert pinned source enabled: direct H2D from the mapped GGUF (budget 24576 MiB)
+ggml_cuda_expert_pin_log_fallback: pinned source unavailable (range overlaps a registered range), using the pinned slot ring
+CHECK PASS shifted: device image byte-exact over A and B
+CHECK PASS shifted: sentinel guards unchanged
+ggml_cuda_expert_pin_source_release: expert pinned source: 18 direct ranges, 0 split ranges, 8 fallback ranges, 0 register failures, 9 intervals released, 10 physical regions released, 33554432 bytes released, 0 bytes still pinned, 0 covered sub-copies, 0 registered sub-copies
+~ggml_backend_cuda_context: expert ring staged 8 calls, 8 chunks
+{"mode":"shifted","split_env":false,"regfail":false,"counters_seen":true,"direct":18,"split":0,"fallback":8,"fail":0,"intervals":9,"regions":10,"bytes_released":33554432,"bytes_still_pinned":0,"sub_direct":0,"sub_reg":0,"swap_before_kib":0,"swap_during_kib":0,"swap_after_free_kib":0,"va_hwm_kib":618540}
+CHECK PASS shifted: release counters captured
+CHECK PASS shifted: VmSwap stays 0
+CHECK PASS shifted: teardown leaves no registered byte
+CHECK PASS shifted: split OFF refuses B, falls back to the ring
+exit=0

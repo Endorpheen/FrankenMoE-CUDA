@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "a fully embedding-marked ubatch is not mixed",
+    "status": "CAUGHT",
+    "failures": 661,
+    "exit_code": 1
+  },
+  {
+    "mutation": "tokens are used for an all-embedding batch",
+    "status": "CAUGHT",
+    "failures": 325,
+    "exit_code": 1
+  },
+  {
+    "mutation": "embeddings are used for a token-only batch",
+    "status": "CAUGHT",
+    "failures": 686,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the state payload is sized by the token count only",
+    "status": "CAUGHT",
+    "failures": 2541,
+    "exit_code": 1
+  },
+  {
+    "mutation": "out ids are recorded for every row",
+    "status": "CAUGHT",
+    "failures": 52737,
+    "exit_code": 1
+  },
+  {
+    "mutation": "unique sequences are listed in row order",
+    "status": "CAUGHT",
+    "failures": 6415,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the sequence index is not assigned",
+    "status": "CAUGHT",
+    "failures": 10472,
+    "exit_code": 1
+  }
+]

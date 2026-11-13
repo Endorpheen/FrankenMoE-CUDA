@@ -1,0 +1,9 @@
+{
+  "status": "PASS_LIVE_APEX_COMMON_CPU_MOE_CONTROL",
+  "sha256": "d281b366f6f9df15d6d292ce859c78ca74dcfadabec33ee5fde256e8ab33d828",
+  "source_parent_sha256": "d97a7353a54fb21fe4a64afa8e649f076adf275a561ff8058e0b094d34f9fbfe",
+  "preserved": "All prior Goose Q4/Q6, tiled, common Q8 and vector elementwise objects; prior whole controller is disable fallback",
+  "production_changed": false,
+  "graph_report": "results/moe-control-apex-expanded-summary.json",
+  "model_report": "results/moe-control-apex-model-stage-summary.json"
+}

@@ -1,0 +1,7 @@
+{
+  "change": "Preserve pool priority in uncompiled non-Linux primitive fallback",
+  "active_linux_preprocessed_bytes_identical": true,
+  "sha256": "2e3762029e4e496e0f3a6e5de6736a7150b9f49004b47fedf6860254d4556f68",
+  "compiler_changed": false,
+  "other_platform_execution_qualified": false
+}

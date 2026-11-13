@@ -1,0 +1,16 @@
+{
+  "producer": {
+    "stage": "self-hosted EXP299 v2 bound Stage3",
+    "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "receipt": "bootstrap-exp299-v2-receipt.json",
+    "applies_to": "new generation only"
+  },
+  "reachable_stack_allocator": false,
+  "ffi": "292-byte Q8_K static assertions; only primitive float bit copy extern",
+  "sha256": {
+    "source/q8k-fixed/kernel.goose": "3fb6f9b07484d678b1aed5453bc5947698b818d4d06ef27f99a1179ac4f5ccec",
+    "source/q8k-fixed/unit.c": "5f94e22a359e9965ad879e6cbc1c852776fa86c29cb89123b4020b06758181e1",
+    "source/q8k-fixed/hook.c": "e1b8c1aca046957e1ce73fb7dc39dc57abbe08dde1e877a56e8621a985fae991",
+    "generated/q8k-fixed.c": "fcff88a7d899f88a997bc99ac88e00286be2f2a52b5b25de0d9897d313fb84c4"
+  }
+}

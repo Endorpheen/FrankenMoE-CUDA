@@ -1,0 +1,63 @@
+{
+  "module": "ssm-conv",
+  "exp": "170s",
+  "import_prefix": "fg170s_",
+  "status": "complete native F32 SSM convolution compute paths as draft Goose algorithms;no compile,codegen or GPU execution was run locally;parent owns the CUDA launch/storage bridge,real builds and all acceptance gates",
+  "sources": {
+    "cuda": "ssm-conv/inputs/ssm-conv.cu",
+    "header": "ssm-conv/inputs/ssm-conv.cuh",
+    "kernels": ["ssm_conv_f32 (serial rolling window,n_t<=32)", "ssm_conv_long_token_f32 (tiled shared,n_t>32)", "ssm_conv_f32_cuda (host dispatch)", "ggml_cuda_op_ssm_conv (host op)"]
+  },
+  "device_primitives": {
+    "fg170s_load(p:u64,i:u64)->f32": "read f32 at byte address p+4*i;base may be a global tensor pointer or the calling block's dynamic shared-memory base",
+    "fg170s_store(p:u64,i:u64,v:f32)": "write f32 at p+4*i",
+    "fg170s_expf(x)->f32": "must lower to CUDA libdevice expf so SiLU is bit-identical including NaN/Inf saturation",
+    "fg170s_barrier()": "__syncthreads()",
+    "fg170s_lc()": "cudaTriggerProgrammaticLaunchCompletion, no-op pre-Hopper, mirrors ggml_cuda_pdl_lc",
+    "fg170s_sync()": "cudaGridDependencySynchronize, no-op pre-Hopper, mirrors ggml_cuda_pdl_sync"
+  },
+  "device_entries": {
+    "ssm_conv_serial": "(src0,src1,bias,dst:u64; src0_nb0,src0_nb1,src0_nb2,src1_nb1,dst_nb0,dst_nb1,dst_nb2:i32 byte strides; n_t,d_conv:i32; apply_silu,use_bias:bool; tid,bidx,bidy:i32). One thread per channel; block=128; grid=(n_s,nr/128,1); smem=0; lc() then sync() exactly like native PDL bracket; src0_nb0 accepted but unused like native GGML_UNUSED",
+    "ssm_conv_long": "(same pointers/strides; smem:u64; n_t,d_conv:i32; apply_silu,use_bias,bounded_tail:bool; tid,bidx,bidy,bidz:i32). Block=128; grid=(n_s,nr/128,ceil(n_t/32)); dynamic smem=128*(d_conv+31)*4 bytes; no PDL calls, exactly one barrier, matching native"
+  },
+  "numerics": [
+    "serial: registers x,w are fixed f32[15]; i==0 loads tokens 0..d_conv-1, else x[(i-1)%d_conv]=token i+d_conv-1 (native int64 modulo on nonnegative operands equals the i32 form for all accepted n_t); dot accumulates j ascending x[(i+j)%d_conv]*w[j] then adds bias; SiLU x/(1+expf(-x)) applied after bias, exactly like ggml_cuda_op_silu_single",
+    "long: shared tile [128][d_conv+31] filled by the native schedule v=tid+128*k (k=0..load_cols-1; row=v/load_cols, col=v%load_cols; write smem[row][col]=x_block[row*stride_x+col]); the native break condition fires only on the final iteration so the plain L-iteration loop performs identical writes in identical order; one barrier; compute reads smem[tid][i+j]*w[j] for i<local_n_t= min(32,n_t-bidz*32)",
+    "plain a*b+c accumulation order preserved; codegen FMA contraction parity is a parent finding, not weakened here"
+  ],
+  "policy_packet": {
+    "args": "0=mode(0 plain,1 silu-fused, must equal silu_dst!=0),1=ctx(!=0),2=dst conv node,3=bias_add_node or 0,4=silu_dst or 0,5=tail_mode(0/absent bounded,1 native-trace)",
+    "bias_pick": "bias_add_node->src[0]==dst ? src[1] : src[0], exactly native",
+    "plan": "fg170s_plan{u64 ptrs[4] (0 src0,1 src1,2 bias,3 out); u64 dims[3][4]? no: dims/strides use the same slot index as ptrs, key1 dims[4] and key2 strides in float elements per slot 0..3; u64 iv[16]; float fv[8] reserved}; plan_ptr returns zero-initialized",
+    "iv": "0 silu,1 use_bias,2 d_conv,3 nr,4 n_t,5 n_s,6 long_token,7 bounded_tail,8 gridX=n_s,9 gridY=nr/128,10 gridZ=ceil(n_t/32) or 0,11 smem bytes,12 threads=128,13 split_n_t=32,14 src0 row tokens,15 reserved",
+    "bridge": "device byte stride = element stride *4 (exact, strides<2^31); pass n_t and d_conv as i32 (n_t<=65535*32 on the long path so values match native int64); allocate iv11 dynamic smem; map smem base; never execute fn main of either Goose file"
+  },
+  "fail_codes": {
+    "1": "u64 overflow guard", "2": "internal ceil divisor", "3": "bad handles/mode (ctx,dst,src0,src1 null; mode inconsistent)", "4": "out geometry (ne[0]!=nr, nb0!=4, token stride<nr)", "5": "tensor projection (null,type!=F32,data null,nb0!=4)", "6": "dim/stride bounds (n<=0 or >2^31-1, stride<0 or >2^31-1 or not multiple of 4)", "7": "bias without silu (native assert)", "8": "bias geometry (non-contiguous, nelements!=nr)", "9": "unsupported d_conv (native GGML_ABORT)", "10": "src0.nb[1]!=src0.ne[0]*4 (native assert)", "11": "nr%128!=0 (native assert)", "12": "src0 window coverage (ne[0]<n_t+d_conv-1 or ne[2]<n_s)", "13": "src1 geometry (ne[1]!=nr or row stride<d_conv; native omits)", "14": "out nb0!=4 (native omits; kernel requires)", "15": "launch grid cap (nr/128>65535 or ceil(n_t/32)>65535; native would fail launch)", "16": "i32 offset domain (stride*128 products)", "17": "i32 sequence offset domain ((n_s-1)*nb2)"
+  },
+  "tail_semantics": {
+    "native_behavior": "in the final z-block (bidz=ceil(n_t/32)-1, local_n_t=n_t-bidz*32<32) the shared load visits columns 0..d_conv+30 for every one of the 128 rows; columns >= local_n_t+d_conv-1 map to token indices >= n_t+d_conv-1, i.e. (32-local_n_t) floats past each channel row end (into the following row, or past the checked span on the last row of the last sequence); all such values are unused by the dot products",
+    "bounded_default": "arg5!=1: those loads are skipped (col<cut=local_n_t+d_conv-1 guard); untouched smem slots are never read; outputs are bit-identical to native for all defined inputs and no access exceeds the checked span",
+    "native_trace": "arg5==1: loads replicate the native address trace including the padding reads; parent storage must guarantee at least (32-local_n_t) floats of slack after each channel row of the final z-block; for trace parity only"
+  },
+  "native_gaps_and_divergences": [
+    "native host never checks out->nb[0] though both kernels require dst_nb0==4; policy code 14",
+    "native host never checks src1 type, src1.ne[1]==nr or weight row stride; kernel would read out of bounds; policy codes 5/13",
+    "native ignores the weight sequence dimension entirely (all sequences share slice 0); replicated, documented, not additionally rejected",
+    "native does not bound gridY/gridZ/n_s; invalid configurations only fail at cudaLaunch; policy codes 15/17",
+    "native i32 byte-offset arithmetic (bidx*nb2, tid*stride) wraps for >2GiB spans or extreme strides; policy codes 16/17 keep every accepted shape inside the native i32 domain so device u64 math is address-identical; beyond it native is already UB",
+    "serial kernel receives src0_nb0 but ignores it (GGML_UNUSED); element stride 1 assumed; policy pins nb0==4",
+    "long kernel has no PDL calls, serial has lc+sync; replicated exactly",
+    "bias is added before SiLU in both paths; replicated"
+  ],
+  "coverage": {
+    "serial": "complete for all d_conv in {3,4,5,7,9,15}, silu on/off, bias on/off, 1<=n_t<=32 (including n_t<d_conv-1 windows and the n_t=32 boundary), any n_s within limits",
+    "long": "complete for all d_conv, silu on/off, bias on/off, 33<=n_t<=65535*32 including exact-multiple and ragged tails, both bounded and native-trace tail modes",
+    "excluded": "d_conv outside {3,4,5,7,9,15} (native GGML_ABORT, policy code 9); nr not multiple of 128 (native assert); these are rejections, not supported cases"
+  },
+  "not_claimed": [
+    "no codegen/GPU tests were executed locally; parent compiles the fixture against the unchanged native-prefixed oracle fg170s_native_ggml_cuda_op_ssm_conv, rollback env GGML_GOOSE_CUDA_SSM=0 and negative cases before the Apex gate",
+    "FMA contraction parity of generated code is delegated to the parent per contract",
+    "native-trace tail mode requires padded storage; exact-size storage must use the bounded default"
+  ]
+}

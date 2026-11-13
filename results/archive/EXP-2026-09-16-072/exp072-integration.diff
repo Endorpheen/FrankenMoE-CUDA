@@ -1,0 +1,850 @@
+diff -ruN '--exclude=.git' work/llama.cpp-exp062-ring3/ggml/include/ggml-cpu.h work/llama.cpp-exp072-iq4nl-fused/ggml/include/ggml-cpu.h
+--- work/llama.cpp-exp062-ring3/ggml/include/ggml-cpu.h	2026-09-09 16:38:35.749781576 +0300
++++ work/llama.cpp-exp072-iq4nl-fused/ggml/include/ggml-cpu.h	2026-09-16 01:17:38.630864267 +0300
+@@ -158,6 +158,17 @@
+     GGML_BACKEND_API void ggml_cpu_iq2s_fused_stats_get(uint64_t * out16);
+     GGML_BACKEND_API void ggml_cpu_iq2s_fused_stats_dump(void);
+ 
++    // EXP-072: separate window for the fused IQ4_NL mul_mat_id path. An open
++    // window means the caller marks the batch as decode target-verification;
++    // the window alone never enables the path (GGML_CPU_IQ4NL_FUSED must not
++    // be "0"; on by default).
++    GGML_BACKEND_API void ggml_cpu_iq4nl_fused_set_window(bool enabled);
++
++    // Counters: groups[4], fused_groups[4], tokens[4], calls, window_opens,
++    // fused_dispatches.
++    GGML_BACKEND_API void ggml_cpu_iq4nl_fused_stats_get(uint64_t * out15);
++    GGML_BACKEND_API void ggml_cpu_iq4nl_fused_stats_dump(void);
++
+     GGML_BACKEND_API void ggml_cpu_fp32_to_fp32(const float *,       float *, int64_t);
+     GGML_BACKEND_API void ggml_cpu_fp32_to_i32 (const float *,     int32_t *, int64_t);
+     GGML_BACKEND_API void ggml_cpu_fp32_to_fp16(const float *, ggml_fp16_t *, int64_t);
+diff -ruN '--exclude=.git' work/llama.cpp-exp062-ring3/ggml/src/ggml-cpu/ggml-cpu.c work/llama.cpp-exp072-iq4nl-fused/ggml/src/ggml-cpu/ggml-cpu.c
+--- work/llama.cpp-exp062-ring3/ggml/src/ggml-cpu/ggml-cpu.c	2026-09-09 16:52:55.355953958 +0300
++++ work/llama.cpp-exp072-iq4nl-fused/ggml/src/ggml-cpu/ggml-cpu.c	2026-09-16 01:22:56.408594339 +0300
+@@ -1606,6 +1606,78 @@
+     }
+ }
+ 
++//
++// EXP-2026-09-16-072: fused IQ4_NL mul_mat_id path for 2-3-row expert groups
++// inside the same decode-only verification window. On by default.
++//
++
++// on by default; set GGML_CPU_IQ4NL_FUSED=0 to restore the stock per-row path
++static int iq4nl_fused_mode(void) {
++    static atomic_int mode = -1;
++    int m = atomic_load_explicit(&mode, memory_order_relaxed);
++    if (m < 0) {
++        const char * e = getenv("GGML_CPU_IQ4NL_FUSED");
++        m = (e == NULL || (*e != '\0' && strcmp(e, "0") != 0)) ? 1 : 0;
++        atomic_store_explicit(&mode, m, memory_order_relaxed);
++    }
++    return m;
++}
++
++// GGML_CPU_IQ4NL_FUSED_STATS: unset or "0" -> stats off; any other value -> on.
++// Counters are read-only diagnostics; both the increments and the atexit dump
++// are gated, so timed runs can keep the entire block disabled.
++static int iq4nl_fused_stats_mode(void) {
++    static atomic_int mode = -1;
++    int m = atomic_load_explicit(&mode, memory_order_relaxed);
++    if (m < 0) {
++        const char * e = getenv("GGML_CPU_IQ4NL_FUSED_STATS");
++        m = (e != NULL && *e != '\0' && strcmp(e, "0") != 0) ? 1 : 0;
++        atomic_store_explicit(&mode, m, memory_order_relaxed);
++    }
++    return m;
++}
++
++static atomic_bool g_iq4nl_fused_window = false; // closed until a caller opens it
++
++static atomic_ullong g_iq4nl_st[16]; // hist_group[4], hist_group_fused[4], hist_tokens[4], n_calls, n_window_open, n_fused_dispatch
++
++static void iq4nl_fused_stats_count(int idx, unsigned long long v) {
++    if (iq4nl_fused_stats_mode() == 1) {
++        atomic_fetch_add_explicit(&g_iq4nl_st[idx], v, memory_order_relaxed);
++    }
++}
++
++void ggml_cpu_iq4nl_fused_stats_dump(void) {
++    if (iq4nl_fused_stats_mode() != 1) {
++        return;
++    }
++    fprintf(stderr, "IQ4NL_FUSED_STATS groups[c1,c2,c3,c4+]=%llu,%llu,%llu,%llu fused_groups=%llu,%llu,%llu,%llu tokens[c1,c2,c3,c4+]=%llu,%llu,%llu,%llu iq4nl_groups_seen=%llu window_opens=%llu fused_dispatches=%llu\n",
++            atomic_load(&g_iq4nl_st[0]), atomic_load(&g_iq4nl_st[1]), atomic_load(&g_iq4nl_st[2]), atomic_load(&g_iq4nl_st[3]),
++            atomic_load(&g_iq4nl_st[4]), atomic_load(&g_iq4nl_st[5]), atomic_load(&g_iq4nl_st[6]), atomic_load(&g_iq4nl_st[7]),
++            atomic_load(&g_iq4nl_st[8]), atomic_load(&g_iq4nl_st[9]), atomic_load(&g_iq4nl_st[10]), atomic_load(&g_iq4nl_st[11]),
++            atomic_load(&g_iq4nl_st[12]), atomic_load(&g_iq4nl_st[13]), atomic_load(&g_iq4nl_st[14]));
++}
++
++void ggml_cpu_iq4nl_fused_set_window(bool enabled) {
++    atomic_store_explicit(&g_iq4nl_fused_window, enabled ? true : false, memory_order_relaxed);
++    if (enabled) {
++        iq4nl_fused_stats_count(13, 1);
++        if (iq4nl_fused_stats_mode() == 1) {
++            static bool dump_registered = false;
++            if (!dump_registered) {
++                dump_registered = true;
++                atexit(ggml_cpu_iq4nl_fused_stats_dump);
++            }
++        }
++    }
++}
++
++void ggml_cpu_iq4nl_fused_stats_get(uint64_t * out) {
++    for (int i = 0; i < 15; ++i) {
++        out[i] = atomic_load_explicit(&g_iq4nl_st[i], memory_order_relaxed);
++    }
++}
++
+ #if defined(__AVX2__) && defined(__FMA__)
+ 
+ #include "ggml-cpu-iq2s-grid.h"
+@@ -1755,6 +1827,101 @@
+     }
+ }
+ 
++// same body as mul_add_epi8 in arch/x86/quants.c
++static inline __m256i mul_add_epi8_e72(const __m256i x, const __m256i y) {
++    const __m256i ax = _mm256_sign_epi8(x, x);
++    const __m256i sy = _mm256_sign_epi8(y, x);
++    return _mm256_maddubs_epi16(ax, sy);
++}
++
++// same values as kvalues_iq4nl in ggml-common.h; any mismatch breaks the byte-exact gate
++static const int8_t kvalues_iq4nl_e72[16] = {
++    -127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113,
++};
++
++// One IQ4_NL expert chunk shared across 2-3 activation rows. Each weight block pair is
++// unpacked once and applied to all rows. Per-row arithmetic is the same order as
++// ggml_vec_dot_iq4_nl_q8_0 (AVX2): two accumulators per row, one fmadd per block pair,
++// final add then the same hsum reduction.
++static void ggml_compute_forward_mul_mat_id_iq4nl_one_chunk_e72(
++        struct ggml_tensor * dst,
++        const struct ggml_tensor * src0,
++        const struct ggml_tensor * src1,
++        const struct ggml_tensor * ids,
++        const int cur_a,
++        const int64_t ir0_start,
++        const int64_t ir0_end,
++        const char * src0_cur,
++        const struct mmid_row_mapping * matrix_rows,
++        const int64_t cne1,
++        const size_t row_size,
++        const void * wdata) {
++
++    GGML_TENSOR_BINARY_OP_LOCALS
++
++    GGML_ASSERT(cne1 >= 2 && cne1 <= 3);
++
++    const __m128i values128 = _mm_loadu_si128((const __m128i *) kvalues_iq4nl_e72);
++    const __m128i m4b  = _mm_set1_epi8(0x0f);
++    const __m256i mone = _mm256_set1_epi16(1);
++
++    const int64_t nb = ne00 / QK4_NL;
++
++    // row chunk: the guard caps cne1 at 3, the 8-slot form keeps the kernel generic
++    for (int64_t t0 = 0; t0 < cne1; t0 += 8) {
++        const int64_t tr = MIN(t0 + 8, cne1) - t0;
++
++        struct mmid_row_mapping rmap[8];
++        const block_q8_0 * ycol[8];
++        float * dst_col_r[8];
++        for (int64_t r = 0; r < tr; ++r) {
++            rmap[r] = MMID_MATRIX_ROW(cur_a, t0 + r);
++            const int64_t i11 = rmap[r].i1 % ne11;
++            const int64_t i12 = rmap[r].i2;
++            ycol[r] = (const block_q8_0 *)((const int8_t *) wdata + (i11 + i12*ne11)*row_size);
++            dst_col_r[r] = (float *) ((char *) dst->data + (rmap[r].i1*nb1 + rmap[r].i2*nb2));
++        }
++
++        for (int64_t ir0 = ir0_start; ir0 < ir0_end; ++ir0) {
++            __m256 acc1[8];
++            __m256 acc2[8];
++            for (int64_t r = 0; r < tr; ++r) {
++                acc1[r] = _mm256_setzero_ps();
++                acc2[r] = _mm256_setzero_ps();
++            }
++
++            const block_iq4_nl * xb = (const block_iq4_nl *)(src0_cur + ir0*nb01);
++            for (int64_t i = 0; i + 1 < nb; i += 2) {
++                // unpack the weight block pair once, shared by all rows
++                const __m128i q4bits_1 = _mm_loadu_si128((const __m128i *) xb[i + 0].qs);
++                const __m128i q4bits_2 = _mm_loadu_si128((const __m128i *) xb[i + 1].qs);
++                const __m256i q4b_1 = _mm256_insertf128_si256(_mm256_castsi128_si256(
++                        _mm_shuffle_epi8(values128, _mm_and_si128(q4bits_1, m4b))),
++                        _mm_shuffle_epi8(values128, _mm_and_si128(_mm_srli_epi16(q4bits_1, 4), m4b)), 1);
++                const __m256i q4b_2 = _mm256_insertf128_si256(_mm256_castsi128_si256(
++                        _mm_shuffle_epi8(values128, _mm_and_si128(q4bits_2, m4b))),
++                        _mm_shuffle_epi8(values128, _mm_and_si128(_mm_srli_epi16(q4bits_2, 4), m4b)), 1);
++                const float xd_1 = GGML_CPU_FP16_TO_FP32(xb[i + 0].d);
++                const float xd_2 = GGML_CPU_FP16_TO_FP32(xb[i + 1].d);
++
++                for (int64_t r = 0; r < tr; ++r) {
++                    const __m256i q8b_1 = _mm256_loadu_si256((const __m256i *) ycol[r][i + 0].qs);
++                    const __m256i q8b_2 = _mm256_loadu_si256((const __m256i *) ycol[r][i + 1].qs);
++                    const __m256i p16_1 = mul_add_epi8_e72(q4b_1, q8b_1);
++                    const __m256i p16_2 = mul_add_epi8_e72(q4b_2, q8b_2);
++                    acc1[r] = _mm256_fmadd_ps(_mm256_set1_ps(GGML_CPU_FP16_TO_FP32(ycol[r][i + 0].d)*xd_1),
++                            _mm256_cvtepi32_ps(_mm256_madd_epi16(p16_1, mone)), acc1[r]);
++                    acc2[r] = _mm256_fmadd_ps(_mm256_set1_ps(GGML_CPU_FP16_TO_FP32(ycol[r][i + 1].d)*xd_2),
++                            _mm256_cvtepi32_ps(_mm256_madd_epi16(p16_2, mone)), acc2[r]);
++                }
++            }
++            for (int64_t r = 0; r < tr; ++r) {
++                dst_col_r[r][ir0] = hsum_float_8_e46(_mm256_add_ps(acc1[r], acc2[r]));
++            }
++        }
++    }
++}
++
+ #endif // __AVX2__ && __FMA__
+ 
+ static void ggml_compute_forward_mul_mat_id(
+@@ -1887,6 +2054,15 @@
+             iq2s_fused_stats_count(8 + (ntok >= 4 ? 3 : (ntok >= 1 ? (int)ntok - 1 : 0)), 1);
+         }
+ 
++        // EXP-2026-09-16-072 diagnostics: group/token histograms for IQ4_NL calls (thread 0 only).
++        if (type == GGML_TYPE_IQ4_NL && ith == 0) {
++            iq4nl_fused_stats_count(12, 1);
++            const int gb = cne1 >= 4 ? 3 : (cne1 >= 1 ? (int)cne1 - 1 : 0);
++            iq4nl_fused_stats_count(0 + gb, 1);
++            const int64_t ntok = ids->ne[1];
++            iq4nl_fused_stats_count(8 + (ntok >= 4 ? 3 : (ntok >= 1 ? (int)ntok - 1 : 0)), 1);
++        }
++
+         // EXP-046: fused IQ2_S path for 2-3-row expert groups inside an opened
+         // verification window. Single-row groups and every other shape keep the
+         // stock vec_dot loop. The window is opened only by an explicit caller
+@@ -1937,6 +2113,58 @@
+                     dst, src0, src1, ids, cur_a,
+                     ir0_start, ir0_end,
+                     src0_cur, matrix_rows, cne1, row_size, wdata);
++
++                if (nth >= nchunk0f) {
++                    break;
++                }
++
++                current_chunk = atomic_fetch_add_explicit(current_chunk_ctr, 1, memory_order_relaxed);
++            }
++#endif
++            continue;
++        }
++
++        // EXP-2026-09-16-072: fused IQ4_NL path for 2-3-row expert groups inside the
++        // same opened verification window. Single-row groups and every other shape
++        // keep the stock vec_dot loop. The guard requires an even block count: the
++        // stock scalar tail for an odd last block is not reproduced by the fused loop.
++
++        const bool iq4nl_fused =
++#if defined(__AVX2__) && defined(__FMA__)
++            iq4nl_fused_mode() == 1 &&
++            atomic_load_explicit(&g_iq4nl_fused_window, memory_order_relaxed) &&
++            type == GGML_TYPE_IQ4_NL &&
++            ids->ne[1] >= 2 && ids->ne[1] <= 3 &&
++            cne1 >= 2 && cne1 <= 3 &&
++            ne00 % (2*QK4_NL) == 0 &&
++            !ggml_is_numa();
++#else
++            false;
++#endif
++
++        if (iq4nl_fused) {
++            iq4nl_fused_stats_count(14, 1);
++            const int gb = cne1 >= 4 ? 3 : (int)cne1 - 1;
++            if (ith == 0) {
++                iq4nl_fused_stats_count(4 + gb, 1);
++            }
++            const int64_t nr0f = ne01;
++            const int64_t nchunk0f = (nr0f + 15) / 16;
++            const int64_t dr0f = (nr0f + nchunk0f - 1) / nchunk0f;
++
++            int current_chunk = ith;
++
++            atomic_int * current_chunk_ctr = (atomic_int *)(atomic_current_chunk + cur_a);
++
++#if defined(__AVX2__) && defined(__FMA__)
++            while (current_chunk < nchunk0f) {
++                const int64_t ir0_start = dr0f * current_chunk;
++                const int64_t ir0_end = MIN(ir0_start + dr0f, nr0f);
++
++                ggml_compute_forward_mul_mat_id_iq4nl_one_chunk_e72(
++                    dst, src0, src1, ids, cur_a,
++                    ir0_start, ir0_end,
++                    src0_cur, matrix_rows, cne1, row_size, wdata);
+ 
+                 if (nth >= nchunk0f) {
+                     break;
+diff -ruN '--exclude=.git' work/llama.cpp-exp062-ring3/tests/CMakeLists.txt work/llama.cpp-exp072-iq4nl-fused/tests/CMakeLists.txt
+--- work/llama.cpp-exp062-ring3/tests/CMakeLists.txt	2026-09-09 16:38:35.753049714 +0300
++++ work/llama.cpp-exp072-iq4nl-fused/tests/CMakeLists.txt	2026-09-16 01:19:06.614006656 +0300
+@@ -157,6 +157,13 @@
+ llama_test(test-iq2s-fused-mmid)
+ llama_build(test-iq2s-fused-mmid-bench.cpp)
+ 
++# EXP-2026-09-16-072: fused IQ4_NL mul_mat_id gate. The gate adapts to the env
++# switch (default on, "0" disabled); the bench is run per case and thread count:
++# ./bin/test-iq4nl-fused-mmid-bench 3s 12
++llama_build(test-iq4nl-fused-mmid.cpp)
++llama_test(test-iq4nl-fused-mmid)
++llama_build(test-iq4nl-fused-mmid-bench.cpp)
++
+ if (NOT WIN32 OR NOT BUILD_SHARED_LIBS)
+     # these tests are disabled on Windows because they use internal functions not exported with LLAMA_API (when building with shared libraries)
+     llama_build_and_test(test-unicode.cpp)
+diff -ruN '--exclude=.git' work/llama.cpp-exp062-ring3/tests/test-iq4nl-fused-mmid-bench.cpp work/llama.cpp-exp072-iq4nl-fused/tests/test-iq4nl-fused-mmid-bench.cpp
+--- work/llama.cpp-exp062-ring3/tests/test-iq4nl-fused-mmid-bench.cpp	1970-01-01 03:00:00.000000000 +0300
++++ work/llama.cpp-exp072-iq4nl-fused/tests/test-iq4nl-fused-mmid-bench.cpp	2026-09-16 01:19:01.301877361 +0300
+@@ -0,0 +1,268 @@
++// EXP-2026-09-16-072: wall-clock microbench for the fused IQ4_NL mul_mat_id path.
++// One CPU MUL_MAT_ID call with the real Qwen3.8 down shape:
++//   src0 = IQ4_NL 640 x 2560 x 512, src1 = f32 640 x rows, ids = i32 10 x rows.
++// Cases:
++//   "2s" -> rows=2, both tokens select the same 10 experts (groups of 2)
++//   "3s" -> rows=3, all three tokens select the same 10 experts (groups of 3)
++//   "3m" -> rows=3, mixed routing close to the EXP-046 group histogram (c1 73.5%, c2 18.1%, c3 8.25%)
++//   "3r" -> rows=3, one group of 3 and one group of 2 (minimal sharing)
++// Arms alternate OFF/ON, 3 pairs per invocation; every arm does 10 warmup calls
++// then n_measured timed calls (timer strictly around ggml_backend_graph_compute,
++// i.e. one graph compute call). Data and seed=42 are shared by both arms.
++// The OFF and ON outputs are compared once over the full dst bytes (exactness of
++// the real call); the fused_dispatches counter delta proves which arm ran.
++// Usage: test-iq4nl-fused-mmid-bench <case: 2s|3s|3m|3r> <threads> [n_measured=100]
++// Disabled control: GGML_CPU_IQ4NL_FUSED=0 ... (both arms then report delta 0)
++#include "ggml.h"
++#include "ggml-backend.h"
++#include "ggml-cpu.h"
++
++#include <algorithm>
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++#include <vector>
++
++static const int64_t D    = 640;   // down contraction (ne00)
++static const int64_t NE   = 512;   // experts (ne02)
++static const int64_t NEU  = 10;    // experts per token (ids ne0)
++static const int64_t NROW = 2560;  // down output rows (ne01)
++
++static const std::vector<int32_t> IDS_2S = {
++    7, 1, 2, 3, 4, 5, 6, 8, 9, 511,
++    7, 1, 2, 3, 4, 5, 6, 8, 9, 511,
++};
++static const std::vector<int32_t> IDS_3S = {
++    7, 1, 2, 3, 4, 5, 6, 8, 9, 511,
++    7, 1, 2, 3, 4, 5, 6, 8, 9, 511,
++    7, 1, 2, 3, 4, 5, 6, 8, 9, 511,
++};
++static const std::vector<int32_t> IDS_3M = {
++    0, 511, 3, 7, 11, 20, 21, 22, 23, 24,
++    0, 511, 3, 7, 11, 30, 31, 32, 33, 34,
++    0, 511, 40, 41, 42, 43, 44, 45, 46, 47,
++};
++static const std::vector<int32_t> IDS_3R = {
++    7, 1, 2, 3, 4, 5, 6, 8, 9, 511,
++    7, 12, 13, 14, 15, 16, 17, 18, 511, 300,
++    505, 20, 21, 22, 23, 24, 25, 26, 27, 100,
++};
++
++static uint64_t xorshift64(uint64_t & s) {
++    s ^= s << 13; s ^= s >> 7; s ^= s << 17; return s;
++}
++
++static double median_of(std::vector<double> v) {
++    std::sort(v.begin(), v.end());
++    const size_t n = v.size();
++    if (n == 0) { return 0.0; }
++    if (n % 2 == 1) { return v[n / 2]; }
++    return 0.5 * (v[n / 2 - 1] + v[n / 2]);
++}
++
++static bool iq4nl_env_on() {
++    const char * e = getenv("GGML_CPU_IQ4NL_FUSED");
++    return e == nullptr || (*e != '\0' && strcmp(e, "0") != 0);
++}
++
++struct arm_result {
++    double min_us;
++    double med_us;
++    double max_us;
++    uint64_t fused_dispatch_delta;
++};
++
++struct bench_ctx {
++    ggml_context   * ctx     = nullptr;
++    ggml_cgraph    * gf      = nullptr;
++    ggml_tensor    * dst     = nullptr;
++    ggml_backend_t   backend = nullptr;
++};
++
++static bench_ctx bench_setup(int rows, const std::vector<int32_t> & ids_data, uint64_t seed, int n_threads) {
++    bench_ctx b;
++    b.backend = ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, NULL);
++    if (!b.backend) {
++        fprintf(stderr, "no CPU backend\n");
++        exit(2);
++    }
++
++    const size_t bytes0 = ggml_row_size(GGML_TYPE_IQ4_NL, D * NROW * NE);
++    const size_t bytes1 = sizeof(float) * (size_t) D * rows;
++    const size_t bytesi = sizeof(int32_t) * ids_data.size();
++
++    ggml_init_params params = {
++        /*.mem_size   =*/ bytes0 + bytes1 + bytesi + 8 * 1024 * 1024,
++        /*.mem_buffer =*/ NULL,
++        /*.no_alloc   =*/ false,
++    };
++    b.ctx = ggml_init(params);
++
++    ggml_tensor * src0 = ggml_new_tensor_3d(b.ctx, GGML_TYPE_IQ4_NL, D, NROW, NE);
++    ggml_tensor * src1 = ggml_new_tensor_3d(b.ctx, GGML_TYPE_F32, D, 1, rows);
++    ggml_tensor * ids  = ggml_new_tensor_2d(b.ctx, GGML_TYPE_I32, NEU, rows);
++
++    std::vector<uint8_t> buf(bytes0);
++    uint64_t s = seed;
++    for (size_t i = 0; i < bytes0; ++i) {
++        buf[i] = (uint8_t)(xorshift64(s) >> 24);
++    }
++    // patch the fp16 scale field of every block to 1.0f to keep arithmetic finite
++    const size_t blk = 18; // block_iq4_nl size
++    for (size_t i = 0; i + 1 < bytes0; i += blk) {
++        buf[i] = 0x00; buf[i + 1] = 0x3c;
++    }
++    memcpy(src0->data, buf.data(), bytes0);
++
++    std::vector<float> f1((size_t) D * rows);
++    for (auto & x : f1) {
++        uint32_t r = (uint32_t)(xorshift64(s) >> 32);
++        x = (float)((int32_t) r) * (1.0f / 2147483648.0f);
++    }
++    memcpy(src1->data, f1.data(), bytes1);
++    memcpy(ids->data, ids_data.data(), bytesi);
++
++    b.gf = ggml_new_graph(b.ctx);
++    b.dst = ggml_mul_mat_id(b.ctx, src0, src1, ids);
++    ggml_build_forward_expand(b.gf, b.dst);
++
++    ggml_backend_cpu_set_n_threads(b.backend, n_threads);
++    return b;
++}
++
++// The arms are switched by the verification window only: OFF = window closed (stock
++// path, same guard short-circuit as env disabled), ON = window open. The fused
++// dispatch counter delta is the authoritative proof of which path ran.
++static arm_result run_arm(bench_ctx & b, bool fused_on, int n_warmup, int n_measured) {
++    uint64_t st_before[16];
++    ggml_cpu_iq4nl_fused_stats_get(st_before);
++
++    for (int i = 0; i < n_warmup; ++i) {
++        ggml_cpu_iq4nl_fused_set_window(fused_on);
++        ggml_status st = ggml_backend_graph_compute(b.backend, b.gf);
++        ggml_cpu_iq4nl_fused_set_window(false);
++        if (st != GGML_STATUS_SUCCESS) {
++            fprintf(stderr, "warmup graph compute failed: %d\n", (int) st);
++            exit(2);
++        }
++    }
++
++    std::vector<double> us;
++    us.reserve(n_measured);
++    for (int i = 0; i < n_measured; ++i) {
++        ggml_cpu_iq4nl_fused_set_window(fused_on);
++        const auto t0 = std::chrono::steady_clock::now();
++        ggml_status st = ggml_backend_graph_compute(b.backend, b.gf);
++        const auto t1 = std::chrono::steady_clock::now();
++        ggml_cpu_iq4nl_fused_set_window(false);
++        if (st != GGML_STATUS_SUCCESS) {
++            fprintf(stderr, "graph compute failed: %d\n", (int) st);
++            exit(2);
++        }
++        us.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
++    }
++
++    uint64_t st_after[16];
++    ggml_cpu_iq4nl_fused_stats_get(st_after);
++
++    arm_result r;
++    r.min_us = *std::min_element(us.begin(), us.end());
++    r.max_us = *std::max_element(us.begin(), us.end());
++    r.med_us = median_of(us);
++    r.fused_dispatch_delta = st_after[14] - st_before[14];
++    return r;
++}
++
++static void compute_once(bench_ctx & b, bool fused_on) {
++    ggml_cpu_iq4nl_fused_set_window(fused_on);
++    ggml_status st = ggml_backend_graph_compute(b.backend, b.gf);
++    ggml_cpu_iq4nl_fused_set_window(false);
++    if (st != GGML_STATUS_SUCCESS) {
++        fprintf(stderr, "graph compute failed: %d\n", (int) st);
++        exit(2);
++    }
++}
++
++int main(int argc, char ** argv) {
++    if (argc < 3) {
++        fprintf(stderr, "usage: %s <case: 2s|3s|3m|3r> <threads> [n_measured=100]\n", argv[0]);
++        return 1;
++    }
++    const std::string case_name = argv[1];
++    const int n_threads = atoi(argv[2]);
++    const int n_measured = (argc > 3) ? atoi(argv[3]) : 100;
++    const int n_warmup = 10;
++    const uint64_t seed = 42;
++
++    int rows = 0;
++    const std::vector<int32_t> * ids = nullptr;
++    const char * group_desc = "";
++    if      (case_name == "2s") { rows = 2; ids = &IDS_2S; group_desc = "10_groups_of_2"; }
++    else if (case_name == "3s") { rows = 3; ids = &IDS_3S; group_desc = "10_groups_of_3"; }
++    else if (case_name == "3m") { rows = 3; ids = &IDS_3M; group_desc = "2x3+3x2+18x1"; }
++    else if (case_name == "3r") { rows = 3; ids = &IDS_3R; group_desc = "1x3+1x2+25x1"; }
++    else {
++        fprintf(stderr, "bad case: %s (expected 2s | 3s | 3m | 3r)\n", case_name.c_str());
++        return 1;
++    }
++    if (n_threads < 1 || n_measured < 1) {
++        fprintf(stderr, "bad threads/n_measured\n");
++        return 1;
++    }
++
++    setenv("GGML_CPU_IQ4NL_FUSED_STATS", "1", 1);
++    const bool env_on = iq4nl_env_on();
++
++    printf("case=%s rows=%d ids=%s threads=%d n_expert_used=%lld D=%lld NROW=%lld NE=%lld seed=%llu\n",
++           case_name.c_str(), rows, group_desc, n_threads, (long long) NEU,
++           (long long) D, (long long) NROW, (long long) NE, (unsigned long long) seed);
++    printf("env GGML_CPU_IQ4NL_FUSED: %s | n_warmup=%d n_measured=%d pairs=3 (OFF,ON alternating)\n",
++           env_on ? "on (default)" : "off (\"0\")", n_warmup, n_measured);
++    printf("arms: OFF = window closed, ON = window open; fused proof: fused_dispatches_delta = 0 on OFF arms, > 0 on ON arms when env on\n");
++    fflush(stdout);
++
++    bench_ctx b = bench_setup(rows, *ids, seed, n_threads);
++
++    // exactness of the real call: OFF output vs ON output over the full dst bytes
++    {
++        const size_t dst_bytes = ggml_nbytes(b.dst);
++        std::vector<uint8_t> off(dst_bytes), on(dst_bytes);
++        compute_once(b, false);
++        memcpy(off.data(), b.dst->data, dst_bytes);
++        compute_once(b, true);
++        memcpy(on.data(), b.dst->data, dst_bytes);
++        size_t ndiff = 0;
++        for (size_t i = 0; i < dst_bytes; ++i) {
++            if (off[i] != on[i]) { ++ndiff; }
++        }
++        printf("exactness: OFF vs ON dst bytes identical=%s (%zu/%zu differing bytes)\n",
++               ndiff == 0 ? "yes" : "NO", ndiff, dst_bytes);
++        fflush(stdout);
++    }
++
++    std::vector<double> ratios;
++    for (int pair = 1; pair <= 3; ++pair) {
++        const arm_result off = run_arm(b, false, n_warmup, n_measured);
++        const arm_result on  = run_arm(b, true,  n_warmup, n_measured);
++        const double ratio = off.med_us / on.med_us;
++        ratios.push_back(ratio);
++        printf("pair%d OFF median=%.3fus min=%.3fus max=%.3fus fused_dispatches_delta=%llu | "
++               "ON median=%.3fus min=%.3fus max=%.3fus fused_dispatches_delta=%llu | "
++               "ratio median(OFF)/median(ON)=%.4fx\n",
++               pair,
++               off.med_us, off.min_us, off.max_us, (unsigned long long) off.fused_dispatch_delta,
++               on.med_us,  on.min_us,  on.max_us,  (unsigned long long) on.fused_dispatch_delta,
++               ratio);
++        fflush(stdout);
++    }
++
++    printf("summary case=%s threads=%d ratios=%.4fx %.4fx %.4fx median=%.4fx\n",
++           case_name.c_str(), n_threads, ratios[0], ratios[1], ratios[2], median_of(ratios));
++    fflush(stdout);
++
++    ggml_free(b.ctx);
++    ggml_backend_free(b.backend);
++    return 0;
++}
+diff -ruN '--exclude=.git' work/llama.cpp-exp062-ring3/tests/test-iq4nl-fused-mmid.cpp work/llama.cpp-exp072-iq4nl-fused/tests/test-iq4nl-fused-mmid.cpp
+--- work/llama.cpp-exp062-ring3/tests/test-iq4nl-fused-mmid.cpp	1970-01-01 03:00:00.000000000 +0300
++++ work/llama.cpp-exp072-iq4nl-fused/tests/test-iq4nl-fused-mmid.cpp	2026-09-16 01:18:44.074458003 +0300
+@@ -0,0 +1,251 @@
++// EXP-2026-09-16-072: model-free correctness gate for the fused IQ4_NL mul_mat_id path.
++// Real Qwen3.8 down shape: K=640, N=2560, 512 experts, top-k 10, rows 1/2/3, edge ids 0 and 511.
++// Verifies window/type/shape gating, byte-exact match against the stock path under window
++// toggling, thread-count independence, and diagnostic counters.
++//
++// Enabled arm (default): ./bin/test-iq4nl-fused-mmid
++// Disabled arm: GGML_CPU_IQ4NL_FUSED=0 ./bin/test-iq4nl-fused-mmid
++#include "ggml.h"
++#include "ggml-backend.h"
++#include "ggml-cpu.h"
++
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <vector>
++
++static uint64_t xorshift64(uint64_t & s) {
++    s ^= s << 13; s ^= s >> 7; s ^= s << 17; return s;
++}
++
++static uint64_t fnv_hash(const uint8_t * data, size_t n_bytes) {
++    uint64_t h = 1469598103934665603ULL;
++    for (size_t i = 0; i < n_bytes; ++i) {
++        h = (h ^ data[i]) * 1099511628211ULL;
++    }
++    return h;
++}
++
++static const int64_t D    = 640;   // down contraction (ne00)
++static const int64_t NE   = 512;   // experts (ne02)
++static const int64_t NEU  = 10;    // experts per token (ids ne0)
++static const int64_t NROW = 2560;  // down output rows (ne01)
++
++struct stats {
++    uint64_t v[15];
++};
++
++static void stats_get(stats & s) {
++    ggml_cpu_iq4nl_fused_stats_get(s.v);
++}
++
++static bool iq4nl_env_on() {
++    const char * e = getenv("GGML_CPU_IQ4NL_FUSED");
++    return e == nullptr || (*e != '\0' && strcmp(e, "0") != 0);
++}
++
++struct result {
++    uint64_t hash;
++    std::vector<float> out;
++    stats    st_before;
++    stats    st_after;
++};
++
++static result run_once(
++        ggml_backend_t backend, enum ggml_type type0, int n_tokens,
++        const std::vector<int32_t> & ids_data, uint64_t seed, int n_threads,
++        bool open_window, int D = 640, int NROW = 2560, int NE = 512) {
++    ggml_init_params params = {
++        /*.mem_size   =*/ 0,
++        /*.mem_buffer =*/ NULL,
++        /*.no_alloc   =*/ false,
++    };
++    const size_t bytes0 = ggml_row_size(type0, D * NROW * NE);
++    const size_t bytes1 = sizeof(float) * (size_t) D * n_tokens;
++    if (!((int64_t) ids_data.size() % n_tokens == 0)) { fprintf(stderr, "ids size %% tokens != 0\n"); exit(2); }
++    const int64_t neu = (int64_t) ids_data.size() / n_tokens;
++    const size_t bytesi = sizeof(int32_t) * (size_t) neu * n_tokens;
++    params.mem_size = bytes0 + bytes1 + bytesi + 8 * 1024 * 1024;
++
++    ggml_context * ctx = ggml_init(params);
++
++    ggml_tensor * src0 = ggml_new_tensor_3d(ctx, type0, D, NROW, NE);
++    ggml_tensor * src1 = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, D, 1, n_tokens);
++    ggml_tensor * ids  = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, neu, n_tokens);
++
++    std::vector<uint8_t> buf(bytes0);
++    uint64_t s = seed;
++    for (size_t i = 0; i < bytes0; ++i) {
++        buf[i] = (uint8_t)(xorshift64(s) >> 24);
++    }
++    // patch the fp16 scale field of every block to 1.0f to keep arithmetic finite
++    const size_t blk = (type0 == GGML_TYPE_IQ2_S) ? 74 : 18; // block_iq2_s / block_iq4_nl
++    for (size_t b = 0; b + 1 < bytes0; b += blk) {
++        buf[b] = 0x00; buf[b + 1] = 0x3c;
++    }
++    memcpy(src0->data, buf.data(), bytes0);
++
++    std::vector<float> f1((size_t) D * n_tokens);
++    for (auto & x : f1) {
++        uint32_t r = (uint32_t)(xorshift64(s) >> 32);
++        x = (float)((int32_t) r) * (1.0f / 2147483648.0f);
++    }
++    memcpy(src1->data, f1.data(), bytes1);
++    memcpy(ids->data, ids_data.data(), bytesi);
++
++    ggml_cgraph * gf = ggml_new_graph(ctx);
++    ggml_tensor * dst = ggml_mul_mat_id(ctx, src0, src1, ids);
++    ggml_build_forward_expand(gf, dst);
++
++    ggml_backend_cpu_set_n_threads(backend, n_threads);
++
++    result r;
++    stats_get(r.st_before);
++    ggml_cpu_iq4nl_fused_set_window(open_window);
++    ggml_status st = ggml_backend_graph_compute(backend, gf);
++    ggml_cpu_iq4nl_fused_set_window(false);
++    stats_get(r.st_after);
++
++    if (st != GGML_STATUS_SUCCESS) {
++        fprintf(stderr, "graph compute failed: %d\n", (int) st);
++        exit(2);
++    }
++
++    size_t dst_bytes = ggml_nbytes(dst);
++    std::vector<float> out;
++    out.resize(dst_bytes / sizeof(float));
++    memcpy(out.data(), dst->data, dst_bytes);
++    r.hash = fnv_hash((const uint8_t *) out.data(), dst_bytes);
++    r.out = std::move(out);
++
++    ggml_free(ctx);
++    return r;
++}
++
++static void report_diff(const result & a, const result & b, const char * label) {
++    size_t n = a.out.size();
++    size_t ndiff = 0;
++    for (size_t i = 0; i < n; ++i) {
++        if (memcmp(&a.out[i], &b.out[i], 4) != 0) {
++            if (ndiff < 4) {
++                fprintf(stderr, "  %s: idx %zu off=%.9g on=%.9g\n", label, i, a.out[i], b.out[i]);
++            }
++            ++ndiff;
++        }
++    }
++    fprintf(stderr, "  %s: %zu/%zu differing floats\n", label, ndiff, n);
++}
++
++static int failures = 0;
++
++static void expect(bool cond, const char * msg) {
++    if (!cond) {
++        fprintf(stderr, "FAIL: %s\n", msg);
++        ++failures;
++    }
++}
++
++static bool fused_delta(const result & r, int bucket) {
++    // bucket: 0 -> c1, 1 -> c2, 2 -> c3, 3 -> c4+
++    return (r.st_after.v[4 + bucket] - r.st_before.v[4 + bucket]) > 0;
++}
++
++int main(void) {
++    setenv("GGML_CPU_IQ4NL_FUSED_STATS", "1", 1);
++
++    ggml_backend_t cpu = ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, NULL);
++    if (!cpu) {
++        fprintf(stderr, "no CPU backend\n");
++        return 1;
++    }
++
++    const bool env_on = iq4nl_env_on();
++    fprintf(stderr, "env GGML_CPU_IQ4NL_FUSED: %s\n", env_on ? "on (default)" : "off (\"0\")");
++
++    // case A: rows=1, edges included -> must never fuse
++    {
++        std::vector<int32_t> ids(NEU);
++        for (int i = 0; i < NEU; ++i) ids[i] = (i == 0) ? 0 : (i == NEU - 1 ? 511 : 7 + i);
++        result a1 = run_once(cpu, GGML_TYPE_IQ4_NL, 1, ids, 11, 1, true);
++        expect(!fused_delta(a1, 0) && !fused_delta(a1, 1) && !fused_delta(a1, 2),
++               "case A rows=1 must not fuse");
++        expect(a1.st_after.v[14] == a1.st_before.v[14], "case A fused_dispatches delta != 0");
++        expect(a1.st_after.v[12] > a1.st_before.v[12], "case A iq4nl_groups_seen delta == 0");
++    }
++
++    fprintf(stderr, "case B start\n");
++    // case B: rows=2, expert 0 shared, edges 511 present
++    std::vector<int32_t> idsB = {
++        0,  3,  10, 21, 44, 100, 200, 300, 400, 511,
++        0,  4,  11, 22, 45, 101, 201, 301, 401, 502,
++    };
++    {
++        result off = run_once(cpu, GGML_TYPE_IQ4_NL, 2, idsB, 12, 12, false);
++        result on  = run_once(cpu, GGML_TYPE_IQ4_NL, 2, idsB, 12, 12, true);
++        expect(off.st_after.v[14] == off.st_before.v[14], "case B window closed fused_dispatches delta != 0");
++        if (env_on) {
++            expect(fused_delta(on, 1), "case B rows=2 must fuse when enabled+window");
++            expect(on.hash == off.hash, "case B ON hash != OFF hash");
++            report_diff(off, on, "caseB");
++        } else {
++            expect(!fused_delta(on, 1), "case B must not fuse when disabled even with window");
++            expect(on.hash == off.hash, "case B disabled hash != baseline");
++        }
++        result t1 = run_once(cpu, GGML_TYPE_IQ4_NL, 2, idsB, 12, 1, true);
++        expect(t1.hash == off.hash, "case B threads=1 hash != baseline");
++    }
++
++    fprintf(stderr, "case C start\n");
++    // case C: rows=3, expert 7 shared by all three, edges 0/511
++    std::vector<int32_t> idsC = {
++        7,  1,  2,  3,  4,  5,  6,  8,  9,  511,
++        7,  12, 13, 14, 15, 16, 17, 18, 511, 300,
++        7,  20, 21, 22, 23, 24, 25, 26, 27,  100,
++    };
++    {
++        result off = run_once(cpu, GGML_TYPE_IQ4_NL, 3, idsC, 13, 12, false);
++        result on  = run_once(cpu, GGML_TYPE_IQ4_NL, 3, idsC, 13, 12, true);
++        expect(off.st_after.v[14] == off.st_before.v[14], "case C window closed fused_dispatches delta != 0");
++        if (env_on) {
++            expect(fused_delta(on, 2), "case C rows=3 shared-by-3 must fuse when enabled+window");
++            expect(on.hash == off.hash, "case C ON hash != OFF hash");
++            report_diff(off, on, "caseC");
++        } else {
++            expect(!fused_delta(on, 2), "case C must not fuse when disabled even with window");
++            expect(on.hash == off.hash, "case C disabled hash != baseline");
++        }
++        result t1 = run_once(cpu, GGML_TYPE_IQ4_NL, 3, idsC, 13, 1, true);
++        expect(t1.hash == off.hash, "case C threads=1 hash != baseline");
++    }
++
++    fprintf(stderr, "case D start\n");
++    // case D: IQ2_S weights inside the opened IQ4_NL window -> type guard, never fuse
++    {
++        std::vector<int32_t> idsD(6); for (int i = 0; i < 6; ++i) idsD[i] = i % 4;
++        result on = run_once(cpu, GGML_TYPE_IQ2_S, 2, idsD, 14, 12, true, 256, 8, 4);
++        expect(on.st_after.v[14] == on.st_before.v[14], "case D IQ2_S must not fuse the IQ4_NL path");
++    }
++
++    fprintf(stderr, "case E start\n");
++    // case E: odd block count (nb = 96/32 = 3) with a shared expert -> shape guard, never fuse
++    {
++        std::vector<int32_t> idsE = {
++            5, 1,  2,  3,  4,  6,  7,  8,  9,  511,
++            5, 11, 12, 13, 14, 15, 16, 17, 18, 502,
++        };
++        result off = run_once(cpu, GGML_TYPE_IQ4_NL, 2, idsE, 15, 12, false, 96, NROW, NE);
++        result on  = run_once(cpu, GGML_TYPE_IQ4_NL, 2, idsE, 15, 12, true,  96, NROW, NE);
++        expect(on.st_after.v[14] == on.st_before.v[14], "case E odd nb must not fuse");
++        expect(on.hash == off.hash, "case E ON hash != OFF hash");
++    }
++
++    fprintf(stderr, "case E done\n");
++    ggml_backend_free(cpu);
++
++    if (failures == 0) {
++        printf("ALL PASS\n");
++        return 0;
++    }
++    fprintf(stderr, "%d failures\n", failures);
++    return 1;
++}
+diff -ruN '--exclude=.git' work/llama.cpp-exp062-ring3/tools/server/server-context.cpp work/llama.cpp-exp072-iq4nl-fused/tools/server/server-context.cpp
+--- work/llama.cpp-exp062-ring3/tools/server/server-context.cpp	2026-09-09 16:38:35.750997872 +0300
++++ work/llama.cpp-exp072-iq4nl-fused/tools/server/server-context.cpp	2026-09-16 01:17:44.184999570 +0300
+@@ -3656,6 +3656,7 @@
+         // a decode-phase row (sampled + draft). The phase comes from the explicit
+         // per-token is_prompt marking set by the batch builder; it is never inferred
+         // from the token count. Prefill chunk views keep the window closed.
++        // EXP-072: the IQ4_NL fused window uses the same predicate.
+         bool iq2s_window_open = batch_view.n_tokens > 0;
+         for (int i = 0; i < batch_view.n_tokens; ++i) {
+             if (batch.tokens[(size_t) off + i].is_prompt) {
+@@ -3664,12 +3665,14 @@
+             }
+         }
+         ggml_cpu_iq2s_fused_set_window(iq2s_window_open);
++        ggml_cpu_iq4nl_fused_set_window(iq2s_window_open);
+         queue_tasks.yield_to_queue([&]() {
+             ret = llama_decode(ctx_tgt, batch_view);
+             if (ret == 0 && has_output) {
+                 llama_synchronize(ctx_tgt);
+             }
+         });
++        ggml_cpu_iq4nl_fused_set_window(false);
+         ggml_cpu_iq2s_fused_set_window(false);
+ 
+         if (ret != 0) {

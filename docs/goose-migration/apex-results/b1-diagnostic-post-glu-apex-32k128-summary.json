@@ -1,0 +1,47 @@
+{
+  "status": "COMPLETED_SINGLE_DIAGNOSTIC_NOT_B1_ACCEPTANCE",
+  "name": "b1-diagnostic-post-glu-apex-32k128",
+  "wall_seconds": 17.12750489707105,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 12420.819,
+    "prompt_per_token_ms": 0.37905331420898436,
+    "prompt_per_second": 2638.151316752945,
+    "predicted_n": 128,
+    "predicted_ms": 4690.086,
+    "predicted_per_token_ms": 36.92981102362205,
+    "predicted_per_second": 27.078394724531705
+  },
+  "exact": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "matching_token_positions": 128,
+  "sampled_rss_peak_mib": 21313.88671875,
+  "process_hwm_mib": 21313.88671875,
+  "sampled_anon_peak_mib": 696.1171875,
+  "sampled_file_peak_mib": 19963.953125,
+  "process_swap_peak_kib": 0,
+  "sampled_gpu_peak_mib": 3348,
+  "system_swapout_pages_delta": 0,
+  "loadavg_start": [
+    8.97998046875,
+    4.33740234375,
+    3.314453125
+  ],
+  "loadavg_end": [
+    8.265625,
+    4.4033203125,
+    3.3525390625
+  ],
+  "preliminary": true,
+  "controlled_quiet_run": false,
+  "baseline": "Saved original C++ measurement, identical request and workload argv",
+  "quality_scope": "One fixed-prompt response equivalence only; not a general quality benchmark",
+  "no_optimization": true,
+  "no_microbenchmarks": true,
+  "no_repeated_series": true,
+  "no_b1_acceptance": true
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "write puts the indexer first",
+    "status": "CAUGHT",
+    "failures": 200,
+    "exit_code": 1
+  },
+  {
+    "mutation": "restore forgets to record the attention section",
+    "status": "CAUGHT",
+    "failures": 12304,
+    "exit_code": 1
+  },
+  {
+    "mutation": "restore reads the recurrent part before attention",
+    "status": "CAUGHT",
+    "failures": 779,
+    "exit_code": 1
+  },
+  {
+    "mutation": "indexer restore does not invalidate the layout",
+    "status": "CAUGHT",
+    "failures": 1328,
+    "exit_code": 1
+  },
+  {
+    "mutation": "failed restore does not drop the sequence",
+    "status": "CAUGHT",
+    "failures": 1016,
+    "exit_code": 1
+  },
+  {
+    "mutation": "dropping all records nothing",
+    "status": "CAUGHT",
+    "failures": 215,
+    "exit_code": 1
+  },
+  {
+    "mutation": "drop forgets to invalidate the layout",
+    "status": "CAUGHT",
+    "failures": 794,
+    "exit_code": 1
+  },
+  {
+    "mutation": "stream count drops the inclusive one",
+    "status": "CAUGHT",
+    "failures": 3454,
+    "exit_code": 1
+  }
+]

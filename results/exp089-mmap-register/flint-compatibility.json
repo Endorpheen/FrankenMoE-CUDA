@@ -1,0 +1,106 @@
+{
+  "passed": true,
+  "scope": "Functional compatibility only; initial HTTP503 excluded; branch HTTP request was queued behind cold on the sole slot, not a timing sample",
+  "cases": [
+    {
+      "step": "cold",
+      "comparison": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "reference_sha256": "1f0a8ce2e998b918a1ed4c1fcc65f501539b1a4cf7d0ddc6e03634045ca25875",
+      "resource": {
+        "pid": 2695918,
+        "request_begin_wall_ns": 1793381351559587000,
+        "request_end_wall_ns": 1793381434286710000,
+        "request_seconds": 82.727123,
+        "before_slack_seconds": 0.048341643,
+        "after_slack_seconds": 0.069495472,
+        "sample_count": 825,
+        "peak_process_swap_kib": 0,
+        "peak_rss_kib": 25527220,
+        "system_swapout_pages": 0,
+        "system_swapin_pages": 19451,
+        "major_faults": 1941061,
+        "minor_faults": 358557,
+        "resource_gate": true
+      }
+    },
+    {
+      "step": "branch",
+      "comparison": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "reference_sha256": "98b9217f83d4e1e3f3d865fa689fa1bd45a7b617dc7d408e4529224e7195df20",
+      "resource": {
+        "pid": 2695918,
+        "request_begin_wall_ns": 1793381386398926000,
+        "request_end_wall_ns": 1793381446741211000,
+        "request_seconds": 60.342285,
+        "before_slack_seconds": 0.027174582,
+        "after_slack_seconds": 0.005078724,
+        "sample_count": 601,
+        "peak_process_swap_kib": 0,
+        "peak_rss_kib": 25622196,
+        "system_swapout_pages": 0,
+        "system_swapin_pages": 13942,
+        "major_faults": 690235,
+        "minor_faults": 119875,
+        "resource_gate": true
+      }
+    },
+    {
+      "step": "repeat",
+      "comparison": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "reference_sha256": "236bffda45e182d9c199e6380642708f91595f63334e4e45d2ea48e1868e4183",
+      "resource": {
+        "pid": 2695918,
+        "request_begin_wall_ns": 1793381450590840000,
+        "request_end_wall_ns": 1793381455326370000,
+        "request_seconds": 4.73553,
+        "before_slack_seconds": 0.026536133,
+        "after_slack_seconds": 0.077139116,
+        "sample_count": 49,
+        "peak_process_swap_kib": 0,
+        "peak_rss_kib": 25672200,
+        "system_swapout_pages": 0,
+        "system_swapin_pages": 619,
+        "major_faults": 2975,
+        "minor_faults": 3532,
+        "resource_gate": true
+      }
+    },
+    {
+      "step": "early",
+      "comparison": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "reference_sha256": "c334da13a00d445aa89721b8c0aa8fd722e9da74774b30176c0d99472cdffd03",
+      "resource": {
+        "pid": 2695918,
+        "request_begin_wall_ns": 1793381457853791000,
+        "request_end_wall_ns": 1793381472227214000,
+        "request_seconds": 14.373423,
+        "before_slack_seconds": 0.037664732,
+        "after_slack_seconds": 0.094755054,
+        "sample_count": 145,
+        "peak_process_swap_kib": 0,
+        "peak_rss_kib": 25672200,
+        "system_swapout_pages": 0,
+        "system_swapin_pages": 6017,
+        "major_faults": 6130,
+        "minor_faults": 8667,
+        "resource_gate": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "the first cell at a position wins instead of the last",
+    "status": "CAUGHT",
+    "failures": 1209,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the target position itself is excluded",
+    "status": "CAUGHT",
+    "failures": 4002,
+    "exit_code": 1
+  },
+  {
+    "mutation": "cells of other sequences count",
+    "status": "CAUGHT",
+    "failures": 5891,
+    "exit_code": 1
+  },
+  {
+    "mutation": "only a token-less batch goes by order",
+    "status": "CAUGHT",
+    "failures": 833,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the order depth is added instead of subtracted",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "the pre-chunk extension forgets the depth",
+    "status": "CAUGHT",
+    "failures": 3831,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the answers are laid out by token plus depth",
+    "status": "CAUGHT",
+    "failures": 12743,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the order counts every token, not just the sequence",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  }
+]

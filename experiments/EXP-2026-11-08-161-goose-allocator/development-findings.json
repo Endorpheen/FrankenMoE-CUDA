@@ -1,0 +1,7 @@
+{
+  "finding": "Zero-length free-list entries may lie inside a subsequently released nonzero span;empty intervals do not overlap",
+  "trigger": "alignment16,max_chunk256,step618,free chunk15 offset1776 bytes443 padded448;existing empty block offset1888 size0",
+  "before": "New overlap guard rejected native-valid operation with code14",
+  "correction": "Exclude zero-length existing blocks from overlap checks while preserving the original coalescing/list semantics",
+  "model_runs_before_fix": 0
+}

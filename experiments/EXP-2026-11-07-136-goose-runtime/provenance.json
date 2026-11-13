@@ -1,0 +1,20 @@
+{
+  "status": "EXPERIMENTAL_CHECKPOINT_NOT_PRODUCTION_ACCEPTED",
+  "self_hosted_producers": [
+    {
+      "stage": "EXP298 completed Stage3",
+      "sha256": "cc23249b57aa4bb92ec4307ae8cd4ae12f0903dec599a765e6aa9033bc1694ca"
+    },
+    {
+      "stage": "EXP299 completed Stage3 fixed-C bootstrap",
+      "sha256": "04ac2b86d276a2a81533329124cf7fd3f4b17a03c5a64ff4df7cb0fcd5ddf095"
+    }
+  ],
+  "allocator_patch_base_sha256": "add873fb1dd96d7bbc696f78a12aa3e278d14830670f1776fa16fe353eeeda6f",
+  "q4_tile_patch_base_sha256": "c6ab617afac0eca67c9c9079e75582c791c51f376bb6932502098f8c18a1937d",
+  "production_changed": false,
+  "compiler_source_changed": false,
+  "qwen_download": "all three IQ2_XS shards and MTP SHA256 verified at pinned revision d96201194f103c906994f283f504209dc8d2a10c",
+  "qwen_goose_verification": "pending",
+  "memory_safety_superiority_claimed": false
+}

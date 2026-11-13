@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-05-031-cuda-prefill-transfer-profile",
+  "status": "ACCEPTED",
+  "kind": "measurement_infrastructure",
+  "question": "During bulk MoE prefill, is time dominated by CUDA math or host-to-device transfers?",
+  "method": "One prefill-only deterministic request under Nsight Systems. The server started with the normal MTP profile and 32K context only because the diagnostic build fit that VRAM state. n_predict was set to 0. The profile is diagnostic and is not a speed benchmark.",
+  "workload": {
+    "prompt_tokens": 395,
+    "bulk_prefill_tokens": 391,
+    "prompt_ms": 4016.342,
+    "bulk_prefill_ms": 3760.0,
+    "cpu_threads": 12,
+    "ehs": 0,
+    "cpu_moe": true
+  },
+  "prompt_interval": {
+    "h2d_calls": 17975,
+    "h2d_mib": 22207.85,
+    "h2d_gpu_timeline_ms": 1661.18,
+    "d2h_mib": 168.43,
+    "all_cuda_kernel_sum_ms": 438.91,
+    "all_cuda_kernel_span_ms": 3945.22
+  },
+  "largest_kernel_groups": {
+    "IQ2_S_MMQ_ms": 128.91,
+    "IQ4_NL_MMQ_ms": 91.64,
+    "IQ3_S_MMQ_ms": 2.71,
+    "MMID_grouping_helper_ms": 15.97
+  },
+  "correctness": {
+    "request_completed": true,
+    "generated_tokens": 0
+  },
+  "decision_note": "EXP-032 timestamp attribution validated that the 22.2 GiB H2D activity starts after request launch and spans 3634.692 ms inside the 3780 ms bulk-prefill window. The bulk path is already a 391-token CUDA MMQ batch. P1 is therefore selected-expert transfer coalescing or transfer-compute overlap, not batch sizing or another CPU fused kernel."
+}

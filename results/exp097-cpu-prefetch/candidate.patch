@@ -1,0 +1,100 @@
+diff -Naur a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+--- a/ggml/src/ggml-cpu/ggml-cpu.c	2026-10-30 21:56:24.361446571 +0300
++++ b/ggml/src/ggml-cpu/ggml-cpu.c	2026-10-30 22:06:45.696729402 +0300
+@@ -1473,6 +1473,48 @@
+ 
+ // ggml_compute_forward_mul_mat_id
+ 
++// Bounded CPU prefetch for the expert rows read by MUL_MAT_ID.
++//
++// The row being multiplied is streamed by vec_dot; this helper only asks the
++// CPU to bring the first cache lines of a few following rows of the same
++// expert matrix closer. It never touches a line outside the src0 tensor, it
++// does not change the arithmetic, the block formats or the accumulation order,
++// and it is restricted to Q4_K/Q6_K weights. Disable with
++// GGML_CPU_MOE_PREFETCH=0.
++
++#define GGML_CPU_MOE_PREFETCH_ROWS  2
++#define GGML_CPU_MOE_PREFETCH_LINES 4
++
++static int ggml_cpu_moe_prefetch_enabled(enum ggml_type type) {
++    if (type != GGML_TYPE_Q4_K && type != GGML_TYPE_Q6_K) {
++        return 0;
++    }
++
++    const char * flag = getenv("GGML_CPU_MOE_PREFETCH");
++    return !(flag != NULL && strcmp(flag, "0") == 0);
++}
++
++static inline void ggml_cpu_moe_prefetch_row(const char * row, const char * tensor_end, size_t row_bytes) {
++#if defined(__GNUC__) || defined(__clang__)
++    const size_t line  = 64;
++    size_t       lines = row_bytes / line;
++    if (lines > GGML_CPU_MOE_PREFETCH_LINES) {
++        lines = GGML_CPU_MOE_PREFETCH_LINES;
++    }
++
++    for (size_t i = 0; i < lines; ++i) {
++        const char * p = row + i*line;
++        if (p < tensor_end) {
++            __builtin_prefetch(p, 0, 3);
++        }
++    }
++#else
++    GGML_UNUSED(row);
++    GGML_UNUSED(tensor_end);
++    GGML_UNUSED(row_bytes);
++#endif
++}
++
+ #define MMID_MATRIX_ROW(row_id, i1) matrix_rows[(row_id)*ids->ne[0]*ids->ne[1] + (i1)]
+ 
+ struct mmid_row_mapping {
+@@ -1494,7 +1536,8 @@
+     const struct mmid_row_mapping * matrix_rows,
+     const size_t row_size,
+     const bool src1_cont,
+-    const void * wdata) {
++    const void * wdata,
++    const int prefetch) {
+ 
+     GGML_TENSOR_BINARY_OP_LOCALS
+ 
+@@ -1506,6 +1549,8 @@
+     const int64_t blck_0 = 16;
+     const int64_t blck_1 = 16;
+ 
++    const char * src0_end = (const char *) src0->data + ggml_nbytes(src0);
++
+     float tmp[16];
+ 
+     for (int64_t iir1 = ir1_start; iir1 < ir1_end; iir1 += blck_1) {
+@@ -1534,6 +1579,9 @@
+                 float * dst_col = (float *) ((char *) dst->data + (i1*nb1 + i2*nb2));
+ 
+                 for (int64_t ir0 = iir0; ir0 < iir0 + blck_0 && ir0 < ir0_end; ++ir0) {
++                    if (prefetch && ir0 + GGML_CPU_MOE_PREFETCH_ROWS < ir0_end) {
++                        ggml_cpu_moe_prefetch_row(src0_cur + (ir0 + GGML_CPU_MOE_PREFETCH_ROWS)*nb01, src0_end, nb01);
++                    }
+                     vec_dot(ne00, &tmp[ir0 - iir0], 0, src0_cur + ir0*nb01, 0, src1_col, 0, 1);
+                 }
+ 
+@@ -1660,6 +1708,9 @@
+         }
+     }
+ 
++    // read the disable flag once per node instead of once per chunk
++    const int prefetch = ggml_cpu_moe_prefetch_enabled(type);
++
+     // reset current_chunk
+     for (int cur_a = ith; cur_a < n_as; cur_a += nth) {
+         atomic_int * current_chunk_ctr = (atomic_int *)(atomic_current_chunk + cur_a);
+@@ -1723,7 +1774,7 @@
+             ggml_compute_forward_mul_mat_id_one_chunk(
+                 dst, src0, src1, ids, cur_a,
+                 ir0_start, ir0_end, ir1_start, ir1_end,
+-                src0_cur, matrix_rows, row_size, src1_cont, wdata
++                src0_cur, matrix_rows, row_size, src1_cont, wdata, prefetch
+             );
+ 
+             if (nth >= nchunk0 * nchunk1) {

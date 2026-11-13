@@ -1,0 +1,71 @@
+{
+  "status": "QUALIFIED_EXISTING_APEX_C_IDENTICAL_AND_CONTEXTUAL_FIX",
+  "source_commit": "ea4ad6fd",
+  "compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-871aec9cc92d",
+  "compiler_sha256": "871aec9cc92db1b5b66c8e18b2eb591236f5b47f072a74713b42d78a3a73a48a",
+  "previous_compiler": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/stage3-f849233b999c",
+  "previous_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "owner_bootstrap_status": "PASS_THREE_STAGE_FIXED_C_SANITIZED_OWN_EMISSION",
+  "fixed_compiler_c_sha256": "9c82e968015b4daccc8415c8ada8b94da509b244b8a748f52f183fe9e2c51e78",
+  "full_stage3_provenance": true,
+  "module_count": 9,
+  "modules": [
+    {
+      "module": "vector-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "de93b7612cb47ba59bac5e79dbcb6838ca6741bbee7a190ccdaded41f8b2a880"
+    },
+    {
+      "module": "loaders-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "860e1628dad44594b51955e87dd991418aa4cc0abcbfbe87672b33e37ec08742"
+    },
+    {
+      "module": "staging-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "110aaa48d2245d6103b18ae2ed9bf919e988e879659519a557f57e277a296c35"
+    },
+    {
+      "module": "mma-iter-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "bf5be07252b0ee8a9b78de2e755b4336870a9bb3986955817222ad46fa815a75"
+    },
+    {
+      "module": "mma-process-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "c3d665beba19178532f1d0d9267caf5ba2ada2c374294672028696aeca4e252d"
+    },
+    {
+      "module": "mma-entry-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "b76ea08d6fb72ee3ad3da6739baf412082e4fb946c9eeb993977834420b36903"
+    },
+    {
+      "module": "mask-fixups-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "d5b561bbcbc65dca7daad534ef59d285c661a110c0997c9b89925fa06966a4b7"
+    },
+    {
+      "module": "value-prefill-device",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "270fba551090802adaae3c77af17863380c8ec945f6ef2e720ca868d0560438e"
+    },
+    {
+      "module": "host",
+      "c_equal_existing_qualified_output": true,
+      "c_sha256": "a4eb9d66ef99f3e90057d380f957f9525cb7134c80ef9a77fe004bbc4d60b27d"
+    }
+  ],
+  "contextual_probe": {
+    "old_exit": 1,
+    "new_exit": 0,
+    "old_diagnostic": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/compiler/qualification-exp303/contextual-f32.goose:1: error: incompatible types (type 3 kind 2 width 8 -> 2 kind 2 width 4)\nfn branch(x:bool)->f32{return if x{1.25}else{-2.5};}\n                              ^\n",
+    "changed_feature": "CF012 literal branches can use destination f32;float-to-integer still outside this artifact"
+  },
+  "production_changed": false,
+  "compiler_sources_changed": false,
+  "existing_runtime_rebuilt": false,
+  "apex_repeated": false,
+  "reason": "All9actual Apex emission outputs equal already verified current-stage C byte for byte;no machine-input change,no speedup claim. Future new/changed source still requires normal ABI/GPU/Apex gates.",
+  "retained_previous_compiler": true
+}

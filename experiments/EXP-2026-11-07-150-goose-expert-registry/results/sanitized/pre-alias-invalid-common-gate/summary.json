@@ -1,0 +1,27 @@
+{
+  "status": "PASS_EXP150_SCOPED_SANITIZED",
+  "checks": {
+    "composite": {
+      "cases": 326,
+      "byte_exact": 284,
+      "violations": 0
+    },
+    "apex-contract": {
+      "cases": 66,
+      "byte_exact": 39,
+      "violations": 0
+    },
+    "planning": {
+      "cases": 960,
+      "exact": true,
+      "rollback": true
+    },
+    "backend-buffer": {
+      "cases": 174,
+      "exact": true,
+      "rollback": true
+    }
+  },
+  "model_loaded": false,
+  "scope": "Rebuilt base/CPU units and fixtures instrumented; inherited objects/vendor libraries not fully instrumented"
+}

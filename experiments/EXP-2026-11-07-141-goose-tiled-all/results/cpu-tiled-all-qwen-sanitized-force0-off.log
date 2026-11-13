@@ -1,0 +1,22 @@
+/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.cpp:402:32: runtime error: load of misaligned address 0x7581327fe9b2 for type 'const uint32_t', which requires 4 byte alignment
+0x7581327fe9b2: note: pointer points here
+ 46 00  dd 6f c7 f1 e2 97 3c a0  02 a2 e4 da 55 4b e9 a3  0a 52 9d 8e a3 c7 f8 b1  ae 7d 80 d9 34 e7
+              ^ 
+    #0 0x79813ad84b2d in tiled_unpack_src0 /home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.cpp:402
+    #1 0x79813ad867d2 in ggml_compute_forward_mul_mat_tiled_one_chunk<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.cpp:992
+    #2 0x79813ad9cc91 in ggml_compute_forward_mul_mat_tiled_driver<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1136
+    #3 0x79813ad9cc91 in tiled_matmul_dispatch<block_iq3_xxs, 32, false, 128, true> /home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1156
+    #4 0x79813ad9cc91 in ggml_tiled_matmul_type_dispatch /home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1190
+    #5 0x79813ada0e7e in fg141_native_dense_tiled /home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src/ggml-cpu/tiled/tiled.cpp:1222
+    #6 0x79813aeaf7c9 in ggml_compute_forward_mul_mat_tiled /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/native-bridge.cpp:81
+    #7 0x79813ad0251e in ggml_compute_forward_mul_mat /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-qwen-tiled.c:1282
+    #8 0x79813ad08562 in ggml_compute_forward /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-qwen-tiled.c:2265
+    #9 0x79813ad08562 in ggml_graph_compute_thread /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-qwen-tiled.c:3552
+    #10 0x79813ad0d8cf in ggml_graph_compute /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/ggml-cpu-qwen-tiled.c:3846
+    #11 0x62e74e2dc329 in compute /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:22
+    #12 0x62e74e2dd843 in dense /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:23
+    #13 0x62e74e2dd843 in main /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/graph-fixture.c:25
+    #14 0x798139e2a600 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:59
+    #15 0x798139e2a717 in __libc_start_main_impl ../csu/libc-start.c:360
+    #16 0x62e74e2db744 in _start (/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/tiled-all-qwen-sanitize/build/fixture+0x6744) (BuildId: 8809328479dde0bde7875c0c146d28ea2ba7e90e)
+

@@ -1,0 +1,6 @@
+{
+  "stage": "self-hosted EXP299 v2 bound Stage3",
+  "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+  "receipt": "bootstrap-exp299-v2-receipt.json",
+  "applies_to": "new generation only"
+}

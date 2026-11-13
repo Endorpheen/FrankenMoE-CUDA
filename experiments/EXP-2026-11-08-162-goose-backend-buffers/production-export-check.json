@@ -1,0 +1,9 @@
+{
+  "exports": [
+    "fg162_buffer_heap_live",
+    "fg162_buffers_seen"
+  ],
+  "foreign_effects_hidden": true,
+  "mutating_test_hooks": false,
+  "sha256": "21aa28e93bde67640f99d811dabe17277be0d75ed537f2fb6dc992f6bc8cc01c"
+}

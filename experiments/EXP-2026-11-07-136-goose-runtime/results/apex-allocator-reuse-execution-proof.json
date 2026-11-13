@@ -1,0 +1,20 @@
+{
+  "status": "PASS_REAL_APEX_BUFFER_REUSE",
+  "requests": [
+    "512/32",
+    "32768/128",
+    "512/32"
+  ],
+  "each_goose_decision_shadow_checked": true,
+  "goose_calls": 23614,
+  "reuse_hits": 18688,
+  "shadow_checks": 23614,
+  "mismatches": 0,
+  "off_calls": 23614,
+  "on_and_off_decision_digest": 14309706970443954887,
+  "text_tokens_probabilities_equal": true,
+  "rollback_verified": true,
+  "trace_removed_for_timing": true,
+  "ownership_scope": "borrowed free-block slices only; original lifetime and free/merge logic preserved",
+  "production_unchanged": true
+}

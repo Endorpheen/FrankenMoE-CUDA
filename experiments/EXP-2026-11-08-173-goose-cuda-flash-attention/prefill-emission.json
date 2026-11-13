@@ -1,0 +1,17 @@
+{
+  "status": "PASS_CURRENT_SELFHOSTED_EMISSION_AND_POD_ABI",
+  "modules": [
+    {
+      "module": "mma-iter",
+      "entry": "fg175mi_gg_function_1",
+      "actual_functions": 16,
+      "source_sha256": "3e71c34065a0e2287f04abc994d34007f6cb80c28f92d744318ad7210456ff4c"
+    },
+    {
+      "module": "mma-process",
+      "entry": "fg175mp_gg_function_1",
+      "actual_functions": 14,
+      "source_sha256": "98c6d25cee835fe3b7ddba0b3988b6ed60db5446ebe6e8db709e825fd29e38c7"
+    }
+  ]
+}

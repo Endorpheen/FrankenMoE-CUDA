@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "schema": 1,
+      "item": "APEX.TOKENIZER (checkpoint after the fifth closed item)",
+      "note": "one preliminary run requested by Igor; no separate runs were made for KV, RECURRENT, BATCH or OUTPUT because the rule arrived after they were closed",
+      "when": "2026-11-11T19:04:22.947729+03:00",
+      "commit": "3000f3d",
+      "dso": "runtime/reconstructed/build/libllama-exp371.so.0.7.0 sha256 388f013d2e5eee7a…",
+      "candidate_status": "candidate tree, not the accepted control (EXP244)",
+      "profile": "Apex 32K/128, temp 1.0, top_k 20, top_p 0.95, min_p 0, seed 123, n_probs 5",
+      "prefill_tok_s": 1640.2,
+      "decode_tok_s": 23.52,
+      "peak_rss_mib": 22855.1,
+      "peak_vram_mib_attributed": 6408,
+      "gpu_total_used_mib_max": 9820,
+      "memory_method": "RSS: sum of VmRSS over the server tree sampled 1 Hz (shared pages counted per process); VRAM: nvidia-smi per-process query filtered to the tree, device total kept separate",
+      "background_load": "load average 4.75/4.23/4.07 on 32 cores, compiler line active",
+      "correctness": {
+        "completion_sha": "e68df05b…",
+        "equal_to_reference": true
+      }
+    },
+    {
+      "schema": 1,
+      "item": "APEX.LOAD (sixth closed item)",
+      "when": "2026-11-11T19:10:49.605571+03:00",
+      "commit": "see git HEAD at the time of the run",
+      "dso": "runtime/reconstructed/build/libllama-exp371.so.0.7.0",
+      "candidate_status": "candidate tree, not the accepted control (EXP244)",
+      "profile": "Apex 32K/128, temp 1.0, top_k 20, top_p 0.95, min_p 0, seed 123, n_probs 5",
+      "prefill_tok_s": 1621.28,
+      "decode_tok_s": 22.72,
+      "peak_rss_mib": 22855.4,
+      "peak_vram_mib_attributed": 6408,
+      "gpu_total_used_mib_max": 9768,
+      "memory_method": "RSS: sum of VmRSS over the server tree at 1 Hz (shared pages counted per process); VRAM: nvidia-smi per-process query filtered to the tree",
+      "background_load": "compiler line and other workers active; not an A/B result",
+      "correctness": {
+        "completion_sha": "e68df05b…",
+        "equal_to_reference": true
+      },
+      "delta_note": "prefill 1621.3 vs 1640.2 and decode 22.72 vs 23.52 at the previous checkpoint: within run-to-run noise under parallel load, not a measured regression"
+    },
+    {
+      "schema": 1,
+      "item": "APEX.CORE (seventh closed item)",
+      "when": "2026-11-11T19:16:18.522363+03:00",
+      "candidate_status": "candidate tree, not the accepted control (EXP244)",
+      "profile": "Apex 32K/128, temp 1.0, top_k 20, top_p 0.95, min_p 0, seed 123, n_probs 5",
+      "prefill_tok_s": 1647.03,
+      "decode_tok_s": 23.75,
+      "peak_rss_mib": 22847.4,
+      "peak_vram_mib_attributed": 6408,
+      "gpu_total_used_mib_max": 9690,
+      "memory_method": "RSS: sum of VmRSS over the server tree at 1 Hz; VRAM: nvidia-smi per-process query filtered to the tree",
+      "background_load": "compiler line and other workers active; single run, no A/B",
+      "correctness": {
+        "completion_sha": "e68df05b…",
+        "equal_to_reference": true
+      },
+      "delta_note": "1647.0 / 23.75 against 1621.3 / 22.72 and 1640.2 / 23.52 at earlier checkpoints: spread inside run noise"
+    },
+    {
+      "schema": 1,
+      "item": "APEX.CPU_CONTROL (eighth closed item)",
+      "when": "2026-11-11T19:42:21.203805+03:00",
+      "series": "candidate all-CPU (--cpu-moe), separate from the baseline placement",
+      "candidate_status": "candidate tree with the rebuilt Goose libggml-cpu (326 symbols), not the accepted control",
+      "profile": "Apex 32K/128, temp 1.0, top_k 20, top_p 0.95, min_p 0, seed 123, n_probs 5",
+      "prefill_tok_s": 1573.61,
+      "decode_tok_s": 21.93,
+      "peak_rss_mib": 22850.9,
+      "peak_vram_mib_attributed": 6408,
+      "gpu_total_used_mib_max": 9827,
+      "memory_method": "RSS: sum of VmRSS over the server tree at 1 Hz; VRAM: nvidia-smi per-process query filtered to the tree",
+      "background_load": "compiler line and other workers active; single run",
+      "correctness": {
+        "completion_sha": "e68df05b…",
+        "equal_to_reference": true
+      },
+      "delta_note": "1573.6/21.93 against 1647.0/23.75 at the previous point: outside nothing, but still a single run under load; trend only"
+    }
+  ],
+  "checkpoints": [
+    {
+      "item": "APEX.CPU_MATH",
+      "experiment": "EXP412",
+      "measured_at": "2026-11-11T19:08:44.620840+00:00",
+      "profile": "CPU-only bench (-ngl 0, -c 2048), Goose libggml-cpu with Q4_K and Q6_K kernels",
+      "load_seconds": 4.6,
+      "completion_4_tokens_seconds_median_of_3": 4.26,
+      "method": "wall clock around HTTP /completion, temperature 0, top_k 1, cache_prompt false; no CUDA, no background load from this session",
+      "note": "functional checkpoint only; the accepted GPU profile does not call these kernels"
+    },
+    {
+      "item": "APEX.CUDA_MATVEC",
+      "experiment": "EXP186",
+      "measured_at": "2026-11-11T20:36:58.467714+00:00",
+      "compiler": "v61 b87af17a (runtime/compiler/current.json)",
+      "profile": "accepted 32K/128, /tmp/build-cuda-fg backend with the Goose Q6_K matvec linked in",
+      "prefill_tok_s": 1658.94,
+      "decode_tok_s": 23.82,
+      "wall_s": 25.11,
+      "peak_rss_mib": 22861.0,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9707,
+      "completion_sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "content_equal": true,
+      "coverage": "636 single-column sub-calls = all 324 Q6_K matvec calls",
+      "method": "run_metrics.py with LD_LIBRARY_PATH pointing at the integrated backend; no preload",
+      "note": "functional stage measurement; acceptable slowdowns are recorded, not treated as a veto"
+    },
+    {
+      "item": "APEX.CUDA_CONTROL",
+      "experiment": "EXP195+196",
+      "measured_at": "2026-11-11T20:56:26.148682+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, /tmp/build-cuda-fg with Q6_K matvec, FG196P policy and FG195V pool arithmetic linked in",
+      "prefill_tok_s": 1664.42,
+      "decode_tok_s": 24.49,
+      "wall_s": 24.9,
+      "peak_rss_mib": 22861.4,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9717,
+      "completion_sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "content_equal": true,
+      "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated backend, no preload",
+      "note": "single quick checkpoint; not evidence of a regression or improvement on its own"
+    },
+    {
+      "item": "APEX.CUDA_MMQ",
+      "experiment": "EXP180/203/255/257",
+      "measured_at": "2026-11-11T23:20:50.609616+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, /tmp/build-server with dispatch, Q8_1 quantizer and the Q4_K/Q6_K tile loaders in Goose",
+      "prefill_tok_s": 1689.33,
+      "decode_tok_s": 23.04,
+      "wall_s": 24.95,
+      "peak_rss_mib": 22861.2,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9764,
+      "content_equal": true,
+      "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated build; no preload",
+      "note": "single quick checkpoint; not by itself evidence of a regression or an improvement"
+    },
+    {
+      "item": "APEX.MODEL_GRAPH",
+      "experiment": "EXP253",
+      "measured_at": "2026-11-11T23:29:11.079594+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, four build_moe_ffn decisions in Goose (gating, weight normalisation, top-k, w_scale)",
+      "prefill_tok_s": 1682.06,
+      "decode_tok_s": 23.98,
+      "wall_s": 24.81,
+      "peak_rss_mib": 22861.3,
+      "peak_vram_attributed_mib": 6412,
+      "gpu_total_used_mib_max": 9756,
+      "content_equal": true,
+      "method": "run_metrics.py with LD_LIBRARY_PATH at the integrated build; no preload",
+      "note": "single quick checkpoint"
+    },
+    {
+      "item": "APEX.REQUEST / APEX.SESSION",
+      "experiment": "EXP250/251/252/254",
+      "measured_at": "2026-11-11T23:30:22.765200+00:00",
+      "compiler": "v61 b87af17a",
+      "profile": "accepted 32K/128, request-path decisions in Goose",
+      "prefill_tok_s": 1667.21,
+      "decode_tok_s": 23.77,
+      "wall_s": 25.03,
+      "peak_rss_mib": 22861.3,
+      "peak_vram_attributed_mib": 6412,
+      "content_equal": true,
+      "method": "run_metrics.py via LD_LIBRARY_PATH; no preload",
+      "note": "single quick checkpoint"
+    }
+  ]
+}

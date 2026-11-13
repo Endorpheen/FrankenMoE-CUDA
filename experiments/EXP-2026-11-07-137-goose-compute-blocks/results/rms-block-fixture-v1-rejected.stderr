@@ -1,0 +1,1 @@
+FAIL bs=256 vpt=1 vec=0 mul=1 add=1 scale=0 n=31 pattern=0 i=65 native=0x1.fd6cb6p-2 goose=0x1.fd6cb8p-2

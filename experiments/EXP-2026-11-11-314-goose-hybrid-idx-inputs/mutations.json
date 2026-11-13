@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "absent sequences are treated as present",
+    "status": "CAUGHT",
+    "failures": 4780,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the representative is the first member, not the last",
+    "status": "CAUGHT",
+    "failures": 23738,
+    "exit_code": 1
+  },
+  {
+    "mutation": "padded scatter entries may reuse a representative cell",
+    "status": "CAUGHT",
+    "failures": 1987,
+    "exit_code": 1
+  },
+  {
+    "mutation": "pooled position comes from the last member",
+    "status": "CAUGHT",
+    "failures": 4095,
+    "exit_code": 1
+  },
+  {
+    "mutation": "order mode visible count skips the partial pool",
+    "status": "CAUGHT",
+    "failures": 1271,
+    "exit_code": 1
+  },
+  {
+    "mutation": "order mode tail keeps one cell too many",
+    "status": "CAUGHT",
+    "failures": 2873,
+    "exit_code": 1
+  },
+  {
+    "mutation": "selection keeps the tail slots as visible",
+    "status": "CAUGHT",
+    "failures": 3154,
+    "exit_code": 1
+  },
+  {
+    "mutation": "position mode tail drops the inclusive one",
+    "status": "CAUGHT",
+    "failures": 2544,
+    "exit_code": 1
+  }
+]

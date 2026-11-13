@@ -1,0 +1,137 @@
+/build/
+/build-*/
+/models/
+/upstream/
+/work/
+/runtime/third_party/llama.cpp
+/results/*.raw.json
+/results/*.csv
+/results/*.sse
+/benchmarks/runs/*.csv
+/benchmarks/runs/*.monitor.csv
+/benchmarks/runs/*.out
+/benchmarks/runs/*.log
+/benchmarks/runs/*.json
+*.log
+*.tmp
+*.perf.data
+__pycache__/
+*.pyc
+
+# LOCAL_ONLY experiment artifacts (raw traces, sched .bin outputs, pid files);
+# their hashes/evidence live in committed logs and SHA256SUMS files
+*.pid
+/results/archive/**/pid.txt
+/results/archive/**/raw/
+/results/archive/**/*.bin
+/results/archive/EXP-2026-09-06-038/tests/test-exp038-ring
+/results/archive/EXP-2026-09-07-040/tests/test-exp038-ring
+/results/archive/EXP-2026-09-07-041/tests/test-exp041-ring
+/results/archive/EXP-2026-09-15-062/tests/test-exp062-ring
+/results/archive/EXP-2026-09-15-064/tests/test-exp064-ring
+
+# LOCAL_ONLY MultiAgentZone: Oh My OpenAgent sandbox (backups, scripts, test repo)
+/MultiAgentZone/
+
+# Private project instructions loaded by Codex.
+/AGENTS.override.md
+
+# Profiler artifacts: multi-megabyte traces and SQLite exports stay local.
+# The derived text summary is committed under docs/goose-migration/ instead.
+*.nsys-rep
+*.ncu-rep
+*.sqlite
+experiments/*/build-copy/
+
+# Build output anywhere in the tree (the leading-slash rule above only covers the repository root).
+**/build/
+**/build-*/
+**/stage-run/
+**/cmake-build-*/
+# Shared objects, object files and slot dumps produced by experiments.
+*.so.0
+*.so.0.*
+*.so.*.0
+*.o
+*.bin
+
+# EXP421 staged log library (build output, not source).
+/runtime/exp421/stage/
+
+# Local binary bundles copied for testing; never tracked.
+/builds/
+
+# EXP421 unified baseline run (assembled artifact, not source).
+/runtime/exp421/unified/
+
+# P3-07 layout experiments: build outputs, not source.
+/runtime/exp430/
+/runtime/exp431/
+/runtime/exp445/
+/runtime/exp446/
+/runtime/exp448/
+/runtime/exp449/
+/runtime/exp450/
+/runtime/exp451/
+/runtime/exp452/
+/runtime/exp453/
+/runtime/exp454/
+/runtime/exp455/
+/runtime/exp456/
+/runtime/exp457/
+/runtime/exp458/
+/runtime/exp459/
+/runtime/exp460/
+/runtime/exp461/
+/runtime/exp463/
+/runtime/exp464/
+/runtime/exp469/
+/runtime/exp470/
+/runtime/exp471/
+/runtime/exp472/
+/runtime/exp473/
+/runtime/exp474/
+/runtime/exp475/
+/runtime/exp476/
+/runtime/exp477/
+/runtime/exp478/
+/runtime/exp479/
+/runtime/exp480/
+/runtime/exp481/
+/runtime/exp482/
+/runtime/exp483/
+/runtime/exp484/
+/runtime/exp485/
+/runtime/exp486/
+/runtime/exp487/
+/runtime/exp488/
+/runtime/exp489/
+/runtime/exp490/
+/runtime/exp491/
+/runtime/exp492/
+/runtime/exp493/
+/runtime/exp494/
+/runtime/exp495/
+/runtime/exp496/
+/runtime/exp497/
+/runtime/exp498/
+/runtime/exp499/
+/runtime/exp500/
+/runtime/exp501/
+/runtime/exp502/
+/runtime/exp503/
+/runtime/exp504/
+/runtime/exp505/
+/runtime/exp506/
+/runtime/exp507/
+/runtime/exp508/
+
+# Local Fried Goose compiler research; preserve for a separate upstream fork.
+/fried-goose/
+/docs/FRIED_GOOSE_DEVELOPMENT_LOG.md
+/results/exp135-goose-q4-pair/
+/results/archive/EXP-2026-10-31-135/
+
+# Old build artifacts committed by mistake; removed from the index 2026-11-13.
+/experiments/*/build-stage-run-backup/
+/runtime/checkpoints/

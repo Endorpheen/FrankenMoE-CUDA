@@ -1,0 +1,17 @@
+EXP-038 formal A/B results
+
+pair1: A=4361.766 ms B=3854.742 ms gain=11.624% A_decode=21.061 B_decode=22.163
+pair2: A=3930.674 ms B=3657.907 ms gain=6.939% A_decode=21.395 B_decode=22.433
+pair3: A=3990.943 ms B=3412.125 ms gain=14.503% A_decode=20.767 B_decode=22.015
+pair4: A=3904.822 ms B=3397.844 ms gain=12.983% A_decode=21.641 B_decode=22.759
+pair5: A=4007.060 ms B=3465.613 ms gain=13.512% A_decode=20.676 B_decode=21.996
+
+median A prefill: 3990.943 ms
+median B prefill: 3465.613 ms
+median prefill gain: 13.163%
+wins: 5/5
+paired mean gain bootstrap 95%: [9.357%, 13.803%]
+median decode change: 5.234%
+median RSS-after delta B-A: 24732 KiB
+correctness: HTTP200=True content_identical=True swap_zero=True B_ring_valid=True cuda_error=False
+verdict: ACCEPTED

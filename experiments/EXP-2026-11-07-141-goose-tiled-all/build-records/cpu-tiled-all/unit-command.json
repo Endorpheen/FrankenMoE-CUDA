@@ -1,0 +1,17 @@
+[
+  "/usr/bin/gcc-13",
+  "-O3",
+  "-march=native",
+  "-fPIC",
+  "-fno-strict-aliasing",
+  "-ffp-contract=off",
+  "-I/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/src",
+  "-I/home/end0/AI/LlamaServer/franken-qwen38-v31/source/ggml/include",
+  "-DFG141_TRACE=1",
+  "-DFG141_KERNEL_ONLY=1",
+  "-shared",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c",
+  "-lm",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-tiled-all/build/libgoose-tiled-all.so"
+]

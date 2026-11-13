@@ -1,0 +1,13 @@
+[
+  "/usr/bin/gcc-13",
+  "-O3",
+  "-march=native",
+  "-fPIC",
+  "-fno-strict-aliasing",
+  "-DFG140_TEST=1",
+  "-shared",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-control/unit.c",
+  "-lm",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-control/build/libgoose-moe-control-test.so"
+]

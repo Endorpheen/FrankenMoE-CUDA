@@ -1,0 +1,60 @@
+{
+  "job": "fg174s scalar gated_delta_net.cu port (EXP168 worker, ownership gdn-scalar)",
+  "prefix": "fg174s_",
+  "sources": ["gdn-scalar/inputs/gated_delta_net.cu", "gdn-scalar/inputs/gated_delta_net.cuh", "gdn-scalar/inputs/gated-delta-net-mma.cuh (dispatch signature only)", "gdn-scalar/inputs/common.cuh (warp_reduce_sum/fastdiv/pdl semantics)"],
+  "public_entries": {
+    "mode0": "ggml_cuda_op_gated_delta_net(ctx,dst) -> packet arg0=0",
+    "mode1": "ggml_cuda_op_gated_delta_net_fused_cache(ctx,dst,cache) -> packet arg0=1"
+  },
+  "packet_args": [
+    "arg0: mode (0 plain, 1 fused cache)",
+    "arg1: ggml_backend_cuda_context* (launch/mma effects use ctx.stream()/ctx.device)",
+    "arg2: dst ggml_tensor* (GGML_OP_GATED_DELTA_NET node; src[0..5] = q,k,v,g,beta,state)",
+    "arg3: fused-cache data pointer as i64 (must be 0 when mode0, non-zero when mode1)",
+    "arg4: fused-cache slot_stride in float elements (0 when K==1; unchecked raw pointer, cache span is bridge/parent-owned like native)"
+  ],
+  "ti_keys": {"0": "src[i] pointer", "1": "data pointer", "2": "type", "3": "ne[i]", "4": "nb[i] bytes", "8": "op_params int32[i] (index 0 = K)", "9": "ggml_nbytes(t) checked span (must call)"},
+  "plan": {
+    "c_struct": "struct fg174s_plan{uint64_t ptrs[8];uint64_t dims[8][4];uint64_t strides[8][4];uint64_t iv[24];float fv[8];uint32_t magic[6][3];};",
+    "ptrs": ["0 q", "1 k", "2 v", "3 g", "4 beta", "5 state_in", "6 dst", "7 state_out (dst_d + S_v*H*n_tokens*n_seqs floats, or cache->data)", "all byte addresses"],
+    "dims_strides": "index which*4+i; which 0=q,1=k,2=v,3=g,4=beta,5=state,6=dst,7 unused; strides in FLOAT ELEMENTS (nb/4)",
+    "iv": {"0": "S_v", "1": "H=v.ne[1]", "2": "n_tokens=v.ne[2]", "3": "n_seqs=v.ne[3]", "4": "neqk1=q.ne[1]", "5": "rq3=v.ne[3]/q.ne[3]", "6": "K (op_params[0], sign-extended u64; only read when keep_rs)", "7": "keep_rs=(K>1)", "8": "grid.x=H", "9": "grid.y=n_seqs", "10": "grid.z=ceil(S_v/(4*num_warps))", "11": "block.x=min(warp_size,S_v)", "12": "block.y=num_warps", "13": "physical warp size (32 or 64)", "14": "nsm", "15": "state_slot_stride (cache->slot_stride in mode1 else S_v*S_v*H*n_seqs)", "16": "kda=(g.ne[0]==S_v)", "17": "mma eligible", "18": "H_k=q.ne[1] (for fg174m_ args)"},
+    "fv": {"0": "scale = native expression 1.0f/sqrtf((float)S_v) via fg174s_scale"},
+    "magic": "magic[slot*3+{0,1,2}] = {mp,L,d} of init_fastdiv_values; slot0 = neqk1, slot1 = rq3"
+  },
+  "host_externs": [
+    "int64_t fg174s_arg(int64_t packet,int64_t k)",
+    "int64_t fg174s_plan_ptr(int64_t packet)",
+    "uint64_t fg174s_hget(int64_t p,int64_t k,int64_t i)",
+    "void fg174s_hput(int64_t p,int64_t k,int64_t i,uint64_t v)",
+    "void fg174s_hfloat(int64_t p,int64_t i,float v)",
+    "int64_t fg174s_ti(int64_t t,int64_t k,int64_t i)",
+    "uint8_t fg174s_contiguous(int64_t t)",
+    "int64_t fg174s_f32_type(void)",
+    "int64_t fg174s_warp_size(void)  // ggml_cuda_info().devices[dev].warp_size (32 or 64)",
+    "int64_t fg174s_nsm(void)        // ggml_cuda_info().devices[dev].nsm",
+    "float fg174s_scale(int64_t sv)  // exactly 1.0f/sqrtf((float)sv), no other math",
+    "void fg174s_launch(int64_t packet)  // read plan iv8..iv12; launch generated scalar kernel wrapper fg174s_kernel<<<grid,block,0,ctx.stream()>>>(plan) which calls device fn gdn(p,bidx,bidy,bidz,tidx,tidy)",
+    "void fg174s_fail(int64_t code)"
+  ],
+  "device_externs": [
+    "float fg174s_load(uint64_t p,uint64_t i)        // ((const float*)p)[i]",
+    "void fg174s_store(uint64_t p,uint64_t i,float v) // ((float*)p)[i]=v",
+    "float fg174s_expf(float x)",
+    "float fg174s_shfl_xor(float v,int32_t offset,int32_t width) // __shfl_xor_sync(0xffffffff,v,offset,width)",
+    "uint32_t fg174s_umulhi(uint32_t a,uint32_t b)",
+    "uint64_t fg174s_dget(int64_t p,int64_t k,int64_t i) // device plan projection (same layout as fg174s_hget)",
+    "float fg174s_df(int64_t p,int64_t i)",
+    "uint32_t fg174s_dm(int64_t p,int64_t i,int64_t k)   // plan.magic[i][k]",
+    "void fg174s_sync(void)                          // ggml_cuda_pdl_sync()"
+  ],
+  "device_entry": "fn gdn(p:i64,bidx:i32,bidy:i32,bidz:i32,tidx:i32,tidy:i32) — grid=(iv8,iv9,iv10), block=(iv11,iv12,1); parent maps blockIdx/threadIdx; __launch_bounds__ stays on the parent wrapper",
+  "route": "host validates everything first (native assert order), fills the whole plan, then: if iv17(eligible) and fg174m_launch(packet)==true return; else fg174s_launch(packet). fg174m_launch is the ONLY declared external dispatch effect: the parent-owned fg174m_ port must rebuild ggml_cuda_gdn_mma_args from this plan exactly as ggml_cuda_gdn_mma_args_from_tensor (q,k,v,g,beta,state data = ptrs[0..5], dst=ptrs[6], state_out=ptrs[7], H=iv1, H_k=iv18, n_tokens=iv2, n_seqs=iv3, rq3=iv5, sq1..3=strides[0][1..3], sv1..3=strides[2][1..3], sb1..3=strides[4][1..3], scale=fv0, eligible=iv17) and run its own select/init/launch; returns true only if it launched. Native MMA ignores snapshot slots when it takes over; that behavior is preserved unchanged.",
+  "eligibility": "g.ne[0]==1 && K < v.ne[2] && S_v==128 && q.ne[0]==128 (verbatim native predicate; evaluated in Goose)",
+  "sv_support": "native scalar switch instantiates S_v in {16,32,64,128} only; any other S_v (including 256) is GGML_ABORT(\"fatal error\") in native and fail(20) here — there is no native S_v=256 kernel to port. No q/k normalization exists in the scalar source, so none is ported.",
+  "failure_codes": {"1": "checked u64 overflow", "2": "division by zero", "3": "packet/args (null ctx/dst, bad mode, cache-data mismatch)", "4": "fastdiv magic domain", "5": "tensor not F32 / null data / nb0!=4", "6": "dim/stride bounds", "7": "missing src tensor", "8": "neq1 != nek1", "9": "neq3/nek3/nev3 relation or rq3 domain", "10": "q/k/v not contiguous-rows", "11": "q,k strides differ (ggml_are_same_stride)", "12": "g.ne[0] neither 1 nor S_v", "13": "g/beta/state not contiguous", "14": "input state layout != [S_v,S_v,H,n_seqs]", "15": "warp-shard geometry (S_v%(4*nw)!=0 or S_v%lanes_per_col!=0)", "16": "launch caps (grid.y>65535 or grid.z>65535)", "17": "dst span < attention + written state slots (plain path)", "18": "strided input span coverage (q/k/v/g/beta) or span internal", "19": "input state span coverage", "20": "S_v outside native switch {16,32,64,128}", "21": "device-property effect out of domain (warp_size not 32/64, nsm<=0)"},
+  "numerics": "state shard loads (i=r*lanes_per_col+lane_in_col), transposed-state convention, per-token kv/delta/attn formulas, expf placement (KDA recomputes expf(g_t[i]) in both loops exactly like native), butterfly shuffle offsets lpc/2..1 with width=lpc, attn_col*scale with scale=1.0f/sqrtf((float)S_v), attn advance by S_v*H per token, snapshot slot = n_tokens-1-t gated to [0,K), final slot-0 write when !keep_rs — all replicate gated_delta_net.cu expression-for-expression; no fma/rsqrt substitutions, no fastmath, no extra accumulation reordering.",
+  "no_invented_abi": "only actual ggml fields are read via ti keys above (src/data/type/ne/nb/op_params/ggml_nbytes); dst layout is used exactly as the native kernel hardcodes it and is guarded by the checked ggml_nbytes span instead of assuming node shapes",
+  "remaining_original_dependency": "fg174m_launch (parent MMA port) plus three query-only effects backed by original host state: fg174s_warp_size/fg174s_nsm (ggml_cuda_info) and fg174s_scale (1.0f/sqrtf); fg174s_sync wraps ggml_cuda_pdl_sync. No original C++ arithmetic is called on the default scalar path; build/link/GPU gates and the cache owner-side span are parent responsibilities.",
+  "files": {"device.goose": "device recurrence (all entries retained in fn main, never run by parent)", "host.goose": "validation/route/launch policy", "cases.json": "<=25 cases"}
+}

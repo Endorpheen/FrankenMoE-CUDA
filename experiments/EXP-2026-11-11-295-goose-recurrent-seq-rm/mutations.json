@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "rollback ignores the upper position bound",
+    "status": "CAUGHT",
+    "failures": 1,
+    "exit_code": 1
+  },
+  {
+    "mutation": "rollback accepts one snapshot too far",
+    "status": "CAUGHT",
+    "failures": 44,
+    "exit_code": 1
+  },
+  {
+    "mutation": "pending rollback is treated as free",
+    "status": "CAUGHT",
+    "failures": 165,
+    "exit_code": 1
+  },
+  {
+    "mutation": "shared cell may roll back for one sequence",
+    "status": "CAUGHT",
+    "failures": 13,
+    "exit_code": 1
+  },
+  {
+    "mutation": "full-range removal keeps the snapshot index",
+    "status": "CAUGHT",
+    "failures": 718,
+    "exit_code": 1
+  },
+  {
+    "mutation": "tail is not invalidated for a removed cell",
+    "status": "CAUGHT",
+    "failures": 552,
+    "exit_code": 1
+  },
+  {
+    "mutation": "emptying a cell leaves the used count alone",
+    "status": "CAUGHT",
+    "failures": 370,
+    "exit_code": 1
+  },
+  {
+    "mutation": "head moves forward instead of back",
+    "status": "CAUGHT",
+    "failures": 368,
+    "exit_code": 1
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "range test includes the upper bound",
+    "status": "CAUGHT",
+    "failures": 2431,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_rm forgets to move the head",
+    "status": "CAUGHT",
+    "failures": 166,
+    "exit_code": 1
+  },
+  {
+    "mutation": "any-sequence rm skips the last stream",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "seq_keep leaves the old sequence pairs behind",
+    "status": "CAUGHT",
+    "failures": 12824,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_keep keeps the ext block on release",
+    "status": "CAUGHT",
+    "failures": 188692,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_cp no longer clamps a negative p0",
+    "status": "CAUGHT",
+    "failures": 2795,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_cp no longer opens a negative p1",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "head update moves backwards",
+    "status": "CAUGHT",
+    "failures": 8142,
+    "exit_code": 1
+  }
+]

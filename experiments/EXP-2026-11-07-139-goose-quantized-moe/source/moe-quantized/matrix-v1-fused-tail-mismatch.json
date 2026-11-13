@@ -1,0 +1,14 @@
+{
+  "status": "FAIL_EXACT",
+  "operation": "matrix",
+  "kind": "iq4_nl",
+  "metadata": {
+    "width": 160,
+    "rows": 2,
+    "raw_q8": false,
+    "pattern": 0
+  },
+  "byte": 0,
+  "native": "6986a3c0ddfa1734dcb697c37d1b3d4439567390adcae704",
+  "goose": "6986a3c0ddfa1734dbb697c37c1b3d4439567390adcae704"
+}

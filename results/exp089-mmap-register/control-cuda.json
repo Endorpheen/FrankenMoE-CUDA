@@ -1,0 +1,9 @@
+{
+  "control_sha256": "f26f7f1e78eb6b6f42db113bd772d8734d7d2bbf0cc3e65c62b1b0d600832f8f",
+  "reference_sha256": "68681579748bd4a0aeecb4c1e49fdff54e52fc3cd707ebd6466fd2c70b67e87c",
+  "differing_sections": [
+    ".strtab"
+  ],
+  "allocatable_code_and_data_identical_except_build_id": true,
+  "unexpected_loaded_differences": []
+}

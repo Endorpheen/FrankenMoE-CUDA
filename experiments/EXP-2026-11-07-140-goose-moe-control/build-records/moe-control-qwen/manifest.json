@@ -1,0 +1,10 @@
+{
+  "status": "PASS_LIVE_QWEN_COMMON_MOE_CONTROLLER",
+  "cpu_sha256": "f19f1e69a235e50cc7f61a7e55298dbc5d506be38b85081f96fa911bd71e8c71",
+  "goose_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98",
+  "preserved": "EXP139 five-format math/common quant, native cold fallback, bank domain, explicit fused window, ready hook, tiled, prior Goose base/allocator/CUDA/MTP",
+  "production_changed": false,
+  "compiler_changed": false,
+  "model_report": "results/moe-control-qwen-model-stage-summary.json",
+  "graph_report": "results/moe-control-qwen-expanded-summary.json"
+}

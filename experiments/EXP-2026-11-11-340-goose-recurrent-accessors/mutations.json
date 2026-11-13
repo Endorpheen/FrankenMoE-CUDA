@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "an empty sequence reports the largest position",
+    "status": "CAUGHT",
+    "failures": 3844,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the minimum is computed as a maximum",
+    "status": "CAUGHT",
+    "failures": 11204,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the maximum starts at zero",
+    "status": "CAUGHT",
+    "failures": 3844,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a negative id is taken as a sequence index",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "the index bound is exclusive",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "the breakdown keeps only the last buffer size",
+    "status": "CAUGHT",
+    "failures": 386,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the breakdown repeats a key per buffer",
+    "status": "CAUGHT",
+    "failures": 1042,
+    "exit_code": 1
+  },
+  {
+    "mutation": "null tensors count towards the family size",
+    "status": "CAUGHT",
+    "failures": 2660,
+    "exit_code": 1
+  },
+  {
+    "mutation": "is_empty is decided by the total, not the list",
+    "status": "CAUGHT",
+    "failures": 737,
+    "exit_code": 1
+  }
+]

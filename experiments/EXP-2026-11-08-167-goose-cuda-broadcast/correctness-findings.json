@@ -1,0 +1,24 @@
+{
+  "scope": "Active inherited CUDA control/source,not a claim about every upstream release",
+  "mixed_input": {
+    "native": "F32/F16/F32 and F16/F16/F32 branches cast the second input to float*,failing the normal F16 byte-stride assertion",
+    "reproduction": "native-mixed-type-rejection returns81 under an abort hook",
+    "fix": "Actual F16 typed load with the correct byte strides;396typed-reference cases cover repaired mixes"
+  },
+  "padded_destination": {
+    "native": "Input-only contiguity condition collapses dimensions even when destination rows have padding",
+    "reproduced_cases": 216,
+    "fix": "Require contiguous destination before collapse;logical typed GPU oracle verifies output and padding"
+  },
+  "fastdiv": {
+    "native": "uint32 high-product+n overflows;32-bit shift by32 also loses the quotient",
+    "checks": 1792,
+    "reproduced_native_mismatches": 245,
+    "fix": "Goose uses widened addition/shift,still __umulhi ISA primitive;host metadata exactly matches native coefficients"
+  },
+  "harness_corrections": [
+    "Repeat uses destination as src0;native already disables padded collapse for repeat,so that case remains a parity oracle"
+  ],
+  "performance": "Single decode decrease2.22percent retained,not attributed to compiler or considered stable proof",
+  "compiler_changed": false
+}

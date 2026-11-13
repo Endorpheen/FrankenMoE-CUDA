@@ -1,0 +1,6 @@
+error: invalid argument: --definitely-not-a-flag
+FG143_CONTROL plans=0 task_queries=0 dispatches=0 jobs=0 worker_jobs=0
+FG143_EXECUTOR worker_graphs=0 worker_steps=0 worker_fusions=0
+FG195V_CUDA_VMM_POOL alloc=0 free=0 grow=0 native=0
+FG196P_CUDA_PINNED host_plan=0 host_fail=0 fallback=0 reg_plan=0 reg_fail=0 unreg=0 native=0
+FG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0

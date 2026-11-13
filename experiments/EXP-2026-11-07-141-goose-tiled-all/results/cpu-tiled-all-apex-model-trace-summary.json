@@ -1,0 +1,87 @@
+{
+  "status": "PASS_LIVE_APEX_FULL_GOOSE_TILED_TRACE",
+  "checks": [
+    {
+      "name": "tiled141-trace-128x4",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "tiled141-trace-2048x16",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    }
+  ],
+  "path_witness": [
+    {
+      "stage": 0,
+      "kind": 0,
+      "units": 124452864
+    },
+    {
+      "stage": 0,
+      "kind": 2,
+      "units": 24379392
+    },
+    {
+      "stage": 1,
+      "kind": 0,
+      "units": 66517504
+    },
+    {
+      "stage": 1,
+      "kind": 2,
+      "units": 14190592
+    },
+    {
+      "stage": 2,
+      "kind": 0,
+      "units": 154330752
+    },
+    {
+      "stage": 2,
+      "kind": 2,
+      "units": 30183168
+    },
+    {
+      "stage": 3,
+      "kind": 0,
+      "units": 281920
+    },
+    {
+      "stage": 3,
+      "kind": 2,
+      "units": 123712
+    },
+    {
+      "stage": 4,
+      "kind": 0,
+      "units": 262176
+    },
+    {
+      "stage": 4,
+      "kind": 2,
+      "units": 50832
+    },
+    {
+      "stage": 5,
+      "kind": 0,
+      "units": 8576
+    },
+    {
+      "stage": 5,
+      "kind": 2,
+      "units": 1248
+    }
+  ],
+  "bridge": "FG141_BRIDGE dense=9824 moe=313008 native_dense_fallback=0 native_moe_fallback=0 enabled=1",
+  "warmup_disabled": true,
+  "scope": "Actual CPU128/4 plus2048/16; new dense and MoE tiled algorithms execute Goose, Q4_K/Q6_K micros live. Diagnostic timing not acceptance.",
+  "production_changed": false
+}

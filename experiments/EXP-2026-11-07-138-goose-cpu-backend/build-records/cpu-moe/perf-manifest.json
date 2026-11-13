@@ -1,0 +1,6 @@
+{
+  "trace_preserved": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe/build/libggml-cpu-moe-trace.so.0.27.0",
+  "trace_sha256": "84f21ff394813a05b06a0899c01ad2b20ced2eb6cae5aabbd89f9927a8e14257",
+  "perf_sha256": "17f107c5b7d64d76782dc594bfbbbbd26a5f36f33c805a0d8ff2d203457fb9ba",
+  "diagnostic_counters_and_shadow_checks_excluded": true
+}

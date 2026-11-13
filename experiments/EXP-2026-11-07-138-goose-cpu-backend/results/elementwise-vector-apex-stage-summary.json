@@ -1,0 +1,101 @@
+{
+  "status": "REAL_APEX_PASS_EXACT; PERFORMANCE_PRELIMINARY; NAN_PAYLOAD_QUALIFICATION_OPEN",
+  "probe_equal_original_cpu_reference": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "2048x16_equal_original_and_control": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "argv_equal": true,
+  "environment_only_feature_flag_differs": true,
+  "runs": {
+    "off": {
+      "name": "element-vector-perf-cpu-off-2048",
+      "wall_seconds": 20.522166860988364,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 19081.238,
+        "prompt_per_token_ms": 9.3170107421875,
+        "prompt_per_second": 107.33056209455592,
+        "predicted_n": 16,
+        "predicted_ms": 1430.138,
+        "predicted_per_token_ms": 95.34253333333332,
+        "predicted_per_second": 10.48849831275024
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "sampled_rss_peak_mib": 21036.859375,
+      "process_hwm_mib": 21036.859375,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 786.0546875,
+      "sampled_file_peak_mib": 20250.8046875,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        6.419921875,
+        3.47607421875,
+        3.267578125
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "on": {
+      "name": "element-vector-perf-cpu-on-2048",
+      "wall_seconds": 21.189950297004543,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 19679.45,
+        "prompt_per_token_ms": 9.6091064453125,
+        "prompt_per_second": 104.06794905345423,
+        "predicted_n": 16,
+        "predicted_ms": 1499.454,
+        "predicted_per_token_ms": 99.9636,
+        "predicted_per_second": 10.00364132544246
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "sampled_rss_peak_mib": 21036.7109375,
+      "process_hwm_mib": 21036.7109375,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 786.0546875,
+      "sampled_file_peak_mib": 20250.65625,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        8.65966796875,
+        4.47509765625,
+        3.6123046875
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  },
+  "throughput_change_percent": {
+    "prompt_per_second": -3.039780075154541,
+    "predicted_per_second": -4.622749347429156
+  },
+  "counter_free_timing": true,
+  "trace_witness_separate_run": {
+    "module_total_values": 233318991,
+    "vector": {
+      "calls": 244470,
+      "values": 227524920
+    }
+  },
+  "scope": "Whole original binary-ops.cpp/unary-ops.cpp supported computations; checked scalar and F32x8 Goose paths; half/libm primitives and C++ tensor metadata bridge remain native",
+  "not_full_cpu_backend": true,
+  "sanitizer_report": "elementwise-vector-sanitizer-summary.json",
+  "operator_report": "elementwise-vector-operation-summary.json",
+  "exact_nan_limitation": "170 release and156 sanitized edge-corpus outputs have different NaN payloads; zero non-NaN mismatches. Strict byte-equality verifier remains failed rather than being relaxed.",
+  "performance_accepted": false,
+  "production_changed": false,
+  "compiler_changed": false,
+  "qwen_new_module_test": "Pending major milestone; Apex is primary",
+  "producer_sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f"
+}

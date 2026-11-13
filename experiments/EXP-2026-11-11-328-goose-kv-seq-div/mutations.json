@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "a division by one still walks the cells",
+    "status": "CAUGHT",
+    "failures": 538,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a mirrored cache is divided",
+    "status": "CAUGHT",
+    "failures": 370,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the shift gains the new position instead of the difference",
+    "status": "CAUGHT",
+    "failures": 2161,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the index is relinked before the division",
+    "status": "CAUGHT",
+    "failures": 7683,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the minimum is computed as a maximum",
+    "status": "CAUGHT",
+    "failures": 3024,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an empty sequence reports zero instead of nothing",
+    "status": "CAUGHT",
+    "failures": 445,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the maximum ignores the sequence bits",
+    "status": "CAUGHT",
+    "failures": 1675,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a mirrored cache no longer delegates for the extremes",
+    "status": "CAUGHT",
+    "failures": 531,
+    "exit_code": 1
+  }
+]

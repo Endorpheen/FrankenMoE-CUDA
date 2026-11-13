@@ -1,0 +1,48 @@
+{
+  "status": "PASS_GPU_GDN_NATIVE_ROLLBACK_AND_PREFLIGHT",
+  "runs": [
+    {
+      "label": "gdn-fixture-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "gdn-fixture-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "gdn-gpu-parity",
+      "exit_code": 0,
+      "stdout": "PASS captures=1 cases=25 native_paired=25 fused=5 checks=9966684 rollback=0 host=3 device=[7,15] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG174M_CUDA_GDN host=0xc,cuda_status=0,paths=0x6,variants=0x3\nFG174S_CUDA_GDN host=0x3,cuda_status=0,modes=0x7,sizes=0xf\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x88404\n"
+    },
+    {
+      "label": "gdn-gpu-rollback",
+      "exit_code": 0,
+      "stdout": "PASS captures=1 cases=25 native_paired=25 fused=5 checks=9966684 rollback=1 host=0 device=[0,0] rc=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x88404\n"
+    },
+    {
+      "label": "gdn-preflight-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "gdn-preflight-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "gdn-preflight-run",
+      "exit_code": 0,
+      "stdout": "PASS GDN preflight cases=32 baseline_not_launched=1 no_stream_or_kernel_before_rejection=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4000000,live_context_heaps=0\n"
+    }
+  ],
+  "production_changed": false
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "destination block index uses guard ibg instead of tid%8",
+    "status": "CAUGHT",
+    "failures": 6
+  },
+  {
+    "mutation": "destination 4*il -> 2*il",
+    "status": "CAUGHT",
+    "failures": 10
+  },
+  {
+    "mutation": "second half offset j+16 -> j+8",
+    "status": "CAUGHT",
+    "failures": 10
+  },
+  {
+    "mutation": "table last entry 113 -> 112",
+    "status": "CAUGHT",
+    "failures": 5
+  },
+  {
+    "mutation": "high nibble reads low nibble",
+    "status": "CAUGHT",
+    "failures": 5
+  }
+]

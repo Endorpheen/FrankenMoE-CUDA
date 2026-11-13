@@ -1,0 +1,19 @@
+{
+  "source/faults.cpp": "993a31be9093e09768f4ddd8533c497a5c3cc93139c3efb8090dcedd36b6e28d",
+  "source/stream-unit.c": "18af51f974cf8128d34cb6399e35de3da991eb4b071e8ed885125da53d2a3f9a",
+  "source/fixture.cpp": "4bdc9fa10ac1d66f0d791a907bbd46979042bf37f8d347fc17fdeba92184bc16",
+  "source/stream-qualified.c": "67cb73019e2396890ea9777f7e9315bbf7196e09497525b78125f870535bd123",
+  "source/stream-api.h": "751aed680aa4d8324929843d09b5876eb47164fc2c8237ee6bf35fc114e691d7",
+  "source/stream.goose": "74ad6a485ea162a3c621bc82e1e16c99e27eabf100c10ac55a7edcd198e854e0",
+  "source/concurrency.cpp": "b1b7a046852081387940b1fd4ac618f4c63454191588b352ba47c94cbae0df31",
+  "source/test-export.h": "6c5639fec21449797b41cce119df9680d3a076b6f1542250c8fc80fa55dbf16d",
+  "source/probe-native.cpp": "42768858932fd44900b40a066cdc50a7fc91fc12685a38e70e87c269e6ab6558",
+  "source/manifest.json": "d7244a3c7f37955659e8e9f6d6e48f3d1d09eecbf3c5c06ffd77138bbd50e8f9",
+  "source/recipes.json": "1bd46dfa289cf3fd19fbf5e95a0771e3805cf4ad06ea43b4349b8adec8b2c39f",
+  "source/backend-stream.cpp": "1c722a0b021b5125d024995502db742b322f0c198a5c4818aa4cbb0185da7c50",
+  "source/native-backend.cpp": "0483a4cb929ef047f713da290cc2117e7d669bf0091e17ba82094a113dec30b4",
+  "source/stream-ffi.h": "c36c33503824b2e11203ddf2d9ad51d0d6df032090604d4ce44972c3f2b0bd5c",
+  "source/probe-candidate.cpp": "34e5536fe0671b1f43d223616340d7d437e244387e203b5f3f7140d6f0451216",
+  "source/stream-generated.c": "9839afe517a7400bac33526f679885f49dd19e1364774ccbb12d2980a1212bcb",
+  "source/stream-bridge.h": "eac863c90bddbec3cc56396414518fc3cf6c225d653846a59a4fd7ffa167bfa2"
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "mutation": "y pair base mixes elements and pairs",
+    "status": "CAUGHT",
+    "failures": 3002
+  },
+  {
+    "mutation": "half/bf16 element size becomes 4 bytes",
+    "status": "CAUGHT",
+    "failures": 92
+  },
+  {
+    "mutation": "half/bf16 pair stride becomes 8 bytes",
+    "status": "CAUGHT",
+    "failures": 3186
+  },
+  {
+    "mutation": "half second lane reads the first element",
+    "status": "CAUGHT",
+    "failures": 1848
+  },
+  {
+    "mutation": "warp ladder skips the 8-offset stage",
+    "status": "CAUGHT",
+    "failures": 3696
+  },
+  {
+    "mutation": "cross-warp slot uses the thread id",
+    "status": "CAUGHT",
+    "failures": 3696
+  },
+  {
+    "mutation": "host grid carries one extra channel",
+    "status": "CAUGHT",
+    "failures": 5
+  },
+  {
+    "mutation": "host shared memory is halved",
+    "status": "CAUGHT",
+    "failures": 5
+  }
+]

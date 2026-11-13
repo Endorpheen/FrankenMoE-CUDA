@@ -1,0 +1,16 @@
+{
+  "status": "PASS_COMPLETE_Q4_Q6_TILED_58_GRAPHS",
+  "runs": {
+    "off": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    }
+  },
+  "all_outputs_equal_immutable_native": true
+}

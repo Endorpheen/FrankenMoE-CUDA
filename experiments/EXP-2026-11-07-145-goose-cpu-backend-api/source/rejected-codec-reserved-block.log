@@ -1,0 +1,3 @@
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-backend/kernel.goose:433: error: expected identifier
+    let kind=decode::super_kind(p.x.kind);let block=if kind>=0 {256} else {decode::compact_width(p.x.kind)};let bytes=if kind>=0 {decode::tile_traits(kind).bytes} else {decode::compact_bytes(p.x.kind)};if bytes==0 {return false;}
+                                              ^

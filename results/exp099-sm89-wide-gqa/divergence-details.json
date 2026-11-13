@@ -1,0 +1,7 @@
+{
+  "first_selected_id_divergence_zero_based": 64,
+  "first_ordered_top5_divergence_zero_based": 3,
+  "shared_history_positions": 65,
+  "max_common_top5_probability_delta_on_shared_history": 0.19108384619305263,
+  "semantic_quality_evaluated": false
+}

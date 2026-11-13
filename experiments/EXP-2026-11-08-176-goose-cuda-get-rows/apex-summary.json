@@ -1,0 +1,78 @@
+{
+  "status": "FUNCTIONAL_APEX_PATH_PASS_TWO_PAIRS_BOTH_ORDERS",
+  "component": "CUDA GET_ROWS float fast paths (vec int4 + scalar) in Goose; all other EXP175 modules identical",
+  "mechanism": "same DSO, GGML_GOOSE_CUDA_GET_ROWS=0 selects the private-renamed native op",
+  "pairs": {
+    "forward": {
+      "native": {
+        "prefill": 2621.6522489660765,
+        "decode": 26.301031248938642,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2629.0396070497222,
+        "decode": 26.957101487543802,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": 0.2817825318578823,
+        "decode": 2.4944658344209807
+      }
+    },
+    "reverse": {
+      "native": {
+        "prefill": 2621.6522489660765,
+        "decode": 26.301031248938642,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2605.9473304070502,
+        "decode": 26.56468060468743,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": -0.5990465961006066,
+        "decode": 1.0024297270071072
+      }
+    },
+    "goose_mean": {
+      "prefill": 2617.4934687283862,
+      "decode": 26.760891046115617
+    },
+    "mean_delta_pct": {
+      "prefill": -0.15863203212136218,
+      "decode": 1.748447780714044
+    }
+  },
+  "historical_baseline": {
+    "prefill": 2663.0,
+    "decode": 27.86
+  },
+  "vs_historical_goose_mean_pct": {
+    "prefill": -1.7088445839885007,
+    "decode": -3.9451146944880917
+  },
+  "correctness": "all 128 token ids, response text and every returned top-5 probability equal to the saved wholly-C++ oracle in all three runs; content sha256 e68df05b",
+  "witnesses": {
+    "get_rows": "FG176G_CUDA_GET_ROWS host=0x3,cuda_status=0,paths=0x3,guards=0",
+    "retained": "FG176R_CUDA_SET_ROWS host=0x8,paths=0x8; FG175C_CUDA_CONCAT host=0x100,paths=0x11"
+  },
+  "local_gates": {
+    "goose": "27 checks / 0 failures / 9 cases",
+    "native": "27 / 0 / 9",
+    "byte_identical": "9 of 9 destinations",
+    "memcheck": "0 errors",
+    "racecheck": "0 hazards"
+  },
+  "limits": "preliminary pairs, uncontrolled external load; other P3-03 scope (COPY/DUP/CONT, SET, PAD, ROLL, quantized GET_ROWS, GET_ROWS_BACK) remains native; P3-03 in progress",
+  "production_changed": false,
+  "active_runtime_changed": false
+}

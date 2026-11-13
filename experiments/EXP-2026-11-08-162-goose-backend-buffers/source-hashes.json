@@ -1,0 +1,18 @@
+{
+  "source/faults.cpp": "2dbb19d867e068f06f20550ef6d8f9418b8e520612147ed800b037890103af7c",
+  "source/buffers-ffi.h": "fb14dd8789c9b09e37128ceafd482941f218daa6dfe45a35d293261db3c58b09",
+  "source/buffers-qualified.c": "f8184e40040ae2ac7152c4bb6a06c048c9d5a85a449448acf697d4be1d47f05e",
+  "source/fixture.cpp": "15a9da94ab2c4260b64af3e5b33b7f6a0f2301203609f33b1f4d9d084adadee6",
+  "source/buffers-generated.c": "5f44e2cf92ccfbc8f87dd35c17bd0cd6029aa8aabcdc8abe32a295ddeea296d8",
+  "source/bulk.cpp": "54b447cab7be2cada60f1da0d9776873f0fe54a8b223fbe7fd12c80d117f9aeb",
+  "source/concurrency.cpp": "826e3e2f260dd7bcc43118cb3ede44229b18801832b1112cd42591410643d5f5",
+  "source/contracts.cpp": "ba400f77bafe38cc6ea40e1fe4698e8d33acd016a8bc880f7e57528f33547c8e",
+  "source/buffers-bridge.h": "95be2594535af8ec00c7f9d2cf3a11b3b9993f1d12eb9e0aeeec6e2913314ebc",
+  "source/backend-buffers.cpp": "0483a4cb929ef047f713da290cc2117e7d669bf0091e17ba82094a113dec30b4",
+  "source/manifest.json": "673be3b413ed668c470022a8ac1131e1e957168bba94d69c5568617d86cd2d2c",
+  "source/recipes.json": "fe8b64295026eeeb1bbb74fa30b023483188d65335a2db32896ec524f611d084",
+  "source/native-backend.cpp": "e0d39ddffbe99d61e99a4f9f1dda109a99b6174d32fe46733502addb0a02e176",
+  "source/buffers.goose": "1856c6c848be9a10dbc510a2b4a4a05ef91b991ac02249702d6918b7ec6ff27f",
+  "source/buffers-api.h": "f8c1a10f163a302ee07ca810b5b42914185657691c62e2c7bdaefa94e702828d",
+  "source/buffers-unit.c": "8b288971cf2f2705609f00f1b3cc339f53d111a7c4881de063d70032130558d5"
+}

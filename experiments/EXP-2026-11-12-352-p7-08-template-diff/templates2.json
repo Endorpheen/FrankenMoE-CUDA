@@ -1,0 +1,22 @@
+{
+ "default": {
+  "native": "<|im_start|>system\nbe terse<|im_end|>\n<|im_start|>user\nhello world<|im_end|>\n<|im_start|>assistant\n",
+  "ours": "<|im_start|>system\nbe terse<|im_end|>\n<|im_start|>user\nhello world<|im_end|>\n<|im_start|>assistant\n"
+ },
+ "filters": {
+  "native": "[SYSTEM] be terse\n[USER] hello WORLD\n<|end|>",
+  "ours": "[SYSTEM] be terse\n[USER] hello WORLD\n<|end|>"
+ },
+ "cond": {
+  "native": "ONE|be terse\nhello world|user",
+  "ours": "ONE|be terse\nhello world|user"
+ },
+ "loop": {
+  "native": "1:a,2:b",
+  "ours": "1:a,2:b"
+ },
+ "tools": {
+  "native": "1 TOOL get_weather(city)|be tersehello world",
+  "ours": "1 TOOL get_weather(city)|be tersehello world"
+ }
+}

@@ -1,0 +1,101 @@
+{
+  "status": "PASS_SNAPSHOT_COMPILE_LINK_AND_REAL_GGML_REPLAY",
+  "compiled_snapshot_units": [
+    {
+      "label": "controller",
+      "snapshot_source": "source/cpu-moe/unit.c",
+      "object_sha256": "9fd5ffcb97f75f9857a58aaaae41646fa3b5c90cd1db872b559f795e30b3bb17"
+    },
+    {
+      "label": "q4",
+      "snapshot_source": "source/cpu-moe/q4/unit.c",
+      "object_sha256": "ae8665f4da0291ea347416799ce51f395253747e6bb28336eaa42c136cc9d66c"
+    },
+    {
+      "label": "q6",
+      "snapshot_source": "source/cpu-moe/q6-efficient/unit.c",
+      "object_sha256": "1e6cbf712910b084733eb3cae73c7c360ae5d9c173526d4cd8c85e568092804a"
+    },
+    {
+      "label": "q8",
+      "snapshot_source": "source/q8k-fixed/unit.c",
+      "object_sha256": "e53a3eae5caea56e87ae024048eee70cfed90ca9176b1278d3a3d0b5bffe7011"
+    },
+    {
+      "label": "core",
+      "snapshot_source": "source/cpu-moe-tiled/ggml-cpu-goose-tiled.c",
+      "object_sha256": "1220cfabfced35728bf96045ecfa669504bbb527676bb1146fceb4e7236ccc6b"
+    },
+    {
+      "label": "tiled",
+      "snapshot_source": "source/cpu-moe-tiled-register/unit.c",
+      "object_sha256": "c4e918d9a309ec9e271eb3ada1e321664b31a30266685897c924c03c5e1d00a3"
+    },
+    {
+      "label": "native-unary",
+      "snapshot_source": "reference/unary-ops.cpp",
+      "object_sha256": "9e858b0b4ae6ef6b73124d0782b603ed1a78e8288ed51558daa9c483b6f32df8"
+    },
+    {
+      "label": "native-binary",
+      "snapshot_source": "reference/binary-ops.cpp",
+      "object_sha256": "7f143f4121d8407450bd7aba3e8e7d394ab3b42661b1a613722e24711d00c144"
+    },
+    {
+      "label": "element-bridge",
+      "snapshot_source": "source/elementwise-vector/bridge.cpp",
+      "object_sha256": "44e6cdb8340e6995b448c7ce8b34a4a8864606a865d0fabbdea228df9f29d555"
+    },
+    {
+      "label": "element-compute",
+      "snapshot_source": "source/elementwise-vector/unit.c",
+      "object_sha256": "063e26efb72e6d461c684ef9a8fc4173a75a934eb9fbe3d0747301656ef4f716"
+    }
+  ],
+  "linked_cpu_sha256": "bfe36c32205ea94b3d3ee546f4f498c78d57c341c43168c8d9b5dd5b749f2851",
+  "runs": {
+    "elementwise-off": {
+      "summary": {
+        "graph_cases": 1225,
+        "values": 3683880,
+        "actual_ggml_compute": true,
+        "input_preserved_when_out_of_place": true,
+        "canaries_preserved": true
+      },
+      "sha256": "c62d0709e79a6252c20f5079a1be51f40b3b2d08e47a199adc538556051f1e2b",
+      "all_bytes_equal_local_canonical_artifact": true
+    },
+    "elementwise-on": {
+      "summary": {
+        "graph_cases": 1225,
+        "values": 3683880,
+        "actual_ggml_compute": true,
+        "input_preserved_when_out_of_place": true,
+        "canaries_preserved": true
+      },
+      "sha256": "b30866f4cd96b1c12b46f07e7316cc0c4edaca3b051317d2e2225cd1d2440466",
+      "all_bytes_equal_local_canonical_artifact": true
+    },
+    "tiled-off": {
+      "summary": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      },
+      "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+      "all_bytes_equal_local_canonical_artifact": true
+    },
+    "tiled-on": {
+      "summary": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      },
+      "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+      "all_bytes_equal_local_canonical_artifact": true
+    }
+  },
+  "production_changed": false,
+  "compiler_rebuilt": false,
+  "scope": "Uses the exact original-host GGML baseline objects/headers. Does not re-run model inference. NaN payload variation versus original C++ remains the recorded limitation."
+}

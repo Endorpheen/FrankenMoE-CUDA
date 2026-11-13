@@ -1,0 +1,36 @@
+{
+  "cold": {
+    "correctness": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "cache_n": 0,
+    "total": 32768,
+    "prompt_ms": 35340.738,
+    "decode_tps": 24.059049622074006
+  },
+  "branch": {
+    "correctness": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "cache_n": 24576,
+    "total": 32768,
+    "prompt_ms": 7213.109,
+    "decode_tps": 28.683944489565818
+  },
+  "early": {
+    "correctness": [
+      true,
+      0.0,
+      "identical ids; max probability delta 0"
+    ],
+    "cache_n": 4096,
+    "total": 16384,
+    "prompt_ms": 9563.397,
+    "decode_tps": 30.682376043200783
+  },
+  "vram_peak_mib": 2536
+}

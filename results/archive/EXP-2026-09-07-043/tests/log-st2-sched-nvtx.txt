@@ -1,0 +1,17 @@
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+CHECK PASS mul_mat_id token dimensions match 395-token prefill
+CHECK PASS sched graph compute
+RING_LOG 1
+CHECK PASS 395-token sched: ring activation logged
+CHECK PASS 395-token sched: staged calls and chunks are non-zero
+OUT_SHA 56d68487adca6899
+Collecting data...
+Generating '/tmp/nsys-report-49f5.qdstrm'
+[1/1] [0%                          ] sched-diag.nsys-rep[1/1] [0%                          ] sched-diag.nsys-rep[1/1] [===23%                      ] sched-diag.nsys-rep[1/1] [=============60%            ] sched-diag.nsys-rep[1/1] [========================98% ] sched-diag.nsys-rep[1/1] [========================100%] sched-diag.nsys-rep[1/1] [========================100%] sched-diag.nsys-rep
+Generated:
+    /tmp/exp043-gate/sched-diag.nsys-rep

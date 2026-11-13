@@ -1,0 +1,37 @@
+{
+  "fixture": "fixture.cu",
+  "api": {
+    "compute": "ggml_cuda_op_topk_moe(ctx, logits, weights, ids, clamp, scale, bias, args)",
+    "eligibility": "ggml_cuda_should_use_topk_moe(gating_op, weights, logits, ids)",
+    "oracle_prefix": "fg169t_native_",
+    "witness_decls": ["extern C uint64_t fg169t_cuda_host_seen()", "extern C int fg169t_cuda_device_read(uint64_t*)"]
+  },
+  "host_counter_bits": {"bit0": "compute", "bit1": "eligibility"},
+  "device_words": ["expert_count_mask", "flags_mask"],
+  "rollback_env": "GGML_GOOSE_CUDA_TOPK_MOE=0",
+  "layouts": {
+    "logits": "[E,rows] F32 contiguous",
+    "weights": "[1,K,rows,1] F32 packed contiguous",
+    "ids": "[K,rows] I32 nb1=E*4; bytes of k>=K per row untouched 0xA5 canaries (except alias cases)",
+    "clamp_scale": "op_params[0] float metadata only, data may be NULL (clamp=0.75, scale=2.5)",
+    "bias": "[E] F32 real device data, values 0.25*((e*13)%7-3)"
+  },
+  "policy": {
+    "float_compare": "bit-exact F32 against fg169t_native_ oracle on identical flags",
+    "nan_exception": "pattern 3 (nan_ok) only: float outputs may differ in NaN payload when BOTH sides are NaN; NaN presence must match; ids and guard canaries always bit-exact",
+    "sync": "cudaDeviceSynchronize after default-stream setup uploads, before non-blocking ctx.stream() use (EXP168 finding)",
+    "partial_block": "native row>=n_rows early return before __syncthreads is permitted; never reported as deadlock from the early return alone",
+    "alias": "only safe ids-over-logits alias with equal row stride nb1=E*4; no bias/output overlap; no cross-block output/logit compaction alias",
+    "coverage": "outside rollback: host bits 0+1 and both device words must be non-zero; full flag coverage intentionally not required in one Apex run"
+  },
+  "logit_patterns": {"0": "rand deterministic spread", "1": "strictly monotonic", "2": "five-way ties", "3": "sparse fixed-payload NaN"},
+  "sweeps": {
+    "A_dims_modes": {"experts": [1, 2, 4, 8, 16, 32, 64, 128, 256, 288, 512, 576], "rows": [1, 7, 8, 9, 17], "k": [1, "min(8,E) (K=E for E<=8)"], "modes": ["softmax", "delayed", "sigmoid", "sqrt_softplus"], "pattern": 0, "extras": "none"},
+    "B_patterns": {"experts": [1, 2, 4, 8, 16, 288, 576], "rows": [7, 17], "k": [1, "min(8,E)"], "modes": 4, "patterns": [1, 2, 3], "extras": "none", "independent": ["oracle ids (finite patterns)", "weights monotone (no bias)", "ids distinct/range (all cases)"]},
+    "C_extras": {"experts": [2, 8, 32, 256], "rows": [1, 9], "k": [1, "min(8,E)"], "pattern": 0, "extras_by_mode": {"softmax": ["norm", "scale", "norm+scale", "bias", "norm+bias", "scale+bias", "norm+scale+bias"], "delayed": ["scale", "bias", "scale+bias"], "sigmoid": ["norm", "scale", "norm+scale", "bias", "norm+bias", "scale+bias", "norm+scale+bias"], "sqrt_softplus": ["norm", "scale", "bias"]}, "note": "norm+delayed excluded: native GGML_ASSERT"},
+    "D_groups": {"combos": [[8, 2, 1], [8, 4, 2], [16, 4, 2], [16, 8, 2], [32, 8, 4], [256, 8, 4], [512, 8, 4]], "k": [1, "min(min(8,E), n_group_used*(E/n_groups))"], "rows": [7, 17], "modes": ["softmax", "sigmoid"], "patterns": [0, 2], "extras": ["none", "bias", "norm"]},
+    "E_alias": {"experts": [8, 16], "k": [1, "min(8,E)"], "rows": [1, 17], "mode": "softmax", "alias": "ids->data == logits->data, nb1=E*4 both"},
+    "F_eligibility": {"check": "native verdict == goose verdict == expected", "variants": ["softmax accepted", "softmax scale=2 rejected", "softmax max_bias=0.5 rejected", "softmax mask rejected", "softmax sinks rejected", "non-contiguous gating src rejected", "non-contiguous weights rejected", "sigmoid accepted", "softplus accepted", "gelu rejected", "non-gating op accepted", "E=288 accepted", "E=576 accepted", "E=96 rejected", "E=1024 rejected", "sigmoid + non-contiguous src rejected"]}
+  },
+  "counts": {"compute_cases": 1444, "eligibility_variants": 16}
+}

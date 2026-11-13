@@ -1,0 +1,114 @@
+{
+  "status": "PASS_REAL_APEX_REGISTER_TILED_EXACT",
+  "probe_equal": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "2048x16_equal": {
+    "content": true,
+    "tokens": true,
+    "completion_probabilities": true
+  },
+  "argv_equal": true,
+  "counter_free_timing": true,
+  "runs": {
+    "off": {
+      "name": "moe-cpu-tiled-register-perf-pure-off-2048",
+      "wall_seconds": 18.142087950953282,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 16639.737,
+        "prompt_per_token_ms": 8.12487158203125,
+        "prompt_per_second": 123.07886837394123,
+        "predicted_n": 16,
+        "predicted_ms": 1492.62,
+        "predicted_per_token_ms": 99.508,
+        "predicted_per_second": 10.049443260843349
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "sampled_rss_peak_mib": 21036.6953125,
+      "process_hwm_mib": 21036.6953125,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 785.99609375,
+      "sampled_file_peak_mib": 20250.69921875,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        6.3974609375,
+        12.69140625,
+        8.94384765625
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "on": {
+      "name": "moe-cpu-tiled-register-perf-pure-on-2048",
+      "wall_seconds": 21.242730450001545,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 19823.405,
+        "prompt_per_token_ms": 9.67939697265625,
+        "prompt_per_second": 103.3122210841175,
+        "predicted_n": 16,
+        "predicted_ms": 1409.283,
+        "predicted_per_token_ms": 93.95219999999999,
+        "predicted_per_second": 10.643710312265174
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "sampled_rss_peak_mib": 21036.7109375,
+      "process_hwm_mib": 21036.7109375,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 786.015625,
+      "sampled_file_peak_mib": 20250.6953125,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        7.1904296875,
+        11.59228515625,
+        8.7900390625
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  },
+  "throughput_change_percent": {
+    "prompt_per_second": -16.060147083712394,
+    "predicted_per_second": 5.913432575288291
+  },
+  "trace_witness_separate_run": {
+    "q4_microtiles": 1634816,
+    "q6_microtiles": 312064,
+    "native_tiled_delegations": 0
+  },
+  "sanitizers": {
+    "status": "PASS_REGISTER_TILED_ASAN_UBSAN_LSAN_114_GRAPHS",
+    "runs": {
+      "off": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      },
+      "on": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      }
+    },
+    "all_bytes_equal_native_unsanitized": true,
+    "instrumented": "New Goose register tiled pipeline, MoE controller, Q4/Q6/Q8 and modified CPU driver/thread code",
+    "uninstrumented": "Inherited other objects, native tiled/repack control and base library",
+    "limitations": "Not TSan, not full repository audit or proof of superiority"
+  },
+  "preliminary": true,
+  "production_accepted": false,
+  "limitations": [
+    "Competing load uncontrolled; decode has only15 timed intervals",
+    "CPU-only validation profile, not the standard CPU/GPU profile",
+    "Prefill regression remains open; experiment retained for continued optimization"
+  ]
+}

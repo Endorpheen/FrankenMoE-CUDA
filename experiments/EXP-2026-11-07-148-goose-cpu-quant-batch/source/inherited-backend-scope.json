@@ -1,0 +1,20 @@
+{
+  "status": "INHERITED_EXP147_VALIDATED_BUFFER_POLICY_REGENERATED_IDENTICALLY",
+  "batch": "B1",
+  "requirement": "P2-14 and backend graph/workspace ownership",
+  "producer": {
+    "stage": "Self-hosted EXP301 key-final Stage3",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp301-function-state/key-final-bootstrap-v1/stage3",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107/compiler/stage3-f849233b999c",
+    "sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+    "bootstrap_status": "PASS_CURRENT_VARDEF_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "source_commit": "d030e5338af11b88480ab6b0b5b6f99ed7155c40",
+    "scope": "Latest completed fixed-C bootstrap checkpoint; SH03.FN-STATE parent task still open; compiler sources unchanged"
+  },
+  "native_source_sha256": "ccf382d3fbf126b5ddb5850a0a970656fb24e00587da4003419439277c91cd01",
+  "scope": "Validated EXP147 CPU API and real buffer ownership/range/alignment/copy policy,plus traits dispatch;actual Goose from_ptr hooked. HBM remains compiled out/native and unverified.",
+  "remaining": "Native ABI storage/CPU descriptions/extra provider implementations;HBM unavailable;full backend task remains open.",
+  "production_changed": false,
+  "compiler_source_changed": false,
+  "no_model_run_yet": false
+}

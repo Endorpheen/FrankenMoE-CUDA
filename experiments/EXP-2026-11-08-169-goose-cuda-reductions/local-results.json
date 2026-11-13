@@ -1,0 +1,52 @@
+{
+  "status": "PASS_GPU_NATIVE_INDEPENDENT_GRAPH_ROLLBACK_PREFLIGHT",
+  "runs": [
+    {
+      "label": "fixture-build",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "fixture-link",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "gpu-parity",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS cases=326 values=15977360 checks=26907 independent=5028 graph_cases=8 host=0x3f device=0x10f cub=0x32 live_temp=0 rollback=0\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG169_CUDA_REDUCTIONS host=0x3f,cuda_status=0,modes=0x10f,cub=0x32,live_temp=0\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x8c07\n"
+    },
+    {
+      "label": "gpu-rollback",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS cases=326 values=15977360 checks=26906 independent=5028 graph_cases=8 host=0x0 device=0x0 cub=0x0 live_temp=0 rollback=1\n",
+      "stderr": "ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):\n  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB\nFG157_CONTEXT_CORE goose_modes=0x4001000,live_context_heaps=0\nFG155_GEOMETRY goose_modes=0x8c03\n"
+    },
+    {
+      "label": "preflight-build",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "preflight-link",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "preflight-run",
+      "exit_code": 0,
+      "stdout": "PASS reduction preflight_cases=24 no_stream_or_kernel_or_pool_effect_before_rejection=1\n",
+      "stderr": "FG157_CONTEXT_CORE goose_modes=0x4000000,live_context_heaps=0\n"
+    }
+  ],
+  "production_changed": false
+}

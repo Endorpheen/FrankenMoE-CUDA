@@ -1,0 +1,129 @@
+0.00.022.895 I srv  llama_server: initializing ...
+0.00.022.907 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.023.222 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.027.296 I srv    load_model: loading model '/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf'
+0.00.410.944 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+0.00.946.936 W model has unused tensor blk.40.attn_norm.weight (size = 8192 bytes) -- ignoring
+0.00.946.943 W model has unused tensor blk.40.post_attention_norm.weight (size = 8192 bytes) -- ignoring
+0.00.946.949 W model has unused tensor blk.40.attn_q.weight (size = 9437184 bytes) -- ignoring
+0.00.946.952 W model has unused tensor blk.40.attn_k.weight (size = 589824 bytes) -- ignoring
+0.00.946.956 W model has unused tensor blk.40.attn_v.weight (size = 860160 bytes) -- ignoring
+0.00.946.963 W model has unused tensor blk.40.attn_output.weight (size = 4718592 bytes) -- ignoring
+0.00.946.965 W model has unused tensor blk.40.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.946.968 W model has unused tensor blk.40.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.946.970 W model has unused tensor blk.40.ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring
+0.00.946.972 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring
+0.00.946.977 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.946.979 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.946.982 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring
+0.00.946.984 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.946.986 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.946.989 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring
+0.00.946.993 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring
+0.00.946.995 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring
+0.00.946.998 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring
+0.00.947.004 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring
+0.03.856.698 I cmn          init: llama threadpool init, n_threads = 8
+0.04.165.925 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+0.04.166.102 I srv    load_model: RAM-only prefix checkpoints (recurrent): disabled, budget 2048.0 MiB
+0.04.166.123 W srv          init: --cache-idle-slots requires --cache-ram, disabling
+0.04.169.667 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.04.169.712 I srv  llama_server: model loaded
+0.04.169.717 I srv  llama_server: listening on http://127.0.0.1:8081
+0.07.675.995 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.07.676.039 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+/home/end0/AI/LlamaServer/exp107-expert-overlap/source/ggml/src/ggml-cuda/ggml-cuda.cu:112: CUDA error
+0.07.703.633 E CUDA error: invalid argument
+0.07.703.641 E   current device: 0, in function ggml_backend_cuda_buffer_set_tensor at /home/end0/AI/LlamaServer/exp107-expert-overlap/source/ggml/src/ggml-cuda/ggml-cuda.cu:852
+0.07.703.642 E   cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, ((cudaStream_t)0x2))
+⚠️ warning: The current terminal doesn't support styling.  Styled output might not appear as expected.
+[New LWP 3370542]
+[New LWP 3370536]
+[New LWP 3370535]
+[New LWP 3370534]
+[New LWP 3370533]
+[New LWP 3370532]
+[New LWP 3370531]
+[New LWP 3370530]
+[New LWP 3370529]
+[New LWP 3370528]
+[New LWP 3370527]
+[New LWP 3370526]
+[New LWP 3370525]
+[New LWP 3370524]
+[New LWP 3370523]
+[New LWP 3370522]
+[New LWP 3370464]
+[New LWP 3370463]
+[New LWP 3370462]
+[New LWP 3370461]
+[New LWP 3370460]
+[New LWP 3370459]
+[New LWP 3370458]
+[New LWP 3370457]
+[New LWP 3370456]
+[New LWP 3370455]
+[New LWP 3370454]
+[New LWP 3370453]
+[New LWP 3370452]
+[New LWP 3370451]
+[New LWP 3370450]
+[New LWP 3370449]
+[New LWP 3370448]
+[New LWP 3370447]
+[New LWP 3370446]
+[New LWP 3370445]
+[New LWP 3370444]
+[New LWP 3370443]
+[New LWP 3370442]
+[New LWP 3370441]
+[New LWP 3370440]
+[New LWP 3370439]
+[New LWP 3370438]
+[New LWP 3370437]
+[New LWP 3370436]
+[New LWP 3370435]
+[New LWP 3370434]
+[New LWP 3370433]
+[New LWP 3370432]
+[New LWP 3370431]
+[New LWP 3370430]
+[New LWP 3370429]
+[New LWP 3370428]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/usr/lib/x86_64-linux-gnu/libthread_db.so.1".
+__syscall_cancel_arch () at ../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S:56
+⚠️ warning: 56	../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S: No such file or directory
+#0  __syscall_cancel_arch () at ../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S:56
+56	in ../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S
+#1  0x00007877eeea039c in __internal_syscall_cancel (a1=<optimized out>, a2=<optimized out>, a3=<optimized out>, a4=<optimized out>, a5=0, a6=0, nr=61) at ./nptl/cancellation.c:49
+⚠️ warning: 49	./nptl/cancellation.c: No such file or directory
+#2  __syscall_cancel (a1=<optimized out>, a2=<optimized out>, a3=<optimized out>, a4=<optimized out>, a5=a5@entry=0, a6=a6@entry=0, nr=61) at ./nptl/cancellation.c:75
+75	in ./nptl/cancellation.c
+#3  0x00007877eef1cacf in __GI___wait4 (pid=<optimized out>, stat_loc=<optimized out>, options=<optimized out>, usage=<optimized out>) at ../sysdeps/unix/sysv/linux/wait4.c:30
+⚠️ warning: 30	../sysdeps/unix/sysv/linux/wait4.c: No such file or directory
+#4  0x00007877ef544373 in ggml_print_backtrace () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libggml-base.so.0
+#5  0x00007877ef54451b in ggml_abort () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libggml-base.so.0
+#6  0x00007877e26f7ce7 in ggml_cuda_error(char const*, char const*, char const*, int, char const*) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libggml-cuda.so.0
+#7  0x00007877e270080b in ggml_backend_cuda_buffer_set_tensor(ggml_backend_buffer*, ggml_tensor*, void const*, unsigned long, unsigned long) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libggml-cuda.so.0
+#8  0x00007877ef564324 in ggml_backend_sched_graph_compute_async () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libggml-base.so.0
+#9  0x00007877e1a4092b in llama_context::graph_compute(ggml_cgraph*, bool) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama.so.0
+#10 0x00007877e1a4463c in llama_context::process_ubatch(llama_ubatch const&, llm_graph_type, llama_memory_context_i*, ggml_status&) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama.so.0
+#11 0x00007877e1a4dcc6 in llama_context::decode(llama_batch_ext const&) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama.so.0
+#12 0x00007877ef792702 in std::_Function_handler<void (), server_context_impl::decode(int&, int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama-server-impl.so
+#13 0x00007877ef747336 in server_queue::yield_to_queue(std::function<void ()>&&) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama-server-impl.so
+#14 0x00007877ef7a7c53 in server_context_impl::decode(int&, int) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama-server-impl.so
+#15 0x00007877ef7a98ae in server_context_impl::update_slots() () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama-server-impl.so
+#16 0x00007877ef747f85 in server_queue::start_loop(long) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama-server-impl.so
+#17 0x00007877ef6e81b8 in llama_server(common_params&, int, char**, server_child&) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama-server-impl.so
+#18 0x00007877ef6e92d1 in llama_server(int, char**) () from /home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled/run/libllama-server-impl.so
+#19 0x00007877eee2a601 in __libc_start_call_main (main=main@entry=0x5f40dee67270 <main>, argc=argc@entry=60, argv=argv@entry=0x7ffe1aa55e88) at ../sysdeps/nptl/libc_start_call_main.h:59
+⚠️ warning: 59	../sysdeps/nptl/libc_start_call_main.h: No such file or directory
+#20 0x00007877eee2a718 in __libc_start_main_impl (main=0x5f40dee67270 <main>, argc=60, argv=0x7ffe1aa55e88, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, stack_end=0x7ffe1aa55e78) at ../csu/libc-start.c:360
+⚠️ warning: 360	../csu/libc-start.c: No such file or directory
+#21 0x00005f40dee672a5 in _start ()
+[Inferior 1 (process 3370420) detached]
+FG_SELFHOST_GRAPH enabled=1 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=1 calls=0 shadow_checks=0 digest=0
+FG_SELFHOST_ALLOC enabled=1 calls=0 reuse_hits=0 shadow_checks=0 digest=0

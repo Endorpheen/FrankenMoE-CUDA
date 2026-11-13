@@ -1,0 +1,9 @@
+{
+  "status": "PASS_RELEASE_ALLOCATOR_NATIVE_PARITY",
+  "goose": "PASS independent allocator dynamic_ops=10800 graph_cases=12 event_records=495 checks=17576 Goose_modes=0x1b180700f8c live_allocator_heaps=0\n",
+  "rollback": "PASS independent allocator dynamic_ops=10800 graph_cases=12 event_records=495 checks=17576 Goose_modes=0x0 live_allocator_heaps=0\n",
+  "model_runs": 0,
+  "production_changed": false,
+  "failure_injection": "PASS allocator failure cleanup unpublished_creation=7 reserve_fatal=6 reserve_recoverable=1 double_free_overflow=2 live_allocator_heaps=0\n",
+  "concurrency": "PASS independent allocator threads=8 graph_lifecycles=128 graph_allocations=256 backend_live=0 allocator_heaps=0\n"
+}

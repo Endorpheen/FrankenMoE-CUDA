@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "d2 reuses scale is (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "qs offset 48 -> 49",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "high-half offset +32 -> +16 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "high-bit contribution 16 -> 15",
+    "status": "CAUGHT",
+    "failures": 8
+  }
+]

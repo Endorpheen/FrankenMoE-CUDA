@@ -1,0 +1,82 @@
+{
+  "build-commands.json": {
+    "sha256": "85d0836906a4b0e345ad6fb92ba9f641fb0e75fe1e4c8f893dbeff1d9fe4bf1c",
+    "bytes": 20305
+  },
+  "context.log": {
+    "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+    "bytes": 5
+  },
+  "cuda-link.log": {
+    "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+    "bytes": 5
+  },
+  "cuda.log": {
+    "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+    "bytes": 5
+  },
+  "diag-console.log": {
+    "sha256": "33319b73c67d8b70739b40c6b40cf57d03500fd43798813187fe1970fdb88f4d",
+    "bytes": 92744
+  },
+  "diag-resources.jsonl": {
+    "sha256": "e3de9ebf6671b37f9b9e07ca7294bffdb1a2b53d9ef21454fc78d4744fba9059",
+    "bytes": 752201
+  },
+  "diag-stop.json": {
+    "sha256": "d1ef6cf708044f32e2ed20d24e6dd59c521ccb53d1503326a004d8432663e250",
+    "bytes": 72
+  },
+  "diag-vram-after.txt": {
+    "sha256": "51ce929857aa32445acc5e325b29d2474dbabc110287ef7446a189f82cdf8fdc",
+    "bytes": 86
+  },
+  "diag.log": {
+    "sha256": "33319b73c67d8b70739b40c6b40cf57d03500fd43798813187fe1970fdb88f4d",
+    "bytes": 92744
+  },
+  "diagcold.sse": {
+    "sha256": "3163112a3dddf85e83795d9c7e63eac7f35de5eb194b899ee239b0667d902f6f",
+    "bytes": 184898
+  },
+  "diagcold.trace": {
+    "sha256": "5518379faadd551a448d8ac5ae44cb88aae8f02502ab2823135297bfb5bfc631",
+    "bytes": 394243
+  },
+  "diagrepeat.sse": {
+    "sha256": "d4dacb2e021d13f02ae1d1d098eee91e36a5aaf50531019c7a237cb9cea9d0b1",
+    "bytes": 184890
+  },
+  "diagrepeat.trace": {
+    "sha256": "66c6754e63f8fd29cc876995b845f2d6cc9a26bf633eee548ad9ea7c441fe947",
+    "bytes": 394213
+  },
+  "llama-link.log": {
+    "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+    "bytes": 5
+  },
+  "pool-diagnostic-result.json": {
+    "sha256": "8442da2ccb35df416fd1a5c99db73835b7ea25c35249ddf68ae854ccc58198f2",
+    "bytes": 2265
+  },
+  "pool-reports.json": {
+    "sha256": "17ed4cd22c0a2b69f7e3a2191524e2fdf95e61a0eef4a9b24402098bd2dbb62f",
+    "bytes": 85814
+  },
+  "restored-console.log": {
+    "sha256": "f8fb095038e4fae8096eb41f6a8ee1d97eaa3fb2f31db0b6a8c658b4dcc46160",
+    "bytes": 29087
+  },
+  "restored-runtime.json": {
+    "sha256": "757f4c351cf13da80523b41bb4395f099b3921834d001b1a4d1476ea2d8137fc",
+    "bytes": 1490
+  },
+  "restored-server.log": {
+    "sha256": "f8fb095038e4fae8096eb41f6a8ee1d97eaa3fb2f31db0b6a8c658b4dcc46160",
+    "bytes": 29087
+  },
+  "working-server-stopped.json": {
+    "sha256": "1295c9d65e7cda92923434c4a076b8e251ea4f8bf2cd15d9b3ff6712e027e639",
+    "bytes": 72
+  }
+}

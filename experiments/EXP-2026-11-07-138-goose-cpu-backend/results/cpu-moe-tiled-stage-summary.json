@@ -1,0 +1,2628 @@
+{
+  "status": "FUNCTIONAL_CPU_MOE_AND_COMPLETE_RAW_Q4_Q6_TILED; PERFORMANCE_NOT_ACCEPTED",
+  "working_runtime_changed": false,
+  "compiler_changed": false,
+  "scope": [
+    "Goose Q8_K conversion, grouping provided expert IDs, worker chunk/claim decisions, Q4_K/Q6_K dot products and 16-row tile, result addressing/scatter",
+    "Complete Goose raw Q4_K/Q6_K tiled prefill: weight unpack, activation gathering/bias, integer SIMD microtiles, FMA epilogues, K accumulation, worker partition and scatter"
+  ],
+  "native_remaining": [
+    "Model router softmax/top-k and other quant formats",
+    "Repack backend, threadpool/atomic/barrier service implementations and physical buffer ownership",
+    "Other CPU backend operators, scheduler and most CUDA/application components"
+  ],
+  "standalone_graphs": {
+    "status": "PASS_REAL_GGML_CPU_MOE_58_GRAPHS",
+    "all_output_bytes_equal": true,
+    "bytes_compared": 1346320,
+    "output_sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "runs": {
+      "off": {
+        "graphs": {
+          "graph_cases": 58,
+          "values": 336464,
+          "actual_ggml_compute": true
+        },
+        "counters": {
+          "entries": 0,
+          "quant_calls": 0,
+          "blocks": 0,
+          "q4_tiles": 0,
+          "q6_tiles": 0,
+          "native_tiled_delegations": 0,
+          "claims": 0,
+          "mapping_checks": 0,
+          "enabled": 0
+        }
+      },
+      "on": {
+        "graphs": {
+          "graph_cases": 58,
+          "values": 336464,
+          "actual_ggml_compute": true
+        },
+        "counters": {
+          "entries": 218,
+          "quant_calls": 34802,
+          "blocks": 34786,
+          "q4_tiles": 3112,
+          "q6_tiles": 3112,
+          "native_tiled_delegations": 1122,
+          "claims": 1040,
+          "mapping_checks": 9808,
+          "enabled": 1
+        }
+      }
+    },
+    "coverage": "Q4_K/Q6_K, widths256/512/2048, source broadcast1/2/4, tokens1/7/128, threads1/2/8 plus dynamic work claims. Existing profitable native tiled path explicitly delegated.",
+    "not_yet_verified": "Noncontiguous/prequantized source variants and actual Apex.",
+    "producer": {
+      "stage": "self-hosted EXP299 v2 bound Stage3",
+      "sha256": "5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+      "receipt": "bootstrap-exp299-v2-receipt.json",
+      "applies_to": "new generation only"
+    }
+  },
+  "expanded_tiled": {
+    "status": "PASS_COMPLETE_TILED_EXPANDED_REAL_GGML",
+    "runs": {
+      "off": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      },
+      "on": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      }
+    },
+    "witness": {
+      "off": {
+        "q4_microtiles": 0,
+        "q6_microtiles": 0,
+        "native_tiled_delegations": 1922
+      },
+      "on": {
+        "q4_microtiles": 36556,
+        "q6_microtiles": 36556,
+        "native_tiled_delegations": 0
+      }
+    },
+    "all_output_bytes_equal_native_cpp": true,
+    "output_sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "bytes_compared": 8687056,
+    "coverage": [
+      "Original58cases",
+      "Hot expert counts8/16/17/255/256/257/273",
+      "Widths256/512/2048/4096",
+      "Output tails1/17/65/129",
+      "Slots1/2/4 and threads1/2/8",
+      "Noncontiguous F32, prequantized contiguous Q8_K, zero activations",
+      "Narrow and standard windows including tail after256 rows"
+    ],
+    "pending": [
+      "ASan/UBSan/LSan for new tiled unit",
+      "Actual Apex tiled execution",
+      "Counter-free operation and model timing",
+      "Other quant formats/repack/physical buffer ownership"
+    ]
+  },
+  "sanitizers": {
+    "status": "PASS_FULL_TILED_ASAN_UBSAN_LSAN_114_GRAPHS",
+    "runs": {
+      "off": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      },
+      "on": {
+        "graph_cases": 114,
+        "values": 2171536,
+        "actual_ggml_compute": true
+      }
+    },
+    "all_bytes_equal_native_unsanitized": true,
+    "instrumented": "Entire new Goose tiled pipeline, MoE controller, Q4/Q6/Q8 and modified CPU driver/thread code",
+    "uninstrumented": "Inherited other objects, native tiled/repack control and base library",
+    "limitations": "No full repository/race/security-superiority claim"
+  },
+  "real_cpu_apex": {
+    "status": "PASS_REAL_APEX_COMPLETE_Q4_Q6_TILED",
+    "cases": {
+      "probe": {
+        "equal": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_equal": true,
+        "runs": {
+          "off": {
+            "name": "moe-cpu-tiled-pure-off-probe",
+            "wall_seconds": 1.602382285054773,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 128,
+              "prompt_ms": 1302.225,
+              "prompt_per_token_ms": 10.1736328125,
+              "prompt_per_second": 98.29330568834112,
+              "predicted_n": 4,
+              "predicted_ms": 290.077,
+              "predicted_per_token_ms": 96.69233333333334,
+              "predicted_per_second": 10.342081585234265
+            },
+            "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+            "tokens": [
+              58558,
+              13,
+              198,
+              760
+            ],
+            "sampled_rss_peak_mib": 20669.62890625,
+            "process_hwm_mib": 20946.4609375,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 418.9921875,
+            "sampled_file_peak_mib": 20250.63671875,
+            "sampled_gpu_peak_mib": 0,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              1.392578125,
+              1.474609375,
+              1.8623046875
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          },
+          "on": {
+            "name": "moe-cpu-tiled-pure-on-probe",
+            "wall_seconds": 2.043135017971508,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 128,
+              "prompt_ms": 1769.215,
+              "prompt_per_token_ms": 13.8219921875,
+              "prompt_per_second": 72.34847093202353,
+              "predicted_n": 4,
+              "predicted_ms": 264.88,
+              "predicted_per_token_ms": 88.29333333333334,
+              "predicted_per_second": 11.325883418906676
+            },
+            "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+            "tokens": [
+              58558,
+              13,
+              198,
+              760
+            ],
+            "sampled_rss_peak_mib": 20669.62109375,
+            "process_hwm_mib": 20947.95703125,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 418.97265625,
+            "sampled_file_peak_mib": 20250.6484375,
+            "sampled_gpu_peak_mib": 0,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              6.34619140625,
+              2.9599609375,
+              2.3515625
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          }
+        }
+      },
+      "2048": {
+        "equal": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_equal": true,
+        "runs": {
+          "off": {
+            "name": "moe-cpu-tiled-pure-off-2048",
+            "wall_seconds": 19.228590645012446,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 2048,
+              "prompt_ms": 17706.209,
+              "prompt_per_token_ms": 8.64560986328125,
+              "prompt_per_second": 115.66564022823859,
+              "predicted_n": 16,
+              "predicted_ms": 1517.721,
+              "predicted_per_token_ms": 101.1814,
+              "predicted_per_second": 9.88323940961481
+            },
+            "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+            "tokens": [
+              13,
+              198,
+              760,
+              18922,
+              11173,
+              1500,
+              369,
+              264,
+              1777,
+              314,
+              264,
+              10548,
+              21979,
+              6136,
+              25,
+              279
+            ],
+            "sampled_rss_peak_mib": 21038.65625,
+            "process_hwm_mib": 21038.65625,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 787.89453125,
+            "sampled_file_peak_mib": 20250.76171875,
+            "sampled_gpu_peak_mib": 0,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              6.33203125,
+              2.60107421875,
+              2.2197265625
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          },
+          "on": {
+            "name": "moe-cpu-tiled-pure-on-2048",
+            "wall_seconds": 26.29538148001302,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 2048,
+              "prompt_ms": 24755.87,
+              "prompt_per_token_ms": 12.0878271484375,
+              "prompt_per_second": 82.72785404027408,
+              "predicted_n": 16,
+              "predicted_ms": 1529.36,
+              "predicted_per_token_ms": 101.95733333333332,
+              "predicted_per_second": 9.808024271590732
+            },
+            "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+            "tokens": [
+              13,
+              198,
+              760,
+              18922,
+              11173,
+              1500,
+              369,
+              264,
+              1777,
+              314,
+              264,
+              10548,
+              21979,
+              6136,
+              25,
+              279
+            ],
+            "sampled_rss_peak_mib": 21036.89453125,
+            "process_hwm_mib": 21036.89453125,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 786.12109375,
+            "sampled_file_peak_mib": 20250.7734375,
+            "sampled_gpu_peak_mib": 0,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              8.2294921875,
+              3.76611328125,
+              2.64208984375
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          }
+        }
+      }
+    },
+    "witness": {
+      "off": {
+        "q4_microtiles": 0,
+        "q6_microtiles": 0,
+        "native_tiled_delegations": 313008
+      },
+      "on": {
+        "q4_microtiles": 28507136,
+        "q6_microtiles": 5521408,
+        "native_tiled_delegations": 0
+      }
+    },
+    "trace_enabled": true,
+    "preliminary": true,
+    "performance_acceptance": false,
+    "profile": "CPU only, ngl0, no repack, no op/KV offload, legacy Goose graph/allocation disabled, identical Goose MoE controller in both arms",
+    "producer_sha256": "2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b",
+    "limitations": [
+      "Not the optimized CPU/GPU production profile",
+      "Other quantization formats and CPU repack remain native",
+      "Mixed CPU/CUDA placement failure remains undiagnosed; original failed profile preserved"
+    ]
+  },
+  "producer_per_artifact": {
+    "ordinary_controller_q4_q8": "EXP299 v2 bound 5b95595ede45e2d721921236619f7acb6dadfaa4c039d85dc593f42ef864ec8e",
+    "efficient_q6_and_tiled": "EXP299 v4 shared 2fa443c95afc3d8d4651512da54ab1e168e3412f467c47c4dcda1f18746c369b"
+  },
+  "ordinary_apex": {
+    "moe-trace": {
+      "512x32": {
+        "equal_unchanged_original": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_pair_equal": true
+      },
+      "32k128": {
+        "equal_unchanged_original": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_pair_equal": true
+      }
+    },
+    "moe-perf": {
+      "512x32": {
+        "equal_unchanged_original": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_pair_equal": true,
+        "runs": {
+          "on": {
+            "name": "moe-perf-on-512x32",
+            "wall_seconds": 1.8739540820242837,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 512,
+              "prompt_ms": 864.072,
+              "prompt_per_token_ms": 1.687640625,
+              "prompt_per_second": 592.5432139914267,
+              "predicted_n": 32,
+              "predicted_ms": 997.986,
+              "predicted_per_token_ms": 32.19309677419355,
+              "predicted_per_second": 31.062559995831606
+            },
+            "content_sha256": "5210e379a14852178b12225ace8cf11a3899355fe51a48fbeb6497820dd47f82",
+            "sampled_rss_peak_mib": 20680.734375,
+            "process_hwm_mib": 21038.57421875,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 638.85546875,
+            "sampled_file_peak_mib": 19963.23828125,
+            "sampled_gpu_peak_mib": 2140,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              7.92529296875,
+              4.0087890625,
+              3.3046875
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          },
+          "off": {
+            "name": "moe-perf-off-512x32",
+            "wall_seconds": 1.914883260964416,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 512,
+              "prompt_ms": 909.499,
+              "prompt_per_token_ms": 1.776365234375,
+              "prompt_per_second": 562.9472929601901,
+              "predicted_n": 32,
+              "predicted_ms": 995.024,
+              "predicted_per_token_ms": 32.09754838709677,
+              "predicted_per_second": 31.155027416424126
+            },
+            "content_sha256": "5210e379a14852178b12225ace8cf11a3899355fe51a48fbeb6497820dd47f82",
+            "sampled_rss_peak_mib": 20680.84375,
+            "process_hwm_mib": 21039.00390625,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 638.91015625,
+            "sampled_file_peak_mib": 19963.29296875,
+            "sampled_gpu_peak_mib": 2140,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              1.51220703125,
+              3.064453125,
+              3.10791015625
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          }
+        }
+      },
+      "32k128": {
+        "equal_unchanged_original": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_pair_equal": true,
+        "runs": {
+          "on": {
+            "name": "moe-perf-on-32k128",
+            "wall_seconds": 15.833330065011978,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 32768,
+              "prompt_ms": 11238.687,
+              "prompt_per_token_ms": 0.34297750854492187,
+              "prompt_per_second": 2915.643081794163,
+              "predicted_n": 128,
+              "predicted_ms": 4569.799,
+              "predicted_per_token_ms": 35.98266929133858,
+              "predicted_per_second": 27.791156678882373
+            },
+            "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+            "sampled_rss_peak_mib": 21330.28125,
+            "process_hwm_mib": 21330.28125,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 713.046875,
+            "sampled_file_peak_mib": 19963.41796875,
+            "sampled_gpu_peak_mib": 3348,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              8.88330078125,
+              4.56689453125,
+              3.509765625
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          },
+          "off": {
+            "name": "moe-perf-off-32k128",
+            "wall_seconds": 15.513634406030178,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 32768,
+              "prompt_ms": 11165.833,
+              "prompt_per_token_ms": 0.34075418090820314,
+              "prompt_per_second": 2934.6668537851137,
+              "predicted_n": 128,
+              "predicted_ms": 4323.265,
+              "predicted_per_token_ms": 34.041456692913385,
+              "predicted_per_second": 29.375946188817938
+            },
+            "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+            "sampled_rss_peak_mib": 21330.3828125,
+            "process_hwm_mib": 21330.3828125,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 713.09375,
+            "sampled_file_peak_mib": 19963.47265625,
+            "sampled_gpu_peak_mib": 3348,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              3.3193359375,
+              3.2060546875,
+              3.14794921875
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          }
+        }
+      }
+    },
+    "moe-efficient": {
+      "512x32": {
+        "equal_unchanged_original": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_pair_equal": true,
+        "runs": {
+          "on": {
+            "name": "moe-efficient-on-512x32",
+            "wall_seconds": 1.8941079599317163,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 512,
+              "prompt_ms": 885.321,
+              "prompt_per_token_ms": 1.729142578125,
+              "prompt_per_second": 578.3213094459524,
+              "predicted_n": 32,
+              "predicted_ms": 998.349,
+              "predicted_per_token_ms": 32.2048064516129,
+              "predicted_per_second": 31.05126563957093
+            },
+            "content_sha256": "5210e379a14852178b12225ace8cf11a3899355fe51a48fbeb6497820dd47f82",
+            "sampled_rss_peak_mib": 20677.2109375,
+            "process_hwm_mib": 21039.69921875,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 635.44140625,
+            "sampled_file_peak_mib": 19963.12890625,
+            "sampled_gpu_peak_mib": 2140,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              3.86376953125,
+              2.2939453125,
+              2.2919921875
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          },
+          "off": {
+            "name": "moe-efficient-off-512x32",
+            "wall_seconds": 1.8216758830239996,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 512,
+              "prompt_ms": 852.293,
+              "prompt_per_token_ms": 1.664634765625,
+              "prompt_per_second": 600.7323772458533,
+              "predicted_n": 32,
+              "predicted_ms": 958.596,
+              "predicted_per_token_ms": 30.922451612903227,
+              "predicted_per_second": 32.338962399175465
+            },
+            "content_sha256": "5210e379a14852178b12225ace8cf11a3899355fe51a48fbeb6497820dd47f82",
+            "sampled_rss_peak_mib": 20677.2734375,
+            "process_hwm_mib": 21038.5,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 635.4765625,
+            "sampled_file_peak_mib": 19963.15625,
+            "sampled_gpu_peak_mib": 2140,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              3.01904296875,
+              2.31689453125,
+              2.2705078125
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          }
+        }
+      },
+      "32k128": {
+        "equal_unchanged_original": {
+          "content": true,
+          "tokens": true,
+          "completion_probabilities": true
+        },
+        "request_pair_equal": true,
+        "runs": {
+          "on": {
+            "name": "moe-efficient-on-32k128",
+            "wall_seconds": 15.718912175041623,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 32768,
+              "prompt_ms": 11219.142,
+              "prompt_per_token_ms": 0.34238104248046874,
+              "prompt_per_second": 2920.722458098846,
+              "predicted_n": 128,
+              "predicted_ms": 4476.885,
+              "predicted_per_token_ms": 35.25106299212599,
+              "predicted_per_second": 28.367938868208586
+            },
+            "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+            "sampled_rss_peak_mib": 21328.61328125,
+            "process_hwm_mib": 21328.61328125,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 711.48828125,
+            "sampled_file_peak_mib": 19963.30859375,
+            "sampled_gpu_peak_mib": 3348,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              2.62890625,
+              2.25244140625,
+              2.27880859375
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          },
+          "off": {
+            "name": "moe-efficient-off-32k128",
+            "wall_seconds": 15.666859711054713,
+            "timings": {
+              "cache_n": 0,
+              "prompt_n": 32768,
+              "prompt_ms": 11231.265,
+              "prompt_per_token_ms": 0.3427510070800781,
+              "prompt_per_second": 2917.569837413684,
+              "predicted_n": 128,
+              "predicted_ms": 4412.512,
+              "predicted_per_token_ms": 34.74418897637795,
+              "predicted_per_second": 28.781791414958196
+            },
+            "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+            "sampled_rss_peak_mib": 21328.75390625,
+            "process_hwm_mib": 21328.75390625,
+            "process_swap_peak_kib": 0,
+            "sampled_anon_peak_mib": 711.6015625,
+            "sampled_file_peak_mib": 19963.3359375,
+            "sampled_gpu_peak_mib": 3348,
+            "system_swapout_pages_delta": 0,
+            "loadavg": [
+              4.125,
+              2.6123046875,
+              2.36328125
+            ],
+            "preliminary": true,
+            "concurrent_download": false,
+            "controlled_quiet_run": false
+          }
+        }
+      }
+    }
+  },
+  "tiled_operator_candidates": {
+    "cpu-moe-tiled": {
+      "status": "PASS_CORRECT_OPERATION_SERIES_PRELIMINARY",
+      "counter_free": true,
+      "method": "Actual GGML MoE operation; identical Goose controller in both arms, native C++ tiled versus Goose tiled; persistent threadpool poll=0; weights/setup outside timed region; two extra warmups, five samples each of twenty graph executions; output checked after each sample.",
+      "cases": 58,
+      "comparison": [
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1,
+          "goose_us": 1.15,
+          "goose_time_change_percent": 14.999999999999991
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 5.15,
+          "goose_us": 6.85,
+          "goose_time_change_percent": 33.00970873786406
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 6.3,
+          "goose_us": 6.1,
+          "goose_time_change_percent": -3.1746031746031744
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 4.65,
+          "goose_us": 4.3,
+          "goose_time_change_percent": -7.526881720430123
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 14.3,
+          "goose_us": 16.85,
+          "goose_time_change_percent": 17.832167832167833
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 15.5,
+          "goose_us": 19.15,
+          "goose_time_change_percent": 23.54838709677418
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 182.2,
+          "goose_us": 327.6,
+          "goose_time_change_percent": 79.80241492864985
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 161.65,
+          "goose_us": 439.25,
+          "goose_time_change_percent": 171.72904423136407
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 253.95,
+          "goose_us": 730.25,
+          "goose_time_change_percent": 187.55660563102973
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 0.75,
+          "goose_us": 1.75,
+          "goose_time_change_percent": 133.33333333333334
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 5.9,
+          "goose_us": 8.25,
+          "goose_time_change_percent": 39.830508474576256
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 9.2,
+          "goose_us": 7.5,
+          "goose_time_change_percent": -18.47826086956521
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 10.95,
+          "goose_us": 12.3,
+          "goose_time_change_percent": 12.328767123287676
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 29.65,
+          "goose_us": 23.05,
+          "goose_time_change_percent": -22.25969645868465
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 22.4,
+          "goose_us": 27.75,
+          "goose_time_change_percent": 23.88392857142858
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 365,
+          "goose_us": 592.95,
+          "goose_time_change_percent": 62.45205479452056
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 459.2,
+          "goose_us": 683.1,
+          "goose_time_change_percent": 48.75871080139373
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 715.25,
+          "goose_us": 1620.45,
+          "goose_time_change_percent": 126.55714785040195
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 3.6,
+          "goose_us": 2.2,
+          "goose_time_change_percent": -38.888888888888886
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 6.25,
+          "goose_us": 15.8,
+          "goose_time_change_percent": 152.8
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 12.75,
+          "goose_us": 9.4,
+          "goose_time_change_percent": -26.274509803921564
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 30.35,
+          "goose_us": 43.8,
+          "goose_time_change_percent": 44.316309719934075
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 66.4,
+          "goose_us": 77.7,
+          "goose_time_change_percent": 17.018072289156617
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 33.15,
+          "goose_us": 55.7,
+          "goose_time_change_percent": 68.02413273001511
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 1307,
+          "goose_us": 2075.85,
+          "goose_time_change_percent": 58.82555470543227
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 1265.6,
+          "goose_us": 2670.1,
+          "goose_time_change_percent": 110.97503160556256
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 2062.05,
+          "goose_us": 5735.35,
+          "goose_time_change_percent": 178.13826046895082
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 0.9,
+          "goose_us": 1.35,
+          "goose_time_change_percent": 50.0
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 7.2,
+          "goose_us": 4.55,
+          "goose_time_change_percent": -36.80555555555556
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 8.1,
+          "goose_us": 8.7,
+          "goose_time_change_percent": 7.407407407407396
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 7.2,
+          "goose_us": 6.85,
+          "goose_time_change_percent": -4.861111111111116
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 27.25,
+          "goose_us": 27.75,
+          "goose_time_change_percent": 1.83486238532109
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 41.6,
+          "goose_us": 24.95,
+          "goose_time_change_percent": -40.02403846153847
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 128.25,
+          "goose_us": 275.05,
+          "goose_time_change_percent": 114.46393762183237
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 321.75,
+          "goose_us": 491.8,
+          "goose_time_change_percent": 52.85159285159287
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 279.4,
+          "goose_us": 1277,
+          "goose_time_change_percent": 357.0508231925555
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.9,
+          "goose_us": 1.75,
+          "goose_time_change_percent": -7.894736842105255
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 9.65,
+          "goose_us": 11.05,
+          "goose_time_change_percent": 14.507772020725396
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 9.1,
+          "goose_us": 13.55,
+          "goose_time_change_percent": 48.901098901098905
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 8.5,
+          "goose_us": 15.8,
+          "goose_time_change_percent": 85.88235294117648
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 52,
+          "goose_us": 57.85,
+          "goose_time_change_percent": 11.250000000000004
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 51.4,
+          "goose_us": 55.1,
+          "goose_time_change_percent": 7.198443579766534
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 435,
+          "goose_us": 733.5,
+          "goose_time_change_percent": 68.62068965517241
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 354.8,
+          "goose_us": 950.15,
+          "goose_time_change_percent": 167.7987598647125
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 896.55,
+          "goose_us": 2120.35,
+          "goose_time_change_percent": 136.50103173275335
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 5.2,
+          "goose_us": 3.4,
+          "goose_time_change_percent": -34.61538461538461
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 16.15,
+          "goose_us": 19.7,
+          "goose_time_change_percent": 21.98142414860682
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 33.15,
+          "goose_us": 20.75,
+          "goose_time_change_percent": -37.405731523378584
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 37.7,
+          "goose_us": 30.4,
+          "goose_time_change_percent": -19.363395225464195
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 140.1,
+          "goose_us": 188.3,
+          "goose_time_change_percent": 34.40399714489652
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 303.75,
+          "goose_us": 138.95,
+          "goose_time_change_percent": -54.25514403292182
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 1382.3,
+          "goose_us": 2553.2,
+          "goose_time_change_percent": 84.70664833972363
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 1616.45,
+          "goose_us": 4035.9,
+          "goose_time_change_percent": 149.6767608029942
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 2359.45,
+          "goose_us": 9939.35,
+          "goose_time_change_percent": 321.2570726228571
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 212.35,
+          "goose_us": 147.85,
+          "goose_time_change_percent": -30.374381916647042
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 60.45,
+          "goose_us": 43.05,
+          "goose_time_change_percent": -28.784119106699755
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 679.7,
+          "goose_us": 444.9,
+          "goose_time_change_percent": -34.54465205237606
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 211.9,
+          "goose_us": 118.75,
+          "goose_time_change_percent": -43.95941481831053
+        }
+      ],
+      "all_outputs_equal_native": true,
+      "performance_limit": "Uncontrolled competing load; synthetic tensor profiles are not end-to-end Apex speeds.",
+      "goose_source_sha256": "a7567e9d3d2b16fc2c6213e25e19ba407e6649eec1631470c73b8fb819cab5f7"
+    },
+    "cpu-moe-tiled-shaped": {
+      "status": "PASS_CORRECT_OPERATION_SERIES_PRELIMINARY",
+      "counter_free": true,
+      "method": "Actual GGML MoE operation; identical Goose controller in both arms, native C++ tiled versus Goose tiled; persistent threadpool poll=0; weights/setup outside timed region; two extra warmups, five samples each of twenty graph executions; output checked after each sample.",
+      "cases": 58,
+      "comparison": [
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.1,
+          "goose_us": 0.9,
+          "goose_time_change_percent": -18.181818181818187
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 6.2,
+          "goose_us": 5.85,
+          "goose_time_change_percent": -5.645161290322587
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 7.2,
+          "goose_us": 7.55,
+          "goose_time_change_percent": 4.861111111111116
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 6.7,
+          "goose_us": 7.65,
+          "goose_time_change_percent": 14.179104477611947
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 16.65,
+          "goose_us": 17.5,
+          "goose_time_change_percent": 5.105105105105112
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 14.55,
+          "goose_us": 21.85,
+          "goose_time_change_percent": 50.171821305841924
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 203.55,
+          "goose_us": 276.6,
+          "goose_time_change_percent": 35.88798820928518
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 297.75,
+          "goose_us": 395.15,
+          "goose_time_change_percent": 32.71200671704448
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 364.6,
+          "goose_us": 881.35,
+          "goose_time_change_percent": 141.7306637410861
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.55,
+          "goose_us": 1.65,
+          "goose_time_change_percent": 6.451612903225801
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 5.75,
+          "goose_us": 5.75,
+          "goose_time_change_percent": 0.0
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 7.75,
+          "goose_us": 7.2,
+          "goose_time_change_percent": -7.096774193548383
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 12.1,
+          "goose_us": 12.45,
+          "goose_time_change_percent": 2.892561983471076
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 10.9,
+          "goose_us": 16.15,
+          "goose_time_change_percent": 48.16513761467889
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 28.85,
+          "goose_us": 18.85,
+          "goose_time_change_percent": -34.66204506065858
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 289.5,
+          "goose_us": 457.75,
+          "goose_time_change_percent": 58.1174438687392
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 373.9,
+          "goose_us": 666.25,
+          "goose_time_change_percent": 78.18935544263172
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 924.95,
+          "goose_us": 1265.3,
+          "goose_time_change_percent": 36.79658359911346
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 3.35,
+          "goose_us": 2.4,
+          "goose_time_change_percent": -28.358208955223883
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 6.45,
+          "goose_us": 11.7,
+          "goose_time_change_percent": 81.3953488372093
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 14.3,
+          "goose_us": 10.85,
+          "goose_time_change_percent": -24.125874125874137
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 26.75,
+          "goose_us": 27.7,
+          "goose_time_change_percent": 3.5514018691588767
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 72.6,
+          "goose_us": 57.7,
+          "goose_time_change_percent": -20.523415977961424
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 36.9,
+          "goose_us": 65.45,
+          "goose_time_change_percent": 77.37127371273714
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 1161.6,
+          "goose_us": 1740.2,
+          "goose_time_change_percent": 49.81060606060608
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 1507.8,
+          "goose_us": 2696.05,
+          "goose_time_change_percent": 78.80687093779018
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 1880,
+          "goose_us": 5253.6,
+          "goose_time_change_percent": 179.4468085106383
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.4,
+          "goose_us": 1.65,
+          "goose_time_change_percent": 17.85714285714286
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 6.75,
+          "goose_us": 6.75,
+          "goose_time_change_percent": 0.0
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 12,
+          "goose_us": 8.3,
+          "goose_time_change_percent": -30.833333333333325
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 6.7,
+          "goose_us": 9.55,
+          "goose_time_change_percent": 42.53731343283582
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 22.95,
+          "goose_us": 34.9,
+          "goose_time_change_percent": 52.069716775599126
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 35.8,
+          "goose_us": 29.75,
+          "goose_time_change_percent": -16.89944134078212
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 140.45,
+          "goose_us": 264.15,
+          "goose_time_change_percent": 88.07404770380917
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 202.7,
+          "goose_us": 508.65,
+          "goose_time_change_percent": 150.93734583127775
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 429.45,
+          "goose_us": 1344.4,
+          "goose_time_change_percent": 213.05157759925487
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 2.5,
+          "goose_us": 1.15,
+          "goose_time_change_percent": -54.0
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 14,
+          "goose_us": 11.6,
+          "goose_time_change_percent": -17.14285714285715
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 10.45,
+          "goose_us": 13.3,
+          "goose_time_change_percent": 27.272727272727295
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 8.7,
+          "goose_us": 9.1,
+          "goose_time_change_percent": 4.597701149425282
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 50.7,
+          "goose_us": 54.55,
+          "goose_time_change_percent": 7.593688362919115
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 58.75,
+          "goose_us": 65.8,
+          "goose_time_change_percent": 11.99999999999999
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 302.25,
+          "goose_us": 602.75,
+          "goose_time_change_percent": 99.42100909842846
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 378.55,
+          "goose_us": 795.05,
+          "goose_time_change_percent": 110.02509576013733
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 597.1,
+          "goose_us": 2095.6,
+          "goose_time_change_percent": 250.96298777424212
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 5.2,
+          "goose_us": 6.1,
+          "goose_time_change_percent": 17.307692307692292
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 31.1,
+          "goose_us": 26.3,
+          "goose_time_change_percent": -15.434083601286176
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 31.7,
+          "goose_us": 31.45,
+          "goose_time_change_percent": -0.7886435331230235
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 36.75,
+          "goose_us": 36.5,
+          "goose_time_change_percent": -0.6802721088435382
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 153.05,
+          "goose_us": 189.8,
+          "goose_time_change_percent": 24.011760862463237
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 176.85,
+          "goose_us": 210.15,
+          "goose_time_change_percent": 18.829516539440206
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 1322.55,
+          "goose_us": 2428,
+          "goose_time_change_percent": 83.58474159767117
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 1549.15,
+          "goose_us": 3977.15,
+          "goose_time_change_percent": 156.73111060904367
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 2817.5,
+          "goose_us": 13429.15,
+          "goose_time_change_percent": 376.6335403726708
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 160.5,
+          "goose_us": 259,
+          "goose_time_change_percent": 61.37071651090342
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 66.2,
+          "goose_us": 69.5,
+          "goose_time_change_percent": 4.984894259818717
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 528.2,
+          "goose_us": 728.7,
+          "goose_time_change_percent": 37.959106399091255
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 217.65,
+          "goose_us": 144.25,
+          "goose_time_change_percent": -33.72386859637032
+        }
+      ],
+      "all_outputs_equal_native": true,
+      "performance_limit": "Uncontrolled competing load; synthetic tensor profiles are not end-to-end Apex speeds.",
+      "goose_source_sha256": "a88223754940d330b2b1830cfa9dd40950a937edde23f7bda50bc495d1d34910"
+    },
+    "cpu-moe-tiled-register": {
+      "status": "PASS_CORRECT_OPERATION_SERIES_PRELIMINARY",
+      "counter_free": true,
+      "method": "Actual GGML MoE operation; identical Goose controller in both arms, native C++ tiled versus Goose tiled; persistent threadpool poll=0; weights/setup outside timed region; two extra warmups, five samples each of twenty graph executions; output checked after each sample.",
+      "cases": 58,
+      "comparison": [
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.1,
+          "goose_us": 0.9,
+          "goose_time_change_percent": -18.181818181818187
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 4.1,
+          "goose_us": 4.8,
+          "goose_time_change_percent": 17.073170731707332
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 6.1,
+          "goose_us": 5.7,
+          "goose_time_change_percent": -6.5573770491803245
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 4.5,
+          "goose_us": 4.3,
+          "goose_time_change_percent": -4.444444444444451
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 26,
+          "goose_us": 8.85,
+          "goose_time_change_percent": -65.96153846153847
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 15.75,
+          "goose_us": 17.65,
+          "goose_time_change_percent": 12.063492063492065
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 238.35,
+          "goose_us": 256.65,
+          "goose_time_change_percent": 7.67778477029577
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 302.35,
+          "goose_us": 250.95,
+          "goose_time_change_percent": -17.00016537125848
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 575,
+          "goose_us": 596.85,
+          "goose_time_change_percent": 3.8000000000000034
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.45,
+          "goose_us": 1.25,
+          "goose_time_change_percent": -13.793103448275856
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 5.95,
+          "goose_us": 5.55,
+          "goose_time_change_percent": -6.722689075630262
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 7.95,
+          "goose_us": 8.15,
+          "goose_time_change_percent": 2.515723270440251
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 12.35,
+          "goose_us": 8.9,
+          "goose_time_change_percent": -27.935222672064775
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 18,
+          "goose_us": 18,
+          "goose_time_change_percent": 0.0
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 19.45,
+          "goose_us": 22.55,
+          "goose_time_change_percent": 15.938303341902316
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 346.25,
+          "goose_us": 467.7,
+          "goose_time_change_percent": 35.075812274368225
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 360.2,
+          "goose_us": 448.05,
+          "goose_time_change_percent": 24.389228206551916
+        },
+        {
+          "type": 12,
+          "width": 512,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 607.4,
+          "goose_us": 1011.25,
+          "goose_time_change_percent": 66.48831083305895
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 3.85,
+          "goose_us": 2.1,
+          "goose_time_change_percent": -45.45454545454546
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 8.2,
+          "goose_us": 14.2,
+          "goose_time_change_percent": 73.17073170731707
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 8.9,
+          "goose_us": 14.25,
+          "goose_time_change_percent": 60.1123595505618
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 38.25,
+          "goose_us": 29.4,
+          "goose_time_change_percent": -23.13725490196079
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 55.2,
+          "goose_us": 31.25,
+          "goose_time_change_percent": -43.38768115942029
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 38.05,
+          "goose_us": 36.4,
+          "goose_time_change_percent": -4.336399474375819
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 1289.45,
+          "goose_us": 1477.75,
+          "goose_time_change_percent": 14.60312536352708
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 1321.5,
+          "goose_us": 1659.05,
+          "goose_time_change_percent": 25.542943624668936
+        },
+        {
+          "type": 12,
+          "width": 2048,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 1916.95,
+          "goose_us": 2207.8,
+          "goose_time_change_percent": 15.172539711520905
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.3,
+          "goose_us": 1.4,
+          "goose_time_change_percent": 7.692307692307687
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 10.2,
+          "goose_us": 6.8,
+          "goose_time_change_percent": -33.33333333333333
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 8.85,
+          "goose_us": 6.6,
+          "goose_time_change_percent": -25.423728813559322
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 8.5,
+          "goose_us": 9.5,
+          "goose_time_change_percent": 11.764705882352944
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 23.95,
+          "goose_us": 34.4,
+          "goose_time_change_percent": 43.63256784968685
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 27.75,
+          "goose_us": 37.5,
+          "goose_time_change_percent": 35.13513513513513
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 150.15,
+          "goose_us": 316.9,
+          "goose_time_change_percent": 111.05561105561104
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 285.25,
+          "goose_us": 403.4,
+          "goose_time_change_percent": 41.41980718667835
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 405.75,
+          "goose_us": 1028.55,
+          "goose_time_change_percent": 153.4935304990758
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 1.75,
+          "goose_us": 1.15,
+          "goose_time_change_percent": -34.285714285714285
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 6.25,
+          "goose_us": 10.75,
+          "goose_time_change_percent": 72.0
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 11.7,
+          "goose_us": 12.9,
+          "goose_time_change_percent": 10.256410256410264
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 8.5,
+          "goose_us": 15.15,
+          "goose_time_change_percent": 78.23529411764707
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 62.05,
+          "goose_us": 48.55,
+          "goose_time_change_percent": -21.7566478646253
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 65,
+          "goose_us": 59,
+          "goose_time_change_percent": -9.230769230769232
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 393.15,
+          "goose_us": 557.5,
+          "goose_time_change_percent": 41.803382932722876
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 328.45,
+          "goose_us": 875.05,
+          "goose_time_change_percent": 166.41802405236717
+        },
+        {
+          "type": 14,
+          "width": 512,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 713.2,
+          "goose_us": 1822.95,
+          "goose_time_change_percent": 155.60151430173863
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 1,
+          "native_us": 3.45,
+          "goose_us": 6,
+          "goose_time_change_percent": 73.91304347826086
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 21.35,
+          "goose_us": 22.5,
+          "goose_time_change_percent": 5.386416861826682
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 35,
+          "goose_us": 22.75,
+          "goose_time_change_percent": -35.0
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 1,
+          "native_us": 54.9,
+          "goose_us": 31,
+          "goose_time_change_percent": -43.533697632058285
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 2,
+          "native_us": 140.95,
+          "goose_us": 191.35,
+          "goose_time_change_percent": 35.757360766229176
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 7,
+          "slots": 2,
+          "threads": 8,
+          "native_us": 197.75,
+          "goose_us": 186.15,
+          "goose_time_change_percent": -5.865992414664978
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 1,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 1,
+          "native_us": 1548.85,
+          "goose_us": 2004.3,
+          "goose_time_change_percent": 29.405688091164418
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 17,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 2,
+          "native_us": 1797.2,
+          "goose_us": 3371.25,
+          "goose_time_change_percent": 87.5834631649232
+        },
+        {
+          "type": 14,
+          "width": 2048,
+          "output": 65,
+          "tokens": 128,
+          "slots": 4,
+          "threads": 8,
+          "native_us": 2764.7,
+          "goose_us": 9545.1,
+          "goose_time_change_percent": 245.2490324447499
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 167.35,
+          "goose_us": 110.1,
+          "goose_time_change_percent": -34.20974006573051
+        },
+        {
+          "type": 12,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 70,
+          "goose_us": 68.55,
+          "goose_time_change_percent": -2.0714285714285796
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 2,
+          "native_us": 650.15,
+          "goose_us": 598,
+          "goose_time_change_percent": -8.021225870952852
+        },
+        {
+          "type": 14,
+          "width": 256,
+          "output": 4097,
+          "tokens": 1,
+          "slots": 1,
+          "threads": 8,
+          "native_us": 150.75,
+          "goose_us": 139.85,
+          "goose_time_change_percent": -7.230514096185747
+        }
+      ],
+      "all_outputs_equal_native": true,
+      "performance_limit": "Uncontrolled competing load; synthetic tensor profiles are not end-to-end Apex speeds.",
+      "goose_source_sha256": "2cb4c56b0d9c2fefa8ac3a126126dd321f658266c17ecc7a438baec95774770d"
+    }
+  },
+  "open_failure": {
+    "log": "moe-cpu-tiled-off-server.log",
+    "error": "cudaMemcpyAsync invalid argument in ggml_backend_cuda_buffer_set_tensor",
+    "new_goose_tiled_enabled": false,
+    "other_goose_components_enabled": true,
+    "root_cause_established": false,
+    "pure_cpu_isolation_passed": true
+  },
+  "qwen": "Previously passed graph/allocator milestone. Main IQ2 compute does not enter this Q4/Q6 path; no new Qwen compute claim. Reload only at major milestone.",
+  "next": [
+    "Apex validation of improved register candidate after sanitizers",
+    "Counter-free matched model runs",
+    "Retain unsuccessful variants and continue broader CPU backend migration without production promotion"
+  ]
+}

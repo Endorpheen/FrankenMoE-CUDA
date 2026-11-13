@@ -1,0 +1,6181 @@
+{
+  "generated_at": "2026-11-12T04:01:27.743593+00:00",
+  "library": "runtime/reconstructed/build/libllama-exp371.so.0.7.0",
+  "library_sha256": "9bdf9a6dae566d72fd6f8a89aa3c78b2b411d819d8307322dcd5d48c423733fd",
+  "declarations": {
+    "count": 165,
+    "all_typed": true,
+    "without_return_type": 0,
+    "duplicate_names": {},
+    "duplicates_identical": []
+  },
+  "exports": {
+    "count": 307,
+    "sample": [
+      "fg199k_can_shift",
+      "fg199k_can_use",
+      "fg199k_enabled",
+      "fg199k_generated_main",
+      "fg199k_head_after",
+      "fg199k_head_after_place",
+      "fg199k_head_after_rm",
+      "fg199k_head_start"
+    ]
+  },
+  "primitive_imports": {
+    "count": 948,
+    "total_use_sites": 2854,
+    "families": {
+      "llama": 714,
+      "ggml": 234
+    },
+    "top": {
+      "ggml_set_name": 71,
+      "ggml_row_size": 57,
+      "ggml_nbytes": 55,
+      "ggml_build_forward_expand": 43,
+      "ggml_backend_buffer_is_host": 38,
+      "ggml_nelements": 36,
+      "ggml_add": 36,
+      "ggml_set_input": 33,
+      "ggml_backend_tensor_set": 30,
+      "ggml_type_name": 29,
+      "ggml_new_tensor_1d": 28,
+      "ggml_reshape_2d": 27,
+      "llama_memory_status_combine": 27,
+      "ggml_scale": 27,
+      "ggml_get_rows": 26
+    },
+    "inventory": {
+      "ggml_abs": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_add": {
+        "uses": 36,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_add_id": {
+        "uses": 5,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_are_same_shape": {
+        "uses": 4,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_are_same_stride": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_argmax": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_argsort": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_argsort_top_k": {
+        "uses": 3,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_backend_alloc_ctx_tensors_from_buft": {
+        "uses": 11,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_alloc_ctx_tensors_from_buft_size": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_buffer_clear": {
+        "uses": 10,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buffer_free": {
+        "uses": 2,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_buffer_get_base": {
+        "uses": 10,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_buffer_get_size": {
+        "uses": 18,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buffer_get_type": {
+        "uses": 16,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buffer_get_usage": {
+        "uses": 1,
+        "files": [
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buffer_is_host": {
+        "uses": 38,
+        "files": [
+          "llama-graph.cpp",
+          "llama-impl.cpp",
+          "llama-kv-cache-msa.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-hybrid-idx.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buffer_name": {
+        "uses": 6,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_buffer_set_usage": {
+        "uses": 5,
+        "files": [
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buffer_type_t": {
+        "uses": 1,
+        "files": [
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_backend_buft_alloc_buffer": {
+        "uses": 8,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buft_get_alignment": {
+        "uses": 3,
+        "files": [
+          "llama-model-loader.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_buft_get_device": {
+        "uses": 6,
+        "files": [
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_backend_buft_is_host": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_buft_name": {
+        "uses": 24,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_cpu_buffer_type": {
+        "uses": 9,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_backend_reg": {
+        "uses": 16,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_buffer_from_host_ptr": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_dev_buffer_type": {
+        "uses": 14,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_by_type": {
+        "uses": 11,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_count": {
+        "uses": 6,
+        "files": [
+          "llama-context.cpp",
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_description": {
+        "uses": 5,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_get": {
+        "uses": 5,
+        "files": [
+          "llama-context.cpp",
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_get_extra_bufts_fn": {
+        "uses": 3,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_dev_get_props": {
+        "uses": 9,
+        "files": [
+          "llama-context.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_host_buffer_type": {
+        "uses": 5,
+        "files": [
+          "llama-context.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_dev_init": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_dev_memory": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_dev_name": {
+        "uses": 25,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_dev_supports_op": {
+        "uses": 3,
+        "files": [
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_backend_dev_type": {
+        "uses": 12,
+        "files": [
+          "llama-context.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_event_free": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_event_new": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_event_record": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_event_synchronize": {
+        "uses": 2,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_free": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_get_default_buffer_type": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_get_device": {
+        "uses": 17,
+        "files": [
+          "llama-context.cpp",
+          "llama-model-loader.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_init_by_type": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_load": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_load_all": {
+        "uses": 4,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_meta_device": {
+        "uses": 2,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_name": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_reg_by_name": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_reg_count": {
+        "uses": 5,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_reg_dev_count": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_reg_dev_get": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_reg_get": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_reg_get_proc_address": {
+        "uses": 14,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_reg_name": {
+        "uses": 2,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_backend_sched_alloc_graph": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_backend_sched_get_buffer_size": {
+        "uses": 4,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_get_buffer_type": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_get_n_copies": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_get_n_splits": {
+        "uses": 4,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_get_tensor_backend": {
+        "uses": 9,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_graph_compute_async": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_new": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_reserve": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_reserve_size": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_reset": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_backend_sched_set_buffer_growth_limits": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_set_copy_callback": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_set_eval_callback": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_set_realloc_callback": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_set_tensor_backend": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_backend_sched_split_graph": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_sched_synchronize": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_backend_split_buffer_type_fn": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_supports_op": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_backend_synchronize": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_tensor_alloc": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_backend_tensor_copy": {
+        "uses": 7,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_backend_tensor_copy_async": {
+        "uses": 1,
+        "files": [
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_tensor_get": {
+        "uses": 6,
+        "files": [
+          "llama-context.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_backend_tensor_get_async": {
+        "uses": 14,
+        "files": [
+          "llama-context.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_tensor_memset": {
+        "uses": 2,
+        "files": [
+          "llama-impl.cpp",
+          "llama-kv-cache-dsv4.cpp"
+        ]
+      },
+      "ggml_backend_tensor_set": {
+        "uses": 30,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-impl.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_backend_tensor_set_async": {
+        "uses": 5,
+        "files": [
+          "llama-context.cpp",
+          "llama-model-loader.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_backend_view_init": {
+        "uses": 6,
+        "files": [
+          "llama-context.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_bf16_to_fp32_row": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_blck_size": {
+        "uses": 8,
+        "files": [
+          "llama-context.cpp",
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_build_forward_expand": {
+        "uses": 43,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_build_forward_order": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_build_forward_select": {
+        "uses": 5,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_cast": {
+        "uses": 8,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_ceil": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_clamp": {
+        "uses": 13,
+        "files": [
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_concat": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_cont": {
+        "uses": 14,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_cont_2d": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_cpy": {
+        "uses": 3,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_cumsum": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_div": {
+        "uses": 6,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model-loader.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_dup": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_dup_tensor": {
+        "uses": 4,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_element_size": {
+        "uses": 18,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp"
+        ]
+      },
+      "ggml_exp": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_fill": {
+        "uses": 7,
+        "files": [
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_flash_attn_ext": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_flash_attn_ext_add_sinks": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_flash_attn_ext_set_n_kv_max": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_fopen": {
+        "uses": 3,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-mmap.cpp"
+        ]
+      },
+      "ggml_format_name": {
+        "uses": 13,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_fp16_to_fp32_row": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_free": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_geglu": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_geglu_erf": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_geglu_erf_split": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_geglu_split": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_gelu": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_gelu_erf": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_gen_hadamard": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_get_first_tensor": {
+        "uses": 15,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_get_max_tensor_size": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_get_name": {
+        "uses": 19,
+        "files": [
+          "llama-model-loader.cpp",
+          "llama-model-saver.cpp",
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_get_next_tensor": {
+        "uses": 14,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_get_rows": {
+        "uses": 26,
+        "files": [
+          "llama-graph.cpp",
+          "llama-memory-hybrid-idx.cpp",
+          "llama-model-loader.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_get_tensor": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_get_type_traits": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_graph_dump_dot": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_graph_n_nodes": {
+        "uses": 11,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_graph_node": {
+        "uses": 8,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_graph_overhead_custom": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_graph_size": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_group_norm": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_im2col": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_init": {
+        "uses": 19,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_is_contiguous": {
+        "uses": 7,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_is_matrix": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "ggml_is_power_of_2": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_is_quantized": {
+        "uses": 13,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_log": {
+        "uses": 5,
+        "files": [
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_log_get": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "ggml_log_set": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "ggml_mul": {
+        "uses": 24,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model-loader.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_mul_mat": {
+        "uses": 16,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_mul_mat_id": {
+        "uses": 5,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_n_dims": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_nbytes": {
+        "uses": 55,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-quant.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_nelements": {
+        "uses": 36,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_new_graph_custom": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_new_tensor_1d": {
+        "uses": 28,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_new_tensor_2d": {
+        "uses": 21,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_new_tensor_3d": {
+        "uses": 15,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_new_tensor_4d": {
+        "uses": 16,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_norm": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_nrows": {
+        "uses": 2,
+        "files": [
+          "llama-quant.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_op_name": {
+        "uses": 4,
+        "files": [
+          "llama-context.cpp",
+          "llama-model-loader.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_opt_alloc": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_dataset_get_batch_host": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_dataset_ndata": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_default_params": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_eval": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_free": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_init": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_labels": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_opt_prepare_alloc": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_pad": {
+        "uses": 6,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_permute": {
+        "uses": 8,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_pool_1d": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_prec_set_acc": {
+        "uses": 8,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_prec_set_src": {
+        "uses": 3,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "ggml_quantize_chunk": {
+        "uses": 3,
+        "files": [
+          "llama-kv-cache.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_quantize_free": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_reglu": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_reglu_split": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_relu": {
+        "uses": 4,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_repeat_4d": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_reset": {
+        "uses": 1,
+        "files": [
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_reshape_1d": {
+        "uses": 17,
+        "files": [
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_reshape_2d": {
+        "uses": 27,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_reshape_3d": {
+        "uses": 14,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_reshape_4d": {
+        "uses": 4,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_rms_norm": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_rope_ext": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_rope_ext_inplace": {
+        "uses": 1,
+        "files": [
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_row_size": {
+        "uses": 57,
+        "files": [
+          "llama-graph.cpp",
+          "llama-impl.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-hybrid-idx.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_rwkv_wkv6": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_scale": {
+        "uses": 27,
+        "files": [
+          "llama-graph.cpp",
+          "llama-model-loader.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_scale_bias": {
+        "uses": 5,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_scale_inplace": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_set_input": {
+        "uses": 33,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_set_name": {
+        "uses": 71,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-quant.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_set_output": {
+        "uses": 9,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_set_param": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_set_rows": {
+        "uses": 16,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-hybrid-idx.cpp",
+          "llama-model-loader.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_set_zero": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_sigmoid": {
+        "uses": 3,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_silu": {
+        "uses": 4,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_soft_max": {
+        "uses": 6,
+        "files": [
+          "llama-graph.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_soft_max_add_sinks": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_soft_max_ext": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_softplus": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_sort": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_sqr": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_sqrt": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_ssm_conv": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_ssm_scan": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "ggml_step": {
+        "uses": 6,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_sub": {
+        "uses": 7,
+        "files": [
+          "llama-kv-cache-dsv4.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_sum": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_sum_rows": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_swiglu": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_swiglu_clamp": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_swiglu_oai": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_swiglu_split": {
+        "uses": 2,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_tallocr_alloc": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_tallocr_new": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "ggml_tanh": {
+        "uses": 4,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_tensor_overhead": {
+        "uses": 18,
+        "files": [
+          "llama-adapter.cpp",
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_time_init": {
+        "uses": 2,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "ggml_time_us": {
+        "uses": 20,
+        "files": [
+          "llama-context.cpp",
+          "llama-impl.cpp",
+          "llama-kv-cache.cpp",
+          "llama.cpp"
+        ]
+      },
+      "ggml_top_k": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "ggml_transpose": {
+        "uses": 4,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_type_name": {
+        "uses": 29,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-model.cpp",
+          "llama-moe-cache.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_type_size": {
+        "uses": 10,
+        "files": [
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model-loader.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_unary": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "ggml_validate_row_data": {
+        "uses": 6,
+        "files": [
+          "llama-model-loader.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "ggml_view_1d": {
+        "uses": 11,
+        "files": [
+          "llama-context.cpp",
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp"
+        ]
+      },
+      "ggml_view_2d": {
+        "uses": 20,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-hybrid-idx.cpp"
+        ]
+      },
+      "ggml_view_3d": {
+        "uses": 9,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp",
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "ggml_view_4d": {
+        "uses": 10,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "ggml_view_tensor": {
+        "uses": 1,
+        "files": [
+          "llama-graph.cpp"
+        ]
+      },
+      "llama_adapter_get_alora_invocation_tokens": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_get_alora_n_invocation_tokens": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_lora": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_lora_free": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_lora_init": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_lora_init_from_file_ptr": {
+        "uses": 2,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_lora_init_impl": {
+        "uses": 2,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_lora_weight": {
+        "uses": 3,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_loras": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_adapter_meta_count": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_meta_key_by_index": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_meta_val_str": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_adapter_meta_val_str_by_index": {
+        "uses": 1,
+        "files": [
+          "llama-adapter.cpp"
+        ]
+      },
+      "llama_add_bos_token": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_add_eos_token": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_attach_threadpool": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_backend_free": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_batch_allocr": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_compat": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext": {
+        "uses": 4,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_add": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_add_embd": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_add_seq": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_add_token": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_clear": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_free": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_init": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_select_n_embd_inp": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_select_n_embd_state": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_set_decision_order": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_set_embd_state": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp",
+          "llama-graph.cpp"
+        ]
+      },
+      "llama_batch_ext_set_embd_token": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_set_output_embd": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_set_output_logits": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_ext_set_pos": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_free": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp",
+          "llama-context.cpp"
+        ]
+      },
+      "llama_batch_get_one": {
+        "uses": 1,
+        "files": [
+          "llama-batch.cpp"
+        ]
+      },
+      "llama_batch_init": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp",
+          "llama-context.cpp"
+        ]
+      },
+      "llama_chat_apply_template": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_chat_builtin_templates": {
+        "uses": 1,
+        "files": [
+          "llama-chat.cpp"
+        ]
+      },
+      "llama_clear_tensor_data": {
+        "uses": 11,
+        "files": [
+          "llama-impl.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-recurrent.cpp"
+        ]
+      },
+      "llama_context": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_context_default_params": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_copy_state_data": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_decode": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_decode_text": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_detach_threadpool": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_detokenize": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_dsv4_comp_state": {
+        "uses": 1,
+        "files": [
+          "llama-kv-cache-dsv4.cpp"
+        ]
+      },
+      "llama_encode": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_escape_whitespace": {
+        "uses": 3,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_expert_gating_func_name": {
+        "uses": 4,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_file": {
+        "uses": 6,
+        "files": [
+          "llama-mmap.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "llama_file_version_name": {
+        "uses": 3,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "llama_flash_attn_type_name": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_format_tensor_shape": {
+        "uses": 6,
+        "files": [
+          "llama-impl.cpp",
+          "llama-model-loader.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_format_win_err": {
+        "uses": 11,
+        "files": [
+          "llama-mmap.cpp"
+        ]
+      },
+      "llama_free": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_free_model": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_ftype_get_default_type": {
+        "uses": 3,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_ftype_name": {
+        "uses": 3,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "llama_get_causal_attn": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_ctx_other": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_embeddings": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_embeddings_ith": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_embeddings_layer_inp": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_embeddings_nextn": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_embeddings_nextn_ith": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_embeddings_seq": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_list_splits": {
+        "uses": 2,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "llama_get_logits": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_logits_ith": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_memory": {
+        "uses": 4,
+        "files": [
+          "llama-batch.cpp",
+          "llama-context.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_get_memory_breakdown": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_model": {
+        "uses": 9,
+        "files": [
+          "llama-batch.cpp",
+          "llama-context.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_sampled_candidates_count_ith": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_get_sampled_candidates_ith": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_sampled_logits_count_ith": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_sampled_logits_ith": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_sampled_probs_count_ith": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_sampled_probs_ith": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_sampled_token_ith": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_get_state_size": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_grammar_accept": {
+        "uses": 2,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_accept_chr": {
+        "uses": 3,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_accept_impl": {
+        "uses": 2,
+        "files": [
+          "llama-grammar.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_grammar_accept_str": {
+        "uses": 1,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_accept_token": {
+        "uses": 4,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_advance_stack": {
+        "uses": 6,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_apply_impl": {
+        "uses": 2,
+        "files": [
+          "llama-grammar.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_grammar_clone_impl": {
+        "uses": 2,
+        "files": [
+          "llama-grammar.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_grammar_detect_left_recursion": {
+        "uses": 4,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_free_impl": {
+        "uses": 3,
+        "files": [
+          "llama-grammar.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_grammar_get_rules": {
+        "uses": 1,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_get_stacks": {
+        "uses": 1,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_init_impl": {
+        "uses": 5,
+        "files": [
+          "llama-grammar.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_grammar_is_end_of_sequence": {
+        "uses": 13,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_match_char": {
+        "uses": 4,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_match_partial_char": {
+        "uses": 2,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_match_token": {
+        "uses": 3,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_reject_candidates": {
+        "uses": 3,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_grammar_reject_candidates_for_stack": {
+        "uses": 3,
+        "files": [
+          "llama-grammar.cpp"
+        ]
+      },
+      "llama_graph_n_input_tensors": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_graph_reserve": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_init_from_model": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_internal_get_tensor_map": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_io_read_device": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_io_read_file": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_io_read_host": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_io_write_device": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_io_write_dummy": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_io_write_file": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_io_write_host": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_kv_cache": {
+        "uses": 7,
+        "files": [
+          "llama-kv-cache.cpp",
+          "llama-memory-hybrid-idx.cpp",
+          "llama-memory-hybrid.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_kv_cache_context": {
+        "uses": 15,
+        "files": [
+          "llama-kv-cache-dsa-iswa.cpp",
+          "llama-kv-cache-dsa.cpp",
+          "llama-kv-cache-iswa.cpp",
+          "llama-kv-cache-msa.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-hybrid-idx.cpp",
+          "llama-memory-hybrid.cpp"
+        ]
+      },
+      "llama_kv_cache_dsa": {
+        "uses": 3,
+        "files": [
+          "llama-kv-cache-dsa.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_kv_cache_dsa_context": {
+        "uses": 6,
+        "files": [
+          "llama-kv-cache-dsa-iswa.cpp",
+          "llama-kv-cache-dsa.cpp"
+        ]
+      },
+      "llama_kv_cache_dsa_iswa": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache-dsa-iswa.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_kv_cache_dsa_iswa_context": {
+        "uses": 5,
+        "files": [
+          "llama-kv-cache-dsa-iswa.cpp"
+        ]
+      },
+      "llama_kv_cache_dsv4": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache-dsv4.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_kv_cache_dsv4_comp_context": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache-dsv4.cpp"
+        ]
+      },
+      "llama_kv_cache_dsv4_context": {
+        "uses": 5,
+        "files": [
+          "llama-kv-cache-dsv4.cpp"
+        ]
+      },
+      "llama_kv_cache_dsv4_raw_context": {
+        "uses": 3,
+        "files": [
+          "llama-kv-cache-dsv4.cpp"
+        ]
+      },
+      "llama_kv_cache_iswa": {
+        "uses": 8,
+        "files": [
+          "llama-kv-cache-iswa.cpp",
+          "llama-memory-hybrid-iswa.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_kv_cache_iswa_context": {
+        "uses": 6,
+        "files": [
+          "llama-kv-cache-iswa.cpp",
+          "llama-memory-hybrid-iswa.cpp"
+        ]
+      },
+      "llama_kv_cache_msa": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache-msa.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_kv_cache_msa_context": {
+        "uses": 5,
+        "files": [
+          "llama-kv-cache-msa.cpp"
+        ]
+      },
+      "llama_kv_lazy_buft": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "llama_kv_prepare": {
+        "uses": 2,
+        "files": [
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "llama_lazy_pp_reserving_enabled": {
+        "uses": 4,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_load_mode_from_str": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_load_mode_name": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_load_model_from_file": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_load_session_file": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_log_callback_default": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "llama_log_get": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "llama_log_internal": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "llama_log_internal_v": {
+        "uses": 2,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "llama_log_set": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "llama_log_softmax": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_max_devices": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_max_parallel_sequences": {
+        "uses": 1,
+        "files": [
+          "llama-cparams.cpp"
+        ]
+      },
+      "llama_max_tensor_buft_overrides": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_memory_can_shift": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_clear": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_get_buffers": {
+        "uses": 1,
+        "files": [
+          "llama-memory.cpp"
+        ]
+      },
+      "llama_memory_hybrid": {
+        "uses": 3,
+        "files": [
+          "llama-memory-hybrid-idx.cpp",
+          "llama-memory-hybrid.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_memory_hybrid_context": {
+        "uses": 8,
+        "files": [
+          "llama-memory-hybrid-idx.cpp",
+          "llama-memory-hybrid.cpp"
+        ]
+      },
+      "llama_memory_hybrid_idx": {
+        "uses": 4,
+        "files": [
+          "llama-memory-hybrid-idx.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_memory_hybrid_idx_context": {
+        "uses": 5,
+        "files": [
+          "llama-memory-hybrid-idx.cpp"
+        ]
+      },
+      "llama_memory_hybrid_idx_ns": {
+        "uses": 2,
+        "files": [
+          "llama-memory-hybrid-idx.cpp"
+        ]
+      },
+      "llama_memory_hybrid_iswa": {
+        "uses": 2,
+        "files": [
+          "llama-memory-hybrid-iswa.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_memory_hybrid_iswa_context": {
+        "uses": 4,
+        "files": [
+          "llama-memory-hybrid-iswa.cpp"
+        ]
+      },
+      "llama_memory_recurrent": {
+        "uses": 4,
+        "files": [
+          "llama-memory-hybrid-iswa.cpp",
+          "llama-memory-hybrid.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_memory_recurrent_context": {
+        "uses": 6,
+        "files": [
+          "llama-memory-hybrid-iswa.cpp",
+          "llama-memory-hybrid.cpp",
+          "llama-memory-recurrent.cpp"
+        ]
+      },
+      "llama_memory_seq_add": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_seq_cp": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_seq_div": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_seq_keep": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_seq_pos_max": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp",
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_seq_pos_min": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_seq_rm": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_memory_status_combine": {
+        "uses": 27,
+        "files": [
+          "llama-kv-cache-dsa-iswa.cpp",
+          "llama-kv-cache-dsa.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache-iswa.cpp",
+          "llama-kv-cache-msa.cpp",
+          "llama-memory-hybrid-iswa.cpp",
+          "llama-memory-hybrid.cpp",
+          "llama-memory.cpp"
+        ]
+      },
+      "llama_memory_status_is_fail": {
+        "uses": 10,
+        "files": [
+          "llama-kv-cache-dsa-iswa.cpp",
+          "llama-kv-cache-dsa.cpp",
+          "llama-kv-cache-dsv4.cpp",
+          "llama-kv-cache-iswa.cpp",
+          "llama-kv-cache-msa.cpp",
+          "llama-kv-cache.cpp",
+          "llama-memory-hybrid-iswa.cpp",
+          "llama-memory-hybrid.cpp",
+          "llama-memory-recurrent.cpp",
+          "llama-memory.cpp"
+        ]
+      },
+      "llama_meta_device_get_split_state": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_mlock": {
+        "uses": 3,
+        "files": [
+          "llama-mmap.cpp",
+          "llama-model-loader.cpp"
+        ]
+      },
+      "llama_mmap": {
+        "uses": 2,
+        "files": [
+          "llama-mmap.cpp"
+        ]
+      },
+      "llama_mmap_fseek": {
+        "uses": 1,
+        "files": [
+          "llama-mmap.cpp"
+        ]
+      },
+      "llama_mmap_ftell": {
+        "uses": 1,
+        "files": [
+          "llama-mmap.cpp"
+        ]
+      },
+      "llama_model": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_afmoe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_apertus": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_arcee": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_arctic": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_arwkv7": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_baichuan": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_bailingmoe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_bailingmoe2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_bailingmoe3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_base": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_beam": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_bert": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_bitnet": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_bloom": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_chameleon": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_chat_template": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_chatglm": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_clef": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_clip": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_cls_label": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_codeshell": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_cogvlm": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_cohere2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_cohere2moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_command_r": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_create": {
+        "uses": 6,
+        "files": [
+          "llama-model.cpp",
+          "llama-quant.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_model_dbrx": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_deci": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_decision_label": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_decoder_start_token": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_deepseek": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_deepseek2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_deepseek2ocr": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_deepseek32": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_deepseek4": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_default_params": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_model_desc": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_dflash": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_dflash_selector_top_k": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_dots1": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_dots3note": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_dream": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_eagle3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_ernie4_5": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_ernie4_5_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_eurobert": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_exaone": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_exaone4": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_exaone_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_falcon": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_falcon_h1": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_flint": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_free": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_model_ftype": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma3n": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma4": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma4_assistant": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma_embedding": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gemma_embedding2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_get_device": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_get_tok_embd": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_get_tok_embd_rows": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_get_vocab": {
+        "uses": 3,
+        "files": [
+          "llama-batch.cpp",
+          "llama-model.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_model_glm4": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_glm4_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_glm5_next": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_glm_dsa": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gpt2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_gptneox": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_granite": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_granite_hybrid": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_granite_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_granite_swa": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_granite_switch": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_grok": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_grovemoe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_has_decoder": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_has_encoder": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_hrm_text": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_hunyuan_dense": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_hunyuan_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_hunyuan_vl": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_hy_v3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_hy_v4": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_init_from_user": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_model_internlm2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_is_diffusion": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_is_hybrid": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_is_recurrent": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_jais": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_jais2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_jamba": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_jina_bert_v2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_jina_bert_v3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_k2_horizon": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_kimi_k3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_kimi_linear": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_kolibri1": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_laguna": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_lfm2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_lfm2moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_llada": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_llada_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_llama": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_llama4": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_llama_embed": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_load": {
+        "uses": 2,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_model_load_from_file": {
+        "uses": 2,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_model_load_from_file_impl": {
+        "uses": 5,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_model_load_from_file_ptr": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_model_load_from_splits": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_model_loader": {
+        "uses": 1,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "llama_model_maincoder": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_maion_coder": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mamba": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mamba2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_maple": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mapping": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mellum": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_meta_count": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_meta_key_by_index": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_meta_key_str": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_meta_val_str": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_meta_val_str_by_index": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mimo2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_minicpm": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_minicpm3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_minimax_01": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_minimax_m2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_minimax_m3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mistral3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mistral4": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_modern_bert": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_mpt": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_muse_glimmer": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_muse_spark": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_cls_out": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_ctx_train": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_devices": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_embd": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_embd_inp": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_embd_out": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_expert": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_head": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_head_kv": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_layer": {
+        "uses": 4,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_layer_nextn": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_params": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_swa": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_n_tokens_delay": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_nanbeige": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_nemotron": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_nemotron_h": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_nemotron_h_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_neo_bert": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_nomic_bert": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_nomic_bert_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_olmo": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_olmo2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_olmoe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_openai_moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_openelm": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_orion": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_paddleocr": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_pangu_embed": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_phi2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_phi3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_phimoe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_plamo": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_plamo2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_plamo3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_plm": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_pockettts": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_quantize": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_model_quantize_default_params": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_model_quantize_impl": {
+        "uses": 2,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_model_qwen": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen2moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen2vl": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen35": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen35moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen3moe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen3next": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen3tts": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen3vl": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen3vlmoe": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_qwen4exp": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_refact": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_rnd1": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_rope_freq_scale_train": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_rope_type": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_rwkv6": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_rwkv6qwen2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_rwkv7": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_save_to_file": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_model_saver": {
+        "uses": 3,
+        "files": [
+          "llama-model-saver.cpp"
+        ]
+      },
+      "llama_model_saver_supports_arch": {
+        "uses": 2,
+        "files": [
+          "llama-model-saver.cpp"
+        ]
+      },
+      "llama_model_seed_oss": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_set_attn_rot": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_size": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_smallthinker": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_smollm3": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_spark2_5": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_stablelm": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_starcoder": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_starcoder2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_step35": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_t5": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_t5encoder": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_talkie": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_target_layer_ids": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_target_layer_ids_n": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_vllm_decision2": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_wavtokenizer_dec": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_model_xverse": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_moe_cache": {
+        "uses": 2,
+        "files": [
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "llama_moe_cache_is_host_weight": {
+        "uses": 1,
+        "files": [
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "llama_moe_cache_layer_experts": {
+        "uses": 3,
+        "files": [
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "llama_moe_cache_same_layout": {
+        "uses": 2,
+        "files": [
+          "llama-moe-cache.cpp"
+        ]
+      },
+      "llama_mul_mat_hadamard": {
+        "uses": 15,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "llama_n_batch": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp",
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_ctx": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_ctx_seq": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_ctx_train": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_n_embd": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_n_head": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_n_layer": {
+        "uses": 1,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_n_rs_seq": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_seq_max": {
+        "uses": 2,
+        "files": [
+          "llama-batch.cpp",
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_threads": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_threads_batch": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_ubatch": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_n_vocab": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_new_context_with_model": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_numa_init": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_opt_epoch": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_opt_init": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_opt_param_filter_all": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_path_max": {
+        "uses": 3,
+        "files": [
+          "llama-mmap.cpp",
+          "llama-model-loader.cpp",
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_perf_context": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_perf_context_print": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_perf_context_reset": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_perf_sampler": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_perf_sampler_print": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_perf_sampler_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_pooling_type": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_prefetch": {
+        "uses": 2,
+        "files": [
+          "llama-impl.cpp",
+          "llama-mmap.cpp"
+        ]
+      },
+      "llama_prefetch_rows": {
+        "uses": 1,
+        "files": [
+          "llama-impl.cpp"
+        ]
+      },
+      "llama_prepare_model_devices": {
+        "uses": 2,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_print_system_info": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_process": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_quant_compute_types": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_quant_free": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_quant_init": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_quant_model_from_metadata": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_quant_tensor_allows_quantization": {
+        "uses": 1,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_relative_position_bucket": {
+        "uses": 3,
+        "files": [
+          "llama-graph.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "llama_rope_scaling_type_from_string": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_rope_scaling_type_name": {
+        "uses": 3,
+        "files": [
+          "llama-model-saver.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_rope_section_order_from_string": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_rope_section_order_name": {
+        "uses": 4,
+        "files": [
+          "llama-model-saver.cpp",
+          "llama-model.cpp"
+        ]
+      },
+      "llama_sample_dist": {
+        "uses": 6,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sample_xtc_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_accept": {
+        "uses": 4,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_adaptive_p_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_adaptive_p_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_adaptive_p_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_adaptive_p_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_adaptive_p_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_adaptive_p_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_apply": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend_begin": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend_copy_state": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend_n_nodes": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend_probe_graph": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend_probe_n_nodes": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend_support": {
+        "uses": 9,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_backend_temp_sampling": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_add": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_backend_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_backend_init": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_backend_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_backend_set_input": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_copy_state": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_default_params": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_sampler_chain_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_get": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_init": {
+        "uses": 4,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_n": {
+        "uses": 3,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_remove": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_chain_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_clone": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_copy": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_backend_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_backend_set_input": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dist_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dry_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dry_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dry_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dry_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dry_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_dry_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_backend_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_backend_set_input": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_empty_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_free": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_get_seed": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_grammar_accept_impl": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_grammar_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_grammar_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_grammar_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_grammar_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_grammar_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_greedy_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_greedy_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_greedy_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_greedy_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_greedy_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_greedy_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_greedy_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_infill_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_infill_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_infill_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_infill_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init": {
+        "uses": 22,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_adaptive_p": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_dist": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_dry": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_dry_testing": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_empty": {
+        "uses": 14,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_grammar": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_grammar_impl": {
+        "uses": 6,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_grammar_lazy": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_grammar_lazy_patterns": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_greedy": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_infill": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_logit_bias": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_min_p": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_mirostat": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_mirostat_v2": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_penalties": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_temp": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_temp_ext": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_top_k": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_top_n_sigma": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_top_p": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_typical": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_init_xtc": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_backend_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_backend_set_input": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_logit_bias_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_min_p_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_min_p_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_min_p_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_min_p_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_min_p_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_min_p_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_v2_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_v2_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_v2_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_v2_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_mirostat_v2_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_name": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_accept": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_backend_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_backend_set_input": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_penalties_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_reset": {
+        "uses": 2,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_sample": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_softmax_impl": {
+        "uses": 12,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_ext_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_ext_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_ext_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_ext_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_ext_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_ext_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_impl": {
+        "uses": 4,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_temp_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_k_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_k_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_k_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_k_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_k_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_k_impl": {
+        "uses": 3,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_k_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_n_sigma_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_n_sigma_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_n_sigma_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_n_sigma_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_p_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_p_backend_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_p_backend_init": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_p_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_p_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_top_p_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_typical_apply": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_typical_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_typical_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_typical_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_xtc_clone": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_xtc_free": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_xtc_name": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_sampler_xtc_reset": {
+        "uses": 1,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_save_session_file": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_abort_callback": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_adapter_cvec": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_adapters_lora": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_causal_attn": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_embeddings": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_embeddings_layer_inp": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_embeddings_nextn": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_n_threads": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_nextn_layer_offset": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_param": {
+        "uses": 17,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_sampler": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_state_data": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_set_warmup": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_split_path": {
+        "uses": 3,
+        "files": [
+          "llama-model-loader.cpp",
+          "llama-quant.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_split_prefix": {
+        "uses": 2,
+        "files": [
+          "llama-model-loader.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_state_get_data": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_get_size": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_load_file": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_save_file": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_get_data": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_get_data_ext": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_get_size": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_get_size_ext": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_load_file": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_save_file": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_set_data": {
+        "uses": 1,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_seq_set_data_ext": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_state_set_data": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_supports_gpu_offload": {
+        "uses": 2,
+        "files": [
+          "llama-model.cpp",
+          "llama.cpp"
+        ]
+      },
+      "llama_supports_mlock": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_supports_mmap": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_supports_rpc": {
+        "uses": 2,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_synchronize": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp",
+          "llama-kv-cache.cpp"
+        ]
+      },
+      "llama_tensor_dequantize_impl": {
+        "uses": 2,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_tensor_get_type": {
+        "uses": 3,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_tensor_get_type_impl": {
+        "uses": 2,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_tensor_quantize_impl": {
+        "uses": 2,
+        "files": [
+          "llama-quant.cpp"
+        ]
+      },
+      "llama_tensor_rows_to_f32": {
+        "uses": 3,
+        "files": [
+          "llama-model.cpp"
+        ]
+      },
+      "llama_tensor_weight": {
+        "uses": 3,
+        "files": [
+          "llama-model-loader.cpp"
+        ]
+      },
+      "llama_time_us": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_token_bos": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_cls": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_data_array_partial_sort": {
+        "uses": 4,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_token_data_array_partial_sort_inplace": {
+        "uses": 5,
+        "files": [
+          "llama-sampler.cpp"
+        ]
+      },
+      "llama_token_eos": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_eot": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_fim_mid": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_fim_pad": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_fim_pre": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_fim_rep": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_fim_sep": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_fim_suf": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_get_attr": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_get_score": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_get_text": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_is_control": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_is_eog": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_nl": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_pad": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_sep": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_token_to_piece": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_tokenize": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_unescape_rwkv_token": {
+        "uses": 3,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_unescape_whitespace": {
+        "uses": 3,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_verify_hadamard_graph": {
+        "uses": 2,
+        "files": [
+          "llama-context.cpp"
+        ]
+      },
+      "llama_version": {
+        "uses": 1,
+        "files": [
+          "llama.cpp"
+        ]
+      },
+      "llama_vocab": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_bos": {
+        "uses": 3,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_cls": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_eos": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_eot": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_fim_mid": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_fim_pad": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_fim_pre": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_fim_rep": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_fim_sep": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_fim_suf": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_get_add_bos": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_get_add_eos": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_get_add_sep": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_get_attr": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_get_score": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_get_suppress_tokens": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_get_text": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_is_control": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_is_eog": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_mask": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_n_tokens": {
+        "uses": 4,
+        "files": [
+          "llama-batch.cpp",
+          "llama-sampler.cpp",
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_nl": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_pad": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_sep": {
+        "uses": 2,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      },
+      "llama_vocab_type": {
+        "uses": 1,
+        "files": [
+          "llama-vocab.cpp"
+        ]
+      }
+    },
+    "note": "Primitives are imported, not owned: these are the ggml/llama entry points the ported code calls. They are counted per use site."
+  },
+  "checks": {
+    "no_implicit_declarations": true,
+    "duplicate_signatures_conflict": false,
+    "no_struct_layout_risk": true,
+    "implicit_check_detail": "Scanned every fg* call in the copied sources against the declared set: one name looked undeclared, fg229i_try_fill, but it is a file-local C++ function defined at line 1829, above both call sites at 1850/1871 - not an implicit external declaration. Zero real implicit declarations."
+  },
+  "size_contracts": {
+    "model": "LP64 (verified at generation time with ctypes on the build host)",
+    "sizes_bytes": {
+      "int": 4,
+      "int64_t": 8,
+      "int32_t": 4,
+      "pointer": 8,
+      "float": 4,
+      "size_t": 8
+    },
+    "structs_crossing_the_abi": 0,
+    "arrays": "passed as pointer + explicit length parameter; no implicit lengths, no owner transfer across the boundary",
+    "ownership": "the caller owns every buffer passed as a pointer; modules neither allocate nor free caller memory",
+    "verified": "return types are int(67)/int64_t(122)/void(2); parameters are scalars and pointers only, so no struct layout can drift"
+  },
+  "updated_at": "2026-11-12T04:06:07.548099+00:00",
+  "acceptance": {
+    "criterion": "all shared types have size/offset/import contracts; no implicit declarations; primitive imports separately inventoried",
+    "result": "no struct crosses the ABI (returns int/int64_t/void, parameters scalars and pointers), sizes verified on the host, arrays carry explicit lengths, caller owns all buffers; 165 typed declarations and 0 implicit; 948 primitive entry points inventoried with use sites",
+    "accepted_at": "2026-11-12T04:06:40.799759+00:00"
+  }
+}

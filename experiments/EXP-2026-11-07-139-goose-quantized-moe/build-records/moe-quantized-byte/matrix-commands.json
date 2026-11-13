@@ -1,0 +1,28 @@
+[
+  [
+    "/usr/bin/gcc-13",
+    "-O3",
+    "-march=native",
+    "-fPIC",
+    "-fno-strict-aliasing",
+    "-ffp-contract=off",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+    "--param=max-inline-insns-auto=2000",
+    "--param=max-inline-insns-single=4000",
+    "--param=inline-unit-growth=500",
+    "-DFG139_MATH_TRACE=1",
+    "-c",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-quantized-byte/matrix-unit.c",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-quantized-byte/build/matrix.o"
+  ],
+  [
+    "/usr/bin/gcc-13",
+    "-shared",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-quantized-byte/build/matrix.o",
+    "-lm",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-quantized-byte/build/libgoose-moe-matrix.so"
+  ]
+]

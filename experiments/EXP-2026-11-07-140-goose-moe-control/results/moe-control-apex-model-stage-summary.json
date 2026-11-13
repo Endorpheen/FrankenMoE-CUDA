@@ -1,0 +1,173 @@
+{
+  "status": "PASS_LIVE_APEX_COMMON_CPU_MOE_CONTROL",
+  "checks": [
+    {
+      "name": "control140-trace-128x4",
+      "original_reference": "moe-cpu-tiled-pure-off-probe",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "control140-perf-off-128x4",
+      "original_reference": "moe-cpu-tiled-pure-off-probe",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "control140-perf-on-128x4",
+      "original_reference": "moe-cpu-tiled-pure-off-probe",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "control140-perf-off-2048x16",
+      "original_reference": "moe-cpu-tiled-pure-off-2048",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "control140-perf-on-2048x16",
+      "original_reference": "moe-cpu-tiled-pure-off-2048",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    }
+  ],
+  "witness": {
+    "entries": 8640,
+    "quant_blocks": 168672,
+    "grouped_routes": 126504,
+    "chunks": 538608,
+    "fused_chunks": 0,
+    "tiled_delegations": 79440,
+    "layout_bytes": 4851524544,
+    "enabled": 1,
+    "apex_q4_calls": 1599744,
+    "apex_q6_calls": 806784
+  },
+  "trace_scope": "Process includes initialization warmup and completed128/4 request; no isolated per-request counter delta",
+  "cpu2048x16": {
+    "off": {
+      "name": "control140-perf-off-2048x16",
+      "wall_seconds": 21.524618996074423,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 20028.49,
+        "prompt_per_token_ms": 9.7795361328125,
+        "prompt_per_second": 102.25433869452964,
+        "predicted_n": 16,
+        "predicted_ms": 1484.731,
+        "predicted_per_token_ms": 98.98206666666667,
+        "predicted_per_second": 10.102840177783046
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "tokens": [
+        13,
+        198,
+        760,
+        18922,
+        11173,
+        1500,
+        369,
+        264,
+        1777,
+        314,
+        264,
+        10548,
+        21979,
+        6136,
+        25,
+        279
+      ],
+      "sampled_rss_peak_mib": 20094.3203125,
+      "process_hwm_mib": 20094.3203125,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 786.18359375,
+      "sampled_file_peak_mib": 19308.13671875,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        5.93701171875,
+        3.8876953125,
+        3.33740234375
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "on": {
+      "name": "control140-perf-on-2048x16",
+      "wall_seconds": 21.395046402933076,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 19918.503,
+        "prompt_per_token_ms": 9.72583154296875,
+        "prompt_per_second": 102.81897188759616,
+        "predicted_n": 16,
+        "predicted_ms": 1466.275,
+        "predicted_per_token_ms": 97.75166666666668,
+        "predicted_per_second": 10.23000460350207
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "tokens": [
+        13,
+        198,
+        760,
+        18922,
+        11173,
+        1500,
+        369,
+        264,
+        1777,
+        314,
+        264,
+        10548,
+        21979,
+        6136,
+        25,
+        279
+      ],
+      "sampled_rss_peak_mib": 21035.59765625,
+      "process_hwm_mib": 21035.59765625,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 786.15625,
+      "sampled_file_peak_mib": 20249.44140625,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        7.73095703125,
+        4.65185546875,
+        3.63623046875
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  },
+  "comparison": "Previous qualified Goose controller versus new common Goose controller, both retain same prior Goose Q4/Q6/tiled/Q8/vector math; CPU-only context4096 t8/tb16 b4096/ub4096 no repack/device/offload",
+  "preliminary": true,
+  "controlled_quiet_run": false,
+  "performance_acceptance": false,
+  "scope": "Apex native baseline lacks cold/bank operation;90 synthetic cold/bank/control cases passed, real Qwen integration pending",
+  "goose_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98",
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "compiler_changed": false,
+  "production_changed": false,
+  "initial_http503": "First request was sent before readiness and did not run. Same process became ready; completed request was checked. No restart from observation failure."
+}

@@ -1,0 +1,13 @@
+--- /home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/ggml-cuda/common.cuh	2026-10-21 22:42:13.392190304 +0300
++++ build-copy/ggml-cuda/common.cuh	2026-11-10 22:12:20.204228284 +0300
+@@ -286,7 +286,9 @@
+ #define VOLTA_MMA_AVAILABLE
+ #endif // !defined(GGML_USE_HIP) && __CUDA_ARCH__ == GGML_CUDA_CC_VOLTA
+ 
+-#if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA) && __CUDA_ARCH__ >= GGML_CUDA_CC_TURING
++// PROBE: force the dp4a path to see whether the ported inner product becomes reachable.
++// This is an experiment-only edit in a copied tree; production sources are untouched.
++#if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA) && __CUDA_ARCH__ >= GGML_CUDA_CC_TURING && !defined(GGML_FORCE_DP4A_PROBE)
+ #define TURING_MMA_AVAILABLE
+ #endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA) && __CUDA_ARCH__ >= GGML_CUDA_CC_TURING
+ 

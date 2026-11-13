@@ -1,0 +1,272 @@
+{
+  "routes": [
+    {
+      "method": 1,
+      "path": "/health",
+      "category": 1
+    },
+    {
+      "method": 1,
+      "path": "/v1/health",
+      "category": 1
+    },
+    {
+      "method": 1,
+      "path": "/metrics",
+      "category": 2
+    },
+    {
+      "method": 1,
+      "path": "/props",
+      "category": 3
+    },
+    {
+      "method": 2,
+      "path": "/props",
+      "category": 4
+    },
+    {
+      "method": 1,
+      "path": "/models",
+      "category": 5
+    },
+    {
+      "method": 1,
+      "path": "/v1/models",
+      "category": 5
+    },
+    {
+      "method": 2,
+      "path": "/models",
+      "category": 6
+    },
+    {
+      "method": 2,
+      "path": "/models/load",
+      "category": 7
+    },
+    {
+      "method": 2,
+      "path": "/models/unload",
+      "category": 8
+    },
+    {
+      "method": 1,
+      "path": "/models/sse",
+      "category": 9
+    },
+    {
+      "method": 3,
+      "path": "/models",
+      "category": 10
+    },
+    {
+      "method": 2,
+      "path": "/completion",
+      "category": 11
+    },
+    {
+      "method": 2,
+      "path": "/completions",
+      "category": 11
+    },
+    {
+      "method": 2,
+      "path": "/v1/completions",
+      "category": 12
+    },
+    {
+      "method": 2,
+      "path": "/chat/completions",
+      "category": 13
+    },
+    {
+      "method": 2,
+      "path": "/v1/chat/completions",
+      "category": 13
+    },
+    {
+      "method": 2,
+      "path": "/v1/chat/completions/control",
+      "category": 14
+    },
+    {
+      "method": 2,
+      "path": "/responses",
+      "category": 15
+    },
+    {
+      "method": 2,
+      "path": "/v1/responses",
+      "category": 15
+    },
+    {
+      "method": 2,
+      "path": "/audio/transcriptions",
+      "category": 16
+    },
+    {
+      "method": 2,
+      "path": "/v1/audio/transcriptions",
+      "category": 16
+    },
+    {
+      "method": 2,
+      "path": "/tts",
+      "category": 17
+    },
+    {
+      "method": 4,
+      "path": "/v1/realtime",
+      "category": 18
+    },
+    {
+      "method": 2,
+      "path": "/v1/messages",
+      "category": 19
+    },
+    {
+      "method": 2,
+      "path": "/infill",
+      "category": 20
+    },
+    {
+      "method": 2,
+      "path": "/embedding",
+      "category": 21
+    },
+    {
+      "method": 2,
+      "path": "/embeddings",
+      "category": 21
+    },
+    {
+      "method": 2,
+      "path": "/v1/embeddings",
+      "category": 22
+    },
+    {
+      "method": 2,
+      "path": "/rerank",
+      "category": 23
+    },
+    {
+      "method": 2,
+      "path": "/reranking",
+      "category": 23
+    },
+    {
+      "method": 2,
+      "path": "/v1/rerank",
+      "category": 23
+    },
+    {
+      "method": 2,
+      "path": "/v1/reranking",
+      "category": 23
+    },
+    {
+      "method": 2,
+      "path": "/v1/systemone",
+      "category": 24
+    },
+    {
+      "method": 2,
+      "path": "/tokenize",
+      "category": 25
+    },
+    {
+      "method": 2,
+      "path": "/detokenize",
+      "category": 26
+    },
+    {
+      "method": 2,
+      "path": "/apply-template",
+      "category": 27
+    },
+    {
+      "method": 2,
+      "path": "/chat/completions/input_tokens",
+      "category": 28
+    },
+    {
+      "method": 2,
+      "path": "/v1/chat/completions/input_tokens",
+      "category": 28
+    },
+    {
+      "method": 2,
+      "path": "/responses/input_tokens",
+      "category": 29
+    },
+    {
+      "method": 2,
+      "path": "/v1/responses/input_tokens",
+      "category": 29
+    },
+    {
+      "method": 2,
+      "path": "/v1/messages/count_tokens",
+      "category": 30
+    },
+    {
+      "method": 1,
+      "path": "/lora-adapters",
+      "category": 31
+    },
+    {
+      "method": 2,
+      "path": "/lora-adapters",
+      "category": 32
+    },
+    {
+      "method": 1,
+      "path": "/slots",
+      "category": 33
+    },
+    {
+      "method": 2,
+      "path": "/slots/:id_slot",
+      "category": 34
+    },
+    {
+      "method": 1,
+      "path": "/v1/stream",
+      "category": 35
+    },
+    {
+      "method": 2,
+      "path": "/v1/streams/lookup",
+      "category": 36
+    },
+    {
+      "method": 3,
+      "path": "/v1/stream",
+      "category": 37
+    },
+    {
+      "method": 1,
+      "path": "/cors-proxy",
+      "category": 38
+    },
+    {
+      "method": 2,
+      "path": "/cors-proxy",
+      "category": 38
+    },
+    {
+      "method": 1,
+      "path": "/tools",
+      "category": 39
+    },
+    {
+      "method": 2,
+      "path": "/tools",
+      "category": 39
+    }
+  ],
+  "dynamic": [
+    "GCP AIP health/predict routes (register_gcp_compat)"
+  ]
+}

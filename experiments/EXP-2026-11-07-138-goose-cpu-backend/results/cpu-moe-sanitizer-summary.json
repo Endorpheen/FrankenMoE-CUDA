@@ -1,0 +1,20 @@
+{
+  "status": "PASS_ASAN_UBSAN_LSAN_NEW_CPU_MOE",
+  "graphs_each_mode": {
+    "off": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 58,
+      "values": 336464,
+      "actual_ggml_compute": true
+    }
+  },
+  "all_output_bytes_equal_native_unsanitized": true,
+  "instrumented": "New Goose controller, Q4/Q6/Q8 units and modified ggml-cpu.c including CPU task/barrier code",
+  "uninstrumented": "Other inherited baseline objects including native C++ tiled/repack kernels and base library",
+  "not_claimed": "No TSan/race-free proof, no independent full security audit, no superiority over llama.cpp",
+  "commands": "variants/cpu-moe-sanitize/build/commands.json"
+}

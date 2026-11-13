@@ -1,0 +1,13 @@
+{
+  "status": "PASS_TYPED_FILL_ABI_LOCAL_GATES_MODEL_DEFERRED_TO_CYCLE_END",
+  "change": "Replace flat int32 pointer arithmetic across C++ fill structs with typed vector/field access. Goose algorithm/generated C and CPU DSO unchanged. Cache/budget release and scoped sanitized differential corpus rerun and passed.",
+  "new_model_requests": 0,
+  "prepared_followup": "Not launched after owner requested minimum runs,one common Apex gate at cycle end.",
+  "model_evidence": "Earlier EXP150 request belongs to its recorded pre-correction llama hash;do not claim it is the exact current whole-candidate artifact. CPU registry/scratch DSO is unchanged and remains the exact recorded/tested CPU artifact. P1-10 is incomplete.",
+  "current_sha256": {
+    "source/expert-cache/llama-moe-cache.cpp": "ff6b31d2fef5cf2706591d320b9168cd4399583c042a70cce24b5b06aa7fdc0d",
+    "source/expert-cache/services.cpp": "8488c74a71ddfc9b7b2bebcfefbde3cb82305edd8b04c1bc4a8e6cda02fcf979",
+    "variants/cpu-backend/run/libllama.so.0": "69e07b260b19866d681850f63d4495c67a6b70f080799555fd43481ac19fde2f",
+    "variants/cpu-backend/run/libggml-cpu.so.0.27.0": "ab6f61ea793d607830c0f13d2f08e2c7de1d41bbf8766ebd6dd56543e29cc274"
+  }
+}

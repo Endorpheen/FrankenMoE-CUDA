@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "the prefix keeps a set right at the tail limit",
+    "status": "CAUGHT",
+    "failures": 9414,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the extend branch is taken when it does not fit",
+    "status": "CAUGHT",
+    "failures": 482,
+    "exit_code": 1
+  },
+  {
+    "mutation": "truncation stops one token early",
+    "status": "CAUGHT",
+    "failures": 247,
+    "exit_code": 1
+  },
+  {
+    "mutation": "truncated tokens stay marked as used",
+    "status": "CAUGHT",
+    "failures": 54,
+    "exit_code": 1
+  },
+  {
+    "mutation": "deferred sets keep their tokens marked",
+    "status": "CAUGHT",
+    "failures": 5602,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the concatenation includes deferred sets",
+    "status": "CAUGHT",
+    "failures": 2940,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a zero tail keeps the block running",
+    "status": "CAUGHT",
+    "failures": 1970,
+    "exit_code": 1
+  }
+]

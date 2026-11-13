@@ -1,0 +1,16 @@
+{
+  "status": "GENERATED_BUILT_INTEGRATION_PENDING",
+  "producer": {
+    "stage": "self-hosted EXP300 C11 frame-default Stage3",
+    "sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-454151b3449b",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp300-frame-scope-state/frame-default-bootstrap-v1",
+    "status": "PASS_CURRENT_C11_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "scope": "Current C11 scope/block source snapshot: Current production source serial bootstrap/fixed point after C11 scope/block integration. Confirms preservation of the working compiler, not full C11 scope/block producer/lifecycle acceptance.",
+    "compiler_source_changed": false
+  },
+  "goose_sha256": "03b95dcdc508a7c7606fb724bc82071a30d8a5f5aa82038751f4330138dc4868",
+  "scope": "Whole per-worker graph traversal,skip/fusion selection,abort callback order and barriers. Fused arithmetic also Goose. Native OS pool waits/atomic primitives,metadata use-count access and original node dispatcher remain explicit services; not full scheduler/backend closure.",
+  "production_changed": false,
+  "compiler_changed": false
+}

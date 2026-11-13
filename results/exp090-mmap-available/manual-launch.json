@@ -1,0 +1,14 @@
+{
+  "source": "User-provided stdout from manual EXP090 launch",
+  "executable": "/home/end0/AI/LlamaServer/exp090-mmap-available/build/bin/llama-server",
+  "registration_log": "pin_mmap_experts: registered 120 mapped expert ranges (18600.47 MiB), no weight copy",
+  "registered_ranges": 120,
+  "registered_mib": 18600.47,
+  "no_weight_copy": true,
+  "lazy_reservation_log": "sched_reserve: lazy worst-case PP reservation",
+  "context_tokens": 262144,
+  "listening": "http://127.0.0.1:8081",
+  "server_ready": true,
+  "new_performance_measurement": false,
+  "assistant_started_model": false
+}

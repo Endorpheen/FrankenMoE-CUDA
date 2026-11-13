@@ -1,0 +1,3 @@
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-quantized/activation.goose:47: error: not implemented yet: defined wrapping float-to-integer conversion
+    var whole:i32=x as i32;
+                    ^

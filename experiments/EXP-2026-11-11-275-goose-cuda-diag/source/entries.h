@@ -1,0 +1,3 @@
+#pragma once
+#define FG275D_CB_diag_f32 fg275dd_gg_function_1
+#define FG275D_CB_diag_f16 fg275dd_gg_function_7

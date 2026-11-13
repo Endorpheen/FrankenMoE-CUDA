@@ -1,0 +1,32 @@
+FG_SELFHOST_ELEMENT mode=0 op=0 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=1 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=2 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=3 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=4 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=5 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=6 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=7 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=8 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=9 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=10 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=11 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=12 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=13 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=14 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=15 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=16 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=17 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=18 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=19 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=20 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=21 calls=43 values=134328
+FG_SELFHOST_ELEMENT mode=0 op=22 calls=132 values=134328
+FG_SELFHOST_ELEMENT mode=1 op=0 calls=174 values=148584
+FG_SELFHOST_ELEMENT mode=1 op=1 calls=59 values=148584
+FG_SELFHOST_ELEMENT mode=1 op=2 calls=178 values=148584
+FG_SELFHOST_ELEMENT mode=1 op=3 calls=174 values=148584
+FG_SELFHOST_ELEMENT total_values=3683880
+FG_SELFHOST_GRAPH enabled=0 walks=0 nodes=0 leafs=0 alloc_requests=0 release_requests=0 checks=0,0,0,0
+FG_SELFHOST_LIFETIME enabled=0 parents=0 views=0 shadow_checks=0 parent_release_requests=0 owner_release_requests=0 digest=0
+FG_SELFHOST_COALESCE enabled=0 calls=0 shadow_checks=0 digest=0
+FG_SELFHOST_ALLOC enabled=0 calls=0 reuse_hits=0 shadow_checks=0 digest=0

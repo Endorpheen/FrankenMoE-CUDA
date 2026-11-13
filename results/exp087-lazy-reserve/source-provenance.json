@@ -1,0 +1,33 @@
+{
+  "reference_project_commit": "a7c411cd327feb7c2ec375314daa6a3af5a7ae0c",
+  "source_base_commit": "1b44e30775dcb2f93952116b05f89e5bd797fb00",
+  "prerequisite_patch": "patches/flint-apex-prefix-baseline.patch",
+  "feature_patch": "patches/lazy-pp-reservation.patch",
+  "feature_patch_sha256": "20789a84deafb124e362110a24f46f6ef1cb243c99e6d2ae8c0078df9b54e99d",
+  "compiled_source_sha256": {
+    "src/llama-context.cpp": "f069d280ee73a975c08947f760099abe7155d88ab24897ea44ba9d0aef318b34",
+    "ggml/src/ggml-backend.cpp": "0f210a21b365de5a3f28db834d02d71894a60274021c8e14bdecb9638f39ac3d",
+    "ggml/src/ggml-alloc.c": "add873fb1dd96d7bbc696f78a12aa3e278d14830670f1776fa16fe353eeeda6f",
+    "ggml/include/ggml-alloc.h": "5e41931dc4306cfb665a5314d85b662246cf45a8ede4291caa750abcfa40cfb5",
+    "ggml/include/ggml-backend.h": "f7ef2cb377db6c241ed75fbe31e27c5b7a0cd34b790f94f9b4e0e112cb2eed90"
+  },
+  "patch_replay_matches_compiled_sources": true,
+  "unchanged_libllama_control_relink_sha256": "ae8c25117528bc7500e05a03746440fa3fa5ae003d9a40a7f9c4e0b4177e12ce",
+  "unchanged_ggml_base_control_relink_sha256": "aa5274b5b7645223d61949b792b58747aa07ed8c28eb5397b72962cc70952686",
+  "candidate_build_directory": "/home/end0/AI/LlamaServer/exp087-lazy-reserve",
+  "only_changed_runtime_components": [
+    "libllama.so.0.7.0",
+    "libggml-base.so.0.27.0"
+  ],
+  "unit_allocator_gate": "13 behavioral cases PASS; expected injected OOM logged and recovered",
+  "status": "ACCEPTED",
+  "gate_results": [
+    "metrics.json",
+    "api-state-result.json",
+    "noalloc-result.json",
+    "cache-capacity-result.json",
+    "flint-compatibility-result.json",
+    "disable-result.json",
+    "baseline-activation.json"
+  ]
+}

@@ -1,0 +1,12 @@
+#pragma once
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+uint64_t fg288h_get(int64_t,int64_t,int64_t);
+void fg288h_put(int64_t,int64_t,int64_t,uint64_t);
+void fg288h_fail(int64_t);
+uint8_t fg288dh_run(int64_t);
+#ifdef __cplusplus
+}
+#endif

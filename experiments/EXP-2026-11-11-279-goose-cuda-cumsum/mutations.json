@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "warp scan adds every step without the lane condition",
+    "status": "CAUGHT",
+    "failures": 9673
+  },
+  {
+    "mutation": "warp scan ladder steps by 1",
+    "status": "CAUGHT",
+    "failures": 9564
+  },
+  {
+    "mutation": "final offset drops the carry",
+    "status": "CAUGHT",
+    "failures": 6144
+  },
+  {
+    "mutation": "carry is replaced instead of accumulated",
+    "status": "CAUGHT",
+    "failures": 4096
+  },
+  {
+    "mutation": "host block cap 256 -> 512",
+    "status": "CAUGHT",
+    "failures": 6
+  }
+]

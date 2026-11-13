@@ -1,0 +1,142 @@
+{
+  "module": "row-reductions",
+  "runner": "trusted parent; this worker executed nothing",
+  "oracle_policy": "numeric cases compare bit-exact against an independent same-order CPU oracle that reproduces native reduce_row_f32 order: eight guarded strided partials per thread, ascending-j fold from 0.0f, warp butterfly 16/8/4/2/1, shared phase when bs>32, single f32 mean division on lane 0. Naive serial-order results may be logged as diagnostics but never decide pass/fail.",
+  "conventions": "dst surrounded by guard bytes; shared buffer poisoned before runs where bs=32; instrumented shims count fg169r_* calls per thread; nsm values are example SM counts, parent substitutes the real device nsm and recomputes policy expectations; inputs are exactly representable in f32 unless stated",
+  "cases": [
+    {
+      "id": "RR-C01",
+      "target": "rr_sum_rows_f32",
+      "property": "eight accumulators, tail path, lane0-only",
+      "launch": {"ncols": 8, "nrows": 3, "bs": 32},
+      "input": "x[r*8+c] = (r+1) + 0.25*c",
+      "expected": "dst[r] bit-exact vs same-order oracle; exactly 3 fg169r_store calls",
+      "checks": "ncols<bs keeps everything in one gather pass with guarded exact-0.0 tail adds; guard bytes untouched"
+    },
+    {
+      "id": "RR-C02",
+      "target": "rr_sum_rows_f32",
+      "property": "policy bs=128, multi-pass loop",
+      "launch": {"ncols": 1024, "nrows": 4096, "nsm": 1024},
+      "input": "alternating +1.0/-1.0 with a 2^-20 ramp along the per-thread visit order",
+      "expected": "bit-exact vs same-order oracle for all 4096 rows",
+      "checks": "policy (4096/1024)=4 and ncols=1024 give bs=128; 8 gather passes per thread, no tail"
+    },
+    {
+      "id": "RR-C03",
+      "target": "rr_sum_rows_f32",
+      "property": "ragged tail handling",
+      "launch": {"ncols": 511, "nrows": 2048, "nsm": 1024},
+      "input": "x[r*511+c] = c*0.5 - 128.0",
+      "expected": "bit-exact vs same-order oracle",
+      "checks": "policy bs=32 (2048/1024=2, 511<1024); ragged last pass guarded with exact 0.0 additions"
+    },
+    {
+      "id": "RR-C04",
+      "target": "rr_sum_rows_f32",
+      "property": "bs=512 multi-warp reduce",
+      "launch": {"ncols": 4096, "nrows": 1, "nsm": 148},
+      "expected": "bit-exact vs same-order oracle",
+      "checks": "policy 512 (1/148=0<2); 8 full passes; cross-warp phase reduces 16 shared partials"
+    },
+    {
+      "id": "RR-C05",
+      "target": "rr_mean_rows_f32",
+      "property": "single mean division",
+      "launch": {"ncols": 1000, "nrows": 2048, "nsm": 1024},
+      "input": "x[r*1000+c] = r + c*2^-12",
+      "expected": "dst[r] = f32(same-order sum) / f32(1000) bit-exact",
+      "checks": "tail 1000%32=8; division happens once after the full reduction, never per-thread or per-warp"
+    },
+    {
+      "id": "RR-C06",
+      "target": "rr_row_block_size",
+      "property": "native nrows/nsm block-size policy",
+      "kind": "pure function matrix, rows are [ncols, nrows, nsm, expected_block_size]",
+      "rows": [
+        [512, 1, 148, 512],
+        [2048, 1, 148, 512],
+        [1023, 295, 148, 512],
+        [1024, 295, 148, 512],
+        [1023, 296, 148, 32],
+        [1024, 296, 148, 128],
+        [512, 296, 148, 32]
+      ],
+      "expected": "exact integer match on every row, no tolerance",
+      "checks": "integer-division boundary 2*nsm-1 vs 2*nsm (295/296 for nsm=148); ncols 1023/1024 boundary; (nrows/nsm)<2 takes precedence over ncols; rr_row_shared_floats returns 32 for bs>32 and 0 for bs=32"
+    },
+    {
+      "id": "RR-C07",
+      "target": "rr_sum_rows_f32_strided",
+      "property": "higher-strided row addressing",
+      "launch": {"ncols": 64, "ne1": 3, "ne2": 2, "nb1": 320, "nb2": 1024, "nb3": 4096, "nrows": 6, "bs": 32},
+      "expected": "dst[row] bit-exact vs same-order oracle over row base x + (i1*nb1+i2*nb2+i3*nb3)/4",
+      "checks": "i1=row%ne1, i2=(row/ne1)%ne2, i3=row/(ne1*ne2); nb1=320 leaves a 16-float guard gap per row and guard bytes stay untouched; a contiguous twin with equal logical values yields bit-identical dst"
+    },
+    {
+      "id": "RR-C08",
+      "target": "rr_sum_rows_f32_strided",
+      "property": "broadcast zero stride",
+      "launch": {"ncols": 32, "ne1": 2, "ne2": 2, "nb1": 128, "nb2": 256, "nb3": 0, "nrows": 8, "bs": 32},
+      "expected": "rows differing only in i3 read the same row base and produce equal dst values",
+      "checks": "nb3=0 allowed (strides nonnegative per shared contract); no access beyond the ne1*ne2 plane"
+    },
+    {
+      "id": "RR-C09",
+      "target": "rr_mean_rows_f32_strided",
+      "property": "strided mean with mostly-idle warps",
+      "launch": {"ncols": 96, "ne1": 5, "ne2": 1, "nb1": 512, "nb2": 512, "nb3": 512, "nrows": 5, "bs": 512},
+      "expected": "dst[r] = f32(same-order sum) / f32(96) bit-exact",
+      "checks": "policy bs=512 for nrows=5 (5/148=0<2); threads 96..511 contribute exact zero partials through the full reduce"
+    },
+    {
+      "id": "RR-C10",
+      "target": "rr_sum_rows_f32",
+      "property": "bs=32 shared-free path",
+      "launch": {"ncols": 33, "nrows": 2048, "nsm": 1024, "bs": 32},
+      "expected": "bit-exact vs same-order oracle (warp butterfly only)",
+      "checks": "poisoned shared buffer unchanged after the run: no shared load/store when bs=32; two passes with a tail of 1"
+    },
+    {
+      "id": "RR-C11",
+      "target": "rr_reduce_row",
+      "property": "PDL sync placement",
+      "kind": "structural trace via instrumented native shim",
+      "expected": "per thread exactly one fg169r_sync occurs before the first fg169r_load, and no fg169r_store or fg169r_barrier precedes it",
+      "checks": "event order recorded for bs in {32,128,512} across all four entries; source inspection confirms no lc-style primitive exists in the module"
+    },
+    {
+      "id": "RR-C12",
+      "target": "rr_sum_rows_f32",
+      "property": "eight independent accumulators vs naive serial sum",
+      "launch": {"ncols": 16384, "nrows": 1, "nsm": 148, "bs": 512},
+      "input": "x[i] = 2^24 for i < bs, else 1.0; every thread visits its huge element first, then 31 ones across 4 gather passes",
+      "expected": "bit-exact vs same-order oracle; the module result legitimately differs from a naive serial f32 oracle by a visible ulp gap because slot partials keep the ones exact while serial order rounds each one away at 2^24 magnitude; that divergence is expected, not a defect",
+      "checks": "a single running per-thread sum fails bit-equality on this input, proving the eight independent accumulators and the ascending-j fold are in effect"
+    },
+    {
+      "id": "RR-C13",
+      "target": "rr_sum_rows_f32",
+      "property": "i64 addressing beyond int32",
+      "launch": {"ncols": 4096, "row": 524288, "bs": 512, "mode": "single-block harness, grid=(1,1,1), row passed as scalar"},
+      "expected": "dst[524288] bit-exact vs same-order oracle; base element offset row*ncols = 2^31 exceeds INT32_MAX and must be computed in i64",
+      "checks": "no 32-bit wrap in the row base computation; the scalar row argument makes a one-block targeted harness possible; full-tensor policy would select bs=128, the harness may launch either policy size"
+    },
+    {
+      "id": "RR-C14",
+      "target": "rr_sum_rows_f32 and rr_mean_rows_f32",
+      "property": "lane0-only output",
+      "launch": {"ncols": 2048, "nrows": 16, "nsm": 148},
+      "expected": "exactly 16 fg169r_store calls, all targeting dst and all issued by tid==0 threads; no store ever targets the x region",
+      "checks": "store-counting shim across both entries; policy bs=512 (16/148=0<2)"
+    },
+    {
+      "id": "RR-C15",
+      "target": "bridge scope guard for rr_mean_rows_f32",
+      "property": "CUB branch deferral",
+      "shape": {"nrows": 1, "ncols": 65537},
+      "expected": "parent must not launch the Goose mean entries for nrows==1 with ncols>65536 (or ncols>32768 under the CUDA-graph-enabled native variant): native takes cub::DeviceReduce::Sum plus divide_by_count there; route the shape to the native fg169r oracle path or reject before any GPU effect",
+      "checks": "bridge-level negative case refuses the launch; source inspection confirms no DeviceReduce emulation exists in the module and none is claimed"
+    }
+  ]
+}

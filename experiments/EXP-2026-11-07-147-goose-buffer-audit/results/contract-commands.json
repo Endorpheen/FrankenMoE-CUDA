@@ -1,0 +1,76 @@
+[
+  {
+    "mode": "release",
+    "compile": [
+      "/usr/bin/gcc-13",
+      "-O2",
+      "/tmp/fg147_buffer_policy.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/build/backend-base-goose.o",
+      "-lm",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/build/buffer-policy-contract"
+    ],
+    "execute": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/build/buffer-policy-contract"
+    ],
+    "exit_code": 0,
+    "cases": 148
+  },
+  {
+    "mode": "release",
+    "compile": [
+      "/usr/bin/gcc-13",
+      "-O2",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/source/cpu-backend/backend/allocation-contract.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/build/backend-goose.o",
+      "-lm",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/build/backend-allocation-contract"
+    ],
+    "execute": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/cpu-backend/build/backend-allocation-contract"
+    ],
+    "exit_code": 0,
+    "cases": 9
+  },
+  {
+    "mode": "sanitized",
+    "compile": [
+      "/usr/bin/gcc-13",
+      "-O1",
+      "/tmp/fg147_buffer_policy.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/sanitized/build/backend-base-goose.o",
+      "-lm",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/sanitized/build/buffer-policy-contract",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "-g"
+    ],
+    "execute": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/sanitized/build/buffer-policy-contract"
+    ],
+    "exit_code": 0,
+    "cases": 148
+  },
+  {
+    "mode": "sanitized",
+    "compile": [
+      "/usr/bin/gcc-13",
+      "-O1",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/source/cpu-backend/backend/allocation-contract.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/sanitized/build/backend-goose.o",
+      "-lm",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/sanitized/build/backend-allocation-contract",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "-g"
+    ],
+    "execute": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp147-audit-20261107/variants/sanitized/build/backend-allocation-contract"
+    ],
+    "exit_code": 0,
+    "cases": 9
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "xxs scale factor 0.25 -> 0.5 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "xxs sign index 7*il -> 6*il (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "xs grid mask 511 -> 255 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "xs scales index ib -> 2*ib (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]

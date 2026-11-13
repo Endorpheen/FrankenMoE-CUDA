@@ -1,0 +1,30 @@
+from pathlib import Path
+import re,json,hashlib,subprocess
+F=Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108');E=F/'experiments/EXP-2026-11-08-174-goose-cuda-set-rows';S=E/'source';B=F/'runtime/exp174/build';pin=json.loads((E/'source-checkpoint.json').read_text())['compiler'];C=Path(pin['compiler']);assert hashlib.sha256(C.read_bytes()).hexdigest()==pin['sha256']
+def body(g,m):
+ at=m.end();depth=1
+ while depth:depth+=(g[at]=='{')-(g[at]=='}');at+=1
+ return g[m.start():at]
+rows=[]
+for name in ['host','device']:
+ q=subprocess.run([str(C),'-o',str(S/(name+'-generated.c')),str(S/(name+'.goose'))],capture_output=True,text=True);assert q.returncode==0,q.stderr
+ g=(S/(name+'-generated.c')).read_text();prefix='fg176rs_'if name=='host'else'fg176rd_';qual=lambda s:re.sub(r'\b(gg_|ggf_|gs_)',lambda m:prefix+m[1],s);main=g[g.rfind('static void gg_function_0('):];entries=[x for x in re.findall(r'\b(gg_function_\d+)\(',main)if x!='gg_function_0']
+ if name=='host':
+  assert len(entries)==1;ffi=['#pragma once','#include <stdint.h>','#ifdef __cplusplus','extern "C" {','#endif'];ct={'i64':'int64_t','u64':'uint64_t','u32':'uint32_t','i32':'int32_t','bool':'uint8_t','f32':'float'}
+  for m in re.finditer(r'extern "([^"]+)" fn \w+\(([^)]*)\)(?:->(\w+))?;', (S/'host.goose').read_text()):
+   ps=[]
+   for p in m[2].split(','):
+    if p.strip():n,t=p.split(':');ps.append(ct[t.strip()])
+   ffi.append((ct[m[3]]if m[3]else'void')+' '+m[1]+'('+','.join(ps)+');')
+  ffi+=['uint8_t fg176rh_run(int64_t);','#ifdef __cplusplus','}','#endif'];(S/'host-ffi.h').write_text('\n'.join(ffi)+'\n');(S/'host-qualified.c').write_text(qual(g));(S/'host-unit.c').write_text('#include "host-ffi.h"\n#define main fg176rh_generated_main\n#include "host-qualified.c"\n#undef main\nuint8_t fg176rh_run(int64_t p){return '+prefix+entries[0]+'(p,1);}\n')
+ else:
+  assert len(entries)==2;tm=re.search(r'(?m)^typedef struct[^\n]*gg_type_\d+',g);assert tm;types=g[g.rfind('\n\n',0,tm.start()):g.index('static void gg_quote(')];layouts=[]
+  for m in re.finditer(r'struct (gg_type_\d+) \{\n([^}]+)\};',g):layouts.append((m[1],re.findall(r'\b(uint32_t|int64_t) (f\d+);',m[2])))
+  typ,fs=next((t,fs)for t,fs in layouts if len(fs)==3 and all(x[0]=='uint32_t'for x in fs));fields=[x[1]for x in fs];(S/'device-types-generated.cuh').write_text('#pragma once\n#include <stdint.h>\n'+qual('typedef struct{void*data;int64_t len;}gg_slice;\n'+types)+'using fg176r_FastDiv = '+prefix+typ+';\nstatic_assert(sizeof(fg176r_FastDiv)==12,"Goose FastDiv POD width");\n')
+  funcs=['static void gg_fail(const char*){asm("trap;");}']
+  for m in re.finditer(r'(?m)^static [^\n{]+? (gg_function_\d+|gg_view|gg_double_bits|gg_index|gg_div|gg_mod|gg_udiv|gg_umod)\([^;{}]*\)\s*\{',g):
+   if m[1]!='gg_function_0':funcs.append(body(g,m))
+  text=qual('\n'.join(x[:x.index('{')].rstrip()+';'for x in funcs)+'\n'+'\n'.join(funcs));text=re.sub(r'(?m)^static ','static __device__ __forceinline__ ',text);assert not any(x in text for x in ['gg_get_stack(','gg_allocate(','gg_append(','gg_ref(']);(S/'device-functions-generated.cuh').write_text('#pragma once\n'+text+'\n#define FG176R_Q4 '+prefix+entries[0]+'\n#define FG176R_F32 '+prefix+entries[1]+'\n')
+  (E/'device-abi.json').write_text(json.dumps(dict(entries=[prefix+x for x in entries],fastdiv_type=prefix+typ,fields=fields,producer=pin),indent=2)+'\n')
+ rows.append(dict(module=name,entries=entries,generated_c_sha256=hashlib.sha256(g.encode()).hexdigest()))
+(E/'emission.json').write_text(json.dumps(dict(status='PASS_CURRENT_SELFHOSTED_SOURCE_AND_MECHANICAL_EXTRACTION',compiler=pin,modules=rows),indent=2)+'\n');print('PASS host/device actual selfhosted emission,FFI and mechanical device compute')

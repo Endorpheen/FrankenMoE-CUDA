@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "block stride 56 -> 57",
+    "status": "CAUGHT",
+    "failures": 3
+  },
+  {
+    "mutation": "qh index drops il/2",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scale shift 3*(ib16%4) -> 2*(ib16%4)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "half pattern s3 mask 0xf000 -> 0x0f00",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "destination 8*il -> 4*il",
+    "status": "CAUGHT",
+    "failures": 8
+  }
+]

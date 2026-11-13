@@ -1,0 +1,54 @@
+{
+  "module": "argmax",
+  "provenance": {
+    "native_source": "argmax/inputs/argmax.cu: kernel argmax_f32 + host ggml_cuda_argmax",
+    "model": "z-ai/glm-5.3-flash",
+    "status": "source-only draft; no compile, GPU, default, rollback or Apex acceptance claimed; parent owns bridge, builds and all gates"
+  },
+  "device": {
+    "file": "argmax/device.goose",
+    "entry": "argmax_lane(x:u64, dst:u64, ncols:i64, row:i64, tid:i32, bs:i32)",
+    "entry_effect": "per-thread lane computation plus only the listed memory/barrier effects; no return value; one block reduces exactly one row",
+    "call_contract": "bridge launches grid=(rows,1,1), block=(bs,1,1) with bs=policy.block_size(cols) and calls the entry once per thread: x=raw byte address of contiguous F32 X element 0, dst=raw byte address of I32 output element 0, row=blockIdx.x, tid=threadIdx.x, bs=blockDim.x, ncols=ne00",
+    "imports_fx": {
+      "fg169a_load": "load(p:u64,i:u64)->f32 reads *(float*)(p+i*4); X element access",
+      "fg169a_store": "store(p:u64,i:u64,v:i32) writes *(int32_t*)(p+i*4)=v; dst element access",
+      "fg169a_sloadf": "sloadf(i:u64)->f32 reads shared float slot i; native shared_maxval[i], i in 0..31",
+      "fg169a_sstoref": "sstoref(i:u64,v:f32) writes shared float slot i",
+      "fg169a_sloadi": "sloadi(i:u64)->i32 reads shared int slot i; native shared_argmax[i], i in 0..31",
+      "fg169a_sstorei": "sstorei(i:u64,v:i32) writes shared int slot i",
+      "fg169a_shuffle": "shuffle(v:f32,offset:i32)->f32 is __shfl_xor_sync(0xFFFFFFFF,v,offset,32)",
+      "fg169a_ishuffle": "ishuffle(v:i32,offset:i32)->i32 is __shfl_xor_sync(0xFFFFFFFF,v,offset,32) on i32",
+      "fg169a_barrier": "barrier() is __syncthreads(); entered by all threads or none since n_warps is uniform"
+    },
+    "semantics_preserved": [
+      "scan over strided cols tid,tid+bs,... updates only on strict val>maxval; NaN never recorded, per-thread ties keep the earlier col",
+      "initial state maxval=-FLT_MAX (literal -340282346638528859811704183484516925440.0 = 0xFF7FFFFF) and argmax=-1; rows whose max never strictly exceeds -FLT_MAX (all -FLT_MAX or all NaN) keep the -1 sentinel",
+      "both warp reductions are shfl_xor butterflies with offsets 16,8,4,2,1 and strict >; native lane/warp reduction order kept; no fmaxf and no stable first-index rewrite",
+      "multi-warp phase: lane0 of each warp stores slot warp_id for float and int; barrier; warp0 only: lanes<n_warps reload slots, lanes>=n_warps retain their first-butterfly values exactly as native; second butterfly over all 32 lanes",
+      "store dst[row]=argmax only from warp0 lane0; shared phase skipped entirely when bs==32"
+    ],
+    "index_policy": "row, base=row*ncols and col are i64 so increments cannot wrap; argmax narrows col as! i32; policy bounds cols<=2147483647 keep it representable"
+  },
+  "host_policy": {
+    "file": "argmax/policy.goose",
+    "imports": "none; policy is pure computation and every fg169a_ import is a device effect",
+    "entries": {
+      "policy": "policy(cols:i64,rows:i64)->Launch{ok:bool,bs:i32,blocks:i64,shared:i64}; single query entry, ok=false must reject before any launch effect",
+      "block_size": "block_size(cols:i64)->i32 is the native rule min(1024, ceil(cols/32)*32); multiple of 32, at least 32",
+      "grid": "grid(rows:i64)->i64 is rows, one block per row (native num_blocks=nrows)",
+      "shared_bytes": "shared_bytes(bs:i32)->i64 is 256 when bs>32 else 0",
+      "valid": "valid(cols:i64,rows:i64)->bool: own bounds cols in 1..2147483647 (argmax must fit I32) and rows in 1..2147483647 (CUDA grid.x limit); then rows*cols fits i64"
+    }
+  },
+  "scope_gaps": [
+    "fg169a_ bridge effects, kernel launch, stream selection and buffer span checks are parent-owned",
+    "parent must reject non-contiguous X before launch (native ggml_is_contiguous assert); the Goose policy sees only scalars",
+    "parent must provision at least 256 bytes of shared memory whenever bs>32 (32 float + 32 int slots); device never touches shared when bs==32",
+    "dst must hold at least rows I32 elements and the X span must cover rows*cols F32 elements",
+    "scalar strided scan only; no vectorization, CUB, heap, slices or sort runtime; no original numerical functions called",
+    "fn main in both files is a retained dummy; parent must not execute it",
+    "cases.json is an independent behavior contract, not an executed fixture; no test or parity claims are made here"
+  ],
+  "parent_review": "See review-findings.json;this contract is the original worker proposal,not the integrated ABI."
+}

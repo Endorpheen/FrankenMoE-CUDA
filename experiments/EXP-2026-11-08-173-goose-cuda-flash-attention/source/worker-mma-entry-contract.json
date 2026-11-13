@@ -1,0 +1,166 @@
+{
+  "artifact": "apex-fattn-mma-entry/device.goose",
+  "provenance": "Goose port of the outer __global__ flash_attn_ext_f16 (fattn-mma-f16.cuh L1796-2003); the exact native outer function was read and mirrored line by line, not guessed. Fixed Apex Ada instantiation DKQ=DV=256, ncols2=8, ncols1 in {4,8}, nthreads=128, stream_k=true (fixed by call site L2105). All process_tile numerics are owned by the separately ported Goose process module (inputs/process-draft.goose); this entry declares one extern adapter to that actual Goose module and performs no original C++ math callback. Native config tables L38-266 resolve per architecture at compile time; only the Ampere rows (256,256,32) and (256,256,64) match the fixed config (nthreads=128, occupancy=2, nbatch_fa=32, nbatch_K2=nbatch_V2=nbatch_combine=128, nstages_target=2, Q_in_reg=true). No runtime acceptance is claimed; the parent owns the CUDA bridge, raw-primitive bindings, codegen, real GPU parity gates and rollback.",
+  "fixed_config": {
+    "dkq": 256, "dv": 256, "d2_half2": 128, "ncols2": 8, "ncols1": [4, 8], "ncols": "ncols1*8 (32 or 64)",
+    "nthreads": 128, "nwarps": 4, "warp_size": 32, "cols_per_warp": 16, "cols_per_thread": 2,
+    "np": "nwarps*cols_per_warp/ncols = (4*16)/(ncols1*8): 2 when ncols1==4, else 1 (native L609/L1229 active branch)",
+    "nbatch_fa": 32, "nbatch_K2": 128, "nbatch_V2": 128, "nbatch_combine": 128,
+    "q_in_reg": true, "nstages": 2, "swizzled": true, "stream_k": true,
+    "use_logit_softcap": false, "v_is_k_view": false, "use_sparse": false,
+    "oob_check": "process-side false (process-draft.goose fixed specialization)",
+    "shared_bytes": 33792,
+    "hardware": "CUDA Ada (AMPERE_MMA_AVAILABLE + CP_ASYNC_AVAILABLE path); all other architectures/configs deferred"
+  },
+  "entry": {
+    "goose_symbol": "fattn_mma (device.goose)",
+    "call_convention": "Parent CUDA wrapper calls it once per block thread of a (32,4,1) block (warp_size=32 x nwarps=4, native nthreads=128). gridDim.x comes from the host stream-K policy (stream_k=true at L2105, blocks_num=(x,1,1), launch_fattn L1168-1186); blockIdx.y/z are unused. Native c1/c2 grid/tile policy is host-provided via ncols1 and gx; the entry contains no forced fallback and no grid heuristic. PDL launch attributes (programmatic stream serialization) are parent-owned; the entry performs only the device-side griddepcontrol wait as its first statement, exactly native L1820. No host launch policy, no CUDA runtime API, no VM heap and no local-address intrinsic inside the entry; the only raw effects are pdl_sync and one int32 KV_max word load.",
+    "parameters": [
+      {"name": "q_p", "type": "u64", "native": "const char * Q_ptr", "sem": "global byte address of the F32 Q tensor base (Q->data)"},
+      {"name": "k_p", "type": "u64", "native": "const char * K_ptr", "sem": "global byte address of the K base; K is pre-converted F16 by the host (need_f16_K path L1031-1057), so rows are half2 elements"},
+      {"name": "v_p", "type": "u64", "native": "const char * V_ptr", "sem": "global byte address of the V base; V is pre-converted F16 by the host (need_f16_V path L1059-1093)"},
+      {"name": "mask_p", "type": "u64", "native": "const char * mask_ptr", "sem": "global byte address of the F16 mask base or 0; caller requirement: non-null whenever ncols2>1, because the ncols2==1&&!mask ternary of L1921-1922 is compile-time absent for ncols2=8 and mask+nb33*(sequence%ne33) is formed unconditionally"},
+      {"name": "sinks_p", "type": "u64", "native": "const char * sinks_ptr", "sem": "global byte address of the f32 sinks base or 0 (optional sinks, forwarded as sinks_f)"},
+      {"name": "kv_max_p", "type": "u64", "native": "const int * KV_max_ptr", "sem": "global byte address of the dense dynamic KV-limit int32 array written by flash_attn_mask_to_KV_max as KV_max[sequence*ne31+jt] with ne31=ntiles_x==iter_j (fattn-common.cuh L723, L1122-1131), or 0 to disable the clamp; little-endian int32 read"},
+      {"name": "dst_p", "type": "u64", "native": "float * dst_ptr", "sem": "global byte address of the f32 output base (stream-K passes KQV->data, launch_fattn L1258)"},
+      {"name": "dst_meta_p", "type": "u64", "native": "float2 * dst_meta_ptr", "sem": "global byte address of the float2 stream-K fixup buffer base (dst_tmp_meta, allocated when ntiles_dst%blocks_num.x!=0, L1188-1190)"},
+      {"name": "scale", "type": "f32", "native": "const float scale", "sem": "op_params[0] scale, forwarded bit-exact to process_tile"},
+      {"name": "max_bias", "type": "f32", "native": "const float max_bias", "sem": "ALiBi max_bias; unused by this instantiation (slope is the constant 1.0f because ncols2==8), param preserved"},
+      {"name": "m0", "type": "f32", "native": "const float m0", "sem": "ALiBi slope base; unused here, param preserved"},
+      {"name": "m1", "type": "f32", "native": "const float m1", "sem": "ALiBi slope base; unused here, param preserved"},
+      {"name": "n_head_log2", "type": "i32", "native": "const uint32_t n_head_log2", "sem": "ALiBi head log2; unused here, param preserved; width note: native u32, values < 2^31 so i32 carriage is bit-safe"},
+      {"name": "logit_softcap", "type": "f32", "native": "const float logit_softcap", "sem": "unused; caller requirement: 0.0f, because the use_logit_softcap=false instantiation is selected iff op_params logit_softcap==0.0f (L2055-2056)"},
+      {"name": "ne00", "type": "i32", "native": "const int32_t ne00", "sem": "Q head size (DKQ); unused by outer control, param preserved"},
+      {"name": "ne01_z", "type": "i32", "native": "const uint3 ne01, field z", "sem": "Q->ne[1] query count; the native fastdiv struct is collapsed to its exact divisor z (fastmodulo replaced by explicit % everywhere); iter_j=ceil(ne01_z/ncols1)"},
+      {"name": "ne02", "type": "i32", "native": "const int32_t ne02", "sem": "Q head count"},
+      {"name": "ne03", "type": "i32", "native": "const int32_t ne03", "sem": "Q sequence count (batch)"},
+      {"name": "nb01", "type": "i32", "native": "const int32_t nb01", "sem": "Q row stride in bytes; stride_Q1=nb01/8 float2 elements"},
+      {"name": "nb02", "type": "i32", "native": "const int32_t nb02", "sem": "Q head stride in bytes; stride_Q2=nb02/8"},
+      {"name": "nb03", "type": "i32", "native": "const int32_t nb03", "sem": "Q sequence stride in bytes; used in native i32 offset arithmetic at L1919 (sign-extended on pointer add, wrap preserved)"},
+      {"name": "ne10", "type": "i32", "native": "const int32_t ne10", "sem": "K head size; unused, param preserved"},
+      {"name": "ne11", "type": "i32", "native": "const int32_t ne11", "sem": "K/V n_kv for this launch (host passes n_kv=K->ne[1], L1261); iter_k=ceil(ne11/nbatch_fa)=ceil(ne11/32)"},
+      {"name": "ne12", "type": "i32", "native": "const int32_t ne12", "sem": "K/V head count; gqa_ratio=ne02/ne12"},
+      {"name": "ne13", "type": "i32", "native": "const int32_t ne13", "sem": "K/V sequence count; unused in the dense path (only the use_sparse KV_max rebase L1894-1896 reads it), param preserved"},
+      {"name": "nb11", "type": "i32", "native": "const int32_t nb11", "sem": "K row stride in bytes of the preconverted F16 plane; stride_K=nb11/4 half2 elements"},
+      {"name": "nb12", "type": "i32", "native": "const int32_t nb12", "sem": "K head stride in bytes (preconverted plane)"},
+      {"name": "nb13", "type": "i64", "native": "const int64_t nb13", "sem": "K sequence stride in bytes (i64 in native, L1920)"},
+      {"name": "nb21", "type": "i32", "native": "const int32_t nb21", "sem": "V row stride in bytes (preconverted plane); stride_V=nb21/4 since V_is_K_view=false (L1888)"},
+      {"name": "nb22", "type": "i32", "native": "const int32_t nb22", "sem": "V head stride in bytes (preconverted plane)"},
+      {"name": "nb23", "type": "i64", "native": "const int64_t nb23", "sem": "V sequence stride in bytes (i64 in native, L1925)"},
+      {"name": "ne31", "type": "i32", "native": "const int32_t ne31", "sem": "mask columns; unused by outer control (dense path), param preserved"},
+      {"name": "ne32", "type": "i32", "native": "const int32_t ne32", "sem": "unused, param preserved"},
+      {"name": "ne33", "type": "i32", "native": "const int32_t ne33", "sem": "mask sequence count; mask plane offset nb33*(sequence%ne33); caller requirement ne33>=1 when the mask is used"},
+      {"name": "nb31", "type": "i32", "native": "const int32_t nb31", "sem": "mask row stride in bytes; stride_mask=nb31/2 half elements"},
+      {"name": "nb32", "type": "i32", "native": "const int32_t nb32", "sem": "unused, param preserved"},
+      {"name": "nb33", "type": "i64", "native": "const int64_t nb33", "sem": "mask sequence stride in bytes (i64 in native, L1922)"},
+      {"name": "ncols1", "type": "i32", "native": "template<int ncols1>", "sem": "queries per tile, 4 or 8, host tile/grid policy (no forced fallback); enters iter_j and np"},
+      {"name": "bx", "type": "i32", "native": "blockIdx.x", "sem": "stream-K work block index; also forwarded to process_tile as bx (fixup meta indexing)"},
+      {"name": "gx", "type": "i32", "native": "gridDim.x", "sem": "number of stream-K work blocks from host policy; forwarded to process_tile"},
+      {"name": "tx", "type": "i32", "native": "threadIdx.x", "sem": "lane index, forwarded to process_tile"},
+      {"name": "ty", "type": "i32", "native": "threadIdx.y", "sem": "warp index 0..3, forwarded to process_tile"},
+      {"name": "qregs", "type": "u64", "native": "wrapper-provided per-thread POD", "sem": "per-thread POD byte pointer, 256 B (64 u32), Q_B register-tile storage; forwarded untouched"},
+      {"name": "vkqregs", "type": "u64", "native": "wrapper-provided per-thread POD (task name: vregs)", "sem": "per-thread POD byte pointer, 256 B, VKQ_C register-tile storage; forwarded untouched"},
+      {"name": "kmax", "type": "u64", "native": "wrapper-provided per-thread POD (task name: max)", "sem": "per-thread POD byte pointer, 8 B (2 f32), KQ_max storage; forwarded untouched"},
+      {"name": "rowsums", "type": "u64", "native": "wrapper-provided per-thread POD (task name: sum)", "sem": "per-thread POD byte pointer, 8 B, KQ_rowsum storage; forwarded untouched"},
+      {"name": "smem", "type": "u64", "native": "extern __shared__ base", "sem": "dynamic shared memory generic byte base (33792 B), provided by wrapper; forwarded untouched"}
+    ]
+  },
+  "raw_effects": [
+    {"symbol": "fg175p_pdl_sync", "c_sig": "void fg175p_pdl_sync(void)", "isa": "griddepcontrol.wait (cudaGridDependencySynchronize); mirrors ggml_cuda_pdl_sync() placed as the first kernel statement at native L1820; this kernel contains no ggml_cuda_pdl_lc() call; must compile to a no-op on pre-sm90 targets exactly like the native macro", "binding": "new member of the fg175p primitive family shared with the process module; the vec sibling experiment used a module-scoped fg175v_sync, so the parent binds the actual symbol once for this family"},
+    {"symbol": "fg175p_ldu32", "c_sig": "uint32_t fg175p_ldu32(uint64_t p, uint64_t i)", "isa": "generic/global u32 word load at p+4*i; used ONLY for the dense KV_max int32 reads (element index sequence*iter_j+jt, little-endian int32 reinterpreted from u32); same symbol family already declared by inputs/process-contract.json"}
+  ],
+  "extern_process_tile": {
+    "symbol": "fg175m_process_tile",
+    "implementation": "the actual Goose process module (inputs/process-draft.goose, function process_tile); NOT the original C++ flash_attn_ext_f16_process_tile and no C++ math callback",
+    "exact_goose_signature": "process_tile(q_f2:u64,k_h2:u64,v_h2:u64,mask_h:u64,sinks_f:u64,dstk:u64,dstk_fixup:u64,scale:f32,slope:f32,ne01z:i64,ne02:i32,gqa_ratio:i32,stride_q1:i64,stride_q2:i64,stride_k:i64,stride_v:i64,stride_mask:i64,jt:i32,zt_gqa:i32,kb0_start:i32,kb0_stop:i32,ncols1:i32,np:i32,needs_fixup:bool,is_fixup:bool,bx:i32,gx:i32,tx:i32,ty:i32,qregs:u64,vkqregs:u64,kmax:u64,rowsums:u64,smem:u64)",
+    "match_status": "VERBATIM MATCH with inputs/process-draft.goose L79: parameter names, order, types and count (34) are identical; no mismatch for the parent to adapt. If the built process artifact registers a different link symbol than the draft's self-declared fg175m_process_tile (draft header line 1), the parent adapts only the extern string in device.goose (single point, no signature change).",
+    "argument_mapping": "q_f2/k_h2/v_h2/mask_h/dstk are derived here exactly as native L1919-1925; dstk_fixup is the raw dst_meta_p base; scale forwarded; slope is the constant 1.0f (native L1929 takes the ncols2==1 ? get_alibi_slope(...) : 1.0f else-branch at compile time for ncols2=8); ne01z=(i64)ne01_z; logit_softcap is not a process parameter because the process module is the softcap-free fixed specialization (native receives it but the active specialization ignores it)"
+  },
+  "boundary_ownership": {
+    "outer_entry_owns": [
+      "PDL wait placement (L1820, first statement)",
+      "stream-K kbc/kbc_stop work partition (L1899-1900)",
+      "kb0_start/kb0_stop initialization and re-derivation (L1907-1908, L1949-1953)",
+      "uniform-tile loop condition kb0_stop==iter_k (L1910)",
+      "sequence/z_KV/zt_gqa/jt decode (L1912-1915)",
+      "zt_Q (L1917)",
+      "all per-tile pointer bases and stride derivation (L1883-1888, L1919-1926)",
+      "dense KV_max kb0_stop clamp (L1933-1935)",
+      "exact needs_fixup/is_fixup flag selection (L1936-1947, L1986-1990)",
+      "final partial tile guard (L1956-1958)"
+    ],
+    "process_module_owns": "everything listed in inputs/process-contract.json (Q staging, Q_B ldmatrix, initial cp.async preloads, kb0 loop, softmax, sinks, meta combine, VKQ staging, output/fixup); the entry never touches shared memory, the POD bytes, or any floating-point value"
+  },
+  "outer_control_facts": [
+    "pdl_sync() is the first statement (L1820); parent owns the PDL launch attributes; on pre-sm90 the native macro compiles empty so the primitive may be a no-op there.",
+    "gqa_ratio=ne02/ne12 (L1881).",
+    "Strides: stride_Q1=nb01/8, stride_Q2=nb02/8, stride_K=nb11/4, stride_mask=nb31/2, stride_V=nb21/4 (V_is_K_view=false) (L1883-1888); all i32 divisions then widened to i64 for the process signature.",
+    "iter_k=ceil(ne11/32), iter_j=ceil(ne01_z/ncols1), iter_z_gqa=ceil(gqa_ratio/8) (L1890-1892) with explicit divisors replacing fastdiv.",
+    "use_sparse=false: the L1894-1896 KV_max rebase and the sparse_indices pointer (L1828, L1927) are absent.",
+    "Stream-K partition: total=iter_k*iter_j*iter_z_gqa*ne12*ne03 computed in i32 with the native left-associative operand order (wrap preserved); kbc=(int)((i64)bx*total/gx); kbc_stop=(int)((i64)(bx+1)*total/gx); the i64 mul/div then int truncation of L1899-1900 is preserved.",
+    "kb0_start=kbc%iter_k; kb0_stop=min(iter_k, kb0_start+kbc_stop-kbc) with native left-associative summation (L1907-1908).",
+    "Uniform-tile loop: while kbc<kbc_stop && kb0_stop==iter_k (L1910).",
+    "Decode (L1912-1915): sequence=kbc/(iter_k*iter_j*iter_z_gqa*ne12); z_KV=(kbc-...*sequence)/(iter_k*iter_j*iter_z_gqa); zt_gqa=(kbc-...-...*z_KV)/(iter_k*iter_j); jt=(kbc-...-...*zt_gqa)/iter_k; identical integer results with explicit divisors.",
+    "zt_Q=z_KV*gqa_ratio+zt_gqa*ncols2 (L1917).",
+    "Q base uses native i32 offset arithmetic nb03*sequence+nb02*zt_Q sign-extended on pointer add (L1919); K base uses i64 nb13 (L1920); V base uses i64 nb23 (L1925, V_is_K_view=false so V is never the K view).",
+    "mask_h=mask+nb33*(sequence%ne33) formed unconditionally; the ncols2==1&&!mask nullptr ternary is compile-time absent for ncols2=8 (L1921-1922).",
+    "dstk=dst+8*((sequence*ne01_z*ne02+zt_Q)*128) bytes (L1923, DV/2=128 float2 elements).",
+    "sinks_f = sinks_p!=0 ? sinks_p+4*zt_Q : 0 (L1926).",
+    "slope=1.0f constant: the get_alibi_slope call lives in the ncols2==1 branch (L1929); max_bias/m0/m1/n_head_log2 remain entry params (param map preserved) but are unused.",
+    "Dense KV_max clamp (L1933-1935 else-if): kb0_stop=min(kb0_stop, (int)KV_max[sequence*iter_j+jt]/32) with native signed i32 division; int32 little-endian load via fg175p_ldu32; index layout matches the flash_attn_mask_to_KV_max writer KV_max[sequence*ne31+jt] with ne31==ntiles_x==iter_j (fattn-common.cuh L723/L1122-1131).",
+    "Fixup flags: loop iterations carry is_fixup=false and needs_fixup=(kb0_start!=0) (L1936-1947); the final partial tile carries is_fixup=true and needs_fixup=false (L1986-1990); these are the exact native unaligned/uniform boundary flags.",
+    "Loop advance: kbc+=iter_k; kbc-=kbc%iter_k; kb0_start=0; kb0_stop=min(iter_k, kbc_stop-kbc) (L1949-1953).",
+    "Final tile guard: native 'if (kbc>=kbc_stop) return;' (L1956-1958) is mirrored as 'if kbc<kbc_stop { ... }' around the only following statement, which is control-flow identical (no top-level return construct is used).",
+    "np=(nwarps*cols_per_warp)/ncols=(4*16)/(ncols1*8): 2 for ncols1=4, 1 for ncols1=8 (L609/L1229 active branch); ncols1 in {4,8} is a caller requirement; the static_assert nwarps*(cols_per_warp/ncols2)%ncols1==0 (L1242) holds for both (8%4==0, 8%8==0).",
+    "stream_k=true is fixed at the call site (L2105): the grid is 1-D (blocks_num=(x,1,1), launch_fattn L1168-1186), blockIdx.y/z unused, dst_meta is the stream-K fixup buffer; the non-stream-K parallel-blocks branch of launch_fattn (L1191-1224) is dead for this kernel.",
+    "async_kv_preload = nstages==2 && !use_sparse = true for this config (L2103); it only affects parent launch attributes; the 2-stage preload protocol itself is implemented inside the process/iterate modules per the process contract."
+  ],
+  "native_guards_and_caller_requirements": {
+    "compile_time_guards_vacuous_for_this_instantiation": [
+      "L1834 use_logit_softcap && !(DKQ==128||256||512): use_logit_softcap=false (instantiation selected iff logit_softcap==0.0f, L2055-2056); parent must bind this entry only when logit_softcap==0.0f.",
+      "L1838 DKQ==192 && ncols2!=8 && ncols2!=16: DKQ=256.",
+      "L1843 !ggml_cuda_flash_attn_ext_mma_f16_may_use_sparse(...) && use_sparse: use_sparse=false.",
+      "L1847-1873 Volta/Turing/AMD ncols guards: architecture-compile-time; the Ada build takes the AMPERE_MMA_AVAILABLE path where none of them exist.",
+      "Config static_asserts L28-34 (nthreads<=512 and %32, nbatch_fa<=256 and %32, nbatch_K2/V2/combine limits, occupancy<=8, nstages in 1..2) hold for the fixed config and stay host-side."
+    ],
+    "runtime_caller_requirements_preserved_not_revalidated": [
+      "kb0_start<kb0_stop for every process_tile call (native comment L1349: 'kb0_start is always < kb0_stop so the last iter can be executed unconditionally'); the host KV_max scan and stream-K partition must maintain this including the dense clamp kb0_stop=KV_max/32.",
+      "mask non-null whenever ncols2>1 and ne33>=1 when the mask is used (L1921-1922 else branch is compiled in).",
+      "gridDim.x>=1 (kbc division).",
+      "scan_mask host gate requires K->ne[1]%FATTN_KQ_STRIDE==0 and the KV_max buffer sized ntiles_x*ne03 int32 (fattn-common.cuh L1117-1133).",
+      "cp.async 16 B alignment of the shared/global addresses (process-side, per the process contract)."
+    ],
+    "builtin_assume": "The only __builtin_assume in the supplied translation unit is 'tid < D' in flash_attn_combine_results (fattn-common.cuh L953), which belongs to the separate vec combine kernel and is not part of this port; the MMA outer/process/iter functions contain none. No global architecture guarantee is assumed anywhere.",
+    "no_global_architecture_guarantee": "Config resolution (L234-266) is per-arch at compile time in native; this entry implements exactly the Ampere-row instantiation for (256,256,ncols1*8) and must not be launched on other architectures or configurations."
+  },
+  "numerical_contract": [
+    "The entry performs no floating-point arithmetic; scale is forwarded bit-exact as f32 and slope is the literal 1.0f.",
+    "All index/address arithmetic is integer with native widths and operand order: i32 products/divisions where native uses int (including the int32 total product at L1899, wrapping exactly as native), i64 where native promotes via int64_t or int64_t strides, and sign-extending i32->i64 before pointer adds for native i32 pointer offsets.",
+    "The dense KV_max read is a raw little-endian int32 load; kb0_stop=min(kb0_stop, kv/32) uses native signed i32 division (scan outputs are non-negative).",
+    "fastdiv/fastmodulo are replaced by explicit / and % on the exact same divisors (task-allowed); results are the exact native integer quotients/remainders."
+  ],
+  "per_thread_pod_storage": {
+    "contract": "The four buffers (task names: qregs 256 B, vregs 256 B, max 8 B, sum 8 B) arrive as raw u64 entry arguments from the parent CUDA wrapper and are forwarded verbatim to process_tile parameters 30-33 (qregs, vkqregs, kmax, rowsums). The entry never reads, writes, initializes or offsets these bytes; initialization, layout and lifetime rules are the process module's (see inputs/process-contract.json per_thread_pod_storage).",
+    "why_forwarded": "Task requires no VM heap and no local-address intrinsic; the native outer kernel also holds no per-thread state beyond indices, so forwarding is the exact native dataflow."
+  },
+  "shared_memory": {
+    "total_bytes": 33792,
+    "note": "Native L2033-2043 for this config: nbytes_shared_combine=64*132*4=33792; nbytes_shared_Q=ncols*132*4 (16896 for ncols1=4, 33792 for ncols1=8); nbytes_shared_KV(2-stage)=32*(128+128)*4=32768; nbytes_shared_mask=ncols1*(32/2+4)*4=ncols1*80 (320/640); Q_in_reg union gives max(combine, max(Q, KV+mask))=33792 for both ncols1 variants. The wrapper provides the base; the entry performs no shared loads/stores/barriers itself.",
+    "map_reference": "byte map, swizzle and barrier schedule are owned by the process module: see inputs/process-contract.json shared_memory"
+  },
+  "unresolved_capabilities": [
+    "as! narrowing is demonstrated in the supplied examples only for u32->i32; it is used here for u32->i32 (KV_max value) and i64->i32 (kbc/kbc_stop truncation mirroring the native int assignments at L1899-1900). Parent codegen must confirm i64->i32 truncating semantics or adapt those two sites.",
+    "fg175p_pdl_sync is a newly declared primitive symbol (the vec sibling used module-scoped fg175v_sync; the fg175p family in the process contract had no PDL member); the parent binds the actual ISA name once.",
+    "The extern symbol fg175m_process_tile is taken from the process draft's self-description (its header line 1); if the built process artifact registers a different symbol the parent adapts the single extern string in device.goose.",
+    "Mixed-width arithmetic is always explicitly cast (i32 sides widened before mixing with i64/u64); no implicit cross-width promotion is assumed beyond identical-width operations.",
+    "Unused entry parameters (max_bias, m0, m1, n_head_log2, logit_softcap, ne00, ne10, ne13, ne31, ne32, nb32) are accepted per supplied example precedent (goose-example.goose fattn_vec carries unused native params).",
+    "No top-level return statement is used; the native early return is mirrored by a guarded final block (control-flow identical)."
+  ],
+  "deferred_scope": [
+    "All other DKQ/DV/ncols1/ncols2/nwarps/nbatch instantiations and the per-arch config tables (L38-266); Volta, Turing-only, RDNA3/4, CDNA, MUSA, Blackwell.",
+    "use_logit_softcap=true, use_sparse=true (sparse indices path L1828/L1894-1896/L1927/L1931-1932), V_is_K_view=true (MLA 576), ncols2==1 (ALiBi slope branch plus the process-side oob_check path), nstages<=1 synchronous loader variants.",
+    "Host work stays outside the entry exactly as native: grid/stream-K policy choice (launch_fattn L1145-1190), KV_max scan launch (L1117-1133), F16 preconversion of K/V (L1031-1093), dst_meta allocation, occupancy query, cudaFuncSetAttribute, PDL launch attributes.",
+    "The separate fixup/combine kernels flash_attn_stream_k_fixup_uniform/general and flash_attn_combine_results (fattn-common.cuh L729-978) are not part of this entry.",
+    "No compiler or production files were touched; no shell, network or agent tools were used; no GPU execution is claimed. Parent codegen and real GPU tests are mandatory and parent-owned."
+  ]
+}

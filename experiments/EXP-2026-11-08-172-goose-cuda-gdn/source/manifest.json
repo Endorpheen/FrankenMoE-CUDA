@@ -1,0 +1,29 @@
+{
+  "status": "LINKED_PENDING_FULL_GDN_GPU_AND_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "scalar-device": [
+      "fg174sd_gg_function_1"
+    ],
+    "scalar-host": [
+      "fg174sh_gg_function_1"
+    ],
+    "mma-device": [
+      "fg174md_gg_function_1",
+      "fg174md_gg_function_35"
+    ],
+    "mma-host": [
+      "fg174mh_gg_function_1"
+    ]
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp172/run/libggml-cuda-gdn-8077791a81e6.so.0.27.0",
+  "sha256": "64e6f9912c688eac7d0c2bde416b5fa0a7b63de6d78fd08a4dc42472052998d3",
+  "previous_library_sha256": "ac247dfc4c3c58cbf4ebd40a2b7de19cad910e040999949ad4ebe0931e6aa8b5",
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated-delta-net-mma.cu.o",
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated_delta_net.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_GDN=0 or immutable EXP171",
+  "test_only_adapter_linked": false,
+  "production_changed": false
+}

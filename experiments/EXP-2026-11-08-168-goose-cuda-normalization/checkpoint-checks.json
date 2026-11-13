@@ -1,0 +1,37 @@
+{
+  "status": "SOURCE_CHECKPOINT_ONLY",
+  "accepted_runtime": "EXP167 6dd3aae1fc5de7057eddda904f36584f5f15be3f",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "components": [
+    {
+      "component": "host",
+      "codegen": "PASS",
+      "generated_sha256": "b3028cc397e07bcea4e54e984cb5f6cce8aff05ec7ef27b00dda6a1b9fdae85f",
+      "emitted_functions": 11,
+      "vm_allocation_calls_in_emitted_functions": 0,
+      "strict_C_FFI_syntax": "PASS"
+    },
+    {
+      "component": "device",
+      "codegen": "PASS",
+      "generated_sha256": "a47b10dd7de400988637ae08f24829d0886e9118cb0d7c3e68a355789141aef5",
+      "emitted_functions": 9,
+      "vm_allocation_calls_in_emitted_functions": 0
+    }
+  ],
+  "recipes": 8,
+  "device_CUDA_build": false,
+  "GPU_correctness": false,
+  "Apex_inference": false,
+  "production_changed": false,
+  "source_sha256": {
+    "accepted-rms-row.goose": "a88f6f52828a046bb398c13c55294755f993eac6cddb5a30ce6cf88d6425619b",
+    "device.goose": "4c11c87ce559abceea09537cf8fcd7f1dc0d0d7c03ef2641588f4ba3d244af4d",
+    "host-ffi.h": "4cdb705ca53e722450b06130353ab02347d1346e9e515c96047ca1fa0849a5e3",
+    "host.goose": "8f4eb2c569e49b5c0831d527fdfc9e18ebe8c2c689f88359e2354e973b9f1bcf",
+    "native-norm.cu": "6f613109716dae7e5e4dbbe56e7c442f796b7540ab07dc1eb9c43536da1c1c98",
+    "native-norm.cuh": "8eb88112ca46162fc3473baa988970bd1a9d7c2ee4e729bcf81b40b8d822c250",
+    "plan.h": "389cb2583ec367a852b2e2fe656ee989662396e09176d926c22743c73866acb7",
+    "recipes.json": "df0d47f918c9f28f00143d5484a1ddebb47910c7cdaa500299c0fd342d4d9d43"
+  }
+}

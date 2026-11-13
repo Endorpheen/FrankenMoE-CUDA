@@ -1,0 +1,11 @@
+========= COMPUTE-SANITIZER
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+expert overlap: two staging slots, total 0.41 MiB
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+expert overlap: two staging slots, total 0.41 MiB
+expert overlap: completed 24 uploads
+PASS: Q6_K overlap, 8 iterations, 3 projections, release and fallback guards
+========= ERROR SUMMARY: 0 errors

@@ -1,0 +1,443 @@
+--- work/llama.cpp-exp075-pinsrc-overlap/ggml/src/ggml-cuda/common.cuh	2026-09-16 02:43:47.804494948 +0300
++++ work/llama.cpp-exp076-pin-async/ggml/src/ggml-cuda/common.cuh	2026-09-16 03:29:43.430005405 +0300
+@@ -5,8 +5,11 @@
+ #include "ggml-cuda.h"
+ 
+ #include <atomic>
++#include <chrono>
++#include <condition_variable>
+ #include <cstdint>
+ #include <cstdlib>
++#include <deque>
+ #include <memory>
+ #include <mutex>
+ #include <thread>
+@@ -1472,6 +1475,24 @@
+     size_t expert_pin_n_sub_direct = 0;     // sub-copies issued from an already registered interval
+     size_t expert_pin_n_sub_reg = 0;        // sub-copies issued after a sub-range was registered
+ 
++    // EXP-076 asynchronous pinning. The request path never registers: an uncovered page-aligned
++    // remainder is queued here and a single worker thread pins it under the same budget, blacklist
++    // and headroom rules. All fields below are guarded by the file-static g_expert_pin_mutex.
++    std::thread expert_pin_worker;              // lazily started with the first enqueue
++    int  expert_pin_worker_state = 0;           // 0 = not started, 1 = running, -1 = failed to start
++    bool expert_pin_worker_joined = false;      // set after the context destructor joins the worker
++    bool expert_pin_quit = false;               // worker exit request
++    bool expert_pin_saturated = false;          // budget exhausted: the worker stops trying
++    bool expert_pin_trace = false;              // GGML_EXPERT_PIN_TRACE: log the per-request class
++    std::condition_variable expert_pin_cv;      // wakes the worker on enqueue and on quit
++    std::deque<std::pair<uintptr_t, uintptr_t>> expert_pin_queue; // page-aligned ranges, FIFO
++    size_t expert_pin_n_queued = 0;             // ranges enqueued by requests
++    size_t expert_pin_n_worker_processed = 0;   // ranges popped from the queue (drain signal)
++    size_t expert_pin_n_worker_registered = 0;  // ranges the worker registered
++    size_t expert_pin_n_dropped = 0;            // queued ranges the worker dropped
++    size_t expert_pin_n_dedup = 0;              // ranges skipped as covered, queued or blacklisted
++    size_t expert_pin_n_worker_batches = 0;     // throttled worker batches
++
+ #ifdef USE_CUDA_GRAPH
+     // Map from first_node_ptr to cuda_graph - allows multiple graphs per context
+     // when the computation is split across CPU/GPU (e.g., with --n-cpu-moe)
+--- work/llama.cpp-exp075-pinsrc-overlap/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-16 02:44:17.951945515 +0300
++++ work/llama.cpp-exp076-pin-async/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-16 03:40:04.692570482 +0300
+@@ -2589,11 +2589,38 @@
+ static std::atomic<size_t> g_expert_pin_bytes{0};
+ static std::atomic<bool>   g_expert_pin_enabled_logged{false};
+ 
++// EXP-076: one mutex guards every registry structure shared by the decode thread and the pin
++// worker (expert_pin_intervals, expert_pin_regions, expert_pin_bytes, the blacklist, the queue and
++// expert_pin_state). The worker keeps this mutex out of the blocking cudaHostRegister call, so a
++// request only waits for a short bookkeeping window. Registration only ever ADDS regions and
++// nothing removes one before teardown, and teardown joins the worker and does
++// cudaDeviceSynchronize first; a copy plan computed under the mutex therefore stays valid after
++// the mutex is released.
++static std::mutex g_expert_pin_mutex;
++// The worker must not compete with the first request, so it does not start its first batch until
++// the first set_tensor_async_pinned_ring call of the process has returned.
++static std::atomic<bool> g_expert_pin_dispatch_done{false};
++
+ static bool ggml_cuda_expert_pin_source_env_enabled(void) {
+     const char * v = getenv("GGML_EXPERT_PIN_SOURCE");
+     return v == nullptr || (v[0] != '\0' && strcmp(v, "0") != 0);
+ }
+ 
++// EXP-076: when set (default), a request is served directly only when it is already fully covered
++// by physical registrations; any uncovered remainder is queued for the background worker. 0
++// restores the EXP-075 synchronous split, where the request thread pins the remainder itself.
++static bool ggml_cuda_expert_pin_async_enabled(void) {
++    const char * v = getenv("GGML_EXPERT_PIN_ASYNC");
++    return v == nullptr || (v[0] != '\0' && strcmp(v, "0") != 0);
++}
++
++// EXP-076 debug aid for the model-free gate: log one line per request so a harness can count the
++// direct and ring requests without a model.
++static bool ggml_cuda_expert_pin_trace_enabled(void) {
++    const char * v = getenv("GGML_EXPERT_PIN_TRACE");
++    return v != nullptr && v[0] != '\0' && strcmp(v, "0") != 0;
++}
++
+ // hard process-wide cap on registered bytes; 0 or unset selects 24 GiB
+ static size_t ggml_cuda_expert_pin_budget_bytes(void) {
+     static const size_t budget = []() {
+@@ -2766,6 +2793,259 @@
+     return it == ivs.end() ? UINTPTR_MAX : it->first;
+ }
+ 
++// EXP-076 worker tuning. Bounded batches with a short sleep keep the worker from fighting the
++// decode thread for NVMe and CPU; the queue bound caps memory if the worker falls behind.
++static constexpr size_t   GGML_CUDA_EXPERT_PIN_BATCH_BYTES      = 64ull * 1024 * 1024;
++static constexpr unsigned GGML_CUDA_EXPERT_PIN_BATCH_SLEEP_MS   = 20;
++static constexpr size_t   GGML_CUDA_EXPERT_PIN_QUEUE_MAX        = 65536;
++
++static bool ggml_cuda_expert_pin_queue_overlaps(const ggml_backend_cuda_context * cuda_ctx,
++                                                uintptr_t begin, uintptr_t end) {
++    for (const auto & q : cuda_ctx->expert_pin_queue) {
++        if (q.first < end && begin < q.second) {
++            return true;
++        }
++    }
++    return false;
++}
++
++// Queue one page-aligned uncovered range. Dedup: skip a range already covered, already queued or
++// blacklisted. The caller holds g_expert_pin_mutex.
++static void ggml_cuda_expert_pin_enqueue_locked(ggml_backend_cuda_context * cuda_ctx, uintptr_t begin, uintptr_t end) {
++    if (begin >= end || cuda_ctx->expert_pin_saturated || cuda_ctx->expert_pin_worker_state == -1) {
++        cuda_ctx->expert_pin_n_dropped++;
++        return;
++    }
++    if (ggml_cuda_expert_pin_overlaps(cuda_ctx->expert_pin_regions, begin, end) ||
++        ggml_cuda_expert_pin_overlaps(cuda_ctx->expert_pin_blacklist, begin, end) ||
++        ggml_cuda_expert_pin_queue_overlaps(cuda_ctx, begin, end)) {
++        cuda_ctx->expert_pin_n_dedup++;
++        return;
++    }
++    if (cuda_ctx->expert_pin_queue.size() >= GGML_CUDA_EXPERT_PIN_QUEUE_MAX) {
++        cuda_ctx->expert_pin_n_dropped++;
++        return;
++    }
++    cuda_ctx->expert_pin_queue.push_back({ begin, end });
++    cuda_ctx->expert_pin_n_queued++;
++}
++
++// Register one queued range. The blocking cudaHostRegister call runs without the mutex so a
++// request never waits for it; the budget is reserved before the call and rolled back on failure.
++static void ggml_cuda_expert_pin_worker_pin(ggml_backend_cuda_context * cuda_ctx, uintptr_t begin, uintptr_t end) {
++    const size_t add = (size_t) (end - begin);
++    {
++        std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++        if (cuda_ctx->expert_pin_saturated) {
++            cuda_ctx->expert_pin_n_dropped++;
++            return;
++        }
++        if (ggml_cuda_expert_pin_overlaps(cuda_ctx->expert_pin_regions, begin, end) ||
++            ggml_cuda_expert_pin_overlaps(cuda_ctx->expert_pin_blacklist, begin, end)) {
++            cuda_ctx->expert_pin_n_dedup++; // covered or blacklisted since it was queued
++            return;
++        }
++        if (g_expert_pin_bytes.load(std::memory_order_relaxed) + add > ggml_cuda_expert_pin_budget_bytes()) {
++            // the budget is a hard process-wide cap: stop trying instead of spinning
++            cuda_ctx->expert_pin_saturated = true;
++            cuda_ctx->expert_pin_n_dropped++;
++            return;
++        }
++        if (!ggml_cuda_expert_pin_headroom_ok(add)) {
++            // memory pressure is transient: drop without blacklisting, the ring still serves it
++            cuda_ctx->expert_pin_n_dropped++;
++            return;
++        }
++        g_expert_pin_bytes.fetch_add(add, std::memory_order_relaxed);
++        cuda_ctx->expert_pin_bytes += add;
++    }
++
++    const bool ok = ggml_cuda_expert_pin_register((void *) begin, add);
++
++    std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++    if (ok) {
++        ggml_cuda_expert_pin_insert_region(cuda_ctx->expert_pin_regions, begin, end);
++        ggml_cuda_expert_pin_insert(cuda_ctx->expert_pin_intervals, begin, end);
++        cuda_ctx->expert_pin_n_worker_registered++;
++    } else {
++        g_expert_pin_bytes.fetch_sub(add, std::memory_order_relaxed);
++        cuda_ctx->expert_pin_bytes -= add;
++        ggml_cuda_expert_pin_insert(cuda_ctx->expert_pin_blacklist, begin, end);
++        cuda_ctx->expert_pin_n_fail++;
++    }
++}
++
++// The worker waits for queued work and for the first request to return, pins one bounded batch,
++// then sleeps briefly so the decode thread keeps the NVMe and CPU.
++static void ggml_cuda_expert_pin_worker_run(ggml_backend_cuda_context * cuda_ctx) {
++    ggml_cuda_set_device(cuda_ctx->device);
++    for (;;) {
++        {
++            std::unique_lock<std::mutex> lock(g_expert_pin_mutex);
++            cuda_ctx->expert_pin_cv.wait(lock, [cuda_ctx] {
++                return cuda_ctx->expert_pin_quit ||
++                    (g_expert_pin_dispatch_done.load(std::memory_order_acquire) &&
++                     !cuda_ctx->expert_pin_saturated && !cuda_ctx->expert_pin_queue.empty());
++            });
++            if (cuda_ctx->expert_pin_quit) {
++                break;
++            }
++        }
++
++        size_t batch_bytes = 0;
++        bool quit = false;
++        while (batch_bytes < GGML_CUDA_EXPERT_PIN_BATCH_BYTES) {
++            uintptr_t begin = 0;
++            uintptr_t end = 0;
++            {
++                std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++                if (cuda_ctx->expert_pin_quit) {
++                    quit = true;
++                    break;
++                }
++                if (cuda_ctx->expert_pin_saturated || cuda_ctx->expert_pin_queue.empty()) {
++                    break;
++                }
++                begin = cuda_ctx->expert_pin_queue.front().first;
++                end   = cuda_ctx->expert_pin_queue.front().second;
++                cuda_ctx->expert_pin_queue.pop_front();
++                cuda_ctx->expert_pin_n_worker_processed++;
++            }
++            ggml_cuda_expert_pin_worker_pin(cuda_ctx, begin, end);
++            batch_bytes += (size_t) (end - begin);
++        }
++        if (quit) {
++            break;
++        }
++
++        size_t processed = 0;
++        size_t queued = 0;
++        size_t depth = 0;
++        {
++            std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++            cuda_ctx->expert_pin_n_worker_batches++;
++            processed = cuda_ctx->expert_pin_n_worker_processed;
++            queued = cuda_ctx->expert_pin_n_queued;
++            depth = cuda_ctx->expert_pin_queue.size();
++        }
++        GGML_LOG_WARN("%s: expert pin worker: processed %zu of %zu queued ranges, queue %zu%s\n",
++                      __func__, processed, queued, depth, (processed >= queued && depth == 0) ? ", drained" : "");
++        std::this_thread::sleep_for(std::chrono::milliseconds(GGML_CUDA_EXPERT_PIN_BATCH_SLEEP_MS));
++    }
++    std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++    cuda_ctx->expert_pin_worker_joined = true;
++}
++
++// started lazily on the first enqueue; the caller holds g_expert_pin_mutex
++static void ggml_cuda_expert_pin_worker_start_locked(ggml_backend_cuda_context * cuda_ctx) {
++    if (cuda_ctx->expert_pin_worker_state != 0) {
++        return;
++    }
++    try {
++        cuda_ctx->expert_pin_worker = std::thread(ggml_cuda_expert_pin_worker_run, cuda_ctx);
++        cuda_ctx->expert_pin_worker_state = 1;
++    } catch (...) {
++        // never register on the request thread: if the worker cannot start, the ring serves
++        cuda_ctx->expert_pin_worker_state = -1;
++        GGML_LOG_WARN("%s: expert pin worker failed to start, staying on the pinned slot ring\n", __func__);
++    }
++}
++
++// idempotent; joins the worker before any registration is released
++static void ggml_cuda_expert_pin_worker_stop(ggml_backend_cuda_context * cuda_ctx) {
++    std::thread worker;
++    {
++        std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++        cuda_ctx->expert_pin_quit = true;
++        if (cuda_ctx->expert_pin_worker.joinable()) {
++            worker = std::move(cuda_ctx->expert_pin_worker);
++        }
++        cuda_ctx->expert_pin_cv.notify_all();
++    }
++    if (worker.joinable()) {
++        worker.join();
++        cuda_ctx->expert_pin_worker_state = -1;
++        cuda_ctx->expert_pin_worker_joined = true; // the join returned: no pin is in flight
++    }
++}
++
++// EXP-076 request path: copy directly only when the whole request is already covered by physical
++// registrations (split at the physical ends, like EXP-075); otherwise copy nothing, queue the
++// page-aligned uncovered remainder and let the accepted ring serve the whole request.
++static bool ggml_cuda_expert_pin_try_async(ggml_backend_cuda_context * cuda_ctx, void * dst,
++                                           const uint8_t * src, size_t size) {
++    struct PinSeg {
++        const uint8_t * host;
++        size_t bytes;
++    };
++    std::vector<PinSeg> segs;
++    segs.reserve(8);
++
++    const size_t page = ggml_cuda_expert_pin_page_size();
++    const uintptr_t req_begin = (uintptr_t) src;
++    const uintptr_t req_end   = req_begin + size;
++
++    bool fully_covered = true;
++    {
++        std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++        uintptr_t cur = req_begin;
++        while (cur < req_end) {
++            const uintptr_t cover = ggml_cuda_expert_pin_cover_end(cuda_ctx->expert_pin_regions, cur);
++            if (cover == 0) {
++                fully_covered = false;
++                break;
++            }
++            const uintptr_t end = std::min<uintptr_t>(cover, req_end);
++            segs.push_back({ (const uint8_t *) cur, (size_t) (end - cur) });
++            cur = end;
++        }
++
++        if (fully_covered) {
++            cuda_ctx->expert_pin_n_direct++;
++            cuda_ctx->expert_pin_n_sub_direct += segs.size();
++        } else {
++            // no direct copy at all for this request: the ring copies it whole, so no byte is
++            // copied twice. Queue each page-aligned uncovered remainder for the worker.
++            cuda_ctx->expert_pin_n_fallback++;
++            uintptr_t q = req_begin;
++            while (q < req_end) {
++                const uintptr_t cover = ggml_cuda_expert_pin_cover_end(cuda_ctx->expert_pin_regions, q);
++                if (cover > 0) {
++                    q = std::min<uintptr_t>(cover, req_end);
++                    continue;
++                }
++                const uintptr_t next = ggml_cuda_expert_pin_next_start(cuda_ctx->expert_pin_regions, q);
++                const uintptr_t end = (next != UINTPTR_MAX && next < req_end) ? next : req_end;
++                const uintptr_t reg_begin = q & ~(uintptr_t) (page - 1);
++                const uintptr_t reg_end   = (end + page - 1) & ~(uintptr_t) (page - 1);
++                ggml_cuda_expert_pin_enqueue_locked(cuda_ctx, reg_begin, reg_end);
++                q = end;
++            }
++            if (cuda_ctx->expert_pin_worker_state == 0) {
++                ggml_cuda_expert_pin_worker_start_locked(cuda_ctx);
++            }
++            cuda_ctx->expert_pin_cv.notify_one();
++        }
++    }
++
++    if (cuda_ctx->expert_pin_trace) {
++        GGML_LOG_WARN("%s: expert pin trace: %s\n", __func__, fully_covered ? "direct" : "ring");
++    }
++    if (!fully_covered) {
++        return false;
++    }
++
++    // The plan was built under the mutex; the copies are issued after it is released. The host
++    // pointers lie in stable registrations that are only added, never removed, before teardown.
++    char * dst_bytes = (char *) dst;
++    size_t off = 0;
++    for (const PinSeg & seg : segs) {
++        CUDA_CHECK(cudaMemcpyAsync(dst_bytes + off, seg.host, seg.bytes, cudaMemcpyHostToDevice, cuda_ctx->stream()));
++        off += seg.bytes;
++    }
++    return true;
++}
++
+ // whole-range path: register the page-aligned range, then one copy straight from the source.
+ // Refuses on any overlap (EXP-074 behaviour, kept for GGML_EXPERT_PIN_OVERLAP_SPLIT=0).
+ static bool ggml_cuda_expert_pin_try_whole(ggml_backend_cuda_context * cuda_ctx, void * dst,
+@@ -2897,12 +3177,19 @@
+             return false;
+         }
+         cuda_ctx->expert_pin_state = 1;
++        cuda_ctx->expert_pin_trace = ggml_cuda_expert_pin_trace_enabled();
+         if (!g_expert_pin_enabled_logged.exchange(true)) {
+-            GGML_LOG_WARN("%s: expert pinned source enabled: direct H2D from the mapped GGUF (budget %.0f MiB)\n",
+-                          __func__, ggml_cuda_expert_pin_budget_bytes() / 1024.0 / 1024.0);
++            GGML_LOG_WARN("%s: expert pinned source enabled: direct H2D from the mapped GGUF (budget %.0f MiB, async %s)\n",
++                          __func__, ggml_cuda_expert_pin_budget_bytes() / 1024.0 / 1024.0,
++                          ggml_cuda_expert_pin_async_enabled() ? "on" : "off");
+         }
+     }
+ 
++    // async takes precedence: with the worker on, the request thread never registers, so the
++    // EXP-075 split and the EXP-074 whole path only apply when GGML_EXPERT_PIN_ASYNC=0.
++    if (ggml_cuda_expert_pin_async_enabled()) {
++        return ggml_cuda_expert_pin_try_async(cuda_ctx, dst, src, size);
++    }
+     if (!ggml_cuda_expert_pin_split_enabled()) {
+         return ggml_cuda_expert_pin_try_whole(cuda_ctx, dst, src, size);
+     }
+@@ -2911,14 +3198,36 @@
+ 
+ // idempotent; unregisters every pinned source registration while the CUDA context is current
+ static void ggml_cuda_expert_pin_source_release(ggml_backend_cuda_context * cuda_ctx) {
++    // the worker cannot outlive the CUDA context: stop, signal, join, then unregister
++    ggml_cuda_expert_pin_worker_stop(cuda_ctx);
+     if (cuda_ctx->expert_pin_state == 0) {
+         return; // never probed
+     }
+-    const size_t n_intervals = cuda_ctx->expert_pin_intervals.size();
+-    const size_t n_regions   = cuda_ctx->expert_pin_regions.size();
+-    const size_t bytes_released = cuda_ctx->expert_pin_bytes;
++    size_t n_intervals = 0;
++    size_t n_regions   = 0;
++    size_t bytes_released = 0;
++    size_t n_queued = 0;
++    size_t n_worker_registered = 0;
++    size_t n_dropped = 0;
++    size_t n_dedup = 0;
++    size_t n_batches = 0;
++    bool   joined = false;
++    bool   saturated = false;
++    {
++        std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++        n_intervals = cuda_ctx->expert_pin_intervals.size();
++        n_regions   = cuda_ctx->expert_pin_regions.size();
++        bytes_released = cuda_ctx->expert_pin_bytes;
++        n_queued = cuda_ctx->expert_pin_n_queued;
++        n_worker_registered = cuda_ctx->expert_pin_n_worker_registered;
++        n_dropped = cuda_ctx->expert_pin_n_dropped;
++        n_dedup = cuda_ctx->expert_pin_n_dedup;
++        n_batches = cuda_ctx->expert_pin_n_worker_batches;
++        joined = cuda_ctx->expert_pin_worker_joined;
++        saturated = cuda_ctx->expert_pin_saturated;
++    }
+     if (n_regions > 0) {
+-        // an in-flight H2D may still read the registered pages
++        // an in-flight H2D may still read the registered pages (the worker is already joined)
+         (void) cudaDeviceSynchronize();
+         // one cudaHostUnregister per physical registration: the merged intervals would skip a
+         // touching registration and leave it pinned
+@@ -2933,11 +3242,13 @@
+         cuda_ctx->expert_pin_bytes = 0;
+         (void) cudaGetLastError();
+     }
+-    GGML_LOG_WARN("%s: expert pinned source: %zu direct ranges, %zu split ranges, %zu fallback ranges, %zu register failures, %zu intervals released, %zu physical regions released, %zu bytes released, %zu bytes still pinned, %zu covered sub-copies, %zu registered sub-copies\n",
++    GGML_LOG_WARN("%s: expert pinned source: %zu direct ranges, %zu split ranges, %zu fallback ranges, %zu register failures, %zu intervals released, %zu physical regions released, %zu bytes released, %zu bytes still pinned, %zu covered sub-copies, %zu registered sub-copies, %zu queued ranges, %zu worker registered ranges, %zu dropped ranges, %zu dedup skipped ranges, %zu worker batches, %d worker joined, %d saturated\n",
+                   __func__, cuda_ctx->expert_pin_n_direct, cuda_ctx->expert_pin_n_split,
+                   cuda_ctx->expert_pin_n_fallback, cuda_ctx->expert_pin_n_fail, n_intervals,
+                   n_regions, bytes_released, g_expert_pin_bytes.load(std::memory_order_relaxed),
+-                  cuda_ctx->expert_pin_n_sub_direct, cuda_ctx->expert_pin_n_sub_reg);
++                  cuda_ctx->expert_pin_n_sub_direct, cuda_ctx->expert_pin_n_sub_reg,
++                  n_queued, n_worker_registered, n_dropped, n_dedup, n_batches,
++                  joined ? 1 : 0, saturated ? 1 : 0);
+ }
+ 
+ // allocates all slots and events before any staged submission; on failure the ring stays disabled
+@@ -2973,10 +3284,23 @@
+     return true;
+ }
+ 
++// EXP-076: on the first call, marks that the first request has returned so the pin worker may
++// start its first batch; this keeps the worker from competing with the first request.
++struct ggml_cuda_expert_pin_dispatch_guard {
++    ggml_backend_cuda_context * cuda_ctx;
++    ~ggml_cuda_expert_pin_dispatch_guard() {
++        if (!g_expert_pin_dispatch_done.exchange(true, std::memory_order_acq_rel)) {
++            std::lock_guard<std::mutex> lock(g_expert_pin_mutex);
++            cuda_ctx->expert_pin_cv.notify_one();
++        }
++    }
++};
++
+ // stages one host->device copy through the bounded pinned ring: fill a free slot on the CPU
+ // while the H2D of the other slots is still in flight; ranges larger than one slot are chunked
+ static bool ggml_backend_cuda_set_tensor_async_pinned_ring(ggml_backend_t backend, ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
++    const ggml_cuda_expert_pin_dispatch_guard dispatch_guard{ cuda_ctx };
+     ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
+ 
+     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");

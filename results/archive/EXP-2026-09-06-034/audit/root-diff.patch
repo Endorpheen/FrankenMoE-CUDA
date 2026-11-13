@@ -1,0 +1,130 @@
+diff --git a/README.md b/README.md
+index 88c3ad2..5c7f6f6 100644
+--- a/README.md
++++ b/README.md
+@@ -174,9 +174,9 @@ Both the standalone prototype and the patched interactive server work. The patch
+ 
+ CPU profiling showed that IQ2_S and IQ4_NL vector-dot kernels account for 53.69% of sampled cycles and OpenMP spin/wait paths account for about 39.96%. Disabling OpenMP did not help: EXP-015 measured a 2.06% slowdown with only a 1.47% reduction in CPU occupancy, so that configuration was rejected. Subsequent experiments (EXP-016 through EXP-022) ruled out selected-expert scheduling changes, madvise prefetch of the selected-expert window, and n-gram speculative decoding; the accepted wins so far are the balanced 12-thread default (EXP-013) and the split MTP speculative draft (EXP-024, +13.6% paired).
+ 
+-The next experiment, EXP-025, raises `--spec-draft-n-max` from 2 to 4: acceptance is high enough (0.71 in the lab, up to 0.78 on coding traffic) that longer draft chains may pay for the extra verify work. It is a flags-only change and will be measured against the 21.10 tok/s paired baseline with the same +2% acceptance gate.
++The accepted MTP profile stays at `--spec-draft-n-max 2`. A larger draft limit was already checked outside the recorded benchmark protocol and is not scheduled for retesting; it is not part of the current roadmap.
+ 
+-The broader P1 target remains overlap and reduced idle time across SSD, RAM, CPU, and GPU. Coalesced expert reads, router-stage prefetch, double buffering, explicit H2D timing, `io_uring`, and `O_DIRECT` will be tested as isolated hypotheses rather than introduced together.
++The next priority is the broader P1 target: measure and then reduce idle time across SSD, RAM, CPU, and GPU. Coalesced expert reads, router-stage prefetch, double buffering, explicit H2D timing, `io_uring`, and `O_DIRECT` will be tested as isolated hypotheses rather than introduced together.
+ 
+ This is research software. Node names and evaluation callbacks used by the integration are not stable `llama.cpp` APIs. See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
+ 
+diff --git a/ROADMAP.md b/ROADMAP.md
+index e353d5e..d6130d4 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -1,19 +1,48 @@
+-# FrankenMoE roadmap
+-
+-Every performance change is accepted only after reproducible correctness checks and at least five comparable runs against the current baseline.
+-
+-- [x] P0: reproducible benchmark, output identity gate, telemetry, and baseline history.
+-- [ ] P1: overlap SSD -> RAM -> GPU transfers with expert computation.
+-- [ ] P1: benchmark aligned coalesced reads, pinned RAM, and double/triple buffering separately.
+-- [ ] P2: hot-expert cache across VRAM, RAM, and SSD.
+-- [ ] P3: router-driven expert prefetch.
+-- [ ] P4: addressed expert container with aligned contiguous blocks.
+-- [ ] P5: fused dequantization + GEMM tuned for Ada and single-token decode.
+-- [ ] P6: MTP, n-gram, draft-model, and combined speculative decoding.
+-- [ ] P7: automatic VRAM/RAM/SSD residency planning.
+-- [ ] P8: sensitivity-driven mixed expert quantization.
+-- [ ] P9: reversible REAP pruning with representative quality gates.
+-- [ ] P10: dynamic batching and aggregate throughput for multiple agents.
+-- [ ] P11: autotuning profiles and an OpenAI-compatible server.
+-
+-The current critical path is P0 followed by true H2D/compute overlap. UI work, pruning, mixed quantization, and multi-agent throughput remain deferred.
++# FrankenMoE roadmap — revision of 2026-09-06
++
++Audit: [docs/AUDIT-2026-09-06.md](docs/AUDIT-2026-09-06.md).
++Sequential task specification: [docs/QWEN-IMPLEMENTATION-TASK.md](docs/QWEN-IMPLEMENTATION-TASK.md).
++History: [experiments/EXPERIMENTS.md](experiments/EXPERIMENTS.md), individual EXP-028–033 cards and `benchmarks/history.jsonl`. Old decisions are preserved; a later clarification takes priority over the old "Next experiment".
++
++**The roadmap needs a substantial update.** The main goal is the patched expert-tier server. `bmoe-cli` remains a separate research branch. Their baselines, I/O and H2D must not be mixed. None of the queue below was implemented at audit time.
++
++## Phase status P0–P11
++
++| Phase | Current status and rationale |
++| --- | --- |
++| P0 — reproducibility | Partially done: EXP-000/004 and server measurements. Open: MTP provenance, artifact preservation, a unified profile and async transfer correctness. |
++| P1 — SSD/RAM/GPU | Old CPU-decode prefetch options are closed: EXP-001/002/003/012/025/027. Bulk CUDA prefill is open separately per EXP-030/031/032. EXP-033 single-buffer packed staging was rejected. |
++| P2 — hot cache | Basic RAM LRU and VRAM banks exist in bmoe-cli; server-side EHS activation was rejected by EXP-010. No new cache is planned without reuse/memory evidence. |
++| P3 — router prefetch | Late madvise and the warmer were rejected. The next layer's router is still unknown. Only provable intra-layer overlap can become a separate experiment; route prediction is deferred. |
++| P4 — container/reads | Addressable split-GGUF/O_DIRECT already exists in bmoe-cli. Model repacking and a new I/O engine are deferred. Exact merging of adjacent H2D expert ranges already exists in the server scheduler. |
++| P5 — kernels | EXP-019 micro-tuning is closed at the current priority, EXP-021 microbench was done, EXP-028 CPU fused integration was rejected. Bulk prefill is actually CUDA MMQ; a CPU fused retry is not planned. |
++| P6 — speculative | EXP-022 ngram and EXP-023 CPU-only draft were rejected; EXP-024 split MTP was accepted historically (+13.6%, one pair). Patch deliverability and broader correctness are not yet confirmed. `n_max=2`; do not retry a larger limit. |
++| P7 — memory planning | The RAM startup gate and EHS safe autofit were implemented in EXP-008/009; a full planner is deferred. Open: validation of the active watchdog/launch profile. |
++| P8 — mixed quant | Deferred: no representative quality baseline or quality budget. |
++| P9 — REAP | Deferred for the same reason; do not change the model or top-k. |
++| P10 — batching | Deferred until the single-request path is stable and lifetime is verified with several requests. Aggregate tok/s is a separate metric. |
++| P11 — API/autotuning | The OpenAI-compatible server already works. Autotuning and UI are not the next step. |
++
++## Execution queue
++
++The IDs below reserve the meaning of the stages; an EXP date is assigned at start. Do not present them as completed experiments.
++
++1. **R0 / EXP-034 — provenance and a reproducible package**. Record the state of the root/nested trees, the MTP diff, sources/libraries/commands and the surviving data. In an isolated copy prepare a minimal reproducible MTP patch; do not update upstream and do not touch the integration tree. Gate: the required configuration is reproducible, missing data is explicitly marked.
++2. **R1 / EXP-035 — a working safety profile**. A separate correctness stage: external watchdog units, enabling the internal watchdog in an explicit benchmark profile, correct monitor termination. Do not provoke real swap/OOM. Gate: synthetic thresholds/lifecycle, then an unchanged inference configuration.
++3. **R2 / EXP-036 — an up-to-date baseline and correctness fixtures**. One chosen 32K MTP profile, `n_max=2`, EHS=0, 12 threads. Fixed requests, full prefill without prompt-cache reuse, a separate warm decode, unified raw artifacts. This is the baseline for new work, not a repeat of the MTP/no-MTP contest.
++4. **R3 / EXP-037 — offline transfer budget and dependency map**. Use the already saved EXP-031/032 first. Split GPU H2D duration, host API time, syncs and gaps; verify the request span and free staging slot availability. Do not re-capture the already known 22.16 GiB expert attribution.
++5. **R4 / EXP-038 — conditional bounded pinned ring without packing/scatter**. Only if R3 shows a measurable host-side submission bottleneck and the possibility of preparing the next chunk. Two bounded host slots, direct copies into the original offsets, the same CUDA stream. This is a CPU-staging/H2D overlap hypothesis; true H2D/compute overlap is not promised. With an insufficient expected effect — `NOT_RUN`, move to conditional R5 or finish P1.
++6. **R5 / EXP-039 — conditional intra-layer transfer/compute overlap**. Only with new dependency/timeline evidence after R3/R4. A separate copy stream, readiness/last-consumer events, bounded extra memory. Do not present a pointer to a scheduler buffer as a lifetime guarantee. If no safe independent window exists — `NOT_RUN`, direction `DEFERRED`.
++7. **R6 — acceptance of the concrete winner**. A representative short/main/long prompt, decode, repeated requests, cancellation/checkpoint/shutdown. Only then the delivery patch and a default-change proposal. No winner — keep the baseline and finish with a negative result.
++
++If R4 is accepted, R6 comes first. R5 starts as a separate cycle only after the handoff and only with a remaining measured bottleneck. R4 and R5 are not implemented simultaneously.
++
++## Decision rule
++
++One experiment, one hypothesis, one baseline, one primary variable. Performance ACCEPTED requires a ≥3% median prefill-time reduction, confirmation by paired results outside the observed noise, and no unacceptable regressions. Fewer H2D calls, working code or less CPU spin are not success by themselves. At least five consecutive pairs for acceptance; early rejection on clear failure is allowed. Correctness/infrastructure experiments are accepted by their own pre-declared functional criteria without a speed claim.
++
++Keep a bad result in the journal, do not include the code. `INCONCLUSIVE`, `BLOCKED`, `NOT_RUN` must not turn into ACCEPTED. A handoff is mandatory after every stage, including rejection and blocking. Model runs and commits are governed by [agents.md](agents.md); the audit is not permission to run.
++
++## Old roadmap (historical pre-audit snapshot)
++
++P0 was marked done; P1: SSD→RAM→GPU overlap, aligned/coalesced reads, pinned RAM, double/triple buffering; P2: hot cache; P3: router prefetch; P4: addressed aligned container; P5: fused dequant+GEMM Ada/decode; P6: MTP/ngram/draft/combined; P7: residency planner; P8: mixed quant; P9: REAP; P10: multi-agent batching; P11: autotuning/API. All of P1–P11 had unchecked boxes. The critical path was formulated as P0 → true H2D/compute overlap. That order is replaced by the R0–R6 queue above; the experimental history is not deleted.
+diff --git a/docs/CURRENT_STATE.md b/docs/CURRENT_STATE.md
+index 576dce6..6309a8d 100644
+--- a/docs/CURRENT_STATE.md
++++ b/docs/CURRENT_STATE.md
+@@ -1,5 +1,7 @@
+ # Current state
+ 
++> Clarification 2026-09-06: below is a preserved historical snapshot, mostly pre-EXP-016. The current state and provenance limitations are described in [AUDIT-2026-09-06.md](AUDIT-2026-09-06.md), the work order in [../ROADMAP.md](../ROADMAP.md). The local integration tree now contains a functional MTP port; the root integration patch does not reproduce it. Do not choose the next experiment from the old text below.
++
+ ## Source state
+ 
+ - Branch: `main`.
+diff --git a/experiments/EXPERIMENTS.md b/experiments/EXPERIMENTS.md
+index 8da6a11..915e558 100644
+--- a/experiments/EXPERIMENTS.md
++++ b/experiments/EXPERIMENTS.md
+@@ -423,6 +423,7 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request
+ - Realistic prefill mapping: with top-8 routing over 128 experts, a 512-token batch routes about 32 activation rows per activated expert, i.e. the `Ny=32` regime: about `+180%` kernel speed on `iq2_s` (the dominant prefill cost of the MoE layers) and `+31-35%` on `iq4_nl`.
+ - Decision: proceed to an integration experiment for the `iq2_s` `MUL_MAT_ID` path only, gated to multi-token chunks (prefill/batch); decode stays on the plain `vec_dot` path (`Ny=1` fused is `-15%`). The `iq4_nl` fused direction is `CLOSED` (ceiling `1.41x`, decode regression, added complexity for no material gain).
+ - Artifacts: `benchmarks/exp021_fused_bench.c`, `benchmarks/exp021_iq2s_grid.h`, `results/exp021-fused-bench.txt`.
++- Independent re-run (2026-09-05, after a stale handoff briefly reopened the experiment): a second standalone prototype built from the ik_llama.cpp GitHub sources reproduced the same shape on a different L3-resident workload: iq2_s fused `0.80-0.83x` at `Ny=1`, `1.36-1.41x` at `Ny=2`, `1.66-2.14x` at `Ny=3-6`, `1.6-1.9x` at `Ny=7-8`; iq4_nl fused `0.19-0.36x` everywhere. Same conclusion on both: reuse pays only at multi-row shapes. The re-run was not committed as a separate experiment; this note is the record.
+ 
+ ## EXP-2026-09-03-022-ngram-simple-spec-decode
+ 
+@@ -519,3 +520,17 @@ Capture an expert-level I/O trace on the unchanged baseline to quantify request
+ - Blocking finding: real in-session eviction of expert pages destabilizes the CUDA driver. Three of four runs that executed a real drop aborted at the same point (~token 215-218 of the first request) with `double free or corruption (out)` inside `cudaGraphExecDestroy` (libcuda heap corruption; core dumps retained). Runs without a real eviction complete normally, and the drop only touches file-backed gguf mappings, so the mechanism is indirect - but the correlation is unambiguous and the scenario cannot be used as a test protocol.
+ - Decision: `REJECTED` on two grounds. First, there is no speed signal: kernel readahead already overlaps fault-fill with compute, and post-request warming buys nothing (consistent with EXP-012's independent verdict). Second, the eviction hook is unsafe. The warmer code is removed from the runtime and the integration patch. P1 is closed: with EXP-012, EXP-026 and EXP-027 together, no remaining prefetch/residency lever has an expected positive value - the warm path has zero disk I/O and the cold path is already overlapped by the kernel.
+ - Artifacts: `benchmarks/exp027-cache-warm.json`; crash core dumps in `/var/lib/systemd/coredump` (2 files, retained); the warmer implementation lives only in git history of this file's workspace, not in any tracked patch.
++
++
++## Re-audit clarifications — 2026-09-06 (no new runs)
++
++Current queue: [../ROADMAP.md](../ROADMAP.md). Full registry of EXP-000–033, evidence checks and limitations: [../docs/AUDIT-2026-09-06.md](../docs/AUDIT-2026-09-06.md). Task specification for the implementer: [../docs/QWEN-IMPLEMENTATION-TASK.md](../docs/QWEN-IMPLEMENTATION-TASK.md). The old Next experiment entries above are historical, not current assignments.
++
++- EXP-026 done: final verdict ACCEPTED measurement; the old PLANNED describes the pre-run state. 206114 expert faults / 209518 main-shard faults = 98.38%, not the 99.5%/99.9% from different records. The share of all 216805 faults = 95.07% remains valid. Counts are not stall time.
++- EXP-024 historically ACCEPTED (+13.6%, one measured pair), but this is not a five-run median. In the saved MTP log cumulative graphs reused: 104 after the first request, 207 after the second; 311 must not be taken as the final cumulative count. The split-MTP port exists in local sources but not in the root integration patch; delivery needs a separate provenance stage.
++- EXP-027 REJECTED stands; live eviction is forbidden. Its broad "P1 closed" applies to the tested CPU-decode prefetch/warmer variants and does not close the separate bulk-prefill transfer path of EXP-030–032.
++- EXP-028 REJECTED; EXP-029 INCONCLUSIVE for bulk; EXP-030/031/032 ACCEPTED measurement; EXP-033 REJECTED, prefill 3979.34→6502.22 ms (+63.40%). Details in the individual EXP files and rejected/.
++- In EXP-033 event wait, CPU gather and device scratch/scatter were added together; event serialization is a plausible but not separately measured cause. Two large buffers by themselves are not a proven fix.
++- The server scheduler already merges adjacent selected expert ranges. A repeat of this optimization, CPU fused, ngram, CPU-only MTP, wait-policy and a larger draft limit are not planned.
++
++Historical records/failed experiments are preserved. The audit changes no code and creates no new performance evidence.

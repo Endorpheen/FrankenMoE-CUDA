@@ -1,0 +1,1 @@
+{"status":"PASS_REAL_POOL_LIFECYCLE_FAILURE_REUSE_ABORT","cases":81,"pthread":true,"pool_allocs":13,"pool_frees":13,"worker_allocs":11,"worker_frees":11,"scope":"Real graph/runtime/threads with injected system allocation or start failures; not OS OOM"}

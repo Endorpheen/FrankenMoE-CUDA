@@ -1,0 +1,14 @@
+{
+  "phase1": {
+    "events_before_interrupt": 8,
+    "exit_code": 0,
+    "port_free_after": true,
+    "process_gone": true
+  },
+  "phase2": {
+    "ready": true,
+    "sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+    "tokens": 128,
+    "exit_code": 0
+  }
+}

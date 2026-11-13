@@ -1,0 +1,57 @@
+{
+  "total": 2216,
+  "mismatches": 0,
+  "sample": [
+    {
+      "i": 0,
+      "text": "",
+      "native": [],
+      "goose": [],
+      "ok": true
+    },
+    {
+      "i": 1,
+      "text": " ",
+      "native": [
+        220
+      ],
+      "goose": [
+        220
+      ],
+      "ok": true
+    },
+    {
+      "i": 2,
+      "text": "  ",
+      "native": [
+        256
+      ],
+      "goose": [
+        256
+      ],
+      "ok": true
+    },
+    {
+      "i": 3,
+      "text": "\n",
+      "native": [
+        198
+      ],
+      "goose": [
+        198
+      ],
+      "ok": true
+    },
+    {
+      "i": 4,
+      "text": "\t",
+      "native": [
+        197
+      ],
+      "goose": [
+        197
+      ],
+      "ok": true
+    }
+  ]
+}

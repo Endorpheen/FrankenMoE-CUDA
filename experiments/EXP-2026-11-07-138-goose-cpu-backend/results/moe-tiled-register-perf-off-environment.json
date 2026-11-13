@@ -1,0 +1,16 @@
+{
+  "LD_LIBRARY_PATH": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled-register-perf/run",
+  "LD_PRELOAD": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-silu.so /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-scale.so /home/end0/AI/LlamaServer/franken-goose-live-20261107/build/libfranken-goose-rms-block.so",
+  "GGML_GOOSE_MOE": "1",
+  "GGML_GOOSE_TILED": "0",
+  "GGML_GOOSE_Q4_TILE": null,
+  "GGML_GOOSE_RMS": null,
+  "GGML_GOOSE_Q8K": null,
+  "GGML_GOOSE_ALLOC": "1",
+  "GGML_GOOSE_ALLOC_VERIFY": "0",
+  "GGML_GOOSE_COALESCE": "1",
+  "GGML_GOOSE_LIFETIME": "0",
+  "GGML_GOOSE_GRAPH_PLAN": "1",
+  "pid": 3401832,
+  "mode": "moe-tiled-register-perf-off"
+}

@@ -1,0 +1,3 @@
+# EXP159: inference graph/hash/traversal/lifecycle in Goose
+
+Continue solo from EXP158. Transfer hash sizing/probing/bitsets,graph arena layout,forward traversal and compute/use-count semantics,selection/copy/view/dup/clear and graph lookup/accessors as one shared inference-graph block. Use iterative DFS with bounded temporary storage instead of recursive generated-C frames. Keep original public/private layout,forward ordering,aliases,gradient pointer metadata and rollback. Numerical backends,autodifferentiation/training/export are separate residual scope,not Apex inference coverage. Validate native parity,deep/shared/self-referencing graphs,copy/reuse and allocation failures,then one unchanged real Apex32K/128 gate. No production/compiler edits or delegated workers.

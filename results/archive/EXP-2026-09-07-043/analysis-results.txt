@@ -1,0 +1,47 @@
+gather_n|17886
+submit_n|17886
+slotwait_n|17886
+expert_gather|17886|1463.641|81.831632|1.369|62.498000|362.344000
+expert_submit|17886|66.701|3.729215|0.039
+expert_slotwait|17886|326.679|18.264531|0.550
+1|17979|23287174436|22208.38
+2|222|176039616|167.88
+8|817|494503936|471.60
+gpu_h2d_sum_ms|1346.071
+gpu_dtoh_sum_ms|9.917
+gpu_dtod_sum_ms|2.690
+kernel_sum_ms|420.620
+memset_sum_ms|0.023
+29241|1779.320|793.340|53|1311|47.832
+gpu_h2d_union_ms|1346.071|16498.67
+kernel_union_ms|420.620
+h2d_kernel_intersect_ms|0.000
+cudaMemcpyAsync_v3020|18450|97.539|5.286654
+cudaEventRecord_v3020|17886|9.537|0.533217
+cudaStreamIsCapturing_v10000|17886|4.483|0.250631
+cudaStreamSynchronize_v3020|1126|394.856|350.671367
+cudaLaunchKernel_v7000|9767|33.472|3.427046
+cudaEventSynchronize_v3020|17886|321.093|17.952213
+cudaMemcpy2DAsync_v3020|568|2.644|4.654639
+cuLaunchKernel|408|1.495|3.663691
+cudaMemsetAsync_v3020|48|0.515|10.727333
+cuKernelGetFunction|408|0.301|0.738363
+cudaGraphInstantiate_v12000|1|0.033|33.272000
+cudaStreamBeginCapture_v10000|1|0.020|20.288000
+1|17886|318.080|0.549
+2|1126|394.437|7.581
+gather_union_ms|1463.641|1109.019
+void mul_mat_q<(ggml_type)22, (int)112, (bool)0>(const c|94|127.463
+void mul_mat_q<(ggml_type)20, (int)112, (bool)0>(const c|48|88.530
+void mul_mat_q<(ggml_type)14, (int)112, (bool)0>(const c|249|37.791
+void gated_delta_net_cuda<(int)128, (bool)0, (bool)1>(co|72|34.430
+void mm_ids_helper<(int)0>(const int *, int *, int *, in|144|14.753
+void k_bin_bcast<&op_mul, float, float, float, const flo|673|12.677
+void k_bin_bcast<&op_add, float, float, float, const flo|1243|9.340
+void mul_mat_q<(ggml_type)8, (int)112, (bool)0>(const ch|150|8.928
+warm_gather_sum_ms|16643.360
+warm_submit_sum_ms|125.147
+warm_slotwait_sum_ms|82.075
+warm_h2d_n|17979
+warm_h2d_sum_ms|1364.712
+warm_kernel_sum_ms|464.247

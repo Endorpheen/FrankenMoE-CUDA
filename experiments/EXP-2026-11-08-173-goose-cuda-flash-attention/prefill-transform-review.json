@@ -1,0 +1,25 @@
+{
+  "status": "PASS_SOURCE_EMISSION_ONLY_PENDING_INTEGRATION",
+  "reviews": [
+    {
+      "part": "iter",
+      "parent_transform_sha256": "5beb8d451d7b13246ce0c510a35df5353bbecc169cf02fd9a9e871e4a300d474",
+      "check_exit": 0,
+      "stdout": "PASS deterministic transform 10617 -> 167191\n",
+      "stderr": "",
+      "selfhosted_exit": 0,
+      "selfhosted_stderr": ""
+    },
+    {
+      "part": "process",
+      "parent_transform_sha256": "fa7652d7c5362e22f2c733f798418b8a5382e5bd3b81e02fd12c17031ecadbe2",
+      "check_exit": 0,
+      "stdout": "PASS deterministic transform 13881 -> 249168\n",
+      "stderr": "",
+      "selfhosted_exit": 0,
+      "selfhosted_stderr": ""
+    }
+  ],
+  "compiler_changed": false,
+  "production_changed": false
+}

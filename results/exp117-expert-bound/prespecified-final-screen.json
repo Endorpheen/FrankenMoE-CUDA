@@ -1,0 +1,9 @@
+{
+  "control_tags": [
+    "A1v3",
+    "A2v3"
+  ],
+  "control_median_prompt_ms": 13024.3755,
+  "screen_min_observed_gain_pct": 2.0,
+  "decision": "Continue to five final cold pairs only if first v4 cold is numerically exact, resource clean and at least2% faster than this fixed control point; otherwise stop this bounded pass without promotion."
+}

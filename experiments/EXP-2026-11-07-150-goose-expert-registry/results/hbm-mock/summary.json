@@ -1,0 +1,5 @@
+{
+  "status": "PASS_COMPILED_HBM_GOOSE_WITH_ALLOCATOR_STUB",
+  "cases": 5,
+  "hardware_hbm": false
+}

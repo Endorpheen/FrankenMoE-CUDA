@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "second-half mask hm1 -> hm0",
+    "status": "CAUGHT",
+    "failures": 3
+  },
+  {
+    "mutation": "qs offset 48 -> 49",
+    "status": "CAUGHT",
+    "failures": 3
+  },
+  {
+    "mutation": "destination 2*ir -> ir",
+    "status": "CAUGHT",
+    "failures": 8
+  },
+  {
+    "mutation": "a1 reads ql0 instead of ql1",
+    "status": "CAUGHT",
+    "failures": 3
+  },
+  {
+    "mutation": "d2 reuses scale is instead of is+1",
+    "status": "CAUGHT",
+    "failures": 3
+  }
+]

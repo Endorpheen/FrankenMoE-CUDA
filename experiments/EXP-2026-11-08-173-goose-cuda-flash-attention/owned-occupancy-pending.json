@@ -1,0 +1,11 @@
+{
+  "status": "ACCEPTED_AS_COMPONENT_OF_FINAL_APEX_Q4_PATH",
+  "reason": "Full Goose vector unrolling now uses255registers in both instances;all four current Goose kernels use2blocks/SM like the original,so own SDK occupancy preserves the exact partition. Remove previous original-kernel metadata dependency and both original numerical-kernel includes from replacement TU.",
+  "original_metadata_callback_present": false,
+  "original_numerical_kernel_includes_in_replacement": false,
+  "native_rollback_remains": true,
+  "production_changed": false,
+  "compiler_changed": false,
+  "final_qualification": "qualification.json",
+  "paired_results": "paired-component-results.json"
+}

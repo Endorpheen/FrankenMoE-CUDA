@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "q3_s grid1 qh shift 8-2*il -> 6-2*il (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "q3_s scale shift 4*(ib%2) -> 2*(ib%2) (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "q1_s delta bit 0x8000 -> 0x4000 (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "q1_s grid index 3*il -> 2*il (f16 body)",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "bf16 store uses half conversion (q1_s body)",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]

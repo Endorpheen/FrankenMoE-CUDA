@@ -1,0 +1,141 @@
+{
+  "files": [
+    {
+      "name": "fg_elementwise_generate.py",
+      "sha256": "3540f91c13de2504a3c3b94699d13b15677d1a33a8339a19c025dbad804332f6",
+      "bytes": 6808
+    },
+    {
+      "name": "fg_elementwise_build.py",
+      "sha256": "4118c48ce25f8afa010175c7dceb334a645eb0bf199be12753655d89ab6e3676",
+      "bytes": 7720
+    },
+    {
+      "name": "fg_elementwise_check.py",
+      "sha256": "b2e1b7acf5bb0279826f54af496fb30f181fc6f09797207674cd11aaba5afc2c",
+      "bytes": 3233
+    },
+    {
+      "name": "fg_elementwise_fixture.c",
+      "sha256": "6dc2e71dd3163338ec5b980a722d25906af7957929904182235ddf08ab4f4a12",
+      "bytes": 5729
+    },
+    {
+      "name": "fg_elementwise_nan_diagnosis.py",
+      "sha256": "0bdc39c4938a4f4ec486540725b20a3f6bbb4964b9211821ca6dae554e2545da",
+      "bytes": 2056
+    },
+    {
+      "name": "fg_elementwise_sanitized_diagnosis.py",
+      "sha256": "f7cef813a2fe7dfd76a3da6b6b0e1082d12da34d9cde8462124c98ca4e28d318",
+      "bytes": 2076
+    },
+    {
+      "name": "fg_elementwise_sanitize.py",
+      "sha256": "d7fa3cb745d5f0e00db131bdd176b8e21ac33324a2cc73838ac13373e43d1d8c",
+      "bytes": 4927
+    },
+    {
+      "name": "fg_elementwise_fma_generate.py",
+      "sha256": "aa5817032403908427680fa3ba019b4d4f3129328ca2f20aa29d21552fbcf389",
+      "bytes": 2189
+    },
+    {
+      "name": "fg_elementwise_fma_build.py",
+      "sha256": "5619793cae1654b5812687bc474b8e1efdce07a7a3e805e63737f628a5c0177a",
+      "bytes": 7736
+    },
+    {
+      "name": "fg_elementwise_fma_check.py",
+      "sha256": "8ee4cef277418cea664344b851ab2dcd92b6d10d79734f3e398a59a86cbb0f2a",
+      "bytes": 3273
+    },
+    {
+      "name": "fg_elementwise_fma_nan_diagnosis.py",
+      "sha256": "582ec31784c45a30057813bfac9dc8875198ef30f5f7fc5aef11ff6e02180ce0",
+      "bytes": 2072
+    },
+    {
+      "name": "fg_elementwise_fma_sanitize.py",
+      "sha256": "fbe89bdc03b69700c4e9ae7992ef57defdfdc9e6cdd66f8e1eec3b7188e33b18",
+      "bytes": 4967
+    },
+    {
+      "name": "fg_elementwise_perf.py",
+      "sha256": "b4e18f1695dbf3f3aacaa436d4b122bbbaa42c460129781f1cec2229f6910e42",
+      "bytes": 7258
+    },
+    {
+      "name": "fg_elementwise_vector_generate.py",
+      "sha256": "fba47f5d3af9d5e36b62193842c2c47c2f8c74b5e15aab33cb12efcc4353e81e",
+      "bytes": 4595
+    },
+    {
+      "name": "fg_elementwise_vector_build.py",
+      "sha256": "72a49f39a4b630b77050a7628f9ec5d7c50753ca04af4f54fe715a777680454d",
+      "bytes": 7855
+    },
+    {
+      "name": "fg_elementwise_vector_check.py",
+      "sha256": "4c66ca8049638bff77506766e36a8ec252b6b14da3b58fca49e28aeeb6482d0a",
+      "bytes": 3310
+    },
+    {
+      "name": "fg_elementwise_vector_fixture.c",
+      "sha256": "2d2b0acfb89963066d4e5146802020522234577fb3bbfde7eb19665019ef4160",
+      "bytes": 5963
+    },
+    {
+      "name": "fg_elementwise_vector_nan_diagnosis.py",
+      "sha256": "a742b824ef9c5215ded08569f81e87137b84984725a95978bae8c5405880e4aa",
+      "bytes": 2084
+    },
+    {
+      "name": "fg_elementwise_vector_sanitize.py",
+      "sha256": "c5585837eed5bd0aab3a95709bca244ce3e13d6fabec83b6eb29abf4a71298bf",
+      "bytes": 4997
+    },
+    {
+      "name": "fg_elementwise_vector_perf.py",
+      "sha256": "722e2324e15c119b85d8f049799978fa38a5c21c1daeefa1a5c82156586f0df0",
+      "bytes": 7316
+    },
+    {
+      "name": "fg_elementwise_vector_trace.py",
+      "sha256": "e8749884e854db99f14a5c5e75fcfa4fc4780ef99e934ef2b7034a86f2e13c68",
+      "bytes": 3796
+    },
+    {
+      "name": "fg_elementwise_apex_report.py",
+      "sha256": "8a93b9d7a0f670d61f48cdd4e8032b8300367937bf93c2bd1858994181d48a12",
+      "bytes": 2626
+    },
+    {
+      "name": "fg_elementwise_vector_apex_report.py",
+      "sha256": "c440e9293834b5fbddfb8a6ef51c0da1a723c76a4e0abe12fb7746fbe29299b8",
+      "bytes": 3879
+    },
+    {
+      "name": "fg_live_launch.py",
+      "sha256": "6922714c01da75aba9d0f24d942e574e70e383fb31f928ec2f027e6d637c3457",
+      "bytes": 9301
+    },
+    {
+      "name": "fg_live_request.py",
+      "sha256": "773098b4dc3ededad08de6c6c07d737a3d0bc27f4905c64c1104b0c527f1a0ff",
+      "bytes": 4457
+    },
+    {
+      "name": "fg_rms_ready.py",
+      "sha256": "08af47d43902198f34f76381cb215dfc2f84d7805e1cf418431d339348872a3c",
+      "bytes": 1377
+    },
+    {
+      "name": "fg_stop_live.py",
+      "sha256": "0705c4deb9d366d4f6e89354a91a17a118e32a5eeba7cdad284584987f8944f4",
+      "bytes": 397
+    }
+  ],
+  "scope": "Exact local orchestration snapshots; canonical source and recorded generation/compile/link commands under source and variants are authoritative. Some generators derive helper scripts; these snapshots are not a portable production installer.",
+  "private_feedback_or_instructions_included": false
+}

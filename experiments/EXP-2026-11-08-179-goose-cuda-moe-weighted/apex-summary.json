@@ -1,0 +1,71 @@
+{
+  "status": "FUNCTIONAL_APEX_PATH_PASS_TWO_PAIRS_BOTH_ORDERS",
+  "component": "CUDA MoE weighted reduction (moe_weighted_reduction_f32) in Goose; all other EXP178 modules identical",
+  "mechanism": "same DSO, GGML_GOOSE_CUDA_MOE_WEIGHTED=0 selects the private-renamed native op",
+  "pairs": {
+    "forward": {
+      "native": {
+        "prefill": 2622.825061458455,
+        "decode": 27.090385899347485,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2619.777803379312,
+        "decode": 27.12067676125305,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": -0.11618228466402006,
+        "decode": 0.1118140657652869
+      }
+    },
+    "reverse": {
+      "native": {
+        "prefill": 2622.825061458455,
+        "decode": 27.090385899347485,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2581.0102298365664,
+        "decode": 26.89962162610966,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": -1.5942668932192088,
+        "decode": -0.704177024080044
+      }
+    },
+    "goose_mean": {
+      "prefill": 2600.394016607939,
+      "decode": 27.010149193681357
+    },
+    "mean_delta_pct": {
+      "prefill": -0.8552245889416145,
+      "decode": -0.296181479157372
+    }
+  },
+  "correctness": "all 128 token ids, text and every returned top-5 probability equal to the saved wholly-C++ oracle in all three runs; sha256 e68df05b",
+  "witnesses": {
+    "moe_weighted": "FG179W_CUDA_MOE_WEIGHTED host=0x1,cuda_status=0,paths=0x1,guards=0",
+    "retained": "FG178Q host=0x1; FG177C host=0x4; FG176G host=0x3"
+  },
+  "local_gates": {
+    "goose": "12 checks/0 failures/6 cases",
+    "native": "12/0/6",
+    "bit_identical_vs_native": "6 of 6 destinations (0 differing floats of 65536 sampled)",
+    "memcheck": "0 errors",
+    "exports": "only the two diagnostics added"
+  },
+  "host_reference_note": "the independent host reference is a tolerance gate (max relative error to the operand-scaled magnitude was 1.7e-7): native is compiled with -fmad=true so its multiply-add chain legitimately differs from a strict host evaluation. Bit-exactness is established by the Goose-vs-native comparison instead.",
+  "limits": "preliminary pairs, uncontrolled external load; P3-11 scope beyond this operator remains native",
+  "production_changed": false,
+  "active_runtime_changed": false
+}

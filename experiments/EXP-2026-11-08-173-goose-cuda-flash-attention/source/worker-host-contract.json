@@ -1,0 +1,65 @@
+{
+  "module": "apex-fattn-host/host.goose",
+  "prefix": "fg175h_",
+  "scope": "FlashAttention host dispatch/support/scratch planning for Apex only: DKQ=DV=256, Q GGML_TYPE_F32, K/V GGML_TYPE_Q4_0, mask GGML_TYPE_F16, padded cache (K->ne[1]%FATTN_KQ_STRIDE==0, FATTN_KQ_STRIDE=256), GQA 16/2=8, CUDA Ada (cc 890). All other native configurations are still routed exactly but reported deferred for the parent's preserved native path. No architecture changes; no forced fallback.",
+  "mirrors": [
+    "fattn.cu: ggml_cuda_flash_attn_ext (dispatch), ggml_cuda_flash_attn_ext_supported, ggml_cuda_flash_attn_ext_get_alloc_size, ggml_cuda_get_best_fattn_kernel, ggml_cuda_fattn_kv_type_supported, ggml_cuda_get_fattn_vec_case",
+    "fattn-common.cuh: ggml_cuda_flash_attn_ext_get_f16_extra_data, launch_fattn (staging strides, sparse/scan scratch, occupancy and wave-efficiency loop, stream-K policy, grid/block shapes, fixup and combine routing)",
+    "fattn-vec.cuh: ggml_cuda_flash_attn_ext_vec_case[_impl] (cols_per_block 1/2, softcap variant, nthreads=128, nbatch_fa=D, warp 32)",
+    "fattn-mma-f16.cuh: mma_f16 head switch (64..576 incl. 192/320/576 special cases), switch_ncols1/2, may/shall_use_sparse, get_config_ampere, case host planning (shared-memory sizes, setattr memo, async_kv_preload)",
+    "common.cuh: arch predicates, init_fastdiv_values divisors (bridge computes), device info, GGML_PAD 128"
+  ],
+  "roles": "packet args [role,device,dst]. role=0: alloc size -> plan 3/0 (f16-extra end minus (uintptr)dst->data). role=1: plan 3/29 native-supported (route!=0), 3/28 deferred. role=2: full planning plus ordered effects; route 0 aborts (fail 29, GGML_ABORT path). Op re-checked (fail 28).",
+  "routes": "best_fattn_kernel enums exact: NONE=0, VEC=100, TILE=200, MMA_F16=400 (plan 3/1). Ada with quantized K/V: Q->ne[1]<=2 -> VEC (small query), else MMA_F16 prefill chain; ncols2=8 (gqa>4, padded+aligned), ncols1 via sparse (1) or 8/16/32/64-minus-ncols2 ladder. Vec: cols_per_block = Q->ne[1]==1?1:2; vec pair id plan 3/21 (U64_MAX = native f16-fallback F16-F16 instance, planned with staging). TILE never planned by Goose (deferred).",
+  "deferred": "plan 3/28=1 iff route==TILE, route==NONE, or MMA with non-ampere build family (carch<800 or non-NVIDIA). Parent runs native dispatch for deferred nodes; Goose effects only when 3/28==0. get_alloc_size and supported stay exact for every route.",
+  "ffi": [
+    "int64_t fg175h_arg(int64_t packet,int64_t k); packet args",
+    "int64_t fg175h_plan_ptr(int64_t packet); zero-initialized plan handle",
+    "uint64_t fg175h_get(int64_t p,int64_t k,int64_t i); void fg175h_put(int64_t,int64_t,int64_t,uint64_t); plan ints",
+    "void fg175h_putf(int64_t p,int64_t i,float v); plan floats",
+    "int64_t fg175h_ti(int64_t t,int64_t k,int64_t i); tensor fields: k0 src[i], 1 data, 2 type, 3 ne[i], 4 nb[i] bytes, 5 op, 7 ggml_nbytes (checked span, must be called), 8 view_src, 9 view_offs",
+    "float fg175h_tpf(int64_t t,int64_t i); int64_t fg175h_tpi(int64_t t,int64_t i); op_params float[i] (memcpy semantics) / int32[i]",
+    "int64_t fg175h_tc(int64_t k); real ggml_type: 0..7 = F32,F16,BF16,Q4_0,Q4_1,Q5_0,Q5_1,Q8_0",
+    "int64_t fg175h_oc(int64_t k); 0 -> GGML_OP_FLASH_ATTN_EXT",
+    "int64_t fg175h_ndev(void); device_count",
+    "int64_t fg175h_dev(int64_t d,int64_t k); ggml_cuda_info().devices[d]: 0 cc, 1 nsm, 4 warp_size",
+    "int64_t fg175h_carch(int64_t d); ggml_cuda_highest_compiled_arch(devices[d].cc)",
+    "int64_t fg175h_blck(int64_t ty); int64_t fg175h_tsize(int64_t ty); ggml_blck_size / ggml_type_size((ggml_type)ty)",
+    "int64_t fg175h_nel(int64_t t); int64_t fg175h_nrows(int64_t t); ggml_nelements / ggml_nrows",
+    "void fg175h_setdev(int64_t d); ggml_cuda_set_device (called first, like ggml_cuda_flash_attn_ext)",
+    "int64_t fg175h_occ(int64_t p); cudaOccupancyMaxActiveBlocksPerMultiprocessor for the kernel resolved from plan (route 3/1; vec pair 3/21; mma 3/2..5 + 3/11 + 3/22), threads 3/30*3/7, shmem 3/9; returns max blocks/SM",
+    "int64_t fg175h_setattr(int64_t p); cudaFuncSetAttribute(MaxDynamicSharedMemorySize, 3/9) for instance 3/34 (mma only)",
+    "int64_t fg175h_memo(int64_t d,int64_t inst); void fg175h_memo_set(int64_t,int64_t,int64_t); per-device raised-limit flag (native shared_memory_limit_raised static)",
+    "int64_t fg175h_pool(int64_t p,int64_t slot); ctx.pool() alloc: slot0 KV_max int32 (3/27 elems), slot1 dst_tmp float (3/25), slot2 dst_tmp_meta float2 (3/26); returns ptr or 0",
+    "int64_t fg175h_conv(int64_t p,int64_t which); f16 staging kernel, which 0=K / 1=V; kind 5/9 | 5/10: 1 = to_fp16_cuda(src 0/1|0/2 -> 0/5|0/6, n 5/1|5/2), 2 = to_fp16_nc_cuda(..., ne, s01..03 5/3..5 | 5/6..8 in type-size units)",
+    "int64_t fg175h_launch(int64_t p); main fattn kernel for the planned instance, args below; returns 0 after CUDA_CHECK(cudaGetLastError())",
+    "int64_t fg175h_lfix(int64_t p,int64_t kind); 0 mask->KV_max scan (grid 3/19,1/3; block 128; s31=2/9/4, s33=2/11/4, iter_k=1/5/256, template ncols1 3/2); 1 sparse compact (grid (1/1+3/2-1)/3/2,1/15; block 256; indices 0/10, counts 0/10+5/11*4; s31=2/9/2, s33=2/11/2; n_queries 1/1, n_kv_max 3/23; native kernel choice ncols1==1 / <8,true> / <8,false>); 2 stream-K uniform fixup (grid 3/18,3/2,3/3; block DV 3/4; bpt 3/33; fastdiv divisors 5/12..14); 3 stream-K general fixup (grid 3/14,3/2,3/3; total_work 3/37; divisors 5/15..18); 4 combine (grid 1/1,1/2,1/3; block DV; smem 3/13*8; dst_tmp 0/13, dst_meta 0/11, out 0/12, parallel_blocks 3/13)",
+    "float fg175h_powf(float,float); float fg175h_u2f(uint64_t); exact C float helpers for m0/m1/n_head_log2 math"
+  ],
+  "main_kernel_args": "bridge assembles the native fattn_kernel_t call from plan: (0/0, 0/7, 0/8, 0/3, 0/4, 0/10, 0/9, 0/11, floats 4/0 scale, 4/1 max_bias, 4/2 m0, 4/3 m1, u32 5/0 n_head_log2, 4/4 logit_softcap, ne00=1/0, ne01=fastdiv(1/1), ne02=1/2, ne03=1/3, nb01..03=2/0..2, ne10=1/4, ne11=3/17 n_kv, ne12=1/6, ne13=1/7, nb11..13=2/3..5, nb21..23=2/6..8, ne31..33=1/13..15, nb31..33=2/9..11).",
+  "plan_keys": {
+    "0": "ptrs: 0 Q, 1 K, 2 V, 3 mask (0 absent), 4 sinks (0 absent), 5 K f16 stage, 6 V f16 stage, 7 K effective, 8 V effective, 9 dst out, 10 KV_max/indices, 11 dst_tmp_meta, 12 KQV data, 13 dst_tmp, 15 f16 end",
+    "1": "dims: 0..3 Q ne, 4..7 K ne, 8..11 V ne, 12..15 mask ne (0 absent)",
+    "2": "strides bytes: 0..2 Q nb1..3, 3..5 K effective, 6..8 V effective, 9..11 mask nb1..3",
+    "3": "0 alloc size, 1 route, 2 ncols1, 3 ncols2, 4 DV, 5 DKQ, 6 nthreads, 7 nwarps, 8 nbatch_fa, 9 shared bytes, 10 stream_k, 11 use_sparse, 12 async_kv_preload, 13 parallel_blocks, 14..16 grid xyz, 17 n_kv, 18 ntiles_dst, 19 ntiles_x, 20 scan_mask, 21 vec pair id, 22 use_logit_softcap, 23 sparse n_kv_max, 24 n_lists, 25 dst_tmp elems, 26 dst_meta elems, 27 KV_max elems, 28 deferred, 29 supported, 30 block_x, 31 gqa_ratio, 32 device, 33 sk blocks_per_tile, 34 mma instance id, 35 ncols, 37 total_work",
+    "4": "floats: 0 scale (softcap-divided), 1 max_bias, 2 m0, 3 m1, 4 logit_softcap",
+    "5": "0 n_head_log2, 1 K nel, 2 V nel, 3..5 K s01..03, 6..8 V s01..03, 9 K conv kind, 10 V conv kind, 11 counts offset elems, 12..14 uniform-fixup divisors, 15..18 general-fixup divisors"
+  },
+  "effects_order": "setdev -> f16_extra metadata -> K conv -> V conv -> [sparse: pool0 + compact launch] -> [scan: pool0 + scan launch] -> occ -> pool1/pool2 -> main launch -> fixup/combine launches; identical to native launch_fattn ordering.",
+  "assumptions": [
+    "Apex build compiles vec instances pair 0 (F16-F16) and pair 8 (Q4_0-Q4_0) for D 64/128/256 (GGML_CUDA_FA_F16_F16, GGML_CUDA_FA_Q4_0_Q4_0); every other pair returns nullptr and takes the native f16-fallback behavior (with staging) exactly; never forced by this module",
+    "Ada: cc 890 NVIDIA, carch>=800 -> ampere config table; stream-K always on cc>=890; async_kv_preload for dense mma with ncols2>=2 (cp-async nstages=2)",
+    "WARP_SIZE=32; half=2B; half2=4B; Q4_0 block=18B; GGML_PAD(...,128) for stage alignment",
+    "op_params: float[0]=scale, float[1]=max_bias, float[2]=logit_softcap, int32[4]=n_kv_max (read only on sparse paths; may be uninitialized when dense, native identical)",
+    "is_quantized == type not in {F32,F16,BF16}: exact within the FA type universe; other types already yield NONE via kv_type_supported",
+    "n_head_log2 = highest power of two <= Q->ne[2] (equals floorf(log2f(float(n))) for all n<2^24; heads never reach that)",
+    "ggml enum values only via fg175h_tc/oc; tensor struct layout never reconstructed (ggml-impl.h not among inputs)",
+    "V_is_K_view via view_src/view_offs (ti k8/k9): V->view_src && (V->view_src==K || (V->view_src==K->view_src && V->view_offs==K->view_offs))"
+  ],
+  "overflow": "all products through checked u64 mul (fail 1); divisions guarded (fail 3); grids bounded x<=2^31-1, y,z<=65535 (fail 25; CUDA launch limits, same abort outcome as native CUDA_CHECK); staging size = dst_nbytes + pad128 + nelements*2 per staged tensor, u64 like native size_t.",
+  "errors": {
+    "1": "mul overflow", "3": "div0", "4": "negative cast", "6": "bad type in vec lookup", "7": "null Q/K/V", "8": "gqa mod/div", "9": "mma switch GGML_ABORT path", "10": "V head mismatch", "11": "192/320/576 gqa-opt assert", "12": "gqa divisibility assert", "13": "missing ampere config row", "14": "vec head invalid", "15": "Q/KQV not F32", "16": "nb0 != element size", "17": "mask not F16", "18": "null f16 stage", "19": "sparse without mask", "20": "sparse ncols1 gate (1 or 8)", "21": "n_kv_max<=0", "22": "pool alloc failure", "23": "occupancy<=0", "24": "n_head out of range", "25": "grid limits", "26": "launch/lfix status nonzero", "27": "bad role/args", "28": "op != GGML_OP_FLASH_ATTN_EXT", "29": "route NONE dispatch abort", "30": "setattr status nonzero", "31": "conv status nonzero", "33": "nthreads % warp_size"
+  },
+  "missing_includes": [],
+  "out_of_scope": "TILE kernel planning (deferred), non-ampere GPU families (deferred), numerical vec/MMA kernels (other Goose modules), f16 conversion and pool internals, compile/GPU/performance claims (parent owns checks)."
+}

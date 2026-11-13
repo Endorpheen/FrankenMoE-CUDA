@@ -1,0 +1,18 @@
+{
+  "libllama.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/run/libllama-exp150-restored.so.0.7.0",
+    "sha256": "926fde348bbce3741a9b899165534793d96c3bb134f21daeb9cb62c54b3f22af"
+  },
+  "libggml-base.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp162/run/libggml-base-buffers-6273a37c65ee.so.0.27.0",
+    "sha256": "21aa28e93bde67640f99d811dabe17277be0d75ed537f2fb6dc992f6bc8cc01c"
+  },
+  "libggml-cpu.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run/libggml-cpu-shared-dd5a40e47065.so.0.27.0",
+    "sha256": "63ad4984881220e55e41463981faa3bba5d4a0d7218880e9b205c8c8c460a9a7"
+  },
+  "libggml-cuda.so": {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp160/run/libggml-cuda-shared-96c6f96ceea7.so.0.27.0",
+    "sha256": "852ab06f91beb65d0218a9c970b521e557ee4ba51401ea2f79c6a057d8fd3353"
+  }
+}

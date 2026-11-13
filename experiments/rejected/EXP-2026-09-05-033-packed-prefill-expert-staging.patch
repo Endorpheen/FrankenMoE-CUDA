@@ -1,0 +1,204 @@
+--- a/ggml/src/ggml-backend-impl.h
++++ b/ggml/src/ggml-backend-impl.h
+@@ -103,6 +103,12 @@
+     // Backend (stream)
+     //
+ 
++    struct ggml_backend_copy_segment {
++        size_t src_offset;
++        size_t dst_offset;
++        size_t size;
++    };
++
+     struct ggml_backend_i {
+         const char * (*get_name)(ggml_backend_t backend);
+ 
+@@ -138,6 +144,9 @@
+ 
+         // (optional) sort/optimize the nodes in the graph
+         void                      (*graph_optimize)    (ggml_backend_t backend, struct ggml_cgraph * cgraph);
++
++        // (optional) upload one packed host payload and scatter it into a device tensor
++        bool (*set_tensor_scatter_async)(ggml_backend_t backend, struct ggml_tensor * tensor, const void * data, size_t size, const struct ggml_backend_copy_segment * segments, size_t n_segments);
+     };
+ 
+     struct ggml_backend {
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -808,6 +808,9 @@
+     int cur_copy;
+     int next_copy;
+     ggml_backend_event_t events[GGML_SCHED_MAX_BACKENDS][GGML_SCHED_MAX_COPIES];
++    ggml_backend_buffer_t packed_staging[GGML_SCHED_MAX_BACKENDS][GGML_SCHED_MAX_COPIES];
++    ggml_backend_event_t packed_staging_events[GGML_SCHED_MAX_BACKENDS][GGML_SCHED_MAX_COPIES];
++    size_t packed_staging_capacity[GGML_SCHED_MAX_BACKENDS][GGML_SCHED_MAX_COPIES];
+     struct ggml_tensor ** graph_inputs;
+     int n_graph_inputs;
+     int graph_inputs_capacity;
+@@ -1687,7 +1690,7 @@
+                         prev_ids_tensor = ids_tensor;
+                     }
+ 
+-                    // group consecutive experts and copy them together
++                    // Group consecutive experts and keep the destination layout unchanged.
+                     auto copy_experts = [&](int32_t first_id, int32_t last_id) {
+                         const size_t expert_offset = first_id * expert_size;
+                         const size_t expert_size_copy =  (last_id - first_id + 1) * expert_size;
+@@ -1702,6 +1705,20 @@
+                             expert_size_copy + padding_end);
+                     };
+ 
++                    const bool packed_prefill = getenv("GGML_PACKED_PREFILL_STAGE") != NULL &&
++                        node->src[1]->ne[2] >= 32 &&
++                        split_backend->iface.set_tensor_scatter_async != NULL;
++                    std::vector<ggml_backend_copy_segment> packed_segments;
++                    size_t packed_size = 0;
++                    auto add_packed_experts = [&](int32_t first_id, int32_t last_id) {
++                        const size_t expert_offset = first_id * expert_size;
++                        const size_t expert_size_copy = (last_id - first_id + 1) * expert_size;
++                        const size_t padding = std::min<size_t>(expert_size, 512);
++                        const size_t padding_end = last_id < n_expert - 1 ? padding : 0;
++                        packed_segments.push_back({ packed_size, expert_offset, expert_size_copy + padding_end });
++                        packed_size += expert_size_copy + padding_end;
++                    };
++
+                     int id = 0;
+                     while (!ggml_bitset_get(used_ids.data(), id)) {
+                         id++;
+@@ -1719,12 +1736,50 @@
+                             continue;
+                         }
+ 
+-                        copy_experts(first_id, last_id);
++                        if (packed_prefill) {
++                            add_packed_experts(first_id, last_id);
++                        } else {
++                            copy_experts(first_id, last_id);
++                        }
+ 
+                         first_id = id;
+                         last_id = id;
+                     }
+-                    copy_experts(first_id, last_id);
++                    if (packed_prefill) {
++                        add_packed_experts(first_id, last_id);
++
++                        ggml_backend_buffer_t * staging = &sched->packed_staging[split_backend_id][sched->cur_copy];
++                        ggml_backend_event_t * staging_event = &sched->packed_staging_events[split_backend_id][sched->cur_copy];
++                        size_t * staging_capacity = &sched->packed_staging_capacity[split_backend_id][sched->cur_copy];
++
++                        if (*staging_event != NULL) {
++                            ggml_backend_event_synchronize(*staging_event);
++                        }
++                        if (*staging == NULL || *staging_capacity < packed_size) {
++                            ggml_backend_buffer_free(*staging);
++                            *staging = ggml_backend_buft_alloc_buffer(ggml_backend_dev_host_buffer_type(split_backend->device), packed_size);
++                            *staging_capacity = packed_size;
++                        }
++                        uint8_t * packed_data = (uint8_t *) ggml_backend_buffer_get_base(*staging);
++                        for (const ggml_backend_copy_segment & segment : packed_segments) {
++                            memcpy(packed_data + segment.src_offset,
++                                   (const uint8_t *) input->data + segment.dst_offset,
++                                   segment.size);
++                        }
++                        GGML_ASSERT(split_backend->iface.set_tensor_scatter_async(
++                            split_backend, input_cpy, packed_data, packed_size,
++                            packed_segments.data(), packed_segments.size()));
++                        if (*staging_event == NULL) {
++                            *staging_event = ggml_backend_event_new(split_backend->device);
++                        }
++                        if (*staging_event != NULL) {
++                            ggml_backend_event_record(*staging_event, split_backend);
++                        } else {
++                            ggml_backend_synchronize(split_backend);
++                        }
++                    } else {
++                        copy_experts(first_id, last_id);
++                    }
+                 } else {
+                     // try async copy, but if not possible, we can still use a sync copy without synchronizing the dst backend, since we handle the synchronization here with multiple copies and events
+                     // TODO: add public function to facilitate this, since applications do not have direct access to the backend interface
+@@ -1870,6 +1925,8 @@
+     for (int b = 0; b < sched->n_backends; b++) {
+         for (int c = 0; c < sched->n_copies; c++) {
+             ggml_backend_event_free(sched->events[b][c]);
++            ggml_backend_event_free(sched->packed_staging_events[b][c]);
++            ggml_backend_buffer_free(sched->packed_staging[b][c]);
+         }
+     }
+     ggml_gallocr_free(sched->galloc);
+--- a/ggml/src/ggml-cpu/ggml-cpu.cpp
++++ b/ggml/src/ggml-cpu/ggml-cpu.cpp
+@@ -207,6 +207,7 @@
+     /* .event_record            = */ NULL,
+     /* .event_wait              = */ NULL,
+     /* .graph_optimize          = */ NULL,
++    /* .set_tensor_scatter_async= */ NULL,
+ };
+ 
+ static ggml_guid_t ggml_backend_cpu_guid(void) {
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -2445,6 +2445,53 @@
+     CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, cuda_ctx->stream()));
+ }
+ 
++static __global__ void ggml_cuda_scatter_packed_segments(
++        const char * src,
++        char * dst,
++        const ggml_backend_copy_segment * segments) {
++    const ggml_backend_copy_segment segment = segments[blockIdx.y];
++    for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < segment.size; i += blockDim.x * gridDim.x) {
++        dst[segment.dst_offset + i] = src[segment.src_offset + i];
++    }
++}
++
++static bool ggml_backend_cuda_set_tensor_scatter_async(
++        ggml_backend_t backend,
++        ggml_tensor * tensor,
++        const void * data,
++        size_t size,
++        const ggml_backend_copy_segment * segments,
++        size_t n_segments) {
++    if (n_segments == 0) {
++        return true;
++    }
++
++    ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
++    ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
++    if (buf->buft != ggml_backend_cuda_buffer_type(cuda_ctx->device)) {
++        return false;
++    }
++
++    size_t max_segment_size = 0;
++    for (size_t i = 0; i < n_segments; ++i) {
++        GGML_ASSERT(segments[i].src_offset + segments[i].size <= size);
++        GGML_ASSERT(segments[i].dst_offset + segments[i].size <= ggml_nbytes(tensor));
++        max_segment_size = std::max(max_segment_size, segments[i].size);
++    }
++
++    ggml_cuda_pool_alloc<char> packed_dev(cuda_ctx->pool(), size);
++    ggml_cuda_pool_alloc<ggml_backend_copy_segment> segments_dev(cuda_ctx->pool(), n_segments);
++    CUDA_CHECK(cudaMemcpyAsync(packed_dev.get(), data, size, cudaMemcpyHostToDevice, cuda_ctx->stream()));
++    CUDA_CHECK(cudaMemcpyAsync(segments_dev.get(), segments, n_segments * sizeof(*segments), cudaMemcpyHostToDevice, cuda_ctx->stream()));
++
++    const dim3 block(256, 1, 1);
++    const dim3 grid((max_segment_size + block.x - 1) / block.x, n_segments, 1);
++    ggml_cuda_scatter_packed_segments<<<grid, block, 0, cuda_ctx->stream()>>>(
++        packed_dev.get(), (char *) tensor->data, segments_dev.get());
++    CUDA_CHECK(cudaGetLastError());
++    return true;
++}
++
+ static void ggml_backend_cuda_get_tensor_async(ggml_backend_t backend, const ggml_tensor * tensor, void * data, size_t offset, size_t size) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
+     ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
+@@ -4593,6 +4640,7 @@
+     /* .event_record            = */ ggml_backend_cuda_event_record,
+     /* .event_wait              = */ ggml_backend_cuda_event_wait,
+     /* .graph_optimize          = */ ggml_backend_cuda_graph_optimize,
++    /* .set_tensor_scatter_async= */ ggml_backend_cuda_set_tensor_scatter_async,
+ };
+ 
+ static ggml_guid_t ggml_backend_cuda_guid() {
+

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd /home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda
+'/usr/bin/g++-13' '-DGGML_BACKEND_SHARED' '-DGGML_SHARED' '-DGGML_USE_CPU' '-DGGML_USE_CUDA' '-DLLAMA_BUILD' '-DLLAMA_SHARED' '-Dllama_EXPORTS' '-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src/.' '-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/build-cuda/src' '-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/src/../include' '-I/home/end0/AI/LlamaServer/llama.cpp-flint-cuda/ggml/src/../include' '-O3' '-DNDEBUG' '-fPIC' '-Wmissing-declarations' '-Wmissing-noreturn' '-Wall' '-Wextra' '-Wpedantic' '-Wcast-qual' '-Wno-unused-function' '-Wno-array-bounds' '-Wextra-semi' '-o' '/home/end0/AI/LlamaServer/exp101-kv-lazy/build/llama-kv-cache.o' '-c' '/home/end0/AI/LlamaServer/exp101-kv-lazy/overlay/src/llama-kv-cache.cpp'

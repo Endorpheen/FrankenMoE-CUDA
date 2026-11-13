@@ -1,0 +1,26 @@
+========= COMPUTE-SANITIZER
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+ggml_backend_cuda_graph_compute: CUDA graph warmup reset
+ggml_backend_cuda_graph_compute: CUDA graph warmup reset
+ggml_backend_cuda_graph_compute: CUDA graph warmup reset
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+CUDA Graph id 17 reused
+DONE: Q6_K safe, fixed UID, balanced->hot routing, 8 iterations
+========= ERROR SUMMARY: 0 errors

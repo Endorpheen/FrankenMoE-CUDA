@@ -1,0 +1,6 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+CHECK PASS decode: token dimensions match 3
+CHECK PASS decode: MUL_MAT_ID runs on the CPU
+CHECK PASS decode: single CPU split
+CHECK PASS decode: sched graph compute

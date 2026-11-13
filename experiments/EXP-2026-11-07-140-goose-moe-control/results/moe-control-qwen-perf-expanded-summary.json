@@ -1,0 +1,195 @@
+{
+  "status": "PASS_REAL_GGML_QWEN_COMMON_CONTROLLER_ALL_FIVE_COLD_BANK_FUSED",
+  "runs": {
+    "native": {
+      "graph_cases": 412,
+      "values": 389732,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    },
+    "off": {
+      "graph_cases": 412,
+      "values": 389732,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    },
+    "on": {
+      "graph_cases": 412,
+      "values": 389732,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    }
+  },
+  "control_witness": {
+    "native": {},
+    "off": {},
+    "on": {}
+  },
+  "math_witness": {
+    "native": [],
+    "off": [
+      {
+        "component": "cpu",
+        "mode": 1,
+        "kind": 4,
+        "calls": 40
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 0,
+        "calls": 744
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 1,
+        "calls": 769
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 2,
+        "calls": 747
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 3,
+        "calls": 720
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 4,
+        "calls": 829
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 0,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 1,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 2,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 3,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 4,
+        "calls": 16
+      }
+    ],
+    "on": [
+      {
+        "component": "cpu",
+        "mode": 1,
+        "kind": 4,
+        "calls": 40
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 0,
+        "calls": 744
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 1,
+        "calls": 769
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 2,
+        "calls": 747
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 3,
+        "calls": 720
+      },
+      {
+        "component": "cpu",
+        "mode": 3,
+        "kind": 4,
+        "calls": 829
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 0,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 1,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 2,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 3,
+        "calls": 16
+      },
+      {
+        "component": "base",
+        "mode": 2,
+        "kind": 4,
+        "calls": 16
+      }
+    ]
+  },
+  "native_fused_stats_identical": "IQ2S_FUSED_STATS groups[c1,c2,c3,c4+]=12,20,20,44 fused_groups=0,16,16,0 tokens[c1,c2,c3,c4+]=12,20,20,44 iq2s_groups_seen=96 window_opens=12 fused_dispatches=60",
+  "all_bytes_equal_original_and_previous": true,
+  "output_sha256": "f52742f35039353144a4e337a3c8d9e82a958f5ff45d51abe9d87873a4daf576",
+  "bytes_compared": 1562224,
+  "preserved": "Same EXP139 math/common quant, native fallback/tiled/window/ready hook; real IDs and bank slots separated",
+  "real_model": "pending",
+  "production_changed": false,
+  "compiler_changed": false,
+  "weight_types": [
+    "Q2_0",
+    "Q5_0",
+    "IQ4_NL",
+    "IQ2_XXS",
+    "IQ2_S",
+    "Q4_K",
+    "Q6_K",
+    "F32",
+    "F16",
+    "BF16"
+  ],
+  "math_scope": "Controller covers all ten; previous EXP139 math remains Goose for first five, additional five retain original native compute in Qwen profile",
+  "additional_cases": {
+    "new_weight_families": 60,
+    "prequant_padded_ids": 30,
+    "window_polarity": 12,
+    "cold_masks_alias_bank_slots": 20
+  },
+  "real_model_inference": "results/moe-control-qwen-model-stage-summary.json"
+}

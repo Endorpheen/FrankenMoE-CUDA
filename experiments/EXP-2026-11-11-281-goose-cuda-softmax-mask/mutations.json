@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "f16 mask offset divides by 4 instead of 2",
+    "status": "CAUGHT",
+    "failures": 1663
+  },
+  {
+    "mutation": "mask row index drops the modulo",
+    "status": "CAUGHT",
+    "failures": 362
+  },
+  {
+    "mutation": "mask term drops the alibi slope",
+    "status": "CAUGHT",
+    "failures": 826
+  },
+  {
+    "mutation": "f16 mask loaded at 32-bit width",
+    "status": "CAUGHT",
+    "failures": 9
+  },
+  {
+    "mutation": "final pass skips normalization",
+    "status": "CAUGHT",
+    "failures": 4620
+  }
+]

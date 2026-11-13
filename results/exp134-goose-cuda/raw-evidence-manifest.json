@@ -1,0 +1,30 @@
+{
+  "benchmark-v1.jsonl": {
+    "sha256": "7b6bf60f41844f61bfb26f9eba04a0e1a6a8566cac82b5cf3409de58e3547b34",
+    "bytes": 6535
+  },
+  "benchmark.jsonl": {
+    "sha256": "f2970e830017ba03f11c24feaa1f9ea7e606962da173691db48a5b96effbd2a8",
+    "bytes": 6535
+  },
+  "correctness.jsonl": {
+    "sha256": "63004aeea910bbd9f28d6a5240b28e09eec980fb4532f099f5724b4dff340abb",
+    "bytes": 435
+  },
+  "feature-compiler.log": {
+    "sha256": "f838a719f224804473fa5f0a83ad84be7086f2bdf59bf26bb99fe303e9ef33fa",
+    "bytes": 748
+  },
+  "memcheck.log": {
+    "sha256": "8288325dca04cf262eabeff3181db773e7d912dd154a37ba2f95617deefc3a4f",
+    "bytes": 497
+  },
+  "normalized-silu-instructions.json": {
+    "sha256": "8f58564c5497321a8399c3478a198889d8512961baf15955fdd593d7869598ca",
+    "bytes": 11111
+  },
+  "probe.sass": {
+    "sha256": "a001b2e6dbf2845c13ce332ac293697f650d667f875edf18918d7cbbb9691ec8",
+    "bytes": 77117
+  }
+}

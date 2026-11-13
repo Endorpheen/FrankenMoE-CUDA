@@ -1,0 +1,19 @@
+{
+  "source/backend-scheduler.cpp": "9e92a367627f09b5a87b8a339f3d2e8e72f3e25e2dbbc214c53937c21497299b",
+  "source/field-abi.json": "fc5b6603523d6f1a69d6bca7e680f09ab16da66383306d3292bb95e73f3a0da0",
+  "source/fixture.cpp": "c24eb0dec6ab8b8dd9681fe1c93339bb877db6ee61775eabf55ed9f5b83736e3",
+  "source/manifest.json": "2c13f997b74eaa815cfc30df58ec8c68e930d8456b4b6da2418aa686fdae2a5f",
+  "source/native-backend.cpp": "1c722a0b021b5125d024995502db742b322f0c198a5c4818aa4cbb0185da7c50",
+  "source/probe-candidate.cpp": "0337d06ba3d02cdb5e53627789b2b4cc753be4054de4fe5fd570c429273258a1",
+  "source/probe-native.cpp": "8b87467bcda01b702f03797f90507ed0926bfd69c8b33cfb33b44fcaa5ada74b",
+  "source/provider.h": "419e4425d586d51bc8e328122a1ad143449c70b67fef5a2881828ffa07ad1491",
+  "source/recipes.json": "c3b91f66d127fa0251228e0deae8b5042eec2b5fc60554a8ab3d081d7203b5b0",
+  "source/scheduler-api.h": "320a0f6024fe1b7e673aae12647e6c82b6ec169ed3c76106fdc33f58580ae51c",
+  "source/scheduler-bridge.h": "fa9396d84ec4bc89472dfa6540c81ca7031f16b343315fb480c444a8ea4ae95d",
+  "source/scheduler-ffi.h": "c399de7aab5fc4063ee37ab5d91ce5d75c8e9dc27b2c5751ced55d2a183aee6f",
+  "source/scheduler-generated.c": "46625d96c0ed8297769fec46faec245a07ccb1328e649561a9d6d4c10cb27aa7",
+  "source/scheduler-qualified.c": "0032d9217533bc5a76b3e335cf01ef6dd0d9ab7a823f40243c0fc73d6872df1a",
+  "source/scheduler-unit.c": "63ec037980355df878a86ccf28ab07888b905ad2360c59931452e10cfd052a47",
+  "source/scheduler.goose": "cef6feb46424bcf768960a7af55b253d190eb121c4371388ca49ba92133b57ad",
+  "source/test-export.h": "358eb8b1871bf619e9c150e8964d7003415a1887c4a124b507c54cac6f94dcd1"
+}

@@ -1,0 +1,122 @@
+{
+  "module": "fg172r_apex_rope",
+  "task": "Goose projection of native ggml_cuda_op_rope / ggml_cuda_op_rope_back (rope.cu) covering the Apex qwen35moe text RoPE path",
+  "sources": {
+    "native": "apex-rope/inputs/rope.cu + rope.cuh (frozen, immutable)",
+    "apex_metadata": "apex-rope/inputs/apex-architecture.json",
+    "op_entry": "ggml_cuda_op_rope(ctx, dst); srcs resolved from dst: src[0]=x, src[1]=pos (I32), src[2]=freq_factors (optional F32)"
+  },
+  "apex_path": {
+    "architecture": "qwen35moe",
+    "head_dim": 256,
+    "rope_dims": 64,
+    "sections": [11, 11, 10, 0],
+    "freq_base": 10000000.0,
+    "layout": "IMRoPE (mode 40): NeoX half pairs, theta position selected per pair from t/h/w/extra via sector%3 priority as native rope_multi",
+    "priority": "text IMRoPE path; NORMAL/NEOX/MROPE also implemented; nothing hardcoded in the kernel"
+  },
+  "oracle": {
+    "aliases": ["fg172r_native_ggml_cuda_op_rope", "fg172r_native_ggml_cuda_op_rope_back", "fg172r_native_ggml_cuda_op_rope_fused", "fg172r_native_ggml_cuda_op_rms_norm_mul_rope_fused"],
+    "op_params_int32": {"0": "n_past (ignored by native kernels; policy ignores too)", "1": "n_dims", "2": "mode", "3": "n_ctx (ignored)", "4": "n_ctx_orig", "11": "sections[0]", "12": "sections[1]", "13": "sections[2]", "14": "sections[3]", "15": "n_offs"},
+    "op_params_float": {"5": "freq_base", "6": "freq_scale", "7": "ext_factor", "8": "attn_factor", "9": "beta_fast", "10": "beta_slow"}
+  },
+  "recipes": [
+    {"op": 0, "name": "ggml_cuda_op_rope", "forward": true, "implemented": true, "args": 1},
+    {"op": 1, "name": "ggml_cuda_op_rope_back", "forward": false, "implemented": true, "args": 1},
+    {"op": 2, "name": "ggml_cuda_op_rope_fused", "implemented": false, "args": 2, "reason": "ROPE+VIEW+SET_ROWS fusion reads I64 row_indices; fg172r effect whitelist allows F32/F16/I32 loads only"},
+    {"op": 3, "name": "ggml_cuda_op_rms_norm_mul_rope_fused", "implemented": false, "args": 4, "reason": "RMS+MUL+ROPE one-block-per-row block-reduction kernel is outside the Apex text RoPE path and this module"}
+  ],
+  "packet_args": {"0": "op id (0 forward, 1 backward; 2/3 rejected code 40, unknown rejected code 1)", "1": "ctx handle, must be nonzero", "2": "dst node tensor", "3": "unused (sources come from node.src)"},
+  "plan": {
+    "c_decl": "struct fg172r_plan{uint64_t ptrs[5];uint64_t dims[4][4];uint64_t strides[4][4];uint64_t iv[32];float fv[8];};",
+    "ptrs": ["x (src0)", "dst (node)", "pos (src1)", "freq_factors (src2, 0 if absent)", "reserved=0"],
+    "dims_rows": ["0=x ne[0..3]", "1=dst ne[0..3]", "2=pos ne[0..3]", "3=freq_factors ne[0..3]"],
+    "strides_rows": ["0=x", "1=dst", "2=pos", "3=freq_factors"],
+    "strides_units": "elements (nb[i]/element_size); flat index = row*4+i",
+    "iv": {"0": "mode", "1": "n_dims", "2": "n_offs", "3": "sections[0]", "4": "sections[1]", "5": "sections[2]", "6": "sections[3]", "7": "forward (1/0)", "8": "inplace (x ptr == dst ptr)", "9": "has_freq_factors", "10": "is_imrope (mode==40)", "11": "x_is_f16", "12": "dst_is_f16", "13": "grid.x=nr", "14": "grid.y=ceil(ne00/512)", "15": "block.x=1", "16": "block.y=256", "17": "block.z=1", "18..31": "reserved 0"},
+    "fv": {"0": "theta_scale=powf(freq_base,-2/n_dims)", "1": "freq_scale", "2": "ext_factor", "3": "attn_factor", "4": "corr_dims.v[0] (low)", "5": "corr_dims.v[1] (high)", "6..7": "reserved"}
+  },
+  "host_ffi": {
+    "fg172r_arg": "(packet,k)->i64 packet argument",
+    "fg172r_plan_ptr": "(packet)->i64 zero-initialized plan",
+    "fg172r_hget/fg172r_hput": "(p,k,i)->u64 / (p,k,i,v) plan sections k: 0=ptrs,1=dims,2=strides,3=iv",
+    "fg172r_hfloat": "(p,i,v) plan fv[i]",
+    "fg172r_ti": "(t,k,i)->i64; k: 0=src[j] handle (0 if absent), 1=data pointer, 2=type, 3=ne[i], 4=nb[i] bytes, 8=op_params int32[i], 9=ggml_nbytes checked span (must call)",
+    "fg172r_tf": "(t,i)->f32 float view of op_params[i]",
+    "fg172r_contiguous": "(t)->bool native ggml_is_contiguous",
+    "fg172r_f32_type/fg172r_f16_type/fg172r_i32_type": "native ggml type ids",
+    "fg172r_hlog/fg172r_hpow": "host logf/powf",
+    "fg172r_launch": "(packet) parent bridge launch",
+    "fg172r_fail": "(code) policy rejection"
+  },
+  "device_effects": {
+    "fg172r_dget": "(p:i64,k:i64,i:i64)->u64 plan read",
+    "fg172r_dfl": "(p:i64,i:i64)->f32 plan fv read",
+    "fg172r_f32_load/fg172r_f32_store": "element-wise F32 at raw ptr + element index",
+    "fg172r_f16_load/fg172r_f16_store": "half<->f32 conversion at raw ptr + element index",
+    "fg172r_i32_load": "I32 load (positions)",
+    "fg172r_sin/fg172r_cos/fg172r_pow/fg172r_log": "f32 sinf/cosf/powf/logf ISA",
+    "fg172r_lc/fg172r_psync": "PDL grid primitives mirroring native ggml_cuda_pdl_lc/pdl_sync call sites (neox entry lc; neox+multi after offsets); safe as no-ops"
+  },
+  "device_entry": {
+    "name": "rope",
+    "signature": "rope(p:i64, bi:i64, row_dst:i64)",
+    "mapping": "bi = blockDim.y*blockIdx.y + threadIdx.y, row_dst = blockDim.x*blockIdx.x + threadIdx.x",
+    "launch": "block(1,256,1), grid(nr, ceil(ne00/512), 1) with native CUDA_ROPE_BLOCK_SIZE=256; one thread owns one even pair i0=2*bi; no whole-tensor serial loop",
+    "dummy_main": "fn main(){rope(0,0,0);} retained for entry linkage; parent never executes it"
+  },
+  "dispatch": "mirrors native if/else order: mode&2 -> NEOX half pairs; else mode&8 (mode!=24) -> MROPE/IMROPE half pairs with section theta; mode==24 VISION rejected upstream and returns untouched; else NORMAL adjacent pairs; backward only negates sin",
+  "policy_checks": [
+    {"code": 1, "rule": "op in 0..3, ctx and node nonzero"},
+    {"code": 2, "rule": "dst type F32 or F16"},
+    {"code": 3, "rule": "dst nb[0] equals element size"},
+    {"code": 4, "rule": "src0 present"},
+    {"code": 5, "rule": "src0 type F32 or F16"},
+    {"code": 6, "rule": "src0 nb[0] equals element size (pairs must be element-adjacent)"},
+    {"code": 7, "rule": "native type combo: same type or F32->F16"},
+    {"code": "8..10", "rule": "x dims in range, whole-element strides, max row offset + ne0 within checked nbytes span"},
+    {"code": "11..13", "rule": "same for dst"},
+    {"code": 14, "rule": "dst dims equal x dims (rope preserves shape)"},
+    {"code": 15, "rule": "ne00 even (native GGML_ASSERT)"},
+    {"code": 16, "rule": "n_dims>0, even, <= ne00"},
+    {"code": 17, "rule": "n_offs>=0, even, n_offs+n_dims<=ne00 (rotated window inside row)"},
+    {"code": 18, "rule": "mode nonnegative"},
+    {"code": 19, "rule": "mrope/imrope requires one of sections[0..2]>0 (native assert)"},
+    {"code": 20, "rule": "sections nonnegative"},
+    {"code": 21, "rule": "freq_base positive finite"},
+    {"code": 22, "rule": "freq_scale positive finite"},
+    {"code": 23, "rule": "ext_factor finite"},
+    {"code": 24, "rule": "attn_factor finite"},
+    {"code": 25, "rule": "beta_fast positive finite"},
+    {"code": 26, "rule": "beta_slow positive finite"},
+    {"code": 27, "rule": "n_ctx_orig>0"},
+    {"code": "28..31", "rule": "pos present, I32, nb[0]==4, contiguous"},
+    {"code": "32", "rule": "pos element count >= ne02 (norm/neox) or 4*ne02 (mrope/imrope)"},
+    {"code": "33..35", "rule": "pos dims/strides/span"},
+    {"code": "36..38", "rule": "freq_factors F32, nb[0]==4, contiguous"},
+    {"code": 39, "rule": "freq_factors count >= n_dims/2"},
+    {"code": 40, "rule": "fused entries (op 2/3) unimplemented"},
+    {"code": 41, "rule": "VISION mode 24 unimplemented in this module"},
+    {"code": "42..44", "rule": "freq_factors dims/strides/span"},
+    {"code": 45, "rule": "nr<=2147483647 and grid.y<=65535 (CUDA launch limits)"},
+    {"code": "46..48", "rule": "x/dst/pos data pointers nonzero"}
+  ],
+  "numeric_fidelity": [
+    "theta_base = (float)pos[i2 + ne02*sec] * powf(theta_scale, (float)iw/2.0f): pair exponent uses float division exactly as native; freq_factors index iw/2 and ramp i0/2 use integer division as native",
+    "rotation stored as x0*cos_theta - x1*sin_theta then x0*sin_theta + x1*cos_theta in native order; no FMA rewriting introduced",
+    "rope_yarn mix theta_interp*(1-ramp_mix)+theta_extrap*ramp_mix and mscale*=1+0.1*logf(1/freq_scale) association preserved; sin negated only for backward",
+    "device offsets use i64 arithmetic; values identical to native 32-bit int math for every policy-valid input",
+    "corr_dims are computed host-side in f32; native computes the inner n_ctx_orig/(n_rot*2*M_PI) in double before narrowing to float, so the projection can deviate by <=1 ulp of the divisor; this only affects the ramp and only when ext_factor != 0; parent may pin fv4/fv5 to oracle values to isolate device math",
+    "device fmax/fmin are ternary comparisons matching ggml MAX/MIN macros; differs from fmaxf only on NaN, excluded by policy finiteness checks",
+    "tail (unrotated) passthrough copies columns i0,i0+1 from x to dst at the same in-row positions for every layout, matching both rope_norm and rope_neox/multi tail stores; inplace (x ptr == dst ptr) skips the tail as native"
+  ],
+  "unimplemented": [
+    "GGML_ROPE_TYPE_VISION (24) rope_vision kernel: vision-only layout (n_dims==ne00/2, whole-row pairs) is not part of the Apex text path; rejected with fail code 41",
+    "ROPE+VIEW+SET_ROWS fusion (ggml_cuda_op_rope_fused): requires I64 row_indices loads outside the fg172r whitelist; rejected code 40",
+    "ggml_cuda_op_rms_norm_mul_rope_fused: separate fused RMS+MUL+ROPE block-reduction kernel; rejected code 40",
+    "mode&1 n_past element skip: no native kernel support either; ignored exactly as native",
+    "no claim of full universal rope migration: only the four native public entries listed in recipes are covered, two of them explicitly rejected"
+  ],
+  "parent_scope": ["CUDA bridge and effect implementations", "bit-exact/ULP comparison against fg172r_native_ oracle", "runtime span enforcement", "Apex liveness gate", "performance", "rollback/negative-case runs"],
+  "files": ["apex-rope/device.goose", "apex-rope/policy.goose", "apex-rope/contract.json", "apex-rope/cases.json"]
+}

@@ -1,0 +1,167 @@
+{
+  "passed": true,
+  "scope": "functional token/probability and prefix-cache regression, no speed claim",
+  "cases": [
+    {
+      "step": "cold",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 25440.309,
+            "prompt_per_token_ms": 0.7763766174316407,
+            "prompt_per_second": 1288.03466970468,
+            "predicted_n": 128,
+            "predicted_ms": 4420.09,
+            "predicted_per_token_ms": 34.803858267716535,
+            "predicted_per_second": 28.73244662439
+          },
+          "stop_type": "limit",
+          "sha256": "57335190d8beaddb993201964046ba3a97725cd9536a24119147ed6db9c6bb2b"
+        },
+        "B": {
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 25759.345,
+            "prompt_per_token_ms": 0.7861128234863282,
+            "prompt_per_second": 1272.0820346945934,
+            "predicted_n": 128,
+            "predicted_ms": 4347.041,
+            "predicted_per_token_ms": 34.22866929133858,
+            "predicted_per_second": 29.21527540227939
+          },
+          "stop_type": "limit",
+          "sha256": "1f0a8ce2e998b918a1ed4c1fcc65f501539b1a4cf7d0ddc6e03634045ca25875"
+        }
+      }
+    },
+    {
+      "step": "branch",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "timings": {
+            "cache_n": 24576,
+            "prompt_n": 8192,
+            "prompt_ms": 6990.922,
+            "prompt_per_token_ms": 0.853384033203125,
+            "prompt_per_second": 1171.8053784608096,
+            "predicted_n": 128,
+            "predicted_ms": 4197.706,
+            "predicted_per_token_ms": 33.0528031496063,
+            "predicted_per_second": 30.254620023412787
+          },
+          "stop_type": "limit",
+          "sha256": "3dffcc4bf9577363bccb434f6e9438a65dffccf651e8de8398af7474c7463bdb"
+        },
+        "B": {
+          "timings": {
+            "cache_n": 24576,
+            "prompt_n": 8192,
+            "prompt_ms": 6999.964,
+            "prompt_per_token_ms": 0.85448779296875,
+            "prompt_per_second": 1170.2917329289123,
+            "predicted_n": 128,
+            "predicted_ms": 4186.194,
+            "predicted_per_token_ms": 32.962157480314964,
+            "predicted_per_second": 30.3378199863647
+          },
+          "stop_type": "limit",
+          "sha256": "98b9217f83d4e1e3f3d865fa689fa1bd45a7b617dc7d408e4529224e7195df20"
+        }
+      }
+    },
+    {
+      "step": "repeat",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "timings": {
+            "cache_n": 32767,
+            "prompt_n": 1,
+            "prompt_ms": 44.412,
+            "prompt_per_token_ms": 44.412,
+            "prompt_per_second": 22.516436999009276,
+            "predicted_n": 128,
+            "predicted_ms": 4433.251,
+            "predicted_per_token_ms": 34.90748818897638,
+            "predicted_per_second": 28.647148559826636
+          },
+          "stop_type": "limit",
+          "sha256": "7f8ae4dc48def9b1a48fe712d0ded40df5111f6cea3ae3ea7da53f6e497775e0"
+        },
+        "B": {
+          "timings": {
+            "cache_n": 32767,
+            "prompt_n": 1,
+            "prompt_ms": 49.618,
+            "prompt_per_token_ms": 49.618,
+            "prompt_per_second": 20.15397637953968,
+            "predicted_n": 128,
+            "predicted_ms": 4450.355,
+            "predicted_per_token_ms": 35.042165354330706,
+            "predicted_per_second": 28.53704929157337
+          },
+          "stop_type": "limit",
+          "sha256": "236bffda45e182d9c199e6380642708f91595f63334e4e45d2ea48e1868e4183"
+        }
+      }
+    },
+    {
+      "step": "early",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "timings": {
+            "cache_n": 4096,
+            "prompt_n": 12288,
+            "prompt_ms": 9786.986,
+            "prompt_per_token_ms": 0.7964669596354167,
+            "prompt_per_second": 1255.5448633522105,
+            "predicted_n": 128,
+            "predicted_ms": 4141.951,
+            "predicted_per_token_ms": 32.613787401574804,
+            "predicted_per_second": 30.661878906824345
+          },
+          "stop_type": "limit",
+          "sha256": "616702f6ddf8cac231b55c7e5324c69ec90266efa18bd90877019c21ff761442"
+        },
+        "B": {
+          "timings": {
+            "cache_n": 4096,
+            "prompt_n": 12288,
+            "prompt_ms": 9289.183,
+            "prompt_per_token_ms": 0.7559556477864584,
+            "prompt_per_second": 1322.8289290888122,
+            "predicted_n": 128,
+            "predicted_ms": 3992.464,
+            "predicted_per_token_ms": 31.436724409448818,
+            "predicted_per_second": 31.809929907946575
+          },
+          "stop_type": "limit",
+          "sha256": "c334da13a00d445aa89721b8c0aa8fd722e9da74774b30176c0d99472cdffd03"
+        }
+      }
+    }
+  ],
+  "resources": {
+    "A": {
+      "process_swap_kib": 0,
+      "swap_out_delta": 0,
+      "major_fault_delta": 229
+    },
+    "B": {
+      "process_swap_kib": 0,
+      "swap_out_delta": 0,
+      "major_fault_delta": 138
+    }
+  },
+  "discarded": "first cold-load process swapped, premature request HTTP503; retried same configuration after cache warmup"
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS_ACTUAL_DYNAMIC_SYMBOL_INSPECTION",
+  "library_sha256": "02bd6343887edb8049c20700cd81b43dfbe9bbdd26b49200e47af650101df2a3",
+  "public_diagnostic_symbols": [
+    "fg170s_cuda_device_read",
+    "fg170s_cuda_host_seen"
+  ],
+  "internal_ffi_hidden": true,
+  "native_oracle_hidden": true
+}

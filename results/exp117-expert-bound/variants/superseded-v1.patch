@@ -1,0 +1,74 @@
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -2860,7 +2860,7 @@
+     if (ggml_graph_n_nodes(graph) == 0) {
+         return false;
+     }
+-    const ggml_tensor * node = ggml_graph_node(graph, 0);
++    ggml_tensor * node = ggml_graph_node(graph, 0);
+     if (node->op != GGML_OP_MUL_MAT_ID || node->src[0] != dst) {
+         return false;
+     }
+@@ -2888,6 +2888,32 @@
+         }
+ 
+         st.ids = ids;
++    }
++
++    // MUL_MAT_ID op_params[4] is a private CUDA launch bound, not an average.
++    node->op_params[4] = 0;
++    static const bool expert_bound_enabled = []() {
++        const char * env = getenv("GGML_MOE_EXPERT_BOUND");
++        return !env || atoi(env) != 0;
++    }();
++    if (expert_bound_enabled && lctx->model.arch == LLM_ARCH_QWEN35MOE &&
++        ids->ne[1] >= 32 && (src->type == GGML_TYPE_Q4_K || src->type == GGML_TYPE_Q6_K)) {
++        std::vector<int32_t> counts(n_expert, 0);
++        int32_t maximum = 0;
++        for (int64_t i1 = 0; i1 < ids->ne[1]; ++i1) {
++            for (int64_t i0 = 0; i0 < ids->ne[0]; ++i0) {
++                const int32_t id = st.ids_data[i1*ids->nb[1]/sizeof(int32_t) + i0*ids->nb[0]/sizeof(int32_t)];
++                GGML_ASSERT(id >= 0 && id < n_expert);
++                maximum = std::max(maximum, ++counts[id]);
++            }
++        }
++        if (maximum > 0 && maximum <= ids->ne[1]) {
++            node->op_params[4] = maximum;
++        }
++        if (getenv("GGML_MOE_EXPERT_BOUND_DIAG")) {
++            fprintf(stderr, "MOE_BOUND host %s tokens=%lld experts=%lld maximum=%d\n",
++                src->name, (long long) ids->ne[1], (long long) n_expert, node->op_params[4]);
++        }
+     }
+ 
+     // group consecutive experts and copy them together
+--- a/ggml/src/ggml-cuda/mmq.cu
++++ b/ggml/src/ggml-cuda/mmq.cu
+@@ -340,6 +340,18 @@
+                                          ne11 * ne10_padded * sizeof(block_q8_1) / (QK8_1 * sizeof(int));
+     const int64_t s13 = ne12*s12;
+ 
++    int64_t ncols_max = ne12;
++    const int32_t expert_bound = ggml_get_op_params_i32(dst, 4);
++    if (cc == GGML_CUDA_CC_ADA_LOVELACE &&
++        (src0->type == GGML_TYPE_Q4_K || src0->type == GGML_TYPE_Q6_K) &&
++        expert_bound > 0 && expert_bound <= ne12) {
++        ncols_max = expert_bound;
++    }
++    if (getenv("GGML_MOE_EXPERT_BOUND_DIAG")) {
++        fprintf(stderr, "MOE_BOUND cuda %s tokens=%lld maximum=%lld J=%d\n",
++            src0->name, (long long) ne12, (long long) ncols_max, J_best);
++    }
++
+     // Note that ne02 is used instead of ne12 because the number of y channels determines the z dimension of the CUDA grid.
+     const mmq_args args = {
+         src0_d, src0->type, (const int *) src1_q8_1.get(), ids_dst.get(), expert_bounds.get(), dst_d,
+@@ -347,7 +359,7 @@
+         ne00, ne01, ne_get_rows, s01, ne_get_rows, s1,
+         ne02, ne02, s02, s12, s2,
+         ne03, ne13, s03, s13, s3,
+-        ne12, J_best};
++        ncols_max, J_best};
+ 
+     ggml_cuda_mul_mat_q_switch_type(ctx, args, stream, prec_src1);
+ }

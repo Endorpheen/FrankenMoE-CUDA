@@ -1,0 +1,35 @@
+{
+  "status": "PASS_SCOPED_ASAN_UBSAN_LSAN_COMMON_MOE_QWEN_412",
+  "runs": {
+    "off": {
+      "graph_cases": 412,
+      "values": 389732,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    },
+    "on": {
+      "graph_cases": 412,
+      "values": 389732,
+      "actual_ggml_compute": true,
+      "coverage": "stock/cold/bank MoE, explicit fused verification windows, native tiled dispatch, GET_ROWS dequantization"
+    }
+  },
+  "all_bytes_equal_original": true,
+  "sha256": "f52742f35039353144a4e337a3c8d9e82a958f5ff45d51abe9d87873a4daf576",
+  "instrumented": "Same Goose controller plus modified Qwen CPU core/bridge, renamed native cold fallback and expanded real GGML C fixture",
+  "uninstrumented": "Prior EXP139 matrix/quant and inherited base/other CPU objects; no full backend audit or TSan claim",
+  "weight_types": [
+    "Q2_0",
+    "Q5_0",
+    "IQ4_NL",
+    "IQ2_XXS",
+    "IQ2_S",
+    "Q4_K",
+    "Q6_K",
+    "F32",
+    "F16",
+    "BF16"
+  ],
+  "additional_coverage": "Prequant inputs, padded IDs, closed/open fused windows in stock/cold/bank, all-zero masks, multiple real IDs mapped to one bank slot",
+  "production_changed": false
+}

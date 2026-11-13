@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "new_exports": [
+    "fg164_scheduler_heap_live",
+    "fg164_scheduler_seen"
+  ],
+  "mutating_test_hooks_in_production": false
+}

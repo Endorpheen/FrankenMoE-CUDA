@@ -1,0 +1,40 @@
+2026-09-16T18:30:51+03:00
+--- experiment ---
+EXP-2026-09-17-078 / PRE-PIN3c pin-idlefast
+--- nvidia-smi ---
+NVIDIA GeForce RTX 4070, 580.178.04, 12282 MiB
+--- nvcc ---
+Cuda compilation tools, release 12.6, V12.6.85
+Build cuda_12.6.r12.6/compiler.35059454_0
+--- g++ ---
+g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+--- uname ---
+Linux end0-B550-AORUS-ELITE-V2 6.8.0-84-generic #84-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  5 22:36:38 UTC 2025 x86_64 GNU/Linux
+--- mem ---
+MemTotal:       63643556 kB
+MemAvailable:   45286240 kB
+SwapTotal:      33554428 kB
+--- ranges ---
+8b58328ed61b0bfea88021e7f0a895233a9a56f078fc65a9ababe4da6b3f6f79  results/archive/EXP-2026-09-16-070/exp070_ranges.txt
+--- build binaries ---
+d399a97de0461f05ed2b7798753acd70ab213904638529c510d4f4d55460b7f2  build/exp078-pin-idlefast/bin/llama-server
+22d15db096b412f05751296dd6a3ac7413d92f4fb9801e195796e6e622ebaae2  build/exp078-pin-idlefast/bin/libggml-cuda.so.0.22.0
+--- reference builds (must be untouched) ---
+5edac915efe5cafd52ecaf63b2c467a4eff9d47e9e8cc25fbb292722ac50d5d5  build/exp077-pin-async2/bin/libggml-cuda.so.0.22.0
+8ecc3a7102aa1c6aea97830eae8d2b198e85bfad7bd94fef13e14a124038d30f  build/exp076-pin-async/bin/libggml-cuda.so.0.22.0
+27137a1a3ea0308c7712a3c15b944438e8c5ff2741d681f2ec685bd331ecd45a  build/exp075-pinsrc-overlap/bin/libggml-cuda.so.0.22.0
+36dba1b2c98bacb96e752e0c72fd5ce43e504a5b24585c88c9456494b772403f  build/exp074-pinsrc/bin/libggml-cuda.so.0.22.0
+--- harness ---
+3bc2f91980bdc8f6702e404dd2ea63838fa7ba103ea4dd3729d1b04ce0c066e3  results/archive/EXP-2026-09-17-078/test-exp078-pinsrc
+5a1797a54e1717433f540f07067c7d2f560f9809748e15308257517b7b394086  results/archive/EXP-2026-09-17-078/test-exp074-sched
+--- harness sources ---
+acddfa9425765bb493fb966b5253d13af59a78070c39f6c2e4aedd9f5a0e096e  results/archive/EXP-2026-09-17-078/test-exp078-pinsrc.cpp
+7d3b549680601a33af4a3dc8555fab0beb9569396a8c0784d74f551d1a2e1aa3  results/archive/EXP-2026-09-17-078/test-exp074-sched.cpp
+--- patch ---
+505d89071a049adacf9439568c93f0cb9e86be072ba86d1b0f01825a7c292064  results/archive/EXP-2026-09-17-078/pin-idlefast.patch
+--- async marker ---
+exp078 lib: 1
+--- max range bytes ---
+11981312
+--- archive files ---
+80

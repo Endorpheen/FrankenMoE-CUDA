@@ -1,0 +1,8 @@
+{
+  "kind": "correctness",
+  "pass": true,
+  "byte_guard_cases": 60,
+  "partial_allocation_fallback": true,
+  "graph_capture_declined": true,
+  "pinned_budget_bytes": 33554432
+}

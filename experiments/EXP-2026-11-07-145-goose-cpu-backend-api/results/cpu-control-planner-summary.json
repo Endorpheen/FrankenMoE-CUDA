@@ -1,0 +1,31 @@
+{
+  "status": "PASS_SELECTED_PLANNING_AND_ROLLBACK",
+  "runs": {
+    "previous-b1": {
+      "exit_code": 0,
+      "cases": 960
+    },
+    "goose-control": {
+      "exit_code": 0,
+      "cases": 960
+    },
+    "rollback": {
+      "exit_code": 0,
+      "cases": 960
+    }
+  },
+  "exact": {
+    "goose-control": true,
+    "rollback": true
+  },
+  "mismatches": [],
+  "sha256": {
+    "previous-b1": "54b7764c3bad93391a2db7fbf1126d7f2a4a9d4a272f54799203955103c4475d",
+    "goose-control": "54b7764c3bad93391a2db7fbf1126d7f2a4a9d4a272f54799203955103c4475d",
+    "rollback": "54b7764c3bad93391a2db7fbf1126d7f2a4a9d4a272f54799203955103c4475d"
+  },
+  "scope": "Planning metadata corpus only,not operator compute or actual model. Includes every registered op,unary/GLU selectors,custom task limits and typed scratch branches.",
+  "no_timings": true,
+  "no_model_run": true,
+  "production_changed": false
+}

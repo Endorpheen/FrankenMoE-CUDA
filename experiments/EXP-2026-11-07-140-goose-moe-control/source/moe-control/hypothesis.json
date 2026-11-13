@@ -1,0 +1,24 @@
+{
+  "experiment": "EXP-2026-11-07-140",
+  "target": "Whole common CPU MoE orchestration: checked workspace layout, strided-ID grouping, cold/bank filtering, quantization partitions, barrier/atomic policy, fused/tiled eligibility and chunk scheduling, preserving existing Goose compute modules.",
+  "hypothesis": "One Goose module can replace duplicated native control and older Apex-only controller, retaining exact work/order/metadata semantics and prior optimized math.",
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "qualification_status": "PASS_CURRENT_VARDEF_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+  "latest_completed_bootstrap_revalidated": true,
+  "production_changed": false,
+  "compiler_source_changed": false,
+  "guards": [
+    "Separate real-ID domain from bank-slot count",
+    "Preserve explicit IQ2_S verification window; never infer phase",
+    "Preserve tiled fast paths and native atomic/barrier/physical services",
+    "Do not replace prior Apex Goose Q4/Q6 math with C++ by accident",
+    "Validate offsets and strides before borrowed views"
+  ],
+  "gates": [
+    "Exact layout/event/mapping controls and malformed input rejection",
+    "Native/off/on actual GGML graph comparison on both source baselines",
+    "Scoped ASan/UBSan/LSan and thread cases",
+    "Actual Apex first, Qwen coherent major integration",
+    "Counter-free operation timing; full prefill/decode/RAM/VRAM preliminary under other load; retain rollback"
+  ]
+}

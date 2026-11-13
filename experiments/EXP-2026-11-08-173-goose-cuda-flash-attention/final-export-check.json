@@ -1,0 +1,8 @@
+{
+  "status": "PASS_ONLY_TWO_READONLY_DIAGNOSTICS_ADDED",
+  "added": [
+    "fg175fa_cuda_device_read",
+    "fg175fa_cuda_host_seen"
+  ],
+  "removed": []
+}

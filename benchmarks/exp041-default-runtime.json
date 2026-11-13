@@ -1,0 +1,98 @@
+{
+  "experiment_id": "EXP-2026-09-07-041-default-runtime",
+  "status": "ACCEPTED",
+  "kind": "delivery",
+  "phase": "R7 default-on pinned ring as the daily runtime",
+  "hypothesis": "accepted EXP-038 pinned ring delivered via reproducible patch chain, enabled by default, daily launcher on a new clean build; no manual GGML_EXPERT_PINNED_RING needed",
+  "patch_chain": {
+    "base": "4aaad5d318a790a42c2197975ec8fadbad42602b",
+    "order": [
+      {
+        "file": "patches/expert-tier-integration.patch",
+        "sha256": "1359f23095ca56f488b5f6e48012b41dd1ada394c4fb58ba10bdc73c0817a23c"
+      },
+      {
+        "file": "patches/integration-drift.patch",
+        "sha256": "b9d8db5d772bc963a09c04be5b0308b1e3c52824ec61f25d461d5620595a07d8"
+      },
+      {
+        "file": "patches/mtp-sidecar.patch",
+        "sha256": "8873d64da544bb238543de14ad602c575d75350a99ac5cd7c10496630a722d69"
+      },
+      {
+        "file": "patches/pinned-ring.patch",
+        "sha256": "e1e6803cec1e26099ee452fcb3537b7e660132e6e30da69febffca4785dbd7de",
+        "note": "byte-identical copy of the accepted EXP-038 patch"
+      },
+      {
+        "file": "patches/pinned-ring-default-on.patch",
+        "sha256": "73ca9f558e1281a41198127de462f51d4c4159d9394daf330cceac186c6609a8",
+        "note": "default-on gates only; =0 disables; alloc failure still falls back"
+      }
+    ],
+    "git_apply_check_all": true
+  },
+  "build": {
+    "source_tree": "work/llama.cpp-exp041",
+    "build_dir": "build/exp041-default-runtime",
+    "flags": "Release, BUILD_SHARED_LIBS=ON, GGML_CUDA=ON, CUDA arch 89, OpenSSL ON, curl OFF",
+    "llama_server_sha256": "8489fbe5a458916c5cdbfb6ccce04d7982d6e95afbeaa340c60f65e8703b5050",
+    "libggml_cuda_sha256": "78cc19486cb368d2433bc844b6acde223118f64896ce1d39e695fa5d20febe26",
+    "libllama_sha256": "df26a4b20807f468eb44e184f09da4dd9d741e3fc8bcdf0e3da5fb54b872e00a",
+    "libllama_server_impl_sha256": "1b79cc228443809dcea54f9b799160b180841d89626513d5f3ce9e42bfd97c08"
+  },
+  "modelfree_validation": {
+    "harness": "results/archive/EXP-2026-09-07-041/tests/ (EXP-038 harness, default-on semantics)",
+    "modes": [
+      "ring default",
+      "ring ON",
+      "ring OFF(=0)",
+      "ring alloc-fail",
+      "sched default",
+      "sched ON",
+      "sched OFF(=0)",
+      "sched alloc-fail"
+    ],
+    "result": "all CHECK PASS",
+    "default_behaves_as_on": true,
+    "explicit_off_works": true,
+    "alloc_failure_fallback": true,
+    "sched_out_sha256_all_modes": "39505119b144ea286e865119b397eecff75578881c24c4aa1cec9bd642e91510",
+    "sched_out_matches_exp038_candidate": true,
+    "bash_n_launcher": true,
+    "launcher_stub_profile": "-c 196608 -np 1 -fa on --jinja -t 12 -ctk q4_0 -ctv q4_0 -ctkd q4_0 -ctvd q4_0 --reasoning-effort low -ehs 0 --cpu-moe -ot per_layer_token_embd.weight=CPU,token_embd.weight=CPU -ngl 99 -md mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf --spec-type draft-mtp --spec-draft-n-max 2 -ngld 99 --spec-draft-cpu-moe",
+    "launcher_ring_env": "default GGML_EXPERT_PINNED_RING=1; PINNED_RING=0 -> GGML_EXPERT_PINNED_RING=0",
+    "integration_tree_untouched": true,
+    "old_build_untouched": true
+  },
+  "launcher": {
+    "file": "scripts/run_qwen38_server.sh",
+    "default_build_dir": "build/exp041-default-runtime",
+    "defaults": {
+      "EHS": 0,
+      "THREADS": 12,
+      "CTX_SIZE": 196608,
+      "NP": 1,
+      "PINNED_RING": 1,
+      "MTP": 1,
+      "SPEC_DRAFT_N_MAX": 2
+    }
+  },
+  "model_smoke": {
+    "run": false,
+    "note": "Igor's instruction: the agent must not run model tests; smoke plan recorded in the experiment card, including expected EXP-040 answer hashes"
+  },
+  "accepted_criteria": {
+    "chain_reproducible": true,
+    "launcher_on_new_runtime": true,
+    "ring_default_on": true,
+    "explicit_off_works": true,
+    "modelfree_tests_pass": true,
+    "model_smoke_pass": "PENDING (not run by instruction)",
+    "answers_match_exp040": "verified model-free via identical sched output sha; model-level check deferred to smoke",
+    "no_cuda_oom_orphan": "no CUDA code executed beyond model-free harness; no errors",
+    "integration_tree_unchanged": true
+  },
+  "verdict": "ACCEPTED (kind=delivery; commit approved by Igor 2026-09-07)",
+  "next": "Model smoke EXP-041 by the senior helper in Codex; model-free gates already PASS."
+}

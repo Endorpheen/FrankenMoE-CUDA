@@ -1,0 +1,9 @@
+{
+  "exports": [
+    "fg163_staging_heap_live",
+    "fg163_stream_seen"
+  ],
+  "foreign_effects_hidden": true,
+  "mutating_test_hooks": false,
+  "sha256": "6a6202a259a9294fd3ca9e2683c79a8de4dbaba0ef2f1d829448c5d672d01fb8"
+}

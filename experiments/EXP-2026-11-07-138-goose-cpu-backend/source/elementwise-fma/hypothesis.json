@@ -1,0 +1,7 @@
+{
+  "scope": "Same full binary/unary modules; make XIELU final fused multiply-add explicit to preserve native rounding across release and sanitizer builds. Original implicit-FMA candidate retained.",
+  "evidence": "Native xielu object disassembly uses FMA for both positive and negative branches; sanitizer O1 implicit Goose expression differs at3900 output values.",
+  "producer_sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f",
+  "compiler_change": false,
+  "nan_payload_difference": "Separate unresolved issue; not fixed or concealed by this change"
+}

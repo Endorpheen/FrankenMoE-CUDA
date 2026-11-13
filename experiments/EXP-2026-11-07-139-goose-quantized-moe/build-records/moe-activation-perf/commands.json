@@ -1,0 +1,34 @@
+[
+  [
+    "/usr/bin/gcc-13",
+    "-O3",
+    "-march=native",
+    "-fPIC",
+    "-fno-strict-aliasing",
+    "-ffp-contract=off",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src/ggml-cpu",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+    "-c",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-quantized/activation-unit.c",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-activation-perf/build/activation.o"
+  ],
+  [
+    "/usr/bin/gcc-13",
+    "-O3",
+    "-march=native",
+    "-ffp-contract=off",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/include",
+    "-I/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/ggml/src",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/moe-quantized/activation-bench.c",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-activation-perf/build/activation.o",
+    "-L/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/bin",
+    "-lggml-cpu",
+    "-lggml-base",
+    "-lm",
+    "-Wl,-rpath,/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/bin",
+    "-o",
+    "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/moe-activation-perf/build/activation-bench"
+  ]
+]

@@ -1,0 +1,86 @@
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1437,6 +1437,12 @@
+ 
+     int curr_stream_no = 0;
+ 
++    // EXP-043 diagnostic counters (ns), enabled by GGML_EXPERT_DIAG=1; kept after all
++    // layout-sensitive fields so the harness context mirror stays valid
++    size_t expert_ring_gather_ns = 0;
++    size_t expert_ring_submit_ns = 0;
++    size_t expert_ring_slotwait_ns = 0;
++
+ #ifdef USE_CUDA_GRAPH
+     // Map from first_node_ptr to cuda_graph - allows multiple graphs per context
+     // when the computation is split across CPU/GPU (e.g., with --n-cpu-moe)
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -89,6 +89,8 @@
+ #include <cstdlib>
+ #include <string>
+ #include <vector>
++#include <ctime>
++#include <nvtx3/nvToolsExt.h>
+ 
+ static_assert(sizeof(half) == sizeof(ggml_fp16_t), "wrong fp16 size");
+ 
+@@ -708,6 +710,10 @@
+     if (expert_ring_n_calls > 0) {
+         GGML_LOG_WARN("%s: expert ring staged %zu calls, %zu chunks\n", __func__, expert_ring_n_calls, expert_ring_n_chunks);
+     }
++    if (expert_ring_gather_ns > 0 || expert_ring_submit_ns > 0 || expert_ring_slotwait_ns > 0) {
++        GGML_LOG_WARN("%s: expert ring diag gather_ms=%.3f submit_ms=%.3f slotwait_ms=%.3f\n", __func__,
++            expert_ring_gather_ns/1e6, expert_ring_submit_ns/1e6, expert_ring_slotwait_ns/1e6);
++    }
+     for (size_t i = 0; i < GGML_CUDA_EXPERT_RING_SLOTS; ++i) {
+         if (expert_ring_events[i] != nullptr) {
+             // drain any in-flight H2D before freeing the slot
+@@ -2537,6 +2543,7 @@
+     const uint8_t * src = (const uint8_t *) data;
+     size_t remaining = size;
+     size_t done = 0;
++    const bool diag = getenv("GGML_EXPERT_DIAG") != nullptr && strcmp(getenv("GGML_EXPERT_DIAG"), "0") != 0;
+     while (remaining > 0) {
+         const size_t chunk = std::min(remaining, GGML_CUDA_EXPERT_RING_SLOT_SIZE);
+         const size_t slot_idx = cuda_ctx->expert_ring_next;
+@@ -2544,12 +2551,27 @@
+ 
+         // the slot must not be refilled before its in-flight H2D has completed
+         if (cuda_ctx->expert_ring_pending[slot_idx]) {
++            if (diag) { nvtxRangePushA("expert_slotwait"); }
++            struct timespec t0, t1;
++            if (diag) { clock_gettime(CLOCK_MONOTONIC, &t0); }
+             CUDA_CHECK(cudaEventSynchronize(cuda_ctx->expert_ring_events[slot_idx]));
++            if (diag) { clock_gettime(CLOCK_MONOTONIC, &t1); nvtxRangePop();
++                        cuda_ctx->expert_ring_slotwait_ns += (t1.tv_sec-t0.tv_sec)*1000000000LL + (t1.tv_nsec-t0.tv_nsec); }
+             cuda_ctx->expert_ring_pending[slot_idx] = false;
+         }
++        if (diag) { nvtxRangePushA("expert_gather"); }
++        struct timespec g0, g1;
++        if (diag) { clock_gettime(CLOCK_MONOTONIC, &g0); }
+         memcpy(cuda_ctx->expert_ring_slots[slot_idx], src + done, chunk);
++        if (diag) { clock_gettime(CLOCK_MONOTONIC, &g1); nvtxRangePop();
++                    cuda_ctx->expert_ring_gather_ns += (g1.tv_sec-g0.tv_sec)*1000000000LL + (g1.tv_nsec-g0.tv_nsec); }
++        if (diag) { nvtxRangePushA("expert_submit"); }
++        struct timespec s0, s1;
++        if (diag) { clock_gettime(CLOCK_MONOTONIC, &s0); }
+         CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset + done, cuda_ctx->expert_ring_slots[slot_idx],
+                                    chunk, cudaMemcpyHostToDevice, cuda_ctx->stream()));
++        if (diag) { clock_gettime(CLOCK_MONOTONIC, &s1); nvtxRangePop();
++                    cuda_ctx->expert_ring_submit_ns += (s1.tv_sec-s0.tv_sec)*1000000000LL + (s1.tv_nsec-s0.tv_nsec); }
+         CUDA_CHECK(cudaEventRecord(cuda_ctx->expert_ring_events[slot_idx], cuda_ctx->stream()));
+         cuda_ctx->expert_ring_pending[slot_idx] = true;
+ 
+--- a/ggml/src/ggml-cuda/CMakeLists.txt
++++ b/ggml/src/ggml-cuda/CMakeLists.txt
+@@ -176,6 +176,10 @@
+         target_link_libraries(ggml-cuda PRIVATE CUDA::cudart CUDA::cublas)
+     endif()
+ 
++    # EXP-043 diagnostic NVTX ranges
++    target_link_libraries(ggml-cuda PRIVATE /usr/local/cuda-12.6/lib64/libnvToolsExt.so)
++    target_link_options(ggml-cuda PRIVATE "-Wl,--no-as-needed")
++
+     if (GGML_CUDA_NO_VMM)
+         # No VMM requested, no need to link directly with the cuda driver lib (libcuda.so)
+     else()

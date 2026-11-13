@@ -1,0 +1,46 @@
+WARNING: CPU IP/backtrace sampling not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+WARNING: CPU context switch tracing not supported, disabling.
+Try the 'nsys status --environment' command to learn more.
+
+0.00.227.310 I RAM headroom: 49617 MiB available, 8 GiB required
+0.00.227.339 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.227.803 W srv  llama_server: -----------------
+0.00.227.805 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.227.805 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.227.805 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.227.806 W srv  llama_server: -----------------
+0.00.229.176 I srv    load_model: loading model 'models/qwen38/UD-IQ3_XXS/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf'
+0.00.982.516 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 99, abort
+0.01.226.328 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+0.05.834.352 I cmn          init: llama threadpool init, n_threads = 12
+0.06.836.713 I common_speculative_init_result: loading draft model 'models/qwen38/MTP/mtp-Qwen3.8-Flash-Next-Q4_K_M.gguf'
+0.08.276.237 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 196608, kv_unified = 'false'
+0.08.477.201 I srv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+0.08.477.249 I srv  llama_server: model loaded
+0.08.477.254 I srv  llama_server: listening on http://127.0.0.1:8081
+1.46.758.725 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+1.46.758.772 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.47.578.441 W ggml_cuda_expert_ring_init: expert ring enabled: 2 pinned host slots x 16 MiB
+2.05.114.526 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =    391, progress = 0.99, t =  18.29 s / 21.38 tokens per second
+2.05.381.128 I slot print_timing: id  0 | task 0 | prompt eval time =   18622.32 ms /   395 tokens (   47.15 ms per token,    21.21 tokens per second)
+2.05.381.132 I slot print_timing: id  0 | task 0 |        eval time =       0.00 ms /     1 tokens (    0.00 ms per token,     0.00 tokens per second)
+2.05.381.132 I slot print_timing: id  0 | task 0 |       total time =   18622.32 ms /   396 tokens
+2.05.381.135 I slot print_timing: id  0 | task 0 |    graphs reused =          1
+2.05.381.221 I slot      release: id  0 | task 0 | stop processing: n_tokens = 395, truncated = 0
+2.30.345.848 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 1.000
+2.30.345.888 I slot launch_slot_: id  0 | task 3 | processing task, is_child = 0
+2.32.919.064 I slot print_timing: id  0 | task 3 | prompt eval time =    2573.15 ms /   395 tokens (    6.51 ms per token,   153.51 tokens per second)
+2.32.919.069 I slot print_timing: id  0 | task 3 |        eval time =       0.00 ms /     1 tokens (    0.00 ms per token,     0.00 tokens per second)
+2.32.919.070 I slot print_timing: id  0 | task 3 |       total time =    2573.16 ms /   396 tokens
+2.32.919.071 I slot print_timing: id  0 | task 3 |    graphs reused =          1
+2.32.919.124 I slot      release: id  0 | task 3 | stop processing: n_tokens = 395, truncated = 0
+4.43.938.306 I srv    operator(): operator(): cleaning up before exit...
+4.44.046.624 W ~ggml_backend_cuda_context: expert ring staged 35772 calls, 35772 chunks
+4.44.046.630 W ~ggml_backend_cuda_context: expert ring diag gather_ms=18094.289 submit_ms=183.862 slotwait_ms=400.790
+Collecting data...
+Generating '/tmp/nsys-report-10b4.qdstrm'
+[1/1] [0%                          ] exp043.nsys-rep[1/1] [0%                          ] exp043.nsys-rep[1/1] [5%                          ] exp043.nsys-rep[1/1] [5%                          ] exp043.nsys-rep[1/1] [5%                          ] exp043.nsys-rep[1/1] [6%                          ] exp043.nsys-rep[1/1] [7%                          ] exp043.nsys-rep[1/1] [8%                          ] exp043.nsys-rep[1/1] [9%                          ] exp043.nsys-rep[1/1] [10%                         ] exp043.nsys-rep[1/1] [8%                          ] exp043.nsys-rep[1/1] [9%                          ] exp043.nsys-rep[1/1] [10%                         ] exp043.nsys-rep[1/1] [11%                         ] exp043.nsys-rep[1/1] [12%                         ] exp043.nsys-rep[1/1] [10%                         ] exp043.nsys-rep[1/1] [11%                         ] exp043.nsys-rep[1/1] [=17%                        ] exp043.nsys-rep[1/1] [=15%                        ] exp043.nsys-rep[1/1] [==21%                       ] exp043.nsys-rep[1/1] [==19%                       ] exp043.nsys-rep[1/1] [=17%                        ] exp043.nsys-rep[1/1] [=16%                        ] exp043.nsys-rep[1/1] [14%                         ] exp043.nsys-rep[1/1] [13%                         ] exp043.nsys-rep[1/1] [12%                         ] exp043.nsys-rep[1/1] [11%                         ] exp043.nsys-rep[1/1] [10%                         ] exp043.nsys-rep[1/1] [9%                          ] exp043.nsys-rep[1/1] [8%                          ] exp043.nsys-rep[1/1] [7%                          ] exp043.nsys-rep[1/1] [6%                          ] exp043.nsys-rep[1/1] [7%                          ] exp043.nsys-rep[1/1] [9%                          ] exp043.nsys-rep[1/1] [12%                         ] exp043.nsys-rep[1/1] [14%                         ] exp043.nsys-rep[1/1] [=17%                        ] exp043.nsys-rep[1/1] [==20%                       ] exp043.nsys-rep[1/1] [===23%                      ] exp043.nsys-rep[1/1] [===24%                      ] exp043.nsys-rep[1/1] [====26%                     ] exp043.nsys-rep[1/1] [====27%                     ] exp043.nsys-rep[1/1] [=====29%                    ] exp043.nsys-rep[1/1] [=====31%                    ] exp043.nsys-rep[1/1] [======34%                   ] exp043.nsys-rep[1/1] [=======37%                  ] exp043.nsys-rep[1/1] [=======39%                  ] exp043.nsys-rep[1/1] [========42%                 ] exp043.nsys-rep[1/1] [=========44%                ] exp043.nsys-rep[1/1] [=========46%                ] exp043.nsys-rep[1/1] [==========48%               ] exp043.nsys-rep[1/1] [==========49%               ] exp043.nsys-rep[1/1] [===========51%              ] exp043.nsys-rep[1/1] [===========53%              ] exp043.nsys-rep[1/1] [============56%             ] exp043.nsys-rep[1/1] [=============58%            ] exp043.nsys-rep[1/1] [==============61%           ] exp043.nsys-rep[1/1] [==============64%           ] exp043.nsys-rep[1/1] [===============66%          ] exp043.nsys-rep[1/1] [================69%         ] exp043.nsys-rep[1/1] [================71%         ] exp043.nsys-rep[1/1] [===================80%      ] exp043.nsys-rep[1/1] [========================100%] exp043.nsys-rep[1/1] [========================100%] exp043.nsys-rep
+Generated:
+    /tmp/exp043-profile/exp043.nsys-rep

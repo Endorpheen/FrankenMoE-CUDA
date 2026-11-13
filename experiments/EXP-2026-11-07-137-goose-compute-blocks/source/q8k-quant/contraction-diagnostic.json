@@ -1,0 +1,9 @@
+{
+  "seed": 20261107,
+  "deterministic_reproducer": "check.py, single case n=16384 pattern16",
+  "offset_in_output": 7542,
+  "native_bytes_near_offset": "594f8188a0c7b21ba9dda691",
+  "goose_rejected_bytes": "594f81889fc7b21ba9dda691",
+  "confirmed_instructions": "Native mulps followed by addps; rejected Goose vfmadd132ss",
+  "resolution": "-ffp-contract=off for this CPU module; no compiler source changes"
+}

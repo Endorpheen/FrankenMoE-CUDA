@@ -1,0 +1,1164 @@
+{
+  "experiment": "EXP-2026-11-07-140",
+  "previous_commit": "119a11c4b7f0b04fa4daf618c4caa8c0e284816a",
+  "status": "REJECTED_FOR_PRODUCTION_PROMOTION_RESEARCH_CONTINUES",
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "common_kernel_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98",
+  "files": [
+    {
+      "path": "source/moe-control/apex-services.inc",
+      "source_sha256": "a77632b0d5c0abd7a2f462fee44bdc39ea0ac4d4c031675c19caf651ce9df02d",
+      "snapshot_sha256": "a77632b0d5c0abd7a2f462fee44bdc39ea0ac4d4c031675c19caf651ce9df02d"
+    },
+    {
+      "path": "source/moe-control/bridge-v1-no-primitives.h",
+      "source_sha256": "63eab439b71bb42905ae3a6fd3f6d1d1df6021f9ce50b679799207e78a3679dd",
+      "snapshot_sha256": "63eab439b71bb42905ae3a6fd3f6d1d1df6021f9ce50b679799207e78a3679dd"
+    },
+    {
+      "path": "source/moe-control/bridge.h",
+      "source_sha256": "9e95c4eec535f768632b7baf23a72c4db3a6241a5700b1d59dbf9590ae2bbe89",
+      "snapshot_sha256": "9e95c4eec535f768632b7baf23a72c4db3a6241a5700b1d59dbf9590ae2bbe89"
+    },
+    {
+      "path": "source/moe-control/emit-command.json",
+      "source_sha256": "1aa935baba7bb9d6eb156a55a53a9cfb02600913d6677648e8d4c7341cb97abf",
+      "snapshot_sha256": "1aa935baba7bb9d6eb156a55a53a9cfb02600913d6677648e8d4c7341cb97abf"
+    },
+    {
+      "path": "source/moe-control/emit.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source/moe-control/fields.json",
+      "source_sha256": "b3216ae146b678537e2911cdd4acaa37aaa09445e0c5ecc7453472880891238a",
+      "snapshot_sha256": "b3216ae146b678537e2911cdd4acaa37aaa09445e0c5ecc7453472880891238a"
+    },
+    {
+      "path": "source/moe-control/ggml-cpu-apex-control.c",
+      "source_sha256": "88264f6b417da3f2d1dc6bc851dd9a71a41be2a82aac3d2ac11fa083c12283bc",
+      "snapshot_sha256": "88264f6b417da3f2d1dc6bc851dd9a71a41be2a82aac3d2ac11fa083c12283bc"
+    },
+    {
+      "path": "source/moe-control/ggml-cpu-qwen-control.c",
+      "source_sha256": "fbec4fa2646ba6711291e36497814e632ee1b4a51f0f317b64b99298eafe5227",
+      "snapshot_sha256": "fbec4fa2646ba6711291e36497814e632ee1b4a51f0f317b64b99298eafe5227"
+    },
+    {
+      "path": "source/moe-control/hypothesis.json",
+      "source_sha256": "0526d596705a968281bc5e25e8e0b315ac85ebef74d488461f3f31b514e109b0",
+      "snapshot_sha256": "0526d596705a968281bc5e25e8e0b315ac85ebef74d488461f3f31b514e109b0"
+    },
+    {
+      "path": "source/moe-control/kernel.goose",
+      "source_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98",
+      "snapshot_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98"
+    },
+    {
+      "path": "source/moe-control/operation-benchmark.c",
+      "source_sha256": "416c1af2bbe4614ce97e50fd9191eaa56306700e0249b7ed87636d135508d267",
+      "snapshot_sha256": "416c1af2bbe4614ce97e50fd9191eaa56306700e0249b7ed87636d135508d267"
+    },
+    {
+      "path": "source/moe-control/qwen-fixture-expanded.c",
+      "source_sha256": "c90e5ecf668abfbebd564f86d6ecf9f5fab7d5d6d7a73c34d6b08eba04b70e5b",
+      "snapshot_sha256": "c90e5ecf668abfbebd564f86d6ecf9f5fab7d5d6d7a73c34d6b08eba04b70e5b"
+    },
+    {
+      "path": "source/moe-control/qwen-operation-benchmark.c",
+      "source_sha256": "8d1d442b3e725426487a2c526d4d22059e00660048c9b89cd0fde3b891cfd933",
+      "snapshot_sha256": "8d1d442b3e725426487a2c526d4d22059e00660048c9b89cd0fde3b891cfd933"
+    },
+    {
+      "path": "source/moe-control/qwen-services.inc",
+      "source_sha256": "aacd92e084f56a4e5069703627f06d348061ccd52452cbaab7ee030a7174249c",
+      "snapshot_sha256": "aacd92e084f56a4e5069703627f06d348061ccd52452cbaab7ee030a7174249c"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_apex_expanded.py",
+      "source_sha256": "7aa9e118d083ea3befc3628465e4e7b2b16f975472b2d7975e206fd46b36e5dd",
+      "snapshot_sha256": "7aa9e118d083ea3befc3628465e4e7b2b16f975472b2d7975e206fd46b36e5dd"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_apex_graphs.py",
+      "source_sha256": "0a8c7b268cd67b2fbdb3ec7f56e8ba403b54dc70ed66b14b7b234816d15910fb",
+      "snapshot_sha256": "0a8c7b268cd67b2fbdb3ec7f56e8ba403b54dc70ed66b14b7b234816d15910fb"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_apex_integrate.py",
+      "source_sha256": "4c33c0c68b588cb9c345e96c32d1484bee0526f01d5ca962e540a41695db0544",
+      "snapshot_sha256": "4c33c0c68b588cb9c345e96c32d1484bee0526f01d5ca962e540a41695db0544"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_apex_launch.py",
+      "source_sha256": "f2f5e013211734d5efb5a1760eed4013e753b51ac8032f075447303990e363e3",
+      "snapshot_sha256": "f2f5e013211734d5efb5a1760eed4013e753b51ac8032f075447303990e363e3"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_apex_perf_graphs.py",
+      "source_sha256": "db547a06b9457e2abdd808065db6a8dc23f282b17ce0cdd48330971e90499c7b",
+      "snapshot_sha256": "db547a06b9457e2abdd808065db6a8dc23f282b17ce0cdd48330971e90499c7b"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_apex_sanitize.py",
+      "source_sha256": "3a28986309b859c9c0b3067669d619b0895fab412a8d380c62771266f248fb59",
+      "snapshot_sha256": "3a28986309b859c9c0b3067669d619b0895fab412a8d380c62771266f248fb59"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_apex_services.inc",
+      "source_sha256": "a77632b0d5c0abd7a2f462fee44bdc39ea0ac4d4c031675c19caf651ce9df02d",
+      "snapshot_sha256": "a77632b0d5c0abd7a2f462fee44bdc39ea0ac4d4c031675c19caf651ce9df02d"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_check.py",
+      "source_sha256": "82864c2f02b11fb6894af529fc6ff91e5a701db9d6941e9b6777186c276f4f8b",
+      "snapshot_sha256": "82864c2f02b11fb6894af529fc6ff91e5a701db9d6941e9b6777186c276f4f8b"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_control.goose",
+      "source_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98",
+      "snapshot_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_generate.py",
+      "source_sha256": "72a16cb676723aeed1a044621e4019fa5be80854a58e908c5ba388b7bc57026f",
+      "snapshot_sha256": "72a16cb676723aeed1a044621e4019fa5be80854a58e908c5ba388b7bc57026f"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_operation.py",
+      "source_sha256": "eae1294192806b85c0089fdacf13ac8bf96ef7785e9d899dfdcdfaa5628007b7",
+      "snapshot_sha256": "eae1294192806b85c0089fdacf13ac8bf96ef7785e9d899dfdcdfaa5628007b7"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_perf_build.py",
+      "source_sha256": "924e5828d56878a310903a3b439dc4cac73defe7ac0b5b89bb7eb5690ffabec0",
+      "snapshot_sha256": "924e5828d56878a310903a3b439dc4cac73defe7ac0b5b89bb7eb5690ffabec0"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_expand.py",
+      "source_sha256": "4785a58f2dbad40df990f301d6b862ca416c947957c13d8a6dcd6b80ff57a33a",
+      "snapshot_sha256": "4785a58f2dbad40df990f301d6b862ca416c947957c13d8a6dcd6b80ff57a33a"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_expanded_graphs.py",
+      "source_sha256": "bfcb9e3d7207ad79fc32d635e3c296b01bf759420ea086fff916797e684eab5d",
+      "snapshot_sha256": "bfcb9e3d7207ad79fc32d635e3c296b01bf759420ea086fff916797e684eab5d"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_graphs.py",
+      "source_sha256": "2959cd5aa1f241ec5c927bb0a9f3d67f7c2eb5f3812111d2a7930a1a49d71fff",
+      "snapshot_sha256": "2959cd5aa1f241ec5c927bb0a9f3d67f7c2eb5f3812111d2a7930a1a49d71fff"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_integrate.py",
+      "source_sha256": "1078a0610ff134d3f7488305a0728d56a837a3c389d9d6d011a86a6d0f60afa9",
+      "snapshot_sha256": "1078a0610ff134d3f7488305a0728d56a837a3c389d9d6d011a86a6d0f60afa9"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_launch.py",
+      "source_sha256": "c44a74600f9e3940bb56fa2861fcc3ab92a7e09356f354461b22a0a02cde36d4",
+      "snapshot_sha256": "c44a74600f9e3940bb56fa2861fcc3ab92a7e09356f354461b22a0a02cde36d4"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_operation.py",
+      "source_sha256": "02520adef6e60c0523c03c10443a79f3b42a91dbc8c5a77e1273f423171cdd4b",
+      "snapshot_sha256": "02520adef6e60c0523c03c10443a79f3b42a91dbc8c5a77e1273f423171cdd4b"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_perf_build.py",
+      "source_sha256": "2e4b9053c9863d4943822fc3043b542c9db0b2bc3e3a6d1a3cfbbf1b44b9af85",
+      "snapshot_sha256": "2e4b9053c9863d4943822fc3043b542c9db0b2bc3e3a6d1a3cfbbf1b44b9af85"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_perf_graphs.py",
+      "source_sha256": "61d4683f6d137737cf0defee96801cd4acebbfd5f21d1a62731a4ab272a8da36",
+      "snapshot_sha256": "61d4683f6d137737cf0defee96801cd4acebbfd5f21d1a62731a4ab272a8da36"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_sanitize.py",
+      "source_sha256": "27fd2f5f39dcccc75e2b9c062d29584783395b99498454067ba33b024e5c5f7d",
+      "snapshot_sha256": "27fd2f5f39dcccc75e2b9c062d29584783395b99498454067ba33b024e5c5f7d"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_services.inc",
+      "source_sha256": "aacd92e084f56a4e5069703627f06d348061ccd52452cbaab7ee030a7174249c",
+      "snapshot_sha256": "aacd92e084f56a4e5069703627f06d348061ccd52452cbaab7ee030a7174249c"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_qwen_services.py",
+      "source_sha256": "41929e9b95bddca60d4b8aa71a6d55fb8604896813e83cf60d1c0b8177b627c7",
+      "snapshot_sha256": "41929e9b95bddca60d4b8aa71a6d55fb8604896813e83cf60d1c0b8177b627c7"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_ready.py",
+      "source_sha256": "66bc493be646f1658f41a4cd44bdabfb046c629c848602b1c601cd4d295e7698",
+      "snapshot_sha256": "66bc493be646f1658f41a4cd44bdabfb046c629c848602b1c601cd4d295e7698"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_stop_qwen.py",
+      "source_sha256": "d35bd248c8bdcf5204b197d47e6667f8783d3273d3a42766c2bccd0fd943a05b",
+      "snapshot_sha256": "d35bd248c8bdcf5204b197d47e6667f8783d3273d3a42766c2bccd0fd943a05b"
+    },
+    {
+      "path": "source/moe-control/reproduce/fg140_unit_build.py",
+      "source_sha256": "9ea8f72259196b941eab92cb215a4549ab28a13a7b4314d0747fd979ac85b9e7",
+      "snapshot_sha256": "9ea8f72259196b941eab92cb215a4549ab28a13a7b4314d0747fd979ac85b9e7"
+    },
+    {
+      "path": "source/moe-control/unit.c",
+      "source_sha256": "4f8f4d31afb3f9728a9553d84ec624a018a2d5fefdb564bddf0891a006d94c33",
+      "snapshot_sha256": "4f8f4d31afb3f9728a9553d84ec624a018a2d5fefdb564bddf0891a006d94c33"
+    },
+    {
+      "path": "generated/moe-control.c",
+      "source_sha256": "39a439d987f26d6202ceed7d5ce9376ce3b4a4efca2078447c2d967c422569af",
+      "snapshot_sha256": "39a439d987f26d6202ceed7d5ce9376ce3b4a4efca2078447c2d967c422569af"
+    },
+    {
+      "path": "results/control140-cpu-perf-off-argv.json",
+      "source_sha256": "6c19bcdf6465d35e32c1e83eb976b22219eb278c218704cb2b58dcc4f3cd0e5d",
+      "snapshot_sha256": "6c19bcdf6465d35e32c1e83eb976b22219eb278c218704cb2b58dcc4f3cd0e5d"
+    },
+    {
+      "path": "results/control140-cpu-perf-off-environment.json",
+      "source_sha256": "c4e9202dd21841e438e5dd1ec7581eadc9d483a7d086d89ec7456b0343edfd6a",
+      "snapshot_sha256": "c4e9202dd21841e438e5dd1ec7581eadc9d483a7d086d89ec7456b0343edfd6a"
+    },
+    {
+      "path": "results/control140-cpu-perf-off-loaded-libraries.json",
+      "source_sha256": "9dbf71b5e83695d1c77e4bb3416fa271a9fa4c1130da82b52031baecac220768",
+      "snapshot_sha256": "9dbf71b5e83695d1c77e4bb3416fa271a9fa4c1130da82b52031baecac220768"
+    },
+    {
+      "path": "results/control140-cpu-perf-off-server.log",
+      "source_sha256": "ac7ef309a2d5d46556f48f1fc05b552fcc424b9fb5cce4bc523d38206f684ea0",
+      "snapshot_sha256": "ac7ef309a2d5d46556f48f1fc05b552fcc424b9fb5cce4bc523d38206f684ea0"
+    },
+    {
+      "path": "results/control140-cpu-perf-on-argv.json",
+      "source_sha256": "6c19bcdf6465d35e32c1e83eb976b22219eb278c218704cb2b58dcc4f3cd0e5d",
+      "snapshot_sha256": "6c19bcdf6465d35e32c1e83eb976b22219eb278c218704cb2b58dcc4f3cd0e5d"
+    },
+    {
+      "path": "results/control140-cpu-perf-on-environment.json",
+      "source_sha256": "38551294975a82699ed9ad807ee804d75ab7e6bccf3840029aeb9f743bcaf950",
+      "snapshot_sha256": "38551294975a82699ed9ad807ee804d75ab7e6bccf3840029aeb9f743bcaf950"
+    },
+    {
+      "path": "results/control140-cpu-perf-on-loaded-libraries.json",
+      "source_sha256": "9dbf71b5e83695d1c77e4bb3416fa271a9fa4c1130da82b52031baecac220768",
+      "snapshot_sha256": "9dbf71b5e83695d1c77e4bb3416fa271a9fa4c1130da82b52031baecac220768"
+    },
+    {
+      "path": "results/control140-cpu-perf-on-server.log",
+      "source_sha256": "89eeaa1c310d7c3dd3895947c1a0bc49fd844c30612e9b3282be1581ef95d6b8",
+      "snapshot_sha256": "89eeaa1c310d7c3dd3895947c1a0bc49fd844c30612e9b3282be1581ef95d6b8"
+    },
+    {
+      "path": "results/control140-cpu-trace-on-argv.json",
+      "source_sha256": "f9f848ee2e73bc8cb9dca53c76c7f90d2ddab878a281a9c895b1a2e08652a031",
+      "snapshot_sha256": "f9f848ee2e73bc8cb9dca53c76c7f90d2ddab878a281a9c895b1a2e08652a031"
+    },
+    {
+      "path": "results/control140-cpu-trace-on-environment.json",
+      "source_sha256": "ed8f86eb5ff032ff9598f6d382fec5dfc0bf2ab2213f03e69ce2a7203a9fb057",
+      "snapshot_sha256": "ed8f86eb5ff032ff9598f6d382fec5dfc0bf2ab2213f03e69ce2a7203a9fb057"
+    },
+    {
+      "path": "results/control140-cpu-trace-on-loaded-libraries.json",
+      "source_sha256": "6b05d5e980e6d19b6eb94a20163efa309e14797a832b70a27cf66aed8852d49f",
+      "snapshot_sha256": "6b05d5e980e6d19b6eb94a20163efa309e14797a832b70a27cf66aed8852d49f"
+    },
+    {
+      "path": "results/control140-cpu-trace-on-server.log",
+      "source_sha256": "de7702eedcf8d337103528808a3034950a226dd9abed93d4a3a1efb04cc5eb71",
+      "snapshot_sha256": "de7702eedcf8d337103528808a3034950a226dd9abed93d4a3a1efb04cc5eb71"
+    },
+    {
+      "path": "results/control140-perf-off-128x4-memory.json",
+      "source_sha256": "de80ce5abdfae2e189a28ffc3a34b2cdf5cccdf302e71cedf62f2fee61e0619d",
+      "snapshot_sha256": "de80ce5abdfae2e189a28ffc3a34b2cdf5cccdf302e71cedf62f2fee61e0619d"
+    },
+    {
+      "path": "results/control140-perf-off-128x4-request.json",
+      "source_sha256": "d6ed741c50758aaec68148dfa1d88947d31664bcff68f26553f9f8b92475b22d",
+      "snapshot_sha256": "d6ed741c50758aaec68148dfa1d88947d31664bcff68f26553f9f8b92475b22d"
+    },
+    {
+      "path": "results/control140-perf-off-128x4-response.json",
+      "source_sha256": "9450052f5ee275eecf957efc975cb513111d0c6ddb076a1b34b7b391b193aabf",
+      "snapshot_sha256": "9450052f5ee275eecf957efc975cb513111d0c6ddb076a1b34b7b391b193aabf"
+    },
+    {
+      "path": "results/control140-perf-off-128x4-summary.json",
+      "source_sha256": "fc81c00b3668e23a8af407516daca6935d639eb2b7d1225379f373bbf51d57ae",
+      "snapshot_sha256": "fc81c00b3668e23a8af407516daca6935d639eb2b7d1225379f373bbf51d57ae"
+    },
+    {
+      "path": "results/control140-perf-off-2048x16-memory.json",
+      "source_sha256": "5f9a3850a034eb1d612a87edb3e874171321abae44b3e581f29b06ad2b1d4964",
+      "snapshot_sha256": "5f9a3850a034eb1d612a87edb3e874171321abae44b3e581f29b06ad2b1d4964"
+    },
+    {
+      "path": "results/control140-perf-off-2048x16-request.json",
+      "source_sha256": "84a67bd737ce94edf6e344dcd4c01057a4bac1506bf4f42cfa02c16178047419",
+      "snapshot_sha256": "84a67bd737ce94edf6e344dcd4c01057a4bac1506bf4f42cfa02c16178047419"
+    },
+    {
+      "path": "results/control140-perf-off-2048x16-response.json",
+      "source_sha256": "f2cb484165eb08c5a4ff4f3a763385dcd58a2ef9840a2e2ba4cd6afcc48571b1",
+      "snapshot_sha256": "f2cb484165eb08c5a4ff4f3a763385dcd58a2ef9840a2e2ba4cd6afcc48571b1"
+    },
+    {
+      "path": "results/control140-perf-off-2048x16-summary.json",
+      "source_sha256": "f32ef743027c12953ec394ba1f5246004786a5f32c5ed19b09b87d97c0d2ef94",
+      "snapshot_sha256": "f32ef743027c12953ec394ba1f5246004786a5f32c5ed19b09b87d97c0d2ef94"
+    },
+    {
+      "path": "results/control140-perf-on-128x4-memory.json",
+      "source_sha256": "75d9762a0e508e23e4458a412a883e1c536ad7e552ed378021372f3da6282d8a",
+      "snapshot_sha256": "75d9762a0e508e23e4458a412a883e1c536ad7e552ed378021372f3da6282d8a"
+    },
+    {
+      "path": "results/control140-perf-on-128x4-request.json",
+      "source_sha256": "d6ed741c50758aaec68148dfa1d88947d31664bcff68f26553f9f8b92475b22d",
+      "snapshot_sha256": "d6ed741c50758aaec68148dfa1d88947d31664bcff68f26553f9f8b92475b22d"
+    },
+    {
+      "path": "results/control140-perf-on-128x4-response.json",
+      "source_sha256": "5a04bdb4c554b142aff4458bf48f31e5b34e854d52a72956be649e4600deb610",
+      "snapshot_sha256": "5a04bdb4c554b142aff4458bf48f31e5b34e854d52a72956be649e4600deb610"
+    },
+    {
+      "path": "results/control140-perf-on-128x4-summary.json",
+      "source_sha256": "8b78eab0c791968856d147384e9b1cea574aeec6bd5717091eaa5e0a056e4308",
+      "snapshot_sha256": "8b78eab0c791968856d147384e9b1cea574aeec6bd5717091eaa5e0a056e4308"
+    },
+    {
+      "path": "results/control140-perf-on-2048x16-memory.json",
+      "source_sha256": "268161ba2c7821af2d0fbd15265a762fb9d440754f6bb0dd68d0fed340864cb6",
+      "snapshot_sha256": "268161ba2c7821af2d0fbd15265a762fb9d440754f6bb0dd68d0fed340864cb6"
+    },
+    {
+      "path": "results/control140-perf-on-2048x16-request.json",
+      "source_sha256": "84a67bd737ce94edf6e344dcd4c01057a4bac1506bf4f42cfa02c16178047419",
+      "snapshot_sha256": "84a67bd737ce94edf6e344dcd4c01057a4bac1506bf4f42cfa02c16178047419"
+    },
+    {
+      "path": "results/control140-perf-on-2048x16-response.json",
+      "source_sha256": "5968c3df1bdf2ba127241d4d913d434a940ed66e9d050098fe5feadfd64bbefb",
+      "snapshot_sha256": "5968c3df1bdf2ba127241d4d913d434a940ed66e9d050098fe5feadfd64bbefb"
+    },
+    {
+      "path": "results/control140-perf-on-2048x16-summary.json",
+      "source_sha256": "67c86a271a0e23a6fa555fafe3acbcf0757d4c806177e5ef3174ecb4601dfc58",
+      "snapshot_sha256": "67c86a271a0e23a6fa555fafe3acbcf0757d4c806177e5ef3174ecb4601dfc58"
+    },
+    {
+      "path": "results/control140-trace-128x4-memory.json",
+      "source_sha256": "3d0a91ed83aba3bc46d54137ed1de7ddf10be4e71a7c2abd38651a374874cbe1",
+      "snapshot_sha256": "3d0a91ed83aba3bc46d54137ed1de7ddf10be4e71a7c2abd38651a374874cbe1"
+    },
+    {
+      "path": "results/control140-trace-128x4-request.json",
+      "source_sha256": "d6ed741c50758aaec68148dfa1d88947d31664bcff68f26553f9f8b92475b22d",
+      "snapshot_sha256": "d6ed741c50758aaec68148dfa1d88947d31664bcff68f26553f9f8b92475b22d"
+    },
+    {
+      "path": "results/control140-trace-128x4-response.json",
+      "source_sha256": "e4bf8ca2423841552a576724007f1cb8a965d88819e1198dce4c2ef83b6a11e1",
+      "snapshot_sha256": "e4bf8ca2423841552a576724007f1cb8a965d88819e1198dce4c2ef83b6a11e1"
+    },
+    {
+      "path": "results/control140-trace-128x4-summary.json",
+      "source_sha256": "9a32be3a0f3aa81275d3556a402c17e0c538dbc5ab84b3a60681a791cac33b95",
+      "snapshot_sha256": "9a32be3a0f3aa81275d3556a402c17e0c538dbc5ab84b3a60681a791cac33b95"
+    },
+    {
+      "path": "results/moe-control-apex-expanded-native.log",
+      "source_sha256": "e1eb89e29b112395e3e6b77382432de8a3b443f8f5ec33bcab1dba4dd01cbdcc",
+      "snapshot_sha256": "e1eb89e29b112395e3e6b77382432de8a3b443f8f5ec33bcab1dba4dd01cbdcc"
+    },
+    {
+      "path": "results/moe-control-apex-expanded-off.log",
+      "source_sha256": "52260ef1f0deb7f1391bfe055936e0610a7ec146147393aff65a92c62e2a2be1",
+      "snapshot_sha256": "52260ef1f0deb7f1391bfe055936e0610a7ec146147393aff65a92c62e2a2be1"
+    },
+    {
+      "path": "results/moe-control-apex-expanded-on.log",
+      "source_sha256": "79823eb8c2212cab0feb7eb51bc36510aeb2a062b1a7d65ed70acfd58f62e3f4",
+      "snapshot_sha256": "79823eb8c2212cab0feb7eb51bc36510aeb2a062b1a7d65ed70acfd58f62e3f4"
+    },
+    {
+      "path": "results/moe-control-apex-expanded-summary.json",
+      "source_sha256": "022a1c965b1f4c10f9cb5fa61d6c4d9e9edf0c48a8d061a5dfb2a53c8db50710",
+      "snapshot_sha256": "022a1c965b1f4c10f9cb5fa61d6c4d9e9edf0c48a8d061a5dfb2a53c8db50710"
+    },
+    {
+      "path": "results/moe-control-apex-graphs-native.log",
+      "source_sha256": "b223d34630ea981d12647ac5f7c42cfdf6bd930a02dd21850700f5ca319642a9",
+      "snapshot_sha256": "b223d34630ea981d12647ac5f7c42cfdf6bd930a02dd21850700f5ca319642a9"
+    },
+    {
+      "path": "results/moe-control-apex-graphs-off.log",
+      "source_sha256": "22c5327c5ac5438d7b0e17eca169dab8cc647d69e271af8745ed76a45174b9ed",
+      "snapshot_sha256": "22c5327c5ac5438d7b0e17eca169dab8cc647d69e271af8745ed76a45174b9ed"
+    },
+    {
+      "path": "results/moe-control-apex-graphs-on.log",
+      "source_sha256": "27dbf36183b5bf930be1497a5dd75c2c5174fe0a5330fd163b0d7fa416c84427",
+      "snapshot_sha256": "27dbf36183b5bf930be1497a5dd75c2c5174fe0a5330fd163b0d7fa416c84427"
+    },
+    {
+      "path": "results/moe-control-apex-graphs-summary.json",
+      "source_sha256": "66d43002ac4f377c2306f021c3aab4190bc80eedd5477df27983ab12ed1254ec",
+      "snapshot_sha256": "66d43002ac4f377c2306f021c3aab4190bc80eedd5477df27983ab12ed1254ec"
+    },
+    {
+      "path": "results/moe-control-apex-model-stage-summary.json",
+      "source_sha256": "b42aa56c8e67e4f6b3e2a44d5496e950d57a36b8fc3b4425eb1f9fa42c968cbb",
+      "snapshot_sha256": "b42aa56c8e67e4f6b3e2a44d5496e950d57a36b8fc3b4425eb1f9fa42c968cbb"
+    },
+    {
+      "path": "results/moe-control-apex-perf-expanded-native.log",
+      "source_sha256": "e1eb89e29b112395e3e6b77382432de8a3b443f8f5ec33bcab1dba4dd01cbdcc",
+      "snapshot_sha256": "e1eb89e29b112395e3e6b77382432de8a3b443f8f5ec33bcab1dba4dd01cbdcc"
+    },
+    {
+      "path": "results/moe-control-apex-perf-expanded-off.log",
+      "source_sha256": "f656e16e07d2c84b179249e7284e7c240448d66956e066efdebbcacf201afee1",
+      "snapshot_sha256": "f656e16e07d2c84b179249e7284e7c240448d66956e066efdebbcacf201afee1"
+    },
+    {
+      "path": "results/moe-control-apex-perf-expanded-on.log",
+      "source_sha256": "f656e16e07d2c84b179249e7284e7c240448d66956e066efdebbcacf201afee1",
+      "snapshot_sha256": "f656e16e07d2c84b179249e7284e7c240448d66956e066efdebbcacf201afee1"
+    },
+    {
+      "path": "results/moe-control-apex-perf-expanded-summary.json",
+      "source_sha256": "d3fb5c445856c871137801a66c4fdcfca2cbf467f7d28d0be78b55763c4d16e1",
+      "snapshot_sha256": "d3fb5c445856c871137801a66c4fdcfca2cbf467f7d28d0be78b55763c4d16e1"
+    },
+    {
+      "path": "results/moe-control-apex-sanitized-off.log",
+      "source_sha256": "52260ef1f0deb7f1391bfe055936e0610a7ec146147393aff65a92c62e2a2be1",
+      "snapshot_sha256": "52260ef1f0deb7f1391bfe055936e0610a7ec146147393aff65a92c62e2a2be1"
+    },
+    {
+      "path": "results/moe-control-apex-sanitized-on.log",
+      "source_sha256": "79823eb8c2212cab0feb7eb51bc36510aeb2a062b1a7d65ed70acfd58f62e3f4",
+      "snapshot_sha256": "79823eb8c2212cab0feb7eb51bc36510aeb2a062b1a7d65ed70acfd58f62e3f4"
+    },
+    {
+      "path": "results/moe-control-apex-sanitizer-summary.json",
+      "source_sha256": "4f7f3b69513ae6e860980ee43aff4dfde09d47891400d5cb8a8f7bb3094c0b67",
+      "snapshot_sha256": "4f7f3b69513ae6e860980ee43aff4dfde09d47891400d5cb8a8f7bb3094c0b67"
+    },
+    {
+      "path": "results/moe-control-functional-summary.json",
+      "source_sha256": "3c68c2043b383fb162ca026697123cd89384b77dcd119d6a42ef2c437fbd4334",
+      "snapshot_sha256": "3c68c2043b383fb162ca026697123cd89384b77dcd119d6a42ef2c437fbd4334"
+    },
+    {
+      "path": "results/moe-control-operation-native.jsonl",
+      "source_sha256": "f67feea5a0b435475315fec07b721c3f06f39767d92a796c6452da58f00043af",
+      "snapshot_sha256": "f67feea5a0b435475315fec07b721c3f06f39767d92a796c6452da58f00043af"
+    },
+    {
+      "path": "results/moe-control-operation-native.stderr",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "results/moe-control-operation-off.jsonl",
+      "source_sha256": "fb6ccca3c09f9b2fb3884ad5a83f8b79516d91ea4c9e4989f09b7743b6b12d13",
+      "snapshot_sha256": "fb6ccca3c09f9b2fb3884ad5a83f8b79516d91ea4c9e4989f09b7743b6b12d13"
+    },
+    {
+      "path": "results/moe-control-operation-off.stderr",
+      "source_sha256": "592f7b8bac33ec4390aa8ec1a94bcc17363f3138df68e4b42be55741299279a3",
+      "snapshot_sha256": "592f7b8bac33ec4390aa8ec1a94bcc17363f3138df68e4b42be55741299279a3"
+    },
+    {
+      "path": "results/moe-control-operation-on.jsonl",
+      "source_sha256": "3fa890c07e83394c0e565b778d9e03ce7b4911af9c29ab564495a132e4c16bfd",
+      "snapshot_sha256": "3fa890c07e83394c0e565b778d9e03ce7b4911af9c29ab564495a132e4c16bfd"
+    },
+    {
+      "path": "results/moe-control-operation-on.stderr",
+      "source_sha256": "592f7b8bac33ec4390aa8ec1a94bcc17363f3138df68e4b42be55741299279a3",
+      "snapshot_sha256": "592f7b8bac33ec4390aa8ec1a94bcc17363f3138df68e4b42be55741299279a3"
+    },
+    {
+      "path": "results/moe-control-operation-summary.json",
+      "source_sha256": "b604f193d907ee1d21e3ca16a94c2979dd2d585804b9d4dd4ff975a00f1b3b3e",
+      "snapshot_sha256": "b604f193d907ee1d21e3ca16a94c2979dd2d585804b9d4dd4ff975a00f1b3b3e"
+    },
+    {
+      "path": "results/moe-control-qwen-expanded-native.log",
+      "source_sha256": "aaf2e402acd86b9c14ed579911e447237d41edef8e17090671f32856f38a28b3",
+      "snapshot_sha256": "aaf2e402acd86b9c14ed579911e447237d41edef8e17090671f32856f38a28b3"
+    },
+    {
+      "path": "results/moe-control-qwen-expanded-off.log",
+      "source_sha256": "860c59848c7c9b22aa14c93a769bda9539224fd18b343bcffd960ef60b3a7941",
+      "snapshot_sha256": "860c59848c7c9b22aa14c93a769bda9539224fd18b343bcffd960ef60b3a7941"
+    },
+    {
+      "path": "results/moe-control-qwen-expanded-on.log",
+      "source_sha256": "b1c8e2178070f235648675d0f02516a3bd12639ba521c079549caaa1c03cea86",
+      "snapshot_sha256": "b1c8e2178070f235648675d0f02516a3bd12639ba521c079549caaa1c03cea86"
+    },
+    {
+      "path": "results/moe-control-qwen-expanded-summary.json",
+      "source_sha256": "47b02a68c3f124c75746f2d845f8740f9cafe8200ae8a2716dbaf9d3b2e9b726",
+      "snapshot_sha256": "47b02a68c3f124c75746f2d845f8740f9cafe8200ae8a2716dbaf9d3b2e9b726"
+    },
+    {
+      "path": "results/moe-control-qwen-graphs-native.log",
+      "source_sha256": "6ef0adf6ac8e10ff696feb753a8396ae266612d66c5db96adcc4b7ae61d6bb18",
+      "snapshot_sha256": "6ef0adf6ac8e10ff696feb753a8396ae266612d66c5db96adcc4b7ae61d6bb18"
+    },
+    {
+      "path": "results/moe-control-qwen-graphs-off.log",
+      "source_sha256": "020f10a5e490446cc27ff623478348f68ecf25152fea6cfa9611c8950dad7eaa",
+      "snapshot_sha256": "020f10a5e490446cc27ff623478348f68ecf25152fea6cfa9611c8950dad7eaa"
+    },
+    {
+      "path": "results/moe-control-qwen-graphs-on.log",
+      "source_sha256": "33acb4eee1ab546f75ad141734db9cdbd8ca80bcd937a9df6fb94dd6b1d59ee2",
+      "snapshot_sha256": "33acb4eee1ab546f75ad141734db9cdbd8ca80bcd937a9df6fb94dd6b1d59ee2"
+    },
+    {
+      "path": "results/moe-control-qwen-graphs-summary.json",
+      "source_sha256": "e2b776b7b39051ef8cf94094c3db32d9978bcb543fafd78aba429e836260eb43",
+      "snapshot_sha256": "e2b776b7b39051ef8cf94094c3db32d9978bcb543fafd78aba429e836260eb43"
+    },
+    {
+      "path": "results/moe-control-qwen-model-stage-summary.json",
+      "source_sha256": "29e821e6b9ab86a2df283fbeb9868922e360b68ce6a7118ddad167ba387881f9",
+      "snapshot_sha256": "29e821e6b9ab86a2df283fbeb9868922e360b68ce6a7118ddad167ba387881f9"
+    },
+    {
+      "path": "results/moe-control-qwen-operation-native.jsonl",
+      "source_sha256": "a266f71568e9e7947c128b22c3b5d7d408f16b2bb745e4c2f1ac93a77ebb5354",
+      "snapshot_sha256": "a266f71568e9e7947c128b22c3b5d7d408f16b2bb745e4c2f1ac93a77ebb5354"
+    },
+    {
+      "path": "results/moe-control-qwen-operation-native.stderr",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "results/moe-control-qwen-operation-off.jsonl",
+      "source_sha256": "a584ae240db7f780d7215f6104041f1457736314f25e751ec9766d3a7bbc25d6",
+      "snapshot_sha256": "a584ae240db7f780d7215f6104041f1457736314f25e751ec9766d3a7bbc25d6"
+    },
+    {
+      "path": "results/moe-control-qwen-operation-off.stderr",
+      "source_sha256": "9d851af8c35242eeac65ba3b978eda53df74085887fca35fb32545503b35c0ac",
+      "snapshot_sha256": "9d851af8c35242eeac65ba3b978eda53df74085887fca35fb32545503b35c0ac"
+    },
+    {
+      "path": "results/moe-control-qwen-operation-on.jsonl",
+      "source_sha256": "f1b025daf696c43801caf1cebc0e9dcf5c790b57aabf216abfb3862809e0691a",
+      "snapshot_sha256": "f1b025daf696c43801caf1cebc0e9dcf5c790b57aabf216abfb3862809e0691a"
+    },
+    {
+      "path": "results/moe-control-qwen-operation-on.stderr",
+      "source_sha256": "9d851af8c35242eeac65ba3b978eda53df74085887fca35fb32545503b35c0ac",
+      "snapshot_sha256": "9d851af8c35242eeac65ba3b978eda53df74085887fca35fb32545503b35c0ac"
+    },
+    {
+      "path": "results/moe-control-qwen-operation-summary.json",
+      "source_sha256": "df3d9508a5ab8b078b7c8025901225e51200561d5508fd1e5b6516b6c205c1ae",
+      "snapshot_sha256": "df3d9508a5ab8b078b7c8025901225e51200561d5508fd1e5b6516b6c205c1ae"
+    },
+    {
+      "path": "results/moe-control-qwen-perf-expanded-native.log",
+      "source_sha256": "aaf2e402acd86b9c14ed579911e447237d41edef8e17090671f32856f38a28b3",
+      "snapshot_sha256": "aaf2e402acd86b9c14ed579911e447237d41edef8e17090671f32856f38a28b3"
+    },
+    {
+      "path": "results/moe-control-qwen-perf-expanded-off.log",
+      "source_sha256": "197e099bb8ef88bec59d3efc910fe5d6e77b262b0230c07172f75c77b4caa863",
+      "snapshot_sha256": "197e099bb8ef88bec59d3efc910fe5d6e77b262b0230c07172f75c77b4caa863"
+    },
+    {
+      "path": "results/moe-control-qwen-perf-expanded-on.log",
+      "source_sha256": "197e099bb8ef88bec59d3efc910fe5d6e77b262b0230c07172f75c77b4caa863",
+      "snapshot_sha256": "197e099bb8ef88bec59d3efc910fe5d6e77b262b0230c07172f75c77b4caa863"
+    },
+    {
+      "path": "results/moe-control-qwen-perf-expanded-summary.json",
+      "source_sha256": "3c1a3db35bf327ce905c09008dd1ba6814cd3c5e395107f7d519a87dcced26c1",
+      "snapshot_sha256": "3c1a3db35bf327ce905c09008dd1ba6814cd3c5e395107f7d519a87dcced26c1"
+    },
+    {
+      "path": "results/moe-control-qwen-sanitized-off.log",
+      "source_sha256": "860c59848c7c9b22aa14c93a769bda9539224fd18b343bcffd960ef60b3a7941",
+      "snapshot_sha256": "860c59848c7c9b22aa14c93a769bda9539224fd18b343bcffd960ef60b3a7941"
+    },
+    {
+      "path": "results/moe-control-qwen-sanitized-on.log",
+      "source_sha256": "ca7e1a38cc3e6ce0caf9067e49dbbb8a3267ddad2d5c1b633637afa25e39982c",
+      "snapshot_sha256": "ca7e1a38cc3e6ce0caf9067e49dbbb8a3267ddad2d5c1b633637afa25e39982c"
+    },
+    {
+      "path": "results/moe-control-qwen-sanitizer-summary.json",
+      "source_sha256": "5f64f42771f48dd6ede64492e774c9ec5798e7340756c19ea7f05e7fefe84d86",
+      "snapshot_sha256": "5f64f42771f48dd6ede64492e774c9ec5798e7340756c19ea7f05e7fefe84d86"
+    },
+    {
+      "path": "results/qwen140-perf-off-128x16-memory.json",
+      "source_sha256": "f7e5254a687c1f2e7e2356306db2ada0d2c03a166170e3db1ef889a64fe0c9fa",
+      "snapshot_sha256": "f7e5254a687c1f2e7e2356306db2ada0d2c03a166170e3db1ef889a64fe0c9fa"
+    },
+    {
+      "path": "results/qwen140-perf-off-128x16-request.json",
+      "source_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7",
+      "snapshot_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7"
+    },
+    {
+      "path": "results/qwen140-perf-off-128x16-response.json",
+      "source_sha256": "458e590628ef7d767d7f0b2a120503278d59d2471dccdcb3ba59206a2f6e48e4",
+      "snapshot_sha256": "458e590628ef7d767d7f0b2a120503278d59d2471dccdcb3ba59206a2f6e48e4"
+    },
+    {
+      "path": "results/qwen140-perf-off-128x16-summary.json",
+      "source_sha256": "a227661260ccfa6a52a9d990d9bde4b8ccfbe9947d95def7a1123daee2e49cf9",
+      "snapshot_sha256": "a227661260ccfa6a52a9d990d9bde4b8ccfbe9947d95def7a1123daee2e49cf9"
+    },
+    {
+      "path": "results/qwen140-perf-off-32x4-memory.json",
+      "source_sha256": "353018a8f28e0544e29cd07ca0ea02714dde32e63c73ce54e7508c06c6eef175",
+      "snapshot_sha256": "353018a8f28e0544e29cd07ca0ea02714dde32e63c73ce54e7508c06c6eef175"
+    },
+    {
+      "path": "results/qwen140-perf-off-32x4-request.json",
+      "source_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e",
+      "snapshot_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e"
+    },
+    {
+      "path": "results/qwen140-perf-off-32x4-response.json",
+      "source_sha256": "371621b5445e23830337496b6c1942854a8d7cf5d47aafd7802dc7ef4e77cd8e",
+      "snapshot_sha256": "371621b5445e23830337496b6c1942854a8d7cf5d47aafd7802dc7ef4e77cd8e"
+    },
+    {
+      "path": "results/qwen140-perf-off-32x4-summary.json",
+      "source_sha256": "536687b5b31daad7f1a40ee47accd10b3770fa2a7415e73ddbc73d5c60adc17b",
+      "snapshot_sha256": "536687b5b31daad7f1a40ee47accd10b3770fa2a7415e73ddbc73d5c60adc17b"
+    },
+    {
+      "path": "results/qwen140-perf-off-argv.json",
+      "source_sha256": "7fa021436c138e72512219d95ebb67a3e5c4c068b43c61ccfdc88bd68197f3a6",
+      "snapshot_sha256": "7fa021436c138e72512219d95ebb67a3e5c4c068b43c61ccfdc88bd68197f3a6"
+    },
+    {
+      "path": "results/qwen140-perf-off-environment.json",
+      "source_sha256": "98960f5aafe3d39a0b13d809208e1e2c5c81ba311e7e0109dda85969bbb1d0f4",
+      "snapshot_sha256": "98960f5aafe3d39a0b13d809208e1e2c5c81ba311e7e0109dda85969bbb1d0f4"
+    },
+    {
+      "path": "results/qwen140-perf-off-loaded-libraries.json",
+      "source_sha256": "cd023c4d48ce541241d41ec90e5ff9928dad71cd6d57ef05696b0dbd52604d59",
+      "snapshot_sha256": "cd023c4d48ce541241d41ec90e5ff9928dad71cd6d57ef05696b0dbd52604d59"
+    },
+    {
+      "path": "results/qwen140-perf-off-server.log",
+      "source_sha256": "b79337b1d8a47566066bfaee93514a6634835b872b602e7a414153ba1a28defe",
+      "snapshot_sha256": "b79337b1d8a47566066bfaee93514a6634835b872b602e7a414153ba1a28defe"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-memory.json",
+      "source_sha256": "0434cea26b2a18a169ab4dc076d1261690021c8e31071931aee12c0ef3add8ba",
+      "snapshot_sha256": "0434cea26b2a18a169ab4dc076d1261690021c8e31071931aee12c0ef3add8ba"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-repeat-memory.json",
+      "source_sha256": "3858f475cf194e7b67b4594f0497799ebb7415a072063890e36271435543dc7a",
+      "snapshot_sha256": "3858f475cf194e7b67b4594f0497799ebb7415a072063890e36271435543dc7a"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-repeat-request.json",
+      "source_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7",
+      "snapshot_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-repeat-response.json",
+      "source_sha256": "48ce9146633c05926f36a3187b9fc1065a1c42fb6b71c8acd929a235bb6e3628",
+      "snapshot_sha256": "48ce9146633c05926f36a3187b9fc1065a1c42fb6b71c8acd929a235bb6e3628"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-repeat-summary.json",
+      "source_sha256": "47fa5f1ee6b92ddee175c6b693e72fa2d0e4bb46ef779732a319ecce5a6dbb2a",
+      "snapshot_sha256": "47fa5f1ee6b92ddee175c6b693e72fa2d0e4bb46ef779732a319ecce5a6dbb2a"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-request.json",
+      "source_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7",
+      "snapshot_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-response.json",
+      "source_sha256": "303965e8209638c3a98acf4db5cc3e969bdcb1dce42c211058f967b2d2ba81db",
+      "snapshot_sha256": "303965e8209638c3a98acf4db5cc3e969bdcb1dce42c211058f967b2d2ba81db"
+    },
+    {
+      "path": "results/qwen140-perf-on-128x16-summary.json",
+      "source_sha256": "f3cdea1674d3d13e7d8341a428b15462e6f156666f13a6d90eeb8b1b89b66b5f",
+      "snapshot_sha256": "f3cdea1674d3d13e7d8341a428b15462e6f156666f13a6d90eeb8b1b89b66b5f"
+    },
+    {
+      "path": "results/qwen140-perf-on-32x4-memory.json",
+      "source_sha256": "2e6123fc16745e66b627ff6e63efe5238814156caad140a50d9c9ac4d7985646",
+      "snapshot_sha256": "2e6123fc16745e66b627ff6e63efe5238814156caad140a50d9c9ac4d7985646"
+    },
+    {
+      "path": "results/qwen140-perf-on-32x4-request.json",
+      "source_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e",
+      "snapshot_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e"
+    },
+    {
+      "path": "results/qwen140-perf-on-32x4-response.json",
+      "source_sha256": "3a182c24750721054afd1bce7c95d83f428639596175ed588bc06da914f78657",
+      "snapshot_sha256": "3a182c24750721054afd1bce7c95d83f428639596175ed588bc06da914f78657"
+    },
+    {
+      "path": "results/qwen140-perf-on-32x4-summary.json",
+      "source_sha256": "85ff4092f9cd12e19d56f149937b9cc03d487efad54bd11ae122e1db505220c1",
+      "snapshot_sha256": "85ff4092f9cd12e19d56f149937b9cc03d487efad54bd11ae122e1db505220c1"
+    },
+    {
+      "path": "results/qwen140-perf-on-argv.json",
+      "source_sha256": "7fa021436c138e72512219d95ebb67a3e5c4c068b43c61ccfdc88bd68197f3a6",
+      "snapshot_sha256": "7fa021436c138e72512219d95ebb67a3e5c4c068b43c61ccfdc88bd68197f3a6"
+    },
+    {
+      "path": "results/qwen140-perf-on-environment.json",
+      "source_sha256": "c3916f5013c5663df5167fdf81692d595cce74b8de025c375b7623ec69c4829e",
+      "snapshot_sha256": "c3916f5013c5663df5167fdf81692d595cce74b8de025c375b7623ec69c4829e"
+    },
+    {
+      "path": "results/qwen140-perf-on-loaded-libraries.json",
+      "source_sha256": "cd023c4d48ce541241d41ec90e5ff9928dad71cd6d57ef05696b0dbd52604d59",
+      "snapshot_sha256": "cd023c4d48ce541241d41ec90e5ff9928dad71cd6d57ef05696b0dbd52604d59"
+    },
+    {
+      "path": "results/qwen140-perf-on-server.log",
+      "source_sha256": "e1fb24c2c84001c1a48fa604fc26040de10d18d31ea8fa47ce860fca600cca87",
+      "snapshot_sha256": "e1fb24c2c84001c1a48fa604fc26040de10d18d31ea8fa47ce860fca600cca87"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-measured-memory.json",
+      "source_sha256": "703b6b8095c953a7041c88cfc538797d71ef3e505c88bc62b3603160514f9ca3",
+      "snapshot_sha256": "703b6b8095c953a7041c88cfc538797d71ef3e505c88bc62b3603160514f9ca3"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-measured-request.json",
+      "source_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7",
+      "snapshot_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-measured-response.json",
+      "source_sha256": "33e5bf4e1408d916361730b2cc5a234e7467a8c09efedd4adf24e900ed6f22fe",
+      "snapshot_sha256": "33e5bf4e1408d916361730b2cc5a234e7467a8c09efedd4adf24e900ed6f22fe"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-measured-summary.json",
+      "source_sha256": "89071829a46d463474a26a42ee8a4827cbee9c9f8811a8de40c9db90dff3b2b7",
+      "snapshot_sha256": "89071829a46d463474a26a42ee8a4827cbee9c9f8811a8de40c9db90dff3b2b7"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-warm-memory.json",
+      "source_sha256": "46e4823445485028f9672ae68812bf26ea257195683c640ca3d975193f91e4ff",
+      "snapshot_sha256": "46e4823445485028f9672ae68812bf26ea257195683c640ca3d975193f91e4ff"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-warm-request.json",
+      "source_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7",
+      "snapshot_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-warm-response.json",
+      "source_sha256": "44a148d4c4642ffb232a2e5cbdd624accd5e5c0fbf4bfa875346a5d27c094230",
+      "snapshot_sha256": "44a148d4c4642ffb232a2e5cbdd624accd5e5c0fbf4bfa875346a5d27c094230"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-128x16-warm-summary.json",
+      "source_sha256": "0369fc6ff8213d6bc9945f20378efd5e8d8f55295405167c2d6452ec9316d4ee",
+      "snapshot_sha256": "0369fc6ff8213d6bc9945f20378efd5e8d8f55295405167c2d6452ec9316d4ee"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-32x4-memory.json",
+      "source_sha256": "61a81e881f1d74186141ab0f654a2bf6b0714ef0ab69e171efb2930a6556b3ef",
+      "snapshot_sha256": "61a81e881f1d74186141ab0f654a2bf6b0714ef0ab69e171efb2930a6556b3ef"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-32x4-request.json",
+      "source_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e",
+      "snapshot_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-32x4-response.json",
+      "source_sha256": "160a6b7b2a700092065e8caa9ce5bb7652f22d03eee92cd4f295d9e1d35c8ca0",
+      "snapshot_sha256": "160a6b7b2a700092065e8caa9ce5bb7652f22d03eee92cd4f295d9e1d35c8ca0"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-32x4-summary.json",
+      "source_sha256": "020df0f282b50116549b3dc14b05d273cbc70b6d53fc07bb2db59c223846eb79",
+      "snapshot_sha256": "020df0f282b50116549b3dc14b05d273cbc70b6d53fc07bb2db59c223846eb79"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-argv.json",
+      "source_sha256": "7fa021436c138e72512219d95ebb67a3e5c4c068b43c61ccfdc88bd68197f3a6",
+      "snapshot_sha256": "7fa021436c138e72512219d95ebb67a3e5c4c068b43c61ccfdc88bd68197f3a6"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-environment.json",
+      "source_sha256": "98960f5aafe3d39a0b13d809208e1e2c5c81ba311e7e0109dda85969bbb1d0f4",
+      "snapshot_sha256": "98960f5aafe3d39a0b13d809208e1e2c5c81ba311e7e0109dda85969bbb1d0f4"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-loaded-libraries.json",
+      "source_sha256": "cd023c4d48ce541241d41ec90e5ff9928dad71cd6d57ef05696b0dbd52604d59",
+      "snapshot_sha256": "cd023c4d48ce541241d41ec90e5ff9928dad71cd6d57ef05696b0dbd52604d59"
+    },
+    {
+      "path": "results/qwen140-perf-repeat-off-server.log",
+      "source_sha256": "d1af60cc1296017ac1f2141641497375042a05c9a12d03a9dfccc74b0c6ad1d2",
+      "snapshot_sha256": "d1af60cc1296017ac1f2141641497375042a05c9a12d03a9dfccc74b0c6ad1d2"
+    },
+    {
+      "path": "results/qwen140-trace-128x16-memory.json",
+      "source_sha256": "9533bb6aff9a5bfe23f8ae69ead840d70b0963c16b23d65e61880d60970c94a6",
+      "snapshot_sha256": "9533bb6aff9a5bfe23f8ae69ead840d70b0963c16b23d65e61880d60970c94a6"
+    },
+    {
+      "path": "results/qwen140-trace-128x16-request.json",
+      "source_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7",
+      "snapshot_sha256": "4cd48b30cacafccd1889e8ad3205230d2f222b5cafcf6326fe06d7ea37d068c7"
+    },
+    {
+      "path": "results/qwen140-trace-128x16-response.json",
+      "source_sha256": "b444550c4eddd55da8a8d18c284f9ad39f50c0be0a8df9c3cefbafc5b576d84d",
+      "snapshot_sha256": "b444550c4eddd55da8a8d18c284f9ad39f50c0be0a8df9c3cefbafc5b576d84d"
+    },
+    {
+      "path": "results/qwen140-trace-128x16-summary.json",
+      "source_sha256": "f4e806d00b37acfec6223b3b93d1892653e55c8a84c24f73703146b9bd7ff555",
+      "snapshot_sha256": "f4e806d00b37acfec6223b3b93d1892653e55c8a84c24f73703146b9bd7ff555"
+    },
+    {
+      "path": "results/qwen140-trace-32x4-memory.json",
+      "source_sha256": "f5a81ac460136ca0a42fb5cb680019d648d93e26c1adc387286f9941c213eb74",
+      "snapshot_sha256": "f5a81ac460136ca0a42fb5cb680019d648d93e26c1adc387286f9941c213eb74"
+    },
+    {
+      "path": "results/qwen140-trace-32x4-request.json",
+      "source_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e",
+      "snapshot_sha256": "67631274055be737eee4851d5633ee360513dff9e6de3063004308be671e825e"
+    },
+    {
+      "path": "results/qwen140-trace-32x4-response.json",
+      "source_sha256": "3ff4d93119793861386245fcfac6ef13f49ae11be33bfb44b406899b180e6495",
+      "snapshot_sha256": "3ff4d93119793861386245fcfac6ef13f49ae11be33bfb44b406899b180e6495"
+    },
+    {
+      "path": "results/qwen140-trace-32x4-summary.json",
+      "source_sha256": "505e8faf4b27b887aaf411c0ddc1692f9052a93dbc9b6b57dfff381073b0fcce",
+      "snapshot_sha256": "505e8faf4b27b887aaf411c0ddc1692f9052a93dbc9b6b57dfff381073b0fcce"
+    },
+    {
+      "path": "results/qwen140-trace-on-argv.json",
+      "source_sha256": "150246fd937928cae651d1d26cd736eba26aeecad04490b71716ce86e2f9937d",
+      "snapshot_sha256": "150246fd937928cae651d1d26cd736eba26aeecad04490b71716ce86e2f9937d"
+    },
+    {
+      "path": "results/qwen140-trace-on-environment.json",
+      "source_sha256": "62d93c5a75e742d4542c81912f1306f249276b4e77d77b6f047631d75a1f1324",
+      "snapshot_sha256": "62d93c5a75e742d4542c81912f1306f249276b4e77d77b6f047631d75a1f1324"
+    },
+    {
+      "path": "results/qwen140-trace-on-loaded-libraries.json",
+      "source_sha256": "e57ae4540185aadb9d5f46d0150dc0b500ed4cdd1e1fc40bcf2e7c8c904f8d04",
+      "snapshot_sha256": "e57ae4540185aadb9d5f46d0150dc0b500ed4cdd1e1fc40bcf2e7c8c904f8d04"
+    },
+    {
+      "path": "results/qwen140-trace-on-server.log",
+      "source_sha256": "c7f1d2fa249d0d0c031bd86af7c48f53566e6fbe47246b6e30002c1be9d9a2e8",
+      "snapshot_sha256": "c7f1d2fa249d0d0c031bd86af7c48f53566e6fbe47246b6e30002c1be9d9a2e8"
+    },
+    {
+      "path": "results/reference-integrity-exp140.json",
+      "source_sha256": "f87e2cb99bf31444d44a245b142e073de160f706c6cb53e3872dc5ef08269b66",
+      "snapshot_sha256": "f87e2cb99bf31444d44a245b142e073de160f706c6cb53e3872dc5ef08269b66"
+    },
+    {
+      "path": "tools/archive/fg_live_request.py",
+      "source_sha256": "773098b4dc3ededad08de6c6c07d737a3d0bc27f4905c64c1104b0c527f1a0ff",
+      "snapshot_sha256": "773098b4dc3ededad08de6c6c07d737a3d0bc27f4905c64c1104b0c527f1a0ff"
+    },
+    {
+      "path": "tools/archive/fg_stop_live.py",
+      "source_sha256": "0705c4deb9d366d4f6e89354a91a17a118e32a5eeba7cdad284584987f8944f4",
+      "snapshot_sha256": "0705c4deb9d366d4f6e89354a91a17a118e32a5eeba7cdad284584987f8944f4"
+    },
+    {
+      "path": "build-records/moe-control/compile-command.json",
+      "source_sha256": "120f5cbcd90a658970740fef5ff0d784ad15ae2d0896fd170008f0610b21e7ac",
+      "snapshot_sha256": "120f5cbcd90a658970740fef5ff0d784ad15ae2d0896fd170008f0610b21e7ac"
+    },
+    {
+      "path": "build-records/moe-control/compile-v1-no-prototypes.log",
+      "source_sha256": "8e2e9cb790e69a646286c2405f82a57ee27f1a906cc40e6e4fe62b433c972dff",
+      "snapshot_sha256": "8e2e9cb790e69a646286c2405f82a57ee27f1a906cc40e6e4fe62b433c972dff"
+    },
+    {
+      "path": "build-records/moe-control/compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex/commands.json",
+      "source_sha256": "0de1a1519a3f022bf34134ee2f8361eded4c50db1b91ccdf88c2b67caa1bcdeb",
+      "snapshot_sha256": "0de1a1519a3f022bf34134ee2f8361eded4c50db1b91ccdf88c2b67caa1bcdeb"
+    },
+    {
+      "path": "build-records/moe-control-apex/controller.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex/core.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex/expanded-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex/graph-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex/link.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex/manifest.json",
+      "source_sha256": "e417e5d9d8a3f7ebcefebd646aff6fd4497094882665c0a1a2446e8f03d432af",
+      "snapshot_sha256": "e417e5d9d8a3f7ebcefebd646aff6fd4497094882665c0a1a2446e8f03d432af"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/commands.json",
+      "source_sha256": "4e5d1ffdf03d14776c75188041af8e5235a7f8c3a9f7a724bdd525ff03a24cf9",
+      "snapshot_sha256": "4e5d1ffdf03d14776c75188041af8e5235a7f8c3a9f7a724bdd525ff03a24cf9"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/controller.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/core.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/expanded-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/link.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/manifest.json",
+      "source_sha256": "da7afa38fe6b4ba45aa32e25b0064843c0c63b12d569c9ff0ae6a3bc0eedcb9d",
+      "snapshot_sha256": "da7afa38fe6b4ba45aa32e25b0064843c0c63b12d569c9ff0ae6a3bc0eedcb9d"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/operation-command.json",
+      "source_sha256": "6f51f366ba4394f579acc6ed9d8e444d1700f5f65505eeb1f3e00ac742728dc8",
+      "snapshot_sha256": "6f51f366ba4394f579acc6ed9d8e444d1700f5f65505eeb1f3e00ac742728dc8"
+    },
+    {
+      "path": "build-records/moe-control-apex-perf/operation-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-sanitize/commands.json",
+      "source_sha256": "9f4b39240e99384d38750e47cc471b299fb1b0fbef5a493cbed73d9f40538958",
+      "snapshot_sha256": "9f4b39240e99384d38750e47cc471b299fb1b0fbef5a493cbed73d9f40538958"
+    },
+    {
+      "path": "build-records/moe-control-apex-sanitize/controller.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-sanitize/core.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-sanitize/fixture-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-apex-sanitize/link.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen/cold-native.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen/commands.json",
+      "source_sha256": "b4e40c585dc216977fc1ab55a75dccf6d82884bdd75d0d53bf4a754d3e7efa81",
+      "snapshot_sha256": "b4e40c585dc216977fc1ab55a75dccf6d82884bdd75d0d53bf4a754d3e7efa81"
+    },
+    {
+      "path": "build-records/moe-control-qwen/controller.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen/core.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen/expanded-fixture-command.json",
+      "source_sha256": "995c25444af7e1635a54d3c0f8208aad9d871d24df64f571828e8cb80d794f27",
+      "snapshot_sha256": "995c25444af7e1635a54d3c0f8208aad9d871d24df64f571828e8cb80d794f27"
+    },
+    {
+      "path": "build-records/moe-control-qwen/expanded-fixture-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen/graph-fixture-command.json",
+      "source_sha256": "529af4eaec620785b8709dfe943076ac0ef4d82dcc8d445d7bfb1d4f8b045cee",
+      "snapshot_sha256": "529af4eaec620785b8709dfe943076ac0ef4d82dcc8d445d7bfb1d4f8b045cee"
+    },
+    {
+      "path": "build-records/moe-control-qwen/graph-fixture-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen/link.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen/manifest.json",
+      "source_sha256": "2e3d0f7a9d9c18710be3716b9c15848b8f63d4b9ede12531765a702f2f4fb262",
+      "snapshot_sha256": "2e3d0f7a9d9c18710be3716b9c15848b8f63d4b9ede12531765a702f2f4fb262"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/commands.json",
+      "source_sha256": "96e112ff450c9356f41c0660f81b94cad360c9c9c3b737a3d66fbd90a6d4cae7",
+      "snapshot_sha256": "96e112ff450c9356f41c0660f81b94cad360c9c9c3b737a3d66fbd90a6d4cae7"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/controller.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/core.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/expanded-fixture-command.json",
+      "source_sha256": "cc9f5cee18dc55f30bf0b35232aa3bd8449442250c2fccc6406c830cd1397f88",
+      "snapshot_sha256": "cc9f5cee18dc55f30bf0b35232aa3bd8449442250c2fccc6406c830cd1397f88"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/expanded-fixture-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/link.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/manifest.json",
+      "source_sha256": "e3d72a844174c42e8eebd356ed3f186cb2abae1f7924db993e81a091f4d2291b",
+      "snapshot_sha256": "e3d72a844174c42e8eebd356ed3f186cb2abae1f7924db993e81a091f4d2291b"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/operation-command.json",
+      "source_sha256": "5868b52a8f8468bcdf3e77eeac505739b743e1c6f2e7eab77f1e91c2798cc7cc",
+      "snapshot_sha256": "5868b52a8f8468bcdf3e77eeac505739b743e1c6f2e7eab77f1e91c2798cc7cc"
+    },
+    {
+      "path": "build-records/moe-control-qwen-perf/operation-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-sanitize/cold-native.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-sanitize/commands.json",
+      "source_sha256": "64ca138966fd98f33fc60778acb6ffd5b4367156d4d3412fa25cdfb72fcc7c1c",
+      "snapshot_sha256": "64ca138966fd98f33fc60778acb6ffd5b4367156d4d3412fa25cdfb72fcc7c1c"
+    },
+    {
+      "path": "build-records/moe-control-qwen-sanitize/controller.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-sanitize/core.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-sanitize/fixture-compile.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-records/moe-control-qwen-sanitize/link.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "snapshot_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "compiler/producer-receipt.json",
+      "source_sha256": "dbdefe4dc1b68a0333433c41de1eff88b6703044d9fd107fe9a5bc94f4d97b1f",
+      "snapshot_sha256": "dbdefe4dc1b68a0333433c41de1eff88b6703044d9fd107fe9a5bc94f4d97b1f"
+    },
+    {
+      "path": "source/moe-control/fixtures/apex-expanded.c",
+      "source_sha256": "29a1c68adee2bbe571518f94857bb5eec83423488421fea2a947bf02e33a7714",
+      "snapshot_sha256": "29a1c68adee2bbe571518f94857bb5eec83423488421fea2a947bf02e33a7714"
+    }
+  ],
+  "normalizations": [],
+  "external_dependencies": 459,
+  "production_changed": false,
+  "compiler_source_changed": false,
+  "excluded": "Runtime/model/compiler binaries, compiler source, private feedback/instructions, migration plan and unrelated user work"
+}

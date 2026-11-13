@@ -1,0 +1,90 @@
+{
+  "status": "PASS_SCOPED_GPU_NATIVE_ROLLBACK_PREFLIGHT_ONCE_AND_REAL_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entries": {
+    "scalar-device": [
+      "fg174sd_gg_function_1"
+    ],
+    "scalar-host": [
+      "fg174sh_gg_function_1"
+    ],
+    "mma-device": [
+      "fg174md_gg_function_1",
+      "fg174md_gg_function_35"
+    ],
+    "mma-host": [
+      "fg174mh_gg_function_1"
+    ]
+  },
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp172/run/libggml-cuda-gdn-8077791a81e6.so.0.27.0",
+  "sha256": "64e6f9912c688eac7d0c2bde416b5fa0a7b63de6d78fd08a4dc42472052998d3",
+  "previous_library_sha256": "ac247dfc4c3c58cbf4ebd40a2b7de19cad910e040999949ad4ebe0931e6aa8b5",
+  "removed_objects": [
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated-delta-net-mma.cu.o",
+    "ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated_delta_net.cu.o"
+  ],
+  "rollback": "GGML_GOOSE_CUDA_GDN=0 or immutable EXP171",
+  "test_only_adapter_linked": false,
+  "production_changed": false,
+  "producer": "Current completed full self-hosted Stage3 f849233b999c;not legacy C++ compiler",
+  "local_results": "local-results.json",
+  "host_policy_results": "mma-host-local-results.json",
+  "component_results": "scalar-local-results.json",
+  "apex_summary": "apex-summary.json",
+  "source_sha256": {
+    "cuda-gdn.cu": "48e6b011be902d7532ca0a57eed997935d55f7e2d14081c56bdcb7f384ec5f51",
+    "cuda-scalar.cu": "0feb69e4eb82f560196fd62285d884bbb083aa14133ee5277e6bf1621359fed6",
+    "fixture.cu": "399067971e1d676f6dc569192674b37bab8e22cb3ef93e88cf5d9719034dba8f",
+    "host-ffi.h": "dda8ec67953a3650d610f0eb02e75bcd4e62a18a8214149f7e5f62813089cc24",
+    "manifest.json": "872c1ffb5a167d17aa38876a9401083f1cc272464327708856c801f6f8f37e88",
+    "mma-bridge.cuh": "615d4181a5f379ed3520e9a1d1a16f9a0cacb5242d61af1d5ce611665cfe2011",
+    "mma-device-generated.c": "66ec49acc33c07bbfdf04c852b747256ff502b20ecd685ff228bcaa50fdc48a5",
+    "mma-device.goose": "d7b886418eff8b766a8f01a13407b70a789d25e63f14600d6701dcf5431100cd",
+    "mma-functions-generated.cuh": "016eda00435deaec93465ad8a0412051d01e33c1e1642bf18e9fec89efdb3533",
+    "mma-host-ffi.h": "441360583bcc970035352f0bd47968fd56af9c80337dac2de626ba309ff852ab",
+    "mma-host-fixture.cpp": "5a3b138ee8d674491b306ae64654126a6b5a4105e0824d402c1ae8efb83645be",
+    "mma-host-generated.c": "66924807f1dba12ba604a12551acdc0aa142cae6e40582911f290bedbace4844",
+    "mma-host-qualified.c": "6bb787b4d86fdede368f0d49feeafed775cc07278419572aad3886b7fab360b1",
+    "mma-host-unit.c": "13cd28599e87575449c2db6c0ea3275f92bda278f598e974ea957d910da1f07a",
+    "mma-host.goose": "267e6961ec63f4ed082745debab1ab976d8d3c65a60d6557e53225eeb0d74732",
+    "mma-native-prefixed.cuh": "43e78ebd0290d522ed9e9485171ccc36239f40f160092dddaec824d0927773ab",
+    "mma-pod-abi.json": "c8830e64a695940c5887f46a6bbcefcdbd3c7cbf3ece130ff540da4951586ef4",
+    "mma-primitives.cuh": "3d213b31d92865f2fd04ed53679093b08603ea7c8dba38d479b8edbbe82a7903",
+    "mma-types-generated.cuh": "b9860646b1aa7687f55e314a6feb65730ebd51600a39c40f210b6fac6c849c57",
+    "native-gated-delta-net-mma.cu": "bda5c4530c74a62ca1993d317de852635520dde7904cb199088a5dab1e9ae751",
+    "native-gated-delta-net-mma.cuh": "ba63a4d496b156796b9d5621218684ba3b700317c40c76727c6ff332f5fa1679",
+    "native-gated_delta_net.cu": "a706183b963939ae3e1b9d51ac789ea914679b13ae957652adad18495bcb66fc",
+    "native-gated_delta_net.cuh": "5a155069868ffb238d90503ae380e68a6d1baa4abb9c0292f369fb0045ffffda",
+    "plan.h": "12c96f5e702f290d64ce83ca76e768a7049c2758216cd31e160828d8cda79189",
+    "preflight-cases.json": "aa1644dba858e7bd8c5dfb8512fb7c8eaefc1d4054c4e647c1adcfe4e933a3bc",
+    "preflight.cu": "a00f7ef538264c91dfe3917579ade043ba4220669eb59f6c8ebebda7a8c9a0c3",
+    "reference-mma.cuh": "36d1f0e55e8ce384efc3c0c6e2be249903313d9792fc419fae31b1a8fc1d1fc1",
+    "scalar-bridge.cuh": "7f7d2d95b03643d37b2bea6dda639b7acc27c42971f7d2bd3b4d8a5ee452dd14",
+    "scalar-component-test-stub.c": "15a79b73642ef35bb4f19126becf30f4e0c4d4204ae8194eff8ea6bbc3facb8d",
+    "scalar-device-generated.c": "fa933623c6d644eaab37e887da2450fa5bf819cea0cbd70c743b0915b2901345",
+    "scalar-device-generated.cuh": "5c70508cf7d3b612675e5ce84860cdf8616ec86c3d96c3de3de0ed86a3f857eb",
+    "scalar-device.goose": "f517221e47d3baf36a3d63937ce6dc2de4813726a6298a37c297c365a7480144",
+    "scalar-host-generated.c": "7cf1acaeb8d4fda714927e38d0214e236e1300927cedf540b1b23451af9e622a",
+    "scalar-host-qualified.c": "d116e40dfaee135df4b8d1801c9d3c369739de9128c68c18d0b0fb08514277ce",
+    "scalar-host-unit.c": "7b3509b5301eb3c4d9b6fc57c944ef0cd7fd05101c1ba627c408741f41b22c37",
+    "scalar-host.goose": "d947c73e5cfda9ec5e00071d420b47f5d938f84d7512ac1e2488a8de5153b545",
+    "scalar-native-combined.cuh": "bc9c8ff30ef2e338e119e048d4772124e8e2f9df0a0bb110c73fba9156e5e2d1",
+    "scalar-native-prefixed.cuh": "e9779753c325a1e000aa6efa59abf5031fdda2fd3bb9e2c8cf30ba0d4fcc9a8e",
+    "scalar-projection.cuh": "47936b09f9a46236df7465bf181227d708cb88afa288b6065d87ed418f71135e",
+    "visibility.map": "5bee987ebd97df159091fd34e7e9447684ae7b100907bd18b1baba930a841ffd",
+    "worker-cases.json": "d8601128e3571ac7159c72b73f4a1be1403374eef4ab8bd0d6edb21941042352",
+    "worker-fixture.cu": "5d3bb5709e70ebeff73e850167aa172f0aa2a4b4feb61f04fb4bc87dee106200",
+    "worker-mma-device.goose": "4f2bf1482e4cc3674c4db555d11bda48ffd7e70e6f9aadf7e42e1034e39aa402",
+    "worker-mma-host.goose": "e85f46bf454a0025a7db5373aa898226bb87d09c4954da996f954bea07e3ecbd",
+    "worker-preflight-cases.json": "aa1644dba858e7bd8c5dfb8512fb7c8eaefc1d4054c4e647c1adcfe4e933a3bc",
+    "worker-preflight-preflight.cu": "a00f7ef538264c91dfe3917579ade043ba4220669eb59f6c8ebebda7a8c9a0c3",
+    "worker-scalar-cases.json": "5e2bf9aa00b26772641fd2cfc678a79f8f46faada31732e9d86b2ab5e6eee112",
+    "worker-scalar-contract.json": "a670a1fb60cc4beaf6cd65ff10401f643e3e2e4c87245c98cfd2620f717d0a61",
+    "worker-scalar-device.goose": "adffe79eb6f794863787abfe627c9a42a3323a8647b82d71d3a52a73be789d6b",
+    "worker-scalar-host.goose": "590af0c28a22c0d649b6b9841d7b41031e638445fc480dff0e8412e696f66164"
+  },
+  "external_header_pins": "external-header-pins.json",
+  "abi": "Actual emitted F4/U4/U2 POD types and primitive declarations;producer adds its implicit frame argument. No guessed C++ ABI.",
+  "external_effects": "Raw CUDA load/store,BF16convert,dp/ldmatrix/mma/exp/shuffle/barrier,SDK launches/properties/attributes;raw C++ atomic/mutex storage effects for Goose once policy. No original GDN arithmetic callback on enabled path.",
+  "safety_scope": "Checked tensor-declared spans,address wrap,source/output alias and state/cache layout;raw fused-cache allocation capacity remains caller-owned,as in native API. Not a whole-runtime sanitizer/audit claim."
+}

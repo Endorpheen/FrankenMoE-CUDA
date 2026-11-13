@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "host": "22 groups/46 runs/333 checks",
+  "device": "13 cases x default/rollback,380 checks each,two graph replays each",
+  "invalid": "4 routes,negative I32/I64 and oversized I32/I64,132 guarded threads,no stores",
+  "witness_host": 15,
+  "witness_device": 15,
+  "valid_invalid_index_threads": 0,
+  "export_delta": "2 readonly diagnostics only",
+  "production_changed": false
+}

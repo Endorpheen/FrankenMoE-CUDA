@@ -1,0 +1,27 @@
+{
+  "status": "PASS_SOURCE_AND_CUBIN_NO_ORIGINAL_NUMERICAL_FA_IN_REPLACEMENT",
+  "original_occupancy_callback_present": false,
+  "original_kernel_instances_in_replacement_object": false,
+  "cubin_sha256": "65704207e7a02a098dd07bab7fe1b0492e1ada2ed3e659a9e7a6bef6bd8e4d05",
+  "kernels": [
+    {
+      "symbol": "_Z13fg175m_kernelILi8EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:640 SHARED:0 LOCAL:0 CONSTANT[2]:8 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175m_kernelILi4EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:672 SHARED:0 LOCAL:0 CONSTANT[2]:8 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi2EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    },
+    {
+      "symbol": "_Z13fg175v_kernelILi1EEvPKcS1_S1_S1_S1_PKiPfP6float2ffffjfi5uint3iiiiiiiiiiiliiliiiiil",
+      "resources": "REG:255 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:560 TEXTURE:0 SURFACE:0 SAMPLER:0"
+    }
+  ],
+  "rollback": "Preserved separate original host/object/instance units,selected only by env0 or out-of-scope compatibility",
+  "compiler_changed": false,
+  "production_changed": false
+}

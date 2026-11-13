@@ -1,0 +1,81 @@
+# EXP-2026-09-06-037 offline results from exp031b-cuda-prefill-1788632387.sqlite (read-only, immutable URI)
+# Window: WS=10417843203 WE=14363385682 (ns since profiler session start); span 3945.542 ms
+burst_h2d_start|10.417843203
+burst_end|14.363385682
+1|17975|23286617380|22207.85
+2|222|176615168|168.43
+8|817|494503936|471.60
+h2d_bytes_median|922112
+h2d_bytes_p90|2765312
+h2d_bytes_p99|5530112
+h2d_bytes_max|16015360
+h2d_bytes_min|4
+h2d_bytes_mean|0
+cuKernelGetFunction|408|9.788
+cudaLaunchKernel_v7000|9755|53.468
+cuMemSetAccess|4|5.515
+cudaStreamSynchronize_v3020|1114|395.664
+cudaMemcpyAsync_v3020|18445|3118.249
+cuLibraryLoadData|10|25.740
+cudaMemcpy2DAsync_v3020|568|2.872
+cuLaunchKernel|408|1.547
+cudaFree_v3020|1|1.177
+cuMemCreate|4|0.638
+cudaMemsetAsync_v3020|48|0.485
+cudaMalloc_v3020|4|0.291
+cuGetProcAddress_v2|810|0.133
+cudaGraphInstantiate_v12000|1|0.033
+cuMemMap|4|0.016
+cudaGraphLaunch_v10000|1|0.013
+cuLibraryGetKernel|14|0.009
+cudaStreamEndCapture_v10000|1|0.008
+cudaStreamBeginCapture_v10000|1|0.008
+cudaEventCreateWithFlags_v3020|18|0.007
+cuInit|3|0.006
+cudaGraphExecUpdate_v10020|1|0.002
+cudaGetDriverEntryPoint_v11030|2|0.001
+cuMemRelease|4|0.001
+cuModuleGetLoadingMode|2|0.000
+cuKernelGetFunction|9.788
+cudaLaunchKernel_v7000|53.468
+cuMemSetAccess|5.515
+cudaStreamSynchronize_v3020|395.664
+cudaMemcpyAsync_v3020|3118.249
+cuLibraryLoadData|25.740
+memcpyAsync_host_union_ms|3121.121
+memcpy+sync_host_union_ms|3516.785
+gpu_h2d_sum_ms|1661.183
+gpu_dtoh_sum_ms|9.962
+gpu_dtod_sum_ms|2.707
+kernel_sum_ms|438.915
+memset_sum_ms|0.017
+kernel_union_ms|438.915
+gpu_h2d_union_ms|1661.183
+h2d_kernel_intersect_ms|0.000
+2|1114|395.243|8.622
+29225|2112.785|3945.542|1832.758|67|58.100
+memcpy|13|260|162.78|10.356
+memcpy|16|18752|22681.24|1663.490
+memcpy|17|2|3.86|0.007
+kernel|16|10078||429.734
+kernel|17|85||9.181
+sync|13|259||3.445
+sync|16|818||391.005
+sync|17|23||0.753
+19013|3121.121|0.164|2.237
+h2d_with_virtualAddress|0
+expert_h2d_stream16|17886|22160.56|10.497|14.107|3610.294
+1|13|cudaMemcpyAsync_v3020|89|47.29
+2|13|cudaMemcpyAsync_v3020|171|115.49
+2|16|cudaMemcpyAsync_v3020|51|52.94
+8|16|cudaMemcpy2DAsync_v3020|566|415.62
+8|16|cudaMemcpyAsync_v3020|249|52.12
+8|17|cudaMemcpy2DAsync_v3020|2|3.86
+void mul_mat_q<(ggml_type)22, (int)112, (bool)0>(const char *, c|94|128.914
+void mul_mat_q<(ggml_type)20, (int)112, (bool)0>(const char *, c|48|91.642
+void gated_delta_net_cuda<(int)128, (bool)0, (bool)1>(const floa|72|41.244
+void mul_mat_q<(ggml_type)14, (int)112, (bool)0>(const char *, c|249|37.201
+void mm_ids_helper<(int)0>(const int *, int *, int *, int *, int|144|15.969
+void k_bin_bcast<&op_mul, float, float, float, const float *>(co|673|13.654
+# Adjacency analysis of exp032-h2d-ts/h2d.log (separate run, own monotonic clock):
+records=17886 unique_tensors=144 consecutive_pairs_adjacent=0 (0.00%) consecutive_pairs_same_tensor=17742 (99.20%) nonzero_gaps_min=524288 median=1049088 max=14745088 sizes median=922112 p90=2765312 p99=5530112 log_span_submission_ms=see_exp032_json_3634.692

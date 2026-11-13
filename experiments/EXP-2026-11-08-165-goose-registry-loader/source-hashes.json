@@ -1,0 +1,21 @@
+{
+  "source/backend-registry.cpp": "6887823fa98931002c0063ec5a5d1b2370832a5a8fdba3e6cca6908ea6d19798",
+  "source/faults.cpp": "9c255d7ff06fc0bfa0c3d1ee8add396c94743c27f52a325a1ee83c30e71e113f",
+  "source/fixture.cpp": "a96558bc60a865f8893a16ecfdf208f9bebccf76febbe407801e3a0faa1e32a7",
+  "source/manifest.json": "4cd340f7d74dc2ba28956d5023deb1a7580ef014289ea4d78e9fd1c34d692650",
+  "source/native-ggml-backend-dl.cpp": "acd76df8b83bcdef6807bc7b0520f57b379d61b4ff1027c04aa4d140d16ad07f",
+  "source/native-ggml-backend-dl.h": "057a5788d294c053055b56183edcb6fe7d2e3c60e7aed1630cb7856cfe66f7c5",
+  "source/native-ggml-backend-reg.cpp": "1436b46bd1e8355345d454baa4b40069be73e9cb09a3a188d32426ea1e1037fe",
+  "source/plugin.cpp": "9fabba01aac1c70d26bb90b5aa6e5cc3d4f71a40c974e160c85e6c91de338c32",
+  "source/probe-candidate.cpp": "bc4d05f1f3004d0a902a236d2c61e244f35c04c262f0092b6f45b01faa8f5bb2",
+  "source/probe-native.cpp": "3d40359ae8d82a67079d22757fb415fb5dc12dcb48b2a6f37f1c4feee602ef26",
+  "source/provider.h": "ae2f2b9ec999cfcf34c96f6c15ba42369c1f254be163ce3371117c592d6528af",
+  "source/recipes.json": "722e768c7ca1ea82d28f69bbba98a0f45048a94bf8f2d15022355ea10f76dcda",
+  "source/registry-bridge.h": "758737f5be4a0f9897d0259b2fbf0ae0d239ff2488c6ef1e718fdf9c02bf6ff3",
+  "source/registry-ffi.h": "9387e77849d696e77fb4cc3c1ac6f08edd5f0c4a6375547be47ccfbe1544b12f",
+  "source/registry-generated.c": "230c32dc799c00b4fe813d44721f632c84c600a91f4f1484b9ace629c84212e2",
+  "source/registry-qualified.c": "3d73e4846e087b86cc06e62c0b9a64b7c381efd4f116da9bc748b6a6ed44de7f",
+  "source/registry-unit.c": "2d3021bdfd3eaadc477257e186641c1507d44ea87cbda118e347236e624918e2",
+  "source/registry.goose": "41f78ef72eec57f5d9f2da8f95e424202fa691ea3cecbf66e79aa755868928bb",
+  "source/test-export.h": "8995159d408c6211ffa7d9315380b2d5300d3bf04084ec4abafd9a55a5b2adf8"
+}

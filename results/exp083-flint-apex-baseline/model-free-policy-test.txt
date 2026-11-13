@@ -1,0 +1,7 @@
+Date: 2026-10-30
+Source: /home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/source/tests/test-prefix-checkpoints.cpp
+Compiler: /usr/bin/g++-13 -std=c++17 -O2 -Wall -Wextra -Wpedantic
+Assertions: enabled (no NDEBUG)
+Output: /home/end0/AI/LlamaServer/verification083-flint-apex/test-prefix-checkpoints
+Result: PASS: SWA and recurrent bounds, prefix rejection, 262K budget, eviction, disable and unsupported modes
+Model/server starts: 0

@@ -1,0 +1,27 @@
+{
+  "cpu-backend.c": {
+    "unchanged": true,
+    "sha256": "e40f0a85ddfed4da61a86e701928e83809120e01c1f9e556ffde65a19e7a97e9",
+    "parent_source": "experiments/EXP-2026-11-07-147-goose-buffer-audit/generated/cpu-backend.c"
+  },
+  "cpu-backend-api.c": {
+    "unchanged": true,
+    "sha256": "844b139b826e687021ff47d24472418b9b053f0e2ca543e4441f20189e6ff9b1",
+    "parent_source": "experiments/EXP-2026-11-07-147-goose-buffer-audit/generated/cpu-backend-api.c"
+  },
+  "cpu-stateful.c": {
+    "unchanged": true,
+    "sha256": "288bacd94f73f3f635dc5654c827bd40ad7a47945a96633a1485fb2e4237722c",
+    "parent_source": "experiments/EXP-2026-11-07-147-goose-buffer-audit/generated/cpu-stateful.c"
+  },
+  "cpu-executor.c": {
+    "unchanged": true,
+    "sha256": "8ce2031c46003a7207e0c2b4870f0ca0581e5c7cd5d3f7947b11a2515270fa1f",
+    "parent_source": "experiments/EXP-2026-11-07-147-goose-buffer-audit/generated/cpu-executor.c"
+  },
+  "cpu-control.c": {
+    "unchanged": true,
+    "sha256": "ad700f9af24d439b4465c4ae29905183d98beb6148b828ab53b45c4795f0c963",
+    "parent_source": "experiments/EXP-2026-11-07-147-goose-buffer-audit/generated/cpu-control.c"
+  }
+}

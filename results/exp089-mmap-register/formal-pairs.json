@@ -1,0 +1,331 @@
+{
+  "summary": {
+    "all_correct": true,
+    "all_resource_gates": true,
+    "wins": 5,
+    "median_paired_ttft_reduction_percent": 37.971346945655725,
+    "median_paired_prefill_rate_change_percent": 61.25485145220886,
+    "median_paired_decode_change_percent": -1.1291512547909388,
+    "arms": {
+      "A": {
+        "client_ttft_s": 23.512496000010287,
+        "prompt_ms": 23502.098,
+        "prefill_tps": 1394.2585040705728,
+        "decode_tps": 28.952969434783324,
+        "server_loaded_log_s": 2.34646,
+        "peak_rss_kib_range": [
+          22208720,
+          22209324
+        ]
+      },
+      "B": {
+        "client_ttft_s": 14.522125000003143,
+        "prompt_ms": 14512.139,
+        "prefill_tps": 2257.9717572991826,
+        "decode_tps": 28.724102507501062,
+        "server_loaded_log_s": 3.80318,
+        "peak_rss_kib_range": [
+          22212040,
+          22212908
+        ]
+      }
+    }
+  },
+  "pairs": [
+    {
+      "pair": 1,
+      "order": "AB",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "client_ttft_s": 23.546893999999156,
+          "prompt_ms": 23537.093,
+          "prefill_tps": 1392.1855175573294,
+          "decode_tps": 28.039448634048327,
+          "resource": {
+            "pid": 2686263,
+            "request_begin_wall_ns": 1793380420455689000,
+            "request_end_wall_ns": 1793380448533189000,
+            "request_seconds": 28.0775,
+            "before_slack_seconds": 0.026468925,
+            "after_slack_seconds": 0.010011103,
+            "sample_count": 280,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22209324,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 20,
+            "major_faults": 0,
+            "minor_faults": 340653,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 2.341912,
+          "startup_swapout_pages": 0
+        },
+        "B": {
+          "client_ttft_s": 14.676919999998063,
+          "prompt_ms": 14666.256,
+          "prefill_tps": 2234.244377024375,
+          "decode_tps": 29.04987245504818,
+          "resource": {
+            "pid": 2686831,
+            "request_begin_wall_ns": 1793380477115305000,
+            "request_end_wall_ns": 1793380496164284000,
+            "request_seconds": 19.048979,
+            "before_slack_seconds": 0.05374039,
+            "after_slack_seconds": 0.02085968,
+            "sample_count": 191,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22212048,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 4860,
+            "major_faults": 0,
+            "minor_faults": 340694,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 3.683188,
+          "startup_swapout_pages": 0
+        }
+      },
+      "ttft_reduction_percent": 37.66940132316989,
+      "prefill_rate_change_percent": 60.484673116301835,
+      "decode_change_percent": 3.6035794932604226
+    },
+    {
+      "pair": 2,
+      "order": "BA",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "client_ttft_s": 23.372168000001693,
+          "prompt_ms": 23362.49,
+          "prefill_tps": 1402.590220477355,
+          "decode_tps": 29.052145169223028,
+          "resource": {
+            "pid": 2687986,
+            "request_begin_wall_ns": 1793380567870265000,
+            "request_end_wall_ns": 1793380595614250000,
+            "request_seconds": 27.743985,
+            "before_slack_seconds": 0.054265614,
+            "after_slack_seconds": 0.095057239,
+            "sample_count": 278,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22208720,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 59,
+            "major_faults": 0,
+            "minor_faults": 340685,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 2.3496960000000002,
+          "startup_swapout_pages": 0
+        },
+        "B": {
+          "client_ttft_s": 14.497440999999526,
+          "prompt_ms": 14487.93,
+          "prefill_tps": 2261.7447765139673,
+          "decode_tps": 28.724102507501062,
+          "resource": {
+            "pid": 2687467,
+            "request_begin_wall_ns": 1793380526621464000,
+            "request_end_wall_ns": 1793380545540944000,
+            "request_seconds": 18.91948,
+            "before_slack_seconds": 0.059028133,
+            "after_slack_seconds": 0.036435389,
+            "sample_count": 190,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22212064,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 3,
+            "major_faults": 0,
+            "minor_faults": 340700,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 3.80318,
+          "startup_swapout_pages": 0
+        }
+      },
+      "ttft_reduction_percent": 37.971346945655725,
+      "prefill_rate_change_percent": 61.25485145220886,
+      "decode_change_percent": -1.1291512547909388
+    },
+    {
+      "pair": 3,
+      "order": "AB",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "client_ttft_s": 23.322667000000365,
+          "prompt_ms": 23310.22,
+          "prefill_tps": 1405.7353384052144,
+          "decode_tps": 27.389277766311665,
+          "resource": {
+            "pid": 2688483,
+            "request_begin_wall_ns": 1793380623900592000,
+            "request_end_wall_ns": 1793380651858365000,
+            "request_seconds": 27.957773,
+            "before_slack_seconds": 0.028381579,
+            "after_slack_seconds": 0.023931951,
+            "sample_count": 279,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22208856,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 47,
+            "major_faults": 0,
+            "minor_faults": 340725,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 2.3100270000000003,
+          "startup_swapout_pages": 0
+        },
+        "B": {
+          "client_ttft_s": 14.468378000005032,
+          "prompt_ms": 14457.735,
+          "prefill_tps": 2266.4684336792725,
+          "decode_tps": 27.064706812506365,
+          "resource": {
+            "pid": 2689218,
+            "request_begin_wall_ns": 1793380681430023000,
+            "request_end_wall_ns": 1793380700591461000,
+            "request_seconds": 19.161438,
+            "before_slack_seconds": 0.069607837,
+            "after_slack_seconds": 0.079436565,
+            "sample_count": 193,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22212908,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 11,
+            "major_faults": 0,
+            "minor_faults": 340748,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 3.708286,
+          "startup_swapout_pages": 0
+        }
+      },
+      "ttft_reduction_percent": 37.96430742674153,
+      "prefill_rate_change_percent": 61.230095862180356,
+      "decode_change_percent": -1.1850292533252427
+    },
+    {
+      "pair": 4,
+      "order": "BA",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "client_ttft_s": 23.512496000010287,
+          "prompt_ms": 23502.098,
+          "prefill_tps": 1394.2585040705728,
+          "decode_tps": 28.952969434783324,
+          "resource": {
+            "pid": 2690184,
+            "request_begin_wall_ns": 1793380777280416000,
+            "request_end_wall_ns": 1793380805179735000,
+            "request_seconds": 27.899319,
+            "before_slack_seconds": 0.039506166,
+            "after_slack_seconds": 0.056287458,
+            "sample_count": 279,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22208816,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 1,
+            "major_faults": 0,
+            "minor_faults": 340692,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 2.5195060000000002,
+          "startup_swapout_pages": 0
+        },
+        "B": {
+          "client_ttft_s": 14.522125000003143,
+          "prompt_ms": 14512.139,
+          "prefill_tps": 2257.9717572991826,
+          "decode_tps": 28.98687008906501,
+          "resource": {
+            "pid": 2689652,
+            "request_begin_wall_ns": 1793380725001851000,
+            "request_end_wall_ns": 1793380743906257000,
+            "request_seconds": 18.904406,
+            "before_slack_seconds": 0.070248543,
+            "after_slack_seconds": 0.044127769,
+            "sample_count": 190,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22212040,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 3,
+            "major_faults": 0,
+            "minor_faults": 340657,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 3.8244819999999997,
+          "startup_swapout_pages": 0
+        }
+      },
+      "ttft_reduction_percent": 38.23656578188556,
+      "prefill_rate_change_percent": 61.94785620507082,
+      "decode_change_percent": 0.11708869571409597
+    },
+    {
+      "pair": 5,
+      "order": "AB",
+      "correct": true,
+      "max_probability_delta": 0.0,
+      "arms": {
+        "A": {
+          "client_ttft_s": 23.593666000000667,
+          "prompt_ms": 23583.125,
+          "prefill_tps": 1389.4681048419156,
+          "decode_tps": 29.44302149386936,
+          "resource": {
+            "pid": 2690954,
+            "request_begin_wall_ns": 1793380837561998000,
+            "request_end_wall_ns": 1793380865470070000,
+            "request_seconds": 27.908072,
+            "before_slack_seconds": 0.091587689,
+            "after_slack_seconds": 0.008367229,
+            "sample_count": 279,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22208852,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 10,
+            "major_faults": 0,
+            "minor_faults": 340683,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 2.34646,
+          "startup_swapout_pages": 0
+        },
+        "B": {
+          "client_ttft_s": 14.5633339999913,
+          "prompt_ms": 14548.841,
+          "prefill_tps": 2252.275628003633,
+          "decode_tps": 27.58070723014124,
+          "resource": {
+            "pid": 2691495,
+            "request_begin_wall_ns": 1793380893260215000,
+            "request_end_wall_ns": 1793380912428810000,
+            "request_seconds": 19.168595,
+            "before_slack_seconds": 0.034327059,
+            "after_slack_seconds": 0.009114066,
+            "sample_count": 192,
+            "peak_process_swap_kib": 0,
+            "peak_rss_kib": 22212092,
+            "system_swapout_pages": 0,
+            "system_swapin_pages": 6,
+            "major_faults": 0,
+            "minor_faults": 340671,
+            "resource_gate": true
+          },
+          "server_loaded_log_s": 3.907315,
+          "startup_swapout_pages": 0
+        }
+      },
+      "ttft_reduction_percent": 38.27439110144694,
+      "prefill_rate_change_percent": 62.09624532978262,
+      "decode_change_percent": -6.325146568655981
+    }
+  ]
+}

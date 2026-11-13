@@ -1,0 +1,107 @@
+{
+ "id":"fg176r-apex-cache-setrows-host",
+ "version":1,
+ "kind":"host-goose",
+ "target":"CUDA host dispatch for GGML_OP_SET_ROWS",
+ "module":"apex-cache-setrows-host",
+ "entry":{"goose":"fn run(packet:i64)->bool","true":"validated, plan written, fg175s_launch issued","false":"out of scope: no plan write, no launch, no SDK effect"},
+ "source_provenance":{
+  "native":"inputs/set-rows.cu: ggml_cuda_op_set_rows, set_rows_cuda, set_rows_cuda_quant",
+  "quantizer":"inputs/cpy-utils.cuh: quantize_f32_q4_0_block",
+  "block":"inputs/ggml-common.h: block_q4_0, QK4_0=32, sizeof=18",
+  "device_counterpart":"inputs/device-contract.json id fg176r-apex-cache-setrows"
+ },
+ "native":{
+  "dispatch":"GGML_ASSERT src0 F32 or (F16 and dst F16); GGML_ASSERT src1 I32 or I64; F32 src0 selects set_rows_cuda<src_t,idx_t,dst_t>",
+  "threads":256,
+  "grid":"gx=ceil(ne_total/256), gy=1, gz=1, shmem=0",
+  "ne_total":{"f32":"ne00*ne01*ne02*ne03","q4_0":"ne00*ne01*ne02*ne03/32"},
+  "strides":{
+   "src0":"s01..s03 = nb01..nb03/4, FLOAT ELEMENTS",
+   "src1":"s10..s12 = nb10..nb12/sizeof(idx_t), IDX ELEMENTS",
+   "dst_q4_0":"s1..s3 = nb1..nb3 BYTES; the kernel divides the row sum by 18",
+   "dst_f32":"s1..s3 = nb1..nb3/4, FLOAT ELEMENTS"
+  },
+  "broadcast":"i10=i01; i11=i02%ne11; i12=i03%ne12; decode tmp=(u32)i_base; i00=tmp%ne00; tmp/=ne00; i01=tmp%ne01; tmp/=ne01; i02=tmp%ne02; i03=tmp/ne02"
+ },
+ "ffi":[
+  {"symbol":"fg175s_arg","type":"int64_t(int64_t,int64_t)","role":"packet argument query"},
+  {"symbol":"fg175s_plan","type":"int64_t(int64_t)","role":"plan base pointer"},
+  {"symbol":"fg175s_put","type":"void(int64_t,int64_t,int64_t,uint64_t)","role":"flat plan write"},
+  {"symbol":"fg175s_get","type":"uint64_t(int64_t,int64_t,int64_t)","role":"flat plan read"},
+  {"symbol":"fg175s_ti","type":"int64_t(int64_t,int64_t,int64_t)","role":"raw tensor field read"},
+  {"symbol":"fg175s_tc","type":"int64_t(int64_t)","role":"type enum constant query"},
+  {"symbol":"fg175s_oc","type":"int64_t(int64_t)","role":"op enum constant query"},
+  {"symbol":"fg175s_launch","type":"void(int64_t)","role":"parent-owned raw SDK launch adapter"},
+  {"symbol":"fg175s_fail","type":"noreturn(int64_t)","role":"GGML_ASSERT/GGML_ABORT equivalent"}
+ ],
+ "packet_args":{"0":"dst tensor handle for the GGML_OP_SET_ROWS result","1..":"not read by this module"},
+ "tensor_field_keys":{"0":"src[0]=src0, src[1]=src1","1":"data pointer","2":"type enum","3":"ne[0..3]","4":"nb[0..3] in BYTES","5":"op enum","6":"view_src","7":"view_off","8":"op_params int32 (unused)","9":"ggml_nbytes (unused)"},
+ "type_codes_as_queried":{"F32":1,"Q4_0":3,"I32":8,"I64":9},
+ "op_codes":{"SET_ROWS":0},
+ "plan":{
+  "layout":"flat key/index writes performed by host.goose; key7/8/9 are launch metadata",
+  "key0_ptrs":{"0":"src0 base byte address","1":"src1 base byte address","2":"dst base byte address","3":"dst view_src","4":"dst view_off"},
+  "key1_src0_ne":"n00,n01,n02,n03",
+  "key2_src1_ne":"n10,n11,n12,n13",
+  "key3_dst_ne":"d0,d1,d2,d3",
+  "key4_src0_strides":"s01,s02,s03 in FLOAT ELEMENTS",
+  "key5_src1_strides":"s10,s11,s12 in IDX ELEMENTS",
+  "key6_dst_strides":{"q4_0":"s1n,s2n,s3n in BYTES","f32":"s1n,s2n,s3n in FLOAT ELEMENTS"},
+  "key7_launch":{"0":"ne_total thread count","1":"ne10","2":"ne11","3":"ne12","4":"ne13","5":"grid.x","6":"grid.y=1","7":"grid.z=1","8":"blockDim.x=256","9":"shmem=0","10":"kind 1=Q4_0,0=F32","11":"index kind 0=I32,1=I64","12":"kind*2+indexkind","13":"1","14":"dst_rows=d1","15":"dst byte span","16":"alias flag, always 0","17":"qk 32/1","18":"dst unit bytes 18/4","19":"src0 byte span","20":"src1 byte span"},
+  "key8_magic":"[mp,L,d] for ne00,ne01,ne02,ne11,ne12",
+  "key9_decode_dims":{"0":"ne00","1":"ne01","2":"ne02","3":"ne11","4":"ne12"}
+ },
+ "device_binding":{
+  "contract":"inputs/device-contract.json",
+  "exports":[
+   {"name":"fg176r_set_rows_q4_0","signature":"fn fg176r_set_rows_q4_0(src0:u64,src1:u64,dst:u64,ne_total:i64,ne00:i64,ne01:i64,ne02:i64,ne11:i64,ne12:i64,s01:i64,s02:i64,s03:i64,s10:i64,s11:i64,s12:i64,s1:i64,s2:i64,s3:i64,dst_rows:i64,has_cap:bool,explicittype:bool,bx:i32,tx:i32,nt:i32)"},
+   {"name":"fg176r_set_rows_f32","signature":"fn fg176r_set_rows_f32(src0:u64,src1:u64,dst:u64,ne_total:i64,ne00:i64,ne01:i64,ne02:i64,ne11:i64,ne12:i64,s01:i64,s02:i64,s03:i64,s10:i64,s11:i64,s12:i64,s1:i64,s2:i64,s3:i64,dst_rows:i64,has_cap:bool,explicittype:bool,bx:i32,tx:i32,nt:i32)"}
+  ],
+  "argument_map":"bx=blockIdx.x, tx=threadIdx.x, nt=blockDim.x=256 (device nt is block size, not host key7[0] thread count), ne_total=key7[0], ne00..ne02=key9[0..2], ne11=key9[3], ne12=key9[4], s01..s03=key4, s10..s12=key5, s1..s3=key6, dst_rows=key7[14], explicittype=(key7[11]==1), has_cap=true"
+ },
+ "validation":[
+  "reject null handles, non-SET_ROWS op, src0 != F32, src1 not I32/I64, dst not F32/Q4_0 before plan write or launch",
+  "all ne/nb dims positive; n10>=n01; d0>=n00; d2>=n02; d3>=n03",
+  "Q4_0: n00%32==0 and d0%32==0",
+  "nb00==4; nb01..nb03%4==0; nb10==4/8; nb11..nb13%4/8==0; db0==18/4; db1..db3%18/4==0",
+  "ne_total product checked for u64 overflow; Q4_0 thread count <= 2^27 so i*32 fits u32; F32 thread count <= 2^32 so i fits u32",
+  "grid.x=ceil(ne_total/256) <= INT32_MAX",
+  "byte spans sp0, sp1, spd fit INT64; base+span fits u64",
+  "fastdiv is metadata only; logical / and % reproduce native decode for 1..2^32-1"
+ ],
+ "bounds_contract":{
+  "owner":"caller owns every allocation and all row destinations",
+  "host_checks":"representability of byte spans, exact element/byte stride units, nonnegative whole-element strides, overflow, and dst-vs-source overlap",
+  "host_cannot_check":"allocation sizes and src1 values; the host never reads src1 and adds no GPU synchronization",
+  "device_row_guard":"launch adapter must pass has_cap=true and dst_rows=key7[14]; device returns before any store when dst_row<0 or dst_row>=dst_rows",
+  "refusal":"if has_cap=true/dst_rows cannot be supplied this path must not launch; no memory safety is claimed for has_cap=false"
+ },
+ "aliasing":{
+  "dst_vs_src1":"any overlap fails code 43",
+  "dst_vs_src0":"any overlap fails code 44; device contract lists dst/src0 aliasing as unsupported, so exact-base in-place is not claimed safe",
+  "alias_flag":"key7[16] is always 0"
+ },
+ "unsupported":[
+  "src0 types other than F32 (native F16 specialization out of scope)",
+  "dst types other than F32 and Q4_0 (F16, BF16, Q4_1, Q5_0, Q5_1, Q8_0, IQ4_NL and all *_K)",
+  "src1 types other than I32/I64",
+  "any dst/src0 or dst/src1 alias, and overlapping row destinations between threads",
+  "zero/negative dims, non-whole-element strides, out-of-span caller pointers",
+  "NaN/Inf float-to-int behavior is native-undefined and not claimed"
+ ],
+ "fidelity_notes":[
+  "Q4_0 absmax uses strict < so the first maximum and its sign (including signed zero) survive",
+  "d=vmax/-8; id=(d!=0)?1/d:0; half scale is an RN hardware store; no fused multiply-add",
+  "packing: low nibble element j, high nibble element j+16; (int8_t)(x+8.5) truncation then min(15,..) clamp",
+  "device OR requirement: final packing must use Goose's supported bitwise OR; the supplied device draft's lo+h4-(lo&h4) is integer-exact arithmetic emulation and is recorded as an open fidelity item, not claimed final",
+  "device fastdiv is replaced by logical / and % (same for validated ranges); host writes magic only as metadata",
+  "no host GPU-index synchronization, no fabricated plan field, no native numerical function called"
+ ],
+ "compatibility_notes":[
+  "device nt parameter is blockDim.x=256; host key7[0] is the thread count ne_total - do not conflate",
+  "device contract marks all dst/src0/src1 aliasing unsupported; host refuses rather than pretending an in-place route",
+  "has_cap is not a separate plan word in the supplied draft; adapter derives it as true from the always-present dst_rows key7[14]"
+ ],
+ "checks":"host.goose was not compiled or executed here; stage3 build, GPU bit-exact, rollback and Apex acceptance are controller-owned"
+}

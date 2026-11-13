@@ -1,0 +1,29 @@
+{
+  "status": "PASS_LOCAL_AND_ONE_REAL_APEX",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "entry": "fg165_gg_function_1",
+  "library": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp165/run/libggml-registry-4d6a42acb184.so.0.27.0",
+  "sha256": "9a9ea86ac80e725bbfcd89b8a7843a99591eeeaa054639bc76c871fecceccdf8",
+  "entrypoints": [
+    "ggml_backend_register",
+    "ggml_backend_device_register",
+    "ggml_backend_reg_count",
+    "ggml_backend_reg_get",
+    "ggml_backend_reg_by_name",
+    "ggml_backend_dev_count",
+    "ggml_backend_dev_get",
+    "ggml_backend_dev_by_name",
+    "ggml_backend_dev_by_type",
+    "ggml_backend_init_by_name",
+    "ggml_backend_init_by_type",
+    "ggml_backend_init_best",
+    "ggml_backend_load",
+    "ggml_backend_unload",
+    "ggml_backend_load_all",
+    "ggml_backend_load_all_from_path"
+  ],
+  "unchanged_sha256": "1e52e0dc14ed0c0a21f753031685ffa716107a9d586bdfbf7771b23d1887ceec",
+  "rollback": "GGML_GOOSE_REGISTRY=0 or immutable EXP164 runtime",
+  "scope": "Actual Linux registry/loader/state/path/score/init selection;non-Linux native fallback retained",
+  "production_changed": false
+}

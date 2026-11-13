@@ -1,0 +1,355 @@
+{
+  "status": "DIAGNOSTIC_COMPLETE",
+  "attribution_limit": "CPU counters include initialization, warmup and both requests; node elapsed includes existing barriers. Not isolated dot time, not a performance acceptance comparison.",
+  "requests": {
+    "A1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 12805.482,
+        "prompt_per_token_ms": 0.39079229736328125,
+        "prompt_per_second": 2558.9040693665415,
+        "predicted_n": 128,
+        "predicted_ms": 4437.647,
+        "predicted_per_token_ms": 34.94210236220472,
+        "predicted_per_second": 28.618770262709045
+      },
+      "correctness_vs_same_uninstrumented_profile": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "token_ids_exact": true,
+      "resources": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      }
+    },
+    "A1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 997.012,
+        "prompt_per_token_ms": 1.1883337306317043,
+        "prompt_per_second": 841.5144451621445,
+        "predicted_n": 256,
+        "predicted_ms": 8348.058,
+        "predicted_per_token_ms": 32.73748235294118,
+        "predicted_per_second": 30.54602639320426
+      },
+      "correctness_vs_same_uninstrumented_profile": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "token_ids_exact": true,
+      "resources": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      }
+    },
+    "M1-long": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 15671.399,
+        "prompt_per_token_ms": 0.47825314331054686,
+        "prompt_per_second": 2090.942869873966,
+        "predicted_n": 128,
+        "predicted_ms": 7513.897,
+        "predicted_per_token_ms": 59.16454330708661,
+        "predicted_per_second": 16.90201502629062,
+        "draft_n": 74,
+        "draft_n_accepted": 53
+      },
+      "correctness_vs_same_uninstrumented_profile": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "token_ids_exact": true,
+      "resources": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      }
+    },
+    "M1-code": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 839,
+        "prompt_ms": 1006.882,
+        "prompt_per_token_ms": 1.2000977353992848,
+        "prompt_per_second": 833.2654670557225,
+        "predicted_n": 256,
+        "predicted_ms": 12986.816,
+        "predicted_per_token_ms": 50.928690196078435,
+        "predicted_per_second": 19.63529782819746,
+        "draft_n": 127,
+        "draft_n_accepted": 127
+      },
+      "correctness_vs_same_uninstrumented_profile": [
+        true,
+        0.0,
+        "identical ids; max probability delta 0"
+      ],
+      "token_ids_exact": true,
+      "resources": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      }
+    }
+  },
+  "cpu": {
+    "A1": {
+      "nodes": [
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q4_K",
+          "bucket": 0,
+          "calls": 38226,
+          "us": 6758227
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q4_K",
+          "bucket": 1,
+          "calls": 196,
+          "us": 58805
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q4_K",
+          "bucket": 2,
+          "calls": 196,
+          "us": 88604
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q6_K",
+          "bucket": 0,
+          "calls": 7653,
+          "us": 1957705
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q6_K",
+          "bucket": 1,
+          "calls": 38,
+          "us": 15900
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q6_K",
+          "bucket": 2,
+          "calls": 38,
+          "us": 24674
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 0,
+          "calls": 382,
+          "us": 969
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 1,
+          "calls": 2,
+          "us": 20
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 2,
+          "calls": 2,
+          "us": 9
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 4,
+          "calls": 9,
+          "us": 20985
+        },
+        {
+          "op": "GLU",
+          "type": "f32",
+          "bucket": 2,
+          "calls": 15449,
+          "us": 28354
+        }
+      ],
+      "routing": [
+        {
+          "bucket": 0,
+          "calls": 45852,
+          "used_experts": 366816,
+          "routed_rows": 366816,
+          "row_pairs": 0
+        },
+        {
+          "bucket": 1,
+          "calls": 234,
+          "used_experts": 3465,
+          "routed_rows": 3744,
+          "row_pairs": 279
+        },
+        {
+          "bucket": 2,
+          "calls": 234,
+          "used_experts": 5172,
+          "routed_rows": 7488,
+          "row_pairs": 1758
+        },
+        {
+          "bucket": 3,
+          "calls": 0,
+          "used_experts": 0,
+          "routed_rows": 0,
+          "row_pairs": 0
+        },
+        {
+          "bucket": 4,
+          "calls": 0,
+          "used_experts": 0,
+          "routed_rows": 0,
+          "row_pairs": 0
+        }
+      ]
+    },
+    "M1": {
+      "nodes": [
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q4_K",
+          "bucket": 0,
+          "calls": 506,
+          "us": 107927
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q4_K",
+          "bucket": 1,
+          "calls": 20602,
+          "us": 6849067
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q4_K",
+          "bucket": 2,
+          "calls": 204,
+          "us": 105770
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q6_K",
+          "bucket": 0,
+          "calls": 223,
+          "us": 66020
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q6_K",
+          "bucket": 1,
+          "calls": 4241,
+          "us": 1854524
+        },
+        {
+          "op": "MUL_MAT_ID",
+          "type": "q6_K",
+          "bucket": 2,
+          "calls": 42,
+          "us": 31453
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 0,
+          "calls": 203,
+          "us": 510
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 1,
+          "calls": 404,
+          "us": 1202
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 2,
+          "calls": 4,
+          "us": 23
+        },
+        {
+          "op": "GET_ROWS",
+          "type": "q4_K",
+          "bucket": 4,
+          "calls": 141,
+          "us": 42639
+        },
+        {
+          "op": "GLU",
+          "type": "f32",
+          "bucket": 2,
+          "calls": 8606,
+          "us": 30570
+        }
+      ],
+      "routing": [
+        {
+          "bucket": 0,
+          "calls": 729,
+          "used_experts": 5832,
+          "routed_rows": 5832,
+          "row_pairs": 0
+        },
+        {
+          "bucket": 1,
+          "calls": 24843,
+          "used_experts": 350922,
+          "routed_rows": 397488,
+          "row_pairs": 46566
+        },
+        {
+          "bucket": 2,
+          "calls": 246,
+          "used_experts": 5457,
+          "routed_rows": 7872,
+          "row_pairs": 1833
+        },
+        {
+          "bucket": 3,
+          "calls": 0,
+          "used_experts": 0,
+          "routed_rows": 0,
+          "row_pairs": 0
+        },
+        {
+          "bucket": 4,
+          "calls": 0,
+          "used_experts": 0,
+          "routed_rows": 0,
+          "row_pairs": 0
+        }
+      ]
+    }
+  },
+  "reuse_upper_bound": {
+    "two_token_routed_rows": 397488,
+    "same_expert_row_pairs": 46566,
+    "paired_rows_fraction": 0.23430141287284145,
+    "maximum_weight_loads_removed_fraction": 0.11715070643642073,
+    "limitation": "Counts repeated per expert projection; assumes paired-row fusion applies to every observed pair. Existing16-output-row tiles already reuse weight cache lines. Not an achieved speedup."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "source/service.h": "72cf640b90857fd4c5bc9c31423ae76985bcbeca7ee7e6335828ef20dbd4376f",
+  "source/fixture.cpp": "d78fb12a90d84bcbac01079127853133c8be576580505e7e734dfeea973b1531",
+  "source/transport.h": "4a44eb5483214ee780067876b7d12a25063bcfffbb7ef63e3b00653e25540ea5",
+  "source/core-recipes.json": "9a618b7d54c5938d3251f8d948f5eeadbcae73533938cb658e3ef62b6baa2194",
+  "source/service.goose": "e174ea13cb73597f4cc5da0ad700271342fd861288eed25ae3f1001fb7398c08",
+  "source/service-generated.c": "47275c363e5968f620ca546a7a759cccb4eb38cba383ecf843351e5151e6e69b",
+  "source/service-qualified.c": "5abc09a5d2f5bbdf9b0c29d3cd37a9759335050afd22dd8ee25656945b468999",
+  "source/abi-values.json": "fcd8c30abf1657edb994f123da67fa5cc68913ec002a7dc58724e95ecc9858e9",
+  "source/header-recipes.json": "4f693fef72c245e0b3476731d5d9c334b84f6f9bfe6b042c598cb8f8e015826b",
+  "source/shared-scheduler.cpp": "e0d39ddffbe99d61e99a4f9f1dda109a99b6174d32fe46733502addb0a02e176",
+  "source/core-impl.h": "32e010d6396bd37bb5fa541ef382a8a2352d2d2c685ec1347800ddfad96e3ae6",
+  "source/service-api.h": "cbafcd4f58e509a647dd3af287c6ef0de969dc69c0cbd14408b9cc513013e801",
+  "source/manifest.json": "f515a3a73638db16a1f05e26c33b7108fbbca77db81780a3de29464207377f70",
+  "source/ggml-shared.c": "da9cce6d6868d9f2ddd2f67f7b734c91b9f2972459c05401f7552bb4f86d8dd6",
+  "source/errors.cpp": "1a34bad4db3053f7c98f583c3cb4ba3729eefcc2b58602264e0eebaae28885ae",
+  "source/shared-meta.cpp": "e306fcd387621009834fcdfc24ea0ef46d44298c72d398c66dcbe7e496a6d3e8",
+  "source/shared-cpu.c": "dda74f76849a58c7316487361cd60d3921c49b0b548959027a205b2ca8c5cdaa",
+  "source/shared-cuda.cu": "5d69b7bfffc4489d4a7c15a3574b873c9456466affb12404240d1bf5f41e6b85",
+  "source/probe.cpp": "498982a482d94e86dcc6838a222259c01b0820001730913fe6619704ea49b3f4"
+}

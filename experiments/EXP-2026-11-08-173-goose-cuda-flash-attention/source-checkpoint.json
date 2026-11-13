@@ -1,0 +1,14 @@
+{
+  "status": "COMPONENT_CHECKPOINT_NOT_RUNTIME_ACCEPTED",
+  "previous_source_phase": {
+    "status": "SOURCE_WORK_ONLY_NOT_ACCEPTED",
+    "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+    "vector_emit_exit_code": 0,
+    "apex_requests": 0,
+    "production_changed": false
+  },
+  "component_receipt": "component-checkpoint.json",
+  "apex_requests": 0,
+  "active_runtime_unchanged": "EXP172",
+  "production_changed": false
+}

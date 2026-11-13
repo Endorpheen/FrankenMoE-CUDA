@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "checks": {
+    "nonstream_hash": {
+      "ok": true,
+      "detail": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9"
+    },
+    "nonstream_tokens": {
+      "ok": true,
+      "detail": 128
+    },
+    "nonstream_finish": {
+      "ok": true,
+      "detail": "limit"
+    },
+    "stream_content_equal": {
+      "ok": true,
+      "detail": "129 chunks"
+    },
+    "stream_tokens_equal": {
+      "ok": true,
+      "detail": 128
+    },
+    "stop_finish": {
+      "ok": true,
+      "detail": "word"
+    },
+    "invalid_rejected": {
+      "ok": true,
+      "detail": "400 {\"error\":{\"code\":400,\"message\":\"\\\"prompt\\\" elements must be a string, a list of tokens, a JSON object containing a promp"
+    },
+    "after_cancel_serves": {
+      "ok": true,
+      "detail": 1
+    }
+  }
+}

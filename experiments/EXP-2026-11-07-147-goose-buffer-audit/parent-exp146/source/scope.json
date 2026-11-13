@@ -1,0 +1,20 @@
+{
+  "status": "IMPLEMENTATION_GATE_PENDING",
+  "batch": "B1",
+  "requirement": "P2-14 and backend graph/workspace ownership",
+  "producer": {
+    "stage": "self-hosted EXP300 C11 frame-default Stage3",
+    "sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-454151b3449b",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp300-frame-scope-state/frame-default-bootstrap-v1",
+    "status": "PASS_CURRENT_C11_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "scope": "Current C11 scope/block source snapshot: Current production source serial bootstrap/fixed point after C11 scope/block integration. Confirms preservation of the working compiler, not full C11 scope/block producer/lifecycle acceptance.",
+    "compiler_source_changed": false
+  },
+  "native_source_sha256": "ccf382d3fbf126b5ddb5850a0a970656fb24e00587da4003419439277c91cd01",
+  "scope": "CPU backend creation/release,plan/workspace lifecycle,capability,extras,features,procedures,memory report plus physical CPU buffers (get_base/align,alloc/free ownership,memset/set/get/cpy/clear,from_ptr),HBM alloc/free policy and traits compute/work_size dispatch in Goose.",
+  "remaining": "Native ABI records,physical new/delete objects,extra-buffer provider implementations,OS CPU-description construction,CPU hardware queries,HBM compiled path in this build (GGML_USE_CPU_HBM off) and other backend source remain explicit residuals.",
+  "production_changed": false,
+  "compiler_source_changed": false,
+  "no_model_run_yet": true
+}

@@ -1,0 +1,15 @@
+{
+  "compiler": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+  "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+  "status": "RELEASE_2026_3_STRING",
+  "version": "goose-2026.3-string",
+  "runtime_version": "1e714e6146bc",
+  "release_sha256": "5c6fdf169408f687a49f3f9ce3ebc0804ece16da0320bbbcb893721f5422558b",
+  "release_file": "/tmp/opencode/release/goose-2026.3-string-linux-x86_64.tar.gz",
+  "source_commit": "e0501dc7dee4522428a46f813cebbce0ad62736e",
+  "qualification": "Compatibility re-run of the EXP445..EXP459 gates on this binary; see docs/goose-migration/COMPILER-2026-3-STRING.md",
+  "rollback": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+  "rollback_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+  "previous_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+  "qualified_at": "2026-11-12T23:31:07.783674+00:00"
+}

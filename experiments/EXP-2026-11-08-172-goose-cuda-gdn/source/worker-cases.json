@@ -1,0 +1,51 @@
+{
+  "job": "fg174s EXP168 compact real-CUDA correctness fixture for the public ggml_cuda_op_gated_delta_net(ctx,dst) and ggml_cuda_op_gated_delta_net_fused_cache(ctx,dst,cache) entries",
+  "prefix": "fg174s_",
+  "fixture": "gdn-fixture/fixture.cu",
+  "abi": {
+    "candidate": ["ggml_cuda_op_gated_delta_net(ggml_backend_cuda_context&, ggml_tensor*)", "ggml_cuda_op_gated_delta_net_fused_cache(ggml_backend_cuda_context&, ggml_tensor*, ggml_cuda_gated_delta_net_fused_cache{float* data; int64_t slot_stride})"],
+    "native_oracle": ["fg174s_native_ggml_cuda_op_gated_delta_net", "fg174s_native_ggml_cuda_op_gated_delta_net_fused_cache"],
+    "provenance": "public ABI from inputs/gated_delta_net.cuh and inputs/scalar-draft-contract.json; node hand-wired exactly as the native op consumes it: dst->op=GGML_OP_GATED_DELTA_NET, src[0..5]=q,k,v,g,beta,state, K=op_params int32[0]; dst is the documented packed output (attention scores [S_v,H_v,T,Nseq] then K state snapshot slots [S_v,S_v,Hv,Nseq], slot0=final, slot s = s tokens back; n_tokens<K writes slots 0..n_tokens-1, n_tokens>K guarantees slot 0 only), contiguous {S_v,Hv,T+K*S_v,Nseq} with ggml_nbytes == attention + K slots exactly; source strides: q/k contiguous rows with identical strides (ggml_are_same_stride), v contiguous rows, g/beta/state fully contiguous, state=[S_v,S_v,Hv,Nseq]; fused cache is a caller-owned external float allocation, slot_stride in floats, 0 when K==1",
+    "mma": "eligibility and path choice are native runtime decisions (eligible = scalar gate && K < n_tokens && S_v==128 && q.ne0==128; MMA path additionally Hk==16, Hv in {16,32,48,64}, n_tokens>=64, cc in {860,890,1200,1210}); the fixture never dispatches a kernel and never requires MMA"
+  },
+  "policy": {
+    "comparison": "candidate vs native bitwise (memcmp, zero tolerance) on the full dst span and full fused-cache span; no CPU reference, no adaptive tolerance",
+    "finiteness": "all inputs finite by construction; dst scores (plus final-state slot on plain path) and all fused-cache slot bytes must decode finite",
+    "immutability": "q/k/v/g/beta/state_in byte-identical after every run on both sides",
+    "buffers": "64-byte 0xA5 canaries on every buffer head and tail; oracle and candidate own disjoint cudaMalloc buffer sets; fused-cache inter-slot padding and the fused dst snapshot tail must stay 0xA5",
+    "sync": "cudaDeviceSynchronize after all uploads/canary memsets before the non-blocking ctx.stream() computes",
+    "capture": "exactly one case (capture_replay) runs the candidate under CUDA graph capture + instantiate + replay, compared bitwise to the native run",
+    "no_timings": true,
+    "limits": "22 cases (contract <=25, task <=60); fixture.cu <=400 lines"
+  },
+  "diagnostics": {
+    "scalar": {"host": "fg174s_cuda_host_seen()", "device": "fg174s_cuda_device_read(uint64_t out[2])", "weak_optional": true, "asserts": "default: host!=0 (active scalar nonzero) and (out0|out1)!=0; rollback: host==0 and both device words 0; unresolved weak symbols are labeled on stderr and skipped"},
+    "mma": {"flag": "FG_GDN_MMA_WITNESS", "host": "fg174m_cuda_host_seen()", "device": "fg174m_cuda_device_read(uint64_t out[2])", "weak_optional": true, "asserts": "only when compiled with the flag and symbols resolve: default host!=0, rollback zero; never required without the flag"}
+  },
+  "rollback": {"env": "GGML_GOOSE_CUDA_GDN", "value": "0", "expect": "candidate entries route to the public originals; all fg174s/fg174m candidate counters zero; bitwise comparisons still hold"},
+  "exit_codes": {"0": "pass", "2": "CUDA API error", "3": "check failure"},
+  "cases": [
+    {"id": "sv16_t1_k1", "S": 16, "Hk": 1, "Hv": 1, "T": 1, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "native SV16, scalar gate, T1, K1 normal state"},
+    {"id": "sv32_t1_k1", "S": 32, "Hk": 1, "Hv": 1, "T": 1, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "native SV32, scalar gate, T1"},
+    {"id": "sv64_t1_k1", "S": 64, "Hk": 1, "Hv": 1, "T": 1, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "native SV64, scalar gate, T1"},
+    {"id": "sv128_t1_k1", "S": 128, "Hk": 1, "Hv": 1, "T": 1, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "native SV128, scalar gate, T1"},
+    {"id": "kda_g_vector", "S": 32, "Hk": 1, "Hv": 2, "T": 2, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "kda", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "KDA g vector [S_v,H_v,T,N]"},
+    {"id": "scalar_gate", "S": 32, "Hk": 1, "Hv": 2, "T": 2, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "scalar gate [1,H_v,T,N], same shape as kda_g_vector"},
+    {"id": "grouped_heads", "S": 32, "Hk": 2, "Hv": 4, "T": 3, "Nseq": 2, "NseqQ": 2, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "grouped q/k heads (Hk=2, Hv=4)"},
+    {"id": "grouped_shared_seq", "S": 32, "Hk": 2, "Hv": 4, "T": 3, "Nseq": 2, "NseqQ": 1, "K": 1, "gate": "kda", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "grouped heads, shared q/k seq (rq3=2), KDA gate"},
+    {"id": "sv128_t16", "S": 128, "Hk": 16, "Hv": 16, "T": 16, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "boundary", "note": "MMA boundary: n_tokens<64 keeps the scalar path"},
+    {"id": "sv128_t64", "S": 128, "Hk": 16, "Hv": 16, "T": 64, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "eligible", "note": "MMA-eligible shape T64 (path chosen by native runtime)"},
+    {"id": "sv128_t65", "S": 128, "Hk": 16, "Hv": 16, "T": 65, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "eligible", "note": "MMA-eligible remainder chunk T65"},
+    {"id": "sv128_t128", "S": 128, "Hk": 16, "Hv": 16, "T": 128, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "eligible", "note": "MMA-eligible shape T128"},
+    {"id": "keep_rs_k2_t2", "S": 32, "Hk": 1, "Hv": 1, "T": 2, "Nseq": 1, "NseqQ": 1, "K": 2, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "keep_rs K2, T==K, both snapshot slots written"},
+    {"id": "keep_rs_k4_t4", "S": 32, "Hk": 1, "Hv": 1, "T": 4, "Nseq": 1, "NseqQ": 1, "K": 4, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "keep_rs K4, T==K, all four slots written"},
+    {"id": "keep_rs_k4_t2", "S": 64, "Hk": 1, "Hv": 2, "T": 2, "Nseq": 1, "NseqQ": 1, "K": 4, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "keep_rs K4, T<K: slots 2..3 caller-owned, identical poison"},
+    {"id": "zero_state", "S": 32, "Hk": 1, "Hv": 1, "T": 2, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "zero", "mma": "no", "note": "zero initial recurrent state"},
+    {"id": "nseq3", "S": 16, "Hk": 1, "Hv": 1, "T": 2, "Nseq": 3, "NseqQ": 3, "K": 1, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": false, "state": "pattern", "mma": "no", "note": "three sequences in one batch"},
+    {"id": "fused_k1", "S": 16, "Hk": 1, "Hv": 1, "T": 1, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "scalar", "fused_cache": true, "cache_stride": "slot_stride=0 (K==1)", "capture": false, "state": "pattern", "mma": "no", "note": "fused cache K1, owned external cache, dst snapshot tail untouched"},
+    {"id": "fused_k2", "S": 32, "Hk": 1, "Hv": 1, "T": 2, "Nseq": 1, "NseqQ": 1, "K": 2, "gate": "scalar", "fused_cache": true, "cache_stride": "exact (S*S*Hv*Nseq)", "capture": false, "state": "pattern", "mma": "no", "note": "fused cache K2, exact slot_stride, both slots written to cache"},
+    {"id": "fused_stride_pad", "S": 16, "Hk": 1, "Hv": 2, "T": 2, "Nseq": 1, "NseqQ": 1, "K": 2, "gate": "scalar", "fused_cache": true, "cache_stride": "padded (S*S*Hv*Nseq+32 floats)", "capture": false, "state": "pattern", "mma": "no", "note": "fused cache K2, padded slot_stride; inter-slot padding must stay 0xA5"},
+    {"id": "fused_grouped_kda", "S": 32, "Hk": 2, "Hv": 4, "T": 3, "Nseq": 1, "NseqQ": 1, "K": 1, "gate": "kda", "fused_cache": true, "cache_stride": "slot_stride=0 (K==1)", "capture": false, "state": "pattern", "mma": "no", "note": "fused cache, grouped heads, KDA gate, K1"},
+    {"id": "capture_replay", "S": 32, "Hk": 1, "Hv": 1, "T": 4, "Nseq": 1, "NseqQ": 1, "K": 2, "gate": "scalar", "fused_cache": false, "cache_stride": "none", "capture": true, "state": "pattern", "mma": "no", "note": "one CUDA graph capture/instantiate/replay of the candidate entry, compared bitwise to the native run"}
+  ]
+}

@@ -1,0 +1,197 @@
+{"name":"device-properties","bytes":72,"type":27}
+{"name":"device-name","bytes":4,"type":24}
+{"name":"device-description","bytes":36,"type":24}
+{"name":"procedure-presence","bytes":13,"type":24}
+{"name":"feature-list","bytes":78,"type":24}
+{"name":"extra-name-0","bytes":11,"type":24}
+{"name":"extra-support-0","bytes":1,"type":24}
+{"name":"extra-operation-0","bytes":1,"type":24}
+{"name":"standard-buffer","bytes":16,"type":27}
+{"name":"wrapped-host-data","bytes":64,"type":24}
+{"name":"buffer-alloc-base","bytes":16,"type":27}
+{"name":"buffer-memset","bytes":64,"type":24}
+{"name":"buffer-set-get","bytes":256,"type":24}
+{"name":"buffer-cpy-flag","bytes":1,"type":24}
+{"name":"buffer-cpy-data","bytes":128,"type":24}
+{"name":"buffer-clear","bytes":64,"type":24}
+{"name":"buffer-fromptr-nonowning","bytes":1,"type":24}
+{"name":"capability-op0","bytes":280,"type":24}
+{"name":"capability-op1","bytes":280,"type":24}
+{"name":"capability-op2","bytes":280,"type":24}
+{"name":"capability-op3","bytes":280,"type":24}
+{"name":"capability-op4","bytes":280,"type":24}
+{"name":"capability-op5","bytes":280,"type":24}
+{"name":"capability-op6","bytes":280,"type":24}
+{"name":"capability-op7","bytes":280,"type":24}
+{"name":"capability-op8","bytes":280,"type":24}
+{"name":"capability-op9","bytes":280,"type":24}
+{"name":"capability-op10","bytes":280,"type":24}
+{"name":"capability-op11","bytes":280,"type":24}
+{"name":"capability-op12","bytes":280,"type":24}
+{"name":"capability-op13","bytes":280,"type":24}
+{"name":"capability-op14","bytes":280,"type":24}
+{"name":"capability-op15","bytes":280,"type":24}
+{"name":"capability-op16","bytes":280,"type":24}
+{"name":"capability-op17","bytes":280,"type":24}
+{"name":"capability-op18","bytes":280,"type":24}
+{"name":"capability-op19","bytes":280,"type":24}
+{"name":"capability-op20","bytes":280,"type":24}
+{"name":"capability-op21","bytes":280,"type":24}
+{"name":"capability-op22","bytes":280,"type":24}
+{"name":"capability-op23","bytes":280,"type":24}
+{"name":"capability-op24","bytes":280,"type":24}
+{"name":"capability-op25","bytes":280,"type":24}
+{"name":"capability-op26","bytes":280,"type":24}
+{"name":"capability-op27","bytes":280,"type":24}
+{"name":"capability-op28","bytes":280,"type":24}
+{"name":"capability-op29","bytes":280,"type":24}
+{"name":"capability-op30","bytes":280,"type":24}
+{"name":"capability-op31","bytes":280,"type":24}
+{"name":"capability-op32","bytes":280,"type":24}
+{"name":"capability-op33","bytes":280,"type":24}
+{"name":"capability-op34","bytes":280,"type":24}
+{"name":"capability-op35","bytes":280,"type":24}
+{"name":"capability-op36","bytes":280,"type":24}
+{"name":"capability-op37","bytes":280,"type":24}
+{"name":"capability-op38","bytes":280,"type":24}
+{"name":"capability-op39","bytes":280,"type":24}
+{"name":"capability-op40","bytes":280,"type":24}
+{"name":"capability-op41","bytes":280,"type":24}
+{"name":"capability-op42","bytes":280,"type":24}
+{"name":"capability-op43","bytes":280,"type":24}
+{"name":"capability-op44","bytes":280,"type":24}
+{"name":"capability-op45","bytes":280,"type":24}
+{"name":"capability-op46","bytes":280,"type":24}
+{"name":"capability-op47","bytes":280,"type":24}
+{"name":"capability-op48","bytes":280,"type":24}
+{"name":"capability-op49","bytes":280,"type":24}
+{"name":"capability-op50","bytes":280,"type":24}
+{"name":"capability-op51","bytes":280,"type":24}
+{"name":"capability-op52","bytes":280,"type":24}
+{"name":"capability-op53","bytes":280,"type":24}
+{"name":"capability-op54","bytes":280,"type":24}
+{"name":"capability-op55","bytes":280,"type":24}
+{"name":"capability-op56","bytes":280,"type":24}
+{"name":"capability-op57","bytes":280,"type":24}
+{"name":"capability-op58","bytes":280,"type":24}
+{"name":"capability-op59","bytes":280,"type":24}
+{"name":"capability-op60","bytes":280,"type":24}
+{"name":"capability-op61","bytes":280,"type":24}
+{"name":"capability-op62","bytes":280,"type":24}
+{"name":"capability-op63","bytes":280,"type":24}
+{"name":"capability-op64","bytes":280,"type":24}
+{"name":"capability-op65","bytes":280,"type":24}
+{"name":"capability-op66","bytes":280,"type":24}
+{"name":"capability-op67","bytes":280,"type":24}
+{"name":"capability-op68","bytes":280,"type":24}
+{"name":"capability-op69","bytes":280,"type":24}
+{"name":"capability-op70","bytes":280,"type":24}
+{"name":"capability-op71","bytes":280,"type":24}
+{"name":"capability-op72","bytes":280,"type":24}
+{"name":"capability-op73","bytes":280,"type":24}
+{"name":"capability-op74","bytes":280,"type":24}
+{"name":"capability-op75","bytes":280,"type":24}
+{"name":"capability-op76","bytes":280,"type":24}
+{"name":"capability-op77","bytes":280,"type":24}
+{"name":"capability-op78","bytes":280,"type":24}
+{"name":"capability-op79","bytes":280,"type":24}
+{"name":"capability-op80","bytes":280,"type":24}
+{"name":"capability-op81","bytes":280,"type":24}
+{"name":"capability-op82","bytes":280,"type":24}
+{"name":"capability-op83","bytes":280,"type":24}
+{"name":"capability-op84","bytes":280,"type":24}
+{"name":"capability-op85","bytes":280,"type":24}
+{"name":"capability-op86","bytes":280,"type":24}
+{"name":"capability-op87","bytes":280,"type":24}
+{"name":"capability-op88","bytes":280,"type":24}
+{"name":"capability-op89","bytes":280,"type":24}
+{"name":"capability-op90","bytes":280,"type":24}
+{"name":"capability-op91","bytes":280,"type":24}
+{"name":"capability-op92","bytes":280,"type":24}
+{"name":"capability-op93","bytes":280,"type":24}
+{"name":"capability-op94","bytes":280,"type":24}
+{"name":"capability-op95","bytes":280,"type":24}
+{"name":"capability-op96","bytes":280,"type":24}
+{"name":"capability-op97","bytes":280,"type":24}
+{"name":"capability-op98","bytes":280,"type":24}
+{"name":"capability-op99","bytes":280,"type":24}
+{"name":"capability-op100","bytes":280,"type":24}
+{"name":"backend-status-cycle0-t1","bytes":16,"type":27}
+{"name":"backend-output-cycle0-t1","bytes":768,"type":0}
+{"name":"backend-status-cycle1-t1","bytes":16,"type":27}
+{"name":"backend-output-cycle1-t1","bytes":12288,"type":0}
+{"name":"backend-status-cycle2-t1","bytes":16,"type":27}
+{"name":"backend-output-cycle2-t1","bytes":384,"type":0}
+{"name":"backend-status-cycle3-t1","bytes":16,"type":27}
+{"name":"backend-output-cycle3-t1","bytes":768,"type":0}
+{"name":"backend-status-cycle4-t1","bytes":16,"type":27}
+{"name":"backend-output-cycle4-t1","bytes":768,"type":0}
+{"name":"backend-status-cycle5-t1","bytes":16,"type":27}
+{"name":"backend-output-cycle5-t1","bytes":768,"type":0}
+{"name":"backend-status-cycle6-t1","bytes":16,"type":27}
+{"name":"backend-output-cycle6-t1","bytes":768,"type":0}
+{"name":"backend-status-cycle0-t2","bytes":16,"type":27}
+{"name":"backend-output-cycle0-t2","bytes":768,"type":0}
+{"name":"backend-status-cycle1-t2","bytes":16,"type":27}
+{"name":"backend-output-cycle1-t2","bytes":12288,"type":0}
+{"name":"backend-status-cycle2-t2","bytes":16,"type":27}
+{"name":"backend-output-cycle2-t2","bytes":384,"type":0}
+{"name":"backend-status-cycle3-t2","bytes":16,"type":27}
+{"name":"backend-output-cycle3-t2","bytes":768,"type":0}
+{"name":"backend-status-cycle4-t2","bytes":16,"type":27}
+{"name":"backend-output-cycle4-t2","bytes":768,"type":0}
+{"name":"backend-status-cycle5-t2","bytes":16,"type":27}
+{"name":"backend-output-cycle5-t2","bytes":768,"type":0}
+{"name":"backend-status-cycle6-t2","bytes":16,"type":27}
+{"name":"backend-output-cycle6-t2","bytes":768,"type":0}
+{"name":"backend-status-cycle0-t8","bytes":16,"type":27}
+{"name":"backend-output-cycle0-t8","bytes":768,"type":0}
+{"name":"backend-status-cycle1-t8","bytes":16,"type":27}
+{"name":"backend-output-cycle1-t8","bytes":12288,"type":0}
+{"name":"backend-status-cycle2-t8","bytes":16,"type":27}
+{"name":"backend-output-cycle2-t8","bytes":384,"type":0}
+{"name":"backend-status-cycle3-t8","bytes":16,"type":27}
+{"name":"backend-output-cycle3-t8","bytes":768,"type":0}
+{"name":"backend-status-cycle4-t8","bytes":16,"type":27}
+{"name":"backend-output-cycle4-t8","bytes":768,"type":0}
+{"name":"backend-status-cycle5-t8","bytes":16,"type":27}
+{"name":"backend-output-cycle5-t8","bytes":768,"type":0}
+{"name":"backend-status-cycle6-t8","bytes":16,"type":27}
+{"name":"backend-output-cycle6-t8","bytes":768,"type":0}
+{"name":"backend-status-cycle0-t16","bytes":16,"type":27}
+{"name":"backend-output-cycle0-t16","bytes":768,"type":0}
+{"name":"backend-status-cycle1-t16","bytes":16,"type":27}
+{"name":"backend-output-cycle1-t16","bytes":12288,"type":0}
+{"name":"backend-status-cycle2-t16","bytes":16,"type":27}
+{"name":"backend-output-cycle2-t16","bytes":384,"type":0}
+{"name":"backend-status-cycle3-t16","bytes":16,"type":27}
+{"name":"backend-output-cycle3-t16","bytes":768,"type":0}
+{"name":"backend-status-cycle4-t16","bytes":16,"type":27}
+{"name":"backend-output-cycle4-t16","bytes":768,"type":0}
+{"name":"backend-status-cycle5-t16","bytes":16,"type":27}
+{"name":"backend-output-cycle5-t16","bytes":768,"type":0}
+{"name":"backend-status-cycle6-t16","bytes":16,"type":27}
+{"name":"backend-output-cycle6-t16","bytes":768,"type":0}
+FG150_REGISTRY mode=0 calls=1
+FG150_REGISTRY mode=1 calls=6
+FG150_REGISTRY mode=2 calls=6
+FG150_REGISTRY mode=3 calls=1
+FG150_REGISTRY mode=4 calls=1
+FG150_REGISTRY mode=5 calls=1
+FG150_REGISTRY mode=7 calls=1
+FG150_REGISTRY mode=8 calls=2
+FG150_REGISTRY mode=9 calls=1
+FG149_POOL mode=0 calls=24
+FG149_POOL mode=1 calls=24
+FG149_POOL mode=4 calls=12
+FG149_POOL mode=6 calls=112
+FG149_POOL mode=15 calls=74
+FG149_POOL mode=16 calls=85
+FG149_POOL mode=17 calls=32
+FG143_CONTROL plans=28 task_queries=0 dispatches=58 jobs=32 worker_jobs=85
+FG143_EXECUTOR worker_graphs=85 worker_steps=112 worker_fusions=27
+FG143_NATIVE op=46 calls=9 enabled=1
+FG143_CPU op=25 calls=27 values=5184
+FG143_CPU op=32 calls=4 values=384
+FG143_CPU op=46 calls=45 values=34560
+FG150_EXPERT scratch_calls=0 enabled=1

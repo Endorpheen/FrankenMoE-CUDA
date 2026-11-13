@@ -1,0 +1,282 @@
+[
+  {
+    "name": "ggml_cuda_op_abs",
+    "mode": 0,
+    "op": 0,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_sgn",
+    "mode": 0,
+    "op": 1,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_neg",
+    "mode": 0,
+    "op": 2,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_step",
+    "mode": 0,
+    "op": 3,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_gelu",
+    "mode": 0,
+    "op": 4,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_gelu_erf",
+    "mode": 0,
+    "op": 5,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_gelu_quick",
+    "mode": 0,
+    "op": 6,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_silu",
+    "mode": 0,
+    "op": 7,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_tanh",
+    "mode": 0,
+    "op": 8,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_relu",
+    "mode": 0,
+    "op": 9,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_sigmoid",
+    "mode": 0,
+    "op": 10,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_hardsigmoid",
+    "mode": 0,
+    "op": 11,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_hardswish",
+    "mode": 0,
+    "op": 12,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_exp",
+    "mode": 0,
+    "op": 13,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_sqr",
+    "mode": 0,
+    "op": 14,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_sqrt",
+    "mode": 0,
+    "op": 15,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_sin",
+    "mode": 0,
+    "op": 16,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_cos",
+    "mode": 0,
+    "op": 17,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_log",
+    "mode": 0,
+    "op": 18,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_elu",
+    "mode": 0,
+    "op": 19,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_floor",
+    "mode": 0,
+    "op": 20,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_ceil",
+    "mode": 0,
+    "op": 21,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_round",
+    "mode": 0,
+    "op": 22,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_trunc",
+    "mode": 0,
+    "op": 23,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_expm1",
+    "mode": 0,
+    "op": 24,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_softplus",
+    "mode": 0,
+    "op": 25,
+    "style": 0,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_reglu",
+    "mode": 2,
+    "op": 9,
+    "style": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_geglu",
+    "mode": 2,
+    "op": 4,
+    "style": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_swiglu",
+    "mode": 2,
+    "op": 7,
+    "style": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_geglu_erf",
+    "mode": 2,
+    "op": 5,
+    "style": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_geglu_quick",
+    "mode": 2,
+    "op": 6,
+    "style": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_swiglu_oai",
+    "mode": 3,
+    "op": 0,
+    "style": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_swiglu_clamp",
+    "mode": 4,
+    "op": 0,
+    "style": 1,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_xielu",
+    "mode": 5,
+    "op": 0,
+    "style": 2,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_silu_back",
+    "mode": 6,
+    "op": 0,
+    "style": 3,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_leaky_relu",
+    "mode": 9,
+    "op": 0,
+    "style": 4,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_scale",
+    "mode": 7,
+    "op": 0,
+    "style": 5,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_clamp",
+    "mode": 8,
+    "op": 0,
+    "style": 6,
+    "args": 1
+  },
+  {
+    "name": "ggml_cuda_op_unary_mul",
+    "mode": 2,
+    "op": 0,
+    "style": 7,
+    "args": 2
+  },
+  {
+    "name": "ggml_cuda_op_relu_sqr",
+    "mode": 0,
+    "op": 26,
+    "style": 8,
+    "args": 2
+  }
+]

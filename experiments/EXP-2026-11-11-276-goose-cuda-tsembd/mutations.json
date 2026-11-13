@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "device half bound skips one column",
+    "status": "CAUGHT",
+    "failures": 264
+  },
+  {
+    "mutation": "odd-dim zero written at half instead of 2*half",
+    "status": "CAUGHT",
+    "failures": 44
+  },
+  {
+    "mutation": "freq divides by half instead of multiplying",
+    "status": "CAUGHT",
+    "failures": 2858
+  },
+  {
+    "mutation": "first store uses sin",
+    "status": "CAUGHT",
+    "failures": 7562
+  },
+  {
+    "mutation": "host half_ceil drops the +1",
+    "status": "CAUGHT",
+    "failures": 1
+  }
+]

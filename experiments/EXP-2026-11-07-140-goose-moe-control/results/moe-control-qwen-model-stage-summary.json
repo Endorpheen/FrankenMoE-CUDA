@@ -1,0 +1,306 @@
+{
+  "status": "PASS_LIVE_QWEN_COMMON_MOE_CONTROLLER",
+  "checks": [
+    {
+      "name": "qwen140-perf-off-128x16",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-perf-off-32x4",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-perf-on-128x16-repeat",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-perf-on-128x16",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-perf-on-32x4",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-perf-repeat-off-128x16-measured",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-perf-repeat-off-128x16-warm",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-perf-repeat-off-32x4",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-trace-128x16",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    },
+    {
+      "name": "qwen140-trace-32x4",
+      "equal_original": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      }
+    }
+  ],
+  "witness": {
+    "entries": 33504,
+    "quant_blocks": 211420,
+    "grouped_routes": 28830,
+    "chunks": 372096,
+    "fused_chunks": 0,
+    "tiled_delegations": 0,
+    "layout_bytes": 11941974944,
+    "enabled": 1,
+    "apex_q4_calls": 0,
+    "apex_q6_calls": 0
+  },
+  "trace_scope": "Only32/4 and128/16 requests; loader warmup disabled",
+  "matched_warm_pair": {
+    "previous_controller": {
+      "name": "qwen140-perf-repeat-off-128x16-measured",
+      "wall_seconds": 3.51224451395683,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 128,
+        "prompt_ms": 1670.804,
+        "prompt_per_token_ms": 13.05315625,
+        "prompt_per_second": 76.60982377346475,
+        "predicted_n": 16,
+        "predicted_ms": 1832.439,
+        "predicted_per_token_ms": 122.16260000000001,
+        "predicted_per_second": 8.185811369437127
+      },
+      "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+      "tokens": [
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369,
+        9859,
+        728,
+        310,
+        8290,
+        264,
+        328,
+        7686,
+        1433,
+        1,
+        421
+      ],
+      "sampled_rss_peak_mib": 23288.62890625,
+      "process_hwm_mib": 23288.62890625,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 624.7421875,
+      "sampled_file_peak_mib": 22362.54296875,
+      "sampled_gpu_peak_mib": 6198,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        2.01953125,
+        3.3828125,
+        3.2470703125
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "new_controller": {
+      "name": "qwen140-perf-on-128x16-repeat",
+      "wall_seconds": 3.4901822070823982,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 128,
+        "prompt_ms": 1567.273,
+        "prompt_per_token_ms": 12.2443203125,
+        "prompt_per_second": 81.6705194308841,
+        "predicted_n": 16,
+        "predicted_ms": 1914.48,
+        "predicted_per_token_ms": 127.632,
+        "predicted_per_second": 7.835025698884292
+      },
+      "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+      "tokens": [
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369,
+        9859,
+        728,
+        310,
+        8290,
+        264,
+        328,
+        7686,
+        1433,
+        1,
+        421
+      ],
+      "sampled_rss_peak_mib": 23287.296875,
+      "process_hwm_mib": 23287.296875,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 621.90234375,
+      "sampled_file_peak_mib": 22364.05078125,
+      "sampled_gpu_peak_mib": 6198,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        4.3828125,
+        4.103515625,
+        3.43310546875
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  },
+  "first_pair_cold_cache_confounded": {
+    "off": {
+      "name": "qwen140-perf-off-128x16",
+      "wall_seconds": 11.727647183928639,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 128,
+        "prompt_ms": 8393.528,
+        "prompt_per_token_ms": 65.5744375,
+        "prompt_per_second": 15.249844880484106,
+        "predicted_n": 16,
+        "predicted_ms": 3325.501,
+        "predicted_per_token_ms": 221.7000666666667,
+        "predicted_per_second": 4.510598553420973
+      },
+      "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+      "tokens": [
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369,
+        9859,
+        728,
+        310,
+        8290,
+        264,
+        328,
+        7686,
+        1433,
+        1,
+        421
+      ],
+      "sampled_rss_peak_mib": 22141.4765625,
+      "process_hwm_mib": 22141.4765625,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 619.875,
+      "sampled_file_peak_mib": 21220.2578125,
+      "sampled_gpu_peak_mib": 6198,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        3.40185546875,
+        2.63623046875,
+        2.87890625
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "on": {
+      "name": "qwen140-perf-on-128x16",
+      "wall_seconds": 3.8355261629913002,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 128,
+        "prompt_ms": 1844.711,
+        "prompt_per_token_ms": 14.4118046875,
+        "prompt_per_second": 69.38756260465732,
+        "predicted_n": 16,
+        "predicted_ms": 1982.063,
+        "predicted_per_token_ms": 132.13753333333335,
+        "predicted_per_second": 7.567872464195134
+      },
+      "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+      "tokens": [
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369,
+        9859,
+        728,
+        310,
+        8290,
+        264,
+        328,
+        7686,
+        1433,
+        1,
+        421
+      ],
+      "sampled_rss_peak_mib": 23158.39453125,
+      "process_hwm_mib": 23158.39453125,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 621.671875,
+      "sampled_file_peak_mib": 22235.37890625,
+      "sampled_gpu_peak_mib": 6198,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        8.376953125,
+        4.6455078125,
+        3.56689453125
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  },
+  "method": "Same retained EXP139 Goose math/quant in both arms, context4096 batch/ubatch4096 t12/tb16 CPU experts/GPU attention no repack no MTP; new controller diagnostics removed, inherited math diagnostics identical. Matching32/4 then128/16 warm then128/16 measured. Separated process runs under other activity.",
+  "preliminary": true,
+  "controlled_quiet_run": false,
+  "production_performance_accepted": false,
+  "cold_bank_and_fused_model_scope": "Actual model requests use stock MoE with spec none/EHS0, fused_chunks0 expected; cold/bank/fused validated by412 actual GGML graphs, not claimed live in these model requests",
+  "goose_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98",
+  "compiler_changed": false,
+  "production_changed": false
+}

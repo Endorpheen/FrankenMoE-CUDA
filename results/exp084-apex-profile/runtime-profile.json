@@ -1,0 +1,33 @@
+{
+  "profile": {
+    "-c": "262144",
+    "-ngl": "all",
+    "--cpu-moe": true,
+    "-b": "4096",
+    "-ub": "4096",
+    "-t": "8",
+    "-tb": "16",
+    "--cpu-mask": "0f0f",
+    "--cpu-mask-batch": "ffff",
+    "--cpu-strict": "1",
+    "--cpu-strict-batch": "1",
+    "--poll": "0",
+    "-np": "1",
+    "--cache-ram": "0",
+    "--ctx-checkpoints": "32",
+    "--load-mode": "mmap",
+    "--spec-type": "none",
+    "--temp": "1",
+    "--top-p": "0.95",
+    "--top-k": "20",
+    "--min-p": "0"
+  },
+  "reference_commit": "8c1f02e9a824ef4ed573140cc7c2dd92fd80008e",
+  "runtime_directory": "/home/end0/AI/LlamaServer/llama.cpp-flint-apex-prefix/build/bin",
+  "working_port_restored": 8081,
+  "diagnostic_port": 18484,
+  "generation_requests": 3,
+  "native_prompt_cache": true,
+  "seed": 123,
+  "duration_limit_s": 600
+}

@@ -1,0 +1,3328 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
+  "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
+  "active_workstream": "APEX_COMMON",
+  "next_task": "P1-06",
+  "execution_order": [
+    "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",
+    "QWEN_COMPATIBILITY: C1 and deferred shared MTP task; only after all APEX_COMMON tasks DONE",
+    "OTHER_COMPATIBILITY: deferred architecture/platform tasks and C2",
+    "FINAL_UNIVERSAL: F1",
+    "Post-migration comprehensive testing,performance/optimization,independent safety comparison"
+  ],
+  "phases": [
+    {
+      "id": "P0",
+      "title": "Inventory, provenance and migration contracts",
+      "depends_on": []
+    },
+    {
+      "id": "P1",
+      "title": "Complete CPU MoE subsystem",
+      "depends_on": [
+        "P0"
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "Complete GGML CPU backend",
+      "depends_on": [
+        "P1"
+      ]
+    },
+    {
+      "id": "P3",
+      "title": "Complete CUDA backend",
+      "depends_on": [
+        "P2"
+      ]
+    },
+    {
+      "id": "P4",
+      "title": "GGML core,allocator,ownership and scheduler",
+      "depends_on": [
+        "P3"
+      ]
+    },
+    {
+      "id": "P5",
+      "title": "KV-cache,recurrent memory and sessions",
+      "depends_on": [
+        "P4"
+      ]
+    },
+    {
+      "id": "P6",
+      "title": "Shared model runtime and complete Apex architecture",
+      "depends_on": [
+        "P5"
+      ]
+    },
+    {
+      "id": "P7",
+      "title": "Shared GGUF/loading/text infrastructure and Apex tokenizer",
+      "depends_on": [
+        "P6"
+      ]
+    },
+    {
+      "id": "P8",
+      "title": "Server,HTTP/API,queues and application lifecycle",
+      "depends_on": [
+        "P7"
+      ]
+    },
+    {
+      "id": "P9",
+      "title": "Standalone streaming runtime and CLI",
+      "depends_on": [
+        "P8"
+      ]
+    },
+    {
+      "id": "P10",
+      "title": "Tools,platforms,build system and dependency closure",
+      "depends_on": [
+        "P9"
+      ]
+    },
+    {
+      "id": "P11",
+      "title": "Full Apex functional integration and native-path removal",
+      "depends_on": [
+        "P10"
+      ]
+    },
+    {
+      "id": "C1",
+      "title": "Qwen extension of the same Goose runtime, only after full Apex",
+      "depends_on": [
+        "P11"
+      ]
+    },
+    {
+      "id": "C2",
+      "title": "Other architectures and platforms using the same runtime",
+      "depends_on": [
+        "C1"
+      ]
+    },
+    {
+      "id": "F1",
+      "title": "Universal source/import closure and final functional handoff",
+      "depends_on": [
+        "C2"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P0-01",
+      "phase": "P0",
+      "title": "Preserve immutable native controls and production rollback",
+      "status": "DONE",
+      "sources": [
+        "reference runtime manifests",
+        "EXP136..141 provenance"
+      ],
+      "acceptance": "Frozen executable/library/model hashes and commands; production hashes unchanged.",
+      "evidence": "EXP141/results/reference-integrity-exp141.json; EXP136..141",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B0"
+    },
+    {
+      "id": "P0-02",
+      "phase": "P0",
+      "title": "Audit all effective source trees and enumerate remaining scope",
+      "status": "DONE",
+      "sources": [
+        "apex/**",
+        "qwen/**",
+        "carrier/runtime/**",
+        "carrier/patches/**"
+      ],
+      "acceptance": "Hash/line inventory for both lineages, active translation units, operation/type/model registries and every file assigned to a subsystem.",
+      "evidence": "docs/goose-migration/source-audit.json",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B0"
+    },
+    {
+      "id": "P0-03",
+      "phase": "P0",
+      "title": "Qualify current self-hosted producer per new stage",
+      "status": "DONE",
+      "sources": [
+        "compiler receipts",
+        "source/*/generation-command.json"
+      ],
+      "acceptance": "Pin latest completed self-hosted producer/receipt at stage entry; generated-C provenance recorded; compiler source untouched.",
+      "evidence": "EXP141/compiler/producer-receipt.json; revalidate at every subsequent stage",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B0"
+    },
+    {
+      "id": "P0-04",
+      "phase": "P0",
+      "title": "Replace manual experimental ABI scaffolding with audited module interfaces",
+      "status": "PARTIAL",
+      "sources": [
+        "source/*/bridge.h",
+        "source/*/unit.c"
+      ],
+      "acceptance": "All shared types have size/offset/import contracts; no implicit declarations; primitive imports separately inventoried.",
+      "evidence": "Per-experiment static ABI assertions exist; unified import ledger not yet complete",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P0-05",
+      "phase": "P0",
+      "title": "Maintain complete differential and liveness coverage registry",
+      "status": "PARTIAL",
+      "sources": [
+        "tests/**",
+        "tools/server/tests/**",
+        "source/*/*fixture*"
+      ],
+      "acceptance": "Every supported operation/type/mode has an executable check and witness; Apex main, Qwen at milestones; unsupported coverage explicit.",
+      "evidence": "Existing exact graph/model corpora cover selected modules only",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P0-06",
+      "phase": "P0",
+      "title": "Preserve isolated builds, feature switches and source rollback",
+      "status": "DONE",
+      "sources": [
+        "variants/**",
+        "experiments/EXP-2026-11-07-*/tools/reproduce_local.py"
+      ],
+      "acceptance": "All migrated modules can be disabled and replayed from pinned sources without replacing production.",
+      "evidence": "EXP141 snapshot rebuild:8objects,104graphs per backend; previous snapshots retained",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B0"
+    },
+    {
+      "id": "P1-01",
+      "phase": "P1",
+      "title": "Port common Q8_K/Q8_0 activation quantization",
+      "status": "DONE",
+      "sources": [
+        "ggml/src/ggml-cpu/quants.c",
+        "ggml/src/ggml-cpu/arch/*/quants.c"
+      ],
+      "acceptance": "Whole row quantizers match native bytes and are witnessed in actual Apex/Qwen inference.",
+      "evidence": "EXP137 Q8_K; EXP139 common Q8_0/Q8_K exact and model traces; Q8_0 performance deferred",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-02",
+      "phase": "P1",
+      "title": "Port raw Q4_K/Q6_K matrix and routed-expert arithmetic",
+      "status": "DONE",
+      "sources": [
+        "ggml/src/ggml-cpu/arch/x86/quants.c",
+        "source/cpu-moe/**"
+      ],
+      "acceptance": "Dot/matrix/routed outputs match preserved precision contracts; actual Apex executes Goose.",
+      "evidence": "EXP137..138 CPU MoE and Apex traces",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-03",
+      "phase": "P1",
+      "title": "Port five Qwen raw quantized expert math families",
+      "status": "DONE",
+      "sources": [
+        "source/moe-quantized-byte/**",
+        "ggml/src/ggml-quants.c"
+      ],
+      "acceptance": "Q2_0,Q5_0,IQ4_NL,IQ2_XXS,IQ2_S dot/matrix/routed/dequant/fused scope exact; real Qwen witnesses.",
+      "evidence": "EXP139 source and exact/sanitizer/model evidence; speed regression recorded",
+      "depends_on": [],
+      "workstream": "HISTORICAL_SHARED_WORK",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "P1-04",
+      "phase": "P1",
+      "title": "Port entire13-format AVX2 tiled-prefill computation",
+      "status": "DONE",
+      "sources": [
+        "ggml/src/ggml-cpu/tiled/**",
+        "source/cpu-tiled-all/**"
+      ],
+      "acceptance": "All13unpack/gather/micro/dense/MoE stages exact, Apex execution witnessed, Qwen integration checked, original fallback retained.",
+      "evidence": "EXP141:104graphs/backend; actual Apex new-path execution; Qwen profile selects raw path",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-05",
+      "phase": "P1",
+      "title": "Port common expert controller and checked workspace policy",
+      "status": "DONE",
+      "sources": [
+        "ggml/src/ggml-cpu/ggml-cpu.c",
+        "ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c",
+        "source/moe-control/**"
+      ],
+      "acceptance": "Grouping,strided IDs,cold masks,bank maps,quant partitions,fused windows and tile/chunk policy exact in both lineages.",
+      "evidence": "EXP140: Apex114/Qwen412graphs; exact actual models; native OS/compute services remain",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-06",
+      "phase": "P1",
+      "title": "Replace every remaining raw CPU quantized MoE math family",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/quants.c",
+        "ggml/src/ggml-cpu/arch/*/quants.c",
+        "ggml/src/ggml-quants.c"
+      ],
+      "acceptance": "Every active common CPU dot/type-trait family absent from P1-02/03 has Goose dot/dequant/routed tests; zero calls to replaced native arithmetic; cover K/IQ/TQ/FP4/legacy types using Apex native precision contracts. Other architecture-specific precision differences stay in later compatibility adapters.",
+      "evidence": "EXP143 B1: common23-format public dequantization matches actual GGML CPY fixtures; remaining raw dot/routed families and type/layout closure incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-07",
+      "phase": "P1",
+      "title": "Replace repacked expert matrices and all packing layouts",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/repack.cpp",
+        "ggml/src/ggml-cpu/arch/*/repack.cpp",
+        "ggml/src/ggml-cpu/traits.cpp"
+      ],
+      "acceptance": "Each registered pack/trait layout round-trips and matmul matches native; raw/repack/fused dispatch liveness and tails covered.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-08",
+      "phase": "P1",
+      "title": "Replace fused and cold expert execution orchestration",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c",
+        "ggml/src/ggml-cpu/ggml-cpu.c"
+      ],
+      "acceptance": "Complete stock/cold/fused paths execute Goose; masks,bank remapping,shared experts,ready hooks and fallback tested; no hidden original executor.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-09",
+      "phase": "P1",
+      "title": "Move expert work distribution and synchronization ownership to Goose",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ggml-cpu.c",
+        "ggml/src/ggml-threading.*"
+      ],
+      "acceptance": "Goose owns partitioning,job queues,claims,barrier state,cancellation; only primitive OS atomics/thread waits imported;1/2/8/16thread deterministic outputs and termination.",
+      "evidence": "EXP143 Goose active OpenMP graph-job lifecycle and worker publication/barrier/result policy;326graph/status cases include1/2/8/16thread persistent pool,cancellation/recovery. Physical allocation/init,OS placement,expert chunk claims and non-OpenMP implementation remain native/incomplete. EXP144 actual fixed Apex request witnesses OpenMP job/controller execution with exact original response; no full non-OpenMP/expert-work-queue closure claim.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-10",
+      "phase": "P1",
+      "title": "Move MoE buffers, residency and output assembly ownership to Goose",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/ggml-cpu.c",
+        "src/llama-expert-*.cpp",
+        "src/llama-moe-cache.cpp"
+      ],
+      "acceptance": "Expert scratch/resident/staging lifecycles and scatter owned by Goose; allocation failure,resize,empty/overlapping routes and cancellations checked.",
+      "evidence": "EXP145 moves backend graph scratch growth/reuse/failure policy into Goose,with real API/Apex and allocation-policy tests. This does not yet replace complete expert residency/staging/bank ownership.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P1-11",
+      "phase": "P1",
+      "title": "Cover portable scalar and alternate CPU ISA MoE paths",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/arch/**",
+        "ggml/src/ggml-cpu/amx/**",
+        "ggml/src/ggml-cpu/kleidiai/**",
+        "ggml/src/ggml-cpu/spacemit/**"
+      ],
+      "acceptance": "Every source/backend registered in audit has Goose implementation or explicit hardware-unverified status; no silent native fallback called complete; portable reference tested.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P1-12",
+      "phase": "P1",
+      "title": "Close CPU MoE subsystem with native compute disabled",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/**",
+        "src/llama-expert-*"
+      ],
+      "acceptance": "All supported MoE formats/modes pass graph corpus and real Apex milestone; replaced native symbols unavailable in candidate link; rollback preserved externally.",
+      "evidence": "",
+      "depends_on": [
+        "P1-06",
+        "P1-07",
+        "P1-08",
+        "P1-09",
+        "P1-10"
+      ],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 58,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-01",
+      "phase": "P2",
+      "title": "Finish complete binary,unary and GLU compute module",
+      "status": "PARTIAL",
+      "sources": [
+        "ggml/src/ggml-cpu/binary-ops.cpp",
+        "ggml/src/ggml-cpu/unary-ops.cpp",
+        "ggml/src/ggml-cpu/ops.cpp"
+      ],
+      "acceptance": "Every binary/unary/GLU variant,type,stride and special-value contract implemented; NaN payload discrepancy resolved or explicit compatibility contract agreed.",
+      "evidence": "EXP138 plus EXP143 selected scalar/binary/unary/GLU. Original AVX2 SWIGLU math now Goose,9/9wide cases byte-exact;signed-zero clamp/OAI selection fixed. EXP144 one fixed Apex32768/128 request exactly matches original text/IDs/all saved top5. Full type/stride/NaN payload/ISA closure remains incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-02",
+      "phase": "P2",
+      "title": "Port tensor copy,conversion and set/contiguous operations",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp",
+        "ggml/src/ggml-cpu/vec.cpp"
+      ],
+      "acceptance": "DUP,CPY,CONT,SET,ACC,F32/F16/BF16/integer/quantized copy paths exact for strided,padded,aliasing and empty tensors.",
+      "evidence": "EXP143 actual GGML scalar copy/CPY plus23 supported public quantized dequant formats pass current composite subset and scoped sanitizers; full conversion/set/type contracts incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-03",
+      "phase": "P2",
+      "title": "Port scalar/vector primitives and numerical conversions",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/vec.cpp",
+        "ggml/src/ggml-cpu/simd-mappings.h",
+        "ggml/src/ggml-cpu/simd-gemm.h"
+      ],
+      "acceptance": "Every exported CPU vector/conversion symbol mapped to Goose; scalar/SIMD lane reduction,rounding and exceptional-value cases checked.",
+      "evidence": "EXP143 checked tensor/byte storage,half/BF16/bit conversion and native precision-shaped vector primitives integrated; full primitive/type/special-value closure incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-04",
+      "phase": "P2",
+      "title": "Port dense matmul,out-product and batched GEMM",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ggml-cpu.c",
+        "ggml/src/ggml-cpu/llamafile/sgemm.cpp",
+        "ggml/src/ggml-blas/**"
+      ],
+      "acceptance": "F32/F16/BF16/quantized,broadcast,4D,tails and precision modes match; native owned GEMM logic removed, optional BLAS explicit imported primitive.",
+      "evidence": "EXP143 F32 dense graph subset passes; other float/quantized dense/out-product paths and all precision/layout contracts incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-05",
+      "phase": "P2",
+      "title": "Port reductions,scans,comparison and sorting",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp"
+      ],
+      "acceptance": "SUM,SUM_ROWS,CUMSUM,MEAN,ARGMAX,COUNT_EQUAL,ARGSORT,TOP_K match including stable tie/NaN/empty behavior.",
+      "evidence": "EXP143 reductions,scans,comparison/sort source integrated; tested reduction subset passes. Full type/stride/special-value closure incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-06",
+      "phase": "P2",
+      "title": "Port normalization and normalization gradients",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp"
+      ],
+      "acceptance": "NORM,RMS_NORM,GROUP_NORM,L2_NORM and registered backward variants match axes,epsilon,strides and exceptional inputs.",
+      "evidence": "EXP143 normalization subset plus RMS+MUL fused executor cases pass; complete normalization/gradient/type closure incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-07",
+      "phase": "P2",
+      "title": "Port softmax,masks and RoPE subsystem",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp"
+      ],
+      "acceptance": "SOFT_MAX/back,diag masks,ROPE/back and all registered position/scaling modes match both graph corpus and model attention outputs.",
+      "evidence": "EXP143 basic softmax plus normal/NeoX F32 RoPE graph cases pass. Other masks/types/modes/backward and full subsystem gate incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-08",
+      "phase": "P2",
+      "title": "Port gather,scatter,repetition and tensor transforms",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp"
+      ],
+      "acceptance": "GET/SET_ROWS,backward,REPEAT/back,CONCAT,DIAG,PAD/reflect,ROLL,ARANGE,FILL,TRI,embedding and layout operations covered.",
+      "evidence": "EXP143 gather/repeat/concat/pad/roll actual GGML subset passes; complete scatter/index/stride/type contracts incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-09",
+      "phase": "P2",
+      "title": "Port complete CPU Flash Attention subsystem",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp",
+        "ggml/src/ggml-cpu/common.h"
+      ],
+      "acceptance": "All supported cache dtypes,masks,head/group counts,quantized KV,tile/tail and forward/back modes execute Goose; Apex attention trace.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-10",
+      "phase": "P2",
+      "title": "Port recurrent,SSM and gated attention computations",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp"
+      ],
+      "acceptance": "SSM_CONV/SCAN,RWKV6/7,GLA,GATED_DELTA_NET,solve-tri,lightning-indexer and DSV4HC supported variants match stateful multi-token corpus.",
+      "evidence": "EXP143 common GDN/KDA,SSM scan,RWKV6/7 and gated linear attention integrated:52 recurrent cases inside278-case composite and scoped sanitizer suite pass. Whole Apex equivalence remains open; no stateful Goose model witness in diagnostic GPU profile; other recurrent scope incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-11",
+      "phase": "P2",
+      "title": "Port convolution,image and relative-position operations",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp"
+      ],
+      "acceptance": "All registered1D/2D/3Dconv/im2col/col2im,pooling/upscale,window partition and relative-position modes have differential fixtures.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-12",
+      "phase": "P2",
+      "title": "Port training,custom and miscellaneous CPU operators",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/ops.cpp",
+        "ggml/src/ggml-opt.cpp"
+      ],
+      "acceptance": "Every residual GGML op enum has Goose support/identical unsupported error; loss/backward/AdamW/SGD/custom-callback contracts checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-13",
+      "phase": "P2",
+      "title": "Port remaining quantization/serialization math and type traits",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-cpu/quants.c",
+        "ggml/src/ggml-cpu/traits.cpp"
+      ],
+      "acceptance": "Every non-removed type registry entry has Goose quant/dequant/traits where native supports it; IQ calibration/tables and Q8_1 included; exact size/layout preserved.",
+      "evidence": "EXP143 actual GGML CPY covers23 native-supported public dequant types. Q8_1/Q8_K have no native public to_float trait; no fabricated oracle. Remaining quantizers/calibration/traits incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-14",
+      "phase": "P2",
+      "title": "Port CPU backend device/buffer/capability registry",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ggml-cpu.cpp",
+        "ggml/src/ggml-cpu/hbm.cpp",
+        "ggml/src/ggml-cpu/traits.cpp"
+      ],
+      "acceptance": "Backend API,buffer alignment/copy,capability predicates and device initialization owned by Goose; OS/HBM primitive imports audited.",
+      "evidence": "EXP145 real Goose CPU backend context/plan/workspace lifecycle,capability and feature/procedure/extra-buffer registration.167API records and28280capability queries exact vs prior B1 and rollback;9allocation-policy failure/recovery contracts;scoped sanitizers;actual Apex32768/128 text/IDs/top5 exact. ABI storage,CPU description/native extra providers and active HBM path remain incomplete. EXP146: Goose physical CPU buffer get_base/alignment,alloc/free ownership,memset/set/get/cpy/clear,from_ptr assertions and traits compute/work_size dispatch (modes 19-33,174 API records,28280 capability queries exact vs previous B1 and rollback;scoped ASan/UBSan/LSan fixture+9 allocation-policy cases pass;Apex32768/128 text/IDs/top5 exact;HBM compiled path remains inactive (GGML_USE_CPU_HBM off) and get_name/NUMA/CPU-description/native extra providers remain residuals.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-15",
+      "phase": "P2",
+      "title": "Port CPU graph executor,task planning and abort paths",
+      "status": "IN_PROGRESS",
+      "sources": [
+        "ggml/src/ggml-cpu/ggml-cpu.c"
+      ],
+      "acceptance": "Entire operation dispatch,n_tasks/workspace planning,graph reuse,threadpool job lifecycle and abort status execute Goose; all operator entries traced.",
+      "evidence": "EXP143 Goose operation dispatch (96leaves),task-count/scratch policy and active OpenMP job lifecycle:960planning cases exact vs previous B1 and rollback;326graph/status cases pass;scoped sanitizers pass. Native backend scratch providers,pool physical initialization and OS/non-OpenMP paths remain; whole-model equivalence open. EXP144 actual Apex witnesses5346Goose plans/jobs,42706worker graphs and170378dispatches;one32768/128 response matches original text/IDs/top5 exactly. Provider/physical ownership/source closure still incomplete.",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-16",
+      "phase": "P2",
+      "title": "Close CPU architecture support and residual source inventory",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/**",
+        "ggml/src/ggml-blas/**"
+      ],
+      "acceptance": "All CPU audit rows assigned and zero owned native executable logic remains in candidate; hardware-unavailable variants stay explicitly incomplete.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-17",
+      "phase": "P2",
+      "title": "Run CPU-only functional milestone across model families",
+      "status": "TODO",
+      "sources": [
+        "tests/test-backend-ops.cpp",
+        "src/models/**"
+      ],
+      "acceptance": "Full supported operator/type matrix plus Apex and tiny representative dense,recurrent,vision graph fixtures pass; witnesses prove Goose, not fallback.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P2-18",
+      "phase": "P2",
+      "title": "Remove replaced CPU implementation from candidate production link",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/**"
+      ],
+      "acceptance": "Candidate link map contains only Goose-emitted CPU logic plus audited primitives; frozen original remains outside candidate for rollback.",
+      "evidence": "",
+      "depends_on": [
+        "P2-01",
+        "P2-02",
+        "P2-03",
+        "P2-04",
+        "P2-05",
+        "P2-06",
+        "P2-07",
+        "P2-08",
+        "P2-09",
+        "P2-10",
+        "P2-11",
+        "P2-12",
+        "P2-13",
+        "P2-14",
+        "P2-15",
+        "P2-16",
+        "P2-17"
+      ],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 109,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B1"
+    },
+    {
+      "id": "P3-01",
+      "phase": "P3",
+      "title": "Finish complete CUDA normalization/elementwise module",
+      "status": "PARTIAL",
+      "sources": [
+        "ggml/src/ggml-cuda/norm.cu",
+        "ggml/src/ggml-cuda/unary.cu",
+        "ggml/src/ggml-cuda/scale.cu",
+        "source/rms-block/**"
+      ],
+      "acceptance": "Allnorm/unary/scale variants and launch policy use Goose logic; shape,type,aliasing and tail cases exact/declared tolerance.",
+      "evidence": "EXP136/137 actual SiLU/scale leaves and full RMS row; other operations/launch control native",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-02",
+      "phase": "P3",
+      "title": "Port CUDA primitive math,reductions and conversions",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/common.cuh",
+        "ggml/src/ggml-cuda/convert.cu",
+        "ggml/src/ggml-cuda/reduce_rows.cuh",
+        "ggml/src/ggml-cuda/mma.cuh"
+      ],
+      "acceptance": "Goose-owned device math/conversion/warp/block helpers; generated device code provenance; rounding,half,bfloat,warp boundaries checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-03",
+      "phase": "P3",
+      "title": "Port CUDA copy,gather,scatter and tensor transformations",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/cpy*",
+        "ggml/src/ggml-cuda/getrows*",
+        "ggml/src/ggml-cuda/set*",
+        "ggml/src/ggml-cuda/pad*",
+        "ggml/src/ggml-cuda/concat*",
+        "ggml/src/ggml-cuda/roll*"
+      ],
+      "acceptance": "All dtype/stride/tail variants match native and Compute Sanitizer bounds checks; asynchronous copies preserve order.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-04",
+      "phase": "P3",
+      "title": "Port CUDA binary,broadcast and activation families",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/binbcast*",
+        "ggml/src/ggml-cuda/unary*",
+        "ggml/src/ggml-cuda/clamp*",
+        "ggml/src/ggml-cuda/snake*",
+        "ggml/src/ggml-cuda/softcap*",
+        "ggml/src/ggml-cuda/acc*",
+        "ggml/src/ggml-cuda/add-id*"
+      ],
+      "acceptance": "Complete registered binary/unary/GLU type/mode matrix; all actual kernels generated from Goose, no original arithmetic callback.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-05",
+      "phase": "P3",
+      "title": "Port CUDA reductions,sort,top-k and expert routing",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/sum*",
+        "ggml/src/ggml-cuda/mean*",
+        "ggml/src/ggml-cuda/arg*",
+        "ggml/src/ggml-cuda/top*",
+        "ggml/src/ggml-cuda/cumsum*",
+        "ggml/src/ggml-cuda/count*"
+      ],
+      "acceptance": "Every reduction/sort/topk MoE mode,tie/index rule and partial block checked; routing witnesses on real model.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-06",
+      "phase": "P3",
+      "title": "Port CUDA softmax,RoPE,masks and position encodings",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/softmax*",
+        "ggml/src/ggml-cuda/rope*",
+        "ggml/src/ggml-cuda/diag*",
+        "ggml/src/ggml-cuda/tsembd*",
+        "ggml/src/ggml-cuda/arange*"
+      ],
+      "acceptance": "All position/mask/scaling/attention-shape variants differential; valid finite tolerance fixed before candidate test.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-07",
+      "phase": "P3",
+      "title": "Port CUDA dequantization and activation quantization",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/dequantize.cuh",
+        "ggml/src/ggml-cuda/quantize*",
+        "ggml/src/ggml-cuda/vecdotq.cuh"
+      ],
+      "acceptance": "Every supported type and packed block path mapped to Goose with byte/ULP fixtures and malformed-size rejection.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-08",
+      "phase": "P3",
+      "title": "Port full CUDA quantized matrix-vector decode",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/mmvq*",
+        "ggml/src/ggml-cuda/vecdotq.cuh",
+        "ggml/src/ggml-cuda/template-instances/**"
+      ],
+      "acceptance": "Every registered MMVQ format/instance,expert routing,split K,tail and batch mode executes Goose; Apex decode witnesses.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-09",
+      "phase": "P3",
+      "title": "Port full CUDA quantized matrix-matrix prefill",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/mmq*",
+        "ggml/src/ggml-cuda/template-instances/**"
+      ],
+      "acceptance": "All MMQ tile loads,accumulation,quant formats,configurations and tails generated from Goose; no native math fallback in candidate.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-10",
+      "phase": "P3",
+      "title": "Port dense CUDA GEMM/vector and cuBLAS dispatch policy",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/mmf*",
+        "ggml/src/ggml-cuda/mmvf*",
+        "ggml/src/ggml-cuda/out-prod*"
+      ],
+      "acceptance": "Dense kernels and shape/precision/dispatch policy Goose; cuBLAS allowed only audited external primitive with all owned orchestration ported.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-11",
+      "phase": "P3",
+      "title": "Port CUDA MoE expert matrix,weighted reduction and fused path",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/mmid*",
+        "ggml/src/ggml-cuda/moe-weighted-reduction*",
+        "ggml/src/ggml-cuda/topk-moe*"
+      ],
+      "acceptance": "All expert grouping,weighted gather/scatter/fusion and ready/stream ordering owned by Goose; masks and cold experts tested.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-12",
+      "phase": "P3",
+      "title": "Port complete CUDA Flash Attention",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/fattn*",
+        "ggml/src/ggml-cuda/template-instances/**"
+      ],
+      "acceptance": "Tile/vector/MMA paths,all supported cache types,mask/alibi/heads/tails and dispatch covered; actual Apex attention witnesses.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-13",
+      "phase": "P3",
+      "title": "Port CUDA recurrent,SSM,gated-delta and sparse indexing",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/ssm*",
+        "ggml/src/ggml-cuda/gated*",
+        "ggml/src/ggml-cuda/gla*",
+        "ggml/src/ggml-cuda/wkv*",
+        "ggml/src/ggml-cuda/solve*",
+        "ggml/src/ggml-cuda/lightning*",
+        "ggml/src/ggml-cuda/dsv4*"
+      ],
+      "acceptance": "Multi-step stateful outputs match for each registered path; state ownership and concurrent stream ordering checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-14",
+      "phase": "P3",
+      "title": "Port CUDA convolution,image,pooling and remaining math",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/conv*",
+        "ggml/src/ggml-cuda/im2col*",
+        "ggml/src/ggml-cuda/col2im*",
+        "ggml/src/ggml-cuda/pool*",
+        "ggml/src/ggml-cuda/upscale*",
+        "ggml/src/ggml-cuda/fwht*"
+      ],
+      "acceptance": "Every remaining inference op has Goose device implementation and shape/type corpus; inventory has no unassigned kernel.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-15",
+      "phase": "P3",
+      "title": "Port CUDA backward,optimizer and residual operators",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/cross*",
+        "ggml/src/ggml-cuda/opt*",
+        "ggml/src/ggml-cuda/fill*",
+        "ggml/src/ggml-cuda/tri*",
+        "ggml/src/ggml-cuda/**"
+      ],
+      "acceptance": "All residual registered enum/dispatch branches implemented or same native unsupported error; no silent deletion of supported capability.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-16",
+      "phase": "P3",
+      "title": "Port CUDA host backend,devices and capability predicates",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/ggml-cuda.cu"
+      ],
+      "acceptance": "Goose owns device selection,op dispatch,events,streams,capability checks,error propagation and graph capture/replay; CUDA SDK calls primitive imports only.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-17",
+      "phase": "P3",
+      "title": "Port GPU/pinned/VMM pools and transfer/residency policy",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/ggml-cuda.cu",
+        "src/llama-expert-*.cpp"
+      ],
+      "acceptance": "All allocation/pool/pinned ring/VMM/residency/copy decisions Goose; OOM,resize,reuse,cancel,device reset and asynchronous lifetimes checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-18",
+      "phase": "P3",
+      "title": "Cover CUDA hardware configurations and multi-GPU",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/mmq-config*",
+        "ggml/src/ggml-cuda/vendors/**",
+        "ggml/src/ggml-cuda/allreduce*"
+      ],
+      "acceptance": "sm89 executed; alternate hardware configurations have compile/emulation evidence and explicit hardware-unverified ledger; vendor services are not owned-code exemptions.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P3-19",
+      "phase": "P3",
+      "title": "Run whole CUDA backend functional/sanitizer milestone",
+      "status": "TODO",
+      "sources": [
+        "tests/test-backend-ops.cpp",
+        "ggml/src/ggml-cuda/**"
+      ],
+      "acceptance": "Supported matrix passes differential checks and Compute Sanitizer memcheck/racecheck/initcheck/synccheck where applicable; Apex CPU/GPU mixed paths execute Goose.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P3-20",
+      "phase": "P3",
+      "title": "Remove replaced CUDA source logic from candidate link",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cuda/**"
+      ],
+      "acceptance": "Zero owned hand-written CUDA/C++ computation/orchestration in selected link; generated CUDA/C from Goose allowed and provenance checked.",
+      "evidence": "",
+      "depends_on": [
+        "P3-01",
+        "P3-02",
+        "P3-03",
+        "P3-04",
+        "P3-05",
+        "P3-06",
+        "P3-07",
+        "P3-08",
+        "P3-09",
+        "P3-10",
+        "P3-11",
+        "P3-12",
+        "P3-13",
+        "P3-14",
+        "P3-15",
+        "P3-16",
+        "P3-17",
+        "P3-19"
+      ],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 572,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B2"
+    },
+    {
+      "id": "P4-01",
+      "phase": "P4",
+      "title": "Port allocation reuse/free-list/coalescing policy",
+      "status": "DONE",
+      "sources": [
+        "ggml/src/ggml-alloc.c",
+        "source/allocator-reuse/**",
+        "source/allocator-coalesce/**"
+      ],
+      "acceptance": "Bounded selected metadata policy exactly matches reference and executes in real inference.",
+      "evidence": "EXP136 native service boundary retained; this does NOT mean physical allocator complete",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-02",
+      "phase": "P4",
+      "title": "Port tensor dependency/view lifetime and allocation-graph policy",
+      "status": "DONE",
+      "sources": [
+        "ggml/src/ggml-alloc.c",
+        "source/tensor-lifetime/**",
+        "source/graph-plan/**"
+      ],
+      "acceptance": "Selected dependency/view/refcount/release traversal state transitions exact and real inference witness.",
+      "evidence": "EXP136 graph/lifetime evidence; full tensor ownership/scheduler still native",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-03",
+      "phase": "P4",
+      "title": "Port GGML tensor/context/object/type core",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml.c",
+        "ggml/include/ggml.h",
+        "ggml/src/ggml.cpp"
+      ],
+      "acceptance": "All public tensor/context constructors,shape/stride/view/alias invariants,type/operation tables and errors handled by Goose; ABI preserved.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-04",
+      "phase": "P4",
+      "title": "Port graph construction,hashing,traversal and differentiation",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml.c",
+        "ggml/src/ggml-opt.cpp"
+      ],
+      "acceptance": "All graph expansion/copy/export/gradient/optimizer entrypoints mapped; cycles,shared views,empty graphs and malformed dimensions tested.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-05",
+      "phase": "P4",
+      "title": "Port full tensor allocator and physical buffer ownership",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-alloc.c"
+      ],
+      "acceptance": "Goose owns tallocr/dyn_tallocr/free blocks/chunks and object lifecycle; only malloc/mmap/device alloc primitives imported; failure/overflow/double-free guards.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-06",
+      "phase": "P4",
+      "title": "Port graph allocator reservation,reuse and realloc",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-alloc.c"
+      ],
+      "acceptance": "Goose owns gallocr reservation,multi-buffer planning,views,inplace reuse and growth; native allocation state unavailable in candidate; exact event/order corpus.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-07",
+      "phase": "P4",
+      "title": "Port backend buffer,device,event and copy abstraction",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-backend.cpp",
+        "ggml/src/ggml-backend-impl.h"
+      ],
+      "acceptance": "Every backend public/vtable lifecycle,view,multi-buffer,async copy/event/sync contract implemented; typed ownership explicit.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-08",
+      "phase": "P4",
+      "title": "Port backend registration,dynamic loading and feature discovery",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-backend-reg.cpp",
+        "ggml/src/ggml-backend-dl.cpp",
+        "ggml/src/ggml-feats.h"
+      ],
+      "acceptance": "Registry/device enumeration,plugin ABI,error behavior and capability queries Goose; dlopen/OS imports only.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-09",
+      "phase": "P4",
+      "title": "Port graph backend placement and splitting",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-backend.cpp"
+      ],
+      "acceptance": "Goose owns node/leaf assignments,split boundaries,buffer compatibility,offload and fallback policy; placement traces match source contracts.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-10",
+      "phase": "P4",
+      "title": "Port cross-device copy planning and asynchronous dependencies",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-backend.cpp"
+      ],
+      "acceptance": "Goose owns split inputs,copy slots,events,waits and lifetime edges; multi-stream/multi-sequence cancellation/failure fixtures pass.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-11",
+      "phase": "P4",
+      "title": "Port unified CPU/GPU scheduler execution and graph reuse",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-backend.cpp"
+      ],
+      "acceptance": "Reserve/compute/recompute/synchronize/reset/eval callback/reallocation paths execute Goose; graph reuse and cold/warm/abort traces checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-12",
+      "phase": "P4",
+      "title": "Port meta backend,backend optimization and threading services",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-backend-meta.cpp",
+        "ggml/src/ggml-opt.cpp",
+        "ggml/src/ggml-threading.cpp"
+      ],
+      "acceptance": "All meta/planner/optimizer helpers Goose; OS primitive boundary minimal; callback reentrancy and thread lifetimes checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-13",
+      "phase": "P4",
+      "title": "Unify allocation and scheduler interfaces across both lineages",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-alloc.c",
+        "ggml/src/ggml-backend.cpp",
+        "source/*/bridge.h"
+      ],
+      "acceptance": "Single Goose ownership model serves Apex; no duplicated hidden native policy; complete borrowed/owned lifetime table.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-14",
+      "phase": "P4",
+      "title": "Check full graph/allocator lifecycle under failures",
+      "status": "TODO",
+      "sources": [
+        "tests/test-backend-ops.cpp",
+        "tests/test-alloc.cpp",
+        "ggml/src/ggml-alloc.c"
+      ],
+      "acceptance": "Allocation failure injection,invalid-size/view/copy,abort/reset/reuse and concurrent independent contexts pass scoped sanitizers; no new leaks.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-15",
+      "phase": "P4",
+      "title": "Run unified scheduler actual model milestone",
+      "status": "TODO",
+      "sources": [
+        "src/llama-context.cpp",
+        "ggml/src/ggml-backend.cpp"
+      ],
+      "acceptance": "Apex and Qwen real prefill/decode,prefix reuse,branch/restore/cancel match reference with Goose scheduler and allocator witnesses.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P4-16",
+      "phase": "P4",
+      "title": "Remove owned GGML core/native scheduler implementation",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml*.c",
+        "ggml/src/ggml*.cpp"
+      ],
+      "acceptance": "Candidate GGML core link contains only Goose-generated logic plus declared primitives; all API symbols and original rollback retained externally.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 78,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-01",
+      "phase": "P5",
+      "title": "Port KV cell allocation,sequence ownership and position maps",
+      "status": "TODO",
+      "sources": [
+        "src/llama-kv-cells.h",
+        "src/llama-kv-cache.cpp"
+      ],
+      "acceptance": "Every cell find/copy/remove/keep/shift/div/sequence operation checked for interleaving,multiple sequences and full-capacity failures.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-02",
+      "phase": "P5",
+      "title": "Port KV tensors,type conversion and physical cache layout",
+      "status": "TODO",
+      "sources": [
+        "src/llama-kv-cache.cpp"
+      ],
+      "acceptance": "F32/F16/BF16/Q8/Q4 supported K/V layouts and CPU/GPU allocation/data movement match; no reduced context/precision for pass.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-03",
+      "phase": "P5",
+      "title": "Port sliding-window/interleaved/special attention caches",
+      "status": "TODO",
+      "sources": [
+        "src/llama-kv-cache-*.cpp"
+      ],
+      "acceptance": "All ISWA/DSA/MSA/DSV4 combinations and attention masks/position updates mapped; native-supported modes not silently dropped.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P5-04",
+      "phase": "P5",
+      "title": "Port recurrent-state memory subsystem",
+      "status": "TODO",
+      "sources": [
+        "src/llama-memory-recurrent.cpp"
+      ],
+      "acceptance": "State create/update/copy/remove/rollback and stream ordering match multi-step recurrent models; actual Apex recurrent witnesses.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-05",
+      "phase": "P5",
+      "title": "Port hybrid and indexed hybrid memory",
+      "status": "TODO",
+      "sources": [
+        "src/llama-memory-hybrid*.cpp",
+        "src/llama-memory.cpp"
+      ],
+      "acceptance": "Hybrid full/sliding/recurrent memory composition and sequence synchronization match reset/branch/interleave fixtures.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-06",
+      "phase": "P5",
+      "title": "Port lazy KV/VMM reservation and context growth policy",
+      "status": "TODO",
+      "sources": [
+        "src/llama-kv-cache*.cpp",
+        "ggml/src/ggml-cuda/ggml-cuda.cu",
+        "patches/kv-lazy-vmm.patch"
+      ],
+      "acceptance": "Preserve lazy mapping/reservation,bounded committed pages,OOM/reallocation and original large-context correctness; CUDA driver primitive import only.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-07",
+      "phase": "P5",
+      "title": "Port checkpoint,prefix reuse,branch and restore",
+      "status": "TODO",
+      "sources": [
+        "src/llama-context.cpp",
+        "src/llama-memory*.cpp",
+        "tools/server/server-context.cpp"
+      ],
+      "acceptance": "Exact saved state and final outputs on reuse/rewind/early branch/near-capacity; no comparing KV alone as answer correctness.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-08",
+      "phase": "P5",
+      "title": "Port state/session serialization and compatibility",
+      "status": "TODO",
+      "sources": [
+        "src/llama-context.cpp",
+        "src/llama-io.cpp"
+      ],
+      "acceptance": "Native<->Goose session/state read/write where format permits; version/endian/truncation/error corpus and deterministic continuation.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-09",
+      "phase": "P5",
+      "title": "Port KV defrag,maintenance and multi-sequence lifecycle",
+      "status": "TODO",
+      "sources": [
+        "src/llama-kv-cache*.cpp",
+        "src/llama-context.cpp"
+      ],
+      "acceptance": "All supported defrag/shift/sequence cleanup/context reuse paths Goose; no dangling caches after cancellation/model unload.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P5-10",
+      "phase": "P5",
+      "title": "Close memory/KV subsystem on actual models",
+      "status": "TODO",
+      "sources": [
+        "src/llama-memory*.cpp",
+        "src/llama-kv-cache*.cpp"
+      ],
+      "acceptance": "Apex memory and session milestone including configured context/multi-sequence lifecycle; zero owned native KV/policy symbols in selected link.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 46,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-01",
+      "phase": "P6",
+      "title": "Port architecture,hparams,cparams and tensor-name registries",
+      "status": "TODO",
+      "sources": [
+        "src/llama-arch.cpp",
+        "src/llama-hparams.cpp",
+        "src/llama-cparams.cpp"
+      ],
+      "acceptance": "Every audited architecture/tensor/config entry represented; unknown/invalid metadata errors preserved; no Apex-only hardcoding.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-02",
+      "phase": "P6",
+      "title": "Port model object and tensor binding lifecycle",
+      "status": "TODO",
+      "sources": [
+        "src/llama-model.cpp",
+        "src/llama-model.h"
+      ],
+      "acceptance": "All model tensor ownership,backend attachment,metadata queries and unload/error cleanup implemented with ABI parity.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-03",
+      "phase": "P6",
+      "title": "Port complete shared graph-builder DSL",
+      "status": "TODO",
+      "sources": [
+        "src/llama-graph.cpp",
+        "src/llama-graph.h"
+      ],
+      "acceptance": "All shared dense,MoE,attention,rope,norm,recurrent and output graph helpers Goose; node/shape/config traces differential.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-04",
+      "phase": "P6",
+      "title": "Port complete Apex architecture graph and shared MoE graph interface",
+      "status": "TODO",
+      "sources": [
+        "src/models/qwen35moe.cpp",
+        "src/models/qwen35.cpp",
+        "src/llama-graph.cpp"
+      ],
+      "acceptance": "Apex graph construction and real prefill/decode/state lifecycle execute Goose using general shared interfaces; no model-specific native graph callback.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-05",
+      "phase": "P6",
+      "title": "Port every remaining text model architecture builder",
+      "status": "TODO",
+      "sources": [
+        "src/models/*.cpp"
+      ],
+      "acceptance": "Every remaining audited text builder assigned and ported; tiny per-architecture graph construction fixture and native-supported API behavior.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P6-06",
+      "phase": "P6",
+      "title": "Port recurrent,multimodal,audio and special model builders",
+      "status": "TODO",
+      "sources": [
+        "src/models/*.cpp",
+        "tools/mtmd/**",
+        "tools/tts/**"
+      ],
+      "acceptance": "Every remaining special builder/encoder/projector mapped; image/audio/recurrent tiny fixtures; unavailable model assets explicit unverified, not DONE.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P6-07",
+      "phase": "P6",
+      "title": "Port batching,ubatching,sequence and output mapping",
+      "status": "TODO",
+      "sources": [
+        "src/llama-batch.cpp",
+        "src/llama-context.cpp"
+      ],
+      "acceptance": "Batch splitting,positions,logit/embedding selection,multi-sequence and output permutations match; invalid batch rejection and aborts.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-08",
+      "phase": "P6",
+      "title": "Port context decode/encode and graph execution orchestration",
+      "status": "TODO",
+      "sources": [
+        "src/llama-context.cpp",
+        "src/llama.cpp"
+      ],
+      "acceptance": "Goose owns context construction,warmup,evaluation,graph reuse,output/embedding/logit APIs,performance counters and error propagation.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-09",
+      "phase": "P6",
+      "title": "Port adapters,LoRA,control vectors and model saving",
+      "status": "TODO",
+      "sources": [
+        "src/llama-adapter.cpp",
+        "src/llama-model-saver.cpp"
+      ],
+      "acceptance": "All adapter apply/remove/scale and save paths Goose; tensor/value/format roundtrips and error cleanup checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-10",
+      "phase": "P6",
+      "title": "Port sampling,grammar and constrained generation",
+      "status": "TODO",
+      "sources": [
+        "src/llama-sampler.cpp",
+        "src/llama-grammar.cpp",
+        "common/sampling.cpp"
+      ],
+      "acceptance": "Every sampler/RNG/chain/grammar mode differential with fixed seeds; token filtering and reproducible text/API semantics preserved.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P6-11",
+      "phase": "P6",
+      "title": "Port MTP,speculative decoding and draft state orchestration",
+      "status": "TODO",
+      "sources": [
+        "common/speculative.cpp",
+        "common/ngram*.cpp",
+        "src/llama-context.cpp",
+        "patches/mtp-sidecar.patch"
+      ],
+      "acceptance": "Shared/separate draft,MTP borrowing,accept/reject/rewind and no-spec mode checked; actual Apex MTP milestone after standard path.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "QWEN_COMPATIBILITY",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "P6-12",
+      "phase": "P6",
+      "title": "Close public inference API and complete Apex model lifecycle",
+      "status": "TODO",
+      "sources": [
+        "include/llama.h",
+        "include/llama-cpp.h",
+        "src/**"
+      ],
+      "acceptance": "Every shared public C API implemented in Goose; full Apex load/graph/decode/state/unload works; remaining architecture builders explicitly assigned to compatibility tasks.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 416,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B3"
+    },
+    {
+      "id": "P7-01",
+      "phase": "P7",
+      "title": "Port complete GGUF parser and metadata accessors",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/gguf.cpp",
+        "ggml/include/gguf.h"
+      ],
+      "acceptance": "Every GGUF version/value type,alignment/endian/tensor descriptor and accessor roundtrip; truncated,overflow,malformed and multi-shard corpus rejected safely.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-02",
+      "phase": "P7",
+      "title": "Port GGUF writing,splitting and tensor serialization",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/gguf.cpp",
+        "tools/gguf-split/**"
+      ],
+      "acceptance": "Native<->Goose byte/semantic compatible serialization,shard naming/offsets/split-merge and nonseekable/error cases checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-03",
+      "phase": "P7",
+      "title": "Port full model loader,mmap and file I/O ownership",
+      "status": "TODO",
+      "sources": [
+        "src/llama-model-loader.cpp",
+        "src/llama-mmap.cpp",
+        "src/llama-io.cpp"
+      ],
+      "acceptance": "All load modes,multi-shard,lazy/mmap/mlock,overrides,tensor validation,progress/cancel and error cleanup implemented; Apex load witnesses.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-04",
+      "phase": "P7",
+      "title": "Port model quantization,importance and conversion policy",
+      "status": "TODO",
+      "sources": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "acceptance": "Every supported quantizer/type policy and calibration path Goose; deterministic small tensor/model corpora; no adaptive quantization research added now.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-05",
+      "phase": "P7",
+      "title": "Port Unicode tables,normalization and character utilities",
+      "status": "TODO",
+      "sources": [
+        "src/unicode*.cpp",
+        "common/unicode.cpp"
+      ],
+      "acceptance": "All audited tables and Unicode normalization/category/byte conversion behavior differential across valid/invalid UTF8; no locale-dependent drift.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-06",
+      "phase": "P7",
+      "title": "Port vocabulary loader and Apex tokenizer through a general tokenizer interface",
+      "status": "TODO",
+      "sources": [
+        "src/llama-vocab.cpp"
+      ],
+      "acceptance": "Apex tokenizer/pretokenizer/special-token policy exact on complete native differential corpus; interface supports future tokenizer implementations without a separate runtime.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-07",
+      "phase": "P7",
+      "title": "Port detokenization,token metadata and incremental text decoding",
+      "status": "TODO",
+      "sources": [
+        "src/llama-vocab.cpp",
+        "tools/tokenize/**"
+      ],
+      "acceptance": "All token-to-piece/special/byte fallback/stream boundary behavior exact; arbitrary byte and Unicode roundtrips; token IDs unchanged.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-08",
+      "phase": "P7",
+      "title": "Port chat templates,Jinja and reasoning parsing",
+      "status": "TODO",
+      "sources": [
+        "src/llama-chat.cpp",
+        "common/chat*.cpp",
+        "common/jinja/**",
+        "common/parsers/**"
+      ],
+      "acceptance": "All shared Jinja/template/filter/parser/tool/reasoning logic Goose; Apex golden prompt bytes and structured output exact; no minja arithmetic/parsing wrapper left.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-09",
+      "phase": "P7",
+      "title": "Port JSON,schema,PEG and grammar conversion infrastructure",
+      "status": "TODO",
+      "sources": [
+        "common/json*.cpp",
+        "common/peg-parser.cpp",
+        "common/json-schema-to-grammar.cpp",
+        "common/trie.cpp"
+      ],
+      "acceptance": "JSON/schema/PEG/grammar parsing/rendering and validation owned by Goose; malformed/deep/large input tests and native golden compatibility.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-10",
+      "phase": "P7",
+      "title": "Port common configuration,args,presets,fit and startup",
+      "status": "TODO",
+      "sources": [
+        "common/arg.cpp",
+        "common/preset.cpp",
+        "common/common.cpp",
+        "common/fit.cpp"
+      ],
+      "acceptance": "All maintained flags/env/defaults/config precedence and memory-fit policy ported; --help/invalid args and model profile compatibility checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-11",
+      "phase": "P7",
+      "title": "Port download,HF cache,HTTP,logging and process helpers",
+      "status": "TODO",
+      "sources": [
+        "common/download.cpp",
+        "common/hf-cache.cpp",
+        "common/http.h",
+        "common/log.cpp",
+        "common/console.cpp",
+        "common/subproc.cpp",
+        "common/debug.cpp"
+      ],
+      "acceptance": "Owned network/cache/resume/logging/console/subprocess decisions Goose; OS/TLS/libcurl primitives explicitly imported; no downloads or destructive cache work during migration tests.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P7-12",
+      "phase": "P7",
+      "title": "Close GGUF,loader,tokenizer and common native dependencies",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/gguf.cpp",
+        "src/llama-vocab.cpp",
+        "common/**"
+      ],
+      "acceptance": "All shared GGUF/loader/common symbols and Apex tokenizer implementation ported; native format/token/API compatibility corpus passes; other tokenizers tracked in compatibility tasks.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 204,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-01",
+      "phase": "P8",
+      "title": "Port server executable,startup and configuration lifecycle",
+      "status": "TODO",
+      "sources": [
+        "tools/server/main.cpp",
+        "tools/server/server.cpp",
+        "tools/server/server-common.cpp"
+      ],
+      "acceptance": "Startup/shutdown/config/model selection/errors/signals handled by Goose; health and lifecycle endpoints compatible.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-02",
+      "phase": "P8",
+      "title": "Port HTTP transport,routing,CORS and request parsing",
+      "status": "TODO",
+      "sources": [
+        "tools/server/server-http.cpp",
+        "tools/server/server-cors-proxy.h",
+        "common/http.h"
+      ],
+      "acceptance": "Owned HTTP/router/limits/CORS/auth middleware Goose; malformed/oversize/timeout/cancel/connection-close requests checked; external socket/TLS primitives only.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-03",
+      "phase": "P8",
+      "title": "Port server queues,tasks,slots and scheduling",
+      "status": "TODO",
+      "sources": [
+        "tools/server/server-queue.cpp",
+        "tools/server/server-task.cpp",
+        "tools/server/server-context.cpp"
+      ],
+      "acceptance": "Task lifecycle,slot allocation,batch/coalescing,cancel,timeout and backpressure owned by Goose; concurrent request outputs and no lost tasks.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-04",
+      "phase": "P8",
+      "title": "Port completion,chat,response APIs and SSE streaming",
+      "status": "TODO",
+      "sources": [
+        "tools/server/server-chat.cpp",
+        "tools/server/server-stream.cpp",
+        "tools/server/server-context.cpp"
+      ],
+      "acceptance": "Native API compatibility suite for stream/nonstream completion/chat/responses,token usage,finish reasons,errors and cancellation.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-05",
+      "phase": "P8",
+      "title": "Port embedding,reranking,tokenization and utility endpoints",
+      "status": "TODO",
+      "sources": [
+        "tools/server/server-context.cpp",
+        "tools/server/server-schema.cpp"
+      ],
+      "acceptance": "Every registered endpoint has schema/status/body differential test; embeddings/rerank numerical contract and tokenizer bytes checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-06",
+      "phase": "P8",
+      "title": "Port model management,connectors and hot reload",
+      "status": "TODO",
+      "sources": [
+        "tools/server/server-models.cpp",
+        "tools/server/server-connect.cpp"
+      ],
+      "acceptance": "Load/unload/swap/list/proxy lifecycle Goose; pending/active requests and resource cleanup checked without changing working runtime.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-07",
+      "phase": "P8",
+      "title": "Port tools,MCP,structured output and decision helpers",
+      "status": "TODO",
+      "sources": [
+        "tools/server/server-tools.cpp",
+        "tools/server/server-mcp.cpp",
+        "tools/server/server-decision.cpp",
+        "tools/server/server-schema.cpp"
+      ],
+      "acceptance": "All maintained tool/MCP/schema/decision paths Goose with fixtures; no external messages or real tool side effects during tests.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-08",
+      "phase": "P8",
+      "title": "Port metrics,watchdog,diagnostics and operational controls",
+      "status": "TODO",
+      "sources": [
+        "tools/server/server-swapwatchdog.cpp",
+        "tools/server/server-common.cpp"
+      ],
+      "acceptance": "Metrics/counters/watchdog/status and administrative controls match; simulated pressure/failure corpus, no stopping other workloads.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-09",
+      "phase": "P8",
+      "title": "Port web/UI serving and application integration",
+      "status": "TODO",
+      "sources": [
+        "tools/ui/**",
+        "tools/server/**"
+      ],
+      "acceptance": "Goose serves maintained UI assets and all owned native UI/API plumbing; existing HTML/CSS/browser assets explicitly inventoried, no hand-written native server logic left.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-10",
+      "phase": "P8",
+      "title": "Run complete server/API functional acceptance corpus",
+      "status": "TODO",
+      "sources": [
+        "tools/server/tests/**",
+        "tools/server/bench/**"
+      ],
+      "acceptance": "All audited route/method/schema combinations have tests; Apex real end-to-end request,stream,cancel,reuse; Qwen major milestone.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-11",
+      "phase": "P8",
+      "title": "Exercise concurrent clients,error handling and long-lived sessions",
+      "status": "TODO",
+      "sources": [
+        "tools/server/tests/**",
+        "tools/server/server-context.cpp"
+      ],
+      "acceptance": "Concurrent independent/branched sessions,disconnects,invalid inputs and repeated model lifecycles complete correctly; leaks/races scoped checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P8-12",
+      "phase": "P8",
+      "title": "Remove native server implementation from candidate executable",
+      "status": "TODO",
+      "sources": [
+        "tools/server/**",
+        "common/**"
+      ],
+      "acceptance": "Goose entrypoint owns HTTP/API lifecycle; link/source/import audit shows no owned original C++ server/parser/task logic remains.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 144,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B4"
+    },
+    {
+      "id": "P9-01",
+      "phase": "P9",
+      "title": "Port standalone config,recipe and architecture registry",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/core/src/config.cpp",
+        "carrier/runtime/core/src/moe/arch_registry.cpp"
+      ],
+      "acceptance": "All config/recipe defaults,validation and architecture gates match existing tests; CLI profiles compatible.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P9-02",
+      "phase": "P9",
+      "title": "Port platform/file I/O and GGUF offset indexing",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/core/src/io/**",
+        "carrier/runtime/core/src/moe/gguf_offsets.cpp"
+      ],
+      "acceptance": "Bounded reads,mmap/pinned allocation,shard offsets,endian/error/overflow cases Goose; only primitive platform imports retained.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P9-03",
+      "phase": "P9",
+      "title": "Port dense weights and expert streaming/LRU sources",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/core/src/moe/dense_weights.cpp",
+        "carrier/runtime/core/src/moe/expert_stream_source.cpp"
+      ],
+      "acceptance": "Goose owns bounded RAM LRU,eviction,prefetch,dense residency and source lifetimes; deterministic trace/data checks.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P9-04",
+      "phase": "P9",
+      "title": "Port row streaming,router hooks and I/O-compute overlap",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/core/src/moe/row_stream.cpp",
+        "carrier/runtime/core/src/moe/router_hook.cpp",
+        "carrier/runtime/core/src/moe/stall_union.h"
+      ],
+      "acceptance": "Exact route/readiness/row-slice outputs,overlap ordering,cancel/failure and bounded RAM/VRAM behavior; native policy callbacks removed.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P9-05",
+      "phase": "P9",
+      "title": "Port standalone sessions,runtime and ngram draft",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/core/src/engine/runtime.cpp",
+        "carrier/runtime/core/src/engine/session.cpp",
+        "carrier/runtime/core/src/engine/ngram_draft.cpp"
+      ],
+      "acceptance": "Complete decode/prefill/session/draft lifecycle Goose; repeated-state and deterministic workload fixtures plus real model request.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P9-06",
+      "phase": "P9",
+      "title": "Port chat/thinking controls and standalone CLI",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/core/src/engine/chat_parse.cpp",
+        "carrier/runtime/core/src/engine/thinking_control.cpp",
+        "carrier/runtime/cli/main.cpp"
+      ],
+      "acceptance": "CLI,chat rendering,thinking markers,budget and interrupt behavior match existing corpus and stdin/stdout contract.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P9-07",
+      "phase": "P9",
+      "title": "Port metrics/traces and deterministic workload infrastructure",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/core/src/metrics/**",
+        "carrier/runtime/core/src/moe/deterministic_workload.cpp"
+      ],
+      "acceptance": "CSV/schema,route/decode traces,stall union and deterministic workloads match golden records; no secret/private data published.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P9-08",
+      "phase": "P9",
+      "title": "Close standalone engine native implementation",
+      "status": "TODO",
+      "sources": [
+        "carrier/runtime/**"
+      ],
+      "acceptance": "All standalone public API,CLI and enabled optional paths Goose; existing eight test modules ported/retained as independent oracle; source/link closure checked.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 54,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-01",
+      "phase": "P10",
+      "title": "Consolidate experimental modules into canonical Goose source tree",
+      "status": "TODO",
+      "sources": [
+        "experiments/**/source/**",
+        "src/**",
+        "ggml/src/**"
+      ],
+      "acceptance": "One canonical selected module per subsystem under appropriate src paths; frozen experiment history preserved; no duplicate runtime implementations.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-02",
+      "phase": "P10",
+      "title": "Port maintained command-line tools and utilities",
+      "status": "TODO",
+      "sources": [
+        "tools/cli/**",
+        "tools/completion/**",
+        "tools/llama-bench/**",
+        "tools/perplexity/**",
+        "tools/export-lora/**",
+        "tools/cvector-generator/**",
+        "tools/connect/**",
+        "tools/tuning/**",
+        "tools/fit-params/**",
+        "tools/batched-bench/**"
+      ],
+      "acceptance": "Every audited tool native entrypoint has Goose equivalent,CLI compatibility and tiny fixture; no tool directory silently excluded.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-03",
+      "phase": "P10",
+      "title": "Port multimodal,audio and RPC tool infrastructure",
+      "status": "TODO",
+      "sources": [
+        "tools/mtmd/**",
+        "tools/tts/**",
+        "tools/rpc/**",
+        "ggml/src/ggml-rpc/**"
+      ],
+      "acceptance": "Owned projector/audio/codec orchestration and RPC serialization/server/client Goose; protocol/tiny media fixtures; hardware/asset gaps explicit.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P10-04",
+      "phase": "P10",
+      "title": "Port maintained non-CPU/CUDA backend implementations",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-*"
+      ],
+      "acceptance": "Every additional audited BLAS/CANN/ET/Hexagon/HIP/Metal/MUSA/OpenCL/OpenVINO/RPC/SYCL/VirtGPU/Vulkan/WebGPU/ZDNN/ZenDNN source assigned and ported or remains explicitly unfinished; not labeled inevitable dependency.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P10-05",
+      "phase": "P10",
+      "title": "Port owned executable infrastructure and generators",
+      "status": "TODO",
+      "sources": [
+        "scripts/**",
+        "cmake/**",
+        "CMakeLists.txt",
+        "common/build-info.cpp.in"
+      ],
+      "acceptance": "Owned runtime/generator/protocol logic moved to Goose tools; build declarations/shell launch wrappers can remain explicitly declarative with no hidden original computation.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-06",
+      "phase": "P10",
+      "title": "Integrate deterministic Goose build,generated C/CUDA and packaging",
+      "status": "TODO",
+      "sources": [
+        "CMakeLists.txt",
+        "ggml/CMakeLists.txt",
+        "src/CMakeLists.txt",
+        "tools/server/CMakeLists.txt",
+        "carrier/runtime/CMakeLists.txt"
+      ],
+      "acceptance": "Clean isolated build uses pinned self-hosted Goose for all owned logic; generated outputs reproducible; CPU/CUDA compile/link manifest machine-audited.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-07",
+      "phase": "P10",
+      "title": "Replace or justify vendored executable dependencies",
+      "status": "TODO",
+      "sources": [
+        "vendor/**",
+        "ggml/src/ggml-cuda/vendors/**",
+        "common/jinja/**"
+      ],
+      "acceptance": "Each JSON/Jinja/HTTP/regex/image/audio helper classified; replace owned/replaceable logic or explicitly justify true external primitive. Vendored C++ is not automatically unavoidable.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-08",
+      "phase": "P10",
+      "title": "Preserve public headers,FFI and binary interoperability",
+      "status": "TODO",
+      "sources": [
+        "include/**",
+        "ggml/include/**",
+        "carrier/runtime/core/include/**"
+      ],
+      "acceptance": "C ABI symbols/layout/statuses compatible; header-only declaration wrappers allowed, executable C++ compatibility logic ported or remains unfinished.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-09",
+      "phase": "P10",
+      "title": "Port test runners,fixtures and diagnostics as needed for native-free builds",
+      "status": "TODO",
+      "sources": [
+        "tests/**",
+        "tools/server/tests/**",
+        "carrier/runtime/tests/**",
+        "benchmarks/**"
+      ],
+      "acceptance": "Candidate can be functionally tested without linking owned original implementation; original C++ tests/oracles allowed only outside production artifact.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-10",
+      "phase": "P10",
+      "title": "Preserve cross-platform and alternate CPU/device support",
+      "status": "TODO",
+      "sources": [
+        "cmake/**",
+        "ggml/src/ggml-cpu/arch/**",
+        "ggml/src/ggml-cuda/vendors/**"
+      ],
+      "acceptance": "Every original maintained platform/build option represented in capability ledger; compile-only/emulated/unavailable hardware scope explicit; no unsupported path claimed verified.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "OTHER_COMPATIBILITY",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "P10-11",
+      "phase": "P10",
+      "title": "Preserve licensing,attribution and source reproducibility",
+      "status": "TODO",
+      "sources": [
+        "LICENSE",
+        "UPSTREAMS.md",
+        "vendor/**",
+        "runtime/LICENSE.BigMoeOnEdge"
+      ],
+      "acceptance": "All derived source attribution/licenses retained; producer/source/generated hashes and reproducible external dependency manifest included.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P10-12",
+      "phase": "P10",
+      "title": "Verify complete source/entrypoint inventory has no residual native logic",
+      "status": "TODO",
+      "sources": [
+        "docs/goose-migration/source-audit.json",
+        "all audited roots"
+      ],
+      "acceptance": "Every Apex/shared implementation path and public entrypoint maps to completed Goose task or audited primitive; remaining architecture/platform sources are explicit compatibility tasks, never hidden exemptions.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 3541,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-01",
+      "phase": "P11",
+      "title": "Assemble one fully migrated Apex-capable common runtime",
+      "status": "TODO",
+      "sources": [
+        "all selected Goose modules"
+      ],
+      "acceptance": "One isolated artifact combines CPU,CUDA,GGML,memory,KV,model,GGUF,tokenizer,server and owned infrastructure; every Apex-path owned component Goose, not a collection of separate partial variants.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-02",
+      "phase": "P11",
+      "title": "Run complete Apex end-to-end functional milestone",
+      "status": "TODO",
+      "sources": [
+        "model/profile manifests",
+        "full candidate"
+      ],
+      "acceptance": "Fixed Apex model/profile/input; text,tokens,probabilities,stream,state,reuse/cancel checked and every migrated subsystem witnessed; full-system prefill/decode,RAM/VRAM recorded once.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-03",
+      "phase": "P11",
+      "title": "Complete remaining supported feature/format/API corpus",
+      "status": "TODO",
+      "sources": [
+        "operation/type/architecture/endpoint inventories"
+      ],
+      "acceptance": "All shared and Apex-supported operations/types/formats/API/platform fixtures pass; Qwen/other architecture-specific cases are explicitly deferred to compatibility workstreams.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-04",
+      "phase": "P11",
+      "title": "Remove every replaced owned C/C++/CUDA implementation",
+      "status": "TODO",
+      "sources": [
+        "all candidate source/build/link manifests"
+      ],
+      "acceptance": "Zero owned hand-written native executable logic in candidate; no renamed original symbols/callbacks/embedded C arithmetic; old experiment/oracle code retained outside selected link.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-05",
+      "phase": "P11",
+      "title": "Validate clean build,rollback and failure recovery",
+      "status": "TODO",
+      "sources": [
+        "build/package/reproduction manifests"
+      ],
+      "acceptance": "Rebuild full artifact from checked-in Goose and pinned producer; test rollback to frozen runtime and bad-input/OOM/cancel/shutdown recovery without touching production.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-06",
+      "phase": "P11",
+      "title": "Publish unavoidable dependency and remaining-limit report",
+      "status": "TODO",
+      "sources": [
+        "dependency/import/link audit"
+      ],
+      "acceptance": "List exact OS,C runtime,CUDA driver/toolchain/vendor primitive dependencies with reasons/ABI/licenses; replaceable owned code not renamed external; unresolved native dependency blocks full completion.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-07",
+      "phase": "P11",
+      "title": "Verify full Apex functional completion and remaining compatibility count",
+      "status": "TODO",
+      "sources": [
+        "GOOSE_MIGRATION_PLAN.md",
+        "docs/goose-migration/tasks.json"
+      ],
+      "acceptance": "All APEX_COMMON tasks DONE with evidence and zero native executable logic on Apex paths; compatibility tasks counted separately as remaining universal GOAL work.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "P11-08",
+      "phase": "P11",
+      "title": "Hand off full Apex runtime and begin shared-runtime compatibility extension",
+      "status": "TODO",
+      "sources": [
+        "full functional report",
+        "COMPILER_FEEDBACK.md local ignored"
+      ],
+      "acceptance": "Record full Apex functionality,dependency/import report,rollback and cumulative speed/memory history; continue Qwen/other architecture compatibility in same runtime; no production promotion.",
+      "evidence": "",
+      "depends_on": [],
+      "workstream": "APEX_COMMON",
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B5"
+    },
+    {
+      "id": "C1-01",
+      "phase": "C1",
+      "workstream": "QWEN_COMPATIBILITY",
+      "title": "Record Qwen-specific source differences without active development",
+      "status": "DONE",
+      "sources": [
+        "qwen/src/**",
+        "qwen/ggml/src/**"
+      ],
+      "acceptance": "Hash and classify all Apex/Qwen source differences; identify Qwen4Exp,IQ2 precision/cold-bank/pinned/MTP and cache differences; no Qwen build/test now.",
+      "evidence": "source-audit.json cross-lineage differences and architecture ledger; historical EXP139..141 evidence only",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "C1-02",
+      "phase": "C1",
+      "workstream": "QWEN_COMPATIBILITY",
+      "title": "Extend general model graph/metadata support to Qwen4Exp",
+      "status": "TODO",
+      "sources": [
+        "src/models/qwen4exp.cpp",
+        "src/llama-arch.cpp",
+        "src/llama-graph.cpp"
+      ],
+      "acceptance": "Use existing shared Goose graph/runtime; architecture adapter only where source semantics differ; no cloned backend/runtime.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "C1-03",
+      "phase": "C1",
+      "workstream": "QWEN_COMPATIBILITY",
+      "title": "Integrate Qwen quantized precision,cold-bank and expert hook differences",
+      "status": "TODO",
+      "sources": [
+        "ggml/src/ggml-cpu/arch/x86/quants.c",
+        "ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c",
+        "src/llama-expert-*.cpp"
+      ],
+      "acceptance": "Reuse common quant/math/controller modules; preserve Qwen precision and explicit fused verification windows; no fork without demonstrated differing contract.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "C1-04",
+      "phase": "C1",
+      "workstream": "QWEN_COMPATIBILITY",
+      "title": "Extend shared loader,tokenizer and memory interfaces for Qwen",
+      "status": "TODO",
+      "sources": [
+        "src/llama-model-loader.cpp",
+        "src/llama-vocab.cpp",
+        "src/llama-memory*.cpp",
+        "src/llama-kv-cache*.cpp"
+      ],
+      "acceptance": "Only required architecture/tokenizer/state adapters; GGUF/parser/allocator/scheduler remain shared; sharded IQ2 model load and state fixtures.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "C1-05",
+      "phase": "C1",
+      "workstream": "QWEN_COMPATIBILITY",
+      "title": "Qualify complete Qwen inference in the common artifact",
+      "status": "TODO",
+      "sources": [
+        "full common Goose runtime",
+        "Qwen model/profile manifests"
+      ],
+      "acceptance": "After full Apex port only: real Qwen text/token/probability and state/API compatibility plus full-system performance/memory; no microbench campaign.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "C1-06",
+      "phase": "C1",
+      "workstream": "QWEN_COMPATIBILITY",
+      "title": "Protect Apex while extending Qwen support",
+      "status": "TODO",
+      "sources": [
+        "fixed Apex profile",
+        "compatibility change history"
+      ],
+      "acceptance": "Each major compatibility change passes same Apex correctness and one full-system measurement; prior baseline preserved; regression recorded and no unverified production promotion.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B6"
+    },
+    {
+      "id": "C2-01",
+      "phase": "C2",
+      "workstream": "OTHER_COMPATIBILITY",
+      "title": "Port all remaining tokenizer/vocabulary families",
+      "status": "TODO",
+      "sources": [
+        "src/llama-vocab.cpp",
+        "src/unicode*.cpp"
+      ],
+      "acceptance": "Every audited tokenizer family has Goose implementation and native golden corpus; shared interface from Apex retained.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "C2-02",
+      "phase": "C2",
+      "workstream": "OTHER_COMPATIBILITY",
+      "title": "Port all remaining dense/MoE/recurrent architecture adapters",
+      "status": "TODO",
+      "sources": [
+        "src/models/*.cpp"
+      ],
+      "acceptance": "Each audited architecture not handled by Apex/Qwen assigned once to shared graph-based adapter and a tiny shape/operation fixture; no separate runtime.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "C2-03",
+      "phase": "C2",
+      "workstream": "OTHER_COMPATIBILITY",
+      "title": "Close optional model/tool/platform compatibility matrix",
+      "status": "TODO",
+      "sources": [
+        "all optional backend/model/tool source inventory"
+      ],
+      "acceptance": "No maintained feature silently dropped; unavailable hardware/assets have explicit evidence gaps and prevent claims beyond tested scope.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "C2-04",
+      "phase": "C2",
+      "workstream": "OTHER_COMPATIBILITY",
+      "title": "Protect common runtime/Apex across remaining architecture extensions",
+      "status": "TODO",
+      "sources": [
+        "common runtime",
+        "fixed Apex profile"
+      ],
+      "acceptance": "One common implementation and same Apex correctness/performance history throughout; architecture branches only with recorded semantic reason.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B7"
+    },
+    {
+      "id": "F1-01",
+      "phase": "F1",
+      "workstream": "FINAL_UNIVERSAL",
+      "title": "Close all owned implementation/import/source paths",
+      "status": "TODO",
+      "sources": [
+        "complete source-audit.json",
+        "candidate build/link/import manifests"
+      ],
+      "acceptance": "All workstreams implemented; no owned handwritten C/C++/CUDA execution hidden as bridge/vendor dependency; historical controls excluded from candidate link.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B8"
+    },
+    {
+      "id": "F1-02",
+      "phase": "F1",
+      "workstream": "FINAL_UNIVERSAL",
+      "title": "Qualify final universal API,format,model and runtime compatibility",
+      "status": "TODO",
+      "sources": [
+        "all shared capability matrices"
+      ],
+      "acceptance": "All required functional tasks have evidence; real Apex/Qwen and representative other family fixtures; one common artifact and reproducible rollback.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B8"
+    },
+    {
+      "id": "F1-03",
+      "phase": "F1",
+      "workstream": "FINAL_UNIVERSAL",
+      "title": "Publish final unavoidable external dependency report",
+      "status": "TODO",
+      "sources": [
+        "OS/C-runtime/CUDA/vendor primitive ABI manifest"
+      ],
+      "acceptance": "Every remaining dependency justified with source/symbol/version/license; replaceable owned parser,kernel,scheduler or server is not called unavoidable.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B8"
+    },
+    {
+      "id": "F1-04",
+      "phase": "F1",
+      "workstream": "FINAL_UNIVERSAL",
+      "title": "Verify all functional task counters and deliver final source/runtime",
+      "status": "TODO",
+      "sources": [
+        "GOOSE_MIGRATION_PLAN.md",
+        "tasks.json",
+        "full build manifests"
+      ],
+      "acceptance": "Every functional task DONE; zero untracked residual native paths; source build reproducible and working runtime unchanged. Then comprehensive audits/optimization.",
+      "evidence": "",
+      "depends_on": [
+        "P11-07"
+      ],
+      "source_phase_files_at_audit": 0,
+      "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
+      "batch": "B8"
+    }
+  ],
+  "post_migration_queue_not_in_functional_total": [
+    {
+      "id": "POST-01",
+      "title": "Systematic compiler/runtime performance audit and optimization",
+      "gate": "Only after functional migration; matched CPU/CUDA operator,prefill,decode,RAM/VRAM studies; feedback-driven compiler changes require separate compiler-owner workflow."
+    },
+    {
+      "id": "POST-02",
+      "title": "Independent comparative memory-safety audit against contemporary llama.cpp",
+      "gate": "Pinned equal models/settings; sanitizers,fuzzing,thread races,CPU/CUDA,ownership; preserve reproducers and limitations; no superiority without evidence."
+    },
+    {
+      "id": "POST-03",
+      "title": "Regular matched upstream comparison and useful change review",
+      "gate": "Pin current official upstream at comparison time; source/behavior/perf differences separated; no autonomous production change."
+    },
+    {
+      "id": "POST-04",
+      "title": "Adaptive joint model/kernel quantization research",
+      "gate": "Roadmap idea only; no change to migration goal/priorities; future equal-size quality/speed/memory comparison."
+    }
+  ],
+  "history": [
+    {
+      "event": "Initial source-audited universal migration ledger; EXP136..141 preserved. Owner updated priority to full Apex first, one fixed Apex end-to-end profile, Qwen deferred.",
+      "checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479"
+    },
+    {
+      "checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
+      "event": "Token-budget strategy:160requirements grouped into9large ordered batches (B0 reference,5Apex implementation batches,B6Qwen,B7other,B8closure). One integration/combined gate/system sample per batch; no per-item experiments or detailed reports."
+    },
+    {
+      "checkpoint": "71b539406937b7d8628e64ca91880f9378238c30",
+      "event": "B1implementation started: latest completed self-hosted EXP300 frame-default pinned; common tensor/storage/conversion,reduction,normalization and transform Goose source written. No candidate build/model acceptance claimed."
+    },
+    {
+      "checkpoint": "B1/EXP143 uncommitted intermediate diagnostic",
+      "event": "254/254 GGML differential cases and scoped ASan/UBSan/leak checks pass; 218 byte-exact,36 within original tolerance. Owner-requested single Apex32768/128 request completes: pp2620.936,tg26.738,RSS21313.555MiB,VRAM3348MiB. Goose graph executor/GET_ROWS/GLU witnessed. Response diverges at token index5 with earlier logprob differences,so model equivalence and B1 acceptance remain open. No repeated series,microbench,optimization,Qwen or production change; continue coherent CPU modules."
+    },
+    {
+      "checkpoint": "EXP143 B1 in-progress source snapshot",
+      "event": "Expanded common recurrent block to RWKV6/7 and GLA:278/278 composite cases,234 exact,scoped ASan/UBSan/leak checks pass. Functional investigation of Apex drift:66/66 operator-contract cases pass;147 real embedding rows byte-exact on1/8/16threads; wide GLU within unchanged tolerance. Root cause remains unestablished; not B1 acceptance. Source/emitted C/tests/provenance are reviewable in experiments/EXP-2026-11-07-143-goose-cpu-b1/; no repeat full inference or speed optimization."
+    },
+    {
+      "checkpoint": "EXP143 CPU control/job and numerical-contract checkpoint",
+      "event": "Goose owns shared CPU plan/dispatch and active OpenMP graph-job policy.326/326graph/status,960/960planning/rollback and66/66Apex operator contracts pass with scoped sanitizers. SWIGLU9/9wide configurations now byte-exact after matching AVX2 math; GLU signed-zero difference repaired. Full Apex response equivalence remains open,no repeated model request/performance tuning. B1 is incomplete; residual source remains visible."
+    },
+    {
+      "checkpoint": "EXP144 post-GLU Apex diagnostic on9c0a698",
+      "event": "Exactly one owner-requested32768/128 request completes:pp2638.151,tg27.078,RSS21313.887MiB,VRAM3348MiB. All128tokens,text and all saved top5/logprobs exactly equal original C++; prior divergence at token index5 absent. Goose control/job/executor/GLU/GET_ROWS witnessed. Historical-control speed deltas remain preliminary,not B1 acceptance. No repeated series,optimization,Qwen or production change; continue B1 backend API/registry ownership."
+    },
+    {
+      "checkpoint": "EXP145 Goose CPU backend API",
+      "event": "19backend API paths route policy to Goose,not original C++ methods.167API records/28280capability queries and rollback exact;9allocation failure/recovery policy cases;326/66/960common cases preserved;scoped ASan/UBSan/leak checks pass. One fixed Apex32768/128 gives2608.115pp/26.461tg,RSS21313.453MiB,VRAM3348MiB,text/IDs/top5 exact;5346backend graph calls witnessed. Previous-stage pp-1.139%,tg-2.280%preliminary;no tuning or repeat series. B1 remains incomplete; refresh private manual-handoff kit next."
+    }
+  ],
+  "batches": [
+    {
+      "id": "B0",
+      "title": "Source audit,immutable reference and fixed Apex history initialization",
+      "workstream": "APEX_COMMON",
+      "scope": [
+        "P0-01",
+        "P0-02",
+        "P0-03",
+        "P0-06"
+      ],
+      "depends_on": [],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B1",
+      "title": "Complete shared CPU MoE and GGML CPU backend",
+      "workstream": "APEX_COMMON",
+      "scope": [
+        "P1-01",
+        "P1-02",
+        "P1-04",
+        "P1-05",
+        "P1-06",
+        "P1-07",
+        "P1-08",
+        "P1-09",
+        "P1-10",
+        "P1-12",
+        "P2-01",
+        "P2-02",
+        "P2-03",
+        "P2-04",
+        "P2-05",
+        "P2-06",
+        "P2-07",
+        "P2-08",
+        "P2-09",
+        "P2-10",
+        "P2-11",
+        "P2-12",
+        "P2-13",
+        "P2-14",
+        "P2-15",
+        "P2-16",
+        "P2-17",
+        "P2-18"
+      ],
+      "depends_on": [
+        "B0"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B2",
+      "title": "Complete CUDA computation,host backend and GPU ownership",
+      "workstream": "APEX_COMMON",
+      "scope": [
+        "P3-01",
+        "P3-02",
+        "P3-03",
+        "P3-04",
+        "P3-05",
+        "P3-06",
+        "P3-07",
+        "P3-08",
+        "P3-09",
+        "P3-10",
+        "P3-11",
+        "P3-12",
+        "P3-13",
+        "P3-14",
+        "P3-15",
+        "P3-16",
+        "P3-17",
+        "P3-19",
+        "P3-20"
+      ],
+      "depends_on": [
+        "B1"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B3",
+      "title": "Unified GGML core,scheduler,memory,KV and Apex model runtime",
+      "workstream": "APEX_COMMON",
+      "scope": [
+        "P4-01",
+        "P4-02",
+        "P4-03",
+        "P4-04",
+        "P4-05",
+        "P4-06",
+        "P4-07",
+        "P4-08",
+        "P4-09",
+        "P4-10",
+        "P4-11",
+        "P4-12",
+        "P4-13",
+        "P4-14",
+        "P4-15",
+        "P4-16",
+        "P5-01",
+        "P5-02",
+        "P5-04",
+        "P5-05",
+        "P5-06",
+        "P5-07",
+        "P5-08",
+        "P5-09",
+        "P5-10",
+        "P6-01",
+        "P6-02",
+        "P6-03",
+        "P6-04",
+        "P6-07",
+        "P6-08",
+        "P6-09",
+        "P6-10",
+        "P6-12"
+      ],
+      "depends_on": [
+        "B2"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B4",
+      "title": "GGUF,loading,text/tokenizer,common layer and full server/API",
+      "workstream": "APEX_COMMON",
+      "scope": [
+        "P7-01",
+        "P7-02",
+        "P7-03",
+        "P7-04",
+        "P7-05",
+        "P7-06",
+        "P7-07",
+        "P7-08",
+        "P7-09",
+        "P7-10",
+        "P7-11",
+        "P7-12",
+        "P8-01",
+        "P8-02",
+        "P8-03",
+        "P8-04",
+        "P8-05",
+        "P8-06",
+        "P8-07",
+        "P8-08",
+        "P8-09",
+        "P8-10",
+        "P8-11",
+        "P8-12"
+      ],
+      "depends_on": [
+        "B3"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B5",
+      "title": "Standalone streaming,infrastructure,ABI and full Apex source/link closure",
+      "workstream": "APEX_COMMON",
+      "scope": [
+        "P0-04",
+        "P0-05",
+        "P9-01",
+        "P9-02",
+        "P9-03",
+        "P9-04",
+        "P9-05",
+        "P9-06",
+        "P9-07",
+        "P9-08",
+        "P10-01",
+        "P10-02",
+        "P10-05",
+        "P10-06",
+        "P10-07",
+        "P10-08",
+        "P10-09",
+        "P10-11",
+        "P10-12",
+        "P11-01",
+        "P11-02",
+        "P11-03",
+        "P11-04",
+        "P11-05",
+        "P11-06",
+        "P11-07",
+        "P11-08"
+      ],
+      "depends_on": [
+        "B4"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B6",
+      "title": "Qwen extension of the same universal runtime after full Apex",
+      "workstream": "QWEN_COMPATIBILITY",
+      "scope": [
+        "P1-03",
+        "P6-11",
+        "C1-01",
+        "C1-02",
+        "C1-03",
+        "C1-04",
+        "C1-05",
+        "C1-06"
+      ],
+      "depends_on": [
+        "B5"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B7",
+      "title": "Remaining architecture/platform compatibility in the same runtime",
+      "workstream": "OTHER_COMPATIBILITY",
+      "scope": [
+        "P1-11",
+        "P3-18",
+        "P5-03",
+        "P6-05",
+        "P6-06",
+        "P10-03",
+        "P10-04",
+        "P10-10",
+        "C2-01",
+        "C2-02",
+        "C2-03",
+        "C2-04"
+      ],
+      "depends_on": [
+        "B6"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    },
+    {
+      "id": "B8",
+      "title": "Universal functional closure and unavoidable dependency report",
+      "workstream": "FINAL_UNIVERSAL",
+      "scope": [
+        "F1-01",
+        "F1-02",
+        "F1-03",
+        "F1-04"
+      ],
+      "depends_on": [
+        "B7"
+      ],
+      "policy": "One integrated candidate,one consolidated correctness/security suite and one fixed-profile end-to-end Apex measurement per major batch; internal compile/error corrections allowed, no per-requirement research or microbenchmarks. Mark only criteria actually met; no invented completion."
+    }
+  ],
+  "current_batch": "B1",
+  "requirement_count_is_not_iteration_count": true,
+  "stage_rules": {
+    "batch_not_task_iteration": true,
+    "integration_per_major_batch": 1,
+    "consolidated_correctness_safety_gate_per_major_batch": 1,
+    "fixed_apex_system_measurements_per_major_batch": 1,
+    "microbenchmarks": false,
+    "manual_per_module_tuning": false,
+    "qwen_now": "none; compatibility only after full Apex",
+    "unverified_completion_forbidden": true
+  }
+}

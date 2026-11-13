@@ -1,0 +1,49 @@
+{
+  "name": "qwen140-perf-off-128x16",
+  "wall_seconds": 11.727647183928639,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 8393.528,
+    "prompt_per_token_ms": 65.5744375,
+    "prompt_per_second": 15.249844880484106,
+    "predicted_n": 16,
+    "predicted_ms": 3325.501,
+    "predicted_per_token_ms": 221.7000666666667,
+    "predicted_per_second": 4.510598553420973
+  },
+  "content_sha256": "6a5772bb9fa9f27ae5d3fa2df18808d086300fef362cafaf1f281f253ea548d1",
+  "tokens": [
+    271,
+    248068,
+    198,
+    760,
+    1156,
+    369,
+    9859,
+    728,
+    310,
+    8290,
+    264,
+    328,
+    7686,
+    1433,
+    1,
+    421
+  ],
+  "sampled_rss_peak_mib": 22141.4765625,
+  "process_hwm_mib": 22141.4765625,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 619.875,
+  "sampled_file_peak_mib": 21220.2578125,
+  "sampled_gpu_peak_mib": 6198,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    3.40185546875,
+    2.63623046875,
+    2.87890625
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

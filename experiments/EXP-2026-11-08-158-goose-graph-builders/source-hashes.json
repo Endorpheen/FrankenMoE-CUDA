@@ -1,0 +1,11 @@
+{
+  "source/fixture.cpp": "26f302dddc05b3078b79fafafd27c5d63382bc3df6448d61cd5413e28ebc567b",
+  "source/builders.h": "d2ba4bb135fafea1dc4a9514b4b36d4de6adcc634fd216894dbca793cf0572ff",
+  "source/abi-values.json": "ab16189287612aa8fb7cdf0ef41ce6facb4b9cf4240caea207925e6f2f0df0fd",
+  "source/builders-generated.c": "1a9de15368d0104d6c0922aabb0a0f3df839e14aadccb14b5f09fe308fc5e01d",
+  "source/manifest.json": "d6745f520ca376277fb15f0a1540cafca9301e66fffb4e79b8743bb3d1c700be",
+  "source/recipes.json": "df7c61923b30189bf2d1cac0c6e739f846c10d398b21a906f5d1506fae171082",
+  "source/ggml-graph-builders.c": "4a9f42c879f961a427db80383bbb8aff56af658e4210d5bd14f9318b962b2c8d",
+  "source/builders.goose": "2580331446e9ffd9b899bb4b72172e09ac9947d0026500a0669a97d3a0ca7027",
+  "source/builders-qualified.c": "fe9cb37821c4dd91ba5736bf18287edcc268aeb7cd87cb07bace0b4ab2b44622"
+}

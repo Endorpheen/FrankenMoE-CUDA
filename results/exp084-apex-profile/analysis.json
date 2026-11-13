@@ -1,0 +1,1306 @@
+{
+  "session_epoch_ns": 1793341379642571275,
+  "clock_mapping": "curl local wall time minus Nsight UTC epoch",
+  "window_limit": "client prefill includes transport and first sampled-token delivery",
+  "attribution_limit": "GPU gaps do not prove CPU computation; sums may overlap and are not additive savings",
+  "requests": {
+    "cold": {
+      "window_ns": [
+        350417858725,
+        376710389725
+      ],
+      "prefill_client_window_ns": [
+        350417858725,
+        372291466725
+      ],
+      "decode_client_window_ns": [
+        372291466725,
+        376710389725
+      ],
+      "client_ttft_s": 21.873608,
+      "client_total_s": 26.292531,
+      "server_timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 21864.453,
+        "prompt_per_token_ms": 0.6672501525878907,
+        "prompt_per_second": 1498.6883047108472,
+        "predicted_n": 128,
+        "predicted_ms": 4418.134,
+        "predicted_per_token_ms": 34.788456692913385,
+        "predicted_per_second": 28.745167077322687
+      },
+      "phases": {
+        "whole": {
+          "window_ns": 26292531000,
+          "kernel_union_ns": 8179504814,
+          "copy_union_ns": 12007493154,
+          "gpu_union_ns": 20186997968,
+          "overlap_ns": 0,
+          "idle_ns": 6105533032,
+          "gpu_with_memset_union_ns": 20186997968,
+          "window_minus_gpu_ns": 6105533032,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 79802990,
+          "gpu_gaps_above_1ms": 196,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 34872,
+              "bytes": 133547398648,
+              "union_ns": 11857851894
+            },
+            {
+              "kind": 2,
+              "count": 11160,
+              "bytes": 2005388032,
+              "union_ns": 149641260
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 0,
+              "count": 28128,
+              "bytes": 131140214784
+            },
+            {
+              "kind": 1,
+              "count": 6744,
+              "bytes": 2407183864
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 2448,
+              "summed_ns": 2402051023
+            },
+            {
+              "name": "void flash_attn_ext_f16<(int)256, (int)256, (int)8, (int)8, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 80,
+              "summed_ns": 1337613077
+            },
+            {
+              "name": "void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 464,
+              "summed_ns": 753901939
+            },
+            {
+              "name": "void ggml_cuda_gated_delta_net_mma::gdn_single<(int)16, (int)128, (int)1>(ggml_cuda_gdn_mma_args)",
+              "count": 240,
+              "summed_ns": 447534784
+            },
+            {
+              "name": "void flash_attn_ext_vec<(int)256, (int)1, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 1270,
+              "summed_ns": 322265021
+            },
+            {
+              "name": "void concat_non_cont<unsigned int, (int)0>(const char *, const char *, char *, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 270,
+              "summed_ns": 320429999
+            },
+            {
+              "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+              "count": 2304,
+              "summed_ns": 253155233
+            },
+            {
+              "name": "void unary_gated_op_kernel<&op_silu, float>(const T2 *, const T2 *, T2 *, long, long, long, long)",
+              "count": 4743,
+              "summed_ns": 250997281
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 46032,
+              "summed_ns": 13731290631,
+              "max_ns": 13684403
+            },
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 42425,
+              "summed_ns": 8295482218,
+              "max_ns": 42933259
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 5542,
+              "summed_ns": 280410370,
+              "max_ns": 122240
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 19431,
+              "summed_ns": 83899334,
+              "max_ns": 2004254
+            },
+            {
+              "name": "cuLibraryLoadData",
+              "count": 4,
+              "summed_ns": 16151421,
+              "max_ns": 5450299
+            },
+            {
+              "name": "cudaGraphInstantiate_v12000",
+              "count": 104,
+              "summed_ns": 8977797,
+              "max_ns": 414292
+            },
+            {
+              "name": "cuKernelGetFunction",
+              "count": 300,
+              "summed_ns": 6122517,
+              "max_ns": 5465388
+            },
+            {
+              "name": "cuLaunchKernel",
+              "count": 300,
+              "summed_ns": 1733313,
+              "max_ns": 28283
+            },
+            {
+              "name": "cudaGraphExecDestroy_v10000",
+              "count": 41,
+              "summed_ns": 1615980,
+              "max_ns": 47199
+            },
+            {
+              "name": "cudaFree_v3020",
+              "count": 1,
+              "summed_ns": 988326,
+              "max_ns": 988326
+            },
+            {
+              "name": "cudaGraphDestroy_v10000",
+              "count": 41,
+              "summed_ns": 458023,
+              "max_ns": 15449
+            },
+            {
+              "name": "cudaStreamBeginCapture_v10000",
+              "count": 104,
+              "summed_ns": 374220,
+              "max_ns": 18615
+            }
+          ]
+        },
+        "prefill": {
+          "window_ns": 21873608000,
+          "kernel_union_ns": 7207930822,
+          "copy_union_ns": 11966826352,
+          "gpu_union_ns": 19174757174,
+          "overlap_ns": 0,
+          "idle_ns": 2698850826,
+          "gpu_with_memset_union_ns": 19174757174,
+          "window_minus_gpu_ns": 2698850826,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 79802990,
+          "gpu_gaps_above_1ms": 69,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 28268,
+              "bytes": 133167587368,
+              "union_ns": 11831851574
+            },
+            {
+              "kind": 2,
+              "count": 873,
+              "bytes": 1837463552,
+              "union_ns": 134974778
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 0,
+              "count": 28128,
+              "bytes": 131140214784
+            },
+            {
+              "kind": 1,
+              "count": 140,
+              "bytes": 2027372584
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 2448,
+              "summed_ns": 2402051023
+            },
+            {
+              "name": "void flash_attn_ext_f16<(int)256, (int)256, (int)8, (int)8, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 80,
+              "summed_ns": 1337613077
+            },
+            {
+              "name": "void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 464,
+              "summed_ns": 753901939
+            },
+            {
+              "name": "void ggml_cuda_gated_delta_net_mma::gdn_single<(int)16, (int)128, (int)1>(ggml_cuda_gdn_mma_args)",
+              "count": 240,
+              "summed_ns": 447534784
+            },
+            {
+              "name": "void concat_non_cont<unsigned int, (int)0>(const char *, const char *, char *, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 270,
+              "summed_ns": 320429999
+            },
+            {
+              "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+              "count": 2304,
+              "summed_ns": 253155233
+            },
+            {
+              "name": "void unary_gated_op_kernel<&op_silu, float>(const T2 *, const T2 *, T2 *, long, long, long, long)",
+              "count": 933,
+              "summed_ns": 247379281
+            },
+            {
+              "name": "moe_weighted_reduction_f32(const float *, const float *, const float *, float *, long, int)",
+              "count": 352,
+              "summed_ns": 220764424
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 29141,
+              "summed_ns": 13678899229,
+              "max_ns": 13684403
+            },
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 2293,
+              "summed_ns": 7191485692,
+              "max_ns": 42933259
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 16571,
+              "summed_ns": 77115844,
+              "max_ns": 2004254
+            },
+            {
+              "name": "cuLibraryLoadData",
+              "count": 4,
+              "summed_ns": 16151421,
+              "max_ns": 5450299
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 375,
+              "summed_ns": 13149348,
+              "max_ns": 114997
+            },
+            {
+              "name": "cuKernelGetFunction",
+              "count": 300,
+              "summed_ns": 6122517,
+              "max_ns": 5465388
+            },
+            {
+              "name": "cudaGraphInstantiate_v12000",
+              "count": 63,
+              "summed_ns": 3619413,
+              "max_ns": 414292
+            },
+            {
+              "name": "cuLaunchKernel",
+              "count": 300,
+              "summed_ns": 1733313,
+              "max_ns": 28283
+            },
+            {
+              "name": "cudaGraphExecDestroy_v10000",
+              "count": 41,
+              "summed_ns": 1615980,
+              "max_ns": 47199
+            },
+            {
+              "name": "cudaFree_v3020",
+              "count": 1,
+              "summed_ns": 988326,
+              "max_ns": 988326
+            },
+            {
+              "name": "cudaGraphDestroy_v10000",
+              "count": 41,
+              "summed_ns": 458023,
+              "max_ns": 15449
+            },
+            {
+              "name": "cudaStreamBeginCapture_v10000",
+              "count": 63,
+              "summed_ns": 327260,
+              "max_ns": 18615
+            }
+          ]
+        },
+        "decode": {
+          "window_ns": 4418923000,
+          "kernel_union_ns": 971573992,
+          "copy_union_ns": 40666802,
+          "gpu_union_ns": 1012240794,
+          "overlap_ns": 0,
+          "idle_ns": 3406682206,
+          "gpu_with_memset_union_ns": 1012240794,
+          "window_minus_gpu_ns": 3406682206,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 4027030,
+          "gpu_gaps_above_1ms": 128,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 6604,
+              "bytes": 379811280,
+              "union_ns": 26000320
+            },
+            {
+              "kind": 2,
+              "count": 10287,
+              "bytes": 167924480,
+              "union_ns": 14666482
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 1,
+              "count": 6604,
+              "bytes": 379811280
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void flash_attn_ext_vec<(int)256, (int)1, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 1270,
+              "summed_ns": 322265021
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 2667,
+              "summed_ns": 170161222
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 16637,
+              "summed_ns": 137186752
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 10033,
+              "summed_ns": 87087843
+            },
+            {
+              "name": "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+              "count": 10160,
+              "summed_ns": 38231419
+            },
+            {
+              "name": "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+              "count": 34417,
+              "summed_ns": 33625873
+            },
+            {
+              "name": "void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 3810,
+              "summed_ns": 23302606
+            },
+            {
+              "name": "void rms_norm_f32<(int)512, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)",
+              "count": 10287,
+              "summed_ns": 16829329
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 40132,
+              "summed_ns": 1103996526,
+              "max_ns": 1054140
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 5167,
+              "summed_ns": 267261022,
+              "max_ns": 122240
+            },
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 16891,
+              "summed_ns": 52391402,
+              "max_ns": 19817
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 2860,
+              "summed_ns": 6783490,
+              "max_ns": 12884
+            },
+            {
+              "name": "cudaGraphInstantiate_v12000",
+              "count": 41,
+              "summed_ns": 5358384,
+              "max_ns": 337888
+            },
+            {
+              "name": "cudaGraphExecUpdate_v10020",
+              "count": 41,
+              "summed_ns": 124215,
+              "max_ns": 5541
+            },
+            {
+              "name": "cudaStreamBeginCapture_v10000",
+              "count": 41,
+              "summed_ns": 46960,
+              "max_ns": 7394
+            },
+            {
+              "name": "cudaStreamEndCapture_v10000",
+              "count": 41,
+              "summed_ns": 45725,
+              "max_ns": 1623
+            }
+          ]
+        }
+      }
+    },
+    "branch": {
+      "window_ns": [
+        387993329725,
+        398218838725
+      ],
+      "prefill_client_window_ns": [
+        387993329725,
+        393747043725
+      ],
+      "decode_client_window_ns": [
+        393747043725,
+        398218838725
+      ],
+      "client_ttft_s": 5.753714,
+      "client_total_s": 10.225509,
+      "server_timings": {
+        "cache_n": 24576,
+        "prompt_n": 8192,
+        "prompt_ms": 5745.872,
+        "prompt_per_token_ms": 0.701400390625,
+        "prompt_per_second": 1425.7191945800394,
+        "predicted_n": 128,
+        "predicted_ms": 4469.691,
+        "predicted_per_token_ms": 35.194417322834646,
+        "predicted_per_second": 28.41359727104178
+      },
+      "phases": {
+        "whole": {
+          "window_ns": 10225509000,
+          "kernel_union_ns": 3019299911,
+          "copy_union_ns": 3068874832,
+          "gpu_union_ns": 6088174743,
+          "overlap_ns": 0,
+          "idle_ns": 4137334257,
+          "gpu_with_memset_union_ns": 6088174743,
+          "window_minus_gpu_ns": 4137334257,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 55627674,
+          "gpu_gaps_above_1ms": 172,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 12690,
+              "bytes": 34912352224,
+              "union_ns": 3021434793
+            },
+            {
+              "kind": 2,
+              "count": 10566,
+              "bytes": 628970944,
+              "union_ns": 47440039
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 0,
+              "count": 6012,
+              "bytes": 33816445440
+            },
+            {
+              "kind": 1,
+              "count": 6678,
+              "bytes": 1095906784
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 612,
+              "summed_ns": 604329271
+            },
+            {
+              "name": "void flash_attn_ext_f16<(int)256, (int)256, (int)8, (int)8, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 20,
+              "summed_ns": 564543887
+            },
+            {
+              "name": "void flash_attn_ext_vec<(int)256, (int)1, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 1270,
+              "summed_ns": 322940900
+            },
+            {
+              "name": "void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 116,
+              "summed_ns": 189284251
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 2668,
+              "summed_ns": 171085477
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 16637,
+              "summed_ns": 137422801
+            },
+            {
+              "name": "void ggml_cuda_gated_delta_net_mma::gdn_single<(int)16, (int)128, (int)1>(ggml_cuda_gdn_mma_args)",
+              "count": 60,
+              "summed_ns": 112337989
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 10034,
+              "summed_ns": 86984860
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 23256,
+              "summed_ns": 3414969941,
+              "max_ns": 17689093
+            },
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 41004,
+              "summed_ns": 3159163769,
+              "max_ns": 42341231
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 5167,
+              "summed_ns": 273962146,
+              "max_ns": 313532
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 8631,
+              "summed_ns": 31283575,
+              "max_ns": 34295
+            },
+            {
+              "name": "cudaGraphInstantiate_v12000",
+              "count": 41,
+              "summed_ns": 4965483,
+              "max_ns": 152107
+            },
+            {
+              "name": "cudaGraphExecDestroy_v10000",
+              "count": 104,
+              "summed_ns": 2193741,
+              "max_ns": 58690
+            },
+            {
+              "name": "cudaGraphDestroy_v10000",
+              "count": 104,
+              "summed_ns": 586188,
+              "max_ns": 17323
+            },
+            {
+              "name": "cuLaunchKernel",
+              "count": 78,
+              "summed_ns": 403765,
+              "max_ns": 11562
+            },
+            {
+              "name": "cuKernelGetFunction",
+              "count": 78,
+              "summed_ns": 168789,
+              "max_ns": 9458
+            },
+            {
+              "name": "cudaGraphExecUpdate_v10020",
+              "count": 41,
+              "summed_ns": 124163,
+              "max_ns": 4058
+            },
+            {
+              "name": "cudaStreamBeginCapture_v10000",
+              "count": 41,
+              "summed_ns": 52983,
+              "max_ns": 6953
+            },
+            {
+              "name": "cudaStreamEndCapture_v10000",
+              "count": 41,
+              "summed_ns": 48232,
+              "max_ns": 1763
+            }
+          ]
+        },
+        "prefill": {
+          "window_ns": 5753714000,
+          "kernel_union_ns": 2046336504,
+          "copy_union_ns": 3028226359,
+          "gpu_union_ns": 5074562863,
+          "overlap_ns": 0,
+          "idle_ns": 679151137,
+          "gpu_with_memset_union_ns": 5074562863,
+          "window_minus_gpu_ns": 679151137,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 55627674,
+          "gpu_gaps_above_1ms": 43,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 6086,
+              "bytes": 34532540944,
+              "union_ns": 2995486229
+            },
+            {
+              "kind": 2,
+              "count": 279,
+              "bytes": 461046464,
+              "union_ns": 32740130
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 0,
+              "count": 6012,
+              "bytes": 33816445440
+            },
+            {
+              "kind": 1,
+              "count": 74,
+              "bytes": 716095504
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 612,
+              "summed_ns": 604329271
+            },
+            {
+              "name": "void flash_attn_ext_f16<(int)256, (int)256, (int)8, (int)8, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 20,
+              "summed_ns": 564543887
+            },
+            {
+              "name": "void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_prec)30>(const char *, const int *, const int *, const int *, float *, float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+              "count": 116,
+              "summed_ns": 189284251
+            },
+            {
+              "name": "void ggml_cuda_gated_delta_net_mma::gdn_single<(int)16, (int)128, (int)1>(ggml_cuda_gdn_mma_args)",
+              "count": 60,
+              "summed_ns": 112337989
+            },
+            {
+              "name": "void concat_non_cont<unsigned int, (int)0>(const char *, const char *, char *, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 90,
+              "summed_ns": 80988583
+            },
+            {
+              "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+              "count": 576,
+              "summed_ns": 63273921
+            },
+            {
+              "name": "void unary_gated_op_kernel<&op_silu, float>(const T2 *, const T2 *, T2 *, long, long, long, long)",
+              "count": 285,
+              "summed_ns": 60775198
+            },
+            {
+              "name": "moe_weighted_reduction_f32(const float *, const float *, const float *, float *, long, int)",
+              "count": 118,
+              "summed_ns": 54831352
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 6365,
+              "summed_ns": 3360551716,
+              "max_ns": 17689093
+            },
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 872,
+              "summed_ns": 2052669662,
+              "max_ns": 42341231
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 5771,
+              "summed_ns": 24548098,
+              "max_ns": 34295
+            },
+            {
+              "name": "cudaGraphExecDestroy_v10000",
+              "count": 104,
+              "summed_ns": 2193741,
+              "max_ns": 58690
+            },
+            {
+              "name": "cudaGraphDestroy_v10000",
+              "count": 104,
+              "summed_ns": 586188,
+              "max_ns": 17323
+            },
+            {
+              "name": "cuLaunchKernel",
+              "count": 78,
+              "summed_ns": 403765,
+              "max_ns": 11562
+            },
+            {
+              "name": "cuKernelGetFunction",
+              "count": 78,
+              "summed_ns": 168789,
+              "max_ns": 9458
+            }
+          ]
+        },
+        "decode": {
+          "window_ns": 4471795000,
+          "kernel_union_ns": 972963407,
+          "copy_union_ns": 40648473,
+          "gpu_union_ns": 1013611880,
+          "overlap_ns": 0,
+          "idle_ns": 3458183120,
+          "gpu_with_memset_union_ns": 1013611880,
+          "window_minus_gpu_ns": 3458183120,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 3995580,
+          "gpu_gaps_above_1ms": 130,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 6604,
+              "bytes": 379811280,
+              "union_ns": 25948564
+            },
+            {
+              "kind": 2,
+              "count": 10287,
+              "bytes": 167924480,
+              "union_ns": 14699909
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 1,
+              "count": 6604,
+              "bytes": 379811280
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void flash_attn_ext_vec<(int)256, (int)1, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 1270,
+              "summed_ns": 322940900
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 2667,
+              "summed_ns": 170174970
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 16637,
+              "summed_ns": 137422801
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 10033,
+              "summed_ns": 86979836
+            },
+            {
+              "name": "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+              "count": 10160,
+              "summed_ns": 38275196
+            },
+            {
+              "name": "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+              "count": 34417,
+              "summed_ns": 33711078
+            },
+            {
+              "name": "void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 3810,
+              "summed_ns": 23327125
+            },
+            {
+              "name": "void rms_norm_f32<(int)512, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)",
+              "count": 10287,
+              "summed_ns": 16894180
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 40132,
+              "summed_ns": 1106494107,
+              "max_ns": 1058228
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 5167,
+              "summed_ns": 273962146,
+              "max_ns": 313532
+            },
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 16891,
+              "summed_ns": 54418225,
+              "max_ns": 14929
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 2860,
+              "summed_ns": 6735477,
+              "max_ns": 19427
+            },
+            {
+              "name": "cudaGraphInstantiate_v12000",
+              "count": 41,
+              "summed_ns": 4965483,
+              "max_ns": 152107
+            },
+            {
+              "name": "cudaGraphExecUpdate_v10020",
+              "count": 41,
+              "summed_ns": 124163,
+              "max_ns": 4058
+            },
+            {
+              "name": "cudaStreamBeginCapture_v10000",
+              "count": 41,
+              "summed_ns": 52983,
+              "max_ns": 6953
+            },
+            {
+              "name": "cudaStreamEndCapture_v10000",
+              "count": 41,
+              "summed_ns": 48232,
+              "max_ns": 1763
+            }
+          ]
+        }
+      }
+    },
+    "repeat": {
+      "window_ns": [
+        406565421725,
+        411192854725
+      ],
+      "prefill_client_window_ns": [
+        406565421725,
+        406736731725
+      ],
+      "decode_client_window_ns": [
+        406736731725,
+        411192854725
+      ],
+      "client_ttft_s": 0.17131,
+      "client_total_s": 4.627433,
+      "server_timings": {
+        "cache_n": 32764,
+        "prompt_n": 4,
+        "prompt_ms": 163.46,
+        "prompt_per_token_ms": 40.865,
+        "prompt_per_second": 24.47081854888046,
+        "predicted_n": 128,
+        "predicted_ms": 4453.842,
+        "predicted_per_token_ms": 35.06962204724409,
+        "predicted_per_second": 28.514707077619732
+      },
+      "phases": {
+        "whole": {
+          "window_ns": 4627433000,
+          "kernel_union_ns": 1005291020,
+          "copy_union_ns": 49944996,
+          "gpu_union_ns": 1055236016,
+          "overlap_ns": 0,
+          "idle_ns": 3572196984,
+          "gpu_with_memset_union_ns": 1055236016,
+          "window_minus_gpu_ns": 3572196984,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 45862155,
+          "gpu_gaps_above_1ms": 170,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 6716,
+              "bytes": 456603256,
+              "union_ns": 31620981
+            },
+            {
+              "kind": 2,
+              "count": 10428,
+              "bytes": 236188672,
+              "union_ns": 18324015
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 0,
+              "count": 60,
+              "bytes": 65863680
+            },
+            {
+              "kind": 1,
+              "count": 6656,
+              "bytes": 390739576
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void flash_attn_ext_vec<(int)256, (int)1, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 1270,
+              "summed_ns": 333827507
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 2668,
+              "summed_ns": 171407249
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 16637,
+              "summed_ns": 138686242
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 10034,
+              "summed_ns": 87976580
+            },
+            {
+              "name": "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+              "count": 10162,
+              "summed_ns": 38839150
+            },
+            {
+              "name": "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+              "count": 34727,
+              "summed_ns": 35496522
+            },
+            {
+              "name": "void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 3840,
+              "summed_ns": 23737541
+            },
+            {
+              "name": "void rms_norm_f32<(int)512, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)",
+              "count": 10368,
+              "summed_ns": 17698263
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 40570,
+              "summed_ns": 1136217463,
+              "max_ns": 1037258
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 5168,
+              "summed_ns": 275195868,
+              "max_ns": 303423
+            },
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 17144,
+              "summed_ns": 67761537,
+              "max_ns": 295778
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 4517,
+              "summed_ns": 11829867,
+              "max_ns": 25038
+            },
+            {
+              "name": "cudaGraphDestroy_v10000",
+              "count": 40,
+              "summed_ns": 629886,
+              "max_ns": 20028
+            },
+            {
+              "name": "cudaGraphExecUpdate_v10020",
+              "count": 40,
+              "summed_ns": 331206,
+              "max_ns": 12062
+            },
+            {
+              "name": "cudaStreamEndCapture_v10000",
+              "count": 40,
+              "summed_ns": 47459,
+              "max_ns": 1974
+            },
+            {
+              "name": "cudaStreamBeginCapture_v10000",
+              "count": 40,
+              "summed_ns": 41732,
+              "max_ns": 3437
+            }
+          ]
+        },
+        "prefill": {
+          "window_ns": 171310000,
+          "kernel_union_ns": 10325448,
+          "copy_union_ns": 8765575,
+          "gpu_union_ns": 19091023,
+          "overlap_ns": 0,
+          "idle_ns": 152218977,
+          "gpu_with_memset_union_ns": 19091023,
+          "window_minus_gpu_ns": 152218977,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 45862155,
+          "gpu_gaps_above_1ms": 43,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 112,
+              "bytes": 76791976,
+              "union_ns": 5307774
+            },
+            {
+              "kind": 2,
+              "count": 141,
+              "bytes": 68264192,
+              "union_ns": 3457801
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 0,
+              "count": 60,
+              "bytes": 65863680
+            },
+            {
+              "kind": 1,
+              "count": 52,
+              "bytes": 10928296
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)4, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 268,
+              "summed_ns": 2355778
+            },
+            {
+              "name": "void dequantize_block_q4_0<__half>(const void *, T1 *, int)",
+              "count": 20,
+              "summed_ns": 1915413
+            },
+            {
+              "name": "void flash_attn_ext_f16<(int)256, (int)256, (int)4, (int)8, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 10,
+              "summed_ns": 1643570
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 1,
+              "summed_ns": 895627
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)14, (int)4, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 39,
+              "summed_ns": 586825
+            },
+            {
+              "name": "void mul_mat_f<float, (int)32, (int)4, (int)8, (bool)0>(const T1 *, const float *, const int *, float *, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int)",
+              "count": 39,
+              "summed_ns": 412866
+            },
+            {
+              "name": "void concat_non_cont<unsigned int, (int)0>(const char *, const char *, char *, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 30,
+              "summed_ns": 385060
+            },
+            {
+              "name": "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+              "count": 310,
+              "summed_ns": 358830
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 253,
+              "summed_ns": 14166415,
+              "max_ns": 295778
+            },
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 438,
+              "summed_ns": 8312385,
+              "max_ns": 950053
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 1669,
+              "summed_ns": 5246602,
+              "max_ns": 25038
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 1,
+              "summed_ns": 48081,
+              "max_ns": 48081
+            }
+          ]
+        },
+        "decode": {
+          "window_ns": 4456123000,
+          "kernel_union_ns": 994965572,
+          "copy_union_ns": 41179421,
+          "gpu_union_ns": 1036144993,
+          "overlap_ns": 0,
+          "idle_ns": 3419978007,
+          "gpu_with_memset_union_ns": 1036144993,
+          "window_minus_gpu_ns": 3419978007,
+          "memset_count": 0,
+          "max_gpu_gap_ns": 4141644,
+          "gpu_gaps_above_1ms": 128,
+          "copies_by_kind": [
+            {
+              "kind": 1,
+              "count": 6604,
+              "bytes": 379811280,
+              "union_ns": 26313207
+            },
+            {
+              "kind": 2,
+              "count": 10287,
+              "bytes": 167924480,
+              "union_ns": 14866214
+            }
+          ],
+          "h2d_host_memory": [
+            {
+              "kind": 1,
+              "count": 6604,
+              "bytes": 379811280
+            }
+          ],
+          "top_kernels": [
+            {
+              "name": "void flash_attn_ext_vec<(int)256, (int)1, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)",
+              "count": 1270,
+              "summed_ns": 333827507
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 2667,
+              "summed_ns": 170511622
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 16637,
+              "summed_ns": 138686242
+            },
+            {
+              "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+              "count": 10033,
+              "summed_ns": 87971556
+            },
+            {
+              "name": "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+              "count": 10160,
+              "summed_ns": 38830830
+            },
+            {
+              "name": "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+              "count": 34417,
+              "summed_ns": 35137692
+            },
+            {
+              "name": "void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+              "count": 3810,
+              "summed_ns": 23545157
+            },
+            {
+              "name": "void rms_norm_f32<(int)512, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)",
+              "count": 10287,
+              "summed_ns": 17554164
+            }
+          ],
+          "top_cuda_apis": [
+            {
+              "name": "cudaStreamSynchronize_v3020",
+              "count": 40132,
+              "summed_ns": 1127905078,
+              "max_ns": 1037258
+            },
+            {
+              "name": "cudaGraphLaunch_v10000",
+              "count": 5167,
+              "summed_ns": 275147787,
+              "max_ns": 303423
+            },
+            {
+              "name": "cudaMemcpyAsync_v3020",
+              "count": 16891,
+              "summed_ns": 53595122,
+              "max_ns": 17102
+            },
+            {
+              "name": "cudaLaunchKernel_v7000",
+              "count": 2848,
+              "summed_ns": 6583265,
+              "max_ns": 19597
+            },
+            {
+              "name": "cudaGraphDestroy_v10000",
+              "count": 40,
+              "summed_ns": 629886,
+              "max_ns": 20028
+            },
+            {
+              "name": "cudaGraphExecUpdate_v10020",
+              "count": 40,
+              "summed_ns": 331206,
+              "max_ns": 12062
+            },
+            {
+              "name": "cudaStreamEndCapture_v10000",
+              "count": 40,
+              "summed_ns": 47459,
+              "max_ns": 1974
+            },
+            {
+              "name": "cudaStreamBeginCapture_v10000",
+              "count": 40,
+              "summed_ns": 41732,
+              "max_ns": 3437
+            }
+          ]
+        }
+      }
+    }
+  },
+  "profiler_warnings": [
+    "Installed CUDA driver version (13.0) is not supported by this build of Nsight Systems. CUDA trace will be collected using libraries for driver version 12.6",
+    "Scheduling information is absent. The thread activity is deduced based on OS runtime libraries traces. This is inaccurate and does not take into account asynchronous interrupts and exception faults.",
+    "No NVTX events collected. Does the process use NVTX?"
+  ]
+}

@@ -1,0 +1,585 @@
+{
+  "status": "FEASIBILITY_CONFIRMED_NO_PROMOTION",
+  "device": {
+    "kind": "device",
+    "name": "NVIDIA GeForce RTX 4070",
+    "sm": 89
+  },
+  "final_cuda_flags": "-O3 -lineinfo --fmad=false -std=c++17 -arch=sm_89",
+  "timing_scope": "CUDA stream-event intervals include stream idle gaps; host enqueue includes identical bridge and driver. No model inference.",
+  "samples": [
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 0,
+      "host_enqueue_us": 6641.422,
+      "wall_us": 6647.934,
+      "gpu_event_ms": 6.64688
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 0,
+      "host_enqueue_us": 6545.411,
+      "wall_us": 6551.332,
+      "gpu_event_ms": 6.548416
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 1,
+      "host_enqueue_us": 6393.213,
+      "wall_us": 6583.994,
+      "gpu_event_ms": 6.580224
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 1,
+      "host_enqueue_us": 6433.82,
+      "wall_us": 6438.729,
+      "gpu_event_ms": 6.233088
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 2,
+      "host_enqueue_us": 6444.31,
+      "wall_us": 6449.65,
+      "gpu_event_ms": 6.445824
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 2,
+      "host_enqueue_us": 6494.094,
+      "wall_us": 6500.496,
+      "gpu_event_ms": 6.49728
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 3,
+      "host_enqueue_us": 6460.911,
+      "wall_us": 6465.6,
+      "gpu_event_ms": 6.46176
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 3,
+      "host_enqueue_us": 6789.232,
+      "wall_us": 6796.195,
+      "gpu_event_ms": 6.792192
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 4,
+      "host_enqueue_us": 7176.335,
+      "wall_us": 7191.594,
+      "gpu_event_ms": 7.182336
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 0,
+      "n": 4096,
+      "count": 4000,
+      "pair": 4,
+      "host_enqueue_us": 8028.779,
+      "wall_us": 8038.507,
+      "gpu_event_ms": 8.03328
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 0,
+      "host_enqueue_us": 7464.621,
+      "wall_us": 7864.297,
+      "gpu_event_ms": 7.860896
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 0,
+      "host_enqueue_us": 6848.695,
+      "wall_us": 8391.005,
+      "gpu_event_ms": 7.911808
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 1,
+      "host_enqueue_us": 6772.841,
+      "wall_us": 7298.296,
+      "gpu_event_ms": 7.071744
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 1,
+      "host_enqueue_us": 6697.268,
+      "wall_us": 6702.438,
+      "gpu_event_ms": 6.69904
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 2,
+      "host_enqueue_us": 6690.716,
+      "wall_us": 7894.375,
+      "gpu_event_ms": 7.890944
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 2,
+      "host_enqueue_us": 6740.72,
+      "wall_us": 6747.222,
+      "gpu_event_ms": 6.744032
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 3,
+      "host_enqueue_us": 6687.139,
+      "wall_us": 7300.37,
+      "gpu_event_ms": 7.297024
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 3,
+      "host_enqueue_us": 7008.758,
+      "wall_us": 7144.735,
+      "gpu_event_ms": 6.913216
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 4,
+      "host_enqueue_us": 6877.801,
+      "wall_us": 6883.902,
+      "gpu_event_ms": 6.880256
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 1,
+      "n": 4096,
+      "count": 4000,
+      "pair": 4,
+      "host_enqueue_us": 6517.939,
+      "wall_us": 7300.26,
+      "gpu_event_ms": 7.296288
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 0,
+      "host_enqueue_us": 6399.605,
+      "wall_us": 6404.104,
+      "gpu_event_ms": 6.4008
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 0,
+      "host_enqueue_us": 6388.244,
+      "wall_us": 6628.318,
+      "gpu_event_ms": 6.62528
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 1,
+      "host_enqueue_us": 6486.048,
+      "wall_us": 6640.892,
+      "gpu_event_ms": 6.43072
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 1,
+      "host_enqueue_us": 6422.809,
+      "wall_us": 6508.341,
+      "gpu_event_ms": 6.336512
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 2,
+      "host_enqueue_us": 6434.601,
+      "wall_us": 6439.46,
+      "gpu_event_ms": 6.43664
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 2,
+      "host_enqueue_us": 6383.003,
+      "wall_us": 6628.107,
+      "gpu_event_ms": 6.625248
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 3,
+      "host_enqueue_us": 6473.845,
+      "wall_us": 6526.535,
+      "gpu_event_ms": 6.352896
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 3,
+      "host_enqueue_us": 6420.094,
+      "wall_us": 6425.033,
+      "gpu_event_ms": 6.421504
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 4,
+      "host_enqueue_us": 6402.71,
+      "wall_us": 6702.398,
+      "gpu_event_ms": 6.6992
+    },
+    {
+      "kind": "timing",
+      "caller": "goose",
+      "kernel": 2,
+      "n": 4096,
+      "count": 4000,
+      "pair": 4,
+      "host_enqueue_us": 6851.61,
+      "wall_us": 6858.413,
+      "gpu_event_ms": 6.644736
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4194304,
+      "count": 100,
+      "pair": 0,
+      "host_enqueue_us": 173.378,
+      "wall_us": 11418.155,
+      "gpu_event_ms": 11.414528
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4194304,
+      "count": 100,
+      "pair": 0,
+      "host_enqueue_us": 172.727,
+      "wall_us": 12900.541,
+      "gpu_event_ms": 12.694528
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4194304,
+      "count": 100,
+      "pair": 1,
+      "host_enqueue_us": 162.998,
+      "wall_us": 11446.819,
+      "gpu_event_ms": 11.442176
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4194304,
+      "count": 100,
+      "pair": 1,
+      "host_enqueue_us": 170.553,
+      "wall_us": 12861.928,
+      "gpu_event_ms": 12.657856
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4194304,
+      "count": 100,
+      "pair": 2,
+      "host_enqueue_us": 154.352,
+      "wall_us": 12238.317,
+      "gpu_event_ms": 12.234752
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4194304,
+      "count": 100,
+      "pair": 2,
+      "host_enqueue_us": 158.83,
+      "wall_us": 11441.639,
+      "gpu_event_ms": 11.438208
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4194304,
+      "count": 100,
+      "pair": 3,
+      "host_enqueue_us": 158.61,
+      "wall_us": 12669.274,
+      "gpu_event_ms": 12.459008
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4194304,
+      "count": 100,
+      "pair": 3,
+      "host_enqueue_us": 158.49,
+      "wall_us": 11237.754,
+      "gpu_event_ms": 11.017216
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 1,
+      "n": 4194304,
+      "count": 100,
+      "pair": 4,
+      "host_enqueue_us": 227.0,
+      "wall_us": 12279.576,
+      "gpu_event_ms": 12.274688
+    },
+    {
+      "kind": "timing",
+      "caller": "cpp",
+      "kernel": 2,
+      "n": 4194304,
+      "count": 100,
+      "pair": 4,
+      "host_enqueue_us": 165.012,
+      "wall_us": 12886.124,
+      "gpu_event_ms": 12.88192
+    }
+  ],
+  "cases": {
+    "4096-0-cpp": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.6603554999999999,
+      "host_enqueue_us_per_call_range": [
+        1.608455,
+        1.79408375
+      ],
+      "wall_us_per_call_median": 1.6619835,
+      "event_interval_us_per_call_median": 1.66172
+    },
+    "4096-0-goose": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.6235235000000001,
+      "host_enqueue_us_per_call_range": [
+        1.5983032499999998,
+        2.00719475
+      ],
+      "wall_us_per_call_median": 1.637833,
+      "event_interval_us_per_call_median": 1.637104
+    },
+    "4096-1-cpp": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.7194502500000002,
+      "host_enqueue_us_per_call_range": [
+        1.672679,
+        1.86615525
+      ],
+      "wall_us_per_call_median": 1.78618375,
+      "event_interval_us_per_call_median": 1.728304
+    },
+    "4096-1-goose": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.6851800000000001,
+      "host_enqueue_us_per_call_range": [
+        1.62948475,
+        1.7121737499999998
+      ],
+      "wall_us_per_call_median": 1.8250650000000002,
+      "event_interval_us_per_call_median": 1.824072
+    },
+    "4096-2-cpp": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.6050235,
+      "host_enqueue_us_per_call_range": [
+        1.5999012499999998,
+        1.60865025
+      ],
+      "wall_us_per_call_median": 1.609865,
+      "event_interval_us_per_call_median": 1.605376
+    },
+    "4096-2-goose": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.61846125,
+      "host_enqueue_us_per_call_range": [
+        1.5957507499999999,
+        1.7129025
+      ],
+      "wall_us_per_call_median": 1.6570795,
+      "event_interval_us_per_call_median": 1.656312
+    },
+    "4194304-1-cpp": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.70553,
+      "host_enqueue_us_per_call_range": [
+        1.54352,
+        2.27
+      ],
+      "wall_us_per_call_median": 122.38316999999999,
+      "event_interval_us_per_call_median": 122.34752
+    },
+    "4194304-2-cpp": {
+      "runs": 5,
+      "host_enqueue_us_per_call_median": 1.62998,
+      "host_enqueue_us_per_call_range": [
+        1.5861,
+        1.72727
+      ],
+      "wall_us_per_call_median": 126.69274,
+      "event_interval_us_per_call_median": 124.59008000000001
+    }
+  },
+  "device_instructions": {
+    "identical": true,
+    "instructions_per_kernel": 160,
+    "normalized_sha256": "39ff8c1d18fe12d730a16cb6b6f5de95f2435c77056602d10fd8ab829acf074b"
+  },
+  "correctness": [
+    {
+      "kind": "correctness",
+      "n": 1,
+      "bit_mismatches": 0,
+      "max_abs": 0
+    },
+    {
+      "kind": "correctness",
+      "n": 31,
+      "bit_mismatches": 0,
+      "max_abs": 0
+    },
+    {
+      "kind": "correctness",
+      "n": 256,
+      "bit_mismatches": 0,
+      "max_abs": 0
+    },
+    {
+      "kind": "correctness",
+      "n": 4096,
+      "bit_mismatches": 0,
+      "max_abs": 0
+    },
+    {
+      "kind": "correctness",
+      "n": 65537,
+      "bit_mismatches": 0,
+      "max_abs": 0
+    },
+    {
+      "kind": "correctness",
+      "n": 4194304,
+      "bit_mismatches": 0,
+      "max_abs": 0
+    }
+  ],
+  "memcheck_errors": 0,
+  "documented_cpu_features": {
+    "checkfree": "12/12 total index checks eliminated; four in the unpack function; actual compiler proof passed.",
+    "simd": "Clang builds baseline, AVX2 and AVX512 clones. Runtime on5950X chooses level1 (AVX2).",
+    "soa": "Proposal only, not implemented in pinned compiler.",
+    "source_pin": "8511ae34bdc9aabf77baaab80b4d659ea87835e2",
+    "benchmark_caution": "Upstream headline suite selects best of3 whole-process timing; flat arrays not expected to gain from allocator/layout changes. Our probes use all paired samples."
+  }
+}

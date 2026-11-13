@@ -1,0 +1,22 @@
+EXP-2026-09-15-064 depth-4 build record (2026-09-15)
+
+Source tree : work/llama.cpp-exp064-ring4 (copy of work/llama.cpp-exp062-ring3)
+Build dir   : build/exp064-ring4
+Generator   : Unix Makefiles (same as build/exp062-ring3)
+Configure   : cmake -S work/llama.cpp-exp064-ring4 -B build/exp064-ring4
+                -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGGML_CUDA=ON
+                -DCMAKE_CUDA_ARCHITECTURES=89 -DLLAMA_OPENSSL=ON -DLLAMA_BUILD_SERVER=ON
+Cache check : build/exp064-ring4/CMakeCache.txt == build/exp062-ring3/CMakeCache.txt after
+              normalizing the build path
+              normalized sha256 fd924ecccd45f6858fe25a5bdb23a62bc86cb248ac4ed4f109c6dbc3b20bdf1b
+Build cmd   : cmake --build build/exp064-ring4 --target llama-server -j10
+Result      : exit 0, wall 4:04.92, max RSS 693964 KiB
+Full log    : build-log.txt (42744 bytes)
+
+Binary shas:
+2ecb65a5752bc706c9b013fc35e7799d23c02e24ce605674efa82fa00e070026  build/exp064-ring4/bin/llama-server
+88733ee7e4680d152245c59252f81be693ba47a855b8af60853a24f22b2ab98d  build/exp064-ring4/bin/libggml-cuda.so
+de1eb8d07a85da10858f45c4035e58df5615d7f714c592c746b3991aaa26ddd6  build/exp064-ring4/bin/libggml.so
+690bd2d0e7a31baa21f8db4069c67c6fe527a0cb8bcc4864736c6486b6684ee4  build/exp064-ring4/bin/libggml-base.so
+
+Reference (untouched): f4b13f6b6f5cfef2529a42f9c32e5d7c6937d1baf217a66bfe1b5af2e5f7a1b1  build/exp062-ring3/bin/llama-server

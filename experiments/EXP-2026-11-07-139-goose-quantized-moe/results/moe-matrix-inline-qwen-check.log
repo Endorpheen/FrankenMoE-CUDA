@@ -1,0 +1,21 @@
+ordinary matrix/dequant cases {'q2_0': 168, 'q5_0': 168, 'iq4_nl': 168, 'iq2_xxs': 144, 'iq2_s': 144}
+{
+  "status": "PASS_ALL_FIVE_NATIVE_QUANT_MATRIX_DEQUANT_FUSED",
+  "ordinary_cases": {
+    "q2_0": 168,
+    "q5_0": 168,
+    "iq4_nl": 168,
+    "iq2_xxs": 144,
+    "iq2_s": 144
+  },
+  "routed_fused_cases": 72,
+  "eight_thread_cases": 160,
+  "all_bytes_equal_native": true,
+  "inputs_and_canaries_unchanged": true,
+  "noncontiguous_weight_and_activation_block_strides": true,
+  "IQ2_S_existing_two_three_activation_weight_reuse_preserved": true,
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "empty_worker_spans": 30,
+  "native_baseline": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/bin",
+  "IQ4_NL_scalar_tail_fused": true
+}

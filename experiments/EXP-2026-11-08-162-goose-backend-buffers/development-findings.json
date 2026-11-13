@@ -1,0 +1,6 @@
+{
+  "native_failure_hazard": "Five of six injected provider failures independently leave stale tensor buffer/data metadata in the EXP161 C++ default bulk allocator;Goose restores complete pre-call metadata after cleanup.",
+  "intentional_failure_changes": ["Default bulk failures restore tensor metadata","Direct duplicate multi-buffer child ownership is rejected","Multi-buffer wrapper OOM retains child ownership","Constructor descriptor OOM cleans provider context through its free callback and returns NULL","Allocation/init callback bad_alloc becomes NULL/ALLOC_FAILED before crossing the C boundary"],
+  "test_namespace_correction": "C++ bad_alloc callback test aborted when thrower and catcher used separate dlmopen C++ runtimes;the identical candidate passes in the primary namespace matching the actual server. Ordinary native-success parity remains namespace-isolated.",
+  "model_runs_before_completion": 0
+}

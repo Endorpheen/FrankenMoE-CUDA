@@ -1,0 +1,12 @@
+# RUNPATH / ldd sweep for build/exp077-pin-async2/bin
+# self = RUNPATH points at own bin dir
+FILE                             SELF   RUNPATH            ldd libggml-cuda.so.0
+libggml-base.so.0.22.0           n/a    <none>             <not linked>
+libggml-cpu.so.0.22.0            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: <not linked>
+libggml-cuda.so.0.22.0           yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: <not linked>
+libggml.so.0.22.0                yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin/libggml-cuda.so.0
+libllama-common.so.0.3.0         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin/libggml-cuda.so.0
+libllama-server-impl.so          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin/libggml-cuda.so.0
+libllama.so.0.3.0                yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin/libggml-cuda.so.0
+libmtmd.so.0.3.0                 yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin/libggml-cuda.so.0
+llama-server                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin: /home/end0/AI/FrankenMoE-CUDA/build/exp077-pin-async2/bin/libggml-cuda.so.0

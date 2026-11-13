@@ -1,0 +1,20 @@
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp:816:20: warning: no previous declaration for ‘int64_t fg145_meta(int64_t, int64_t)’ [-Wmissing-declarations]
+  816 | extern "C" int64_t fg145_meta(int64_t context,int64_t field){auto&r=*(fg145_request*)(uintptr_t)context;const ggml_tensor*t=r.op;const ggml_tensor*x=t?t->src[0]:nullptr;const ggml_tensor*y=t?t->src[1]:nullptr;
+      |                    ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp:906:18: warning: no previous declaration for ‘float fg145_float(int64_t, int64_t)’ [-Wmissing-declarations]
+  906 | extern "C" float fg145_float(int64_t context,int64_t field){auto&r=*(fg145_request*)(uintptr_t)context;GGML_ASSERT(field==0);float result;std::memcpy(&result,(const char*)r.op->op_params+sizeof(float),sizeof(result));return result;}
+      |                  ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp:907:20: warning: no previous declaration for ‘int64_t fg145_action(int64_t, int64_t, int64_t, int64_t)’ [-Wmissing-declarations]
+  907 | extern "C" int64_t fg145_action(int64_t context,int64_t op,int64_t a,int64_t b){auto&r=*(fg145_request*)(uintptr_t)context;switch(op){
+      |                    ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp: In function ‘int64_t fg145_action(int64_t, int64_t, int64_t, int64_t)’:
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp:956:192: warning: cast from type ‘const ggml_tensor*’ to type ‘ggml_tensor*’ casts away qualifiers [-Wcast-qual]
+  956 |  case 27:{GGML_ASSERT(a>=0&&a<(int64_t)fg145_extras().size());auto*extra=(ggml::cpu::extra_buffer_type*)fg145_extras()[(size_t)a]->context;if(!extra)return 0;auto*tr=extra->get_tensor_traits((ggml_tensor*)r.op);return tr&&tr->compute_forward((ggml_compute_params*)(uintptr_t)r.params,(ggml_tensor*)r.op)?1:0;}
+      |                                                                                                                                                                                                ^~~~~~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp:956:285: warning: cast from type ‘const ggml_tensor*’ to type ‘ggml_tensor*’ casts away qualifiers [-Wcast-qual]
+  956 |  case 27:{GGML_ASSERT(a>=0&&a<(int64_t)fg145_extras().size());auto*extra=(ggml::cpu::extra_buffer_type*)fg145_extras()[(size_t)a]->context;if(!extra)return 0;auto*tr=extra->get_tensor_traits((ggml_tensor*)r.op);return tr&&tr->compute_forward((ggml_compute_params*)(uintptr_t)r.params,(ggml_tensor*)r.op)?1:0;}
+      |                                                                                                                                                                                                                                                                                             ^~~~~~~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp: At global scope:
+/home/end0/AI/LlamaServer/franken-goose-exp150-expert-registry-20261107/source/cpu-backend/backend/ggml-cpu-backend.cpp:1013:34: warning: no previous declaration for ‘ggml_backend_buffer* fg150_hbm_alloc(ggml_backend_buffer_type_t, size_t)’ [-Wmissing-declarations]
+ 1013 | extern "C" ggml_backend_buffer_t fg150_hbm_alloc(ggml_backend_buffer_type_t buft,size_t size){fg150_registry_request q={};q.pointer=buft;q.size=size;return(ggml_backend_buffer_t)(uintptr_t)fg150_call(10,q);}
+      |                                  ^~~~~~~~~~~~~~~

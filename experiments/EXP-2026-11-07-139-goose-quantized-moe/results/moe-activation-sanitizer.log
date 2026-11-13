@@ -1,0 +1,1 @@
+{"status":"PASS_NATIVE_QUANT_BYTES_AND_CANARIES","q8_0_cases":587,"q8_K_cases":254,"q8_0_values":736960,"q8_K_values":699904,"concurrent_threads":8}

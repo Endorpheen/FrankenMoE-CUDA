@@ -1,0 +1,19 @@
+{
+  "status": "PASS_REGISTER_TILED_ASAN_UBSAN_LSAN_114_GRAPHS",
+  "runs": {
+    "off": {
+      "graph_cases": 114,
+      "values": 2171536,
+      "actual_ggml_compute": true
+    },
+    "on": {
+      "graph_cases": 114,
+      "values": 2171536,
+      "actual_ggml_compute": true
+    }
+  },
+  "all_bytes_equal_native_unsanitized": true,
+  "instrumented": "New Goose register tiled pipeline, MoE controller, Q4/Q6/Q8 and modified CPU driver/thread code",
+  "uninstrumented": "Inherited other objects, native tiled/repack control and base library",
+  "limitations": "Not TSan, not full repository audit or proof of superiority"
+}

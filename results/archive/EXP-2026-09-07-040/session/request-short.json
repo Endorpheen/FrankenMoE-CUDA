@@ -1,0 +1,1 @@
+{"prompt": "Explain in a few sentences why overlapping a host memory copy with an in-flight GPU transfer reduces latency when model weights live in system RAM. State the single mechanism in one sentence first, then justify it.", "n_predict": 128, "temperature": 0, "cache_prompt": false, "stream": false}

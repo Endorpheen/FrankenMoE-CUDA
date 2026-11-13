@@ -1,0 +1,6 @@
+CHECK PASS rate: worker drained the quiet window queue
+CHECK PASS rate: release counters captured
+CHECK PASS rate: worker joined before unregister
+CHECK PASS rate: teardown leaves no registered byte
+CHECK PASS rate: VmSwap stays 0
+{"mode":"rate","ranges":1000,"bytes_pinned":1546723328,"worker_registered":1000,"batches":299,"stream_ms":499.3,"quiet_ms":31348.0,"first_batch_ms":1217.7,"gate_ms":718.4,"pin_ms":30629.6,"rate_window_bps":49340368,"rate_steady_bps":50497594,"spin_probe_ms":0,"spin_cpu_s":-1.000,"swap_during_kib":0,"swap_after_free_kib":0}

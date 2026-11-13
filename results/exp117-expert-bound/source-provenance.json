@@ -1,0 +1,22 @@
+{
+  "status": "REJECTED_FOR_PROMOTION",
+  "reference_project_commit": "d73f7d59bd0b50a4f0310759be25af61961cbfd1",
+  "upstream_source_base": "1b44e30775dcb2f93952116b05f89e5bd797fb00",
+  "reference_runtime_manifest": "results/exp107-expert-overlap/runtime-manifest.json",
+  "patch": "patches/moe-launch-bound-experimental.patch",
+  "patch_sha256": "be809f4b5da5386c2489b21ead3eea49f96a10619b677267ef3421a980bee792",
+  "final_source_sha256": {
+    "src/llama-context.cpp": "5131cc51d2ae2cacde7f9d63f8b7876f2c76be03603d4839a4393487f83c8f12",
+    "src/llama-moe-bound.h": "c2a7e054a928905dcb04aa57c8410dc79c134a7929d8dff09d1310018b74fe19",
+    "ggml/src/ggml-cuda/mmq.cu": "fdb6923f032ad031e9c4a2763380beacd47d3a015659ff4efdca0db775f4c652",
+    "ggml/src/ggml-cuda/ggml-cuda.cu": "fba78873549b50ad7672880e329de6cabed4f001a56c09694e2082e264c5040c"
+  },
+  "unchanged_internal_header_sha256": "43564db0238aebb7ed68501e346c194866b5dac218d1d37b26baff9f458c00d3",
+  "runtime_directory": "/home/end0/AI/LlamaServer/exp117-expert-bound/build/bin",
+  "changed_runtime_files": [
+    "libllama.so.0.7.0",
+    "libggml-cuda.so.0.27.0"
+  ],
+  "gpu_kernel_instances": "Reused unchanged from accepted runtime; modified host dispatch and callback/cache metadata only.",
+  "model_identity": "Same Apex-35B-V1.0 Q4_K_M as the accepted EXP107 profile; weights and precision unchanged."
+}

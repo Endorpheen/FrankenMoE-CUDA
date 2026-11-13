@@ -1,0 +1,102 @@
+{
+  "status": "PASS_EXP150_FUNCTIONAL_BATCH_WITH_P2_14_CLOSURE_NOT_FULL_CYCLE",
+  "newly_closed_requirements": [
+    "P2-14"
+  ],
+  "additional_progress": [
+    "P1-10"
+  ],
+  "cases": {
+    "cache_budget_native_differential": 30296,
+    "registry_and_hbm_policy": 210,
+    "compiled_hbm_stub": 5,
+    "composite": 326,
+    "apex_contract": 66,
+    "workspace": 960,
+    "backend_buffer": 174
+  },
+  "apex": {
+    "status": "COMPLETED_SINGLE_DIAGNOSTIC_NOT_B1_ACCEPTANCE",
+    "name": "audit-exp150-omp-apex-32k128",
+    "wall_seconds": 16.876798401004635,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 12336.025,
+      "prompt_per_token_ms": 0.3764656066894531,
+      "prompt_per_second": 2656.28514857906,
+      "predicted_n": 128,
+      "predicted_ms": 4522.953,
+      "predicted_per_token_ms": 35.613803149606305,
+      "predicted_per_second": 28.079000599829357
+    },
+    "exact": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "matching_token_positions": 128,
+    "sampled_rss_peak_mib": 21312.08984375,
+    "process_hwm_mib": 21312.08984375,
+    "sampled_anon_peak_mib": 696.2890625,
+    "sampled_file_peak_mib": 19961.984375,
+    "process_swap_peak_kib": 0,
+    "sampled_gpu_peak_mib": 3348,
+    "system_swapout_pages_delta": 0,
+    "loadavg_start": [
+      2.8271484375,
+      2.42578125,
+      2.13818359375
+    ],
+    "loadavg_end": [
+      3.6474609375,
+      2.62841796875,
+      2.2109375
+    ],
+    "preliminary": true,
+    "controlled_quiet_run": false,
+    "baseline": "Saved original C++ measurement, identical request and workload argv",
+    "quality_scope": "One fixed-prompt response equivalence only; not a general quality benchmark",
+    "no_optimization": true,
+    "no_microbenchmarks": true,
+    "no_repeated_series": true,
+    "no_b1_acceptance": true
+  },
+  "previous_exp149": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 12381.366,
+    "prompt_per_token_ms": 0.37784930419921875,
+    "prompt_per_second": 2646.5577384595526,
+    "predicted_n": 128,
+    "predicted_ms": 4462.08,
+    "predicted_per_token_ms": 35.13448818897638,
+    "predicted_per_second": 28.462062535857715
+  },
+  "saved_cpp": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 11226.145,
+    "prompt_per_token_ms": 0.34259475708007814,
+    "prompt_per_second": 2918.9004774123264,
+    "predicted_n": 128,
+    "predicted_ms": 4292.094,
+    "predicted_per_token_ms": 33.79601574803149,
+    "predicted_per_second": 29.589286721120274
+  },
+  "performance_delta_percent": {
+    "cpp": {
+      "prompt_per_second": -8.997063478713763,
+      "predicted_per_second": -5.1041653539181215
+    },
+    "exp149": {
+      "prompt_per_second": 0.36754951453163986,
+      "predicted_per_second": -1.3458685067034737
+    }
+  },
+  "performance_scope": "Single uncontrolled-load diagnostic,saved C++ control,not contemporaneous repeated fresh pairs. No stable speed parity/no-regression/3000/30 claim. Cache/HBM policies do not execute in the fixed no-cache/no-HBM Apex profile and rely on their separate differential/API gates.",
+  "discarded_gate": "Early common results loaded copied inherited CPU aliases;archived and invalidated explicitly. Both release/sanitized common gates were rerun against corrected aliases before Apex. Direct cache/registry fixtures unaffected.",
+  "production_changed": false,
+  "compiler_changed": false,
+  "post_diagnostic_current_candidate": "Typed fill-ABI correction passed local release/scoped sanitizer gates;exact whole-candidate Apex deferred to large-cycle end. Earlier recorded request retains original artifact hashes. CPU DSO unchanged."
+}

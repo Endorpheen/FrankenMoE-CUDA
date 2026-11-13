@@ -1,0 +1,38 @@
+== EXP-035 synthetic boundary suite ==
+
+## original scripts/run_qwen38_server.sh
+== variant: orig (scripts/run_qwen38_server.sh)
+if (( sys_rate > 2097152 )) || { (( sys_rate > 512 )) && (( ++burst_secs >= 5 )); }; then
+  hard-rate 2049 single sample                 expect=no-trip got=no-trip OK
+  hard-rate 2048 single sample                 expect=no-trip got=no-trip OK
+  hard-rate 2047 single sample                 expect=no-trip got=no-trip OK
+Sustained system swap I/O at 600 MiB/s; stopping server
+  burst 5 consecutive >512                     expect=trip    got=trip    OK
+  burst 4 consecutive >512                     expect=no-trip got=no-trip OK
+  burst 4x600 reset normal 4x600               expect=no-trip got=no-trip OK
+  rate exactly 512, 8 samples                  expect=no-trip got=no-trip OK
+== proc VmSwap burst constants (expression parity, strict >)
+  255 MiB -> internal(>262144KiB)=no-trip external(>262144KiB)=no-trip MATCH
+  256 MiB -> internal(>262144KiB)=no-trip external(>262144KiB)=no-trip MATCH
+  257 MiB -> internal(>262144KiB)=trip    external(>262144KiB)=trip    MATCH
+pass=7 fail=0
+rc=0
+
+## fixed copy (sys_rate > 2048)
+== variant: --fixed (/tmp/tmp.IjXXD4bBX1/script.fixed.sh)
+if (( sys_rate > 2048 )) || { (( sys_rate > 512 )) && (( ++burst_secs >= 5 )); }; then
+Sustained system swap I/O at 2049 MiB/s; stopping server
+  hard-rate 2049 single sample                 expect=trip    got=trip    OK
+  hard-rate 2048 single sample                 expect=no-trip got=no-trip OK
+  hard-rate 2047 single sample                 expect=no-trip got=no-trip OK
+Sustained system swap I/O at 600 MiB/s; stopping server
+  burst 5 consecutive >512                     expect=trip    got=trip    OK
+  burst 4 consecutive >512                     expect=no-trip got=no-trip OK
+  burst 4x600 reset normal 4x600               expect=no-trip got=no-trip OK
+  rate exactly 512, 8 samples                  expect=no-trip got=no-trip OK
+== proc VmSwap burst constants (expression parity, strict >)
+  255 MiB -> internal(>262144KiB)=no-trip external(>262144KiB)=no-trip MATCH
+  256 MiB -> internal(>262144KiB)=no-trip external(>262144KiB)=no-trip MATCH
+  257 MiB -> internal(>262144KiB)=trip    external(>262144KiB)=trip    MATCH
+pass=7 fail=0
+rc=0

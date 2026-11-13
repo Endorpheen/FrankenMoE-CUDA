@@ -1,0 +1,18 @@
+date=2026-09-16T01:10:12+03:00
+gpu=NVIDIA GeForce RTX 4070, 12282 MiB
+pcie_gen_width=4, 16
+cpu=32 threads
+mem_total=MemTotal: 63643556 kB
+memlock_ulimit_l=8192 KiB
+glibc=ldd (Ubuntu GLIBC 2.43-2ubuntu2.4) 2.43
+gcc=g++-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0
+cuda_toolkit=Cuda compilation tools, release 12.6, V12.6.85
+cuda_driver=580.178.04
+0d3bee424f0d561eb4d07c5c2aff56152eaa020e5cd837fa4dc2bd18681d8ba7  exp070_transfer3.cpp
+d1221c1021af9cf36ae9c7371e6bc490836668d5675a4405c39a93ede9cebefb  exp070_pinprobe.cpp
+8b58328ed61b0bfea88021e7f0a895233a9a56f078fc65a9ababe4da6b3f6f79  exp070_ranges.txt
+19853de0ad0e0611b353101e5afd27edd53c5fe64eeb9835391f9b86d30cf5e3  build.sh
+fc5921c66a17d67e6bb0f749c414185762ba97fe470246a3fd94823c1c98ba71  run_arm.sh
+864b7d74e9d338f7a17baae8436d2a85239ee53b962b98c74b551ceda3326c39  gen_exp070_ranges.py
+c59c359a6b901c8dc074a073021440790b521a7ce7fb1651af7d80df3b9b6fe9  /home/end0/AI/FrankenMoE-CUDA/build/exp070-transfer3/exp070_transfer3
+2dd3cc97a219b3eaa9e13cee8b2ce376ee2899c3ecdb5b087ed7d58935425d96  /home/end0/AI/FrankenMoE-CUDA/build/exp070-transfer3/exp070_pinprobe

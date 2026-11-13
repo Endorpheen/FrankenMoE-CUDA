@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "a single-sequence record may carry one id",
+    "status": "CAUGHT",
+    "failures": 1991,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an empty single-sequence section still reads records",
+    "status": "CAUGHT",
+    "failures": 75,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a failed slot search is ignored",
+    "status": "CAUGHT",
+    "failures": 290,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the whole cache is not cleared before reading",
+    "status": "CAUGHT",
+    "failures": 6341,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a second tail is accepted",
+    "status": "CAUGHT",
+    "failures": 1130,
+    "exit_code": 1
+  },
+  {
+    "mutation": "an id above the range is accepted",
+    "status": "CAUGHT",
+    "failures": 1090,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a transposed state is accepted",
+    "status": "CAUGHT",
+    "failures": 462,
+    "exit_code": 1
+  },
+  {
+    "mutation": "null layers are read anyway",
+    "status": "CAUGHT",
+    "failures": 1202,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a zero-length section still reads tensors",
+    "status": "CAUGHT",
+    "failures": 148,
+    "exit_code": 1
+  }
+]

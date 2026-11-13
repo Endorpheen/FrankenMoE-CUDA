@@ -1,0 +1,8 @@
+# MANIFEST — experiments/designs/exp057
+# copied 2026-09-15T22:19:56+03:00 from /tmp/exp057-designs/
+5cafcfc919042551b546112e7aca64622d830621748f43f256edae279b651c2f  experiments/designs/exp057/D1-host-serialization.md
+47b461932a43827d041f2ba1a9c74943478ece295305141fa7b5fba2aaa46435  experiments/designs/exp057/D2-knob-survey.md
+bfcabb310944e13e6ff6c4c8acd3aa05003aebc73595783ee3f368d9ec19f50c  experiments/designs/exp057/D3-thread-affinity.md
+17927df9479357edc5c5a159784ee4ccbd2639d7ba118e33c5b0696f64328f80  experiments/designs/exp057/D4-ring-depth3.md
+1913026fe93d050ae27d55675378d8d031b1be9447cfd3d0bca82bfd1a97f7dd  experiments/designs/exp057/patch-ring-depth3.patch
+c2687b97f002e0ccfe40d52f08a1604be7b7bc7f08aeb1aab4050e59657df9dc  experiments/designs/exp057/patch-ring-depth3-test.patch

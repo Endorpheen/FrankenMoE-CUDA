@@ -1,0 +1,30 @@
+{
+  "status": "ACCEPTED",
+  "reference_project_commit": "380cf838c9caf4187899f2ac2a28251af5a52955",
+  "reference_engine": "EXP087",
+  "source_base_commit": "1b44e30775dcb2f93952116b05f89e5bd797fb00",
+  "prerequisite_patches": [
+    "patches/flint-apex-prefix-baseline.patch",
+    "patches/lazy-pp-reservation.patch"
+  ],
+  "feature_patch": "patches/mmap-expert-registration.patch",
+  "feature_patch_sha256": "01038b582f008d6c628055bdd44d62442be82b64b8d4b3981400beeb384cf0ab",
+  "compiled_source_sha256": {
+    "src/llama-model.cpp": "21e7944eaa73c77d10b7cb4f19f29246edc85fc1d243e3de57c588c97bf451a8",
+    "src/llama-model.h": "498629fc8066de075d9eccab3b2c489aed5462cd7dd6e00c8a2488456eee3b21",
+    "src/llama-context.cpp": "83fb3b178be8143794cd8711d25c53b971b44c76ef417e7b209174b4ffcf7cb6",
+    "src/llama-mmap-expert-pin.h": "fbac8f0162b4359e68d60913e3e52ffb8a317ed9099e7cb51a1afe2fb31866cf",
+    "ggml/src/ggml-cuda/ggml-cuda.cu": "c5b49a120ca24a08384983d0ede0a8118b676ba57033a9053b10c4aded783db9"
+  },
+  "candidate_build_directory": "/home/end0/AI/LlamaServer/exp089-mmap-register",
+  "only_changed_runtime_components": [
+    "libllama.so.0.7.0",
+    "libggml-cuda.so.0.27.0"
+  ],
+  "public_model_abi": "Nonvirtual internal method only; no public object layout/vtable changes",
+  "controls": "Control model and libllama bit-identical; control CUDA differs only in nonloaded NVCC filename metadata; loaded code/data/fatbins identical",
+  "unsupported_policy": "Old pageable path for unsupported context/device/OS, nonresident pages, insufficient host budget or any registration failure",
+  "patch_replay_matches_compiled_sources": true,
+  "patch_replay_log": "patching file src/llama-model.cpp\npatching file src/llama-model.h\npatching file src/llama-context.cpp\npatching file src/llama-mmap-expert-pin.h\npatching file ggml/src/ggml-cuda/ggml-cuda.cu\n",
+  "baseline_activation": "baseline-activation.json"
+}

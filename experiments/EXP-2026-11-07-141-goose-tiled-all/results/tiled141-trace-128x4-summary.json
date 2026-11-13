@@ -1,0 +1,37 @@
+{
+  "name": "tiled141-trace-128x4",
+  "wall_seconds": 2.4545464359689504,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 2107.791,
+    "prompt_per_token_ms": 16.4671171875,
+    "prompt_per_second": 60.72708347269724,
+    "predicted_n": 4,
+    "predicted_ms": 336.952,
+    "predicted_per_token_ms": 112.31733333333334,
+    "predicted_per_second": 8.903345283601226
+  },
+  "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+  "tokens": [
+    58558,
+    13,
+    198,
+    760
+  ],
+  "sampled_rss_peak_mib": 16087.6796875,
+  "process_hwm_mib": 20878.421875,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 423.9765625,
+  "sampled_file_peak_mib": 15663.703125,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    3.697265625,
+    4.17333984375,
+    3.32470703125
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

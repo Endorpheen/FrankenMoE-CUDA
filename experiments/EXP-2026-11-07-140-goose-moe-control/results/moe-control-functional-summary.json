@@ -1,0 +1,38 @@
+{
+  "status": "PASS_COMMON_MOE_LAYOUT_GROUPING_DISPATCH_SERVICE_FIXTURE",
+  "layout_cases": 4096,
+  "control_cases": 90,
+  "compared_service_events": 29317,
+  "grouped_routes": 4080,
+  "threads": [
+    1,
+    2,
+    8
+  ],
+  "stock_cold_bank": true,
+  "bank_real_ids_exceed_slots": true,
+  "strided_ids": true,
+  "inputs_and_sentinels_preserved": true,
+  "invalid_plan_rejections": {
+    "overflow": {
+      "exit": 1,
+      "stderr": "goose runtime error: assertion failed"
+    },
+    "workspace": {
+      "exit": 1,
+      "stderr": "goose runtime error: assertion failed"
+    },
+    "thread": {
+      "exit": 1,
+      "stderr": "goose runtime error: assertion failed"
+    },
+    "alignment": {
+      "exit": 1,
+      "stderr": "goose runtime error: assertion failed"
+    }
+  },
+  "scope": "Goose control with mocked quant/matrix/tiled/atomic/barrier services; actual native backend/model integration pending",
+  "performance_claim": false,
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "goose_sha256": "dd9c1d59dfc528fd38ef62b5e94a11c67ceddc2e4d98c46422b19292d91e6c98"
+}

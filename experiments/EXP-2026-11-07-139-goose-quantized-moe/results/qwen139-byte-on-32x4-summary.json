@@ -1,0 +1,37 @@
+{
+  "name": "qwen139-byte-on-32x4",
+  "wall_seconds": 1.7216606470756233,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32,
+    "prompt_ms": 1263.32,
+    "prompt_per_token_ms": 39.47875,
+    "prompt_per_second": 25.33008263939461,
+    "predicted_n": 4,
+    "predicted_ms": 449.094,
+    "predicted_per_token_ms": 149.698,
+    "predicted_per_second": 6.680115966813184
+  },
+  "content_sha256": "688f6ce92ab06ee74fd34c8db23df3b2fa8492ceeeb6ece7982cee726db5f2c8",
+  "tokens": [
+    321,
+    2426,
+    279,
+    1785
+  ],
+  "sampled_rss_peak_mib": 15349.79296875,
+  "process_hwm_mib": 15349.79296875,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 609.65625,
+  "sampled_file_peak_mib": 14438.79296875,
+  "sampled_gpu_peak_mib": 6196,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    2.6064453125,
+    3.15771484375,
+    3.10693359375
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

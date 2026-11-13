@@ -1,0 +1,92 @@
+{
+  "status": "PASS_SCHEDULER_NATIVE_PARITY_ROLLBACK_FAILURE_THREADS_EXPERT",
+  "runs": [
+    {
+      "label": "parity",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS scheduler cases=44 callback_events=18661 checks=13370 mask=0x140003ffc001ff rollback=0\nPASS wide72inputs=2 compute_failure=1 checks=13976\n"
+    },
+    {
+      "label": "rollback",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS scheduler cases=44 callback_events=18661 checks=13370 mask=0x0 rollback=1\nPASS wide72inputs=2 compute_failure=1 checks=13976\n"
+    },
+    {
+      "label": "faults",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so",
+        "faults"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS constructor_failure_sites=12 checks=34\n"
+    },
+    {
+      "label": "threads",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so",
+        "threads"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS independent_threads=4 scheduler_lifecycles=32 checks=4128\n"
+    },
+    {
+      "label": "expert-parity",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS scheduler cases=44 callback_events=18661 checks=13370 mask=0x140003ffc001ff rollback=0\nPASS wide72inputs=2 compute_failure=1 expert_paths=10 checks=14894\n"
+    },
+    {
+      "label": "expert-rollback",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS scheduler cases=44 callback_events=18661 checks=13370 mask=0x0 rollback=1\nPASS wide72inputs=2 compute_failure=1 expert_paths=10 checks=14894\n"
+    },
+    {
+      "label": "final-faults",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so",
+        "faults"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS constructor_failure_sites=12 checks=34\n"
+    },
+    {
+      "label": "final-threads",
+      "argv": [
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/fixture",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-native.so",
+        "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp164/build/libstream-candidate.so",
+        "threads"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS independent_threads=4 scheduler_lifecycles=32 checks=4128\n"
+    }
+  ],
+  "fixtures": "44placement/reuse modes+2wide72input graphs+1compute failure+10expert phase routes;12constructor OOM sites;4threads32independent scheduler lifecycles",
+  "model_runs": 1,
+  "production_changed": false
+}

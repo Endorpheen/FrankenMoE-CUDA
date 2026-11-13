@@ -1,0 +1,12 @@
+Zen 3 single pinned core, -O3 -march=native, working build libs
+
+iq2_s    n=      4096 blocks=      16 iters= 200000 |     15.46 ns/block |    22.53 GiB/s |   16556.06 Melem/s | s=22602.5117
+iq2_s    n=   4194304 blocks=   16384 iters=    400 |     15.52 ns/block |    22.45 GiB/s |   16497.10 Melem/s | s=22764028.0000
+iq2_s    n= 134217728 blocks=  524288 iters=     12 |     19.77 ns/block |    17.62 GiB/s |   12948.09 Melem/s | s=728838144.0000
+iq2_s    stream baseline on the same buffers:    23.69 GiB/s
+
+iq4nl    n=       512 blocks=      16 iters= 200000 |      1.49 ns/block |    32.47 GiB/s |   21457.39 Melem/s | s=2816.2207
+iq4nl    n=    524288 blocks=   16384 iters=    400 |      1.22 ns/block |    39.73 GiB/s |   26249.39 Melem/s | s=2786040.2500
+iq4nl    n=  16777216 blocks=  524288 iters=     12 |      1.66 ns/block |    29.17 GiB/s |   19273.45 Melem/s | s=89289512.0000
+iq4nl    n= 134217728 blocks= 4194304 iters=     30 |      2.23 ns/block |    21.76 GiB/s |   14377.90 Melem/s | s=714265600.0000
+iq4nl    stream baseline on the same buffers:    22.02 GiB/s

@@ -1,0 +1,44 @@
+[
+  {
+    "mutation": "used rows are accepted",
+    "status": "CAUGHT",
+    "failures": 11012,
+    "exit_code": 1
+  },
+  {
+    "mutation": "overlapping sets are accepted",
+    "status": "CAUGHT",
+    "failures": 15431,
+    "exit_code": 1
+  },
+  {
+    "mutation": "sequential order is not enforced",
+    "status": "CAUGHT",
+    "failures": 4812,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the break happens at the limit, not one past it",
+    "status": "CAUGHT",
+    "failures": 5941,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the cursor does not move past used rows",
+    "status": "CAUGHT",
+    "failures": 1484,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the cursor skips one row too many",
+    "status": "CAUGHT",
+    "failures": 6479,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the final count is reported as zero",
+    "status": "CAUGHT",
+    "failures": 4862,
+    "exit_code": 1
+  }
+]

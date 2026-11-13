@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "qs offset 8 -> 9",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "qs row offset 4*il -> 2*il",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scales_l index ib/2 -> ib",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scale bias 32 -> 31",
+    "status": "CAUGHT",
+    "failures": 4
+  },
+  {
+    "mutation": "scales_h shift 2*ib -> ib",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]

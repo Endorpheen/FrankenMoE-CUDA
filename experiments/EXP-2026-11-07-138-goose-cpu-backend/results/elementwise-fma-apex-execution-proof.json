@@ -1,0 +1,139 @@
+{
+  "status": "PASS_REAL_APEX_FULL_BINARY_UNARY_WITH_OPEN_NAN_PAYLOAD_LIMIT",
+  "checks": {
+    "probe": {
+      "equal_pair_and_original_cpu_reference": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      },
+      "request_equal": true
+    },
+    "2048": {
+      "equal_pair_and_original_cpu_reference": {
+        "content": true,
+        "tokens": true,
+        "completion_probabilities": true
+      },
+      "request_equal": true
+    }
+  },
+  "witness": {
+    "off": {
+      "total_values": 0,
+      "operations": []
+    },
+    "on": {
+      "total_values": 3795832944,
+      "operations": [
+        {
+          "mode": 0,
+          "op": 7,
+          "calls": 8908,
+          "values": 92225904
+        },
+        {
+          "mode": 0,
+          "op": 17,
+          "calls": 1620,
+          "values": 2110080
+        },
+        {
+          "mode": 1,
+          "op": 0,
+          "calls": 22900,
+          "values": 1758147200
+        },
+        {
+          "mode": 1,
+          "op": 2,
+          "calls": 18816,
+          "values": 1942663808
+        },
+        {
+          "mode": 1,
+          "op": 3,
+          "calls": 2128,
+          "values": 685952
+        }
+      ]
+    }
+  },
+  "runs": {
+    "off": {
+      "name": "element-fma-cpu-off-2048",
+      "wall_seconds": 21.058657046989538,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 19608.414,
+        "prompt_per_token_ms": 9.5744208984375,
+        "prompt_per_second": 104.44495918945816,
+        "predicted_n": 16,
+        "predicted_ms": 1439.746,
+        "predicted_per_token_ms": 95.98306666666667,
+        "predicted_per_second": 10.418504375077271
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "sampled_rss_peak_mib": 21036.9453125,
+      "process_hwm_mib": 21036.9453125,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 786.1796875,
+      "sampled_file_peak_mib": 20250.765625,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        7.2587890625,
+        3.49169921875,
+        3.89306640625
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "on": {
+      "name": "element-fma-cpu-on-2048",
+      "wall_seconds": 20.912604963988997,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2048,
+        "prompt_ms": 19387.415,
+        "prompt_per_token_ms": 9.46651123046875,
+        "prompt_per_second": 105.63553728024081,
+        "predicted_n": 16,
+        "predicted_ms": 1514.863,
+        "predicted_per_token_ms": 100.99086666666668,
+        "predicted_per_second": 9.901885517040155
+      },
+      "content_sha256": "1ad5bc1d866877fbbb87cb5b339850c1aa5720dc797408ec52d29fc4e6af4f39",
+      "sampled_rss_peak_mib": 21036.94921875,
+      "process_hwm_mib": 21036.94921875,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 786.15234375,
+      "sampled_file_peak_mib": 20250.796875,
+      "sampled_gpu_peak_mib": 0,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        7.892578125,
+        4.2021484375,
+        4.083984375
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  },
+  "scope": "Entire binary-ops.cpp and unary-ops.cpp for all supported formats; prior Goose MoE and tiled paths kept enabled in both arms",
+  "not_ported": "GELU/SiLU/GLU implementations elsewhere in ops.cpp, physical allocator/threadpool services and the rest of CPU backend",
+  "trace_enabled": true,
+  "preliminary": true,
+  "production_accepted": false,
+  "strict_nan_payload_gate": "Still fails at170 release values in independent edge corpus; ordinary values, infinities, signed zeros and actual Apex all match exactly",
+  "producer_sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f",
+  "sanitizer_report": "elementwise-fma-sanitizer-summary.json",
+  "pending": [
+    "Counter-free operation and model timing",
+    "Broader CPU backend migration",
+    "Qwen major-milestone test"
+  ]
+}

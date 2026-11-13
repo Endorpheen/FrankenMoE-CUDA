@@ -1,0 +1,352 @@
+[
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-fixture-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-fixture-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-operation-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-operation-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-q6-efficient-fixture-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-q6-efficient-fixture-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-q6-efficient-operation-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-q6-efficient-operation-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-q6-efficient-sanitized-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-q6-efficient-sanitized-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-sanitized-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-sanitized-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-expanded-off.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-expanded-on.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-operation-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-operation-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-register-expanded-off.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-register-expanded-on.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-register-operation-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-register-operation-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-register-sanitized-off.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-register-sanitized-on.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-sanitized-off.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-sanitized-on.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-shaped-expanded-off.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-shaped-expanded-on.bin",
+    "bytes": 8687056,
+    "sha256": "fcf2afe50bfec436ebb8decbafd1dadfbf0359d17d456c18b50a1d44c999f767",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-shaped-operation-off.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/cpu-moe-tiled-shaped-operation-on.bin",
+    "bytes": 1346320,
+    "sha256": "dc9b270113824576dbb019e0a685f648f6d56627c7b4ff64c5073a82019040a0",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-fma-off.bin",
+    "bytes": 3409856,
+    "sha256": "654cc907b3b52077fbbe5e8153e0f30a8a24bae9c172c5cff238ee60313ffb42",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-fma-on.bin",
+    "bytes": 3409856,
+    "sha256": "61b54c5e971a2a75d52584a59936f9142cc3c83d2f161e59f9a2b8c2c7327f44",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-fma-operation-off.bin",
+    "bytes": 14039600,
+    "sha256": "76c1b970f2a0d8dae97f5fcbac00161e04b949513f67e2f6da5af9944de3a35a",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-fma-operation-on.bin",
+    "bytes": 14039600,
+    "sha256": "4beb54d6b6693c4e284d8cfd3ef83cb8e032de895ea8769e1fc2b7eeace78b83",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-fma-parent.bin",
+    "bytes": 3409856,
+    "sha256": "654cc907b3b52077fbbe5e8153e0f30a8a24bae9c172c5cff238ee60313ffb42",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-fma-sanitized-off.bin",
+    "bytes": 3409856,
+    "sha256": "654cc907b3b52077fbbe5e8153e0f30a8a24bae9c172c5cff238ee60313ffb42",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-fma-sanitized-on.bin",
+    "bytes": 3409856,
+    "sha256": "8f9f1451843c472c931144d12d66309ed4832459df929802f381aed7400baa86",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-off.bin",
+    "bytes": 3409856,
+    "sha256": "654cc907b3b52077fbbe5e8153e0f30a8a24bae9c172c5cff238ee60313ffb42",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-on.bin",
+    "bytes": 3409856,
+    "sha256": "61b54c5e971a2a75d52584a59936f9142cc3c83d2f161e59f9a2b8c2c7327f44",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-parent.bin",
+    "bytes": 3409856,
+    "sha256": "654cc907b3b52077fbbe5e8153e0f30a8a24bae9c172c5cff238ee60313ffb42",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-sanitized-off.bin",
+    "bytes": 3409856,
+    "sha256": "654cc907b3b52077fbbe5e8153e0f30a8a24bae9c172c5cff238ee60313ffb42",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-sanitized-on.bin",
+    "bytes": 3409856,
+    "sha256": "5abf1cb87acd7edc564a589307cc6b7387806cc7932e0619bae265980cee0265",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-off.bin",
+    "bytes": 14082848,
+    "sha256": "c62d0709e79a6252c20f5079a1be51f40b3b2d08e47a199adc538556051f1e2b",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-on.bin",
+    "bytes": 14082848,
+    "sha256": "b30866f4cd96b1c12b46f07e7316cc0c4edaca3b051317d2e2225cd1d2440466",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-operation-off.bin",
+    "bytes": 14082848,
+    "sha256": "c62d0709e79a6252c20f5079a1be51f40b3b2d08e47a199adc538556051f1e2b",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-operation-on.bin",
+    "bytes": 14082848,
+    "sha256": "b30866f4cd96b1c12b46f07e7316cc0c4edaca3b051317d2e2225cd1d2440466",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-parent.bin",
+    "bytes": 14082848,
+    "sha256": "c62d0709e79a6252c20f5079a1be51f40b3b2d08e47a199adc538556051f1e2b",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-sanitized-off.bin",
+    "bytes": 14082848,
+    "sha256": "c62d0709e79a6252c20f5079a1be51f40b3b2d08e47a199adc538556051f1e2b",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-sanitized-on.bin",
+    "bytes": 14082848,
+    "sha256": "fa354172261b828c6fbf9a2be242c1bffa0fb11537ad86a2107a8aefb527c26b",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  },
+  {
+    "path": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/results/elementwise-vector-trace-fixture.bin",
+    "bytes": 14082848,
+    "sha256": "b30866f4cd96b1c12b46f07e7316cc0c4edaca3b051317d2e2225cd1d2440466",
+    "included": false,
+    "reason": "Numeric corpus dumps remain local; deterministic fixtures and recorded hashes/results are included"
+  }
+]

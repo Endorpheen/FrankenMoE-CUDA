@@ -1,0 +1,26 @@
+{
+  "status": "PASS_SELECTED_BACKEND_API_CORRECTNESS_SAFETY_AND_FIXED_APEX_NOT_FULL_B1",
+  "cpu_sha256": "de3e727c099da6c8c365ae27559ea5528e9529c06a8eb7ec497dd889ed55fec6",
+  "wrapped_operator_entries": 86,
+  "native_fallback": "Present,explicitly counted; not qualified as complete B1",
+  "producer": {
+    "stage": "self-hosted EXP300 C11 frame-default Stage3",
+    "sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-454151b3449b",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp300-frame-scope-state/frame-default-bootstrap-v1",
+    "status": "PASS_CURRENT_C11_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "scope": "Current C11 scope/block source snapshot: Current production source serial bootstrap/fixed point after C11 scope/block integration. Confirms preservation of the working compiler, not full C11 scope/block producer/lifecycle acceptance.",
+    "compiler_source_changed": false
+  },
+  "working_runtime_changed": false,
+  "model_loaded": true,
+  "microbenchmarks": false,
+  "requirements_closed": 0,
+  "model_equivalence": "Exact one fixed32768/128Apex response vs original/previous",
+  "functional_graph_cases": 326,
+  "planning_cases": 960,
+  "apex_operator_contract_cases": 66,
+  "backend_api_records": 167,
+  "capability_queries": 28280,
+  "allocation_policy_cases": 9
+}

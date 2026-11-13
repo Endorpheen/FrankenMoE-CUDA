@@ -1,0 +1,37 @@
+{
+  "name": "moe-cpu-tiled-pure-on-probe",
+  "wall_seconds": 2.043135017971508,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 1769.215,
+    "prompt_per_token_ms": 13.8219921875,
+    "prompt_per_second": 72.34847093202353,
+    "predicted_n": 4,
+    "predicted_ms": 264.88,
+    "predicted_per_token_ms": 88.29333333333334,
+    "predicted_per_second": 11.325883418906676
+  },
+  "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+  "tokens": [
+    58558,
+    13,
+    198,
+    760
+  ],
+  "sampled_rss_peak_mib": 20669.62109375,
+  "process_hwm_mib": 20947.95703125,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 418.97265625,
+  "sampled_file_peak_mib": 20250.6484375,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    6.34619140625,
+    2.9599609375,
+    2.3515625
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}

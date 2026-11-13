@@ -1,0 +1,56 @@
+{
+  "status": "PASS_CURRENT_SELFHOSTED_C_AND_MECHANICAL_COMPUTE_HEADERS",
+  "compiler_sha256": "f849233b999ca9e931ca40dcbee51e292ec9e553d66bed32e2a4af27d46bdf3a",
+  "modules": [
+    {
+      "module": "vector-device",
+      "generated_c_sha256": "de93b7612cb47ba59bac5e79dbcb6838ca6741bbee7a190ccdaded41f8b2a880",
+      "function_count": 13
+    },
+    {
+      "module": "loaders-device",
+      "generated_c_sha256": "860e1628dad44594b51955e87dd991418aa4cc0abcbfbe87672b33e37ec08742",
+      "function_count": 2
+    },
+    {
+      "module": "staging-device",
+      "generated_c_sha256": "110aaa48d2245d6103b18ae2ed9bf919e988e879659519a557f57e277a296c35",
+      "function_count": 3
+    },
+    {
+      "module": "mma-iter-device",
+      "generated_c_sha256": "bf5be07252b0ee8a9b78de2e755b4336870a9bb3986955817222ad46fa815a75",
+      "function_count": 9
+    },
+    {
+      "module": "mma-process-device",
+      "generated_c_sha256": "c3d665beba19178532f1d0d9267caf5ba2ada2c374294672028696aeca4e252d",
+      "function_count": 7
+    },
+    {
+      "module": "mma-entry-device",
+      "generated_c_sha256": "b76ea08d6fb72ee3ad3da6739baf412082e4fb946c9eeb993977834420b36903",
+      "function_count": 4
+    },
+    {
+      "module": "mask-fixups-device",
+      "generated_c_sha256": "d5b561bbcbc65dca7daad534ef59d285c661a110c0997c9b89925fa06966a4b7",
+      "function_count": 6
+    },
+    {
+      "module": "value-prefill-device",
+      "generated_c_sha256": "270fba551090802adaae3c77af17863380c8ec945f6ef2e720ca868d0560438e",
+      "function_count": 12
+    },
+    {
+      "module": "value-prefill-device",
+      "generated_c_sha256": "270fba551090802adaae3c77af17863380c8ec945f6ef2e720ca868d0560438e",
+      "function_count": 12
+    },
+    {
+      "module": "host",
+      "generated_c_sha256": "a4eb9d66ef99f3e90057d380f957f9525cb7134c80ef9a77fe004bbc4d60b27d",
+      "function_count": 45
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "write drops the sequence count",
+    "status": "CAUGHT",
+    "failures": 856,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write skips every second sequence id",
+    "status": "CAUGHT",
+    "failures": 666,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read rejects an exactly full cache",
+    "status": "CAUGHT",
+    "failures": 6460,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read accepts a duplicate tail",
+    "status": "CAUGHT",
+    "failures": 122,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read accepts a far out-of-range sequence id",
+    "status": "CAUGHT",
+    "failures": 23,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read leaves the used count at zero",
+    "status": "CAUGHT",
+    "failures": 98,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read does not stage the source index",
+    "status": "CAUGHT",
+    "failures": 1606,
+    "exit_code": 1
+  },
+  {
+    "mutation": "read forgets the sequence bit",
+    "status": "CAUGHT",
+    "failures": 522,
+    "exit_code": 1
+  }
+]

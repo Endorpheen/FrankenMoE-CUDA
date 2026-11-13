@@ -1,0 +1,4 @@
+{
+  "status": "INVALID_FOR_EXP150_CPU_INTEGRATION",
+  "reason": "Copied aliases libggml-cpu.so and .so.0 still held inherited EXP149 bytes; direct new cache/registry object fixtures unaffected; no Apex request or requirement closure relied on these common gate results."
+}

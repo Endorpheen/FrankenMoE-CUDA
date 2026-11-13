@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-06-037-offline-transfer-budget",
+  "status": "ACCEPTED",
+  "kind": "infrastructure",
+  "note": "Offline analysis of saved traces only. No server, model, profiler, benchmark, build, or runtime code change. No new measurements. No performance claim.",
+  "sources": {
+    "sqlite": "results/archive/EXP-2026-09-06-034/raw/exp031b/exp031b-cuda-prefill-1788632387.sqlite",
+    "sqlite_sha256": "dc78ade311faba10274fde4aea935334fcd93f73becbb83beb7d986a760ab8e4",
+    "nsys_rep_sha256": "95327d456f14586ddf93504e17c4c15980fc628be63754a3e3395c4db8064182",
+    "server_log_sha256": "b01cedf4f384abe77a77609968765365efbcecd60aedcc0a61b5248f6f1b4f84",
+    "response_sha256": "768a520b230c919a5b9f80501756d272ae1549b76eaaeff67f4b42c01def7940",
+    "stats_txt_sha256": "d1266f9e70cae8d930cd589400c607e467887aa9ba7dedf321d6422dc2ee5a4d",
+    "exp032_h2d_log_sha256": "3267cbeaeec4f25fd328e88db8b882f73b2b307ad0913d452b6aa56577b55945",
+    "exp032_server_log_sha256": "6714c43b5ed0008b19ed121cc095684c7ab492990bab0e24e21e3a5add610420",
+    "exp032_request_sha256": "0b7524b3dde8e862be3b3bdf608bccb41c2a9882cc2305df7ca8ee32b9153862",
+    "exp032_response_sha256": "b564e55a2fefbb7be945ae4f0fb9012b173da3d5e44c2accb0c167c493596281",
+    "access_mode": "SQLite opened via file:...?immutable=1 (strict read-only, no copy, no WAL)"
+  },
+  "clock_domains": {
+    "cupti_timestamps": "ns since profiler session start (TARGET_INFO_SESSION_START_TIME epoch ns 1788632388440732080)",
+    "server_log": "relative process timer; NOT numerically joined to CUPTI ns, only order-anchored (idle-gap burst, cleanup line at 50.888 s vs last RUNTIME 51.137 s)",
+    "exp032_h2d_log": "separate process, own CLOCK_MONOTONIC us; never joined to CUPTI ns"
+  },
+  "request_window": {
+    "ws_ns": 10417843203,
+    "we_ns": 14363385682,
+    "span_ms": 3945.542,
+    "method": "burst bounded by a 7023.060 ms memcpy idle gap before and session tail after; matches EXP-031 saved kernel span 3945.22 ms (0.008% diff: saved span was kernel-min-start to kernel-max-end, window starts at first memcpy)"
+  },
+  "copies_in_window": {
+    "h2d_calls": 17975,
+    "h2d_bytes": 23286617380,
+    "h2d_mib": 22207.85,
+    "dtoh_calls": 222,
+    "dtoh_mib": 168.43,
+    "dtod_calls": 817,
+    "dtod_mib": 471.60,
+    "dtod_note": "566 via cudaMemcpy2DAsync + 249 via cudaMemcpyAsync on stream 16; not expert weights",
+    "expert_h2d_stream16_calls": 17886,
+    "expert_h2d_stream16_mib": 22160.56,
+    "expert_h2d_stream16_span_ms": 3610.294,
+    "cross_check": "expert-only count/volume equals EXP-032 (17886 / 22160.56 MiB) to the byte; EXP-031 saved totals matched exactly (17975 / 22207.85)"
+  },
+  "h2d_size_bytes": { "median": 922112, "p90": 2765312, "p99": 5530112, "max": 16015360, "min": 4 },
+  "host_api_in_window": {
+    "cudaMemcpyAsync_calls": 18445, "cudaMemcpyAsync_sum_ms": 3118.249, "cudaMemcpyAsync_union_ms": 3118.249,
+    "cudaMemcpy2DAsync_calls": 568, "cudaMemcpy2DAsync_sum_ms": 2.872,
+    "cudaLaunchKernel_calls": 9755, "cudaLaunchKernel_sum_ms": 53.468,
+    "cudaStreamSynchronize_calls": 1114, "cudaStreamSynchronize_sum_ms": 395.664,
+    "memcpyAsync_host_union_ms": 3121.121,
+    "memcpy_plus_sync_host_union_ms": 3516.785,
+    "memcpy_plus_sync_host_union_percent_of_window": 89.14,
+    "per_call_submission_mean_us": 164.2, "per_call_submission_max_ms": 2.237
+  },
+  "gpu_activity_in_window": {
+    "gpu_h2d_sum_ms": 1661.183, "gpu_h2d_union_ms": 1661.183,
+    "gpu_dtoh_sum_ms": 9.962, "gpu_dtod_sum_ms": 2.707,
+    "kernel_sum_ms": 438.915, "kernel_union_ms": 438.915,
+    "memset_sum_ms": 0.017,
+    "h2d_kernel_intersect_ms": 0.0,
+    "gpu_busy_union_ms": 2112.785, "busy_segments": 29225,
+    "gaps_without_cuda_activity_ms": 1832.758, "gaps_gt_1ms_count": 67, "max_gap_ms": 58.100,
+    "cross_check": "gpu_h2d_union 1661.183 vs EXP-031 saved 1661.18; kernel_sum 438.915 vs saved 438.91; MMQ groups 128.914/91.642/15.969 vs saved 128.91/91.64/15.97"
+  },
+  "streams": {
+    "stream16": "main compute+copy stream: 18752 copies (22681.24 MiB incl expert H2D), 10078 kernels 429.734 ms, 818 syncs 391.005 ms",
+    "stream13": "260 copies (162.78 MiB: 89 H2D 47.29 + 171 DtoH 115.49), 259 syncs 3.445 ms, no kernels; DtoH readbacks at 14.195-14.359 s",
+    "stream17": "2 copies (3.86 MiB DtoD), 85 kernels 9.181 ms, 23 syncs"
+  },
+  "adjacency_of_expert_ranges": {
+    "source": "exp032-h2d-ts/h2d.log (17886 records, 144 unique tensors = 48 layers x 3 projections)",
+    "consecutive_pairs_adjacent": 0,
+    "consecutive_pairs_same_tensor_percent": 99.2,
+    "intra_tensor_gap_bytes": { "min": 524288, "median": 1049088, "max": 14745088 },
+    "interpretation": "zero adjacent pairs is consistent with exact-adjacent ID merging already done in the scheduler (ggml-backend.cpp copy_experts loop merges id==last_id+1 runs); no new coalescing patch is justified",
+    "log_size_percentiles_bytes": { "median": 922112, "p90": 2765312, "p99": 5530112, "max": 11981312 }
+  },
+  "dependency_map": {
+    "scheduler": "ggml/src/ggml-backend.cpp:1596 ggml_backend_sched_compute_splits: per split copies inputs then enqueues graph compute (1745); cross-split allocator-reuse barrier at 1613-1619 uses events when present",
+    "copy_experts_branch": "ggml-backend.cpp:1643-1727: weights buffer + host source + MUL_MAT_ID head; reads router IDs host-side with get_async + full backend synchronize (1655, 1673-1674); merges consecutive IDs into runs (1705-1727) with <=512 B trailing padding; each run submitted by ggml_backend_tensor_set_async (1697)",
+    "cuda_submission": "ggml/src/ggml-cuda/ggml-cuda.cu:2439 ggml_backend_cuda_set_tensor_async: cudaMemcpyAsync from raw pageable mmap host pointer into cuda_ctx->stream() (the same single compute stream)",
+    "staging_memory": "no host staging exists on the expert path: src is the mmap GGUF buffer itself; dst is a persistent device weights-buffer tensor overwritten per split; no allocator/pool involvement",
+    "synchronization": "events only for cross-split barriers; per-node ids read forces ggml_backend_synchronize on CUDA backend (1114 cudaStreamSynchronize, 395.664 ms host, max 8.622 ms)",
+    "last_destination_consumer": "MUL_MAT_ID nodes of the same split on the same stream; next overwrite of the same tensor happens only on the next request, stream-ordered; lifetime is clear"
+  },
+  "budget": {
+    "dominant_component": "host pageable cudaMemcpyAsync: host union 3121.121 ms inside a 3945.542 ms window (79.1%); GPU busy union only 2112.785 ms; H2D/kernel intersection exactly 0.000 ms; 1832.758 ms of GPU gaps (waiting on submission, not CPU idle)",
+    "r4_prediction": {
+      "saved_host_critical_time_ms": "up to ~3070 (pageable submission 3121 replaced by pinned submission ~95-380 for 19013 calls)",
+      "added_gather_cost_ms": "1080-2700 CPU memcpy of 21.64 GiB (unknown single-thread bandwidth 8-20 GiB/s), partially overlappable with GPU H2D consumption 1661 ms via 2 slots",
+      "expected_net_gain_percent_range": "10-35, central ~20",
+      "unknowns": ["single-thread host memcpy bandwidth", "overlap fraction at ring depth 2", "page-cache state of mmap source"]
+    }
+  },
+  "gates": {
+    "r4": "ALLOWED: host-side submission bottleneck proven (host union 3121.121 ms, gaps 1832.758 ms, intersection 0.000 ms); two bounded staging slots safely possible (dst lifetime clear, no allocator barriers to remove); expected net gain range 10-35% with central ~20% > 5% gate",
+    "r5": "NOT_RUN: no proven independent intra-layer H2D/compute window. Intersection is 0.000 ms and structurally capped: total kernel union is only 438.915 ms, so perfect compute-side hiding saves at most ~11% of the window; router IDs for later nodes are not available before prior-split compute, so no expert copy can legally start earlier than the scheduler already starts it. Destination lifetime is clear, but the window requirement fails. Direction DEFERRED."
+  },
+  "consistency_check": "all recomputed values match saved EXP-031/032 summaries within 0.01% (exact on counts and bytes); EXP-032 span 3634.692 ms is a different run of the same deterministic request; EXP-031b expert span 3610.294 ms (0.7% cross-run difference, both recorded)"
+}

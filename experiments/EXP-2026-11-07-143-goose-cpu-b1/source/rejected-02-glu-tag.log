@@ -1,0 +1,3 @@
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-backend/kernel.goose:136: error: unknown variable 'GLU_REGLU'
+            if op==GLU_REGLU {value=(if a>(0 as f32) {a} else {(0 as f32)})*b;}
+                   ^

@@ -1,0 +1,6 @@
+{
+  "original": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp162/run/libggml-base-buffers-6273a37c65ee.so.0.27.0",
+  "original_sha256": "21aa28e93bde67640f99d811dabe17277be0d75ed537f2fb6dc992f6bc8cc01c",
+  "relink_sha256": "21aa28e93bde67640f99d811dabe17277be0d75ed537f2fb6dc992f6bc8cc01c",
+  "unchanged_cpu_cuda_llama": true
+}

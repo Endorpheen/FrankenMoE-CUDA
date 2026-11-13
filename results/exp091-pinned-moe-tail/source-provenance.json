@@ -1,0 +1,32 @@
+{
+  "status": "REJECTED",
+  "reference_project_commit": "28a854aac223e930336b780e4511d60bf817c46b",
+  "reference_runtime": "EXP090",
+  "candidate_root": "/home/end0/AI/LlamaServer/exp091-pinned-moe-tail",
+  "compiled_source": "ggml/src/ggml-cuda/ggml-cuda.cu",
+  "compiled_source_sha256": "a26e8982589bb1d94546c29d13f58855746da177716c1eea18823ba674e94710",
+  "candidate_patch_sha256": "0ae1d1582f45b2d1403db7179429fc5bf70c8a6bd25a5a29715dc52c894b3879",
+  "changed_runtime_components": [
+    "libggml-cuda.so.0.27.0"
+  ],
+  "device_fatbin_control": {
+    "bytes": 64568,
+    "sha256": "2a07a1e4e1dc569ead78066ec62df735cfc8cfcdae74d0f64c4659fb1bf4be35"
+  },
+  "device_fatbin_candidate": {
+    "bytes": 64568,
+    "sha256": "2a07a1e4e1dc569ead78066ec62df735cfc8cfcdae74d0f64c4659fb1bf4be35"
+  },
+  "device_fatbin_identical": true,
+  "model_starts": 2,
+  "inference_requests": 3,
+  "tests_executed": "Two-arm numerical qualification; stopped before candidate repeat",
+  "numerical_correctness": "FAILED on cold request",
+  "performance": "NOT ACCEPTED; formal series not run",
+  "accepted": false,
+  "rejected_patch_local_path": "results/archive/EXP-2026-10-30-091/raw/rejected-candidate.patch",
+  "feature_patch_shipped": false,
+  "restored_reference": "restored-runtime.json",
+  "service_restores": 1,
+  "semantic_quality": "NOT EVALUATED; output divergence alone does not establish degradation"
+}

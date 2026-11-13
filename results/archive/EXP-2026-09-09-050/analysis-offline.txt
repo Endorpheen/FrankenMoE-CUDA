@@ -1,0 +1,78 @@
+EXP-2026-09-09-050 offline analysis of server.log (single approved run)
+=======================================================================
+Log segments (line numbers in server.log):
+  1-120    model load + load-time warmup graphs
+  121-3636 warmup request  (task 0,  104 tokens)
+  3637-10752 measured request (task 59, 256/256 tokens, finish=length)
+
+Phase relabeling
+----------------
+Instrumentation artifact: the draft MTP GGUF declares qwen4exp.block_count=49
+(35 tensors physically stored), so the is_draft heuristic (n_layer() <= 2)
+failed and every draft ubatch got a target_* tag. Offline relabeling by
+(n_tokens, n_outputs), whole-run combo census:
+    346  (1,1)  draft generate     (2 per spec step)
+    173  (3,0)  draft catch-up     (1 per spec step; replays accepted tokens)
+    173  (3,3)  target verify      (1 per spec step)
+      3  (2,1)  load-time warmup verify
+      4  (4,*)  post-prefill boundary steps (excluded)
+      4  (36/37,0) prompt prefill
+No other combos exist; relabeling is exhaustive.
+
+L1 (llama graph reuse, [EXP050-L1]) — measured segment
+-------------------------------------------------------
+target verify (3,3):   reuse 115, rebuild 2 (boundary)   -> 98% reuse
+draft catch-up (3,0):  reuse 0,  rebuild 117  reason=params:ubatch.n_tokens 1->3
+draft generate #1:     reuse 0,  rebuild 117  reason=params:ubatch.n_tokens 3->1
+draft generate #2:     reuse 117, rebuild 0
+Per-step L1 cycle: V(3,3) reuse -> C(3,0) rebuild -> D1(1,1) rebuild -> D2(1,1) reuse
+
+L2 (CUDA graph capture/replay, [EXP050-L2]) — measured segment
+---------------------------------------------------------------
+target backend: 49 split keys (n_nodes=113, one per MoE layer):
+    1 direct_first_call + 1..2 capture/unstable, then launch on EVERY step
+    (launch 113-116 of 117 steps) -> full replay, no resets.
+draft backend: exactly 2 split keys, n_nodes=116 and 63
+    (0x594cc4f0c6c0, 0x594cc4f16d80), 351 calls each, launches=0.
+    Per-step cycle per key: catch-up -> direct_warmup_reset
+                            draft#1  -> direct_warmup_unstable
+                            draft#2  -> capture (stream capture + instantiate;
+                                        instance destroyed by next step's reset)
+    Diffs: node[0].ne[1] 1->3 (and back), node[0].ne[2] 0->1 (and back).
+Whole-run totals per key: ~173 capture + ~173 reset + ~173 unstable, 0 launch.
+
+Server "graphs reused" metric decoded
+-------------------------------------
+task 0 prints 56, task 59 prints 171; 171-56 = 115 = exact count of target
+verify (3,3) reuses in the measured segment. The counter is cumulative for the
+target context only. EXP-049's "56/171" was a misread fraction: target verify
+reuse is 115/117 (98%), not 33%.
+
+Root cause (the deliverable Igor asked for)
+-------------------------------------------
+The draft context alternates ubatch shapes every speculative step:
+catch-up of accepted tokens (n_tokens=3) vs draft generation (n_tokens=1).
+- L1: llm_graph_params::allow_reuse requires ubatch.n_tokens equality
+  (src/llama-graph.cpp:1487), called from llama_context::process_ubatch
+  (src/llama-context.cpp:1419) -> 2 of 3 draft ubatches rebuild every step.
+- L2: the CUDA graph key is cgraph->nodes[0] (ggml/src/ggml-cuda/ggml-cuda.cu:4605);
+  update_required memcmps node_properties incl. node[0].ne (ggml-cuda.cu:2927);
+  warmup needs >=2 consecutive identical calls (ggml-cuda.cu:4627-4634).
+  The 1<->3 alternation flips node[0].ne[1] (and ne[2]) every call, so warmup
+  never converges for the draft's 2 splits: 0 replays for the whole run plus a
+  capture+instantiate every step whose instance is destroyed one step later.
+The target context is unaffected at both levels.
+
+Cost per spec step (diagnostics only, not a speedup claim):
+  draft backend: 2 direct executions of 179 nodes (116+63) + 1 graph capture
+  (with instantiate) + 2 full L1 graph rebuilds.
+
+Remediation directions (Igor's decision, nothing implemented):
+  (a) run catch-up as three n_tokens=1 ubatches -> all draft calls shape-1,
+      L1 chain stable, L2 warmup converges after step 2;
+  (b) namespace graph results / CUDA graph keys by shape hash instead of
+      nodes[0] pointer;
+  (c) leave as is.
+
+Reproduce: grep/awk over server.log per the commands above; raw log kept at
+results/archive/EXP-2026-09-09-050/server/server.log (10754 lines).

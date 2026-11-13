@@ -1,0 +1,18 @@
+{
+  "status": "FAIL_EXACT_BYTES",
+  "mode": "on",
+  "case": {
+    "case": 925,
+    "mode": 1,
+    "op": 0,
+    "format": 0,
+    "profile": 5,
+    "width": 7,
+    "threads": 8,
+    "inplace": 0,
+    "bytes": 816
+  },
+  "byte_in_tensor": 124,
+  "expected_hex": "a5a5a5a54523c17f4523c17f5634c2ff4523c17f00000000",
+  "actual_hex": "a5a5a5a54523c17f5634c2ff4523c17f4523c17f00000000"
+}

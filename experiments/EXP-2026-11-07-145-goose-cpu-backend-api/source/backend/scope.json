@@ -1,0 +1,27 @@
+{
+  "status": "PASS_SELECTED_BACKEND_API_AND_SCOPED_SAFETY_AND_FIXED_APEX",
+  "batch": "B1",
+  "requirement": "P2-14 and backend graph/workspace ownership",
+  "producer": {
+    "stage": "self-hosted EXP300 C11 frame-default Stage3",
+    "sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-454151b3449b",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp300-frame-scope-state/frame-default-bootstrap-v1",
+    "status": "PASS_CURRENT_C11_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "scope": "Current C11 scope/block source snapshot: Current production source serial bootstrap/fixed point after C11 scope/block integration. Confirms preservation of the working compiler, not full C11 scope/block producer/lifecycle acceptance.",
+    "compiler_source_changed": false
+  },
+  "native_source_sha256": "ccf382d3fbf126b5ddb5850a0a970656fb24e00587da4003419439277c91cd01",
+  "scope": "CPU backend creation/release,plan and reusable workspace lifecycle,capability decisions,extra-buffer registration order,feature/procedure lookup and memory-report policy in Goose.",
+  "remaining": "Native ABI records,physical allocation/delete primitives,extra-buffer implementations,OS CPU-description construction,CPU hardware queries,HBM/copy/alignment and other backend source remain explicit residuals.",
+  "production_changed": false,
+  "compiler_source_changed": false,
+  "no_model_run_yet": false,
+  "hooked_methods": 19,
+  "capability_queries": 28280,
+  "api_records": 167,
+  "allocation_policy_cases": 9,
+  "actual_model_exact": "Apex32768/128 text,all IDs and saved top5 match original and previous B1",
+  "actual_model_backend_graph_calls": 5346,
+  "performance": "Single preliminary system sample; no speed acceptance/tuning"
+}

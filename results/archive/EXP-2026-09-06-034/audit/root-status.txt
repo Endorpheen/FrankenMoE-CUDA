@@ -1,0 +1,22 @@
+ M README.md
+ M ROADMAP.md
+ M docs/CURRENT_STATE.md
+ M experiments/EXPERIMENTS.md
+?? agents.md
+?? benchmarks/exp028-fused-iq2s-prefill.json
+?? benchmarks/exp029-iq2s-group-distribution.json
+?? benchmarks/exp030-bulk-prefill-cuda-path.json
+?? benchmarks/exp031-cuda-prefill-transfer-profile.json
+?? benchmarks/exp032-expert-h2d-attribution.json
+?? benchmarks/exp033-packed-prefill-expert-staging.json
+?? benchmarks/inputs/
+?? docs/AUDIT-2026-09-06.md
+?? docs/QWEN-IMPLEMENTATION-TASK.md
+?? experiments/EXP-2026-09-05-029-iq2s-group-distribution.md
+?? experiments/EXP-2026-09-05-030-bulk-prefill-cuda-path.md
+?? experiments/EXP-2026-09-05-031-cuda-prefill-transfer-profile.md
+?? experiments/EXP-2026-09-05-032-expert-h2d-attribution.md
+?? experiments/EXP-2026-09-05-033-packed-prefill-expert-staging.md
+?? experiments/rejected/EXP-2026-09-05-028-fused-iq2s-prefill.md
+?? experiments/rejected/EXP-2026-09-05-033-packed-prefill-expert-staging.md
+?? experiments/rejected/EXP-2026-09-05-033-packed-prefill-expert-staging.patch

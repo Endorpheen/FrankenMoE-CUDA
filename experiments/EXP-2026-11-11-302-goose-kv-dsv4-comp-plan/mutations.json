@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "visible blocks divide by the wrong ratio",
+    "status": "CAUGHT",
+    "failures": 4614,
+    "exit_code": 1
+  },
+  {
+    "mutation": "state position uses the wrong modulus",
+    "status": "CAUGHT",
+    "failures": 5975,
+    "exit_code": 1
+  },
+  {
+    "mutation": "write index uses the block offset instead of the block number",
+    "status": "CAUGHT",
+    "failures": 1613,
+    "exit_code": 1
+  },
+  {
+    "mutation": "duplicate token positions take the first token",
+    "status": "CAUGHT",
+    "failures": 970,
+    "exit_code": 1
+  },
+  {
+    "mutation": "persist keeps the earlier position",
+    "status": "CAUGHT",
+    "failures": 1196,
+    "exit_code": 1
+  },
+  {
+    "mutation": "dummy write targets the wrong last slot",
+    "status": "CAUGHT",
+    "failures": 152,
+    "exit_code": 1
+  },
+  {
+    "mutation": "n_kv keeps the last block instead of the maximum",
+    "status": "CAUGHT",
+    "failures": 632,
+    "exit_code": 1
+  },
+  {
+    "mutation": "coupled sets still fan out",
+    "status": "CAUGHT",
+    "failures": 953,
+    "exit_code": 1
+  }
+]

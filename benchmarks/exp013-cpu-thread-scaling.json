@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-2026-09-02-013-cpu-thread-scaling",
+  "status": "REJECTED",
+  "protocol": "early guardrail using immediately paired fresh-server runs; one warmup and one measured 256-token request per completed arm",
+  "completed_arms": {
+    "16": {
+      "warmup_generation_tok_s": 17.218855091990214,
+      "warm": {
+        "generation_tok_s": 17.71807950748464,
+        "cpu_cores_mean": 15.92641745663653,
+        "gpu_util_pct_mean": 30.857142857142858,
+        "physical_read_mib": 0.0,
+        "major_faults": 0,
+        "rss_peak_mib": 29473.859375,
+        "swap_peak_mib": 0.0,
+        "text_sha256": "3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2"
+      }
+    },
+    "24": {
+      "warmup_generation_tok_s": 14.290235123683106,
+      "warm": {
+        "generation_tok_s": 15.943258505681522,
+        "cpu_cores_mean": 23.677986784310594,
+        "gpu_util_pct_mean": 28.233333333333334,
+        "physical_read_mib": 0.0,
+        "major_faults": 0,
+        "rss_peak_mib": 29475.36328125,
+        "swap_peak_mib": 0.0,
+        "text_sha256": "3be17501f0987ac5881160853f361a274ba40379a14f283b9fa13f61680c11e2"
+      }
+    }
+  },
+  "warm_change_pct_24_vs_16": -10.017005517180234,
+  "incomplete_guardrail": {
+    "threads": 32,
+    "generated_tokens_observed": 106,
+    "generation_tok_s_observed_range": [0.69, 0.70],
+    "reason_stopped": "catastrophic slowdown made the planned long protocol unsafe for the active workstation",
+    "excluded_from_ab": true
+  },
+  "correctness_gate": "passed for the completed 16/24 pair",
+  "decision_note": "Keep 16 production threads; 24 regressed warm decode by 10.02%, and 32 triggered the early-stop guardrail."
+}

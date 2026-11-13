@@ -1,0 +1,16 @@
+{
+  "LD_LIBRARY_PATH": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/cpu-moe-tiled-register-perf/run",
+  "LD_PRELOAD": null,
+  "GGML_GOOSE_MOE": "1",
+  "GGML_GOOSE_TILED": "1",
+  "GGML_GOOSE_Q4_TILE": null,
+  "GGML_GOOSE_RMS": null,
+  "GGML_GOOSE_Q8K": null,
+  "GGML_GOOSE_ALLOC": "0",
+  "GGML_GOOSE_ALLOC_VERIFY": "0",
+  "GGML_GOOSE_COALESCE": "0",
+  "GGML_GOOSE_LIFETIME": "0",
+  "GGML_GOOSE_GRAPH_PLAN": "0",
+  "pid": 3400217,
+  "mode": "moe-cpu-tiled-register-perf-pure-on"
+}

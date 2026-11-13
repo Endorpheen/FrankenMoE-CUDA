@@ -1,0 +1,292 @@
+{
+  "status": "ACCEPTED_AS_COMPONENT_OF_FINAL_APEX_Q4_PATH",
+  "base_commit": "c46b72b",
+  "base_source_sha256": "059a9b36b129fbb4f8d46147f265601e0f2b1664e8e053957bba3acd6ca706e0",
+  "source_sha256": "448cb76b88057a5027420a90acf7d9c9170ba997e6f3ce56372f924d2890ffc5",
+  "specializations": [
+    1,
+    2
+  ],
+  "unrolled": [
+    {
+      "variable": "w",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "i0",
+      "bound": "256",
+      "step": 128,
+      "copies": 2
+    },
+    {
+      "variable": "iv",
+      "bound": "128",
+      "step": 64,
+      "copies": 2
+    },
+    {
+      "variable": "kk",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "kk",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "iv",
+      "bound": "128",
+      "step": 64,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "k0",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "iq",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "i0",
+      "bound": "64",
+      "step": 32,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "i0",
+      "bound": "64",
+      "step": 32,
+      "copies": 2
+    },
+    {
+      "variable": "i0",
+      "bound": "64",
+      "step": 32,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 1
+    },
+    {
+      "variable": "w",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "i0",
+      "bound": "256",
+      "step": 128,
+      "copies": 2
+    },
+    {
+      "variable": "iv",
+      "bound": "128",
+      "step": 64,
+      "copies": 2
+    },
+    {
+      "variable": "kk",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "w",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "i0",
+      "bound": "256",
+      "step": 128,
+      "copies": 2
+    },
+    {
+      "variable": "iv",
+      "bound": "128",
+      "step": 64,
+      "copies": 2
+    },
+    {
+      "variable": "kk",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "kk",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "kk",
+      "bound": "4",
+      "step": 1,
+      "copies": 4
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "iv",
+      "bound": "128",
+      "step": 64,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "k0",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "iq",
+      "bound": "32",
+      "step": 1,
+      "copies": 32
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "i0",
+      "bound": "64",
+      "step": 32,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "i0",
+      "bound": "64",
+      "step": 32,
+      "copies": 2
+    },
+    {
+      "variable": "i0",
+      "bound": "64",
+      "step": 32,
+      "copies": 2
+    },
+    {
+      "variable": "j",
+      "bound": "ncols",
+      "step": 1,
+      "copies": 2
+    },
+    {
+      "variable": "h",
+      "bound": "2",
+      "step": 1,
+      "copies": 2
+    }
+  ],
+  "numerical_order_changed": false,
+  "production_changed": false,
+  "final_qualification": "qualification.json",
+  "paired_results": "paired-component-results.json"
+}

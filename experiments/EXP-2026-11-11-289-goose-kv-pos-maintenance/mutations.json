@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "pos_add shifts by the wrong sign",
+    "status": "CAUGHT",
+    "failures": 7354,
+    "exit_code": 1
+  },
+  {
+    "mutation": "pos_add keeps the sequence words when a cell is released",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "pos_div absorbs the wrong difference",
+    "status": "CAUGHT",
+    "failures": 7241,
+    "exit_code": 1
+  },
+  {
+    "mutation": "insertion orders equal positions by lowest index",
+    "status": "CAUGHT",
+    "failures": 202,
+    "exit_code": 1
+  },
+  {
+    "mutation": "removal forgets to shrink the count",
+    "status": "CAUGHT",
+    "failures": 0,
+    "exit_code": 250
+  },
+  {
+    "mutation": "tok_le ignores a cell exactly at the position",
+    "status": "CAUGHT",
+    "failures": 347,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_pos_max returns the first entry",
+    "status": "CAUGHT",
+    "failures": 4270,
+    "exit_code": 1
+  },
+  {
+    "mutation": "pos_add reports a released cell as kept",
+    "status": "CAUGHT",
+    "failures": 20,
+    "exit_code": 1
+  }
+]

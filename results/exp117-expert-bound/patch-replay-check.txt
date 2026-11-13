@@ -1,0 +1,10 @@
+checking file src/llama-context.cpp
+checking file src/llama-moe-bound.h
+checking file ggml/src/ggml-cuda/mmq.cu
+checking file ggml/src/ggml-cuda/ggml-cuda.cu
+patching file src/llama-context.cpp
+patching file src/llama-moe-bound.h
+patching file ggml/src/ggml-cuda/mmq.cu
+patching file ggml/src/ggml-cuda/ggml-cuda.cu
+All four resulting source files match final source hashes.
+Native include contract compiled without extra ggml/src include paths.

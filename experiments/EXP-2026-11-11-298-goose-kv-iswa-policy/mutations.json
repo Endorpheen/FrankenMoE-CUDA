@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "size padding rounds down",
+    "status": "CAUGHT",
+    "failures": 1592,
+    "exit_code": 1
+  },
+  {
+    "mutation": "size ignores the micro-batch",
+    "status": "CAUGHT",
+    "failures": 899,
+    "exit_code": 1
+  },
+  {
+    "mutation": "full-size SWA cache is not honoured",
+    "status": "CAUGHT",
+    "failures": 403,
+    "exit_code": 1
+  },
+  {
+    "mutation": "unified caches do not scale by the sequence count",
+    "status": "CAUGHT",
+    "failures": 543,
+    "exit_code": 1
+  },
+  {
+    "mutation": "base and SWA filters are swapped",
+    "status": "CAUGHT",
+    "failures": 1862,
+    "exit_code": 1
+  },
+  {
+    "mutation": "seq_rm succeeds if either cache does",
+    "status": "CAUGHT",
+    "failures": 104,
+    "exit_code": 1
+  },
+  {
+    "mutation": "breakdown overwrites instead of adding",
+    "status": "CAUGHT",
+    "failures": 323,
+    "exit_code": 1
+  },
+  {
+    "mutation": "breakdown keeps insertion order",
+    "status": "CAUGHT",
+    "failures": 2296,
+    "exit_code": 1
+  }
+]

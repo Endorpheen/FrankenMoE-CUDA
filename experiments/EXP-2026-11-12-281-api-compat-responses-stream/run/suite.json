@@ -1,0 +1,36 @@
+{
+  "ok": true,
+  "checks": {
+    "nonstream_output": {
+      "ok": true,
+      "detail": "text 11, reasoning 74, items ['reasoning', 'message']"
+    },
+    "stream_events_present": {
+      "ok": true,
+      "detail": "32 events, first ['response.created', 'response.in_progress', 'response.output_item.added']"
+    },
+    "stream_terminated": {
+      "ok": true,
+      "detail": "completed"
+    },
+    "stream_usage": {
+      "ok": true,
+      "detail": {
+        "input_tokens": 16,
+        "output_tokens": 27,
+        "total_tokens": 43,
+        "input_tokens_details": {
+          "cached_tokens": 12
+        }
+      }
+    },
+    "stream_text_equal": {
+      "ok": true,
+      "detail": "11 vs 11 chars"
+    },
+    "stream_reasoning_equal": {
+      "ok": true,
+      "detail": "74 vs 74 chars"
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "status": "FUNCTIONAL_APEX_PATH_PASS_TWO_PAIRS_BOTH_ORDERS",
+  "component": "CUDA Q8_1 activation quantization (non-MMQ quantize_q8_1) in Goose; all other EXP177 modules identical",
+  "mechanism": "same DSO, GGML_GOOSE_CUDA_Q8_1=0 selects the private-renamed native quantize_row_q8_1_cuda",
+  "pairs": {
+    "forward": {
+      "native": {
+        "prefill": 2627.241369302038,
+        "decode": 25.597278223266716,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2615.325786762675,
+        "decode": 27.045801959138263,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": -0.4535396967553354,
+        "decode": 5.658897493855058
+      }
+    },
+    "reverse": {
+      "native": {
+        "prefill": 2627.241369302038,
+        "decode": 25.597278223266716,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "goose": {
+        "prefill": 2614.8937703395814,
+        "decode": 25.66260544148269,
+        "tokens": true,
+        "content": true,
+        "probs": true
+      },
+      "delta_pct": {
+        "prefill": -0.4699834246952724,
+        "decode": 0.25521158009914446
+      }
+    },
+    "goose_mean": {
+      "prefill": 2615.1097785511283,
+      "decode": 26.354203700310478
+    },
+    "mean_delta_pct": {
+      "prefill": -0.46176156072529523,
+      "decode": 2.957054536977108
+    }
+  },
+  "correctness": "all 128 token ids, text and every returned top-5 probability equal to the saved wholly-C++ oracle in all three runs; sha256 e68df05b",
+  "witnesses": {
+    "q8_1": "FG178Q_CUDA_Q8_1 host=0x1,cuda_status=0,paths=0x1,guards=0",
+    "retained": "FG177C_CUDA_CPY host=0x4; FG176G_CUDA_GET_ROWS host=0x3"
+  },
+  "local_gates": {
+    "goose": "10 checks/0 failures/5 cases",
+    "native": "10/0/5",
+    "byte_identical": "5 of 5",
+    "memcheck": "0 errors",
+    "exports": "only the two diagnostics added"
+  },
+  "defects_fixed": [
+    "fastdiv wrote to plan slot 0 which held the x/vy pointers, overwriting them (moved to slot 6)",
+    "the launch adapter read the fastdiv triple from slot 0 while the host wrote slot 6",
+    "the stream was published as the address of a caller local, so the adapter dereferenced stale memory (now a typed packet field)",
+    "ld_f32 was given an element index instead of a byte offset",
+    "the objcopy rename targeted the .cold companion instead of the callable symbol"
+  ],
+  "limits": "preliminary pairs with wide decode spread; MMQ ds layouts (D4/DS4/D2S6) and the scatter variant are a different kernel and remain native; P3-07 in progress",
+  "production_changed": false,
+  "active_runtime_changed": false
+}

@@ -1,0 +1,9 @@
+{"name":"context-allocation-failure","pass":true}
+{"name":"backend-allocation-failure-cleans-context","pass":true}
+{"name":"plan-allocation-failure","pass":true}
+{"name":"planned-workspace-failure-cleans-plan","pass":true}
+{"name":"growth-failure-clears-released-pointer","pass":true}
+{"name":"workspace-recovers-after-failure","pass":true}
+{"name":"sufficient-workspace-reused-without-allocation","pass":true}
+{"name":"backend-lifecycle-no-resources-retained","pass":true}
+{"name":"zero-workspace-plan-lifecycle","pass":true}

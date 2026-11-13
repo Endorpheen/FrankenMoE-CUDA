@@ -1,0 +1,528 @@
+--- work/llama.cpp-exp046-iq2s-verify/ggml/include/ggml.h	2026-09-09 10:55:48.557323108 +0300
++++ work/llama.cpp-exp050-diag/ggml/include/ggml.h	2026-09-09 19:55:01.789322124 +0300
+@@ -735,6 +735,13 @@
+     GGML_API int64_t ggml_cycles(void);
+     GGML_API int64_t ggml_cycles_per_ms(void);
+ 
++    // EXP050 diagnostics: thread-local tag naming the current graph-compute phase
++    // (for example "target_verify", "draft_decode", "warmup"). Set by the llama layer
++    // before scheduler compute, read by backend diagnostics. The tag must be a static
++    // string. No effect on execution; purely observational.
++    GGML_API void ggml_debug_set_thread_phase(const char * phase);
++    GGML_API const char * ggml_debug_get_thread_phase(void);
++
+     // accepts a UTF-8 path, even on Windows
+     GGML_API FILE *  ggml_fopen(const char * fname, const char * mode);
+ 
+--- work/llama.cpp-exp046-iq2s-verify/ggml/src/ggml.c	2026-09-09 10:55:48.644659568 +0300
++++ work/llama.cpp-exp050-diag/ggml/src/ggml.c	2026-09-09 19:55:12.135430644 +0300
+@@ -579,6 +579,17 @@
+     return CLOCKS_PER_SEC/1000;
+ }
+ 
++// EXP050 diagnostics: thread-local phase tag (see ggml.h)
++static __thread const char * g_exp050_thread_phase = NULL;
++
++void ggml_debug_set_thread_phase(const char * phase) {
++    g_exp050_thread_phase = phase;
++}
++
++const char * ggml_debug_get_thread_phase(void) {
++    return g_exp050_thread_phase;
++}
++
+ //
+ // cross-platform UTF-8 file paths
+ //
+--- work/llama.cpp-exp046-iq2s-verify/ggml/src/ggml-cuda/common.cuh	2026-09-09 10:56:25.758696950 +0300
++++ work/llama.cpp-exp050-diag/ggml/src/ggml-cuda/common.cuh	2026-09-09 19:57:59.619213048 +0300
+@@ -1248,6 +1248,10 @@
+     bool warmup_complete = false;
+     uint64_t uid = 0;
+     int64_t last_used_time = 0;
++    // EXP050 diagnostics: per-key call/launch counters (only updated when
++    // GGML_GRAPH_DIAG is set; never read on the production path)
++    uint64_t exp050_calls = 0;
++    uint64_t exp050_launches = 0;
+     struct node_properties {
+         ggml_tensor node;
+         void *   node_src_data_ptrs[GGML_MAX_SRC];
+--- work/llama.cpp-exp046-iq2s-verify/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-09 10:56:25.758743839 +0300
++++ work/llama.cpp-exp050-diag/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-09 19:59:30.289194996 +0300
+@@ -2815,11 +2815,116 @@
+     return use_cuda_graph;
+ }
+ 
++// EXP050 diagnostics ------------------------------------------------------------
++//
++// Decision logging for the CUDA-graph state machine (env GGML_GRAPH_DIAG).
++// Purely observational: no stream operation, sync, or allocation is added.
++
++static bool exp050_diag_enabled() {
++    static const bool enabled = getenv("GGML_GRAPH_DIAG") != nullptr;
++    return enabled;
++}
++
++static void exp050_log(const char * fmt, ...) {
++    va_list args;
++    va_start(args, fmt);
++    fputs("[EXP050-L2] ", stderr);
++    vfprintf(stderr, fmt, args);
++    fputc('\n', stderr);
++    fflush(stderr);
++    va_end(args);
++}
++
++static std::string exp050_hex(uintptr_t v) {
++    char buf[32];
++    snprintf(buf, sizeof(buf), "0x%zx", v);
++    return std::string(buf);
++}
++
++// first differing field between two saved node-property snapshots ("old->new");
++// if none of the named fields differs while the raw memcmp did, reports the raw
++// byte offset (catches unstable padding/flags bytes inside ggml_tensor)
++static std::string exp050_props_diff(int node_idx, const ggml_cuda_graph::node_properties & a, const ggml_cuda_graph::node_properties & b) {
++    const std::string pre = "node[" + std::to_string(node_idx) + "]";
++
++    if (a.node.op != b.node.op) {
++        return pre + ".op " + std::to_string((int) a.node.op) + "->" + std::to_string((int) b.node.op);
++    }
++    if (a.node.type != b.node.type) {
++        return pre + ".type " + std::to_string((int) a.node.type) + "->" + std::to_string((int) b.node.type);
++    }
++    for (int d = 0; d < GGML_MAX_DIMS; ++d) {
++        if (a.node.ne[d] != b.node.ne[d]) {
++            return pre + ".ne[" + std::to_string(d) + "] " + std::to_string(a.node.ne[d]) + "->" + std::to_string(b.node.ne[d]);
++        }
++    }
++    for (int d = 0; d < GGML_MAX_DIMS; ++d) {
++        if (a.node.nb[d] != b.node.nb[d]) {
++            return pre + ".nb[" + std::to_string(d) + "] " + std::to_string(a.node.nb[d]) + "->" + std::to_string(b.node.nb[d]);
++        }
++    }
++    if (memcmp(a.node.op_params, b.node.op_params, GGML_MAX_OP_PARAMS) != 0) {
++        return pre + ".op_params";
++    }
++    if (a.node.flags != b.node.flags) {
++        return pre + ".flags " + std::to_string(a.node.flags) + "->" + std::to_string(b.node.flags);
++    }
++    for (int j = 0; j < GGML_MAX_SRC; ++j) {
++        if (a.node.src[j] != b.node.src[j]) {
++            return pre + ".src[" + std::to_string(j) + "] " + exp050_hex((uintptr_t) a.node.src[j]) + "->" + exp050_hex((uintptr_t) b.node.src[j]);
++        }
++        if (a.node.src[j] != nullptr) {
++            if (a.node_src_data_ptrs[j] != b.node_src_data_ptrs[j]) {
++                return pre + ".src[" + std::to_string(j) + "].data " + exp050_hex((uintptr_t) a.node_src_data_ptrs[j]) + "->" + exp050_hex((uintptr_t) b.node_src_data_ptrs[j]);
++            }
++            for (int d = 0; d < GGML_MAX_DIMS; ++d) {
++                if (a.node_src_ne[j][d] != b.node_src_ne[j][d]) {
++                    return pre + ".src[" + std::to_string(j) + "].ne[" + std::to_string(d) + "] " + std::to_string(a.node_src_ne[j][d]) + "->" + std::to_string(b.node_src_ne[j][d]);
++                }
++            }
++            for (int d = 0; d < GGML_MAX_DIMS; ++d) {
++                if (a.node_src_nb[j][d] != b.node_src_nb[j][d]) {
++                    return pre + ".src[" + std::to_string(j) + "].nb[" + std::to_string(d) + "] " + std::to_string(a.node_src_nb[j][d]) + "->" + std::to_string(b.node_src_nb[j][d]);
++                }
++            }
++        }
++    }
++    if (a.node.view_src != b.node.view_src) {
++        return pre + ".view_src " + exp050_hex((uintptr_t) a.node.view_src) + "->" + exp050_hex((uintptr_t) b.node.view_src);
++    }
++    if (a.node.view_offs != b.node.view_offs) {
++        return pre + ".view_offs " + std::to_string(a.node.view_offs) + "->" + std::to_string(b.node.view_offs);
++    }
++    if (a.node.data != b.node.data) {
++        return pre + ".data " + exp050_hex((uintptr_t) a.node.data) + "->" + exp050_hex((uintptr_t) b.node.data);
++    }
++    if (strncmp(a.node.name, b.node.name, GGML_MAX_NAME) != 0) {
++        return pre + ".name '" + std::string(a.node.name) + "'->'" + std::string(b.node.name) + "'";
++    }
++    if (a.node.buffer != b.node.buffer) {
++        return pre + ".buffer " + exp050_hex((uintptr_t) a.node.buffer) + "->" + exp050_hex((uintptr_t) b.node.buffer);
++    }
++    if (a.node.extra != b.node.extra) {
++        return pre + ".extra";
++    }
++
++    // no named field differs, but memcmp did: report the raw offset
++    const char * pa = (const char *) &a;
++    const char * pb = (const char *) &b;
++    for (size_t off = 0; off < sizeof(a); ++off) {
++        if (pa[off] != pb[off]) {
++            return pre + " raw_byte_offset=" + std::to_string(off);
++        }
++    }
++    return pre + " (memcmp mismatch not reproduced)";
++}
++// end EXP050 diagnostics -------------------------------------------------------
++
+ static const void * ggml_cuda_graph_get_key(ggml_cgraph * cgraph) {
+     return cgraph->nodes[0];
+ }
+ 
+-static bool ggml_cuda_graph_update_required(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph) {
++static bool ggml_cuda_graph_update_required(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, std::string * exp050_diff = nullptr) {
+     bool res = false;
+ 
+     const void * graph_key = ggml_cuda_graph_get_key(cgraph);
+@@ -2837,6 +2942,9 @@
+     // Check if the graph size has changed
+     if ((int)graph->node_props.size() != cgraph->n_nodes) {
+         res = true;
++        if (exp050_diff != nullptr && exp050_diff->empty()) {
++            *exp050_diff = "node_count " + std::to_string((int) graph->node_props.size()) + "->" + std::to_string(cgraph->n_nodes);
++        }
+         graph->node_props.resize(cgraph->n_nodes);
+     }
+ 
+@@ -2853,6 +2961,12 @@
+         }
+ 
+         if (res || memcmp(&graph->node_props[i], &prop, sizeof(prop)) != 0) {
++            // EXP050 diagnostics: capture the first field-level difference before
++            // the snapshot is overwritten (only when diagnostics are enabled)
++            if (exp050_diff != nullptr && exp050_diff->empty() &&
++                memcmp(&graph->node_props[i], &prop, sizeof(prop)) != 0) {
++                *exp050_diff = exp050_props_diff(i, graph->node_props[i], prop);
++            }
+             graph->node_props[i] = prop;
+             res = true;
+         }
+@@ -4499,7 +4613,20 @@
+     if (graph->is_enabled()) {
+         const bool graph_compatible = ggml_cuda_graph_check_compability(cgraph);
+         if (graph_compatible) {
+-            const bool properties_changed = ggml_cuda_graph_update_required(cuda_ctx, cgraph);
++            // EXP050 diagnostics: decision logging for the state machine below
++            const bool exp050_diag = exp050_diag_enabled();
++            std::string exp050_diff;
++            const char * exp050_phase = ggml_debug_get_thread_phase();
++            if (exp050_phase == nullptr) {
++                exp050_phase = "none";
++            }
++            if (exp050_diag) {
++                graph->exp050_calls++;
++            }
++
++            const bool properties_changed = ggml_cuda_graph_update_required(cuda_ctx, cgraph, exp050_diag ? &exp050_diff : nullptr);
++
++            const char * exp050_diff_str = exp050_diff.empty() ? "" : exp050_diff.c_str();
+ 
+             if (!graph->warmup_complete) {
+                 // Warmup: need at least 2 calls with no property change on the 2nd call
+@@ -4508,19 +4635,53 @@
+                     GGML_LOG_DEBUG("%s: CUDA graph warmup complete\n", __func__);
+                     use_cuda_graph = true;
+                     cuda_graph_update_required = true;
++                    if (exp050_diag) {
++                        exp050_log("event=decision key=%p phase=%s decision=capture n_nodes=%d calls=%llu launches=%llu",
++                            graph_key, exp050_phase, cgraph->n_nodes,
++                            (unsigned long long) graph->exp050_calls, (unsigned long long) graph->exp050_launches);
++                    }
++                } else {
++                    // else: properties changed or first call - execute directly (use_cuda_graph stays false)
++                    if (exp050_diag) {
++                        const char * decision = graph->exp050_calls <= 1 ? "direct_first_call" : "direct_warmup_unstable";
++                        exp050_log("event=decision key=%p phase=%s decision=%s n_nodes=%d calls=%llu launches=%llu diff=%s",
++                            graph_key, exp050_phase, decision, cgraph->n_nodes,
++                            (unsigned long long) graph->exp050_calls, (unsigned long long) graph->exp050_launches, exp050_diff_str);
++                    }
+                 }
+-                // else: properties changed or first call - execute directly (use_cuda_graph stays false)
+             } else {
+                 // Post-warmup: normal CUDA graph operation
+                 if (properties_changed) {
+                     // Properties changed - reset warmup, execute directly until stable again
+                     graph->warmup_complete = false;
+                     GGML_LOG_DEBUG("%s: CUDA graph warmup reset\n", __func__);
++                    if (exp050_diag) {
++                        exp050_log("event=decision key=%p phase=%s decision=direct_warmup_reset n_nodes=%d calls=%llu launches=%llu diff=%s",
++                            graph_key, exp050_phase, cgraph->n_nodes,
++                            (unsigned long long) graph->exp050_calls, (unsigned long long) graph->exp050_launches, exp050_diff_str);
++                    }
+                 } else {
+                     use_cuda_graph = true;
+                     cuda_graph_update_required = graph->instance == nullptr;
++                    if (exp050_diag) {
++                        graph->exp050_launches++;
++                        exp050_log("event=decision key=%p phase=%s decision=%s n_nodes=%d calls=%llu launches=%llu",
++                            graph_key, exp050_phase, graph->instance == nullptr ? "launch_reinstantiate" : "launch",
++                            cgraph->n_nodes,
++                            (unsigned long long) graph->exp050_calls, (unsigned long long) graph->exp050_launches);
++                    }
+                 }
+             }
++        } else {
++            if (exp050_diag_enabled()) {
++                exp050_log("event=decision key=%p phase=%s decision=incompatible n_nodes=%d",
++                    graph_key, ggml_debug_get_thread_phase() ? ggml_debug_get_thread_phase() : "none", cgraph->n_nodes);
++            }
++        }
++    } else {
++        if (exp050_diag_enabled()) {
++            exp050_log("event=decision key=%p phase=%s decision=disabled reason=env_or_arch n_nodes=%d",
++                graph_key, ggml_debug_get_thread_phase() ? ggml_debug_get_thread_phase() : "none", cgraph->n_nodes);
+         }
+     }
+ #endif // USE_CUDA_GRAPH
+--- work/llama.cpp-exp046-iq2s-verify/src/llama-graph.h	2026-09-09 10:55:48.884326773 +0300
++++ work/llama.cpp-exp050-diag/src/llama-graph.h	2026-09-09 19:55:57.547909333 +0300
+@@ -11,6 +11,7 @@
+ #include <set>
+ #include <functional>
+ #include <map>
++#include <string>
+ 
+ struct ggml_cgraph;
+ struct ggml_context;
+@@ -881,6 +882,11 @@
+             loras == other.loras &&
+             cross == other.cross;
+     }
++
++    // EXP050 diagnostics: same verdict as allow_reuse(), but records the first failed
++    // check with old/new values into *reason. Standalone copy of the chain so the
++    // production path stays untouched. Only called when GGML_GRAPH_DIAG is set.
++    bool allow_reuse_diag(const llm_graph_params & other, std::string * reason) const;
+ };
+ 
+ struct llm_graph_fused_node {
+@@ -920,6 +926,12 @@
+     // return true if the graph was updated and can be reused
+     bool can_reuse(const llm_graph_params & params);
+ 
++    // EXP050 diagnostics: human-readable reason why can_reuse(params) returned false:
++    // either the first failed allow_reuse() check (with old/new values) or the first
++    // failing input class plus the full per-input verdict list. Diag-only; called
++    // again from the logging site, never on the production path.
++    std::string exp050_reuse_blocker(const llm_graph_params & params) const;
++
+     llm_graph_input_i * add_input(llm_graph_input_ptr input);
+ 
+     void add_fused_node(llm_graph_fused_node result);
+--- work/llama.cpp-exp046-iq2s-verify/src/llama-graph.cpp	2026-09-09 10:55:48.884326773 +0300
++++ work/llama.cpp-exp050-diag/src/llama-graph.cpp	2026-09-09 19:57:00.181575364 +0300
+@@ -19,12 +19,18 @@
+ 
+ #include <cassert>
+ #include <cmath>
++#include <cstdlib>
+ #include <cstring>
+ #include <numeric>
+ #include <sstream>
+ #include <string>
++#include <typeinfo>
+ #include <unordered_set>
+ 
++#if defined(__GLIBCXX__)
++#include <cxxabi.h>
++#endif
++
+ // dedup helpers
+ 
+ static ggml_tensor * build_attn_inp_kq_mask(
+@@ -1434,6 +1440,159 @@
+     return res;
+ }
+ 
++// EXP050 diagnostics ------------------------------------------------------------
++//
++// Diagnostic copies of the reuse checks. They never run on the production path;
++// exp050_reuse_blocker() is called a second time from the logging site when
++// GGML_GRAPH_DIAG is set and can_reuse() has already returned false.
++
++static std::string exp050_demangle(const char * name) {
++#if defined(__GLIBCXX__)
++    int status = 0;
++    char * demangled = abi::__cxa_demangle(name, nullptr, nullptr, &status);
++    if (status == 0 && demangled != nullptr) {
++        std::string res = demangled;
++        free(demangled);
++        return res;
++    }
++#endif
++    return std::string(name);
++}
++
++bool llm_graph_params::allow_reuse_diag(const llm_graph_params & other, std::string * reason) const {
++    auto fail = [reason](const std::string & msg) {
++        if (reason != nullptr && reason->empty()) {
++            *reason = msg;
++        }
++        return false;
++    };
++
++    // first check the ubatch
++    bool can_reuse_ubatch =
++        ubatch.equal_seqs() == other.ubatch.equal_seqs() &&
++        ubatch.n_tokens     == other.ubatch.n_tokens     &&
++        ubatch.n_seq_tokens == other.ubatch.n_seq_tokens &&
++        ubatch.n_seqs       == other.ubatch.n_seqs       &&
++        ubatch.n_seqs_unq   == other.ubatch.n_seqs_unq   &&
++        (
++            (!ubatch.token && !other.ubatch.token) ||
++            (!ubatch.embd  && !other.ubatch.embd)  ||
++            (ubatch.token && other.ubatch.token && ubatch.embd && other.ubatch.embd)
++        );
++
++    if (!can_reuse_ubatch) {
++        if (ubatch.equal_seqs() != other.ubatch.equal_seqs()) {
++            return fail("ubatch.equal_seqs " + std::to_string(ubatch.equal_seqs()) + "->" + std::to_string(other.ubatch.equal_seqs()));
++        }
++        if (ubatch.n_tokens != other.ubatch.n_tokens) {
++            return fail("ubatch.n_tokens " + std::to_string(ubatch.n_tokens) + "->" + std::to_string(other.ubatch.n_tokens));
++        }
++        if (ubatch.n_seq_tokens != other.ubatch.n_seq_tokens) {
++            return fail("ubatch.n_seq_tokens " + std::to_string(ubatch.n_seq_tokens) + "->" + std::to_string(other.ubatch.n_seq_tokens));
++        }
++        if (ubatch.n_seqs != other.ubatch.n_seqs) {
++            return fail("ubatch.n_seqs " + std::to_string(ubatch.n_seqs) + "->" + std::to_string(other.ubatch.n_seqs));
++        }
++        if (ubatch.n_seqs_unq != other.ubatch.n_seqs_unq) {
++            return fail("ubatch.n_seqs_unq " + std::to_string(ubatch.n_seqs_unq) + "->" + std::to_string(other.ubatch.n_seqs_unq));
++        }
++        return fail("ubatch token/embd presence pattern changed");
++    }
++
++    // when we split the batch using "equal_seqs" we have to verify that the participating sequences are the same
++    if (can_reuse_ubatch && ubatch.equal_seqs()) {
++        if (!ubatch.data) {
++            return fail("ubatch.data absent (cannot verify unique seq ids)");
++        }
++        for (uint32_t s = 0; s < ubatch.n_seqs_unq; ++s) {
++            if (ubatch.seq_id_unq[s] != other.ubatch.seq_id_unq[s]) {
++                return fail("ubatch.seq_id_unq[" + std::to_string(s) + "]");
++            }
++        }
++    }
++
++    if (n_outputs != other.n_outputs) {
++        return fail("n_outputs " + std::to_string(n_outputs) + "->" + std::to_string(other.n_outputs));
++    }
++
++    if (!samplers_equal(samplers, other.samplers)) {
++        return fail("samplers set changed");
++    }
++
++    if (samplers.size() > 0) {
++        if (!ubatch.data || !other.ubatch.data) {
++            return fail("samplers present but ubatch.data absent");
++        }
++
++        for (uint32_t i = 0; i < ubatch.n_tokens; ++i) {
++            if (ubatch.output[i]    != other.ubatch.output[i] ||
++                ubatch.seq_id[i][0] != other.ubatch.seq_id[i][0]) {
++                return fail("ubatch.output/seq_id[" + std::to_string(i) + "]");
++            }
++        }
++    }
++
++    if (cparams.nextn_layer_offset != other.cparams.nextn_layer_offset) {
++        return fail("nextn_layer_offset " + std::to_string(cparams.nextn_layer_offset) + "->" + std::to_string(other.cparams.nextn_layer_offset));
++    }
++
++    if (cparams.embeddings != other.cparams.embeddings) {
++        return fail("cparams.embeddings " + std::to_string(cparams.embeddings) + "->" + std::to_string(other.cparams.embeddings));
++    }
++    if (cparams.embeddings_nextn != other.cparams.embeddings_nextn) {
++        return fail("cparams.embeddings_nextn");
++    }
++    if (cparams.embeddings_nextn_masked != other.cparams.embeddings_nextn_masked) {
++        return fail("cparams.embeddings_nextn_masked");
++    }
++    if (cparams.causal_attn != other.cparams.causal_attn) {
++        return fail("cparams.causal_attn");
++    }
++    if (arch != other.arch) {
++        return fail("arch");
++    }
++    if (gtype != other.gtype) {
++        return fail("gtype");
++    }
++    if (cvec != other.cvec) {
++        return fail("cvec");
++    }
++    if (loras != other.loras) {
++        return fail("loras");
++    }
++    if (cross != other.cross) {
++        return fail("cross");
++    }
++
++    return true;
++}
++
++std::string llm_graph_result::exp050_reuse_blocker(const llm_graph_params & params) const {
++    std::string reason;
++
++    if (!this->params.allow_reuse_diag(params, &reason)) {
++        return "params:" + (reason.empty() ? std::string("unspecified") : reason);
++    }
++
++    // inputs: report the first failing input class plus the full per-input verdict list
++    std::string verdicts;
++    for (const auto & input : inputs) {
++        if (!verdicts.empty()) {
++            verdicts += " ";
++        }
++        verdicts += exp050_demangle(typeid(*input).name()) + "=" + (input->can_reuse(params) ? "1" : "0");
++    }
++
++    for (const auto & input : inputs) {
++        if (!input->can_reuse(params)) {
++            return "input:" + exp050_demangle(typeid(*input).name()) + " [" + verdicts + "]";
++        }
++    }
++
++    return "unknown";
++}
++// end EXP050 diagnostics -------------------------------------------------------
++
+ llm_graph_input_i * llm_graph_result::add_input(llm_graph_input_ptr input) {
+     inputs.emplace_back(std::move(input));
+     return inputs.back().get();
+--- work/llama.cpp-exp046-iq2s-verify/src/llama-context.cpp	2026-09-09 10:56:25.716837036 +0300
++++ work/llama.cpp-exp050-diag/src/llama-context.cpp	2026-09-09 19:57:34.642944465 +0300
+@@ -1395,7 +1395,39 @@
+     // in order to correctly reuse a graph, it's full topology has to be uniquely determined by these parameters
+     const auto gparams = graph_params(res, ubatch, mctx, gtype);
+ 
+-    if (!graph_reuse_disable && res->can_reuse(gparams)) {
++    // EXP050 diagnostics: phase tag + llama-level reuse/rebuild decision log.
++    // Fully gated by GGML_GRAPH_DIAG; the tag is only set when diagnostics run.
++    static const bool exp050_diag = getenv("GGML_GRAPH_DIAG") != nullptr;
++    const char * exp050_phase = "";
++    if (exp050_diag) {
++        if (cparams.warmup) {
++            exp050_phase = "warmup";
++        } else {
++            // the sidecar MTP head-only GGUF has 1 layer vs 48 in the target
++            const bool exp050_is_draft = model.hparams.n_layer() <= 2;
++            if (ubatch.n_tokens >= 32) {
++                exp050_phase = exp050_is_draft ? "draft_prefill" : "target_prefill";
++            } else if (ubatch.n_tokens > 1) {
++                exp050_phase = exp050_is_draft ? "draft_batch" : "target_verify";
++            } else {
++                exp050_phase = exp050_is_draft ? "draft_decode" : "target_decode";
++            }
++        }
++        ggml_debug_set_thread_phase(exp050_phase);
++    }
++
++    const bool exp050_reused = !graph_reuse_disable && res->can_reuse(gparams);
++    if (exp050_diag) {
++        fprintf(stderr, "[EXP050-L1] phase=%s n_tokens=%u n_outputs=%u decision=%s",
++            exp050_phase, ubatch.n_tokens, gparams.n_outputs, exp050_reused ? "reuse" : "rebuild");
++        if (!exp050_reused) {
++            fprintf(stderr, " reason=%s",
++                graph_reuse_disable ? "graph_reuse_disable" : res->exp050_reuse_blocker(gparams).c_str());
++        }
++        fprintf(stderr, "\n");
++    }
++
++    if (exp050_reused) {
+         //LLAMA_LOG_DEBUG("%s: reusing previous graph\n", __func__);
+ 
+         // with pipeline parallelism, the previous graph_compute_async may still be running

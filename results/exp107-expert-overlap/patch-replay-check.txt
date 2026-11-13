@@ -1,0 +1,11 @@
+checking file ggml/include/ggml-backend.h
+checking file ggml/src/ggml-backend.cpp
+checking file src/llama-context.cpp
+checking file ggml/src/ggml-cuda/ggml-cuda.cu
+checking file ggml/src/ggml-expert-pipeline.h
+patching file ggml/include/ggml-backend.h
+patching file ggml/src/ggml-backend.cpp
+patching file src/llama-context.cpp
+patching file ggml/src/ggml-cuda/ggml-cuda.cu
+patching file ggml/src/ggml-expert-pipeline.h
+All five resulting source hashes match the tested candidate.

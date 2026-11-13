@@ -1,0 +1,116 @@
+# RUNPATH / ldd sweep for build/exp078-pin-idlefast/bin
+# self = DT_RUNPATH points at own bin; ldd libggml-cuda.so.0 = resolution for every file
+FILE                                   SELF   RUNPATH                                                        ldd libggml-cuda.so.0
+libggml-base.so.0.22.0                 n/a    <none>                                                         <not linked>
+libggml-cpu.so.0.22.0                  yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+libggml-cuda.so.0.22.0                 yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+libggml.so.0.22.0                      yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-batched-bench-impl.so         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-bench-impl.so                 yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-cli-impl.so                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-common.so.0.3.0               yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-completion-impl.so            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-fit-params-impl.so            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-perplexity-impl.so            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-quantize-impl.so              yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama-server-impl.so                yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libllama.so.0.3.0                      yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+libmtmd.so.0.3.0                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama                                  yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-batched                          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-batched-bench                    yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-bench                            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-cli                              yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-completion                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-convert-llama2c-to-ggml          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-cvector-generator                yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-debug                            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-diffusion-cli                    yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-embedding                        yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-eval-callback                    yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-export-lora                      yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-finetune                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-fit-params                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-gemma3-cli                       n/a    <none>                                                         <not linked>
+llama-gen-docs                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-gguf                             yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+llama-gguf-hash                        yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+llama-gguf-split                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-idle                             yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-imatrix                          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-llava-cli                        n/a    <none>                                                         <not linked>
+llama-lookahead                        yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-lookup                           yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-lookup-create                    yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-lookup-merge                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-lookup-stats                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-minicpmv-cli                     n/a    <none>                                                         <not linked>
+llama-mtmd-cli                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-mtmd-debug                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-parallel                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-passkey                          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-perplexity                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-q8dot                            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin    <not linked>
+llama-quantize                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-qwen2vl-cli                      n/a    <none>                                                         <not linked>
+llama-results                          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-retrieval                        yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-server                           yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-simple                           yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-simple-chat                      yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-speculative                      yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-speculative-simple               yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-tokenize                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-tts                              yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+llama-vdot                             yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin    <not linked>
+test-alloc                             yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+test-arg-parser                        yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-autorelease                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-backend-ops                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-backend-sampler                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-barrier                           yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+test-batch-alloc                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-c                                 yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin    <not linked>
+test-chat                              yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-chat-analysis                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-chat-auto-parser                  yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-chat-peg-parser                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-chat-template                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-col2im-1d                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+test-export-graph-ops                  yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-gbnf-validator                    yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-gguf                              yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-gguf-model-data                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-grammar-integration               yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-grammar-parser                    yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-iq2s-fused-mmid                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-iq2s-fused-mmid-bench             yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-jinja                             yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-json-schema-to-grammar            yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-llama-archs                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-llama-grammar                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-log                               yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-model-load-cancel                 yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-model-resolution                  yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-mtmd-c-api                        yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-mtmd-impl                         yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-opt                               yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-peg-parser                        yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-quantize-fns                      yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+test-quantize-perf                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+test-quantize-stats                    yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-quant-type-selection              yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-reasoning-budget                  yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-recurrent-state-rollback          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-rope                              yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   <not linked>
+test-sampling                          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-save-load-state                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-state-restore-fragmented          yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-thread-safety                     yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-tokenizer-0                       yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-tokenizer-1-bpe                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-tokenizer-1-spm                   yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+test-unicode                           yes    /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin:   /home/end0/AI/FrankenMoE-CUDA/build/exp078-pin-idlefast/bin/libggml-cuda.so.0
+
+# files=110 resolved_libggml-cuda=92 stale_runpath=0
+# marker: strings lib | grep -c 'async %s' = 1 (want 1)

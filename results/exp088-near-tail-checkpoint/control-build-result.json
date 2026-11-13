@@ -1,0 +1,8 @@
+{
+  "identical": true,
+  "control_relink_sha256": "8a963ce35bc919880354b226f5737c6c5d3f2dc47184c291badfe8470a209168",
+  "reference_sha256": "8a963ce35bc919880354b226f5737c6c5d3f2dc47184c291badfe8470a209168",
+  "object_identical": true,
+  "archive_identical": true,
+  "required_preparation": "copy original ten-member static archive before ar rcs replacement of one context object; preserve local header search and macro source paths"
+}

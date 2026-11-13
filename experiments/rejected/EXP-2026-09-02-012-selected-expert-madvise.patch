@@ -1,0 +1,89 @@
+diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+index 8a4240455..43fa9e7b5 100644
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -207,11 +207,73 @@ typedef void * thread_ret_t;
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#if defined(__linux__)
++#include <sys/mman.h>
++#endif
+ 
+ #endif
+ 
+ typedef pthread_t ggml_thread_t;
+ 
++#if defined(__linux__)
++static pthread_once_t g_cpu_moe_prefetch_once = PTHREAD_ONCE_INIT;
++static int g_cpu_moe_prefetch_enabled = 0;
++
++static void ggml_cpu_moe_prefetch_init(void) {
++    const char * value = getenv("LLAMA_CPU_MOE_PREFETCH");
++    g_cpu_moe_prefetch_enabled = value != NULL && value[0] != '\0' && strcmp(value, "0") != 0;
++    if (g_cpu_moe_prefetch_enabled) {
++        GGML_LOG_INFO("CPU MoE selected-expert prefetch enabled\n");
++    }
++}
++
++static void ggml_cpu_moe_prefetch_selected(
++        const struct ggml_tensor * src0,
++        const int64_t * matrix_row_counts,
++        int n_experts,
++        size_t expert_stride) {
++    pthread_once(&g_cpu_moe_prefetch_once, ggml_cpu_moe_prefetch_init);
++    if (!g_cpu_moe_prefetch_enabled || expert_stride == 0) {
++        return;
++    }
++
++    const long page_size_long = sysconf(_SC_PAGESIZE);
++    if (page_size_long <= 0) {
++        return;
++    }
++    const size_t page_size = (size_t) page_size_long;
++    const size_t tensor_bytes = ggml_nbytes(src0);
++    const uintptr_t tensor_base = (uintptr_t) src0->data;
++
++    for (int expert = 0; expert < n_experts; ++expert) {
++        if (matrix_row_counts[expert] == 0) {
++            continue;
++        }
++        const size_t offset = (size_t) expert * expert_stride;
++        if (offset >= tensor_bytes) {
++            continue;
++        }
++        const size_t slice_bytes = MIN(expert_stride, tensor_bytes - offset);
++        const uintptr_t first = (tensor_base + offset) & ~((uintptr_t) page_size - 1);
++        const uintptr_t last = (tensor_base + offset + slice_bytes + page_size - 1) & ~((uintptr_t) page_size - 1);
++        if (last > first) {
++            posix_madvise((void *) first, last - first, POSIX_MADV_WILLNEED);
++        }
++    }
++}
++#else
++static void ggml_cpu_moe_prefetch_selected(
++        const struct ggml_tensor * src0,
++        const int64_t * matrix_row_counts,
++        int n_experts,
++        size_t expert_stride) {
++    GGML_UNUSED(src0);
++    GGML_UNUSED(matrix_row_counts);
++    GGML_UNUSED(n_experts);
++    GGML_UNUSED(expert_stride);
++}
++#endif
++
+ #define GGML_THREADPOOL_N_THREADS_MASK (0xffffU)
+ #define GGML_THREADPOOL_N_THREADS_BITS (16)
+ 
+@@ -1637,6 +1699,10 @@ static void ggml_compute_forward_mul_mat_id(
+                 matrix_row_counts[i02] += 1;
+             }
+         }
++
++        // WILLNEED is asynchronous on Linux. Issue every selected slice before the worker
++        // barrier so page-ins for later experts can overlap computation of the first expert.
++        ggml_cpu_moe_prefetch_selected(src0, matrix_row_counts, n_as, nb02);
+     }
+ 
+     // reset current_chunk

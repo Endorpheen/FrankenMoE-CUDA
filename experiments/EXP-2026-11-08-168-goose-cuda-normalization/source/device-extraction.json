@@ -1,0 +1,6 @@
+{
+  "entry": "fg168d_gg_function_1",
+  "functions": 8,
+  "f4_type": "fg168d_gg_type_10",
+  "transformation": "Select emitted POD types/functions and checked helpers;qualify names and decorate device/forceinline. Typed vector load/store are raw storage effects. Map fatal effect to trap;no arithmetic edits."
+}

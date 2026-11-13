@@ -1,0 +1,355 @@
+{
+  "status": "DIAGNOSIS_ONLY_NOT_EXACT_PASS",
+  "counts": [
+    {
+      "mode": 1,
+      "op": 0,
+      "format": 0,
+      "classification": "both_nan_different_bits",
+      "values": 2
+    },
+    {
+      "mode": 1,
+      "op": 0,
+      "format": 1,
+      "classification": "both_nan_different_bits",
+      "values": 7
+    },
+    {
+      "mode": 1,
+      "op": 0,
+      "format": 5,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    },
+    {
+      "mode": 1,
+      "op": 0,
+      "format": 6,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    },
+    {
+      "mode": 1,
+      "op": 2,
+      "format": 0,
+      "classification": "both_nan_different_bits",
+      "values": 2
+    },
+    {
+      "mode": 1,
+      "op": 2,
+      "format": 1,
+      "classification": "both_nan_different_bits",
+      "values": 7
+    },
+    {
+      "mode": 1,
+      "op": 2,
+      "format": 5,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    },
+    {
+      "mode": 1,
+      "op": 2,
+      "format": 6,
+      "classification": "both_nan_different_bits",
+      "values": 38
+    }
+  ],
+  "total_changed_values": 170,
+  "non_nan_mismatches": 0,
+  "examples": [
+    {
+      "case": {
+        "case": 925,
+        "mode": 1,
+        "op": 0,
+        "format": 0,
+        "profile": 5,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 816
+      },
+      "byte_in_tensor": 124,
+      "kind": 0,
+      "expected": "0x7fc12345",
+      "actual": "0xffc23456",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 925,
+        "mode": 1,
+        "op": 0,
+        "format": 0,
+        "profile": 5,
+        "width": 7,
+        "threads": 8,
+        "inplace": 0,
+        "bytes": 816
+      },
+      "byte_in_tensor": 128,
+      "kind": 0,
+      "expected": "0xffc23456",
+      "actual": "0x7fc12345",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 933,
+        "mode": 1,
+        "op": 0,
+        "format": 1,
+        "profile": 5,
+        "width": 7,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 408
+      },
+      "byte_in_tensor": 62,
+      "kind": 1,
+      "expected": "0x7e00",
+      "actual": "0xfe00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 933,
+        "mode": 1,
+        "op": 0,
+        "format": 1,
+        "profile": 5,
+        "width": 7,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 408
+      },
+      "byte_in_tensor": 64,
+      "kind": 1,
+      "expected": "0xfe00",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 934,
+        "mode": 1,
+        "op": 0,
+        "format": 1,
+        "profile": 6,
+        "width": 32,
+        "threads": 2,
+        "inplace": 1,
+        "bytes": 768
+      },
+      "byte_in_tensor": 52,
+      "kind": 1,
+      "expected": "0xfe00",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 934,
+        "mode": 1,
+        "op": 0,
+        "format": 1,
+        "profile": 6,
+        "width": 32,
+        "threads": 2,
+        "inplace": 1,
+        "bytes": 768
+      },
+      "byte_in_tensor": 54,
+      "kind": 1,
+      "expected": "0x7e00",
+      "actual": "0xfe00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 934,
+        "mode": 1,
+        "op": 0,
+        "format": 1,
+        "profile": 6,
+        "width": 32,
+        "threads": 2,
+        "inplace": 1,
+        "bytes": 768
+      },
+      "byte_in_tensor": 112,
+      "kind": 1,
+      "expected": "0x7e00",
+      "actual": "0xfe00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 934,
+        "mode": 1,
+        "op": 0,
+        "format": 1,
+        "profile": 6,
+        "width": 32,
+        "threads": 2,
+        "inplace": 1,
+        "bytes": 768
+      },
+      "byte_in_tensor": 570,
+      "kind": 1,
+      "expected": "0xfe00",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 934,
+        "mode": 1,
+        "op": 0,
+        "format": 1,
+        "profile": 6,
+        "width": 32,
+        "threads": 2,
+        "inplace": 1,
+        "bytes": 768
+      },
+      "byte_in_tensor": 572,
+      "kind": 1,
+      "expected": "0x7e00",
+      "actual": "0xfe00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 967,
+        "mode": 1,
+        "op": 0,
+        "format": 5,
+        "profile": 7,
+        "width": 257,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 6408
+      },
+      "byte_in_tensor": 1608,
+      "kind": 1,
+      "expected": "0x7e09",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 967,
+        "mode": 1,
+        "op": 0,
+        "format": 5,
+        "profile": 7,
+        "width": 257,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 6408
+      },
+      "byte_in_tensor": 1648,
+      "kind": 1,
+      "expected": "0x7e09",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 967,
+        "mode": 1,
+        "op": 0,
+        "format": 5,
+        "profile": 7,
+        "width": 257,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 6408
+      },
+      "byte_in_tensor": 1688,
+      "kind": 1,
+      "expected": "0x7e09",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 967,
+        "mode": 1,
+        "op": 0,
+        "format": 5,
+        "profile": 7,
+        "width": 257,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 6408
+      },
+      "byte_in_tensor": 1728,
+      "kind": 1,
+      "expected": "0x7e09",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 967,
+        "mode": 1,
+        "op": 0,
+        "format": 5,
+        "profile": 7,
+        "width": 257,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 6408
+      },
+      "byte_in_tensor": 1768,
+      "kind": 1,
+      "expected": "0x7e09",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 967,
+        "mode": 1,
+        "op": 0,
+        "format": 5,
+        "profile": 7,
+        "width": 257,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 6408
+      },
+      "byte_in_tensor": 1808,
+      "kind": 1,
+      "expected": "0x7e09",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    },
+    {
+      "case": {
+        "case": 967,
+        "mode": 1,
+        "op": 0,
+        "format": 5,
+        "profile": 7,
+        "width": 257,
+        "threads": 1,
+        "inplace": 0,
+        "bytes": 6408
+      },
+      "byte_in_tensor": 1848,
+      "kind": 1,
+      "expected": "0x7e09",
+      "actual": "0x7e00",
+      "classification": "both_nan_different_bits"
+    }
+  ],
+  "original_exact_failure_preserved": true,
+  "producer_sha256": "81d6d066a675b282c72ee214d7154b709f3a3f581f72103a6b0790469f4f460f"
+}

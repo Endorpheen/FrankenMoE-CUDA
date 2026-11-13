@@ -1,0 +1,25 @@
+{
+  "correctness": [
+    true,
+    0.0,
+    "identical ids; max probability delta 0"
+  ],
+  "reference_sha256": "25728945e7b17dbdfef9aefdb0cf21bc5300bbc1bc6e077199228804deef9402",
+  "candidate_prompt_ms": 216193.017,
+  "resource": {
+    "pid": 2692748,
+    "request_begin_wall_ns": 1793381066360861000,
+    "request_end_wall_ns": 1793381289016208000,
+    "request_seconds": 222.655347,
+    "before_slack_seconds": 0.080935365,
+    "after_slack_seconds": 0.056617123,
+    "sample_count": 2218,
+    "peak_process_swap_kib": 0,
+    "peak_rss_kib": 23450128,
+    "system_swapout_pages": 0,
+    "system_swapin_pages": 1753,
+    "major_faults": 0,
+    "minor_faults": 600878,
+    "resource_gate": true
+  }
+}

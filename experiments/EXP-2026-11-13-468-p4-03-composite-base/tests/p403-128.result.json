@@ -1,0 +1,14 @@
+{
+  "tag": "p403-128",
+  "n_predict": 128,
+  "prefill_tok_s": 2161.139003619156,
+  "decode_tok_s": 36.329621227941196,
+  "prompt_tokens": 32768,
+  "predicted": 128,
+  "content_sha256": "9d90a010775f2e72fbea3fec7e0d34b8e57b52aab9dd16e90eb9cd5151ba7560",
+  "server_exit": 0,
+  "loadavg_before": "7.63 6.07 5.28",
+  "loadavg_at_request": "7.66 6.10 5.30",
+  "cpu_threads": 32,
+  "parallel_compilers_before": 0
+}

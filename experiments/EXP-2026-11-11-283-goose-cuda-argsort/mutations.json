@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "ASC first-branch compare uses >= (ties swap)",
+    "status": "CAUGHT",
+    "failures": 1368
+  },
+  {
+    "mutation": "direction bit uses j instead of k",
+    "status": "CAUGHT",
+    "failures": 2822
+  },
+  {
+    "mutation": "padding test a>=ncols weakened to a>ncols",
+    "status": "CAUGHT",
+    "failures": 35
+  },
+  {
+    "mutation": "swap writes the second value to the wrong slot",
+    "status": "CAUGHT",
+    "failures": 2856
+  },
+  {
+    "mutation": "host block cap 1024 -> 512",
+    "status": "CAUGHT",
+    "failures": 1
+  }
+]

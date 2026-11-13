@@ -1,0 +1,234 @@
+{
+  "ggml_backend_buffer_init": {
+    "mode": 0,
+    "args": [
+      "buft",
+      "&iface",
+      "context",
+      "size"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buffer_free": {
+    "mode": 1,
+    "args": [
+      "buffer"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_buffer_get_size": {
+    "mode": 2,
+    "args": [
+      "buffer"
+    ],
+    "kind": "size_t"
+  },
+  "ggml_backend_buffer_get_base": {
+    "mode": 3,
+    "args": [
+      "buffer"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buffer_init_tensor": {
+    "mode": 4,
+    "args": [
+      "buffer",
+      "tensor"
+    ],
+    "kind": "enum ggml_status"
+  },
+  "ggml_backend_buffer_clear": {
+    "mode": 5,
+    "args": [
+      "buffer",
+      "value"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_buffer_set_usage": {
+    "mode": 6,
+    "args": [
+      "buffer",
+      "usage"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_buffer_get_usage": {
+    "mode": 7,
+    "args": [
+      "buffer"
+    ],
+    "kind": "enum ggml_backend_buffer_usage"
+  },
+  "ggml_backend_buffer_get_type": {
+    "mode": 8,
+    "args": [
+      "buffer"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buffer_reset": {
+    "mode": 9,
+    "args": [
+      "buffer"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_buffer_copy_tensor": {
+    "mode": 10,
+    "args": [
+      "src",
+      "dst"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_buft_name": {
+    "mode": 11,
+    "args": [
+      "buft"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buft_alloc_buffer": {
+    "mode": 12,
+    "args": [
+      "buft",
+      "size"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buft_get_alignment": {
+    "mode": 13,
+    "args": [
+      "buft"
+    ],
+    "kind": "size_t"
+  },
+  "ggml_backend_buft_get_max_size": {
+    "mode": 14,
+    "args": [
+      "buft"
+    ],
+    "kind": "size_t"
+  },
+  "ggml_backend_buft_get_alloc_size": {
+    "mode": 15,
+    "args": [
+      "buft",
+      "tensor"
+    ],
+    "kind": "size_t"
+  },
+  "ggml_backend_buft_alloc_buffer_n": {
+    "mode": 16,
+    "args": [
+      "buft",
+      "tensors",
+      "n_tensors"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buft_get_alloc_size_n": {
+    "mode": 17,
+    "args": [
+      "buft",
+      "tensors",
+      "n_tensors"
+    ],
+    "kind": "size_t"
+  },
+  "ggml_backend_buft_is_host": {
+    "mode": 18,
+    "args": [
+      "buft"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_buft_get_device": {
+    "mode": 19,
+    "args": [
+      "buft"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buft_alloc_buffer_n_default": {
+    "mode": 20,
+    "args": [
+      "buft",
+      "tensors",
+      "n_tensors"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_buft_get_alloc_size_n_default": {
+    "mode": 21,
+    "args": [
+      "buft",
+      "tensors",
+      "n_tensors"
+    ],
+    "kind": "size_t"
+  },
+  "ggml_backend_multi_buffer_alloc_buffer": {
+    "mode": 22,
+    "args": [
+      "buffers",
+      "n_buffers"
+    ],
+    "kind": "ptr"
+  },
+  "ggml_backend_multi_buffer_free_buffer": {
+    "mode": 23,
+    "args": [
+      "buffer"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_multi_buffer_clear": {
+    "mode": 24,
+    "args": [
+      "buffer",
+      "value"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_multi_buffer_set_usage": {
+    "mode": 25,
+    "args": [
+      "buffer",
+      "usage"
+    ],
+    "kind": "void"
+  },
+  "ggml_backend_buffer_is_multi_buffer": {
+    "mode": 26,
+    "args": [
+      "buffer"
+    ],
+    "kind": "bool"
+  },
+  "ggml_backend_view_init": {
+    "mode": 27,
+    "args": [
+      "tensor"
+    ],
+    "kind": "enum ggml_status"
+  },
+  "ggml_backend_tensor_alloc": {
+    "mode": 28,
+    "args": [
+      "buffer",
+      "tensor",
+      "addr"
+    ],
+    "kind": "enum ggml_status"
+  },
+  "ggml_op_alloc_size_may_expand": {
+    "mode": 29,
+    "args": [
+      "op"
+    ],
+    "kind": "bool"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "direct_pair_cases": 5100,
+  "eight_thread_pair_cases": 2048,
+  "chained_view_lifecycles": 4,
+  "lifecycle_steps": 361,
+  "noncounter_fields_unchanged": true,
+  "owner_release_exactly_once_after_last_view": true,
+  "reachable_shared_runtime_stack_use": false,
+  "source_sha256": "c32a2888ad884ff8ded4ff51c62000f44c7f371129e200ca05028b71f76287c1"
+}

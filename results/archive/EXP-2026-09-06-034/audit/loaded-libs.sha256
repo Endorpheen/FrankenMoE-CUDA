@@ -1,0 +1,8 @@
+8c5d7cfc14fec3b9ceebba984ac24249daddcf5220f4a8043e1adbc3a56e953b  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libggml-base.so.0
+0f43a0085d90a85c353a2b61afd0d8a6bb33aa7ad9f63dbb77787ee3bb74577f  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libggml-cpu.so.0
+e631969099f28b9eb9bae9fd9feddae69c966deb89ae2588e593fefaa69f2cdc  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libggml-cuda.so.0
+274f6e6ebb7c9bf0698075123aa5349b697aad18d730e2530f9d8e2e8bc2c34c  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libggml.so.0
+6a607f6a4ed64c442c82504915ca9d7003af06dfb880f44601caa26efcec5e88  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libllama-common.so.0
+e7d7d3d7c260f68765f3f887cd175206bbbc5aa404811cdc8732c8dd1bb60ae6  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libllama-server-impl.so
+ef1b4396e5b7e8577ca5e5b533a2a7e195d41e534562ea546d7c90f816d3d93d  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libllama.so.0
+66f177c7dd34b055359baae0b1990dba6f373195a60085ace414c0c16764bcda  /home/end0/AI/FrankenMoE-CUDA/build/exp023-mtp-sidecar/bin/libmtmd.so.0

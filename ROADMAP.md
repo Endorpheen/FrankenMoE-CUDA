@@ -1,0 +1,285 @@
+# FrankenMoE roadmap — current state 2026-10-30
+
+## Current Flint/Apex series
+
+EXP101 lazy physical KV mapping is preserved as a measured Apex candidate for manual launch: author five loaded pairs and an independent clean Codex qualification observe4428 ->3188MiB (-1240MiB/-28.0036%) at32K with context262144. Independent output is exact, resource gates clean, decode remains around28–30tok/s. Broad compatibility/failure-mode validation remains incomplete; no universal default claim or installed-profile switch. EXP090 stays the active service until the user's manual restart. EXP102 geometry requires manual correction/audit; EXP107 is deferred architectural work. The next ten-experiment assignment is prepared separately.
+
+EXP100 host state-transfer batching is REJECTED after direct real-Apex qualification: exact numerical output and clean candidate resources, but repeat TTFT186.377 ->195.786ms gives no>=5% gain. No formal series or default promotion. All four prepared runtime patches096/097/099/100 were built unchanged and screened on real Apex;098 supplied no runtime patch (reported ALREADY_PRESENT). EXP090 remains working. Next: the requested seven-experiment implementation/build/real-model assignment for the user's OpenCode agent; no overlapping GPU owners.
+
+EXP099 alternative sm89 wide-GQA FA dispatch is REJECTED at the original numerical gate after one real Apex cold32K request: top5 divergence3, selected-ID divergence64, shared-history common-top5 probability delta0.19108. No semantic-quality conclusion. Swap-out1504 pages also prevents speed acceptance. EXP090 restored. Next prepared candidate: EXP100 state-transfer batching; seven subsequent experiments will be handed to the user's OpenCode agent after these remaining screens.
+
+EXP097 CPU Q4_K/Q6_K prefetch is REJECTED at real-model qualification: exact output, unchanged4428MiB VRAM, no>=5% improvement established. Repeat has10 swap-out pages and is not clean timing evidence; no causal slowdown claim or formal series. EXP090 restored. Next: prepared independent EXP099 FA dispatch, then EXP100 state-transfer batching. EXP098 has no candidate because the requested placement is reported already present.
+
+EXP096 pinned checkpoint storage is REJECTED after direct real-Apex qualification: repeat client TTFT186.377 ->185.485ms, only0.4786%, below the new>=5% goal. Numerical output exact; observed VRAM unchanged4428MiB. No formal series or default promotion. EXP090 restored. Next prepared independent candidate: EXP097 bounded CPU Q4_K/Q6_K expert prefetch; EXP098 is reported ALREADY_PRESENT, EXP099/100 await real-model screens. Goal remains active.
+
+EXP093 temporary-pool retention is REJECTED for the fixed32K pool-only >=5% goal: the entire mapped pool is74MiB, just1.6712% of observed4428MiB process VRAM; pool plus4MiB cuBLAS workspace is1.7615%. No unsafe trimming is implemented. Diagnostic cold/repeat numerical outputs are exact; EXP090 is restored with all nine hashes checked. The new>=5% goal remains active. Next: audit bounded H2D coalescing against prior EXP042/043 and current pinned-mmap geometry before deciding whether a new probe is justified.
+
+EXP092 twelve-worker qualification is REJECTED for the current Apex/all-CPU/poll0 combination: fresh warm-decode gain1.386% is below5%, and repeat TTFT rises21.05%. Earlier reused-control gain5.28% is retained as a diagnostic, not selected for acceptance. EXP0908-thread profile remains working. Current priority is Apex/Flint; legacy Qwen bundles are preserved.
+
+The new>=5% goal above EXP090 remains active. EXP091 pinned small-batch MoE offload is REJECTED: cold-tail CPU->CUDA placement changes top5/selected outputs, even though kernels/weights are unchanged. EXP090 is restored; no new default is promoted. CPU worker qualification then closed as EXP092; preserve numerical placement in subsequent directions.
+
+EXP090 delivers the requested correction to EXP089: remove the raw MemFree veto that treated reclaimable file cache as unavailable. Use the isolated exp090-mmap-available runtime for manual restart. Available-memory headroom, resident pages and ownership checks remain. Only libllama changes; no new model/performance runs are claimed. Prior EXP089 measurements and builds stay preserved.
+
+EXP089 is the new accepted baseline above EXP087: resident mmap expert registration. Five balanced manual32K Apex pairs show median paired prefill throughput+61.25485%, client TTFT-37.97135%,5/5 wins; single-response decode-1.12915%. All640 IDs/ordered top5/probabilities match exactly, and primary process swap/system swap-out/major faults are0. Primary RAM increase is several MiB; qualification observes4428MiB VRAM after both requests. Startup-loaded median rises about1.457s. This completes the new >=5% goal; no next optimization experiment is scheduled automatically.
+
+The feature pins existing resident CPU expert pages, without copying weights or changing arithmetic/batching. It defaults on in supported Linux single-GPU+CPU causal FA single-sequence mmap inference, with explicit conservative host/residency gates. Insufficient available RAM/nonresident/unsupported configurations keep the old path; this is not an all-model or cold-disk speed promise. Apex prefix/capacity261632 and Flint compatibility retain exact outputs. Functional swapped/major-fault checks are documented separately, not used for speed acceptance. Details and reproduction: results/exp089-mmap-register/ and patches/mmap-expert-registration.patch, applied after the baseline and lazy-reservation patches. Installed Desktop/runtime profiles remain untouched.
+
+EXP087's accepted lazy reservation remains in this baseline: previous32K VRAM6404 ->4428MiB (-30.8557%) against preserved EXP083, with exact outputs. It is a prior result, not a new30% gain or a comparison against current official llama.cpp. Larger actual graphs can grow/retain buffers; the memory saving is not universal across contexts.
+
+EXP083 remains immutable. EXP084 is diagnostic; EXP085 pinned staging, EXP086 batch6144 and EXP088 near-tail checkpoint splitting remain REJECTED. The original none-loading branch of EXP089 is rejected for request-window swap-out. Earlier accepted patches/builds are preserved.
+
+## Archived runtime-speed series
+
+**Runtime-speed hypothesis series (2026-09-15): CLOSED.** The series tracked in
+`experiments/HYPOTHESES-2026-09-15-runtime-speed.md` is finished. One candidate was
+accepted and delivered as default-on, five were rejected with numbers, one is
+implemented but waits on an unrun live A/B, and the remainder stay gated or parked.
+Cards: `experiments/EXP-2026-09-15-05*.md` (057 to 061) and
+`experiments/EXP-2026-09-15-06*.md` (062, 064, 065); design notes:
+`experiments/designs/exp057/`.
+
+**EXP-2026-09-15-062: ACCEPTED and delivered** (`kind=performance`). The pinned host
+upload ring depth went from 2 to 3 slots (`GGML_CUDA_EXPERT_RING_SLOTS` 2 -> 3). Five
+clean paired A/B runs on the 395-token request: median paired prefill gain **+11.537%**,
+the candidate won 5/5, the arm medians control 3039.2 ms against candidate 2708.1 ms
+(**-10.891%**), the decode medians 21.94 against 22.43 tok/s; the completion content
+sha256 `7dfa7d1e…` is identical, VmSwap 0, and the ring costs +16 MiB pinned (48 MiB
+total). Mechanism: the saved ~336 ms matches the EXP-043 slot-wait union of 326.679 ms.
+Model-free gates PASS (the depth-3 and depth-2 harnesses; the scheduler sha256
+`39505119…` in all modes). Card: `experiments/EXP-2026-09-15-062-ring-depth3.md`.
+Delivery as default-on per Hard rule 10: patch `patches/ring-depth-3.patch` (sha256
+`3da9825d…`), delivery build `build/exp063-default-runtime` (llama-server sha256
+`9bb4c503…`), and the `scripts/run_qwen38_server.sh` default `BUILD_DIR` switched to it
+(launcher sha256 `95188e5b…`). Model smoke PASS: the ring activation logs 3 pinned host
+slots, the short and 395-token answers are byte-identical to the references
+(`2f409a00…`, `7dfa7d1e…`), ring teardown 31092/31092, clean SIGINT.
+
+**Rejected with numbers.** EXP-2026-09-15-057 CPU affinity: no gain, jitter unchanged.
+EXP-2026-09-15-058 `GGML_OP_OFFLOAD_MIN_BATCH` sweep: the default 32 is optimal, 4 is
+19.8% slower, 4096/8192 are far slower and change the output hash. EXP-2026-09-15-059
+`GGML_CUDA_GRAPH_OPT=1`: 3.0% and 7.9% slower. EXP-2026-09-15-060 `-b 512 -ub 256`:
++57% slower and the output changed. EXP-2026-09-15-061 `-tb 16`: no reproducible gain.
+EXP-2026-09-15-064 ring depth 4: median -4.6%, 2/5, noise-dominated; the ring saturates
+at 3 slots.
+
+**DEC-1 host serialization: REJECTED (measured null).** The live decode A/B ran on
+2026-09-16 with the single binary `build/exp065-hostser` (sha256 `ddbe62dd…`); the only
+variable was env `GGML_SCHED_READBACK_ASYNC` (A=0 / B=1), 5 pairs order A/B, B/A, A/B,
+B/A, A/B. Median paired decode gain **-0.05%**, B wins 2/5, arm medians A 18.9149 /
+B 18.9597 tok/s (**+0.237%**), content byte-identical (`9270353f…`): inside noise and
+below the 2 percent bar. The device-to-host async readback in the scheduler
+(`GGML_SCHED_READBACK_ASYNC`, default off) was implemented and its model-free gate
+PASSES (the scheduler sha256 is unchanged with the flag off and on), but the design
+note's 1 to 4 percent estimate is not realized at the measured workload. Tree
+`work/llama.cpp-exp065-hostser`, build `build/exp065-hostser`, binary sha256 `ddbe62dd…`.
+Card: `experiments/EXP-2026-09-15-065-host-serialization.md`, evidence
+`results/archive/EXP-2026-09-16-065/ab/`.
+
+**Dead knobs closed without runs** (`experiments/designs/exp057/dead-levers.md`):
+`GGML_ET_*` (the ET backend is not built), `GGML_CUDA_PDL` (inert on sm_89), `--poll`
+(a no-op under OpenMP), `--spec-draft-cpu-mask` (no threadpool attached to the draft
+context).
+
+**Still gated or parked.** DEC-2 and DEC-5 (the IQ4_NL down-projection and the
+verify-shape kernel, gate G1), DEC-6 (the reduced-vocabulary MTP head, gate G2). DEC-7
+(the CUDA-graph L1 extension) is parked: EXP-052 rejected the L2-only variant.
+
+Current assignment: **none — decode acceleration direction closed 2026-09-10**.
+Three candidates from `docs/DECODE-CANDIDATES-2026-09-09.md` were tested and all
+rejected: EXP-2026-09-09-053 CUDA radix top-k (`REJECTED`; correctness 340/340 pass,
+clean pair +0.24%, the only positive pair had divergent outputs, the ~119k run was
+not completed), EXP-2026-09-10-054 PixelML DFlash prototype (`REJECTED`; it works but
+runs 29-47% slower than native MTP), and EXP-2026-09-10-055 alternative MTP draft
+heads (`REJECTED`; no head beats the current head beyond noise, paired duel tie
+20.860 vs 20.839 tok/s). The accepted EXP-046 runtime, model and launcher are
+unchanged.
+See the [cards](experiments/EXP-2026-09-10-055-mtp-heads.md) and the
+[three externally implemented directions](docs/DECODE-CANDIDATES-2026-09-09.md).
+Reduced draft vocabulary and hyper-connection kernel fusion remain backlog options,
+not authorized follow-up experiments.
+
+Coverage follow-up closed: **EXP-2026-09-15-056 — ACCEPTED** (`kind=correctness`,
+coverage; 2026-09-15, runs executed by OpenCode on the accepted EXP-046 default
+runtime). It closed the two deferred deficits of EXP-040: a real mid-stream
+cancellation under the pinned ring (`cancel task, id_task = 126` while the task was
+generating, then `stop processing`/`reset`/`all slots are idle`, and the next short
+request reproduced `H_short`), and a real decode probe (`n_predict=1` vs `n_predict=64`
+with `ignore_eos=true`: teardown counters `51429 calls, 51429 chunks` in both, so
+decode stages zero ring calls). S-run/prefix-cache/checkpoint-restore and safety gates
+all PASS; VmSwap 0; clean SIGINT; no orphan. No runtime, binary, model or launcher
+change. Card: `experiments/EXP-2026-09-15-056-coverage-cancel-and-decode-probe.md`;
+raw data: `results/archive/EXP-2026-09-15-056/`.
+
+Latest state: **EXP-2026-09-09-052 — REJECTED** (`kind=model-ab`; under the EXP-051 project — an L2-only two-variant CUDA Graph for the alternating 1/3 draft ubatch shapes; Igor's approval of 2026-09-09 «запускай» ("run it") + «4 раза AB и 4 раза BA» ("4 times AB and 4 times BA"): 8 pairs / 16 server runs, plan 4 A→B + 4 B→A, one binary `build/exp052-variants`, the only variable env `GGML_CUDA_GRAPH_VARIANTS` A=1/B=2, both arms `GGML_CPU_IQ2S_FUSED=1`, the EXP-046 protocol, port 8081). Implementation + model-free gate 32/32 PASS (VARIANTS=1 byte-for-byte = the old behavior, the EXP-050 trap reproduced; VARIANTS=2 — both shapes live in their own slots and reach launch; LRU/restoration/update-fail/sweep — all against a control); memory measured: host ~185 KiB for the two draft keys, device ~104.9 KiB per instance+graph (1-node, granularity 2 MiB). A/B: pair 1 +13.46% — a cold anomaly of arm A (16.758, warmup 21.88 s), excluded; the clean 7 pairs −0.72/−0.66/+1.42/+1.04/+0.14/−0.67/−2.09 → **median −0.66%**, B wins 3/7, the independent medians A 20.843701 / B 20.843498 → **−0.001%**. Correctness of all 16 runs: sha `9270353f…`, draft 138/234, ring 25326/25326, VmSwap 0 (pair1-B 127 MiB — the desktop), clean SIGINT. The ≥2% threshold was not reached, the sign is negative: the EXP-051 estimate (+1.4–1.7%) did not materialize — the ~1.6–2 ms/step saving is not on the critical path (the step is limited by CPU serialization/MUL_MAT_ID, EXP-048). The runtime and the launcher do not change; default VARIANTS=1 stays; the code is correct and lies opt-in in `work/llama.cpp-exp052-variants`; L1 was not added (the EXP-051 condition). Card: `experiments/EXP-2026-09-09-052-two-variant-l2-only-implementation.md`.
+
+Previous state: **EXP-2026-09-09-047 — REJECTED** (`kind=model-ab`, 2026-09-09; the senior helper's task order; Igor's approval for pairs 1–2 and the direct instruction «еще по разу AB и BA» ("one more AB and BA each") for pairs 3–4; 8 server runs in one day, plan 2 A→B + 2 B→A). Hypothesis: the single-token draft passes of split-MTP lose time synchronizing the 12 inherited CPU threads; `-td 6` gives ≥2% decode. The setting exists in the stock binary without a rebuild (`-td/-tbd`; the chain `arg.cpp:4070` → `speculative.cpp:2517` → the draft context, the target untouched; without the flag the draft inherits `-t 12`). A/B on `build/exp046-default-runtime`, the EXP-046 argv verbatim, arm B = + `--spec-draft-threads 6 --spec-draft-threads-batch 12`. Arms: A1 15.90 (a cold machine anomaly: prompt eval 3.35 tok/s, excluded), B1 18.93 (right after the anomalous A1, not included in the clean medians), B2 19.97, A2 20.14, A3 20.60, B3 20.15, B4 20.12, A4 20.28 tok/s. Clean pairs: −0.85% (B→A), −2.18% (A→B), −0.79% (B→A) — the median **−0.85%**, B slower in 3/3 clean pairs; the independent medians of the clean arms A 20.28 / B 20.12 → −0.79%. The 2% threshold was not reached, the sign is negative: the draft pass is bandwidth-bound (~37 MiB/pass), 6 threads slightly lose streaming throughput, the synchronization does not compensate; the draft share of the step is 3–6% — the effect window is smaller than the threshold. Correctness in all 8 arms: sha `9270353f…`, acceptance 0.58974 to the digit, ring 25326/25326, VmSwap=0, clean SIGINT. The runtime and the launcher do not change; `-td/-tbd` remain unused opt-in flags; the 4/8 sweep is not performed. Card: `experiments/EXP-2026-09-09-047-draft-threads-ab.md`.
+
+Previous state: **EXP-2026-09-09-046 — CONFIRMED_POSITIVE, scale ~+3%** (`kind=model-ab`; the preliminary pair per the senior helper's task order with Igor's approval, then pairs 2–3 B→A, 4–6 A→B, 7–8 B→A by Igor's direct instructions; in total 8 pairs / 16 server runs in one day with one binary `build/exp046-cuda-ab`, 2026-09-09, the balanced plan 4 A→B + 4 B→A). Fused IQ2_S (the MTP verify path, decode-only batches of 2–3 tokens, env `GGML_CPU_IQ2S_FUSED` before process start): the pair gains +25.57% (pair1 — a machine anomaly in arm A at 16.45 tok/s, not included in the estimate), B→A: +3.07 / +4.01 / +2.92 / +4.19, A→B: +1.69 / +0.35 / +1.97; B wins **8/8** (one-sided sign test p = 0.0039); the median **+3.00%** over all 8, **+2.92%** over the clean 7; the independent arm medians A 20.282 / B 20.817 → **+2.64%**. The real scale is about +3% decode tok/s, consistent with the CPU microbench (group 3 +2.3…+2.7% per call with almost full coverage of the groups in real verify decoding). Correctness: all 16 runs 256/256 stop=limit, the content sha256 `9270353f…` identical, the draft acceptance identical to the digit (0.58974), ring 25326/25326, VmSwap=0, RSS the same in both arms, clean SIGINT. The order asymmetry (A slower second after B: 20.10 against 20.50 first) points against overestimating the candidate; arm B is stable at 20.64–20.87. The 2% usefulness threshold was exceeded in all aggregations; the "minimum five consecutive pairs" requirement was over-fulfilled. The transfer into the baseline was done by Igor's decision of 2026-09-09 (this commit): the patches `patches/iq2s-fused-decode.patch` (+ tests) and `patches/iq2s-fused-decode-default-on.patch` in the chain, `build/exp046-default-runtime` built, the launcher `scripts/run_qwen38_server.sh` switched to it; fused ON by default, the rollback is `GGML_CPU_IQ2S_FUSED=0`. Card: `experiments/EXP-2026-09-09-046-fused-iq2s-ab-pair.md`. Previous state — EXP-2026-09-08-045 (`INCONCLUSIVE`, a two-thread gather prototype; nevertheless the port into the default runtime was done by Igor's direct decision of 2026-09-08, commit 73354ac, `build/exp045-default-runtime`; the startup crash was caused by a build directory damaged by the staged build, not by the code — cured by a clean rebuild from scratch on 2026-09-09, details in `experiments/EXP-2026-09-08-045-two-thread-cpu-gather.md` and in the journal).
+
+**Igor's decision of 2026-09-08:** the senior helper's recommendation to keep the current checkpoints was approved. Moving the save to after the full prompt is not accepted for implementation because of the loss of useful restore points; the 110–125 ms speedup estimate is not confirmed by A/B. The results of the local investigation and the caveats are stored in `experiments/checkpoint-post-prefill-decision-2026-09-08.md`. This is the current checkpoint decision, it takes priority over the earlier proposals to explore removing the break; no next experiment has been chosen.
+
+Latest decision: **EXP-2026-09-08-044 — REJECTED** (`kind=offline-design`), closed by Igor's explicit decision of 2026-09-08. The checkpoint tail of 32 instead of 4 is not implemented: a positive budget is not established, there is a risk of re-staging several GiB. This is a refusal of development based on the offline estimate, not a proven slowdown in A/B. The scenario of 32 unique experts per layer is not a lower bound; 391+4 → 363+32 changes both batches. The next direction was not assigned; the old recommendations about the nearest candidate are not an assignment. Card: `experiments/EXP-2026-09-08-044-checkpoint-tail-32-offline.md`.
+
+The senior helper's proposal after EXP-044 was closed (not an assigned experiment): check the CPU gather with two threads instead of one, preserving the H2D bytes/calls, the 32 MiB ring, and the checkpoints. The benefit is a potential prefill reduction; the basis is EXP-043: 496.453 ms of GPU idle concurrently with the gather, not a guaranteed saving. The nearest proposed gate is a model-free comparison of one thread vs two on the EXP-043 size distribution, including the synchronization cost, byte parity, and the subsequent H2D. Performance checks are manual and sequential; a model A/B only by separate agreement. Risks: competition for RAM/cache, CPU occupancy, the cost of wakeups; the absence of a win closes the candidate before the model.
+
+The assignment of 2026-09-08: Igor promoted this proposal into the assigned experiment **EXP-2026-09-08-045 — a two-thread CPU gather (a model-free prototype)**, finished on 2026-09-08 — `INCONCLUSIVE`, the summary is above. The only A/B variable: one memcpy vs the calling thread plus one permanent helper; two pinned 16 MiB slots, the range/order/count and the H2D volume, the stream, and the checkpoints — unchanged. The gate for moving to a server candidate: a median of the full model-free gather+H2D time with a final drain of ≥5% reduction, ≥4/5 wins, all byte-checks, VmSwap=0. The load is the 17 886 ranges of EXP-032 with an unambiguous restoration of the mmap addresses from the GGUF metadata (21.641 GiB, source footprint ≫ L3). The correctness gate passed: selftest 8/8, a byte-for-byte A/B comparison on real ranges (sha256 of the hash lists `5bbf98f3…`). The model and the server were not touched. Card: `experiments/EXP-2026-09-08-045-two-thread-cpu-gather.md`.
+
+Audit: [docs/AUDIT-2026-09-06.md](docs/AUDIT-2026-09-06.md).
+The sequential task order: [docs/QWEN-IMPLEMENTATION-TASK.md](docs/QWEN-IMPLEMENTATION-TASK.md).
+History: [experiments/EXPERIMENTS.md](experiments/EXPERIMENTS.md), the individual EXP-028–033 cards, and `benchmarks/history.jsonl`. The old decisions are preserved; a later clarification takes priority over an old "Next experiment".
+
+**Roadmap status: CURRENT.** R0/EXP-034, R1/EXP-035, R3/EXP-037, R4/EXP-038, R6/EXP-040, and R7/EXP-041 are finished; R2/EXP-036 was cancelled before launch as a duplicate. R4/EXP-038 `ACCEPTED` (`kind=performance`): the bounded pinned ring sped up the median 395-token prefill by 13.16%, won 5/5 pairs, and did not slow down decode. R6/EXP-040 `ACCEPTED` (`kind=acceptance`): the extended acceptance — short prefill `+13.679%` (5/5), long prefill `+14.045%` (4/5), the median of the paired decode changes `-0.038%`, the answers identical, VmSwap=0. R7/EXP-041 `ACCEPTED` (`kind=delivery`, Igor's approval for the commit on 2026-09-07): the ring was delivered as default-on through a reproducible patch chain, the daily launcher switched to `build/exp041-default-runtime`; the model-free gates 8/8 PASS, the sched output sha identical to the accepted runtime; the SM-041 model smoke was performed by the senior helper on 2026-09-07 — PASS (the EXP-040 answer hashes reproduced, the ring active without manual variables, the counters 64635/64635, VmSwap=0, clean SIGINT). R5/EXP-039 remains `NOT_RUN`/`DEFERRED`. The R0–R7 queue is closed; the next candidate is the deferred coverage experiment by Igor's decision. `bmoe-cli` remains a separate research branch; its baseline, I/O, and H2D must not be mixed with the server's.
+
+## Phase statuses P0–P11
+
+| Phase | Current status and basis |
+| --- | --- |
+| P0 — reproducibility | Done for the current split-MTP server: provenance and the reproduction package were closed by R0/EXP-034; the safety profile and the launch lifecycle by R1/EXP-035. The next work belongs to the offline analysis of the transfer path, not to repeated reproducibility. |
+| P1 — SSD/RAM/GPU | The old CPU-decode prefetch variants are closed: EXP-001/002/003/012/025/027. EXP-033 single-buffer packed staging was rejected. R3/EXP-037 confirmed the host-side submission bottleneck; R4/EXP-038's bounded pinned ring was accepted: median prefill 3990.943→3465.613 ms (`+13.16%`), 5/5 pairs, decode `+5.23%`, VmSwap=0. R6/EXP-040's acceptance passed: short prefill 2018.462→1742.357 ms (`+13.679%`, 5/5), long prefill 8427.428→7243.800 ms (`+14.045%`, 4/5), decode paired `-0.038%`, VmSwap=0, RSS growth 32.199 MiB. R7/EXP-041's delivery was accepted (`kind=delivery`): the ring default-on in `build/exp041-default-runtime`, the daily launcher switched, `PINNED_RING=0` disables; the model-free gates 8/8 PASS. |
+| P2 — hot cache | The basic RAM LRU and VRAM banks exist in bmoe-cli; the server EHS activation was rejected by EXP-010. No new cache is planned without reuse/memory evidence. |
+| P3 — router prefetch | The late madvise and the warmer were rejected. The next layer's router is still unknown. Only provable intra-layer overlap can become a separate experiment; route prediction is deferred. |
+| P4 — container/reading | The addressed split-GGUF/O_DIRECT already exists in bmoe-cli. Repacking the model and a new I/O engine are deferred. The exact merging of adjacent H2D expert ranges already exists in the server scheduler. |
+| P5 — kernels | EXP-019 micro-tuning was closed by the current priority, EXP-021's microbench was done, EXP-028's CPU fused integration was rejected. Bulk prefill is really CUDA MMQ; a CPU fused retry is not planned. |
+| P6 — speculative | EXP-022 ngram and EXP-023 CPU-only draft were rejected; EXP-024 split MTP was historically accepted (+13.6%, one pair). The reproducibility of the MTP patch was confirmed by R0, the smoke of the current profile by R1. There is no broad new performance claim; `n_max=2`, do not repeat a larger limit. |
+| P7 — memory planning | The RAM startup gate and the EHS safe autofit were implemented by EXP-008/009; the integral planner is deferred. The acting watchdog/launch profile was checked and accepted in R1/EXP-035. |
+| P8 — mixed quant | Deferred: no representative quality baseline and no quality budget. |
+| P9 — REAP | Deferred for the same reason; do not change the model and the top-k. |
+| P10 — batching | Deferred until the stable single-request path and the lifetime check under several requests. Aggregate tok/s is a separate metric. |
+| P11 — API/autotuning | The OpenAI-compatible server already works. Autotuning and UI are not the next step. |
+
+## Execution queue
+
+The status of every stage is stated explicitly. Do not repeat the closed R0/R1; do not launch the cancelled R2; continue only from the first item with the status `PLANNED`.
+
+1. **R0 / EXP-034 — provenance and the reproducible package**. Status: ACCEPTED (`kind=infrastructure`), committed in `1cf489a` — a queue violation: the commit was made without the pre-commit approval block (outcome, memory impact, correctness, the file list). The content stays; from that moment on, every following commit only after showing these items and Igor's explicit approval. The raw archive `results/archive/EXP-2026-09-06-034/raw/` is LOCAL_ONLY/untracked, the commit contains only the manifest/hashes/compact audit. Fixed: the root/nested trees, the live server (including the restart during capture), the hashes of the binaries/libraries/model shards, the EXP-023–033 artifacts, and the reference status of EXP-000–033. The chain `integration + integration-drift + mtp-sidecar` from the pin `4aaad5d` provably reproduces the working tree (except one empty line) and builds; `--help` matches the live binary. `experiments/EXP-2026-09-06-034-provenance.md`, `benchmarks/manifests/exp034-provenance.json`, `patches/README-mtp-sidecar.md`.
+2. **R1 / EXP-035 — a working safety profile**. Status: `ACCEPTED` (`kind=correctness`), committed in `7e8b819`. Audit: the external hard threshold `sys_rate > 2097152` was non-working (sys_rate is already MiB/s; the internal default 2048), the VmSwap message in the launcher overstated MiB by a factor of 4 (`*4` — a redundant page factor), `--swap-watchdog` was not enabled in any launch path. The fix (threshold 2048 + the correct KiB->MiB + opt-in `SWAP_WATCHDOG=1`) was applied to the working `scripts/run_qwen38_server.sh`. Lifecycle: the original 4/4 PASS, the fixed 6/6 PASS. Boundary synthetic: orig 7/7, fixed 7/7. The model smoke (a separate block, the senior helper): the watchdog activation is visible, one request 48+35 tokens in 6305.08 ms, MTP acceptance 24/24, no CUDA/OOM/trip, the server stopped. Limitation: VmSwap=0 was formally not reached (~150 MiB of swap before the request, decreased during the request); acceptable for a functional gate. These data are not a performance baseline. `experiments/EXP-2026-09-06-035-watchdog-safety-profile.md`, the artifacts in `results/archive/EXP-2026-09-06-035/`.
+3. **R2 / EXP-036 — a repeated baseline**. Status: `NOT_RUN_DUPLICATE`. Cancelled before launch: EXP-030/031/032 already fixed the unchanged 395-token bulk-prefill path, and EXP-033 contains a comparable control and the rejected candidate. Do not create an EXP-036 card, do not launch the server, the model, or new baseline measurements. Every future performance candidate keeps a fresh control A inside its own A/B; this is not a separate repeated baseline experiment.
+4. **R3 / EXP-037 — the offline transfer budget and the dependency map**. Status: `ACCEPTED` (`kind=infrastructure`, offline on the saved EXP-031b/032 traces; no server/model/profiler/build launch and no new measurements). The request window in the trace is 3945.542 ms: the host-side union of memcpyAsync+streamSynchronize = 3516.785 ms (89.14%), the GPU busy union 2112.785 ms, the intersection of H2D/kernels = exactly 0 ms, the gaps without CUDA activity 1832.758 ms. Host pageable submission is the dominant serial component. The expert H2D 17 886 / 22,160.56 MiB matched EXP-032 byte-for-byte; the EXP-031 totals matched exactly (17 975 / 22 207.85 MiB; H2D 1661.183 vs 1661.18; kernels 438.915 vs 438.91). Exact-adjacent coalescing already exists in the scheduler (`ggml-backend.cpp:1705-1727`), 0 new adjacent pairs in the log. `experiments/EXP-2026-09-06-037-offline-transfer-budget.md`, `benchmarks/exp037-offline-transfer-budget.json`, `results/archive/EXP-2026-09-06-037/`.
+5. **R4 / EXP-038 — the bounded pinned ring without packing/scatter**. Status: `ACCEPTED` (`kind=performance`), committed in `d965c66`. Two context-owned pinned host slots of 16 MiB, direct copies into the original offsets, the previous CUDA stream, opt-in `GGML_EXPERT_PINNED_RING=1`. Formal A/B: median prefill 3990.943→3465.613 ms (`13.163%`), median paired gain `12.983%`, 5/5 wins, exact bootstrap 95% `[9.357%; 13.803%]`; median decode `+5.234%`; the answers byte-for-byte identical, VmSwap=0. All B runs gave `17886` staged calls/chunks. The invalid cold/HTTP/log-level preflight runs are preserved and excluded.
+6. **R5 / EXP-039 — conditional transfer/compute overlap inside a layer**. Status: `NOT_RUN` by the EXP-037 gate: an independent intra-layer window is not proven — the intersection of H2D/kernels = 0 ms and is bounded by the sum of the kernels 438.915 ms (~11% of the window), the IDs of the next nodes are unavailable before the previous split is computed; the lifetime of the destination buffer is clear, but there is no window. The direction is `DEFERRED`.
+7. **R6 / EXP-040 — the acceptance of EXP-038**. Status: `ACCEPTED` (`kind=acceptance`, Igor's decision of 2026-09-07). The model-free part (2026-09-07): the control/candidate/patch hashes match; the EXP-038 harness re-run (12/12 PASS, the sched output sha `39505119b1…`); the delivery patch = the EXP-038 patch (`e1e6803c…`) passes `git apply --check` on top of the R0 chain; the isolated build `build/exp040-delivery` built cleanly, the tests 12/12 PASS, byte-for-byte identical to the candidate; the 4 ring files are identical to the EXP-038 tree. The model acceptance (performed by the senior helper in Codex): A/B 5 pairs × 2 arms — short prompt median 2018.462→1742.357 ms (`+13.679%`, 5/5 wins), long prompt median 8427.428→7243.800 ms (`+14.045%`, 4/5 wins); decode short tok/s — the median of the paired changes `-0.038%` (the primary result; the independent medians give `-2.961%`, recorded for transparency); the answers identical in all 10 (short content sha256 `2f409a00f774…`); every B-run `64635 staged calls/chunks`; VmSwap=0 in all 13 snapshots; the RSS growth `32.199 MiB`; the prefix cache 7672.15→257.91 ms; clean SIGINT, orphan=0; no CUDA/OOM/hang. The three invalid preflight runs are preserved and excluded. The two deficiencies of the test requests (cancellation not covered — the answer finished by EOG in 0.30 s; the n_predict=0/64 probes both produced 1 EOG token) — not regressions, moved to the deferred coverage experiment. `experiments/EXP-2026-09-07-040-pinned-ring-acceptance.md`, `benchmarks/exp040-pinned-ring-acceptance.json`, `results/archive/EXP-2026-09-07-040/`.
+8. **R7 / EXP-041 — the main accelerated runtime (default-on pinned ring)**. Status: `ACCEPTED` (`kind=delivery`, Igor's approval for the commit on 2026-09-07; the commit is this one). The delivery of the accepted EXP-038/EXP-040 ring as default-on was done: `patches/pinned-ring.patch` (SHA `e1e6803c…`, byte-for-byte the accepted EXP-038) + the minimal `patches/pinned-ring-default-on.patch` (SHA `73ca9f55…`, only two env gates; `0` disables, an alloc-fail fallback to the pageable path); the chain expert-tier-integration → integration-drift → mtp-sidecar → pinned-ring → pinned-ring-default-on on top of the pinned base `4aaad5d3` passes `git apply --check`+`git apply` on a fresh clone; the clean source tree `work/llama.cpp-exp041`, the new build directory `build/exp041-default-runtime` (built cleanly); the daily `scripts/run_qwen38_server.sh` switched to it (EHS=0, THREADS=12, context 196608, `-np 1`, KV q4_0, MTP n_max=2, `PINNED_RING=1` by default, `PINNED_RING=0` — the disable, `BUILD_DIR=build/expert-tier-franken-cuda` — the old build). Model-free validation: the EXP-038 harness in the default-on semantics, 8 modes (ring/sched × default/ON/OFF/alloc-fail) — all CHECK PASS; the sched output sha `39505119b1…` identical in all the modes and to the accepted EXP-040 runtime; the launcher stub run confirmed the full profile. The formal A/B was not repeated. The SM-041 model smoke was performed by the senior helper on 2026-09-07 — PASS: the ring active without manual variables, the counters `64635 calls, 64635 chunks` byte-for-byte as in EXP-040, the answer hashes reproduced (`2f409a00…`/empty long), VmSwap=0, MTP active, SIGINT exit 0, no orphans; the raw data in `results/archive/EXP-2026-09-07-041/smoke/`. `experiments/EXP-2026-09-07-041-default-runtime.md`, `benchmarks/exp041-default-runtime.json`, `results/archive/EXP-2026-09-07-041/tests/` (without the 4×25 MiB .bin — the hash is in log-sched-sha.txt).
+
+R4, R6, and R7 are accepted; the R0–R7 queue is closed, the R7 delivery confirmed by the SM-041 model smoke (PASS). R5 starts as a separate cycle only with a remaining measured bottleneck. The next direction is not chosen automatically; the candidates (including the deferred coverage experiment) are proposed, but the priority is set by Igor.
+
+## Offline pre-analysis outside the queue
+
+- **EXP-2026-09-09-051 — the two-variant CUDA Graph design for the draft's 1/3 shapes** (Igor's task order of 2026-09-09 after EXP-050: store graphs separately for the two shapes, do not split the catch-up; check the addresses/properties/memory/expense share; lifetime and budget; without launches). Status: `DONE` (`kind=design`). The decision: the `cuda_graphs` map holds ≤2 variant slots per key (`nodes[0]`): a replay on a full match of the slot's properties, otherwise the LRU slot → warmup+capture; a neighbor's snapshot is not overwritten (exactly what kills the replay today). Compatibility — the previous byte-for-byte `node_properties` memcmp, no size hash is introduced; env `GGML_CUDA_GRAPH_VARIANTS` (1 = today's behavior, default). The four checks are closed: (1) the addresses on an L1-rebuild are stable (reset() on the same buf_compute_meta, llama-graph.cpp:1347–1360; EXP-050 empirics — 351 calls on the same addresses through 173 rebuilds); (2) a variant is a slot index, not a hash; a legitimate recapture ~1/request from the kq_mask padding of 256; (3) ≤4 draft instances (~hundreds of KB VRAM) + ~0.4 MB host, the target in decode a single shape — negligible against 10.6 GB; LRU + a 10-s sweep + a destroy of the slot only. (4) The budget: 537 direct launches/step → 6 graph launches, the saving ≈1.64 ms + 0.1–0.5 ms capture → L2-only ≈1.4–1.7% (below the ≥2% threshold), with the L1 extension ≈1.7–2.5%; the server effect may be higher than the local one (the EXP-046 lesson) — the decision by A/B. The syncs and D2H are not touched; the edit is ~60–100 lines in common.cuh/ggml-cuda.cu. Igor's decision: L2-only as the first step; 1.4–1.7% — a research candidate, not a promised ≥2%; do not add L1 automatically. The clarifications before the implementation: check the lifetime of all the addresses of a captured graph after an L1-rebuild (device buffers, kernel arguments, temporary allocations), a measurable memory limit instead of "negligible" (a second slot is possible for the target too), an eviction/restoration gate (1→3→1→3, a third shape, a pointer change, update-failure, sweep/teardown — each against a control). The next steps (both with approval): EXP-052 — the isolated L2-only, default VARIANTS=1, model-free gates and the actual memory → a preliminary A/B by the EXP-046 protocol. Artifacts: `experiments/EXP-2026-09-09-051-two-variant-cuda-graphs-design.md`, the basis `results/archive/EXP-2026-09-09-050/`.
+
+- **EXP-2026-09-09-050 — the cause of the reuse reset: the ping-pong of the draft-context ubatch shapes** (Igor's task order of 2026-09-09 after EXP-049: a diagnostic build with a separation of the reuse levels, the reasons by keys, the first mismatched field, a disableable diagnostic; a model-free check, then one agreed run; the times are diagnostics only). Status: `DONE` (`kind=diagnostic-run`). Build `build/exp050-diag` (a copy of the exp046 baseline + only the diagnostics patch, the gate `GGML_GRAPH_DIAG`, without a value — zero output; the model-free gate 10/10, MUL_MAT 1193/1193, the syncs/D2H/algorithms untouched; LLAMA_GRAPH_RESULT_DEBUG=1 is read in Release, but is suppressed by the server log filter at INFO and prints a placeholder — hence our own strings). One run (the EXP-046 argv, port 8081): 256/256 tokens, the content and the draft acceptance byte-for-byte = EXP-046. The result: the target verify is not guilty — L1 reuse 115/117 (98%), L2 49 splits replayed every step; the "graphs reused 56/171" — a misreading: the counter is cumulative and target-context only (171−56=115). The real cause: **the alternation of the draft-context MTP ubatch shapes — the catch-up of the accepted (n=3) ↔ the generation (n=1)** breaks both levels: L1 — the `ubatch.n_tokens` equality (llama-graph.cpp:1487, the call from llama-context.cpp:1419; 2 of the 3 draft ubatches rebuild every step), L2 — the warmup ≥2 identical consecutive with the `nodes[0]` key and the memcmp of `node[0].ne` (ggml-cuda.cu:4605/2927/4627–4634): exactly 2 draft splits (116+63 nodes) — 353 calls, 0 replays per run, a reset→unstable→capture cycle with the `ne[1] 1↔3`/`ne[2] 0↔1` flip, the captured instance dies every step. The cost per step (diagnostics): 2 direct runs of 179 nodes + 1 capture+instantiate + 2 L1 rebuilds. The elimination directions — Igor's decision: (a) the catch-up as three 1-token ubatches; (b) keys/chains by a shape hash; (c) leave as is; the effect — only a separate A/B. Artifacts: `experiments/EXP-2026-09-09-050-draft-ubatch-shape-pingpong.md`, `results/archive/EXP-2026-09-09-050/` (server.log, analysis-offline.txt, the patch, the gate).
+
+- **EXP-2026-09-09-049 — the CUDA Graph failure conditions for the target verify** (Igor's task order of 2026-09-09, the next step after EXP-048; without launches). Status: `DONE` (`kind=offline-analysis`; reading the code of the tree `work/llama.cpp-exp046-iq2s-verify` + the EXP-043 trace read-only; no code changes). An inventory of 10 conditions with file:line in the card. Not holding: the build (`GGML_CUDA_GRAPHS=ON`), the env disable (not set), arch < Volta (Ada), MUL_MAT_ID-sync in the GPU splits (batch < 32 keeps the experts on the CPU). Definitely holding: the warmup automaton — a capture only on the second consecutive call of a key with identical properties (ggml-cuda.cu:4504–4523) combined with the instability of reuse/properties between steps (reuse 56/171; a fresh uid on every sched pass). Empirics: 49 captures at model load (the machine works per-split on the same configuration), 1 in the warmup phase, 0 in the measured windows; the single-shot batches (W2: 391, 4) could not be captured in principle — the W2 window could not show graphs regardless of the verify (a correction to EXP-048). The open item: the reused steps in real decode are not captured (trace: 1 event per ~50 steps contrary to the static model), the shape arithmetic (batch ≈ 3 almost always) does NOT explain the low 56/171 reuse — the real `can_reuse` blocker is not established; the Release `-DNDEBUG` compiles out the decision logs. The resolvers (both need Igor's approval): one nsys decode256 run (count cudaGraphLaunch per verify step) or a diagnostic build with an env counter of the decisions + `LLAMA_GRAPH_RESULT_DEBUG=1`. Until the item is closed, the ≥2% estimate from launch-CPU reduction remains unconfirmed; the syncs and D2H are not to be removed (Igor's condition). Artifacts: `experiments/EXP-2026-09-09-049-cuda-graph-capture-conditions.md`, `results/archive/EXP-2026-09-09-049/`.
+
+- **EXP-2026-09-09-048 — which decode operation remains notable and was never optimized** (the senior helper's task order after EXP-046/047; the wording weakened per Igor's four remarks before the commit: W2 — an approximation, not a measurement, the sums of API times are not the removable latency, the absence of a CUDA-graph in W2 does not prove its absence in the verify, priority instead of excluding the alternatives). Status: `DONE` (`kind=offline-analysis`, 2026-09-09, without launches; no performance claims). Method: the W2 window = a 4-token trunk batch from the EXP-043 trace (sqlite `f86cd32b…`, read-only; 129.5 ms; an approximation to the verify pass: batch < 32 → CPU experts) + the absolute MUL_MAT_ID times from the EXP-046 microbench + the 106.3 ms step arithmetic. The result: GPU busy only 15.7% (4559 kernels with a mean of 3.93 µs, ≈95/layer; H2D+D2H+D2D 2.4 ms); `cudaLaunchKernel` 4394 = 13.53 ms; `cudaStreamSynchronize` 396 (≈8/layer) = 6.41 ms; the CUDA-graph is inactive in the W2 window (1 instantiate per process; the non-capture cause not established); the remainder of 73–81% — CPU. The verify-step budget (a carry-over, the error — a working assumption): CPU MUL_MAT_ID ~56–60% (gate/up closed by EXP-046; **down IQ4_NL ~20–27% — never optimized**), **host serialization ~24–28% as an upper bound of the presence — never optimized** (sums of API times ≠ removable latency: a sync may await useful GPU work, a launch overlaps with execution), GPU swarms ~16–19% (latency-bound), draft 3–6% (closed by EXP-047), checkpoints ~1%. Conclusion (accepted by Igor): the offline analysis singled out host serialization as a promising hypothesis; its contribution and removability in the current decode require confirmation; for IQ4_NL the proven kernel levers are closed (EXP-019/021 + the EXP-046 lesson), the priority is lower, ≥2% is not excluded. Limitation: there is no kernel profile of the current MTP configuration (EXP-014 — pre-MTP); a refinement option — one CPU profile of the current decode (perf, separate approval). The next step was assigned by Igor (without launches): an analysis of the CUDA Graph capture failure conditions for the target verify in the current code (which ones actually hold); the potential benefit of ≥2% of decode by reducing the CPU cost of launching GPU operations; the syncs and D2H are not to be removed for now. `experiments/EXP-2026-09-09-048-decode-remaining-operations.md`, `results/archive/EXP-2026-09-09-048/`.
+
+- **EXP-2026-09-07-042 — limited-gap H2D coalescing** (audit item A7). Status: `PRELIMINARY_ANALYSIS`, offline only (the EXP-032 journal + GGUF metadata; no server/model/profiler/build and no runtime changes). Two equal threshold candidates: A (a byte gap ≤512 KiB) — 12 316 transfers (−31.14%), +2 785 MiB (+12.57%); B (≤1 skipped expert) — 9 434 (−47.25%), +5 296 MiB (+23.90%). Safety conditionally confirmed by the EXP-041 code invariant (dst=weights-tensor, offset=`id*expert_size`, the same stream) with a merged span ≤ slot. The speedup budget was NOT established, the sign of the effect is unknown: EXP-037 gave only a prediction of pinned submission at 5-20 µs/call, the extra gather/H2D overlap and do not add up in wall time. Measurements on the delivered EXP-041 (µs/call, the gather band width, the GPU H2D idle-headroom) are required before a candidate decision. The implementation and the model A/B are deferred; a profiler run is not scheduled. Artifacts: `experiments/EXP-2026-09-07-042-limited-gap-h2d-coalescing.md`, `benchmarks/exp042-limited-gap-h2d-coalescing-offline.json`, `scripts/exp042_limited_gap_calc.py`.
+
+- **EXP-2026-09-07-043 — what limits the prefill after the pinned ring** (a diagnostics protocol, scheme B). Status: `DONE` (STAGE1 model-free preparation + STAGE2 model profile performed on 2026-09-08, rule 1 agreed; `kind=diagnostics`, no performance claims). Goal: on EXP-041 and the saved 395-token request, distinguish three limitations — (1) the CPU gather into the pinned slots, (2) the GPU starving because of the submission/events/slot, (3) the achievable PCIe band. Instruments: nsys `-t cuda,nvtx` + the diagnostic build `build/exp043-diag` (the NVTX intervals `expert_gather/submit/slotwait` + the `expert_prefill` window markers in llama-server, env `GGML_EXPERT_DIAG=1`; both patches only in the diag tree `work/llama.cpp-exp043-diag`). The result (the measured window 2572.660 ms, the controls converged: 17886 intervals, 35772 staged = 2×17886, cache_n=0): the CPU gather 1463.641 ms union (56.9%, p50 ≈ a pure memcpy), the GPU H2D union 1346.071 ms (17.3 GB/s), the GPU idle 793.340 ms (30.8%), of which 496.453 ms while the gather was running; the submission totals 66.7 ms; the tail of 217.774 ms after the last gather was attributed offline on 2026-09-08: it is NOT a per-token draft (the draft goes as one batched pass over 391 rows — Igor's correction confirmed) and NOT the verify (0 gather after the end of the staging); the structure: host preparation 12.7 ms + the batched draft GPU pass 7.8 ms + 394 no-op syncs 2.6 ms + the CPU-MoE draft 45.1 ms + the checkpoint save of 112.6 MiB (16.3 ms, the size matches the EXP-040 logs) + the final 4-token trunk batch 129.5 ms with CPU experts — the 395-token prompt is cut by the checkpoint break `{4+n_ubatch, 4}` (`n_ctx_checkpoints=32` default) into 391+4, and batch 4 < 32 keeps the experts on the CPU (the op-offload gate). **The diagnosis: case 1 (CPU gather-bound); cases 2 and 3 are not confirmed. There are NO grounds to move to limited-gap A (EXP-042)** (the saving of 84-111 ms of CPU — at an estimated 15-20 µs/call — against +2.920 GB (2785 MiB) → +139 ms gather / +161 ms H2D; a negative forecast, no A/B was run); EXP-042 stays parked. Side candidate targets (not assigned, the priority is Igor's): the checkpoint break 391+4 (~146 ms of the tail: the save + the 4-token batch), the CPU-MoE draft 45.1 ms, the ring depth (slotwait 326.7 ms union, inside it a nested cudaEventSynchronize 321.1 ms, not additive), the CPU serialization of the router/dense/staging. Artifacts: `experiments/EXP-2026-09-07-043-prefill-bottleneck-profile.md`, `results/archive/EXP-2026-09-07-043/` (analysis.sql, analysis-results.txt, the logs, the patches; the binaries are LOCAL_ONLY).
+
+## Decision rule
+
+One experiment, one hypothesis, one baseline, one main variable. A performance ACCEPTED requires ≥3% median prefill time reduction, confirmation by paired results outside the observed noise, and no unacceptable regressions. Fewer H2D calls, working code, or less CPU spin are not by themselves a success. A minimum of five consecutive pairs for acceptance; an early stop at a clear failure is allowed. Correctness/infrastructure are accepted by their own pre-stated functional criteria without a speedup claim.
+
+Keep a bad result in the journal, do not include the code. Do not turn `INCONCLUSIVE`, `BLOCKED`, or `NOT_RUN` into ACCEPTED. A handoff is mandatory after every stage, including a rejection and a block. Model launches and commits are governed by [AGENTS.md](AGENTS.md); an audit is not a launch permission.
+
+## Old roadmap (a historical snapshot before the audit)
+
+P0 was marked done; P1: SSD→RAM→GPU overlap, aligned/coalesced reads, pinned RAM, double/triple buffering; P2: hot cache; P3: router prefetch; P4: addressed aligned container; P5: fused dequant+GEMM Ada/decode; P6: MTP/ngram/draft/combined; P7: residency planner; P8: mixed quant; P9: REAP; P10: multi-agent batching; P11: autotuning/API. All P1–P11 had unchecked boxes. The critical path was formulated as P0 → a true H2D/compute overlap. This order was replaced by the R0–R7 queue above; the experimental history was not deleted.
+
+## Long-term research idea: GOQ (Goose Optimized Quantization)
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-07. GOQ is the proposed
+name for a future family of our own quantization formats; an example name is
+`Q4_GOQ_M`. These names describe a research idea, not implemented formats.
+
+The goals are smaller model files, lower RAM/VRAM use, faster end-to-end
+inference, and minimal quality loss relative to existing formats. Start with
+optimization for our architecture. Explore adaptive layer/expert precision in
+MoE models, jointly developing quantization algorithms and CPU/CUDA kernels
+with Fried Goose.
+
+Design philosophy: **Hardware-First Quantization Design**. First investigate
+which operations are most efficient on the target CPU/GPU; then design the bit
+layout, block structure, and quantization scales around those operations.
+Start with our architecture. The objective is the largest practical gain in
+end-to-end prefill/decode while minimizing quality loss, model size, and
+RAM/VRAM use. Validate the hardware-first design experimentally against
+existing quantization formats; do not assume an advantage from format design
+or isolated kernel efficiency alone.
+
+When this research is scheduled, compare against the strongest then-available
+formats under reproducible conditions, including matched model-size or quality
+budgets. Measure quality, model size, total prefill/decode speed, RAM and VRAM;
+distinguish quantization improvements from runtime/kernel improvements. These
+are objectives to validate, not established advantages.
+
+This note does not change the current Goose migration GOAL, its sequence, or
+priorities. No implementation, model conversion, or benchmark is scheduled.
+
+
+## Long-term research idea: GooseMP
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-07. Investigate GooseMP,
+our own OpenMP runtime implementation written in Fried Goose, after the full
+functional migration of FrankenMoE is complete.
+
+First measure the OpenMP runtime overhead in the completed FrankenMoE runtime.
+Then experimentally evaluate replacing OpenMP entirely with GooseMP, improving
+scheduling, synchronization, and thread management. The target is faster real
+Apex prefill/decode than the OpenMP baseline while preserving correctness;
+compare under reproducible, matched hardware and inference settings. A gain
+in an isolated scheduling operation is not proof of faster inference.
+
+If results are successful, consider OpenMP ABI compatibility and reuse in other
+projects. Building a systems-level multithreading library is also a substantial
+compiler capability test, including concurrency, synchronization, and resource
+lifetime management. ABI compatibility and performance gains remain hypotheses.
+
+This note schedules no implementation or experiment now and does not change the
+current Goose migration GOAL, task count, sequence, or priorities.
+
+
+## Long-term research idea: FlashState
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-08. Third-party project,
+not ours and not yet evaluated: https://github.com/FutureMLS-Lab/FlashState
+
+The stated idea is to save and restore hybrid inference state — KV-cache
+together with linear-attention state — without repeating the prefill, plus
+intelligent management and eviction of those states. The authors report up to
+**3.14x** prefill speedup.
+
+Why it might matter here: the Apex profile already runs with a large checkpoint
+budget (`--ctx-checkpoints 32`) and `--cache-ram 0`, and the KV work ported in
+EXP199 already covers cell ownership, placement and range clearing. If hybrid
+state can be parked and resumed cheaply, repeated-prefix and multi-session
+workloads could skip prefill entirely. That is a different axis from the
+current single-request 32K/128 acceptance profile, which measures one fresh
+prefill per arm and would not show the benefit at all.
+
+Recorded only for future study. Nothing is adopted, integrated or benchmarked,
+and no claim from the upstream project is treated as reproduced. If this is ever
+scheduled, it needs a workload that actually repeats prefixes, a state
+compatibility contract across the Goose-ported KV modules, and a correctness
+gate that proves restored state is bit-identical to a fresh prefill — the 3.14x
+figure must be reproduced locally under the fixed profile before it means
+anything.
+
+This note does not change the current Goose migration GOAL, its sequence, or
+priorities.
+
+## Long-term research idea: adaptive quantization with Fried Goose
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-07. This is a future research
+idea, not an active experiment. It does not change the current Goose migration
+GOAL, its sequence, or existing priorities.
+
+Explore adaptive quantization for FrankenMoE that minimizes quality loss at the same
+total model size by jointly optimizing layer/expert precision in MoE models,
+quantization algorithms, and CPU/CUDA kernels developed with Fried Goose.
+
+When this direction is prioritized in the future, compare against the strongest
+then-available quantization baselines under matched model-size budgets and
+reproducible conditions. Evaluate quality, prefill/decode speed, model size, RAM
+and VRAM; distinguish quantization quality gains from runtime/kernel gains.
+No implementation, model conversion, or benchmark is scheduled by this note.

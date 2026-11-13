@@ -1,0 +1,82 @@
+{
+  "status": "PASS_OPTIMIZED_APEX_EXACT_512_32_AND_32K_128",
+  "equal_frozen_native": {
+    "512x32": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    },
+    "32k128": {
+      "content": true,
+      "tokens": true,
+      "completion_probabilities": true
+    }
+  },
+  "preliminary": true,
+  "control": "Identical Goose MoE/graph/CUDA combination, native tiled selector versus Goose tiled selector",
+  "timing_limit": "Runs separated by feedback-document work; no controlled quiet repeated performance verdict",
+  "runs": {
+    "off": {
+      "name": "moe-tiled-register-perf-off-32k128",
+      "wall_seconds": 15.529773053014651,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 11078.394,
+        "prompt_per_token_ms": 0.33808575439453126,
+        "prompt_per_second": 2957.8294471202234,
+        "predicted_n": 128,
+        "predicted_ms": 4428.896,
+        "predicted_per_token_ms": 34.8731968503937,
+        "predicted_per_second": 28.675317731552063
+      },
+      "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "sampled_rss_peak_mib": 21330.8984375,
+      "process_hwm_mib": 21330.8984375,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 713.72265625,
+      "sampled_file_peak_mib": 19963.359375,
+      "sampled_gpu_peak_mib": 3348,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        2.55322265625,
+        8.0498046875,
+        7.8349609375
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    },
+    "on": {
+      "name": "moe-tiled-register-perf-on-32k128",
+      "wall_seconds": 15.474217287963256,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 11152.406,
+        "prompt_per_token_ms": 0.3403444213867188,
+        "prompt_per_second": 2938.2000619417904,
+        "predicted_n": 128,
+        "predicted_ms": 4298.76,
+        "predicted_per_token_ms": 33.84850393700788,
+        "predicted_per_second": 29.543403213950068
+      },
+      "content_sha256": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+      "sampled_rss_peak_mib": 21330.30859375,
+      "process_hwm_mib": 21330.30859375,
+      "process_swap_peak_kib": 0,
+      "sampled_anon_peak_mib": 713.0625,
+      "sampled_file_peak_mib": 19963.4296875,
+      "sampled_gpu_peak_mib": 3348,
+      "system_swapout_pages_delta": 0,
+      "loadavg": [
+        2.2001953125,
+        4.20458984375,
+        6.18798828125
+      ],
+      "preliminary": true,
+      "concurrent_download": false,
+      "controlled_quiet_run": false
+    }
+  }
+}

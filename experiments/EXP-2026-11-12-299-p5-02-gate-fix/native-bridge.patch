@@ -1,0 +1,13 @@
+--- experiments/EXP-2026-11-07-143-goose-cpu-b1/source/native-bridge.cpp	2026-11-08 05:41:23.727110481 +0300
++++ experiments/EXP-2026-11-12-299-p5-02-gate-fix/native-bridge.patched.cpp	2026-11-12 12:42:33.505547602 +0300
+@@ -39,6 +39,10 @@
+ extern "C" size_t fg143_extra_workspace(const ggml_tensor*t,int nth){if(!fg143_enabled)return 0;auto p=fg143_describe(t,0,nth);int64_t info[4]={};fg143_workspace(&p,info);GGML_ASSERT(info[3]>=0&&(uint64_t)info[3]<=SIZE_MAX);return(size_t)info[3];}
+ extern "C" uint8_t fg143_try(const ggml_compute_params*params,ggml_tensor*t){
+  if(!fg143_enabled||params->use_ref||!fg143_scalar(t->type))return 0;
++ // entry() validates src[1]/src[2] without a scalar check of its own, and the module does not port flash attention, so a
++ // block-quantized K/V must fall back to the native implementation (EXP298/EXP299).
++ if(t->src[1]&&!fg143_scalar(t->src[1]->type))return 0;
++ if(t->src[2]&&!fg143_scalar(t->src[2]->type))return 0;
+ 
+  if(t->op==GGML_OP_GATED_DELTA_NET||t->op==GGML_OP_SSM_SCAN||t->op==GGML_OP_RWKV_WKV6||t->op==GGML_OP_RWKV_WKV7||t->op==GGML_OP_GATED_LINEAR_ATTN){fg143_state_plan state={};const void*inputs[7]={};for(int i=0;i<7;++i){state.source[i]=fg143_shape(t->src[i]);inputs[i]=t->src[i]?t->src[i]->data:nullptr;}state.dst=fg143_shape(t);state.ith=params->ith;state.nth=params->nth;state.op=t->op;state.snapshots=t->op_params[0];for(int i=0;i<4;++i)state.fp[i]=fg143_float(t,i);return fg143_state_compute(&state,inputs,t->data);}
+  auto p=fg143_describe(t,params->ith,params->nth);int64_t info[4]={};fg143_workspace(&p,info);GGML_ASSERT(info[3]>=0&&(uint64_t)info[3]<=params->wsize);void*work=params->wdata;int64_t*indices=info[1]?(int64_t*)((char*)work+info[2]):nullptr;

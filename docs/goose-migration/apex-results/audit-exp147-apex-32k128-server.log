@@ -1,0 +1,76 @@
+0.00.026.408 I srv  llama_server: initializing ...
+0.00.026.422 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.026.764 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.030.948 I srv    load_model: loading model '/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf'
+0.00.396.097 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+0.00.491.978 W model has unused tensor blk.40.attn_norm.weight (size = 8192 bytes) -- ignoring
+0.00.491.984 W model has unused tensor blk.40.post_attention_norm.weight (size = 8192 bytes) -- ignoring
+0.00.491.990 W model has unused tensor blk.40.attn_q.weight (size = 9437184 bytes) -- ignoring
+0.00.491.992 W model has unused tensor blk.40.attn_k.weight (size = 589824 bytes) -- ignoring
+0.00.491.994 W model has unused tensor blk.40.attn_v.weight (size = 860160 bytes) -- ignoring
+0.00.492.003 W model has unused tensor blk.40.attn_output.weight (size = 4718592 bytes) -- ignoring
+0.00.492.006 W model has unused tensor blk.40.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.492.008 W model has unused tensor blk.40.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.492.011 W model has unused tensor blk.40.ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring
+0.00.492.013 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring
+0.00.492.018 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.492.020 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.492.023 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring
+0.00.492.025 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.492.028 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.492.030 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring
+0.00.492.034 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring
+0.00.492.037 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring
+0.00.492.040 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring
+0.00.492.047 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring
+0.03.387.532 I cmn          init: llama threadpool init, n_threads = 8
+0.03.572.823 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 262144, kv_unified = 'false'
+0.03.572.872 I srv    load_model: RAM-only prefix checkpoints (recurrent): enabled, budget 2048.0 MiB
+0.03.572.888 W srv          init: --cache-idle-slots requires --cache-ram, disabling
+0.03.576.073 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.03.576.116 I srv  llama_server: model loaded
+0.03.576.122 I srv  llama_server: listening on http://127.0.0.1:8081
+0.03.793.271 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.03.793.324 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.06.959.839 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   8192, progress = 0.25, t =   3.17 s / 2587.12 tokens per second
+0.08.333.616 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  12288, progress = 0.38, t =   4.54 s / 2706.48 tokens per second
+0.09.736.116 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  16384, progress = 0.50, t =   5.94 s / 2756.98 tokens per second
+0.11.202.469 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  20480, progress = 0.62, t =   7.41 s / 2764.18 tokens per second
+0.12.705.442 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  24576, progress = 0.75, t =   8.91 s / 2757.61 tokens per second
+0.14.278.612 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  28672, progress = 0.88, t =  10.49 s / 2734.52 tokens per second
+0.14.317.013 I slot create_check: id  0 | task 0 | RAM recurrent prefix saved: tokens = 28672, size = 62.813 MiB, retained = 1
+0.15.941.183 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  32764, progress = 1.00, t =  12.15 s / 2697.11 tokens per second
+0.15.979.683 I slot create_check: id  0 | task 0 | RAM recurrent prefix saved: tokens = 32764, size = 62.813 MiB, retained = 2
+0.19.585.703 I slot print_timing: id  0 | task 0 | n_gen =    100, tg =  28.30 t/s, tg_3s =  28.58 t/s
+0.20.666.463 I slot print_timing: id  0 | task 0 | prompt eval time =   12293.32 ms / 32768 tokens (    0.38 ms per token,  2665.51 tokens per second)
+0.20.666.468 I slot print_timing: id  0 | task 0 |        eval time =    4578.59 ms /   128 tokens (   36.05 ms per token,    27.74 tokens per second)
+0.20.666.469 I slot print_timing: id  0 | task 0 |       total time =   16871.90 ms / 32896 tokens
+0.20.666.474 I slot print_timing: id  0 | task 0 |    graphs reused =        127
+0.20.666.475 I slot print_timing: id  0 | task 0 |   graph reallocs =          7    /     0        (same size) / (changed size)
+0.20.666.944 I slot      release: id  0 | task 0 | stop processing: n_tokens = 32895, truncated = 0
+0.20.677.467 I srv    operator(): operator(): cleaning up before exit...
+FG147_BACKEND mode=0 calls=1
+FG147_BACKEND mode=1 calls=1
+FG147_BACKEND mode=5 calls=5346
+FG147_BACKEND mode=6 calls=138
+FG147_BACKEND mode=7 calls=138
+FG147_BACKEND mode=8 calls=1
+FG147_BACKEND mode=10 calls=4421
+FG147_BACKEND mode=11 calls=5582
+FG147_BACKEND mode=13 calls=1
+FG147_BACKEND mode=14 calls=1
+FG147_BACKEND mode=15 calls=155
+FG147_BACKEND mode=16 calls=1
+FG147_BACKEND mode=17 calls=2
+FG147_BACKEND mode=30 calls=170378
+FG147_BACKEND mode=31 calls=21108
+FG143_CONTROL plans=5346 task_queries=0 dispatches=170378 jobs=5346 worker_jobs=42706
+FG143_EXECUTOR worker_graphs=42706 worker_steps=170410 worker_fusions=0
+FG143_CPU op=40 calls=138 values=67377152
+FG143_CPU op=100 calls=42560 values=187105280
+FG147_BACKEND mode=19 calls=10561
+FG147_BACKEND mode=23 calls=276
+FG147_BACKEND mode=26 calls=1
+FG147_BACKEND mode=27 calls=124
+FG147_BACKEND mode=28 calls=1
+FG147_BACKEND mode=29 calls=28319

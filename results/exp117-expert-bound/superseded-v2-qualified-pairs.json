@@ -1,0 +1,310 @@
+{
+  "pairs": [
+    {
+      "pair": 1,
+      "A": "A1",
+      "B": "B1",
+      "A_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "cold": {
+        "A_prompt_ms": 12920.039,
+        "B_prompt_ms": 12835.185,
+        "prefill_tps_gain_pct": 0.6611046120488462,
+        "A_decode_tps": 29.297221931300555,
+        "B_decode_tps": 29.48063250116704,
+        "decode_gain_pct": 0.6260339983653385,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "repeat": {
+        "A_prompt_ms": 166.832,
+        "B_prompt_ms": 167.665,
+        "prefill_tps_gain_pct": -0.4968240240956656,
+        "A_decode_tps": 28.37960922842323,
+        "B_decode_tps": 29.49836748601673,
+        "decode_gain_pct": 3.9421200221214425,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mib": 2928,
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mib": 2928
+    },
+    {
+      "pair": 2,
+      "A": "A2",
+      "B": "B2",
+      "A_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "cold": {
+        "A_prompt_ms": 13000.698,
+        "B_prompt_ms": 12839.798,
+        "prefill_tps_gain_pct": 1.2531349792263002,
+        "A_decode_tps": 28.16494723729589,
+        "B_decode_tps": 27.292629206422752,
+        "decode_gain_pct": -3.0971761584485336,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "repeat": {
+        "A_prompt_ms": 164.314,
+        "B_prompt_ms": 160.185,
+        "prefill_tps_gain_pct": 2.57764459843306,
+        "A_decode_tps": 28.042884857681255,
+        "B_decode_tps": 28.042123243586026,
+        "decode_gain_pct": -0.0027158906763524726,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mib": 2928,
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mib": 2928
+    },
+    {
+      "pair": 3,
+      "A": "A3r",
+      "B": "B3r",
+      "A_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "cold": {
+        "A_prompt_ms": 13135.026,
+        "B_prompt_ms": 12653.56,
+        "prefill_tps_gain_pct": 3.8049845260938353,
+        "A_decode_tps": 29.17008802705698,
+        "B_decode_tps": 28.097972985679547,
+        "decode_gain_pct": -3.6753918616323156,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "repeat": {
+        "A_prompt_ms": 159.667,
+        "B_prompt_ms": 162.574,
+        "prefill_tps_gain_pct": -1.788108799685073,
+        "A_decode_tps": 27.97564488817783,
+        "B_decode_tps": 29.610259045467835,
+        "decode_gain_pct": 5.842990085925681,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mib": 2928,
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mib": 2928
+    },
+    {
+      "pair": 4,
+      "A": "A4r",
+      "B": "B4r",
+      "A_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "cold": {
+        "A_prompt_ms": 13029.027,
+        "B_prompt_ms": 12709.591,
+        "prefill_tps_gain_pct": 2.513346023487295,
+        "A_decode_tps": 27.68755703745756,
+        "B_decode_tps": 28.99043657999591,
+        "decode_gain_pct": 4.705650053472499,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "repeat": {
+        "A_prompt_ms": 182.948,
+        "B_prompt_ms": 174.295,
+        "prefill_tps_gain_pct": 4.964571559711994,
+        "A_decode_tps": 28.753523438649715,
+        "B_decode_tps": 28.463510563884554,
+        "decode_gain_pct": -1.008616823548425,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mib": 2928,
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mib": 2928
+    },
+    {
+      "pair": 5,
+      "A": "A5r",
+      "B": "B5r",
+      "A_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_cold_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "cold": {
+        "A_prompt_ms": 12976.991,
+        "B_prompt_ms": 12683.778,
+        "prefill_tps_gain_pct": 2.311716587912538,
+        "A_decode_tps": 27.86970758093352,
+        "B_decode_tps": 28.4467811123229,
+        "decode_gain_pct": 2.0706120784136584,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "B_repeat_resource_gate": {
+        "covered": true,
+        "swapout_pages": 0,
+        "major_faults": 0,
+        "process_swap_max_kib": 0
+      },
+      "repeat": {
+        "A_prompt_ms": 173.312,
+        "B_prompt_ms": 179.716,
+        "prefill_tps_gain_pct": -3.5634000311602687,
+        "A_decode_tps": 28.407775498942314,
+        "B_decode_tps": 29.283454617562693,
+        "decode_gain_pct": 3.0825332263449523,
+        "correctness": [
+          true,
+          0.0,
+          "identical ids; max probability delta 0"
+        ]
+      },
+      "A_vram_peak_mib": 3348,
+      "A_vram_retained_mib": 2928,
+      "B_vram_peak_mib": 3348,
+      "B_vram_retained_mib": 2928
+    }
+  ],
+  "exclusions": {
+    "3": "request swap-out and incomplete repeat coverage",
+    "4": "control cold swap-out",
+    "5": "control cold swap-out"
+  },
+  "numerical_compared_ids_per_arm": 1280,
+  "medians": {
+    "prefill_gain_pct": 2.311716587912538,
+    "cold_decode_gain_pct": 0.6260339983653385,
+    "repeat_decode_gain_pct": 3.0825332263449523
+  }
+}

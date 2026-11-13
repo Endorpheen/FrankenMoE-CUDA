@@ -1,0 +1,27 @@
+{
+  "experiment": "EXP-2026-11-07-141",
+  "target": "Whole common AVX2 tiled matmul subsystem for13 K/IQ weight families: weight unpack/repack, Q8_K gathering, activation bias/correction,16x16 SIMD microkernel, K accumulation, narrow/standard windows and dense/MoE scheduling/scatter.",
+  "hypothesis": "One Goose implementation can replace shared native tiled computation across both exact baselines, generalizing earlier Q4/Q6 module and retaining raw/repack/native fallback.",
+  "producer": {
+    "sha256": "0424b7bce8ddfbf308d2208612cef01de1780ada26337ff0f556a6786f9ea364",
+    "status": "PASS_CURRENT_C11_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "scope": "Current C11 scope/block source snapshot: Current production source serial bootstrap/fixed point after C11 scope/block integration. Confirms preservation of the working compiler, not full C11 scope/block producer/lifecycle acceptance."
+  },
+  "source_identity": "Apex and Qwen tiled.cpp/tiled-kernel.cpp/tiled-kernel.h byte-identical at stage entry",
+  "gates": [
+    "Per-format unpack/repack/microtile native oracle and ABI checks",
+    "Exact complete native on/off dense and MoE GGML corpora including K/window tails and broadcasts",
+    "Scoped ASan/UBSan/LSan and valid unsupported-path fallback",
+    "Actual Apex first and Qwen major gate, path witnesses",
+    "Operation timing separately from full prefill/decode/RAM/VRAM; preliminary if other load"
+  ],
+  "risks": [
+    "Native narrow extent clamps row count to16; older Goose helper differed for<16",
+    "Native supported-type switch returns before some activation guards; new eligibility must validate safe actual input layouts explicitly",
+    "Natural AVX2 tile layout differs from old shaped scale stride; do not transplant opaque workspace indices",
+    "Preserve FP contraction and sign-trick wrapping for raw -128 activations",
+    "No VNNI/other-ISA speed/support claim from AVX2 test"
+  ],
+  "compiler_changed": false,
+  "working_runtime_changed": false
+}

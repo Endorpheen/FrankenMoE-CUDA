@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "an empty cell reports its stale shift",
+    "status": "CAUGHT",
+    "failures": 3368,
+    "exit_code": 1
+  },
+  {
+    "mutation": "every stream uses the first stream width",
+    "status": "CAUGHT",
+    "failures": 5832,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the matrix copy forgets the element width",
+    "status": "CAUGHT",
+    "failures": 612,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the matrix copy forgets the square",
+    "status": "CAUGHT",
+    "failures": 598,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a width missing from the table is copied anyway",
+    "status": "CAUGHT",
+    "failures": 170,
+    "exit_code": 1
+  },
+  {
+    "mutation": "a mismatched width is copied anyway",
+    "status": "CAUGHT",
+    "failures": 156,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the shift is read without the stream offset",
+    "status": "CAUGHT",
+    "failures": 4889,
+    "exit_code": 1
+  },
+  {
+    "mutation": "the reported count is zero",
+    "status": "CAUGHT",
+    "failures": 2000,
+    "exit_code": 1
+  }
+]

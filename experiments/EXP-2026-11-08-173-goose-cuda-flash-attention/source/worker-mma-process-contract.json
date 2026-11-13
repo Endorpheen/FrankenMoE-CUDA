@@ -1,0 +1,136 @@
+{
+  "artifact": "apex-fattn-mma-process/device.goose",
+  "provenance": "Goose port of flash_attn_ext_f16_process_tile, fattn-mma-f16.cuh L1190-1786, active CUDA branch (TURING/AMPERE MMA + CP_ASYNC_AVAILABLE). Loaders mirror flash_attn_ext_f16_load_tile L383-441 and flash_attn_ext_f16_load_mask L487-515 (use_cp_async=true branches) exactly as the supplied reviewed loaders-device.goose specialization. Tile element maps taken from the exact CUDA specializations in mma.cuh: tile<16,8,half2> L400-428, tile<16,16,float> L239-254, ldmatrix address math L852-882, swizzle L786-801. SOFTMAX_FTZ_THRESHOLD=-20.0f verified in fattn-common.cuh L11. No runtime acceptance is claimed; the parent owns the CUDA bridge, raw-primitive bindings, build, GPU parity gates and rollback.",
+  "fixed_config": {
+    "dkq": 256, "dv": 256, "d2_half2": 128, "ncols2": 8, "ncols1": [4, 8], "ncols": "ncols1*8 (32 or 64)",
+    "nwarps": 4, "nthreads": 128, "warp_size": 32, "cols_per_warp": 16, "cols_per_thread": 2,
+    "np": "2 when ncols1==4, else 1 (nwarps*cols_per_warp/ncols)",
+    "nbatch_fa": 32, "nbatch_K2": 128, "nbatch_V2": 128, "nbatch_combine": 128,
+    "q_in_reg": true, "nstages": 2, "swizzled": true,
+    "stride_tile_Q": 132, "stride_tile_K": 128, "stride_tile_V": 128, "tile_stride": 132,
+    "use_logit_softcap": false, "v_is_k_view": false, "use_sparse": false, "oob_check": false,
+    "hardware": "CUDA Ada (Ampere-MMA path, cp.async available); all other architectures/configs deferred"
+  },
+  "entry": {
+    "goose_symbol": "process_tile (device.goose)",
+    "call_convention": "Parent CUDA wrapper calls it once per block thread with the parameters below; grid/block indices are plain arguments, no C callbacks.",
+    "parameters": [
+      {"name": "q_f2", "type": "u64", "sem": "global byte address of the float2 Q plane for this (sequence, zt_Q); element i at p+4i"},
+      {"name": "k_h2", "type": "u64", "sem": "global byte address of the half2 K plane for this (sequence, z_KV)"},
+      {"name": "v_h2", "type": "u64", "sem": "global byte address of the half2 V plane (forwarded to iterate)"},
+      {"name": "mask_h", "type": "u64", "sem": "global byte address of the half mask plane incl. nb33*sequence offset; never null for ncols2=8 (native L1921-1922)"},
+      {"name": "sinks_f", "type": "u64", "sem": "global byte address of sinks+zt_Q floats, or 0 when sinks are absent (optional sinks)"},
+      {"name": "dstk", "type": "u64", "sem": "global byte address of the float2 output plane ((float2*)dst + (sequence*ne01.z*ne02+zt_Q)*(DV/2))"},
+      {"name": "dstk_fixup", "type": "u64", "sem": "global byte address of the float2 fixup buffer base"},
+      {"name": "scale", "type": "f32", "sem": "native scale, applied to Q during staging"},
+      {"name": "slope", "type": "f32", "sem": "native slope (1.0 for ncols2>1), forwarded to iterate"},
+      {"name": "ne01z", "type": "i64", "sem": "ne01.z, query row count of the current sequence group"},
+      {"name": "ne02", "type": "i32", "sem": "native ne02 (Q heads)"},
+      {"name": "gqa_ratio", "type": "i32", "sem": "ne02/ne12"},
+      {"name": "stride_q1", "type": "i64", "sem": "nb01/8, float2 elements"},
+      {"name": "stride_q2", "type": "i64", "sem": "nb02/8, float2 elements"},
+      {"name": "stride_k", "type": "i64", "sem": "nb11/4, half2 elements"},
+      {"name": "stride_v", "type": "i64", "sem": "nb21/4, half2 elements (forwarded to iterate)"},
+      {"name": "stride_mask", "type": "i64", "sem": "nb31/2, half elements"},
+      {"name": "jt", "type": "i32", "sem": "query tile start row"},
+      {"name": "zt_gqa", "type": "i32", "sem": "GQA sub-tile start head"},
+      {"name": "kb0_start", "type": "i32", "sem": "first KV batch (kb0_start<kb0_stop guaranteed by native caller L1907-1908)"},
+      {"name": "kb0_stop", "type": "i32", "sem": "end KV batch, already clamped by native caller with KV_max/sparse logic"},
+      {"name": "ncols1", "type": "i32", "sem": "4 or 8"},
+      {"name": "np", "type": "i32", "sem": "2 when ncols1==4 else 1"},
+      {"name": "needs_fixup", "type": "bool", "sem": "native template flag: block missing the beginning of a tile (kb0_start!=0)"},
+      {"name": "is_fixup", "type": "bool", "sem": "native template flag: last segment writes to fixup buffer"},
+      {"name": "bx", "type": "i32", "sem": "blockIdx.x"},
+      {"name": "gx", "type": "i32", "sem": "gridDim.x"},
+      {"name": "tx", "type": "i32", "sem": "threadIdx.x (lane)"},
+      {"name": "ty", "type": "i32", "sem": "threadIdx.y (warp)"},
+      {"name": "qregs", "type": "u64", "sem": "per-thread POD byte pointer, 64 u32 = 256 B, Q_B register-tile storage"},
+      {"name": "vkqregs", "type": "u64", "sem": "per-thread POD byte pointer, 64 u32 = 256 B, VKQ_C register-tile storage"},
+      {"name": "kmax", "type": "u64", "sem": "per-thread POD byte pointer, 2 f32 = 8 B, KQ_max storage"},
+      {"name": "rowsums", "type": "u64", "sem": "per-thread POD byte pointer, 2 f32 = 8 B, KQ_rowsum storage"},
+      {"name": "smem", "type": "u64", "sem": "dynamic shared memory generic byte base, 33792 B"}
+    ]
+  },
+  "per_thread_pod_storage": {
+    "contract": "Wrapper allocates four storage-only per-thread stack buffers (qregs 256 B, vkqregs 256 B, kmax 8 B, rowsums 8 B) and passes their byte addresses. ALL initialization (VKQ zeroing, KQ_max=-FLT_MAX/2, rowsum=0), all reads/writes, and all lifetime/control execute in Goose via fg175p_ldu32/stu32/gload/gstore. The wrapper must not initialize or interpret these bytes.",
+    "layout": "qregs/vkqregs: 16 consecutive tile<16,8,half2> fragments, tile t at u32 words 4t..4t+3 in tile.x[l] order (l=0..3). kmax/rowsums: f32 elements 0,1 (= native KQ_max[cols_per_thread=2]).",
+    "why_not_local_arrays": "The rework feedback replaced the requested rawlocaladdress/gg_view/gg_slice route: no supplied example source demonstrates any local address-of or view intrinsic, and array-typed function parameters appear only in the host-dialect accepted-rms-row.goose. The parent-supplied POD pointers avoid inventing unsupported capabilities while keeping every layout and access explicit in Goose."
+  },
+  "shared_memory": {
+    "total_bytes": 33792,
+    "map": {
+      "tile_Q": "byte 0, ncols*132 half2 words (16896 B for ncols1=4, 33792 B for ncols1=8)",
+      "tile_K": "byte 0, 32 rows x 128 half2 x 4 B = 16384 B (overlays tile_Q, Q_in_reg union, native L1250-1253)",
+      "tile_V": "byte 16384, 16384 B",
+      "tile_mask": "byte 32768, half rows of (nbatch_fa+8)=40 half (80 B) per ncols1 query row"
+    },
+    "swizzle": "K/V tile byte offset (i*512+k*16)^((i%8)<<4) = mma.cuh swizzle<512,char>; tile_mask is never swizzled; meta floats live in tile_Q row padding words 128/129 (float index jc*132+128).",
+    "barrier_schedule": "Eight native barrier sites preserved: L1319 after Q staging, L1330 after Q ldmatrix (before K/V overwrite of the union), L1394-1396 after the kb0 loop (nstages>1 && 64>32), L1555-1557 swz pre-meta, L1563 after meta write, L1626 (np>1 only) before combined meta write-back, L1712 after VKQ staging, L1775-1777 (np>1 only, since nbatch_combine==DKQ/2). The first fg175m_iter call performs cp_async_wait_all+__syncthreads for the preload issued here (native iter L634-635)."
+  },
+  "raw_effects": [
+    {"symbol": "fg175l_cp16", "c_sig": "void fg175l_cp16(uint64_t dst_shared_generic, uint64_t src_global)", "isa": "cp.async.cg.shared.global [dst],[src],16 with L2::64B hint; dst is the generic-space shared byte address (parent converts the address space), src raw global byte address; identical binding to loaders-device.goose"},
+    {"symbol": "fg175p_gload", "c_sig": "float fg175p_gload(uint64_t p, uint64_t i)", "isa": "generic/global f32 load at byte p+4i (F32 global load primitive; Q rows, sinks, kmax/rowsums POD)"},
+    {"symbol": "fg175p_gstore", "c_sig": "void fg175p_gstore(uint64_t p, uint64_t i, float v)", "isa": "generic/global f32 store at p+4i (dstk/dstk_fixup float2 outputs are two f32 stores; no vector-store ABI is claimed)"},
+    {"symbol": "fg175p_ldu32", "c_sig": "uint32_t fg175p_ldu32(uint64_t p, uint64_t i)", "isa": "generic u32 word load at p+4i (per-thread POD qregs/vkqregs)"},
+    {"symbol": "fg175p_stu32", "c_sig": "void fg175p_stu32(uint64_t p, uint64_t i, uint32_t v)", "isa": "generic u32 word store at p+4i"},
+    {"symbol": "fg175p_smld", "c_sig": "uint32_t fg175p_smld(uint64_t p, uint64_t i)", "isa": "shared u32 word load at p+4i (VKQ combine readback)"},
+    {"symbol": "fg175p_smst", "c_sig": "void fg175p_smst(uint64_t p, uint64_t i, uint32_t v)", "isa": "shared u32 word store at p+4i (Q staging and VKQ staging, one half2 per word)"},
+    {"symbol": "fg175p_smldf", "c_sig": "float fg175p_smldf(uint64_t p, uint64_t i)", "isa": "shared f32 load at p+4i (meta slots; float and half2 share 4-byte granularity so float index == half2 word index)"},
+    {"symbol": "fg175p_smstf", "c_sig": "void fg175p_smstf(uint64_t p, uint64_t i, float v)", "isa": "shared f32 store at p+4i (KQ_cmr/KQ_cms/KQ_crs meta slots)"},
+    {"symbol": "fg175p_h2mul", "c_sig": "uint32_t fg175p_h2mul(uint32_t a, uint32_t b)", "isa": "half2 x half2 multiply, IEEE round-to-nearest per half lane (__hmul2)"},
+    {"symbol": "fg175p_h2pack", "c_sig": "uint32_t fg175p_h2pack(float x, float y)", "isa": "pack {cvt.rn.f16.f32(x), cvt.rn.f16.f32(y)} (make_half2 with native RN conversion)"},
+    {"symbol": "fg175p_hlo", "c_sig": "float fg175p_hlo(uint32_t w)", "isa": "low half to f32 (__low2float)"},
+    {"symbol": "fg175p_hhi", "c_sig": "float fg175p_hhi(uint32_t w)", "isa": "high half to f32 (__high2float)"},
+    {"symbol": "fg175p_ldm4", "c_sig": "U4 fg175p_ldm4(uint64_t a)", "isa": "ldmatrix.sync.aligned.m8n8.x4.b16 with raw shared byte address a (must be 16 B aligned; the Q tile addresses here are: 528*j0 + 32*(q0/8) + 528*(tx%16) + 16*(tx/16))"},
+    {"symbol": "fg175p_shflx", "c_sig": "float fg175p_shflx(float v, int32_t o)", "isa": "__shfl_xor_sync(0xFFFFFFFF, v, o, 32)"},
+    {"symbol": "fg175p_expf", "c_sig": "float fg175p_expf(float x)", "isa": "expf"},
+    {"symbol": "fg175p_barrier", "c_sig": "void fg175p_barrier(void)", "isa": "__syncthreads"}
+  ],
+  "extern_iterate": {
+    "symbol": "fg175m_iter",
+    "implementation": "Goose module of the sibling worker (function named iterate there); NOT the original C++ flash_attn_ext_f16_iter.",
+    "exact_goose_signature": "iterate(k_h2:u64,v_h2:u64,mask_h:u64,stride_k:i64,stride_v:i64,stride_mask:i64,slope:f32,jt:i32,kb0:i32,n_queries:i64,ncols1:i32,qregs:u64,vkqregs:u64,kmax:u64,rowsums:u64,smem:u64,tx:i32,ty:i32,np:i32,last:bool)",
+    "required_semantics": "Port of flash_attn_ext_f16_iter (fattn-mma-f16.cuh L574-1072) for this fixed config with oob_check=false, use_sparse=false, V_is_K_view=false, k_VKQ_0=kb0*32, k_VKQ_sup=32 (constexpr for the non-oob path L1374/1383), last_iter=last. Must: wait the cp.async preload issued by process_tile (cp_async_wait_all+__syncthreads at entry, L634-635); issue the V tile cp.async load (L636-637); compute KQ C tiles from qregs Q_B and tile_K with the mma.cuh CUDA A/B swap (L682), softcap-free; add slope*mask from tile_mask rows at smem+32768; softmax with FATTN_KQ_MAX_OFFSET=(3.0f*0.6931f) and per-column shfl reductions (offsets 2,1); update kmax/rowsums POD; convert KQ C to B via get_half2; wait V and preload next mask+K via cp.async when !last (L981-996); compute VKQ tiles into vkqregs via ldmatrix.trans from tile_V with swizzle. Same shared map and same raw-primitive family; its internal loads must reproduce the 16384 B row arithmetic (32 rows*128 half2*4 B).",
+    "boundary_ownership": "process_tile owns: Q staging, Q_B ldmatrix, initial mask/K preload, kb0 loop control, post-loop barrier, rowsum warp reduction, sinks, meta write/combine, VKQ staging, output/fixup. iterate owns everything inside one native iter call. Neither side calls the original C++ arithmetic."
+  },
+  "tile_index_math": {
+    "tile_16_8_half2": "ne=4; get_i(l)=((l%2)*8)+tx/4; get_j(l)=((l/2)*4)+tx%4 (mma.cuh L405-407/420-422, CUDA I_MAJOR, physical warp 32)",
+    "tile_16_16_float": "ne=8; get_i(l)=(((l/2)%2)*8)+tx/4; get_j(l)=((l/4)*8)+((tx%4)*2)+(l%2) (mma.cuh L246-247/263-264); only get_i is used here (sinks jc)",
+    "q_ldmatrix_word_offset": "j0*132+k0+(tx%16)*132+(tx/16)*4 with j0=(ty/np)*16, k0=0..120 step 8 (native L857 int-word arithmetic)",
+    "meta_slot": "float index jc*132+128 (and +1) == half2 word jc*132+128 == ((float2*)tile_Q)[jc*66+64] (float and half2 share 4-byte granularity)"
+  },
+  "numerical_contract": [
+    "KQ_max initialized to -FLT_MAX/2 with exact f32 bits: computed as 2^127-2^103 from exact power-of-two products/subtraction, equal to native -FLT_MAX/2.0f (0x7EFFFFFF negated); no bitcast primitive used or needed.",
+    "Q staging: h2mul(h2pack(tmp.x,tmp.y), h2pack(scale,scale)) == native scale_h2*make_half2(tmp.x,tmp.y); half conversions are round-to-nearest; zero rows store h2pack(0.0,0.0)==0x00000000.",
+    "Sinks FTZ: native bit-trick *((uint32_t*)&s)*=(diff>=-20.0f) is expressed as the exact select s=0.0f when diff<-20.0f (SOFTMAX_FTZ_THRESHOLD=-20.0f, fattn-common.cuh L11); expf inputs are non-positive so no NaN divergence is reachable.",
+    "Combine: dstk_val = sum_ip half2float(tile[row+ip*16])*cms(ip), then divided by meta rowsum when neither fixup flag is set; np==1 uses crs==1.0 and divides by KQ_rowsum_j; fmaxf2 matches fmaxf for all inputs reachable here (finite or NaN-in-first-arg); divide order and half2->f32 conversion are per native L1751-1764.",
+    "All global float2 outputs (dstk, dstk_fixup data and meta) are emitted as two exact f32 stores per element; no fused or reordered accumulation is introduced.",
+    "fltmax2 arithmetic is exact in both f32 and f64 evaluation (products/subtraction of representable powers of two), so literal parsing width cannot change the bits."
+  ],
+  "loop_structure_facts": [
+    "Q staging granularity loop {32,16,8,4}: for DKQ/2=128 only stride_k=32 emits (128-128%(2*s)==128-128%s for s<=16), stride_jc=1, so each thread stages one jc=jc0+ty column and k=k0+tx over 4 passes; native break statically false for ncols=32|64 (documented, removed like loaders-device.goose).",
+    "Output stride loop {32,16,8,4}: identically only stride_k=32 emits for nbatch_combine=128; jc0_dst step=(nwarps/np)*1=4/np; native break statically false.",
+    "Combine k00 loop is a single iteration (DV/2=128==nbatch_combine).",
+    "kb0 loop: while kb0<kb0_stop-1 with last_iter=false, then one unconditional last_iter=true call (native L1349-1390, else-branch).",
+    "nmeta=1 for np=2 (np*cols_per_warp=32==warp_size); combine shuffles are the single offset=16 pair exchange (loop from np*cols_per_warp/2=16 down to cols_per_warp=16 with offset<32 guard).",
+    "Rowsum reduction offsets are exactly {2,1} (TURING+ cols_per_warp!=8 path L1400-1416).",
+    "Fixup guards: np==1 meta writes need thread_should_write (tx%4<2); np>1 combined meta writes need ty%np==0 and tx<cols_per_warp=16; VKQ/output work needs np==1||ty%np==0; sinks additionally need !is_fixup and sinks_f!=0."
+  ],
+  "unresolved_capabilities": [
+    "rawlocaladdress intrinsic: NOT present in any supplied example source (goose-mma-example.goose, loaders-device.goose, device.goose, host.goose, accepted-rms-row.goose); not used and not claimed. Per-thread arrays are parent POD byte pointers per rework feedback.",
+    "gg_view/gg_slice: mentioned only in the task text; no provided example demonstrates them; not used and not claimed.",
+    "Virtual array ABI (f32[:] parameters with x[i] indexing) exists only in accepted-rms-row.goose, a host/testbench dialect example from a different experiment with print()/local main arrays; no device-side virtual-array effect binding is demonstrated, so none is claimed.",
+    "Array-typed Goose function parameters or returning fixed arrays are not demonstrated anywhere; avoided via the four POD pointers and element-wise ldu32/stu32 access.",
+    "A vectorized 8/16-byte global float2 load/store primitive is not claimed; float2 IO is two f32 accesses (permitted F32 global load/store primitive). cp.async is the only 16-byte raw memory effect.",
+    "Goose literal parsing width (f32 vs f64) is not documented in examples; the FLT_MAX/2 construction is exact under either width, but the parent reviewer should confirm codegen of the -20.0f select and h2pack rounding.",
+    "expf/cvt.rn/hmul2 instruction-level parity and any FMA-contraction differences in the combine accumulation are parent-owned GPU gate findings; this worker does not claim bit parity.",
+    "The runtime conditions kb0_start<kb0_stop and 16 B alignment of cp.async src/dst are native caller guarantees; process_tile does not re-validate them (mirrors native)."
+  ],
+  "deferred_scope": [
+    "All other DKQ/DV/ncols1/ncols2/nwarps/nbatch configurations and config tables (Volta, RDNA3/4, CDNA, MUSA, Blackwell).",
+    "use_logit_softcap=true, use_sparse=true, V_is_K_view=true, oob_check=true, ncols2==1, nstages<=1 synchronous loader paths, non-swizzled tiles.",
+    "AMD unscrambled/float VKQ combine branches (mma.cuh DATA_LAYOUT variants beyond CUDA I_MAJOR).",
+    "Host launch planning, KV_max/sparse clamping, KV pad, ALiBi slope computation: all remain in the native caller as in fattn-mma-f16.cuh L1894-1935.",
+    "No testbench, compiler, host bridge, or production files were written by this worker; no shell/network/agents were used; no GPU execution is claimed."
+  ]
+}

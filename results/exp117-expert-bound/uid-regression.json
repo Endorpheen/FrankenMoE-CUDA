@@ -1,0 +1,21 @@
+{
+  "fixed_uid": 17,
+  "iterations": 8,
+  "projections": 3,
+  "shape": {
+    "width": 256,
+    "experts": 256,
+    "tokens": 512,
+    "used": 2
+  },
+  "routing_change_iteration": 4,
+  "same_grid_uid_retention_asserted": true,
+  "q4_safe_exact": true,
+  "q6_safe_exact": true,
+  "negative_control_differs": true,
+  "negative_control_first_byte": 12847104,
+  "negative_control_first_iteration": 4,
+  "q4_control_sha256": "26baf3c7613588a0ff28ae182d00075ef0b8ebf2f3f1f9b80407c1dfad6d59b9",
+  "q6_control_sha256": "ab16ce10357468cfecb444fb0a5da6c8709bcfb892f8600dfac88d631219e3bd",
+  "q6_memcheck_errors": 0
+}

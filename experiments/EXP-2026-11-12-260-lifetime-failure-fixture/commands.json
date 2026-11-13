@@ -1,0 +1,102 @@
+[
+  {
+    "label": "generate-pinned",
+    "argv": [
+      "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source/host-generated.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source/pinned-host.goose"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "generate-vmm",
+    "argv": [
+      "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source/device-generated.c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source/vmm-device.goose"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "pinned-bridge",
+    "argv": [
+      "gcc-13",
+      "-O2",
+      "-fPIC",
+      "-fno-strict-aliasing",
+      "-ffp-contract=off",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source",
+      "-include",
+      "stdint.h",
+      "-include",
+      "stdio.h",
+      "-include",
+      "stdlib.h",
+      "-include",
+      "string.h",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source/pinned-bridge.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/pinned-bridge.o"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "vmm-bridge",
+    "argv": [
+      "gcc-13",
+      "-O2",
+      "-fPIC",
+      "-fno-strict-aliasing",
+      "-ffp-contract=off",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source",
+      "-include",
+      "stdint.h",
+      "-include",
+      "stdio.h",
+      "-include",
+      "stdlib.h",
+      "-include",
+      "string.h",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source/vmm-bridge.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/vmm-bridge.o"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "fixture-build",
+    "argv": [
+      "gcc-13",
+      "-O2",
+      "-I/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/source",
+      "-c",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/tests/lifetime_fixture.c",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/fixture.o"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "fixture-link",
+    "argv": [
+      "gcc-13",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/fixture.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/pinned-bridge.o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/vmm-bridge.o",
+      "-o",
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/fixture"
+    ],
+    "exit_code": 0
+  },
+  {
+    "label": "fixture",
+    "argv": [
+      "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-12-260-lifetime-failure-fixture/build/fixture"
+    ],
+    "exit_code": 0
+  }
+]

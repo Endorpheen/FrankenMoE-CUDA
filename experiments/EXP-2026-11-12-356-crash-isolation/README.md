@@ -1,0 +1,152 @@
+# EXP356: the n_predict 0 crash lives in the rebuilt libllama
+
+The crash from EXP355 needed attribution. Four configurations were run with the same two-request sequence (empty prompt with `n_predict 4`, then
+`n_predict 0`), changing one library at a time.
+
+| server impl | libllama | result |
+|---|---|---|
+| merged (our ports) | merged exp371 | **abort** |
+| restored native `aa360322` | merged exp371 | **abort** |
+| restored native `aa360322` | rebuilt exp340 (stage) | **abort** |
+| restored native `aa360322` | flint's own `62e4daad` | **both requests answered** |
+| flint's own (native binary) | flint's own | both answered |
+
+So the crash depends on `libllama` and on nothing else. Every configuration using a **rebuilt** library aborts -- the EXP340 stage, the merged
+build, and the mixed stage-plus-merged pairing -- while the configuration using flint's own library works, regardless of which server
+implementation sits on top.
+
+## What that rules out
+
+- Not the server ports: the restored native server implementation aborts just the same.
+- Not the base library: the base is unchanged across all four rows.
+- Not the merged bridge set: the crash predates it, in the EXP340 rebuild.
+
+## What that implicates
+
+`runtime/reconstructed/src` plus the reconstruction's patches produce a `libllama` whose behaviour differs from flint's on a legal request. The
+abort happens in `pre_decode`, when llama reports `pos_min == -1` with `n_past > 0`, so the difference is in the batch or memory state that
+llama tracks between the two requests, not in arithmetic.
+
+The accepted runtime uses the same rebuilt library, so the accepted baseline carries this defect too. It stayed invisible because the accepted
+profile never sends `n_predict 0`.
+
+## Next step
+
+Bisect `runtime/reconstructed/src` against flint's sources file by file, starting with the memory and batch files, since the divergence is in
+`pos_min` after a zero-length generation.
+
+## Narrowed to one file
+
+Two further swaps, each rebuilding libllama with a single file taken from flint:
+
+| file replaced with flint's version | result |
+|---|---|
+| `llama-context.cpp` | **still aborts** |
+| `llama-kv-cache.cpp` | **both requests answered, no abort** |
+
+So the divergence is in our `llama-kv-cache.cpp`. It is not a Goose decision: with **all fourteen** KV gates set to 0
+(`GGML_GOOSE_KV_CELLS`, `_CELL_EXT`, `_FIND_SLOT`, `_INPUT_IDXS`, `_K_SHIFT`, `_LAYOUT_SPAN`, `_META_PLAN`, `_N_KV`, `_READ_META`, `_READ_SINFO`,
+`_SCAN`, `_STATE_CLEAR`, `_STATE_WRITE`, `_WHOLE_CLEAR`) the crash still happens, so disabling every port leaves a behavioural difference behind.
+
+That points at version skew rather than at a port: our copy of the file descends from an earlier state of the upstream source, and the fix for the
+`pos_min == -1` path landed upstream afterwards. Supporting evidence is thin but consistent -- the non-bridge differences are mostly continuation
+lines of multi-line `extern` declarations, so the file is not a rewrite, it is an older revision with bridges added. Settling it properly needs
+the upstream revision our copy was taken from, which is what the next step should find.
+
+## Attempted fix: the arena reads had no gate
+
+`llama-kv-cells.h` answers `seq_pos_min` and `seq_pos_max` from an incrementally maintained arena whenever the arena exists:
+
+    if (int64_t * gb = goose_bounds_ptr()) {
+        return (llama_pos) gb[seq_id];
+    }
+
+There is no gate on that read, so the "gate off means native behaviour" contract was broken by construction: an experiment that switched the
+incremental bookkeeping off still consumed its (possibly stale) values.
+
+The four arena reads are now behind `fg209i_enabled()`. That is a correctness fix regardless of the crash, but it does **not** resolve it: with the
+gate off, and again with it on, the two-request sequence still aborts.
+
+So the arena is not the whole story, and the remaining difference inside `llama-kv-cache.cpp` is still to be found. What is already established
+stands: replacing that one file with flint's version removes the crash, and disabling all fourteen KV gates does not.
+
+## Bisection inside the file so far
+
+Two of the most-changed functions were substituted with flint's versions, one at a time, rebuilt and tested on the same two-request sequence:
+
+| function replaced with flint's | lines | result |
+|---|---|---|
+| `apply_ubatch` | 92 vs our 136 | **still aborts** |
+| `find_slot` | 198 vs our 218 | **still aborts** |
+
+So neither of the two largest rewrites is responsible. Remaining candidates by change size: `prepare` (51 lines), `state_clear` (42),
+`state_write_data` (33), `state_write` (32), `state_read` (28), `clear` (27), `state_read_data` (26), `set_input_k_shift` (24).
+
+A pattern is worth noting: the functions that fail to explain it are the ones whose rewrites are *pure* wrappers around a bridge, and the ones
+still untested include the state-save and clear paths -- which is consistent with a defect in how a zero-length generation leaves the cell state,
+rather than in slot selection or batch application.
+
+## Correction: my "ungated arena" claim was wrong
+
+The previous section said the arena reads ignored their gate. They do not: `goose_arena_for()` itself starts with
+
+    if (!fg209i_enabled()) { return nullptr; }
+
+so every read-through-arena path was already behind the gate, and the edit I described as a correctness fix was a no-op. It has been reverted.
+The claim is withdrawn, and the reason it looked true is recorded here so the mistake is not repeated: I patched the four call sites in
+`seq_pos_min`/`seq_pos_max` without reading the helper they call.
+
+## What that does to the file-swap bisection
+
+It also weakens the swap method, which needs saying before it is relied on again. With flint's `llama-kv-cache.cpp` in the build, the header is
+still ours, the arena is still lazily created on first read, and its entries start at `-1`. A tree in that state answers `seq_pos_min` from an
+arena no one maintains, so "the crash disappeared" there does not prove the state was correct -- it may only prove the abort branch was not
+reached. File swaps show which object owns a behaviour; they do not show that the resulting behaviour is right.
+
+So the current facts are narrower than they looked: the crash happens with our `llama-kv-cache.cpp` plus our header, it does not happen with
+flint's `llama-kv-cache.cpp` plus our header, and disabling the gates does not remove it. Attribution inside the pair is still open, and the next
+step should compare *state* rather than assert-free behaviour -- for example by printing `seq_pos_min` and the cell set size for the same
+sequence under both libraries.
+
+## Root cause found for one half, and a fix that holds in isolation
+
+Instrumenting `llama_kv_cells::seq_pos_min` (behind `FG_DEBUG_POS`) for the same two-request sequence gives:
+
+    ours:     FGPOS_MIN seq=0 set_empty=1 set_size=0 arena=0x...   then  set_size=4   -> abort
+    flint's:  FGPOS_MIN seq=0 set_empty=1 set_size=0 arena=0x...   then  set_size=4, set_size=1
+
+So the abort fires on a query where the *set* already holds four positions, which means the returned `-1` came from the arena, not from the cells.
+The incremental bounds missed a path -- a zero-length generation -- and the stale `-1` then overrode the correct set.
+
+The environment variable matters here and cost a detour: it is `GGML_GOOSE_KV_SEQPOS`, not `GGML_GOOSE_KV_SEQPOS_INCR`. With the correct name set
+to `0`, the sequence answers and does not abort -- which is what identified the arena rather than the set as the source.
+
+**Fix:** `seq_pos_min` and `seq_pos_max` now fall back to the set when the arena reports "absent" while the set is non-empty. The fast path is
+unchanged, and the fallback only runs on the path the arena missed. With the fix and the gate at its default, the sequence answers and the full
+edge sweep passes on the isolated stage.
+
+## A second, independent cause remains
+
+The same test against the **candidate** still aborts -- with all five server gates at `0`, and also after replacing its `libllama` with flint's.
+So the merged server implementation triggers the assert on its own, independently of the library fix.
+
+Two causes, then, not one: the stale arena (fixed, verified in isolation) and something in the merged server path (open).
+
+## Correction to an earlier inference
+
+A scan of the merged file suggested `fg274b_can_batch` was called without its gate. It is not: the `if (fg274b_enabled())` guard is fourteen
+lines above the call, and my twelve-line window missed it. No code change was made on that basis.
+
+## The second cause is not the merge either
+
+The candidate layout was rebuilt with a server implementation compiled from **flint's own unmodified `server-context.cpp`** -- no ports, no
+guards, no merged file -- and linked the same way our merged library is. It still aborts, with flint's `libllama` underneath.
+
+That rules the merge out as the second cause. The remaining difference between that build and the shipped `build-cuda/bin/llama-server` is the
+build and link environment: our implementation is compiled today from the same source, linked against the stage's older `libggml-*` libraries, and
+assembled with our own object set and link line, while the shipped binary was built on 2026-10-21 by the flint toolchain against its own
+libraries.
+
+So the picture is now: one real defect found and fixed (the stale arena value), and one behaviour that depends on how the server implementation
+is built rather than on what its source says. The next step is to build our implementation exactly as flint builds it -- same compiler flags, same
+link line, same libraries -- and see whether the difference disappears. If it does, the lesson is about our assembly, not about Goose.

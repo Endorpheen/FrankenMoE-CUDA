@@ -1,0 +1,59 @@
+{
+  "checkpoint": "exp412-cpu-q6k-v61-20261111",
+  "created_at": "2026-11-11T21:05:30.900058+00:00",
+  "compiler": "v61 b87af17a",
+  "contents": {
+    "artifact/libggml-cpu.so.0.27.0": "CPU backend built from the flint sources (AVX2/FMA), native Q6_K",
+    "artifact/libggml-cpu-goose.so.0.27.0": "the same backend with the Goose Q6_K kernel replacing the dispatched one",
+    "artifact/libggml-base.so.0.27.0": "matching base library",
+    "build/": "link recipe, wrapped objects, extracted blocks"
+  },
+  "verification": {
+    "gate": "240/240 bit-exact vs the dispatched AVX2 kernel",
+    "bench": "CPU bench run identical (Paris, a city / d13cf4cf)"
+  },
+  "reproduce": "experiments/EXP-2026-11-11-412-goose-cpu-q6k-dot/emit_sources.py plus the link recipe in build/linkAB.sh",
+  "files": [
+    {
+      "path": "artifact/libggml-base.so.0.27.0",
+      "sha256": "85098caa317ffe133e4b019ff14bb130c15ce03082d77f7f39bfd3295b30a60e",
+      "bytes": 942560
+    },
+    {
+      "path": "artifact/libggml-cpu-goose.so.0.27.0",
+      "sha256": "7962342b99a19a982d484e2a96d84ae268b4a69db195ba77ed78b19030b977b2",
+      "bytes": 1443888
+    },
+    {
+      "path": "artifact/libggml-cpu.so.0.27.0",
+      "sha256": "fffdea78fb3a944a28049d72f7a99637a12403724a3c7cffd81b3e49a534c233",
+      "bytes": 1439136
+    },
+    {
+      "path": "build/CMakeCache.txt",
+      "sha256": "031f9224d9b9e00acf3814c4e4e0b0221512dd205ea3da0c4a9e61d6dd73ab90",
+      "bytes": 34549
+    },
+    {
+      "path": "build/bridge412.o",
+      "sha256": "f9d5870760d0e180ec42a0bf3be5b5d53510597c9a896b1f7cd014f94267c856",
+      "bytes": 6960
+    },
+    {
+      "path": "build/fg196_blocks.txt",
+      "sha256": "62765c923ee6128bb4e2171fb8d5a401906da1eb1f6343d794f2b3b4948f45c2",
+      "bytes": 4236
+    },
+    {
+      "path": "build/linkAB.sh",
+      "sha256": "c5a78793247654015c2c6862b8686bedf0b00e5dcb638d8e5d097fa4e26f2aa0",
+      "bytes": 1334
+    },
+    {
+      "path": "build/wrap412.o",
+      "sha256": "5ae8a883ea7ca5d79813706ae78ea7a9511e8300867823b3ea25f9d5290cfe3e",
+      "bytes": 2528
+    }
+  ],
+  "independence": "both Goose and native CPU libraries had RUNPATH /tmp/build-cpu-goose/bin (or build-cpu-avx2); patched to $ORIGIN/ and libggml-base copied alongside; ldd reports no /tmp entry"
+}

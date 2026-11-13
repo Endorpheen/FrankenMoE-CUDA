@@ -1,0 +1,8 @@
+--- constructors.goose (current)
++++ constructors.goose (proposed)
+@@ tensor()
+- let n0=dim(dims,0);ensure(n0%bs==0,15);var bytes=mul(typesize(ty),n0 as u64)/(bs as u64);
++ // native ggml_new_tensor_impl does not require ne0 to be a multiple of the block size; it divides.
++ // The extra ensure here rejected ggml_view_3d(ctx, q4_K[256,8,3], 128, ...) which native accepts,
++ // so the check is removed to restore parity. Code 15 is left unused rather than renumbered.
++ let n0=dim(dims,0);var bytes=mul(typesize(ty),n0 as u64)/(bs as u64);

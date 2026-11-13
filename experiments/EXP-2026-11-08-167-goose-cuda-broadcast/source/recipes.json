@@ -1,0 +1,42 @@
+[
+  {
+    "name": "ggml_cuda_op_repeat",
+    "op": 0,
+    "fused": false
+  },
+  {
+    "name": "ggml_cuda_op_add",
+    "op": 1,
+    "fused": false
+  },
+  {
+    "name": "ggml_cuda_op_sub",
+    "op": 2,
+    "fused": false
+  },
+  {
+    "name": "ggml_cuda_op_mul",
+    "op": 3,
+    "fused": false
+  },
+  {
+    "name": "ggml_cuda_op_div",
+    "op": 4,
+    "fused": false
+  },
+  {
+    "name": "ggml_cuda_op_repeat_back",
+    "op": 5,
+    "fused": false
+  },
+  {
+    "name": "ggml_cuda_op_fused_add",
+    "op": 1,
+    "fused": true
+  },
+  {
+    "name": "ggml_cuda_op_fused_mul",
+    "op": 3,
+    "fused": true
+  }
+]

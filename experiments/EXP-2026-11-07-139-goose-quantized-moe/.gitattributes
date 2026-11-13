@@ -1,0 +1,13 @@
+# Frozen fragments retain their original concatenation separators.
+source/moe-quantized/matrix-common.goose whitespace=-blank-at-eof
+source/moe-quantized/matrix-dequant.goose whitespace=-blank-at-eof
+source/moe-quantized/matrix-iq.goose whitespace=-blank-at-eof
+source/moe-quantized/matrix-low.goose whitespace=-blank-at-eof
+source/moe-quantized-branchless/matrix-common.goose whitespace=-blank-at-eof
+source/moe-quantized-branchless/matrix-dequant.goose whitespace=-blank-at-eof
+source/moe-quantized-branchless/matrix-iq.goose whitespace=-blank-at-eof
+source/moe-quantized-branchless/matrix-low.goose whitespace=-blank-at-eof
+tools/archive/fg139_matrix_common.goose whitespace=-blank-at-eof
+tools/archive/fg139_matrix_dequant.goose whitespace=-blank-at-eof
+tools/archive/fg139_matrix_iq.goose whitespace=-blank-at-eof
+tools/archive/fg139_matrix_low.goose whitespace=-blank-at-eof

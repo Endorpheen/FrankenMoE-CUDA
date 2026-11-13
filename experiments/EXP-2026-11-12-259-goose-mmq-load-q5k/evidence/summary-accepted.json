@@ -1,0 +1,20 @@
+{
+  "first_sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+  "second_sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+  "tokens_equal": true,
+  "probs_equal": true,
+  "content_equal": true,
+  "restore_ok": true,
+  "slot_file_size": 387989920,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 20317.652,
+    "prompt_per_token_ms": 0.6200455322265624,
+    "prompt_per_second": 1612.78478438355,
+    "predicted_n": 128,
+    "predicted_ms": 4282.009,
+    "predicted_per_token_ms": 33.7166062992126,
+    "predicted_per_second": 29.65897549491372
+  }
+}

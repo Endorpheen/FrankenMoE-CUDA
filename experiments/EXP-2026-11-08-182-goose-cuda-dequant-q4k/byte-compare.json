@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "identical": [
+    "four-blocks.bin",
+    "one-block.bin",
+    "sixty-four.bin",
+    "two-fifty-six.bin"
+  ]
+}

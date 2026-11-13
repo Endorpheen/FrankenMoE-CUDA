@@ -1,0 +1,15 @@
+{
+  "source/faults.cpp": "f27322c5bca159a1fa8ec560ae8e0726b026e30e34e5ba52c0e3095146e028f9",
+  "source/ggml-context-core.c": "d78c4c7c96bf954040c86bf1252dba33f3668ec900ee8eba474c49e7c5e301f7",
+  "source/fixture.cpp": "c658656fa514c9128913e4831bf800ce2b6f616ba0c84a72c2a23acd3ab8990d",
+  "source/metadata-facts.json": "967722dfe609f9bb6c0b99f930fc34c2948f024d1227e6235e780aa3a436b794",
+  "source/core.h": "e9820af51efdd5a6b0e5a5f7362b5c149cbc9d6aaaa89cc05416e51774d4827f",
+  "source/registry-data.goose": "94919789d5e29af20b0ed83adddbac6dce8a9a960e47d8e806f48ff3578cf08e",
+  "source/context-qualified.c": "00571567c4b75d70d1e4d04f7bea29ffe30deddd265d2771655f205acbd8cc46",
+  "source/context-generated.c": "e370a71abdb88347dd625e6138c18ffb309007a8348065191ee89f09e53fd5f0",
+  "source/context-policy.goose": "37a0421de6f3941ee061b1f52a24f60d0d9dbb81a2f8e0b5520a67d77d2c80d8",
+  "source/manifest.json": "59ca829cedc07b142cd9d47e5997914def9349bc66a8e98987cb2c5874169344",
+  "source/probe.cpp": "bc02392b91d8113887ef1c042eea74454a537ee39e9453db739745e4412b7737",
+  "source/core-api.h": "970bd7e872471f0333274ed306fe0ddc5003e4b55100f1df3c1e182fcd1643aa",
+  "source/context.goose": "81e1ae56504fc349c00b9d3b0d827879434b459eeed4bdde846467df378ece81"
+}

@@ -1,0 +1,79 @@
+{"name":"apex-real-embedding-q4k-t1","type":0,"bytes":2408448,"threads":1}
+{"name":"apex-glu-op0-layout0-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op0-layout1-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op0-layout2-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op1-layout0-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op1-layout1-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op1-layout2-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op2-layout0-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op2-layout1-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op2-layout2-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op3-layout0-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op3-layout1-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op3-layout2-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op4-layout0-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op4-layout1-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op4-layout2-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op5-layout0-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op5-layout1-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op5-layout2-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op6-layout0-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op6-layout1-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-glu-op6-layout2-wide-values-t1","type":0,"bytes":196608,"threads":1}
+{"name":"apex-real-embedding-q4k-t8","type":0,"bytes":2408448,"threads":8}
+{"name":"apex-glu-op0-layout0-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op0-layout1-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op0-layout2-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op1-layout0-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op1-layout1-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op1-layout2-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op2-layout0-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op2-layout1-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op2-layout2-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op3-layout0-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op3-layout1-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op3-layout2-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op4-layout0-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op4-layout1-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op4-layout2-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op5-layout0-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op5-layout1-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op5-layout2-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op6-layout0-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op6-layout1-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-glu-op6-layout2-wide-values-t8","type":0,"bytes":196608,"threads":8}
+{"name":"apex-real-embedding-q4k-t16","type":0,"bytes":2408448,"threads":16}
+{"name":"apex-glu-op0-layout0-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op0-layout1-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op0-layout2-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op1-layout0-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op1-layout1-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op1-layout2-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op2-layout0-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op2-layout1-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op2-layout2-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op3-layout0-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op3-layout1-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op3-layout2-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op4-layout0-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op4-layout1-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op4-layout2-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op5-layout0-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op5-layout1-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op5-layout2-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op6-layout0-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op6-layout1-wide-values-t16","type":0,"bytes":196608,"threads":16}
+{"name":"apex-glu-op6-layout2-wide-values-t16","type":0,"bytes":196608,"threads":16}
+FG149_POOL mode=0 calls=66
+FG149_POOL mode=1 calls=66
+FG149_POOL mode=6 calls=528
+FG149_POOL mode=15 calls=504
+FG149_POOL mode=16 calls=528
+FG149_POOL mode=17 calls=66
+FG147_BACKEND mode=13 calls=1
+FG147_BACKEND mode=30 calls=528
+FG147_BACKEND mode=31 calls=66
+FG143_CONTROL plans=66 task_queries=0 dispatches=528 jobs=66 worker_jobs=528
+FG143_EXECUTOR worker_graphs=528 worker_steps=528 worker_fusions=0
+FG143_CPU op=40 calls=3 values=1806336
+FG143_CPU op=100 calls=525 values=25804800

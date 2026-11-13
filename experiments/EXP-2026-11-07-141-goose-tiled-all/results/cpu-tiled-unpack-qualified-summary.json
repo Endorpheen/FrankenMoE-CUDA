@@ -1,0 +1,28 @@
+{
+  "status": "PASS_ALL_13_TILED_UNPACK_REPACK_NATIVE",
+  "serial_cases": 1950,
+  "eight_thread_cases": 104,
+  "semantic_bytes_compared": 39641280,
+  "weight_types": [
+    "q4_K",
+    "q5_K",
+    "q6_K",
+    "q3_K",
+    "q2_K",
+    "iq4_xs",
+    "iq2_xxs",
+    "iq2_xs",
+    "iq2_s",
+    "iq3_xxs",
+    "iq3_s",
+    "iq1_s",
+    "iq1_m"
+  ],
+  "inputs_and_canaries_preserved": true,
+  "native_untouched_fields": "Only documented active q/d/scales, dmin/min when used, or act-bias correction compared; Goose additionally zeros SIMD-tail rows. Entire activation/acc sections unchanged.",
+  "kernel_sha256": "a648fe095c769a7fb10c266a13d12637392cfc33936ce5bf771cf5bbf95d42f3",
+  "producer_sha256": "0424b7bce8ddfbf308d2208612cef01de1780ada26337ff0f556a6786f9ea364",
+  "scope": "Complete weight unpack/repack only; microkernel/full tiled/model validation pending",
+  "production_changed": false,
+  "compiler_changed": false
+}

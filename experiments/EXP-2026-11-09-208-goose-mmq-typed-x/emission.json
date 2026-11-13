@@ -1,0 +1,24 @@
+{
+  "status": "PASS_CURRENT_SELFHOSTED_SOURCE_AND_MECHANICAL_EXTRACTION",
+  "compiler": {
+    "compiler": "/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/versions/subset-acc916a43628499a/compiler",
+    "sha256": "acc916a43628499aa9d6453e10b392e5ff1d7c22eb210e01d96b8d032e066c4f"
+  },
+  "modules": [
+    {
+      "module": "host",
+      "entries": [
+        "gg_function_1"
+      ],
+      "generated_c_sha256": "f691cc0229a3c7bfd2540cd8cab648ddc68cb8171312e8d7bc7a9d23e48902fc"
+    },
+    {
+      "module": "device",
+      "entries": [
+        "gg_function_1",
+        "gg_function_22"
+      ],
+      "generated_c_sha256": "430bcd26952b9ebc87374fd4b4c530dccffcce82bfb71e1a112af4950508347d"
+    }
+  ]
+}

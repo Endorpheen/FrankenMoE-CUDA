@@ -1,0 +1,7 @@
+INVALID PREFLIGHT — excluded before formal EXP-040 statistics.
+
+Reasons:
+1. Fresh control server had VmSwap=57080 KiB before requests and 54540 KiB after requests; the preregistered R6 gate requires VmSwap=0.
+2. The first short prompt was cold-cache dominated (41 prompt tokens in 14008.146 ms), so it is not comparable to a warm candidate arm.
+
+The server exited cleanly via SIGINT with exit code 0. No CUDA error, OOM, or orphan process was observed. The formal five-pair block did not start.

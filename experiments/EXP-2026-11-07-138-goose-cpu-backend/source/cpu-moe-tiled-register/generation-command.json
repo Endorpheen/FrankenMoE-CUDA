@@ -1,0 +1,6 @@
+[
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-2fa443c95afc",
+  "-o",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/generated/cpu-moe-tiled-register.c",
+  "/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-moe-tiled-register/kernel.goose"
+]

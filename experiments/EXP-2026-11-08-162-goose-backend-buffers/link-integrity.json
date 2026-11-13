@@ -1,0 +1,6 @@
+{
+  "original": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/exp161/run/libggml-base-allocator-f91f061bc825.so.0.27.0",
+  "sha256": "7ddf029dfb6a9b24f914bc33831d9016711c9940794d7c589df654a45a3ba7cb",
+  "unchanged_relink_sha256": "7ddf029dfb6a9b24f914bc33831d9016711c9940794d7c589df654a45a3ba7cb",
+  "unchanged_numerical_libraries": true
+}

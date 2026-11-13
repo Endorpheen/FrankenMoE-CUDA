@@ -1,0 +1,14 @@
+{
+  "apex": {
+    "sha": "e68df05b4829865dcf8cd2424febfaded15b055f56fec36fefc002650ef8e7c9",
+    "tokens": 128
+  },
+  "goose": {
+    "sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c",
+    "size": 131975288
+  },
+  "self_restore": {
+    "restored": 12,
+    "sha": "1da0f49942ac7858dad6346f0c4c1b8f5ed9e6bfb7318dff2120d209e32c505c"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "A1": {
+    "peak_sampled_mib": 3188,
+    "most_frequent_post_ready_mib": 3188
+  },
+  "B1": {
+    "peak_sampled_mib": 3348,
+    "most_frequent_post_ready_mib": 2928
+  },
+  "A2": {
+    "peak_sampled_mib": 3188,
+    "most_frequent_post_ready_mib": 3188
+  },
+  "B2": {
+    "peak_sampled_mib": 3348,
+    "most_frequent_post_ready_mib": 2928
+  },
+  "A3": {
+    "peak_sampled_mib": 3188,
+    "most_frequent_post_ready_mib": 3188
+  },
+  "B3": {
+    "peak_sampled_mib": 3348,
+    "most_frequent_post_ready_mib": 2928
+  },
+  "A4": {
+    "peak_sampled_mib": 3188,
+    "most_frequent_post_ready_mib": 3188
+  },
+  "B4": {
+    "peak_sampled_mib": 3348,
+    "most_frequent_post_ready_mib": 2928
+  },
+  "A5": {
+    "peak_sampled_mib": 3188,
+    "most_frequent_post_ready_mib": 3188
+  },
+  "B5": {
+    "peak_sampled_mib": 3348,
+    "most_frequent_post_ready_mib": 2928
+  },
+  "Bfinal": {
+    "peak_sampled_mib": 3348,
+    "most_frequent_post_ready_mib": 2928
+  },
+  "Dfinal": {
+    "peak_sampled_mib": 3188,
+    "most_frequent_post_ready_mib": 3188
+  },
+  "Flint107": {
+    "peak_sampled_mib": 2536,
+    "most_frequent_post_ready_mib": 2536
+  }
+}

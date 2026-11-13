@@ -1,0 +1,363 @@
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:46:23: error: ‘block_q4_K’ undeclared here (not in a function)
+   46 | _Static_assert(sizeof(block_q4_K)==144,"q4_K size");
+      |                       ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:46:16: error: expression in static assertion is not an integer
+   46 | _Static_assert(sizeof(block_q4_K)==144,"q4_K size");
+      |                ^~~~~~
+In file included from /usr/include/unistd.h:226,
+                 from /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/../../generated/cpu-tiled-all.c:23,
+                 from /home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:23:
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:47:25: error: expected specifier-qualifier-list before ‘block_q4_K’
+   47 | _Static_assert(offsetof(block_q4_K,d)==0,"q4_K.d");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:47:16: error: expression in static assertion is not an integer
+   47 | _Static_assert(offsetof(block_q4_K,d)==0,"q4_K.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:48:25: error: expected specifier-qualifier-list before ‘block_q4_K’
+   48 | _Static_assert(offsetof(block_q4_K,dmin)==2,"q4_K.dmin");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:48:16: error: expression in static assertion is not an integer
+   48 | _Static_assert(offsetof(block_q4_K,dmin)==2,"q4_K.dmin");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:49:25: error: expected specifier-qualifier-list before ‘block_q4_K’
+   49 | _Static_assert(offsetof(block_q4_K,scales)==4,"q4_K.scales");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:49:16: error: expression in static assertion is not an integer
+   49 | _Static_assert(offsetof(block_q4_K,scales)==4,"q4_K.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:50:25: error: expected specifier-qualifier-list before ‘block_q4_K’
+   50 | _Static_assert(offsetof(block_q4_K,qs)==16,"q4_K.qs");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:50:16: error: expression in static assertion is not an integer
+   50 | _Static_assert(offsetof(block_q4_K,qs)==16,"q4_K.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:51:23: error: ‘block_q5_K’ undeclared here (not in a function)
+   51 | _Static_assert(sizeof(block_q5_K)==176,"q5_K size");
+      |                       ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:51:16: error: expression in static assertion is not an integer
+   51 | _Static_assert(sizeof(block_q5_K)==176,"q5_K size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:52:25: error: expected specifier-qualifier-list before ‘block_q5_K’
+   52 | _Static_assert(offsetof(block_q5_K,d)==0,"q5_K.d");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:52:16: error: expression in static assertion is not an integer
+   52 | _Static_assert(offsetof(block_q5_K,d)==0,"q5_K.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:53:25: error: expected specifier-qualifier-list before ‘block_q5_K’
+   53 | _Static_assert(offsetof(block_q5_K,dmin)==2,"q5_K.dmin");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:53:16: error: expression in static assertion is not an integer
+   53 | _Static_assert(offsetof(block_q5_K,dmin)==2,"q5_K.dmin");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:54:25: error: expected specifier-qualifier-list before ‘block_q5_K’
+   54 | _Static_assert(offsetof(block_q5_K,scales)==4,"q5_K.scales");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:54:16: error: expression in static assertion is not an integer
+   54 | _Static_assert(offsetof(block_q5_K,scales)==4,"q5_K.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:55:25: error: expected specifier-qualifier-list before ‘block_q5_K’
+   55 | _Static_assert(offsetof(block_q5_K,qh)==16,"q5_K.qh");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:55:16: error: expression in static assertion is not an integer
+   55 | _Static_assert(offsetof(block_q5_K,qh)==16,"q5_K.qh");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:56:25: error: expected specifier-qualifier-list before ‘block_q5_K’
+   56 | _Static_assert(offsetof(block_q5_K,qs)==48,"q5_K.qs");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:56:16: error: expression in static assertion is not an integer
+   56 | _Static_assert(offsetof(block_q5_K,qs)==48,"q5_K.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:57:23: error: ‘block_q6_K’ undeclared here (not in a function)
+   57 | _Static_assert(sizeof(block_q6_K)==210,"q6_K size");
+      |                       ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:57:16: error: expression in static assertion is not an integer
+   57 | _Static_assert(sizeof(block_q6_K)==210,"q6_K size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:58:25: error: expected specifier-qualifier-list before ‘block_q6_K’
+   58 | _Static_assert(offsetof(block_q6_K,ql)==0,"q6_K.ql");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:58:16: error: expression in static assertion is not an integer
+   58 | _Static_assert(offsetof(block_q6_K,ql)==0,"q6_K.ql");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:59:25: error: expected specifier-qualifier-list before ‘block_q6_K’
+   59 | _Static_assert(offsetof(block_q6_K,qh)==128,"q6_K.qh");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:59:16: error: expression in static assertion is not an integer
+   59 | _Static_assert(offsetof(block_q6_K,qh)==128,"q6_K.qh");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:60:25: error: expected specifier-qualifier-list before ‘block_q6_K’
+   60 | _Static_assert(offsetof(block_q6_K,scales)==192,"q6_K.scales");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:60:16: error: expression in static assertion is not an integer
+   60 | _Static_assert(offsetof(block_q6_K,scales)==192,"q6_K.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:61:25: error: expected specifier-qualifier-list before ‘block_q6_K’
+   61 | _Static_assert(offsetof(block_q6_K,d)==208,"q6_K.d");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:61:16: error: expression in static assertion is not an integer
+   61 | _Static_assert(offsetof(block_q6_K,d)==208,"q6_K.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:62:23: error: ‘block_q3_K’ undeclared here (not in a function)
+   62 | _Static_assert(sizeof(block_q3_K)==110,"q3_K size");
+      |                       ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:62:16: error: expression in static assertion is not an integer
+   62 | _Static_assert(sizeof(block_q3_K)==110,"q3_K size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:63:25: error: expected specifier-qualifier-list before ‘block_q3_K’
+   63 | _Static_assert(offsetof(block_q3_K,hmask)==0,"q3_K.hmask");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:63:16: error: expression in static assertion is not an integer
+   63 | _Static_assert(offsetof(block_q3_K,hmask)==0,"q3_K.hmask");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:64:25: error: expected specifier-qualifier-list before ‘block_q3_K’
+   64 | _Static_assert(offsetof(block_q3_K,qs)==32,"q3_K.qs");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:64:16: error: expression in static assertion is not an integer
+   64 | _Static_assert(offsetof(block_q3_K,qs)==32,"q3_K.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:65:25: error: expected specifier-qualifier-list before ‘block_q3_K’
+   65 | _Static_assert(offsetof(block_q3_K,scales)==96,"q3_K.scales");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:65:16: error: expression in static assertion is not an integer
+   65 | _Static_assert(offsetof(block_q3_K,scales)==96,"q3_K.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:66:25: error: expected specifier-qualifier-list before ‘block_q3_K’
+   66 | _Static_assert(offsetof(block_q3_K,d)==108,"q3_K.d");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:66:16: error: expression in static assertion is not an integer
+   66 | _Static_assert(offsetof(block_q3_K,d)==108,"q3_K.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:67:23: error: ‘block_q2_K’ undeclared here (not in a function)
+   67 | _Static_assert(sizeof(block_q2_K)==84,"q2_K size");
+      |                       ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:67:16: error: expression in static assertion is not an integer
+   67 | _Static_assert(sizeof(block_q2_K)==84,"q2_K size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:68:25: error: expected specifier-qualifier-list before ‘block_q2_K’
+   68 | _Static_assert(offsetof(block_q2_K,scales)==0,"q2_K.scales");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:68:16: error: expression in static assertion is not an integer
+   68 | _Static_assert(offsetof(block_q2_K,scales)==0,"q2_K.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:69:25: error: expected specifier-qualifier-list before ‘block_q2_K’
+   69 | _Static_assert(offsetof(block_q2_K,qs)==16,"q2_K.qs");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:69:16: error: expression in static assertion is not an integer
+   69 | _Static_assert(offsetof(block_q2_K,qs)==16,"q2_K.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:70:25: error: expected specifier-qualifier-list before ‘block_q2_K’
+   70 | _Static_assert(offsetof(block_q2_K,d)==80,"q2_K.d");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:70:16: error: expression in static assertion is not an integer
+   70 | _Static_assert(offsetof(block_q2_K,d)==80,"q2_K.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:71:25: error: expected specifier-qualifier-list before ‘block_q2_K’
+   71 | _Static_assert(offsetof(block_q2_K,dmin)==82,"q2_K.dmin");
+      |                         ^~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:71:16: error: expression in static assertion is not an integer
+   71 | _Static_assert(offsetof(block_q2_K,dmin)==82,"q2_K.dmin");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:72:23: error: ‘block_iq4_xs’ undeclared here (not in a function)
+   72 | _Static_assert(sizeof(block_iq4_xs)==136,"iq4_xs size");
+      |                       ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:72:16: error: expression in static assertion is not an integer
+   72 | _Static_assert(sizeof(block_iq4_xs)==136,"iq4_xs size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:73:25: error: expected specifier-qualifier-list before ‘block_iq4_xs’
+   73 | _Static_assert(offsetof(block_iq4_xs,d)==0,"iq4_xs.d");
+      |                         ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:73:16: error: expression in static assertion is not an integer
+   73 | _Static_assert(offsetof(block_iq4_xs,d)==0,"iq4_xs.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:74:25: error: expected specifier-qualifier-list before ‘block_iq4_xs’
+   74 | _Static_assert(offsetof(block_iq4_xs,scales_h)==2,"iq4_xs.scales_h");
+      |                         ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:74:16: error: expression in static assertion is not an integer
+   74 | _Static_assert(offsetof(block_iq4_xs,scales_h)==2,"iq4_xs.scales_h");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:75:25: error: expected specifier-qualifier-list before ‘block_iq4_xs’
+   75 | _Static_assert(offsetof(block_iq4_xs,scales_l)==4,"iq4_xs.scales_l");
+      |                         ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:75:16: error: expression in static assertion is not an integer
+   75 | _Static_assert(offsetof(block_iq4_xs,scales_l)==4,"iq4_xs.scales_l");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:76:25: error: expected specifier-qualifier-list before ‘block_iq4_xs’
+   76 | _Static_assert(offsetof(block_iq4_xs,qs)==8,"iq4_xs.qs");
+      |                         ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:76:16: error: expression in static assertion is not an integer
+   76 | _Static_assert(offsetof(block_iq4_xs,qs)==8,"iq4_xs.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:77:23: error: ‘block_iq2_xxs’ undeclared here (not in a function)
+   77 | _Static_assert(sizeof(block_iq2_xxs)==66,"iq2_xxs size");
+      |                       ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:77:16: error: expression in static assertion is not an integer
+   77 | _Static_assert(sizeof(block_iq2_xxs)==66,"iq2_xxs size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:78:25: error: expected specifier-qualifier-list before ‘block_iq2_xxs’
+   78 | _Static_assert(offsetof(block_iq2_xxs,d)==0,"iq2_xxs.d");
+      |                         ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:78:16: error: expression in static assertion is not an integer
+   78 | _Static_assert(offsetof(block_iq2_xxs,d)==0,"iq2_xxs.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:79:25: error: expected specifier-qualifier-list before ‘block_iq2_xxs’
+   79 | _Static_assert(offsetof(block_iq2_xxs,qs)==2,"iq2_xxs.qs");
+      |                         ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:79:16: error: expression in static assertion is not an integer
+   79 | _Static_assert(offsetof(block_iq2_xxs,qs)==2,"iq2_xxs.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:80:23: error: ‘block_iq2_xs’ undeclared here (not in a function)
+   80 | _Static_assert(sizeof(block_iq2_xs)==74,"iq2_xs size");
+      |                       ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:80:16: error: expression in static assertion is not an integer
+   80 | _Static_assert(sizeof(block_iq2_xs)==74,"iq2_xs size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:81:25: error: expected specifier-qualifier-list before ‘block_iq2_xs’
+   81 | _Static_assert(offsetof(block_iq2_xs,d)==0,"iq2_xs.d");
+      |                         ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:81:16: error: expression in static assertion is not an integer
+   81 | _Static_assert(offsetof(block_iq2_xs,d)==0,"iq2_xs.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:82:25: error: expected specifier-qualifier-list before ‘block_iq2_xs’
+   82 | _Static_assert(offsetof(block_iq2_xs,qs)==2,"iq2_xs.qs");
+      |                         ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:82:16: error: expression in static assertion is not an integer
+   82 | _Static_assert(offsetof(block_iq2_xs,qs)==2,"iq2_xs.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:83:25: error: expected specifier-qualifier-list before ‘block_iq2_xs’
+   83 | _Static_assert(offsetof(block_iq2_xs,scales)==66,"iq2_xs.scales");
+      |                         ^~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:83:16: error: expression in static assertion is not an integer
+   83 | _Static_assert(offsetof(block_iq2_xs,scales)==66,"iq2_xs.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:84:23: error: ‘block_iq2_s’ undeclared here (not in a function)
+   84 | _Static_assert(sizeof(block_iq2_s)==82,"iq2_s size");
+      |                       ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:84:16: error: expression in static assertion is not an integer
+   84 | _Static_assert(sizeof(block_iq2_s)==82,"iq2_s size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:85:25: error: expected specifier-qualifier-list before ‘block_iq2_s’
+   85 | _Static_assert(offsetof(block_iq2_s,d)==0,"iq2_s.d");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:85:16: error: expression in static assertion is not an integer
+   85 | _Static_assert(offsetof(block_iq2_s,d)==0,"iq2_s.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:86:25: error: expected specifier-qualifier-list before ‘block_iq2_s’
+   86 | _Static_assert(offsetof(block_iq2_s,qs)==2,"iq2_s.qs");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:86:16: error: expression in static assertion is not an integer
+   86 | _Static_assert(offsetof(block_iq2_s,qs)==2,"iq2_s.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:87:25: error: expected specifier-qualifier-list before ‘block_iq2_s’
+   87 | _Static_assert(offsetof(block_iq2_s,qh)==66,"iq2_s.qh");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:87:16: error: expression in static assertion is not an integer
+   87 | _Static_assert(offsetof(block_iq2_s,qh)==66,"iq2_s.qh");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:88:25: error: expected specifier-qualifier-list before ‘block_iq2_s’
+   88 | _Static_assert(offsetof(block_iq2_s,scales)==74,"iq2_s.scales");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:88:16: error: expression in static assertion is not an integer
+   88 | _Static_assert(offsetof(block_iq2_s,scales)==74,"iq2_s.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:89:23: error: ‘block_iq3_xxs’ undeclared here (not in a function)
+   89 | _Static_assert(sizeof(block_iq3_xxs)==98,"iq3_xxs size");
+      |                       ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:89:16: error: expression in static assertion is not an integer
+   89 | _Static_assert(sizeof(block_iq3_xxs)==98,"iq3_xxs size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:90:25: error: expected specifier-qualifier-list before ‘block_iq3_xxs’
+   90 | _Static_assert(offsetof(block_iq3_xxs,d)==0,"iq3_xxs.d");
+      |                         ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:90:16: error: expression in static assertion is not an integer
+   90 | _Static_assert(offsetof(block_iq3_xxs,d)==0,"iq3_xxs.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:91:25: error: expected specifier-qualifier-list before ‘block_iq3_xxs’
+   91 | _Static_assert(offsetof(block_iq3_xxs,qs)==2,"iq3_xxs.qs");
+      |                         ^~~~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:91:16: error: expression in static assertion is not an integer
+   91 | _Static_assert(offsetof(block_iq3_xxs,qs)==2,"iq3_xxs.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:92:23: error: ‘block_iq3_s’ undeclared here (not in a function)
+   92 | _Static_assert(sizeof(block_iq3_s)==110,"iq3_s size");
+      |                       ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:92:16: error: expression in static assertion is not an integer
+   92 | _Static_assert(sizeof(block_iq3_s)==110,"iq3_s size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:93:25: error: expected specifier-qualifier-list before ‘block_iq3_s’
+   93 | _Static_assert(offsetof(block_iq3_s,d)==0,"iq3_s.d");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:93:16: error: expression in static assertion is not an integer
+   93 | _Static_assert(offsetof(block_iq3_s,d)==0,"iq3_s.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:94:25: error: expected specifier-qualifier-list before ‘block_iq3_s’
+   94 | _Static_assert(offsetof(block_iq3_s,qs)==2,"iq3_s.qs");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:94:16: error: expression in static assertion is not an integer
+   94 | _Static_assert(offsetof(block_iq3_s,qs)==2,"iq3_s.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:95:25: error: expected specifier-qualifier-list before ‘block_iq3_s’
+   95 | _Static_assert(offsetof(block_iq3_s,qh)==66,"iq3_s.qh");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:95:16: error: expression in static assertion is not an integer
+   95 | _Static_assert(offsetof(block_iq3_s,qh)==66,"iq3_s.qh");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:96:25: error: expected specifier-qualifier-list before ‘block_iq3_s’
+   96 | _Static_assert(offsetof(block_iq3_s,signs)==74,"iq3_s.signs");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:96:16: error: expression in static assertion is not an integer
+   96 | _Static_assert(offsetof(block_iq3_s,signs)==74,"iq3_s.signs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:97:25: error: expected specifier-qualifier-list before ‘block_iq3_s’
+   97 | _Static_assert(offsetof(block_iq3_s,scales)==106,"iq3_s.scales");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:97:16: error: expression in static assertion is not an integer
+   97 | _Static_assert(offsetof(block_iq3_s,scales)==106,"iq3_s.scales");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:98:23: error: ‘block_iq1_s’ undeclared here (not in a function)
+   98 | _Static_assert(sizeof(block_iq1_s)==50,"iq1_s size");
+      |                       ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:98:16: error: expression in static assertion is not an integer
+   98 | _Static_assert(sizeof(block_iq1_s)==50,"iq1_s size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:99:25: error: expected specifier-qualifier-list before ‘block_iq1_s’
+   99 | _Static_assert(offsetof(block_iq1_s,d)==0,"iq1_s.d");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:99:16: error: expression in static assertion is not an integer
+   99 | _Static_assert(offsetof(block_iq1_s,d)==0,"iq1_s.d");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:100:25: error: expected specifier-qualifier-list before ‘block_iq1_s’
+  100 | _Static_assert(offsetof(block_iq1_s,qs)==2,"iq1_s.qs");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:100:16: error: expression in static assertion is not an integer
+  100 | _Static_assert(offsetof(block_iq1_s,qs)==2,"iq1_s.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:101:25: error: expected specifier-qualifier-list before ‘block_iq1_s’
+  101 | _Static_assert(offsetof(block_iq1_s,qh)==34,"iq1_s.qh");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:101:16: error: expression in static assertion is not an integer
+  101 | _Static_assert(offsetof(block_iq1_s,qh)==34,"iq1_s.qh");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:102:23: error: ‘block_iq1_m’ undeclared here (not in a function)
+  102 | _Static_assert(sizeof(block_iq1_m)==56,"iq1_m size");
+      |                       ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:102:16: error: expression in static assertion is not an integer
+  102 | _Static_assert(sizeof(block_iq1_m)==56,"iq1_m size");
+      |                ^~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:103:25: error: expected specifier-qualifier-list before ‘block_iq1_m’
+  103 | _Static_assert(offsetof(block_iq1_m,qs)==0,"iq1_m.qs");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:103:16: error: expression in static assertion is not an integer
+  103 | _Static_assert(offsetof(block_iq1_m,qs)==0,"iq1_m.qs");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:104:25: error: expected specifier-qualifier-list before ‘block_iq1_m’
+  104 | _Static_assert(offsetof(block_iq1_m,qh)==32,"iq1_m.qh");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:104:16: error: expression in static assertion is not an integer
+  104 | _Static_assert(offsetof(block_iq1_m,qh)==32,"iq1_m.qh");
+      |                ^~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:105:25: error: expected specifier-qualifier-list before ‘block_iq1_m’
+  105 | _Static_assert(offsetof(block_iq1_m,scales)==48,"iq1_m.scales");
+      |                         ^~~~~~~~~~~
+/home/end0/AI/LlamaServer/franken-goose-live-20261107/source/cpu-tiled-all/unit.c:105:16: error: expression in static assertion is not an integer
+  105 | _Static_assert(offsetof(block_iq1_m,scales)==48,"iq1_m.scales");
+      |                ^~~~~~~~

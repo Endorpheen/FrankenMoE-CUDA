@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "device value uses nidx+1",
+    "status": "CAUGHT",
+    "failures": 419860
+  },
+  {
+    "mutation": "device value subtracts the step term",
+    "status": "CAUGHT",
+    "failures": 419832
+  },
+  {
+    "mutation": "device bound skips the last element",
+    "status": "CAUGHT",
+    "failures": 28
+  },
+  {
+    "mutation": "host steps uses truncation instead of ceil",
+    "status": "CAUGHT",
+    "failures": 1
+  },
+  {
+    "mutation": "host block size 256 -> 128",
+    "status": "CAUGHT",
+    "failures": 5
+  }
+]

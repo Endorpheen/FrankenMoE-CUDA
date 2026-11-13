@@ -1,0 +1,31 @@
+--- a/ggml/src/ggml-cuda/common.cuh	2026-09-15 23:20:52.135124553 +0300
++++ b/ggml/src/ggml-cuda/common.cuh	2026-09-15 23:20:52.138124520 +0300
+@@ -1414,7 +1414,7 @@
+     }
+ };
+ 
+-static constexpr size_t GGML_CUDA_EXPERT_RING_SLOTS      = 2;
++static constexpr size_t GGML_CUDA_EXPERT_RING_SLOTS      = 3;
+ static constexpr size_t GGML_CUDA_EXPERT_RING_SLOT_SIZE  = 16 * 1024 * 1024;
+ 
+ struct ggml_backend_cuda_context {
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-15 23:20:52.137124531 +0300
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu	2026-09-15 23:20:52.139124509 +0300
+@@ -2569,7 +2569,7 @@
+     return v == nullptr || (v[0] != '\0' && strcmp(v, "0") != 0);
+ }
+ 
+-// allocates both slots and both events before any staged submission; on failure the ring stays disabled
++// allocates all slots and events before any staged submission; on failure the ring stays disabled
+ static bool ggml_cuda_expert_ring_init(ggml_backend_cuda_context * cuda_ctx) {
+     if (cuda_ctx->expert_ring_state != 0) {
+         return cuda_ctx->expert_ring_state == 1;
+@@ -2603,7 +2603,7 @@
+ }
+ 
+ // stages one host->device copy through the bounded pinned ring: fill a free slot on the CPU
+-// while the H2D of the other slot is still in flight; ranges larger than one slot are chunked
++// while the H2D of the other slots is still in flight; ranges larger than one slot are chunked
+ static bool ggml_backend_cuda_set_tensor_async_pinned_ring(ggml_backend_t backend, ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
+     ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;

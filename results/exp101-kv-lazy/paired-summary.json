@@ -1,0 +1,121 @@
+{
+  "scope": "Apex32K memory candidate; seven other runtime files unchanged. Loaded historical timings are not clean speed acceptance; wider compatibility pending.",
+  "pairs": [
+    {
+      "pair": 1,
+      "control": {
+        "cold_ttft_s": 18.813264363998314,
+        "prefill_tok_s": 1744.0320074155422,
+        "decode_tok_s": 19.87085819733139,
+        "repeat_ttft_s": 0.2648951060255058,
+        "vram_peak_mib": 4428
+      },
+      "cand": {
+        "cold_ttft_s": 18.633592989994213,
+        "prefill_tok_s": 1760.6255292743488,
+        "decode_tok_s": 19.46470527830697,
+        "repeat_ttft_s": 0.257690939004533,
+        "vram_peak_mib": 3188
+      }
+    },
+    {
+      "pair": 2,
+      "control": {
+        "cold_ttft_s": 18.843225272983545,
+        "prefill_tok_s": 1741.0838129841773,
+        "decode_tok_s": 19.528784274746315,
+        "repeat_ttft_s": 0.24007040899596177,
+        "vram_peak_mib": 4428
+      },
+      "cand": {
+        "cold_ttft_s": 18.788984428014373,
+        "prefill_tok_s": 1745.8487873735407,
+        "decode_tok_s": 20.082705959614152,
+        "repeat_ttft_s": 0.23885946199879982,
+        "vram_peak_mib": 3188
+      }
+    },
+    {
+      "pair": 3,
+      "control": {
+        "cold_ttft_s": 18.876172113989014,
+        "prefill_tok_s": 1737.9302209984485,
+        "decode_tok_s": 19.57787330341156,
+        "repeat_ttft_s": 0.24286906499764882,
+        "vram_peak_mib": 4428
+      },
+      "cand": {
+        "cold_ttft_s": 18.667300172994146,
+        "prefill_tok_s": 1756.8132539893675,
+        "decode_tok_s": 19.009961219679113,
+        "repeat_ttft_s": 0.23118402098771185,
+        "vram_peak_mib": 3188
+      }
+    },
+    {
+      "pair": 4,
+      "control": {
+        "cold_ttft_s": 18.75435667601414,
+        "prefill_tok_s": 1749.1979595323949,
+        "decode_tok_s": 19.836537558921936,
+        "repeat_ttft_s": 0.2742419980058912,
+        "vram_peak_mib": 4428
+      },
+      "cand": {
+        "cold_ttft_s": 18.553903065010672,
+        "prefill_tok_s": 1767.916502201371,
+        "decode_tok_s": 20.432838306262507,
+        "repeat_ttft_s": 0.22766975502599962,
+        "vram_peak_mib": 3188
+      }
+    },
+    {
+      "pair": 5,
+      "control": {
+        "cold_ttft_s": 18.751111164019676,
+        "prefill_tok_s": 1749.418164169078,
+        "decode_tok_s": 19.72950997179146,
+        "repeat_ttft_s": 0.25196816300740466,
+        "vram_peak_mib": 4428
+      },
+      "cand": {
+        "cold_ttft_s": 18.630712468002457,
+        "prefill_tok_s": 1760.2562943478572,
+        "decode_tok_s": 19.78827789161664,
+        "repeat_ttft_s": 0.2658756760065444,
+        "vram_peak_mib": 3188
+      }
+    }
+  ],
+  "author_medians": {
+    "prefill_delta_pct": 0.9514459475658432,
+    "decode_delta_pct": 0.2978681168929409,
+    "repeat_ttft_delta_pct": -2.7196300939886564,
+    "vram_saving_mib": 1240
+  },
+  "author_numerical": {
+    "all_cold_ids_identical": true,
+    "all_cold_top5_identical": true,
+    "max_probability_delta": 0.0
+  },
+  "author_capacity": {
+    "candidate_peak_vram_mib": 6388,
+    "candidate_prefill_tok_s": 1002.8,
+    "archived_control_numeric_match": true,
+    "prompt_tokens": 261632,
+    "generated_tokens": 128
+  },
+  "author_branch": {
+    "control_cache_n": 24576,
+    "candidate_cache_n": 24576,
+    "ids_identical": true,
+    "max_probability_delta": 0.0
+  },
+  "vram_saving_percent": 28.00361336946703,
+  "startup_vram_mib": {
+    "control": 3000,
+    "candidate": 1600
+  },
+  "flint_validated": false,
+  "disable_and_unsupported_modes_live_tested_by_codex": false
+}

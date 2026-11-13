@@ -1,0 +1,27 @@
+[
+  {
+    "mutation": "snake drops one factor of s",
+    "status": "CAUGHT",
+    "failures": 13882
+  },
+  {
+    "mutation": "snake subtracts instead of adding",
+    "status": "CAUGHT",
+    "failures": 13882
+  },
+  {
+    "mutation": "snake channel index off by one",
+    "status": "CAUGHT",
+    "failures": 13882
+  },
+  {
+    "mutation": "softcap drops the cap factor",
+    "status": "CAUGHT",
+    "failures": 43050
+  },
+  {
+    "mutation": "host grid uses 128 instead of 256",
+    "status": "CAUGHT",
+    "failures": 4
+  }
+]

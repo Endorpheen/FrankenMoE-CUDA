@@ -1,0 +1,202 @@
+{
+  "ggml_hash_size": {
+    "mode": 0,
+    "args": [
+      "min_sz"
+    ],
+    "kind": "size_t",
+    "local": null
+  },
+  "ggml_hash_set_new": {
+    "mode": 1,
+    "args": [
+      "&fg_result",
+      "size"
+    ],
+    "kind": "struct ggml_hash_set",
+    "local": "struct ggml_hash_set fg_result={0};"
+  },
+  "ggml_hash_set_reset": {
+    "mode": 2,
+    "args": [
+      "hash_set"
+    ],
+    "kind": "void",
+    "local": null
+  },
+  "ggml_hash_set_free": {
+    "mode": 3,
+    "args": [
+      "hash_set"
+    ],
+    "kind": "void",
+    "local": null
+  },
+  "ggml_graph_nbytes": {
+    "mode": 13,
+    "args": [
+      "size",
+      "grads"
+    ],
+    "kind": "size_t",
+    "local": null
+  },
+  "ggml_graph_overhead_custom": {
+    "mode": 14,
+    "args": [
+      "size",
+      "grads"
+    ],
+    "kind": "size_t",
+    "local": null
+  },
+  "ggml_new_graph_custom": {
+    "mode": 15,
+    "args": [
+      "ctx",
+      "size",
+      "grads"
+    ],
+    "kind": "ptr",
+    "local": null
+  },
+  "ggml_build_forward_impl": {
+    "mode": 16,
+    "args": [
+      "cgraph",
+      "tensor",
+      "expand",
+      "compute"
+    ],
+    "kind": "void",
+    "local": null
+  },
+  "ggml_visit_parents_graph": {
+    "mode": 17,
+    "args": [
+      "cgraph",
+      "node",
+      "compute"
+    ],
+    "kind": "size_t",
+    "local": null
+  },
+  "ggml_build_forward_select": {
+    "mode": 18,
+    "args": [
+      "cgraph",
+      "tensors",
+      "n_tensors",
+      "idx"
+    ],
+    "kind": "ptr",
+    "local": null
+  },
+  "ggml_graph_view": {
+    "mode": 19,
+    "args": [
+      "&fg_result",
+      "cgraph0",
+      "i0",
+      "i1"
+    ],
+    "kind": "struct ggml_cgraph",
+    "local": "struct ggml_cgraph fg_result={0};"
+  },
+  "ggml_graph_cpy": {
+    "mode": 20,
+    "args": [
+      "src",
+      "dst"
+    ],
+    "kind": "void",
+    "local": null
+  },
+  "ggml_graph_dup": {
+    "mode": 21,
+    "args": [
+      "ctx",
+      "cgraph",
+      "force_grads"
+    ],
+    "kind": "ptr",
+    "local": null
+  },
+  "ggml_graph_clear": {
+    "mode": 22,
+    "args": [
+      "cgraph"
+    ],
+    "kind": "void",
+    "local": null
+  },
+  "ggml_graph_size": {
+    "mode": 23,
+    "args": [
+      "cgraph"
+    ],
+    "kind": "int",
+    "local": null
+  },
+  "ggml_graph_node": {
+    "mode": 24,
+    "args": [
+      "cgraph",
+      "i"
+    ],
+    "kind": "ptr",
+    "local": null
+  },
+  "ggml_graph_nodes": {
+    "mode": 25,
+    "args": [
+      "cgraph"
+    ],
+    "kind": "ptr",
+    "local": null
+  },
+  "ggml_graph_n_nodes": {
+    "mode": 26,
+    "args": [
+      "cgraph"
+    ],
+    "kind": "int",
+    "local": null
+  },
+  "ggml_graph_add_node": {
+    "mode": 27,
+    "args": [
+      "cgraph",
+      "tensor"
+    ],
+    "kind": "void",
+    "local": null
+  },
+  "ggml_graph_get_tensor": {
+    "mode": 28,
+    "args": [
+      "cgraph",
+      "name"
+    ],
+    "kind": "ptr",
+    "local": null
+  },
+  "ggml_graph_get_grad": {
+    "mode": 29,
+    "args": [
+      "cgraph",
+      "node"
+    ],
+    "kind": "ptr",
+    "local": null
+  },
+  "ggml_graph_get_grad_acc": {
+    "mode": 30,
+    "args": [
+      "cgraph",
+      "node"
+    ],
+    "kind": "ptr",
+    "local": null
+  }
+}

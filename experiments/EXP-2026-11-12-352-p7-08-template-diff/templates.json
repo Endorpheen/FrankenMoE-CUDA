@@ -1,0 +1,28 @@
+{
+ "native": {
+  "plain": "<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n",
+  "system": "<|im_start|>system\nYou are terse.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n",
+  "multi": "<|im_start|>user\na<|im_end|>\n<|im_start|>assistant\nb<|im_end|>\n<|im_start|>user\nc<|im_end|>\n<|im_start|>assistant\n",
+  "tools": "<|im_start|>user\nweather?<|im_end|>\n<|im_start|>assistant\n",
+  "toolcall": "<|im_start|>user\nweather?<|im_end|>\n<|im_start|>assistant\n<|im_end|>\n<|im_start|>tool\n7C<|im_end|>\n<|im_start|>assistant\n",
+  "reasoning": "<|im_start|>user\nq<|im_end|>\n<|im_start|>assistant\nanswer",
+  "unicode": "<|im_start|>user\n\u043f\u0440\u0438\u0432\u0435\u0442 \ud83c\udf0d\n\ttab \"quoted\" <tag> & amp<|im_end|>\n<|im_start|>assistant\n",
+  "emptycontent": "<|im_start|>user\n<|im_end|>\n<|im_start|>assistant\nx",
+  "jinja_filters": "<|im_start|>user\nhello world<|im_end|>\n<|im_start|>assistant\n",
+  "jinja_cond": "<|im_start|>user\nq<|im_end|>\n<|im_start|>assistant\n",
+  "jinja_loop": "<|im_start|>user\na<|im_end|>\n<|im_start|>user\nb<|im_end|>\n<|im_start|>assistant\n"
+ },
+ "ours": {
+  "plain": "<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n",
+  "system": "<|im_start|>system\nYou are terse.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n",
+  "multi": "<|im_start|>user\na<|im_end|>\n<|im_start|>assistant\nb<|im_end|>\n<|im_start|>user\nc<|im_end|>\n<|im_start|>assistant\n",
+  "tools": "<|im_start|>user\nweather?<|im_end|>\n<|im_start|>assistant\n",
+  "toolcall": "<|im_start|>user\nweather?<|im_end|>\n<|im_start|>assistant\n<|im_end|>\n<|im_start|>tool\n7C<|im_end|>\n<|im_start|>assistant\n",
+  "reasoning": "<|im_start|>user\nq<|im_end|>\n<|im_start|>assistant\nanswer",
+  "unicode": "<|im_start|>user\n\u043f\u0440\u0438\u0432\u0435\u0442 \ud83c\udf0d\n\ttab \"quoted\" <tag> & amp<|im_end|>\n<|im_start|>assistant\n",
+  "emptycontent": "<|im_start|>user\n<|im_end|>\n<|im_start|>assistant\nx",
+  "jinja_filters": "<|im_start|>user\nhello world<|im_end|>\n<|im_start|>assistant\n",
+  "jinja_cond": "<|im_start|>user\nq<|im_end|>\n<|im_start|>assistant\n",
+  "jinja_loop": "<|im_start|>user\na<|im_end|>\n<|im_start|>user\nb<|im_end|>\n<|im_start|>assistant\n"
+ }
+}

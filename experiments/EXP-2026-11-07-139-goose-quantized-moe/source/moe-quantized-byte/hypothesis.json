@@ -1,0 +1,7 @@
+{
+  "experiment": "EXP-2026-11-07-139",
+  "hypothesis": "Use native-equivalent OR/shift/mask word expansion for Q2_0, and byte-width wrapping sign/nonzero masks for Q5_0/IQ4_NL. All compute remains Goose; retain checks, FP arithmetic and prior negative variants.",
+  "control": "Branchless matrix with same increased GCC inline budget",
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "compiler_changed": false
+}

@@ -1,0 +1,6 @@
+{
+  "status": "BUILT_VALIDATION_PENDING",
+  "cpu_sha256": "87d45c43092ac834750507366033ca436af22ff67e6b049413931b27eba35a2b",
+  "emitted_c_sha256": "664e957a04c8edf09703f96eb4ca44cd74fc9b40e35c71361dcfa2d66635a5c1",
+  "change": "Only host GCC inline limits for Goose tiled object; all other objects and source unchanged"
+}

@@ -1,0 +1,6 @@
+{
+  "status": "PASS_EXACT_UNCHANGED_QUANT_SOURCE_AND_GENERATED_C",
+  "parent": "/home/end0/AI/LlamaServer/franken-goose-exp148-quant-20261107",
+  "parent_quant_safety_status": "PASS_NINE_QUANT_FORMATS_TRAITS_ROLLBACK_AND_Q8_SPECIALS",
+  "note": "Parent893trait/841activation gates inherited for unchanged source;not rerun here"
+}

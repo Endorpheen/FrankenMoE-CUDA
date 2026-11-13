@@ -1,0 +1,18 @@
+{
+  "status": "GENERATED_AND_BUILT_FUNCTIONAL_INTEGRATION_PENDING",
+  "producer": {
+    "stage": "self-hosted EXP300 C11 frame-default Stage3",
+    "sha256": "454151b3449b208b62335d942dc2226eb19fdd3bfccec3c0a42ecdc13ef71e61",
+    "frozen": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/compiler/stage3-454151b3449b",
+    "origin": "/home/end0/AI/Fried-Goose/.cache/exp300-frame-scope-state/frame-default-bootstrap-v1",
+    "status": "PASS_CURRENT_C11_INTEGRATION_THREE_STAGE_BOOTSTRAP_FIXED_C",
+    "scope": "Current C11 scope/block source snapshot: Current production source serial bootstrap/fixed point after C11 scope/block integration. Confirms preservation of the working compiler, not full C11 scope/block producer/lifecycle acceptance.",
+    "compiler_source_changed": false
+  },
+  "goose_sha256": "281ad08b8ce56a257696f1b429696f19dcccf64757b920909be11b10b1916292",
+  "reuse": "Same previously verified13format tile unpack source; complete compact legacy/FP4/Q8 block decoding added in Goose",
+  "native_compute_imports": false,
+  "data_imports": "Immutable GGML grid/palette tables; primitive half/bitcast/math helpers only",
+  "performance_tests": false,
+  "qwen_development_or_tests": false
+}

@@ -1,0 +1,37 @@
+ordinary matrix/dequant cases {'q2_0': 168, 'q5_0': 168, 'iq4_nl': 168, 'iq2_xxs': 144, 'iq2_s': 144}
+{
+  "status": "PASS_ALL_FIVE_NATIVE_QUANT_MATRIX_DEQUANT_FUSED",
+  "ordinary_cases": {
+    "q2_0": 168,
+    "q5_0": 168,
+    "iq4_nl": 168,
+    "iq2_xxs": 144,
+    "iq2_s": 144
+  },
+  "routed_fused_cases": 72,
+  "eight_thread_cases": 160,
+  "all_bytes_equal_native": true,
+  "inputs_and_canaries_unchanged": true,
+  "noncontiguous_weight_and_activation_block_strides": true,
+  "IQ2_S_existing_two_three_activation_weight_reuse_preserved": true,
+  "producer_sha256": "7ab1a1ca1cdb82bd45c447cafc9a8143cbcb23dab29bae3e813f66069c5d0846",
+  "empty_worker_spans": 30,
+  "native_baseline": "/home/end0/AI/LlamaServer/franken-goose-live-20261107/variants/qwen839a-shared/build/bin",
+  "IQ4_NL_scalar_tail_fused": true
+}
+FG139_MATH mode=0 kind=0 calls=200 rows=1316 dot_blocks=20960
+FG139_MATH mode=0 kind=1 calls=200 rows=1316 dot_blocks=21796
+FG139_MATH mode=0 kind=2 calls=200 rows=1316 dot_blocks=21796
+FG139_MATH mode=0 kind=3 calls=176 rows=1160 dot_blocks=7232
+FG139_MATH mode=0 kind=4 calls=176 rows=1160 dot_blocks=7232
+FG139_MATH mode=1 kind=4 calls=12 rows=210 dot_blocks=2100
+FG139_MATH mode=2 kind=0 calls=200 rows=200 dot_blocks=3200
+FG139_MATH mode=2 kind=1 calls=200 rows=200 dot_blocks=3304
+FG139_MATH mode=2 kind=2 calls=200 rows=200 dot_blocks=3304
+FG139_MATH mode=2 kind=3 calls=176 rows=176 dot_blocks=1088
+FG139_MATH mode=2 kind=4 calls=176 rows=176 dot_blocks=1088
+FG139_MATH mode=3 kind=0 calls=18 rows=210 dot_blocks=2100
+FG139_MATH mode=3 kind=1 calls=18 rows=210 dot_blocks=4200
+FG139_MATH mode=3 kind=2 calls=18 rows=210 dot_blocks=4200
+FG139_MATH mode=3 kind=3 calls=18 rows=210 dot_blocks=2100
+FG139_MATH mode=3 kind=4 calls=18 rows=210 dot_blocks=2100

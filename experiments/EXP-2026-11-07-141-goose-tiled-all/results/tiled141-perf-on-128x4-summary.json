@@ -1,0 +1,37 @@
+{
+  "name": "tiled141-perf-on-128x4",
+  "wall_seconds": 2.2854579689446837,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 128,
+    "prompt_ms": 1980.97,
+    "prompt_per_token_ms": 15.476328125,
+    "prompt_per_second": 64.6148099163541,
+    "predicted_n": 4,
+    "predicted_ms": 296.21,
+    "predicted_per_token_ms": 98.73666666666666,
+    "predicted_per_second": 10.127949765369165
+  },
+  "content_sha256": "1bed50f4a4c3fa8b8121dc03c4ed06e8b987b2db217145f6cf1477f7743803bd",
+  "tokens": [
+    58558,
+    13,
+    198,
+    760
+  ],
+  "sampled_rss_peak_mib": 20673.9375,
+  "process_hwm_mib": 20946.49609375,
+  "process_swap_peak_kib": 0,
+  "sampled_anon_peak_mib": 423.4765625,
+  "sampled_file_peak_mib": 20250.4609375,
+  "sampled_gpu_peak_mib": 0,
+  "system_swapout_pages_delta": 0,
+  "loadavg": [
+    5.61376953125,
+    4.75,
+    3.77294921875
+  ],
+  "preliminary": true,
+  "concurrent_download": false,
+  "controlled_quiet_run": false
+}
