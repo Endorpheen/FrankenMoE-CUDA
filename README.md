@@ -8,7 +8,7 @@ is **Apex-35B-V1.0 Q4_K_M** on a Ryzen 9 5950X, 64 GB RAM and an RTX 4070 12 GB.
 The current state and the open work are in
 [`docs/goose-migration/STATUS.md`](docs/goose-migration/STATUS.md).
 
-## Apex today — 2026-11-13
+## Apex performance — 2026-11-13 baseline
 
 Canonical configuration, fixed profile, one request:
 
@@ -38,6 +38,24 @@ The 128-token run produced content hash
 exit 0. The GPU cache selects a different execution path than the historical
 `e68df05b...` reference, so those two hashes are not comparable; the answer
 remains coherent, which is why the cache run has its own baseline.
+
+### Compared with the C++ control
+
+The same model, host, request and argv, with the C++ build as the control and
+the FrankenMoE build with the GPU expert cache as the candidate:
+
+| metric | C++ control | FrankenMoE, cache 3584 MiB | change |
+|---|---:|---:|---:|
+| prefill, 32K prompt | 2918.90 tok/s | 2228.76 tok/s | −23.6% |
+| decode, 128 tokens | 29.59 tok/s | 41.62 tok/s | **+40.7%** |
+
+Control: `docs/goose-migration/apex-results/audit-cpp-apex-32k128-summary.json`.
+Candidate: `docs/goose-migration/APEX-BASELINE-20261113.md`. The control runs
+without `--moe-cache-mib`, the candidate with it; without the cache the
+FrankenMoE build decodes 29–33 tok/s, i.e. it is at parity with the control.
+The gain therefore comes from keeping 3.5 GiB of experts on the GPU, not from a
+different model path. The prefill difference is recorded as measured and is not
+claimed as an improvement.
 
 These are single-request decode numbers. Aggregate throughput across slots is a
 separate metric and is not claimed here.
