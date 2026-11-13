@@ -5,6 +5,23 @@ one consumer GPU. The runtime is derived from `llama.cpp` and is being migrated,
 module by module, to **Goose**, the project's own language. The reference model
 is **Apex-35B-V1.0 Q4_K_M** on a Ryzen 9 5950X, 64 GB RAM and an RTX 4070 12 GB.
 
+## Performance headline
+
+**Decode is 40.7% faster than the llama.cpp C++ control on Apex-35B Q4_K_M:**
+29.59 → 41.62 tok/s on one RTX 4070 with a 32K prompt. The gain comes from
+keeping 3584 MiB of experts on the GPU (`--moe-cache-mib 3584`); without it the
+same build is at parity (29–33 tok/s). Prefill in the same recorded runs is
+2918.90 → 2228.76 tok/s (−23.6%), shown as measured rather than hidden.
+Configuration, sources and content hashes are below.
+
+## Releases
+
+[v0.1.0](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.1.0) is
+the first tagged snapshot: the Goose sources, the status document and a runtime
+bundle (`goose-runtime-v0.1.0-linux-x86_64.tar.zst`, 438 MB, SHA256
+`50cd2233…`). Only the newest runtime archive is kept on GitHub; older release
+notes stay without the heavy asset.
+
 The current state and the open work are in
 [`docs/goose-migration/STATUS.md`](docs/goose-migration/STATUS.md).
 
@@ -111,6 +128,58 @@ remaining requirements close.
 4. A paired comparison below 2% is not claimed as a change without repeated
    pairs and the raw data.
 5. Rejected experiments stay in the record with their numbers.
+
+## Build from source
+
+The repository does not vendor the C++ tree or the compiler: it pins them. The
+current runtime is the reconstructed llama.cpp fork; the Goose modules are
+compiled separately and linked into it.
+
+Prerequisites: Linux x86_64, GCC 13, CMake 3.24 or newer, Ninja, a CUDA toolkit
+for the GPU build, and the pinned Goose compiler (`goose-2026.3-string`, SHA256
+in `docs/goose-migration/COMPILER-2026-3-STRING.md`).
+
+1. Prepare the pinned upstreams. The script clones the exact commits from
+   [`UPSTREAMS.md`](UPSTREAMS.md) and checks that each checkout matches:
+
+   ```
+   scripts/prepare_upstreams.sh
+   ```
+
+2. Build the C++ runtime from the llama.cpp fork:
+
+   ```
+   cmake -S /home/end0/AI/LlamaServer/llama.cpp-flint-cuda -B build-cuda -G Ninja \
+     -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON \
+     -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 \
+     -DCMAKE_CUDA_ARCHITECTURES=89
+   cmake --build build-cuda -j8
+   ```
+
+3. Compile a Goose module with the pinned compiler. Every experiment directory
+   has a working recipe; this is the pattern:
+
+   ```
+   GOOSE=/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose
+   $GOOSE --standalone -o runtime-gen.c --header runtime-gen.h \
+     experiments/EXP-2026-11-13-509-p7-08-jinja-runtime-for/source/runtime.goose
+   ```
+
+4. Run the gates before trusting a build:
+
+   ```
+   python3 tools/check-goose-tree.py
+   bash experiments/EXP-2026-11-13-509-p7-08-jinja-runtime-for/build_fixture.sh final
+   ```
+
+   The differential fixtures compare against the native implementation and the
+   mutation harness checks that the gate catches wrong behaviour. The final
+   `-O2` compile of a large generated module can exceed five minutes; the gate
+   scripts enforce a per-step timeout.
+
+If you only want a working runtime, the release bundle is the tested
+alternative: extract it and follow `LAUNCH.txt`. It is the same reconstructed
+build with the Goose modules already linked.
 
 ## Run the canonical profile
 
