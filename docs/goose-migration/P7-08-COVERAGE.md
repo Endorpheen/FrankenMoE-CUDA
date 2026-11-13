@@ -36,8 +36,11 @@ Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).
    `func_args` and the int/float tables (51 cases, 14/14 mutations, final -O2
    gate); bool/none/undefined, string, array/object and `global_builtins` are
    still native.
-6. Runtime: statement execution and expression evaluation (`for`/`if`/`set`/
-   macros), filters/tests dispatch.
+6. Runtime: expression evaluation (`for`/`if`/`set`/macros) and filter/test
+   dispatch — in progress. EXP507 ports literals, identifiers, unary/binary
+   operators and membership (81 cases, 14/14 mutations, final -O2 gate);
+   statements, filters/tests, member/call expressions and function values are
+   still native.
 7. String and caps: input marking, origin metadata, concatenation rules,
    capability checks.
 8. Chat layer and acceptance: `llama-chat.cpp`, `common/chat*.cpp`, the
