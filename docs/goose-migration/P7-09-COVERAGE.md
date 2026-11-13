@@ -12,7 +12,7 @@ Slices: 472 shaping, 473 `$ref`/names, 474 pattern/format, 475 object text,
 480 GBNF parser, 481 PEG dump, 482-485 PEG engine/AST/invalid, 486-487 PEG
 build_grammar, 488-489 Aho-Corasick, 490 add_schema, 491 lazy triggers,
 492 JSON-schema builder, 493 JSON parser, 494 JSON dump, 495 schema
-introspection, 496 converter output.
+introspection, 496 converter output, 497 AST helpers.
 
 ## common/json.cpp
 
@@ -83,10 +83,10 @@ directly, so the regex is not needed. Its equivalence is covered by the 474 gate
 | `build_grammar`, `to_gbnf`, `effective_parser`, `collect_reachable_rules`, `schema_delegates` | Goose (486, 487, 490, 491) |
 | `gbnf_char_class`, `gbnf_escape_char_class`, `gbnf_ac_grammar`, `gbnf_excluding_grammar`, `gbnf_including_grammar` | Goose (489) |
 | Aho-Corasick structure (`common_trie`, fail links, terminals, `next`) | Goose (488) |
-| `common_peg_ast_arena::find_by_tag`, `find_by_rule` | **pending** |
-| `common_peg_ast_arena::visit` (both overloads) | **pending** |
-| `common_peg_ast_node::sanitized_text` | **pending** |
-| `common_peg_parse_result_type_name` | **pending** — name table |
+| `common_peg_ast_arena::find_by_tag`, `find_by_rule` | Goose (497) — children in order, depth-limited, no self-match |
+| `common_peg_ast_arena::visit` (both overloads) | Goose (497) — pre-order DFS from each root |
+| `common_peg_ast_node::sanitized_text` | Goose (497) — invalid runs to U+FFFD |
+| `common_peg_parse_result_type_name` | Goose (497) — name table |
 | `is_hex_digit`, `parse_hex_escape`, `parse_char_class_char`, `parse_char_classes` | **pending** — the `chars("a-z", …)` pattern to ranges |
 | `common_peg_arena::resolve_ref`, `resolve_refs` | **pending** — the build-time ref rewrite |
 | `common_peg_arena::add_parser`, `add_rule`, `get_rule` | Boundary — arena storage |
@@ -104,12 +104,12 @@ directly, so the regex is not needed. Its equivalence is covered by the 474 gate
 
 ## Remaining to close P7-09
 
-1. PEG AST helpers: `find_by_tag`, `find_by_rule`, `visit`, `sanitized_text`, `parse_result_type_name`.
-2. PEG `chars` pattern parsing: `parse_char_classes` and its two helpers.
-3. PEG `resolve_ref`/`resolve_refs`.
-4. The PEG builder helper batch and the decisions inside it.
-5. A malformed/deep/large corpus for the grammar and PEG layers, matching the
+1. PEG `chars` pattern parsing: `parse_char_classes` and its two helpers.
+2. PEG `resolve_ref`/`resolve_refs`.
+3. The PEG builder helper batch and the decisions inside it.
+4. A malformed/deep/large corpus for the grammar and PEG layers, matching the
    JSON corpora of 493/494 (EXP480 already covers 18 malformed grammars; deep and
    large inputs are still missing).
 
-Done: `check_errors` and `format_grammar` (496).
+Done: `check_errors` and `format_grammar` (496); the AST helpers `find_by_tag`,
+`find_by_rule`, `visit`, `sanitized_text` and `parse_result_type_name` (497).
