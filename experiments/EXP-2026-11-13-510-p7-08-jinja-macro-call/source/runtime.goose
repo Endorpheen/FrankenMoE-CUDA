@@ -1912,6 +1912,7 @@ const K_SELECT: i64 = 25;
 const K_FOR: i64 = 2;
 const K_MACRO: i64 = 7;
 const K_CALL: i64 = 21;
+const K_KWARG: i64 = 22;
 const K_MEMBER: i64 = 20;
 
 fn ast_bases(A: const i64[:], st: i64[:]) -> i64 {
@@ -2191,6 +2192,120 @@ recursive fn eval_member(
     return mk_undef_hint(A, F, B, st, "object_property");
 }
 
+recursive fn collect_args(
+    id: i64,
+    ctxc: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let argv = arr_new(A, F, st);
+    let start = al0s(A, st, id);
+    let count = al0c(A, st, id);
+    var i: i64 = 0;
+
+    while i < count {
+        let child = A[apool(A, st) + start + i];
+
+        if ak(A, st, child) == K_KWARG {
+            return fail_node(K_CALL, apos(A, st, id), "Call keyword arguments are not supported yet", E, st);
+        }
+        let v = eval_node(child, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+        if st[1] != 0 {
+            return -1;
+        }
+        arr_push(A, st, argv, v);
+        i = i + 1;
+    }
+    return argv;
+}
+
+recursive fn invoke_func(
+    fid: i64,
+    argv: i64,
+    argc: i64,
+    site_id: i64,
+    site_kind: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let node = vi(A, st, fid);
+    let pstart = al0s(A, st, node);
+    let pcount = al0c(A, st, node);
+    let bstart = al1s(A, st, node);
+    let bcount = al1c(A, st, node);
+
+    if pcount > 16 {
+        return fail_node(site_kind, apos(A, st, site_id), "Too many parameters", E, st);
+    }
+    var vals: i64[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var i: i64 = 0;
+
+    while i < pcount {
+        let pnode = A[apool(A, st) + pstart + i];
+        let pk = ak(A, st, pnode);
+
+        if pk != K_IDENT && pk != K_KWARG {
+            return fail_node(site_kind, apos(A, st, site_id), "Invalid parameter type", E, st);
+        }
+        let pname = if pk == K_IDENT { astr(B, A, st, pnode) } else { astr(B, A, st, ac0(A, st, pnode)) };
+        var v: i64 = -1;
+
+        if i < argc {
+            v = vchild(A, st, argv, i);
+        } else if pk == K_KWARG {
+            v = eval_node(ac1(A, st, pnode), st[11], noff, nlen, cval, A, F, B, E, out, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+        } else {
+            var p = apps(E, 0, "Not enough arguments provided to '");
+            let nm = astr(B, A, st, ac0(A, st, node));
+            p = app(E, p, nm, 0, nm.len);
+            p = appc(E, p, 39);
+            return fail_node(site_kind, apos(A, st, site_id), E[0..p], E, st);
+        }
+        vals[i] = v;
+        i = i + 1;
+    }
+    scope_push(st);
+    i = 0;
+
+    while i < pcount {
+        let pnode = A[apool(A, st) + pstart + i];
+        let pname = if ak(A, st, pnode) == K_IDENT { astr(B, A, st, pnode) } else { astr(B, A, st, ac0(A, st, pnode)) };
+
+        if ctx_set(pname, vals[i], noff, nlen, cval, B, A, F, st, E) < 0 {
+            return -1;
+        }
+        i = i + 1;
+    }
+    let start = st[7];
+    let r = exec_list(bstart, bcount, noff, nlen, cval, A, F, B, E, out, st);
+
+    if r < 0 || st[1] != 0 {
+        return -1;
+    }
+    let n = st[7] - start;
+    let text = out[start .. start + n];
+    st[7] = start;
+    scope_pop(st);
+    return mk_str(A, F, B, st, text);
+}
+
 recursive fn eval_call(
     id: i64,
     ctxc: i64,
@@ -2203,6 +2318,11 @@ recursive fn eval_call(
     E: u8[:],
     out: u8[:],
     st: i64[:]) -> i64 {
+    let argv = collect_args(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
     let callee = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
@@ -2215,27 +2335,7 @@ recursive fn eval_call(
         p = p + tn;
         return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
     }
-    let mid = vi(A, st, callee);
-
-    if al0c(A, st, mid) > 0 {
-        return fail_node(K_MACRO, apos(A, st, id), "Macro parameters are not supported yet", E, st);
-    }
-
-    if al0c(A, st, id) > 0 {
-        return fail_node(K_CALL, apos(A, st, id), "Call arguments are not supported yet", E, st);
-    }
-    let start = st[7];
-    scope_push(st);
-    let r = exec_list(al1s(A, st, mid), al1c(A, st, mid), noff, nlen, cval, A, F, B, E, out, st);
-
-    if r < 0 || st[1] != 0 {
-        return -1;
-    }
-    let n = st[7] - start;
-    let text = out[start .. start + n];
-    st[7] = start;
-    scope_pop(st);
-    return mk_str(A, F, B, st, text);
+    return invoke_func(callee, argv, vcc(A, st, argv), id, K_CALL, noff, nlen, cval, A, F, B, E, out, st);
 }
 
 fn exec_macro_def(

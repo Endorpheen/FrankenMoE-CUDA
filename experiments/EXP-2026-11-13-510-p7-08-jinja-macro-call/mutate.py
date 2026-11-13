@@ -9,12 +9,12 @@ SRC = E / 'source/runtime.goose'
 ORIG = SRC.read_text()
 
 M = [
-    ('macro body is not executed', 'let r = exec_list(al1s(A, st, mid), al1c(A, st, mid), noff, nlen, cval, A, F, B, E, out, st);', 'let r: i64 = 0;'),
-    ('macro name is not bound', 'return ctx_set(name, f, cnoff, cnlen, cval, B, A, F, st, E);', 'return 0;'),
+    ('positional argument ignored', 'v = vchild(A, st, argv, i);', 'v = mk_int(A, F, st, 0);'),
+    ('default value ignored', 'v = eval_node(ac1(A, st, pnode), st[11], noff, nlen, cval, A, F, B, E, out, st);', 'v = mk_int(A, F, st, 0);'),
+    ('parameter name ignored', 'if ctx_set(pname, vals[i], noff, nlen, cval, B, A, F, st, E) < 0 {', 'if ctx_set("z", vals[i], noff, nlen, cval, B, A, F, st, E) < 0 {'),
+    ('macro body not executed', 'let r = exec_list(bstart, bcount, noff, nlen, cval, A, F, B, E, out, st);', 'let r: i64 = 0;'),
+    ('macro output not captured', 'let n = st[7] - start;', 'let n = 0;'),
     ('function value stores the wrong node', 'A[st[17] + f] = id;', 'A[st[17] + f] = 0;'),
-    ('macro output is not captured', 'let n = st[7] - start;', 'let n = 0;'),
-    ('macro output is not rewound', 'st[7] = start;', 'st[7] = st[7] + 0;'),
-    ('callee type check removed', 'if vk(A, st, callee) != V_FUNC {', 'if false {'),
 ]
 
 
