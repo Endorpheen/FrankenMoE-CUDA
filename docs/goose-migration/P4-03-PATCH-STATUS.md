@@ -27,6 +27,42 @@ The sweep that builds the base from source is the reproducibility work the
 coordinator moved to P10, but the *gate for this patch* still needs one relinked
 base variant. It is a diagnostic build; the accepted runtime is not replaced.
 
+## Diagnostic base built and probed (2026-11-13)
+
+The base was rebuilt from the flint CMake objects with `ggml.c.o` replaced by the
+patched `ggml-constructors.c` (EXP155 geometry + EXP156 constructors):
+
+    gcc-13 <flint ggml.c flags> -I EXP156/source -I EXP155/source \
+        -o ggml-constructors.o -c EXP156/source/ggml-constructors.c
+    g++-13 -shared -Wl,-Bsymbolic -Wl,-soname,libggml-base.so.0 \
+        -o libggml-base-diag.so.0 <8 flint objects> ggml-constructors.o -lm -lgomp -lpthread
+
+Probe results, compared with the flint base on the same call:
+
+| probe | flint | patched base |
+|---|---|---|
+| `probe.c` (full constructor/view/permute/reshape surface, including the Q4_K `view_3d` with `ne0 = 128`) | completes | **completes, byte-identical output** (`diff` empty) |
+| `probe-errors.c` case 7 (non-block-aligned view) | no abort | **no abort** |
+| `probe-errors.c` cases 1,2,4,5,6 | abort | abort (decisions still match) |
+| `probe-errors.c` case 3 (overflow) | abort | no abort — pre-existing difference in the EXP155/156 unit, present in the deployed base too, unrelated to this patch |
+
+## Apex acceptance blocked by three symbols
+
+The diagnostic base cannot serve the Apex run: our `libggml-cuda` and
+`libggml-cpu` call Goose functions that the base provides.
+
+    libggml-cuda.so.0: fg160_fusion_enabled, fg160_query
+    libggml-cpu.so.0:  one more fg symbol
+
+The rebuilt base was linked from flint objects plus the constructors unit only, so
+those symbols are absent and the server stops with `symbol lookup error`. Running
+Apex with this base therefore requires linking the EXP160 host unit (and the CPU
+one) into it — i.e. a fuller base build.
+
+An attempt to run the canonical profile against the diagnostic base was made and
+correctly failed; an earlier run that appeared to succeed had silently used the
+baseline stage, and that result is discarded, not reported.
+
 ## Next step
 
 Reconstruct the base link from the flint CMake build (`build-cuda` compile
