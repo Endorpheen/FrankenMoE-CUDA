@@ -1922,7 +1922,7 @@
         "common/trie.cpp"
       ],
       "acceptance": "JSON/schema/PEG/grammar parsing/rendering and validation owned by Goose; malformed/deep/large input tests and native golden compatibility.",
-      "evidence": "2026-11-12 INVENTORY (docs/goose-migration/P7-09-INVENTORY.md): every parsing surface named by the criterion is NATIVE -- llama-grammar.cpp.o in the candidate has 0 gg_function_ symbols (21 llama_grammar_* + 8 accept symbols in libllama), and json_schema_to_grammar (5 symbols) lives in libllama-common which has 0 Goose marks in the entire library. Therefore any behavioural parity here compares the same implementation with itself; the grammar-constrained case in EXP351 was exactly that and its README now says so explicitly instead of counting it as evidence. What the item requires is porting llama-grammar.cpp (PEG-style grammar with parser, stack machine, state cache) plus JSON-schema-to-GBNF, a project the size of the minja port; not started. Not tested: malformed/deep/large input differentials, which would be native-vs-native.",
+      "evidence": "2026-11-12 INVENTORY (docs/goose-migration/P7-09-INVENTORY.md): every parsing surface named by the criterion is NATIVE -- llama-grammar.cpp.o in the candidate has 0 gg_function_ symbols (21 llama_grammar_* + 8 accept symbols in libllama), and json_schema_to_grammar (5 symbols) lives in libllama-common which has 0 Goose marks in the entire library. Therefore any behavioural parity here compares the same implementation with itself; the grammar-constrained case in EXP351 was exactly that and its README now says so explicitly instead of counting it as evidence. What the item requires is porting llama-grammar.cpp (PEG-style grammar with parser, stack machine, state cache) plus JSON-schema-to-GBNF, a project the size of the minja port; not started. Not tested: malformed/deep/large input differentials, which would be native-vs-native. 2026-11-13 FIRST SLICE (EXP472, experiments/EXP-2026-11-13-472-p7-09-schema-shape): the JSON-schema-to-GBNF shaping decisions are Goose: repetition kind selection (empty/?/+/#/{min,max}/separator), the separator recursion (min-1, optional wrapper), the object required-then-optional split with one branch per optional property, additionalProperties as an extra branch, the empty-object form and the comma-prefix rule. Gate vs a native transcription: 369 cases / 1569 values / 0 failures, 300 random property sets; ASan+UBSan clean; 8/8 mutations. Still native: rule-text emission, pattern/format handling, $ref and the PEG grammar parser. P7-09 stays PARTIAL.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -3720,6 +3720,10 @@
     {
       "event": "P8-02 closed: the owned HTTP/router/limits/CORS/auth/middleware is Goose with gates for every request class; the remaining native part is the vendored httplib transport primitive.",
       "checkpoint": "340b6085"
+    },
+    {
+      "event": "P7-09 first slice (EXP472): schema shaping decisions (repetition kinds, separator recursion, object required/optional split, additionalProperties, empty object, comma prefix) are Goose with a 369-case gate, clean sanitizers and 8/8 mutations.",
+      "checkpoint": "c5c7183d"
     }
   ],
   "batches": [
@@ -4610,7 +4614,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-13T01:04:17.680360+00:00",
+  "updated_at": "2026-11-13T01:06:46.378013+00:00",
   "status_totals": {
     "DONE": 101,
     "IN_PROGRESS": 0,
