@@ -126,6 +126,30 @@ model on `strata`, `edge0-infer`, their Python server or any of their
 libraries is not part of this work. Any stage that would need that is reported
 as blocked instead.
 
+## Readiness check (2026-11-13)
+
+`tools/check-edge0-pack.py <pack>` validates the download without loading the
+weights: expected sizes per file, no `*.part` left, the index v3 header, tensor
+count, 64-byte alignment and every offset inside `dense.bin`, the native
+experts v6 table (48 layers, types 11/20, record 1 164 800, stride 596 377 600),
+`labels.bin`, `scales/` and the latent D/U sizes.
+
+Current result: the complete files pass (index: 1367 tensors, 1065 in
+`dense.bin`; native experts: 48 layers), and the pack reports `NOT READY` only
+because three downloads are still partial:
+
+| file | downloaded | total |
+|---|---:|---:|
+| `model-skeleton.gguf` | 3.16 GB | 5.99 GB |
+| `experts.bin` | 2.93 GB | 28.63 GB |
+| `ple-fp8.gguf` | 1.38 GB | 51.20 GB |
+
+What this means for the plan: E1 (the pack reader and its validator) can be
+written and gated **now** against the complete index, native-expert table,
+`dense.bin` and latent D/U files. Only E2 onward — binding the skeleton,
+loading expert records and running a forward pass — needs the three remaining
+downloads. PLE streaming (E5) needs `ple-fp8.gguf` last.
+
 ## Staged plan (each build and check limited to five minutes)
 
 | stage | deliverable | gate |
