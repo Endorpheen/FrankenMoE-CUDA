@@ -12,7 +12,7 @@ Slices: 472 shaping, 473 `$ref`/names, 474 pattern/format, 475 object text,
 480 GBNF parser, 481 PEG dump, 482-485 PEG engine/AST/invalid, 486-487 PEG
 build_grammar, 488-489 Aho-Corasick, 490 add_schema, 491 lazy triggers,
 492 JSON-schema builder, 493 JSON parser, 494 JSON dump, 495 schema
-introspection, 496 converter output, 497 AST helpers, 498 chars parsing, 499 ref resolution.
+introspection, 496 converter output, 497 AST helpers, 498 chars parsing, 499 ref resolution, 500 builder decisions.
 
 ## common/json.cpp
 
@@ -90,7 +90,8 @@ directly, so the regex is not needed. Its equivalence is covered by the 474 gate
 | `is_hex_digit`, `parse_hex_escape`, `parse_char_class_char`, `parse_char_classes` | Goose (498) — `chars("a-z", …)` pattern to ranges and negation |
 | `common_peg_arena::resolve_ref`, `resolve_refs` | Goose (499) — ref children to rule ids, root flattening, unknown-name error |
 | `common_peg_arena::add_parser`, `add_rule`, `get_rule` | Boundary — arena storage |
-| builder helpers (`literal`, `any`, `space`, `string_content`, `until`, `schema`, `rule`, `ref`, `atomic`, `tag`, `repeat`, `ac`, `gbnf`, `sequence`, `choice`, `epsilon`, `start`, `end`, `peek`, `negate`, `number`, `boolean`, `null`, `json_*`, `marker`, `chars`) | **pending** — constructors plus the few decisions inside them (`choice` flattening, `rule_name` cleaning, `literal` splitting) |
+| `rule_name`, `sequence`/`choice` flattening, both `rule()` overloads | Goose (500) — the name cleaner, the same-kind splice and the placeholder/registry policy |
+| `literal`, `any`, `space`, `string_content`, `until`, `schema`, `ref`, `atomic`, `tag`, `repeat`, `ac`, `gbnf`, `epsilon`, `start`, `end`, `peek`, `negate`, `number`, `boolean`, `null`, `json_*`, `python_*`, `marker`, `chars` | Boundary — they store their arguments or compose primitives; the trees built through them are gated by 481-491 |
 
 ## src/llama-grammar.cpp
 
@@ -104,11 +105,11 @@ directly, so the regex is not needed. Its equivalence is covered by the 474 gate
 
 ## Remaining to close P7-09
 
-1. The PEG builder helper batch and the decisions inside it.
-2. A malformed/deep/large corpus for the grammar and PEG layers, matching the
+1. A malformed/deep/large corpus for the grammar and PEG layers, matching the
    JSON corpora of 493/494 (EXP480 already covers 18 malformed grammars; deep and
    large inputs are still missing).
 
 Done: `check_errors` and `format_grammar` (496); the AST helpers `find_by_tag`,
 `find_by_rule`, `visit`, `sanitized_text` and `parse_result_type_name` (497);
-`chars` pattern parsing (498); `resolve_ref`/`resolve_refs` (499).
+`chars` pattern parsing (498); `resolve_ref`/`resolve_refs` (499); the builder
+decisions (500).
