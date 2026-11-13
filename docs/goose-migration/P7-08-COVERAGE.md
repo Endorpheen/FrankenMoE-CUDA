@@ -25,17 +25,22 @@ code; "pending" means still native.
 
 ## Slice plan
 
+Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).
+
 1. Lexer (EXP502) — done.
 2. Parser: token stream to program, with the exact node shapes and error text — done (EXP503).
-3. Value model and JSON output — done (EXP504, EXP505). Remaining value
-   work: arithmetic operators and the built-in function/filter tables.
-4. Runtime: statement execution, expression evaluation, `for`/`if`/`set`/macros,
-   filters and tests.
-5. String: input marking, origin metadata, concatenation rules.
-6. Caps: capability checks.
-7. Chat layer: `llama-chat.cpp` template application, then `common/chat*.cpp`
-   parsing, then the per-model parsers.
-8. Final acceptance: Apex golden prompt bytes and structured-output exactness.
+3. Value model: types, conversions, flags, equality, `value_compare`, repr — done (EXP504).
+4. JSON output: `value_to_json`, `float_repr`, `float_json` — done (EXP505).
+5. Builtins and filters: `func_args`/`value_func`, `global_builtins`, the
+   per-type tables, and the arithmetic operators — in progress (EXP506 covers
+   `func_args` and the int/float tables; bool/none/undefined, string and
+   array/object tables still native).
+6. Runtime: statement execution and expression evaluation (`for`/`if`/`set`/
+   macros), filters/tests dispatch.
+7. String and caps: input marking, origin metadata, concatenation rules,
+   capability checks.
+8. Chat layer and acceptance: `llama-chat.cpp`, `common/chat*.cpp`, the
+   per-model parsers, then the Apex golden prompt bytes and structured output.
 
 ## Boundaries allowed by the criterion
 

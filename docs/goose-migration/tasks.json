@@ -440,7 +440,12 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 58,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B1"
+      "batch": "B1",
+      "remaining": [
+        "native compute inside the CPU MoE dot products cannot move (Goose has no SIMD); only the orchestration around it is ported. Closing the criterion needs an owner decision to reclassify or a substrate change."
+      ],
+      "coverage_doc": "docs/goose-migration/cpu-moe-structure.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P2-01",
@@ -1309,7 +1314,12 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B3"
+      "batch": "B3",
+      "remaining": [
+        "meta backend and diagnostics: the provider-side meta item named when P4-05/06/07 were closed"
+      ],
+      "coverage_doc": "docs/goose-migration/P4-ALLOC-BACKEND-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P4-13",
@@ -1799,7 +1809,16 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B4"
+      "batch": "B4",
+      "remaining": [
+        "GGUF writing",
+        "GGUF splitting",
+        "tensor serialization",
+        "GGUF v1 and non-little-endian files (shared with P7-12/C2)",
+        "multi-shard files and shard naming/offset merge (shared with P7-12/C2)"
+      ],
+      "coverage_doc": "docs/goose-migration/P7-01-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P7-03",
@@ -1837,7 +1856,12 @@
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
-      "notes": " Different-type/quantized CPY pairs and non-Q4_K quantized GET_ROWS from P3-03 are conversion utilities tracked here; their dequant arithmetic is Goose (P3-07)."
+      "notes": " Different-type/quantized CPY pairs and non-Q4_K quantized GET_ROWS from P3-03 are conversion utilities tracked here; their dequant arithmetic is Goose (P3-07).",
+      "remaining": [
+        "quantization and conversion policy (importance matrix and quantize entry points)"
+      ],
+      "coverage_doc": "docs/goose-migration/P3-03-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P7-05",
@@ -1908,7 +1932,16 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B4"
+      "batch": "B4",
+      "slices_total": 8,
+      "slices_done": 4,
+      "remaining": [
+        "builtins and filters: func_args/value_func, global_builtins and the per-type tables (EXP506 in progress: int/float gate green, 51 cases/100 values; mutation run and sanitizers still to finish; bool/none/undefined, string, array/object tables still native)",
+        "runtime: statement and expression execution, context, filters/tests dispatch, arithmetic operators",
+        "string marking and capability checks: input origin metadata, uppercase/lowercase and the caps table",
+        "chat layer and acceptance: llama-chat.cpp, common/chat*.cpp, common/parsers/**, then the Apex golden prompt bytes and structured-output check"
+      ],
+      "coverage_doc": "docs/goose-migration/P7-08-COVERAGE.md"
     },
     {
       "id": "P7-09",
@@ -1927,7 +1960,12 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B4"
+      "batch": "B4",
+      "slices_total": 30,
+      "slices_done": 30,
+      "remaining": [],
+      "coverage_doc": "docs/goose-migration/P7-09-COVERAGE.md",
+      "closure_doc": "docs/goose-migration/P7-09-CLOSURE.md"
     },
     {
       "id": "P7-10",
@@ -1968,7 +2006,14 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B4"
+      "batch": "B4",
+      "remaining": [
+        "model file discovery",
+        "HF download and cache",
+        "the model loader itself"
+      ],
+      "coverage_doc": "docs/goose-migration/P8-01-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P7-12",
@@ -1986,7 +2031,14 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B4"
+      "batch": "B4",
+      "remaining": [
+        "GGUF v1 and non-little-endian files",
+        "multi-shard files and shard naming/offset merge",
+        "accessors beyond the typed classes exercised by P7-01"
+      ],
+      "coverage_doc": "docs/goose-migration/P7-01-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P8-01",
@@ -2417,7 +2469,12 @@
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
-      "notes": "Byte-identical reproducibility of the deployed libggml-base (five lost objects, link determinism proven) is tracked here per the 2026-11-13 coordinator decision."
+      "notes": "Byte-identical reproducibility of the deployed libggml-base (five lost objects, link determinism proven) is tracked here per the 2026-11-13 coordinator decision.",
+      "remaining": [
+        "byte-identical reconstruction of the deployed libggml-base"
+      ],
+      "coverage_doc": "docs/goose-migration/P9-02-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P10-07",
@@ -2511,7 +2568,12 @@
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
-      "notes": "Byte-identical reproducibility of the deployed libggml-base (five lost objects, link determinism proven) is tracked here per the 2026-11-13 coordinator decision."
+      "notes": "Byte-identical reproducibility of the deployed libggml-base (five lost objects, link determinism proven) is tracked here per the 2026-11-13 coordinator decision.",
+      "remaining": [
+        "byte-identical reconstruction of the deployed libggml-base"
+      ],
+      "coverage_doc": "docs/goose-migration/P9-02-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "P10-12",
@@ -2698,7 +2760,12 @@
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B6"
+      "batch": "B6",
+      "remaining": [
+        "general model graph/metadata builders needed by Qwen"
+      ],
+      "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "C1-03",
@@ -2718,7 +2785,12 @@
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B6"
+      "batch": "B6",
+      "remaining": [
+        "Qwen quantized precision, cold-bank and expert hook differences"
+      ],
+      "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "C1-04",
@@ -2739,7 +2811,12 @@
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B6"
+      "batch": "B6",
+      "remaining": [
+        "shared loader, tokenizer and memory interfaces needed by Qwen"
+      ],
+      "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "C1-05",
@@ -2758,7 +2835,12 @@
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B6"
+      "batch": "B6",
+      "remaining": [
+        "complete Qwen inference qualification in the common artifact"
+      ],
+      "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "C1-06",
@@ -2777,7 +2859,12 @@
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B6"
+      "batch": "B6",
+      "remaining": [
+        "Apex protection while Qwen support is extended"
+      ],
+      "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "C2-04",
@@ -2796,7 +2883,12 @@
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B7"
+      "batch": "B7",
+      "remaining": [
+        "remaining architecture extensions (Qwen builders, precision, loader and qualification) without regressing the common runtime or Apex"
+      ],
+      "coverage_doc": "docs/goose-migration/architecture-scope.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
       "id": "F1-01",
@@ -4746,10 +4838,18 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-13T08:02:13.639080+00:00",
+  "updated_at": "2026-11-13T10:32:35.409951+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
     "PARTIAL": 1
-  }
+  },
+  "work_front": {
+    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08 (8 slices) and P7-09 (30 slices).",
+    "slices_total": 38,
+    "slices_done": 34,
+    "slices_in_progress": 0,
+    "slices_remaining": 4
+  },
+  "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

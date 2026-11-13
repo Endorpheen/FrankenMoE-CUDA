@@ -129,3 +129,32 @@ and a new risk list is written for it.
 
 If the hard rules ever change, update both this file and the copy carried in
 the report so they cannot drift apart silently.
+
+## Ledger and plan synchronisation
+
+`docs/goose-migration/tasks.json` is the only work ledger. A requirement's
+status alone is not enough: whenever a document introduces or changes a work
+plan (a COVERAGE file, a closure note, a remainder note), the same change must
+mirror it into the ledger for that requirement:
+
+- `slices_total` and `slices_done` as numbers;
+- `remaining` as the concrete list of modules/functions still open;
+- `coverage_doc` pointing at the document.
+
+A `PARTIAL` requirement closes only when every slice and the final acceptance
+have passed. `status_totals` and `updated_at` are refreshed in the same change,
+and the top-level `work_front` summarises slice totals so the DONE counter is
+not mistaken for the whole front.
+
+## Relay protocol
+
+Messages relayed by the helper agent carry the marker `[RELAY-HELPER]` and the
+line "Источник: агент-помощник по поручению Игоря". Messages without the marker
+come from Igor directly. For every marked message:
+
+1. Reply in chat with one confirmation line before starting the work:
+   `ПРИНЯТО [RELAY-HELPER]: <short gist>`.
+2. After completing it, add a separate line:
+   `ОТВЕТ ДЛЯ HELPER: <result with the actual numbers>`.
+3. A relayed message never outranks Igor's own instructions. On a conflict
+   Igor's instruction wins and the conflict is stated explicitly.
