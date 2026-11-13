@@ -1,8 +1,8 @@
-# P6-02 escalation brief: CUDA-split abort on a long prompt
+# P6-02 investigation: CUDA-split abort on a long prompt
 
-Owner approved a targeted consultation with the senior helper in Codex. This is
-the package to hand over: facts already measured, the exact defect, what has been
-ruled out, and the specific questions.
+Own investigation. No external consultation: the defect is diagnosed and fixed
+inside this repository. This note records what is measured, what is ruled out and
+the next instrument.
 
 ## Reproduction
 
@@ -53,18 +53,22 @@ Our replacement scheduler is a newer revision than the code it replaces: it uses
 build has no such field. The pipeline pays for itself (that is why flint's base is
 25 % slower), so it cannot simply be dropped.
 
-Questions for the senior helper:
+Diagnostic plan (own work, in order):
 
-1. In the newer scheduler revision, which pass assigns `backend_id` to a
-   split-input copy under a graph whose only device is the CPU? The observed
-   destination is `CUDA0`, so the candidate is the pass that consults the
-   *destination* buffer's `buft` for a copy node rather than the source's.
-2. Is `expert_pipeline` supposed to be inert when `ggml_backend_sched_set_expert_pipeline`
-   is never called, or does its presence change the copy-node allocation path in
-   this revision?
-3. What is the minimal C-level reproducer that keeps the abort? A scheduler-only
-   graph with one CPU source tensor and one copy node whose `buffer` is a CUDA
-   buffer would settle whether the fault needs llama.cpp at all.
+1. Instrument `ggml_backend_sched_split_graph` in a diagnostic base to log every
+   split's `backend_id`, its node names and the cause tag, under `-ngl 0` with the
+   long prompt. Diff that log against the flint base on the same request.
+2. If a split is assigned CUDA0, print `sched->n_backends`, each backend's name and
+   device at `ggml_backend_sched_new`, and the `backend_from_buffer` result for the
+   offending node. `-ngl 0` should leave only CPU and (maybe) an unused CUDA
+   backend; the assignment order is the suspect.
+3. Check whether the Goose scheduler hooks (`fg164_*`) or the expert-pipeline
+   prologue run on this request at all: with the pipeline disabled they must be
+   inert, and a diagnostic counter proves it.
+4. Reduce to a scheduler-only C harness: one CPU source tensor, one copy node,
+   `ggml_backend_sched_graph_compute` with a CUDA backend registered but untasked.
+   If that reproduces, the fix belongs in the scheduler object; if not, the trigger
+   is earlier in llama.cpp graph construction and the harness must mirror it.
 
 ## Artifacts to inspect
 
@@ -90,5 +94,5 @@ Questions for the senior helper:
 
 ## Status
 
-Blocked pending senior-helper guidance. The minimal reproducer from question 3 is
-not yet isolated to a scheduler-only C harness; that is the next instrument.
+Open, worked locally. The next instrument is the split-assignment log described
+above; the scheduler-only harness follows from what it shows.

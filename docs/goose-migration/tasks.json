@@ -1587,7 +1587,7 @@
       "source_phase_files_at_audit": 416,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B3",
-      "notes": "2026-11-13 ESCALATION PACKAGE (docs/goose-migration/P6-02-ESCALATION.md): owner approved the senior-helper consultation. The brief packages the repro (-ngl 0 -c 2048 -np 1, 371 tokens), the COPY src=norm-0 dst=CUDA0#norm-0#0 observation, the isolation matrix (flint base fixes it; CUDA_VISIBLE_DEVICES empty fixes it; every Goose switch still aborts; LD_PRELOAD cannot bind), the 253-line remainder, the 16 expert_pipeline sites, the artifact paths and the three targeted questions. The scheduler-only minimal C reproducer is the next instrument; the fix must keep c5ca940b for the long prompt, e68df05b on Apex, and the 2 percent performance rule."
+      "notes": "2026-11-13 ESCALATION PACKAGE (docs/goose-migration/P6-02-ESCALATION.md): investigation carried out locally, no external consultation. The note packages the repro (-ngl 0 -c 2048 -np 1, 371 tokens), the COPY src=norm-0 dst=CUDA0#norm-0#0 observation, the isolation matrix (flint base fixes it; CUDA_VISIBLE_DEVICES empty fixes it; every Goose switch still aborts; LD_PRELOAD cannot bind), the 253-line remainder, the 16 expert_pipeline sites, the artifact paths and the diagnostic plan (split-assignment log, then a scheduler-only harness). The scheduler-only minimal C reproducer is the next instrument; the fix must keep c5ca940b for the long prompt, e68df05b on Apex, and the 2 percent performance rule."
     },
     {
       "id": "P6-03",
@@ -3660,7 +3660,7 @@
       "checkpoint": "dbfc0c80"
     },
     {
-      "event": "P6-02 escalation brief written for the senior helper: reproduction, isolation matrix, identical-vs-divergent source areas, the exact failing copy pair and three targeted questions; the scheduler-only minimal reproducer remains the next instrument.",
+      "event": "P6-02 investigation note written: reproduction, isolation matrix, identical-vs-divergent source areas, the exact failing copy pair and the diagnostic plan; the scheduler-only reproducer follows the split-assignment log.",
       "checkpoint": "42c8a17b"
     },
     {
@@ -4564,7 +4564,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-13T00:12:48.307656+00:00",
+  "updated_at": "2026-11-13T00:14:52.800526+00:00",
   "status_totals": {
     "DONE": 97,
     "IN_PROGRESS": 4,
