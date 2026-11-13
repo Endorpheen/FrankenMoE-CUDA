@@ -43,7 +43,7 @@ CANONICAL_SOURCES = [
     ("jinja/builtins.goose", "EXP-2026-11-13-506-p7-08-builtins-scalar", "source/builtins.goose",
      "common/jinja/value.cpp (built-ins)", "51 cases / 100 values / 0 failures, 14/14 mutations"),
     ("jinja/runtime.goose", "EXP-2026-11-13-510-p7-08-jinja-macro-call", "source/runtime.goose",
-     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112 and macro 74/148, 12/12 mutations"),
+     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112, macro+caller 77/154, 10/10 mutations"),
 ]
 
 CANONICAL = {

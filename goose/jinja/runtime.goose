@@ -1912,6 +1912,7 @@ const K_SELECT: i64 = 25;
 const K_FOR: i64 = 2;
 const K_MACRO: i64 = 7;
 const K_CALL: i64 = 21;
+const K_CALLSTMT: i64 = 8;
 const K_KWARG: i64 = 22;
 const K_MEMBER: i64 = 20;
 
@@ -2060,6 +2061,10 @@ fn node_name(k: i64) -> const u8[:] {
 
     if k == K_CALL {
         return "CallExpression";
+    }
+
+    if k == K_CALLSTMT {
+        return "CallStatement";
     }
     return "UnaryExpression";
 }
@@ -2304,6 +2309,53 @@ recursive fn invoke_func(
     st[7] = start;
     scope_pop(st);
     return mk_str(A, F, B, st, text);
+}
+
+fn exec_call_stmt(
+    id: i64,
+    cnoff: i64[:],
+    cnlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let call = ac0(A, st, id);
+    let argv = collect_args(call, st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+    let callee = eval_node(ac0(A, st, call), st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+
+    if vk(A, st, callee) != V_FUNC {
+        var p = apps(E, 0, "Callee is not a function: got ");
+        let tn = type_name(A, B, st, callee, E[p..]);
+        p = p + tn;
+        return fail_node(K_CALLSTMT, apos(A, st, id), E[0..p], E, st);
+    }
+    scope_push(st);
+    let f = vnew(A, F, st, V_FUNC);
+    A[st[18] + f] = 1;
+    A[st[17] + f] = id;
+
+    if ctx_set("caller", f, cnoff, cnlen, cval, B, A, F, st, E) < 0 {
+        return -1;
+    }
+    let res = invoke_func(callee, argv, vcc(A, st, argv), id, K_CALLSTMT, cnoff, cnlen, cval, A, F, B, E, out, st);
+
+    if res < 0 || st[1] != 0 {
+        return -1;
+    }
+    append_rendered(res, A, B, F, st, out, E);
+    scope_pop(st);
+    return 0;
 }
 
 recursive fn eval_call(
@@ -3506,6 +3558,10 @@ recursive fn exec_stmt(
 
     if k == 7 {
         return exec_macro_def(id, cnoff, cnlen, cval, A, F, B, E, st);
+    }
+
+    if k == 8 {
+        return exec_call_stmt(id, cnoff, cnlen, cval, A, F, B, E, out, st);
     }
 
     if k == 0 {

@@ -15,6 +15,10 @@ M = [
     ('macro body not executed', 'let r = exec_list(bstart, bcount, noff, nlen, cval, A, F, B, E, out, st);', 'let r: i64 = 0;'),
     ('macro output not captured', 'let n = st[7] - start;', 'let n = 0;'),
     ('function value stores the wrong node', 'A[st[17] + f] = id;', 'A[st[17] + f] = 0;'),
+    ('caller is not bound', 'if ctx_set("caller", f, cnoff, cnlen, cval, B, A, F, st, E) < 0 {', 'if false {'),
+    ('caller function stores the wrong node', 'A[st[17] + f] = id;\n\n    if ctx_set("caller"', 'A[st[17] + f] = 0;\n\n    if ctx_set("caller"'),
+    ('call statement result is not rendered', 'append_rendered(res, A, B, F, st, out, E);', ''),
+    ('call statement does not invoke', 'let res = invoke_func(callee, argv, vcc(A, st, argv), id, K_CALLSTMT, cnoff, cnlen, cval, A, F, B, E, out, st);', 'let res: i64 = 0;'),
 ]
 
 

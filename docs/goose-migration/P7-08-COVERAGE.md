@@ -43,10 +43,10 @@ Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).
    mutations); EXP509 ports `for` with its filter and per-iteration scope,
    `break`/`continue` consumption, the loop object and member access (56 cases,
    14/14 mutations, final -O2 gate deferred at the five-minute step limit).
-   EXP510 ports the macro definition, calls, positional parameters and defaults
-   (74 cases, 12/12 mutations across the two parts); keyword arguments and the
-   `call`/`caller` block are the next part and are rejected explicitly. Still
-   native: those, filters and tests, function values.
+   EXP510 ports the macro definition, calls, positional parameters, defaults and
+   the call/caller block (77 cases, 10/10 mutations); keyword arguments are the
+   next part and are rejected explicitly. Still native: those, filters and
+   tests, function values.
 7. String and caps: input marking, origin metadata, concatenation rules,
    capability checks.
 8. Chat layer and acceptance: `llama-chat.cpp`, `common/chat*.cpp`, the

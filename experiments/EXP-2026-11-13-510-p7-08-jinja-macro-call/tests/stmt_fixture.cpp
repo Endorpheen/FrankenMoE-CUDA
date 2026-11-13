@@ -308,6 +308,12 @@ struct AstEnc {
             std::vector<int> a; for (const auto & c : x->args) a.push_back(enc(c.get()));
             std::vector<int> b; for (const auto & c : x->body) b.push_back(enc(c.get()));
             put_list(l0s, a, id, false); put_list(l1s, b, id, true);
+        } else if (auto x = dynamic_cast<const jinja::call_statement *>(s)) {
+            init(id, 8, s);
+            c0[id] = enc(x->call.get());
+            std::vector<int> a; for (const auto & c : x->caller_args) a.push_back(enc(c.get()));
+            std::vector<int> b; for (const auto & c : x->body) b.push_back(enc(c.get()));
+            put_list(l0s, a, id, false); put_list(l1s, b, id, true);
         } else if (auto x = dynamic_cast<const jinja::keyword_argument_expression *>(s)) {
             init(id, 22, s);
             c0[id] = enc(x->key.get()); c1[id] = enc(x->val.get());
@@ -512,6 +518,9 @@ int main(void) {
         "{% macro m(a, b=10) %}{{ a }}{{ b }}{% endmacro %}{{ m(1) }}",
         "{% macro m(a, b=2) %}{{ a }}{{ b }}{% endmacro %}{{ m(1, 9) }}",
         "{% macro m(a) %}{{ a }}{% endmacro %}{{ m(1, 2) }}",
+        "{% macro wrap() %}[{{ caller() }}]{% endmacro %}{% call wrap() %}body{% endcall %}",
+        "{% macro each() %}{{ caller(1) }}{{ caller(2) }}{% endmacro %}{% call(x) each() %}{{ x }}{% endcall %}",
+        "{% macro tw() %}<{{ caller() }}>{% endmacro %}{% call tw() %}{% for x in v %}{{ x }}{% endfor %}{% endcall %}",
         "{% macro m(a) %}{{ a }}{% endmacro %}{{ m() }}",
         "{% macro m(a) %}[{{ a }}]{% endmacro %}{% macro n(a) %}{{ m(a) }}{% endmacro %}{{ n(7) }}",
         "{% set a = 9 %}{% macro m(a) %}{{ a }}{% endmacro %}{{ m(3) }}{{ a }}",

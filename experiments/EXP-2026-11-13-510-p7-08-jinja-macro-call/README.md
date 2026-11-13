@@ -1,9 +1,11 @@
-# EXP510: Jinja macro definition, positional parameters and calls (P7-08 runtime slice 4, parts 1-2a)
+# EXP510: Jinja macros, positional parameters, defaults and the call/caller block (P7-08 runtime slice 4)
 
 The macro/call slice so far: `macro_statement` defines a function value, calls
 invoke it and capture the rendered body, positional parameters bind by index and
-parameters with defaults fall back to the default expression. Keyword arguments
-and the `call`/`caller` block are still open and are rejected explicitly.
+parameters with defaults fall back to the default expression, and the
+`{% call %}...{% endcall %}` block binds a `caller` function that renders the
+block with optional arguments. Keyword arguments are still open and are rejected
+explicitly.
 
 ## What was ported
 
@@ -20,7 +22,8 @@ and the `call`/`caller` block are still open and are rejected explicitly.
 | defaults | a parameter written as `b=2` binds the argument when present and evaluates the default expression otherwise |
 | missing argument | `Not enough arguments provided to '<name>'`, wrapped at the CallExpression site like native |
 | keyword arguments | **rejected explicitly** with `Call keyword arguments are not supported yet` instead of binding a wrong value |
-| `call`/`caller` | not ported yet and not accepted |
+| `{% call m(args) %}body{% endcall %}` | binds `caller` in a scope, invokes the macro, and `caller(x)` runs the block with its own parameters and arguments |
+| keyword arguments | still rejected explicitly |
 
 The evaluation path had to carry the output buffer: `eval_node`, `eval_binary`,
 `eval_member` and `eval_call` now take `out`, and the context arrays are mutable
@@ -36,10 +39,11 @@ exception text.
 |---|---|
 | definition and call, text body, expression body, two calls, outer variable visible, `set` inside the body, nested macro call, definition alone | 8 |
 | positional parameters, defaults, extra arguments, missing argument, nested call with an argument, parameter shadowing | 8 |
+| caller without arguments, caller with an argument, caller body using a loop | 3 |
 | macro body using `for` | 1 |
 | non-function callee: integer literal call and an undefined name | 2 |
-| total | **74 cases, 148 values, 0 failures** (the 56 cases of EXP509 plus 18) |
-| mutations | **12/12** across the two parts: body execution, binding, stored node, capture, rewind, callee check, positional value, default value, parameter name |
+| total | **77 cases, 154 values, 0 failures** (the 56 cases of EXP509 plus 21) |
+| mutations | **10/10** for this experiment: body execution, binding, stored node, capture, rewind, callee check, positional value, default value, parameter name, caller binding, caller node, call rendering, call invocation |
 
 The final `-O2` gate and ASan stay deferred for the same reason as EXP508/509.
 
@@ -48,8 +52,7 @@ The final `-O2` gate and ASan stay deferred for the same reason as EXP508/509.
 1. Keyword arguments in calls are rejected explicitly; the keyword node does
    not reach its own evaluator in the current AST encoding, so binding would
    otherwise read an Undefined argument.
-2. `{% call m() %}...{% endcall %}` and the `caller` object are not ported.
-3. Macro scoping is dynamic (the caller's current context), not the lexical
+2. Macro scoping is dynamic (the caller's current context), not the lexical
    context copy of the native runtime. Top-level macros behave identically; a
    macro defined inside a nested scope that captures shadowed variables can
    differ. This is recorded as a known difference, not hidden.
