@@ -68,3 +68,19 @@ their SHA256.
 `docs/goose-migration/RELEASE-NOTES-TEMPLATE.md` is the skeleton: what changed,
 which slices closed, the measured numbers with their configuration, what is
 still open, and the verification commands that were run.
+
+## Retention of heavy assets
+
+The runtime bundle is the only heavy asset, and GitHub keeps **one** of them:
+the newest. Publishing a runtime release deletes the runtime asset from every
+older release automatically (the release notes stay; only the archive is
+removed). The local copy stays in `builds/` and is managed by
+`scripts/prune-local-builds.sh`.
+
+`scripts/make-release.sh` performs this purge unless `--keep-old-runtime` is
+given. It only purges after the new asset exists and the release was created
+successfully, so a failed publish cannot leave the project without a binary.
+
+GitHub Actions is not required for this: tags, notes and assets are created by
+`gh` from the release script. Actions would only add CI checks (grammar tests,
+goose tree check); none are configured and none are needed to publish.

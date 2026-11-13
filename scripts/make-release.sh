@@ -14,12 +14,14 @@ version=""
 notes=""
 apply=0
 assets=()
+keep_old_runtime=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --version) version="${2:?}"; shift 2 ;;
         --notes-file) notes="${2:?}"; shift 2 ;;
         --asset) assets+=("${2:?}"); shift 2 ;;
+        --keep-old-runtime) keep_old_runtime=1; shift ;;
         --yes) apply=1; shift ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
@@ -103,3 +105,25 @@ for asset in "${assets[@]:-}"; do
     [ -n "$asset" ] || continue
     sha256sum "$asset"
 done
+
+# Keep one heavy runtime archive on GitHub: the newest. Older release notes stay,
+# only their runtime assets are removed. Runs after the new release exists, so a
+# failed publish never leaves the project without a binary.
+has_runtime=0
+for asset in "${assets[@]:-}"; do
+    [ -n "$asset" ] || continue
+    case "$(basename "$asset")" in goose-runtime-*) has_runtime=1 ;; esac
+done
+
+if [ "$has_runtime" -eq 1 ] && [ "$keep_old_runtime" -eq 0 ]; then
+    while read -r old; do
+        [ -n "$old" ] || continue
+        [ "$old" = "$version" ] && continue
+        while read -r name; do
+            [ -n "$name" ] || continue
+            gh release delete-asset "$old" "$name" --yes
+            echo "removed old runtime asset: $old/$name"
+        done < <(gh release view "$old" --json assets \
+            --jq '.assets[] | select(.name | startswith("goose-runtime-")) | .name')
+    done < <(gh release list --limit 100 --json tagName --jq '.[].tagName')
+fi
