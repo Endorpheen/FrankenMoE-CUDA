@@ -3001,6 +3001,11 @@
       "id": "POST-07",
       "title": "Final migration audit after 152/152",
       "gate": "Trigger only when all 152 requirements are DONE. Full source/library/dependency/link audit of the working runtime; classify every remaining C++ function as used/obsolete; re-check C2/POST and Apex-scope closures; port all still-needed components; remove unjustified code; prove no hidden C++ paths/fallbacks/duplicates; final Apex correctness/safety/integration/performance against the saved baseline under the golden rule; publish allowed external dependencies and support boundaries. Migration is not declared complete before this audit."
+    },
+    {
+      "id": "POST-08",
+      "title": "Edge0-120B Q3_K pack support in the FrankenMoE runtime",
+      "gate": "Out-of-ledger owner request. Load the strata pack index v3, native experts v6, latent D/U, PLE and MTP entirely inside the FrankenMoE/Goose runtime; the Edge0/strata engine is a format reference only, never a backend. Staged gates E0-E7 and acceptance checks are in docs/goose-migration/EDGE0-120B-ADAPTATION.md. No claim of support before the deck is loaded, numerically verified and measured at 65536 context on the RTX 4070."
     }
   ],
   "history": [
@@ -4850,7 +4855,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-13T15:18:56.798623+00:00",
+  "updated_at": "2026-11-13T15:35:29.640110+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
