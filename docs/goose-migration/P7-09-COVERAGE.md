@@ -1,7 +1,7 @@
 # P7-09 coverage: JSON, schema, PEG and grammar
 
-Status: **PARTIAL**. This document assigns an owner to every function in the five
-files named by the criterion, so the remaining work is a list, not a guess.
+Status: **DONE** (see `P7-09-CLOSURE.md`). This document assigns an owner to
+every function in the five files named by the criterion.
 "Goose" means the decision lives in `experiments/EXP-2026-11-13-*/source/*.goose`
 and is gated against the native code quoted in the slice's README. "Boundary"
 means the code is the third-party container or an OS primitive; it makes no
@@ -12,7 +12,7 @@ Slices: 472 shaping, 473 `$ref`/names, 474 pattern/format, 475 object text,
 480 GBNF parser, 481 PEG dump, 482-485 PEG engine/AST/invalid, 486-487 PEG
 build_grammar, 488-489 Aho-Corasick, 490 add_schema, 491 lazy triggers,
 492 JSON-schema builder, 493 JSON parser, 494 JSON dump, 495 schema
-introspection, 496 converter output, 497 AST helpers, 498 chars parsing, 499 ref resolution, 500 builder decisions.
+introspection, 496 converter output, 497 AST helpers, 498 chars parsing, 499 ref resolution, 500 builder decisions, 501 malformed/deep/large corpus.
 
 ## common/json.cpp
 
@@ -103,13 +103,18 @@ directly, so the regex is not needed. Its equivalence is covered by the 474 gate
 | `parse_token` (`<...>` tokens) | Boundary — needs a vocabulary; native dereferences a null vocab there, so the corpus cannot reach it |
 | `llama_grammar_init_impl`, `llama_grammar_free_impl`, `llama_grammar_accept_impl`, `llama_grammar_apply_impl`, `llama_grammar_*` stacks | Out of P7-09 — the sampling-time matcher; scheduled with the sampling subsystem, not with parsing/rendering |
 
-## Remaining to close P7-09
+## Closed remainder
 
-1. A malformed/deep/large corpus for the grammar and PEG layers, matching the
-   JSON corpora of 493/494 (EXP480 already covers 18 malformed grammars; deep and
-   large inputs are still missing).
+| item | slice |
+|---|---|
+| `check_errors` and `format_grammar` | 496 |
+| AST `find_by_tag`, `find_by_rule`, `visit`, `sanitized_text`, `parse_result_type_name` | 497 |
+| `chars` pattern parsing | 498 |
+| `resolve_ref` / `resolve_refs` | 499 |
+| builder decisions (`rule_name`, flattening, `rule()`) | 500 |
+| malformed/deep/large grammar and PEG corpus | 501 |
 
-Done: `check_errors` and `format_grammar` (496); the AST helpers `find_by_tag`,
-`find_by_rule`, `visit`, `sanitized_text` and `parse_result_type_name` (497);
-`chars` pattern parsing (498); `resolve_ref`/`resolve_refs` (499); the builder
-decisions (500).
+EXP501 also found and fixed a real defect: the repetition scratch in the GBNF
+parser was a fixed `i64[1024]`, so a long literal under `{n}` overflowed it. The
+copy now lives in the tail of the caller-sized rule arena, with an explicit
+guard. The fixed module is kept in EXP501; the EXP480 card is unchanged.
