@@ -216,6 +216,34 @@ in a CUDA buffer, the fix is in the memory allocation for that state under
 `-ngl 0`, not in the scheduler; if all inputs are host buffers, the scheduler's
 pass 1 misreads the buffer.
 
+## Root-cause candidate (2026-11-13)
+
+`node_55` is `GGML_OP_MUL` with sources `CUDA0#norm-0#0` and
+`CUDA0#blk.0.ssm_norm.weight#0`, and the assignment comes from the scheduler rule
+
+    if (sched->op_offload && src_backend_id == n_backends - 1 &&
+        ggml_backend_buffer_is_host(src->buffer)) {
+        for (b < src_backend_id)
+            if (supports_op(b, tensor) && offload_op(b, tensor)) return b;
+    }
+
+i.e. an op whose weight sits in a **host** buffer is moved to a higher-priority
+backend that claims it can offload the op. `blk.0.ssm_norm.weight` is CPU_Mapped
+(host), CUDA0 claims the offload, and the MUL plus its copies become the CUDA
+island. That explains the missing abort with `CUDA_VISIBLE_DEVICES=""` and why no
+Goose hook switch changes it.
+
+Two switches were tested on the current build and both still abort:
+
+    GGML_GOOSE_WEIGHT_PLACEMENT=0   EXIT=134 CUDA=2
+    GGML_GOOSE_STREAM_CONTROL=0     EXIT=134 CUDA=2
+
+Next: force `op_offload` off in a diagnostic base (`ggml_backend_sched_new` call
+site) and re-run. If the abort disappears, the fix is to stop CUDA from claiming
+`offload_op` for these elementwise ops (or to keep `op_offload` false when no layer
+is offloaded), and it must then be verified against the flint base behaviour and
+the Apex acceptance.
+
 ## Status
 
 Open, worked locally. The next instrument is the split-assignment log described
