@@ -12,7 +12,7 @@ Slices: 472 shaping, 473 `$ref`/names, 474 pattern/format, 475 object text,
 480 GBNF parser, 481 PEG dump, 482-485 PEG engine/AST/invalid, 486-487 PEG
 build_grammar, 488-489 Aho-Corasick, 490 add_schema, 491 lazy triggers,
 492 JSON-schema builder, 493 JSON parser, 494 JSON dump, 495 schema
-introspection.
+introspection, 496 converter output.
 
 ## common/json.cpp
 
@@ -60,9 +60,9 @@ the converter read them through the flat encoding the slices use.
 | `_add_primitive`, `_visit_primitive` | Goose (479) |
 | `add_schema`, the converter constructor, `_visit_all_of`, `visit` | Goose (478, 479) |
 | `_generate_constant_rule` | Goose (476) |
-| `check_errors` | **pending** — error aggregation, the thrown `invalid_argument` text and the warning channel |
-| `format_grammar` | **pending** — `std::map` to `name ::= text\n` lines in map order |
-| `json_schema_to_grammar` (both overloads), `build_grammar` | Partly Goose (the dispatch inside); the final map-to-text step depends on `format_grammar` |
+| `check_errors` | Goose (496) — the thrown `invalid_argument` text and the warning channel |
+| `format_grammar` | Goose (496) — `std::map` order to `name ::= text\n` lines |
+| `json_schema_to_grammar` (both overloads), `build_grammar` | Goose for the dispatch (479) and the output (496); the `LLAMA_USE_LLGUIDANCE` branch is not built in this tree |
 
 `GRAMMAR_RANGE_LITERAL_ESCAPE_RE` is the macOS range escape used by
 `_pattern_to_rule`'s class path; the port (474) reproduces the escape table
@@ -104,11 +104,12 @@ directly, so the regex is not needed. Its equivalence is covered by the 474 gate
 
 ## Remaining to close P7-09
 
-1. `check_errors` and `format_grammar` (converter output text and error aggregation).
-2. PEG AST helpers: `find_by_tag`, `find_by_rule`, `visit`, `sanitized_text`, `parse_result_type_name`.
-3. PEG `chars` pattern parsing: `parse_char_classes` and its two helpers.
-4. PEG `resolve_ref`/`resolve_refs`.
-5. The PEG builder helper batch and the decisions inside it.
-6. A malformed/deep/large corpus for the grammar and PEG layers, matching the
+1. PEG AST helpers: `find_by_tag`, `find_by_rule`, `visit`, `sanitized_text`, `parse_result_type_name`.
+2. PEG `chars` pattern parsing: `parse_char_classes` and its two helpers.
+3. PEG `resolve_ref`/`resolve_refs`.
+4. The PEG builder helper batch and the decisions inside it.
+5. A malformed/deep/large corpus for the grammar and PEG layers, matching the
    JSON corpora of 493/494 (EXP480 already covers 18 malformed grammars; deep and
    large inputs are still missing).
+
+Done: `check_errors` and `format_grammar` (496).
