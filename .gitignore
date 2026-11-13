@@ -160,6 +160,7 @@ node_modules/
 
 # EXP512 generated output and build directory.
 /runtime/exp512/
+/runtime/exp513/
 /experiments/EXP-2026-11-13-512-p7-08-jinja-filters/source/runtime-gen.c
 /experiments/EXP-2026-11-13-512-p7-08-jinja-filters/source/runtime-gen.h
 

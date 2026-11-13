@@ -2361,7 +2361,8 @@ fn filter_name_is(n: const u8[:], want: const u8[:]) -> bool {
 fn text_filter(n: const u8[:]) -> bool {
     return filter_name_is(n, "upper") || filter_name_is(n, "lower") ||
         filter_name_is(n, "capitalize") || filter_name_is(n, "strip") ||
-        filter_name_is(n, "title") || filter_name_is(n, "wordcount");
+        filter_name_is(n, "replace") || filter_name_is(n, "title") ||
+        filter_name_is(n, "wordcount");
 }
 
 fn ascii_lower(c: u8) -> u8 {
@@ -2402,11 +2403,13 @@ recursive fn eval_filter(
     let f = ac1(A, st, id);
     var fname: const u8[:] = "";
     var argc: i64 = 0;
+    var fcall: bool = false;
     var argv: i64[4] = [0, 0, 0, 0];
 
     if ak(A, st, f) == K_IDENT {
         fname = astr(B, A, st, f);
     } else if ak(A, st, f) == K_CALL {
+        fcall = true;
         let callee = ac0(A, st, f);
 
         if ak(A, st, callee) != K_IDENT {
@@ -2441,7 +2444,31 @@ recursive fn eval_filter(
     }
     var sval = v;
 
-    if vk(A, st, sval) != V_STRING && vk(A, st, sval) != V_UNDEF && text_filter(fname) {
+    if vk(A, st, sval) == V_UNDEF {
+        var known: bool = false;
+
+        if filter_name_is(fname, "capitalize") || filter_name_is(fname, "lower") ||
+            filter_name_is(fname, "upper") || filter_name_is(fname, "strip") ||
+            filter_name_is(fname, "replace") || filter_name_is(fname, "title") ||
+            filter_name_is(fname, "join") || filter_name_is(fname, "length") ||
+            filter_name_is(fname, "wordcount") || filter_name_is(fname, "first") ||
+            filter_name_is(fname, "last") {
+            known = true;
+        }
+
+        if known {
+            if filter_name_is(fname, "first") || filter_name_is(fname, "last") {
+                return mk_undef(A, F, st);
+            }
+
+            if filter_name_is(fname, "length") || filter_name_is(fname, "wordcount") {
+                return mk_int(A, F, st, 0);
+            }
+            return mk_str(A, F, B, st, "");
+        }
+    }
+
+    if !fcall && vk(A, st, sval) != V_STRING && vk(A, st, sval) != V_UNDEF && text_filter(fname) {
         let base = st[7];
         let n = as_string_into(A, B, F, st, sval, out[base..], 0, E);
 
@@ -2558,6 +2585,189 @@ recursive fn eval_filter(
             i = i + 1;
         }
         let res = mk_str(A, F, B, st, out[base .. base + (b - a)]);
+        st[7] = base;
+        return res;
+    }
+
+    if filter_name_is(fname, "title") {
+        if vk(A, st, sval) != V_STRING {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let src = vstr(B, A, st, sval);
+        let base = st[7];
+        var i: i64 = 0;
+        var cap: i64 = 1;
+
+        while i < src.len {
+            var c = src[i];
+
+            if ws_byte(c) {
+                cap = 1;
+            } else if cap != 0 {
+                c = ascii_upper(c);
+                cap = 0;
+            } else {
+                c = ascii_lower(c);
+            }
+            out[base + i] = c;
+            i = i + 1;
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + src.len]);
+        st[7] = base;
+        return res;
+    }
+
+    if filter_name_is(fname, "lstrip") || filter_name_is(fname, "rstrip") {
+        if vk(A, st, sval) != V_STRING {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let src = vstr(B, A, st, sval);
+        var chars: const u8[:] = "";
+
+        if argc > 0 && vk(A, st, argv[0]) != V_UNDEF {
+            let cbase = st[7];
+            let cn = as_string_into(A, B, F, st, argv[0], out[cbase..], 0, E);
+
+            if cn < 0 || st[1] != 0 {
+                return -1;
+            }
+            chars = out[cbase .. cbase + cn];
+        }
+        var a: i64 = 0;
+        var b: i64 = src.len;
+
+        if filter_name_is(fname, "lstrip") {
+            var go: i64 = 1;
+
+            while a < b && go != 0 {
+                var hit = ws_byte(src[a]);
+
+                if chars.len > 0 {
+                    hit = false;
+                    var k: i64 = 0;
+
+                    while k < chars.len {
+                        if chars[k] == src[a] {
+                            hit = true;
+                        }
+                        k = k + 1;
+                    }
+                }
+
+                if hit {
+                    a = a + 1;
+                } else {
+                    go = 0;
+                }
+            }
+        } else {
+            var go: i64 = 1;
+
+            while b > a && go != 0 {
+                var hit = ws_byte(src[b - 1]);
+
+                if chars.len > 0 {
+                    hit = false;
+                    var k: i64 = 0;
+
+                    while k < chars.len {
+                        if chars[k] == src[b - 1] {
+                            hit = true;
+                        }
+                        k = k + 1;
+                    }
+                }
+
+                if hit {
+                    b = b - 1;
+                } else {
+                    go = 0;
+                }
+            }
+        }
+        let base = st[7];
+        var j: i64 = 0;
+
+        while j < b - a {
+            out[base + j] = src[a + j];
+            j = j + 1;
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + (b - a)]);
+        st[7] = base;
+        return res;
+    }
+
+    if filter_name_is(fname, "first") || filter_name_is(fname, "last") {
+        if vk(A, st, sval) != V_ARRAY && vk(A, st, sval) != V_TUPLE {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let n = vcc(A, st, sval);
+
+        if n == 0 {
+            return mk_undef(A, F, st);
+        }
+
+        if filter_name_is(fname, "first") {
+            return A[pool(A, st) + vcs(A, st, sval)];
+        }
+        return A[pool(A, st) + vcs(A, st, sval) + n - 1];
+    }
+
+    if filter_name_is(fname, "join") {
+        if vk(A, st, sval) != V_ARRAY && vk(A, st, sval) != V_TUPLE {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let n = vcc(A, st, sval);
+        let base = st[7];
+        var p: i64 = 0;
+        var i: i64 = 0;
+
+        while i < n {
+            let item = A[pool(A, st) + vcs(A, st, sval) + i];
+            let ik = vk(A, st, item);
+
+            if ik != V_STRING && ik != V_INT && ik != V_FLOAT {
+                return fail_node(K_FILTER, apos(A, st, id),
+                    "join() can only join arrays of strings or numerics", E, st);
+            }
+            let m = as_string_into(A, B, F, st, item, out[base + p..], 0, E);
+
+            if m < 0 || st[1] != 0 {
+                return -1;
+            }
+            p = p + m;
+
+            if i + 1 < n && argc > 0 && vk(A, st, argv[0]) != V_UNDEF {
+                let d = as_string_into(A, B, F, st, argv[0], out[base + p..], 0, E);
+
+                if d < 0 || st[1] != 0 {
+                    return -1;
+                }
+                p = p + d;
+            }
+            i = i + 1;
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + p]);
         st[7] = base;
         return res;
     }
