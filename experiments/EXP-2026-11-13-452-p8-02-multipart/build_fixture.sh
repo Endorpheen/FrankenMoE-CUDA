@@ -10,5 +10,5 @@ if [ ! -f "$OUT/gen-runtime.c" ]; then "$G" --emit-runtime "$OUT/gen-runtime.c";
 gcc-13 -O2 -std=c11 -c "$OUT/gen-runtime.c" -o "$OUT/gen-runtime.o"
 gcc-13 -O2 -std=c11 -I"$E/source" -c "$E/source/multipart-gen.c" -o "$OUT/gen.o"
 g++-13 -O2 -std=c++17 -I"$E/source" -I"$E/tests" -c "$E/tests/multipart_fixture.c" -o "$OUT/fixture.o"
-g++-13 "$OUT/fixture.o" "$OUT/gen.o" "$OUT/gen-runtime.o" -o "$OUT/exp452-fixture"
-"$OUT/exp452-fixture"
+g++-13 "$OUT/fixture.o" "$OUT/gen.o" "$OUT/gen-runtime.o" -o cd "$OUT" && ./exp452-fixture
+cd "$OUT" && ./exp452-fixture
