@@ -10,25 +10,33 @@
 //
 // Packet layout written by the bridge:
 //   (0,0) source pointer (0,1) block count k/256 (0,2) destination pointer
-extern "fg182h_get" fn get(p:i64,k:i64,i:i64)->u64;
-extern "fg182h_plan" fn plan_ptr(packet:i64)->i64;
-extern "fg182h_put" fn put(p:i64,k:i64,i:i64,v:u64);
-extern "fg182h_launch" fn launch(packet:i64)->i64;
-extern "fg182h_fail" fn fail(code:i64);
+extern "fg182h_get" fn get(p: i64, k: i64, i: i64) -> u64;
+extern "fg182h_plan" fn plan_ptr(packet: i64) -> i64;
+extern "fg182h_put" fn put(p: i64, k: i64, i: i64, v: u64);
+extern "fg182h_launch" fn launch(packet: i64) -> i64;
+extern "fg182h_fail" fn fail(code: i64);
 
-fn ensure(v:bool,c:i64){if !v{fail(c);}}
-
-fn run(packet:i64)->bool{
- let src=get(packet,0,0);
- let dst=get(packet,0,2);
- let nb=get(packet,0,1);
- ensure(src!=0&&dst!=0,20);
- ensure(nb>0,21);
- ensure(nb<=(2147483647 as u64),22);
- let p=plan_ptr(packet);
- put(p,1,0,nb);put(p,1,1,32 as u64);
- ensure(launch(packet)==0,23);
- return true;
+fn ensure(v: bool, c: i64) {
+    if !v {
+        fail(c);
+    }
 }
 
-fn main(){run(0);}
+fn run(packet: i64) -> bool {
+    let src = get(packet, 0, 0);
+    let dst = get(packet, 0, 2);
+    let nb = get(packet, 0, 1);
+    ensure(src != 0 && dst != 0, 20);
+    ensure(nb > 0, 21);
+    ensure(nb <= (2147483647 as u64), 22);
+    let p = plan_ptr(packet);
+    put(p, 1, 0, nb);
+    put(p, 1, 1, 32 as u64);
+    ensure(launch(packet) == 0, 23);
+    return true;
+}
+
+fn main() {
+    run(0);
+}
+

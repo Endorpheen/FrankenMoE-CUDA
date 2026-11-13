@@ -14,3 +14,4 @@ fn main() {
     assert(dst[4] == 0 && dst[5] == 0 && dst[6] == 0 && dst[7] == 8);
     print("PASS: checkfree unpack and CPU SIMD versions");
 }
+

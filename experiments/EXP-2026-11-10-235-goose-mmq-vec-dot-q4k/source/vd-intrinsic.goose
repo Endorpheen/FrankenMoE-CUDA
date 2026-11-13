@@ -23,62 +23,69 @@
 // Accumulation uses i64 even where native uses int32. Every product is at most 15*127 in magnitude and
 // there are 32 of them, so the value never approaches the int32 limit -- using a wider type cannot change
 // the result, only remove a class of overflow I would otherwise have to reason about.
+extern "fg235v_fail" fn fail(code: i64);
+extern "fg235v_ld_i32" fn ld_i32(base: u64, idx: i64) -> i64;
+extern "fg235v_ld_u8" fn ld_u8(base: u64, idx: i64) -> i64;
 
-extern "fg235v_fail" fn fail(code:i64);
-extern "fg235v_ld_i32" fn ld_i32(base:u64,idx:i64)->i64;
-extern "fg235v_ld_u8" fn ld_u8(base:u64,idx:i64)->i64;
-
-fn ensure(v:bool,c:i64){if !v{fail(c);}}
-
+fn ensure(v: bool, c: i64) {
+    if !v {
+        fail(c);
+    }
+}
 // byte k of a 32-bit word, sign-extended as int8
-fn byte_s(v:i64,k:i64)->i64{
- let b:i64=(v>>(k*8 as i64))&0xFF as i64;
- if b>=0x80 as i64{return b-0x100 as i64;}
- b
-}
 
+fn byte_s(v: i64, k: i64) -> i64 {
+    let b: i64 = (v >> (k * 8 as i64)) & 0xFF as i64;
+
+    if b >= 0x80 as i64 {
+        return b - 0x100 as i64;
+    }
+    b
+}
 // byte k as unsigned
-fn byte_u(v:i64,k:i64)->i64{
- (v>>(k*8 as i64))&0xFF as i64
-}
 
+fn byte_u(v: i64, k: i64) -> i64 {
+    (v >> (k * 8 as i64)) & 0xFF as i64
+}
 // dp4a: the hardware four-way byte dot product, declared as a primitive.
 //
 // This is the whole point of the experiment: the loop version below is what the emission cannot fold to
 // IDP.4A, so declaring the intrinsic and calling it directly should remove the 5.6x code expansion.
 // byte_s/byte_u stay in the module because other code may use them.
-extern "fg235v_dp4a" fn dp4a(a:i64,b:i64,acc:i64)->i64;
-
+extern "fg235v_dp4a" fn dp4a(a: i64, b: i64, acc: i64) -> i64;
 // vd_q4k: computes the dot product. sc and m are uint8 arrays, dsx/dsy the per-i float halves.
-fn vd_q4k(v:u64,u:u64,sc:u64,m:u64,dsx:u64,dsy:u64,dm4x:f32,dm4y:f32,n_i:i64)->f32{
- ensure(n_i>=0,1300);
- var sumf_d:f32=0.0;
- var sumf_m:f32=0.0;
- var i:i64=0;
- while i<n_i{
-  var sumi_d:i64=0;
-  var j:i64=0;
-  while j<8 as i64{
-   let a:i64=(ld_i32(v,j)>>(4 as i64*i))&0x0F0F0F0F as i64;
-   let b:i64=ld_i32(u,i*8 as i64+j);
-   sumi_d=dp4a(a,b,sumi_d);
-   j=j+1 as i64;
-  }
-  let sci:i64=ld_u8(sc,i);
-  let mi:i64=ld_u8(m,i);
-  let sxf:f32=ld_f32(dsx,i);
-  let syf:f32=ld_f32(dsy,i);
-  sumf_d=sumf_d+sxf*((sci as f32)*to_f32(sumi_d));
-  sumf_m=sumf_m+syf*(mi as f32);
-  i=i+1 as i64;
- }
- dm4x*sumf_d-dm4y*sumf_m
+
+fn vd_q4k(v: u64, u: u64, sc: u64, m: u64, dsx: u64, dsy: u64, dm4x: f32, dm4y: f32, n_i: i64) -> f32 {
+    ensure(n_i >= 0, 1300);
+    var sumf_d: f32 = 0.0;
+    var sumf_m: f32 = 0.0;
+    var i: i64 = 0;
+
+    while i < n_i {
+        var sumi_d: i64 = 0;
+        var j: i64 = 0;
+
+        while j < 8 as i64 {
+            let a: i64 = (ld_i32(v, j) >> (4 as i64 * i)) & 0x0F0F0F0F as i64;
+            let b: i64 = ld_i32(u, i * 8 as i64 + j);
+            sumi_d = dp4a(a, b, sumi_d);
+            j = j + 1 as i64;
+        }
+        let sci: i64 = ld_u8(sc, i);
+        let mi: i64 = ld_u8(m, i);
+        let sxf: f32 = ld_f32(dsx, i);
+        let syf: f32 = ld_f32(dsy, i);
+        sumf_d = sumf_d + sxf * ( (sci as f32) * to_f32(sumi_d));
+        sumf_m = sumf_m + syf * (mi as f32);
+        i = i + 1 as i64;
+    }
+    dm4x * sumf_d - dm4y * sumf_m
+}
+extern "fg235v_ld_f32" fn ld_f32(base: u64, idx: i64) -> f32;
+extern "fg235v_to_f32" fn to_f32(v: i64) -> f32;
+
+fn main() {
+    vd_q4k(0 as u64, 0 as u64, 0 as u64, 0 as u64, 0 as u64, 0 as u64, 0.0, 0.0, 0 as i64);
+    vd_q4k(8 as u64, 16 as u64, 24 as u64, 32 as u64, 40 as u64, 48 as u64, 1.0, 0.5, 2 as i64);
 }
 
-extern "fg235v_ld_f32" fn ld_f32(base:u64,idx:i64)->f32;
-extern "fg235v_to_f32" fn to_f32(v:i64)->f32;
-
-fn main(){
- vd_q4k(0 as u64,0 as u64,0 as u64,0 as u64,0 as u64,0 as u64,0.0,0.0,0 as i64);
- vd_q4k(8 as u64,16 as u64,24 as u64,32 as u64,40 as u64,48 as u64,1.0,0.5,2 as i64);
-}

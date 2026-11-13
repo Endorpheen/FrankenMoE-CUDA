@@ -12,19 +12,25 @@
 // a single 4-byte load, so ld_i32 is the right primitive. x_sc is int*, slots scale by 4 bytes.
 // Note the destination slot uses %4 while the source index uses %(MMQ_TILE_NE_K/8); they differ
 // whenever that ratio is not four, so both are kept as written.
+extern "fg258sc_fail" fn fail(c: i64);
+extern "fg258sc_ld_i32" fn ld_i32(base: u64, byte: i64) -> i64;
+extern "fg258sc_st_i32" fn st_i32(base: u64, byte: i64, v: i64);
 
-extern "fg258sc_fail" fn fail(c:i64);
-extern "fg258sc_ld_i32" fn ld_i32(base:u64, byte:i64)->i64;
-extern "fg258sc_st_i32" fn st_i32(base:u64, byte:i64, v:i64);
+fn ensure(v: bool, c: i64) {
+    if !v {
+        fail(c);
+    }
+}
 
-fn ensure(v:bool,c:i64){if !v{fail(c);}}
-
-fn write_sc(x:u64, sc:u64, kbx0:i64, stride:i64, i:i64, sram_stride:i64, tx:i64, tile_ne_k:i64) -> bool {
-    let idx:i64 = tx % (tile_ne_k / (8 as i64));
-    let bxi:u64 = x + ((kbx0 + i*stride + idx / (4 as i64)) * 210) as u64;
-    let v:i64 = ld_i32(bxi + 192 as u64, idx * 4 as i64);
-    st_i32(sc, (i*sram_stride + (tx % (4 as i64))) * 4 as i64, v);
+fn write_sc(x: u64, sc: u64, kbx0: i64, stride: i64, i: i64, sram_stride: i64, tx: i64, tile_ne_k: i64) -> bool {
+    let idx: i64 = tx % (tile_ne_k / (8 as i64));
+    let bxi: u64 = x + ( (kbx0 + i * stride + idx / (4 as i64)) * 210) as u64;
+    let v: i64 = ld_i32(bxi + 192 as u64, idx * 4 as i64);
+    st_i32(sc, (i * sram_stride + (tx % (4 as i64))) * 4 as i64, v);
     true
 }
 
-fn main(){ write_sc(0 as u64,0 as u64,0 as i64,0 as i64,0 as i64,0 as i64,0 as i64,32 as i64); }
+fn main() {
+    write_sc(0 as u64, 0 as u64, 0 as i64, 0 as i64, 0 as i64, 0 as i64, 0 as i64, 32 as i64);
+}
+

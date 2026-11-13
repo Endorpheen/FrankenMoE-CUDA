@@ -9,27 +9,35 @@
 //      earlier slot -- the same order std::stable_sort produces in get_free_slots().
 //
 // Both return an index or -1; the slots themselves, their state and the prompt cache stay in the server.
+extern "fg272s_fail" fn fail(c: i64);
+extern "fg272s_ld_i64" fn ld_i64(base: u64, byte: i64) -> i64;
+extern "fg272s_st_i64" fn st_i64(base: u64, byte: i64, v: i64);
+extern "fg272s_from_bits" fn from_bits(x: u32) -> f32;
 
-extern "fg272s_fail" fn fail(c:i64);
-extern "fg272s_ld_i64" fn ld_i64(base:u64, byte:i64)->i64;
-extern "fg272s_st_i64" fn st_i64(base:u64, byte:i64, v:i64);
-extern "fg272s_from_bits" fn from_bits(x:u32)->f32;
+fn ensure(v: bool, c: i64) {
+    if !v {
+        fail(c);
+    }
+}
 
-fn ensure(v:bool,c:i64){if !v{fail(c);}}
-fn at(a:u64, i:i64)->i64 {return ld_i64(a, i*8 as i64);}
+fn at(a: u64, i: i64) -> i64 {
+    return ld_i64(a, i * 8 as i64);
+}
 
-fn pick_similar(eligible:u64, lcp:u64, count:i64, n_tokens:i64, thr_bits:i64) -> i64 {
+fn pick_similar(eligible: u64, lcp: u64, count: i64, n_tokens: i64, thr_bits: i64) -> i64 {
     ensure(count >= 0 as i64 && n_tokens > 0 as i64, 10);
-    let thr:f32 = from_bits(thr_bits as! u32);
-    var best:f32 = 0 as f32;
-    var ret:i64 = -1 as i64;
-    var i:i64 = 0 as i64;
+    let thr: f32 = from_bits(thr_bits as !u32);
+    var best: f32 = 0 as f32;
+    var ret: i64 = -1 as i64;
+    var i: i64 = 0 as i64;
+
     while i < count {
         if at(eligible, i) != 0 as i64 {
-            let sim:f32 = (at(lcp, i) as f32) / (n_tokens as f32);
+            let sim: f32 = (at(lcp, i) as f32) / (n_tokens as f32);
+
             if sim > best && sim > thr {
                 best = sim;
-                ret  = i;
+                ret = i;
             }
         }
         i = i + 1 as i64;
@@ -37,19 +45,20 @@ fn pick_similar(eligible:u64, lcp:u64, count:i64, n_tokens:i64, thr_bits:i64) ->
     ret
 }
 
-fn pick_lru(idle:u64, empty:u64, t_last:u64, count:i64) -> i64 {
+fn pick_lru(idle: u64, empty: u64, t_last: u64, count: i64) -> i64 {
     ensure(count >= 0 as i64, 11);
-    var ret:i64 = -1 as i64;
-    var i:i64 = 0 as i64;
+    var ret: i64 = -1 as i64;
+    var i: i64 = 0 as i64;
+
     while i < count {
         if at(idle, i) != 0 as i64 {
             if ret < 0 as i64 {
                 ret = i;
             } else {
-                let e_best:i64 = at(empty, ret);
-                let e_cur:i64  = at(empty, i);
-                if (e_best == 0 as i64 && e_cur != 0 as i64) ||
-                   (e_best == e_cur && at(t_last, i) < at(t_last, ret)) {
+                let e_best: i64 = at(empty, ret);
+                let e_cur: i64 = at(empty, i);
+
+                if (e_best == 0 as i64 && e_cur != 0 as i64) || (e_best == e_cur && at(t_last, i) < at(t_last, ret)) {
                     ret = i;
                 }
             }
@@ -59,7 +68,8 @@ fn pick_lru(idle:u64, empty:u64, t_last:u64, count:i64) -> i64 {
     ret
 }
 
-fn main(){
+fn main() {
     pick_similar(0 as u64, 0 as u64, 0 as i64, 1 as i64, 0 as i64);
     pick_lru(0 as u64, 0 as u64, 0 as u64, 0 as i64);
 }
+
