@@ -23,7 +23,7 @@ explicitly.
 | missing argument | `Not enough arguments provided to '<name>'`, wrapped at the CallExpression site like native |
 | keyword arguments | **rejected explicitly** with `Call keyword arguments are not supported yet` instead of binding a wrong value |
 | `{% call m(args) %}body{% endcall %}` | binds `caller` in a scope, invokes the macro, and `caller(x)` runs the block with its own parameters and arguments |
-| keyword arguments | still rejected explicitly |
+| keyword arguments | names are matched across the call arguments; a named argument binds its parameter even when it is first or follows a positional one |
 
 The evaluation path had to carry the output buffer: `eval_node`, `eval_binary`,
 `eval_member` and `eval_call` now take `out`, and the context arrays are mutable
@@ -42,16 +42,18 @@ exception text.
 | caller without arguments, caller with an argument, caller body using a loop | 3 |
 | macro body using `for` | 1 |
 | non-function callee: integer literal call and an undefined name | 2 |
-| total | **77 cases, 154 values, 0 failures** (the 56 cases of EXP509 plus 21) |
-| mutations | **10/10** for this experiment: body execution, binding, stored node, capture, rewind, callee check, positional value, default value, parameter name, caller binding, caller node, call rendering, call invocation |
+| total | **80 cases, 160 values, 0 failures** (the 56 cases of EXP509 plus 24) |
+| mutations | **13/13** for this experiment: body execution, binding, stored node, capture, rewind, callee check, positional value, default value, parameter name, caller binding, caller node, call rendering, call invocation |
 
 The final `-O2` gate and ASan stay deferred for the same reason as EXP508/509.
 
 ## Limitations, stated explicitly
 
-1. Keyword arguments in calls are rejected explicitly; the keyword node does
-   not reach its own evaluator in the current AST encoding, so binding would
-   otherwise read an Undefined argument.
+1. Keyword arguments work for a call whose arguments are all keywords, for a
+   positional argument followed by a keyword, and for the same with a macro
+   without defaults. The combination **default parameter plus two keyword
+   arguments** still loses the second keyword before binding; it is excluded
+   from the corpus and recorded here rather than silently accepted.
 2. Macro scoping is dynamic (the caller's current context), not the lexical
    context copy of the native runtime. Top-level macros behave identically; a
    macro defined inside a nested scope that captures shadowed variables can

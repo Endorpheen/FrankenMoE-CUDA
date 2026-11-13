@@ -38,7 +38,7 @@ extern "C" int64_t gs_to_string_f64(sl_u8 out, double x) {
 static int cases = 0, values = 0, fails = 0;
 static void bad(const char * what, const std::string & detail) {
     ++fails;
-    if (fails <= 8) printf("FAIL %s: %s\n", what, detail.c_str());
+    if (fails <= 200) printf("FAIL %s: %s\n", what, detail.c_str());
 }
 static sl_u8 sl(const std::string & s) { return sl_u8{ (uint8_t *) s.data(), (int64_t) s.size() }; }
 static sl_u8 slv(std::vector<uint8_t> & v) { return sl_u8{ v.data(), (int64_t) v.size() }; }
@@ -518,6 +518,9 @@ int main(void) {
         "{% macro m(a, b=10) %}{{ a }}{{ b }}{% endmacro %}{{ m(1) }}",
         "{% macro m(a, b=2) %}{{ a }}{{ b }}{% endmacro %}{{ m(1, 9) }}",
         "{% macro m(a) %}{{ a }}{% endmacro %}{{ m(1, 2) }}",
+        "{% macro m(b, a) %}{{ a }}{{ b }}{% endmacro %}{{ m(b=2, a=1) }}",
+        "{% macro m(x) %}{{ x }}{% endmacro %}{{ m(x=7) }}",
+        "{% macro m(a, b) %}{{ a }}{{ b }}{% endmacro %}{{ m(1, b=2) }}",
         "{% macro wrap() %}[{{ caller() }}]{% endmacro %}{% call wrap() %}body{% endcall %}",
         "{% macro each() %}{{ caller(1) }}{{ caller(2) }}{% endmacro %}{% call(x) each() %}{{ x }}{% endcall %}",
         "{% macro tw() %}<{{ caller() }}>{% endmacro %}{% call tw() %}{% for x in v %}{{ x }}{% endfor %}{% endcall %}",

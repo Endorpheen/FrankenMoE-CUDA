@@ -36,6 +36,7 @@ const V_OBJECT: i64 = 6;
 const V_NONE: i64 = 7;
 const V_UNDEF: i64 = 8;
 const V_FUNC: i64 = 9;
+const V_KWARG: i64 = 10;
 extern "gs_json_fmt_g" fn libc_fmt_g(out: u8[:], x: f64) -> i64;
 extern "gs_json_fmt_e" fn libc_fmt_e(out: u8[:], prec: i64, x: f64) -> i64;
 extern "gs_json_strtod" fn libc_strtod(s: const u8[:]) -> f64;
@@ -2218,14 +2219,34 @@ recursive fn collect_args(
         let child = A[apool(A, st) + start + i];
 
         if ak(A, st, child) == K_KWARG {
-            return fail_node(K_CALL, apos(A, st, id), "Call keyword arguments are not supported yet", E, st);
-        }
-        let v = eval_node(child, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+            let key = ac0(A, st, child);
+            let val = eval_node(ac1(A, st, child), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
-        if st[1] != 0 {
-            return -1;
+            if st[1] != 0 {
+                return -1;
+            }
+            let name = astr(B, A, st, key);
+            let kw = vnew(A, F, st, V_KWARG);
+            let off = st[3];
+            var qi: i64 = 0;
+
+            while qi < name.len {
+                B[st[3] + qi] = name[qi];
+                qi = qi + 1;
+            }
+            st[3] = st[3] + name.len;
+            A[st[18] + kw] = off;
+            A[st[19] + kw] = name.len;
+            arr_push(A, st, kw, val);
+            arr_push(A, st, argv, kw);
+        } else {
+            let v = eval_node(child, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+            arr_push(A, st, argv, v);
         }
-        arr_push(A, st, argv, v);
         i = i + 1;
     }
     return argv;
@@ -2266,22 +2287,58 @@ recursive fn invoke_func(
             return fail_node(site_kind, apos(A, st, site_id), "Invalid parameter type", E, st);
         }
         let pname = if pk == K_IDENT { astr(B, A, st, pnode) } else { astr(B, A, st, ac0(A, st, pnode)) };
-        var v: i64 = -1;
+        var v = -1;
+        var qn: i64 = 0;
 
-        if i < argc {
-            v = vchild(A, st, argv, i);
-        } else if pk == K_KWARG {
-            v = eval_node(ac1(A, st, pnode), st[11], noff, nlen, cval, A, F, B, E, out, st);
+        while qn < argc {
+            let av = vchild(A, st, argv, qn);
 
-            if st[1] != 0 {
-                return -1;
+            if vk(A, st, av) == V_KWARG && vcc(A, st, av) > 0 {
+                let vn = vstr(B, A, st, av);
+
+                if vn.len == pname.len {
+                    var same: bool = true;
+                    var k2: i64 = 0;
+
+                    while k2 < vn.len {
+                        if vn[k2] != pname[k2] {
+                            same = false;
+                            k2 = vn.len;
+                        } else {
+                            k2 = k2 + 1;
+                        }
+                    }
+
+                    if same && v < 0 {
+                        v = vchild(A, st, av, 0);
+                    }
+                }
             }
-        } else {
-            var p = apps(E, 0, "Not enough arguments provided to '");
-            let nm = astr(B, A, st, ac0(A, st, node));
-            p = app(E, p, nm, 0, nm.len);
-            p = appc(E, p, 39);
-            return fail_node(site_kind, apos(A, st, site_id), E[0..p], E, st);
+            qn = qn + 1;
+        }
+
+        if v < 0 && i < argc {
+            let cand = vchild(A, st, argv, i);
+
+            if vk(A, st, cand) != V_KWARG {
+                v = cand;
+            }
+        }
+
+        if v < 0 {
+            if pk == K_KWARG {
+                v = eval_node(ac1(A, st, pnode), st[11], noff, nlen, cval, A, F, B, E, out, st);
+
+                if st[1] != 0 {
+                    return -1;
+                }
+            } else {
+                var p = apps(E, 0, "Not enough arguments provided to '");
+                let nm = astr(B, A, st, ac0(A, st, node));
+                p = app(E, p, nm, 0, nm.len);
+                p = appc(E, p, 39);
+                return fail_node(site_kind, apos(A, st, site_id), E[0..p], E, st);
+            }
         }
         vals[i] = v;
         i = i + 1;
