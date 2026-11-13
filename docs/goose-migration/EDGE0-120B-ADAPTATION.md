@@ -150,6 +150,21 @@ written and gated **now** against the complete index, native-expert table,
 loading expert records and running a forward pass — needs the three remaining
 downloads. PLE streaming (E5) needs `ple-fp8.gguf` last.
 
+## E1 status: pack reader (2026-11-13)
+
+`tools/edge0/pack.{hpp,cpp}` parses the two text tables into structures the
+loader can consume and validates them against the pool:
+
+- index v3: 1367 rows, header `align 64 pool 1538625024 tensors 1367`, 1065
+  tensors in `dense.bin`, every in-pool offset 64-byte aligned and inside the
+  pool (`max_end` equals the pool size exactly);
+- native experts v6: 48 layers, type ids 11/20, record 1 164 800, stride
+  596 377 600, every layer offset follows the stride.
+
+`tools/edge0/run.sh [pack]` compiles and runs the gate; on the current download
+it reports `FGEDGE0_PACK failures=0`. The reader is the foundation for E2: the
+same structures will drive tensor creation in the loader.
+
 ## Staged plan (each build and check limited to five minutes)
 
 | stage | deliverable | gate |
