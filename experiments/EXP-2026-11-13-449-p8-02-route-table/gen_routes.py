@@ -134,11 +134,10 @@ def main():
         lines.append(f' if m=={method} as i64 && p=="{path}" {{return {cat} as i64;}} // {METHOD_TAG[method]} {path} -> {CAT_NAME[cat]}')
     lines += [
         ' // POST /slots/<one segment> -> slots_post',
+        ' // httplib captures an empty parameter too: "/slots/" matches with ""',
         ' if m==2 as i64 {',
         '  if starts_with(p, "/slots/") {',
-        '   if p.len > 7 as i64 {',
-        '    if find(p[7..], "/") < 0 as i64 { return 34 as i64; }',
-        '   }',
+        '   if find(p[7..], "/") < 0 as i64 { return 34 as i64; }',
         '  }',
         ' }',
         ' return 0 as i64;',

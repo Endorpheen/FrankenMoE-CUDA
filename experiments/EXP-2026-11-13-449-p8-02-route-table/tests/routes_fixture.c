@@ -58,7 +58,7 @@ int main(void) {
     // 3. unknown and near-miss paths must not route
     const char * unknown[] = {
         "", "/", "/healthz", "/health2", "/Health", "/v1/health/", "/health ",
-        "/metrics/", "/props2", "/v1", "/v1/", "/slots/", "/slot/1",
+        "/metrics/", "/props2", "/v1", "/v1/", "/slot/1",
         "/slotsx/1", "/models/", "/models/load/", "/tools/", "/cors-proxy/",
         "/v1/chat/completionsx", "/v1/streams", "/v1/stream/x", "/completions/",
         "/v1/responses/", "/embeddings2", "/tokenize/", "/v1/models?x=1",
@@ -69,7 +69,7 @@ int main(void) {
         expect(m, unknown[i], 0, "unknown");
 
     // 3b. parameterised POST /slots/:id_slot matches any single segment
-    const char * slots[] = {"/slots/0", "/slots/42", "/slots/:id_slot", "/slots/abc" };
+    const char * slots[] = {"/slots/", "/slots/0", "/slots/42", "/slots/:id_slot", "/slots/abc" };
     for (size_t i = 0; i < sizeof(slots) / sizeof(slots[0]); ++i)
         expect(2, slots[i], 34, "slots-param");
 

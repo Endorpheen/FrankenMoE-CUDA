@@ -1206,8 +1206,8 @@ static const uint8_t gs_str47[1] = "/";
 
 /* ---- data ---- */
 static const a23_f64 parse_flt_pow10_g = { { 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0, 10000000.0, 100000000.0, 1000000000.0, 10000000000.0, 100000000000.0, 1000000000000.0, 10000000000000.0, 100000000000000.0, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22 } };
-static const char gs_file0[] = "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/stdlib/std.goose";
-static const char gs_file1[] = "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-449-p8-02-route-table/source/routes.goose";
+static const char gs_file0[] = "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-449-p8-02-route-table/source/routes.goose";
+static const char gs_file1[] = "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/stdlib/std.goose";
 static int gs_program_initialized;
 typedef struct {
     uint8_t gs_none;
@@ -2276,55 +2276,54 @@ static int64_t route_id_g(int64_t m_g, void *p_g_data, int64_t p_g_len) {
             if (!(t273)) goto L265;
         }
         {
-            if ((uint8_t)((int64_t)((int64_t)((p_g.len))) > (int64_t)(7))) {
-                int64_t t274;
-                uint8_t *t275 = p_g.data;
-                int64_t t276 = p_g.len;
-                int64_t t277 = 7;
-                int64_t t278 = t276;
-                xs_g_2.data = t275 + t277; xs_g_2.len = t278 - t277;
-                t279.data = ((uint8_t *)gs_str47); t279.len = 1;
-                sub_g = t279;
-                {
-                    if ((uint8_t)((int64_t)((int64_t)((sub_g.len))) == (int64_t)(0))) {
-                        t274 = 0;
-                        goto L280;
-                    }
-                    int64_t i_g = 0;
-                    for (;;) {
-                        if (!((uint8_t)((int64_t)((int64_t)(gs_add_i64((int64_t)(i_g), (sub_g.len), gs_file0, 359))) <= (int64_t)((xs_g_2.len))))) goto L281;
-                        int64_t t284 = i_g;
-                        uint8_t *t285 = xs_g_2.data;
-                        uint8_t *t286 = sub_g.data;
-                        if (!((uint8_t)((uint8_t)((uint8_t)(t285[GS_IDX((int64_t)(t284), xs_g_2.len, gs_file0, 360)])) == (uint8_t)(t286[0])))) goto L283;
-                        uint8_t *t287 = xs_g_2.data;
-                        int64_t t288 = xs_g_2.len;
-                        int64_t t289 = i_g;
-                        int64_t t290 = gs_add_i64((int64_t)(i_g), (sub_g.len), gs_file0, 360);
-                        if (t289 < 0 || t290 < t289 || t290 > t288) gs_abort(GS_E_SLICE, gs_file0, 360);
-                        t291.data = t287 + t289; t291.len = t290 - t289;
-                        uint8_t t292 = t291.len == sub_g.len;
-                        if (t292) {
-                            t292 = gs_memeq(t291.data, sub_g.data, (size_t)((t291.len) * 1));
-                        }
-                        if (!(t292)) goto L283;
-                        {
-                            t274 = i_g;
-                            goto L280;
-                        }
-                        L283:;
-                        i_g = gs_add_i64(i_g, 1, gs_file0, 361);
-                    }
-                    L281:;
-                    t274 = -1;
+            int64_t t274;
+            uint8_t *t275 = p_g.data;
+            int64_t t276 = p_g.len;
+            int64_t t277 = 7;
+            int64_t t278 = t276;
+            if (t277 < 0 || t278 < t277 || t278 > t276) gs_abort(GS_E_SLICE, gs_file0, 69);
+            xs_g_2.data = t275 + t277; xs_g_2.len = t278 - t277;
+            t279.data = ((uint8_t *)gs_str47); t279.len = 1;
+            sub_g = t279;
+            {
+                if ((uint8_t)((int64_t)((int64_t)((sub_g.len))) == (int64_t)(0))) {
+                    t274 = 0;
                     goto L280;
                 }
-                L280:;
-                if ((uint8_t)((int64_t)((int64_t)(t274)) < (int64_t)(0))) {
-                    int64_t t293;
-                    t293 = 34;
-                    return t293;
+                int64_t i_g = 0;
+                for (;;) {
+                    if (!((uint8_t)((int64_t)((int64_t)(gs_add_i64((int64_t)(i_g), (sub_g.len), gs_file1, 359))) <= (int64_t)((xs_g_2.len))))) goto L281;
+                    int64_t t284 = i_g;
+                    uint8_t *t285 = xs_g_2.data;
+                    uint8_t *t286 = sub_g.data;
+                    if (!((uint8_t)((uint8_t)((uint8_t)(t285[GS_IDX((int64_t)(t284), xs_g_2.len, gs_file1, 360)])) == (uint8_t)(t286[0])))) goto L283;
+                    uint8_t *t287 = xs_g_2.data;
+                    int64_t t288 = xs_g_2.len;
+                    int64_t t289 = i_g;
+                    int64_t t290 = gs_add_i64((int64_t)(i_g), (sub_g.len), gs_file1, 360);
+                    if (t289 < 0 || t290 < t289 || t290 > t288) gs_abort(GS_E_SLICE, gs_file1, 360);
+                    t291.data = t287 + t289; t291.len = t290 - t289;
+                    uint8_t t292 = t291.len == sub_g.len;
+                    if (t292) {
+                        t292 = gs_memeq(t291.data, sub_g.data, (size_t)((t291.len) * 1));
+                    }
+                    if (!(t292)) goto L283;
+                    {
+                        t274 = i_g;
+                        goto L280;
+                    }
+                    L283:;
+                    i_g = gs_add_i64(i_g, 1, gs_file1, 361);
                 }
+                L281:;
+                t274 = -1;
+                goto L280;
+            }
+            L280:;
+            if ((uint8_t)((int64_t)((int64_t)(t274)) < (int64_t)(0))) {
+                int64_t t293;
+                t293 = 34;
+                return t293;
             }
         }
         L265:;
@@ -2332,7 +2331,7 @@ static int64_t route_id_g(int64_t m_g, void *p_g_data, int64_t p_g_len) {
     int64_t t294;
     t294 = 0;
     return t294;
-    GS_UNREACHABLE(gs_file1, 11);
+    GS_UNREACHABLE(gs_file0, 11);
     int64_t t295 = {0};
     return t295;
 }
@@ -2351,7 +2350,7 @@ static int64_t requires_key_g(int64_t cat_g) {
     int64_t t2;
     t2 = 1;
     return t2;
-    GS_UNREACHABLE(gs_file1, 78);
+    GS_UNREACHABLE(gs_file0, 77);
     int64_t t3 = {0};
     return t3;
 }

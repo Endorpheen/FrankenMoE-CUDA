@@ -63,11 +63,10 @@ export fn route_id(m:i64,p:const u8[:])->i64{
  if m==1 as i64 && p=="/tools" {return 39 as i64;} // GET /tools -> tools
  if m==2 as i64 && p=="/tools" {return 39 as i64;} // POST /tools -> tools
  // POST /slots/<one segment> -> slots_post
+ // httplib captures an empty parameter too: "/slots/" matches with ""
  if m==2 as i64 {
   if starts_with(p, "/slots/") {
-   if p.len > 7 as i64 {
-    if find(p[7..], "/") < 0 as i64 { return 34 as i64; }
-   }
+   if find(p[7..], "/") < 0 as i64 { return 34 as i64; }
   }
  }
  return 0 as i64;

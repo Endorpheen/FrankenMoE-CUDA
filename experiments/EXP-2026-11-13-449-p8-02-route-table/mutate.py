@@ -16,7 +16,7 @@ ORIG = SRC.read_text()
 MUTATIONS = [
     ('emitted category off by one', "{{return {cat} as i64;}}", "{{return {cat + 1} as i64;}}"),
     ('method shifted to the next one', 'if m=={method} as i64 && p==', 'if m=={method + 1} as i64 && p=='),
-    ('slots segment length not checked', "        '   if p.len > 7 as i64 {',", "        '   if p.len > 0 as i64 {',"),
+    ('slots prefix points at the wrong route', 'if starts_with(p, "/slots/") {', 'if starts_with(p, "/slot/") {'),
     ('slots rule matches nested paths', "if find(p[7..], \"/\") < 0 as i64", "if find(p[7..], \"/\") >= 0 as i64"),
     ('health loses the public exemption', "        ' if cat==1 as i64 {return 0 as i64;}',",
      "        ' if cat==99 as i64 {return 0 as i64;}',"),
