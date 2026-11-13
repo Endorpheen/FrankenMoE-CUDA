@@ -2867,6 +2867,226 @@ recursive fn eval_filter(
         return res;
     }
 
+    if filter_name_is(fname, "tojson") {
+        if vk(A, st, sval) == V_UNDEF {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let base = st[7];
+        let n = json_into(sval, 0, -1, ", ", ": ", A, B, F, st, out, base, E);
+
+        if n < 0 || st[1] != 0 {
+            return -1;
+        }
+        let res = mk_str(A, F, B, st, out[base..n]);
+        st[7] = base;
+        return res;
+    }
+
+    if filter_name_is(fname, "string") || filter_name_is(fname, "safe") {
+        let k = vk(A, st, sval);
+
+        if k == V_STRING {
+            return sval;
+        }
+
+        if k == V_BOOL {
+            if vi(A, st, sval) != 0 {
+                return mk_str(A, F, B, st, "True");
+            }
+            return mk_str(A, F, B, st, "False");
+        }
+
+        if k == V_NONE {
+            return mk_str(A, F, B, st, "None");
+        }
+
+        if k == V_UNDEF {
+            return mk_str(A, F, B, st, "");
+        }
+
+        if filter_name_is(fname, "safe") && (k == V_ARRAY || k == V_TUPLE || k == V_OBJECT) {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let base = st[7];
+        var n: i64 = 0;
+
+        if k == V_FLOAT {
+            n = float_repr(out, base, F[sval]);
+        } else if k == V_ARRAY || k == V_TUPLE || k == V_OBJECT {
+            n = repr_into(A, B, F, st, sval, out, base, E);
+        } else {
+            n = json_into(sval, 0, -1, ", ", ": ", A, B, F, st, out, base, E);
+        }
+
+        if n < 0 || st[1] != 0 {
+            return -1;
+        }
+        let res = mk_str(A, F, B, st, out[base..base + n]);
+        st[7] = base;
+        return res;
+    }
+
+    if filter_name_is(fname, "int") || filter_name_is(fname, "float") {
+        let k = vk(A, st, sval);
+        let want_float: bool = filter_name_is(fname, "float");
+
+        if k == V_INT {
+            if want_float {
+                return mk_float(A, F, st, vi(A, st, sval) as f64);
+            }
+            return sval;
+        }
+
+        if k == V_FLOAT {
+            if want_float {
+                return sval;
+            }
+            return mk_int(A, F, st, F[sval] as i64);
+        }
+
+        if k == V_BOOL {
+            if want_float {
+                if vi(A, st, sval) != 0 {
+                    return mk_float(A, F, st, 1.0);
+                }
+                return mk_float(A, F, st, 0.0);
+            }
+            return mk_int(A, F, st, vi(A, st, sval));
+        }
+
+        if k != V_STRING {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        var base_arg: i64 = 10;
+
+        if !want_float && argc > 1 && vk(A, st, argv[1]) != V_UNDEF {
+            base_arg = vi(A, st, argv[1]);
+        }
+
+        if !want_float && base_arg != 0 && base_arg != 10 {
+            return fail_node(K_FILTER, apos(A, st, id), "int() non-decimal base not ported", E, st);
+        }
+        let src = vstr(B, A, st, sval);
+        var i: i64 = 0;
+
+        while i < src.len && ws_byte(src[i]) {
+            i = i + 1;
+        }
+        var negi: bool = false;
+
+        if i < src.len {
+            if src[i] == 45 {
+                negi = true;
+                i = i + 1;
+            } else if src[i] == 43 {
+                i = i + 1;
+            }
+        }
+        var any: bool = false;
+
+        if want_float {
+            var val: f64 = 0.0;
+
+            while i < src.len && src[i] >= 48 && src[i] <= 57 {
+                val = val * 10.0 + (src[i] as f64 - 48.0);
+                any = true;
+                i = i + 1;
+            }
+
+            if i < src.len && src[i] == 46 {
+                var scale: f64 = 0.1;
+                i = i + 1;
+
+                while i < src.len && src[i] >= 48 && src[i] <= 57 {
+                    val = val + (src[i] as f64 - 48.0) * scale;
+                    scale = scale * 0.1;
+                    any = true;
+                    i = i + 1;
+                }
+            }
+
+            if any && i < src.len && (src[i] == 101 || src[i] == 69) {
+                var j: i64 = i + 1;
+                var eneg: bool = false;
+
+                if j < src.len {
+                    if src[j] == 45 {
+                        eneg = true;
+                        j = j + 1;
+                    } else if src[j] == 43 {
+                        j = j + 1;
+                    }
+                }
+                var ex: i64 = 0;
+                var eany: bool = false;
+
+                while j < src.len && src[j] >= 48 && src[j] <= 57 {
+                    ex = ex * 10 + (src[j] as i64 - 48);
+                    eany = true;
+                    j = j + 1;
+                }
+
+                if eany {
+                    while ex > 0 {
+                        if eneg {
+                            val = val / 10.0;
+                        } else {
+                            val = val * 10.0;
+                        }
+                        ex = ex - 1;
+                    }
+                }
+            }
+
+            if !any {
+                if argc > 0 && vk(A, st, argv[0]) != V_UNDEF {
+                    return mk_float(A, F, st, F[argv[0]]);
+                }
+                return mk_float(A, F, st, 0.0);
+            }
+
+            if negi {
+                val = 0.0 - val;
+            }
+            return mk_float(A, F, st, val);
+        }
+
+        var acc: i64 = 0;
+
+        while i < src.len && src[i] >= 48 && src[i] <= 57 {
+            acc = acc * 10 + (src[i] as i64 - 48);
+            any = true;
+            i = i + 1;
+        }
+
+        if !any {
+            if argc > 0 && vk(A, st, argv[0]) != V_UNDEF {
+                return mk_int(A, F, st, vi(A, st, argv[0]));
+            }
+            return mk_int(A, F, st, 0);
+        }
+
+        if negi {
+            acc = 0 - acc;
+        }
+        return mk_int(A, F, st, acc);
+    }
+
     var p = apps(E, 0, "Unknown (built-in) filter '");
     p = app(E, p, fname, 0, fname.len);
     p = apps(E, p, "' for type ");
