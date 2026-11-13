@@ -9,7 +9,7 @@ SRC = E / 'source/runtime.goose'
 ORIG = SRC.read_text()
 
 M = [
-    ('positional argument ignored', 'if vk(A, st, cand) != V_KWARG {', 'if false {'),
+    ('positional argument ignored', 'if pos == index {', 'if false {'),
     ('default value ignored', 'v = eval_node(ac1(A, st, pnode), st[11], noff, nlen, cval, A, F, B, E, out, st);', 'v = mk_int(A, F, st, 0);'),
     ('parameter name ignored', 'if ctx_set(pname, vals[i], noff, nlen, cval, B, A, F, st, E) < 0 {', 'if ctx_set("z", vals[i], noff, nlen, cval, B, A, F, st, E) < 0 {'),
     ('macro body not executed', 'let r = exec_list(bstart, bcount, noff, nlen, cval, A, F, B, E, out, st);', 'let r: i64 = 0;'),
@@ -18,10 +18,10 @@ M = [
     ('caller is not bound', 'if ctx_set("caller", f, cnoff, cnlen, cval, B, A, F, st, E) < 0 {', 'if false {'),
     ('caller function stores the wrong node', 'A[st[17] + f] = id;\n\n    if ctx_set("caller"', 'A[st[17] + f] = 0;\n\n    if ctx_set("caller"'),
     ('call statement result is not rendered', 'append_rendered(res, A, B, F, st, out, E);', ''),
-    ('call statement does not invoke', 'let res = invoke_func(callee, argv, vcc(A, st, argv), id, K_CALLSTMT, cnoff, cnlen, cval, A, F, B, E, out, st);', 'let res: i64 = 0;'),
-    ('keyword arguments are not wrapped', 'if ak(A, st, child) == K_KWARG {', 'if false {'),
-    ('keyword lookup ignores names', 'if vk(A, st, av) == V_KWARG && vcc(A, st, av) > 0 {', 'if vk(A, st, av) == V_KWARG && vcc(A, st, av) > 0 && false {'),
-    ('keyword lookup disabled', 'if vk(A, st, av) == V_KWARG && vcc(A, st, av) > 0 {', 'if false {'),
+    ('call statement does not invoke', 'let res = invoke_func(callee, call, K_CALLSTMT, cnoff, cnlen, cval, A, F, B, E, out, st);', 'let res: i64 = 0;'),
+    ('keyword name match removed', 'if same_name(B, A, st, ac0(A, st, a), pname) {', 'if true {'),
+    ('keyword branch disabled', 'if ak(A, st, a) == K_KWARG {', 'if false {'),
+    ('keyword value ignored', 'return eval_node(ac1(A, st, a), ctxc, noff, nlen, cval, A, F, B, E, out, st);', 'return -1;'),
 ]
 
 

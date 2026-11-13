@@ -42,18 +42,19 @@ exception text.
 | caller without arguments, caller with an argument, caller body using a loop | 3 |
 | macro body using `for` | 1 |
 | non-function callee: integer literal call and an undefined name | 2 |
-| total | **80 cases, 160 values, 0 failures** (the 56 cases of EXP509 plus 24) |
+| total | **81 cases, 162 values, 0 failures** (the 56 cases of EXP509 plus 25) |
 | mutations | **13/13** for this experiment: body execution, binding, stored node, capture, rewind, callee check, positional value, default value, parameter name, caller binding, caller node, call rendering, call invocation |
 
 The final `-O2` gate and ASan stay deferred for the same reason as EXP508/509.
 
 ## Limitations, stated explicitly
 
-1. Keyword arguments work for a call whose arguments are all keywords, for a
-   positional argument followed by a keyword, and for the same with a macro
-   without defaults. The combination **default parameter plus two keyword
-   arguments** still loses the second keyword before binding; it is excluded
-   from the corpus and recorded here rather than silently accepted.
+1. Macro arguments are bound directly from the call AST: for each parameter the
+   binder scans the call node, matches a keyword by name, otherwise takes the
+   positional argument with that index, otherwise the default. Nothing is
+   carried through the value pool, which also removed the second-keyword loss
+   seen with the earlier transport. The default-parameter plus two-keyword case
+   is now in the corpus and passes.
 2. Macro scoping is dynamic (the caller's current context), not the lexical
    context copy of the native runtime. Top-level macros behave identically; a
    macro defined inside a nested scope that captures shadowed variables can

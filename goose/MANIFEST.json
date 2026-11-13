@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-13T19:23:11.676817+00:00",
+  "updated_at": "2026-11-13T19:57:08.434436+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -73,8 +73,8 @@
       "experiment": "EXP-2026-11-13-510-p7-08-jinja-macro-call",
       "task": "",
       "status": "ported",
-      "sha256": "61512262c2b9062a82b77ee92fc3cd5c547e57cbab644b75b9d553b5bb35ae80",
-      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro+caller+kwargs 80/160, 13/13 mutations"
+      "sha256": "f0543287e36591644b1743b560c1ca66da12a8c8618677bbe1551212d146be5d",
+      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro+caller+kwargs 81/162, 13/13 mutations"
     },
     {
       "goose": "cpu/goose-runtime/allocator-coalesce/kernel-v1.goose",
@@ -10726,7 +10726,7 @@
       "experiment": "EXP-2026-11-13-510-p7-08-jinja-macro-call",
       "task": "P7-08",
       "status": "slice",
-      "sha256": "61512262c2b9062a82b77ee92fc3cd5c547e57cbab644b75b9d553b5bb35ae80"
+      "sha256": "f0543287e36591644b1743b560c1ca66da12a8c8618677bbe1551212d146be5d"
     },
     {
       "goose": "misc/edge0-pack-index.goose",

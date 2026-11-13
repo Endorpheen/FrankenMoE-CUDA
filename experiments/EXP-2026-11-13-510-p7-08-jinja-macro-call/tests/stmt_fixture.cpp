@@ -519,6 +519,7 @@ int main(void) {
         "{% macro m(a, b=2) %}{{ a }}{{ b }}{% endmacro %}{{ m(1, 9) }}",
         "{% macro m(a) %}{{ a }}{% endmacro %}{{ m(1, 2) }}",
         "{% macro m(b, a) %}{{ a }}{{ b }}{% endmacro %}{{ m(b=2, a=1) }}",
+        "{% macro m(a, b=2) %}{{ a }}{{ b }}{% endmacro %}{{ m(b=9, a=1) }}",
         "{% macro m(x) %}{{ x }}{% endmacro %}{{ m(x=7) }}",
         "{% macro m(a, b) %}{{ a }}{{ b }}{% endmacro %}{{ m(1, b=2) }}",
         "{% macro wrap() %}[{{ caller() }}]{% endmacro %}{% call wrap() %}body{% endcall %}",

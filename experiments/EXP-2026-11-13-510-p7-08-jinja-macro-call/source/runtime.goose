@@ -2198,8 +2198,27 @@ recursive fn eval_member(
     return mk_undef_hint(A, F, B, st, "object_property");
 }
 
-recursive fn collect_args(
-    id: i64,
+fn same_name(B: const u8[:], A: const i64[:], st: const i64[:], node: i64, name: const u8[:]) -> bool {
+    let n = astr(B, A, st, node);
+
+    if n.len != name.len {
+        return false;
+    }
+    var k: i64 = 0;
+
+    while k < n.len {
+        if n[k] != name[k] {
+            return false;
+        }
+        k = k + 1;
+    }
+    return true;
+}
+
+fn arg_value(
+    site_id: i64,
+    index: i64,
+    pname: const u8[:],
     ctxc: i64,
     noff: i64[:],
     nlen: i64[:],
@@ -2210,52 +2229,31 @@ recursive fn collect_args(
     E: u8[:],
     out: u8[:],
     st: i64[:]) -> i64 {
-    let argv = arr_new(A, F, st);
-    let start = al0s(A, st, id);
-    let count = al0c(A, st, id);
-    var i: i64 = 0;
+    let start = al0s(A, st, site_id);
+    let count = al0c(A, st, site_id);
+    var k: i64 = 0;
+    var pos: i64 = 0;
 
-    while i < count {
-        let child = A[apool(A, st) + start + i];
+    while k < count {
+        let a = A[apool(A, st) + start + k];
 
-        if ak(A, st, child) == K_KWARG {
-            let key = ac0(A, st, child);
-            let val = eval_node(ac1(A, st, child), ctxc, noff, nlen, cval, A, F, B, E, out, st);
-
-            if st[1] != 0 {
-                return -1;
+        if ak(A, st, a) == K_KWARG {
+            if same_name(B, A, st, ac0(A, st, a), pname) {
+                return eval_node(ac1(A, st, a), ctxc, noff, nlen, cval, A, F, B, E, out, st);
             }
-            let name = astr(B, A, st, key);
-            let kw = vnew(A, F, st, V_KWARG);
-            let off = st[3];
-            var qi: i64 = 0;
-
-            while qi < name.len {
-                B[st[3] + qi] = name[qi];
-                qi = qi + 1;
-            }
-            st[3] = st[3] + name.len;
-            A[st[18] + kw] = off;
-            A[st[19] + kw] = name.len;
-            arr_push(A, st, kw, val);
-            arr_push(A, st, argv, kw);
         } else {
-            let v = eval_node(child, ctxc, noff, nlen, cval, A, F, B, E, out, st);
-
-            if st[1] != 0 {
-                return -1;
+            if pos == index {
+                return eval_node(a, ctxc, noff, nlen, cval, A, F, B, E, out, st);
             }
-            arr_push(A, st, argv, v);
+            pos = pos + 1;
         }
-        i = i + 1;
+        k = k + 1;
     }
-    return argv;
+    return -1;
 }
 
 recursive fn invoke_func(
     fid: i64,
-    argv: i64,
-    argc: i64,
     site_id: i64,
     site_kind: i64,
     noff: i64[:],
@@ -2282,63 +2280,35 @@ recursive fn invoke_func(
     while i < pcount {
         let pnode = A[apool(A, st) + pstart + i];
         let pk = ak(A, st, pnode);
+        var pname: const u8[:] = "";
 
-        if pk != K_IDENT && pk != K_KWARG {
+        if pk == K_IDENT {
+            pname = astr(B, A, st, pnode);
+        } else if pk == K_KWARG {
+            pname = astr(B, A, st, ac0(A, st, pnode));
+        } else {
             return fail_node(site_kind, apos(A, st, site_id), "Invalid parameter type", E, st);
         }
-        let pname = if pk == K_IDENT { astr(B, A, st, pnode) } else { astr(B, A, st, ac0(A, st, pnode)) };
-        var v = -1;
-        var qn: i64 = 0;
+        var v = arg_value(site_id, i, pname, st[11], noff, nlen, cval, A, F, B, E, out, st);
 
-        while qn < argc {
-            let av = vchild(A, st, argv, qn);
-
-            if vk(A, st, av) == V_KWARG && vcc(A, st, av) > 0 {
-                let vn = vstr(B, A, st, av);
-
-                if vn.len == pname.len {
-                    var same: bool = true;
-                    var k2: i64 = 0;
-
-                    while k2 < vn.len {
-                        if vn[k2] != pname[k2] {
-                            same = false;
-                            k2 = vn.len;
-                        } else {
-                            k2 = k2 + 1;
-                        }
-                    }
-
-                    if same && v < 0 {
-                        v = vchild(A, st, av, 0);
-                    }
-                }
-            }
-            qn = qn + 1;
+        if st[1] != 0 {
+            return -1;
         }
 
-        if v < 0 && i < argc {
-            let cand = vchild(A, st, argv, i);
+        if v < 0 && pk == K_KWARG {
+            v = eval_node(ac1(A, st, pnode), st[11], noff, nlen, cval, A, F, B, E, out, st);
 
-            if vk(A, st, cand) != V_KWARG {
-                v = cand;
+            if st[1] != 0 {
+                return -1;
             }
         }
 
         if v < 0 {
-            if pk == K_KWARG {
-                v = eval_node(ac1(A, st, pnode), st[11], noff, nlen, cval, A, F, B, E, out, st);
-
-                if st[1] != 0 {
-                    return -1;
-                }
-            } else {
-                var p = apps(E, 0, "Not enough arguments provided to '");
-                let nm = astr(B, A, st, ac0(A, st, node));
-                p = app(E, p, nm, 0, nm.len);
-                p = appc(E, p, 39);
-                return fail_node(site_kind, apos(A, st, site_id), E[0..p], E, st);
-            }
+            var p = apps(E, 0, "Not enough arguments provided to '");
+            let nm = astr(B, A, st, ac0(A, st, node));
+            p = app(E, p, nm, 0, nm.len);
+            p = appc(E, p, 39);
+            return fail_node(site_kind, apos(A, st, site_id), E[0..p], E, st);
         }
         vals[i] = v;
         i = i + 1;
@@ -2368,6 +2338,33 @@ recursive fn invoke_func(
     return mk_str(A, F, B, st, text);
 }
 
+recursive fn eval_call(
+    id: i64,
+    ctxc: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let callee = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+
+    if vk(A, st, callee) != V_FUNC {
+        var p = apps(E, 0, "Callee is not a function: got ");
+        let tn = type_name(A, B, st, callee, E[p..]);
+        p = p + tn;
+        return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
+    }
+    return invoke_func(callee, id, K_CALL, noff, nlen, cval, A, F, B, E, out, st);
+}
+
 fn exec_call_stmt(
     id: i64,
     cnoff: i64[:],
@@ -2380,11 +2377,6 @@ fn exec_call_stmt(
     out: u8[:],
     st: i64[:]) -> i64 {
     let call = ac0(A, st, id);
-    let argv = collect_args(call, st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
-
-    if st[1] != 0 {
-        return -1;
-    }
     let callee = eval_node(ac0(A, st, call), st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
@@ -2405,7 +2397,7 @@ fn exec_call_stmt(
     if ctx_set("caller", f, cnoff, cnlen, cval, B, A, F, st, E) < 0 {
         return -1;
     }
-    let res = invoke_func(callee, argv, vcc(A, st, argv), id, K_CALLSTMT, cnoff, cnlen, cval, A, F, B, E, out, st);
+    let res = invoke_func(callee, call, K_CALLSTMT, cnoff, cnlen, cval, A, F, B, E, out, st);
 
     if res < 0 || st[1] != 0 {
         return -1;
@@ -2415,37 +2407,6 @@ fn exec_call_stmt(
     return 0;
 }
 
-recursive fn eval_call(
-    id: i64,
-    ctxc: i64,
-    noff: i64[:],
-    nlen: i64[:],
-    cval: i64[:],
-    A: i64[:],
-    F: f64[:],
-    B: u8[:],
-    E: u8[:],
-    out: u8[:],
-    st: i64[:]) -> i64 {
-    let argv = collect_args(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
-
-    if st[1] != 0 {
-        return -1;
-    }
-    let callee = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
-
-    if st[1] != 0 {
-        return -1;
-    }
-
-    if vk(A, st, callee) != V_FUNC {
-        var p = apps(E, 0, "Callee is not a function: got ");
-        let tn = type_name(A, B, st, callee, E[p..]);
-        p = p + tn;
-        return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
-    }
-    return invoke_func(callee, argv, vcc(A, st, argv), id, K_CALL, noff, nlen, cval, A, F, B, E, out, st);
-}
 
 fn exec_macro_def(
     id: i64,
