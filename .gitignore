@@ -162,3 +162,7 @@ node_modules/
 /runtime/exp512/
 /experiments/EXP-2026-11-13-512-p7-08-jinja-filters/source/runtime-gen.c
 /experiments/EXP-2026-11-13-512-p7-08-jinja-filters/source/runtime-gen.h
+
+# Generated Goose output inside experiment sources.
+experiments/**/source/runtime-gen.c
+experiments/**/source/runtime-gen.h

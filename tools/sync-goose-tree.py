@@ -43,7 +43,7 @@ CANONICAL_SOURCES = [
     ("jinja/builtins.goose", "EXP-2026-11-13-506-p7-08-builtins-scalar", "source/builtins.goose",
      "common/jinja/value.cpp (built-ins)", "51 cases / 100 values / 0 failures, 14/14 mutations"),
     ("jinja/runtime.goose", "EXP-2026-11-13-512-p7-08-jinja-filters", "source/runtime.goose",
-     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 88/176, 5/5 mutations"),
+     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 99/198, 10/10 mutations"),
 ]
 
 CANONICAL = {
@@ -56,6 +56,10 @@ CANONICAL = {
     "EXP-2026-11-13-507-p7-08-jinja-runtime-expr",
     "EXP-2026-11-13-509-p7-08-jinja-runtime-for",
 }
+
+# An experiment already published as a canonical module is not copied again as a
+# slice; the canonical file carries the same bytes.
+CANONICAL_EXPERIMENTS = CANONICAL | {row[1] for row in CANONICAL_SOURCES}
 
 EXTERNAL_ROOTS = [
     Path("/home/end0/AI/LlamaServer"),
@@ -214,7 +218,7 @@ def build(check: bool) -> int:
         if not folder.is_dir() or not folder.name.startswith("EXP-"):
             continue
         files = sorted(folder.rglob("*.goose"))
-        if not files or folder.name in CANONICAL:
+        if not files or folder.name in CANONICAL_EXPERIMENTS:
             continue
         targets, task = choose_target(folder, ledger)
         for source in files:

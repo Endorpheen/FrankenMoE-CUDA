@@ -338,7 +338,6 @@ struct AstEnc {
 
 static void check_tpl(const std::string & src,
                       const std::vector<std::pair<std::string, std::string>> & vars) {
-    if (src.find("|") != std::string::npos) { fprintf(stderr, "CASE %s\n", src.c_str()); fflush(stderr); }
     jinja::lexer lx;
     auto lr = lx.tokenize(src);
     auto prog = jinja::parse_from_tokens(lr);
@@ -528,7 +527,18 @@ int main(void) {
         "{{ 'abc'|count }}",
         "{{ 123|upper }}",
         "{{ 'ab'|upper|lower }}",
+        "{{ '  hi '|strip }}",
+        "{{ '\t x \t'|strip }}",
+        "{{ 'xxaxx'|strip('x') }}",
         "{{ 'x'|nope }}",
+        "{{ 'a-b-a'|replace('-', '+') }}",
+        "{{ 'ab'|replace('', '-') }}",
+        "{{ [1,2,3]|count }}",
+        "{{ o|length }}",
+        "{{ t|count }}",
+        "{{ 'a-b'|replace('a-b', '+') }}",
+        "{{ 'xax'|replace('x', '--') }}",
+        "{{ '  '|strip }}",
         "{% macro m(b, a) %}{{ a }}{{ b }}{% endmacro %}{{ m(b=2, a=1) }}",
         "{% macro m(a, b=2) %}{{ a }}{{ b }}{% endmacro %}{{ m(b=9, a=1) }}",
         "{% macro m(x) %}{{ x }}{% endmacro %}{{ m(x=7) }}",

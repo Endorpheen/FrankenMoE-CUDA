@@ -2487,9 +2487,92 @@ recursive fn eval_filter(
         return res;
     }
 
+    if filter_name_is(fname, "strip") {
+        if vk(A, st, sval) != V_STRING {
+            var p = apps(E, 0, "Unknown (built-in) filter '");
+            p = app(E, p, fname, 0, fname.len);
+            p = apps(E, p, "' for type ");
+            let tn = type_name(A, B, st, sval, E[p..]);
+            p = p + tn;
+            return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
+        }
+        let src = vstr(B, A, st, sval);
+        var chars: const u8[:] = "";
+
+        if argc > 0 && vk(A, st, argv[0]) != V_UNDEF {
+            chars = vstr(B, A, st, argv[0]);
+        }
+        var a: i64 = 0;
+        var b: i64 = src.len;
+        var go: i64 = 1;
+
+        while a < b && go != 0 {
+            var hit = ws_byte(src[a]);
+
+            if chars.len > 0 {
+                hit = false;
+                var k: i64 = 0;
+
+                while k < chars.len {
+                    if chars[k] == src[a] {
+                        hit = true;
+                    }
+                    k = k + 1;
+                }
+            }
+
+            if hit {
+                a = a + 1;
+            } else {
+                go = 0;
+            }
+        }
+        go = 1;
+
+        while b > a && go != 0 {
+            var hit = ws_byte(src[b - 1]);
+            var k: i64 = 0;
+
+            if chars.len > 0 {
+                hit = false;
+
+                while k < chars.len {
+                    if chars[k] == src[b - 1] {
+                        hit = true;
+                    }
+                    k = k + 1;
+                }
+            }
+
+            if hit {
+                b = b - 1;
+            } else {
+                go = 0;
+            }
+        }
+        let base = st[7];
+        var i: i64 = 0;
+
+        while i < b - a {
+            out[base + i] = src[a + i];
+            i = i + 1;
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + (b - a)]);
+        st[7] = base;
+        return res;
+    }
+
     if filter_name_is(fname, "length") {
         if vk(A, st, sval) == V_STRING {
             return mk_int(A, F, st, vstr(B, A, st, sval).len);
+        }
+
+        if vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE {
+            return mk_int(A, F, st, vcc(A, st, sval));
+        }
+
+        if vk(A, st, sval) == V_OBJECT {
+            return mk_int(A, F, st, vkc(A, st, sval));
         }
         var p = apps(E, 0, "Unknown (built-in) filter '");
         p = app(E, p, fname, 0, fname.len);
@@ -2498,6 +2581,82 @@ recursive fn eval_filter(
         p = p + tn;
         return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
     }
+    if filter_name_is(fname, "replace") {
+        var pat: const u8[:] = "";
+        var rep: const u8[:] = "";
+
+        if argc > 0 {
+            pat = vstr(B, A, st, argv[0]);
+        }
+
+        if argc > 1 {
+            rep = vstr(B, A, st, argv[1]);
+        }
+        let src = vstr(B, A, st, sval);
+        let base = st[7];
+        var n: i64 = 0;
+
+        if pat.len == 0 {
+            var j: i64 = 0;
+
+            while j < rep.len {
+                out[base + n] = rep[j];
+                n = n + 1;
+                j = j + 1;
+            }
+            j = 0;
+
+            while j < src.len {
+                out[base + n] = src[j];
+                n = n + 1;
+                var k: i64 = 0;
+
+                while k < rep.len {
+                    out[base + n] = rep[k];
+                    n = n + 1;
+                    k = k + 1;
+                }
+                j = j + 1;
+            }
+        } else {
+            var i: i64 = 0;
+
+            while i < src.len {
+                var hit: bool = false;
+
+                if i + pat.len <= src.len {
+                    hit = true;
+                    var k: i64 = 0;
+
+                    while k < pat.len {
+                        if src[i + k] != pat[k] {
+                            hit = false;
+                        }
+                        k = k + 1;
+                    }
+                }
+
+                if hit {
+                    var k2: i64 = 0;
+
+                    while k2 < rep.len {
+                        out[base + n] = rep[k2];
+                        n = n + 1;
+                        k2 = k2 + 1;
+                    }
+                    i = i + pat.len;
+                } else {
+                    out[base + n] = src[i];
+                    n = n + 1;
+                    i = i + 1;
+                }
+            }
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + n]);
+        st[7] = base;
+        return res;
+    }
+
     var p = apps(E, 0, "Unknown (built-in) filter '");
     p = app(E, p, fname, 0, fname.len);
     p = apps(E, p, "' for type ");
