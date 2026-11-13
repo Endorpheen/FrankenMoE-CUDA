@@ -125,6 +125,7 @@ experiments/*/build-copy/
 /runtime/exp506/
 /runtime/exp507/
 /runtime/exp508/
+/runtime/exp509/
 
 # Local Fried Goose compiler research; preserve for a separate upstream fork.
 /fried-goose/
@@ -142,3 +143,7 @@ node_modules/
 
 # Staged release assets (compressed run sets).
 /releases/
+
+# Generated Goose output for EXP509 (rebuilt by build_fixture.sh).
+/experiments/EXP-2026-11-13-509-p7-08-jinja-runtime-for/source/runtime-gen.c
+/experiments/EXP-2026-11-13-509-p7-08-jinja-runtime-for/source/runtime-gen.h

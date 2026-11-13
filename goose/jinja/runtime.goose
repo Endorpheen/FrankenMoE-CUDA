@@ -1903,6 +1903,9 @@ const K_BINARY: i64 = 19;
 const K_UNARY: i64 = 24;
 const K_IDENT: i64 = 12;
 const K_SET_NODE: i64 = 6;
+const K_SELECT: i64 = 25;
+const K_FOR: i64 = 2;
+const K_MEMBER: i64 = 20;
 
 fn ast_bases(A: const i64[:], st: i64[:]) -> i64 {
     let vc = A[0];
@@ -2038,6 +2041,10 @@ fn node_name(k: i64) -> const u8[:] {
     if k == K_BINARY {
         return "BinaryExpression";
     }
+
+    if k == K_MEMBER {
+        return "MemberExpression";
+    }
     return "UnaryExpression";
 }
 // prefix the message with the node wrapper the native statement::execute adds
@@ -2071,6 +2078,103 @@ fn mk_undef_hint(A: i64[:], F: f64[:], B: u8[:], st: i64[:], s: const u8[:]) -> 
     A[st[19] + id] = s.len;
     return id;
 }
+fn obj_lookup(A: const i64[:], B: const u8[:], F: const f64[:], st: const i64[:], obj: i64, key: i64) -> i64 {
+    let n = vkc(A, st, obj);
+    var i: i64 = 0;
+
+    while i < n {
+        let k = A[st[26] + vks(A, st, obj) + i];
+
+        if eqv(A, B, F, st, k, key) {
+            return A[st[26] + vvs(A, st, obj) + i];
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+recursive fn eval_member(
+    id: i64,
+    ctxc: i64,
+    noff: const i64[:],
+    nlen: const i64[:],
+    cval: const i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    st: i64[:]) -> i64 {
+    let obj = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+    var prop: i64 = -1;
+
+    if aiv(A, st, id) != 0 {
+        prop = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+
+        if st[1] != 0 {
+            return -1;
+        }
+    } else {
+        let pn = ac1(A, st, id);
+        let pk = ak(A, st, pn);
+
+        if pk == K_IDENT {
+            prop = mk_str(A, F, B, st, astr(B, A, st, pn));
+        } else if pk == K_INT {
+            prop = mk_int(A, F, st, aiv(A, st, pn));
+        } else {
+            return fail_node(K_MEMBER, apos(A, st, id), "Static member property must be an identifier", E, st);
+        }
+    }
+
+    if vk(A, st, prop) == V_UNDEF || vk(A, st, obj) == V_UNDEF {
+        return mk_undef_hint(A, F, B, st, "object_property");
+    }
+    let ok = vk(A, st, obj);
+
+    if ok == V_OBJECT {
+        let found = obj_lookup(A, B, F, st, obj, prop);
+
+        if found >= 0 {
+            return found;
+        }
+        return mk_undef_hint(A, F, B, st, "object_property");
+    }
+    let pk = vk(A, st, prop);
+
+    if ok == V_ARRAY || ok == V_TUPLE {
+        if pk == V_INT || pk == V_BOOL {
+            var idx = vi(A, st, prop);
+            let n = vcc(A, st, obj);
+
+            if idx < 0 {
+                idx = idx + n;
+            }
+
+            if idx >= 0 && idx < n {
+                return vchild(A, st, obj, idx);
+            }
+        }
+        return mk_undef_hint(A, F, B, st, "object_property");
+    }
+
+    if ok == V_STRING {
+        if pk == V_INT || pk == V_BOOL {
+            let idx = vi(A, st, prop);
+            let txt = vstr(B, A, st, obj);
+
+            if idx >= 0 && idx < txt.len {
+                return mk_str(A, F, B, st, txt[idx .. idx + 1]);
+            }
+        }
+        return mk_undef_hint(A, F, B, st, "object_property");
+    }
+    return mk_undef_hint(A, F, B, st, "object_property");
+}
+
 recursive fn eval_node(
     id: i64,
     ctxc: i64,
@@ -2203,6 +2307,23 @@ recursive fn eval_node(
 
     if k == K_BINARY {
         return eval_binary(id, ctxc, noff, nlen, cval, A, F, B, E, st);
+    }
+
+    if k == K_MEMBER {
+        return eval_member(id, ctxc, noff, nlen, cval, A, F, B, E, st);
+    }
+
+    if k == K_SELECT {
+        let t = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+
+        if st[1] != 0 {
+            return -1;
+        }
+
+        if v_bool(A, F, st, t) == 0 {
+            return mk_undef(A, F, st);
+        }
+        return eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
     }
     return fail_node(k, apos(A, st, id), "Unexpected node type", E, st);
 }
@@ -2772,6 +2893,414 @@ recursive fn append_rendered(v: i64, A: i64[:], B: u8[:], F: f64[:], st: i64[:],
     }
     return 0;
 }
+fn vchild(A: const i64[:], st: const i64[:], id: i64, i: i64) -> i64 {
+    return A[st[26] + vcs(A, st, id) + i];
+}
+
+fn obj_key(A: i64[:], st: i64[:], id: i64, key: i64) -> i64 {
+    let kc = st[23] + id;
+
+    if A[kc] == 0 {
+        A[st[22] + id] = st[4];
+    }
+    A[st[26] + st[4]] = key;
+    st[4] = st[4] + 1;
+    A[kc] = A[kc] + 1;
+    return 0;
+}
+
+fn obj_val(A: i64[:], st: i64[:], id: i64, val: i64) -> i64 {
+    let vc = st[25] + id;
+
+    if A[vc] == 0 {
+        A[st[24] + id] = st[4];
+    }
+    A[st[26] + st[4]] = val;
+    st[4] = st[4] + 1;
+    A[vc] = A[vc] + 1;
+    return 0;
+}
+
+fn loop_shape_ok(loopvar: i64, item: i64, pos: i64, A: const i64[:], B: const u8[:], st: i64[:], E: u8[:]) -> i64 {
+    if ak(A, st, loopvar) != K_TUPLE {
+        return 0;
+    }
+    let ik = vk(A, st, item);
+
+    if ik != V_ARRAY && ik != V_TUPLE {
+        var p = apps(E, 0, "Cannot unpack non-iterable type: ");
+        let tn = type_name(A, B, st, item, E[p..]);
+        p = p + tn;
+        return fail_node(K_FOR, pos, E[0..p], E, st);
+    }
+    let want = al0c(A, st, loopvar);
+    let got = vcc(A, st, item);
+
+    if want != got {
+        let msg: const u8[:] = if want > got {
+            "Too few items to unpack"
+        } else {
+            "Too many items to unpack"
+        };
+        return fail_node(K_FOR, pos, msg, E, st);
+    }
+    return 0;
+}
+
+fn bind_loop_item(
+    loopvar: i64,
+    item: i64,
+    key_mode: i64,
+    pos: i64,
+    cnoff: i64[:],
+    cnlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    st: i64[:]) -> i64 {
+    let lv = ak(A, st, loopvar);
+
+    if lv == K_IDENT {
+        var v = item;
+
+        if key_mode != 0 {
+            v = vchild(A, st, item, 0);
+        }
+        let name = astr(B, A, st, loopvar);
+        return ctx_set(name, v, cnoff, cnlen, cval, B, A, F, st, E);
+    }
+
+    if lv == K_TUPLE {
+        if loop_shape_ok(loopvar, item, pos, A, B, st, E) < 0 {
+            return -1;
+        }
+        let n = al0c(A, st, loopvar);
+        var i: i64 = 0;
+
+        while i < n {
+            let elem = A[apool(A, st) + al0s(A, st, loopvar) + i];
+
+            if ak(A, st, elem) != K_IDENT {
+                var p = apps(E, 0, "Cannot unpack non-identifier type: ");
+                let nm = node_name(ak(A, st, elem));
+                p = app(E, p, nm, 0, nm.len);
+                return fail_node(K_FOR, pos, E[0..p], E, st);
+            }
+            let name = astr(B, A, st, elem);
+
+            if ctx_set(name, vchild(A, st, item, i), cnoff, cnlen, cval, B, A, F, st, E) < 0 {
+                return -1;
+            }
+            i = i + 1;
+        }
+        return 0;
+    }
+    var p = apps(E, 0, "Invalid loop variable(s): ");
+    let nm = node_name(lv);
+    p = app(E, p, nm, 0, nm.len);
+    return fail_node(K_FOR, pos, E[0..p], E, st);
+}
+
+fn check_object_shape(loopvar: i64, pos: i64, A: const i64[:], st: i64[:], E: u8[:]) -> i64 {
+    if ak(A, st, loopvar) != K_TUPLE {
+        return 0;
+    }
+    let want = al0c(A, st, loopvar);
+
+    if want != 2 {
+        let msg: const u8[:] = if want > 2 {
+            "Too few items to unpack"
+        } else {
+            "Too many items to unpack"
+        };
+        return fail_node(K_FOR, pos, msg, E, st);
+    }
+    return 0;
+}
+
+fn bind_object_item(
+    loopvar: i64,
+    obj: i64,
+    idx: i64,
+    pos: i64,
+    cnoff: i64[:],
+    cnlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    st: i64[:]) -> i64 {
+    let lv = ak(A, st, loopvar);
+    let key = A[st[26] + vks(A, st, obj) + idx];
+    let val = A[st[26] + vvs(A, st, obj) + idx];
+
+    if lv == K_IDENT {
+        let name = astr(B, A, st, loopvar);
+        return ctx_set(name, key, cnoff, cnlen, cval, B, A, F, st, E);
+    }
+
+    if lv == K_TUPLE {
+        if check_object_shape(loopvar, pos, A, st, E) < 0 {
+            return -1;
+        }
+        var i: i64 = 0;
+
+        while i < 2 {
+            let elem = A[apool(A, st) + al0s(A, st, loopvar) + i];
+
+            if ak(A, st, elem) != K_IDENT {
+                var p = apps(E, 0, "Cannot unpack non-identifier type: ");
+                let nm = node_name(ak(A, st, elem));
+                p = app(E, p, nm, 0, nm.len);
+                return fail_node(K_FOR, pos, E[0..p], E, st);
+            }
+            let name = astr(B, A, st, elem);
+            var v = key;
+
+            if i == 1 {
+                v = val;
+            }
+
+            if ctx_set(name, v, cnoff, cnlen, cval, B, A, F, st, E) < 0 {
+                return -1;
+            }
+            i = i + 1;
+        }
+        return 0;
+    }
+    var p = apps(E, 0, "Invalid loop variable(s): ");
+    let nm = node_name(lv);
+    p = app(E, p, nm, 0, nm.len);
+    return fail_node(K_FOR, pos, E[0..p], E, st);
+}
+
+fn mk_pair(A: i64[:], F: f64[:], st: i64[:], key: i64, val: i64) -> i64 {
+    let t = vnew(A, F, st, V_TUPLE);
+    arr_push(A, st, t, key);
+    arr_push(A, st, t, val);
+    return t;
+}
+
+fn item_at(A: i64[:], F: f64[:], st: i64[:], iter: i64, key_mode: i64, idx: i64) -> i64 {
+    if key_mode != 0 {
+        return mk_pair(A, F, st,
+            A[st[26] + vks(A, st, iter) + idx],
+            A[st[26] + vvs(A, st, iter) + idx]);
+    }
+    return vchild(A, st, iter, idx);
+}
+
+recursive fn exec_for(
+    id: i64,
+    cnoff: i64[:],
+    cnlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let pos = apos(A, st, id);
+    let loopvar = ac0(A, st, id);
+    let iternode = ac1(A, st, id);
+    let bstart = al0s(A, st, id);
+    let bcount = al0c(A, st, id);
+    let estart = al1s(A, st, id);
+    let ecount = al1c(A, st, id);
+    var sel: i64 = -1;
+    var src = iternode;
+
+    if ak(A, st, iternode) == K_SELECT {
+        sel = ac1(A, st, iternode);
+        src = ac0(A, st, iternode);
+    }
+    let iter = eval_node(src, st[11], cnoff, cnlen, cval, A, F, B, E, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+    var key_mode: i64 = 0;
+    let ik = vk(A, st, iter);
+    var count: i64 = 0;
+
+    if ik == V_UNDEF {
+        count = 0;
+    } else if ik == V_OBJECT {
+        key_mode = 1;
+        count = vvc(A, st, iter);
+    } else if ik == V_ARRAY || ik == V_TUPLE {
+        count = vcc(A, st, iter);
+    } else {
+        var p = apps(E, 0, "Expected iterable or object type in for loop: got ");
+        let tn = type_name(A, B, st, iter, E[p..]);
+        p = p + tn;
+        return fail_node(K_FOR, pos, E[0..p], E, st);
+    }
+    let kept = arr_new(A, F, st);
+    var i: i64 = 0;
+
+    while i < count {
+        var take: i64 = 1;
+
+        if sel >= 0 {
+            scope_push(st);
+            var br: i64 = 0;
+
+            if key_mode != 0 {
+                br = bind_object_item(loopvar, iter, i, pos, cnoff, cnlen, cval, A, F, B, E, st);
+            } else {
+                br = bind_loop_item(loopvar, vchild(A, st, iter, i), 0, pos, cnoff, cnlen, cval, A, F, B, E, st);
+            }
+
+            if br < 0 {
+                return -1;
+            }
+            let tv = eval_node(sel, st[11], cnoff, cnlen, cval, A, F, B, E, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+            take = v_bool(A, F, st, tv);
+            scope_pop(st);
+        } else {
+            var cr: i64 = 0;
+
+            if key_mode != 0 {
+                cr = check_object_shape(loopvar, pos, A, st, E);
+            } else {
+                cr = loop_shape_ok(loopvar, vchild(A, st, iter, i), pos, A, B, st, E);
+            }
+
+            if cr < 0 {
+                return -1;
+            }
+        }
+
+        if take != 0 {
+            arr_push(A, st, kept, mk_int(A, F, st, i));
+        }
+        i = i + 1;
+    }
+    let kn = vcc(A, st, kept);
+    let k_index: i64 = mk_str(A, F, B, st, "index");
+    let k_index0: i64 = mk_str(A, F, B, st, "index0");
+    let k_revindex: i64 = mk_str(A, F, B, st, "revindex");
+    let k_revindex0: i64 = mk_str(A, F, B, st, "revindex0");
+    let k_first: i64 = mk_str(A, F, B, st, "first");
+    let k_last: i64 = mk_str(A, F, B, st, "last");
+    let k_length: i64 = mk_str(A, F, B, st, "length");
+    let k_prev: i64 = mk_str(A, F, B, st, "previtem");
+    let k_next: i64 = mk_str(A, F, B, st, "nextitem");
+    var completed: i64 = 0;
+    var j: i64 = 0;
+
+    while j < kn {
+        let idx = vi(A, st, vchild(A, st, kept, j));
+        scope_push(st);
+        let obj = vnew(A, F, st, V_OBJECT);
+        var lk: i64[9] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var lv: i64[9] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        lk[0] = k_index;
+        lv[0] = mk_int(A, F, st, j + 1);
+        lk[1] = k_index0;
+        lv[1] = mk_int(A, F, st, j);
+        lk[2] = k_revindex;
+        lv[2] = mk_int(A, F, st, kn - j);
+        lk[3] = k_revindex0;
+        lv[3] = mk_int(A, F, st, kn - j - 1);
+        var first: i64 = 0;
+
+        if j == 0 {
+            first = 1;
+        }
+        var last: i64 = 0;
+
+        if j == kn - 1 {
+            last = 1;
+        }
+        lk[4] = k_first;
+        lv[4] = mk_bool(A, F, st, first);
+        lk[5] = k_last;
+        lv[5] = mk_bool(A, F, st, last);
+        lk[6] = k_length;
+        lv[6] = mk_int(A, F, st, kn);
+
+        if j > 0 {
+            lv[7] = item_at(A, F, st, iter, key_mode, vi(A, st, vchild(A, st, kept, j - 1)));
+        } else {
+            lv[7] = mk_undef_hint(A, F, B, st, "previtem");
+        }
+        lk[7] = k_prev;
+
+        if j < kn - 1 {
+            lv[8] = item_at(A, F, st, iter, key_mode, vi(A, st, vchild(A, st, kept, j + 1)));
+        } else {
+            lv[8] = mk_undef_hint(A, F, B, st, "nextitem");
+        }
+        lk[8] = k_next;
+        var q: i64 = 0;
+
+        while q < 9 {
+            obj_key(A, st, obj, lk[q]);
+            q = q + 1;
+        }
+        q = 0;
+
+        while q < 9 {
+            obj_val(A, st, obj, lv[q]);
+            q = q + 1;
+        }
+
+        if ctx_set("loop", obj, cnoff, cnlen, cval, B, A, F, st, E) < 0 {
+            return -1;
+        }
+
+        var br2: i64 = 0;
+
+        if key_mode != 0 {
+            br2 = bind_object_item(loopvar, iter, idx, pos, cnoff, cnlen, cval, A, F, B, E, st);
+        } else {
+            br2 = bind_loop_item(loopvar, vchild(A, st, iter, idx), 0, pos, cnoff, cnlen, cval, A, F, B, E, st);
+        }
+
+        if br2 < 0 {
+            return -1;
+        }
+        let r = exec_list(bstart, bcount, cnoff, cnlen, cval, A, F, B, E, out, st);
+
+        if r < 0 || st[1] != 0 {
+            return -1;
+        }
+
+        if st[8] == 1 {
+            st[8] = 0;
+            scope_pop(st);
+            j = kn;
+        } else if st[8] == 2 {
+            st[8] = 0;
+            scope_pop(st);
+            j = j + 1;
+        } else {
+            scope_pop(st);
+            completed = 1;
+            j = j + 1;
+        }
+    }
+
+    if completed == 0 {
+        let r = exec_list(estart, ecount, cnoff, cnlen, cval, A, F, B, E, out, st);
+
+        if r < 0 || st[1] != 0 {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 recursive fn exec_stmt(
     id: i64,
     cnoff: i64[:],
@@ -2785,6 +3314,10 @@ recursive fn exec_stmt(
     st: i64[:]) -> i64 {
     let k = ak(A, st, id);
     let pos = apos(A, st, id);
+
+    if k == 2 {
+        return exec_for(id, cnoff, cnlen, cval, A, F, B, E, out, st);
+    }
 
     if k == 0 {
         return exec_list(al0s(A, st, id), al0c(A, st, id), cnoff, cnlen, cval, A, F, B, E, out, st);
