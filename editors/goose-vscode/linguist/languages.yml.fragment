@@ -1,0 +1,11 @@
+# Paste into lib/linguist/languages.yml, keeping the file alphabetically sorted.
+Goose:
+  type: programming
+  color: "#5f7189"
+  extensions:
+    - ".goose"
+  tm_scope: source.goose
+  ace_mode: text
+  aliases:
+    - goose
+  # language_id is assigned by script/update-ids, do not set it by hand.

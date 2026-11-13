@@ -135,3 +135,7 @@ experiments/*/build-copy/
 # Old build artifacts committed by mistake; removed from the index 2026-11-13.
 /experiments/*/build-stage-run-backup/
 /runtime/checkpoints/
+
+# Editor extension build output.
+node_modules/
+*.vsix

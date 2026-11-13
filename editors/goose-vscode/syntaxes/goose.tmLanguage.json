@@ -1,0 +1,165 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Goose",
+  "scopeName": "source.goose",
+  "fileTypes": ["goose"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#declarations" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#literals" },
+    { "include": "#numbers" },
+    { "include": "#namespaces" },
+    { "include": "#functions" },
+    { "include": "#properties" },
+    { "include": "#operators" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.double-slash.goose", "match": "//.*$" },
+        {
+          "name": "comment.block.goose",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "patterns": [{ "include": "#comments" }]
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.goose",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "patterns": [
+            { "match": "\\\\.", "name": "constant.character.escape.goose" }
+          ]
+        },
+        {
+          "name": "string.quoted.double.goose",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "match": "\\\\(?:[ntr0\\\\\"']|x[0-9a-fA-F]{2})", "name": "constant.character.escape.goose" },
+            { "match": "\\\\.", "name": "invalid.illegal.escape.goose" }
+          ]
+        },
+        {
+          "name": "string.quoted.single.goose",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            { "match": "\\\\(?:[ntr0\\\\\"']|x[0-9a-fA-F]{2})", "name": "constant.character.escape.goose" }
+          ]
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(fn|thread_fn)\\s+((?:::)?(?:[A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.function.goose" },
+            "2": { "name": "entity.name.function.goose" }
+          }
+        },
+        {
+          "match": "\\b(struct|enum|type)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.goose" },
+            "2": { "name": "entity.name.type.goose" }
+          }
+        },
+        {
+          "match": "\\b(namespace)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.import.goose" },
+            "2": { "name": "entity.name.namespace.goose" }
+          }
+        },
+        {
+          "match": "\\b(const|let|var|pad|reusable)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.variable.goose" },
+            "2": { "name": "variable.other.definition.goose" }
+          }
+        },
+        {
+          "match": "\\b(extern)\\s+(\"(?:[^\"\\\\]|\\\\.)*\")",
+          "captures": {
+            "1": { "name": "storage.modifier.goose" },
+            "2": { "name": "string.quoted.double.goose" }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        { "match": "\\b(?:if|else|while|for|in|loop|block|guard|match|return|break|continue)\\b", "name": "keyword.control.goose" },
+        { "match": "\\b(?:import|as)\\b", "name": "keyword.other.import.goose" },
+        { "match": "\\b(?:export|extern|simd|recursive)\\b", "name": "storage.modifier.goose" }
+      ]
+    },
+    "types": {
+      "patterns": [
+        { "match": "\\b(?:bool|varint|[iu](?:8|16|32|64)|f(?:32|64))\\b", "name": "storage.type.primitive.goose" },
+        { "match": "\\b[A-Z][A-Z0-9_]{2,}\\b", "name": "constant.other.goose" },
+        { "match": "\\b[A-Z][A-Za-z0-9_]*\\b", "name": "entity.name.type.goose" }
+      ]
+    },
+    "literals": {
+      "patterns": [
+        { "match": "\\b(?:true|false)\\b", "name": "constant.language.boolean.goose" },
+        { "match": "\\bnull\\b", "name": "constant.language.null.goose" },
+        { "match": "\\bself\\b", "name": "variable.language.goose" }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        { "match": "\\b0[xX][0-9a-fA-F]+(?:\\.[0-9a-fA-F]*)?[pP][+-]?[0-9]+\\b", "name": "constant.numeric.float.hex.goose" },
+        { "match": "\\b0[xX][0-9a-fA-F]+\\b", "name": "constant.numeric.integer.hex.goose" },
+        { "match": "\\b[0-9]+\\.[0-9]+(?:[eE][+-]?[0-9]+)?\\b", "name": "constant.numeric.float.goose" },
+        { "match": "\\b[0-9]+[eE][+-]?[0-9]+\\b", "name": "constant.numeric.float.goose" },
+        { "match": "\\b[0-9]+\\b", "name": "constant.numeric.integer.goose" }
+      ]
+    },
+    "namespaces": {
+      "patterns": [
+        { "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*::)", "name": "entity.name.namespace.goose" }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "match": "\\b(?:print|assert|abort|exit|str|format|copy|to_bytes|bytes_of|from_bytes|embed_shader|embed_file|index_of|push|append|pop|pop_n|resize|clear|hardware_threads|thread_spawn|thread_spawn_contained|thread_wait|qput|qget|qpoll|qlimit|alloc_index|alloc_ref|free|alloc_slice|realloc_slice|free_slice)\\b(?=\\s*[<(])",
+          "name": "support.function.builtin.goose"
+        },
+        { "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\()", "name": "entity.name.function.call.goose" }
+      ]
+    },
+    "properties": {
+      "patterns": [
+        { "match": "(?<=\\.)\\b(?:len|cap)\\b", "name": "support.variable.property.goose" },
+        { "match": "(?<=\\.)[A-Za-z_][A-Za-z0-9_]*", "name": "variable.other.property.goose" }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "match": "(?:<<=|>>=|\\.==|\\.!=|::|\\.\\.|->|=>|==|!=|<=|>=|&&|\\|\\||<<|>>|\\+=|-=|\\*=|/=|%=|&=|\\|=|\\^=|\\.=|\\+\\+|--|[+\\-*/%!<>=&|^~?])",
+          "name": "keyword.operator.goose"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        { "match": "[(){}\\[\\]]", "name": "punctuation.section.goose" },
+        { "match": "[,;:.]", "name": "punctuation.separator.goose" }
+      ]
+    }
+  }
+}

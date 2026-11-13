@@ -1,0 +1,50 @@
+{
+  "name": "goose-language",
+  "displayName": "Goose",
+  "description": "Syntax highlighting and snippets for Goose (.goose), the language of the FrankenMoE runtime.",
+  "version": "0.1.0",
+  "publisher": "frankenmoe",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "goose",
+    "frankenmoe",
+    "syntax"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "goose",
+        "aliases": [
+          "Goose",
+          "goose"
+        ],
+        "extensions": [
+          ".goose"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "goose",
+        "scopeName": "source.goose",
+        "path": "./syntaxes/goose.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "goose",
+        "path": "./snippets/goose.json"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "node test/grammar.test.js"
+  }
+}
