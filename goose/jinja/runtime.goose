@@ -2677,7 +2677,7 @@ recursive fn eval_filter(
             filter_name_is(fname, "replace") || filter_name_is(fname, "title") ||
             filter_name_is(fname, "join") || filter_name_is(fname, "length") ||
             filter_name_is(fname, "wordcount") || filter_name_is(fname, "first") ||
-            filter_name_is(fname, "last") {
+            filter_name_is(fname, "last") || filter_name_is(fname, "truncate") {
             known = true;
         }
 
@@ -3342,6 +3342,108 @@ recursive fn eval_filter(
             return mk_bool(A, F, st, 1);
         }
         return mk_bool(A, F, st, 0);
+    }
+
+    if (filter_name_is(fname, "split") || filter_name_is(fname, "rsplit")) && vk(A, st, sval) == V_STRING {
+        var delim: const u8[:] = " ";
+
+        if argc > 0 && vk(A, st, argv[0]) != V_UNDEF {
+            delim = vstr(B, A, st, argv[0]);
+        }
+
+        if delim.len == 0 {
+            return fail_node(K_FILTER, apos(A, st, id), "empty separator", E, st);
+        }
+        var maxsplit: i64 = -1;
+
+        if argc > 1 && vk(A, st, argv[1]) != V_UNDEF {
+            maxsplit = vi(A, st, argv[1]);
+        }
+        let src = vstr(B, A, st, sval);
+        let arr = arr_new(A, F, st);
+
+        if filter_name_is(fname, "split") {
+            var cur: i64 = 0;
+            var go: i64 = 1;
+
+            while maxsplit != 0 && go != 0 {
+                var pos: i64 = -1;
+                var j: i64 = cur;
+
+                while j + delim.len <= src.len {
+                    var eq: bool = true;
+                    var k: i64 = 0;
+
+                    while k < delim.len {
+                        if src[j + k] != delim[k] {
+                            eq = false;
+                        }
+                        k = k + 1;
+                    }
+
+                    if eq {
+                        pos = j;
+                        j = src.len;
+                    } else {
+                        j = j + 1;
+                    }
+                }
+
+                if pos < 0 {
+                    go = 0;
+                } else {
+                    arr_push(A, st, arr, mk_str(A, F, B, st, src[cur..pos]));
+                    cur = pos + delim.len;
+                    maxsplit = maxsplit - 1;
+                }
+            }
+            arr_push(A, st, arr, mk_str(A, F, B, st, src[cur..]));
+        } else {
+            var cur: i64 = src.len;
+            var go: i64 = 1;
+
+            while maxsplit != 0 && go != 0 {
+                var pos: i64 = -1;
+                var j: i64 = 0;
+
+                while j + delim.len <= cur {
+                    var eq: bool = true;
+                    var k: i64 = 0;
+
+                    while k < delim.len {
+                        if src[j + k] != delim[k] {
+                            eq = false;
+                        }
+                        k = k + 1;
+                    }
+
+                    if eq {
+                        pos = j;
+                    }
+                    j = j + 1;
+                }
+
+                if pos < 0 {
+                    go = 0;
+                } else {
+                    arr_push(A, st, arr, mk_str(A, F, B, st, src[pos + delim.len .. cur]));
+                    cur = pos;
+                    maxsplit = maxsplit - 1;
+                }
+            }
+            arr_push(A, st, arr, mk_str(A, F, B, st, src[0..cur]));
+            let n = vcc(A, st, arr);
+            let base = pool(A, st) + vcs(A, st, arr);
+            var i: i64 = 0;
+
+            while i + i < n {
+                let left = A[base + i];
+                A[base + i] = A[base + n - 1 - i];
+                A[base + n - 1 - i] = left;
+                i = i + 1;
+            }
+        }
+        return arr;
     }
 
     var p = apps(E, 0, "Unknown (built-in) filter '");
