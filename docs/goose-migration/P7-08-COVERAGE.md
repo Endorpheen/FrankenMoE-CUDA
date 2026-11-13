@@ -15,7 +15,7 @@ code; "pending" means still native.
 | `common/jinja/lexer.cpp`, `lexer.h` | 361 + 157 | **Goose (EXP502)**: tokens, normalization, trim, escapes, positions, error text |
 | `common/jinja/parser.cpp`, `parser.h` | 619 + 21 | **Goose (EXP503)**: token stream to the 30 node shapes, precedence chain, statements, arguments, positions and error text |
 | `common/jinja/runtime.cpp`, `runtime.h` | 1 015 + 777 | pending — statement and expression execution, filters, tests |
-| `common/jinja/value.cpp`, `value.h` | 1 758 + 765 | **Goose (EXP504)** for the value model: types, conversions, flags, both equalities, `value_compare`, `value_to_string_repr`. Pending: `get_builtins` (built-ins/filters per type), arithmetic operators and `value_to_json` + `float_repr` (EXP505) |
+| `common/jinja/value.cpp`, `value.h` | 1 758 + 765 | **Goose (EXP504, EXP505)**: the value model (types, conversions, flags, both equalities, `value_compare`, `value_to_string_repr`) and JSON output (`value_to_json`, `float_repr`, `float_json`). Pending: `get_builtins` (built-ins/filters per type) and the arithmetic operators |
 | `common/jinja/string.cpp`, `string.h` | 213 + 61 | pending — input marking and origin metadata |
 | `common/jinja/caps.cpp`, `caps.h` | 592 + 40 | pending — capability checks |
 | `common/jinja/utils.h` | 149 | Boundary — `peak_source` and the FNV hasher are utilities; `peak_source` is already reproduced by EXP502 for lexer errors |
@@ -27,9 +27,8 @@ code; "pending" means still native.
 
 1. Lexer (EXP502) — done.
 2. Parser: token stream to program, with the exact node shapes and error text — done (EXP503).
-3. Value model: primitive types, conversions, flags, equality and repr —
-   done (EXP504). Remaining value work: arithmetic operators, `value_to_json`
-   with `float_repr`, and the built-in function/filter tables (EXP505).
+3. Value model and JSON output — done (EXP504, EXP505). Remaining value
+   work: arithmetic operators and the built-in function/filter tables.
 4. Runtime: statement execution, expression evaluation, `for`/`if`/`set`/macros,
    filters and tests.
 5. String: input marking, origin metadata, concatenation rules.
