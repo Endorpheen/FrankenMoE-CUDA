@@ -139,3 +139,6 @@ experiments/*/build-copy/
 # Editor extension build output.
 node_modules/
 *.vsix
+
+# Staged release assets (compressed run sets).
+/releases/
