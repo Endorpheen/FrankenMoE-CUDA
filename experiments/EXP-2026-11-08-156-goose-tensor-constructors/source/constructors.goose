@@ -49,7 +49,10 @@ fn tensor(ctx:i64,ty:i64,nd:i64,dims:i64,view:i64,off:u64)->i64{
  if source!=0&&tget(source,2,0)!=0 {offset=add(offset,tget(source,3,0));source=ip(tget(source,2,0));}
  var count=dim(dims,0);ensure(count>=0,13);var i:i64=1;
  while i<nd {let n=dim(dims,i);ensure(n>=0,13);if n>1{ensure(9223372036854775807/n>count,14);count*=n;}i+=1;}
- let n0=dim(dims,0);ensure(n0%bs==0,15);var bytes=mul(typesize(ty),n0 as u64)/(bs as u64);
+ // native ggml_new_tensor_impl does not require ne0 to be a multiple of the block size; it divides.
+ // The extra ensure here rejected ggml_view_3d(ctx, q4_K[256,8,3], 128, ...) which native accepts,
+ // so the check is removed to restore parity. Code 15 is left unused rather than renumbered.
+ let n0=dim(dims,0);var bytes=mul(typesize(ty),n0 as u64)/(bs as u64);
  i=1;while i<nd{bytes=mul(bytes,dim(dims,i) as u64);i+=1;}
  if source!=0&&bytes!=0{ensure(add(bytes,offset)<=span(source),16);}
  var data:i64=0;
