@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-13T17:06:19.941730+00:00",
+  "updated_at": "2026-11-13T17:40:00.486395+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -70,11 +70,11 @@
       "native_targets": [
         "common/jinja/runtime.cpp"
       ],
-      "experiment": "EXP-2026-11-13-509-p7-08-jinja-runtime-for",
+      "experiment": "EXP-2026-11-13-510-p7-08-jinja-macro-call",
       "task": "",
       "status": "ported",
-      "sha256": "32714e923d7ae9e3e8b43df0333b2e05dd29f519ff22baf9500f630522e882e0",
-      "gate": "expressions 81/162, statements 27/54 and for/loop 56/112, 14/14 mutations"
+      "sha256": "23825e21dd19e918637bf05a741d29879908d83ea25b14ba87f530b840020169",
+      "gate": "expressions 81/162, statements 27/54, for/loop 56/112 and macro 66/132, 6/6 mutations"
     },
     {
       "goose": "cpu/goose-runtime/allocator-coalesce/kernel-v1.goose",
@@ -10713,6 +10713,29 @@
       "task": "P7-09",
       "status": "slice",
       "sha256": "1061d2151000a8e3305474147b415ce5cfbc602e406f9572981e258df8f551cc"
+    },
+    {
+      "goose": "jinja/jinja-macro-call.goose",
+      "native": "src/llama-chat.cpp",
+      "native_targets": [
+        "src/llama-chat.cpp",
+        "common/chat*.cpp",
+        "common/jinja/**",
+        "common/parsers/**"
+      ],
+      "experiment": "EXP-2026-11-13-510-p7-08-jinja-macro-call",
+      "task": "P7-08",
+      "status": "slice",
+      "sha256": "23825e21dd19e918637bf05a741d29879908d83ea25b14ba87f530b840020169"
+    },
+    {
+      "goose": "misc/edge0-pack-index.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "EXP-2026-11-13-511-edge0-pack-index",
+      "task": "",
+      "status": "slice",
+      "sha256": "29442dab8129465adfee5dd3c0c5977ea461420b3e93f13c0cdc2b38bcdf76a9"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",

@@ -35,6 +35,7 @@ const V_TUPLE: i64 = 5;
 const V_OBJECT: i64 = 6;
 const V_NONE: i64 = 7;
 const V_UNDEF: i64 = 8;
+const V_FUNC: i64 = 9;
 extern "gs_json_fmt_g" fn libc_fmt_g(out: u8[:], x: f64) -> i64;
 extern "gs_json_fmt_e" fn libc_fmt_e(out: u8[:], prec: i64, x: f64) -> i64;
 extern "gs_json_strtod" fn libc_strtod(s: const u8[:]) -> f64;
@@ -220,6 +221,10 @@ fn type_name(A: const i64[:], B: const u8[:], st: const i64[:], id: i64, out: u8
 
     if k == V_NONE {
         return apps(out, 0, "None");
+    }
+
+    if k == V_FUNC {
+        return apps(out, 0, "Function");
     }
     let h = vstr(B, A, st, id);
 
@@ -1905,6 +1910,8 @@ const K_IDENT: i64 = 12;
 const K_SET_NODE: i64 = 6;
 const K_SELECT: i64 = 25;
 const K_FOR: i64 = 2;
+const K_MACRO: i64 = 7;
+const K_CALL: i64 = 21;
 const K_MEMBER: i64 = 20;
 
 fn ast_bases(A: const i64[:], st: i64[:]) -> i64 {
@@ -2045,6 +2052,14 @@ fn node_name(k: i64) -> const u8[:] {
     if k == K_MEMBER {
         return "MemberExpression";
     }
+
+    if k == K_MACRO {
+        return "Macro";
+    }
+
+    if k == K_CALL {
+        return "CallExpression";
+    }
     return "UnaryExpression";
 }
 // prefix the message with the node wrapper the native statement::execute adds
@@ -2096,15 +2111,16 @@ fn obj_lookup(A: const i64[:], B: const u8[:], F: const f64[:], st: const i64[:]
 recursive fn eval_member(
     id: i64,
     ctxc: i64,
-    noff: const i64[:],
-    nlen: const i64[:],
-    cval: const i64[:],
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
     A: i64[:],
     F: f64[:],
     B: u8[:],
     E: u8[:],
+    out: u8[:],
     st: i64[:]) -> i64 {
-    let obj = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+    let obj = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
         return -1;
@@ -2112,7 +2128,7 @@ recursive fn eval_member(
     var prop: i64 = -1;
 
     if aiv(A, st, id) != 0 {
-        prop = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+        prop = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
         if st[1] != 0 {
             return -1;
@@ -2175,16 +2191,80 @@ recursive fn eval_member(
     return mk_undef_hint(A, F, B, st, "object_property");
 }
 
-recursive fn eval_node(
+recursive fn eval_call(
     id: i64,
     ctxc: i64,
-    noff: const i64[:],
-    nlen: const i64[:],
-    cval: const i64[:],
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
     A: i64[:],
     F: f64[:],
     B: u8[:],
     E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let callee = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+
+    if vk(A, st, callee) != V_FUNC {
+        var p = apps(E, 0, "Callee is not a function: got ");
+        let tn = type_name(A, B, st, callee, E[p..]);
+        p = p + tn;
+        return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
+    }
+    let mid = vi(A, st, callee);
+
+    if al0c(A, st, mid) > 0 {
+        return fail_node(K_MACRO, apos(A, st, id), "Macro parameters are not supported yet", E, st);
+    }
+
+    if al0c(A, st, id) > 0 {
+        return fail_node(K_CALL, apos(A, st, id), "Call arguments are not supported yet", E, st);
+    }
+    let start = st[7];
+    scope_push(st);
+    let r = exec_list(al1s(A, st, mid), al1c(A, st, mid), noff, nlen, cval, A, F, B, E, out, st);
+
+    if r < 0 || st[1] != 0 {
+        return -1;
+    }
+    let n = st[7] - start;
+    let text = out[start .. start + n];
+    st[7] = start;
+    scope_pop(st);
+    return mk_str(A, F, B, st, text);
+}
+
+fn exec_macro_def(
+    id: i64,
+    cnoff: i64[:],
+    cnlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    st: i64[:]) -> i64 {
+    let name = astr(B, A, st, ac0(A, st, id));
+    let f = vnew(A, F, st, V_FUNC);
+    A[st[17] + f] = id;
+    return ctx_set(name, f, cnoff, cnlen, cval, B, A, F, st, E);
+}
+
+recursive fn eval_node(
+    id: i64,
+    ctxc: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
     st: i64[:]) -> i64 {
     let k = ak(A, st, id);
 
@@ -2241,7 +2321,7 @@ recursive fn eval_node(
 
         while i < n {
             let c = A[apool(A, st) + al0s(A, st, id) + i];
-            let v = eval_node(c, ctxc, noff, nlen, cval, A, F, B, E, st);
+            let v = eval_node(c, ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
             if st[1] != 0 {
                 return -1;
@@ -2253,7 +2333,7 @@ recursive fn eval_node(
     }
 
     if k == 22 {
-        let t = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+        let t = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
         if st[1] != 0 {
             return -1;
@@ -2262,11 +2342,11 @@ recursive fn eval_node(
         if v_bool(A, F, st, t) == 0 {
             return mk_undef(A, F, st);
         }
-        return eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+        return eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
     }
 
     if k == K_UNARY {
-        let arg = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+        let arg = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
         if st[1] != 0 {
             return -1;
@@ -2306,15 +2386,19 @@ recursive fn eval_node(
     }
 
     if k == K_BINARY {
-        return eval_binary(id, ctxc, noff, nlen, cval, A, F, B, E, st);
+        return eval_binary(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
     }
 
     if k == K_MEMBER {
-        return eval_member(id, ctxc, noff, nlen, cval, A, F, B, E, st);
+        return eval_member(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+    }
+
+    if k == K_CALL {
+        return eval_call(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
     }
 
     if k == K_SELECT {
-        let t = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+        let t = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
         if st[1] != 0 {
             return -1;
@@ -2323,7 +2407,7 @@ recursive fn eval_node(
         if v_bool(A, F, st, t) == 0 {
             return mk_undef(A, F, st);
         }
-        return eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+        return eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
     }
     return fail_node(k, apos(A, st, id), "Unexpected node type", E, st);
 }
@@ -2458,17 +2542,18 @@ fn unknown_op(op: const u8[:], l: i64, r: i64, pos: i64, A: const i64[:], B: con
 recursive fn eval_binary(
     id: i64,
     ctxc: i64,
-    noff: const i64[:],
-    nlen: const i64[:],
-    cval: const i64[:],
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
     A: i64[:],
     F: f64[:],
     B: u8[:],
     E: u8[:],
+    out: u8[:],
     st: i64[:]) -> i64 {
     let pos = apos(A, st, id);
     let op = astr(B, A, st, id);
-    let l = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+    let l = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
         return -1;
@@ -2476,7 +2561,7 @@ recursive fn eval_binary(
 
     if bytes_eq(op, "and") {
         if v_bool(A, F, st, l) != 0 {
-            return eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+            return eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
         }
         return l;
     }
@@ -2485,9 +2570,9 @@ recursive fn eval_binary(
         if v_bool(A, F, st, l) != 0 {
             return l;
         }
-        return eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+        return eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
     }
-    let r = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, st);
+    let r = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
         return -1;
@@ -2770,7 +2855,7 @@ export fn eval_expr(
     st: i64[:]) -> i64 {
     reset_io(A, st, blen);
     ast_bases(A, st);
-    let r = eval_node(root, ctxc, noff, nlen, cval, A, F, B, E, st);
+    let r = eval_node(root, ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
         return -1;
@@ -3118,7 +3203,7 @@ recursive fn exec_for(
         sel = ac1(A, st, iternode);
         src = ac0(A, st, iternode);
     }
-    let iter = eval_node(src, st[11], cnoff, cnlen, cval, A, F, B, E, st);
+    let iter = eval_node(src, st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
         return -1;
@@ -3159,7 +3244,7 @@ recursive fn exec_for(
             if br < 0 {
                 return -1;
             }
-            let tv = eval_node(sel, st[11], cnoff, cnlen, cval, A, F, B, E, st);
+            let tv = eval_node(sel, st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
 
             if st[1] != 0 {
                 return -1;
@@ -3319,12 +3404,16 @@ recursive fn exec_stmt(
         return exec_for(id, cnoff, cnlen, cval, A, F, B, E, out, st);
     }
 
+    if k == 7 {
+        return exec_macro_def(id, cnoff, cnlen, cval, A, F, B, E, st);
+    }
+
     if k == 0 {
         return exec_list(al0s(A, st, id), al0c(A, st, id), cnoff, cnlen, cval, A, F, B, E, out, st);
     }
 
     if k == 1 {
-        let test = eval_node(ac0(A, st, id), st[11], cnoff, cnlen, cval, A, F, B, E, st);
+        let test = eval_node(ac0(A, st, id), st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
 
         if st[1] != 0 {
             return -1;
@@ -3349,7 +3438,7 @@ recursive fn exec_stmt(
         st[8] = 2;
         return 0;
     }
-    let v = eval_node(id, st[11], cnoff, cnlen, cval, A, F, B, E, st);
+    let v = eval_node(id, st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
 
     if st[1] != 0 {
         return -1;
@@ -3399,7 +3488,7 @@ recursive fn exec_set(
     var rhs: i64 = -1;
 
     if valnode >= 0 {
-        rhs = eval_node(valnode, st[11], cnoff, cnlen, cval, A, F, B, E, st);
+        rhs = eval_node(valnode, st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
 
         if st[1] != 0 {
             return -1;
