@@ -1,0 +1,15 @@
+blck f32=1 f16=1 q4_0=32 q4_K=256 iq4_nl=32
+tsize f32=4 f16=2 q4_0=18 q4_K=144 iq4_nl=18 bf16=2
+1d type=f32 ne=[100,1,1,1] nb=[4,400,400,400] nbytes=400 contig=1 view=0 op=0
+2d type=f16 ne=[64,32,1,1] nb=[2,128,4096,4096] nbytes=4096 contig=1 view=0 op=0
+3d_q4k type=q4_K ne=[256,8,3,1] nb=[144,144,1152,3456] nbytes=3456 contig=1 view=0 op=0
+4d_iq4nl type=iq4_nl ne=[32,4,2,5] nb=[18,18,72,144] nbytes=720 contig=1 view=0 op=0
+view1d type=f32 ne=[10,1,1,1] nb=[4,40,40,40] nbytes=40 contig=1 view=1 op=37
+view2d type=f16 ne=[32,16,1,1] nb=[2,128,2048,2048] nbytes=1984 contig=0 view=1 op=37
+view3d type=q4_K ne=[128,4,2,1] nb=[144,144,1152,2304] nbytes=1656 contig=0 view=1 op=37
+permute type=iq4_nl ne=[4,32,2,5] nb=[18,18,72,144] nbytes=1208 contig=0 view=1 op=38
+transpose type=f16 ne=[32,64,1,1] nb=[128,2,4096,4096] nbytes=4096 contig=0 view=1 op=39
+reshape2d type=f32 ne=[10,10,1,1] nb=[4,40,400,400] nbytes=400 contig=1 view=1 op=36
+reshape4d type=f32 ne=[5,5,2,2] nb=[4,20,100,200] nbytes=400 contig=1 view=1 op=36
+row_size f32 100=400 f16 64=128 q4k 256=144 iq4nl 32=18
+elsize f32=4 f16=2 iq4nl=18
