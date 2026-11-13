@@ -1910,6 +1910,7 @@ const K_UNARY: i64 = 24;
 const K_IDENT: i64 = 12;
 const K_SET_NODE: i64 = 6;
 const K_SELECT: i64 = 25;
+const K_TEST: i64 = 26;
 const K_FOR: i64 = 2;
 const K_MACRO: i64 = 7;
 const K_CALL: i64 = 21;
@@ -2071,6 +2072,10 @@ fn node_name(k: i64) -> const u8[:] {
 
     if k == K_CALLSTMT {
         return "CallStatement";
+    }
+
+    if k == K_TEST {
+        return "TestExpression";
     }
     return "UnaryExpression";
 }
@@ -2381,6 +2386,205 @@ fn ascii_upper(c: u8) -> u8 {
 
 fn ws_byte(c: u8) -> bool {
     return c == 32 || c == 9 || c == 10 || c == 11 || c == 12 || c == 13;
+}
+
+recursive fn eval_test(
+    id: i64,
+    ctxc: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let v = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+    let t = ac1(A, st, id);
+    var tname: const u8[:] = "";
+    var argc: i64 = 0;
+    var argv: i64[4] = [0, 0, 0, 0];
+
+    if ak(A, st, t) == K_IDENT {
+        tname = astr(B, A, st, t);
+    } else if ak(A, st, t) == K_CALL {
+        let callee = ac0(A, st, t);
+
+        if ak(A, st, callee) != K_IDENT {
+            return fail_node(K_TEST, apos(A, st, id), "Test callee must be an identifier", E, st);
+        }
+        tname = astr(B, A, st, callee);
+        argc = al0c(A, st, t);
+
+        if argc > 4 {
+            return fail_node(K_TEST, apos(A, st, id), "Too many test arguments", E, st);
+        }
+        var ai: i64 = 0;
+
+        while ai < argc {
+            let argn = A[apool(A, st) + al0s(A, st, t) + ai];
+            let av = eval_node(argn, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+            argv[ai] = av;
+            ai = ai + 1;
+        }
+    } else {
+        return fail_node(K_TEST, apos(A, st, id), "Invalid test expression", E, st);
+    }
+
+    let k = vk(A, st, v);
+    var res: i64 = 0;
+    var known: bool = true;
+
+    if filter_name_is(tname, "defined") {
+        if k != V_UNDEF {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "undefined") {
+        if k == V_UNDEF {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "none") {
+        if k == V_NONE {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "boolean") {
+        if k == V_BOOL {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "true") {
+        if k == V_BOOL && vi(A, st, v) != 0 {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "false") {
+        if k == V_BOOL && vi(A, st, v) == 0 {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "string") {
+        if k == V_STRING {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "integer") {
+        if k == V_INT {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "float") {
+        if k == V_FLOAT {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "number") {
+        if k == V_INT || k == V_FLOAT {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "iterable") || filter_name_is(tname, "sequence") {
+        if k == V_OBJECT || k == V_ARRAY || k == V_TUPLE || k == V_STRING || k == V_UNDEF {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "mapping") {
+        if k == V_OBJECT {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "callable") {
+        if k == V_FUNC {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "odd") || filter_name_is(tname, "even") {
+        if k != V_INT {
+            return fail_node(K_TEST, apos(A, st, id), "test expects an Integer value", E, st);
+        }
+        let rem = vi(A, st, v) % 2;
+
+        if filter_name_is(tname, "odd") {
+            if rem != 0 {
+                res = 1;
+            }
+        } else {
+            if rem == 0 {
+                res = 1;
+            }
+        }
+    } else if filter_name_is(tname, "divisibleby") {
+        if k != V_INT || argc < 1 || vk(A, st, argv[0]) != V_INT {
+            return fail_node(K_TEST, apos(A, st, id), "test expects Integer values", E, st);
+        }
+        let div = vi(A, st, argv[0]);
+
+        if div != 0 && vi(A, st, v) % div == 0 {
+            res = 1;
+        }
+    } else if filter_name_is(tname, "lower") || filter_name_is(tname, "upper") {
+        if k != V_STRING {
+            return fail_node(K_TEST, apos(A, st, id), "test expects a String value", E, st);
+        }
+        let src = vstr(B, A, st, v);
+        var i: i64 = 0;
+        res = 1;
+
+        while i < src.len {
+            let c = src[i];
+
+            if filter_name_is(tname, "lower") {
+                if c >= 65 && c <= 90 {
+                    res = 0;
+                }
+            } else {
+                if c >= 97 && c <= 122 {
+                    res = 0;
+                }
+            }
+            i = i + 1;
+        }
+    } else if filter_name_is(tname, "eq") || filter_name_is(tname, "equalto") || filter_name_is(tname, "ne") {
+        if argc < 1 {
+            return fail_node(K_TEST, apos(A, st, id), "test expects two values", E, st);
+        }
+        var same: i64 = 0;
+
+        if eqv(A, B, F, st, v, argv[0]) {
+            same = 1;
+        }
+
+        if filter_name_is(tname, "ne") {
+            res = 1 - same;
+        } else {
+            res = same;
+        }
+    } else if filter_name_is(tname, "in") {
+        if argc < 1 {
+            return fail_node(K_TEST, apos(A, st, id), "test expects a container", E, st);
+        }
+        let r = test_in(v, argv[0], A, F, B, E, st);
+
+        if r < 0 {
+            return -1;
+        }
+        res = r;
+    } else {
+        known = false;
+    }
+
+    if !known {
+        let base = st[7];
+        var p = apps(out, base, "Unknown test '");
+        p = app(out, p, tname, 0, tname.len);
+        p = appc(out, p, 39);
+        let r = fail_node(K_TEST, apos(A, st, id), out[base..p], E, st);
+        st[7] = base;
+        return r;
+    }
+
+    if aiv(A, st, id) != 0 {
+        res = 1 - res;
+    }
+    return mk_bool(A, F, st, res);
 }
 
 recursive fn eval_filter(
@@ -3326,6 +3530,10 @@ recursive fn eval_node(
 
     if k == K_FILTER {
         return eval_filter(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+    }
+
+    if k == K_TEST {
+        return eval_test(id, ctxc, noff, nlen, cval, A, F, B, E, out, st);
     }
 
     if k == K_SELECT {

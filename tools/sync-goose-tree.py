@@ -42,8 +42,8 @@ CANONICAL_SOURCES = [
      "common/jinja/value.cpp (JSON output)", "192 cases / 384 values / 0 failures, 20/20 mutations"),
     ("jinja/builtins.goose", "EXP-2026-11-13-506-p7-08-builtins-scalar", "source/builtins.goose",
      "common/jinja/value.cpp (built-ins)", "51 cases / 100 values / 0 failures, 14/14 mutations"),
-    ("jinja/runtime.goose", "EXP-2026-11-14-514-p7-08-jinja-serialization", "source/runtime.goose",
-     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, 12/12 mutations"),
+    ("jinja/runtime.goose", "EXP-2026-11-14-515-p7-08-jinja-tests", "source/runtime.goose",
+     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, 12/12 mutations"),
 ]
 
 CANONICAL = {
@@ -57,6 +57,7 @@ CANONICAL = {
     "EXP-2026-11-13-509-p7-08-jinja-runtime-for",
     "EXP-2026-11-13-512-p7-08-jinja-filters",
     "EXP-2026-11-14-513-p7-08-jinja-filters-more",
+    "EXP-2026-11-14-514-p7-08-jinja-serialization",
 }
 
 # An experiment already published as a canonical module is not copied again as a
