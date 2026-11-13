@@ -168,6 +168,28 @@ Next probes, in this order:
    mapping), rebuild the diagnostic base, and require both prompt shapes plus the
    Apex acceptance.
 
+## Placement-flag test (2026-11-13)
+
+Running the same request with `GGML_GOOSE_WEIGHT_PLACEMENT=0`, which restores the
+native `select_weight_buft` branch, still aborts:
+
+    p602-native-placement READY=1 HTTP=000 EXIT=134 CUDA=2 ABORT=1 LEFT=0
+
+So the Goose placement decision is not the trigger. What remains is the input to
+that decision: the per-layer buffer-type list and the device capability answers.
+Under `-ngl 0` the list should contain only the CPU buffer type, yet `norm-0` ends
+up in `CUDA_Host`, so either the layer's device is CUDA (offload count misread) or
+the CPU entry was rejected by `weight_buft_supported` and CUDA was taken instead.
+
+Next probes:
+
+1. At `select_weight_buft`, print the list contents (device name + buft name) and
+   the returned buft for `norm-0` and `output_norm.weight`.
+2. If the list contains CUDA, print `n_gpu_layers` and the layer device assignment
+   at load time; that is the actual divergence from `-ngl 0`.
+3. If the list is CPU-only, print `weight_buft_supported` and the
+   `ggml_backend_dev_supports_op` answer for the norm op on the CPU device.
+
 ## Status
 
 Open, worked locally. The next instrument is the split-assignment log described
