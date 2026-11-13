@@ -190,6 +190,32 @@ Next probes:
 3. If the list is CPU-only, print `weight_buft_supported` and the
    `ggml_backend_dev_supports_op` answer for the norm op on the CPU device.
 
+## Split map under -ngl 0 (2026-11-13)
+
+gdb on the diagnostic base at `ggml_backend_sched_graph_compute_async`:
+
+    SPLITS n=81 n_backends=2
+      split[0] backend_id=1 (CPU)   split[1] backend_id=0 (CUDA0)
+      split[2] backend_id=1         split[3] backend_id=0   ... alternating
+
+and the CUDA-assigned nodes are copy tensors around one compute node per layer:
+
+    cuda_node[56] CUDA0#norm-0#0
+    cuda_node[58] CUDA0#blk.0.ssm_norm.weight#0
+    cuda_node[59] node_55
+    cuda_node[60] node_55 (view)
+
+So each layer has a small CUDA island consisting of one node plus the copies that
+feed it, while the rest of the graph is CPU. Under `-ngl 0` no weight is on the GPU
+(`load_tensors: offloaded 0/42 layers`), so that island must come from a tensor
+whose buffer is CUDA: the candidate is the recurrent/SSM state that llama.cpp
+allocates on the device independently of the layer offload count.
+
+Next probe: print `node_55`'s op and the buffer names of its inputs. If an input is
+in a CUDA buffer, the fix is in the memory allocation for that state under
+`-ngl 0`, not in the scheduler; if all inputs are host buffers, the scheduler's
+pass 1 misreads the buffer.
+
 ## Status
 
 Open, worked locally. The next instrument is the split-assignment log described
