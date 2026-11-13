@@ -31,6 +31,21 @@ GOOSE = ROOT / "goose"
 EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
+CANONICAL_SOURCES = [
+    ("jinja/lexer.goose", "EXP-2026-11-13-502-p7-08-jinja-lexer", "source/lexer.goose",
+     "common/jinja/lexer.cpp", "107 cases / 131025 values / 0 failures, 20/20 mutations"),
+    ("jinja/parser.goose", "EXP-2026-11-13-503-p7-08-jinja-parser", "source/parser.goose",
+     "common/jinja/parser.cpp", "105 cases / 210 values / 0 failures, 19/19 mutations"),
+    ("jinja/value.goose", "EXP-2026-11-13-504-p7-08-jinja-values", "source/values.goose",
+     "common/jinja/value.cpp (value model)", "271 cases / 271 values / 0 failures, 20/20 mutations"),
+    ("jinja/value-json.goose", "EXP-2026-11-13-505-p7-08-value-json", "source/valuesjson.goose",
+     "common/jinja/value.cpp (JSON output)", "192 cases / 384 values / 0 failures, 20/20 mutations"),
+    ("jinja/builtins.goose", "EXP-2026-11-13-506-p7-08-builtins-scalar", "source/builtins.goose",
+     "common/jinja/value.cpp (built-ins)", "51 cases / 100 values / 0 failures, 14/14 mutations"),
+    ("jinja/runtime.goose", "EXP-2026-11-13-508-p7-08-jinja-runtime-stmt", "source/runtime.goose",
+     "common/jinja/runtime.cpp", "expressions 81/162 and statements 27/54, 12/12 mutations"),
+]
+
 CANONICAL = {
     "EXP-2026-11-13-502-p7-08-jinja-lexer",
     "EXP-2026-11-13-503-p7-08-jinja-parser",
@@ -38,6 +53,8 @@ CANONICAL = {
     "EXP-2026-11-13-505-p7-08-value-json",
     "EXP-2026-11-13-506-p7-08-builtins-scalar",
     "EXP-2026-11-13-508-p7-08-jinja-runtime-stmt",
+    "EXP-2026-11-13-507-p7-08-jinja-runtime-expr",
+    "EXP-2026-11-13-509-p7-08-jinja-runtime-for",
 }
 
 EXTERNAL_ROOTS = [
@@ -66,6 +83,8 @@ def normalise(path: str) -> str | None:
     if not path or path.startswith("source/") or path.startswith("qwen/"):
         return None
     if not re.match(r"^(common|src|ggml|examples|tools)/", path):
+        return None
+    if "CMakeFiles" in path or path.endswith(".dir"):
         return None
     return path
 
@@ -116,37 +135,81 @@ def choose_target(folder: Path, ledger: dict[int, dict]) -> tuple[list[str], str
     return [], ""
 
 
-def destination(area: str, experiment: str, relative: Path) -> Path:
-    base = area
-    if base.endswith("/**"):
-        base = base[:-3]
-    if base.endswith(".c") or base.endswith(".cpp") or base.endswith(".h") or base.endswith(".cu") or base.endswith(".cuh"):
-        base = str(Path(base).parent)
-    base = base.strip("/")
-    return GOOSE / base / experiment / relative
+def topic_name(experiment: str) -> str:
+    name = re.sub(r"^EXP-\d{4}-\d{2}-\d{2}-\d+-", "", experiment)
+    name = re.sub(r"^p\d+-\d+-", "", name)
+    return name.lower()
+
+
+def subsystem(targets: list[str], experiment: str) -> str:
+    """Human-facing group, not a native path."""
+    target = " ".join(targets).lower()
+    name = experiment.lower()
+    if "jinja" in target or "jinja" in name:
+        return "jinja"
+    if "json" in target or "json" in name:
+        return "json"
+    if "peg" in target or "peg" in name:
+        return "peg"
+    if "grammar" in target or "gbnf" in target or "gbnf" in name:
+        return "grammar"
+    if "chat" in target or "chat" in name or "template" in name:
+        return "chat"
+    if "tools/server" in target or "server" in name or "/http" in target:
+        return "server"
+    if "ggml-cuda" in target or "cuda" in name:
+        return "cuda"
+    if "kv" in target or "kv" in name or "memory" in target:
+        return "kv"
+    if "sampl" in target or "sampl" in name:
+        return "sampling"
+    if "vocab" in target or "token" in target or "gguf" in target:
+        return "model"
+    if "ggml-cpu" in target or "ggml/src/ggml-" in target or "cpu" in name or "moe" in name or "quant" in name:
+        return "cpu"
+    if "llama" in target or "context" in name or "batch" in name or "graph" in name or "model" in name:
+        return "model"
+    return "misc"
+
+
+def destination(targets: list[str], experiment: str, count: int, relative: Path) -> Path:
+    group = subsystem(targets, experiment)
+    topic = topic_name(experiment)
+    if count == 1:
+        return GOOSE / group / (topic + ".goose")
+    parts = list(relative.parts)
+    if parts and parts[0] == "source":
+        parts = parts[1:]
+    return GOOSE / group / topic / Path(*parts)
 
 
 def build(check: bool) -> int:
     ledger = ledger_map()
-    existing = []
-    if (GOOSE / "MANIFEST.json").exists():
-        existing = json.loads((GOOSE / "MANIFEST.json").read_text()).get("entries", [])
-    canonical_paths = {
-        "common/jinja/lexer.goose", "common/jinja/parser.goose",
-        "common/jinja/value.goose", "common/jinja/value-json.goose",
-        "common/jinja/builtins.goose", "common/jinja/runtime.goose",
-    }
-    canonical = {row["goose"]: row for row in existing if row["goose"] in canonical_paths}
+    canonical = {}
+    for target, experiment, source, native, gate in CANONICAL_SOURCES:
+        path = EXPERIMENTS / experiment / source
+        canonical[target] = {
+            "goose": target,
+            "native": native,
+            "native_targets": [native],
+            "experiment": experiment,
+            "task": "",
+            "status": "ported",
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "gate": gate,
+        }
 
     entries = []
     written = 0
+    used: set[Path] = set()
     if not check:
-        for stale in sorted(GOOSE.rglob("EXP-*")):
+        for stale in list(GOOSE.iterdir()):
             if stale.is_dir():
                 shutil.rmtree(stale)
-        for stale in (GOOSE / "_external", GOOSE / "_unmapped"):
-            if stale.exists():
-                shutil.rmtree(stale)
+        for target, experiment, source, native, gate in CANONICAL_SOURCES:
+            path = GOOSE / target
+            path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(EXPERIMENTS / experiment / source, path)
     for folder in sorted(EXPERIMENTS.iterdir()):
         if not folder.is_dir() or not folder.name.startswith("EXP-"):
             continue
@@ -154,10 +217,13 @@ def build(check: bool) -> int:
         if not files or folder.name in CANONICAL:
             continue
         targets, task = choose_target(folder, ledger)
-        area = targets[0] if targets else "_unmapped"
         for source in files:
             relative = source.relative_to(folder)
-            target = destination(area, folder.name, relative)
+            target = destination(targets, folder.name, len(files), relative)
+            if target.exists() or target in used:
+                stem = target.stem + "-" + folder.name.split("-")[-3]
+                target = target.with_name(stem + target.suffix)
+            used.add(target)
             rel = target.relative_to(GOOSE).as_posix()
             entries.append({
                 "goose": rel,
@@ -191,7 +257,7 @@ def build(check: bool) -> int:
                 seen.add(digest)
                 checkout = source.relative_to(base).parts[0]
                 inner = source.relative_to(base / checkout)
-                target = GOOSE / "_external" / checkout / inner
+                target = GOOSE / "_archive" / checkout / inner
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target)
                 merged.append({
@@ -226,7 +292,7 @@ def build(check: bool) -> int:
                 if digest in seen:
                     continue
                 seen.add(digest)
-                target = GOOSE / "_external" / "_branches" / branch.replace("/", "__") / path
+                target = GOOSE / "_archive" / "_branches" / branch.replace("/", "__") / path
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
                 merged.append({

@@ -4,13 +4,15 @@ FrankenMoE-CUDA is an experimental project for running Mixture-of-Experts models
 
 ## Goose migration
 
-The runtime is being ported to Goose, the project's own language. The live Goose
-sources are in one place: [`goose/`](goose/README.md), which mirrors the
-llama.cpp tree file for file (`common/jinja/lexer.goose` replaces
-`common/jinja/lexer.cpp`, and so on). Start with [`GOOSE.md`](GOOSE.md) for the
-map and `goose/MANIFEST.json` for the native path, experiment and gate of every
-ported file. Accepted slices, their differential gates and the migration ledger
-are in [`docs/goose-migration/`](docs/goose-migration/).
+The runtime is being ported to Goose, the project's own language. All 4061 Goose
+sources are in one place: [`goose/`](goose/README.md), grouped by subsystem
+(`jinja/`, `json/`, `server/`, `cpu/`, `cuda/`, `kv/`, `model/`, ...). A complete
+module is one file named after the native module it replaces
+(`jinja/lexer.goose` for `common/jinja/lexer.cpp`); partial slices are named
+after the decision they implement. [`GOOSE.md`](GOOSE.md) is the short map and
+`goose/MANIFEST.json` records the experiment, native path, gate and SHA256 of
+every file. The current project state is
+[`docs/goose-migration/STATUS.md`](docs/goose-migration/STATUS.md).
 
 The results below predate the migration and describe the C++ runtime; the root
 README is queued for a rewrite.

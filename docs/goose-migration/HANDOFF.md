@@ -1,5 +1,10 @@
 # Handoff — batch/output block, EXP237–244
 
+> **Historical document (EXP237-244 era).** The current state of the migration is
+> `docs/goose-migration/STATUS.md`; the sources are in `goose/`. This file is kept as
+> the detailed narrative of the batch/output work, not as a status report.
+
+
 Written at the end of a long session. The next session starts from this file, not from conversation memory.
 
 ## Where the work stands
