@@ -32,9 +32,10 @@ Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).
 3. Value model: types, conversions, flags, equality, `value_compare`, repr — done (EXP504).
 4. JSON output: `value_to_json`, `float_repr`, `float_json` — done (EXP505).
 5. Builtins and filters: `func_args`/`value_func`, `global_builtins`, the
-   per-type tables, and the arithmetic operators — in progress (EXP506 covers
-   `func_args` and the int/float tables; bool/none/undefined, string and
-   array/object tables still native).
+   per-type tables, and the arithmetic operators — in progress. EXP506 ports
+   `func_args` and the int/float tables (51 cases, 14/14 mutations, final -O2
+   gate); bool/none/undefined, string, array/object and `global_builtins` are
+   still native.
 6. Runtime: statement execution and expression evaluation (`for`/`if`/`set`/
    macros), filters/tests dispatch.
 7. String and caps: input marking, origin metadata, concatenation rules,
