@@ -150,10 +150,20 @@ written and gated **now** against the complete index, native-expert table,
 loading expert records and running a forward pass — needs the three remaining
 downloads. PLE streaming (E5) needs `ple-fp8.gguf` last.
 
-## E1 status: pack reader (2026-11-13)
+## Universal runtime contract
 
-`tools/edge0/pack.{hpp,cpp}` parses the two text tables into structures the
-loader can consume and validates them against the pool:
+Edge0 is a second model family in the same universal runtime, not a separate
+binary. One `llama-server` serves every family; the loader selects a provider
+from the model directory (GGUF -> the existing Apex path, a directory with
+`index.txt`, `profile.bin` and the pack files -> the Edge0 provider). The Goose
+modules are linked once and registered as capabilities. Apex flags, profile and
+output hashes stay unchanged; Edge0 options are additive and off by default.
+There are no per-model build directories.
+
+## E1 status: pack reader in Goose (2026-11-13)
+
+`experiments/EXP-2026-11-13-511-edge0-pack-index/source/pack.goose` parses the
+two text tables and validates them against the pool:
 
 - index v3: 1367 rows, header `align 64 pool 1538625024 tensors 1367`, 1065
   tensors in `dense.bin`, every in-pool offset 64-byte aligned and inside the
@@ -161,9 +171,10 @@ loader can consume and validates them against the pool:
 - native experts v6: 48 layers, type ids 11/20, record 1 164 800, stride
   596 377 600, every layer offset follows the stride.
 
-`tools/edge0/run.sh [pack]` compiles and runs the gate; on the current download
-it reports `FGEDGE0_PACK failures=0`. The reader is the foundation for E2: the
-same structures will drive tensor creation in the loader.
+The experiment gate (`build_fixture.sh`) compares every statistic with an
+independent parse and adds a synthetic malformed corpus: 4 cases, 38 values,
+0 failures, 6/6 mutations. The reader is the foundation for E2; the C++ side is
+only the fixture, all parsing and validation are Goose.
 
 ## Staged plan (each build and check limited to five minutes)
 

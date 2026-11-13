@@ -147,3 +147,8 @@ node_modules/
 # Generated Goose output for EXP509 (rebuilt by build_fixture.sh).
 /experiments/EXP-2026-11-13-509-p7-08-jinja-runtime-for/source/runtime-gen.c
 /experiments/EXP-2026-11-13-509-p7-08-jinja-runtime-for/source/runtime-gen.h
+
+# EXP511 generated Goose output and build directory.
+/runtime/exp511/
+/experiments/EXP-2026-11-13-511-edge0-pack-index/source/pack-gen.c
+/experiments/EXP-2026-11-13-511-edge0-pack-index/source/pack-gen.h
