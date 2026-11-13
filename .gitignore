@@ -131,3 +131,7 @@ experiments/*/build-copy/
 /docs/FRIED_GOOSE_DEVELOPMENT_LOG.md
 /results/exp135-goose-q4-pair/
 /results/archive/EXP-2026-10-31-135/
+
+# Old build artifacts committed by mistake; removed from the index 2026-11-13.
+/experiments/*/build-stage-run-backup/
+/runtime/checkpoints/
