@@ -121,3 +121,9 @@ experiments/*/build-copy/
 /runtime/exp505/
 /runtime/exp506/
 /runtime/exp507/
+
+# Local Fried Goose compiler research; preserve for a separate upstream fork.
+/fried-goose/
+/docs/FRIED_GOOSE_DEVELOPMENT_LOG.md
+/results/exp135-goose-q4-pair/
+/results/archive/EXP-2026-10-31-135/

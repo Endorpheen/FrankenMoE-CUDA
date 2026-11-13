@@ -267,3 +267,19 @@ anything.
 
 This note does not change the current Goose migration GOAL, its sequence, or
 priorities.
+
+## Long-term research idea: adaptive quantization with Fried Goose
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-07. This is a future research
+idea, not an active experiment. It does not change the current Goose migration
+GOAL, its sequence, or existing priorities.
+
+Explore adaptive quantization for FrankenMoE that minimizes quality loss at the same
+total model size by jointly optimizing layer/expert precision in MoE models,
+quantization algorithms, and CPU/CUDA kernels developed with Fried Goose.
+
+When this direction is prioritized in the future, compare against the strongest
+then-available quantization baselines under matched model-size budgets and
+reproducible conditions. Evaluate quality, prefill/decode speed, model size, RAM
+and VRAM; distinguish quantization quality gains from runtime/kernel gains.
+No implementation, model conversion, or benchmark is scheduled by this note.
