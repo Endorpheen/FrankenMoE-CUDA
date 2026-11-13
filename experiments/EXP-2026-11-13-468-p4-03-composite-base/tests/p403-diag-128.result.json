@@ -1,0 +1,14 @@
+{
+  "tag": "p403-diag-128",
+  "n_predict": 128,
+  "prefill_tok_s": 2132.601501138509,
+  "decode_tok_s": 35.657630592562434,
+  "prompt_tokens": 32768,
+  "predicted": 128,
+  "content_sha256": "9d90a010775f2e72fbea3fec7e0d34b8e57b52aab9dd16e90eb9cd5151ba7560",
+  "server_exit": 0,
+  "loadavg_before": "4.55 4.32 4.64",
+  "loadavg_at_request": "5.54 4.53 4.70",
+  "cpu_threads": 32,
+  "parallel_compilers_before": 4
+}
