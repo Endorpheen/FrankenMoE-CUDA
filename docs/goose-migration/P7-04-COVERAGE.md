@@ -12,7 +12,7 @@ accepted in two steps; the rest is open.
 | S1a. Type selection and imatrix flags | `llama_quant_compute_types`, `requires_imatrix`, `tensor_requires_imatrix` | **done (EXP581)** |
 | S1b. Allow-cuts and tensor-type overrides | `tensor_allows_quantization`, the `--tensor-type` loop, the decision prefix of `llama_tensor_get_type` | **done (EXP576)** |
 | S2. imatrix loader and remap | legacy and GGUF loaders, dataset metadata, `remap_layer`, `remap_imatrix`, prepare | open |
-| S3. Unweighted row quantizers | q1_0…q8_0, K, IQ, MXFP4/NVFP4, TQ without imatrix | open |
+| S3. Unweighted row quantizers | q1_0…q8_0, K, IQ, MXFP4/NVFP4, TQ without imatrix | in acceptance (S3a: q4_0/q4_1/q5_0/q5_1/q8_0/q1_0/q2_0) |
 | S4. Weighted quantizers | imatrix branches of q2_K…q6_K and IQ1/2/3/4 | open |
 | S5. Conversion and dequant closure | CPU dequant of all 26 types, different-type copy, q8_K, scale pack, f16/bf16 output | open |
 
