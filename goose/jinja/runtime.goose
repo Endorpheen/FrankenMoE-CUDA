@@ -5659,6 +5659,7 @@ recursive fn exec_for(
     if st[1] != 0 {
         return -1;
     }
+    A[st[27] + iter] = A[st[27] + iter] | 2;
     var key_mode: i64 = 0;
     let ik = vk(A, st, iter);
     var count: i64 = 0;
