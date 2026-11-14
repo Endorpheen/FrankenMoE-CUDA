@@ -362,3 +362,61 @@ baseline pair. No step is pre-approved by this note.
 This note does not start DGoose, does not reserve the GPU, and does not change the
 current migration goal or its measurement discipline. It exists so the direction,
 its prerequisites and its acceptance rule are written down before any work begins.
+
+## Long-term research idea: Goosinja (own extended Jinja engine on Goose)
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-14. This is a future research
+and engineering direction, not an active experiment. Nothing here is implemented,
+and it does not change the current Goose migration GOAL, its order, or any
+existing priority.
+
+Goal: eventually turn the ported Jinja layer into Goosinja — an own, extended
+Jinja engine written entirely in Fried Goose. The intent is not merely to replace
+the native C++ Jinja/minja implementation, but over time to have a more capable,
+faster, more general and more functional implementation.
+
+### Principles
+
+1. **100% backward compatibility** with the original llama.cpp engine: existing
+   templates, semantics and results must not change.
+2. New capabilities are compatible extensions only. No old syntax may change
+   meaning because of an extension.
+3. Two explicit modes: **Compatible Mode** reproduces the original behaviour
+   exactly; **Extended Mode** enables the additional features and is opted into
+   explicitly.
+4. Every speed-up must be backed by reproducible A/B measurements; every new
+   feature must pass a correctness and compatibility check.
+5. Goosinja is meant to become a standalone portable library on Goose, usable
+   outside FrankenMoE (for example in WASM), not a private helper of one runtime.
+
+### Possible directions
+
+| direction | idea |
+|---|---|
+| bytecode / VM | compile the AST to own bytecode and execute it, replacing tree walking |
+| AST optimisation | constant folding, dead-branch removal, shared sub-expressions |
+| intelligent caching | per-template compiled artefacts, per-shape render plans |
+| incremental and streaming rendering | emit parts as they are produced instead of one final string |
+| zero-copy | reference input bytes instead of copying them into value strings |
+| static analysis | detect unsupported constructs before the first request |
+| debugger | step/inspect rendering with positions that map back to the template |
+| profiler | per-template, per-block and per-filter cost attribution |
+| extended functions and filters | a superset of the native tables, enabled only in Extended Mode |
+| safe resource limits | bounded output size, recursion depth and time, opt-in |
+
+### Prerequisites
+
+1. All 152 ledger requirements closed (currently 102 DONE / 1 PARTIAL / 49 TODO).
+2. The final C++ audit complete.
+3. The runtime stabilised: fixed launch profile, reproducible measurements.
+4. Full compatibility of the current Jinja port — every template and semantic
+   difference resolved or explicitly recorded, with the differential gate green.
+
+### Order
+
+None of this starts before the four prerequisites hold. The migration continues to
+be the only active goal; Goosinja is recorded so the direction, its compatibility
+rule and its measurement discipline exist before any work begins.
+
+This note does not reserve the GPU, does not schedule an experiment and does not
+change the current measurement discipline.
