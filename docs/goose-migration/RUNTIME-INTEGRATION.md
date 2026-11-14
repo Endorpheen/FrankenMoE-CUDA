@@ -33,6 +33,15 @@ shared object at `-O2 -fPIC`, link a smoke host, and prove there are no duplicat
 symbols and that every set loads. Sets today: server (6 modules), quantizer (6),
 GGUF (4), P9-06 (3), runtime+schema (2), app (9) and core (5).
 
+Proven in `experiments/EXP-2026-11-15-627-s0-composed-artifact`: each accepted
+set composes, generates C and builds a shared object; exported symbols are
+scoped per set (`goose_init` -> `goose_init_<set>`, the duplicate `json_parse`
+localised), the sets link into one `libgoose_unified.so`, and a smoke host loads
+every set both by link and by `dlopen` (5/5, rc=0, no unresolved symbols). The
+two duplicate groups before scoping were `goose_init` (5 sets) and `json_parse`
+(server and P9-06); both are explained and resolved. The generated C embeds the
+output path, so the artifact hash is reproducible at a fixed `OUT`.
+
 The growing main build is `tools/build-main-runtime.sh`. It composes every
 accepted module that shares one unit, typechecks, generates C, compiles an
 object and fails on any duplicate global symbol. Current state: 36 modules,
