@@ -1,0 +1,43 @@
+[
+ {
+  "mutation": "M01 constructed start marker",
+  "status": "caught",
+  "failing_cases": [
+   "P6-xml-single",
+   "P7-xml-two-calls",
+   "P8-xml-partial",
+   "P9-json-bad-exp"
+  ]
+ },
+ {
+  "mutation": "M05 json digits min 1 -> 0",
+  "status": "caught",
+  "failing_cases": [
+   "P9-json-bad-exp"
+  ]
+ },
+ {
+  "mutation": "M06 flat fields sorted descending",
+  "status": "caught",
+  "failing_cases": [
+   "P3-json-args-first",
+   "P9-json-bad-exp"
+  ]
+ },
+ {
+  "mutation": "M15 exponent reuses digits0",
+  "status": "caught",
+  "failing_cases": [
+   "P9-json-bad-exp"
+  ]
+ },
+ {
+  "mutation": "X1 constructed param closer typo",
+  "status": "caught",
+  "failing_cases": [
+   "P6-xml-single",
+   "P7-xml-two-calls",
+   "P9-json-bad-exp"
+  ]
+ }
+]

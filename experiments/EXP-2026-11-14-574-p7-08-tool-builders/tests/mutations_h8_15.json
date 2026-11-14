@@ -1,0 +1,102 @@
+[
+ {
+  "id": "M08",
+  "mutation": "M08 function_is_key dispatch never taken",
+  "status": "caught",
+  "failing_cases": [
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=8"
+ },
+ {
+  "id": "M09",
+  "mutation": "M09 openai wrapper emits eps",
+  "status": "caught",
+  "failing_cases": [
+   "J-1",
+   "J-2",
+   "J-3",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=4"
+ },
+ {
+  "id": "M10",
+  "mutation": "M10 nested name keeps the full dot key",
+  "status": "caught",
+  "failing_cases": [
+   "J-5"
+  ],
+  "gate": "cases=13 failures=1"
+ },
+ {
+  "id": "M11",
+  "mutation": "M11 array wrapper closes with a space",
+  "status": "caught",
+  "failing_cases": [
+   "J-3"
+  ],
+  "gate": "cases=13 failures=1"
+ },
+ {
+  "id": "M12",
+  "mutation": "M12 flat string call id loses the number branch",
+  "status": "caught",
+  "failing_cases": [
+   "J-3",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=2"
+ },
+ {
+  "id": "M13",
+  "mutation": "M13 force=false still forced (first builder)",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-4",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=4"
+ },
+ {
+  "id": "M14",
+  "mutation": "M14 dump prints CharRepeat max unbounded literal",
+  "status": "caught",
+  "failing_cases": [
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=8"
+ },
+ {
+  "id": "M15",
+  "mutation": "M15 json exponent reuses digits0 (dump-invisible)",
+  "status": "caught",
+  "failing_cases": [
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=8"
+ }
+]
