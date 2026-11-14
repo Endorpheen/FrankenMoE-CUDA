@@ -12,10 +12,10 @@ structure gate and mutations.
 |---:|---|---|---|---|
 | 1 | qwen35moe | `qwen35moe.cpp` | S2 MoE + S4 hybrid | **done (EXP577)** |
 | 2 | qwen4exp | `qwen4exp.cpp` | S2 + S3 indexer + S4 hybrid + PLE | **done (EXP580)** |
-| 3 | qwen3 | `qwen3.cpp` | S1 dense | open |
+| 3 | qwen3 | `qwen3.cpp` | S1 dense | **done (EXP583)** |
 | 4 | qwen3moe | `qwen3moe.cpp` | S2 | open |
 | 5 | qwen3next | `qwen3next.cpp` | S4 | open |
-| 6 | qwen2 | `qwen2.cpp` | S1 | open |
+| 6 | qwen2 | `qwen2.cpp` | S1 | **done (EXP583)** |
 | 7 | qwen2moe | `qwen2moe.cpp` | S2 | open |
 | 8 | deepseek32 | `deepseek32.cpp` | S3 MLA + indexer | open |
 | 9 | deepseek4 | `deepseek4.cpp` | S3 + compressor | open |
