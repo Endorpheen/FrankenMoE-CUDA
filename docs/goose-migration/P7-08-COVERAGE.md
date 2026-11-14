@@ -104,7 +104,13 @@ carry different bodies under one name. Status:
   architectures, and one runtime links exactly one builder plus the base
   modules. Composing them together is therefore not a goal;
 - the jinja runtime, value/builtins still need the same treatment before one
-  runtime can link.
+  runtime can link. Their copies are not stale duplicates but variants tied to
+  different scratch layouts (`bases` uses st[10] in runtime and st[0] in value)
+  and to extra kinds (`type_name` knows V_FUNC/V_METHOD only in runtime), so
+  unifying them is a real merge, not a rename;
+- `tools/check-composition.sh` composes the four accepted sets (server, quant,
+  GGUF, P9-06) and runs `goose check` on each; it is the fast smoke test for the
+  composition step.
 
 ## Slice plan
 
