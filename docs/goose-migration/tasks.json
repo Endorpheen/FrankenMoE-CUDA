@@ -1645,7 +1645,7 @@
         "src/models/*.cpp"
       ],
       "acceptance": "Every audited text builder in the kept architecture set assigned and ported; tiny per-architecture graph construction fixture. Legacy architectures removed by owner directive are not in scope and carry no requirement.",
-      "evidence": " 2026-11-14 architecture 1 (EXP577, experiments/EXP-2026-11-14-577-p6-05-qwen35moe): the qwen35moe plan/shape builder is Goose - per-layer attention vs gated-delta-net choice with the hybrid interval and plus-one marker, the MTP layer in the plan, per-layer marker direction, negative-index rejection, GDN nodes, qk-norm width, routed/shared expert widths, the router table, attention QKV blocks and the output tensor. Gate: 10/26 original cases plus an extended 43/149 block (lost output, shared-expert flag, inverted marker, dropped MTP); mutations 12/12 in two halves. Structural gate only: expectations are a transcription of qwen35moe.cpp, no native library and no model. 2026-11-14 architecture 2 (EXP580, experiments/EXP-2026-11-14-580-p6-05-qwen4exp): the qwen4exp plan/shape builder is Goose - the hybrid interval with the recurrent flag, fused QKV and GDN wqkv widths, indexer q/k projections, hyper-connection head norm and per-layer down shapes, routed-expert width with n_expert_used, the MTP doubled hidden state and the PLE marker. Gate: 10 structure cases / 26 values, 0 failures; mutations 12/12 in two halves. Structural gate only. Recorded gaps: q4_plan, q4_is_ple, PLE tensors, indexer.k_proj, shared experts and nextn.*norm have no cases, and the recurrent branch has no positive case (the fixture passes zero flags). 2026-11-14 architectures 3 and 6 (EXP583, experiments/EXP-2026-11-14-583-p6-05-qwen3-qwen2): qwen3 and qwen2 are Goose over one shared dense skeleton - the uniform attention plan, the fused QKV row, the GQA key/value width, the gated SILU-PAR FFN and the lm_head/token_embd duplication; qwen3 adds qk-norm and its head-width query block, qwen2 the n_embd query width, the fused/legacy bias rules and output.bias. Gates: FG-ARCH3 30 cases / 96 values and FG-ARCH6 26 cases / 84 values, 0 failures; mutations 12/12 in two halves. Structural gate only: no native library is linked and the graph is not executed; the qwen2 query width coincides algebraically with head_k*n_head on release sizes. 2026-11-14 architectures 4, 7 and 13 (EXP584, experiments/EXP-2026-11-14-584-p6-05-moe-families): the three MoE families are Goose - qwen3moe (q/k-norm, head-width query, routed experts), qwen2moe (shared expert, n_embd query, no q/k-norm) and glm4-moe (dense lead / MoE / MTP layers, attn_post_norm, optional q/k-norm, shexp width from n_expert_shared, doubled nextn.eh_proj, mrope decision). Gates: FG-ARCH4 10/78, FG-ARCH7 10/58, FG-ARCH13 10/78, all 0 failures; mutations 12/12 in two halves. Structural gate only; the shared-expert activation path and some tensors are not covered.",
+      "evidence": " 2026-11-14 architecture 1 (EXP577, experiments/EXP-2026-11-14-577-p6-05-qwen35moe): the qwen35moe plan/shape builder is Goose - per-layer attention vs gated-delta-net choice with the hybrid interval and plus-one marker, the MTP layer in the plan, per-layer marker direction, negative-index rejection, GDN nodes, qk-norm width, routed/shared expert widths, the router table, attention QKV blocks and the output tensor. Gate: 10/26 original cases plus an extended 43/149 block (lost output, shared-expert flag, inverted marker, dropped MTP); mutations 12/12 in two halves. Structural gate only: expectations are a transcription of qwen35moe.cpp, no native library and no model. 2026-11-14 architecture 2 (EXP580, experiments/EXP-2026-11-14-580-p6-05-qwen4exp): the qwen4exp plan/shape builder is Goose - the hybrid interval with the recurrent flag, fused QKV and GDN wqkv widths, indexer q/k projections, hyper-connection head norm and per-layer down shapes, routed-expert width with n_expert_used, the MTP doubled hidden state and the PLE marker. Gate: 10 structure cases / 26 values, 0 failures; mutations 12/12 in two halves. Structural gate only. Recorded gaps: q4_plan, q4_is_ple, PLE tensors, indexer.k_proj, shared experts and nextn.*norm have no cases, and the recurrent branch has no positive case (the fixture passes zero flags). 2026-11-14 architectures 3 and 6 (EXP583, experiments/EXP-2026-11-14-583-p6-05-qwen3-qwen2): qwen3 and qwen2 are Goose over one shared dense skeleton - the uniform attention plan, the fused QKV row, the GQA key/value width, the gated SILU-PAR FFN and the lm_head/token_embd duplication; qwen3 adds qk-norm and its head-width query block, qwen2 the n_embd query width, the fused/legacy bias rules and output.bias. Gates: FG-ARCH3 30 cases / 96 values and FG-ARCH6 26 cases / 84 values, 0 failures; mutations 12/12 in two halves. Structural gate only: no native library is linked and the graph is not executed; the qwen2 query width coincides algebraically with head_k*n_head on release sizes. 2026-11-14 architectures 4, 7 and 13 (EXP584, experiments/EXP-2026-11-14-584-p6-05-moe-families): the three MoE families are Goose - qwen3moe (q/k-norm, head-width query, routed experts), qwen2moe (shared expert, n_embd query, no q/k-norm) and glm4-moe (dense lead / MoE / MTP layers, attn_post_norm, optional q/k-norm, shexp width from n_expert_shared, doubled nextn.eh_proj, mrope decision). Gates: FG-ARCH4 10/78, FG-ARCH7 10/58, FG-ARCH13 10/78, all 0 failures; mutations 12/12 in two halves. Structural gate only; the shared-expert activation path and some tensors are not covered. 2026-11-14 architecture 8 (EXP587, experiments/EXP-2026-11-14-587-p6-05-deepseek32): deepseek32 is Goose - the dense-lead/MoE/MTP plan, the MLA shapes (wq_a/wq_b, wkv_a_mqa with the rope part, wk_b/wv_b splits, wo, q/kv norms and the per-head {nope, rope, head_k} split), the DSA/indexer tensors with min(n_cached, top_k) and the is_mla gate, routed/shared expert widths, and nextn eh_proj/enorm/hnorm. Gate: 54 cases / 130 values / 0 failures over plan, globals, MLA, indexer, dense, experts, nextn and decisions; mutations 12/12 in two halves. Structural gate only; MLA absorption and indexer scoring are not modelled.",
       "depends_on": [],
       "workstream": "OTHER_COMPATIBILITY",
       "source_phase_files_at_audit": 416,
@@ -1653,11 +1653,10 @@
       "batch": "B7",
       "scope_note": "Narrowed to modern architectures; see docs/goose-migration/architecture-scope.md",
       "slices_total": 20,
-      "slices_done": 7,
+      "slices_done": 8,
       "coverage_doc": "docs/goose-migration/P6-05-COVERAGE.md",
       "remaining": [
         "qwen3next",
-        "deepseek32",
         "deepseek4",
         "kimi-k3",
         "kimi-linear",
@@ -4339,6 +4338,10 @@
     {
       "event": "P8-07 second slice (EXP586): the pure tool definitions and dispatch join the canon as goose/server/tools-pure.goose with a 12-case gate and 12/12 mutations.",
       "checkpoint": "b3548dd1"
+    },
+    {
+      "event": "P6-05 architecture 8 (EXP587): deepseek32 joins the canon as goose/model/deepseek32.goose with a 54-case gate and 12/12 mutations.",
+      "checkpoint": "ac8cb943"
     }
   ],
   "batches": [
@@ -5229,7 +5232,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T18:43:00.568325+00:00",
+  "updated_at": "2026-11-14T18:44:10.077138+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5238,9 +5241,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09 and P8-07.",
     "slices_total": 88,
-    "slices_done": 52,
+    "slices_done": 53,
     "slices_in_progress": 0,
-    "slices_remaining": 36
+    "slices_remaining": 35
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

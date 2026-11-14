@@ -64,6 +64,8 @@ CANONICAL_SOURCES = [
      "src/models/qwen3moe.cpp", "10 cases / 78 values / 0 failures, 12/12 mutations"),
     ("model/qwen2moe.goose", "EXP-2026-11-14-584-p6-05-moe-families", "source/qwen2moe.goose",
      "src/models/qwen2moe.cpp", "10 cases / 58 values / 0 failures, 12/12 mutations"),
+    ("model/deepseek32.goose", "EXP-2026-11-14-587-p6-05-deepseek32", "source/deepseek32.goose",
+     "src/models/deepseek32.cpp", "54 cases / 130 values / 0 failures, 12/12 mutations"),
     ("model/glm4-moe.goose", "EXP-2026-11-14-584-p6-05-moe-families", "source/glm4-moe.goose",
      "src/models/glm4-moe.cpp", "10 cases / 78 values / 0 failures, 12/12 mutations"),
     ("model/qwen3.goose", "EXP-2026-11-14-583-p6-05-qwen3-qwen2", "source/qwen3.goose",

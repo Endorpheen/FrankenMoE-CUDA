@@ -17,7 +17,7 @@ structure gate and mutations.
 | 5 | qwen3next | `qwen3next.cpp` | S4 | open |
 | 6 | qwen2 | `qwen2.cpp` | S1 | **done (EXP583)** |
 | 7 | qwen2moe | `qwen2moe.cpp` | S2 | **done (EXP584)** |
-| 8 | deepseek32 | `deepseek32.cpp` | S3 MLA + indexer | open |
+| 8 | deepseek32 | `deepseek32.cpp` | S3 MLA + indexer | **done (EXP587)** |
 | 9 | deepseek4 | `deepseek4.cpp` | S3 + compressor | open |
 | 10 | kimi-k3 | `kimi-k3.cpp` | S3 + S4 | open |
 | 11 | kimi-linear | `kimi-linear.cpp` | S3 + S4 | open |
