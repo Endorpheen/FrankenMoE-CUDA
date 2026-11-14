@@ -1,0 +1,33 @@
+# EXP574 S3 native oracle cases (build/native_s3.out), base 6c217e30
+# fields: case|kind|...; split: status|prefix|tag|index|count|bits
+C0|split|0|model-Q4_K_M|Q4_K_M|1|1|4
+C1|split|0|model-Q8_0|Q8_0|1|1|8
+C2|split|0|model-F16|F16|1|1|16
+C3|split|0|model-NVFP4|NVFP4|1|1|4
+C4|split|0|model-Q4_K_M|Q4_K_M|3|4|4
+C5|split|0|model||1|2|0
+C6|split|0|dir/sub/model-Q4_K_M|Q4_K_M|1|1|4
+C7|split|1|||0|0|0
+C8|split|0|model-Q4_K_M-001-of-00003|00003|1|1|3
+C9|split|0|model-q4_k_m|Q4_K_M|1|1|4
+C10|split|0|model.IQ2_XS|IQ2_XS|1|1|2
+C11|split|0|model-Q4_K_M|Q4_K_M|1|3|4
+C12|parts|4|model-Q4_K_M-00001-of-00004.gguf|model-Q4_K_M-00002-of-00004.gguf|model-Q4_K_M-00003-of-00004.gguf|model-Q4_K_M-00004-of-00004.gguf
+C13|parts|1|model-Q4_K_M.gguf
+C14|parts|2|https://host/m-Q8_0-00001-of-00002.gguf|https://host/m-Q8_0-00002-of-00002.gguf
+C15|group|2|0|1
+C16|group|1|2
+C17|model|1
+C18|model|2
+C19|model|0
+C20|model|2
+C21|sibling|1
+C22|sibling|2
+C23|sibling|2
+C24|sibling|-1
+C25|sidecar|2|dflash-|1|1
+C26|sidecar|-1||1|1
+C27|ismodel|1|0|0|0|0
+C28|plan|3|0|2|4
+C29|repo|0|user/model|Q4_K_M|1|||0|a/b|d|0|a/b|
+C30|resume|0|1|1|2|2|0|1|0|0

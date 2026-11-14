@@ -11,7 +11,7 @@ slice. S1 is accepted; S2–S5 are open.
 |---|---|---|
 | S1. HTTP URL and authority policy | `common_http_parse_url`, `format_host`, `is_loopback`, `proxy_bypass`, `show_masked_url` | **done (EXP578)** |
 | S2. HF cache naming | `hf-cache.cpp` naming and path rules | open |
-| S3. Download selection | `download.cpp` file selection and metadata | open |
+| S3. Download selection | `download.cpp` file selection and metadata | **done (EXP579)** |
 | S4. Log policy | `log.cpp` level/filter policy, plus the `debug.cpp` filter/NaN-abort part | open |
 | S5. Console editing | `console.cpp` line editing | open |
 | Boundary. subprocess | `subproc.cpp` | not a slice |
