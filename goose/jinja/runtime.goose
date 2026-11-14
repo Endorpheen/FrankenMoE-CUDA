@@ -6600,3 +6600,378 @@ export fn chat_tool_parameters_json(blob: const u8[:], off: i64, len: i64, out: 
     }
     return app(out, 0, raw, 0, raw.len);
 }
+
+// Minimal JSON scanner for the tools envelope: validates the grammar and
+// returns the span of each value so nested text can be spliced verbatim.
+// Kinds: 0 invalid, 1 null, 2 bool, 3 number, 4 string, 5 array, 6 object.
+fn js_ws(t: const u8[:], i: i64) -> i64 {
+    var p = i;
+
+    while p < t.len && (t[p] == 32 || t[p] == 9 || t[p] == 10 || t[p] == 13) {
+        p = p + 1;
+    }
+    return p;
+}
+
+fn js_string_end(t: const u8[:], i: i64) -> i64 {
+    if i >= t.len || t[i] != 34 {
+        return 0 - 1;
+    }
+    var p = i + 1;
+
+    while p < t.len {
+        let c = t[p];
+
+        if c == 34 {
+            return p + 1;
+        }
+
+        if c == 92 {
+            p = p + 2;
+        } else {
+            p = p + 1;
+        }
+    }
+    return 0 - 1;
+}
+
+// returns the end offset, or -1; kind is written through the caller after.
+recursive fn js_value(t: const u8[:], i: i64, depth: i64) -> i64 {
+    if depth > 64 {
+        return 0 - 1;
+    }
+    let p = js_ws(t, i);
+
+    if p >= t.len {
+        return 0 - 1;
+    }
+    let c = t[p];
+
+    if c == 34 {
+        return js_string_end(t, p);
+    }
+
+    if c == 123 {
+        var q = js_ws(t, p + 1);
+
+        if q < t.len && t[q] == 125 {
+            return q + 1;
+        }
+
+        while q < t.len {
+            let ke = js_string_end(t, js_ws(t, q));
+
+            if ke < 0 {
+                return 0 - 1;
+            }
+            let colon = js_ws(t, ke);
+
+            if colon >= t.len || t[colon] != 58 {
+                return 0 - 1;
+            }
+            let ve = js_value(t, colon + 1, depth + 1);
+
+            if ve < 0 {
+                return 0 - 1;
+            }
+            let after = js_ws(t, ve);
+
+            if after < t.len && t[after] == 44 {
+                q = after + 1;
+            } else if after < t.len && t[after] == 125 {
+                return after + 1;
+            } else {
+                return 0 - 1;
+            }
+        }
+        return 0 - 1;
+    }
+
+    if c == 91 {
+        var q = js_ws(t, p + 1);
+
+        if q < t.len && t[q] == 93 {
+            return q + 1;
+        }
+
+        while q < t.len {
+            let ve = js_value(t, q, depth + 1);
+
+            if ve < 0 {
+                return 0 - 1;
+            }
+            let after = js_ws(t, ve);
+
+            if after < t.len && t[after] == 44 {
+                q = after + 1;
+            } else if after < t.len && t[after] == 93 {
+                return after + 1;
+            } else {
+                return 0 - 1;
+            }
+        }
+        return 0 - 1;
+    }
+
+    if c == 116 || c == 102 || c == 110 {
+        // true / false / null
+        if p + 4 <= t.len && bytes_is(t[p .. p + 4], "true") {
+            return p + 4;
+        }
+
+        if p + 5 <= t.len && bytes_is(t[p .. p + 5], "false") {
+            return p + 5;
+        }
+
+        if p + 4 <= t.len && bytes_is(t[p .. p + 4], "null") {
+            return p + 4;
+        }
+        return 0 - 1;
+    }
+
+    if c == 45 || (c >= 48 && c <= 57) {
+        var q = p;
+
+        if t[q] == 45 {
+            q = q + 1;
+        }
+        var any: i64 = 0;
+
+        while q < t.len && t[q] >= 48 && t[q] <= 57 {
+            any = 1;
+            q = q + 1;
+        }
+
+        if q < t.len && t[q] == 46 {
+            q = q + 1;
+
+            while q < t.len && t[q] >= 48 && t[q] <= 57 {
+                any = 1;
+                q = q + 1;
+            }
+        }
+
+        if any == 0 {
+            return 0 - 1;
+        }
+
+        if q < t.len && (t[q] == 101 || t[q] == 69) {
+            q = q + 1;
+
+            if q < t.len && (t[q] == 43 || t[q] == 45) {
+                q = q + 1;
+            }
+            var eany: i64 = 0;
+
+            while q < t.len && t[q] >= 48 && t[q] <= 57 {
+                eany = 1;
+                q = q + 1;
+            }
+
+            if eany == 0 {
+                return 0 - 1;
+            }
+        }
+        return q;
+    }
+    return 0 - 1;
+}
+
+// Span of a member value inside a JSON object text: returns 1 and writes
+// [start, end) through the slice when the key is present.
+fn js_member(t: const u8[:], obj_start: i64, obj_end: i64, key: const u8[:], span: i64[:]) -> i64 {
+    var q = js_ws(t, obj_start);
+
+    if q >= obj_end || t[q] != 123 {
+        return 0;
+    }
+    q = js_ws(t, q + 1);
+
+    while q < obj_end && t[q] != 125 {
+        let ks = q;
+
+        if t[q] != 34 {
+            return 0;
+        }
+        let ke = js_string_end(t, q);
+
+        if ke < 0 {
+            return 0;
+        }
+        let colon = js_ws(t, ke);
+
+        if colon >= obj_end || t[colon] != 58 {
+            return 0;
+        }
+        let vs = js_ws(t, colon + 1);
+        let ve = js_value(t, vs, 0);
+
+        if ve < 0 {
+            return 0;
+        }
+        let inner_s = ks + 1;
+        let inner_l = ke - 2 - ks;
+
+        if inner_l == key.len {
+            var same: i64 = 1;
+            var k: i64 = 0;
+
+            while k < inner_l {
+                if t[inner_s + k] != key[k] {
+                    same = 0;
+                }
+                k = k + 1;
+            }
+
+            if same != 0 {
+                span[0] = vs;
+                span[1] = ve;
+                return 1;
+            }
+        }
+        let after = js_ws(t, ve);
+
+        if after < obj_end && t[after] == 44 {
+            q = js_ws(t, after + 1);
+        } else {
+            q = after;
+        }
+    }
+    return 0;
+}
+
+// common_chat_tools_parse_oaicompat: parse a tools array text into
+// (name, description, parameters-text) triples. Returns the tool count, or a
+// negative code: -2 not an array, -3 missing type, -4 unsupported type,
+// -5 missing function, -6 malformed JSON / missing name.
+export fn chat_tools_parse(
+    t: const u8[:],
+    maxn: i64,
+    out: u8[:],
+    offs: i64[:],
+    lens: i64[:]) -> i64 {
+    var p: i64 = js_ws(t, 0);
+
+    if p + 4 <= t.len && bytes_is(t[p .. p + 4], "null") {
+        return 0;
+    }
+
+    if p >= t.len || t[p] != 91 {
+        return 0 - 2;
+    }
+    p = js_ws(t, p + 1);
+
+    if p < t.len && t[p] == 93 {
+        return 0;
+    }
+    var count: i64 = 0;
+    var np: i64 = 0;
+    var q: i64 = p;
+
+    while q < t.len {
+        let ostart = js_ws(t, q);
+
+        if ostart >= t.len || t[ostart] != 123 {
+            return 0 - 6;
+        }
+        let oend = js_value(t, ostart, 0);
+
+        if oend < 0 {
+            return 0 - 6;
+        }
+        var span: i64[2] = [0, 0];
+
+        if js_member(t, ostart, oend, "type", span) == 0 {
+            return 0 - 3;
+        }
+        let ts = span[0];
+        let te = span[1];
+
+        if te - ts < 2 || t[ts] != 34 || t[te - 1] != 34 {
+            return 0 - 4;
+        }
+
+        if te - ts - 2 != 8 || !bytes_is(t[ts + 1 .. te - 1], "function") {
+            return 0 - 4;
+        }
+
+        if js_member(t, ostart, oend, "function", span) == 0 {
+            return 0 - 5;
+        }
+        let fs = span[0];
+        let fe = span[1];
+
+        if count >= maxn {
+            return 0 - 6;
+        }
+        var nspan: i64[2] = [0, 0];
+
+        if js_member(t, fs, fe, "name", nspan) == 0 {
+            return 0 - 6;
+        }
+
+        if nspan[1] - nspan[0] < 2 || t[nspan[0]] != 34 {
+            return 0 - 6;
+        }
+        var dspan: i64[2] = [0, 0];
+        var has_desc: i64 = js_member(t, fs, fe, "description", dspan);
+        var pspan: i64[2] = [0, 0];
+        var has_parm: i64 = js_member(t, fs, fe, "parameters", pspan);
+
+        let noff = np;
+        var k: i64 = nspan[0] + 1;
+
+        while k < nspan[1] - 1 {
+            out[np] = t[k];
+            np = np + 1;
+            k = k + 1;
+        }
+        offs[3 * count] = noff;
+        lens[3 * count] = np - noff;
+
+        let doff = np;
+
+        if has_desc != 0 && dspan[1] - dspan[0] >= 2 {
+            k = dspan[0] + 1;
+
+            while k < dspan[1] - 1 {
+                out[np] = t[k];
+                np = np + 1;
+                k = k + 1;
+            }
+        }
+        offs[3 * count + 1] = doff;
+        lens[3 * count + 1] = np - doff;
+
+        let poff2 = np;
+
+        if has_parm != 0 {
+            k = pspan[0];
+
+            while k < pspan[1] {
+                out[np] = t[k];
+                np = np + 1;
+                k = k + 1;
+            }
+        } else {
+            out[np] = 123;
+            np = np + 1;
+            out[np] = 125;
+            np = np + 1;
+        }
+        offs[3 * count + 2] = poff2;
+        lens[3 * count + 2] = np - poff2;
+        count = count + 1;
+
+        let after = js_ws(t, oend);
+
+        if after < t.len && t[after] == 44 {
+            q = js_ws(t, after + 1);
+        } else if after < t.len && t[after] == 93 {
+            return count;
+        } else {
+            return 0 - 6;
+        }
+    }
+    return 0 - 6;
+}
