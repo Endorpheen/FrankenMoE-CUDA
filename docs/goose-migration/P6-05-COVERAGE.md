@@ -23,13 +23,13 @@ structure gate and mutations.
 | 11 | kimi-linear | `kimi-linear.cpp` | S3 + S4 | **done (EXP594)** |
 | 12 | glm5-next | `glm5-next.cpp` | S3 + S4 + HC | **done (EXP591)** |
 | 13 | glm4-moe | `glm4-moe.cpp` | S2 | **done (EXP584)** |
-| 14 | glm4 | `glm4.cpp` | S1 + nextn | open |
-| 15 | glm-dsa | `glm-dsa.cpp` | S3 | open |
-| 16 | gemma3 | `gemma3.cpp` | S5 SWA | open |
-| 17 | gemma3n | `gemma3n.cpp` | S5 PLE | open |
-| 18 | gemma4 | `gemma4.cpp` | S5 + MoE | open |
-| 19 | gemma4-assistant | `gemma4-assistant.cpp` | S5 + nextn | open |
-| 20 | mistral3 | `mistral3.cpp` | S5 + MoE | open |
+| 14 | glm4 | `glm4.cpp` | S1 + nextn | in acceptance |
+| 15 | glm-dsa | `glm-dsa.cpp` | S3 | in acceptance |
+| 16 | gemma3 | `gemma3.cpp` | S5 SWA | in acceptance |
+| 17 | gemma3n | `gemma3n.cpp` | S5 PLE | in acceptance |
+| 18 | gemma4 | `gemma4.cpp` | S5 + MoE | in acceptance |
+| 19 | gemma4-assistant | `gemma4-assistant.cpp` | S5 + nextn | in acceptance |
+| 20 | mistral3 | `mistral3.cpp` | S5 + MoE | in acceptance |
 
 ## qwen4exp — accepted
 
