@@ -1,12 +1,13 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (4). This file is the current state; update it in the same change
+Updated: 2026-11-15 (5). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 107**, **PARTIAL 3**, **TODO 42** of
-152 functional requirements. Slice front: **91 / 92** done, 1 remaining.
+`docs/goose-migration/tasks.json`: **DONE 108**, **PARTIAL 8**, **TODO 36** of
+152 functional requirements. Slice front: **110 / 111** done, 1 remaining
+(the ggml-opt optimizer).
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
@@ -14,13 +15,18 @@ The remaining partial requirements and their slice fronts:
 
 | requirement | slices | what is open |
 |---|---|---|
-| P7-08 | 8 / 8 | acceptance wording: hoisted native rule names, chat apply entry point and time injection |
+| P4-12 | 3 / 4 | ggml-opt optimizer and backend-optimization decisions |
+| P6-11 | 3 / 3 | wire ngram_draft.cpp and session.cpp to the Goose decisions |
+| P7-08 | 8 / 8 | acceptance wording: hoisted native rule names, chat apply and time injection |
 | P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
-| P8-07 | 5 / 6 | process/HTTP integration (S5b), in flight |
+| P7-12 | 3 / 3 | wire the tokenizer dispatch, special-token partition and common strings |
+| P9-01 | 3 / 3 | wire validate(), arch_registry.cpp and main.cpp |
+| P9-03 | 3 / 3 | replace the 25 streaming call sites |
+| P9-07 | 3 / 3 | wire the three sinks and DeterministicWorkload |
 
 ## What the canonical tree contains
 
-`goose/` holds 4131 verified entries. The accepted slices of this phase cover:
+`goose/` holds 4144 verified entries. The accepted slices of this phase cover:
 
 - Jinja runtime 19025 lines (expressions, statements, filters, tests, macros,
   chat layer, streaming, delimiters, autoparser, tool builders, nine parser
