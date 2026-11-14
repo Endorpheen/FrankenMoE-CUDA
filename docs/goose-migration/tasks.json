@@ -1798,13 +1798,13 @@
       "id": "P7-02",
       "phase": "P7",
       "title": "Port GGUF writing,splitting and tensor serialization",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "ggml/src/gguf.cpp",
         "tools/gguf-split/**"
       ],
       "acceptance": "Native<->Goose byte/semantic compatible serialization,shard naming/offsets/split-merge and nonseekable/error cases checked.",
-      "evidence": "",
+      "evidence": " 2026-11-14 S1 (EXP571, experiments/EXP-2026-11-14-571-p7-02-gguf-metadata): the GGUF context and metadata block of ggml/src/gguf.cpp is Goose - the flat KV list, every scalar/array/string setter, remove with its old index, set_kv copy semantics, and the general.alignment reserved-key rule (native aborts, the port returns -1). Gate: the native gguf_set_* path and the Goose host print the same canonical TSV over 20 cases, 46 records compared, 0 failures; mutations 12/12 in two halves. The writer, tensor data, split/merge and llama_model_saver remain native; the slice plan and boundaries are in docs/goose-migration/P7-02-COVERAGE.md.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -1812,13 +1812,17 @@
       "batch": "B4",
       "remaining": [
         "GGUF writing",
-        "GGUF splitting",
         "tensor serialization",
+        "GGUF splitting and merge",
+        "model saver (needs weights or a synthetic hparams/vocab fixture)",
+        "llama-io string helpers (boundary with state serialization)",
         "GGUF v1 and non-little-endian files (shared with P7-12/C2)",
         "multi-shard files and shard naming/offset merge (shared with P7-12/C2)"
       ],
-      "coverage_doc": "docs/goose-migration/P7-01-CLOSURE.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "coverage_doc": "docs/goose-migration/P7-02-COVERAGE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "slices_total": 5,
+      "slices_done": 1
     },
     {
       "id": "P7-03",
@@ -4217,6 +4221,10 @@
     {
       "event": "P7-08 sixty-fifth slice (EXP570): the JSON-schema converter is gated against the native converter over 30 schemas with 12/12 mutations and becomes the canonical json/format-grammar.goose; the superseded EXP496 slot is removed from the tree.",
       "checkpoint": "73c51a5e"
+    },
+    {
+      "event": "P7-02 first slice (EXP571): GGUF context and metadata become canonical goose/model/gguf-metadata.goose with a weight-free native TSV gate and 12/12 mutations.",
+      "checkpoint": "085e6c4a"
     }
   ],
   "batches": [
@@ -5107,18 +5115,18 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T17:51:20.287373+00:00",
+  "updated_at": "2026-11-14T17:53:28.977319+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
     "PARTIAL": 1
   },
   "work_front": {
-    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08 (8 slices) and P7-09 (30 slices).",
-    "slices_total": 38,
-    "slices_done": 34,
+    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09 and P7-02.",
+    "slices_total": 43,
+    "slices_done": 35,
     "slices_in_progress": 0,
-    "slices_remaining": 4
+    "slices_remaining": 8
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

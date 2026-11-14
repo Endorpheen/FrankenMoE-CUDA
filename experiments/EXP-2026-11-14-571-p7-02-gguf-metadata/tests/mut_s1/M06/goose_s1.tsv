@@ -1,0 +1,46 @@
+CASE	u8	1
+KV	key	0	0	0	1	fa
+CASE	i8	1
+KV	key	0	0	0	1	fb
+CASE	u16	1
+KV	key	0	0	0	1	e8
+CASE	i16	1
+KV	key	0	0	0	1	2e
+CASE	u32	1
+KV	key	0	0	0	1	00
+CASE	i32	1
+KV	key	0	0	0	1	00
+CASE	f32	1
+KV	key	0	0	0	1	00
+CASE	u64	1
+KV	key	0	0	0	1	05
+CASE	i64	1
+KV	key	0	0	0	1	00
+CASE	f64	1
+KV	key	0	0	0	1	00
+CASE	bool	1
+KV	key	0	0	0	1	01
+CASE	str	1
+KV	key	8	0	8	5	68656c6c6f
+CASE	arr_u8	1
+KV	a	0	1	0	3	0102ff
+CASE	arr_i32	1
+KV	a	5	1	5	3	ffffffff0000000007000000
+CASE	arr_f32	1
+KV	a	6	1	6	2	0000003f0000c0bf
+CASE	arr_bool	1
+KV	a	7	1	7	3	010001
+CASE	arr_str	1
+KV	a	8	1	8	3	61,6263,
+CASE	replace_reserved	2
+KV	k	0	0	0	1	02
+KV	general.alignment	0	0	0	1	40
+RM	1	-1
+CASE	remove	2
+KV	a	0	0	0	1	01
+KV	c	0	0	0	1	03
+CASE	set_kv	4
+KV	s_u16	0	0	0	1	60
+KV	s_str	8	0	8	4	636f7079
+KV	s_arr	4	1	4	2	0700000008000000
+KV	s_sarr	8	1	8	2	78,797a

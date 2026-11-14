@@ -32,6 +32,8 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("model/gguf-metadata.goose", "EXP-2026-11-14-571-p7-02-gguf-metadata", "source/s1_metadata.goose",
+     "ggml/src/gguf.cpp (context and metadata)", "46 records / 0 failures, 12/12 mutations"),
     ("jinja/lexer.goose", "EXP-2026-11-13-502-p7-08-jinja-lexer", "source/lexer.goose",
      "common/jinja/lexer.cpp", "107 cases / 131025 values / 0 failures, 20/20 mutations"),
     ("jinja/parser.goose", "EXP-2026-11-13-503-p7-08-jinja-parser", "source/parser.goose",

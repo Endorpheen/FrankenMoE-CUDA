@@ -1,9 +1,21 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T17:50:38.656726+00:00",
+  "updated_at": "2026-11-14T17:53:39.030065+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
+    {
+      "goose": "model/gguf-metadata.goose",
+      "native": "ggml/src/gguf.cpp (context and metadata)",
+      "native_targets": [
+        "ggml/src/gguf.cpp (context and metadata)"
+      ],
+      "experiment": "EXP-2026-11-14-571-p7-02-gguf-metadata",
+      "task": "",
+      "status": "ported",
+      "sha256": "a00c2d84a3f52189cef3cacf44076cfe8664e95710a9d147bc89b7bde20c20f7",
+      "gate": "46 records / 0 failures, 12/12 mutations"
+    },
     {
       "goose": "jinja/lexer.goose",
       "native": "common/jinja/lexer.cpp",
