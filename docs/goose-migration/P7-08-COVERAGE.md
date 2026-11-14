@@ -115,9 +115,16 @@ carry different bodies under one name. Status:
   plain `extern` would leave those links unresolved. Closing the `meta[3]=1`
   stub needs an explicit seam (a weak fallback or a build that always links the
   converter), which is a separate design step;
-- `tools/check-composition.sh` composes the five accepted sets (server, quant,
-  GGUF, P9-06, runtime+schema) and runs `goose check` on each; it is the fast
-  smoke test for the composition step.
+- the application stack (the five server modules, `chat/thinking-control`,
+  `chat/parse-params` and `cli/cli-protocol`) composes too: 666 specializations,
+  six struct instances. It is the largest decision-only unit before the Jinja
+  runtime joins;
+- the composer now checks interfaces: it records every `export fn` in the input
+  modules and fails if the composed unit does not expose exactly that set, so a
+  dedup or rename can no longer silently drop a public entry point;
+- `tools/check-composition.sh` composes the six accepted sets (server, quant,
+  GGUF, P9-06, runtime+schema, app) and runs `goose check` on each; it is the
+  fast smoke test for the composition step.
 
 ## Slice plan
 

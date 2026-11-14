@@ -143,11 +143,15 @@ def declarations(text: str):
     return out
 
 
-def emit(path: Path, seen: dict, conflicts: list) -> str:
+EXPORT = re.compile(r"(?m)^export fn (\w+)")
+
+
+def emit(path: Path, seen: dict, conflicts: list, expected: set) -> str:
     text = path.read_text()
     for old, new in RENAMES.get(path.name, {}).items():
         text = re.sub(r"\b" + re.escape(old) + r"\b", new, text)
     text = IMPORT.sub("", text)
+    expected.update(EXPORT.findall(text))
     rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
     kept = []
     for kind, name, block in declarations(text):
@@ -183,8 +187,15 @@ def main() -> int:
         collect(Path(arg), order, seen)
     seen: dict = {}
     conflicts: list = []
+    expected: set = set()
     header = "".join(f"import {b};\n" for b in sorted(BUILTINS))
-    body = header + "\n".join(emit(p, seen, conflicts) for p in order)
+    body = header + "\n".join(emit(p, seen, conflicts, expected) for p in order)
+    actual = set(EXPORT.findall(body))
+    if expected != actual:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        print(f"interface check failed: missing={missing} extra={extra}", file=sys.stderr)
+        return 1
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(body)
     if conflicts:
