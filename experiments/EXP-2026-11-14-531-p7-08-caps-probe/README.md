@@ -1,49 +1,63 @@
-# EXP531: value usage counter foundation (P7-08 slice 5, part 21)
+# EXP531: caps usage flag and detector (P7-08 slice 5, part 21)
 
-## Status: partial by design, blocker recorded
+## Hypothesis
 
-This slice was meant to port `jinja::caps::analyze`. The analysis is dynamic: it
-renders probe templates and inspects `value_t::stats.used` on
-`messages[0].content` (caps.cpp around the "system prompt" check). A Goose port
-therefore needs a usage flag in the value model, and the flag has to be readable
-after a render.
-
-The foundation is done and gated; the detector itself is **not** verified and is
-not committed as working. The blocker is recorded below.
+`jinja::caps::analyze` decides `supports_system_role` dynamically: it renders a
+probe with `[system "System message", user "User message"]` and clears the flag
+when `messages[0].content` was not used. A Goose port needs a usage flag in the
+value model and a way to read it after a render. That worked.
 
 ## What is in this slice
 
 | change | rule |
 |---|---|
 | arena | the value record gained an eleventh field, `st[27]`, holding the usage flag; `bases()` and `ast_bases()` were widened, and the fixture writes the pool at `11 * valcap` |
-| marking | `append_rendered` sets the flag of every value it renders, approximating the native `stats.used` |
-| probe exports | `chat_probe_used(A, st, id)` reads a flag, `chat_probe_content_used(A, B, st, msgs)` looks up `messages[0]["content"]` and returns its flag |
+| marking | `append_rendered` marks every value it renders, and `vnew` clears the flag for new values |
+| probe | `chat_probe_used(A, st, id)` reads a flag; `chat_probe_content_used(A, B, st, msgs)` walks `messages[0]` keys and returns the `content` flag; `chat_probe_fresh` checks a fresh value starts unused |
 
-The existing 385-case gate stays green, so the arena change did not regress any
-template behaviour:
+## The defect that blocked the first attempt
+
+The probe read the key bytes as `B[st[18] + k ..]`, but `st[18] + k` is the
+*index into the arena*, not the byte offset: the offset lives in
+`A[st[18] + k]` and the length in `A[st[19] + k]`. Every key compare therefore
+failed and the probe reported 0. Reading the two fields first fixed it:
 
 ```
-FG531_RUNTIME_CAPS cases=385 values=762 failures=0
+let koff = A[st[18] + k];
+let klen = A[st[19] + k];
+let ks = B[koff .. koff + klen];
 ```
 
-## Blocker
+The same mistake had been made in the debug export, which is why the earlier
+debug output looked plausible while the probe stayed at 0.
 
-`chat_probe_content_used` returns 0 for every template, including
-`{{ messages[0]['content'] }}` where the flag must be 1. The debug run showed
-`messages` kind 4 (array), its first child kind 6 (object), so the shape is
-right; the key walk inside the export does not find `content`. Three attempts
-(key bytes read through `st[18]/st[19]`, a byte-compare helper, an id-based
-debug export) did not isolate whether the key offsets or the value-id lookup is
-wrong, and the caps comparison case was removed again to keep the tree green.
+## Gate
 
-Per the repository rule the trial-and-error loop stops here. The next step needs
-a decision from Igor: either consult the senior helper in Codex with this
-report, or accept a different design for the flag (for example a host-side set
-of used ids instead of an arena field).
+The native expectation comes from `common_chat_template(src, "", "").original_caps().supports_system_role`;
+our side renders the probe through the same pipeline as the template gate and
+reads the flag, so only the flag is compared (the rendering is compared by the
+other checks).
 
-## Files worth looking at
+```
+FG531_RUNTIME_CAPS cases=394 values=775 failures=0
+mutations 6/6 caught (range 0:6)
+mutations 6/6 caught (range 6:12)
+baseline after restore: rc=0 cases=394 values=775 failures=0
+```
 
-- `source/runtime.goose`: `bases()`/`ast_bases()` (11 fields),
-  `append_rendered` marking, `chat_probe_used`, `chat_probe_content_used`.
-- `tests/stmt_fixture.cpp`: arena sizing in `check_tpl`, `check_chat_shape`,
-  `check_chat_roles`.
+Four caps cases: the role/content loop (supported), the role-only template
+(unsupported), a conditional-content template (unsupported), and
+`{{ messages[0]['content'] }}` (supported), plus the fresh-value unit check.
+
+Mutations: marking disabled or written into another field, the probe always
+unused or always used, wrong key match, the key flag returned instead of the
+value flag, key offset/length swapped, fresh values starting used, the message
+array ignored, an empty key walk, and matching any key.
+
+## Not ported
+
+- The remaining caps probes (`supports_typed_content`, tools, reasoning,
+  `has_op` history). Only the system-role rule is ported, because it is the one
+  the chat-layer workarounds consume.
+- Typed content normalization, tool schemas/grammars, the autoparser and model
+  parsers.

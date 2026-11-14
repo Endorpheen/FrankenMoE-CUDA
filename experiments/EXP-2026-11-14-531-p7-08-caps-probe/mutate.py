@@ -9,19 +9,20 @@ SRC = E / 'source/runtime.goose'
 ORIG = SRC.read_text()
 
 M = [
-    ('developer is not mapped', 'if bytes_is(role, "developer") {\n            role = "system";\n        }', 'if false {\n            role = "system";\n        }'),
-    ('the merge joins with a space', 'out[p] = 10;\n            p = p + 1;\n            k = 0;', 'out[p] = 32;\n            p = p + 1;\n            k = 0;'),
-    ('the merged content is dropped', 'content = out[0..p];', 'content = out[0..0];'),
-    ('a lone system message is kept', 'effective = 0;', 'effective = 1;'),
-    ('the merge flag is not set', 'merged = true;', 'merged = false;'),
-    ('the start index is not advanced', 'start = 1;', 'start = 0;'),
-    ('caps are ignored', 'if supports_system == 0 && n > 0 {', 'if n > 0 {'),
-    ('the developer check looks for assistant', 'if bytes_is(role, "developer") {', 'if bytes_is(role, "assistant") {'),
-    ('the mapped role is assistant', 'if bytes_is(role, "developer") {\n            role = "system";\n        }', 'if bytes_is(role, "developer") {\n            role = "assistant";\n        }'),
-    ('the effective count loses two', 'effective = n - 1;', 'effective = n - 2;'),
-    ('only one array slot is reserved', 'while ri < effective {', 'while ri < 1 {'),
-    ('the object keys are swapped', 'obj_key(A, st, obj, mk_str(A, F, B, st, "role"));\n        obj_key(A, st, obj, mk_str(A, F, B, st, "content"));', 'obj_key(A, st, obj, mk_str(A, F, B, st, "content"));\n        obj_key(A, st, obj, mk_str(A, F, B, st, "role"));'),
+    ('rendered values are not marked', 'A[st[27] + v] = 1;', 'A[st[27] + v] = 0;'),
+    ('the flag is written into the value-count field', 'A[st[27] + v] = 1;', 'A[st[25] + v] = 1;'),
+    ('the probe always reports unused', 'return A[st[27] + v];', 'return 0;'),
+    ('the probe always reports used', 'return A[st[27] + v];', 'return 1;'),
+    ('the probe matches the wrong key', 'if bytes_is(ks, "content") {', 'if false {'),
+    ('the probe reports the key flag', 'let v = A[pool(A, st) + vvs(A, st, first) + i];', 'let v = k;'),
+    ('the key offset is read as a length', 'let koff = A[st[18] + k];', 'let koff = A[st[19] + k];'),
+    ('the key length is read as an offset', 'let klen = A[st[19] + k];', 'let klen = A[st[18] + k];'),
+    ('new values start used', 'A[st[27] + id] = 0;', 'A[st[27] + id] = 1;'),
+    ('the probe ignores the message array', 'if vcc(A, st, msgs) == 0 {', 'if true {'),
+    ('the probe walk has no keys', 'let n = vkc(A, st, first);', 'let n = 0;'),
+    ('the probe matches any key', 'if bytes_is(ks, "content") {', 'if klen > 0 {'),
 ]
+
 
 
 

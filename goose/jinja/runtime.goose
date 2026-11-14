@@ -6174,7 +6174,9 @@ export fn chat_probe_content_used(A: const i64[:], B: const u8[:], st: const i64
 
     while i < n {
         let k = A[pool(A, st) + vks(A, st, first) + i];
-        let ks = B[st[18] + k .. st[18] + k + A[st[19] + k]];
+        let koff = A[st[18] + k];
+        let klen = A[st[19] + k];
+        let ks = B[koff .. koff + klen];
 
         if bytes_is(ks, "content") {
             let v = A[pool(A, st) + vvs(A, st, first) + i];
@@ -6183,4 +6185,11 @@ export fn chat_probe_content_used(A: const i64[:], B: const u8[:], st: const i64
         i = i + 1;
     }
     return 0;
+}
+
+// Unit probe: a freshly created value must start unused.
+export fn chat_probe_fresh(A: i64[:], F: f64[:], B: u8[:], st: i64[:]) -> i64 {
+    reset_io(A, st, 0);
+    let f = vnew(A, F, st, V_STRING);
+    return A[st[27] + f];
 }

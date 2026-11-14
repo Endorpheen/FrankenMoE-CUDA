@@ -342,7 +342,10 @@ struct AstEnc {
 
 static void check_tpl(const std::string & src,
                       const std::vector<std::pair<std::string, std::string>> & vars,
-                      const std::string * forced_want = nullptr) {
+                      const std::string * forced_want = nullptr,
+                      int64_t * out_used = nullptr,
+                      const std::string & probe_var = "",
+                      bool compare_output = true) {
     if (getenv("FG_TRACE")) { fprintf(stderr, "CASE %s\n", src.c_str()); fflush(stderr); }
     jinja::lexer lx;
     auto lr = lx.tokenize(src);
@@ -461,8 +464,15 @@ static void check_tpl(const std::string & src,
         return;
     }
     ++values;
+    if (out_used) {
+        int64_t root = -1;
+        for (size_t i = 0; i < cvals.size(); ++i) {
+            if (cvals[i].first == probe_var) { root = croot[i]; break; }
+        }
+        *out_used = root < 0 ? -1 : chat_probe_content_used(sli(A), slv(B), sli(st), root);
+    }
     const std::string got((const char *) out.data(), (size_t) len);
-    if (got != want) bad("output", src + "\n  got =[" + visible(got) + "]\n  want=[" + visible(want) + "]");
+    if (compare_output && got != want) bad("output", src + "\n  got =[" + visible(got) + "]\n  want=[" + visible(want) + "]");
 }
 
 static std::string vp_str(const std::string & s) {
@@ -672,6 +682,36 @@ static void check_chat_roles(const std::string & src,
     check_tpl(src, vars, &want);
 }
 
+
+
+static void check_caps(const std::string & src) {
+    bool native_supported = false;
+    try {
+        common_chat_template tmpl(src, "", "");
+        native_supported = tmpl.original_caps().supports_system_role;
+    } catch (const std::exception & e) {
+        printf("FAIL caps oracle: %s: %s\n", src.c_str(), e.what());
+        ++fails;
+        return;
+    }
+    const std::string vp =
+        "a[o{s\"role\"=s\"system\",s\"content\"=s\"System message\"},"
+        "o{s\"role\"=s\"user\",s\"content\"=s\"User message\"}]";
+    const std::vector<std::pair<std::string, std::string>> vars = {
+        {"messages", vp},
+        {"add_generation_prompt", "bF"},
+    };
+    int64_t used = -1;
+    const std::string sink;
+    check_tpl(src, vars, &sink, &used, "messages", false);
+    ++cases;
+    ++values;
+    if ((used != 0) != native_supported) {
+        ++fails;
+        printf("FAIL caps: %s\n  ours_used=%lld native_supported=%d\n", src.c_str(),
+               (long long) used, native_supported ? 1 : 0);
+    }
+}
 
 int main(void) {
     goose_init(0, 0);
@@ -1079,6 +1119,28 @@ int main(void) {
     check_chat_roles("{% for m in messages %}{% if m['role'] != 'system' %}[{{ m['content'] }}]{% endif %}{% endfor %}",
                      {{"system", "S"}, {"user", "U"}}, false);
 
+
+    check_caps(chat_loop);
+    check_caps(role_only);
+    check_caps("{% for m in messages %}{% if m['role'] != 'system' %}[{{ m['content'] }}]{% endif %}{% endfor %}");
+    check_caps("{{ messages[0]['content'] }}");
+
+    {
+        const int64_t valcap = 64, poolcap = 256;
+        std::vector<int64_t> A((size_t) (32 + 11 * valcap + poolcap), 0);
+        A[0] = valcap;
+        A[5] = poolcap;
+        std::vector<double> F((size_t) valcap, 0.0);
+        std::vector<uint8_t> B(1 << 12, 0);
+        std::vector<int64_t> st(64, 0);
+        const int64_t fresh = chat_probe_fresh(sli(A), slf(F), slv(B), sli(st));
+        ++cases;
+        ++values;
+        if (fresh != 0) {
+            ++fails;
+            printf("FAIL caps: a fresh value starts used (%lld)\n", (long long) fresh);
+        }
+    }
 
     printf("FG531_RUNTIME_CAPS cases=%d values=%d failures=%d\n", cases, values, fails);
     return fails ? 1 : 0;
