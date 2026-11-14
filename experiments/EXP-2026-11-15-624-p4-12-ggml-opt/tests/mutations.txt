@@ -1,0 +1,14 @@
+M01 half=A slice=s1 KILLED    nbatches                         batch count off by one
+M02 half=A slice=s1 KILLED    batches_split_negative_all       negative split keeps no training data
+M03 half=A slice=s1 KILLED    epoch_split_period               validation split drops the physical period
+M04 half=A slice=s1 KILLED    shard_bytes_data                 shard bytes invert the shard ratio
+M05 half=A slice=s1 KILLED    shuffle_limit_prefix             shuffle limit not divided by the shard size
+M06 half=A slice=s1 KILLED    batch_mapping_identity           batch shard index transposed
+half A: killed 6/6
+M07 half=B slice=s2 KILLED    epoch_state_p1                   optimizer graph selected on the wrong step index
+M08 half=B slice=s2 KILLED    epoch_state_p2                   step index does not wrap
+M09 half=B slice=s2 KILLED    accumulate_static_p1             period-one static graph accumulates anyway
+M10 half=B slice=s2 KILLED    loss_scale_t2_p2                 cross-entropy ignores the opt period
+M11 half=B slice=s3 KILLED    loss_per_dp_p2                   per-datapoint loss is not rescaled
+M12 half=B slice=s3 KILLED    ncorrect_next_sticky             undefined accuracy sentinel is not sticky
+half B: killed 6/6

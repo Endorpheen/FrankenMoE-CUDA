@@ -38,6 +38,9 @@ RENAMES = {
         "PJ_K_ARRAY": "TP_K_ARRAY",
         "PJ_K_OBJECT": "TP_K_OBJECT",
     },
+    "goose-opt.goose": {
+        "sqrt": "op_sqrt",
+    },
     "quant-rows2.goose": {
         "st_f16": "st2_f16",
         "st_u8": "st2_u8",

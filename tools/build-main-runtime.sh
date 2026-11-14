@@ -42,6 +42,8 @@ MODULES=(
     goose/model/expert-lru.goose
     goose/model/dense-place.goose
     goose/model/stream-plan.goose
+    goose/cpu/goose-meta-backend.goose
+    goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
     goose/model/special-partition.goose
     goose/misc/common-strings.goose
