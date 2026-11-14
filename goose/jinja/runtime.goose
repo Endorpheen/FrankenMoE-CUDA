@@ -7388,3 +7388,28 @@ export fn chat_contains_media(
     }
     return 0;
 }
+
+// common_chat_format_single: the newly formatted part is the tail of the render
+// that includes the new message beyond the length of the render without it. When
+// a generation prompt is requested and the history render ends with a newline,
+// that newline is preserved ahead of the tail.
+export fn chat_format_single(past: const u8[:], full: const u8[:], add_ass: i64, out: u8[:]) -> i64 {
+    var p: i64 = 0;
+
+    if add_ass != 0 && past.len > 0 && past[past.len - 1] == 10 {
+        out[p] = 10;
+        p = p + 1;
+    }
+
+    if past.len > full.len {
+        return p;
+    }
+    var i: i64 = past.len;
+
+    while i < full.len {
+        out[p] = full[i];
+        p = p + 1;
+        i = i + 1;
+    }
+    return p;
+}
