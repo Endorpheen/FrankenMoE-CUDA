@@ -2396,58 +2396,19 @@ fn fail_raw(msg: const u8[:], E: u8[:], st: i64[:]) -> i64 {
     return -1;
 }
 
-recursive fn eval_test(
-    id: i64,
-    ctxc: i64,
-    noff: i64[:],
-    nlen: i64[:],
-    cval: i64[:],
+recursive fn dispatch_test(
+    tname: const u8[:],
+    v: i64,
+    argc: i64,
+    argv: i64[:],
     A: i64[:],
     F: f64[:],
     B: u8[:],
     E: u8[:],
     out: u8[:],
-    st: i64[:]) -> i64 {
-    let v = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
-
-    if st[1] != 0 {
-        return -1;
-    }
-    let t = ac1(A, st, id);
-    var tname: const u8[:] = "";
-    var argc: i64 = 0;
-    var argv: i64[4] = [0, 0, 0, 0];
-
-    if ak(A, st, t) == K_IDENT {
-        tname = astr(B, A, st, t);
-    } else if ak(A, st, t) == K_CALL {
-        let callee = ac0(A, st, t);
-
-        if ak(A, st, callee) != K_IDENT {
-            return fail_node(K_TEST, apos(A, st, id), "Test callee must be an identifier", E, st);
-        }
-        tname = astr(B, A, st, callee);
-        argc = al0c(A, st, t);
-
-        if argc > 4 {
-            return fail_node(K_TEST, apos(A, st, id), "Too many test arguments", E, st);
-        }
-        var ai: i64 = 0;
-
-        while ai < argc {
-            let argn = A[apool(A, st) + al0s(A, st, t) + ai];
-            let av = eval_node(argn, ctxc, noff, nlen, cval, A, F, B, E, out, st);
-
-            if st[1] != 0 {
-                return -1;
-            }
-            argv[ai] = av;
-            ai = ai + 1;
-        }
-    } else {
-        return fail_node(K_TEST, apos(A, st, id), "Invalid test expression", E, st);
-    }
-
+    st: i64[:],
+    pos: i64,
+    mode: i64) -> i64 {
     let k = vk(A, st, v);
     var res: i64 = 0;
     var known: bool = true;
@@ -2506,7 +2467,7 @@ recursive fn eval_test(
         }
     } else if filter_name_is(tname, "odd") || filter_name_is(tname, "even") {
         if k != V_INT {
-            return fail_node(K_TEST, apos(A, st, id), "test expects an Integer value", E, st);
+            return fail_node(K_TEST, pos, "test expects an Integer value", E, st);
         }
         let rem = vi(A, st, v) % 2;
 
@@ -2521,7 +2482,7 @@ recursive fn eval_test(
         }
     } else if filter_name_is(tname, "divisibleby") {
         if k != V_INT || argc < 1 || vk(A, st, argv[0]) != V_INT {
-            return fail_node(K_TEST, apos(A, st, id), "test expects Integer values", E, st);
+            return fail_node(K_TEST, pos, "test expects Integer values", E, st);
         }
         let div = vi(A, st, argv[0]);
 
@@ -2530,7 +2491,7 @@ recursive fn eval_test(
         }
     } else if filter_name_is(tname, "lower") || filter_name_is(tname, "upper") {
         if k != V_STRING {
-            return fail_node(K_TEST, apos(A, st, id), "test expects a String value", E, st);
+            return fail_node(K_TEST, pos, "test expects a String value", E, st);
         }
         let src = vstr(B, A, st, v);
         var i: i64 = 0;
@@ -2554,7 +2515,7 @@ recursive fn eval_test(
         filter_name_is(tname, "gt") || filter_name_is(tname, "greaterthan") ||
         filter_name_is(tname, "ge") {
         if argc < 1 {
-            return fail_node(K_TEST, apos(A, st, id), "test expects two values", E, st);
+            return fail_node(K_TEST, pos, "test expects two values", E, st);
         }
         var op: i64 = 0;
 
@@ -2568,12 +2529,12 @@ recursive fn eval_test(
         let r = vcompare(A, B, F, st, v, argv[0], op, out, E);
 
         if r < 0 {
-            return fail_node(K_TEST, apos(A, st, id), E[0..st[2]], E, st);
+            return fail_node(K_TEST, pos, E[0..st[2]], E, st);
         }
         res = r;
     } else if filter_name_is(tname, "eq") || filter_name_is(tname, "equalto") || filter_name_is(tname, "ne") {
         if argc < 1 {
-            return fail_node(K_TEST, apos(A, st, id), "test expects two values", E, st);
+            return fail_node(K_TEST, pos, "test expects two values", E, st);
         }
         var same: i64 = 0;
 
@@ -2588,7 +2549,7 @@ recursive fn eval_test(
         }
     } else if filter_name_is(tname, "in") {
         if argc < 1 {
-            return fail_node(K_TEST, apos(A, st, id), "test expects a container", E, st);
+            return fail_node(K_TEST, pos, "test expects a container", E, st);
         }
         let r = test_in(v, argv[0], A, F, B, E, st);
 
@@ -2603,17 +2564,87 @@ recursive fn eval_test(
     if !known {
         let base = st[7];
         var p = apps(out, base, "Unknown test '");
+
+        if mode != 0 {
+            p = apps(out, base, "selectattr: unknown test '");
+        }
         p = app(out, p, tname, 0, tname.len);
         p = appc(out, p, 39);
-        let r = fail_node(K_TEST, apos(A, st, id), out[base..p], E, st);
+        var r = fail_node(K_TEST, pos, out[base..p], E, st);
+
+        if mode != 0 {
+            st[7] = base;
+            return fail_node(K_FILTER, pos, out[base..p], E, st);
+        }
         st[7] = base;
         return r;
     }
 
-    if aiv(A, st, id) != 0 {
-        res = 1 - res;
-    }
     return mk_bool(A, F, st, res);
+}
+
+recursive fn eval_test(
+    id: i64,
+    ctxc: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let v = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+    if st[1] != 0 {
+        return -1;
+    }
+    let t = ac1(A, st, id);
+    var tname: const u8[:] = "";
+    var argc: i64 = 0;
+    var argv: i64[4] = [0, 0, 0, 0];
+
+    if ak(A, st, t) == K_IDENT {
+        tname = astr(B, A, st, t);
+    } else if ak(A, st, t) == K_CALL {
+        let callee = ac0(A, st, t);
+
+        if ak(A, st, callee) != K_IDENT {
+            return fail_node(K_TEST, apos(A, st, id), "Test callee must be an identifier", E, st);
+        }
+        tname = astr(B, A, st, callee);
+        argc = al0c(A, st, t);
+
+        if argc > 4 {
+            return fail_node(K_TEST, apos(A, st, id), "Too many test arguments", E, st);
+        }
+        var ai: i64 = 0;
+
+        while ai < argc {
+            let argn = A[apool(A, st) + al0s(A, st, t) + ai];
+            let av = eval_node(argn, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+            argv[ai] = av;
+            ai = ai + 1;
+        }
+    } else {
+        return fail_node(K_TEST, apos(A, st, id), "Invalid test expression", E, st);
+    }
+
+    let r = dispatch_test(tname, v, argc, argv, A, F, B, E, out, st, apos(A, st, id), 0);
+
+    if r < 0 {
+        return -1;
+    }
+
+    if aiv(A, st, id) != 0 {
+        return mk_bool(A, F, st, 1 - v_bool(A, F, st, r));
+    }
+    return r;
 }
 
 fn attr_of(item: i64, attr: i64, defid: i64, A: i64[:], B: const u8[:], F: f64[:], st: i64[:]) -> i64 {
@@ -2696,6 +2727,9 @@ recursive fn eval_filter(
     var has_attr: bool = false;
     var kwattr: const u8[:] = "";
     var kwval: i64 = 0;
+    var has_kw2: bool = false;
+    var kwattr2: const u8[:] = "";
+    var kwval2: i64 = 0;
     var argv: i64[4] = [0, 0, 0, 0];
 
     if ak(A, st, f) == K_IDENT {
@@ -2719,13 +2753,23 @@ recursive fn eval_filter(
             let argn = A[apool(A, st) + al0s(A, st, f) + ai];
 
             if ak(A, st, argn) == K_KWARG {
-                kwattr = astr(B, A, st, ac0(A, st, argn));
-                kwval = eval_node(ac1(A, st, argn), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+                if !has_attr {
+                    kwattr = astr(B, A, st, ac0(A, st, argn));
+                    kwval = eval_node(ac1(A, st, argn), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
-                if st[1] != 0 {
-                    return -1;
+                    if st[1] != 0 {
+                        return -1;
+                    }
+                    has_attr = true;
+                } else {
+                    kwattr2 = astr(B, A, st, ac0(A, st, argn));
+                    kwval2 = eval_node(ac1(A, st, argn), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+                    if st[1] != 0 {
+                        return -1;
+                    }
+                    has_kw2 = true;
                 }
-                has_attr = true;
             } else {
                 let av = eval_node(argn, ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
@@ -3851,11 +3895,16 @@ recursive fn eval_filter(
             A[st[16] + res] = V_TUPLE;
         }
         let undef = mk_undef(A, F, st);
+        var miss = undef;
+
+        if has_kw2 && filter_name_is(kwattr2, "default") {
+            miss = kwval2;
+        }
         var i: i64 = 0;
 
         while i < n {
             let item = A[src_base + i];
-            arr_push(A, st, res, attr_of(item, kwval, undef, A, B, F, st));
+            arr_push(A, st, res, attr_of(item, kwval, miss, A, B, F, st));
             i = i + 1;
         }
         return res;
@@ -3868,10 +3917,37 @@ recursive fn eval_filter(
         let undef = mk_undef(A, F, st);
         var i: i64 = 0;
 
+        var targs: i64[1] = [0];
+
         while i < n {
             let item = A[src_base + i];
-            let av = attr_of(item, argv[0], undef, A, B, F, st);
-            var sel = v_bool(A, F, st, av);
+            var sel: i64 = 0;
+
+            if argc == 2 && vk(A, st, argv[0]) == V_STRING {
+                if vk(A, st, argv[1]) != V_UNDEF {
+                    targs[0] = argv[1];
+                } else {
+                    targs[0] = undef;
+                }
+                let r = dispatch_test(vstr(B, A, st, argv[0]), item, 1, targs[0..1], A, F, B, E, out, st, apos(A, st, id), 1);
+
+                if r < 0 {
+                    return -1;
+                }
+                sel = v_bool(A, F, st, r);
+            } else if argc >= 3 && vk(A, st, argv[1]) == V_STRING {
+                let av = attr_of(item, argv[0], undef, A, B, F, st);
+                targs[0] = argv[2];
+                let r = dispatch_test(vstr(B, A, st, argv[1]), av, 1, targs[0..1], A, F, B, E, out, st, apos(A, st, id), 1);
+
+                if r < 0 {
+                    return -1;
+                }
+                sel = v_bool(A, F, st, r);
+            } else {
+                let av = attr_of(item, argv[0], undef, A, B, F, st);
+                sel = v_bool(A, F, st, av);
+            }
 
             if filter_name_is(fname, "reject") {
                 sel = 1 - sel;
