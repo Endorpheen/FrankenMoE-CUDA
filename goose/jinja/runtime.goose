@@ -2172,7 +2172,8 @@ fn method_name_is(kind: i64, n: const u8[:]) -> bool {
             filter_name_is(n, "sort") || filter_name_is(n, "reverse") ||
             filter_name_is(n, "min") || filter_name_is(n, "max") ||
             filter_name_is(n, "unique") || filter_name_is(n, "select") ||
-            filter_name_is(n, "reject");
+            filter_name_is(n, "reject") || filter_name_is(n, "selectattr") ||
+            filter_name_is(n, "rejectattr");
     }
 
     if kind == V_INT || kind == V_FLOAT {
@@ -3538,8 +3539,23 @@ recursive fn eval_filter(
             p = p + tn;
             return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
         }
+        var jindent: i64 = 0 - 1;
+        var jisep: const u8[:] = ", ";
+        var jksep: const u8[:] = ": ";
+        var ind_arg: i64 = -1;
+
+        if has_attr && filter_name_is(kwattr, "indent") {
+            ind_arg = kwval;
+        } else if argc > 1 {
+            ind_arg = argv[1];
+        }
+
+        if ind_arg >= 0 && vk(A, st, ind_arg) == V_INT {
+            jindent = vi(A, st, ind_arg);
+            jisep = ",";
+        }
         let base = st[7];
-        let n = json_into(sval, 0, -1, ", ", ": ", A, B, F, st, out, base, E);
+        let n = json_into(sval, 0, jindent, jisep, jksep, A, B, F, st, out, base, E);
 
         if n < 0 || st[1] != 0 {
             return -1;
@@ -4207,7 +4223,9 @@ recursive fn eval_filter(
         return res;
     }
 
-    if (filter_name_is(fname, "select") || filter_name_is(fname, "reject")) && (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) && argc > 0 {
+    if (filter_name_is(fname, "select") || filter_name_is(fname, "reject") ||
+        filter_name_is(fname, "selectattr") || filter_name_is(fname, "rejectattr")) &&
+        (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) && argc > 0 {
         A[st[27] + sval] = A[st[27] + sval] | 4;
         let n = vcc(A, st, sval);
         let src_base = pool(A, st) + vcs(A, st, sval);
@@ -4247,7 +4265,7 @@ recursive fn eval_filter(
                 sel = v_bool(A, F, st, av);
             }
 
-            if filter_name_is(fname, "reject") {
+            if filter_name_is(fname, "reject") || filter_name_is(fname, "rejectattr") {
                 sel = 1 - sel;
             }
 
