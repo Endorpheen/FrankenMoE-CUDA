@@ -6613,6 +6613,16 @@ fn js_ws(t: const u8[:], i: i64) -> i64 {
     return p;
 }
 
+fn is_hex_digit(c: i64) -> bool {
+    return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
+}
+
+fn is_digit(c: i64) -> bool {
+    return c >= 48 && c <= 57;
+}
+
+// Strict JSON string per RFC 8259: raw control bytes are rejected, escapes are
+// limited to the eight named ones plus \uXXXX with four hex digits.
 fn js_string_end(t: const u8[:], i: i64) -> i64 {
     if i >= t.len || t[i] != 34 {
         return 0 - 1;
@@ -6626,8 +6636,34 @@ fn js_string_end(t: const u8[:], i: i64) -> i64 {
             return p + 1;
         }
 
+        if c < 32 {
+            return 0 - 1;
+        }
+
         if c == 92 {
-            p = p + 2;
+            if p + 1 >= t.len {
+                return 0 - 1;
+            }
+            let e = t[p + 1];
+
+            if e == 117 {
+                if p + 6 > t.len {
+                    return 0 - 1;
+                }
+                var k: i64 = 0;
+
+                while k < 4 {
+                    if !is_hex_digit(t[p + 2 + k]) {
+                        return 0 - 1;
+                    }
+                    k = k + 1;
+                }
+                p = p + 6;
+            } else if e == 34 || e == 92 || e == 47 || e == 98 || e == 102 || e == 110 || e == 114 || e == 116 {
+                p = p + 2;
+            } else {
+                return 0 - 1;
+            }
         } else {
             p = p + 1;
         }
@@ -6729,30 +6765,36 @@ recursive fn js_value(t: const u8[:], i: i64, depth: i64) -> i64 {
         return 0 - 1;
     }
 
-    if c == 45 || (c >= 48 && c <= 57) {
+    if c == 45 || is_digit(c) {
         var q = p;
 
         if t[q] == 45 {
             q = q + 1;
         }
-        var any: i64 = 0;
 
-        while q < t.len && t[q] >= 48 && t[q] <= 57 {
-            any = 1;
+        if q >= t.len || !is_digit(t[q]) {
+            return 0 - 1;
+        }
+
+        if t[q] == 48 {
+            // a leading zero cannot be followed by another digit
             q = q + 1;
+        } else {
+            while q < t.len && is_digit(t[q]) {
+                q = q + 1;
+            }
         }
 
         if q < t.len && t[q] == 46 {
             q = q + 1;
 
-            while q < t.len && t[q] >= 48 && t[q] <= 57 {
-                any = 1;
+            if q >= t.len || !is_digit(t[q]) {
+                return 0 - 1;
+            }
+
+            while q < t.len && is_digit(t[q]) {
                 q = q + 1;
             }
-        }
-
-        if any == 0 {
-            return 0 - 1;
         }
 
         if q < t.len && (t[q] == 101 || t[q] == 69) {
@@ -6761,15 +6803,13 @@ recursive fn js_value(t: const u8[:], i: i64, depth: i64) -> i64 {
             if q < t.len && (t[q] == 43 || t[q] == 45) {
                 q = q + 1;
             }
-            var eany: i64 = 0;
 
-            while q < t.len && t[q] >= 48 && t[q] <= 57 {
-                eany = 1;
-                q = q + 1;
+            if q >= t.len || !is_digit(t[q]) {
+                return 0 - 1;
             }
 
-            if eany == 0 {
-                return 0 - 1;
+            while q < t.len && is_digit(t[q]) {
+                q = q + 1;
             }
         }
         return q;
@@ -7328,4 +7368,23 @@ export fn chat_tools_error(t: const u8[:], code: i64, fs: i64, fe: i64, out: u8[
     var xs: i64[2] = [0, p];
     js_pretty(t, out, xs, 0, 0);
     return xs[1];
+}
+
+// common_chat_msg::contains_media over the typed parts.
+export fn chat_contains_media(
+    blob: const u8[:],
+    type_off: i64[:],
+    type_len: i64[:],
+    n: i64) -> i64 {
+    var i: i64 = 0;
+
+    while i < n {
+        let ty = blob[type_off[i] .. type_off[i] + type_len[i]];
+
+        if bytes_is(ty, "media_marker") {
+            return 1;
+        }
+        i = i + 1;
+    }
+    return 0;
 }
