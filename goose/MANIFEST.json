@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T15:22:55.087242+00:00",
+  "updated_at": "2026-11-14T16:58:01.629901+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -10736,6 +10736,34 @@
       "task": "",
       "status": "slice",
       "sha256": "29442dab8129465adfee5dd3c0c5977ea461420b3e93f13c0cdc2b38bcdf76a9"
+    },
+    {
+      "goose": "json/json-escapers/value-json.goose",
+      "native": "common/json*.cpp",
+      "native_targets": [
+        "common/json*.cpp",
+        "common/peg-parser.cpp",
+        "common/json-schema-to-grammar.cpp",
+        "common/trie.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-565-p7-08-json-escapers",
+      "task": "P7-09",
+      "status": "slice",
+      "sha256": "861acfc9f71ff86a1cd077d2da60b50780056e411f3bc7e91fa31160ac16db87"
+    },
+    {
+      "goose": "json/json-escapers/value.goose",
+      "native": "common/json*.cpp",
+      "native_targets": [
+        "common/json*.cpp",
+        "common/peg-parser.cpp",
+        "common/json-schema-to-grammar.cpp",
+        "common/trie.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-565-p7-08-json-escapers",
+      "task": "P7-09",
+      "status": "slice",
+      "sha256": "4330072d0127ea91a7456540e6027b5c31eb524aa787bbf56cf6892c0376d057"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
