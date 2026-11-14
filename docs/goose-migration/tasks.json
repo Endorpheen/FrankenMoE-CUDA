@@ -1817,14 +1817,13 @@
         "tools/gguf-split/**"
       ],
       "acceptance": "Native<->Goose byte/semantic compatible serialization,shard naming/offsets/split-merge and nonseekable/error cases checked.",
-      "evidence": " 2026-11-14 S1 (EXP571, experiments/EXP-2026-11-14-571-p7-02-gguf-metadata): the GGUF context and metadata block of ggml/src/gguf.cpp is Goose - the flat KV list, every scalar/array/string setter, remove with its old index, set_kv copy semantics, and the general.alignment reserved-key rule (native aborts, the port returns -1). Gate: the native gguf_set_* path and the Goose host print the same canonical TSV over 20 cases, 46 records compared, 0 failures; mutations 12/12 in two halves. The writer, tensor data, split/merge and llama_model_saver remain native; the slice plan and boundaries are in docs/goose-migration/P7-02-COVERAGE.md. 2026-11-14 S2 (EXP596, experiments/EXP-2026-11-14-596-p7-02-gguf-writer): the writer core is Goose - header (magic/version/n_tensors/n_kv), KV order, all 13 scalar types, NUL-separated string arrays, numeric/bool arrays, empty strings and arrays, long and UTF-8 strings, set_kv/remove results, padding 32/64/1 and the empty context. Gate: 31 cases / 161 checks / 0; 56 byte comparisons over only_meta true and false plus 6 reload comparisons for alignment 64/1, and 56 only_meta invariants. Mutations 12/12 in two halves. Limits: n_tensors=0 and no data section (S3), the port writes from offset 0 while native appends to a vector, and alignment 64/1 is checked only through reload.",
+      "evidence": " 2026-11-14 S1 (EXP571, experiments/EXP-2026-11-14-571-p7-02-gguf-metadata): the GGUF context and metadata block of ggml/src/gguf.cpp is Goose - the flat KV list, every scalar/array/string setter, remove with its old index, set_kv copy semantics, and the general.alignment reserved-key rule (native aborts, the port returns -1). Gate: the native gguf_set_* path and the Goose host print the same canonical TSV over 20 cases, 46 records compared, 0 failures; mutations 12/12 in two halves. The writer, tensor data, split/merge and llama_model_saver remain native; the slice plan and boundaries are in docs/goose-migration/P7-02-COVERAGE.md. 2026-11-14 S2 (EXP596, experiments/EXP-2026-11-14-596-p7-02-gguf-writer): the writer core is Goose - header (magic/version/n_tensors/n_kv), KV order, all 13 scalar types, NUL-separated string arrays, numeric/bool arrays, empty strings and arrays, long and UTF-8 strings, set_kv/remove results, padding 32/64/1 and the empty context. Gate: 31 cases / 161 checks / 0; 56 byte comparisons over only_meta true and false plus 6 reload comparisons for alignment 64/1, and 56 only_meta invariants. Mutations 12/12 in two halves. Limits: n_tensors=0 and no data section (S3), the port writes from offset 0 while native appends to a vector, and alignment 64/1 is checked only through reload. 2026-11-14 S3 (EXP601, experiments/EXP-2026-11-14-601-p7-02-gguf-tensors): tensor descriptors and data are Goose - name/n_dims/ne/type and cumulative padded offset, the data section after the pad with per-tensor alignment, only_meta as a prefix, a type_size/block_size table taken from this ggml.c (43 types), n_dims derived as ggml_n_dims with the declared ndims validated but not written, and refusals instead of aborts for duplicate names, unknown tensors, short/missing data and a bad alignment. Gate: 41 cases / 307 checks / 0 against native gguf_add_tensor/set_tensor_data over the four required tensors, one-tensor, empty, duplicate, 1D-4D, type change, alignment 32/64/1 and round-trip reload with data checks; the S2 regression stays 31/161. Mutations 12/12 in two halves. Findings: n_dims must come from ne, not the declared ndims, and the native reader leaves ggml_tensor::buffer uninitialized, so the 64/1 native context is obtained by reloading a file with only general.alignment.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
       "remaining": [
-        "tensor serialization",
         "GGUF splitting and merge",
         "model saver (needs weights or a synthetic hparams/vocab fixture)",
         "llama-io string helpers (boundary with state serialization)",
@@ -1834,7 +1833,7 @@
       "coverage_doc": "docs/goose-migration/P7-02-COVERAGE.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
       "slices_total": 5,
-      "slices_done": 2
+      "slices_done": 3
     },
     {
       "id": "P7-03",
@@ -4383,6 +4382,10 @@
     {
       "event": "P6-09 first slice (EXP600): the LoRA manifest and pairing join the canon as goose/model/lora-manifest.goose with a 26-case native gate and 12/12 mutations.",
       "checkpoint": "b41d2546"
+    },
+    {
+      "event": "P7-02 third slice (EXP601): tensor descriptors and data join the canon as goose/model/gguf-tensors.goose with a 41-case byte gate, the S2 regression and 12/12 mutations.",
+      "checkpoint": "4556e01a"
     }
   ],
   "batches": [
@@ -5273,7 +5276,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T19:24:14.263813+00:00",
+  "updated_at": "2026-11-14T19:30:44.064018+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5282,9 +5285,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09 and P8-07.",
     "slices_total": 88,
-    "slices_done": 75,
+    "slices_done": 76,
     "slices_in_progress": 0,
-    "slices_remaining": 13
+    "slices_remaining": 12
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }
