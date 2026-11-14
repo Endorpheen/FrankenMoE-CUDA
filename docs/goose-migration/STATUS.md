@@ -1,12 +1,12 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (3). This file is the current state; update it in the same change
+Updated: 2026-11-15 (4). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 106**, **PARTIAL 4**, **TODO 42** of
-152 functional requirements. Slice front: **86 / 91** done, 5 remaining.
+`docs/goose-migration/tasks.json`: **DONE 107**, **PARTIAL 3**, **TODO 42** of
+152 functional requirements. Slice front: **91 / 92** done, 1 remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
@@ -14,14 +14,13 @@ The remaining partial requirements and their slice fronts:
 
 | requirement | slices | what is open |
 |---|---|---|
-| P7-04 | 7 / 8 | weighted quantizers (in acceptance) |
-| P7-08 | 4 / 8 | plan-level split: chat apply and time injection, hoisted native names |
+| P7-08 | 8 / 8 | acceptance wording: hoisted native rule names, chat apply entry point and time injection |
 | P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
-| P8-07 | 5 / 6 | process/HTTP integration (S5b), blocked on single-runtime composition |
+| P8-07 | 5 / 6 | process/HTTP integration (S5b), in flight |
 
 ## What the canonical tree contains
 
-`goose/` holds 4107 verified files. The accepted slices of this phase cover:
+`goose/` holds 4131 verified entries. The accepted slices of this phase cover:
 
 - Jinja runtime 19025 lines (expressions, statements, filters, tests, macros,
   chat layer, streaming, delimiters, autoparser, tool builders, nine parser
@@ -46,16 +45,19 @@ The remaining partial requirements and their slice fronts:
 
 ## Composition debt
 
-An export-name audit over the 34 canonical files finds five shared names that a
-single linked runtime must deduplicate: `builtin_call`/`builtin_names`
-(builtins vs runtime), `value_cmp`/`value_info` (value vs value-json) and
-`json_parse` (the parser plus three byte-identical module copies required by
-Goose's name-based import). Every standalone gate is green; deduplication is a
-composition step and must be done with the gates re-run.
+`tools/compose-goose.py` performs the deduplication: it resolves imports (the
+parser is emitted once), drops identical declarations, applies per-module
+renames for colliding helper families and refuses a set whose modules carry
+different bodies under one name. It also fails when the composed unit does not
+expose exactly the export set of its inputs. `tools/check-composition.sh` runs
+the six accepted sets (server, quant, GGUF, P9-06, runtime+schema, app) through
+`goose check`; all six currently pass.
 
-The GGUF writer is the next composition-sensitive piece: the writer core is a
-separate slice, and its byte-exact gate must be added before split/merge can
-depend on it.
+What is left for one linked runtime: the Jinja copies (`builtin_call`/
+`builtin_names`, `value_cmp`/`value_info`, `bases`, `type_name`, `as_string_into`)
+are layout-specific variants rather than stale duplicates, so unifying them is a
+real merge. The schema stub (`meta[3]=1`) still needs a linker seam because the
+P7-08 gates build the runtime standalone.
 
 ## Open documentation debt
 
@@ -69,9 +71,13 @@ depend on it.
 
 ## Next
 
-1. Accept the in-flight slices: seven P6-05 architectures, imatrix loader,
-   LoRA manifest, GGUF writer.
-2. Then P8-07 S3/S4 (MCP session core, decision core) and P6-09 S2.
-3. P7-08: hoisted native names need a native insertion index per node; chat
+1. Accept the in-flight module streams as they land: MCP stdio integration
+   (P8-07 S5b), config/recipe registry (P9-01), expert streaming (P9-03),
+   metrics (P9-07), backend and threading (P4-12), MTP (P6-11), loader and
+   tokenizer (P7-12), and the composed-artifact smoke build.
+2. P7-08: hoisted native names need a native insertion index per node; chat
    apply and time injection are the remaining chat-layer work.
+3. Stage the accepted modules into the runtime in the order recorded in
+   `RUNTIME-INTEGRATION.md` (S1 leaf modules, S2 server/CLI, S3 chat/Jinja, S4
+   full runtime), each behind a build switch.
 4. Keep `goose/` and this file current with every accepted slice.
