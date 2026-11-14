@@ -2271,18 +2271,23 @@
       "id": "P9-01",
       "phase": "P9",
       "title": "Port standalone config,recipe and architecture registry",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "carrier/runtime/core/src/config.cpp",
         "carrier/runtime/core/src/moe/arch_registry.cpp"
       ],
       "acceptance": "All config/recipe defaults,validation and architecture gates match existing tests; CLI profiles compatible.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP620 (experiments/EXP-2026-11-15-620-p9-01-config-recipe-arch): config validation (cfg_, 48 ordered rules), the MoE recipe registry and expert-name matcher (ar_, 9 rows, match_expert) and CLI flag/env/default resolution (cc_, 11 fields, auto cache, dense mode, draft source) are Goose. Gates: 66 named cases + 40000 fuzz against the linked native validate() (47/48 rules covered), 9 rows / 20632 tensor names / 20000 fuzz names against the native accessors and transcription, and a 936 matrix + 20000 fuzz for the resolver; 0 differences. Mutations 12/12 in halves. Assumptions: the host narrows f64 to float before validate(); the recipe table must have static lifetime because RouterHook keeps references; atoi overflow and NUL-in-name stay outside the corpus. Native keeps the graph, tokenizer, sampler, decode, KV, load and gguf I/O, and the validation error texts.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 54,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "wire validate(), arch_registry.cpp and main.cpp to the Goose decisions"
+      ]
     },
     {
       "id": "P9-02",
@@ -4455,6 +4460,10 @@
     {
       "event": "P6-11: speculative decoding decisions ported (EXP619, 9828/0, 12/12); wiring the engine to them is open.",
       "checkpoint": "d0b6e258"
+    },
+    {
+      "event": "P9-01: config validation, recipe registry and CLI resolution ported (EXP620, 3 gates, 12/12); call-site wiring is open.",
+      "checkpoint": "cc649ed1"
     }
   ],
   "batches": [
@@ -5345,16 +5354,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T22:33:53.185001+00:00",
+  "updated_at": "2026-11-14T22:35:20.327785+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
     "PARTIAL": 1
   },
   "work_front": {
-    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07 and P6-11.",
-    "slices_total": 102,
-    "slices_done": 100,
+    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11 and P9-01.",
+    "slices_total": 105,
+    "slices_done": 103,
     "slices_in_progress": 0,
     "slices_remaining": 2
   },

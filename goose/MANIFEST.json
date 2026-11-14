@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T22:33:56.728611+00:00",
+  "updated_at": "2026-11-14T22:35:23.797384+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -783,6 +783,42 @@
       "status": "ported",
       "sha256": "58634e3171fe3d65e05f4e7c2ab7c1709d0a91ac42c838f7231c0d7441bab564",
       "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789, typed content 436/797, media content 445/806, message fields 452/813, tool schemas 460/821, tools parse 471/832, tools decode 476/842, strict json 494/860, format single 502/868, real templates 507/878, slice 526/916, object literal 532/928, modern templates 561/986, reasoning 570/1002, 2026 templates 578/1018, strftime 587/1036, marking 593/1048, propagation 607/1076, parts 618/1098, parse entry 628/1108, peg builder 646/1126, chat grammar 662/1142, permute 672/1152, base mapper 16/87, visited 678/1158, subclass mappers 13/65, legacy 75/75, typed 24/24, delimiters 36/1452, streaming 10/271, diff 10/106, mono 10/273, contract 13/61, caller 12/12, autoparser 36/36, grammar 10/10, tools 8/8, tokens 6/6, tool-builders 13/13, parse 9/9, parsers 18/99"
+    },
+    {
+      "goose": "cli/config-validate.goose",
+      "native": "runtime/core/src/config.cpp (validate, 48 ordered rules)",
+      "native_targets": [
+        "runtime/core/src/config.cpp (validate, 48 ordered rules)"
+      ],
+      "experiment": "EXP-2026-11-15-620-p9-01-config-recipe-arch",
+      "task": "",
+      "status": "ported",
+      "sha256": "bf61ad2fa42c863380d078df24cf5217d42433c39227f941c89b4f9c0066d054",
+      "gate": "66 cases + 40000 fuzz / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/arch-registry.goose",
+      "native": "runtime/core/src/moe/arch_registry.cpp and router_hook.cpp (match_expert)",
+      "native_targets": [
+        "runtime/core/src/moe/arch_registry.cpp and router_hook.cpp (match_expert)"
+      ],
+      "experiment": "EXP-2026-11-15-620-p9-01-config-recipe-arch",
+      "task": "",
+      "status": "ported",
+      "sha256": "b39540dc868f73b32e4840c3221593646e933e0c156d062576c6f4f2bf2130bb",
+      "gate": "9 rows / 20632 names / 20000 fuzz, 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "cli/config-resolve.goose",
+      "native": "runtime/cli/main.cpp (flags, env and defaults)",
+      "native_targets": [
+        "runtime/cli/main.cpp (flags, env and defaults)"
+      ],
+      "experiment": "EXP-2026-11-15-620-p9-01-config-recipe-arch",
+      "task": "",
+      "status": "ported",
+      "sha256": "01dae1c99e143cf2fd3f97918246e9d4659682f624dc0d76ecd4092eba218a91",
+      "gate": "936 matrix + 20000 fuzz / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/spec-decode-decisions.goose",
