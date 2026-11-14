@@ -56,6 +56,8 @@ CANONICAL_SOURCES = [
      "common/download.cpp", "31 cases / 0 diffs, 16/16 mutations"),
     ("server/server-schema.goose", "EXP-2026-11-14-595-p8-07-request-schema", "source/server-schema.goose",
      "tools/server/server-schema.cpp", "181 lines / 0 diffs, 12/12 mutations"),
+    ("server/mcp-stdio.goose", "EXP-2026-11-14-612-p8-07-mcp-stdio", "source/mcp-stdio.goose",
+     "tools/server/server-mcp.cpp (stdio shells)", "94 cases / 0 failures, 12/12 mutations"),
     ("server/decision-core.goose", "EXP-2026-11-14-610-p8-07-decision-core", "source/decision-core.goose",
      "tools/server/server-decision.cpp (render/answer core)", "400 cases / 0 failures, 12/12 mutations"),
     ("server/mcp-core.goose", "EXP-2026-11-14-605-p8-07-mcp-core", "source/mcp-core.goose",

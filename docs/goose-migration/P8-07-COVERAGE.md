@@ -13,7 +13,8 @@ gate. S1 is in acceptance; the rest is open.
 | S2. Local file tools | path helpers, `path_glob_match`, `tools_io_basic`, the seven tool definitions and argument handling, `server_tools` dispatch | **done (EXP586)** — pure half only |
 | S3. MCP session core | config parsing, `rpc_error_message`, `mcp_result_to_response`, the JSON-RPC session and manager over an abstract transport | **done (EXP605)** |
 | S4. Decision core | `parse_questions`, `parse_state`, value transforms and renderers, options, variants/outputs, confidence, `format_answer`, `group_tasks` | **done (EXP610)** |
-| S5. Integration shells | isolate/container/ssh IO, tool runtimes, stdio MCP transport, HTTP handlers, decision init/embeddings | open (integration fixture) |
+| S5a. MCP stdio shells | resolve, env, write framing, pump/cooldown/warmup decisions | **done (EXP612)** |
+| S5b. Integration shells | spawn/pumps over pipes, isolate/container/ssh IO, tool runtimes, HTTP handlers, decision init/embeddings | open (integration fixture) |
 
 ## S3 plan (MCP session core)
 
