@@ -2197,18 +2197,17 @@
         "tools/server/server-schema.cpp"
       ],
       "acceptance": "All maintained tool/MCP/schema/decision paths Goose with fixtures; no external messages or real tool side effects during tests.",
-      "evidence": "",
+      "evidence": " 2026-11-14 S2 (EXP586, experiments/EXP-2026-11-14-586-p8-07-tool-definitions): the pure half of the local tools is Goose - the seven-tool table and reverse lookup, the write/cwd/stream flags, per-tool argument validation with defaults and clamps (glob depth/limit, grep context, exec timeout 60 and 16 KiB output, read line range), edit occurrence checks, read text/guard and the exact result JSON member order. Gate: 12 cases / 92 values / 0 failures, no filesystem, no process, no model; mutations 12/12 in two halves. The IO backends, isolate/container/ssh and the runtimes remain in S5.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
       "slices_total": 5,
-      "slices_done": 0,
+      "slices_done": 1,
       "coverage_doc": "docs/goose-migration/P8-07-COVERAGE.md",
       "remaining": [
         "request schema fields (in acceptance)",
-        "local file tools and dispatch",
         "MCP session core over an abstract transport",
         "decision render/answer core",
         "integration shells (isolate/container/ssh, stdio MCP, HTTP handlers)"
@@ -4336,6 +4335,10 @@
     {
       "event": "P8-07 plan recorded: five slices with their dependencies and the offline oracle policy; S1 is in acceptance.",
       "checkpoint": "5ab757e0"
+    },
+    {
+      "event": "P8-07 second slice (EXP586): the pure tool definitions and dispatch join the canon as goose/server/tools-pure.goose with a 12-case gate and 12/12 mutations.",
+      "checkpoint": "b3548dd1"
     }
   ],
   "batches": [
@@ -5226,7 +5229,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T18:38:56.563520+00:00",
+  "updated_at": "2026-11-14T18:43:00.568325+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5235,9 +5238,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09 and P8-07.",
     "slices_total": 88,
-    "slices_done": 51,
+    "slices_done": 52,
     "slices_in_progress": 0,
-    "slices_remaining": 37
+    "slices_remaining": 36
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

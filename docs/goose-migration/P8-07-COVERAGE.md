@@ -10,7 +10,7 @@ gate. S1 is in acceptance; the rest is open.
 | slice | native scope | state |
 |---|---|---|
 | S1. Request schema fields | `field*` helpers, aliases, hard limits, `make_llama_cmpl_schema` (76 fields), `make_tts_schema` | in acceptance |
-| S2. Local file tools | path helpers, `path_glob_match`, `tools_io_basic`, the seven tool definitions and argument handling, `server_tools` dispatch | open |
+| S2. Local file tools | path helpers, `path_glob_match`, `tools_io_basic`, the seven tool definitions and argument handling, `server_tools` dispatch | **done (EXP586)** — pure half only |
 | S3. MCP session core | config parsing, `rpc_error_message`, `mcp_result_to_response`, the JSON-RPC session and manager over an abstract transport | open |
 | S4. Decision core | `parse_questions`, `parse_state`, value transforms and renderers, options, variants/outputs, confidence, `format_answer`, `group_tasks` | open |
 | S5. Integration shells | isolate/container/ssh IO, tool runtimes, stdio MCP transport, HTTP handlers, decision init/embeddings | open (integration fixture) |
