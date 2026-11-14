@@ -17573,3 +17573,1453 @@ export fn autoparser_collect_preserved(
     n = ap_add_token(cis, out, off, len, n);
     return n;
 }
+
+
+const D_MAX_CALLS: i64 = 16;
+const D_STR: i64 = 0;
+const D_JSON: i64 = 1;
+const D_MIXED: i64 = 2;
+
+// ---- byte helpers ----------------------------------------------------------
+
+fn d_find(s: const u8[:], from: i64, t: const u8[:]) -> i64 {
+    if t.len == 0 {
+        return from;
+    }
+    var i = from;
+
+    while i + t.len <= s.len {
+        var j: i64 = 0;
+        var ok: i64 = 1;
+
+        while j < t.len {
+            if s[i + j] != t[j] {
+                ok = 0;
+                j = t.len;
+            } else {
+                j = j + 1;
+            }
+        }
+        if ok == 1 {
+            return i;
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+fn d_prefix(s: const u8[:], t: const u8[:]) -> bool {
+    if s.len < t.len {
+        return false;
+    }
+    var i: i64 = 0;
+
+    while i < t.len {
+        if s[i] != t[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+fn d_eq_bytes(a: const u8[:], b: const u8[:]) -> bool {
+    if a.len != b.len {
+        return false;
+    }
+    var i: i64 = 0;
+
+    while i < a.len {
+        if a[i] != b[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+fn d_is_ws(c: u8) -> bool {
+    return c == 32 || c == 9 || c == 10 || c == 13;
+}
+
+fn d_trim(s: const u8[:]) -> const u8[:] {
+    var b: i64 = 0;
+    var e = s.len;
+
+    while b < e && d_is_ws(s[b]) {
+        b = b + 1;
+    }
+    while e > b && d_is_ws(s[e - 1]) {
+        e = e - 1;
+    }
+    return s[b .. e];
+}
+
+// Spaces only: the native `p.chars("[ ]", 0, -1)` used by LLM-jp.
+fn d_skip_sp(s: const u8[:]) -> const u8[:] {
+    var b: i64 = 0;
+    while b < s.len && s[b] == 32 {
+        b = b + 1;
+    }
+    return s[b .. s.len];
+}
+
+fn d_after(s: const u8[:], t: const u8[:]) -> const u8[:] {
+    if d_prefix(s, t) {
+        return s[t.len .. s.len];
+    }
+    return s;
+}
+
+fn d_min2(a: i64, b: i64) -> i64 {
+    if a < 0 {
+        return b;
+    }
+    if b < 0 {
+        return a;
+    }
+    if b < a {
+        return b;
+    }
+    return a;
+}
+
+// A value that looks like JSON. This is used only for D_MIXED, where the
+// native parser itself tries the JSON rules first and then falls back to the
+// string rule; it is never used to type a string-only parameter.
+fn d_json_scalar(s: const u8[:]) -> bool {
+    let t = d_trim(s);
+    if t.len == 0 {
+        return false;
+    }
+    if d_prefix(t, "true") || d_prefix(t, "false") || d_prefix(t, "null") {
+        return true;
+    }
+    if t[0] == 123 || t[0] == 91 {
+        return true;
+    }
+    var i: i64 = 0;
+    if t[0] == 45 {
+        i = 1;
+    }
+    var digits: i64 = 0;
+
+    while i < t.len && t[i] >= 48 && t[i] <= 57 {
+        digits = digits + 1;
+        i = i + 1;
+    }
+    if digits == 0 {
+        return false;
+    }
+    if i < t.len && t[i] == 46 {
+        i = i + 1;
+        while i < t.len && t[i] >= 48 && t[i] <= 57 {
+            i = i + 1;
+        }
+    }
+    if i < t.len && (t[i] == 101 || t[i] == 69) {
+        i = i + 1;
+        if i < t.len && (t[i] == 43 || t[i] == 45) {
+            i = i + 1;
+        }
+        while i < t.len && t[i] >= 48 && t[i] <= 57 {
+            i = i + 1;
+        }
+    }
+    return i == t.len;
+}
+
+// Drop whitespace outside strings, the compact form nlohmann::dump() uses.
+fn d_compact_json(src: const u8[:], out: u8[:]) -> i64 {
+    var q: i64 = 0;
+    var i: i64 = 0;
+    var in_str: i64 = 0;
+    var escp: i64 = 0;
+
+    while i < src.len {
+        let c = src[i];
+
+        if in_str == 1 {
+            q = appc(out, q, c);
+            if escp == 1 {
+                escp = 0;
+            } else if c == 92 {
+                escp = 1;
+            } else if c == 34 {
+                in_str = 0;
+            }
+        } else if c == 34 {
+            in_str = 1;
+            q = appc(out, q, c);
+        } else if c == 32 || c == 9 || c == 10 || c == 13 {
+            // skipped
+        } else {
+            q = appc(out, q, c);
+        }
+        i = i + 1;
+    }
+    return q;
+}
+
+// The JSON value that starts at `at`, balanced over strings.
+fn d_json_value(s: const u8[:], at: i64) -> const u8[:] {
+    if at >= s.len {
+        return s[at .. at];
+    }
+    let open = s[at];
+    if open == 123 || open == 91 {
+        let close: u8 = if open == 123 { 125 } else { 93 };
+        var depth: i64 = 0;
+        var i = at;
+        var in_str: i64 = 0;
+        var escp: i64 = 0;
+
+        while i < s.len {
+            let c = s[i];
+            if in_str == 1 {
+                if escp == 1 {
+                    escp = 0;
+                } else if c == 92 {
+                    escp = 1;
+                } else if c == 34 {
+                    in_str = 0;
+                }
+            } else if c == 34 {
+                in_str = 1;
+            } else if c == open {
+                depth = depth + 1;
+            } else if c == close {
+                depth = depth - 1;
+                if depth == 0 {
+                    return s[at .. i + 1];
+                }
+            }
+            i = i + 1;
+        }
+        return s[at .. s.len];
+    }
+    var i = at;
+    while i < s.len && s[i] != 44 && s[i] != 125 && s[i] != 93 {
+        i = i + 1;
+    }
+    return s[at .. i];
+}
+
+// A JSON value that ends at the end of its line, used by Harmony XML where the
+// parameter value sits between two newlines.
+fn d_json_line(s: const u8[:], at: i64) -> const u8[:] {
+    if at >= s.len {
+        return s[at .. at];
+    }
+    if s[at] == 123 || s[at] == 91 {
+        return d_json_value(s, at);
+    }
+    var i = at;
+    while i < s.len && s[i] != 10 {
+        i = i + 1;
+    }
+    return s[at .. i];
+}
+
+// ---- schema type table -----------------------------------------------------
+
+fn d_type_of(
+    name: const u8[:],
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    n: i64
+) -> i64 {
+    var i: i64 = 0;
+
+    while i < n {
+        let nm = schema[soff[i] .. soff[i] + slen[i]];
+        if d_eq_bytes(nm, name) {
+            return stype[i];
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+// ---- JSON emitters ---------------------------------------------------------
+
+fn d_calls_json(
+    dst: u8[:],
+    q: i64,
+    s: const u8[:],
+    noff: i64[:],
+    nlen: i64[:],
+    abuf: const u8[:],
+    aoff: i64[:],
+    alen: i64[:],
+    n: i64
+) -> i64 {
+    var p = q;
+    if n <= 0 {
+        return p;
+    }
+    p = apps(dst, p, ",\"tool_calls\":[");
+    var i: i64 = 0;
+
+    while i < n {
+        if i > 0 {
+            p = appc(dst, p, 44);
+        }
+        p = apps(dst, p, "{\"type\":\"function\",\"function\":{\"name\":");
+        p = esc(dst, p, s[noff[i] .. noff[i] + nlen[i]]);
+        p = apps(dst, p, ",\"arguments\":");
+        p = esc(dst, p, abuf[aoff[i] .. aoff[i] + alen[i]]);
+        p = apps(dst, p, "}}");
+        i = i + 1;
+    }
+    return appc(dst, p, 93);
+}
+
+fn d_message_json(
+    dst: u8[:],
+    content: const u8[:],
+    reas: const u8[:],
+    s: const u8[:],
+    noff: i64[:],
+    nlen: i64[:],
+    abuf: const u8[:],
+    aoff: i64[:],
+    alen: i64[:],
+    n: i64
+) -> i64 {
+    var q = apps(dst, 0, "{\"role\":\"assistant\",\"content\":");
+    q = esc(dst, q, content);
+    if reas.len > 0 {
+        q = apps(dst, q, ",\"reasoning_content\":");
+        q = esc(dst, q, reas);
+    }
+    q = d_calls_json(dst, q, s, noff, nlen, abuf, aoff, alen, n);
+    return appc(dst, q, 125);
+}
+
+// ---- parameter assembly ----------------------------------------------------
+
+fn d_params_begin(abuf: u8[:], at: i64) -> i64 {
+    return appc(abuf, at, 123);
+}
+
+// `ty` is the schema type: -1 means "not in the schema" and the parameter is
+// dropped instead of guessed.
+fn d_param_append(
+    abuf: u8[:],
+    at: i64,
+    first: i64,
+    name: const u8[:],
+    value: const u8[:],
+    ty: i64
+) -> i64 {
+    if ty < 0 {
+        return at;
+    }
+    var p = at;
+    if first == 0 {
+        p = appc(abuf, p, 44);
+    }
+    p = esc(abuf, p, name);
+    p = appc(abuf, p, 58);
+
+    if ty == D_STR {
+        p = esc(abuf, p, value);
+    } else if ty == D_JSON {
+        let t = d_trim(value);
+        p = app(abuf, p, t, 0, t.len);
+    } else if d_json_scalar(value) {
+        let t = d_trim(value);
+        p = app(abuf, p, t, 0, t.len);
+    } else {
+        p = esc(abuf, p, value);
+    }
+    return p;
+}
+
+// Appends a value and reports whether it was written (an unknown schema type
+// writes nothing, so the caller keeps `first` set).
+fn d_param_put(
+    abuf: u8[:],
+    at: i64,
+    first: i64,
+    name: const u8[:],
+    value: const u8[:],
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64
+) -> i64 {
+    let ty = d_type_of(name, schema, soff, slen, stype, nschema);
+    return d_param_append(abuf, at, first, name, value, ty);
+}
+
+// ---- TranslateGemma --------------------------------------------------------
+
+export fn d_translate_gemma(s: const u8[:], dst: u8[:]) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    return d_message_json(dst, s, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+}
+
+// ---- Functionary v3.2 ------------------------------------------------------
+// The arguments of a call are one JSON object, so no schema table is needed.
+
+export fn d_functionary(s: const u8[:], tools: i64, parallel: i64, dst: u8[:]) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var abuf: u8[8192] = [0; 8192];
+
+    if d_prefix(s, "all\n") {
+        var body = s[4 .. s.len];
+        if tools != 0 {
+            let cut = d_find(body, 0, ">>>");
+            if cut >= 0 {
+                body = body[0 .. cut];
+            }
+        }
+        return d_message_json(dst, body, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+
+    if tools == 0 {
+        return d_message_json(dst, s, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+
+    let nl = d_find(s, 0, "\n");
+    if nl <= 0 {
+        return d_message_json(dst, s, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+
+    let raw = s[nl + 1 .. s.len];
+    let start = d_params_begin(abuf, 0);
+    var end = start;
+    let from = d_find(raw, 0, "{");
+    if from >= 0 {
+        let obj = d_json_value(raw, from);
+        if obj.len > 2 {
+            var tmp: u8[8192] = [0; 8192];
+            let cl = d_compact_json(obj[1 .. obj.len - 1], tmp);
+            end = app(abuf, start, tmp[0 .. cl], 0, cl);
+        }
+    }
+    let closed = appc(abuf, end, 125);
+    noff[0] = 0;
+    nlen[0] = nl;
+    aoff[0] = 0;
+    alen[0] = closed;
+    let _ = parallel;
+    return d_message_json(dst, s[0 .. 0], s[0 .. 0], s, noff, nlen, abuf, aoff, alen, 1);
+}
+
+// ---- GigaChat V3 -----------------------------------------------------------
+
+fn d_json_member(s: const u8[:], key: const u8[:]) -> const u8[:] {
+    let k = d_find(s, 0, key);
+    if k < 0 {
+        return s[0 .. 0];
+    }
+    var i = k + key.len;
+    while i < s.len && (d_is_ws(s[i]) || s[i] == 58) {
+        i = i + 1;
+    }
+    return d_json_value(s, i);
+}
+
+fn d_json_string_body(v: const u8[:]) -> const u8[:] {
+    let t = d_trim(v);
+    if t.len >= 2 && t[0] == 34 && t[t.len - 1] == 34 {
+        return t[1 .. t.len - 1];
+    }
+    return t;
+}
+
+export fn d_gigachat(s: const u8[:], tools: i64, dst: u8[:]) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var abuf: u8[8192] = [0; 8192];
+
+    let at = d_find(s, 0, "<|message_sep|>\n\n");
+    if tools == 0 || at < 0 {
+        return d_message_json(dst, s, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+
+    let content = s[0 .. at];
+    let call_at = d_find(s, at, "function call<|role_sep|>\n");
+    if call_at < 0 {
+        return d_message_json(dst, content, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+    let body = s[call_at + 26 .. s.len];
+    if !d_prefix(d_trim(body), "{") {
+        return d_message_json(dst, content, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+    let name = d_json_string_body(d_json_member(body, "\"name\""));
+    let args = d_trim(d_json_member(body, "\"arguments\""));
+    if name.len == 0 || args.len == 0 {
+        return d_message_json(dst, content, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+    let name_at = d_find(s, call_at, name);
+    if name_at < 0 {
+        return d_message_json(dst, content, s[0 .. 0], s, noff, nlen, s, aoff, alen, 0);
+    }
+    var tmp: u8[8192] = [0; 8192];
+    let cl = d_compact_json(args, tmp);
+    let end = app(abuf, 0, tmp[0 .. cl], 0, cl);
+    noff[0] = name_at;
+    nlen[0] = name.len;
+    aoff[0] = 0;
+    alen[0] = end;
+    return d_message_json(dst, content, s[0 .. 0], s, noff, nlen, abuf, aoff, alen, 1);
+}
+
+// ---- Muse protocol (Glimmer and Spark) -------------------------------------
+// Recipients: to=self is reasoning, to=commentary is user-facing content
+// (Spark only), to=user is the final content, anything else is a tool call.
+// Content from several messages concatenates with no separator, as native.
+
+fn d_parse_atem_params(
+    src: const u8[:],
+    from: i64,
+    lim: i64,
+    abuf: u8[:],
+    at: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64
+) -> i64 {
+    let open = "<atem:parameter name=\"";
+    let close = "</atem:parameter>";
+    var p = from;
+    var first: i64 = 1;
+    var q = at;
+
+    while true {
+        let k = d_find(src, p, open);
+        if k < 0 || k >= lim {
+            return q;
+        }
+        let ns = k + open.len;
+        let ne = d_find(src, ns, "\">");
+        if ne < 0 || ne >= lim {
+            return q;
+        }
+        let vs = ne + 2;
+        let ve = d_find(src, vs, close);
+        if ve < 0 || ve >= lim {
+            return q;
+        }
+        let before = q;
+        q = d_param_put(abuf, q, first, src[ns .. ne], src[vs .. ve],
+                        schema, soff, slen, stype, nschema);
+        if q != before {
+            first = 0;
+        }
+        p = ve + close.len;
+    }
+    return q;
+}
+
+fn d_muse(
+    s: const u8[:],
+    tools: i64,
+    extract: i64,
+    commentary: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64,
+    dst: u8[:]
+) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var abuf: u8[16384] = [0; 16384];
+    var cbuf: u8[16384] = [0; 16384];
+
+    var rest = s;
+    var reas = s[0 .. 0];
+    var clen: i64 = 0;
+    var ncall: i64 = 0;
+    var q: i64 = 0;
+
+    if extract != 0 && d_prefix(rest, " to=self<|message|>") {
+        let body_at = 19;
+        let end = d_find(rest, body_at, "<|eom|>");
+        if end >= 0 {
+            reas = rest[body_at .. end];
+            rest = rest[end + 7 .. rest.len];
+        }
+    }
+
+    if d_prefix(rest, "<|start|>assistant") {
+        rest = rest[18 .. rest.len];
+    }
+
+    var cur = rest;
+
+    while cur.len > 0 && d_prefix(cur, " to=") && ncall < D_MAX_CALLS {
+        let hdr = d_find(cur, 4, "<|message|>");
+        if hdr < 0 {
+            clen = app(cbuf, clen, cur, 0, cur.len);
+            cur = cur[0 .. 0];
+        } else {
+            let recipient = cur[4 .. hdr];
+            let body = cur[hdr + 11 .. cur.len];
+
+            if d_eq_bytes(recipient, "self") {
+                if extract != 0 {
+                    // A second analysis block: the native parser concatenates.
+                    let e = d_find(body, 0, "<|eom|>");
+                    if e >= 0 && reas.len == 0 {
+                        reas = body[0 .. e];
+                    }
+                    cur = if e < 0 { body[0 .. 0] } else { body[e + 7 .. body.len] };
+                } else {
+                    let e = d_find(body, 0, "<|eom|>");
+                    let n: i64 = if e < 0 { body.len } else { e };
+                    clen = app(cbuf, clen, body, 0, n);
+                    cur = d_after(body, "<|eom|>");
+                }
+            } else if d_eq_bytes(recipient, "commentary") && commentary != 0 {
+                let e = d_find(body, 0, "<|eom|>");
+                let n: i64 = if e < 0 { body.len } else { e };
+                clen = app(cbuf, clen, body, 0, n);
+                cur = if e < 0 { body[0 .. 0] } else { body[e + 7 .. body.len] };
+            } else if d_eq_bytes(recipient, "user") {
+                let eot = d_find(body, 0, "<|eot|>");
+                let eom = d_find(body, 0, "<|eom|>");
+                var stop = eot;
+                if stop < 0 || (eom >= 0 && eom < stop) {
+                    stop = eom;
+                }
+                let n: i64 = if stop < 0 { body.len } else { stop };
+                clen = app(cbuf, clen, body, 0, n);
+                cur = if stop < 0 { body[0 .. 0] } else { body[stop + 7 .. body.len] };
+            } else if tools != 0 {
+                let invoke = d_find(body, 0, "<atem:invoke name=\"");
+                if invoke < 0 {
+                    cur = cur[0 .. 0];
+                } else {
+                    let ns = invoke + 19;
+                    let ne = d_find(body, ns, "\">");
+                    if ne < 0 {
+                        cur = cur[0 .. 0];
+                    } else {
+                        let call_start = q;
+                        let start = d_params_begin(abuf, call_start);
+                        var ilim = d_find(body, ne, "</atem:invoke>");
+                        if ilim < 0 {
+                            ilim = body.len;
+                        }
+                        let params_end = d_parse_atem_params(body, ne + 2, ilim, abuf, start,
+                                                             schema, soff, slen, stype, nschema);
+                        let end = appc(abuf, params_end, 125);
+                        let name_at = d_find(s, 0, recipient);
+                        noff[ncall] = if name_at < 0 { 0 } else { name_at };
+                        nlen[ncall] = if name_at < 0 { 0 } else { recipient.len };
+                        aoff[ncall] = call_start;
+                        alen[ncall] = end - call_start;
+                        q = end;
+                        ncall = ncall + 1;
+                        let eom = d_find(body, ne, "<|eom|>");
+                        let eot = d_find(body, ne, "<|eot|>");
+                        var stop = eom;
+                        if stop < 0 || (eot >= 0 && eot < stop) {
+                            stop = eot;
+                        }
+                        cur = if stop < 0 { body[0 .. 0] } else { body[stop + 7 .. body.len] };
+                    }
+                }
+            } else {
+                clen = app(cbuf, clen, body, 0, body.len);
+                cur = cur[0 .. 0];
+            }
+        }
+
+        if d_prefix(cur, "<|start|>assistant") {
+            cur = cur[18 .. cur.len];
+        }
+    }
+
+    return d_message_json(dst, cbuf[0 .. clen], reas, s, noff, nlen, abuf, aoff, alen, ncall);
+}
+
+export fn d_muse_glimmer(
+    s: const u8[:],
+    tools: i64,
+    extract: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64,
+    dst: u8[:]
+) -> i64 {
+    return d_muse(s, tools, extract, 0, schema, soff, slen, stype, nschema, dst);
+}
+
+export fn d_muse_spark(
+    s: const u8[:],
+    tools: i64,
+    extract: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64,
+    dst: u8[:]
+) -> i64 {
+    return d_muse(s, tools, extract, 1, schema, soff, slen, stype, nschema, dst);
+}
+
+// ---- MiniCPM5 --------------------------------------------------------------
+
+fn d_parse_minicpm_params(
+    src: const u8[:],
+    from: i64,
+    lim: i64,
+    abuf: u8[:],
+    at: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64
+) -> i64 {
+    let open = "<param name=\"";
+    let close = "</param>";
+    var p = from;
+    var first: i64 = 1;
+    var q = at;
+
+    while true {
+        let k = d_find(src, p, open);
+        if k < 0 || k >= lim {
+            return q;
+        }
+        let ns = k + open.len;
+        let ne = d_find(src, ns, "\">");
+        if ne < 0 || ne >= lim {
+            return q;
+        }
+        let vs = ne + 2;
+        var value: const u8[:] = src[0 .. 0];
+        var next: i64 = -1;
+
+        if d_prefix(src[vs .. src.len], "<![CDATA[") {
+            let cs = vs + 9;
+            let ce = d_find(src, cs, "]]>");
+            if ce < 0 {
+                return q;
+            }
+            value = src[cs .. ce];
+            let cl = d_find(src, ce, close);
+            next = if cl < 0 { -1 } else { cl + close.len };
+        } else {
+            let ve = d_find(src, vs, close);
+            if ve < 0 {
+                return q;
+            }
+            value = src[vs .. ve];
+            next = ve + close.len;
+        }
+
+        let before = q;
+        q = d_param_put(abuf, q, first, src[ns .. ne], value,
+                        schema, soff, slen, stype, nschema);
+        if q != before {
+            first = 0;
+        }
+        if next < 0 {
+            return q;
+        }
+        p = next;
+    }
+    return q;
+}
+
+export fn d_minicpm5(
+    s: const u8[:],
+    tools: i64,
+    extract: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64,
+    dst: u8[:]
+) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var abuf: u8[16384] = [0; 16384];
+
+    var rest = s;
+    var reas = s[0 .. 0];
+
+    if extract != 0 {
+        let te = d_find(rest, 0, "</think>");
+        if te >= 0 {
+            var rs: i64 = 0;
+            if d_prefix(rest, "<think>") {
+                rs = 7;
+            }
+            reas = rest[rs .. te];
+            rest = rest[te + 8 .. rest.len];
+        }
+    }
+
+    var f0: i64 = -1;
+    var content = rest;
+    if tools != 0 {
+        f0 = d_find(rest, 0, "<function");
+        if f0 >= 0 {
+            content = rest[0 .. f0];
+        }
+    }
+
+    var q: i64 = 0;
+    var ncall: i64 = 0;
+    var p = f0;
+
+    while p >= 0 && ncall < D_MAX_CALLS {
+        let open = "<function name=\"";
+        if !d_prefix(rest[p .. rest.len], open) {
+            p = -1;
+        } else {
+            let ns = p + open.len;
+            let ne = d_find(rest, ns, "\">");
+            if ne < 0 {
+                p = -1;
+            } else {
+                let name = rest[ns .. ne];
+                let call_start = q;
+                let start = d_params_begin(abuf, q);
+                var after = d_find(rest, ne, "</function>");
+                if after < 0 {
+                    after = d_find(rest, ne, "<function");
+                }
+                let flim: i64 = if after < 0 { rest.len } else { after };
+                let params_end = d_parse_minicpm_params(rest, ne + 2, flim, abuf, start,
+                                                        schema, soff, slen, stype, nschema);
+                let end = appc(abuf, params_end, 125);
+                let name_at = d_find(s, 0, name);
+                noff[ncall] = if name_at < 0 { 0 } else { name_at };
+                nlen[ncall] = if name_at < 0 { 0 } else { name.len };
+                aoff[ncall] = call_start;
+                alen[ncall] = end - call_start;
+                q = end;
+                ncall = ncall + 1;
+                if after < 0 {
+                    p = -1;
+                } else {
+                    p = after;
+                    if d_prefix(rest[p .. rest.len], "</function>") {
+                        p = p + 11;
+                    }
+                    while p < rest.len && d_is_ws(rest[p]) {
+                        p = p + 1;
+                    }
+                    if p >= rest.len {
+                        p = -1;
+                    }
+                }
+            }
+        }
+    }
+
+    return d_message_json(dst, content, reas, s, noff, nlen, abuf, aoff, alen, ncall);
+}
+
+// ---- K2 Horizon ------------------------------------------------------------
+// call_format: 0 xml, 1 xml_typed, 2 json.
+
+fn d_parse_k2_params(
+    src: const u8[:],
+    from: i64,
+    abuf: u8[:],
+    at: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64
+) -> i64 {
+    let open = "<ifm|arg_key>";
+    let close_key = "</ifm|arg_key>";
+    let close_type = "</ifm|arg_type>";
+    let open_val = "<ifm|arg_value>";
+    let close_val = "</ifm|arg_value>";
+    var p = from;
+    var first: i64 = 1;
+    var q = at;
+
+    while true {
+        let k = d_find(src, p, open);
+        if k < 0 {
+            return q;
+        }
+        let ns = k + open.len;
+        let ne = d_find(src, ns, close_key);
+        if ne < 0 {
+            return q;
+        }
+        let name = src[ns .. ne];
+        var i = ne + close_key.len;
+        // The native grammar allows whitespace before each argument element.
+        while i < src.len && d_is_ws(src[i]) {
+            i = i + 1;
+        }
+        if d_prefix(src[i .. src.len], "<ifm|arg_type>") {
+            let te = d_find(src, i, close_type);
+            if te < 0 {
+                return q;
+            }
+            i = te + close_type.len;
+            while i < src.len && d_is_ws(src[i]) {
+                i = i + 1;
+            }
+        }
+        if !d_prefix(src[i .. src.len], open_val) {
+            return q;
+        }
+        let vs = i + open_val.len;
+        let ve = d_find(src, vs, close_val);
+        if ve < 0 {
+            return q;
+        }
+        let before = q;
+        q = d_param_put(abuf, q, first, name, src[vs .. ve],
+                        schema, soff, slen, stype, nschema);
+        if q != before {
+            first = 0;
+        }
+        p = ve + close_val.len;
+    }
+    return q;
+}
+
+export fn d_k2_horizon(
+    s: const u8[:],
+    tools: i64,
+    extract: i64,
+    call_format: i64,
+    parallel: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64,
+    dst: u8[:]
+) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var abuf: u8[16384] = [0; 16384];
+
+    var rest = s;
+    var reas = s[0 .. 0];
+
+    // The open tag may or may not be part of the continuation.
+    if d_prefix(rest, "<ifm|think_faster>") {
+        rest = rest[18 .. rest.len];
+    } else if d_prefix(rest, "<ifm|think_fast>") {
+        rest = rest[16 .. rest.len];
+    } else if d_prefix(rest, "<ifm|think>") {
+        rest = rest[11 .. rest.len];
+    }
+
+    let te = d_min2(
+        d_min2(d_find(rest, 0, "</ifm|think_faster>"), d_find(rest, 0, "</ifm|think_fast>")),
+        d_find(rest, 0, "</ifm|think>")
+    );
+    if te >= 0 && extract != 0 {
+        reas = rest[0 .. te];
+        var cl: i64 = 0;
+        if d_prefix(rest[te .. rest.len], "</ifm|think_faster>") {
+            cl = 19;
+        } else if d_prefix(rest[te .. rest.len], "</ifm|think_fast>") {
+            cl = 17;
+        } else {
+            cl = 12;
+        }
+        rest = rest[te + cl .. rest.len];
+    }
+
+    let sec = d_find(rest, 0, "<ifm|tool_calls>");
+    var content = rest;
+    var q: i64 = 0;
+    var ncall: i64 = 0;
+
+    if tools != 0 && sec >= 0 {
+        content = rest[0 .. sec];
+        var p = sec + 16;
+        let end = d_find(rest, p, "</ifm|tool_calls>");
+        let lim: i64 = if end < 0 { rest.len } else { end };
+
+        while p < lim && ncall < D_MAX_CALLS {
+            let k = d_find(rest, p, "<ifm|tool_call>");
+            if k < 0 || k >= lim {
+                p = lim;
+            } else {
+                let cs = k + 15;
+                var ce = d_find(rest, cs, "</ifm|tool_call>");
+                if ce < 0 || ce > lim {
+                    ce = lim;
+                }
+                let body = rest[cs .. ce];
+
+                if call_format == 2 {
+                    let j = d_find(body, 0, "{");
+                    if j >= 0 {
+                        let name = d_json_string_body(d_json_member(body, "\"name\""));
+                        let args = d_trim(d_json_member(body, "\"arguments\""));
+                        if name.len > 0 && args.len > 0 {
+                            var tmp: u8[16384] = [0; 16384];
+                            let cl = d_compact_json(args, tmp);
+                            let start = q;
+                            let e = app(abuf, start, tmp[0 .. cl], 0, cl);
+                            let name_at = d_find(s, 0, name);
+                            noff[ncall] = if name_at < 0 { 0 } else { name_at };
+                            nlen[ncall] = if name_at < 0 { 0 } else { name.len };
+                            aoff[ncall] = start;
+                            alen[ncall] = e - start;
+                            q = e;
+                            ncall = ncall + 1;
+                        }
+                    }
+                } else {
+                    let nl = d_find(body, 0, "\n");
+                    let name_end: i64 = if nl < 0 { body.len } else { nl };
+                    let name = body[0 .. name_end];
+                    // Native builds one JSON object per call: the opening brace
+                    // comes before the first parameter, as in the other families.
+                    let call_start = q;
+                    let start = d_params_begin(abuf, call_start);
+                    let params_end = d_parse_k2_params(body, name_end, abuf, start,
+                                                       schema, soff, slen, stype, nschema);
+                    let e = appc(abuf, params_end, 125);
+                    let name_at = d_find(s, 0, name);
+                    noff[ncall] = if name_at < 0 { 0 } else { name_at };
+                    nlen[ncall] = if name_at < 0 { 0 } else { name.len };
+                    aoff[ncall] = call_start;
+                    alen[ncall] = e - call_start;
+                    q = e;
+                    ncall = ncall + 1;
+                }
+                p = ce + 16;
+                if parallel == 0 {
+                    p = lim;
+                }
+            }
+        }
+    }
+
+    return d_message_json(dst, content, reas, s, noff, nlen, abuf, aoff, alen, ncall);
+}
+
+// ---- Harmony XML -----------------------------------------------------------
+// The end-of-generation tokens also end a value; native passes them to the
+// parser because an XML call has no closing tag of its own.
+
+fn d_eog_at(s: const u8[:], from: i64) -> i64 {
+    var best = d_find(s, from, "<|end|>");
+    best = d_min2(best, d_find(s, from, "<|call|>"));
+    best = d_min2(best, d_find(s, from, "<|return|>"));
+    best = d_min2(best, d_find(s, from, "<|endoftext|>"));
+    best = d_min2(best, d_find(s, from, "<|im_end|>"));
+    best = d_min2(best, d_find(s, from, "<|fim_pad|>"));
+    best = d_min2(best, d_find(s, from, "<|repo_name|>"));
+    best = d_min2(best, d_find(s, from, "<|file_sep|>"));
+    return best;
+}
+
+fn d_parse_rfl_params(
+    src: const u8[:],
+    from: i64,
+    lim: i64,
+    abuf: u8[:],
+    at: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64
+) -> i64 {
+    let open = "<rfl:parameter name=\"";
+    let close = "\n</rfl:parameter>";
+    var p = from;
+    var first: i64 = 1;
+    var q = at;
+
+    while true {
+        let k = d_find(src, p, open);
+        if k < 0 || k >= lim {
+            return q;
+        }
+        let ns = k + open.len;
+        let ne = d_find(src, ns, "\">\n");
+        if ne < 0 || ne >= lim {
+            return q;
+        }
+        let name = src[ns .. ne];
+        let vs = ne + 3;
+        var value = src[0 .. 0];
+        var next = -1;
+
+        let ty = d_type_of(name, schema, soff, slen, stype, nschema);
+        if ty == D_STR || ty < 0 {
+            // String values stop before "\n</rfl:parameter>", before the next
+            // parameter, or before an EOG token on a new line.
+            var ve = d_find(src, vs, close);
+            ve = d_min2(ve, d_find(src, vs, "\n<rfl:parameter name=\""));
+            ve = d_min2(ve, d_eog_at(src, vs));
+            if ve < 0 {
+                return q;
+            }
+            value = src[vs .. ve];
+            let cl = d_find(src, ve, close);
+            if cl == ve {
+                next = cl + close.len;
+            } else {
+                // A bare "\n" before the next open or an EOG token.
+                var e = ve;
+                if e < src.len && src[e] == 10 {
+                    e = e + 1;
+                }
+                next = e;
+            }
+        } else {
+            let jv = d_json_line(src, vs);
+            value = jv;
+            let cl = d_find(src, vs + jv.len, close);
+            next = if cl < 0 { vs + jv.len } else { cl + close.len };
+        }
+
+        let before = q;
+        q = d_param_append(abuf, q, first, name, value, ty);
+        if q != before {
+            first = 0;
+        }
+        if next < 0 || next <= p {
+            return q;
+        }
+        p = next;
+    }
+    return q;
+}
+
+export fn d_harmony_xml(
+    s: const u8[:],
+    tools: i64,
+    extract: i64,
+    schema: const u8[:],
+    soff: const i64[:],
+    slen: const i64[:],
+    stype: const i64[:],
+    nschema: i64,
+    dst: u8[:]
+) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var abuf: u8[16384] = [0; 16384];
+    var cbuf: u8[16384] = [0; 16384];
+
+    var rest = s;
+    var reas = s[0 .. 0];
+    var clen: i64 = 0;
+    var ncall: i64 = 0;
+    var qk: i64 = 0;
+
+    rest = d_after(rest, "<|start|>assistant");
+
+    var done: i64 = 0;
+
+    while rest.len > 0 && done == 0 {
+        rest = d_after(rest, "<|start|>assistant");
+        if d_prefix(rest, "<|channel|>analysis<|message|>") {
+            let body = rest[30 .. rest.len];
+            let stop = d_min2(
+                d_min2(d_find(body, 0, "<|end|>"), d_eog_at(body, 0)),
+                d_min2(d_find(body, 0, "<|constrain|>"), d_find(body, 0, "<|start|>assistant"))
+            );
+            let n: i64 = if stop < 0 { body.len } else { stop };
+            if extract != 0 {
+                reas = body[0 .. n];
+            } else {
+                clen = app(cbuf, clen, body, 0, n);
+            }
+            if stop < 0 {
+                rest = body[0 .. 0];
+            } else {
+                rest = body[stop .. body.len];
+                if d_prefix(rest, "<|end|>") {
+                    rest = rest[7 .. rest.len];
+                } else if d_prefix(rest, "<|constrain|>") {
+                    rest = rest[13 .. rest.len];
+                } else if d_prefix(rest, "<|start|>assistant") {
+                    rest = rest[18 .. rest.len];
+                } else {
+                    let e = d_eog_at(rest, 0);
+                    if e == 0 {
+                        rest = d_skip_tag(rest);
+                    }
+                }
+            }
+        } else if d_prefix(rest, "<|channel|>final<|message|>") {
+            let body = rest[27 .. rest.len];
+            let stop = d_eog_at(body, 0);
+            let n: i64 = if stop < 0 { body.len } else { stop };
+            clen = app(cbuf, clen, body, 0, n);
+            done = 1;
+        } else if d_prefix(rest, " to=") {
+            let nl = d_find(rest, 4, "<|channel|>analysis <|constrain|>xml<|message|>");
+            if nl < 0 || tools == 0 {
+                clen = app(cbuf, clen, rest, 0, rest.len);
+                rest = rest[0 .. 0];
+            } else {
+                let name = rest[4 .. nl];
+                let body = rest[nl + 47 .. rest.len];
+                let start = d_params_begin(abuf, qk);
+                var blim = d_eog_at(body, 0);
+                if blim < 0 {
+                    blim = body.len;
+                }
+                let params_end = d_parse_rfl_params(body, 0, blim, abuf, start,
+                                                    schema, soff, slen, stype, nschema);
+                let end = appc(abuf, params_end, 125);
+                let name_at = d_find(s, 0, name);
+                noff[ncall] = if name_at < 0 { 0 } else { name_at };
+                nlen[ncall] = if name_at < 0 { 0 } else { name.len };
+                aoff[ncall] = qk;
+                alen[ncall] = end - qk;
+                qk = end;
+                ncall = ncall + 1;
+                // call_close: <|end|>, an EOG token, or the next <|start|>.
+                let e = d_eog_at(body, 0);
+                rest = if e < 0 { body[0 .. 0] } else { body[e .. body.len] };
+                let e2 = d_eog_at(rest, 0);
+                if e2 == 0 {
+                    rest = d_skip_tag(rest);
+                }
+                rest = d_after(rest, "<|start|>assistant");
+            }
+        } else {
+            clen = app(cbuf, clen, rest, 0, rest.len);
+            rest = rest[0 .. 0];
+        }
+    }
+
+    return d_message_json(dst, cbuf[0 .. clen], reas, s, noff, nlen, abuf, aoff, alen, ncall);
+}
+
+// Skips exactly one EOG token at the start of `s`.
+fn d_skip_tag(s: const u8[:]) -> const u8[:] {
+    let tags: const u8[:] = "<|end|><|call|><|return|><|endoftext|><|im_end|><|fim_pad|><|repo_name|><|file_sep|>";
+    var i: i64 = 0;
+
+    while i < tags.len {
+        // The tags are packed back to back; find the one that matches here.
+        if d_prefix(s, "<|end|>") {
+            return s[7 .. s.len];
+        }
+        if d_prefix(s, "<|call|>") {
+            return s[8 .. s.len];
+        }
+        if d_prefix(s, "<|return|>") {
+            return s[10 .. s.len];
+        }
+        if d_prefix(s, "<|endoftext|>") {
+            return s[13 .. s.len];
+        }
+        if d_prefix(s, "<|im_end|>") {
+            return s[10 .. s.len];
+        }
+        if d_prefix(s, "<|fim_pad|>") {
+            return s[11 .. s.len];
+        }
+        if d_prefix(s, "<|repo_name|>") {
+            return s[13 .. s.len];
+        }
+        if d_prefix(s, "<|file_sep|>") {
+            return s[12 .. s.len];
+        }
+        i = tags.len;
+    }
+    return s;
+}
+
+// ---- LLM-jp Harmony --------------------------------------------------------
+// GPT-OSS dialect: one space may follow every special token; a tool recipient
+// may sit in the role header or in the channel header.
+
+fn d_take_until(s: const u8[:], from: i64, stops: const u8[:]) -> i64 {
+    var i = from;
+
+    while i < s.len {
+        var k: i64 = 0;
+        var hit: i64 = 0;
+
+        while k < stops.len {
+            if s[i] == stops[k] {
+                hit = 1;
+                k = stops.len;
+            } else {
+                k = k + 1;
+            }
+        }
+        if hit == 1 {
+            return i;
+        }
+        i = i + 1;
+    }
+    return s.len;
+}
+
+export fn d_llm_jp_harmony(s: const u8[:], tools: i64, extract: i64, dst: u8[:]) -> i64 {
+    var noff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var nlen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var aoff: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var alen: i64[D_MAX_CALLS] = [0; D_MAX_CALLS];
+    var abuf: u8[16384] = [0; 16384];
+    var cbuf: u8[16384] = [0; 16384];
+
+    var rest = s;
+    var reas = s[0 .. 0];
+    var clen: i64 = 0;
+    var ncall: i64 = 0;
+    var done: i64 = 0;
+    var ql: i64 = 0;
+
+    while rest.len > 0 && done == 0 {
+        if d_prefix(rest, "<|start|>") {
+            rest = d_skip_sp(rest[9 .. rest.len]);
+            if d_prefix(rest, "assistant") {
+                rest = d_skip_sp(rest[9 .. rest.len]);
+            }
+        }
+
+        var tool_name = s[0 .. 0];
+
+        // Recipient in the role header: "<|start|> assistant to=functions.NAME".
+        if d_prefix(rest, "to=functions.") {
+            let e = d_take_until(rest, 13, " <");
+            tool_name = rest[13 .. e];
+            rest = d_skip_sp(rest[e .. rest.len]);
+        }
+
+        if !d_prefix(rest, "<|channel|>") {
+            clen = app(cbuf, clen, rest, 0, rest.len);
+            rest = rest[0 .. 0];
+            done = 1;
+        } else {
+            rest = d_skip_sp(rest[11 .. rest.len]);
+
+            var ch: i64 = 0;
+            if d_prefix(rest, "analysis") {
+                ch = 1;
+                rest = d_skip_sp(rest[8 .. rest.len]);
+            } else if d_prefix(rest, "commentary") {
+                ch = 2;
+                rest = d_skip_sp(rest[10 .. rest.len]);
+            } else if d_prefix(rest, "final") {
+                ch = 3;
+                rest = d_skip_sp(rest[5 .. rest.len]);
+            }
+
+            // Recipient in the channel header.
+            if d_prefix(rest, "to=functions.") {
+                let e = d_take_until(rest, 13, " <");
+                tool_name = rest[13 .. e];
+                rest = d_skip_sp(rest[e .. rest.len]);
+            }
+
+            if d_prefix(rest, "<|constrain|>") {
+                rest = d_skip_sp(rest[12 .. rest.len]);
+                // The constraint type ("json", ...) sits before <|message|>.
+                if !d_prefix(rest, "<|message|>") {
+                    let e = d_find(rest, 0, "<|message|>");
+                    if (e < 0) {
+                        done = 1;
+                    }
+                    rest = if e < 0 { rest[0 .. 0] } else { rest[e .. rest.len] };
+                }
+            }
+
+            if !d_prefix(rest, "<|message|>") {
+                clen = app(cbuf, clen, rest, 0, rest.len);
+                rest = rest[0 .. 0];
+                done = 1;
+            } else {
+                rest = rest[11 .. rest.len];
+                // Exactly one optional space, as native: an intentional
+                // leading space survives.
+                if d_prefix(rest, " ") {
+                    rest = rest[1 .. rest.len];
+                }
+
+                let e = d_find(rest, 0, "<|end|>");
+                let body = if e < 0 { rest } else { rest[0 .. e] };
+
+                if tool_name.len > 0 && tools != 0 {
+                    let j = d_find(body, 0, "{");
+                    if j >= 0 {
+                        let val = d_json_value(body, j);
+                        var tmp: u8[16384] = [0; 16384];
+                        let cl = d_compact_json(val, tmp);
+                        let start = ql;
+                        let ee = app(abuf, start, tmp[0 .. cl], 0, cl);
+                        let name_at = d_find(s, 0, tool_name);
+                        noff[ncall] = if name_at < 0 { 0 } else { name_at };
+                        nlen[ncall] = if name_at < 0 { 0 } else { tool_name.len };
+                        aoff[ncall] = start;
+                        alen[ncall] = ee - start;
+                        ql = ee;
+                        ncall = ncall + 1;
+                    }
+                } else if ch == 1 {
+                    if extract != 0 {
+                        reas = body;
+                    } else {
+                        clen = app(cbuf, clen, body, 0, body.len);
+                    }
+                } else {
+                    clen = app(cbuf, clen, body, 0, body.len);
+                }
+
+                if e < 0 {
+                    rest = rest[0 .. 0];
+                    done = 1;
+                } else {
+                    rest = rest[e + 7 .. rest.len];
+                }
+            }
+        }
+    }
+
+    return d_message_json(dst, cbuf[0 .. clen], reas, s, noff, nlen, abuf, aoff, alen, ncall);
+}
+
+fn main() {
+    var dst: u8[65536] = [0; 65536];
+    let n = d_translate_gemma("Hello", dst);
+    if n <= 0 {
+        return;
+    }
+}
