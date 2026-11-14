@@ -96,6 +96,8 @@ CANONICAL_SOURCES = [
      "src/models/qwen35moe.cpp", "10/26 + extended 43/149, 12/12 mutations"),
     ("model/base/model_graph.goose", "EXP-2026-11-14-577-p6-05-qwen35moe", "source/base/model_graph.goose",
      "src/llama-graph.cpp (shared module, no main)", "imported by the architecture builders"),
+    ("model/gguf-writer.goose", "EXP-2026-11-14-596-p7-02-gguf-writer", "source/gguf-writer.goose",
+     "ggml/src/gguf.cpp (writer core)", "31 cases / 161 checks / 0 failures, 12/12 mutations"),
     ("model/gguf-metadata.goose", "EXP-2026-11-14-571-p7-02-gguf-metadata", "source/s1_metadata.goose",
      "ggml/src/gguf.cpp (context and metadata)", "46 records / 0 failures, 12/12 mutations"),
     ("jinja/lexer.goose", "EXP-2026-11-13-502-p7-08-jinja-lexer", "source/lexer.goose",
