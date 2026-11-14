@@ -108,9 +108,16 @@ carry different bodies under one name. Status:
   different scratch layouts (`bases` uses st[10] in runtime and st[0] in value)
   and to extra kinds (`type_name` knows V_FUNC/V_METHOD only in runtime), so
   unifying them is a real merge, not a rename;
-- `tools/check-composition.sh` composes the four accepted sets (server, quant,
-  GGUF, P9-06) and runs `goose check` on each; it is the fast smoke test for the
-  composition step.
+- the runtime and the schema converter (`jinja/runtime` + `json/format-grammar`)
+  compose as well: 1029 specializations. That makes the schema grammar reachable
+  in one unit, but `arena_gbnf` still cannot call `json_schema_convert` without
+  a linker seam: the runtime is also built standalone by every P7-08 gate, and a
+  plain `extern` would leave those links unresolved. Closing the `meta[3]=1`
+  stub needs an explicit seam (a weak fallback or a build that always links the
+  converter), which is a separate design step;
+- `tools/check-composition.sh` composes the five accepted sets (server, quant,
+  GGUF, P9-06, runtime+schema) and runs `goose check` on each; it is the fast
+  smoke test for the composition step.
 
 ## Slice plan
 

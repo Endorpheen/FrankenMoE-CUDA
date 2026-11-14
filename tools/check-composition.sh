@@ -27,9 +27,10 @@ check server   "$ROOT"/goose/server/{mcp-core,mcp-stdio,decision-core,server-sch
 check quant    "$ROOT"/goose/model/{quant-types,quant-allow,quant-rows,quant-rows2,quant-dequant,quant-dequant2}.goose || fails=$((fails+1))
 check gguf     "$ROOT"/goose/model/{gguf-metadata,gguf-writer,gguf-tensors,gguf-split}.goose || fails=$((fails+1))
 check p9-06    "$ROOT"/goose/cli/cli-protocol.goose "$ROOT"/goose/chat/{thinking-control,parse-params}.goose || fails=$((fails+1))
+check jinja-schema "$ROOT"/goose/jinja/runtime.goose "$ROOT"/goose/json/format-grammar.goose || fails=$((fails+1))
 
 if [ "$fails" -ne 0 ]; then
     echo "composition: $fails set(s) failed"
     exit 1
 fi
-echo "composition: 4 set(s) ok"
+echo "composition: 5 set(s) ok"

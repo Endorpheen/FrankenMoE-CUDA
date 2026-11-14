@@ -45,6 +45,12 @@ RENAMES = {
         "fabs32": "fabs2_32",
         "ld_f32": "ld2_f32",
     },
+    "format-grammar.goose": {
+        "K_STRING": "FG_K_STRING",
+        "K_ARRAY": "FG_K_ARRAY",
+        "K_TUPLE": "FG_K_TUPLE",
+        "K_OBJECT": "FG_K_OBJECT",
+    },
     "quant-dequant2.goose": {
         "iq2_grid": "qd_iq2_grid",
         "iq3_grid": "qd_iq3_grid",
