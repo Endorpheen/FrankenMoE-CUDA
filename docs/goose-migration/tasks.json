@@ -1645,7 +1645,7 @@
         "src/models/*.cpp"
       ],
       "acceptance": "Every audited text builder in the kept architecture set assigned and ported; tiny per-architecture graph construction fixture. Legacy architectures removed by owner directive are not in scope and carry no requirement.",
-      "evidence": " 2026-11-14 architecture 1 (EXP577, experiments/EXP-2026-11-14-577-p6-05-qwen35moe): the qwen35moe plan/shape builder is Goose - per-layer attention vs gated-delta-net choice with the hybrid interval and plus-one marker, the MTP layer in the plan, per-layer marker direction, negative-index rejection, GDN nodes, qk-norm width, routed/shared expert widths, the router table, attention QKV blocks and the output tensor. Gate: 10/26 original cases plus an extended 43/149 block (lost output, shared-expert flag, inverted marker, dropped MTP); mutations 12/12 in two halves. Structural gate only: expectations are a transcription of qwen35moe.cpp, no native library and no model.",
+      "evidence": " 2026-11-14 architecture 1 (EXP577, experiments/EXP-2026-11-14-577-p6-05-qwen35moe): the qwen35moe plan/shape builder is Goose - per-layer attention vs gated-delta-net choice with the hybrid interval and plus-one marker, the MTP layer in the plan, per-layer marker direction, negative-index rejection, GDN nodes, qk-norm width, routed/shared expert widths, the router table, attention QKV blocks and the output tensor. Gate: 10/26 original cases plus an extended 43/149 block (lost output, shared-expert flag, inverted marker, dropped MTP); mutations 12/12 in two halves. Structural gate only: expectations are a transcription of qwen35moe.cpp, no native library and no model. 2026-11-14 architecture 2 (EXP580, experiments/EXP-2026-11-14-580-p6-05-qwen4exp): the qwen4exp plan/shape builder is Goose - the hybrid interval with the recurrent flag, fused QKV and GDN wqkv widths, indexer q/k projections, hyper-connection head norm and per-layer down shapes, routed-expert width with n_expert_used, the MTP doubled hidden state and the PLE marker. Gate: 10 structure cases / 26 values, 0 failures; mutations 12/12 in two halves. Structural gate only. Recorded gaps: q4_plan, q4_is_ple, PLE tensors, indexer.k_proj, shared experts and nextn.*norm have no cases, and the recurrent branch has no positive case (the fixture passes zero flags).",
       "depends_on": [],
       "workstream": "OTHER_COMPATIBILITY",
       "source_phase_files_at_audit": 416,
@@ -1653,10 +1653,9 @@
       "batch": "B7",
       "scope_note": "Narrowed to modern architectures; see docs/goose-migration/architecture-scope.md",
       "slices_total": 20,
-      "slices_done": 1,
+      "slices_done": 2,
       "coverage_doc": "docs/goose-migration/P6-05-COVERAGE.md",
       "remaining": [
-        "qwen4exp",
         "qwen3",
         "qwen3moe",
         "qwen3next",
@@ -4297,6 +4296,10 @@
     {
       "event": "P6-05 first architecture (EXP577): the qwen35moe plan/shape builder joins the canon as goose/model/qwen35moe.goose with an extended structure gate and 12/12 mutations.",
       "checkpoint": "96e2fb91"
+    },
+    {
+      "event": "P6-05 second architecture (EXP580): the qwen4exp plan/shape builder joins the canon as goose/model/qwen4exp.goose with 10/26 structure cases and 12/12 mutations.",
+      "checkpoint": "1afe637d"
     }
   ],
   "batches": [
@@ -5187,7 +5190,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T18:22:11.828508+00:00",
+  "updated_at": "2026-11-14T18:22:34.562947+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5196,9 +5199,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11 and P6-05.",
     "slices_total": 78,
-    "slices_done": 42,
+    "slices_done": 43,
     "slices_in_progress": 0,
-    "slices_remaining": 36
+    "slices_remaining": 35
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

@@ -50,6 +50,8 @@ CANONICAL_SOURCES = [
      "common/http.h", "20000 cases / 0 diffs, 14/14 mutations"),
     ("model/quant-allow.goose", "EXP-2026-11-14-576-p7-04-quant-allow", "source/quant-allow.goose",
      "llama-quant.cpp (allow-cuts and type overrides)", "73 lines / 0 diffs, 16/16 mutations"),
+    ("model/qwen4exp.goose", "EXP-2026-11-14-580-p6-05-qwen4exp", "source/qwen4exp.goose",
+     "src/models/qwen4exp.cpp", "10/26 structure cases, 12/12 mutations"),
     ("model/qwen35moe.goose", "EXP-2026-11-14-577-p6-05-qwen35moe", "source/qwen35moe.goose",
      "src/models/qwen35moe.cpp", "10/26 + extended 43/149, 12/12 mutations"),
     ("model/base/model_graph.goose", "EXP-2026-11-14-577-p6-05-qwen35moe", "source/base/model_graph.goose",
