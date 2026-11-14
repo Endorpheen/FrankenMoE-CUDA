@@ -2388,6 +2388,14 @@ fn ws_byte(c: u8) -> bool {
     return c == 32 || c == 9 || c == 10 || c == 11 || c == 12 || c == 13;
 }
 
+fn fail_raw(msg: const u8[:], E: u8[:], st: i64[:]) -> i64 {
+    var p = apps(E, 0, "NotImplemented: ");
+    p = app(E, p, msg, 0, msg.len);
+    st[1] = 1;
+    st[2] = p;
+    return -1;
+}
+
 recursive fn eval_test(
     id: i64,
     ctxc: i64,
@@ -3444,6 +3452,170 @@ recursive fn eval_filter(
             }
         }
         return arr;
+    }
+
+    if filter_name_is(fname, "format") && vk(A, st, sval) == V_STRING {
+        let src = vstr(B, A, st, sval);
+        let base = st[7];
+        var p: i64 = 0;
+        var i: i64 = 0;
+        var ai: i64 = 0;
+
+        while i < src.len {
+            let c = src[i];
+
+            if c == 123 {
+                if i + 1 < src.len && src[i + 1] == 125 {
+                    if ai >= argc {
+                        return fail_node(K_FILTER, apos(A, st, id), "format() missing argument", E, st);
+                    }
+                    let n = as_string_into(A, B, F, st, argv[ai], out[base + p..], 0, E);
+
+                    if n < 0 || st[1] != 0 {
+                        return -1;
+                    }
+                    p = p + n;
+                    ai = ai + 1;
+                    i = i + 2;
+                } else {
+                    return fail_raw("format() only supports simple '{}' placeholders", E, st);
+                }
+            } else {
+                out[base + p] = c;
+                p = p + 1;
+                i = i + 1;
+            }
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + p]);
+        st[7] = base;
+        return res;
+    }
+
+    if filter_name_is(fname, "indent") && vk(A, st, sval) == V_STRING {
+        let base = st[7];
+        var iw: i64 = 0;
+        var spaces: bool = true;
+
+        if argc > 0 {
+            let wk = vk(A, st, argv[0]);
+
+            if wk == V_INT {
+                iw = vi(A, st, argv[0]);
+            } else if wk == V_STRING {
+                let ws = vstr(B, A, st, argv[0]);
+                spaces = false;
+                var k: i64 = 0;
+
+                while k < ws.len {
+                    out[base + k] = ws[k];
+                    k = k + 1;
+                }
+                iw = ws.len;
+            } else {
+                iw = 4;
+            }
+        } else {
+            iw = 4;
+        }
+
+        if spaces {
+            var k: i64 = 0;
+
+            while k < iw {
+                out[base + k] = 32;
+                k = k + 1;
+            }
+        }
+        var fflag: i64 = 0;
+        var bflag: i64 = 0;
+
+        if argc > 1 && vk(A, st, argv[1]) != V_UNDEF {
+            fflag = v_bool(A, F, st, argv[1]);
+        }
+
+        if argc > 2 && vk(A, st, argv[2]) != V_UNDEF {
+            bflag = v_bool(A, F, st, argv[2]);
+        }
+        let src = vstr(B, A, st, sval);
+        let cstart = base + iw;
+        var p: i64 = cstart;
+        var start: i64 = 0;
+
+        while start < src.len {
+            var nl: i64 = -1;
+            var i: i64 = start;
+
+            while i < src.len {
+                if src[i] == 10 {
+                    nl = i;
+                    i = src.len;
+                } else {
+                    i = i + 1;
+                }
+            }
+            var lend: i64 = src.len;
+
+            if nl >= 0 {
+                lend = nl;
+            }
+
+            if p > cstart {
+                out[p] = 10;
+                p = p + 1;
+            }
+            var doind: bool = false;
+
+            if p == cstart {
+                if fflag != 0 {
+                    doind = true;
+                }
+            } else {
+                if lend > start || bflag != 0 {
+                    doind = true;
+                }
+            }
+
+            if doind {
+                var q: i64 = 0;
+
+                while q < iw {
+                    out[p] = out[base + q];
+                    p = p + 1;
+                    q = q + 1;
+                }
+            }
+            var j: i64 = start;
+
+            while j < lend {
+                out[p] = src[j];
+                p = p + 1;
+                j = j + 1;
+            }
+
+            if nl < 0 {
+                start = src.len;
+            } else {
+                start = nl + 1;
+            }
+        }
+
+        if src.len > 0 && src[src.len - 1] == 10 {
+            out[p] = 10;
+            p = p + 1;
+
+            if bflag != 0 {
+                var q: i64 = 0;
+
+                while q < iw {
+                    out[p] = out[base + q];
+                    p = p + 1;
+                    q = q + 1;
+                }
+            }
+        }
+        let res = mk_str(A, F, B, st, out[cstart .. p]);
+        st[7] = base;
+        return res;
     }
 
     var p = apps(E, 0, "Unknown (built-in) filter '");

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-13T23:45:42.618336+00:00",
+  "updated_at": "2026-11-14T00:03:21.081287+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -70,11 +70,11 @@
       "native_targets": [
         "common/jinja/runtime.cpp"
       ],
-      "experiment": "EXP-2026-11-14-517-p7-08-jinja-split",
+      "experiment": "EXP-2026-11-14-518-p7-08-jinja-format",
       "task": "",
       "status": "ported",
-      "sha256": "6cefb802379d0aadfd11b62ca8fe8de1cebaf522cc299f60d89d18864f5d98bf",
-      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, 12/12 mutations"
+      "sha256": "a70b9ae6cfc2d7e8bf4317353da6a2ec1efd0b580dc4347014acb81193a50a9c",
+      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, 12/12 mutations"
     },
     {
       "goose": "cpu/goose-runtime/allocator-coalesce/kernel-v1.goose",
