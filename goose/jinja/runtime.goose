@@ -9839,3 +9839,704 @@ export fn peg_map_msg(
     }
     return st[S_NCALLS];
 }
+
+const MT_REASONING: i64 = 0;
+const MT_CONTENT: i64 = 1;
+const MT_TOOL: i64 = 2;
+const MT_TOOL_NAME: i64 = 3;
+
+// gemma4 tags
+const GT_TOOL_ARGS: i64 = 4;
+const GT_TAGS: i64 = 5;
+
+// minimax tags
+const MMT_ARG: i64 = 4;
+const MMT_ARG_NAME: i64 = 5;
+const MMT_ARG_VALUE: i64 = 6;
+const MMT_ARG_STRING_VALUE: i64 = 7;
+const MMT_ARG_OBJECT: i64 = 8;
+const MMT_ARG_ARRAY: i64 = 9;
+const MMT_ARG_ITEM: i64 = 10;
+const MMT_TAGS: i64 = 11;
+
+// gemma4 rule ids, in the order gemma4_to_json tests them
+const GR_NUMBER: i64 = 0;
+const GR_BOOL: i64 = 1;
+const GR_NULL: i64 = 2;
+const GR_STRING_CONTENT: i64 = 3;
+const GR_STRING: i64 = 4;
+const GR_ARRAY: i64 = 5;
+const GR_DICT_KEY_NAME: i64 = 6;
+const GR_DICT_KEY: i64 = 7;
+const GR_DICT_KV: i64 = 8;
+const GR_DICT: i64 = 9;
+const GR_VALUE: i64 = 10;
+const GR_RULES: i64 = 11;
+
+// mapper state
+const MS_CONT: i64 = 0;
+const MS_REAS: i64 = 1;
+const MS_TCB: i64 = 2;
+const MS_NCALLS: i64 = 3;
+
+// out table
+const MO_CONTENT: i64 = 0;
+const MO_REASONING: i64 = 1;
+const MO_NCALLS: i64 = 2;
+const MO_CALLS: i64 = 3;
+const MO_STRIDE: i64 = 6;
+
+// ---- byte helpers (copied from the accepted base port) ---------------------
+
+fn g_emit_hex4(dst: u8[:], at: i64, v: i64) -> i64 {
+    let digits: const u8[:] = "0123456789abcdef";
+    var p = m_app(dst, at, "\\u00", 0, 4);
+    p = m_appc(dst, p, digits[(v >> 4) & 15]);
+    return m_appc(dst, p, digits[v & 15]);
+}
+
+// ordered_json(s).dump() minus the quotes, i.e. escape_json_string_inner.
+fn g_esc_inner(dst: u8[:], at: i64, s: const u8[:]) -> i64 {
+    var p = at;
+    var i: i64 = 0;
+
+    while i < s.len {
+        let c = s[i];
+
+        if c == '"' {
+            p = m_app(dst, p, "\\\"", 0, 2);
+        } else
+
+        if c == '\\' {
+            p = m_app(dst, p, "\\\\", 0, 2);
+        } else
+
+        if c == 8 {
+            p = m_app(dst, p, "\\b", 0, 2);
+        } else
+
+        if c == 12 {
+            p = m_app(dst, p, "\\f", 0, 2);
+        } else
+
+        if c == 10 {
+            p = m_app(dst, p, "\\n", 0, 2);
+        } else
+
+        if c == 13 {
+            p = m_app(dst, p, "\\r", 0, 2);
+        } else
+
+        if c == 9 {
+            p = m_app(dst, p, "\\t", 0, 2);
+        } else
+
+        if c < 32 {
+            p = g_emit_hex4(dst, p, c);
+        } else {
+            p = m_appc(dst, p, c);
+        }
+        i = i + 1;
+    }
+    return p;
+}
+
+fn g_esc_quoted(dst: u8[:], at: i64, s: const u8[:]) -> i64 {
+    var p = m_appc(dst, at, '"');
+    p = g_esc_inner(dst, p, s);
+    return m_appc(dst, p, '"');
+}
+
+// ---- arena helpers ---------------------------------------------------------
+
+fn g_push(
+    st: i64[:],
+    out: i64[:],
+    noff: i64,
+    nlen: i64,
+    aoff: i64,
+    alen: i64,
+    ioff: i64,
+    ilen: i64) -> i64 {
+    let i = st[MS_NCALLS];
+    let b = MO_CALLS + MO_STRIDE * i;
+
+    if b + MO_STRIDE > out.len {
+        return st[MS_NCALLS];
+    }
+    out[b + 0] = noff;
+    out[b + 1] = nlen;
+    out[b + 2] = aoff;
+    out[b + 3] = alen;
+    out[b + 4] = ioff;
+    out[b + 5] = ilen;
+    st[MS_NCALLS] = i + 1;
+    return i + 1;
+}
+
+// find_by_tag(parent, tag, max_depth): children in order, then their subtree
+// while depth is left. A negative `want` is "no such tag" and must not match
+// the -1 of untagged nodes.
+recursive fn m_find_tag(
+    id: i64,
+    want: i64,
+    depth: i64,
+    a_tag: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:]) -> i64 {
+    if want < 0 {
+        return 0 - 1;
+    }
+    let base = a_cs[id];
+    let n = a_cc[id];
+    var i: i64 = 0;
+
+    while i < n {
+        let c = achild[base + i];
+
+        if a_tag[c] == want {
+            return c;
+        }
+
+        if depth > 1 {
+            let r = m_find_tag(c, want, depth - 1, a_tag, a_cs, a_cc, achild);
+
+            if r >= 0 {
+                return r;
+            }
+        }
+        i = i + 1;
+    }
+    return 0 - 1;
+}
+
+// ---- gemma4: rule-driven JSON ---------------------------------------------
+
+// gemma4_to_json. Emits straight into dst and returns the new cursor; the
+// native version builds a std::string, so the byte sequence is the same.
+recursive fn g_emit(
+    id: i64,
+    input: const u8[:],
+    a_rule: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_part: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    rid: const i64[:],
+    dst: u8[:],
+    at: i64) -> i64 {
+    // The native function returns "" before testing any rule.
+    if a_tlen[id] == 0 {
+        return at;
+    }
+    let r = a_rule[id];
+
+    if r < 0 {
+        return at;
+    }
+    var p = at;
+
+    if r == rid[GR_NUMBER] || r == rid[GR_BOOL] || r == rid[GR_NULL] {
+        return m_app(dst, p, input, a_toff[id], a_tlen[id]);
+    }
+
+    if r == rid[GR_STRING_CONTENT] {
+        return g_esc_inner(dst, p, input[a_toff[id] .. a_toff[id] + a_tlen[id]]);
+    }
+
+    if r == rid[GR_STRING] {
+        p = m_appc(dst, p, '"');
+
+        if a_cc[id] > 0 {
+            p = g_emit(achild[a_cs[id]], input, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, rid, dst, p);
+
+            if a_part[id] == 0 {
+                p = m_appc(dst, p, '"');
+            }
+        }
+        return p;
+    }
+
+    if r == rid[GR_ARRAY] {
+        p = m_appc(dst, p, '[');
+
+        var i: i64 = 0;
+
+        while i < a_cc[id] {
+            if i > 0 {
+                p = m_appc(dst, p, ',');
+            }
+            p = g_emit(achild[a_cs[id] + i], input, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, rid, dst, p);
+            i = i + 1;
+        }
+
+        if a_part[id] == 0 {
+            p = m_appc(dst, p, ']');
+        }
+        return p;
+    }
+
+    if r == rid[GR_DICT_KEY_NAME] {
+        return m_app(dst, p, input, a_toff[id], a_tlen[id]);
+    }
+
+    if r == rid[GR_DICT_KEY] {
+        p = m_appc(dst, p, '"');
+
+        if a_cc[id] > 0 {
+            // Native escapes gemma4_to_json(child); the grammar only produces a
+            // dict-key-name child, whose result is its raw text.
+            let c = achild[a_cs[id]];
+            p = g_esc_inner(dst, p, input[a_toff[c] .. a_toff[c] + a_tlen[c]]);
+        }
+
+        if a_part[id] == 0 {
+            p = m_app(dst, p, "\":", 0, 2);
+        }
+        return p;
+    }
+
+    if r == rid[GR_DICT_KV] {
+        var i: i64 = 0;
+
+        while i < a_cc[id] {
+            p = g_emit(achild[a_cs[id] + i], input, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, rid, dst, p);
+            i = i + 1;
+        }
+        return p;
+    }
+
+    if r == rid[GR_DICT] {
+        p = m_appc(dst, p, '{');
+
+        var i: i64 = 0;
+
+        while i < a_cc[id] {
+            if i > 0 {
+                p = m_appc(dst, p, ',');
+            }
+            p = g_emit(achild[a_cs[id] + i], input, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, rid, dst, p);
+            i = i + 1;
+        }
+
+        if a_part[id] == 0 {
+            p = m_appc(dst, p, '}');
+        }
+        return p;
+    }
+
+    if r == rid[GR_VALUE] {
+        if a_cc[id] > 0 {
+            return g_emit(achild[a_cs[id]], input, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, rid, dst, p);
+        }
+        return at;
+    }
+
+    // Unknown rules produce "" natively.
+    return at;
+}
+
+recursive fn g_walk(
+    id: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_rule: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_part: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    rid: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64 {
+    let tag = a_tag[id];
+
+    if tag >= 0 && tag == tid[MT_REASONING] {
+        st[MS_REAS] = m_san(reas, st[MS_REAS], input, a_toff[id], a_tlen[id], a_is[id], a_ic[id], inv);
+    }
+
+    if tag >= 0 && tag == tid[MT_CONTENT] {
+        st[MS_CONT] = m_san(cont, st[MS_CONT], input, a_toff[id], a_tlen[id], a_is[id], a_ic[id], inv);
+    }
+
+    if tag >= 0 && tag == tid[MT_TOOL] {
+        let name_id = m_find_tag(id, tid[MT_TOOL_NAME], 3, a_tag, a_cs, a_cc, achild);
+        let args_id = m_find_tag(id, tid[GT_TOOL_ARGS], 3, a_tag, a_cs, a_cc, achild);
+
+        if (name_id >= 0 && args_id >= 0) && a_part[name_id] == 0 {
+            let noff = st[MS_TCB];
+
+            st[MS_TCB] = m_app(tcb, noff, input, a_toff[name_id], a_tlen[name_id]);
+
+            var aoff: i64 = 0;
+            var alen: i64 = 0;
+
+            if a_cc[args_id] > 0 {
+                aoff = st[MS_TCB];
+                let p = g_emit(
+                    achild[a_cs[args_id]], input, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, rid, tcb, aoff);
+                alen = p - aoff;
+                st[MS_TCB] = p;
+            }
+            g_push(st, out, noff, a_tlen[name_id], aoff, alen, 0, 0);
+        }
+        // The native visit returns here: no recursion into a tool node.
+        return 0;
+    }
+
+    var i: i64 = 0;
+
+    while i < a_cc[id] {
+        g_walk(
+            achild[a_cs[id] + i], input, a_tag, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, a_is, a_ic, inv,
+            rid, tid, cont, reas, tcb, st, out);
+        i = i + 1;
+    }
+    return 0;
+}
+
+export fn peg_map_gemma4(
+    roots: const i64[:],
+    nroots: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_rule: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_part: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    rid: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64 {
+    st[MS_CONT] = 0;
+    st[MS_REAS] = 0;
+    st[MS_TCB] = 0;
+    st[MS_NCALLS] = 0;
+    out[MO_CONTENT] = 0;
+    out[MO_REASONING] = 0;
+    out[MO_NCALLS] = 0;
+
+    var i: i64 = 0;
+
+    while i < nroots {
+        g_walk(roots[i], input, a_tag, a_rule, a_toff, a_tlen, a_part, a_cs, a_cc, achild, a_is, a_ic, inv, rid, tid, cont, reas, tcb, st, out);
+        i = i + 1;
+    }
+    out[MO_CONTENT] = st[MS_CONT];
+    out[MO_REASONING] = st[MS_REAS];
+    out[MO_NCALLS] = st[MS_NCALLS];
+    // No whitespace-only reasoning drop: the subclass never calls the base
+    // from_ast, which is where that cleanup lives.
+    return st[MS_NCALLS];
+}
+
+// ---- minimax_m3: schema-container JSON ------------------------------------
+
+// First direct child with a value tag; COMMON_PEG_INVALID_AST_ID otherwise.
+fn mm_value_of(
+    id: i64,
+    a_tag: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    tid: const i64[:]) -> i64 {
+    let base = a_cs[id];
+    let n = a_cc[id];
+    var i: i64 = 0;
+
+    while i < n {
+        let c = achild[base + i];
+        let t = a_tag[c];
+
+        if t >= 0 &&
+           (t == tid[MMT_ARG_VALUE] || t == tid[MMT_ARG_STRING_VALUE] || t == tid[MMT_ARG_OBJECT] ||
+            t == tid[MMT_ARG_ARRAY]) {
+            return c;
+        }
+        i = i + 1;
+    }
+    return 0 - 1;
+}
+
+// The native helpers (value_to_json, container_to_json, member_to_json and the
+// collect pass) call each other in a cycle, which a flat port cannot express as
+// separate Goose functions without forward declarations. One recursive
+// dispatcher keeps the same call graph; the op code selects the helper.
+const MMOP_VALUE: i64 = 0;
+const MMOP_MEMBER: i64 = 1;
+const MMOP_CONTAINER: i64 = 2;
+const MMOP_ENTS: i64 = 3;
+
+// Returns the new cursor and, for MMOP_ENTS, the number of entries emitted
+// (otherwise 1 when something was written, 0 when the entry was skipped).
+recursive fn mm_node(
+    op: i64,
+    id: i64,
+    is_object: i64,
+    closed: i64,
+    emitted: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_part: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    tid: const i64[:],
+    dst: u8[:],
+    at: i64) -> i64, i64 {
+    if op == MMOP_VALUE {
+        if id < 0 {
+            return at, 0;
+        }
+        let t = a_tag[id];
+
+        if t >= 0 && t == tid[MMT_ARG_OBJECT] {
+            return mm_node(MMOP_CONTAINER, id, 1, closed, 0, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, tid, dst, at);
+        }
+
+        if t >= 0 && t == tid[MMT_ARG_ARRAY] {
+            return mm_node(MMOP_CONTAINER, id, 0, closed, 0, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, tid, dst, at);
+        }
+
+        if t >= 0 && t == tid[MMT_ARG_STRING_VALUE] {
+            var p = m_appc(dst, at, '"');
+
+            p = g_esc_inner(dst, p, input[a_toff[id] .. a_toff[id] + a_tlen[id]]);
+
+            if closed != 0 {
+                p = m_appc(dst, p, '"');
+            }
+            return p, 1;
+        }
+
+        // Numbers and booleans are written verbatim by the template.
+        return m_app(dst, at, input, a_toff[id], a_tlen[id]), 1;
+    }
+
+    if op == MMOP_MEMBER {
+        let name_id = m_find_tag(id, tid[MMT_ARG_NAME], 3, a_tag, a_cs, a_cc, achild);
+
+        if name_id < 0 {
+            return at, 0;
+        }
+        var p = g_esc_quoted(dst, at, input[a_toff[name_id] .. a_toff[name_id] + a_tlen[name_id]]);
+
+        p = m_appc(dst, p, ':');
+
+        let value_id = mm_value_of(id, a_tag, a_cs, a_cc, achild, tid);
+        let p2, w2 = mm_node(
+            MMOP_VALUE, value_id, 0, 1 - a_part[id], 0, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, tid,
+            dst, p);
+        // The member text is non-empty even when the value is missing: native
+        // then leaves a bare "name": in the object.
+        return p2, 1;
+    }
+
+    if op == MMOP_CONTAINER {
+        var want: i64 = tid[MMT_ARG];
+
+        if is_object == 0 {
+            want = tid[MMT_ARG_ITEM];
+        }
+        var p = at;
+
+        if is_object != 0 {
+            p = m_appc(dst, p, '{');
+        } else {
+            p = m_appc(dst, p, '[');
+        }
+        let p2, e2 = mm_node(
+            MMOP_ENTS, id, is_object, closed, 0, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, tid, dst, p);
+        p = p2;
+
+        if closed != 0 {
+            if is_object != 0 {
+                p = m_appc(dst, p, '}');
+            } else {
+                p = m_appc(dst, p, ']');
+            }
+        }
+        return p, e2;
+    }
+
+    // MMOP_ENTS: minimax_m3_collect order, emitted on the fly. A matching child
+    // stops the descent; a non-matching one is searched further down.
+    var p = at;
+    var e = emitted;
+    let base = a_cs[id];
+    let n = a_cc[id];
+    var want: i64 = tid[MMT_ARG];
+
+    if is_object == 0 {
+        want = tid[MMT_ARG_ITEM];
+    }
+    var i: i64 = 0;
+
+    while i < n {
+        let c = achild[base + i];
+
+        if want >= 0 && a_tag[c] == want {
+            var q = p;
+
+            if e > 0 {
+                q = m_appc(dst, q, ',');
+            }
+            var w: i64 = 0;
+
+            if is_object != 0 {
+                let q2, w2 = mm_node(
+                    MMOP_MEMBER, c, 1, closed, 0, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, tid, dst, q);
+
+                q = q2;
+                w = w2;
+            } else {
+                let vid = mm_value_of(c, a_tag, a_cs, a_cc, achild, tid);
+
+                if vid >= 0 {
+                    let q2, w2 = mm_node(
+                        MMOP_VALUE, vid, 0, 1 - a_part[c], 0, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild,
+                        tid, dst, q);
+
+                    q = q2;
+                    w = w2;
+                }
+            }
+
+            if w != 0 {
+                p = q;
+                e = e + 1;
+            }
+        } else {
+            let p2, e2 = mm_node(
+                MMOP_ENTS, c, is_object, closed, e, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, tid, dst,
+                p);
+
+            p = p2;
+            e = e2;
+        }
+        i = i + 1;
+    }
+    return p, e;
+}
+
+recursive fn mm_walk(
+    id: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_part: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64 {
+    let tag = a_tag[id];
+
+    if tag >= 0 && tag == tid[MT_REASONING] {
+        st[MS_REAS] = m_san(reas, st[MS_REAS], input, a_toff[id], a_tlen[id], a_is[id], a_ic[id], inv);
+    }
+
+    if tag >= 0 && tag == tid[MT_CONTENT] {
+        st[MS_CONT] = m_san(cont, st[MS_CONT], input, a_toff[id], a_tlen[id], a_is[id], a_ic[id], inv);
+    }
+
+    if tag >= 0 && tag == tid[MT_TOOL] {
+        let name_id = m_find_tag(id, tid[MT_TOOL_NAME], 3, a_tag, a_cs, a_cc, achild);
+
+        if name_id >= 0 {
+            let noff = st[MS_TCB];
+
+            st[MS_TCB] = m_app(tcb, noff, input, a_toff[name_id], a_tlen[name_id]);
+
+            let aoff = st[MS_TCB];
+            let p, e = mm_node(
+                MMOP_CONTAINER, id, 1, 1 - a_part[id], 0, input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, tid,
+                tcb, aoff);
+
+            st[MS_TCB] = p;
+            g_push(st, out, noff, a_tlen[name_id], aoff, p - aoff, 0, 0);
+        }
+        // The native visit returns here: no recursion into a tool node.
+        return 0;
+    }
+
+    var i: i64 = 0;
+
+    while i < a_cc[id] {
+        mm_walk(
+            achild[a_cs[id] + i], input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, a_is, a_ic, inv, tid, cont,
+            reas, tcb, st, out);
+        i = i + 1;
+    }
+    return 0;
+}
+
+export fn peg_map_minimax(
+    roots: const i64[:],
+    nroots: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_part: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64 {
+    st[MS_CONT] = 0;
+    st[MS_REAS] = 0;
+    st[MS_TCB] = 0;
+    st[MS_NCALLS] = 0;
+    out[MO_CONTENT] = 0;
+    out[MO_REASONING] = 0;
+    out[MO_NCALLS] = 0;
+
+    var i: i64 = 0;
+
+    while i < nroots {
+        mm_walk(roots[i], input, a_tag, a_toff, a_tlen, a_part, a_cs, a_cc, achild, a_is, a_ic, inv, tid, cont, reas, tcb, st, out);
+        i = i + 1;
+    }
+    out[MO_CONTENT] = st[MS_CONT];
+    out[MO_REASONING] = st[MS_REAS];
+    out[MO_NCALLS] = st[MS_NCALLS];
+    return st[MS_NCALLS];
+}
