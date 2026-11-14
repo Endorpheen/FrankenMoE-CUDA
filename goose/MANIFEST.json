@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T18:16:02.127336+00:00",
+  "updated_at": "2026-11-14T18:18:37.183126+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -75,6 +75,18 @@
       "status": "ported",
       "sha256": "ee56f4e479dd05b65f57589ca4916767d923d13e73187087a95ab27416bfd70e",
       "gate": "accepted in P7-09 EXP493, byte-identical copy"
+    },
+    {
+      "goose": "server/http-url-policy.goose",
+      "native": "common/http.h",
+      "native_targets": [
+        "common/http.h"
+      ],
+      "experiment": "EXP-2026-11-14-578-p7-11-http-url",
+      "task": "",
+      "status": "ported",
+      "sha256": "6b063a235bafa008828a3acb8e0d94e21a82663120a6066bc37c313d4a53c16c",
+      "gate": "20000 cases / 0 diffs, 14/14 mutations"
     },
     {
       "goose": "model/quant-allow.goose",
@@ -10897,6 +10909,28 @@
       "task": "P7-08",
       "status": "slice",
       "sha256": "e98a2a7ce3f9d58f82e2686051e02f8f7ece43fe51942f9946d4466b11bfaaaa"
+    },
+    {
+      "goose": "cpu/qwen35moe/base/model_graph.goose",
+      "native": "src/models/qwen35moe.c",
+      "native_targets": [
+        "src/models/qwen35moe.c"
+      ],
+      "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
+      "task": "",
+      "status": "slice",
+      "sha256": "8c83ca66a50322a20c76a13b55038b87646785d7fb7973531bdac15f70bd5fcc"
+    },
+    {
+      "goose": "cpu/qwen35moe/qwen35moe.goose",
+      "native": "src/models/qwen35moe.c",
+      "native_targets": [
+        "src/models/qwen35moe.c"
+      ],
+      "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
+      "task": "",
+      "status": "slice",
+      "sha256": "38c915be90c822a9962dac8fe201892b918de0e3ece6abcf035374ebcd1d5a6a"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",

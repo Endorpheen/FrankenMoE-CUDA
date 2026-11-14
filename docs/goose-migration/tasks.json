@@ -2000,7 +2000,7 @@
       "id": "P7-11",
       "phase": "P7",
       "title": "Port download,HF cache,HTTP,logging and process helpers",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "common/download.cpp",
         "common/hf-cache.cpp",
@@ -2011,19 +2011,24 @@
         "common/debug.cpp"
       ],
       "acceptance": "Owned network/cache/resume/logging/console/subprocess decisions Goose; OS/TLS/libcurl primitives explicitly imported; no downloads or destructive cache work during migration tests.",
-      "evidence": "",
+      "evidence": " 2026-11-14 S1 (EXP578, experiments/EXP-2026-11-14-578-p7-11-http-url): the HTTP URL and authority policy of common/http.h is Goose - scheme detection, userinfo split, path offsets with the invented slash, bracketed IPv6 statuses, stoi-compatible port parsing and defaults, the full loopback rule (including the native zero-shape and .localhost quirks), NO_PROXY matching and the masked URL renderer. Gate: one generator drives the header-only native probe and the Goose driver over 20000 cases; diff 0. Mutations 14/14 in two halves. Divergence found: goose/server/prerouting.goose still uses its own origin_is_localhost and differs on six corpus rows; replacing it needs the CORS regression and is a separate integration step.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
       "remaining": [
-        "model file discovery",
-        "HF download and cache",
-        "the model loader itself"
+        "HF cache naming",
+        "download selection",
+        "log policy (plus the debug filter/NaN-abort part)",
+        "console line editing",
+        "model file discovery (shared with the loader requirement)",
+        "HF download and cache wiring (shared with the loader requirement)"
       ],
-      "coverage_doc": "docs/goose-migration/P8-01-CLOSURE.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "coverage_doc": "docs/goose-migration/P7-11-COVERAGE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "slices_total": 5,
+      "slices_done": 1
     },
     {
       "id": "P7-12",
@@ -4257,6 +4262,10 @@
     {
       "event": "P7-04 first slice (EXP576): the quantization allow-cuts, tensor-type overrides and the regex subset join the canon as goose/model/quant-allow.goose with a 73-line differential and 16/16 mutations.",
       "checkpoint": "19e10cdd"
+    },
+    {
+      "event": "P7-11 first slice (EXP578): the HTTP URL and authority policy becomes canonical goose/server/http-url-policy.goose with a 20000-case differential and 14/14 mutations.",
+      "checkpoint": "1adaccc7"
     }
   ],
   "batches": [
@@ -5147,18 +5156,18 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T18:15:58.904806+00:00",
+  "updated_at": "2026-11-14T18:18:33.916343+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
     "PARTIAL": 1
   },
   "work_front": {
-    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06 and P7-04.",
-    "slices_total": 53,
-    "slices_done": 39,
+    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04 and P7-11.",
+    "slices_total": 58,
+    "slices_done": 40,
     "slices_in_progress": 0,
-    "slices_remaining": 14
+    "slices_remaining": 18
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

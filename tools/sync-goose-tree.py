@@ -44,6 +44,8 @@ CANONICAL_SOURCES = [
      "common/json.cpp (parser)", "accepted in P7-09 EXP493"),
     ("cli/jsonparse.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",
      "common/json.cpp (CLI protocol dependency)", "accepted in P7-09 EXP493, byte-identical copy"),
+    ("server/http-url-policy.goose", "EXP-2026-11-14-578-p7-11-http-url", "source/http-url-policy.goose",
+     "common/http.h", "20000 cases / 0 diffs, 14/14 mutations"),
     ("model/quant-allow.goose", "EXP-2026-11-14-576-p7-04-quant-allow", "source/quant-allow.goose",
      "llama-quant.cpp (allow-cuts and type overrides)", "73 lines / 0 diffs, 16/16 mutations"),
     ("model/gguf-metadata.goose", "EXP-2026-11-14-571-p7-02-gguf-metadata", "source/s1_metadata.goose",

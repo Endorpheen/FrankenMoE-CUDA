@@ -1,0 +1,32 @@
+# EXP574 S1 representative pairs, native oracle (build/native.out, 20000 cases)
+# fields: i|status|scheme|user|pass|host|port|path|format_host|masked|loopback|bypass|url|no_proxy|bypass_host
+# label<TAB>line
+default port 80	0|0|http|||example.com|80|/|example.com|http://example.com/|0|0|http://example.com||example.com
+default port 443	1|0|https|||example.com|443|/|example.com|https://example.com/|0|0|https://example.com||example.com
+explicit port 65536	696|0|http||||65536|/||http:///|0|1|http://@:65536|.example.com|x.sub.example.com
+negative port -1	117|0|http||||-1|/||http:///|0|0|http://@:-1/|ample.com|other
+port with trailing text	130|0|http||||80|/x||http:///x|0|0|http://@:80x/x|ample.com|other
+hex-like port	143|0|http||||0|/a/b?q=1||http:///a/b?q=1|0|0|http://@:0x10/a/b?q=1|localhost:8080|x.sub.example.com
+user and password	14|0|http|u|p|localhost|80|/|localhost|http://****:****@localhost/|1|0|http://u:p@localhost:80||example.com
+user empty password	7|0|https|u||example.com|443|/|example.com|https://****:****@example.com/|0|0|https://u@example.com||example.com
+bracketed IPv6	468|0|http|||::1|80|/x|[::1]|http://[::1]/x|1|0|http://[::1]/x|example.com|a.b
+path with query	54|0|http|u||128.0.0.1|65535|/a/b?q=1|128.0.0.1|http://****:****@128.0.0.1/a/b?q=1|0|0|http://u@128.0.0.1:65535/a/b?q=1|example.com|ample.com
+invented path slash	2|0|http|||example.com|80|/|example.com|http://example.com/|0|0|http://example.com||example.com
+status 1 no scheme	58|1|||||0||||0|0|u:p@::1:65535/a/b?q=1|.example.com|ample.com
+status 2 bad scheme	32|2|||||0||||0|1|ftp://@@127.0.0.1:443/|*|sub.example.com
+status 3 broken bracket	87|3|||||0||||0|1|http://[::1:abc| localhost , 127.0.0.1 |LOCALHOST
+status 4 non-numeric port	551|4|||||0||||0|0|http://@:abc/x|localhost:8080|Sub.Example.Com
+status 4 port overflow	406|4|||||0||||0|1|http://@:99999999999/a/b?q=1|sub.example.com, other|other
+loopback localhost	11|0|https|u||localhost|443|/|localhost|https://****:****@localhost/|1|0|https://u@localhost||example.com
+loopback 127.0.0.1	22|0|http|u|p:q|127.0.0.1|80|/|127.0.0.1|http://****:****@127.0.0.1/|1|1|http://u:p:q@127.0.0.1:80/|*|example.com
+loopback 127.1.2.3	36|0|http|u||127.1.2.3|443|/x|127.1.2.3|http://****:****@127.1.2.3/x|1|1|http://u:@127.1.2.3:443/x|*|sub.example.com
+loopback trailing dot	330|0|http|u||127.0.0.1.|80|/?|127.0.0.1.|http://****:****@127.0.0.1./?|0|1|http://u:@127.0.0.1.:80/?|ample.com|ample.com
+loopback a.localhost	290|0|http|u||a.localhost|80|/x|a.localhost|http://****:****@a.localhost/x|1|0|http://u:@a.localhost:80x/x| localhost , 127.0.0.1 |example.com
+not loopback .localhost	297|0|https|||.localhost|80|/x|.localhost|https://.localhost/x|0|0|https://.localhost:80x/x| localhost , 127.0.0.1 |example.com
+loopback 0.0.0.0	319|0|https|u|p:q|0.0.0.0|443|/a/b?q=1|0.0.0.0|https://****:****@0.0.0.0/a/b?q=1|1|1|https://u:p:q@0.0.0.0/a/b?q=1|EXAMPLE.COM|sub.example.com
+not loopback 128.0.0.1	48|0|http|||128.0.0.1|0|/x|128.0.0.1|http://128.0.0.1/x|0|0|http://128.0.0.1:0/x|example.com|ample.com
+not loopback 127.0.0.1.5	165|0|https|u||127.0.0.1.5|443|/?|127.0.0.1.5|https://****:****@127.0.0.1.5/?|0|0|https://u:@127.0.0.1.5/?|,,|b
+masked credentials	8|0|http|u||example.com|80|/|example.com|http://****:****@example.com/|0|0|http://u@example.com||example.com
+bypass star	19|0|https|u|p|localhost|80|/|localhost|https://****:****@localhost/|1|1|https://u:p@localhost:80/|*|example.com
+bypass leading dot	266|0|http||||80|/||http:///|0|1|http://@:+80|.example.com|Sub.Example.Com
+no bypass partial label	114|3|||||0||||0|0|http://[::1:+80/|ample.com|127.0.0.1
