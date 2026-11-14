@@ -143,7 +143,13 @@ carry different bodies under one name. Status:
   spec-decode-decisions): 1199 specializations, no new collisions;
 - `tools/check-composition.sh` composes the nine accepted sets (server, quant,
   GGUF, P9-06, runtime+schema, app, core, core2, full) and runs `goose check` on
-  each; it is the fast smoke test for the composition step.
+  each; it is the fast smoke test for the composition step;
+- `tools/build-main-runtime.sh` is the growing main build: it adds every
+  accepted module that shares one unit, then typechecks, generates C, compiles
+  an object and rejects duplicate globals. Today it holds 29 modules and 2196
+  specializations (15.8 MB C, 308 globals, 0 duplicates, 134 extern entry
+  points). Its internal name collisions are scoped per module in the composer
+  (quant-weighted's helper families join the qw_ prefix).
 
 ## Slice plan
 

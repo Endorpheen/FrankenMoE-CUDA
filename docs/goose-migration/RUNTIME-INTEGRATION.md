@@ -33,10 +33,19 @@ shared object at `-O2 -fPIC`, link a smoke host, and prove there are no duplicat
 symbols and that every set loads. Sets today: server (6 modules), quantizer (6),
 GGUF (4), P9-06 (3), runtime+schema (2), app (9) and core (5).
 
-The full unit (core + app, 14 modules) is the first end-to-end check: 1678
-specializations, 35 164 lines, 14.1 MB of generated C, compiles at -O0 in 13 s
-into a 6.8 MB object with 201 global symbols and no duplicate definitions. It
-still cannot link because the native helper entry points are extern symbols
+The growing main build is `tools/build-main-runtime.sh`. It composes every
+accepted module that shares one unit, typechecks, generates C, compiles an
+object and fails on any duplicate global symbol. Current state: 29 modules,
+2196 specializations, 15.8 MB of C, 3 s to typecheck and 13 s to compile,
+308 global symbols, 0 duplicates, 134 extern helper entry points.
+
+The build holds the model graph/loader/file-io/arch-registry, the six quantizer
+modules plus weighted, the four GGUF modules, the Jinja runtime, the schema
+converter, config validate/resolve, CLI protocol, metrics, spec-decode
+decisions, the five server modules and the two chat modules. Per-architecture
+model builders stay out by design: they are alternatives, not one unit.
+
+It still cannot link because the native helper entry points are extern symbols
 supplied by the per-slice test fixtures; wiring them to the runtime is S1 work.
 This step touches no production file.
 
