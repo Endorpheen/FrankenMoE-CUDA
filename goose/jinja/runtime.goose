@@ -6055,3 +6055,104 @@ export fn chat_message_json(
     arr_push(A, st, arr, obj);
     return json_into(arr, 0, -1, ", ", ": ", A, B, F, st, out, 0, E);
 }
+
+fn bytes_is(b: const u8[:], lit: const u8[:]) -> bool {
+    if b.len != lit.len {
+        return false;
+    }
+    var i: i64 = 0;
+
+    while i < b.len {
+        if b[i] != lit[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+// Chat-layer role workarounds: developer -> system, and the system prompt is
+// merged into the next message (or dropped) when the template caps do not
+// support the system role.
+export fn chat_normalize(
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    st: i64[:],
+    blob: const u8[:],
+    roles_off: i64[:],
+    roles_len: i64[:],
+    cont_off: i64[:],
+    cont_len: i64[:],
+    n: i64,
+    supports_system: i64,
+    out: u8[:]) -> i64 {
+    reset_io(A, st, 0);
+    var start: i64 = 0;
+    var effective: i64 = n;
+    var merged: bool = false;
+
+    if supports_system == 0 && n > 0 {
+        let r0raw = blob[roles_off[0] .. roles_off[0] + roles_len[0]];
+
+        if bytes_is(r0raw, "system") || bytes_is(r0raw, "developer") {
+            if n > 1 {
+                merged = true;
+                effective = n - 1;
+            } else {
+                effective = 0;
+            }
+            start = 1;
+        }
+    }
+    let arr = arr_new(A, F, st);
+    var ri: i64 = 0;
+
+    while ri < effective {
+        arr_push(A, st, arr, 0);
+        ri = ri + 1;
+    }
+    let abase = pool(A, st) + vcs(A, st, arr);
+    var i: i64 = 0;
+
+    while i < effective {
+        let src = start + i;
+        var role = blob[roles_off[src] .. roles_off[src] + roles_len[src]];
+
+        if bytes_is(role, "developer") {
+            role = "system";
+        }
+        var content = blob[cont_off[src] .. cont_off[src] + cont_len[src]];
+
+        if i == 0 && merged {
+            let c0 = blob[cont_off[0] .. cont_off[0] + cont_len[0]];
+            var p: i64 = 0;
+            var k: i64 = 0;
+
+            while k < c0.len {
+                out[p] = c0[k];
+                p = p + 1;
+                k = k + 1;
+            }
+            out[p] = 10;
+            p = p + 1;
+            k = 0;
+
+            while k < content.len {
+                out[p] = content[k];
+                p = p + 1;
+                k = k + 1;
+            }
+            content = out[0..p];
+        }
+        let obj = vnew(A, F, st, V_OBJECT);
+        obj_key(A, st, obj, mk_str(A, F, B, st, "role"));
+        obj_key(A, st, obj, mk_str(A, F, B, st, "content"));
+        obj_val(A, st, obj, mk_str(A, F, B, st, role));
+        obj_val(A, st, obj, mk_str(A, F, B, st, content));
+        A[abase + i] = obj;
+        i = i + 1;
+    }
+    return json_into(arr, 0, -1, ", ", ": ", A, B, F, st, out, 0, E);
+}
