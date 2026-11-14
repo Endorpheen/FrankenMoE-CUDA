@@ -75,6 +75,30 @@ Checked on 2026-11-15, all against the current main build:
 Integrating an alternative is a merge decision (pick a body, delete the other),
 not a composition step; it is out of scope until a stage needs that subsystem.
 
+### S1.1 — proven on the schema converter (EXP626, isolated)
+
+The staged build is reproduced in
+`experiments/EXP-2026-11-15-626-s1-1-apex-staging`: a CPU-only copy of the
+runtime tree, the Goose schema converter generated from
+`goose/json/format-grammar.goose`, and a build flag `FG_GOOSE_JSON_SCHEMA` that
+selects the Goose path while the native one stays compiled.
+
+| check | result |
+|---|---|
+| base build (pristine llama.cpp, CPU only) | built, 74 s |
+| staged build, flag OFF | built, 57 s |
+| staged build, flag ON | built, 57 s |
+| smoke gate, 30 schemas / 182 rules | OFF 30/30, ON 30/30, 0 failures |
+| Goose actually dispatched | `goose_calls=30` on ON, `0` on OFF |
+| grammar text base vs OFF vs ON | identical (242 lines) |
+| `json_schema_convert` definitions | exactly 1 in the ON library, 0 in OFF |
+
+The switch is therefore a build flag, not a runtime branch; the off path is the
+production one. The remaining seam is the host bridge that walks a JSON document
+into the flat node table the converter takes (`$ref`, `additionalProperties`,
+exclusive bounds); it is still native and is the next S1.1 step. No model was
+run and no production file was touched.
+
 ### S1 — leaf modules with a native oracle
 
 Swap one leaf at a time into a copy of the runtime build, starting where the

@@ -1,0 +1,5 @@
+schema_build         defs=1
+grammar_text         defs=1
+conversion_failed    defs=1
+conversion_warning   defs=1
+json_schema_convert  defs=1
