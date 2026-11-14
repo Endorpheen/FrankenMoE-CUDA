@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T22:11:57.463688+00:00",
+  "updated_at": "2026-11-14T22:29:26.551730+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -783,6 +783,18 @@
       "status": "ported",
       "sha256": "58634e3171fe3d65e05f4e7c2ab7c1709d0a91ac42c838f7231c0d7441bab564",
       "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789, typed content 436/797, media content 445/806, message fields 452/813, tool schemas 460/821, tools parse 471/832, tools decode 476/842, strict json 494/860, format single 502/868, real templates 507/878, slice 526/916, object literal 532/928, modern templates 561/986, reasoning 570/1002, 2026 templates 578/1018, strftime 587/1036, marking 593/1048, propagation 607/1076, parts 618/1098, parse entry 628/1108, peg builder 646/1126, chat grammar 662/1142, permute 672/1152, base mapper 16/87, visited 678/1158, subclass mappers 13/65, legacy 75/75, typed 24/24, delimiters 36/1452, streaming 10/271, diff 10/106, mono 10/273, contract 13/61, caller 12/12, autoparser 36/36, grammar 10/10, tools 8/8, tokens 6/6, tool-builders 13/13, parse 9/9, parsers 18/99"
+    },
+    {
+      "goose": "cpu/goose-meta-backend.goose",
+      "native": "ggml/src/ggml-backend-meta.cpp, ggml-threading.cpp, ggml-cpu.c, runtime/core/src/config.cpp",
+      "native_targets": [
+        "ggml/src/ggml-backend-meta.cpp, ggml-threading.cpp, ggml-cpu.c, runtime/core/src/config.cpp"
+      ],
+      "experiment": "EXP-2026-11-15-617-p4-12-meta-backend",
+      "task": "",
+      "status": "ported",
+      "sha256": "81a2e06bfc8d700e111a2f4177d37cbcc4fdc61d23672ade04eafae2170f2ade",
+      "gate": "67 cases / 0 failures, 12/12 mutations"
     },
     {
       "goose": "cpu/goose-runtime/allocator-coalesce/kernel-v1.goose",

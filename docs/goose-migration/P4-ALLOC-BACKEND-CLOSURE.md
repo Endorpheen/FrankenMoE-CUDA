@@ -57,6 +57,28 @@ Provider implementations (CUDA/CPU kernels, meta backend) are not this
 abstraction: they are external primitives or the P4-12 meta item. Source
 removal remains P2-16/P3-20.
 
+## P4-12 -- meta backend, registry identity and threading (EXP617)
+
+Three slices are now Goose in `goose/cpu/goose-meta-backend.goose`:
+
+| slice | content | gate |
+|---|---|---|
+| S1 meta device and buffer type | 13 exports: names/descriptions, memory sums, caps AND (seed 17), device type, supports_op/supports_buft, alignment=max, max_size=min, alloc_size=max, is_host=all, host buffer type resolution | part of 67/67 |
+| S2 registry identity | key = ordered device list + callback + userdata, insert-or-find slot, per-slot buffer type | part of 67/67 |
+| S3 threading and config | params_default/match, cpumask_valid/next (512 wrap), plan clamp, n_threads>0, io_threads in [1,8] | part of 67/67 |
+
+The oracle is the real meta backend over synthetic ggml devices,
+`ggml_threadpool_params_*` from libggml-base and `bmoe::validate`; only three
+static helpers are transcribed, and the fixture says so. Mutations 12/12 in two
+halves. The port reproduces two upstream defects instead of hiding them: meta
+device names are always `Meta()` because the constructors read a moved-from
+vector, and the meta device always reports host_buffer/from_host_ptr/events as
+false.
+
+Still native: graph compute and split state, real allocation/copy, backend init,
+events, comm, affinity syscalls and thread lifecycles. The optimizer
+(`ggml-opt.cpp`) is the fourth slice and stays open, so P4-12 is PARTIAL at 3/4.
+
 ## Verdict
 
 P4-05, P4-06 and P4-07 are closed against their criteria. Their earlier

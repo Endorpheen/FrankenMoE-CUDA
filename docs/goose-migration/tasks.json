@@ -1302,24 +1302,26 @@
       "id": "P4-12",
       "phase": "P4",
       "title": "Port meta backend,backend optimization and threading services",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "ggml/src/ggml-backend-meta.cpp",
         "ggml/src/ggml-opt.cpp",
         "ggml/src/ggml-threading.cpp"
       ],
       "acceptance": "All meta/planner/optimizer helpers Goose; OS primitive boundary minimal; callback reentrancy and thread lifetimes checked.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP617 (experiments/EXP-2026-11-15-617-p4-12-meta-backend): meta device and buffer-type policy (13 exports: names, memory sums, caps AND, device type, supports_op/buft, alignment=max, max_size=min, alloc_size=max, is_host=all, host buffer type resolution), the registry identity (key = ordered device list + callback + userdata, insert-or-find slot, per-slot buffer type) and threading/config acceptance (params_default/match, cpumask_valid/next with the 512 wrap, plan clamp, n_threads>0, io_threads in [1,8]) are Goose. Gate 67/67 against the real meta backend over synthetic ggml devices, ggml_threadpool_params_* from libggml-base and bmoe::validate; mutations 12/12 in halves. Reproduces two upstream defects: meta names are always \"Meta()\" because the constructors read a moved-from vector, and the meta device always reports host_buffer/from_host_ptr/events as false. Boundaries: graph compute, split state, real allocation/copy, init, events, comm, affinity syscalls and thread lifecycles stay native; ggml-opt.cpp is a separate slice.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B3",
       "remaining": [
-        "meta backend and diagnostics: the provider-side meta item named when P4-05/06/07 were closed"
+        "ggml-opt.cpp optimizer and the backend-optimization decisions (separate slice)"
       ],
       "coverage_doc": "docs/goose-migration/P4-ALLOC-BACKEND-CLOSURE.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "slices_total": 4,
+      "slices_done": 3
     },
     {
       "id": "P4-13",
@@ -4431,6 +4433,10 @@
     {
       "event": "P7-04 closed: the weighted (imatrix) quantizers (EXP616) complete 8 of 8 slices with 28308 cases / 13M comparisons and 12/12 mutations.",
       "checkpoint": "129fbd88"
+    },
+    {
+      "event": "P4-12: meta backend, registry identity and threading/config decisions ported (EXP617, 67/67, 12/12); the optimizer slice is open.",
+      "checkpoint": "22a713ba"
     }
   ],
   "batches": [
@@ -5321,18 +5327,18 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T22:11:54.166786+00:00",
+  "updated_at": "2026-11-14T22:29:39.430865+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
     "PARTIAL": 1
   },
   "work_front": {
-    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09 and P8-07.",
-    "slices_total": 92,
-    "slices_done": 91,
+    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07 and P4-12.",
+    "slices_total": 96,
+    "slices_done": 94,
     "slices_in_progress": 0,
-    "slices_remaining": 1
+    "slices_remaining": 2
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

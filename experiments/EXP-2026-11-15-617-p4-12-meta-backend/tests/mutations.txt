@@ -1,0 +1,14 @@
+M01 half=A slice=mb KILLED    s1.name.one                      meta device name drops the M prefix
+M02 half=A slice=mb KILLED    s1.caps.and                      caps seed forgets the async flag
+M03 half=A slice=mb KILLED    s1.memory.free                   free memory sum starts at -1
+M04 half=A slice=mb KILLED    s1.buft.alignment                alignment takes the minimum instead of the maximum
+M05 half=A slice=mb KILLED    s1.buft.max_size.min             max buffer size takes the maximum instead of the minimum
+M06 half=A slice=mb KILLED    s1.host_buft.mismatch            host buffer type ignores a mismatching member
+half A: killed 6/6
+M07 half=B slice=mb KILLED    s1.supports_buft.reversed        supports_buft ignores device order
+M08 half=B slice=th KILLED    s3.params_default.n=1            params_default polls at 0 instead of 50
+M09 half=B slice=th KILLED    s3.cpumask_next.wrap_skip        cpumask wrap resets the index to 0
+M10 half=B slice=th KILLED    s3.plan_threads.case2            plan clamp no longer applied
+M11 half=B slice=rt KILLED    s3.config.io_threads=8           io_threads upper bound drops to 7
+M12 half=B slice=rg KILLED    s2.device.other_ud               registry key drops the userdata check
+half B: killed 6/6
