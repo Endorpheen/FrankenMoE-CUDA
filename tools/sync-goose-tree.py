@@ -66,6 +66,8 @@ CANONICAL_SOURCES = [
      "src/llama-adapter.cpp (LoRA manifest)", "26 cases / 139 values / 0 failures, 12/12 mutations"),
     ("model/control-vectors.goose", "EXP-2026-11-14-582-p6-09-control-vectors", "source/cvec.goose",
      "src/llama-adapter.cpp (control vectors)", "10 cases / 2447 values / 0 failures, 16/16 mutations"),
+    ("model/quant-rows.goose", "EXP-2026-11-14-603-p7-04-quant-rows", "source/quant-rows.goose",
+     "ggml/src/ggml-quants.c (q4_0/q4_1/q5_0/q5_1/q8_0/q1_0/q2_0)", "1798 cases / 441986 bytes / 0 failures, 12/12 mutations"),
     ("model/quant-types.goose", "EXP-2026-11-14-581-p7-04-quant-types", "source/quant.goose",
      "llama-quant.cpp (type selection and imatrix flags)", "734 cases / 90461 values / 0 failures, 12/12 mutations"),
     ("model/quant-allow.goose", "EXP-2026-11-14-576-p7-04-quant-allow", "source/quant-allow.goose",
