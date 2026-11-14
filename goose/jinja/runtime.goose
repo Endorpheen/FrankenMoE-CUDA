@@ -6441,6 +6441,8 @@ export fn chat_normalize(
     roles_len: i64[:],
     cont_off: i64[:],
     cont_len: i64[:],
+    reas_off: i64[:],
+    reas_len: i64[:],
     n: i64,
     supports_system: i64,
     out: u8[:]) -> i64 {
@@ -6502,11 +6504,24 @@ export fn chat_normalize(
             }
             content = out[0..p];
         }
+        var has_reas: bool = false;
+
+        if reas_len.len > src && reas_len[src] > 0 {
+            has_reas = true;
+        }
         let obj = vnew(A, F, st, V_OBJECT);
         obj_key(A, st, obj, mk_str(A, F, B, st, "role"));
         obj_key(A, st, obj, mk_str(A, F, B, st, "content"));
+
+        if has_reas {
+            obj_key(A, st, obj, mk_str(A, F, B, st, "reasoning_content"));
+        }
         obj_val(A, st, obj, mk_str(A, F, B, st, role));
         obj_val(A, st, obj, mk_str(A, F, B, st, content));
+
+        if has_reas {
+            obj_val(A, st, obj, mk_str(A, F, B, st, blob[reas_off[src] .. reas_off[src] + reas_len[src]]));
+        }
         A[abase + i] = obj;
         i = i + 1;
     }
