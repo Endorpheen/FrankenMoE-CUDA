@@ -465,59 +465,81 @@ def zeros(n):
     return ", ".join(["0"] * n)
 
 
-def go_join(entries):
-    """Goose statements that build a 0xFF-joined string blob and its count."""
-    lines = []
-    if not entries:
-        return lines, "0", '""'
-    lines.append("var b0: u8[256] = [%s];" % zeros(256))
-    lines.append("var b0p: i64 = 0;")
-    for s in entries:
-        lines.append('b0p = sc_puts(b0, b0p, "%s");' % s.replace('"', '\\"'))
-        lines.append("b0[b0p] = 255;")
-        lines.append("b0p = b0p + 1;")
-    return lines, str(len(entries)), "b0[0..b0p]"
+def go_text(text):
+    """Declare the value buffer and copy a string into it."""
+    lines = ["var tv: u8[256] = [%s];" % zeros(256), "var tl: i64 = 0;"]
+    if text:
+        lines.append('tl = sc_puts(tv, 0, "%s");' % text.replace('"', '\\"'))
+    return lines, "tv[0..tl]"
+
+
+def go_blob(items):
+    """Declare the value buffer and fill it with 0xFF-joined strings."""
+    lines = ["var tv: u8[256] = [%s];" % zeros(256), "var tl: i64 = 0;"]
+    for s in items:
+        lines.append('tl = sc_puts(tv, tl, "%s");' % s.replace('"', '\\"'))
+        lines.append("tv[tl] = 255;")
+        lines.append("tl = tl + 1;")
+    return lines, "tv[0..tl]"
 
 
 def go_entry(e):
+    """Returns (row/key/k/iv/fv, build lines, error key).
+
+    The value text is always passed as a mutable slice of one local buffer:
+    an export fn gets one concrete signature, so a literal and a slice in the
+    same call site would be two specialisations.
+    """
     k = e[0]
     if k == "i":
-        return ['sc_find("%s")' % e[1], "0", str(e[2]), "0.0", '""'], [], None
+        lines, txt = go_text("")
+        return ['schema_find("%s")' % e[1], "0", str(e[2]), "0.0", txt], lines, None
     if k == "f":
-        return ['sc_find("%s")' % e[1], "1", "0", repr(float(e[2])), '""'], [], None
+        lines, txt = go_text("")
+        return ['schema_find("%s")' % e[1], "1", "0", repr(float(e[2])), txt], lines, None
     if k == "b":
-        return ['sc_find("%s")' % e[1], "2", str(e[2]), "0.0", '""'], [], None
+        lines, txt = go_text("")
+        return ['schema_find("%s")' % e[1], "2", str(e[2]), "0.0", txt], lines, None
     if k == "null":
-        return ['sc_find("%s")' % e[1], "7", "0", "0.0", '""'], [], None
+        lines, txt = go_text("")
+        return ['schema_find("%s")' % e[1], "7", "0", "0.0", txt], lines, None
     if k == "s":
-        return ['sc_find("%s")' % e[1], "3", "0", "0.0", '"%s"' % e[2].replace('"', '\\"')], [], None
+        lines, txt = go_text(e[2])
+        return ['schema_find("%s")' % e[1], "3", "0", "0.0", txt], lines, None
     if k == "arr":
-        lines, n, blob = go_join(e[2])
-        return ['sc_find("%s")' % e[1], "4", n, "0.0", blob], lines, None
+        lines, txt = go_blob(e[2])
+        return ['schema_find("%s")' % e[1], "4", str(len(e[2])), "0.0", txt], lines, None
     if k == "arrnum":
-        return ['sc_find("%s")' % e[1], "5", "0", "0.0", '""'], [], None
+        lines, txt = go_text("")
+        return ['schema_find("%s")' % e[1], "5", "0", "0.0", txt], lines, None
     if k == "obj":
-        return ['sc_find("%s")' % e[1], "6", "0", "0.0", '""'], [], None
+        lines, txt = go_text("")
+        return ['schema_find("%s")' % e[1], "6", "0", "0.0", txt], lines, None
     if k == "lora":
-        ids = ",".join(str(x) for x in e[1])
-        return ['sc_find("lora")', "4", str(len(e[1])), "0.0", '"%s"' % ids], [], None
+        lines, txt = go_text(",".join(str(x) for x in e[1]))
+        return ['schema_find("lora")', "4", str(len(e[1])), "0.0", txt], lines, None
     if k == "lora_bad":
-        return ['sc_find("lora")', "5", "0", "0.0", '""'], [], None
+        lines, txt = go_text("")
+        return ['schema_find("lora")', "5", "0", "0.0", txt], lines, None
     if k == "schema":
         js, gr, tc, gtxt = e[1], e[2], e[3], e[4]
         key = "json_schema" if js else "grammar"
         flags = js | (gr << 1) | (tc << 2)
-        return ['sc_find("%s")' % key, "8", str(flags), "0.0",
-                '"%s"' % gtxt.replace('"', '\\"')], [], None
+        lines, txt = go_text(gtxt)
+        return ['schema_find("%s")' % key, "8", str(flags), "0.0", txt], lines, None
     if k == "nested":
         sub = e[1]
         if sub == "b":
-            return ["3", "10" if e[2] else "11", "0", "0.0", '""'], [], None
+            lines, txt = go_text("")
+            return ["3", "10" if e[2] else "11", "0", "0.0", txt], lines, None
         if sub == "null":
-            return ["3", "12", "0", "0.0", '""'], [], None
+            lines, txt = go_text("")
+            return ["3", "12", "0", "0.0", txt], lines, None
         if sub == "s":
-            return ["3", "13", "0", "0.0", '"%s"' % e[2]], [], "include_usage"
-        return ["3", "14", "0", "0.0", '""'], [], None
+            lines, txt = go_text(e[2])
+            return ["3", "13", "0", "0.0", txt], lines, "include_usage"
+        lines, txt = go_text("")
+        return ["3", "14", "0", "0.0", txt], lines, None
     raise SystemExit("bad entry " + k)
 
 
@@ -526,23 +548,23 @@ GO_HEAD = r'''
 // port (Goose cannot call an export fn from another function).
 fn base_variant(BI: i64[:], BF: f32[:], B: i64[:], BANT: u8[:], v: i64) {
     if v == 1 {
-        sc_base_cfg(B, 10, 4);
-        sc_base_set_i(BI, BF, 10, 8);    // n_keep
-        sc_base_set_i(BI, BF, 8, 64);    // n_predict
-        sc_base_set_i(BI, BF, 13, 16);   // n_cache_reuse
-        sc_base_set_i(BI, BF, 4, 0);     // cache_prompt
-        sc_base_set_i(BI, BF, 7, 7);     // sse_ping_interval
-        sc_base_set_i(BI, BF, 48, 1);    // reasoning_format AUTO
-        sc_base_set_i(BI, BF, 16, 13);   // top_k
-        sc_base_set_f(BI, BF, 17, 0.5);  // top_p
-        sc_base_set_f(BI, BF, 18, 0.1);  // min_p
-        sc_base_set_f(BI, BF, 23, 0.3);  // temperature
-        sc_base_set_i(BI, BF, 39, 7);    // seed
-        sc_base_set_f(BI, BF, 27, 1.2);  // repeat_penalty
-        sc_base_set_f(BI, BF, 31, 1.5);  // dry_base
-        sc_base_set_i(BI, BF, 40, 2);    // n_probs
-        sc_base_set_i(BI, BF, 34, 1);    // mirostat
-        sc_base_set_ant(B, BANT, "\nUser:");
+        schema_base_cfg(B, 10, 4);
+        schema_base_set_i(BI, BF, 10, 8);    // n_keep
+        schema_base_set_i(BI, BF, 8, 64);    // n_predict
+        schema_base_set_i(BI, BF, 13, 16);   // n_cache_reuse
+        schema_base_set_i(BI, BF, 4, 0);     // cache_prompt
+        schema_base_set_i(BI, BF, 7, 7);     // sse_ping_interval
+        schema_base_set_i(BI, BF, 48, 1);    // reasoning_format AUTO
+        schema_base_set_i(BI, BF, 16, 13);   // top_k
+        schema_base_set_f(BI, BF, 17, 0.5);  // top_p
+        schema_base_set_f(BI, BF, 18, 0.1);  // min_p
+        schema_base_set_f(BI, BF, 23, 0.3);  // temperature
+        schema_base_set_i(BI, BF, 39, 7);    // seed
+        schema_base_set_f(BI, BF, 27, 1.2);  // repeat_penalty
+        schema_base_set_f(BI, BF, 31, 1.5);  // dry_base
+        schema_base_set_i(BI, BF, 40, 2);    // n_probs
+        schema_base_set_i(BI, BF, 34, 1);    // mirostat
+        schema_base_set_ant(B, BANT, "\nUser:");
     }
 }
 
@@ -561,14 +583,14 @@ fn main() {
     var r: i64 = 0;
     var p: i64 = 0;
 
-    while r < 63 {
-        p = sc_tline(r, 1, out, 0);
+    while r < schema_row_count() {
+        p = schema_tline(r, 1, out, 0);
         print(out[0..p]);
         r = r + 1;
     }
     r = 0;
-    while r < 6 {
-        p = sc_tts_tline(r, out, 0);
+    while r < schema_tts_row_count() {
+        p = schema_tts_tline(r, out, 0);
         print(out[0..p]);
         r = r + 1;
     }
@@ -576,21 +598,21 @@ fn main() {
 
 GO_CASE_HEAD = r'''
     {
-        sc_reset(I, F, ANT);
-        sc_base_std(BI, BF, B, BANT);
+        schema_reset(I, F, ANT);
+        schema_base_std(BI, BF, B, BANT);
         base_variant(BI, BF, B, BANT, __VAR__);
-        sc_defaults(I, F, BI, BF, B, ANT, BANT, SAM, KEYN);
+        schema_defaults(I, F, BI, BF, B, ANT, BANT, SAM, KEYN);
         var done: i64 = 0;
         var rc: i64 = 0;
 '''
 
 GO_ENTRY = r'''        if done == 0 {
 __BUILD__
-            rc = sc_apply(I, F, BI, BF, B, ANT, BANT, SAM, KEYN, MSG, __ROW__, "__KEY2__", __K__, __IV__, __FV__, __TXT__);
+            rc = schema_apply(I, F, BI, BF, B, ANT, BANT, SAM, KEYN, MSG, __ROW__, "__KEY2__", __K__, __IV__, __FV__, __TXT__);
             if rc != 0 {
                 done = 1;
                 p = sc_puts(out, 0, "__PREFIX____ID__|err|Field '__KEY__': ");
-                p = sc_copy(out, p, MSG, 0, I[79]);
+                p = sc_copy(out, p, MSG, 0, schema_msg_len(I));
                 print(out[0..p]);
             }
         }
@@ -600,7 +622,7 @@ GO_TAIL = r'''        if done == 0 {
             p = sc_puts(out, 0, "__PREFIX____ID__|ok|");
             r = 0;
             while r < 62 {
-                p = sc_vline(r, I, F, SAM, ANT, out, p);
+                p = schema_vline(r, I, F, SAM, ANT, out, p);
                 r = r + 1;
             }
             print(out[0..p]);
@@ -609,11 +631,11 @@ GO_TAIL = r'''        if done == 0 {
 '''
 
 GO_TTS_ENTRY = r'''        if done == 0 {
-            rc = sc_tts_apply(I, F, MSG, __ROW__, __K__, __IV__, __FV__);
+            rc = schema_tts_apply(I, F, MSG, __ROW__, __K__, __IV__, __FV__);
             if rc != 0 {
                 done = 1;
                 p = sc_puts(out, 0, "D__ID__|err|Field '__KEY__': ");
-                p = sc_copy(out, p, MSG, 0, I[79]);
+                p = sc_copy(out, p, MSG, 0, schema_msg_len(I));
                 print(out[0..p]);
             }
         }
@@ -623,7 +645,7 @@ GO_TTS_TAIL = r'''        if done == 0 {
             p = sc_puts(out, 0, "D__ID__|ok|");
             r = 0;
             while r < 6 {
-                p = sc_tts_vline(r, I, F, out, p);
+                p = schema_tts_vline(r, I, F, out, p);
                 r = r + 1;
             }
             print(out[0..p]);
@@ -655,13 +677,13 @@ def gen_goose(port_text):
     tts_body = []
     for i, (label, variant, entries) in enumerate(TTS_CASES):
         chunk = GO_CASE_HEAD.replace('__VAR__', str(variant))
-        chunk += "        sc_tts_defaults(I, F, BI);\n"
+        chunk += "        schema_tts_defaults(I, F, BI);\n"
         for e in entries:
             head, build, key = go_entry(e)
             row, k, iv, fv, txt = head
             if key is None:
                 key = e[1] if e[0] in ("i", "f", "b", "null", "s") else e[1]
-            row = 'sc_tfind("%s")' % key
+            row = 'schema_tfind("%s")' % key
             chunk += (GO_TTS_ENTRY.replace('__ROW__', row).replace('__K__', k)
                                     .replace('__IV__', iv).replace('__FV__', fv)
                                     .replace('__KEY__', key).replace('__ID__', str(i)))

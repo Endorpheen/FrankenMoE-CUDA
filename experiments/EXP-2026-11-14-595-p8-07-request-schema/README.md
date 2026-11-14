@@ -14,7 +14,9 @@ gate is one run of one binary and one run of the Goose driver.
 
 ## What the slice owns
 
-`source/server-schema.goose` (1402 lines) is the port:
+`source/server-schema.goose` (1436 lines) is the port.  Everything below
+`sc_`/`SC_`/`TTS_` is private; the `schema_*` exports at the end of the file are
+the integration surface (see Public API).
 
 | port part | native counterpart | notes |
 |---|---|---|
@@ -58,7 +60,10 @@ driver from the same case table, so there is no second copy of the requests.
   linked: it carries an unrelated experiment's static initialiser that prints
   on load. No sockets, no server, no model, no vocab.
 - Goose: `build/gate_schema.goose` = the port plus the generated driver, run
-  with `goose run`.
+  with `goose run`.  The driver calls the public `schema_*` wrappers, not the
+  private `sc_*` bodies, so the gate checks the entry points a runtime uses;
+  it only uses `sc_puts`/`sc_copy` to build the input buffers and the error
+  text line.
 
 ```
 docs/experiments/…/tests$ bash tests/build.sh
@@ -131,10 +136,45 @@ diff for each.
 8. **No server, no model, no network, no timing.** This says nothing about
    throughput and is not a performance claim.
 
+## Public API
+
+`source/server-schema.goose` compiles with `goose --standalone --header`; the
+23 `export fn` wrappers are one-line forwards to the private bodies, so the
+decisions stay in one place.  The gate driver calls these wrappers.
+
+| export | forward | purpose |
+|---|---|---|
+| `schema_find(name)` | `sc_find` | row of a request key, aliases included, `-1` when absent |
+| `schema_tfind(name)` | `sc_tfind` | TTS row of a request key |
+| `schema_reset(I, F, ANT)` | `sc_reset` | zero the task state |
+| `schema_base_std(BI, BF, B, BANT)` | `sc_base_std` | `common_params` defaults for the base |
+| `schema_base_set_i(BI, BF, row, v)` | `sc_base_set_i` | base integer override by row |
+| `schema_base_set_f(BI, BF, row, v)` | `sc_base_set_f` | base float override by row |
+| `schema_base_cfg(B, verbosity, np)` | `sc_base_cfg` | base `verbosity` and `n_parallel` |
+| `schema_base_set_ant(B, BANT, txt)` | `sc_base_set_ant` | base stop list (`antiprompt`) |
+| `schema_defaults(I, F, BI, BF, B, ANT, BANT, SAM, KEYN)` | `sc_defaults` | `task_params` defaults + base copy |
+| `schema_apply(..., row, key, k, iv, fv, txt)` | `sc_apply` | apply/validate one completion request entry |
+| `schema_vline(row, I, F, SAM, ANT, out, at)` | `sc_vline` | text dump of one completion row |
+| `schema_tline(row, np, out, at)` | `sc_tline` | table line of one completion row |
+| `schema_tts_defaults(I, F, BI)` | `sc_tts_defaults` | TTS baseline |
+| `schema_tts_apply(I, F, MSG, row, k, iv, fv)` | `sc_tts_apply` | apply/validate one TTS request entry |
+| `schema_tts_vline(row, I, F, out, at)` | `sc_tts_vline` | text dump of one TTS row |
+| `schema_tts_tline(row, out, at)` | `sc_tts_tline` | table line of one TTS row |
+| `schema_row_count()` | constant | 63 completion rows (62 fields + `include_usage`) |
+| `schema_tts_row_count()` | constant | 6 TTS rows |
+| `schema_rc_ok` / `schema_rc_range` / `schema_rc_type` / `schema_rc_message` | constants | status codes of `schema_apply` |
+| `schema_msg_len(I)` | `I[79]` | length of the message written into `MSG` |
+
+`schema_apply` returns 0 (applied), 1 (hard-limit range error), 2 (JSON type
+error), 3 (handler message); on a non-zero code the text is in `MSG` and its
+length is `schema_msg_len(I)`.  `I` is 80 `i64` slots, `F` 80 `f32` slots,
+`SAM` 16 sampler codes, `KEYN` 63 alias-priority slots, `ANT`/`MSG` byte
+buffers; the row layout is the table order documented above.
+
 ## Layout
 
 ```
-source/server-schema.goose    port (1402 lines)
+source/server-schema.goose    port (1436 lines)
 tests/gen_schema.py           one table -> probe + driver + cases_schema.tsv
 tests/probe_schema.cpp        native oracle (generated)
 tests/mutate.py        12 mutations, two halves
@@ -149,6 +189,8 @@ Reproduce from this directory:
 bash tests/build.sh
 python3 tests/mutate.py 0 6
 python3 tests/mutate.py 6 12
+goose --standalone -o build/schema_api.c --header build/schema_api.h \
+      source/server-schema.goose
 ```
 
 `FG_LLAMA`, `FG_GOOSE`, `FG_CXX`, `FG_OUT` override the paths. The scripts

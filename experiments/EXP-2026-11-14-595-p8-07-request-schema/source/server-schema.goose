@@ -1400,3 +1400,37 @@ fn sc_tts_vline(row: i64, I: const i64[:], F: const f32[:], out: u8[:], at: i64)
     out[p] = 59;
     return p + 1;
 }
+
+// ----------------------------------------------------------- public API ---
+//
+// Thin one-line forwards.  All decisions stay in the sc_* functions above;
+// these wrappers are the module's integration surface, and the gate driver
+// calls them, so the gate exercises the same entry points a runtime would.
+// Return codes of schema_apply/schema_tts_apply: 0 ok, 1 hard-limit range
+// error, 2 JSON type error, 3 handler message.  On a non-zero code the message
+// sits in MSG and its length is schema_msg_len(I).
+
+export fn schema_row_count() -> i64 { return 63; }
+export fn schema_tts_row_count() -> i64 { return 6; }
+export fn schema_rc_ok() -> i64 { return 0; }
+export fn schema_rc_range() -> i64 { return 1; }
+export fn schema_rc_type() -> i64 { return 2; }
+export fn schema_rc_message() -> i64 { return 3; }
+export fn schema_msg_len(I: const i64[:]) -> i64 { return I[79]; }
+export fn schema_find(name: const u8[:]) -> i64 { return sc_find(name); }
+export fn schema_tfind(name: const u8[:]) -> i64 { return sc_tfind(name); }
+export fn schema_reset(I: i64[:], F: f32[:], ANT: u8[:]) { sc_reset(I, F, ANT); }
+export fn schema_base_std(BI: i64[:], BF: f32[:], B: i64[:], BANT: u8[:]) { sc_base_std(BI, BF, B, BANT); }
+export fn schema_base_set_i(BI: i64[:], BF: f32[:], row: i64, v: i64) { sc_base_set_i(BI, BF, row, v); }
+export fn schema_base_set_f(BI: i64[:], BF: f32[:], row: i64, v: f32) { sc_base_set_f(BI, BF, row, v); }
+export fn schema_base_cfg(B: i64[:], verbosity: i64, np: i64) { sc_base_cfg(B, verbosity, np); }
+export fn schema_base_set_ant(B: i64[:], BANT: u8[:], txt: const u8[:]) { sc_base_set_ant(B, BANT, txt); }
+export fn schema_defaults(I: i64[:], F: f32[:], BI: const i64[:], BF: const f32[:], B: const i64[:], ANT: u8[:], BANT: const u8[:], SAM: i64[:], KEYN: i64[:]) { sc_defaults(I, F, BI, BF, B, ANT, BANT, SAM, KEYN); }
+export fn schema_apply(I: i64[:], F: f32[:], BI: const i64[:], BF: const f32[:], B: const i64[:], ANT: u8[:], BANT: const u8[:], SAM: i64[:], KEYN: i64[:], MSG: u8[:], row: i64, key: const u8[:], k: i64, iv: i64, fv: f32, txt: const u8[:]) -> i64 { return sc_apply(I, F, BI, BF, B, ANT, BANT, SAM, KEYN, MSG, row, key, k, iv, fv, txt); }
+export fn schema_tline(row: i64, np: i64, out: u8[:], at: i64) -> i64 { return sc_tline(row, np, out, at); }
+export fn schema_vline(row: i64, I: const i64[:], F: const f32[:], SAM: const i64[:], ANT: const u8[:], out: u8[:], at: i64) -> i64 { return sc_vline(row, I, F, SAM, ANT, out, at); }
+export fn schema_tts_defaults(I: i64[:], F: f32[:], BI: const i64[:]) { sc_tts_defaults(I, F, BI); }
+export fn schema_tts_apply(I: i64[:], F: f32[:], MSG: u8[:], row: i64, k: i64, iv: i64, fv: f32) -> i64 { return sc_tts_apply(I, F, MSG, row, k, iv, fv); }
+export fn schema_tts_tline(row: i64, out: u8[:], at: i64) -> i64 { return sc_tts_tline(row, out, at); }
+export fn schema_tts_vline(row: i64, I: const i64[:], F: const f32[:], out: u8[:], at: i64) -> i64 { return sc_tts_vline(row, I, F, out, at); }
+
