@@ -82,6 +82,8 @@ CANONICAL_SOURCES = [
      "ggml/src/ggml-quants.c (dequant closure and copy)", "1391 cases / 1131616 comparisons / 0 failures, 12/12 mutations"),
     ("model/quant-dequant.goose", "EXP-2026-11-14-607-p7-04-dequant", "source/quant-dequant.goose",
      "ggml/src/ggml-quants.c (basic dequantizers)", "300 cases / 0 failures, 12/12 mutations"),
+    ("model/quant-weighted.goose", "EXP-2026-11-14-616-p7-04-quant-weighted", "source/quant-weighted.goose",
+     "ggml/src/ggml-quants.c (imatrix branches)", "28308 cases / 13053520 comparisons / 0 failures, 12/12 mutations"),
     ("model/quant-rows2.goose", "EXP-2026-11-14-611-p7-04-quant-rows2", "source/quant-rows2.goose",
      "ggml/src/ggml-quants.c (K/IQ/MX/NV/TQ)", "3764 cases / 1897854 comparisons / 0 failures, 12/12 mutations"),
     ("model/quant-rows.goose", "EXP-2026-11-14-603-p7-04-quant-rows", "source/quant-rows.goose",

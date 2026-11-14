@@ -14,7 +14,7 @@ accepted in two steps; the rest is open.
 | S2. imatrix loader and remap | legacy and GGUF loaders, dataset metadata, `remap_layer`, `remap_imatrix`, prepare | **done (EXP604)** |
 | S3a. Basic row quantizers | q4_0/q4_1/q5_0/q5_1/q8_0/q1_0/q2_0 | **done (EXP603)** |
 | S3b. K/IQ/MXFP4/NVFP4/TQ quantizers | the remaining unweighted types | **done (EXP611)** |
-| S4. Weighted quantizers | imatrix branches of q2_K…q6_K and IQ1/2/3/4 | open |
+| S4. Weighted quantizers | imatrix branches of q2_K…q6_K and IQ1/2/3/4 | **done (EXP616)** |
 | S5a. Basic dequantizers | q4_0/q4_1/q5_0/q5_1/q8_0 row dequant | **done (EXP607)** |
 | S5b. Dequant closure | K/IQ/MX/TQ dequant, different-type copy, q8_K, f16/bf16 output | **done (EXP613)** |
 
