@@ -3618,6 +3618,142 @@ recursive fn eval_filter(
         return res;
     }
 
+    if (filter_name_is(fname, "keys") || filter_name_is(fname, "values") || filter_name_is(fname, "items")) && vk(A, st, sval) == V_OBJECT {
+        let n = vkc(A, st, sval);
+        let arr = arr_new(A, F, st);
+
+        if filter_name_is(fname, "items") {
+            var i0: i64 = 0;
+
+            while i0 < n {
+                arr_push(A, st, arr, 0);
+                i0 = i0 + 1;
+            }
+            let abase = pool(A, st) + vcs(A, st, arr);
+            var i1: i64 = 0;
+
+            while i1 < n {
+                let t = arr_new(A, F, st);
+                A[st[16] + t] = V_TUPLE;
+                let tb = st[4];
+                A[st[26] + tb] = A[pool(A, st) + vks(A, st, sval) + i1];
+                A[st[26] + tb + 1] = A[pool(A, st) + vvs(A, st, sval) + i1];
+                A[st[20] + t] = tb;
+                A[st[21] + t] = 2;
+                st[4] = tb + 2;
+                A[abase + i1] = t;
+                i1 = i1 + 1;
+            }
+            return arr;
+        }
+        var i: i64 = 0;
+
+        while i < n {
+            if filter_name_is(fname, "keys") {
+                arr_push(A, st, arr, A[pool(A, st) + vks(A, st, sval) + i]);
+            } else {
+                arr_push(A, st, arr, A[pool(A, st) + vvs(A, st, sval) + i]);
+            }
+            i = i + 1;
+        }
+        return arr;
+    }
+
+    if filter_name_is(fname, "get") && vk(A, st, sval) == V_OBJECT {
+        if argc < 1 || vk(A, st, argv[0]) != V_STRING {
+            return fail_node(K_FILTER, apos(A, st, id), "get: second argument must be a string (key)", E, st);
+        }
+        let found = obj_lookup(A, B, F, st, sval, argv[0]);
+
+        if found >= 0 {
+            return found;
+        }
+
+        if argc > 1 {
+            return argv[1];
+        }
+        return mk_none(A, F, st);
+    }
+
+    if (filter_name_is(fname, "sort") || filter_name_is(fname, "unique")) && (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) {
+        let n = vcc(A, st, sval);
+        let src_base = pool(A, st) + vcs(A, st, sval);
+        let res = arr_new(A, F, st);
+
+        if vk(A, st, sval) == V_TUPLE {
+            A[st[16] + res] = V_TUPLE;
+        }
+
+        if filter_name_is(fname, "sort") {
+            var i0: i64 = 0;
+
+            while i0 < n {
+                arr_push(A, st, res, A[src_base + i0]);
+                i0 = i0 + 1;
+            }
+            let base = pool(A, st) + vcs(A, st, res);
+            var op: i64 = 3;
+
+            if argc > 0 && vk(A, st, argv[0]) != V_UNDEF && v_bool(A, F, st, argv[0]) != 0 {
+                op = 2;
+            }
+            var i: i64 = 1;
+
+            while i < n {
+                let key = A[base + i];
+                var j: i64 = i - 1;
+                var go: i64 = 1;
+
+                while j >= 0 && go != 0 {
+                    let cur = A[base + j];
+                    let r = vcompare(A, B, F, st, key, cur, op, out, E);
+
+                    if r < 0 {
+                        return -1;
+                    }
+
+                    if r != 0 {
+                        A[base + j + 1] = cur;
+                        j = j - 1;
+                    } else {
+                        go = 0;
+                    }
+                }
+                A[base + j + 1] = key;
+                i = i + 1;
+            }
+            return res;
+        }
+        var i: i64 = 0;
+
+        while i < n {
+            let item = A[src_base + i];
+            var dup: i64 = 0;
+            let rn = vcc(A, st, res);
+            var k: i64 = 0;
+
+            while k < rn {
+                let seen = A[pool(A, st) + vcs(A, st, res) + k];
+                let r = vcompare(A, B, F, st, seen, item, 0, out, E);
+
+                if r < 0 {
+                    return -1;
+                }
+
+                if r != 0 {
+                    dup = 1;
+                }
+                k = k + 1;
+            }
+
+            if dup == 0 {
+                arr_push(A, st, res, item);
+            }
+            i = i + 1;
+        }
+        return res;
+    }
+
     var p = apps(E, 0, "Unknown (built-in) filter '");
     p = app(E, p, fname, 0, fname.len);
     p = apps(E, p, "' for type ");
