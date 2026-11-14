@@ -1,0 +1,7 @@
+MUT h1-1 CAUGHT :: the quote predicate loses the comma :: FG617_S1 cases=25 values=42 failures=6 | FG617_S2 cases=32 values=106 failures=1 | FG617_S3 cases=49 values=55 failures=0
+MUT h1-2 CAUGHT :: the quote predicate quotes a carriage return (the stdlib csv rule) :: FG617_S1 cases=25 values=42 failures=2 | FG617_S2 cases=32 values=106 failures=1 | FG617_S3 cases=49 values=55 failures=0
+MUT h1-3 CAUGHT :: a newline inside a quoted field is written raw :: FG617_S1 cases=25 values=42 failures=4 | FG617_S2 cases=32 values=106 failures=2 | FG617_S3 cases=49 values=55 failures=0
+MUT h1-4 CAUGHT :: a quote inside a quoted field is not doubled :: FG617_S1 cases=25 values=42 failures=5 | FG617_S2 cases=32 values=106 failures=3 | FG617_S3 cases=49 values=55 failures=0
+MUT h1-5 CAUGHT :: the opening quote is skipped :: FG617_S1 cases=25 values=42 failures=11 | FG617_S2 cases=32 values=106 failures=5 | FG617_S3 cases=49 values=55 failures=0
+MUT h1-6 CAUGHT :: a NaN weight takes the numeric arm :: FG617_S1 cases=25 values=42 failures=2 | FG617_S2 cases=32 values=106 failures=2 | FG617_S3 cases=49 values=55 failures=0
+HALF 1 total=6 caught=6 survived=0 broken=0

@@ -1,0 +1,10 @@
+/tmp/opencode/sub-624/EXP-2026-11-15-617-p9-07-metrics-traces/source/metrics-traces.goose:109: warning: redundant `as u64`: 0 fits u64 here
+parsed ok: 171 top-level declarations, 2 file(s)
+typechecked ok: 90 specialization(s), 2 struct/0 enum instance(s); optimized -O1: 5 inlined, 0 base case(s), 1 folded, 12 propagated, 0 tail loop(s), 0 reassociated
+bce: elided 4/7 index and 0/0 slice checks
+wrote /tmp/opencode/sub-624/EXP-2026-11-15-617-p9-07-metrics-traces/build/g.c (191852 bytes)
+wrote /tmp/opencode/sub-624/EXP-2026-11-15-617-p9-07-metrics-traces/build/g.h (3411 bytes)
+FG617_S1 cases=25 values=42 failures=0
+FG617_S2 cases=32 values=106 failures=0
+FG617_S3 cases=49 values=55 failures=0
+FG617 total=PASS

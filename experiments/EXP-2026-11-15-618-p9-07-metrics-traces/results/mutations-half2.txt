@@ -1,0 +1,7 @@
+MUT h2-1 CAUGHT :: the io row writes the requested size as the read size :: FG617_S1 cases=25 values=42 failures=0 | FG617_S2 cases=32 values=106 failures=5 | FG617_S3 cases=49 values=55 failures=0
+MUT h2-2 CAUGHT :: the route row drops the separator before the dropped flag :: FG617_S1 cases=25 values=42 failures=0 | FG617_S2 cases=32 values=106 failures=8 | FG617_S3 cases=49 values=55 failures=0
+MUT h2-3 CAUGHT :: the reader counts commas inside quoted fields :: FG617_S1 cases=25 values=42 failures=0 | FG617_S2 cases=32 values=106 failures=3 | FG617_S3 cases=49 values=55 failures=0
+MUT h2-4 CAUGHT :: the unescaper never collapses a doubled quote :: FG617_S1 cases=25 values=42 failures=0 | FG617_S2 cases=32 values=106 failures=3 | FG617_S3 cases=49 values=55 failures=0
+MUT h2-5 CAUGHT :: the route shape comparison ignores the phase :: FG617_S1 cases=25 values=42 failures=0 | FG617_S2 cases=32 values=106 failures=0 | FG617_S3 cases=49 values=55 failures=1
+MUT h2-6 CAUGHT :: finish() checks the tokens before the routes :: FG617_S1 cases=25 values=42 failures=0 | FG617_S2 cases=32 values=106 failures=0 | FG617_S3 cases=49 values=55 failures=1
+HALF 2 total=6 caught=6 survived=0 broken=0
