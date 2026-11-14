@@ -85,6 +85,17 @@ go back to the author before a new task; small integration fixes may be done by
 the lead. Do not exceed the agreed number of helpers, and never stop other
 running agents (Codex, the compiler agent, the user's processes).
 
+Every task names the base commit SHA the helper must copy, and the interfaces it
+may rely on. Do not assign work that depends on an interface that is not yet in
+that commit; assign preparatory analysis instead. Before integration, rebase the
+result on the current canon and re-run its gate.
+
+New experiments start from `tools/experiment-template/`: no absolute `/tmp`
+paths in build scripts, the root is derived from the script location, the gate
+runs at `-O1` and mutations at `-O0`. The lead accepts personally; there is no
+automatic accept step. Keep the helper count at the level the lead can review
+(5-6 is the current point); adjust it by the queue, not by ambition.
+
 ## Experiment storage
 
 Evidence stays, build artefacts do not. Commit the Goose source, the build and
