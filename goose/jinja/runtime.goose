@@ -2285,6 +2285,7 @@ recursive fn eval_member(
             }
 
             if idx >= 0 && idx < n {
+                A[st[27] + obj] = A[st[27] + obj] | 2;
                 return vchild(A, st, obj, idx);
             }
         }
@@ -2303,6 +2304,7 @@ recursive fn eval_member(
             let txt = vstr(B, A, st, obj);
 
             if idx >= 0 && idx < txt.len {
+                A[st[27] + obj] = A[st[27] + obj] | 2;
                 return mk_str(A, F, B, st, txt[idx .. idx + 1]);
             }
         }
@@ -2545,6 +2547,8 @@ recursive fn dispatch_test(
             res = 1;
         }
     } else if filter_name_is(tname, "string") {
+        A[st[27] + v] = A[st[27] + v] | 8;
+
         if k == V_STRING {
             res = 1;
         }
@@ -4025,6 +4029,7 @@ recursive fn eval_filter(
     }
 
     if (filter_name_is(fname, "select") || filter_name_is(fname, "reject")) && (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) && argc > 0 {
+        A[st[27] + sval] = A[st[27] + sval] | 4;
         let n = vcc(A, st, sval);
         let src_base = pool(A, st) + vcs(A, st, sval);
         let res = arr_new(A, F, st);
@@ -5398,7 +5403,7 @@ fn out_bytes(out: u8[:], st: i64[:], s: const u8[:]) -> i64 {
     return 0;
 }
 recursive fn append_rendered(v: i64, A: i64[:], B: u8[:], F: f64[:], st: i64[:], out: u8[:], E: u8[:]) -> i64 {
-    A[st[27] + v] = 1;
+    A[st[27] + v] = A[st[27] + v] | 1;
     let k = vk(A, st, v);
 
     if k == V_STRING {
@@ -6192,4 +6197,30 @@ export fn chat_probe_fresh(A: i64[:], F: f64[:], B: u8[:], st: i64[:]) -> i64 {
     reset_io(A, st, 0);
     let f = vnew(A, F, st, V_STRING);
     return A[st[27] + f];
+}
+
+export fn chat_probe_mask(A: const i64[:], st: const i64[:], id: i64) -> i64 {
+    return A[st[27] + id];
+}
+
+export fn chat_probe_content_mask(A: const i64[:], B: const u8[:], st: const i64[:], msgs: i64) -> i64 {
+    if vcc(A, st, msgs) == 0 {
+        return 0;
+    }
+    let first = A[pool(A, st) + vcs(A, st, msgs)];
+    let n = vkc(A, st, first);
+    var i: i64 = 0;
+
+    while i < n {
+        let k = A[pool(A, st) + vks(A, st, first) + i];
+        let koff = A[st[18] + k];
+        let klen = A[st[19] + k];
+
+        if bytes_is(B[koff .. koff + klen], "content") {
+            let v = A[pool(A, st) + vvs(A, st, first) + i];
+            return A[st[27] + v];
+        }
+        i = i + 1;
+    }
+    return 0;
 }
