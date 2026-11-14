@@ -78,6 +78,8 @@ CANONICAL_SOURCES = [
      "common/imatrix-loader.cpp and llama-quant.cpp (remap)", "277 lines / 0 diffs, 12/12 mutations"),
     ("model/quant-dequant.goose", "EXP-2026-11-14-607-p7-04-dequant", "source/quant-dequant.goose",
      "ggml/src/ggml-quants.c (basic dequantizers)", "300 cases / 0 failures, 12/12 mutations"),
+    ("model/quant-rows2.goose", "EXP-2026-11-14-611-p7-04-quant-rows2", "source/quant-rows2.goose",
+     "ggml/src/ggml-quants.c (K/IQ/MX/NV/TQ)", "3764 cases / 1897854 comparisons / 0 failures, 12/12 mutations"),
     ("model/quant-rows.goose", "EXP-2026-11-14-603-p7-04-quant-rows", "source/quant-rows.goose",
      "ggml/src/ggml-quants.c (q4_0/q4_1/q5_0/q5_1/q8_0/q1_0/q2_0)", "1798 cases / 441986 bytes / 0 failures, 12/12 mutations"),
     ("model/quant-types.goose", "EXP-2026-11-14-581-p7-04-quant-types", "source/quant.goose",

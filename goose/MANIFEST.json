@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T20:51:22.394765+00:00",
+  "updated_at": "2026-11-14T20:58:04.830304+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -279,6 +279,18 @@
       "status": "ported",
       "sha256": "cea9b3457c1da0502ba041432be9d9d31dbbfca18bfa11f7b51d650f994b0011",
       "gate": "300 cases / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/quant-rows2.goose",
+      "native": "ggml/src/ggml-quants.c (K/IQ/MX/NV/TQ)",
+      "native_targets": [
+        "ggml/src/ggml-quants.c (K/IQ/MX/NV/TQ)"
+      ],
+      "experiment": "EXP-2026-11-14-611-p7-04-quant-rows2",
+      "task": "",
+      "status": "ported",
+      "sha256": "3fd3671893abf3d160b08479535ae9275b07097cabf10c7417bc5671d8d6cfb4",
+      "gate": "3764 cases / 1897854 comparisons / 0 failures, 12/12 mutations"
     },
     {
       "goose": "model/quant-rows.goose",
