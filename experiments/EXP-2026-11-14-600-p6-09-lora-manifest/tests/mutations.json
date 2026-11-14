@@ -1,0 +1,90 @@
+{
+  "source": "source/lora-manifest.goose",
+  "note": "Each entry flips one decision the gate is supposed to defend. Half A is the metadata gate, half B is pairing, shape and naming. Every entry must compile and then fail the differential gate.",
+  "mutations": [
+    {
+      "id": "A1",
+      "half": "A",
+      "old": "    if bytes_eq(pool, kv_v0[gt], kv_v1[gt], VAL_ADAPTER) == 0 {",
+      "new": "    if bytes_eq(pool, kv_v0[gt], kv_v1[gt], VAL_ADAPTER) != 0 {",
+      "note": "general.type compared with inverted equality"
+    },
+    {
+      "id": "A2",
+      "half": "A",
+      "old": "    if bytes_eq(pool, kv_v0[ga], kv_v1[ga], model_arch) == 0 {",
+      "new": "    if 0 == 1 {",
+      "note": "architecture mismatch never reported"
+    },
+    {
+      "id": "A3",
+      "half": "A",
+      "old": "        out_f[0] = kv_f32[id];",
+      "new": "        out_f[0] = kv_f32[id] * 2.0;",
+      "note": "alpha read with a wrong multiplier"
+    },
+    {
+      "id": "A4",
+      "half": "A",
+      "old": "        if kv_type[ia] != T_ARRAY {",
+      "new": "        if kv_type[ia] == T_ARRAY {",
+      "note": "aLoRA array-type test inverted"
+    },
+    {
+      "id": "A5",
+      "half": "A",
+      "old": "        if kv_v2[ia] != T_UINT32 {",
+      "new": "        if kv_v2[ia] == T_UINT32 {",
+      "note": "aLoRA element-type test inverted"
+    },
+    {
+      "id": "A6",
+      "half": "A",
+      "old": "            if v >= 2147483648 {",
+      "new": "            if v >= 4294967296 {",
+      "note": "u32 to llama_token sign extension removed"
+    },
+    {
+      "id": "B1",
+      "half": "B",
+      "old": "        if kind == 3 {",
+      "new": "        if kind == 99 {",
+      "note": "_norm.weight tensors no longer skipped"
+    },
+    {
+      "id": "B2",
+      "half": "B",
+      "old": "    if kind == 2 {\n        return SUF_B;\n    }",
+      "new": "    if kind == 2 {\n        return SUF_A;\n    }",
+      "note": ".lora_b stripped with the .lora_a suffix"
+    },
+    {
+      "id": "B3",
+      "half": "B",
+      "old": "    if ends_with(names, name_off, name_len, NAME_TOKEN_EMBD) != 0 {",
+      "new": "    if ends_with(names, name_off, name_len, NAME_TOKEN_EMBD) == 0 {",
+      "note": "token_embd.weight flipped shape rule inverted"
+    },
+    {
+      "id": "B4",
+      "half": "B",
+      "old": "    if m_ne0[hit] != a_ne0 || m_ne1[hit] != b_ne1 {",
+      "new": "    if m_ne0[hit] != a_ne0 {",
+      "note": "the ne1 half of the shape comparison dropped"
+    },
+    {
+      "id": "B5",
+      "half": "B",
+      "old": "    if a_ne1 != b_ne0 {",
+      "new": "    if a_ne1 == -1 {",
+      "note": "transpose check effectively disabled"
+    },
+    {
+      "id": "B6",
+      "half": "B",
+      "old": "    if m_had[hit] != 0 {",
+      "new": "    if m_had[hit] == 2 {",
+      "note": "Hadamard-folded target accepted"
+    }
+  ]
+}

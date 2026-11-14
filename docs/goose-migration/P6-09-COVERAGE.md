@@ -8,7 +8,7 @@ The requirement owns five slices. S3 is accepted; the rest is open.
 
 | slice | native scope | state |
 |---|---|---|
-| S1. LoRA manifest and pairing | adapter manifest parsing, tensor pairing | in acceptance |
+| S1. LoRA manifest and pairing | adapter manifest parsing, tensor pairing | **done (EXP600)** |
 | S2. LoRA application and scale | `apply` for LoRA, scaling, cleanup | open |
 | S3. Control vectors | `llama_adapter_cvec` state, `apply`, `apply_to`, `tensor_for` | **done (EXP582)** |
 | S4. Saver writer | GGUF writer path for saved models | open |
