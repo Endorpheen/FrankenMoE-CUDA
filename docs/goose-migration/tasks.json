@@ -1755,7 +1755,7 @@
       "id": "P6-11",
       "phase": "P6",
       "title": "Port MTP,speculative decoding and draft state orchestration",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "common/speculative.cpp",
         "common/ngram*.cpp",
@@ -1763,12 +1763,17 @@
         "patches/mtp-sidecar.patch"
       ],
       "acceptance": "Shared/separate draft,MTP borrowing,accept/reject/rewind and no-spec mode checked; actual Apex MTP milestone after standard path.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP619 (experiments/EXP-2026-11-15-619-p6-11-spec-decode): draft source and accept (sdp_ngram_draft/accept/emit_count), MTP draft state (width, chained-head clamp, rewind, catch-up) and budget/rollback/trim decisions (step plan, rollback, advance, tail trim) are Goose (sdp_ prefix, 11 exports). Gate 5/5 sections, 9828 comparisons, 0 failures, byte-identical across two runs; the end-to-end run matches plain greedy and a no-draft step costs exactly one decode. Mutations 12/12 in halves. Boundaries: batched verify is not bit-identical, MTP head probabilities, the draft KV and any speed metrics stay native; the native functions still own logits/argmax, EOG test, sequence removal and the speculative helpers.",
       "depends_on": [],
       "workstream": "QWEN_COMPATIBILITY",
       "source_phase_files_at_audit": 416,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B6"
+      "batch": "B6",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "wire ngram_draft.cpp and session.cpp to the Goose decisions (draft source, accept, MTP state, budget, trim)"
+      ]
     },
     {
       "id": "P6-12",
@@ -4446,6 +4451,10 @@
     {
       "event": "P9-07: metrics/trace formatting and deterministic-workload validation ported (EXP618, 106/203, 12/12); sink wiring is the open integration step.",
       "checkpoint": "ee4e34be"
+    },
+    {
+      "event": "P6-11: speculative decoding decisions ported (EXP619, 9828/0, 12/12); wiring the engine to them is open.",
+      "checkpoint": "d0b6e258"
     }
   ],
   "batches": [
@@ -5336,16 +5345,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T22:31:52.377785+00:00",
+  "updated_at": "2026-11-14T22:33:53.185001+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
     "PARTIAL": 1
   },
   "work_front": {
-    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12 and P9-07.",
-    "slices_total": 99,
-    "slices_done": 97,
+    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07 and P6-11.",
+    "slices_total": 102,
+    "slices_done": 100,
     "slices_in_progress": 0,
     "slices_remaining": 2
   },
