@@ -2143,7 +2143,7 @@ fn method_name_is(kind: i64, n: const u8[:]) -> bool {
     }
 
     if kind == V_ARRAY || kind == V_TUPLE {
-        return filter_name_is(n, "first") || filter_name_is(n, "last") ||
+        return filter_name_is(n, "default") || filter_name_is(n, "first") || filter_name_is(n, "last") ||
             filter_name_is(n, "length") || filter_name_is(n, "list") ||
             filter_name_is(n, "join") || filter_name_is(n, "tojson") ||
             filter_name_is(n, "string") || filter_name_is(n, "map") ||
@@ -2155,19 +2155,19 @@ fn method_name_is(kind: i64, n: const u8[:]) -> bool {
     }
 
     if kind == V_INT || kind == V_FLOAT {
-        return filter_name_is(n, "abs") || filter_name_is(n, "int") ||
+        return filter_name_is(n, "default") || filter_name_is(n, "abs") || filter_name_is(n, "int") ||
             filter_name_is(n, "float") || filter_name_is(n, "string") ||
             filter_name_is(n, "safe") || filter_name_is(n, "tojson");
     }
 
     if kind == V_BOOL {
-        return filter_name_is(n, "int") || filter_name_is(n, "float") ||
+        return filter_name_is(n, "default") || filter_name_is(n, "int") || filter_name_is(n, "float") ||
             filter_name_is(n, "string") || filter_name_is(n, "safe") ||
             filter_name_is(n, "tojson");
     }
 
     if kind == V_STRING {
-        return filter_name_is(n, "upper") || filter_name_is(n, "lower") ||
+        return filter_name_is(n, "default") || filter_name_is(n, "upper") || filter_name_is(n, "lower") ||
             filter_name_is(n, "strip") || filter_name_is(n, "lstrip") ||
             filter_name_is(n, "rstrip") || filter_name_is(n, "title") ||
             filter_name_is(n, "capitalize") || filter_name_is(n, "length") ||
@@ -2825,13 +2825,20 @@ recursive fn eval_filter(
     var fname: const u8[:] = "";
     var argc: i64 = 0;
     var fcall: bool = false;
+    var argv: i64[4] = [0, 0, 0, 0];
+    let undef0 = mk_undef(A, F, st);
+    var qi: i64 = 0;
+
+    while qi < 4 {
+        argv[qi] = undef0;
+        qi = qi + 1;
+    }
     var has_attr: bool = false;
     var kwattr: const u8[:] = "";
     var kwval: i64 = 0;
     var has_kw2: bool = false;
     var kwattr2: const u8[:] = "";
     var kwval2: i64 = 0;
-    var argv: i64[4] = [0, 0, 0, 0];
 
     if ak(A, st, f) == K_IDENT {
         fname = astr(B, A, st, f);
@@ -4284,6 +4291,35 @@ recursive fn eval_filter(
             }
             return mk_float(A, F, st, f);
         }
+    }
+
+    if filter_name_is(fname, "default") && vk(A, st, sval) != V_OBJECT {
+        if argc < 1 {
+            return fail_node(K_FILTER, apos(A, st, id), "default() expects a default value", E, st);
+        }
+        var check: i64 = 0;
+
+        if has_attr && filter_name_is(kwattr, "boolean") {
+            check = v_bool(A, F, st, kwval);
+        } else if argc > 1 && vk(A, st, argv[1]) != V_UNDEF {
+            check = v_bool(A, F, st, argv[1]);
+        }
+        var noval: bool = false;
+
+        if check != 0 {
+            if v_bool(A, F, st, sval) == 0 {
+                noval = true;
+            }
+        } else {
+            if vk(A, st, sval) == V_UNDEF || vk(A, st, sval) == V_NONE {
+                noval = true;
+            }
+        }
+
+        if noval {
+            return argv[0];
+        }
+        return sval;
     }
 
     var p = apps(E, 0, "Unknown (built-in) filter '");
