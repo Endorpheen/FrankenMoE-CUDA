@@ -37,6 +37,7 @@ const V_NONE: i64 = 7;
 const V_UNDEF: i64 = 8;
 const V_FUNC: i64 = 9;
 const V_KWARG: i64 = 10;
+const V_METHOD: i64 = 11;
 extern "gs_json_fmt_g" fn libc_fmt_g(out: u8[:], x: f64) -> i64;
 extern "gs_json_fmt_e" fn libc_fmt_e(out: u8[:], prec: i64, x: f64) -> i64;
 extern "gs_json_strtod" fn libc_strtod(s: const u8[:]) -> f64;
@@ -224,7 +225,7 @@ fn type_name(A: const i64[:], B: const u8[:], st: const i64[:], id: i64, out: u8
         return apps(out, 0, "None");
     }
 
-    if k == V_FUNC {
+    if k == V_FUNC || k == V_METHOD {
         return apps(out, 0, "Function");
     }
     let h = vstr(B, A, st, id);
@@ -1911,6 +1912,7 @@ const K_IDENT: i64 = 12;
 const K_SET_NODE: i64 = 6;
 const K_SELECT: i64 = 25;
 const K_TEST: i64 = 26;
+const K_VALUE: i64 = 27;
 const K_FOR: i64 = 2;
 const K_MACRO: i64 = 7;
 const K_CALL: i64 = 21;
@@ -2077,6 +2079,10 @@ fn node_name(k: i64) -> const u8[:] {
     if k == K_TEST {
         return "TestExpression";
     }
+
+    if k == K_VALUE {
+        return "ValueLiteral";
+    }
     return "UnaryExpression";
 }
 // prefix the message with the node wrapper the native statement::execute adds
@@ -2125,6 +2131,60 @@ fn obj_lookup(A: const i64[:], B: const u8[:], F: const f64[:], st: const i64[:]
     return -1;
 }
 
+// The native tables are per type: an object has no "length" builtin, so
+// loop.length reads the key, while a string or array does have one.
+fn method_name_is(kind: i64, n: const u8[:]) -> bool {
+    if kind == V_OBJECT {
+        return filter_name_is(n, "get") || filter_name_is(n, "keys") ||
+            filter_name_is(n, "values") || filter_name_is(n, "items") ||
+            filter_name_is(n, "list") || filter_name_is(n, "tojson") ||
+            filter_name_is(n, "string") || filter_name_is(n, "dictsort") ||
+            filter_name_is(n, "join");
+    }
+
+    if kind == V_ARRAY || kind == V_TUPLE {
+        return filter_name_is(n, "first") || filter_name_is(n, "last") ||
+            filter_name_is(n, "length") || filter_name_is(n, "list") ||
+            filter_name_is(n, "join") || filter_name_is(n, "tojson") ||
+            filter_name_is(n, "string") || filter_name_is(n, "map") ||
+            filter_name_is(n, "append") || filter_name_is(n, "pop") ||
+            filter_name_is(n, "sort") || filter_name_is(n, "reverse") ||
+            filter_name_is(n, "min") || filter_name_is(n, "max") ||
+            filter_name_is(n, "unique") || filter_name_is(n, "select") ||
+            filter_name_is(n, "reject");
+    }
+
+    if kind == V_STRING {
+        return filter_name_is(n, "upper") || filter_name_is(n, "lower") ||
+            filter_name_is(n, "strip") || filter_name_is(n, "lstrip") ||
+            filter_name_is(n, "rstrip") || filter_name_is(n, "title") ||
+            filter_name_is(n, "capitalize") || filter_name_is(n, "length") ||
+            filter_name_is(n, "startswith") || filter_name_is(n, "endswith") ||
+            filter_name_is(n, "split") || filter_name_is(n, "rsplit") ||
+            filter_name_is(n, "replace") || filter_name_is(n, "format") ||
+            filter_name_is(n, "indent") || filter_name_is(n, "int") ||
+            filter_name_is(n, "float") || filter_name_is(n, "string") ||
+            filter_name_is(n, "safe") || filter_name_is(n, "tojson");
+    }
+    return false;
+}
+
+fn method_value(A: i64[:], F: f64[:], B: const u8[:], st: i64[:], recv: i64, prop: i64) -> i64 {
+    if vk(A, st, prop) != V_STRING {
+        return 0 - 1;
+    }
+    let rk = vk(A, st, recv);
+
+    if !method_name_is(rk, vstr(B, A, st, prop)) {
+        return 0 - 1;
+    }
+    let f = vnew(A, F, st, V_METHOD);
+    A[st[17] + f] = recv;
+    A[st[18] + f] = A[st[18] + prop];
+    A[st[19] + f] = A[st[19] + prop];
+    return f;
+}
+
 recursive fn eval_member(
     id: i64,
     ctxc: i64,
@@ -2168,17 +2228,36 @@ recursive fn eval_member(
     }
     let ok = vk(A, st, obj);
 
+    if aiv(A, st, id) == 0 {
+        let mv = method_value(A, F, B, st, obj, prop);
+
+        if mv >= 0 {
+            return mv;
+        }
+    }
+
     if ok == V_OBJECT {
         let found = obj_lookup(A, B, F, st, obj, prop);
 
         if found >= 0 {
             return found;
         }
+        let mv2 = method_value(A, F, B, st, obj, prop);
+
+        if mv2 >= 0 {
+            return mv2;
+        }
         return mk_undef_hint(A, F, B, st, "object_property");
     }
     let pk = vk(A, st, prop);
 
     if ok == V_ARRAY || ok == V_TUPLE {
+        let mv4 = method_value(A, F, B, st, obj, prop);
+
+        if mv4 >= 0 {
+            return mv4;
+        }
+
         if pk == V_INT || pk == V_BOOL {
             var idx = vi(A, st, prop);
             let n = vcc(A, st, obj);
@@ -2195,6 +2274,12 @@ recursive fn eval_member(
     }
 
     if ok == V_STRING {
+        let mv3 = method_value(A, F, B, st, obj, prop);
+
+        if mv3 >= 0 {
+            return mv3;
+        }
+
         if pk == V_INT || pk == V_BOOL {
             let idx = vi(A, st, prop);
             let txt = vstr(B, A, st, obj);
@@ -2462,7 +2547,7 @@ recursive fn dispatch_test(
             res = 1;
         }
     } else if filter_name_is(tname, "callable") {
-        if k == V_FUNC {
+        if k == V_FUNC || k == V_METHOD {
             res = 1;
         }
     } else if filter_name_is(tname, "odd") || filter_name_is(tname, "even") {
@@ -4375,6 +4460,44 @@ recursive fn call_builtin(
     return fail_node(K_CALL, apos(A, st, id), "Unknown builtin", E, st);
 }
 
+recursive fn call_method(
+    callee: i64,
+    id: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let recv = vi(A, st, callee);
+    let noff2 = A[st[18] + callee];
+    let nlen2 = A[st[19] + callee];
+    let base = A[3] - 4;
+    let vnode = base;
+    let inode = base + 1;
+    let cnode = base + 2;
+    let fnode = base + 3;
+    A[st[30] + vnode] = K_VALUE;
+    A[st[32] + vnode] = recv;
+    A[st[35] + vnode] = 0;
+    A[st[36] + vnode] = 0;
+    A[st[30] + inode] = K_IDENT;
+    A[st[33] + inode] = noff2;
+    A[st[34] + inode] = nlen2;
+    A[st[30] + cnode] = K_CALL;
+    A[st[35] + cnode] = inode;
+    A[st[36] + cnode] = 0;
+    A[st[38] + cnode] = al0s(A, st, id);
+    A[st[39] + cnode] = al0c(A, st, id);
+    A[st[30] + fnode] = K_FILTER;
+    A[st[35] + fnode] = vnode;
+    A[st[36] + fnode] = cnode;
+    return eval_filter(fnode, st[11], noff, nlen, cval, A, F, B, E, out, st);
+}
+
 recursive fn eval_call(
     id: i64,
     ctxc: i64,
@@ -4393,7 +4516,13 @@ recursive fn eval_call(
         return -1;
     }
 
-    if vk(A, st, callee) != V_FUNC {
+    let ck = vk(A, st, callee);
+
+    if ck == V_METHOD {
+        return call_method(callee, id, noff, nlen, cval, A, F, B, E, out, st);
+    }
+
+    if ck != V_FUNC {
         var p = apps(E, 0, "Callee is not a function: got ");
         let tn = type_name(A, B, st, callee, E[p..]);
         p = p + tn;
@@ -4481,6 +4610,10 @@ recursive fn eval_node(
 
     if k == K_INT {
         return mk_int(A, F, st, aiv(A, st, id));
+    }
+
+    if k == K_VALUE {
+        return aiv(A, st, id);
     }
 
     if k == K_FLOAT {
