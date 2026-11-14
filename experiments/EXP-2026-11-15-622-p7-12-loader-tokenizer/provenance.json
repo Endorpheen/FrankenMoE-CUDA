@@ -1,0 +1,74 @@
+{
+  "experiment": "EXP-2026-11-15-627-p7-12-gguf-loader-common",
+  "task": "P7-12",
+  "base_commit": "df3ce73a",
+  "native_tree": {
+    "path": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
+    "commit": "1b44e307",
+    "llama_vocab_cpp_sha256": "e6dac06f02e0264f7a2ed7062e7603ec0eeb8ae96568819874e42adbb2dc1f38",
+    "orca_lib_sha256_16": "d05eba2bdb0281ec",
+    "note": "S3 links libllama-common.so from build-cuda/bin as the oracle"
+  },
+  "compiler": {
+    "path": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+    "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+    "version": "goose runtime 1e714e6146bc",
+    "cc": "gcc-13",
+    "cxx": "g++-13",
+    "gate_opt": "-O1",
+    "mutation_opt": "-O0"
+  },
+  "slices": [
+    {
+      "id": "S1",
+      "module": "goose/model/vocab-type.goose",
+      "prefix": "vt_",
+      "source_sha256": "f744f1a7a31ffa52c62024388e28363858b9a2a47d7a5c09bef47b0637e8a5d2",
+      "generated_c_sha256": "3d7d029f99292596639ca507d38bb36bd4c149399d0583ae7667dbd2a4c2cf26",
+      "oracle": "build/native-dispatch.cpp (522 native lines extracted from src/llama-vocab.cpp)",
+      "oracle_sha256": "a1fefc6607c1d47382f39760a90fa349c06b52125355f2c1a305711920b45c60",
+      "gate": "cases 2556, record bytes 224908, failures 0",
+      "cases": 2556,
+      "mutations": 4
+    },
+    {
+      "id": "S2",
+      "module": "goose/model/special-partition.goose",
+      "prefix": "stp_",
+      "source_sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682",
+      "generated_c_sha256": "333b0271af418d6a135426fdc8d13810e2c6fbe2cc4485a9343a0b7bd69bf841",
+      "oracle": "build/native-partition.cpp (116 native lines, body of tokenizer_st_partition)",
+      "oracle_sha256": "b16a92f51e0d3df67521641dd714f33705723024f51a6d4a93795ee302ffd467",
+      "gate": "cases 443, fragments 1469, failures 0",
+      "cases": 443,
+      "mutations": 4
+    },
+    {
+      "id": "S3",
+      "module": "goose/misc/common-strings.goose",
+      "prefix": "cs_",
+      "source_sha256": "f6647d3636090a1ded775976945f9f6b2b7b8ca4c5f3da57a69e2f2e89026c5b",
+      "generated_c_sha256": "a3677e023f0b5cabecb77951fd5281b21f2ed81cc2aa7fa46b0528956d01037c",
+      "oracle": "libllama-common.so symbols string_strip, string_split, string_join, string_replace_all, string_repeat, string_from, string_lcs, string_process_escapes, string_parse_kv_override",
+      "gate": "cases 140, output bytes 1012, failures 0",
+      "cases": 140,
+      "mutations": 4
+    }
+  ],
+  "mutations": {
+    "total": 12,
+    "caught": 12,
+    "halves": ["0:6 -> 6/6", "6:12 -> 6/6"]
+  },
+  "scripts": {
+    "tests/make-native.py": "496eaa7b6f277ad63a2f403535038f3134ed67e2be652e3cc58d3ccae9e8f0f8",
+    "tests/gen-vocab-type.py": "21fbb2e1df4769dc3fef6f26dd0c166087f9cf661b568f2b2c8ca32618806b72",
+    "tests/gen-cases.py": "3d686b34e7bb1fd8182ddf7f08f41a3831019403c6ad58e5afc61d0105df6983",
+    "tests/gen-partition-cases.py": "08c47814289a4a98989366688a1341d73c300a03332ac87536942f2dd43bb4be",
+    "tests/build.sh": "e9436354c5e2a5d9f87c0c82ba7da60a38d6a4e275f85b2fa3fc8c67acb97bea",
+    "tests/mutate.py": "86d04505c446f423c8a9ab440b31329f12c3469bd98d1a3df2b99ca13c8a4751",
+    "tests/fixture_dispatch.cpp": "a1c898ae13120862a269c5a251cbc207301c976a30c185251ca4ff60cc28e272",
+    "tests/fixture_partition.cpp": "097cc3e207d8fde374969d257fdff924cd3878c05ee06f4099933c666613aefe",
+    "tests/fixture_strings.cpp": "0b19f9b66fa241ab271f021c1bfd02281bd839e1fa83b038b0f637cb7524a077"
+  }
+}

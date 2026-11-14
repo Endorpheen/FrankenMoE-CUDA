@@ -42,6 +42,9 @@ MODULES=(
     goose/model/expert-lru.goose
     goose/model/dense-place.goose
     goose/model/stream-plan.goose
+    goose/model/vocab-type.goose
+    goose/model/special-partition.goose
+    goose/misc/common-strings.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose

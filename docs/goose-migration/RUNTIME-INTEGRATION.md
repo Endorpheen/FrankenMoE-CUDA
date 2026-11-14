@@ -35,15 +35,16 @@ GGUF (4), P9-06 (3), runtime+schema (2), app (9) and core (5).
 
 The growing main build is `tools/build-main-runtime.sh`. It composes every
 accepted module that shares one unit, typechecks, generates C, compiles an
-object and fails on any duplicate global symbol. Current state: 32 modules,
-2237 specializations, 15.9 MB of C, 3 s to typecheck and 13 s to compile,
-337 global symbols, 0 duplicates, 134 extern helper entry points.
+object and fails on any duplicate global symbol. Current state: 35 modules,
+2284 specializations, 16.3 MB of C, 3 s to typecheck and 13 s to compile,
+349 global symbols, 0 duplicates, 134 extern helper entry points.
 
 The build holds the model graph/loader/file-io/arch-registry, the six quantizer
 modules plus weighted, the four GGUF modules, expert LRU, dense placement,
-row-stream planning, the Jinja runtime, the schema converter, config
-validate/resolve, CLI protocol, metrics, spec-decode decisions, the five server
-modules and the two chat modules. Per-architecture
+row-stream planning, vocab dispatch, special-token partition, common strings,
+the Jinja runtime, the schema converter, config validate/resolve, CLI protocol,
+metrics, spec-decode decisions, the five server modules and the two chat
+modules. Per-architecture
 model builders stay out by design: they are alternatives, not one unit.
 
 It still cannot link because the native helper entry points are extern symbols
