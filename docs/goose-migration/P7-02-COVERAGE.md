@@ -41,6 +41,26 @@ failures**. Mutations: **12/12** in two halves of 6 (set replacement, remove
 shift, missing-key result, reserved type/value, key length, scalar type, string
 length, array count, `set_kv` count/replacement/bytes, string-array flag).
 
+## S4 plan (split and merge)
+
+Native anchors in `tools/gguf-split/gguf-split.cpp`: `split_str_to_n_bytes` (74),
+`split_params_parse_ex` (92), `split_params_parse` (183), `zeros` (196),
+`split_strategy` (203) with `should_split`, `print_info` and `split` (up to 372),
+`gguf_split` (373), `gguf_merge` (411) and `main` (597).
+
+The port owns the decisions: size/tensor-count split strategy, the per-shard
+metadata (first shard carries all metadata; every shard gets split.no,
+split.count and split.tensors.count), shard naming, the merge metadata replay,
+tensor order restoration and the refusal paths (existing output, missing shard,
+mismatched counts). File IO stays a parameter, so the gate can run on
+in-memory buffers.
+
+Prerequisite: S3 must land first, because both split and merge read and write
+tensor descriptors and data. The gate reuses the S3 synthetic tensors, runs the
+native `gguf-split` binary on a tiny file as the oracle, and compares the shard
+set, every KV and every tensor's name/shape/type/bytes; a second comparison
+merges the shards back and checks the original tensor set and data.
+
 ## Open boundaries
 
 - The writer (S2) and tensor data (S3) are native; no byte-exact GGUF output
