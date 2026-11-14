@@ -283,3 +283,82 @@ then-available quantization baselines under matched model-size budgets and
 reproducible conditions. Evaluate quality, prefill/decode speed, model size, RAM
 and VRAM; distinguish quantization quality gains from runtime/kernel gains.
 No implementation, model conversion, or benchmark is scheduled by this note.
+
+## Long-term research idea: DGoose (own speculative decoding on Goose)
+
+Status: **IDEA_ONLY / UNSCHEDULED**, recorded 2026-11-14. This is a future research
+and engineering direction, not an active experiment. Nothing here is implemented,
+and it does not change the current Goose migration GOAL, its sequence, or existing
+priorities.
+
+Goal: build an own adaptive speculative decoding system for FrankenMoE in Goose —
+independent of upstream speculation code, with full control over the algorithms and
+without added dependencies.
+
+### Directions
+
+| direction | scope |
+|---|---|
+| DGoose N-gram | predict the next tokens from the generated context itself, without a second model or draft head |
+| DGoose MTP | an own MTP engine in Goose: support existing MTP heads and investigate whether a head can be built and trained here |
+| DGoose Adaptive | choose speculation depth dynamically from the accepted-token fraction and the verification cost |
+| DGoose MoE-Aware | account for expert GPU cache residency, PCIe transfers, RAM/VRAM headroom and the cost of preloading experts |
+| DGoose Verification | accept predictions so that the generation distribution is preserved: exact acceptance test, no quality loss by construction |
+
+### Principles
+
+1. The implementation is independent Goose code; upstream speculation is a
+   reference for behaviour, never a dependency.
+2. Algorithms stay under local control: the acceptance rule, depth policy and
+   scheduling are owned and auditable, not hidden in a library.
+3. No additional dependencies: the Goose runtime, the existing tokenizer and the
+   model are the only inputs.
+4. Every mechanism is capability-gated and defaults on inside its verified
+   envelope, with an explicit disable path, per Hard rule 10.
+
+### Accepted operating mode
+
+- Golden rule: any candidate is judged on the combined balance of single-response
+  decode, actual prefill and memory, never on decode alone and never on aggregate
+  throughput (Hard rule 9).
+- Reference baseline: **43.04 tok/s** single-response decode, measured under the
+  fixed Apex profile. This number is the comparison point, not a promise.
+- Experimental orientation: **50+ tok/s**, explicitly without a guarantee. A
+  candidate that reaches it still needs the numerical/quality gate and the memory
+  budget to pass before any promotion.
+
+### Technical prerequisites (before the first DGoose experiment)
+
+1. All 152 ledger requirements closed (currently 102 DONE / 1 PARTIAL / 49 TODO),
+   including the remaining P9 and P6 mechanisms that speculation depends on.
+2. The final C++ audit complete: no unported hot path left in the decode loop that
+   DGoose would have to duplicate.
+3. The runtime stabilized: fixed launch profile, reproducible measurements, swap and
+   page-fault checks clean.
+4. The Goose port complete for what speculation touches: attention/KV, sampling,
+   the chat template layer and tokenizer access.
+5. A measurement harness that can run paired A/B runs on the golden rule without
+   touching the working profile.
+
+### Preliminary experiment plan (concept only, not scheduled)
+
+1. **D1 — N-gram draft**: draft from repeated context spans, expose the
+   accepted-token fraction, measure decode prefill cost. Gate: exact distribution.
+2. **D2 — Verification**: implement the exact acceptance rule and prove on a fixed
+   seed set that the output distribution matches plain decoding.
+3. **D3 — Adaptive depth**: depth policy from acceptance rate and verification cost;
+   gate on the golden rule, not on decode alone.
+4. **D4 — MoE-aware scheduling**: expert-residency and transfer cost in the depth
+   decision; measure VRAM/RAM/PCIe impact.
+5. **D5 — MTP engine**: own MTP path on existing heads; compare with D1/D3.
+6. **D6 — Training a head (research)**: only if D5 shows a head can help at all;
+   otherwise record a negative result.
+
+Each step gets one experiment card, one atomic commit, its own gate and its own
+baseline pair. No step is pre-approved by this note.
+
+### Boundaries
+
+This note does not start DGoose, does not reserve the GPU, and does not change the
+current migration goal or its measurement discipline. It exists so the direction,
+its prerequisites and its acceptance rule are written down before any work begins.
