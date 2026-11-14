@@ -8037,3 +8037,23 @@ export fn chat_bases(st: i64[:], n: i64) -> i64 {
     bases(st);
     return 0;
 }
+
+// chat.cpp common_chat_peg_parse with an empty parser arena: the static
+// content-only grammar accepts the rest of the input, and the generation prompt
+// is prepended to the input before parsing.
+export fn chat_parse_content_only(gp: const u8[:], text: const u8[:], out: u8[:]) -> i64 {
+    var n: i64 = 0;
+
+    while n < gp.len {
+        out[n] = gp[n];
+        n = n + 1;
+    }
+    var i: i64 = 0;
+
+    while i < text.len {
+        out[n] = text[i];
+        n = n + 1;
+        i = i + 1;
+    }
+    return n;
+}
