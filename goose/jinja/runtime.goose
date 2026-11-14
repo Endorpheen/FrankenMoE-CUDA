@@ -2154,6 +2154,18 @@ fn method_name_is(kind: i64, n: const u8[:]) -> bool {
             filter_name_is(n, "reject");
     }
 
+    if kind == V_INT || kind == V_FLOAT {
+        return filter_name_is(n, "abs") || filter_name_is(n, "int") ||
+            filter_name_is(n, "float") || filter_name_is(n, "string") ||
+            filter_name_is(n, "safe") || filter_name_is(n, "tojson");
+    }
+
+    if kind == V_BOOL {
+        return filter_name_is(n, "int") || filter_name_is(n, "float") ||
+            filter_name_is(n, "string") || filter_name_is(n, "safe") ||
+            filter_name_is(n, "tojson");
+    }
+
     if kind == V_STRING {
         return filter_name_is(n, "upper") || filter_name_is(n, "lower") ||
             filter_name_is(n, "strip") || filter_name_is(n, "lstrip") ||
@@ -2289,6 +2301,10 @@ recursive fn eval_member(
             }
         }
         return mk_undef_hint(A, F, B, st, "object_property");
+    }
+
+    if vk(A, st, prop) == V_STRING {
+        return mk_undef_hint(A, F, B, st, vstr(B, A, st, prop));
     }
     return mk_undef_hint(A, F, B, st, "object_property");
 }
@@ -4248,6 +4264,26 @@ recursive fn eval_filter(
             return fail_node(K_FILTER, apos(A, st, id), "pop index out of bounds", E, st);
         }
         return A[pool(A, st) + vcs(A, st, sval) + idx];
+    }
+
+    if filter_name_is(fname, "abs") {
+        if vk(A, st, sval) == V_INT {
+            var v = vi(A, st, sval);
+
+            if v < 0 {
+                v = 0 - v;
+            }
+            return mk_int(A, F, st, v);
+        }
+
+        if vk(A, st, sval) == V_FLOAT {
+            var f = F[sval];
+
+            if f < 0.0 {
+                f = 0.0 - f;
+            }
+            return mk_float(A, F, st, f);
+        }
     }
 
     var p = apps(E, 0, "Unknown (built-in) filter '");
