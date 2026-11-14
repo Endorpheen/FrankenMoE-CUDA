@@ -137,9 +137,13 @@ carry different bodies under one name. Status:
   `K_*` are value kinds (0..7); the schema converter also uses `K_NULL` with a
   different meaning. All three families are scoped per module in the composed
   unit while the sources keep their names;
-- `tools/check-composition.sh` composes the eight accepted sets (server, quant,
-  GGUF, P9-06, runtime+schema, app, core, full) and runs `goose check` on each;
-  it is the fast smoke test for the composition step.
+- with the accepted P9-01, P9-07 and P6-11 modules the core set grows to ten
+  modules (`core2`: model graph/loader/file-io/arch-registry, jinja runtime,
+  schema converter, config-validate, config-resolve, metrics-traces,
+  spec-decode-decisions): 1199 specializations, no new collisions;
+- `tools/check-composition.sh` composes the nine accepted sets (server, quant,
+  GGUF, P9-06, runtime+schema, app, core, core2, full) and runs `goose check` on
+  each; it is the fast smoke test for the composition step.
 
 ## Slice plan
 
