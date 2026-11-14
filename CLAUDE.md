@@ -113,6 +113,16 @@ module that is not accepted yet, assign analysis only.
 At acceptance, check that existing behaviour and interfaces are preserved, not
 just that the new module is locally correct.
 
+## Deleting files
+
+Never delete whole shared directories inside the project (`rm -rf runtime/*`,
+`build/*`, `work/*` and similar). Remove only specific temporary artefacts whose
+purpose has been checked: a named experiment build directory, a named /tmp
+scratch path, or files proven reproducible from tracked sources. `runtime/`,
+`build/` and `work/` contain tracked and untracked material that Git cannot
+restore as a whole, and `work/llama.cpp-integration` is off limits by rule 5.
+Mass deletions require Igor's explicit approval.
+
 ## Experiment storage
 
 Evidence stays, build artefacts do not. Commit the Goose source, the build and
