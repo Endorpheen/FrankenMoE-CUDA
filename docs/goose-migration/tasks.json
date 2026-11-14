@@ -2310,18 +2310,23 @@
       "id": "P9-03",
       "phase": "P9",
       "title": "Port dense weights and expert streaming/LRU sources",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "carrier/runtime/core/src/moe/dense_weights.cpp",
         "carrier/runtime/core/src/moe/expert_stream_source.cpp"
       ],
       "acceptance": "Goose owns bounded RAM LRU,eviction,prefetch,dense residency and source lifetimes; deterministic trace/data checks.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP621 (experiments/EXP-2026-11-15-621-p9-03-stream-policy): expert LRU and residency policy (xl_, 14 exports), dense weight placement (dw_, 6) and the row-stream plan (sp_, 7) are Goose, shipped as one composite unit because three generated headers cannot share one translation unit. Gate 74 cases / 198 checks / 0 failures against the native transcription; mutations 12/12 in halves. Contracts kept explicit: xl_touch takes an already-committed access, xl_set_budget returns the budget, and quiesce_spec() stays with the caller on the compression branch. Honest conflicts: u8->i64 range widening (+~256 KiB at 40x128), std::list replaced by a flat array in sp_evict, a 32-bit generation mask, and the transcription oracle. Native keeps file/disk (FileReader, O_DIRECT, pread), the kernel (vm_*, madvise, mincore, /proc, pinned), threads, the graph/ABI and telemetry.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 54,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "replace the 25 call sites in the expert cache, dense placement and row streaming with the Goose decisions (commit-before-touch, budget return, caller-owned quiesce_spec)"
+      ]
     },
     {
       "id": "P9-04",
@@ -4464,6 +4469,10 @@
     {
       "event": "P9-01: config validation, recipe registry and CLI resolution ported (EXP620, 3 gates, 12/12); call-site wiring is open.",
       "checkpoint": "cc649ed1"
+    },
+    {
+      "event": "P9-03: expert LRU, dense placement and row-stream planning ported (EXP621, 74/198, 12/12); call-site wiring is open.",
+      "checkpoint": "ef898800"
     }
   ],
   "batches": [
@@ -5354,16 +5363,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T22:35:20.327785+00:00",
+  "updated_at": "2026-11-14T22:44:44.842304+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
     "PARTIAL": 1
   },
   "work_front": {
-    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11 and P9-01.",
-    "slices_total": 105,
-    "slices_done": 103,
+    "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01 and P9-03.",
+    "slices_total": 108,
+    "slices_done": 106,
     "slices_in_progress": 0,
     "slices_remaining": 2
   },

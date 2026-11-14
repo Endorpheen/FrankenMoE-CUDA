@@ -146,8 +146,8 @@ carry different bodies under one name. Status:
   each; it is the fast smoke test for the composition step;
 - `tools/build-main-runtime.sh` is the growing main build: it adds every
   accepted module that shares one unit, then typechecks, generates C, compiles
-  an object and rejects duplicate globals. Today it holds 29 modules and 2196
-  specializations (15.8 MB C, 308 globals, 0 duplicates, 134 extern entry
+  an object and rejects duplicate globals. Today it holds 32 modules and 2237
+  specializations (15.9 MB C, 337 globals, 0 duplicates, 134 extern entry
   points). Its internal name collisions are scoped per module in the composer
   (quant-weighted's helper families join the qw_ prefix).
 

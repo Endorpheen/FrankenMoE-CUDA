@@ -39,6 +39,9 @@ MODULES=(
     goose/model/gguf-writer.goose
     goose/model/gguf-tensors.goose
     goose/model/gguf-split.goose
+    goose/model/expert-lru.goose
+    goose/model/dense-place.goose
+    goose/model/stream-plan.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose
