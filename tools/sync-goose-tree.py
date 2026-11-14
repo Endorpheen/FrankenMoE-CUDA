@@ -52,6 +52,8 @@ CANONICAL_SOURCES = [
      "common/hf-cache.cpp", "1556 cases / 0 diffs, 12/12 mutations"),
     ("server/download-selection.goose", "EXP-2026-11-14-579-p7-11-download-selection", "source/download-selection.goose",
      "common/download.cpp", "31 cases / 0 diffs, 16/16 mutations"),
+    ("server/server-schema.goose", "EXP-2026-11-14-595-p8-07-request-schema", "source/server-schema.goose",
+     "tools/server/server-schema.cpp", "181 lines / 0 diffs, 12/12 mutations"),
     ("server/tools-pure.goose", "EXP-2026-11-14-586-p8-07-tool-definitions", "source/tools-pure.goose",
      "tools/server/server-tools.cpp (definitions and dispatch)", "12 cases / 92 values / 0 failures, 12/12 mutations"),
     ("server/jsonparse.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",

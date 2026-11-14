@@ -1,0 +1,113 @@
+# id	label	base	request
+C0	empty0	0	{}
+C1	empty1	1	{}
+C2	nulls	1	{"top_k": null, "stream": null, "verbose": null}
+C3	top_k_100	0	{"top_k": 100}
+C4	top_k_neg	0	{"top_k": -5}
+C5	n_predict_neg	0	{"n_predict": -5}
+C6	n_cmpl_0	0	{"n_cmpl": 0}
+C7	n_cmpl_2_v0	0	{"n_cmpl": 2}
+C8	n_cmpl_2_v1	1	{"n_cmpl": 2}
+C9	n_cmpl_5_v1	1	{"n_cmpl": 5}
+C10	n_indent_neg	0	{"n_indent": -1}
+C11	n_keep_neg2	0	{"n_keep": -2}
+C12	n_keep_neg1	0	{"n_keep": -1}
+C13	top_p_hi	0	{"top_p": 2.0}
+C14	top_p_lo	0	{"top_p": -0.5}
+C15	temp_neg	0	{"temperature": -1.0}
+C16	mirostat_hi	0	{"mirostat": 3}
+C17	mirostat_lo	0	{"mirostat": -1}
+C18	decay_hi	0	{"adaptive_decay": 1.5}
+C19	decay_ok	0	{"adaptive_decay": 0.5}
+C20	atarget_hi	0	{"adaptive_target": 2.0}
+C21	seed_42	0	{"seed": 42}
+C22	seed_neg	0	{"seed": -1}
+C23	seed_wrap	0	{"seed": 4294967296}
+C24	top_k_float	0	{"top_k": 1.5}
+C25	top_k_str	0	{"top_k": "x"}
+C26	stream_str	0	{"stream": "yes"}
+C27	stream_true	1	{"stream": true, "cache_prompt": true}
+C28	t_max	0	{"t_max_predict_ms": 9000000000}
+C29	repeat_last_neg	0	{"repeat_last_n": -1}
+C30	dry_base_lo	0	{"dry_base": 0.5}
+C31	dry_base_hi	1	{"dry_base": 2.5}
+C32	dry_base_1	1	{"dry_base": 1.0}
+C33	resp_fields	0	{"response_fields": ["n_predict", "model"]}
+C34	resp_fields_str	0	{"response_fields": "x"}
+C35	resp_fields_num	0	{"response_fields": [1, 2]}
+C36	lora_empty	0	{"lora": []}
+C37	lora_str	0	{"lora": "x"}
+C38	lora_one	0	{"lora": [{"id": 1, "scale": 0.5}]}
+C39	lora_dups	0	{"lora": [{"id": -1, "scale": 0.5}, {"id": -1, "scale": 0.5}]}
+C40	breakers_ok	0	{"dry_sequence_breakers": ["a", "bb"]}
+C41	breakers_empty	0	{"dry_sequence_breakers": []}
+C42	breakers_str	0	{"dry_sequence_breakers": "x"}
+C43	breakers_blank	0	{"dry_sequence_breakers": [""]}
+C44	stop_arr	0	{"stop": ["a", "b"]}
+C45	stop_empty_arr	1	{"stop": []}
+C46	stop_str	0	{"stop": "END"}
+C47	stop_empty_str	1	{"stop": ""}
+C48	stop_filter	0	{"stop": ["", "a"]}
+C49	stop_num	0	{"stop": 5}
+C50	stop_obj	1	{"stop": {"a": 1}}
+C51	samplers_names	0	{"samplers": ["top_k", "top-p", "nucleus", "temp"]}
+C52	samplers_upper	0	{"samplers": ["TOP_K", "Typ_P", "topnsigma"]}
+C53	samplers_unknown	0	{"samplers": ["bogus", "minp"]}
+C54	samplers_chars	0	{"samplers": "kyp"}
+C55	samplers_chars_unknown	0	{"samplers": "kzq"}
+C56	samplers_num	1	{"samplers": 5}
+C57	json_schema_empty	0	{"json_schema": {}}
+C58	json_schema_and_grammar	0	{"json_schema": {"type":"object"}, "grammar": "root ::= \"a\""}
+C59	grammar_user	0	{"grammar": "root ::= \"a\""}
+C60	grammar_tool	0	{"grammar": "root ::= \"a\"", "grammar_type": "tool_calls"}
+C61	grammar_empty	0	{"grammar": ""}
+C62	schema_null	0	{"json_schema": null}
+C63	reasoning_deepseek	0	{"reasoning_format": "deepseek"}
+C64	reasoning_legacy	0	{"reasoning_format": "deepseek-legacy"}
+C65	reasoning_auto	0	{"reasoning_format": "auto"}
+C66	reasoning_none	0	{"reasoning_format": "none"}
+C67	reasoning_bad	0	{"reasoning_format": "nope"}
+C68	reasoning_num	0	{"reasoning_format": 1}
+C69	cont_true	0	{"continue_final_message": true}
+C70	cont_content	0	{"continue_final_message": "content"}
+C71	cont_reason	0	{"continue_final_message": "reasoning_content"}
+C72	cont_bad	0	{"continue_final_message": "x"}
+C73	cont_num	0	{"continue_final_message": 1}
+C74	echo_true	0	{"echo": true}
+C75	echo_num	0	{"echo": 1}
+C76	nested_usage	0	{"stream_options": {"include_usage": true}}
+C77	nested_false	0	{"stream_options": {"include_usage": false}}
+C78	nested_null	1	{"stream_options": {"include_usage": null}}
+C79	nested_str	0	{"stream_options": {"include_usage": "x"}}
+C80	nested_arr	0	{"stream_options": []}
+C81	alias_max_tokens	0	{"max_tokens": 32}
+C82	alias_both	0	{"n_predict": 10, "max_tokens": 32}
+C83	alias_alias_both	0	{"max_completion_tokens": 16, "max_tokens": 32}
+C84	alias_n	1	{"n": 3}
+C85	alias_logprobs	0	{"logprobs": 3}
+C86	ignore_eos_t	0	{"ignore_eos": true}
+C87	ignore_eos_f	1	{"ignore_eos": false}
+C88	bools	0	{"backend_sampling": true, "post_sampling_probs": true, "grammar_lazy": true, "reasoning_control": true}
+C89	budget_tokens	0	{"reasoning_budget_tokens": 128, "reasoning_control": true}
+C90	int_to_float	0	{"temperature": 1}
+C91	float_to_int	0	{"n_keep": 3.9}
+C92	n_probs_min	0	{"n_probs": -2147483648}
+C93	min_keep_neg	0	{"min_keep": -1}
+C94	backend_str	0	{"backend_sampling": "x"}
+C95	timings_true	0	{"timings_per_token": true}
+C96	n_discard_neg	0	{"n_discard": -1}
+C97	n_cache_v1	1	{"n_cache_reuse": 32}
+C98	dry_allowed_neg	0	{"dry_allowed_length": -1}
+C99	pos_freq	0	{"frequency_penalty": 0.25, "presence_penalty": 0.5}
+C100	nested_extra	0	{"stream_options": {"include_usage": true}}
+D0	empty0	0	{}
+D1	all	0	{"top_k": 5, "top_p": 0.9, "max_tokens": 64}
+D2	neg	0	{"n_predict": -5}
+D3	top_k_neg	0	{"top_k": -1}
+D4	top_p_hi	0	{"top_p": 2.0}
+D5	seed_neg	0	{"seed": -1}
+D6	stream_rep	0	{"stream": true, "repeat_penalty": 1.5}
+D7	seed_base	1	{}
+D8	alias_max_tokens	0	{"max_tokens": 32}
+D9	top_k_str	0	{"top_k": "x"}
+D10	n_predict_float	0	{"n_predict": 7.9}

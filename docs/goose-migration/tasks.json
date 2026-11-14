@@ -2189,17 +2189,16 @@
         "tools/server/server-schema.cpp"
       ],
       "acceptance": "All maintained tool/MCP/schema/decision paths Goose with fixtures; no external messages or real tool side effects during tests.",
-      "evidence": " 2026-11-14 S2 (EXP586, experiments/EXP-2026-11-14-586-p8-07-tool-definitions): the pure half of the local tools is Goose - the seven-tool table and reverse lookup, the write/cwd/stream flags, per-tool argument validation with defaults and clamps (glob depth/limit, grep context, exec timeout 60 and 16 KiB output, read line range), edit occurrence checks, read text/guard and the exact result JSON member order. Gate: 12 cases / 92 values / 0 failures, no filesystem, no process, no model; mutations 12/12 in two halves. The IO backends, isolate/container/ssh and the runtimes remain in S5.",
+      "evidence": " 2026-11-14 S2 (EXP586, experiments/EXP-2026-11-14-586-p8-07-tool-definitions): the pure half of the local tools is Goose - the seven-tool table and reverse lookup, the write/cwd/stream flags, per-tool argument validation with defaults and clamps (glob depth/limit, grep context, exec timeout 60 and 16 KiB output, read line range), edit occurrence checks, read text/guard and the exact result JSON member order. Gate: 12 cases / 92 values / 0 failures, no filesystem, no process, no model; mutations 12/12 in two halves. The IO backends, isolate/container/ssh and the runtimes remain in S5. 2026-11-14 S1 (EXP595, experiments/EXP-2026-11-14-595-p8-07-request-schema): the request schema fields are Goose - the 62 live completion fields plus one subfield, 6 aliases, 7 disabled #if 0 speculative fields excluded, hard/soft limits, defaults, the TTS schema and field evaluation with the native error texts (12 range, 7 JSON-type, 6 own messages). Gate: 112 cases, 181 lines each side, diff 0; mutations 12/12 in two halves. Limits: six token-level handlers (preserved_tokens, grammar_triggers, reasoning_budget_*, logit_bias) stop at GGML_ASSERT(vocab) natively, so only their rows/limits/defaults are compared; json_schema text is D1, the gate checks the choice and type; the nlohmann string/float quirks are fixed deliberately.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
       "slices_total": 5,
-      "slices_done": 1,
+      "slices_done": 2,
       "coverage_doc": "docs/goose-migration/P8-07-COVERAGE.md",
       "remaining": [
-        "request schema fields (in acceptance)",
         "MCP session core over an abstract transport",
         "decision render/answer core",
         "integration shells (isolate/container/ssh, stdio MCP, HTTP handlers)"
@@ -4363,6 +4362,10 @@
     {
       "event": "P6-05 architecture 11 (EXP594): kimi-linear joins the canon as goose/model/kimi-linear.goose with a 103-case gate and 12/12 mutations.",
       "checkpoint": "e4f8e5a1"
+    },
+    {
+      "event": "P8-07 first slice (EXP595): the request schema joins the canon as goose/server/server-schema.goose with a 181-line differential and 12/12 mutations.",
+      "checkpoint": "626b687d"
     }
   ],
   "batches": [
@@ -5253,7 +5256,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T19:03:38.455436+00:00",
+  "updated_at": "2026-11-14T19:04:56.311252+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5262,9 +5265,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09 and P8-07.",
     "slices_total": 88,
-    "slices_done": 60,
+    "slices_done": 61,
     "slices_in_progress": 0,
-    "slices_remaining": 28
+    "slices_remaining": 27
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }
