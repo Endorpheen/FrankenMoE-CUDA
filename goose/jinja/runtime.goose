@@ -4135,6 +4135,116 @@ recursive fn call_builtin(
         i = i + 1;
     }
 
+    if bid == 3 || bid == 4 {
+        var kk: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
+        var vv: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
+        var n: i64 = 0;
+        var iter_seen: i64 = 0;
+        var ai: i64 = 0;
+        let acount = al0c(A, st, id);
+
+        while ai < acount {
+            let argn = A[apool(A, st) + al0s(A, st, id) + ai];
+
+            if ak(A, st, argn) == K_KWARG {
+                if n >= 8 {
+                    return fail_node(K_CALL, apos(A, st, id), "dict() supports at most 8 entries", E, st);
+                }
+                let key = mk_str(A, F, B, st, astr(B, A, st, ac0(A, st, argn)));
+                let val = eval_node(ac1(A, st, argn), st[11], noff, nlen, cval, A, F, B, E, out, st);
+
+                if st[1] != 0 {
+                    return -1;
+                }
+                kk[n] = key;
+                vv[n] = val;
+                n = n + 1;
+            } else {
+                let it = eval_node(argn, st[11], noff, nlen, cval, A, F, B, E, out, st);
+
+                if st[1] != 0 {
+                    return -1;
+                }
+
+                if iter_seen != 0 {
+                    var p = apps(E, 0, "namespace/dict() arguments must be kwargs, dict and/or iterable of tuples, not ");
+                    let tn = type_name(A, B, st, it, E[p..]);
+                    p = p + tn;
+                    return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
+                }
+                let ik = vk(A, st, it);
+
+                if ik == V_OBJECT {
+                    let m = vkc(A, st, it);
+
+                    if n + m > 8 {
+                        return fail_node(K_CALL, apos(A, st, id), "dict() supports at most 8 entries", E, st);
+                    }
+                    var j: i64 = 0;
+
+                    while j < m {
+                        kk[n + j] = A[pool(A, st) + vks(A, st, it) + j];
+                        vv[n + j] = A[pool(A, st) + vvs(A, st, it) + j];
+                        j = j + 1;
+                    }
+                    n = n + m;
+                } else if ik == V_ARRAY || ik == V_TUPLE {
+                    let m = vcc(A, st, it);
+
+                    if n + m > 8 {
+                        return fail_node(K_CALL, apos(A, st, id), "dict() supports at most 8 entries", E, st);
+                    }
+                    var j: i64 = 0;
+
+                    while j < m {
+                        let pairid = A[pool(A, st) + vcs(A, st, it) + j];
+                        let pk = vk(A, st, pairid);
+
+                        if (pk == V_ARRAY || pk == V_TUPLE) && vcc(A, st, pairid) == 2 {
+                            kk[n + j] = A[pool(A, st) + vcs(A, st, pairid)];
+                            vv[n + j] = A[pool(A, st) + vcs(A, st, pairid) + 1];
+                        } else {
+                            var p = apps(E, 0, "namespace/dict() iterable argument must consist of tuples, not ");
+                            let tn = type_name(A, B, st, pairid, E[p..]);
+                            p = p + tn;
+                            return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
+                        }
+                        j = j + 1;
+                    }
+                    n = n + m;
+                } else {
+                    var p = apps(E, 0, "namespace/dict() arguments must be kwargs, dict and/or iterable of tuples, not ");
+                    let tn = type_name(A, B, st, it, E[p..]);
+                    p = p + tn;
+                    return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
+                }
+                iter_seen = 1;
+            }
+            ai = ai + 1;
+        }
+        let obj = vnew(A, F, st, V_OBJECT);
+        let kb = st[4];
+        var q: i64 = 0;
+
+        while q < n {
+            A[st[26] + kb + q] = kk[q];
+            q = q + 1;
+        }
+        let vb = st[4] + n;
+        q = 0;
+
+        while q < n {
+            A[st[26] + vb + q] = vv[q];
+            q = q + 1;
+        }
+        st[4] = vb + n;
+        A[st[22] + obj] = kb;
+        A[st[23] + obj] = n;
+        A[st[24] + obj] = vb;
+        A[st[25] + obj] = n;
+        return obj;
+    }
+
     if bid == 1 {
         if argc < 1 || argc > 3 {
             return fail_node(K_CALL, apos(A, st, id), "range() expects 1 to 3 arguments", E, st);
@@ -4338,6 +4448,14 @@ recursive fn eval_node(
 
         if filter_name_is(name, "raise_exception") {
             return mk_builtin(A, F, st, 2);
+        }
+
+        if filter_name_is(name, "dict") {
+            return mk_builtin(A, F, st, 3);
+        }
+
+        if filter_name_is(name, "namespace") {
+            return mk_builtin(A, F, st, 4);
         }
         return mk_undef_hint(A, F, B, st, name);
     }
