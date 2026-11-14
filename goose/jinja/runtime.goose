@@ -12535,3 +12535,698 @@ export fn role_to_string(role: i64, out: u8[:]) -> i64 {
     }
     return 0;
 }
+
+// ------------------------------------------------------------------ streaming
+//
+// common/chat.cpp common_chat_peg_parse (the FAIL branch and the "publish only
+// a non-empty message" rule of common_chat_session::feed / finish). This is
+// the streaming slice only: the grammar is executed by the accepted parser
+// module (goose/json/peg-ast.goose, peg_parse_ast, LENIENT), and the message is
+// built by the accepted mapper peg_map_msg above. Neither is repeated here.
+//
+// Owned decisions, copied from the native code:
+//   - the accumulated input already holds the generation prompt: native
+//     common_chat_peg_parse prepends it before the parse, so the buffer is
+//     opened with chat_stream_open(st, gp_len) and every chunk is appended;
+//   - the parse always runs with COMMON_PEG_PARSE_FLAG_LENIENT, in feed and in
+//     finish alike; only the FAIL branch reads is_partial;
+//   - a FAIL with is_partial and end > 0 maps the nodes the failed result kept
+//     (sequence/choice/repetition drop them, so the candidate is normally empty)
+//     and a FAIL otherwise is the runtime_error path, which finish hits after
+//     `finished` has already been set;
+//   - feed keeps the previous result when the candidate message is empty; the
+//     result is replaced only by a non-empty message;
+//   - the native feed/finish assertions become status -2, and the native throw
+//     becomes status -3; the previous message survives both;
+//   - the result is a copy of the candidate, so a frozen session keeps its
+//     bytes: the mapper writes into work buffers and the result buffers are
+//     rewritten only on publish.
+//
+// Flat state, as everywhere in this port:
+//   st[0] finished, st[1] accumulated input length, st[2] result content
+//   length, st[3] result reasoning length, st[4] result tool-call count,
+//   st[5] last status;
+//   rcont/rreas/rtcb hold the result message, rtab holds 6 i64 per call
+//   (name off/len, args off/len, id off/len) with offsets into rtcb;
+//   wcont/wreas/wtcb/mout are the mapper's work buffers and its out table;
+//   out is the published message in the mapper's layout: out[0] content length,
+//   out[1] reasoning length, out[2] call count, then 6 i64 per call.
+//
+// A candidate is published only when it is monotone with respect to the last
+// published message: chat_msg_monotone, the same relations the server-side
+// common_chat_msg_diff::compute_diffs enforces, runs before any byte is copied
+// into the result. A rejected candidate keeps the previous message and reports
+// -6 with the diff status in st[SS_DIFF]; feeding may continue, and finish uses
+// the same rule.
+//
+// The published state is also a contract: a hand-filled or damaged result table
+// is refused with -5 before anything reads it, so a bad offset is a status, not
+// a trap.
+//
+// Status table, with chat_stream_error_name as the byte-exact rendering:
+//    0 published 1 kept
+//   -1 input_full          input buffer cannot hold the chunk
+//   -2 after_finish        feed/finish after finish
+//   -3 unparsed_output     final parse FAIL (native runtime_error)
+//   -4 output_too_small    work or result buffer is too small
+//   -5 bad_state           the published state is not a valid message
+//   -6 not_monotone        candidate contradicts the published message
+//
+// st[SS_STATUS] is the status of this step only; st[SS_ERR] keeps the last
+// non-zero status, so a later successful step reports 0 without hiding an
+// earlier rejection.
+
+const SS_FIN: i64 = 0;
+const SS_INLEN: i64 = 1;
+const SS_CONT: i64 = 2;
+const SS_REAS: i64 = 3;
+const SS_NCALLS: i64 = 4;
+const SS_STATUS: i64 = 5;
+const SS_DIFF: i64 = 6;      // chat_msg_monotone status of the last candidate
+const SS_ERR: i64 = 7;       // last non-zero status, 0 when no step has failed
+
+// common_peg_parse_result_type: FAIL is 0, OK 1, NEED_MORE_INPUT 2.
+const SS_PARSE_FAIL: i64 = 0;
+
+const SS_STRIDE: i64 = 6;
+
+// Record a failure: the step status and the persistent last-error slot.
+fn ss_fail(st: i64[:], code: i64) -> i64 {
+    st[SS_STATUS] = code;
+    st[SS_ERR] = code;
+    return code;
+}
+
+fn ss_put(dst: u8[:], s: const u8[:]) -> i64 {
+    var i: i64 = 0;
+
+    while i < s.len {
+        if i < dst.len {
+            dst[i] = s[i];
+        }
+        i = i + 1;
+    }
+    return s.len;
+}
+
+// The explicit status contract: the code's name, byte-exact, length returned.
+export fn chat_stream_error_name(code: i64, out: u8[:]) -> i64 {
+    if code == 0 {
+        return ss_put(out, "published");
+    }
+    if code == 1 {
+        return ss_put(out, "kept");
+    }
+    if code == 0 - 1 {
+        return ss_put(out, "input_full");
+    }
+    if code == 0 - 2 {
+        return ss_put(out, "after_finish");
+    }
+    if code == 0 - 3 {
+        return ss_put(out, "unparsed_output");
+    }
+    if code == 0 - 4 {
+        return ss_put(out, "output_too_small");
+    }
+    if code == 0 - 5 {
+        return ss_put(out, "bad_state");
+    }
+    if code == 0 - 6 {
+        return ss_put(out, "not_monotone");
+    }
+    return ss_put(out, "unknown");
+}
+
+export fn chat_stream_open(st: i64[:], gp_len: i64) -> i64 {
+    st[SS_FIN] = 0;
+    st[SS_INLEN] = gp_len;
+    st[SS_CONT] = 0;
+    st[SS_REAS] = 0;
+    st[SS_NCALLS] = 0;
+    st[SS_STATUS] = 0;
+    st[SS_DIFF] = 0;
+    st[SS_ERR] = 0;
+    return 0;
+}
+
+// out <- the current result message, in peg_map_msg's layout.
+fn chat_stream_msg(st: const i64[:], rtab: const i64[:], out: i64[:]) -> i64 {
+    let n = st[SS_NCALLS];
+
+    if n < 0 || 3 + n * SS_STRIDE > out.len || n * SS_STRIDE > rtab.len {
+        return 0 - 1;
+    }
+    out[0] = st[SS_CONT];
+    out[1] = st[SS_REAS];
+    out[2] = n;
+    var c: i64 = 0;
+
+    while c < n {
+        var f: i64 = 0;
+
+        while f < SS_STRIDE {
+            out[3 + c * SS_STRIDE + f] = rtab[c * SS_STRIDE + f];
+            f = f + 1;
+        }
+        c = c + 1;
+    }
+    return 0;
+}
+
+// peg_map_msg is exported, and in this toolchain an exported function with a
+// const-slice parameter cannot be instantiated for an internal call. The step
+// therefore calls the very same C symbol through the export ABI instead of
+// carrying a second copy of the mapper.
+extern "peg_map_msg" fn peg_map_msg_abi(
+    roots: const i64[:],
+    nroots: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64;
+
+// One feed (is_final = 0) or finish (is_final = 1) step.
+// ptype/pend/roots are the parse of inbuf[0 .. inlen] after the chunk is
+// appended: the type, result.end and the surviving AST roots.
+export fn chat_stream_step(
+    st: i64[:],
+    inbuf: u8[:],
+    chunk: const u8[:],
+    is_final: i64,
+    ptype: i64,
+    pend: i64,
+    roots: const i64[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    tid: const i64[:],
+    mst: i64[:],
+    wcont: u8[:],
+    wreas: u8[:],
+    wtcb: u8[:],
+    mout: i64[:],
+    rcont: u8[:],
+    rreas: u8[:],
+    rtcb: u8[:],
+    rtab: i64[:],
+    out: i64[:]
+) -> i64 {
+    // GGML_ASSERT(!finished && "...")
+    if st[SS_FIN] != 0 {
+        return ss_fail(st, 0 - 2);
+    }
+
+    // The published state is refused before it is read: lengths against their
+    // buffers, the table against the call count, every offset/length against
+    // rtcb. A damaged state is -5, never a trap.
+    if st[SS_INLEN] < 0 || st[SS_INLEN] > inbuf.len ||
+       st[SS_CONT] < 0 || st[SS_CONT] > rcont.len ||
+       st[SS_REAS] < 0 || st[SS_REAS] > rreas.len ||
+       st[SS_NCALLS] < 0 || st[SS_NCALLS] * SS_STRIDE > rtab.len {
+        return ss_fail(st, 0 - 5);
+    }
+    var pv: i64 = 0;
+
+    while pv < st[SS_NCALLS] {
+        var pf: i64 = 0;
+
+        while pf < 3 {
+            let poff = rtab[pv * SS_STRIDE + 2 * pf];
+            let plen = rtab[pv * SS_STRIDE + 2 * pf + 1];
+
+            if poff < 0 || plen < 0 || poff + plen > rtcb.len {
+                return ss_fail(st, 0 - 5);
+            }
+            pf = pf + 1;
+        }
+        pv = pv + 1;
+    }
+
+    // input.append(chunk)
+    let old_in = st[SS_INLEN];
+
+    if old_in + chunk.len > inbuf.len {
+        return ss_fail(st, 0 - 1);
+    }
+    var i: i64 = 0;
+
+    while i < chunk.len {
+        inbuf[old_in + i] = chunk[i];
+        i = i + 1;
+    }
+    let inlen = old_in + chunk.len;
+
+    st[SS_INLEN] = inlen;
+
+    // common_chat_peg_parse: a FAIL survives only while streaming and only
+    // when the failed parse consumed something; otherwise it throws, and
+    // finish has set `finished` before that throw.
+    if ptype == SS_PARSE_FAIL && (is_final != 0 || pend <= 0) {
+        // finish() sets finished before it parses; feed() does not, so a feed
+        // that throws leaves the session open and the next call fails again.
+        if is_final != 0 {
+            st[SS_FIN] = 1;
+        }
+        return ss_fail(st, 0 - 3);
+    }
+
+    let input: const u8[:] = inbuf[0 .. inlen];
+
+    peg_map_msg_abi(roots, roots.len, input, a_tag, a_toff, a_tlen, a_cs, a_cc, achild,
+                    a_is, a_ic, inv, tid, wcont, wreas, wtcb, mst, mout);
+
+    let c_cont = mout[0];
+    let c_reas = mout[1];
+    let c_calls = mout[2];
+
+    // if (!msg.empty()) result = msg; an all-empty message keeps the result.
+    if c_cont == 0 && c_reas == 0 && c_calls == 0 {
+        st[SS_STATUS] = 1;
+        st[SS_DIFF] = 0;
+
+        if is_final != 0 {
+            st[SS_FIN] = 1;
+        }
+        chat_stream_msg(st, rtab, out);
+        return 1;
+    }
+
+    if c_cont < 0 || c_reas < 0 || c_calls < 0 ||
+       c_cont > wcont.len || c_reas > wreas.len ||
+       c_cont > rcont.len || c_reas > rreas.len ||
+       c_calls * SS_STRIDE + 3 > mout.len ||
+       c_calls * SS_STRIDE > rtab.len ||
+       3 + c_calls * SS_STRIDE > out.len {
+        return ss_fail(st, 0 - 4);
+    }
+
+    // Every table entry must lie inside the work buffer; the mapper clamps
+    // writes to the buffer but still advances its cursor, so a truncated
+    // candidate shows up here.
+    var need: i64 = 0;
+    var c: i64 = 0;
+
+    while c < c_calls {
+        let b = 3 + c * SS_STRIDE;
+        var f: i64 = 0;
+
+        while f < 3 {
+            let off = mout[b + 2 * f];
+            let len = mout[b + 2 * f + 1];
+
+            if off < 0 || len < 0 || off + len > wtcb.len {
+                return ss_fail(st, 0 - 4);
+            }
+            need = need + len;
+            f = f + 1;
+        }
+        c = c + 1;
+    }
+
+    if need > rtcb.len {
+        return ss_fail(st, 0 - 4);
+    }
+
+    // 4. monotonicity: the candidate table of mout starts at index 3.
+    let mono = chat_msg_monotone_impl(
+        rcont, st[SS_CONT], rreas, st[SS_REAS], rtcb, rtab, st[SS_NCALLS],
+        wcont, c_cont, wreas, c_reas, wtcb, mout[3 .. 3 + c_calls * SS_STRIDE], c_calls);
+
+    if mono < 0 {
+        st[SS_DIFF] = mono;
+        st[SS_STATUS] = 0 - 6;
+        st[SS_ERR] = 0 - 6;
+        if is_final != 0 {
+            st[SS_FIN] = 1;
+        }
+        chat_stream_msg(st, rtab, out);
+        return 0 - 6;
+    }
+
+    // 5. publish: content, reasoning and a densely rebuilt call table.
+    m_app(rcont, 0, wcont, 0, c_cont);
+    m_app(rreas, 0, wreas, 0, c_reas);
+    var tcb_len: i64 = 0;
+
+    c = 0;
+    while c < c_calls {
+        let b = 3 + c * SS_STRIDE;
+        var f: i64 = 0;
+
+        while f < 3 {
+            let len = mout[b + 2 * f + 1];
+
+            rtab[c * SS_STRIDE + 2 * f] = tcb_len;
+            rtab[c * SS_STRIDE + 2 * f + 1] = len;
+            tcb_len = m_app(rtcb, tcb_len, wtcb, mout[b + 2 * f], len);
+            f = f + 1;
+        }
+        c = c + 1;
+    }
+
+    st[SS_CONT] = c_cont;
+    st[SS_REAS] = c_reas;
+    st[SS_NCALLS] = c_calls;
+    st[SS_STATUS] = 0;
+    st[SS_DIFF] = 0;
+
+    if is_final != 0 {
+        st[SS_FIN] = 1;
+    }
+    chat_stream_msg(st, rtab, out);
+    return 0;
+}
+
+// ------------------------------------------------------------------- diffs
+//
+// common/chat.cpp string_diff (58-70) and
+// common_chat_msg_diff::compute_diffs (236-310). The slice is the diff between
+// two messages in the port's flat message layout, plus the monotonicity check
+// the server relies on (server-task.cpp:169).
+//
+// Owned decisions, copied from the native code:
+//   - reasoning is compared and diffed before content, so its entry, when both
+//     change, always comes first;
+//   - a field that is byte-equal produces no entry at all;
+//   - string_diff: an empty previous value makes the whole current value the
+//     delta; a previous value that the current one extends gives the suffix; a
+//     current value that is a prefix of the previous one (the partial stop-word
+//     case) gives an empty delta and still produces an entry; anything else is
+//     the native runtime_error;
+//   - a shrunken tool-call count is an error before any call is compared;
+//   - only the last previous call is compared: its name may be empty on either
+//     side, otherwise the new name must extend the previous one; its arguments
+//     go through string_diff; the entry exists when the arguments delta, the id
+//     or the name changed, and id/name are reported only when they changed;
+//   - every call beyond the previous count is reported whole.
+//
+// Flat message layout (the one chat_stream_step publishes):
+//   cont[0 .. clen] content, reas[0 .. rlen] reasoning,
+//   tab: 6 i64 per call (name off/len, args off/len, id off/len) into tcb.
+//
+// Flat diff layout:
+//   out[0] entry count, then 8 i64 per entry:
+//     kind 0 reasoning delta, 1 content delta, 2 tool call;
+//     entry index (call index, -1 for text); then off/len pairs a, b, c into
+//     dbuf: a is the text delta, or the call id, b the call name, c the
+//     arguments delta. An empty pair is reported as off 0, len 0.
+//
+// Status: 0 diffs computed / monotone; -1 string_diff violation (the native
+// runtime_error for reasoning, content or arguments); -2 the tool-call count
+// shrank; -3 tool-call name mismatch; -4 output too small; -5 malformed
+// message layout.
+
+const DF_K_REAS: i64 = 0;
+const DF_K_CONT: i64 = 1;
+const DF_K_CALL: i64 = 2;
+const DF_STRIDE: i64 = 8;
+const DF_NONE: i64 = 0 - 1;
+
+fn df_prefix(a: const u8[:], ao: i64, al: i64, b: const u8[:], bo: i64, bl: i64) -> i64 {
+    if al > bl {
+        return 0;
+    }
+    var i: i64 = 0;
+
+    while i < al {
+        if a[ao + i] != b[bo + i] {
+            return 0;
+        }
+        i = i + 1;
+    }
+    return 1;
+}
+
+fn df_eq(a: const u8[:], ao: i64, al: i64, b: const u8[:], bo: i64, bl: i64) -> i64 {
+    if al != bl {
+        return 0;
+    }
+    return df_prefix(a, ao, al, b, bo, bl);
+}
+
+// string_diff shape: 0 when the current value extends the previous one (delta
+// is the suffix, length in dlen), 1 when the current one is a prefix of the
+// previous one (delta empty), -1 on a violation. An empty previous value is
+// always the first case with the whole current value as the delta.
+fn df_len(po: i64, pl: i64, no: i64, nl: i64,
+          prev: const u8[:], next: const u8[:]) -> i64, i64 {
+    if pl == 0 {
+        return 0, nl;
+    }
+    if df_prefix(prev, po, pl, next, no, nl) == 1 {
+        return 0, nl - pl;
+    }
+    if df_prefix(next, no, nl, prev, po, pl) == 1 {
+        return 1, 0;
+    }
+    return 0 - 1, 0;
+}
+
+// Write one entry and append its byte strings to dbuf. Returns the new dbuf
+// cursor, or -1 when the buffer cannot hold them.
+fn df_emit(
+    out: i64[:],
+    ne: i64,
+    kind: i64,
+    idx: i64,
+    s1: const u8[:], o1: i64, l1: i64,
+    s2: const u8[:], o2: i64, l2: i64,
+    s3: const u8[:], o3: i64, l3: i64,
+    dbuf: u8[:],
+    cur: i64
+) -> i64 {
+    if cur + l1 + l2 + l3 > dbuf.len {
+        return 0 - 1;
+    }
+    let b = 1 + ne * DF_STRIDE;
+    var at = cur;
+    var i: i64 = 0;
+
+    out[b + 0] = kind;
+    out[b + 1] = idx;
+    out[b + 2] = at;
+    out[b + 3] = l1;
+    while i < l1 {
+        dbuf[at + i] = s1[o1 + i];
+        i = i + 1;
+    }
+    at = at + l1;
+    out[b + 4] = at;
+    out[b + 5] = l2;
+    i = 0;
+    while i < l2 {
+        dbuf[at + i] = s2[o2 + i];
+        i = i + 1;
+    }
+    at = at + l2;
+    out[b + 6] = at;
+    out[b + 7] = l3;
+    i = 0;
+    while i < l3 {
+        dbuf[at + i] = s3[o3 + i];
+        i = i + 1;
+    }
+    return at + l3;
+}
+
+fn chat_msg_diff_impl(
+    pcont: const u8[:], pclen: i64,
+    preas: const u8[:], prlen: i64,
+    ptcb: const u8[:], ptab: const i64[:], pcalls: i64,
+    ncont: const u8[:], nclen: i64,
+    nreas: const u8[:], nrlen: i64,
+    ntcb: const u8[:], ntab: const i64[:], ncalls: i64,
+    dbuf: u8[:], out: i64[:], emit: i64
+) -> i64 {
+    if pcalls < 0 || ncalls < 0 || pclen < 0 || prlen < 0 || nclen < 0 || nrlen < 0 ||
+       pcalls * 6 > ptab.len || ncalls * 6 > ntab.len ||
+       pclen > pcont.len || prlen > preas.len || nclen > ncont.len || nrlen > nreas.len {
+        return 0 - 5;
+    }
+    if emit != 0 && 1 + (3 + ncalls) * DF_STRIDE > out.len {
+        return 0 - 4;
+    }
+    var ne: i64 = 0;
+    var cur: i64 = 0;
+
+    // 1. reasoning, then content: the native order.
+    if df_eq(preas, 0, prlen, nreas, 0, nrlen) == 0 {
+        let r, dl = df_len(0, prlen, 0, nrlen, preas, nreas);
+
+        if r < 0 {
+            return 0 - 1;
+        }
+        if emit != 0 {
+            cur = df_emit(out, ne, DF_K_REAS, DF_NONE, nreas, prlen, dl, nreas, 0, 0, nreas, 0, 0, dbuf, cur);
+
+            if cur < 0 {
+                return 0 - 4;
+            }
+        }
+        ne = ne + 1;
+    }
+
+    if df_eq(pcont, 0, pclen, ncont, 0, nclen) == 0 {
+        let r, dl = df_len(0, pclen, 0, nclen, pcont, ncont);
+
+        if r < 0 {
+            return 0 - 1;
+        }
+        if emit != 0 {
+            cur = df_emit(out, ne, DF_K_CONT, DF_NONE, ncont, pclen, dl, ncont, 0, 0, ncont, 0, 0, dbuf, cur);
+
+            if cur < 0 {
+                return 0 - 4;
+            }
+        }
+        ne = ne + 1;
+    }
+
+    if ncalls < pcalls {
+        return 0 - 2;
+    }
+
+    // The count guard above is the native order of checks; the second test
+    // keeps the last-call block from indexing past a shorter new table.
+    if pcalls > 0 && ncalls >= pcalls {
+        let idx = pcalls - 1;
+        let pb = idx * 6;
+        let nb = idx * 6;
+        let p_no = ptab[pb + 0];
+        let p_nl = ptab[pb + 1];
+        let p_ao = ptab[pb + 2];
+        let p_al = ptab[pb + 3];
+        let p_io = ptab[pb + 4];
+        let p_il = ptab[pb + 5];
+        let n_no = ntab[nb + 0];
+        let n_nl = ntab[nb + 1];
+        let n_ao = ntab[nb + 2];
+        let n_al = ntab[nb + 3];
+        let n_io = ntab[nb + 4];
+        let n_il = ntab[nb + 5];
+
+        if p_nl != 0 && n_nl != 0 &&
+           df_prefix(ptcb, p_no, p_nl, ntcb, n_no, n_nl) != 1 {
+            return 0 - 3;
+        }
+        let ar, adl = df_len(p_ao, p_al, n_ao, n_al, ptcb, ntcb);
+
+        if ar < 0 {
+            return 0 - 1;
+        }
+        let name_changed = df_eq(ptcb, p_no, p_nl, ntcb, n_no, n_nl);
+        let id_changed = df_eq(ptcb, p_io, p_il, ntcb, n_io, n_il);
+
+        if adl > 0 || name_changed == 0 || id_changed == 0 {
+            if emit != 0 {
+                var io: i64 = 0;
+                var il: i64 = 0;
+                var mo: i64 = 0;
+                var ml: i64 = 0;
+
+                // Native sets both fields together when either changed:
+                //   if (pref.id != newf.id || pref.name != newf.name) { ... }
+                if id_changed == 0 || name_changed == 0 {
+                    io = n_io;
+                    il = n_il;
+                    mo = n_no;
+                    ml = n_nl;
+                }
+                cur = df_emit(out, ne, DF_K_CALL, idx, ntcb, io, il, ntcb, mo, ml,
+                              ntcb, n_ao + p_al, adl, dbuf, cur);
+                if cur < 0 {
+                    return 0 - 4;
+                }
+            }
+            ne = ne + 1;
+        }
+    }
+
+    var c: i64 = pcalls;
+
+    while c < ncalls {
+        if emit != 0 {
+            let cb = c * 6;
+
+            cur = df_emit(out, ne, DF_K_CALL, c,
+                          ntcb, ntab[cb + 4], ntab[cb + 5],
+                          ntcb, ntab[cb + 0], ntab[cb + 1],
+                          ntcb, ntab[cb + 2], ntab[cb + 3], dbuf, cur);
+            if cur < 0 {
+                return 0 - 4;
+            }
+        }
+        ne = ne + 1;
+        c = c + 1;
+    }
+
+    if emit != 0 {
+        out[0] = ne;
+    }
+    return 0;
+}
+
+export fn chat_msg_diff(
+    pcont: const u8[:], pclen: i64,
+    preas: const u8[:], prlen: i64,
+    ptcb: const u8[:], ptab: const i64[:], pcalls: i64,
+    ncont: const u8[:], nclen: i64,
+    nreas: const u8[:], nrlen: i64,
+    ntcb: const u8[:], ntab: const i64[:], ncalls: i64,
+    dbuf: u8[:],
+    out: i64[:]
+) -> i64 {
+    return chat_msg_diff_impl(pcont, pclen, preas, prlen, ptcb, ptab, pcalls,
+                              ncont, nclen, nreas, nrlen, ntcb, ntab, ncalls,
+                              dbuf, out, 1);
+}
+
+// The same relations without building entries: 0 means the pair is monotone.
+// chat_stream_step calls this before it publishes; the exported wrapper below
+// is the same call with an empty output.
+fn chat_msg_monotone_impl(
+    pcont: const u8[:], pclen: i64,
+    preas: const u8[:], prlen: i64,
+    ptcb: const u8[:], ptab: const i64[:], pcalls: i64,
+    ncont: const u8[:], nclen: i64,
+    nreas: const u8[:], nrlen: i64,
+    ntcb: const u8[:], ntab: const i64[:], ncalls: i64
+) -> i64 {
+    var d0: u8[8] = [0; 8];
+    var o0: i64[8] = [0; 8];
+
+    return chat_msg_diff_impl(pcont, pclen, preas, prlen, ptcb, ptab, pcalls,
+                              ncont, nclen, nreas, nrlen, ntcb, ntab, ncalls,
+                              d0[0 .. 8], o0[0 .. 8], 0);
+}
+
+export fn chat_msg_monotone(
+    pcont: const u8[:], pclen: i64,
+    preas: const u8[:], prlen: i64,
+    ptcb: const u8[:], ptab: const i64[:], pcalls: i64,
+    ncont: const u8[:], nclen: i64,
+    nreas: const u8[:], nrlen: i64,
+    ntcb: const u8[:], ntab: const i64[:], ncalls: i64
+) -> i64 {
+    return chat_msg_monotone_impl(pcont, pclen, preas, prlen, ptcb, ptab, pcalls,
+                                  ncont, nclen, nreas, nrlen, ntcb, ntab, ncalls);
+}
