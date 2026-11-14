@@ -80,6 +80,7 @@ Checked on 2026-11-15, all against the current main build:
 | `goose/json/*` (31) | alternative schema ports: `ac` vs `ac-grammar`, `format-grammar` vs `schema` vs `pattern`; one representative (`format-grammar`) is in the build |
 | `goose/model/goose-*.goose` (13) | 55 body conflicts (`put`, `get`, `fail`, ...) - alternative batch/ubatch/loader live ports |
 | `goose/server/*` (40) | 124 body conflicts (`put`, `get`, `fail`, `st_i64`, ...) - alternative server and live-run ports |
+| `goose/jinja/tool-builders.goose` | alternative runtime copy (its own `K_*`, `bases`, `esc`; 14 body conflicts) - the tool builders are already inside the canonical runtime from EXP574 |
 
 Integrating an alternative is a merge decision (pick a body, delete the other),
 not a composition step; it is out of scope until a stage needs that subsystem.
