@@ -2616,6 +2616,62 @@ recursive fn eval_test(
     return mk_bool(A, F, st, res);
 }
 
+fn attr_of(item: i64, attr: i64, defid: i64, A: i64[:], B: const u8[:], F: f64[:], st: i64[:]) -> i64 {
+    let ik = vk(A, st, item);
+    let ak_ = vk(A, st, attr);
+
+    if ik == V_OBJECT {
+        if ak_ == V_STRING {
+            let f = obj_lookup(A, B, F, st, item, attr);
+
+            if f >= 0 {
+                return f;
+            }
+        }
+        return defid;
+    }
+
+    if ik == V_ARRAY || ik == V_TUPLE {
+        var idx: i64 = 0 - 1;
+
+        if ak_ == V_INT {
+            idx = vi(A, st, attr);
+        } else if ak_ == V_STRING {
+            let s = vstr(B, A, st, attr);
+            var i: i64 = 0;
+            var digits: bool = true;
+
+            if s.len == 0 {
+                digits = false;
+            }
+
+            while i < s.len {
+                if s[i] < 48 || s[i] > 57 {
+                    digits = false;
+                }
+                i = i + 1;
+            }
+
+            if digits {
+                var v: i64 = 0;
+                i = 0;
+
+                while i < s.len {
+                    v = v * 10 + (s[i] as i64 - 48);
+                    i = i + 1;
+                }
+                idx = v;
+            }
+        }
+
+        if idx >= 0 && idx < vcc(A, st, item) {
+            return A[pool(A, st) + vcs(A, st, item) + idx];
+        }
+        return defid;
+    }
+    return defid;
+}
+
 recursive fn eval_filter(
     id: i64,
     ctxc: i64,
@@ -2637,6 +2693,9 @@ recursive fn eval_filter(
     var fname: const u8[:] = "";
     var argc: i64 = 0;
     var fcall: bool = false;
+    var has_attr: bool = false;
+    var kwattr: const u8[:] = "";
+    var kwval: i64 = 0;
     var argv: i64[4] = [0, 0, 0, 0];
 
     if ak(A, st, f) == K_IDENT {
@@ -2658,12 +2717,23 @@ recursive fn eval_filter(
 
         while ai < argc {
             let argn = A[apool(A, st) + al0s(A, st, f) + ai];
-            let av = eval_node(argn, ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
-            if st[1] != 0 {
-                return -1;
+            if ak(A, st, argn) == K_KWARG {
+                kwattr = astr(B, A, st, ac0(A, st, argn));
+                kwval = eval_node(ac1(A, st, argn), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+                if st[1] != 0 {
+                    return -1;
+                }
+                has_attr = true;
+            } else {
+                let av = eval_node(argn, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+                if st[1] != 0 {
+                    return -1;
+                }
+                argv[ai] = av;
             }
-            argv[ai] = av;
             ai = ai + 1;
         }
     } else {
@@ -3752,6 +3822,120 @@ recursive fn eval_filter(
             i = i + 1;
         }
         return res;
+    }
+
+    if filter_name_is(fname, "map") && (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) && has_attr && filter_name_is(kwattr, "attribute") {
+        let n = vcc(A, st, sval);
+        let src_base = pool(A, st) + vcs(A, st, sval);
+        let res = arr_new(A, F, st);
+
+        if vk(A, st, sval) == V_TUPLE {
+            A[st[16] + res] = V_TUPLE;
+        }
+        let undef = mk_undef(A, F, st);
+        var i: i64 = 0;
+
+        while i < n {
+            let item = A[src_base + i];
+            arr_push(A, st, res, attr_of(item, kwval, undef, A, B, F, st));
+            i = i + 1;
+        }
+        return res;
+    }
+
+    if (filter_name_is(fname, "select") || filter_name_is(fname, "reject")) && (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) && argc > 0 {
+        let n = vcc(A, st, sval);
+        let src_base = pool(A, st) + vcs(A, st, sval);
+        let res = arr_new(A, F, st);
+        let undef = mk_undef(A, F, st);
+        var i: i64 = 0;
+
+        while i < n {
+            let item = A[src_base + i];
+            let av = attr_of(item, argv[0], undef, A, B, F, st);
+            var sel = v_bool(A, F, st, av);
+
+            if filter_name_is(fname, "reject") {
+                sel = 1 - sel;
+            }
+
+            if sel != 0 {
+                arr_push(A, st, res, item);
+            }
+            i = i + 1;
+        }
+        return res;
+    }
+
+    if filter_name_is(fname, "dictsort") && vk(A, st, sval) == V_OBJECT {
+        let n = vkc(A, st, sval);
+        let src_k = pool(A, st) + vks(A, st, sval);
+        let src_v = pool(A, st) + vvs(A, st, sval);
+        let obj = vnew(A, F, st, V_OBJECT);
+        let kb = st[4];
+        var i0: i64 = 0;
+
+        while i0 < n {
+            A[st[26] + kb + i0] = A[src_k + i0];
+            i0 = i0 + 1;
+        }
+        let vb = st[4] + n;
+        var i1: i64 = 0;
+
+        while i1 < n {
+            A[st[26] + vb + i1] = A[src_v + i1];
+            i1 = i1 + 1;
+        }
+        st[4] = vb + n;
+        A[st[22] + obj] = kb;
+        A[st[23] + obj] = n;
+        A[st[24] + obj] = vb;
+        A[st[25] + obj] = n;
+        var by_value: bool = false;
+
+        if argc > 1 && vk(A, st, argv[1]) == V_STRING && filter_name_is(vstr(B, A, st, argv[1]), "value") {
+            by_value = true;
+        }
+        var op: i64 = 3;
+
+        if argc > 2 && vk(A, st, argv[2]) != V_UNDEF && v_bool(A, F, st, argv[2]) != 0 {
+            op = 2;
+        }
+        var i: i64 = 1;
+
+        while i < n {
+            let key = A[st[26] + kb + i];
+            let val = A[st[26] + vb + i];
+            var j: i64 = i - 1;
+            var go: i64 = 1;
+
+            while j >= 0 && go != 0 {
+                var cur: i64 = key;
+                var other: i64 = A[st[26] + kb + j];
+
+                if by_value {
+                    cur = val;
+                    other = A[st[26] + vb + j];
+                }
+                let r = vcompare(A, B, F, st, cur, other, op, out, E);
+
+                if r < 0 {
+                    return -1;
+                }
+
+                if r != 0 {
+                    A[st[26] + kb + j + 1] = A[st[26] + kb + j];
+                    A[st[26] + vb + j + 1] = A[st[26] + vb + j];
+                    j = j - 1;
+                } else {
+                    go = 0;
+                }
+            }
+            A[st[26] + kb + j + 1] = key;
+            A[st[26] + vb + j + 1] = val;
+            i = i + 1;
+        }
+        return obj;
     }
 
     var p = apps(E, 0, "Unknown (built-in) filter '");
