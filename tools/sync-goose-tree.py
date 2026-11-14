@@ -48,6 +48,8 @@ CANONICAL_SOURCES = [
      "common/download.cpp", "31 cases / 0 diffs, 16/16 mutations"),
     ("server/http-url-policy.goose", "EXP-2026-11-14-578-p7-11-http-url", "source/http-url-policy.goose",
      "common/http.h", "20000 cases / 0 diffs, 14/14 mutations"),
+    ("model/quant-types.goose", "EXP-2026-11-14-581-p7-04-quant-types", "source/quant.goose",
+     "llama-quant.cpp (type selection and imatrix flags)", "734 cases / 90461 values / 0 failures, 12/12 mutations"),
     ("model/quant-allow.goose", "EXP-2026-11-14-576-p7-04-quant-allow", "source/quant-allow.goose",
      "llama-quant.cpp (allow-cuts and type overrides)", "73 lines / 0 diffs, 16/16 mutations"),
     ("model/qwen4exp.goose", "EXP-2026-11-14-580-p6-05-qwen4exp", "source/qwen4exp.goose",

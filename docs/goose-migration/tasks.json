@@ -1877,7 +1877,7 @@
         "tools/imatrix/**"
       ],
       "acceptance": "Every supported quantizer/type policy and calibration path Goose; deterministic small tensor/model corpora; no adaptive quantization research added now.",
-      "evidence": " 2026-11-14 S1b (EXP576, experiments/EXP-2026-11-14-576-p7-04-quant-allow): the quantization allow-cuts and tensor-type overrides are Goose - every cut in tensor_allows_quantization (rank, only_copy, weight suffix, norms, output gate, expert gating, i32 routing, altup/laurel, per-layer projection, position/token-type tensors, conv1d, MiniMax indexers, fourteen GLM5_NEXT cuts, VLLM_DECISION2, RWKV time-mix, T5 rel-bias, multimodal and audio), the CLI pattern loop with first-match-wins, the decision priority table and the supported std::regex_search subset with a documented fallback for unsupported constructs. Gate: one generator drives the native oracle (llama-quant.cpp linked into the probe) and the Goose driver over 16 policy cases and a 57-pair regex corpus; 73 identical lines; mutations 16/16 in two halves. The type-selection/imatrix-flag port (S1a) exists but has no gate and is not counted.",
+      "evidence": " 2026-11-14 S1b (EXP576, experiments/EXP-2026-11-14-576-p7-04-quant-allow): the quantization allow-cuts and tensor-type overrides are Goose - every cut in tensor_allows_quantization (rank, only_copy, weight suffix, norms, output gate, expert gating, i32 routing, altup/laurel, per-layer projection, position/token-type tensors, conv1d, MiniMax indexers, fourteen GLM5_NEXT cuts, VLLM_DECISION2, RWKV time-mix, T5 rel-bias, multimodal and audio), the CLI pattern loop with first-match-wins, the decision priority table and the supported std::regex_search subset with a documented fallback for unsupported constructs. Gate: one generator drives the native oracle (llama-quant.cpp linked into the probe) and the Goose driver over 16 policy cases and a 57-pair regex corpus; 73 identical lines; mutations 16/16 in two halves. The type-selection/imatrix-flag port (S1a) exists but has no gate and is not counted. 2026-11-14 S1a (EXP581, experiments/EXP-2026-11-14-581-p7-04-quant-types): type selection and the imatrix flags are Goose - llama_quant_compute_types over the ftype/gqa/expert/layer/shape grid with all overrides and n_fallback, tensor_requires_imatrix over 43 types x 36 ftypes x 8 names, and ggml_quantize_requires_imatrix over 43 types. Gate: 734 cases / 90461 values / 0 failures against the included llama-quant.cpp; mutations 12/12 in two halves. Two conformity fixes were required in the draft: the block sizes of NVFP4/Q1_0/Q2_0 and the C_FFN_DOWN/Q3_K_M Falcon split (native gives Q4_K for non-Falcon). Limits: has_imatrix=true has no native oracle, NVFP4 has no native default here, and non-block-multiple Q1_0/Q2_0 shapes throw natively but not in Goose.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
@@ -1885,7 +1885,6 @@
       "batch": "B4",
       "notes": " Different-type/quantized CPY pairs and non-Q4_K quantized GET_ROWS from P3-03 are conversion utilities tracked here; their dequant arithmetic is Goose (P3-07).",
       "remaining": [
-        "type selection and imatrix flags (llama_quant_compute_types, requires_imatrix)",
         "imatrix loader and remap (legacy and GGUF, dataset metadata)",
         "unweighted row quantizers (q1_0..q8_0, K, IQ, MXFP4/NVFP4, TQ)",
         "weighted quantizers (imatrix branches q2_K..q6_K, IQ1/2/3/4)",
@@ -1894,7 +1893,7 @@
       "coverage_doc": "docs/goose-migration/P7-04-COVERAGE.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
       "slices_total": 6,
-      "slices_done": 1
+      "slices_done": 2
     },
     {
       "id": "P7-05",
@@ -4300,6 +4299,10 @@
     {
       "event": "P6-05 second architecture (EXP580): the qwen4exp plan/shape builder joins the canon as goose/model/qwen4exp.goose with 10/26 structure cases and 12/12 mutations.",
       "checkpoint": "1afe637d"
+    },
+    {
+      "event": "P7-04 second slice (EXP581): type selection and the imatrix flags join the canon as goose/model/quant-types.goose with a 734-case differential and 12/12 mutations.",
+      "checkpoint": "4dac50f2"
     }
   ],
   "batches": [
@@ -5190,7 +5193,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T18:22:34.562947+00:00",
+  "updated_at": "2026-11-14T18:30:26.493572+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5199,9 +5202,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11 and P6-05.",
     "slices_total": 78,
-    "slices_done": 43,
+    "slices_done": 44,
     "slices_in_progress": 0,
-    "slices_remaining": 35
+    "slices_remaining": 34
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }
