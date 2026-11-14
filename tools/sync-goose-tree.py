@@ -32,6 +32,8 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("chat/thinking-control.goose", "EXP-2026-11-14-573-p9-06-thinking", "source/think.goose",
+     "runtime/core/src/engine/thinking_control.cpp", "12 cases / 26 values / 0 failures, 12/12 mutations"),
     ("cli/cli-protocol.goose", "EXP-2026-11-14-572-p9-06-cli-protocol", "source/cli_protocol.goose",
      "runtime/cli/main.cpp (session line protocol)", "17 cases / 26 values / 0 failures, 15/15 mutations"),
     ("json/json-parser.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",
