@@ -60,23 +60,26 @@ autoparser nodes are not created in native insertion order.
 ## Canonical composition
 
 Every canonical module is built standalone, but the migration target is one
-runtime. An export-name audit over all 34 canonical files finds five shared
-names that a single linked module must deduplicate:
+runtime. The checker reports shared export names as warnings; the current set is
+27 names in four groups:
 
-| name | files |
-|---|---|
-| `builtin_call`, `builtin_names` | `jinja/builtins.goose`, `jinja/runtime.goose` |
-| `value_cmp`, `value_info` | `jinja/value.goose`, `jinja/value-json.goose` |
-| `json_parse` | `json/json-parser.goose` and three byte-identical module copies (`chat/`, `cli/`, `server/`) |
-| `s1_init`, `s1_remove`, `s1_set_arr`, `s1_set_arr_str`, `s1_set_kv`, `s1_set_str`, `s1_set_val` | `model/gguf-metadata.goose` and `model/gguf-writer.goose` (the writer carries its own S1 context) |
+- `builtin_call`, `builtin_names` — `jinja/builtins.goose` and `jinja/runtime.goose`;
+- `value_cmp`, `value_info` — `jinja/value.goose` and `jinja/value-json.goose`;
+- `json_parse` — `json/json-parser.goose` plus three byte-identical module copies
+  (`chat/`, `cli/`, `server/`), required because Goose resolves `import
+  jsonparse` only by module name next to the importer;
+- the GGUF stack — `s1_*`, `s2_write`, `s3_*` repeated in `model/gguf-metadata`,
+  `gguf-writer`, `gguf-tensors`, `gguf-split` and `model-saver`, because each
+  slice is standalone and carries the layers below it;
+- quantizer helpers — `qz_*` in `model/quant-rows` and `model/quant-rows2`;
+- `g4_plan`, `g4_shape` — `model/gemma4` and `model/glm4` (an accidental shared
+  prefix; the files are otherwise disjoint).
 
-The three `jsonparse.goose` copies exist because Goose resolves `import
-jsonparse` only by module name in the importing file's directory; the tree check
-pins all four files to the same SHA. `builtins`/`runtime` and
-`value`/`value-json` overlap by design of the earlier slices: `runtime` and
-`value-json` carry self-contained copies of the helpers they call. Deduplicating
-them is a composition step, not a slice; it must keep every standalone gate
-green before the runtime links as one module.
+Deduplicating them is a composition step, not a slice; it must keep every
+standalone gate green before the runtime links as one module. The checker fails
+a canonical file with no export fn unless it is a shared `model/base/` module,
+which is how the request-schema defect (gate driver in the same unit, no public
+API) is now caught.
 
 ## Slice plan
 

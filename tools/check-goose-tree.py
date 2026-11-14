@@ -10,6 +10,7 @@ Exit code 0 when everything agrees, 1 otherwise.
 import hashlib
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -25,6 +26,37 @@ def canonical_sources():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.CANONICAL_SOURCES
+
+
+SHARED_MODULES = {
+    # Imported as modules; their functions are private by design.
+    "model/base/trunk.goose",
+    "model/base/gemma.goose",
+    "model/base/dense.goose",
+    "model/base/model_graph.goose",
+}
+
+
+def check_canonical_api(problems, warnings):
+    """A canonical file is either a library module or exposes an API.
+
+    The request-schema slice once shipped with no export fn at all: its gate
+    worked only because the driver was generated into the same unit, and the
+    runtime could not call it. This check makes that class of defect visible.
+    """
+    seen = {}
+    for target, _experiment, _source, _native, _gate in canonical_sources():
+        path = GOOSE / target
+        if not path.is_file():
+            continue
+        names = re.findall(r"(?m)^export fn (\w+)", path.read_text(errors="replace"))
+        if not names and target not in SHARED_MODULES:
+            problems.append(f"canonical file has no export fn: {target}")
+        for name in names:
+            seen.setdefault(name, []).append(target)
+    for name, targets in sorted(seen.items()):
+        if len(targets) > 1:
+            warnings.append(f"export name shared: {name} -> {', '.join(sorted(targets))}")
 
 
 def check_required(problems):
@@ -48,6 +80,7 @@ def main() -> int:
     entries = doc.get("entries", [])
     seen = set()
     problems = []
+    warnings = []
 
     for row in entries:
         rel = row["goose"]
@@ -79,6 +112,12 @@ def main() -> int:
             problems.append(f"canonical file differs from its source: {target} <- {experiment}/{source}")
 
     check_required(problems)
+    check_canonical_api(problems, warnings)
+
+    if warnings:
+        print(f"goose tree check: {len(warnings)} warning(s)")
+        for item in warnings:
+            print("  " + item)
 
     if problems:
         print(f"goose tree check: {len(problems)} problem(s)")
