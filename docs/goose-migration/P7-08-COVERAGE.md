@@ -23,6 +23,26 @@ code; "pending" means still native.
 | `common/chat.cpp`, `chat.h`, `chat-*.cpp` | — | pending — chat parsing, tool calls, reasoning extraction |
 | `common/parsers/**` | ~3 360 | pending — per-model output parsers |
 
+## Canonical composition
+
+Every canonical module is built standalone, but the migration target is one
+runtime. An export-name audit over all 34 canonical files finds five shared
+names that a single linked module must deduplicate:
+
+| name | files |
+|---|---|
+| `builtin_call`, `builtin_names` | `jinja/builtins.goose`, `jinja/runtime.goose` |
+| `value_cmp`, `value_info` | `jinja/value.goose`, `jinja/value-json.goose` |
+| `json_parse` | `json/json-parser.goose` and three byte-identical module copies (`chat/`, `cli/`, `server/`) |
+
+The three `jsonparse.goose` copies exist because Goose resolves `import
+jsonparse` only by module name in the importing file's directory; the tree check
+pins all four files to the same SHA. `builtins`/`runtime` and
+`value`/`value-json` overlap by design of the earlier slices: `runtime` and
+`value-json` carry self-contained copies of the helpers they call. Deduplicating
+them is a composition step, not a slice; it must keep every standalone gate
+green before the runtime links as one module.
+
 ## Slice plan
 
 Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).
