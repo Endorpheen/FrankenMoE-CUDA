@@ -74,7 +74,7 @@ Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).
    `common_chat_templates_apply` (370 cases, 12/12 mutations). EXP529 ports
    the message shape (378 cases, 12/12 mutations). EXP530 adds the
    caps-driven role workarounds (385 cases, 12/12 mutations). Still native:
-   the remaining caps probes (EXP531 ports the usage flag and the system-role probe; EXP532 adds the operation mask and the content flags; EXP533 adds the for/select probes; EXP534 adds the tools probes), string marking/caps and strftime_now.
+   the remaining caps probes (EXP531 ports the usage flag and the system-role probe; EXP532 adds the operation mask and the content flags; EXP533 adds the for/select probes; EXP534 adds the tools probes; EXP535 adds the parallel/object-argument probes), string marking/caps and strftime_now.
 7. String and caps: input marking, origin metadata, concatenation rules,
    capability checks.
 8. Chat layer and acceptance: `llama-chat.cpp`, `common/chat*.cpp`, the

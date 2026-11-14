@@ -2244,6 +2244,7 @@ recursive fn eval_member(
     if vk(A, st, prop) == V_UNDEF || vk(A, st, obj) == V_UNDEF {
         return mk_undef_hint(A, F, B, st, "object_property");
     }
+    A[st[27] + obj] = A[st[27] + obj] | 1;
     let ok = vk(A, st, obj);
 
     if aiv(A, st, id) == 0 {
@@ -6288,4 +6289,62 @@ export fn chat_probe_tool_calls_mask(A: const i64[:], B: const u8[:], st: const 
         return 0 - 1;
     }
     return A[st[27] + calls];
+}
+
+export fn chat_probe_tool_arg_mask(A: const i64[:], B: const u8[:], st: const i64[:], msgs: i64) -> i64 {
+    let m1 = arr_at(A, st, msgs, 1);
+
+    if m1 < 0 {
+        return 0 - 1;
+    }
+    let calls = obj_get(A, B, st, m1, "tool_calls");
+
+    if calls < 0 {
+        return 0 - 1;
+    }
+    let c0 = arr_at(A, st, calls, 0);
+
+    if c0 < 0 {
+        return 0 - 1;
+    }
+    let fnobj = obj_get(A, B, st, c0, "function");
+
+    if fnobj < 0 {
+        return 0 - 1;
+    }
+    let args = obj_get(A, B, st, fnobj, "arguments");
+
+    if args < 0 || vk(A, st, args) != V_OBJECT {
+        return 0;
+    }
+    let arg = obj_get(A, B, st, args, "arg");
+
+    if arg < 0 {
+        return 0;
+    }
+    return A[st[27] + arg];
+}
+
+export fn chat_probe_second_call_mask(A: const i64[:], B: const u8[:], st: const i64[:], msgs: i64) -> i64 {
+    let m1 = arr_at(A, st, msgs, 1);
+
+    if m1 < 0 {
+        return 0 - 1;
+    }
+    let calls = obj_get(A, B, st, m1, "tool_calls");
+
+    if calls < 0 {
+        return 0 - 1;
+    }
+    let c1 = arr_at(A, st, calls, 1);
+
+    if c1 < 0 {
+        return 0 - 1;
+    }
+    let fnobj = obj_get(A, B, st, c1, "function");
+
+    if fnobj < 0 {
+        return 0;
+    }
+    return A[st[27] + fnobj];
 }
