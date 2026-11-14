@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T19:02:12.462067+00:00",
+  "updated_at": "2026-11-14T19:03:41.664798+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -219,6 +219,18 @@
       "status": "ported",
       "sha256": "779404f8f564f6f0256f213de3f2df46db0f5d4077b9bb75d6613b3c9eaeabaa",
       "gate": "10 cases / 58 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/kimi-linear.goose",
+      "native": "src/models/kimi-linear.cpp",
+      "native_targets": [
+        "src/models/kimi-linear.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-594-p6-05-kimi-linear",
+      "task": "",
+      "status": "ported",
+      "sha256": "95ebe770ca4835d8ec7d77a5f7b798edf3492e1505779ea1c1594de6ee4e9ab0",
+      "gate": "103 cases / 195 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "model/kimi-k3.goose",

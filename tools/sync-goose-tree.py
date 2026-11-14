@@ -68,6 +68,8 @@ CANONICAL_SOURCES = [
      "src/models/qwen3moe.cpp", "10 cases / 78 values / 0 failures, 12/12 mutations"),
     ("model/qwen2moe.goose", "EXP-2026-11-14-584-p6-05-moe-families", "source/qwen2moe.goose",
      "src/models/qwen2moe.cpp", "10 cases / 58 values / 0 failures, 12/12 mutations"),
+    ("model/kimi-linear.goose", "EXP-2026-11-14-594-p6-05-kimi-linear", "source/kimi-linear.goose",
+     "src/models/kimi-linear.cpp", "103 cases / 195 values / 0 failures, 12/12 mutations"),
     ("model/kimi-k3.goose", "EXP-2026-11-14-592-p6-05-kimi-k3", "source/kimi-k3.goose",
      "src/models/kimi-k3.cpp", "126 cases / 226 values / 0 failures, 12/12 mutations"),
     ("model/glm5-next.goose", "EXP-2026-11-14-591-p6-05-glm5-next", "source/glm5-next.goose",

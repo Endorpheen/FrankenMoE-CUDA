@@ -20,7 +20,7 @@ structure gate and mutations.
 | 8 | deepseek32 | `deepseek32.cpp` | S3 MLA + indexer | **done (EXP587)** |
 | 9 | deepseek4 | `deepseek4.cpp` | S3 + compressor | **done (EXP588)** |
 | 10 | kimi-k3 | `kimi-k3.cpp` | S3 + S4 | **done (EXP592)** |
-| 11 | kimi-linear | `kimi-linear.cpp` | S3 + S4 | open |
+| 11 | kimi-linear | `kimi-linear.cpp` | S3 + S4 | **done (EXP594)** |
 | 12 | glm5-next | `glm5-next.cpp` | S3 + S4 + HC | **done (EXP591)** |
 | 13 | glm4-moe | `glm4-moe.cpp` | S2 | **done (EXP584)** |
 | 14 | glm4 | `glm4.cpp` | S1 + nextn | open |
