@@ -122,9 +122,15 @@ carry different bodies under one name. Status:
 - the composer now checks interfaces: it records every `export fn` in the input
   modules and fails if the composed unit does not expose exactly that set, so a
   dedup or rename can no longer silently drop a public entry point;
-- `tools/check-composition.sh` composes the six accepted sets (server, quant,
-  GGUF, P9-06, runtime+schema, app) and runs `goose check` on each; it is the
-  fast smoke test for the composition step.
+- the core set (`goose-model-graph`, `goose-model-loader`, `file-io`,
+  `jinja/runtime`, `json/format-grammar`) composes as well: 1114
+  specializations and 12.5 MB of generated C. The collision was in the native
+  helper declarations, not in the logic: the model modules bind different
+  extern symbols under the same local names (`fail`, `ensure`, `st_i64`), so
+  the local names are scoped per module while the extern symbols stay intact;
+- `tools/check-composition.sh` composes the seven accepted sets (server, quant,
+  GGUF, P9-06, runtime+schema, app, core) and runs `goose check` on each; it is
+  the fast smoke test for the composition step.
 
 ## Slice plan
 

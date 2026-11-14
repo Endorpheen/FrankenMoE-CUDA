@@ -50,6 +50,22 @@ RENAMES = {
         "K_ARRAY": "FG_K_ARRAY",
         "K_TUPLE": "FG_K_TUPLE",
         "K_OBJECT": "FG_K_OBJECT",
+        "I64_MAX": "FG_I64_MAX",
+    },
+    # Native helper entry points bound through extern symbols: the symbol string
+    # stays, only the local name is scoped to the module so two modules can share
+    # one unit without touching the ABI.
+    "goose-model-loader.goose": {
+        "fail": "fgl_fail",
+        "ensure": "fgl_ensure",
+        "st_i64": "fgl_st_i64",
+    },
+    "goose-model-graph.goose": {
+        "fail": "fgg_fail",
+        "ensure": "fgg_ensure",
+    },
+    "file-io.goose": {
+        "st_i64": "fio_st_i64",
     },
     "quant-dequant2.goose": {
         "iq2_grid": "qd_iq2_grid",
