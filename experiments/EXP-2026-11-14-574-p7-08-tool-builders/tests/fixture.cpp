@@ -427,11 +427,14 @@ static std::string port_grammar(const Port & P, int64_t root) {
     return std::string(out, (size_t) len);
 }
 
+static std::map<int64_t, int64_t> g_n2p;
+
 static std::string identity_check(const common_peg_arena & a, const Port & P, int64_t root,
                                   bool & ok) {
     std::map<int64_t, int64_t> n2p, p2n;
     std::string why;
     ok = iso_walk(a, a.root(), P, root, n2p, p2n, why);
+    g_n2p = n2p;
     return ok ? std::string() : why;
 }
 
@@ -591,6 +594,38 @@ int main(int argc, char ** argv) {
                     printf("  body-diff %s\n    native: %s\n    port  : %s\n", k.c_str(),
                            v.substr(0, 90).c_str(), it->second.substr(0, 90).c_str());
                     if (++shown >= 4) break;
+                }
+            }
+            if (getenv("GBNF_DIFF") && !strcmp(getenv("GBNF_DIFF"), "3")) {
+                for (size_t i = 0; i < 20 && i < a.size(); i++) {
+                    const auto & v = a.get(i);
+                    int nk = -1;
+                    if (std::holds_alternative<common_peg_epsilon_parser>(v)) nk = 0;
+                    else if (std::holds_alternative<common_peg_start_parser>(v)) nk = 1;
+                    else if (std::holds_alternative<common_peg_end_parser>(v)) nk = 2;
+                    else if (std::holds_alternative<common_peg_literal_parser>(v)) nk = 3;
+                    else if (std::holds_alternative<common_peg_sequence_parser>(v)) nk = 4;
+                    else if (std::holds_alternative<common_peg_choice_parser>(v)) nk = 5;
+                    else if (std::holds_alternative<common_peg_repetition_parser>(v)) nk = 6;
+                    else if (std::holds_alternative<common_peg_any_parser>(v)) nk = 9;
+                    else if (std::holds_alternative<common_peg_space_parser>(v)) nk = 10;
+                    else if (std::holds_alternative<common_peg_until_parser>(v)) nk = 13;
+                    else if (std::holds_alternative<common_peg_rule_parser>(v)) nk = 14;
+                    else if (std::holds_alternative<common_peg_tag_parser>(v)) nk = 17;
+                    else if (std::holds_alternative<common_peg_ac_parser>(v)) nk = 20;
+                    printf("  node %2zu native=%2d port=%2lld\n", i, nk, (long long) P.kind[i]);
+                }
+            }
+            if (getenv("GBNF_DIFF") && !strcmp(getenv("GBNF_DIFF"), "2")) {
+                for (size_t ni = 0; ni < a.size(); ni++) {
+                    const auto & v = a.get(ni);
+                    bool h = std::holds_alternative<common_peg_until_parser>(v) ||
+                             std::holds_alternative<common_peg_ac_parser>(v);
+                    if (h) {
+                        auto it = g_n2p.find((int64_t) ni);
+                        printf("  id native=%zu port=%lld\n", ni,
+                               it == g_n2p.end() ? -1LL : (long long) it->second);
+                    }
                 }
             }
             for (auto & [k, v] : pr) {
