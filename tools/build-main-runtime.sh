@@ -71,8 +71,8 @@ echo "[2/5] typecheck"
 echo "[3/5] generate C"
 "$GOOSE" --standalone -o "$C" --header "$H" "$UNIT" >/dev/null
 
-echo "[4/5] compile object at -O0"
-"$CC" -O0 -std=c11 -w -c "$C" -o "$OBJ"
+echo "[4/5] compile object at -O1"
+"$CC" -O1 -std=c11 -w -c "$C" -o "$OBJ"
 
 echo "[5/5] symbol check"
 defined=$(nm -g --defined-only "$OBJ" | wc -l)
