@@ -1720,17 +1720,16 @@
         "src/llama-model-saver.cpp"
       ],
       "acceptance": "All adapter apply/remove/scale and save paths Goose; tensor/value/format roundtrips and error cleanup checked.",
-      "evidence": " 2026-11-14 S3 (EXP582, experiments/EXP-2026-11-14-582-p6-09-control-vectors): control vectors are Goose - the per-layer direction table with layer 0 absent, tensor_for bounds against cv_direction_off, the apply copy rule off=n_embd*(il-1) with the length guard, short vectors, repeated application and disable, the n_embd refusal before state change, and apply_to (same tensor without a direction, a GGML_OP_ADD node of shape [n_embd, rows] with exact per-row arithmetic with one). Oracle: llama_model is abstract in this tree, so the fixture defines TestModel with seven stubbed virtuals and drives the real adapter; 10 cases / 2447 values / 0 failures, pool seeded so a skipped zeroing is visible, negative control 284 failures. Mutations 16/16 in two halves. Limits: native init() is not executed and the ggml_add graph is not evaluated. 2026-11-14 S1 (EXP600, experiments/EXP-2026-11-14-600-p6-09-lora-manifest): the LoRA manifest and pairing are Goose - metadata in native order (general.type, general.architecture, adapter.type, adapter.lora.alpha, adapter.alora.invocation_tokens), A/B pairing with every suffix occurrence removed, _norm.weight skipped, a sorted pair map, the check order (component -> model presence -> hadamard -> shape), the token_embd.weight rule, transpose, data bounds and scale. Gate against the real llama_adapter_lora_init_from_file_ptr on a synthetic GGUF adapter with TestModel: 26 cases / 139 values / 0 failures; mutations 12/12 in two halves. Native quirks pinned: the base name removes all suffix occurrences, suffix scanning precedes the pair loop, and llama_token is int32 so ids above 2^31-1 arrive negative. 2026-11-14 S4 (EXP606, experiments/EXP-2026-11-14-606-p6-09-saver-writer): the saver writer path is Goose - sav_init (arch+ctx constructor), the u32/i32/u64/f32/bool/str/char overloads, arr containers with per_layer (equal values collapse to a scalar, refusal when n_layer > n, zero-count), string arrays, sav_add_tensor with the native rope-duplicate rule and sav_save writing the whole file into a buffer. S1-S3 of the writer are carried internally with core_* bodies and thin export wrappers. Gate: native llama_model_saver (TestModel for per-layer hparams) against the port, comparing the KV dump, descriptor dump, full save bytes and a reload; 29 cases / 154 checks / 0; the P7-02 S3 regression stays 41/307. Mutations 12/12 in two halves. S5 (add_kv_from_model, add_tensors_from_model, model constructor) stays open and needs a model.",
+      "evidence": " 2026-11-14 S3 (EXP582, experiments/EXP-2026-11-14-582-p6-09-control-vectors): control vectors are Goose - the per-layer direction table with layer 0 absent, tensor_for bounds against cv_direction_off, the apply copy rule off=n_embd*(il-1) with the length guard, short vectors, repeated application and disable, the n_embd refusal before state change, and apply_to (same tensor without a direction, a GGML_OP_ADD node of shape [n_embd, rows] with exact per-row arithmetic with one). Oracle: llama_model is abstract in this tree, so the fixture defines TestModel with seven stubbed virtuals and drives the real adapter; 10 cases / 2447 values / 0 failures, pool seeded so a skipped zeroing is visible, negative control 284 failures. Mutations 16/16 in two halves. Limits: native init() is not executed and the ggml_add graph is not evaluated. 2026-11-14 S1 (EXP600, experiments/EXP-2026-11-14-600-p6-09-lora-manifest): the LoRA manifest and pairing are Goose - metadata in native order (general.type, general.architecture, adapter.type, adapter.lora.alpha, adapter.alora.invocation_tokens), A/B pairing with every suffix occurrence removed, _norm.weight skipped, a sorted pair map, the check order (component -> model presence -> hadamard -> shape), the token_embd.weight rule, transpose, data bounds and scale. Gate against the real llama_adapter_lora_init_from_file_ptr on a synthetic GGUF adapter with TestModel: 26 cases / 139 values / 0 failures; mutations 12/12 in two halves. Native quirks pinned: the base name removes all suffix occurrences, suffix scanning precedes the pair loop, and llama_token is int32 so ids above 2^31-1 arrive negative. 2026-11-14 S4 (EXP606, experiments/EXP-2026-11-14-606-p6-09-saver-writer): the saver writer path is Goose - sav_init (arch+ctx constructor), the u32/i32/u64/f32/bool/str/char overloads, arr containers with per_layer (equal values collapse to a scalar, refusal when n_layer > n, zero-count), string arrays, sav_add_tensor with the native rope-duplicate rule and sav_save writing the whole file into a buffer. S1-S3 of the writer are carried internally with core_* bodies and thin export wrappers. Gate: native llama_model_saver (TestModel for per-layer hparams) against the port, comparing the KV dump, descriptor dump, full save bytes and a reload; 29 cases / 154 checks / 0; the P7-02 S3 regression stays 41/307. Mutations 12/12 in two halves. S5 (add_kv_from_model, add_tensors_from_model, model constructor) stays open and needs a model. 2026-11-14 S2 (EXP608, experiments/EXP-2026-11-14-608-p6-09-lora-apply): applying LoRA is Goose - pair selection by exact weight name (get_weight), the per-tensor scale (alpha == 0 uses the caller scale, otherwise caller*alpha/rank with rank = b.ne[0]), the four-node sequence (a*cur, b*(a*cur), scale, add), the batch geometry [n_embd, n_tokens, ne2, ne3], the get_n_nodes budget (6 per pair) and cleanup over model.loras (release, null no-op, unregistered release only). Oracle: the real llm_graph_context::build_lora_mm on a CPU backend with TestModel; 21 cases / 435 values / 0 failures; mutations 12/12 in two halves. Limits: the MoE build_lora_mm_id and token-embedding block are not covered; w_s/NVFP4/Hadamard are outside the LoRA loop; the port requires b.ne1 == w.ne1 and rejects rank 0 as contract cases.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 416,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B3",
       "slices_total": 5,
-      "slices_done": 3,
+      "slices_done": 4,
       "coverage_doc": "docs/goose-migration/P6-09-COVERAGE.md",
       "remaining": [
-        "LoRA application and scale",
         "saver from a model"
       ]
     },
@@ -4405,6 +4404,10 @@
     {
       "event": "P7-04 fifth slice (EXP607): the five basic dequantizers join the canon as goose/model/quant-dequant.goose with 300 cases and 12/12 mutations.",
       "checkpoint": "fed26568"
+    },
+    {
+      "event": "P6-09 second slice (EXP608): LoRA application and scaling join the canon as goose/model/lora-apply.goose with a real graph oracle and 12/12 mutations.",
+      "checkpoint": "fc1c3e2f"
     }
   ],
   "batches": [
@@ -5295,7 +5298,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T20:14:01.112171+00:00",
+  "updated_at": "2026-11-14T20:15:30.196592+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5304,9 +5307,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09 and P8-07.",
     "slices_total": 91,
-    "slices_done": 82,
+    "slices_done": 83,
     "slices_in_progress": 0,
-    "slices_remaining": 9
+    "slices_remaining": 8
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }
