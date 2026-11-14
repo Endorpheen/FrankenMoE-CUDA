@@ -1,0 +1,119 @@
+{
+  "experiment": "EXP578",
+  "source": "source/cvec.goose",
+  "note": "Two halves: A = state/validation, B = copy/arithmetic. Each entry is applied to a fresh copy of the source; a caught mutation makes tests/build.sh exit non-zero.",
+  "mutations": [
+    {
+      "id": "A1",
+      "half": "A",
+      "note": "cv_init marks layer 0 present",
+      "old": "    var il: i64 = 1;\n\n    while il < n {\n        let tb = cv_tbase(il);",
+      "new": "    var il: i64 = 0;\n\n    while il < n {\n        let tb = cv_tbase(il);"
+    },
+    {
+      "id": "A2",
+      "half": "A",
+      "note": "cv_init does not zero the direction buffers",
+      "old": "            F[base + k] = 0.0;",
+      "new": "            F[base + k] = F[base + k];"
+    },
+    {
+      "id": "A3",
+      "half": "A",
+      "note": "cv_apply drops the n_embd equality check",
+      "old": "    if n_embd != e {\n        return -1;\n    }",
+      "new": "    if n_embd < 0 {\n        return -1;\n    }"
+    },
+    {
+      "id": "A4",
+      "half": "A",
+      "note": "cv_apply writes the range before refusing a mismatch",
+      "old": "    if n_embd != e {\n        return -1;\n    }\n    if S[S_INIT] == 0 {",
+      "new": "    if n_embd != e {\n        S[S_START] = il_start;\n        S[S_END]   = il_end;\n        return -1;\n    }\n    if S[S_INIT] == 0 {"
+    },
+    {
+      "id": "A5",
+      "half": "A",
+      "note": "cv_disable leaves layer_end set",
+      "old": "    S[S_START] = -1;\n    S[S_END]   = -1;\n    return 0;",
+      "new": "    S[S_START] = -1;\n    return 0;"
+    },
+    {
+      "id": "A6",
+      "half": "A",
+      "note": "direction_off drops the negative-layer check",
+      "old": "    if il < 0 {\n        return -1;\n    }\n",
+      "new": ""
+    },
+    {
+      "id": "A7",
+      "half": "A",
+      "note": "direction_off drops the layer_start lower bound",
+      "old": "    if il < S[S_START] || il > S[S_END] {",
+      "new": "    if il > S[S_END] {"
+    },
+    {
+      "id": "A8",
+      "half": "A",
+      "note": "init_state records n_embd + 1",
+      "old": "    S[S_NEMBD]  = n_embd;",
+      "new": "    S[S_NEMBD]  = n_embd + 1;"
+    },
+    {
+      "id": "B1",
+      "half": "B",
+      "note": "apply uses off = n_embd*il instead of n_embd*(il-1)",
+      "old": "        let off = n_embd * (il - 1);",
+      "new": "        let off = n_embd * il;"
+    },
+    {
+      "id": "B2",
+      "half": "B",
+      "note": "apply uses a strict copy boundary",
+      "old": "        if off >= 0 && off + n_embd <= data.len {",
+      "new": "        if off >= 0 && off + n_embd < data.len {"
+    },
+    {
+      "id": "B3",
+      "half": "B",
+      "note": "apply copies data[off] into every slot",
+      "old": "                F[base + k] = data[off + k];",
+      "new": "                F[base + k] = data[off];"
+    },
+    {
+      "id": "B4",
+      "half": "B",
+      "note": "apply_to updates only the first row",
+      "old": "            cur[r * e + k] = cur[r * e + k] + F[off + k];",
+      "new": "            cur[k] = cur[k] + F[off + k];"
+    },
+    {
+      "id": "B5",
+      "half": "B",
+      "note": "apply_to subtracts the direction",
+      "old": "            cur[r * e + k] = cur[r * e + k] + F[off + k];",
+      "new": "            cur[r * e + k] = cur[r * e + k] - F[off + k];"
+    },
+    {
+      "id": "B6",
+      "half": "B",
+      "note": "apply_to processes one row only",
+      "old": "    let rows = cur.len / e;",
+      "new": "    let rows = 1;"
+    },
+    {
+      "id": "B7",
+      "half": "B",
+      "note": "apply_to accepts a partial row",
+      "old": "    if e <= 0 || cur.len % e != 0 {\n        return -1;\n    }",
+      "new": "    if e <= 0 {\n        return -1;\n    }"
+    },
+    {
+      "id": "B8",
+      "half": "B",
+      "note": "apply reads the direction length slot as the base",
+      "old": "            let base = T[cv_tbase(il) + 1];",
+      "new": "            let base = T[cv_tbase(il) + 2];"
+    }
+  ]
+}
