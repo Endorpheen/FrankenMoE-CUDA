@@ -1,6 +1,6 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15. This file is the current state; update it in the same change
+Updated: 2026-11-15 (2). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
@@ -14,12 +14,12 @@ The remaining partial requirements and their slice fronts:
 
 | requirement | slices | what is open |
 |---|---|---|
-| P6-09 | 4 / 5 | saver from model (in acceptance) |
+| P6-09 | 4 / 5 | saver from model (in acceptance, shared with P7-02) |
 | P7-02 | 4 / 5 | model saver (shared with P6-09 S5) |
-| P7-04 | 6 / 8 | weighted quantizers and dequant closure S5b (in acceptance) |
+| P7-04 | 7 / 8 | weighted quantizers (in acceptance) |
 | P7-08 | 4 / 8 | plan-level split: chat apply and time injection, hoisted native names |
 | P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
-| P8-07 | 4 / 5 | MCP stdio shells (in acceptance) |
+| P8-07 | 5 / 6 | process/HTTP integration (S5b) |
 
 ## What the canonical tree contains
 
