@@ -1,0 +1,7 @@
+M07: caught [rope scale] FAIL c01_minimal_shared_output: kv #110
+M08: caught [dsv4 branch] FAIL c31_dsv4_hc_mult_collapse: kv #96
+M09: caught [ple layers] FAIL c15_ple_group: kv #103
+M10: caught [charmap guard] FAIL c30_charmap_refusal: port rc 0
+M11: caught [tok/output alias] FAIL c01_minimal_shared_output: tensor count -1 vs 2
+M12: caught [layer dedup] FAIL c20_layer_alias: tensor count -1 vs 25
+MUTATIONS 6/6 caught

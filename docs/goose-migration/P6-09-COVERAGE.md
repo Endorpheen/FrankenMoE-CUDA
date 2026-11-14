@@ -4,7 +4,7 @@ Updated: 2026-11-14. Native sources: `src/llama-adapter.cpp`,
 `src/llama-model-saver.cpp`, the LoRA manifest/application blocks and the saver
 writer path.
 
-The requirement owns five slices. S3 is accepted; the rest is open.
+The requirement is DONE: five of five slices are accepted (S5 uses a synthetic model, no weights).
 
 | slice | native scope | state |
 |---|---|---|
@@ -12,7 +12,7 @@ The requirement owns five slices. S3 is accepted; the rest is open.
 | S2. LoRA application and scale | `apply` for LoRA, scaling, cleanup | **done (EXP608)** |
 | S3. Control vectors | `llama_adapter_cvec` state, `apply`, `apply_to`, `tensor_for` | **done (EXP582)** |
 | S4. Saver writer | GGUF writer path for saved models | **done (EXP606)** |
-| S5. Saver from a model | `llama_model_saver` metadata/tensor enumeration | open |
+| S5. Saver from a model | `llama_model_saver` metadata/tensor enumeration | **done (EXP614)** |
 
 ## S3 — accepted
 

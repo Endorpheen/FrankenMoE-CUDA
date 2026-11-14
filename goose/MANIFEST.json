@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T21:33:15.554929+00:00",
+  "updated_at": "2026-11-14T21:37:47.168564+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -226,11 +226,11 @@
       "native_targets": [
         "src/llama-model-saver.cpp (writer path)"
       ],
-      "experiment": "EXP-2026-11-14-606-p6-09-saver-writer",
+      "experiment": "EXP-2026-11-14-614-p6-09-saver-model",
       "task": "",
       "status": "ported",
-      "sha256": "083c01f6a1f20785a7c3aa358080680c2306bb3ddfac5339bdedab56fba29b18",
-      "gate": "29 cases / 154 checks / 0 failures, 12/12 mutations"
+      "sha256": "298c1f2a36ebe900dd48a9a4293b148d8a53e28690b85629f17ba423a1e18632",
+      "gate": "33 cases / 5714 checks / 0 failures, 12/12 mutations"
     },
     {
       "goose": "model/lora-apply.goose",
@@ -11434,21 +11434,7 @@
       "sha256": "ed2c3acabc8504abfa50bb34b83d25d713c1b848832ed3455a3ee36883fb8fe4"
     },
     {
-      "goose": "jinja/streaming/run/mut.goose",
-      "native": "src/llama-chat.cpp",
-      "native_targets": [
-        "src/llama-chat.cpp",
-        "common/chat*.cpp",
-        "common/jinja/**",
-        "common/parsers/**"
-      ],
-      "experiment": "EXP-2026-11-14-567-p7-08-streaming",
-      "task": "P7-08",
-      "status": "slice",
-      "sha256": "658a2bb1d1be5707ae4808963f341a297662030059704d415379ba6a94a1d767"
-    },
-    {
-      "goose": "jinja/streaming/runtime.goose",
+      "goose": "jinja/streaming.goose",
       "native": "src/llama-chat.cpp",
       "native_targets": [
         "src/llama-chat.cpp",
@@ -11487,35 +11473,7 @@
       "sha256": "e98a2a7ce3f9d58f82e2686051e02f8f7ece43fe51942f9946d4466b11bfaaaa"
     },
     {
-      "goose": "jinja/tool-builders/build/mut/runtime.goose",
-      "native": "src/llama-chat.cpp",
-      "native_targets": [
-        "src/llama-chat.cpp",
-        "common/chat*.cpp",
-        "common/jinja/**",
-        "common/parsers/**"
-      ],
-      "experiment": "EXP-2026-11-14-574-p7-08-tool-builders",
-      "task": "P7-08",
-      "status": "slice",
-      "sha256": "4239701680854347e7697e7cb1df6edef66eeed8db116df1ce4bdac82d0df942"
-    },
-    {
-      "goose": "jinja/tool-builders/build/pm/m.goose",
-      "native": "src/llama-chat.cpp",
-      "native_targets": [
-        "src/llama-chat.cpp",
-        "common/chat*.cpp",
-        "common/jinja/**",
-        "common/parsers/**"
-      ],
-      "experiment": "EXP-2026-11-14-574-p7-08-tool-builders",
-      "task": "P7-08",
-      "status": "slice",
-      "sha256": "3530696f980874538ff2cb2c149905400296712e02a16d1c764e8f3500fe9db1"
-    },
-    {
-      "goose": "jinja/tool-builders/runtime.goose",
+      "goose": "jinja/tool-builders.goose",
       "native": "src/llama-chat.cpp",
       "native_targets": [
         "src/llama-chat.cpp",
@@ -11527,6 +11485,18 @@
       "task": "P7-08",
       "status": "slice",
       "sha256": "635bfe110eaed10cc1f744239270c19b3ffdbeb271e9602c97e25e6c8b38ba73"
+    },
+    {
+      "goose": "model/saver-writer.goose",
+      "native": "src/llama-adapter.cpp",
+      "native_targets": [
+        "src/llama-adapter.cpp",
+        "src/llama-model-saver.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-606-p6-09-saver-writer",
+      "task": "P6-09",
+      "status": "slice",
+      "sha256": "083c01f6a1f20785a7c3aa358080680c2306bb3ddfac5339bdedab56fba29b18"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",

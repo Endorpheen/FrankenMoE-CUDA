@@ -68,8 +68,8 @@ CANONICAL_SOURCES = [
      "common/json.cpp (tool-validate dependency)", "accepted in P7-09 EXP493, byte-identical copy"),
     ("server/http-url-policy.goose", "EXP-2026-11-14-578-p7-11-http-url", "source/http-url-policy.goose",
      "common/http.h", "20000 cases / 0 diffs, 14/14 mutations"),
-    ("model/model-saver.goose", "EXP-2026-11-14-606-p6-09-saver-writer", "source/model-saver.goose",
-     "src/llama-model-saver.cpp (writer path)", "29 cases / 154 checks / 0 failures, 12/12 mutations"),
+    ("model/model-saver.goose", "EXP-2026-11-14-614-p6-09-saver-model", "source/model-saver.goose",
+     "src/llama-model-saver.cpp (writer path)", "33 cases / 5714 checks / 0 failures, 12/12 mutations"),
     ("model/lora-apply.goose", "EXP-2026-11-14-608-p6-09-lora-apply", "source/lora-apply.goose",
      "src/llama-adapter.cpp (LoRA apply)", "21 cases / 435 values / 0 failures, 12/12 mutations"),
     ("model/lora-manifest.goose", "EXP-2026-11-14-600-p6-09-lora-manifest", "source/lora-manifest.goose",
@@ -387,6 +387,11 @@ def build(check: bool) -> int:
         if not folder.is_dir() or not folder.name.startswith("EXP-"):
             continue
         files = sorted(folder.rglob("*.goose"))
+        # Generated per-mutation copies and build trees are reproducible from the
+        # source plus the mutation table; never copy them into the canon.
+        files = [f for f in files
+                 if not any(part in ("build", "run") or part.startswith("mut")
+                            for part in f.relative_to(folder).parts)]
         if not files or folder.name in CANONICAL_EXPERIMENTS:
             continue
         targets, task = choose_target(folder, ledger)

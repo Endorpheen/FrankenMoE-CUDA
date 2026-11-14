@@ -1,0 +1,7 @@
+M01: caught [per-layer count] FAIL c04_nextn_per_layer: kv #7
+M02: caught [u32 type] FAIL c01_minimal_shared_output: kv #2
+M03: caught [bool type] FAIL c01_minimal_shared_output: kv #15
+M04: caught [attr mapping] FAIL c17_vocab_spm_attrs: kv #132
+M05: caught [prec mapping] FAIL c10_prec_q8_f32: kv #3
+M06: caught [empty string] FAIL c19_vocab_none: kv count 157 vs 158
+MUTATIONS 6/6 caught
