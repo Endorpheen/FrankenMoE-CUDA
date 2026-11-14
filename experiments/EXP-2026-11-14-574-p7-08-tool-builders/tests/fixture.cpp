@@ -13,6 +13,7 @@
 #include <variant>
 
 #include "chat.h"
+#include "json-schema-to-grammar.h"
 #include "peg-parser.h"
 #include "chat-peg-parser.h"
 #include "runtime-gen.h"
@@ -367,6 +368,65 @@ static bool iso_walk(const common_peg_arena & a, int64_t nid, const Port & P, in
     return true;
 }
 
+static std::map<std::string, std::string> parse_rules(const std::string & text) {
+    std::map<std::string, std::string> m;
+    size_t pos = 0;
+    while (pos < text.size()) {
+        size_t nl = text.find('\n', pos);
+        if (nl == std::string::npos) nl = text.size();
+        std::string line = text.substr(pos, nl - pos);
+        size_t sep = line.find(" ::= ");
+        if (sep != std::string::npos) {
+            m[line.substr(0, sep)] = line.substr(sep + 5);
+        }
+        pos = nl + 1;
+    }
+    return m;
+}
+
+static std::string native_grammar(const common_peg_arena & a) {
+    common_grammar_builder b;
+    std::vector<std::pair<std::string, std::string>> rules;
+    b.add_rule = [&](const std::string & n, const std::string & body) {
+        rules.emplace_back(n, body);
+        return n;
+    };
+    b.add_schema = [&](const std::string & n, const common_chat_schema &) { return n; };
+    a.build_grammar(b, false);
+    std::string out;
+    for (auto & [n, body] : rules) out += n + " ::= " + body + "\n";
+    return out;
+}
+
+static std::string port_grammar(const Port & P, int64_t root) {
+    static char out[1 << 20];
+    static uint8_t scratch[1 << 20];
+    std::vector<int64_t> meta(8, 0), vis(4096, 0), rids(4096, 0), hids(4096, 0);
+    std::vector<int64_t> roff(4096, 0), rlen(4096, 0), boff(4096, 0), blen(4096, 0);
+    sl_i64 mi{meta.data(), (int64_t) meta.size()};
+    sl_i64 vi{vis.data(), (int64_t) vis.size()};
+    sl_i64 ri{rids.data(), (int64_t) rids.size()};
+    sl_i64 hi{hids.data(), (int64_t) hids.size()};
+    sl_i64 ro{roff.data(), (int64_t) roff.size()};
+    sl_i64 rl{rlen.data(), (int64_t) rlen.size()};
+    sl_i64 bo{boff.data(), (int64_t) boff.size()};
+    sl_i64 bl{blen.data(), (int64_t) blen.size()};
+    int64_t len = autoparser_arena_gbnf(root, 0, 4096,
+        sl_i64{(int64_t *) P.kind.data(), (int64_t) P.kind.size()},
+        sl_i64{(int64_t *) P.cfirst.data(), (int64_t) P.cfirst.size()},
+        sl_i64{(int64_t *) P.ccount.data(), (int64_t) P.ccount.size()},
+        sl_i64{(int64_t *) P.children.data(), (int64_t) P.children.size()},
+        sl_i64{(int64_t *) P.sidx.data(), (int64_t) P.sidx.size()},
+        sl_i64{(int64_t *) P.dstart.data(), (int64_t) P.dstart.size()},
+        sl_i64{(int64_t *) P.dcount.data(), (int64_t) P.dcount.size()},
+        sl_i64{(int64_t *) P.mn.data(), (int64_t) P.mn.size()},
+        sl_i64{(int64_t *) P.mx.data(), (int64_t) P.mx.size()},
+        sl_u8{(uint8_t *) (void *) P.pool.data(), (int64_t) P.pool.size()},
+        mi, vi, ri, hi, ro, rl, bo, bl,
+        sl_u8{scratch, sizeof scratch}, sl_u8{(uint8_t *) out, sizeof out});
+    return std::string(out, (size_t) len);
+}
+
 static std::string identity_check(const common_peg_arena & a, const Port & P, int64_t root,
                                   bool & ok) {
     std::map<int64_t, int64_t> n2p, p2n;
@@ -516,8 +576,33 @@ int main(int argc, char ** argv) {
         if (getenv("DUMP")) printf("%s\n", p.c_str());
         bool id_ok = false;
         std::string why = identity_check(a, P, port_root, id_ok);
+        auto nr = parse_rules(native_grammar(a));
+        auto pr = parse_rules(port_grammar(P, port_root));
+        nr.erase("space"); pr.erase("space");
+        bool gbnf_ok = nr == pr;
+        if (!gbnf_ok && getenv("GBNF_DIFF")) {
+            int shown = 0;
+            for (auto & [k, v] : nr) {
+                auto it = pr.find(k);
+                if (it == pr.end()) {
+                    printf("  only-native %s ::= %s\n", k.c_str(), v.substr(0, 80).c_str());
+                    if (++shown >= 4) break;
+                } else if (it->second != v) {
+                    printf("  body-diff %s\n    native: %s\n    port  : %s\n", k.c_str(),
+                           v.substr(0, 90).c_str(), it->second.substr(0, 90).c_str());
+                    if (++shown >= 4) break;
+                }
+            }
+            for (auto & [k, v] : pr) {
+                if (nr.find(k) == nr.end()) {
+                    printf("  only-port %s ::= %s\n", k.c_str(), v.substr(0, 80).c_str());
+                    if (++shown >= 8) break;
+                }
+            }
+        }
         if (n == p && id_ok) {
-            printf("%-5s ok   nodes=%zu bytes=%zu identity=ok\n", c.id, a.size(), n.size());
+            printf("%-5s ok   nodes=%zu bytes=%zu identity=ok gbnf=%s\n", c.id, a.size(), n.size(),
+                   gbnf_ok ? "ok" : "DIFF");
         } else if (n != p) {
             printf("%-5s FAIL dump native=%zu port=%zu\n", c.id, n.size(), p.size());
             first_diff(n, p);

@@ -62,6 +62,21 @@ Canon `73c51a5e`: 81 `export fn` + 1 recursive. After the block: 83 + 1, the
 two new names are `chat_standard_constructed_tools` and
 `chat_standard_json_tools`; no export is lost and no name is duplicated.
 
+## Hoisted-name parity (diagnostic)
+
+The structural gate now also builds the GBNF text on both sides and compares the
+rule maps (ignoring the built-in `space` rule). Today 1 of 13 cases matches:
+CT-3 is a single epsilon node, everything else differs in the hoisted
+`until-*`/`ac-*` numbers only. Example CT-1: native `until-10` is port
+`until-15`; the bodies are identical.
+
+The cause is that the port's builder allocates a different number of nodes
+before each hoisted node, so the node index the port uses as `pid` is not the
+native arena insertion index. This is the measured target for the hoist slice:
+the builder must carry a native insertion index per node (or avoid the extra
+allocations), after which `gbnf=ok` must be 13/13. `GBNF_DIFF=1` prints the
+first differing rules.
+
 ## Recorded limits
 
 - Hoisted rule names still use a local pid and do not match native `to_gbnf`
