@@ -48,6 +48,7 @@ names that a single linked module must deduplicate:
 | `builtin_call`, `builtin_names` | `jinja/builtins.goose`, `jinja/runtime.goose` |
 | `value_cmp`, `value_info` | `jinja/value.goose`, `jinja/value-json.goose` |
 | `json_parse` | `json/json-parser.goose` and three byte-identical module copies (`chat/`, `cli/`, `server/`) |
+| `s1_init`, `s1_remove`, `s1_set_arr`, `s1_set_arr_str`, `s1_set_kv`, `s1_set_str`, `s1_set_val` | `model/gguf-metadata.goose` and `model/gguf-writer.goose` (the writer carries its own S1 context) |
 
 The three `jsonparse.goose` copies exist because Goose resolves `import
 jsonparse` only by module name in the importing file's directory; the tree check
