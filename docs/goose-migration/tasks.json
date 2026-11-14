@@ -2387,17 +2387,17 @@
         "carrier/runtime/cli/main.cpp"
       ],
       "acceptance": "CLI,chat rendering,thinking markers,budget and interrupt behavior match existing corpus and stdin/stdout contract.",
-      "evidence": " 2026-11-14 S2 (EXP572, experiments/EXP-2026-11-14-572-p9-06-cli-protocol): the session line protocol of runtime/cli/main.cpp is Goose - one stdin line into a flat command (kind, id, n_predict, think, clear_kv, prompt bytes), the six stdout emitters including the 12-field progress line and the 30-field summary, the per-token delta rule with its reset flag, the recoverable/fatal split, and the native defaults. The JSON text is parsed by the accepted parser (EXP493) imported as a module. Gate: 17 cases / 26 values, 0 failures, with the oracle built from the carrier's own format strings; mutations 15/15 in two halves. S1 chat_parse, S3 thinking control and S4 serialized parser load remain; the slice plan is in docs/goose-migration/P9-06-COVERAGE.md. 2026-11-14 S3 (EXP573, experiments/EXP-2026-11-14-573-p9-06-thinking): the pure thinking-control decision is Goose - think_control_name (template/prefill/none with a template fallback), add_no_think_prefill (assistant message with \"\\n\\n\" reasoning and continue_final_message=CONTENT) and probe_think_control (null/failed probe, flag difference, owned-span detection against the template source, the prefill-lands branch, and the span-closed property). Gate: the native renderer supplies the three prompts and the native probe is the oracle - 12 cases / 26 values / 0 failures over six vendored templates, a plain template, null and four mechanism checks; mutations 12/12 in two halves. The renderer and the session wiring stay native. 2026-11-14 S4 (EXP575, experiments/EXP-2026-11-14-575-p9-06-arena-load): the serialized PEG arena load and build_parse_params are Goose - the inverse of the native JSON serialization into the flat arrays read by peg_dump (all fifteen variant types), the five status codes with the native error texts, the format/prompt copy before the load, reasoning_format=AUTO only after success, and the per-session warn-once flag. Gate: 10 cases / 58 checks / 0 failures over content-only and 15-node tool-style arenas, bounds, invalid ids, unknown type, non-JSON and a failed load; mutations 15/15 in two halves. Owned decision: child ids are bounds-checked up front, which the native code does not do.",
+      "evidence": " 2026-11-14 S2 (EXP572, experiments/EXP-2026-11-14-572-p9-06-cli-protocol): the session line protocol of runtime/cli/main.cpp is Goose - one stdin line into a flat command (kind, id, n_predict, think, clear_kv, prompt bytes), the six stdout emitters including the 12-field progress line and the 30-field summary, the per-token delta rule with its reset flag, the recoverable/fatal split, and the native defaults. The JSON text is parsed by the accepted parser (EXP493) imported as a module. Gate: 17 cases / 26 values, 0 failures, with the oracle built from the carrier's own format strings; mutations 15/15 in two halves. S1 chat_parse, S3 thinking control and S4 serialized parser load remain; the slice plan is in docs/goose-migration/P9-06-COVERAGE.md. 2026-11-14 S3 (EXP573, experiments/EXP-2026-11-14-573-p9-06-thinking): the pure thinking-control decision is Goose - think_control_name (template/prefill/none with a template fallback), add_no_think_prefill (assistant message with \"\\n\\n\" reasoning and continue_final_message=CONTENT) and probe_think_control (null/failed probe, flag difference, owned-span detection against the template source, the prefill-lands branch, and the span-closed property). Gate: the native renderer supplies the three prompts and the native probe is the oracle - 12 cases / 26 values / 0 failures over six vendored templates, a plain template, null and four mechanism checks; mutations 12/12 in two halves. The renderer and the session wiring stay native. 2026-11-14 S4 (EXP575, experiments/EXP-2026-11-14-575-p9-06-arena-load): the serialized PEG arena load and build_parse_params are Goose - the inverse of the native JSON serialization into the flat arrays read by peg_dump (all fifteen variant types), the five status codes with the native error texts, the format/prompt copy before the load, reasoning_format=AUTO only after success, and the per-session warn-once flag. Gate: 10 cases / 58 checks / 0 failures over content-only and 15-node tool-style arenas, bounds, invalid ids, unknown type, non-JSON and a failed load; mutations 15/15 in two halves. Owned decision: child ids are bounds-checked up front, which the native code does not do. 2026-11-14 S1 folded into S4 (EXP575): chat_parse.cpp is 23 lines - build_parse_params (copy format/prompt, load the arena, force AUTO after success) and warn_parse_failed_once (per-session 1/0/0 flag). Both were ported and gated in EXP575 as pq_build_params and pq_warn_once, including the failed-load state and the warn-once sequence, so no separate module is needed. P9-06 is at 4/4 slices; the acceptance text still names the budget/interrupt behavior in the session loop, which lives in session.cpp and is not part of these four slices, so the requirement stays PARTIAL.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 54,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
       "slices_total": 4,
-      "slices_done": 3,
+      "slices_done": 4,
       "coverage_doc": "docs/goose-migration/P9-06-COVERAGE.md",
       "remaining": [
-        "chat parse and rendering (chat_parse.cpp)"
+        "budget and interrupt behavior in the session loop (session.cpp)"
       ]
     },
     {
@@ -4366,6 +4366,10 @@
     {
       "event": "P8-07 first slice (EXP595): the request schema joins the canon as goose/server/server-schema.goose with a 181-line differential and 12/12 mutations.",
       "checkpoint": "626b687d"
+    },
+    {
+      "event": "P9-06 slice 1 folded into EXP575: build_parse_params and warn_parse_failed_once are already gated there; the ledger moves to 4/4 slices with the session-loop budget/interrupt item open.",
+      "checkpoint": "a640bac9"
     }
   ],
   "batches": [
@@ -5256,7 +5260,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T19:04:56.311252+00:00",
+  "updated_at": "2026-11-14T19:06:27.209316+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
