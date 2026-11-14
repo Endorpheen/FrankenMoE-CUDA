@@ -36,6 +36,8 @@ CANONICAL_SOURCES = [
      "common/peg-parser.cpp (arena load) and runtime chat_parse.cpp", "10 cases / 58 values / 0 failures, 15/15 mutations"),
     ("chat/jsonparse.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",
      "common/json.cpp (arena-load dependency)", "accepted in P7-09 EXP493, byte-identical copy"),
+    ("chat/session-loop.goose", "EXP-2026-11-14-602-p9-06-session-loop", "source/session-loop.goose",
+     "runtime/core/src/engine/session.cpp (budget and interrupt)", "74 cases / 446 values / 0 failures, 12/12 mutations"),
     ("chat/thinking-control.goose", "EXP-2026-11-14-573-p9-06-thinking", "source/think.goose",
      "runtime/core/src/engine/thinking_control.cpp", "12 cases / 26 values / 0 failures, 12/12 mutations"),
     ("cli/cli-protocol.goose", "EXP-2026-11-14-572-p9-06-cli-protocol", "source/cli_protocol.goose",

@@ -13,6 +13,7 @@ is open.
 | S2. CLI line protocol | `main.cpp` stdin reader, the six stdout emitters, the delta rule, recoverability | **done (EXP572)** |
 | S3. Thinking control | `ThinkControl` Template/Prefill/None, `add_no_think_prefill`, `probe_think_control` | open (port written, not accepted) |
 | S4. Serialized parser load | `build_parse_params`, `common_peg_arena::load` from JSON | **done (EXP575)** |
+| S5. Session-loop budget/interrupt | `session.cpp` n_predict loop, cancel latch, abort predicate, n_ctx bound, classification | **done (EXP602)** |
 
 ## S2 — accepted
 
