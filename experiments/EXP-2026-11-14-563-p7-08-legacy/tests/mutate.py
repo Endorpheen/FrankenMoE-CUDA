@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import sys
+import concurrent.futures
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DRAFT = os.path.join(BASE, "..", "source", "runtime.goose")
@@ -192,73 +193,94 @@ def run(cmd, **kw):
     return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, **kw)
 
 
+def run_one(item):
+    """Build and gate one mutation. Every write stays under mut/<id>/."""
+    mid, category, reason, old, new = item
+    base = open(DRAFT, encoding="utf-8").read()
+    d = os.path.join(MUT, mid)
+
+    count = base.count(old)
+    if count != 1:
+        return (mid, category, "not-applied", f"source matches {count} times, expected 1", "")
+
+    src = base.replace(old, new)
+    os.makedirs(d, exist_ok=True)
+    src_path = os.path.join(d, "draft.goose")
+    open(src_path, "w", encoding="utf-8").write(src)
+
+    env = dict(os.environ)
+    env["GOOSE_HOME"] = os.path.join(d, ".goose")
+    build = run([GOOSE, "-o", os.path.join(d, "draft.c"), "--standalone",
+                 "--header", os.path.join(d, "draft.h"), src_path], env=env)
+    if build.returncode != 0:
+        return (mid, category, "build-failed", reason, build.stdout[-600:])
+
+    obj = run(["gcc", "-O0", "-c", os.path.join(d, "draft.c"), "-o", os.path.join(d, "draft.o")])
+    if obj.returncode != 0:
+        return (mid, category, "object-failed", reason, obj.stdout[-600:])
+
+    host = run(["g++", "-O0", "-I", d, "-I", BASE, os.path.join(BASE, "host.cpp"),
+                os.path.join(d, "draft.o"), "-o", os.path.join(d, "host"), "-lm"])
+    if host.returncode != 0:
+        return (mid, category, "host-failed", reason, host.stdout[-600:])
+
+    with open(os.path.join(d, "goose.tsv"), "w", encoding="utf-8") as f:
+        f.write(run([os.path.join(d, "host")]).stdout)
+    gate = run([sys.executable, os.path.join(BASE, "compare.py"),
+                os.path.join(d, "goose.tsv")], cwd=BASE)
+    lines = [ln for ln in gate.stdout.splitlines()
+             if ("mismatch" in ln or ": prompt " in ln or ": detect " in ln
+                 or ": label " in ln or ln.startswith("parts:"))]
+    caught = gate.returncode != 0
+    return (mid, category, "caught" if caught else "MISSED", reason, lines[0] if lines else "")
+
+
 def main():
     half = 0
-    if len(sys.argv) > 2 and sys.argv[1] == "--half":
-        half = int(sys.argv[2])
+    jobs = 1
+    args = sys.argv[1:]
+    if len(args) >= 2 and args[0] == "--half":
+        half = int(args[1])
+        args = args[2:]
+    if len(args) >= 2 and args[0] == "--jobs":
+        jobs = int(args[1])
+        args = args[2:]
     os.makedirs(MUT, exist_ok=True)
     shutil.copy(os.path.join(BASE, "goose.tsv"), os.path.join(MUT, "baseline_goose.tsv"))
-    base = open(DRAFT, encoding="utf-8").read()
-    results = []
 
     half_size = (len(MUTATIONS) + 1) // 2
     batch = MUTATIONS if half == 0 else MUTATIONS[(half - 1) * half_size:half * half_size]
-    for mid, category, reason, old, new in batch:
-        count = base.count(old)
-        if count < 1:
-            print(f"{mid}: SOURCE NOT FOUND ({category})")
-            results.append((mid, category, "not-applied", "", ""))
-            continue
-        src = base.replace(old, new)
-        d = os.path.join(MUT, mid)
-        os.makedirs(d, exist_ok=True)
-        src_path = os.path.join(d, "draft.goose")
-        shutil.copyfile(DRAFT, src_path)
-        open(src_path, "w", encoding="utf-8").write(src)
-
-        build = run([GOOSE, "-o", os.path.join(d, "draft.c"), "--standalone",
-                     "--header", os.path.join(d, "draft.h"), src_path])
-        if build.returncode != 0:
-            print(f"{mid}: BUILD FAILED (syntax mutation, rejected)\n{build.stdout[-600:]}")
-            results.append((mid, category, "build-failed", "", ""))
-            continue
-
-        obj = run(["gcc", "-O0", "-c", os.path.join(d, "draft.c"), "-o", os.path.join(d, "draft.o")])
-        if obj.returncode != 0:
-            print(f"{mid}: OBJECT BUILD FAILED\n{obj.stdout[-600:]}")
-            results.append((mid, category, "object-failed", "", ""))
-            continue
-        host = run(["g++", "-O0", "-I", d, "-I", BASE, os.path.join(BASE, "host.cpp"),
-                    os.path.join(d, "draft.o"), "-o", os.path.join(d, "host"), "-lm"])
-        if host.returncode != 0:
-            print(f"{mid}: HOST BUILD FAILED\n{host.stdout[-600:]}")
-            results.append((mid, category, "host-failed", "", ""))
-            continue
-
-        with open(os.path.join(d, "goose.tsv"), "w", encoding="utf-8") as f:
-            f.write(run([os.path.join(d, "host")]).stdout)
-        shutil.copy(os.path.join(d, "goose.tsv"), os.path.join(BASE, "goose.tsv"))
-        gate = run([sys.executable, os.path.join(BASE, "compare.py")], cwd=BASE)
-        shutil.copy(os.path.join(MUT, "baseline_goose.tsv"), os.path.join(BASE, "goose.tsv"))
-
-        lines = [ln for ln in gate.stdout.splitlines()
-                 if ("mismatch" in ln or ": prompt " in ln or ": detect " in ln
-                     or ": label " in ln or ln.startswith("parts:"))]
-        caught = gate.returncode != 0
-        first = lines[0] if lines else ""
-        results.append((mid, category, "caught" if caught else "MISSED", reason, first))
-        print(f"{mid}: {'caught' if caught else 'MISSED'} [{category}] {first[:110]}")
-
-    shutil.copy(os.path.join(MUT, "baseline_goose.tsv"), os.path.join(BASE, "goose.tsv"))
+    if jobs > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
+            results = list(ex.map(run_one, batch))
+    else:
+        results = [run_one(item) for item in batch]
+    for mid, category, verdict, reason, first in results:
+        print(f"{mid}: {verdict} [{category}] {first[:110]}")
     caught = sum(1 for r in results if r[2] == "caught")
-    print(f"\nMUTATIONS {caught}/{len(batch)} caught")
+    expected = len(batch)
+    print(f"\nMUTATIONS {caught}/{expected} caught")
     suffix = "" if half == 0 else f"-half{half}"
     with open(os.path.join(MUT, f"results{suffix}.md"), "w", encoding="utf-8") as f:
         f.write("| id | category | mutation | verdict | first failure |\n")
         f.write("|---|---|---|---|---|\n")
         for mid, category, verdict, reason, first in results:
             f.write(f"| {mid} | {category} | {reason} | {verdict} | `{first.replace('|', '/')}` |\n")
-    return 0 if caught == len(batch) else 1
+    if half not in (0, 1, 2):
+        print(f"GATE FAILURE: --half must be 0, 1 or 2, got {half}")
+        return 2
+    if len(batch) == 0:
+        print("GATE FAILURE: empty mutation batch")
+        return 2
+    if len(results) != expected:
+        print(f"GATE FAILURE: expected {expected} results, got {len(results)}")
+        return 1
+    if caught != expected:
+        missed = ", ".join(r[0] for r in results if r[2] != "caught")
+        print(f"GATE FAILURE: {expected - caught} of {expected} not caught: {missed}")
+        return 1
+    print(f"GATE OK: {caught}/{expected} caught")
+    return 0
 
 
 if __name__ == "__main__":

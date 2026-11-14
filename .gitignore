@@ -230,3 +230,13 @@ experiments/*/tests/mut/*/draft.goose
 experiments/*/tests/mut/*/host
 experiments/*/source/*-gen.c
 experiments/*/source/*-gen.h
+
+# Oracle binaries are rebuilt by tests/build.sh from probe*.cpp.
+experiments/**/tests/probe
+experiments/**/tests/probe2
+
+# Object files anywhere under an experiment's tests directory.
+experiments/**/tests/*.o
+
+# Goose per-job build cache used by the parallel mutation runner.
+experiments/**/tests/mut/*/.goose/

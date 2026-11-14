@@ -71,6 +71,19 @@ If you are the senior helper in Codex consulted by Igor, diagnose the reported
 blocker and give Igor concrete guidance for the local agent in OpenCode. Do not
 apply the rule above recursively by sending Igor to another helper.
 
+## Experiment storage
+
+Evidence stays, build artefacts do not. Commit the Goose source, the build and
+gate scripts, the mutation descriptions, the recorded results (`.tsv`, logs,
+reports, cases), the SHA-256 of the inputs and the compiler/version notes.
+Never commit generated C, objects, oracle binaries or per-mutation copies of the
+source: they are reproducible from the Goose file plus the mutation table.
+
+`tools/check-generated-files.py` fails a commit that stages a generated `.c`
+of 1 MiB or more; `experiments/*/tests/probe*`, `mut/*/host`, `*.o` and the
+per-job Goose cache are ignored. Mutation runs use `-O0` and `mutate.py --jobs`
+(measured 2.7x at four workers); the gate itself stays at `-O1`.
+
 ## Experiment lifecycle
 
 One experiment at a time. The cycle is always:

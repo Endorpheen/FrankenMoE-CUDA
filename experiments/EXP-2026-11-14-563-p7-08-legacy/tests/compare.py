@@ -62,7 +62,10 @@ def compare(tag, native, goose):
 
 
 def main():
-    goose = rows("goose.tsv")
+    # Optional explicit path, so parallel mutation workers never rewrite the
+    # shared baseline goose.tsv.
+    goose_path = sys.argv[1] if len(sys.argv) > 1 else "goose.tsv"
+    goose = rows(goose_path)
     det = [r for r in goose if r[0] == "det"]
     cases = [r for r in goose if r[0].startswith(("case-", "gap-"))]
     parts = [r for r in goose if r[0] in ("parts", "parts-empty")]
