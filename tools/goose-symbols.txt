@@ -14,6 +14,8 @@ goose/jinja/runtime.goose	chat_bases
 goose/jinja/runtime.goose	chat_concat_parts
 goose/jinja/runtime.goose	chat_contains_media
 goose/jinja/runtime.goose	chat_content_json
+goose/jinja/runtime.goose	chat_content_parts_caps_json
+goose/jinja/runtime.goose	chat_content_string_caps_json
 goose/jinja/runtime.goose	chat_format_single
 goose/jinja/runtime.goose	chat_input_parts
 goose/jinja/runtime.goose	chat_mark_value

@@ -6861,7 +6861,9 @@ export fn chat_probe_second_call_mask(A: const i64[:], B: const u8[:], st: const
 
 // chat.cpp concat_content_parts: join text parts with a newline, but never
 // around a media marker; unknown part types are skipped.
-export fn chat_concat_parts(
+// The body is private so the caps normalizer can reuse it: Goose cannot call an
+// export fn from another function, so the export below is a thin wrapper.
+fn concat_parts(
     blob: const u8[:],
     type_off: i64[:],
     type_len: i64[:],
@@ -6907,6 +6909,17 @@ export fn chat_concat_parts(
         i = i + 1;
     }
     return p;
+}
+
+export fn chat_concat_parts(
+    blob: const u8[:],
+    type_off: i64[:],
+    type_len: i64[:],
+    text_off: i64[:],
+    text_len: i64[:],
+    n: i64,
+    out: u8[:]) -> i64 {
+    return concat_parts(blob, type_off, type_len, text_off, text_len, n, out);
 }
 
 // common_chat_msg::to_json_oaicompat content shape: a joined string when the
@@ -7881,7 +7894,7 @@ export fn chat_tools_error(t: const u8[:], code: i64, fs: i64, fe: i64, out: u8[
 }
 
 // common_chat_msg::contains_media over the typed parts.
-export fn chat_contains_media(
+fn contains_media(
     blob: const u8[:],
     type_off: i64[:],
     type_len: i64[:],
@@ -7897,6 +7910,14 @@ export fn chat_contains_media(
         i = i + 1;
     }
     return 0;
+}
+
+export fn chat_contains_media(
+    blob: const u8[:],
+    type_off: i64[:],
+    type_len: i64[:],
+    n: i64) -> i64 {
+    return contains_media(blob, type_off, type_len, n);
 }
 
 // common_chat_format_single: the newly formatted part is the tail of the render
@@ -11821,4 +11842,185 @@ export fn legacy_apply(tmpl: const u8[:], roles: const u8[:], roffs: i64[:], rle
         return len;
     }
     return len;
+}
+
+// ---- typed-direction content shape (EXP565) --------------------------------
+// messages_inp_normalizer: the base shape of to_json_oaicompat(concat=false),
+// then the caps rewrite.
+//
+//   only_string (string=1 typed=0): an array becomes one joined string;
+//   only_typed  (string=0 typed=1): a string becomes one text part;
+//   both true: the base shape is kept.
+//
+// A media marker forces the joined string before the rewrite, so under
+// only_typed it collapses into a single text part. The join reuses the accepted
+// concat_parts rule and the escaping reuses g_esc_quoted, the module's
+// nlohmann-compatible writer, so neither rule is duplicated.
+
+// Strict UTF-8, because nlohmann dump() throws type_error.316 on invalid input:
+// the typed entries report an error instead of writing bytes JSON cannot carry.
+fn utf8_ok_strict(s: const u8[:]) -> bool {
+    var i: i64 = 0;
+
+    while i < s.len {
+        let c = s[i];
+
+        if c < 128 {
+            i = i + 1;
+        } else if c < 194 {
+            return false;
+        } else if c < 224 {
+            if i + 1 >= s.len {
+                return false;
+            }
+            if s[i + 1] < 128 || s[i + 1] > 191 {
+                return false;
+            }
+            i = i + 2;
+        } else if c < 240 {
+            if i + 2 >= s.len {
+                return false;
+            }
+            if s[i + 1] < 128 || s[i + 1] > 191 || s[i + 2] < 128 || s[i + 2] > 191 {
+                return false;
+            }
+            if c == 224 && s[i + 1] < 160 {
+                return false;
+            }
+            if c == 237 && s[i + 1] > 159 {
+                return false;
+            }
+            i = i + 3;
+        } else if c < 245 {
+            if i + 3 >= s.len {
+                return false;
+            }
+            if s[i + 1] < 128 || s[i + 1] > 191 || s[i + 2] < 128 || s[i + 2] > 191 ||
+               s[i + 3] < 128 || s[i + 3] > 191 {
+                return false;
+            }
+            if c == 240 && s[i + 1] < 144 {
+                return false;
+            }
+            if c == 244 && s[i + 1] > 143 {
+                return false;
+            }
+            i = i + 4;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn content_parts_caps(
+    blob: const u8[:],
+    type_off: i64[:],
+    type_len: i64[:],
+    text_off: i64[:],
+    text_len: i64[:],
+    n: i64,
+    supports_string: i64,
+    supports_typed: i64,
+    out: u8[:]) -> i64 {
+    let only_string: bool = supports_string != 0 && supports_typed == 0;
+    let only_typed: bool = supports_string == 0 && supports_typed != 0;
+    let media = contains_media(blob, type_off, type_len, n);
+
+    // A media marker or only_string takes the joined string branch.
+    if n > 0 && (only_string || media != 0) {
+        let base = out.len / 2;
+        let p = concat_parts(blob, type_off, type_len, text_off, text_len, n, out[base ..]);
+        let joined: const u8[:] = out[base .. base + p];
+
+        if !utf8_ok_strict(joined) {
+            return 0 - 1;
+        }
+        if only_typed {
+            var q = apps(out, 0, "[{\"type\":\"text\",\"text\":");
+            q = g_esc_quoted(out, q, joined);
+            q = appc(out, q, 125);
+            return appc(out, q, 93);
+        }
+        return g_esc_quoted(out, 0, joined);
+    }
+    if n == 0 {
+        // Neither content nor parts: to_json_oaicompat emits "" (a string), and
+        // only_typed then wraps that empty string into one empty text part.
+        if only_typed {
+            return apps(out, 0, "[{\"type\":\"text\",\"text\":\"\"}]");
+        }
+        return apps(out, 0, "\"\"");
+    }
+    // Typed array: every part in message order, unknown types included.
+    var q = appc(out, 0, 91);
+    var i: i64 = 0;
+
+    while i < n {
+        if i > 0 {
+            q = appc(out, q, 44);
+        }
+        let ty = blob[type_off[i] .. type_off[i] + type_len[i]];
+        let tx = blob[text_off[i] .. text_off[i] + text_len[i]];
+
+        if !utf8_ok_strict(ty) || !utf8_ok_strict(tx) {
+            return 0 - 1;
+        }
+        q = apps(out, q, "{\"type\":");
+        q = g_esc_quoted(out, q, ty);
+        q = apps(out, q, ",\"text\":");
+        q = g_esc_quoted(out, q, tx);
+        q = appc(out, q, 125);
+        i = i + 1;
+    }
+    return appc(out, q, 93);
+}
+
+export fn chat_content_parts_caps_json(
+    blob: const u8[:],
+    type_off: i64[:],
+    type_len: i64[:],
+    text_off: i64[:],
+    text_len: i64[:],
+    n: i64,
+    supports_string: i64,
+    supports_typed: i64,
+    out: u8[:]) -> i64 {
+    return content_parts_caps(blob, type_off, type_len, text_off, text_len, n,
+                              supports_string, supports_typed, out);
+}
+
+// The same normalizer for a message whose content is a plain string: only_typed
+// wraps it into one text part, every other caps combination keeps the string.
+// The empty string stays "" under both caps, matching to_json_oaicompat.
+fn content_string_caps(
+    blob: const u8[:],
+    off: i64,
+    len: i64,
+    supports_string: i64,
+    supports_typed: i64,
+    out: u8[:]) -> i64 {
+    let only_typed: bool = supports_string == 0 && supports_typed != 0;
+    let text: const u8[:] = blob[off .. off + len];
+
+    if !utf8_ok_strict(text) {
+        return 0 - 1;
+    }
+    if only_typed {
+        var q = apps(out, 0, "[{\"type\":\"text\",\"text\":");
+        q = g_esc_quoted(out, q, text);
+        q = appc(out, q, 125);
+        return appc(out, q, 93);
+    }
+    return g_esc_quoted(out, 0, text);
+}
+
+export fn chat_content_string_caps_json(
+    blob: const u8[:],
+    off: i64,
+    len: i64,
+    supports_string: i64,
+    supports_typed: i64,
+    out: u8[:]) -> i64 {
+    return content_string_caps(blob, off, len, supports_string, supports_typed, out);
 }
