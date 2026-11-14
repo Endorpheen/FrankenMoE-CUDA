@@ -59,11 +59,15 @@ def index_head(path: str, limit: int = 512) -> bytes:
 
 
 def is_generated_goose_c(path: str, head: bytes) -> bool:
-    if not path.endswith(".c"):
-        return False
-    return (head.startswith(MARKER_SOURCE)
-            and MARKER_DO_NOT_EDIT in head
-            and MARKER_RUNTIME in head)
+    # Generated Goose C comes in two shapes: --standalone embeds runtime.h,
+    # --emit-runtime leaves it out. The first-line banner is common to both.
+    if path.endswith(".c"):
+        return head.startswith(MARKER_SOURCE) and MARKER_DO_NOT_EDIT in head
+    # CUDA headers written by the experiment's generator scripts, either
+    # named "*-generated.cuh" or placed under a generated/ directory.
+    if path.endswith(".cuh") and "generated" in path.lower():
+        return True
+    return False
 
 
 def main() -> int:
@@ -79,7 +83,7 @@ def main() -> int:
     warned: list[tuple[str, int]] = []
 
     for path in staged_files():
-        if not path.endswith(".c"):
+        if not (path.endswith(".c") or path.endswith(".cuh")):
             continue
         size = index_size(path)
         if size < 0:

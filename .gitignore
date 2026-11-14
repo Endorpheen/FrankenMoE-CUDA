@@ -240,3 +240,16 @@ experiments/**/tests/*.o
 
 # Goose per-job build cache used by the parallel mutation runner.
 experiments/**/tests/mut/*/.goose/
+
+# Generated CUDA headers (exp173 family and the generated/ directories).
+experiments/*/source/*-generated.cuh
+experiments/*/generated/*.cuh
+
+# Remaining build artefacts that older experiments committed before the rule:
+# static archives, shared objects without a soname suffix, and oracle binaries.
+experiments/*/*.a
+experiments/*/*.so
+experiments/*/probe
+experiments/*/probe2
+experiments/*/goose_detok
+experiments/*/native_detok
