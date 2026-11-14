@@ -70,12 +70,21 @@ CT-3 is a single epsilon node, everything else differs in the hoisted
 `until-*`/`ac-*` numbers only. Example CT-1: native `until-10` is port
 `until-15`; the bodies are identical.
 
-The cause is that the port's builder allocates a different number of nodes
-before each hoisted node, so the node index the port uses as `pid` is not the
-native arena insertion index. This is the measured target for the hoist slice:
-the builder must carry a native insertion index per node (or avoid the extra
-allocations), after which `gbnf=ok` must be 13/13. `GBNF_DIFF=1` prints the
-first differing rules.
+The cause is that the port's builder allocates nodes in a different order before
+each hoisted node, so the node index the port uses as `pid` is not the native
+arena insertion index. For the constructed tool family the offset is a constant
++5 in CT-1/CT-2 (native until-10/31 are port until-15/36), but the first
+divergence is earlier: native node 9 is a ref-like variant while the port has an
+atomic node there. This is the measured target for the hoist slice: the builder
+must carry a native insertion index per node (or avoid the extra allocations),
+after which `gbnf=ok` must be 13/13.
+
+The JSON-tool cases differ for a different reason: their arguments go through
+schema nodes, and `meta[3]=1` marks the schema grammar as a stub, so the native
+`json-array/bool/null/number/...` rules have no port counterpart. Closing that
+stub is the schema-in-GBNF slice, not a naming issue. `GBNF_DIFF=1` prints the
+first differing rules and `GBNF_DIFF=2|3` the id mapping and the first 20 node
+kinds.
 
 ## Recorded limits
 
