@@ -130,6 +130,8 @@ CANONICAL_SOURCES = [
      "src/models/qwen35moe.cpp", "10/26 + extended 43/149, 12/12 mutations"),
     ("model/base/model_graph.goose", "EXP-2026-11-14-577-p6-05-qwen35moe", "source/base/model_graph.goose",
      "src/llama-graph.cpp (shared module, no main)", "imported by the architecture builders"),
+    ("model/gguf-split.goose", "EXP-2026-11-14-609-p7-02-gguf-split", "source/gguf-split.goose",
+     "tools/gguf-split/gguf-split.cpp", "39 cases / 587 checks / 0 failures, 12/12 mutations"),
     ("model/gguf-tensors.goose", "EXP-2026-11-14-601-p7-02-gguf-tensors", "source/gguf-tensors.goose",
      "ggml/src/gguf.cpp (tensor descriptors and data)", "41 cases / 307 checks / 0 failures, 12/12 mutations"),
     ("model/gguf-writer.goose", "EXP-2026-11-14-596-p7-02-gguf-writer", "source/gguf-writer.goose",

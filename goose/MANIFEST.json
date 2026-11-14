@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T20:15:33.552549+00:00",
+  "updated_at": "2026-11-14T20:20:18.125842+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -591,6 +591,18 @@
       "status": "ported",
       "sha256": "8c83ca66a50322a20c76a13b55038b87646785d7fb7973531bdac15f70bd5fcc",
       "gate": "imported by the architecture builders"
+    },
+    {
+      "goose": "model/gguf-split.goose",
+      "native": "tools/gguf-split/gguf-split.cpp",
+      "native_targets": [
+        "tools/gguf-split/gguf-split.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-609-p7-02-gguf-split",
+      "task": "",
+      "status": "ported",
+      "sha256": "f8c887ea3fb690132df33fc8e129f962c0f2b31fec09e7718752eebac5cac36a",
+      "gate": "39 cases / 587 checks / 0 failures, 12/12 mutations"
     },
     {
       "goose": "model/gguf-tensors.goose",
