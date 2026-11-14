@@ -1,11 +1,11 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (6). This file is the current state; update it in the same change
+Updated: 2026-11-15 (7). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 110**, **PARTIAL 6**, **TODO 36** of
+`docs/goose-migration/tasks.json`: **DONE 111**, **PARTIAL 5**, **TODO 36** of
 152 functional requirements. Slice front: **112 / 112** done, none remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
@@ -15,7 +15,6 @@ The remaining partial requirements and their slice fronts:
 | requirement | slices | what is open |
 |---|---|---|
 | P6-11 | 3 / 3 | wire ngram_draft.cpp and session.cpp to the Goose decisions |
-| P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
 | P7-12 | 3 / 3 | wire the tokenizer dispatch, special-token partition and common strings |
 | P9-01 | 3 / 3 | wire validate(), arch_registry.cpp and main.cpp |
 | P9-03 | 3 / 3 | replace the 25 streaming call sites |
