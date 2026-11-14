@@ -81,6 +81,21 @@ a canonical file with no export fn unless it is a shared `model/base/` module,
 which is how the request-schema defect (gate driver in the same unit, no public
 API) is now caught.
 
+`tools/compose-goose.py` is the first composition step. It resolves imports
+(the parser is emitted once), drops identical declarations, applies per-module
+renames for colliding helper families and refuses to finish when two modules
+carry different bodies under one name. Status:
+
+- the server stack (`jsonparse`, `mcp-core`, `mcp-stdio`, `decision-core`,
+  `server-schema`, `tools-pure`) composes and typechecks as one unit with 595
+  specializations and writes 1.4 MB of generated C; `decision-core` now calls
+  the parser through its `extern "json_parse"` ABI, as the other modules do;
+- the GGUF stack still conflicts: `gguf-writer` and `gguf-split` carry
+  different `s2_write` bodies, so the composer exits 1 for that set until the
+  two are unified;
+- the jinja runtime, value/builtins and the quantizer helper families still
+  need the same treatment before one runtime can link.
+
 ## Slice plan
 
 Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).

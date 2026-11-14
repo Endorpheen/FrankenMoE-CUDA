@@ -43,6 +43,16 @@
 import std;
 import jsonparse;
 
+// The accepted parser through its export ABI: an exported function with
+// const-slice parameters cannot be instantiated for an internal call when the
+// module is composed into one unit with the parser.
+extern "json_parse" fn json_parse_abi(
+    text: const u8[:],
+    jk: i64[:], jv: i64[:], jd: f64[:], js: i64[:], jl: i64[:], jf: i64[:],
+    jn: i64[:], jh: i64[:],
+    e_val: i64[:], e_koff: i64[:], e_klen: i64[:], e_next: i64[:],
+    sbuf: u8[:], jkey: i64[:], jkl: i64[:], jchild: i64[:], st: i64[:]) -> i64;
+
 // JSON node kinds, as jsonparse emits them (its K_* names are module globals).
 const DC_NULL: i64 = 0;
 const DC_BOOL: i64 = 1;
@@ -1537,7 +1547,7 @@ export fn dc_py_dumps(text: const u8[:], indent: i64, ensure: i64, out: u8[:]) -
     var kl: i64[1024] = [0; 1024];
     var jc: i64[1024] = [0; 1024];
     var st: i64[16] = [0; 16];
-    let root = json_parse(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         return 0;
@@ -1605,7 +1615,7 @@ export fn dc_kev_render(text: const u8[:], out: u8[:]) -> i64 {
     var kl: i64[1024] = [0; 1024];
     var jc: i64[1024] = [0; 1024];
     var st: i64[16] = [0; 16];
-    let root = json_parse(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         return 0;
@@ -1633,7 +1643,7 @@ export fn dc_kev_text(text: const u8[:], out: u8[:]) -> i64 {
     var kl: i64[1024] = [0; 1024];
     var jc: i64[1024] = [0; 1024];
     var st: i64[16] = [0; 16];
-    let root = json_parse(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         return 0;
@@ -1664,7 +1674,7 @@ export fn dc_replace_text(text: const u8[:], search: const u8[:], repl: const u8
     var kl: i64[1024] = [0; 1024];
     var jc: i64[1024] = [0; 1024];
     var st: i64[16] = [0; 16];
-    let root = json_parse(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         return 0;
@@ -1692,7 +1702,7 @@ export fn dc_sort_keys(text: const u8[:], out: u8[:]) -> i64 {
     var kl: i64[1024] = [0; 1024];
     var jc: i64[1024] = [0; 1024];
     var st: i64[16] = [0; 16];
-    let root = json_parse(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         return 0;
@@ -1720,7 +1730,7 @@ export fn dc_d1omni_escape(text: const u8[:], out: u8[:]) -> i64 {
     var kl: i64[1024] = [0; 1024];
     var jc: i64[1024] = [0; 1024];
     var st: i64[16] = [0; 16];
-    let root = json_parse(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         return 0;
@@ -1762,7 +1772,7 @@ export fn dc_parse_questions(body: const u8[:], typ: i64, strict: i64, csort: i6
     var kdesc: i64[DC_MAX_OPT] = [0; DC_MAX_OPT];
     var kbuf: u8[DC_KEYBUF] = [0; DC_KEYBUF];
     var kb: i64[4] = [0; 4];
-    let root = json_parse(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         dc_puts(out, 0, "body is not JSON");
@@ -1815,7 +1825,7 @@ export fn dc_parse_state(body: const u8[:], out: u8[:]) -> i64 {
     var scratch: u8[DC_SCRATCH] = [0; DC_SCRATCH];
     var kinds: u8[64] = [0; 64];
     var cnt: i64[4] = [0; 4];
-    let root = json_parse(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         dc_puts(out, 0, "body is not JSON");
@@ -2078,7 +2088,7 @@ export fn dc_prepare_state(text: const u8[:], typ: i64, spell: const u8[:], out:
     var st: i64[16] = [0; 16];
     var cut: u8[DC_SCRATCH] = [0; DC_SCRATCH];
     var quoted: u8[DC_SCRATCH] = [0; DC_SCRATCH];
-    let root = json_parse(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(text, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         return 0;
@@ -2201,7 +2211,7 @@ export fn dc_render_h2o(body: const u8[:], typ: i64, strict: i64, csort: i64, nt
     var opt: u8[DC_SCRATCH] = [0; DC_SCRATCH];
     var dbuf: u8[DC_SCRATCH] = [0; DC_SCRATCH];
     var qbuf: u8[DC_KEYBUF] = [0; DC_KEYBUF];
-    let root = json_parse(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         dc_puts(out, 0, "body is not JSON");
@@ -2579,7 +2589,7 @@ export fn dc_format_answer(body: const u8[:], typ: i64, strict: i64, csort: i64,
     var kbuf: u8[DC_KEYBUF] = [0; DC_KEYBUF];
     var kb: i64[4] = [0; 4];
     var pr: f64[64] = [0.0; 64];
-    let root = json_parse(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
+    let root = json_parse_abi(body, jk, jv, jd, js, jl, jf, jn, jh, ev, ek, el, en, sb, key, kl, jc, st);
 
     if root < 0 {
         dc_puts(out, 0, "body is not JSON");
