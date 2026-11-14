@@ -2755,7 +2755,8 @@ recursive fn eval_filter(
             filter_name_is(fname, "replace") || filter_name_is(fname, "title") ||
             filter_name_is(fname, "join") || filter_name_is(fname, "length") ||
             filter_name_is(fname, "wordcount") || filter_name_is(fname, "first") ||
-            filter_name_is(fname, "last") || filter_name_is(fname, "truncate") {
+            filter_name_is(fname, "last") || filter_name_is(fname, "truncate") ||
+            filter_name_is(fname, "sum") {
             known = true;
         }
 
@@ -2764,7 +2765,8 @@ recursive fn eval_filter(
                 return mk_undef(A, F, st);
             }
 
-            if filter_name_is(fname, "length") || filter_name_is(fname, "wordcount") {
+            if filter_name_is(fname, "length") || filter_name_is(fname, "wordcount") ||
+                filter_name_is(fname, "sum") {
                 return mk_int(A, F, st, 0);
             }
             return mk_str(A, F, B, st, "");
@@ -3045,8 +3047,24 @@ recursive fn eval_filter(
         var p: i64 = 0;
         var i: i64 = 0;
 
+        var join_attr: bool = false;
+        var attr_val: i64 = 0;
+
+        if has_attr && filter_name_is(kwattr, "attribute") {
+            join_attr = true;
+            attr_val = kwval;
+        } else if argc > 1 && vk(A, st, argv[1]) != V_UNDEF {
+            join_attr = true;
+            attr_val = argv[1];
+        }
+        let join_undef = mk_undef(A, F, st);
+
         while i < n {
-            let item = A[pool(A, st) + vcs(A, st, sval) + i];
+            var item = A[pool(A, st) + vcs(A, st, sval) + i];
+
+            if join_attr {
+                item = attr_of(item, attr_val, join_undef, A, B, F, st);
+            }
             let ik = vk(A, st, item);
 
             if ik != V_STRING && ik != V_INT && ik != V_FLOAT {
@@ -3936,6 +3954,139 @@ recursive fn eval_filter(
             i = i + 1;
         }
         return obj;
+    }
+
+    if filter_name_is(fname, "reverse") && (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) {
+        let n = vcc(A, st, sval);
+        let src_base = pool(A, st) + vcs(A, st, sval);
+        let res = arr_new(A, F, st);
+
+        if vk(A, st, sval) == V_TUPLE {
+            A[st[16] + res] = V_TUPLE;
+        }
+        var i: i64 = n - 1;
+
+        while i >= 0 {
+            arr_push(A, st, res, A[src_base + i]);
+            i = i - 1;
+        }
+        return res;
+    }
+
+    if filter_name_is(fname, "list") {
+        if vk(A, st, sval) == V_OBJECT {
+            let n = vkc(A, st, sval);
+            let res = arr_new(A, F, st);
+            var i: i64 = 0;
+
+            while i < n {
+                arr_push(A, st, res, A[pool(A, st) + vks(A, st, sval) + i]);
+                i = i + 1;
+            }
+            return res;
+        }
+
+        if vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE {
+            let n = vcc(A, st, sval);
+            let src_base = pool(A, st) + vcs(A, st, sval);
+            let res = arr_new(A, F, st);
+            var i: i64 = 0;
+
+            while i < n {
+                arr_push(A, st, res, A[src_base + i]);
+                i = i + 1;
+            }
+            return res;
+        }
+    }
+
+    if (filter_name_is(fname, "min") || filter_name_is(fname, "max")) && (vk(A, st, sval) == V_ARRAY || vk(A, st, sval) == V_TUPLE) {
+        let n = vcc(A, st, sval);
+
+        if n == 0 {
+            return mk_undef(A, F, st);
+        }
+        let src_base = pool(A, st) + vcs(A, st, sval);
+        var use_attr: bool = false;
+        var attr_val: i64 = 0;
+
+        if has_attr && filter_name_is(kwattr, "attribute") {
+            use_attr = true;
+            attr_val = kwval;
+        } else if argc > 1 && vk(A, st, argv[1]) != V_UNDEF {
+            use_attr = true;
+            attr_val = argv[1];
+        }
+        let undef = mk_undef(A, F, st);
+        var best = A[src_base];
+        var bestkey = best;
+
+        if use_attr {
+            bestkey = attr_of(best, attr_val, undef, A, B, F, st);
+        }
+        var op: i64 = 3;
+
+        if filter_name_is(fname, "max") {
+            op = 2;
+        }
+        var i: i64 = 1;
+
+        while i < n {
+            let item = A[src_base + i];
+            var key = item;
+
+            if use_attr {
+                key = attr_of(item, attr_val, undef, A, B, F, st);
+            }
+            let r = vcompare(A, B, F, st, key, bestkey, op, out, E);
+
+            if r < 0 {
+                return -1;
+            }
+
+            if r != 0 {
+                best = item;
+                bestkey = key;
+            }
+            i = i + 1;
+        }
+        return best;
+    }
+
+    if filter_name_is(fname, "append") && vk(A, st, sval) == V_ARRAY && argc > 0 {
+        let n = vcc(A, st, sval);
+        let src_base = pool(A, st) + vcs(A, st, sval);
+        let res = arr_new(A, F, st);
+        var i: i64 = 0;
+
+        while i < n {
+            arr_push(A, st, res, A[src_base + i]);
+            i = i + 1;
+        }
+        arr_push(A, st, res, argv[0]);
+        return res;
+    }
+
+    if filter_name_is(fname, "pop") && vk(A, st, sval) == V_ARRAY {
+        let n = vcc(A, st, sval);
+
+        if n == 0 {
+            return fail_node(K_FILTER, apos(A, st, id), "Index -1 out of bounds for array of size 0", E, st);
+        }
+        var idx: i64 = 0 - 1;
+
+        if argc > 0 && vk(A, st, argv[0]) != V_UNDEF {
+            idx = vi(A, st, argv[0]);
+        }
+
+        if idx < 0 {
+            idx = n + idx;
+        }
+
+        if idx < 0 || idx >= n {
+            return fail_node(K_FILTER, apos(A, st, id), "pop index out of bounds", E, st);
+        }
+        return A[pool(A, st) + vcs(A, st, sval) + idx];
     }
 
     var p = apps(E, 0, "Unknown (built-in) filter '");
