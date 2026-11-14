@@ -8106,6 +8106,14 @@ const PEG_UNTIL: i64 = 13;
 const PEG_RULE: i64 = 14;
 const PEG_ATOMIC: i64 = 16;
 const PEG_TAG: i64 = 17;
+// Kinds the generator slices need. The numbers follow the EXP481 flat enum,
+// not the native variant order, and are private to this file.
+const PEG_AND: i64 = 7;
+const PEG_SPACE: i64 = 10;
+const PEG_CHARS: i64 = 11;
+const PEG_STRING: i64 = 12;
+const PEG_SCHEMA: i64 = 18;
+const PEG_AC: i64 = 20;
 
 // st[60] node count, st[61] child cursor, st[62] pool cursor, st[63] string count.
 fn peg_reset(st: i64[:]) -> i64 {
@@ -8522,6 +8530,31 @@ recursive fn peg_dump_node(
         }
     } else if k == PEG_ANY {
         p = peg_app(out, p, "Any");
+    } else if k == PEG_SPACE {
+        p = peg_app(out, p, "Space");
+    } else if k == PEG_AND {
+        p = peg_app(out, p, "And(");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ")");
+    } else if k == PEG_CHARS {
+        let csid = sidx[id];
+        p = peg_app(out, p, "CharRepeat(");
+        p = peg_app(out, p, pool[dstart[csid] .. dstart[csid] + dcount[csid]]);
+        p = peg_app(out, p, ", ");
+        p = peg_app_i64(out, p, mn[id]);
+        p = peg_app(out, p, ", ");
+        if mx[id] < 0 {
+            p = peg_app(out, p, "unbounded");
+        } else {
+            p = peg_app_i64(out, p, mx[id]);
+        }
+        p = peg_app(out, p, ")");
+    } else if k == PEG_STRING {
+        let ssid = sidx[id];
+        p = peg_app(out, p, "String(");
+        p = peg_app(out, p, pool[dstart[ssid] .. dstart[ssid] + dcount[ssid]]);
+        p = peg_app(out, p, ")");
     } else if k == PEG_NOT {
         p = peg_app(out, p, "Not(");
         st[70] = p;
@@ -8534,6 +8567,22 @@ recursive fn peg_dump_node(
         p = peg_app(out, p, ", ");
         st[70] = p;
         p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ")");
+    } else if k == PEG_AC {
+        let asid = sidx[id];
+        p = peg_app(out, p, "Ac(");
+        p = peg_app(out, p, pool[dstart[asid] .. dstart[asid] + dcount[asid]]);
+        p = peg_app(out, p, ", ");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ")");
+    } else if k == PEG_SCHEMA {
+        let schid = sidx[id];
+        p = peg_app(out, p, "Schema(");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ", ");
+        p = peg_app(out, p, pool[dstart[schid] .. dstart[schid] + dcount[schid]]);
         p = peg_app(out, p, ")");
     } else if k == PEG_LIT {
         let sid = sidx[id];
@@ -13229,4 +13278,3042 @@ export fn chat_msg_monotone(
 ) -> i64 {
     return chat_msg_monotone_impl(pcont, pclen, preas, prlen, ptcb, ptab, pcalls,
                                   ncont, nclen, nreas, nrlen, ntcb, ntab, ncalls);
+}
+// ---- autoparser generator, content-only slice ------------------------------
+// First draft of autoparser::peg_generator::generate_parser for a template
+// where the differential analysis found no reasoning and no usable tools:
+//   root = prefix(generation_prompt, "") + analyze_content::build_parser()
+// with the parser context reducing to eps + content(...) + end.
+// plain:   Sequence(prefix, Epsilon, Tag(content, Until()), End)
+// wrapped: Sequence(prefix, Tag(content, Until(start)), Literal(start),
+//                   Tag(content, Until(end)), Literal(end), End)
+// Mirrors common/chat-peg-parser.cpp (prefix, content, until) and
+// common/chat-auto-parser-generator.cpp (analyze_content::build_parser).
+//
+// Two port limits are worked around here, both recorded in REPORT.md:
+//   - the goose compiler cannot instantiate an exported function whose
+//     parameters are const slices, so ap_prefix repeats peg_prefix for
+//     in-tree callers and the export stays for C callers;
+//   - peg_seq/peg_flat_n carry only three children, so ap_seq appends the
+//     list directly. It does not need the native same-kind flattening: the
+//     content-only grammar never passes a sequence as a child.
+fn ap_prefix(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    s: const u8[:],
+    delim: const u8[:]) -> i64 {
+    if s.len == 0 {
+        return peg_eps_node(kind, cfirst, ccount, sidx, st);
+    }
+
+    if delim.len == 0 {
+        return peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, s);
+    }
+    var cut: i64 = s.len;
+    var i: i64 = 0;
+
+    while i + delim.len <= s.len {
+        var same: bool = true;
+        var k: i64 = 0;
+
+        while k < delim.len {
+            if s[i + k] != delim[k] {
+                same = false;
+            }
+            k = k + 1;
+        }
+
+        if same {
+            cut = i;
+            i = s.len;
+        } else {
+            i = i + 1;
+        }
+    }
+    return peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, s[0 .. cut]);
+}
+
+// Same-kind flattening of common_peg_parser_builder::sequence, with no child
+// count limit. The canonical peg_seq/peg_flat_n carry only three children.
+fn ap_seq(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    kids: const i64[:]) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_SEQ, 0 - 1);
+    var out_n: i64 = 0;
+    var i: i64 = 0;
+
+    while i < kids.len {
+        let kid = kids[i];
+
+        if kind[kid] == PEG_SEQ {
+            var j: i64 = 0;
+
+            while j < ccount[kid] {
+                children[st[61] + out_n] = children[cfirst[kid] + j];
+                out_n = out_n + 1;
+                j = j + 1;
+            }
+        } else {
+            children[st[61] + out_n] = kid;
+            out_n = out_n + 1;
+        }
+        i = i + 1;
+    }
+    ccount[id] = out_n;
+    st[61] = st[61] + out_n;
+    return id;
+}
+
+fn ap_choice(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    kids: const i64[:]) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_CHOICE, 0 - 1);
+    var out_n: i64 = 0;
+    var i: i64 = 0;
+
+    while i < kids.len {
+        let kid = kids[i];
+
+        if kind[kid] == PEG_CHOICE {
+            var j: i64 = 0;
+
+            while j < ccount[kid] {
+                children[st[61] + out_n] = children[cfirst[kid] + j];
+                out_n = out_n + 1;
+                j = j + 1;
+            }
+        } else {
+            children[st[61] + out_n] = kid;
+            out_n = out_n + 1;
+        }
+        i = i + 1;
+    }
+    ccount[id] = out_n;
+    st[61] = st[61] + out_n;
+    return id;
+}
+
+export fn autoparser_build_content(
+    gp: const u8[:],
+    content_start: const u8[:],
+    content_end: const u8[:],
+    wrapped: i64,
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:]) -> i64 {
+    // generation_prompt prefix; reasoning.start is empty in this slice.
+    let pre = ap_prefix(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gp, "");
+    let endn = peg_end_node(kind, cfirst, ccount, sidx, st);
+
+    if wrapped != 0 {
+        let u1 = peg_until_marker(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, content_start);
+        mn[u1] = u1;
+        let c1 = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content", u1);
+        let s1 = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, content_start);
+        let u2 = peg_until_marker(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, content_end);
+        mn[u2] = u2;
+        let c2 = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content", u2);
+        let s2 = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, content_end);
+        var kids: i64[6] = [0, 0, 0, 0, 0, 0];
+        kids[0] = pre;
+        kids[1] = c1;
+        kids[2] = s1;
+        kids[3] = c2;
+        kids[4] = s2;
+        kids[5] = endn;
+        return ap_seq(kind, cfirst, ccount, children, sidx, st, kids[0..6]);
+    }
+
+    // PLAIN: the context reasoning parser is eps.
+    let rp = peg_eps_node(kind, cfirst, ccount, sidx, st);
+    let u = peg_until_marker(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "");
+    let c = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content", u);
+    var kids: i64[4] = [0, 0, 0, 0];
+    kids[0] = pre;
+    kids[1] = rp;
+    kids[2] = c;
+    kids[3] = endn;
+    return ap_seq(kind, cfirst, ccount, children, sidx, st, kids[0..4]);
+}
+
+// ---- second slice: reasoning and TAG_WITH_JSON ------------------------------
+// Helpers mirror common_peg_parser_builder (peg-parser.cpp) and
+// common_chat_peg_builder (chat-peg-parser.cpp). All are private: the goose
+// backend cannot instantiate exported functions with const-slice parameters.
+
+fn ap_isspace(c: u8) -> i64 {
+    if c == 32 || c == 9 || c == 10 || c == 13 || c == 11 || c == 12 {
+        return 1;
+    }
+    return 0;
+}
+
+// trim_whitespace from chat-auto-parser-helpers.cpp.
+fn ap_trim(s: const u8[:]) -> const u8[:] {
+    var a: i64 = 0;
+
+    while a < s.len && ap_isspace(s[a]) == 1 {
+        a = a + 1;
+    }
+
+    if a == s.len {
+        return s[0..0];
+    }
+    var b: i64 = s.len - 1;
+
+    while b > a && ap_isspace(s[b]) == 1 {
+        b = b - 1;
+    }
+    return s[a .. b + 1];
+}
+
+fn ap_eps(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_EPS, 0 - 1);
+}
+
+fn ap_end(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_END, 0 - 1);
+}
+
+fn ap_lit(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    text: const u8[:]) -> i64 {
+    return peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, text);
+}
+
+fn ap_space(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_SPACE, 0 - 1);
+}
+
+fn ap_any(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_ANY, 0 - 1);
+}
+
+fn ap_chars(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    pattern: const u8[:],
+    lo: i64,
+    hi: i64) -> i64 {
+    let sid = peg_pool_add(pool, st, dstart, dcount, pattern);
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_CHARS, sid);
+    mn[id] = lo;
+    mx[id] = hi;
+    return id;
+}
+
+fn ap_string_node(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    delim: u8) -> i64 {
+    var b: u8[1] = [0];
+    b[0] = delim;
+    let sid = peg_pool_add(pool, st, dstart, dcount, b[0..1]);
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_STRING, sid);
+}
+
+fn ap_rep(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    st: i64[:],
+    child: i64,
+    lo: i64,
+    hi: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_REP, 0 - 1);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    mn[id] = lo;
+    mx[id] = hi;
+    return id;
+}
+
+fn ap_tag(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    name: const u8[:],
+    child: i64) -> i64 {
+    return peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, name, child);
+}
+
+fn ap_atomic(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    child: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_ATOMIC, 0 - 1);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+fn ap_and(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    child: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_AND, 0 - 1);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+// rule() sanitizes names with [^a-zA-Z0-9-]+ -> "-" (peg-parser.cpp).
+fn ap_rule(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    name: const u8[:],
+    child: i64) -> i64 {
+    var rb: u8[256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var n: i64 = 0;
+    var dirty: i64 = 0;
+    var i: i64 = 0;
+
+    while i < name.len {
+        let c = name[i];
+        var ok: i64 = 0;
+
+        if c >= 97 && c <= 122 {
+            ok = 1;
+        }
+        if c >= 65 && c <= 90 {
+            ok = 1;
+        }
+        if c >= 48 && c <= 57 {
+            ok = 1;
+        }
+        if c == 45 {
+            ok = 1;
+        }
+
+        if ok == 1 {
+            rb[n] = c;
+            n = n + 1;
+            dirty = 0;
+        } else {
+            if dirty == 0 {
+                rb[n] = 45;
+                n = n + 1;
+                dirty = 1;
+            }
+        }
+        i = i + 1;
+    }
+    return peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, rb[0..n], child);
+}
+
+fn ap_until(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    marker: const u8[:]) -> i64 {
+    let id = peg_until_marker(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, marker);
+    // pid column, preparatory: Until never uses mn, so it carries the native
+    // insertion-index candidate.
+    mn[id] = id;
+    return id;
+}
+
+fn ap_schema(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    child: i64,
+    schema_text: const u8[:]) -> i64 {
+    let sid = peg_pool_add(pool, st, dstart, dcount, schema_text);
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_SCHEMA, sid);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+// optspace from chat-peg-parser.cpp: eps root, one optional literal per leading
+// space, the trimmed body, one optional literal per trailing space.
+fn ap_optspace(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    tag: const u8[:]) -> i64 {
+    var pre_end: i64 = tag.len;
+    var i: i64 = 0;
+
+    while i < tag.len {
+        if ap_isspace(tag[i]) == 0 {
+            pre_end = i;
+            i = tag.len;
+        } else {
+            i = i + 1;
+        }
+    }
+    var suf_start: i64 = tag.len;
+    var j: i64 = tag.len;
+
+    while j > 0 {
+        if ap_isspace(tag[j - 1]) == 0 {
+            suf_start = j;
+            j = 0;
+        } else {
+            j = j - 1;
+        }
+    }
+    var acc = ap_eps(kind, cfirst, ccount, sidx, st);
+    var k2: i64[2] = [0, 0];
+    var a: i64 = 0;
+
+    while a < pre_end {
+        let lit = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, tag[a .. a + 1]);
+        let opt = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, lit, 0, 1);
+        k2[0] = acc;
+        k2[1] = opt;
+        acc = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+        a = a + 1;
+    }
+    let body = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, tag[pre_end .. suf_start]);
+    k2[0] = acc;
+    k2[1] = body;
+    acc = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    var b: i64 = suf_start;
+
+    while b < tag.len {
+        let lit = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, tag[b .. b + 1]);
+        let opt = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, lit, 0, 1);
+        k2[0] = acc;
+        k2[1] = opt;
+        acc = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+        b = b + 1;
+    }
+    return acc;
+}
+
+// analyze_reasoning::build_parser, TAG_BASED and TOOLS_ONLY branches.
+fn ap_reasoning_parser(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    start: const u8[:],
+    end: const u8[:],
+    on: i64) -> i64 {
+    if on == 0 {
+        return ap_eps(kind, cfirst, ccount, sidx, st);
+    }
+
+    if end.len == 0 {
+        return ap_eps(kind, cfirst, ccount, sidx, st);
+    }
+    let te = ap_trim(end);
+    let until = ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, te);
+    let reasoning = ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "reasoning", until);
+    var k3: i64[3] = [0, 0, 0];
+
+    if start.len > 0 {
+        let pre = ap_optspace(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, start);
+        let post = ap_optspace(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, te);
+        k3[0] = pre;
+        k3[1] = reasoning;
+        k3[2] = post;
+        let inner = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+        return ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, inner, 0, 1);
+    }
+    let post = ap_optspace(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, te);
+    var k2: i64[2] = [0, 0];
+    k2[0] = reasoning;
+    k2[1] = post;
+    let inner = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    return ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, inner, 0, 1);
+}
+
+// The generic JSON grammar built by common_peg_parser_builder::json()
+// (peg-parser.cpp). Rules are shared, so the dump repeats them as [cycle].
+fn ap_json_value(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    jout: i64[:]) -> i64 {
+    let anyv = ap_any(kind, cfirst, ccount, sidx, st);
+    let jv = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "json-value", anyv);
+    let jo = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "json-object", ap_any(kind, cfirst, ccount, sidx, st));
+    let jstr = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "json-string", ap_any(kind, cfirst, ccount, sidx, st));
+
+    var k3: i64[3] = [0, 0, 0];
+    let q1 = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\"");
+    let sc = ap_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, '"');
+    let q2 = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\"");
+    k3[0] = q1;
+    k3[1] = sc;
+    k3[2] = q2;
+    children[cfirst[jstr]] = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+
+    let ws = ap_space(kind, cfirst, ccount, sidx, st);
+    let colon = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":");
+    var k5: i64[5] = [0, 0, 0, 0, 0];
+    k5[0] = jstr;
+    k5[1] = ws;
+    k5[2] = colon;
+    k5[3] = ws;
+    k5[4] = jv;
+    let member = ap_seq(kind, cfirst, ccount, children, sidx, st, k5[0..5]);
+    var k4: i64[4] = [0, 0, 0, 0];
+    k4[0] = ws;
+    k4[1] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+    k4[2] = ws;
+    k4[3] = member;
+    let repseq = ap_seq(kind, cfirst, ccount, children, sidx, st, k4[0..4]);
+    let rep = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, repseq, 0, 0 - 1);
+    var k2: i64[2] = [0, 0];
+    k2[0] = member;
+    k2[1] = rep;
+    let members = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    let rbrace1 = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "}");
+    let rbrace2 = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "}");
+    k3[0] = members;
+    k3[1] = ws;
+    k3[2] = rbrace2;
+    let tail = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+    k2[0] = rbrace1;
+    k2[1] = tail;
+    let objchoice = ap_choice(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    k3[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "{");
+    k3[1] = ws;
+    k3[2] = objchoice;
+    children[cfirst[jo]] = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+
+    let jarr = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "json-array", ap_any(kind, cfirst, ccount, sidx, st));
+    let ws2 = ap_space(kind, cfirst, ccount, sidx, st);
+    k4[0] = ws2;
+    k4[1] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+    k4[2] = ws2;
+    k4[3] = jv;
+    let arrseq = ap_seq(kind, cfirst, ccount, children, sidx, st, k4[0..4]);
+    let arrep = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, arrseq, 0, 0 - 1);
+    k2[0] = jv;
+    k2[1] = arrep;
+    let elems = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    let rb1 = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "]");
+    let rb2 = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "]");
+    k3[0] = elems;
+    k3[1] = ws2;
+    k3[2] = rb2;
+    let atail = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+    k2[0] = rb1;
+    k2[1] = atail;
+    let arrchoice = ap_choice(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    k3[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "[");
+    k3[1] = ws2;
+    k3[2] = arrchoice;
+    children[cfirst[jarr]] = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+
+    let jnum = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "json-number", ap_any(kind, cfirst, ccount, sidx, st));
+    let minus = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "-");
+    let d19 = ap_chars(kind, cfirst, ccount, sidx, dstart, dcount, mn, mx, pool, st, "[1-9]", 1, 1);
+    let d0 = ap_chars(kind, cfirst, ccount, sidx, dstart, dcount, mn, mx, pool, st, "[0-9]", 0, 0 - 1);
+    k2[0] = d19;
+    k2[1] = d0;
+    let intseq = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    k2[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "0");
+    k2[1] = intseq;
+    let intpart = ap_choice(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    let digits = ap_chars(kind, cfirst, ccount, sidx, dstart, dcount, mn, mx, pool, st, "[0-9]", 1, 0 - 1);
+    k2[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ".");
+    k2[1] = digits;
+    let frac = ap_seq(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    k3[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "e");
+    k3[1] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "E");
+    let echoice = ap_choice(kind, cfirst, ccount, children, sidx, st, k3[0..2]);
+    let sign = ap_chars(kind, cfirst, ccount, sidx, dstart, dcount, mn, mx, pool, st, "[+-]", 1, 1);
+    let signopt = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, sign, 0, 1);
+    k3[0] = echoice;
+    k3[1] = signopt;
+    k3[2] = digits;
+    let expseq = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+    let cont = ap_chars(kind, cfirst, ccount, sidx, dstart, dcount, mn, mx, pool, st, "[0-9.eE+-]", 1, 1);
+    let notc = ap_not_direct(kind, cfirst, ccount, children, sidx, st, cont);
+    k5[0] = minus;
+    k5[1] = intpart;
+    k5[2] = frac;
+    k5[3] = expseq;
+    k5[4] = notc;
+    var numkids: i64[5] = [0, 0, 0, 0, 0];
+    numkids[0] = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, minus, 0, 1);
+    numkids[1] = intpart;
+    numkids[2] = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, frac, 0, 1);
+    numkids[3] = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, expseq, 0, 1);
+    numkids[4] = notc;
+    children[cfirst[jnum]] = ap_seq(kind, cfirst, ccount, children, sidx, st, numkids[0..5]);
+
+    k2[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "true");
+    k2[1] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "false");
+    let jbool = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "json-bool",
+        ap_choice(kind, cfirst, ccount, children, sidx, st, k2[0..2]));
+    let jnull = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "json-null",
+        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "null"));
+    jout[0] = jnum;
+
+    var j6: i64[6] = [0, 0, 0, 0, 0, 0];
+    j6[0] = jo;
+    j6[1] = jarr;
+    j6[2] = jstr;
+    j6[3] = jnum;
+    j6[4] = jbool;
+    j6[5] = jnull;
+    children[cfirst[jv]] = ap_choice(kind, cfirst, ccount, children, sidx, st, j6[0..6]);
+    return jv;
+}
+
+fn ap_not_direct(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    child: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_NOT, 0 - 1);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+// Root for a template with reasoning markers and no tools:
+//   prefix(gp, trim(start)) << (reasoning_parser + content path)
+export fn autoparser_build_reasoning(
+    gp: const u8[:],
+    rstart: const u8[:],
+    rend: const u8[:],
+    cstart: const u8[:],
+    cend: const u8[:],
+    wrapped: i64,
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:]) -> i64 {
+    let rp = ap_reasoning_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, rstart, rend, 1);
+    let endn = ap_end(kind, cfirst, ccount, sidx, st);
+    var k5: i64[5] = [0, 0, 0, 0, 0];
+    var body = ap_eps(kind, cfirst, ccount, sidx, st);
+
+    if wrapped != 0 {
+        k5[0] = rp;
+        k5[1] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cstart);
+        k5[2] = ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+            ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, cend));
+        k5[3] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cend);
+        k5[4] = endn;
+        body = ap_seq(kind, cfirst, ccount, children, sidx, st, k5[0..5]);
+    } else {
+        var k3: i64[3] = [0, 0, 0];
+        k3[0] = rp;
+        k3[1] = ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+            ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, ""));
+        k3[2] = endn;
+        body = ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+    }
+    let pre = ap_prefix(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gp, ap_trim(rstart));
+    var k3: i64[3] = [0, 0, 0];
+    k3[0] = pre;
+    k3[1] = ap_space(kind, cfirst, ccount, sidx, st);
+    k3[2] = body;
+    return ap_seq(kind, cfirst, ccount, children, sidx, st, k3[0..3]);
+}
+
+
+// analyze_tools::build_func_parser, shared by TAG_WITH_JSON and
+// TAG_WITH_TAGGED. peek = -1 means no atomic peek.
+fn ap_func_parser(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    openp: i64,
+    cid: i64,
+    have_cid: i64,
+    args: i64,
+    peek: i64,
+    name_suffix: const u8[:],
+    func_close: const u8[:],
+    per_call_end: const u8[:],
+    tolerate: i64) -> i64 {
+    var func = ap_eps(kind, cfirst, ccount, sidx, st);
+    var matched: i64 = 0;
+
+    if name_suffix.len > 0 {
+        func = ap_seq4(kind, cfirst, ccount, children, sidx, st, openp, cid,
+            ap_space(kind, cfirst, ccount, sidx, st), args);
+        matched = 1;
+    } else if have_cid != 0 {
+        func = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq2(kind, cfirst, ccount, children, sidx, st, openp, cid)),
+            ap_space(kind, cfirst, ccount, sidx, st), args);
+        matched = 1;
+    } else if peek >= 0 {
+        func = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq4(kind, cfirst, ccount, children, sidx, st, openp, cid,
+                    ap_space(kind, cfirst, ccount, sidx, st), peek)), args);
+        matched = 1;
+    } else {
+        func = ap_seq4(kind, cfirst, ccount, children, sidx, st, openp, cid,
+            ap_space(kind, cfirst, ccount, sidx, st), args);
+    }
+
+    if func_close.len > 0 {
+        func = ap_seq3(kind, cfirst, ccount, children, sidx, st, func,
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-close",
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_close))));
+    } else if per_call_end.len > 0 {
+        var peeknode = ap_and(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_end));
+
+        if tolerate != 0 {
+            peeknode = ap_and(kind, cfirst, ccount, children, sidx, st,
+                ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_end)));
+        }
+        func = ap_seq2(kind, cfirst, ccount, children, sidx, st, func,
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-close", peeknode)));
+    } else {
+        func = ap_seq2(kind, cfirst, ccount, children, sidx, st, func,
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-close",
+                    ap_space(kind, cfirst, ccount, sidx, st))));
+    }
+
+    if matched == 0 {
+        func = ap_atomic(kind, cfirst, ccount, children, sidx, st, func);
+    }
+    return func;
+}
+
+// analyze_tools::build_tool_parser_tag_json. Every function carries its name
+// and the exact schema JSON text that the native schema->dump() prints.
+export fn autoparser_build_tag_json(
+    gp: const u8[:],
+    rstart: const u8[:],
+    rend: const u8[:],
+    reasoning_on: i64,
+    name_prefix: const u8[:],
+    name_suffix: const u8[:],
+    func_close: const u8[:],
+    args_start: const u8[:],
+    args_end: const u8[:],
+    section_start: const u8[:],
+    section_end: const u8[:],
+    per_call_start: const u8[:],
+    per_call_end: const u8[:],
+    cid_prefix: const u8[:],
+    cid_suffix: const u8[:],
+    cid_pos: i64,
+    tolerate: i64,
+    names: const u8[:],
+    noff: i64[:],
+    nlen: i64[:],
+    schemas: const u8[:],
+    soff: i64[:],
+    slen: i64[:],
+    nfuncs: i64,
+    parallel: i64,
+    required: i64,
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:]) -> i64 {
+    let rp = ap_reasoning_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, rstart, rend, reasoning_on);
+    var jout: i64[1] = [0];
+    let jv = ap_json_value(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, jout[0..1]);
+    var k0: i64[1] = [0];
+    var choice = ap_choice(kind, cfirst, ccount, children, sidx, st, k0[0..0]);
+    var nb: u8[128] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    nb[0] = 116;
+    nb[1] = 111;
+    nb[2] = 111;
+    nb[3] = 108;
+    nb[4] = 45;
+    var f: i64 = 0;
+
+    while f < nfuncs {
+        let fname = names[noff[f] .. noff[f] + nlen[f]];
+        var c: i64 = 0;
+
+        while c < nlen[f] {
+            nb[5 + c] = names[noff[f] + c];
+            c = c + 1;
+        }
+        let rname = nb[0 .. 5 + nlen[f]];
+        let open_inner = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, name_prefix),
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-name",
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, fname))),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, name_suffix));
+        let openp = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-open", open_inner));
+        let stext = schemas[soff[f] .. soff[f] + slen[f]];
+        var argsp = ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-args",
+            ap_schema(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, jv, stext));
+
+        if args_start.len > 0 {
+            argsp = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_start), argsp);
+        }
+        if args_end.len > 0 {
+            argsp = ap_seq2(kind, cfirst, ccount, children, sidx, st, argsp,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_end));
+        }
+        var cid = ap_cid_section(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st,
+            cid_prefix, cid_suffix, cid_pos, args_start);
+        var have_cid: i64 = 0;
+
+        if cid >= 0 {
+            have_cid = 1;
+        } else {
+            cid = ap_eps(kind, cfirst, ccount, sidx, st);
+        }
+        var peeknode: i64 = 0 - 1;
+
+        if args_start.len > 0 {
+            peeknode = ap_and(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_start));
+        }
+        var func = ap_func_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st,
+            openp, cid, have_cid, argsp, peeknode, name_suffix, func_close, per_call_end, tolerate);
+        let ruled = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, rname, func);
+        var kc: i64[2] = [0, 0];
+        kc[0] = choice;
+        kc[1] = ruled;
+        choice = ap_choice(kind, cfirst, ccount, children, sidx, st, kc[0..2]);
+        f = f + 1;
+    }
+    var tc = ap_eps(kind, cfirst, ccount, sidx, st);
+
+    if per_call_start.len > 0 {
+        let wrapped = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_start), choice,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_end));
+
+        if parallel != 0 {
+            let spaced = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                ap_space(kind, cfirst, ccount, sidx, st), wrapped);
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+                ap_seq2(kind, cfirst, ccount, children, sidx, st, wrapped,
+                    ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, spaced, 0, 0 - 1)));
+        } else {
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call", wrapped);
+        }
+        if section_start.len > 0 {
+            var tailx = ap_end(kind, cfirst, ccount, sidx, st);
+
+            if section_end.len > 0 {
+                tailx = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end);
+            }
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-calls",
+                ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
+                    ap_space(kind, cfirst, ccount, sidx, st), tc,
+                    ap_space(kind, cfirst, ccount, sidx, st), tailx));
+        }
+    } else {
+        if parallel != 0 {
+            let rep = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ", "), choice), 0, 0 - 1);
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+                ap_seq4(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
+                    choice, rep,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end)));
+        } else {
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+                ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
+                    choice,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end)));
+        }
+    }
+
+    if required == 0 {
+        tc = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, tc, 0, 1);
+    }
+    var body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+            ap_eps(kind, cfirst, ccount, sidx, st)), 0, 1);
+
+    if section_start.len > 0 {
+        body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, section_start)), 0, 1);
+    } else if per_call_start.len > 0 {
+        body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, per_call_start)), 0, 1);
+    }
+    let parser = ap_seq4(kind, cfirst, ccount, children, sidx, st, rp, body, tc,
+        ap_end(kind, cfirst, ccount, sidx, st));
+    let pre = ap_prefix(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gp, ap_trim(rstart));
+    return ap_seq3(kind, cfirst, ccount, children, sidx, st, pre,
+        ap_space(kind, cfirst, ccount, sidx, st), parser);
+}
+
+fn ap_seq2(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:], st: i64[:],
+    a: i64, b: i64) -> i64 {
+    var k: i64[2] = [0, 0];
+    k[0] = a;
+    k[1] = b;
+    return ap_seq(kind, cfirst, ccount, children, sidx, st, k[0..2]);
+}
+
+fn ap_seq3(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:], st: i64[:],
+    a: i64, b: i64, c: i64) -> i64 {
+    var k: i64[3] = [0, 0, 0];
+    k[0] = a;
+    k[1] = b;
+    k[2] = c;
+    return ap_seq(kind, cfirst, ccount, children, sidx, st, k[0..3]);
+}
+
+fn ap_seq4(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:], st: i64[:],
+    a: i64, b: i64, c: i64, d: i64) -> i64 {
+    var k: i64[4] = [0, 0, 0, 0];
+    k[0] = a;
+    k[1] = b;
+    k[2] = c;
+    k[3] = d;
+    return ap_seq(kind, cfirst, ccount, children, sidx, st, k[0..4]);
+}
+
+fn ap_seq5(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:], st: i64[:],
+    a: i64, b: i64, c: i64, d: i64, e: i64) -> i64 {
+    var k: i64[5] = [0, 0, 0, 0, 0];
+    k[0] = a;
+    k[1] = b;
+    k[2] = c;
+    k[3] = d;
+    k[4] = e;
+    return ap_seq(kind, cfirst, ccount, children, sidx, st, k[0..5]);
+}
+
+fn ap_ac(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:],
+    dstart: i64[:], dcount: i64[:], mn: i64[:], pool: u8[:], st: i64[:], child: i64,
+    delim: const u8[:]) -> i64 {
+    let sid = peg_pool_add(pool, st, dstart, dcount, delim);
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_AC, sid);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    mn[id] = id;
+    return id;
+}
+
+// Call-id section from build_tool_parser_tag_json / tag_tagged. Returns the
+// node id, or -1 when the position is not BETWEEN_FUNC_AND_ARGS.
+fn ap_cid_section(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:],
+    dstart: i64[:], dcount: i64[:], mn: i64[:], mx: i64[:], pool: u8[:], st: i64[:],
+    cid_prefix: const u8[:], cid_suffix: const u8[:], cid_pos: i64,
+    args_start: const u8[:]) -> i64 {
+    if cid_pos != 2 || cid_prefix.len == 0 || (cid_suffix.len == 0 && args_start.len == 0) {
+        return 0 - 1;
+    }
+
+    if cid_suffix.len > 0 {
+        let idbody = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cid_prefix),
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                    ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, cid_suffix))));
+        return ap_seq2(kind, cfirst, ccount, children, sidx, st,
+            ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, idbody, 0, 1),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cid_suffix));
+    }
+    let idbody = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cid_prefix),
+        ap_atomic(kind, cfirst, ccount, children, sidx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, args_start))));
+    return ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, idbody, 0, 1);
+}
+
+// analyze_tools::build_tool_parser_tag_tagged.
+export fn autoparser_build_tag_tagged(
+    gp: const u8[:],
+    rstart: const u8[:],
+    rend: const u8[:],
+    reasoning_on: i64,
+    func_name_prefix: const u8[:],
+    name_suffix: const u8[:],
+    func_close: const u8[:],
+    args_name_prefix: const u8[:],
+    args_name_suffix: const u8[:],
+    args_value_prefix: const u8[:],
+    args_value_suffix: const u8[:],
+    args_start: const u8[:],
+    args_end: const u8[:],
+    section_start: const u8[:],
+    section_end: const u8[:],
+    per_call_start: const u8[:],
+    per_call_end: const u8[:],
+    cid_prefix: const u8[:],
+    cid_suffix: const u8[:],
+    cid_pos: i64,
+    tolerate: i64,
+    names: const u8[:],
+    noff: i64[:],
+    nlen: i64[:],
+    schemas: const u8[:],
+    soff: i64[:],
+    slen: i64[:],
+    pnames: const u8[:],
+    poff: i64[:],
+    plen: i64[:],
+    ptype: i64[:],
+    preq: i64[:],
+    pbase: i64[:],
+    pcount: i64[:],
+    pschemas: const u8[:],
+    psoff: i64[:],
+    pslen: i64[:],
+    nfuncs: i64,
+    parallel: i64,
+    required: i64,
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:]) -> i64 {
+    let rp = ap_reasoning_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, rstart, rend, reasoning_on);
+    var jout: i64[1] = [0];
+    let jv = ap_json_value(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, jout[0..1]);
+    let until_suffix = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+        "until-suffix", ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, args_value_suffix));
+    var k0: i64[1] = [0];
+    var choice = ap_choice(kind, cfirst, ccount, children, sidx, st, k0[0..0]);
+    var f: i64 = 0;
+
+    while f < nfuncs {
+        let fname = names[noff[f] .. noff[f] + nlen[f]];
+        let pstart = pbase[f];
+        let pend = pstart + pcount[f];
+        var req = ap_eps(kind, cfirst, ccount, sidx, st);
+        var any_opt = ap_choice(kind, cfirst, ccount, children, sidx, st, k0[0..0]);
+        var has_req: i64 = 0;
+        var has_opt: i64 = 0;
+        var p: i64 = pstart;
+
+        while p < pend {
+            let pname = pnames[poff[p] .. poff[p] + plen[p]];
+            let argopen = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg-open",
+                    ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_name_prefix),
+                        ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg-name",
+                                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, pname))),
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_name_suffix))));
+            var val = ap_eps(kind, cfirst, ccount, sidx, st);
+
+            if ptype[p] == 1 {
+                val = ap_ac(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, pool, st,
+                    ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg-string-value",
+                            until_suffix),
+                        ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg-close",
+                                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_value_suffix)))),
+                    args_value_suffix);
+            } else {
+                let ptext = pschemas[psoff[p] .. psoff[p] + pslen[p]];
+                val = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                    ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg-value",
+                        ap_schema(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, jv, ptext)),
+                    ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg-close",
+                            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_value_suffix))));
+            }
+            let argnode = ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg",
+                ap_seq3(kind, cfirst, ccount, children, sidx, st, argopen,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_value_prefix), val));
+            var nb2: u8[256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            var cn: i64 = 0;
+            let prebytes: u8[5] = [116, 111, 111, 108, 45];
+            var z: i64 = 0;
+
+            while z < 5 {
+                nb2[cn] = prebytes[z];
+                cn = cn + 1;
+                z = z + 1;
+            }
+            z = 0;
+
+            while z < fname.len {
+                nb2[cn] = fname[z];
+                cn = cn + 1;
+                z = z + 1;
+            }
+            let mid: u8[5] = [45, 97, 114, 103, 45];
+            z = 0;
+
+            while z < 5 {
+                nb2[cn] = mid[z];
+                cn = cn + 1;
+                z = z + 1;
+            }
+            z = 0;
+
+            while z < pname.len {
+                nb2[cn] = pname[z];
+                cn = cn + 1;
+                z = z + 1;
+            }
+            let named = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                nb2[0..cn], argnode);
+
+            if preq[p] != 0 {
+                if has_req != 0 {
+                    req = ap_seq2(kind, cfirst, ccount, children, sidx, st, req,
+                        ap_space(kind, cfirst, ccount, sidx, st));
+                }
+                req = ap_seq2(kind, cfirst, ccount, children, sidx, st, req, named);
+                has_req = 1;
+            } else {
+                var ko: i64[2] = [0, 0];
+                ko[0] = any_opt;
+                ko[1] = named;
+                any_opt = ap_choice(kind, cfirst, ccount, children, sidx, st, ko[0..2]);
+                has_opt = 1;
+            }
+            p = p + 1;
+        }
+        var args_seq = req;
+
+        if has_opt != 0 {
+            args_seq = ap_seq2(kind, cfirst, ccount, children, sidx, st, args_seq,
+                ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                    ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                        ap_space(kind, cfirst, ccount, sidx, st), any_opt), 0, 0 - 1));
+        }
+        if args_start.len > 0 {
+            args_seq = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_start), args_seq);
+        }
+        if args_end.len > 0 {
+            args_seq = ap_seq2(kind, cfirst, ccount, children, sidx, st, args_seq,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_end));
+        }
+        var cid = ap_cid_section(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st,
+            cid_prefix, cid_suffix, cid_pos, args_start);
+        var have_cid: i64 = 0;
+
+        if cid >= 0 {
+            have_cid = 1;
+        } else {
+            cid = ap_eps(kind, cfirst, ccount, sidx, st);
+        }
+        let openp = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-open",
+                ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_name_prefix),
+                    ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-name",
+                            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, fname))),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, name_suffix))));
+        var peeknode: i64 = 0 - 1;
+
+        if args_name_prefix.len > 0 && has_req != 0 {
+            peeknode = ap_and(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_name_prefix));
+        }
+        let func = ap_func_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st,
+            openp, cid, have_cid, args_seq, peeknode, name_suffix, func_close, per_call_end, tolerate);
+        var nb2: u8[256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var cn2: i64 = 0;
+        let tb: u8[5] = [116, 111, 111, 108, 45];
+        var z3: i64 = 0;
+
+        while z3 < 5 {
+            nb2[cn2] = tb[z3];
+            cn2 = cn2 + 1;
+            z3 = z3 + 1;
+        }
+        z3 = 0;
+
+        while z3 < fname.len {
+            nb2[cn2] = fname[z3];
+            cn2 = cn2 + 1;
+            z3 = z3 + 1;
+        }
+        let ruled = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, nb2[0..cn2], func);
+        var kc: i64[2] = [0, 0];
+        kc[0] = choice;
+        kc[1] = ruled;
+        choice = ap_choice(kind, cfirst, ccount, children, sidx, st, kc[0..2]);
+        f = f + 1;
+    }
+
+    var tc = ap_eps(kind, cfirst, ccount, sidx, st);
+
+    if per_call_start.len > 0 {
+        let wrapped = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_start),
+            ap_space(kind, cfirst, ccount, sidx, st), choice,
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_end));
+
+        if parallel != 0 {
+            let spaced = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                ap_space(kind, cfirst, ccount, sidx, st), wrapped);
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+                ap_seq3(kind, cfirst, ccount, children, sidx, st, wrapped,
+                    ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, spaced, 0, 0 - 1),
+                    ap_space(kind, cfirst, ccount, sidx, st)));
+        } else {
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+                ap_seq2(kind, cfirst, ccount, children, sidx, st, wrapped,
+                    ap_space(kind, cfirst, ccount, sidx, st)));
+        }
+        if section_start.len > 0 {
+            var tailx = ap_end(kind, cfirst, ccount, sidx, st);
+
+            if section_end.len > 0 {
+                tailx = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end),
+                    ap_space(kind, cfirst, ccount, sidx, st));
+            }
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-calls",
+                ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
+                    ap_space(kind, cfirst, ccount, sidx, st), tc,
+                    ap_space(kind, cfirst, ccount, sidx, st), tailx));
+        }
+    } else {
+        if parallel != 0 {
+            let sep = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ", "), choice);
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+                ap_seq6(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
+                    ap_space(kind, cfirst, ccount, sidx, st), choice,
+                    ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, sep, 0, 0 - 1),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end)));
+        } else {
+            tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+                ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
+                    ap_space(kind, cfirst, ccount, sidx, st), choice,
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end)));
+        }
+    }
+
+    if required == 0 {
+        tc = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, tc, 0, 1);
+    }
+    var body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+            ap_eps(kind, cfirst, ccount, sidx, st)), 0, 1);
+
+    if section_start.len > 0 {
+        body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, section_start)), 0, 1);
+    } else if per_call_start.len > 0 {
+        body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, per_call_start)), 0, 1);
+    }
+    let parser = ap_seq4(kind, cfirst, ccount, children, sidx, st, rp, body, tc,
+        ap_end(kind, cfirst, ccount, sidx, st));
+    let pre = ap_prefix(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gp, ap_trim(rstart));
+    return ap_seq3(kind, cfirst, ccount, children, sidx, st, pre,
+        ap_space(kind, cfirst, ccount, sidx, st), parser);
+}
+
+fn ap_seq6(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:], st: i64[:],
+    a: i64, b: i64, c: i64, d: i64, e: i64, f: i64) -> i64 {
+    var k: i64[6] = [0, 0, 0, 0, 0, 0];
+    k[0] = a;
+    k[1] = b;
+    k[2] = c;
+    k[3] = d;
+    k[4] = e;
+    k[5] = f;
+    return ap_seq(kind, cfirst, ccount, children, sidx, st, k[0..6]);
+}
+
+// analyze_tools::build_tool_parser_json_native, flat-keys layout from
+// common_chat_peg_builder::build_json_tools_flat_keys. Key strings arrive
+// already quoted (for example "\"name\"").
+export fn autoparser_build_json_native(
+    gp: const u8[:],
+    rstart: const u8[:],
+    rend: const u8[:],
+    reasoning_on: i64,
+    section_start: const u8[:],
+    section_end: const u8[:],
+    per_call_start: const u8[:],
+    per_call_end: const u8[:],
+    name_key: const u8[:],
+    args_key: const u8[:],
+    id_key: const u8[:],
+    gen_key: const u8[:],
+    rank_name: i64,
+    rank_args: i64,
+    rank_id: i64,
+    rank_gen: i64,
+    array_wrapped: i64,
+    accept_wrapper: i64,
+    content_wrapped: i64,
+    cstart: const u8[:],
+    cend: const u8[:],
+    names: const u8[:],
+    noff: i64[:],
+    nlen: i64[:],
+    schemas: const u8[:],
+    soff: i64[:],
+    slen: i64[:],
+    nfuncs: i64,
+    parallel: i64,
+    required: i64,
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:]) -> i64 {
+    let rp = ap_reasoning_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, rstart, rend, reasoning_on);
+    var jout: i64[1] = [0];
+    let jv = ap_json_value(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, jout[0..1]);
+    let jnum = jout[0];
+    var k0: i64[1] = [0];
+    var choices = ap_choice(kind, cfirst, ccount, children, sidx, st, k0[0..0]);
+    var f: i64 = 0;
+
+    while f < nfuncs {
+        let fname = names[noff[f] .. noff[f] + nlen[f]];
+        let stext = schemas[soff[f] .. soff[f] + slen[f]];
+        let quote = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\"");
+        let namefield = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, name_key),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                    ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-name",
+                            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, fname))),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""))));
+        let argsfield = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_key),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-args",
+                ap_schema(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, jv, stext)));
+        var ids: i64[4] = [0, 0, 0, 0];
+        var ranks: i64[4] = [0, 0, 0, 0];
+        var nf: i64 = 0;
+        ids[nf] = namefield;
+        ranks[nf] = rank_name;
+        nf = nf + 1;
+        ids[nf] = argsfield;
+        ranks[nf] = rank_args;
+        nf = nf + 1;
+
+        if id_key.len > 0 {
+            var ki: i64[2] = [0, 0];
+            ki[0] = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                    ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                        ap_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, '"'))),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""));
+            ki[1] = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id", jnum));
+            ids[nf] = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                    ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, id_key),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+                        ap_space(kind, cfirst, ccount, sidx, st),
+                        ap_choice(kind, cfirst, ccount, children, sidx, st, ki[0..2]))), 0, 1);
+            ranks[nf] = rank_id;
+            nf = nf + 1;
+        }
+        if gen_key.len > 0 {
+            var kg: i64[2] = [0, 0];
+            kg[0] = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                    ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                        ap_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, '"'))),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""));
+            kg[1] = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id", jnum));
+            ids[nf] = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                    ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gen_key),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+                        ap_space(kind, cfirst, ccount, sidx, st),
+                        ap_choice(kind, cfirst, ccount, children, sidx, st, kg[0..2]))), 0, 1);
+            ranks[nf] = rank_gen;
+            nf = nf + 1;
+        }
+        var i: i64 = 1;
+
+        while i < nf {
+            let cur = ids[i];
+            let cr = ranks[i];
+            var j: i64 = i - 1;
+
+            while j >= 0 && ranks[j] > cr {
+                ids[j + 1] = ids[j];
+                ranks[j + 1] = ranks[j];
+                j = j - 1;
+            }
+            ids[j + 1] = cur;
+            ranks[j + 1] = cr;
+            i = i + 1;
+        }
+        var typefield = ap_eps(kind, cfirst, ccount, sidx, st);
+
+        if accept_wrapper != 0 {
+            var k8: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
+            k8[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\"type\"");
+            k8[1] = ap_space(kind, cfirst, ccount, sidx, st);
+            k8[2] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":");
+            k8[3] = ap_space(kind, cfirst, ccount, sidx, st);
+            k8[4] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\"function\"");
+            k8[5] = ap_space(kind, cfirst, ccount, sidx, st);
+            k8[6] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+            k8[7] = ap_space(kind, cfirst, ccount, sidx, st);
+            typefield = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_seq(kind, cfirst, ccount, children, sidx, st, k8[0..8]), 0, 1);
+        }
+        var body: i64 = 0;
+        var head: i64[3] = [0, 0, 0];
+        head[0] = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-open",
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "{")));
+        head[1] = ap_space(kind, cfirst, ccount, sidx, st);
+        head[2] = typefield;
+        body = ap_seq(kind, cfirst, ccount, children, sidx, st, head[0..3]);
+        var z: i64 = 0;
+
+        while z < nf {
+            body = ap_seq2(kind, cfirst, ccount, children, sidx, st, body, ids[z]);
+
+            if z < nf - 1 {
+                body = ap_seq3(kind, cfirst, ccount, children, sidx, st, body,
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ","));
+                body = ap_seq2(kind, cfirst, ccount, children, sidx, st, body,
+                    ap_space(kind, cfirst, ccount, sidx, st));
+            }
+            z = z + 1;
+        }
+        body = ap_seq2(kind, cfirst, ccount, children, sidx, st, body,
+            ap_space(kind, cfirst, ccount, sidx, st));
+        body = ap_seq2(kind, cfirst, ccount, children, sidx, st, body,
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-close",
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "}"))));
+        var nb: u8[256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var cn: i64 = 0;
+        let prebytes: u8[5] = [116, 111, 111, 108, 45];
+        var z2: i64 = 0;
+
+        while z2 < 5 {
+            nb[cn] = prebytes[z2];
+            cn = cn + 1;
+            z2 = z2 + 1;
+        }
+        z2 = 0;
+
+        while z2 < fname.len {
+            nb[cn] = fname[z2];
+            cn = cn + 1;
+            z2 = z2 + 1;
+        }
+        var kr: i64[2] = [0, 0];
+        kr[0] = choices;
+        kr[1] = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, nb[0..cn], ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool", body));
+        choices = ap_choice(kind, cfirst, ccount, children, sidx, st, kr[0..2]);
+        f = f + 1;
+    }
+
+    var per_call_mode: i64 = 0;
+
+    if section_start.len == 0 && per_call_start.len > 0 {
+        per_call_mode = 1;
+    }
+    return ap_json_finish(gp, rstart, rend, reasoning_on, section_start, section_end,
+        per_call_start, per_call_end, choices, per_call_mode, array_wrapped, parallel, required,
+        content_wrapped, cstart, cend, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st);
+}
+
+// Shared tail of build_tool_parser_json_native: wrappers plus the root.
+// per_call_mode selects the trigger_rule("tool-calls", one_or_more(...)) form.
+fn ap_json_finish(
+    gp: const u8[:], rstart: const u8[:], rend: const u8[:], reasoning_on: i64,
+    section_start: const u8[:], section_end: const u8[:],
+    per_call_start: const u8[:], per_call_end: const u8[:],
+    choices: i64, per_call_mode: i64, array_wrapped: i64, parallel: i64, required: i64,
+    content_wrapped: i64, cstart: const u8[:], cend: const u8[:],
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:],
+    dstart: i64[:], dcount: i64[:], mn: i64[:], mx: i64[:], pool: u8[:], st: i64[:]) -> i64 {
+    let rp = ap_reasoning_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, rstart, rend, reasoning_on);
+    var tool_calls = choices;
+
+    if parallel != 0 {
+        let sep = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ","),
+            ap_space(kind, cfirst, ccount, sidx, st));
+        tool_calls = ap_seq2(kind, cfirst, ccount, children, sidx, st, tool_calls,
+            ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_seq2(kind, cfirst, ccount, children, sidx, st, sep, choices), 0, 0 - 1));
+    }
+    if array_wrapped != 0 {
+        tool_calls = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "["),
+            ap_space(kind, cfirst, ccount, sidx, st), tool_calls,
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "]"));
+    }
+    var tc = ap_eps(kind, cfirst, ccount, sidx, st);
+
+    if per_call_mode != 0 {
+        let single = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+            ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_start),
+                ap_space(kind, cfirst, ccount, sidx, st), tool_calls,
+                ap_space(kind, cfirst, ccount, sidx, st),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, per_call_end)));
+        var one = single;
+
+        if required == 0 {
+            one = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, single, 0, 1);
+        }
+        tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-calls",
+            ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_seq2(kind, cfirst, ccount, children, sidx, st, one,
+                    ap_space(kind, cfirst, ccount, sidx, st)), 1, 0 - 1));
+    } else {
+        tc = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-call",
+            ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
+                ap_space(kind, cfirst, ccount, sidx, st), tool_calls,
+                ap_space(kind, cfirst, ccount, sidx, st),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end)));
+
+        if required == 0 {
+            tc = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st, tc, 0, 1);
+        }
+    }
+    var parser = ap_eps(kind, cfirst, ccount, sidx, st);
+
+    if content_wrapped != 0 {
+        let wrapped = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+            ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cstart),
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                    ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, cend)),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cend)), 0, 1);
+        parser = ap_seq4(kind, cfirst, ccount, children, sidx, st, rp, wrapped, tc,
+            ap_end(kind, cfirst, ccount, sidx, st));
+    } else {
+        var body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, "{")), 0, 1);
+
+        if section_start.len > 0 {
+            body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                    ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, section_start)), 0, 1);
+        } else if per_call_start.len > 0 {
+            body = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+                    ap_until(kind, cfirst, ccount, sidx, dstart, dcount, mn, pool, st, per_call_start)), 0, 1);
+        }
+        parser = ap_seq4(kind, cfirst, ccount, children, sidx, st, rp, body, tc,
+            ap_end(kind, cfirst, ccount, sidx, st));
+    }
+    let pre = ap_prefix(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gp, ap_trim(rstart));
+    return ap_seq3(kind, cfirst, ccount, children, sidx, st, pre,
+        ap_space(kind, cfirst, ccount, sidx, st), parser);
+}
+
+fn ap_json_schema_for(
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:],
+    dstart: i64[:], dcount: i64[:], pool: u8[:], st: i64[:], jv: i64,
+    schemas: const u8[:], soff: i64[:], slen: i64[:], f: i64) -> i64 {
+    let stext = schemas[soff[f] .. soff[f] + slen[f]];
+    return ap_schema(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, jv, stext);
+}
+
+// build_json_tools_function_is_key: {"function_name": <args>}.
+export fn autoparser_build_json_fkey(
+    gp: const u8[:], rstart: const u8[:], rend: const u8[:], reasoning_on: i64,
+    section_start: const u8[:], section_end: const u8[:],
+    per_call_start: const u8[:], per_call_end: const u8[:],
+    args_key: const u8[:], cid_key: const u8[:], gen_key: const u8[:],
+    names: const u8[:], noff: i64[:], nlen: i64[:],
+    schemas: const u8[:], soff: i64[:], slen: i64[:], nfuncs: i64,
+    parallel: i64, required: i64, array_wrapped: i64,
+    content_wrapped: i64, cstart: const u8[:], cend: const u8[:],
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:],
+    dstart: i64[:], dcount: i64[:], mn: i64[:], mx: i64[:], pool: u8[:], st: i64[:]) -> i64 {
+    var jout: i64[1] = [0];
+    let jv = ap_json_value(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, jout[0..1]);
+    let jnum = jout[0];
+    var k0: i64[1] = [0];
+    var choices = ap_choice(kind, cfirst, ccount, children, sidx, st, k0[0..0]);
+    var f: i64 = 0;
+
+    while f < nfuncs {
+        let fname = names[noff[f] .. noff[f] + nlen[f]];
+        var argsp = ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-args",
+            ap_json_schema_for(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, jv, schemas, soff, slen, f));
+
+        if args_key.len > 0 {
+            argsp = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, args_key),
+                ap_space(kind, cfirst, ccount, sidx, st),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+                ap_space(kind, cfirst, ccount, sidx, st), argsp);
+        }
+        var fields: i64[3] = [0, 0, 0];
+        var nf: i64 = 0;
+
+        if cid_key.len > 0 {
+            let idp = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cid_key),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                        ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                                ap_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, '"'))),
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""))));
+            var commaopt: i64[2] = [0, 0];
+            commaopt[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+            commaopt[1] = ap_space(kind, cfirst, ccount, sidx, st);
+            fields[nf] = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_seq3(kind, cfirst, ccount, children, sidx, st, idp,
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                        ap_seq(kind, cfirst, ccount, children, sidx, st, commaopt[0..2]), 0, 1)), 0, 1);
+            nf = nf + 1;
+        }
+        if gen_key.len > 0 {
+            var kg: i64[2] = [0, 0];
+            kg[0] = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                    ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                        ap_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, '"'))),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""));
+            kg[1] = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id", jnum));
+            let genp = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gen_key),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_choice(kind, cfirst, ccount, children, sidx, st, kg[0..2])));
+            var commaopt: i64[2] = [0, 0];
+            commaopt[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+            commaopt[1] = ap_space(kind, cfirst, ccount, sidx, st);
+            fields[nf] = ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                ap_seq3(kind, cfirst, ccount, children, sidx, st, genp,
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                        ap_seq(kind, cfirst, ccount, children, sidx, st, commaopt[0..2]), 0, 1)), 0, 1);
+            nf = nf + 1;
+        }
+        fields[nf] = argsp;
+        nf = nf + 1;
+        var inner = argsp;
+
+        if nf > 1 || args_key.len > 0 {
+            var acc = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "{"),
+                ap_space(kind, cfirst, ccount, sidx, st));
+            var i: i64 = 0;
+
+            while i < nf {
+                acc = ap_seq2(kind, cfirst, ccount, children, sidx, st, acc, fields[i]);
+
+                if i < nf - 1 {
+                    acc = ap_seq2(kind, cfirst, ccount, children, sidx, st, acc,
+                        ap_space(kind, cfirst, ccount, sidx, st));
+                }
+                i = i + 1;
+            }
+            inner = ap_seq3(kind, cfirst, ccount, children, sidx, st, acc,
+                ap_space(kind, cfirst, ccount, sidx, st),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "}"));
+        }
+        var body = ap_seq4(kind, cfirst, ccount, children, sidx, st,
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-open",
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "{"))),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_seq4(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                    ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-name",
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, fname))),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                ap_space(kind, cfirst, ccount, sidx, st)),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"));
+        body = ap_seq3(kind, cfirst, ccount, children, sidx, st, body,
+            ap_space(kind, cfirst, ccount, sidx, st), inner);
+        body = ap_seq3(kind, cfirst, ccount, children, sidx, st, body,
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-close",
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "}"))));
+        var nb: u8[256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var cn: i64 = 0;
+        let tb: u8[5] = [116, 111, 111, 108, 45];
+        var z: i64 = 0;
+
+        while z < 5 {
+            nb[cn] = tb[z];
+            cn = cn + 1;
+            z = z + 1;
+        }
+        z = 0;
+
+        while z < fname.len {
+            nb[cn] = fname[z];
+            cn = cn + 1;
+            z = z + 1;
+        }
+        let ruled = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, nb[0..cn],
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool", body));
+        var kc: i64[2] = [0, 0];
+        kc[0] = choices;
+        kc[1] = ruled;
+        choices = ap_choice(kind, cfirst, ccount, children, sidx, st, kc[0..2]);
+        f = f + 1;
+    }
+    var per_call_mode: i64 = 0;
+
+    if section_start.len == 0 && per_call_start.len > 0 {
+        per_call_mode = 1;
+    }
+    return ap_json_finish(gp, rstart, rend, reasoning_on, section_start, section_end,
+        per_call_start, per_call_end, choices, per_call_mode, array_wrapped, parallel, required,
+        content_wrapped, cstart, cend, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st);
+}
+
+// build_json_tools_nested_keys: {"prefix": {"name": ..., "args": ...}}.
+export fn autoparser_build_json_nested(
+    gp: const u8[:], rstart: const u8[:], rend: const u8[:], reasoning_on: i64,
+    section_start: const u8[:], section_end: const u8[:],
+    per_call_start: const u8[:], per_call_end: const u8[:],
+    nested_prefix: const u8[:], nested_name: const u8[:], nested_args: const u8[:],
+    cid_key: const u8[:], gen_key: const u8[:],
+    names: const u8[:], noff: i64[:], nlen: i64[:],
+    schemas: const u8[:], soff: i64[:], slen: i64[:], nfuncs: i64,
+    parallel: i64, required: i64, array_wrapped: i64,
+    content_wrapped: i64, cstart: const u8[:], cend: const u8[:],
+    kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:],
+    dstart: i64[:], dcount: i64[:], mn: i64[:], mx: i64[:], pool: u8[:], st: i64[:]) -> i64 {
+    var jout: i64[1] = [0];
+    let jv = ap_json_value(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, jout[0..1]);
+    let jnum = jout[0];
+    var k0: i64[1] = [0];
+    var choices = ap_choice(kind, cfirst, ccount, children, sidx, st, k0[0..0]);
+    var f: i64 = 0;
+
+    while f < nfuncs {
+        let fname = names[noff[f] .. noff[f] + nlen[f]];
+        let nname = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, nested_name),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                    ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-name",
+                            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, fname))),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""))));
+        let nargs = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, nested_args),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-args",
+                ap_json_schema_for(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, jv, schemas, soff, slen, f)));
+        var k8: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
+        k8[0] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "{");
+        k8[1] = ap_space(kind, cfirst, ccount, sidx, st);
+        k8[2] = nname;
+        k8[3] = ap_space(kind, cfirst, ccount, sidx, st);
+        k8[4] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+        k8[5] = ap_space(kind, cfirst, ccount, sidx, st);
+        k8[6] = nargs;
+        k8[7] = ap_space(kind, cfirst, ccount, sidx, st);
+        let nested_obj = ap_seq(kind, cfirst, ccount, children, sidx, st, k8[0..8]);
+        var nobj = ap_seq2(kind, cfirst, ccount, children, sidx, st, nested_obj,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "}"));
+        let nested_field = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, nested_prefix),
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+            ap_space(kind, cfirst, ccount, sidx, st), nobj);
+        var body = ap_seq2(kind, cfirst, ccount, children, sidx, st,
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-open",
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "{"))),
+            ap_space(kind, cfirst, ccount, sidx, st));
+
+        if cid_key.len > 0 {
+            let idp = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, cid_key),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                        ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                                ap_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, '"'))),
+                        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""))));
+            var k4: i64[4] = [0, 0, 0, 0];
+            k4[0] = idp;
+            k4[1] = ap_space(kind, cfirst, ccount, sidx, st);
+            k4[2] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+            k4[3] = ap_space(kind, cfirst, ccount, sidx, st);
+            body = ap_seq2(kind, cfirst, ccount, children, sidx, st, body,
+                ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                    ap_seq(kind, cfirst, ccount, children, sidx, st, k4[0..4]), 0, 1));
+        }
+        if gen_key.len > 0 {
+            var kg: i64[2] = [0, 0];
+            kg[0] = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""),
+                ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                    ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id",
+                        ap_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, '"'))),
+                ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\""));
+            kg[1] = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-id", jnum));
+            let genp = ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_seq5(kind, cfirst, ccount, children, sidx, st,
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gen_key),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ":"),
+                    ap_space(kind, cfirst, ccount, sidx, st),
+                    ap_choice(kind, cfirst, ccount, children, sidx, st, kg[0..2])));
+            var k4: i64[4] = [0, 0, 0, 0];
+            k4[0] = genp;
+            k4[1] = ap_space(kind, cfirst, ccount, sidx, st);
+            k4[2] = ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, ",");
+            k4[3] = ap_space(kind, cfirst, ccount, sidx, st);
+            body = ap_seq2(kind, cfirst, ccount, children, sidx, st, body,
+                ap_rep(kind, cfirst, ccount, children, sidx, mn, mx, st,
+                    ap_seq(kind, cfirst, ccount, children, sidx, st, k4[0..4]), 0, 1));
+        }
+        body = ap_seq2(kind, cfirst, ccount, children, sidx, st, body, nested_field);
+        body = ap_seq3(kind, cfirst, ccount, children, sidx, st, body,
+            ap_space(kind, cfirst, ccount, sidx, st),
+            ap_atomic(kind, cfirst, ccount, children, sidx, st,
+                ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-close",
+                    ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "}"))));
+        var nb: u8[256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var cn: i64 = 0;
+        let tb: u8[5] = [116, 111, 111, 108, 45];
+        var z: i64 = 0;
+
+        while z < 5 {
+            nb[cn] = tb[z];
+            cn = cn + 1;
+            z = z + 1;
+        }
+        z = 0;
+
+        while z < fname.len {
+            nb[cn] = fname[z];
+            cn = cn + 1;
+            z = z + 1;
+        }
+        let ruled = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, nb[0..cn],
+            ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool", body));
+        var kc: i64[2] = [0, 0];
+        kc[0] = choices;
+        kc[1] = ruled;
+        choices = ap_choice(kind, cfirst, ccount, children, sidx, st, kc[0..2]);
+        f = f + 1;
+    }
+    var per_call_mode: i64 = 0;
+
+    if section_start.len == 0 && per_call_start.len > 0 {
+        per_call_mode = 1;
+    }
+    return ap_json_finish(gp, rstart, rend, reasoning_on, section_start, section_end,
+        per_call_start, per_call_end, choices, per_call_mode, array_wrapped, parallel, required,
+        content_wrapped, cstart, cend, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st);
+}
+
+// build_parser response-format branch: fenced or plain block around the
+// response-format rule.
+export fn autoparser_build_response_format(
+    gp: const u8[:],
+    rstart: const u8[:],
+    rend: const u8[:],
+    reasoning_on: i64,
+    schema_text: const u8[:],
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:]) -> i64 {
+    let rp = ap_reasoning_parser(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, rstart, rend, reasoning_on);
+    var jout: i64[1] = [0];
+    let jv = ap_json_value(kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, st, jout[0..1]);
+    let rf = ap_rule(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "response-format",
+        ap_tag(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content",
+            ap_schema(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, jv, schema_text)));
+    let fenced = ap_seq5(kind, cfirst, ccount, children, sidx, st,
+        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "```json"),
+        ap_space(kind, cfirst, ccount, sidx, st), rf,
+        ap_space(kind, cfirst, ccount, sidx, st),
+        ap_lit(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "```"));
+    let plain = ap_seq3(kind, cfirst, ccount, children, sidx, st,
+        ap_space(kind, cfirst, ccount, sidx, st), rf,
+        ap_space(kind, cfirst, ccount, sidx, st));
+    var k2: i64[2] = [0, 0];
+    k2[0] = fenced;
+    k2[1] = plain;
+    let blocknode = ap_choice(kind, cfirst, ccount, children, sidx, st, k2[0..2]);
+    let parser = ap_seq4(kind, cfirst, ccount, children, sidx, st, rp,
+        ap_space(kind, cfirst, ccount, sidx, st), blocknode, ap_end(kind, cfirst, ccount, sidx, st));
+    let pre = ap_prefix(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, gp, ap_trim(rstart));
+    return ap_seq3(kind, cfirst, ccount, children, sidx, st, pre,
+        ap_space(kind, cfirst, ccount, sidx, st), parser);
+}
+
+// Grammar decision layer from peg_generator::generate_parser. The grammar text
+// itself is built by the native grammar builder; this export reproduces only
+// the include/lazy/trigger contract. preserved_tokens and additional_stops are
+// analysis outputs, not generator outputs.
+export fn autoparser_grammar_decision(
+    tool_choice: i64,
+    has_tools: i64,
+    has_response_format: i64,
+    trigger_marker: const u8[:],
+    openai_wrapper: i64,
+    out: i64[:],
+    trig: u8[:]) -> i64 {
+    var include: i64 = 0;
+
+    if has_response_format != 0 {
+        include = 1;
+    } else if has_tools != 0 {
+        if tool_choice == 0 && trigger_marker.len > 0 {
+            include = 1;
+        }
+        if tool_choice == 1 {
+            include = 1;
+        }
+    }
+    var lazy: i64 = 0;
+
+    if has_response_format == 0 && tool_choice == 0 {
+        lazy = 1;
+    }
+    var count: i64 = 0;
+    var mlen: i64 = 0;
+    var wrapper: i64 = 0;
+
+    if include != 0 && lazy != 0 {
+        count = 1;
+        mlen = trigger_marker.len;
+        var i: i64 = 0;
+
+        while i < trigger_marker.len {
+            trig[i] = trigger_marker[i];
+            i = i + 1;
+        }
+
+        if openai_wrapper != 0 {
+            count = 2;
+            wrapper = 1;
+        }
+    }
+    out[0] = include;
+    out[1] = lazy;
+    out[2] = count;
+    out[3] = mlen;
+    out[4] = wrapper;
+    return include;
+}
+
+// ---- GBNF text from a flat arena -------------------------------------------
+// Port of common_peg_arena::build_grammar (peg-parser.cpp). Supported node
+// kinds are the ones the generator emits for tagged string-only tools:
+// Epsilon/End/Literal/Sequence/Choice/Repetition/Any/Space/Chars/String/
+// Until/Rule/Tag/Atomic/Ac. Schema nodes are reported as unsupported because
+// the native path delegates them to json-schema-to-grammar.
+fn gb_w(dst: u8[:], at: i64, s: const u8[:]) -> i64 {
+    var i: i64 = 0;
+
+    while i < s.len {
+        dst[at + i] = s[i];
+        i = i + 1;
+    }
+    return at + s.len;
+}
+
+fn gb_wi(dst: u8[:], at: i64, v: i64) -> i64 {
+    var tmp: u8[24] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var n: i64 = 0;
+    var x: i64 = v;
+
+    if x == 0 {
+        return gb_w(dst, at, "0");
+    }
+    while x > 0 {
+        tmp[n] = (48 + (x % 10)) as u8;
+        x = x / 10;
+        n = n + 1;
+    }
+    var i: i64 = 0;
+
+    while i < n {
+        dst[at + i] = tmp[n - 1 - i];
+        i = i + 1;
+    }
+    return at + n;
+}
+
+// format_literal: escape \r \n " \.
+fn gb_quote(dst: u8[:], at: i64, s: const u8[:]) -> i64 {
+    var p = gb_w(dst, at, "\"");
+    var i: i64 = 0;
+
+    while i < s.len {
+        let c = s[i];
+
+        if c == 13 {
+            p = gb_w(dst, p, "\\r");
+        } else if c == 10 {
+            p = gb_w(dst, p, "\\n");
+        } else if c == 34 {
+            p = gb_w(dst, p, "\\\"");
+        } else if c == 92 {
+            p = gb_w(dst, p, "\\\\");
+        } else {
+            var b: u8[1] = [0];
+            b[0] = c;
+            p = gb_w(dst, p, b[0..1]);
+        }
+        i = i + 1;
+    }
+    return gb_w(dst, p, "\"");
+}
+
+fn gb_cc(dst: u8[:], at: i64, c: u8) -> i64 {
+    var p = gb_w(dst, at, "[");
+
+    if c == 45 || c == 93 || c == 91 || c == 92 {
+        p = gb_w(dst, p, "\\");
+        var b: u8[1] = [0];
+        b[0] = c;
+        p = gb_w(dst, p, b[0..1]);
+    } else if c == 10 {
+        p = gb_w(dst, p, "\\n");
+    } else if c == 9 {
+        p = gb_w(dst, p, "\\t");
+    } else if c == 13 {
+        p = gb_w(dst, p, "\\r");
+    } else {
+        var b: u8[1] = [0];
+        b[0] = c;
+        p = gb_w(dst, p, b[0..1]);
+    }
+    return gb_w(dst, p, "]");
+}
+
+fn gb_cc_neg(dst: u8[:], at: i64, c: u8) -> i64 {
+    var p = gb_w(dst, at, "[^");
+
+    if c == 45 || c == 93 || c == 91 || c == 92 {
+        p = gb_w(dst, p, "\\");
+        var b: u8[1] = [0];
+        b[0] = c;
+        p = gb_w(dst, p, b[0..1]);
+    } else if c == 10 {
+        p = gb_w(dst, p, "\\n");
+    } else if c == 9 {
+        p = gb_w(dst, p, "\\t");
+    } else if c == 13 {
+        p = gb_w(dst, p, "\\r");
+    } else {
+        var b: u8[1] = [0];
+        b[0] = c;
+        p = gb_w(dst, p, b[0..1]);
+    }
+    return gb_w(dst, p, "]");
+}
+
+recursive fn gb_need(id: i64, kind: const i64[:], children: const i64[:], cfirst: const i64[:]) -> i64 {
+    if kind[id] == PEG_TAG || kind[id] == PEG_ATOMIC {
+        return gb_need(children[cfirst[id]], kind, children, cfirst);
+    }
+    if kind[id] == PEG_SEQ || kind[id] == PEG_CHOICE {
+        return 1;
+    }
+    return 0;
+}
+
+// Effective kind: unwrap Tag and Atomic like build_grammar's effective_parser.
+fn gb_eff(id: i64, kind: const i64[:], children: const i64[:], cfirst: const i64[:]) -> i64 {
+    var cur = id;
+    var go: i64 = 1;
+
+    while go != 0 {
+        if kind[cur] == PEG_TAG || kind[cur] == PEG_ATOMIC {
+            cur = children[cfirst[cur]];
+        } else {
+            go = 0;
+        }
+    }
+    return cur;
+}
+
+fn gb_name(kind: const i64[:], sidx: const i64[:], dstart: const i64[:], dcount: const i64[:],
+           pool: const u8[:], id: i64, dst: u8[:], at: i64) -> i64 {
+    let sid = sidx[id];
+    return gb_w(dst, at, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
+}
+
+fn gb_rep_suffix(dst: u8[:], at: i64, lo: i64, hi: i64) -> i64 {
+    var p = at;
+
+    if lo == 0 && hi == 1 {
+        return gb_w(dst, p, "?");
+    }
+    if lo == 0 && hi == 0 - 1 {
+        return gb_w(dst, p, "*");
+    }
+    if lo == 1 && hi == 0 - 1 {
+        return gb_w(dst, p, "+");
+    }
+    if hi == 0 - 1 {
+        p = gb_w(dst, p, "{");
+        p = gb_wi(dst, p, lo);
+        return gb_w(dst, p, ",}");
+    }
+    if lo == hi {
+        if lo == 1 {
+            return p;
+        }
+        p = gb_w(dst, p, "{");
+        p = gb_wi(dst, p, lo);
+        return gb_w(dst, p, "}");
+    }
+    p = gb_w(dst, p, "{");
+    p = gb_wi(dst, p, lo);
+    p = gb_w(dst, p, ",");
+    p = gb_wi(dst, p, hi);
+    return gb_w(dst, p, "}");
+}
+
+recursive fn gb_node(id: i64, kind: const i64[:], cfirst: const i64[:], ccount: const i64[:],
+           children: const i64[:], sidx: const i64[:], dstart: const i64[:],
+           dcount: const i64[:], mn: const i64[:], mx: const i64[:], pool: const u8[:],
+           dst: u8[:], at: i64) -> i64 {
+    let k = kind[id];
+    var p = at;
+
+    if k == PEG_EPS || k == PEG_START || k == PEG_END || k == PEG_AND || k == PEG_NOT {
+        return p;
+    }
+    if k == PEG_LIT {
+        let sid = sidx[id];
+        return gb_quote(dst, p, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
+    }
+    if k == PEG_ANY {
+        return gb_w(dst, p, ".");
+    }
+    if k == PEG_SPACE {
+        return gb_w(dst, p, "space");
+    }
+    if k == PEG_CHARS {
+        let sid = sidx[id];
+        p = gb_w(dst, p, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
+        return gb_rep_suffix(dst, p, mn[id], mx[id]);
+    }
+    if k == PEG_STRING {
+        let sid = sidx[id];
+        let c = pool[dstart[sid]];
+        p = gb_w(dst, p, "( [^");
+        var b: u8[1] = [0];
+        b[0] = c;
+        p = gb_w(dst, p, b[0..1]);
+        p = gb_w(dst, p, "\\\\] | \"\\\\\" ( [");
+        p = gb_w(dst, p, b[0..1]);
+        p = gb_w(dst, p, "\\\\/ bfnrt] | \"u\" [0-9a-fA-F]{4} ) )*");
+        return p;
+    }
+    if k == PEG_UNTIL {
+        let sid = sidx[id];
+
+        if sid < 0 {
+            return gb_w(dst, p, ".*");
+        }
+        var pid: i64 = mn[id];
+
+        if pid == 0 {
+            pid = id;
+        }
+        p = gb_w(dst, p, "until-");
+        p = gb_wi(dst, p, pid);
+        return p;
+    }
+    if k == PEG_AC {
+        var pid: i64 = mn[id];
+
+        if pid == 0 {
+            pid = id;
+        }
+        p = gb_w(dst, p, "ac-");
+        p = gb_wi(dst, p, pid);
+        return p;
+    }
+    if k == PEG_RULE {
+        return gb_name(kind, sidx, dstart, dcount, pool, id, dst, p);
+    }
+    if k == PEG_TAG || k == PEG_ATOMIC {
+        return gb_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+    }
+    if k == PEG_SEQ {
+        var i: i64 = 0;
+        var wrote: i64 = 0;
+
+        while i < ccount[id] {
+            let ch = children[cfirst[id] + i];
+            let ek = gb_eff(ch, kind, children, cfirst);
+            var empty: i64 = 0;
+
+            if kind[ch] == PEG_EPS || kind[ch] == PEG_END || kind[ch] == PEG_AND || kind[ch] == PEG_NOT {
+                empty = 1;
+            }
+            if empty == 0 {
+                if wrote != 0 {
+                    p = gb_w(dst, p, " ");
+                }
+                if gb_need(ch, kind, children, cfirst) != 0 {
+                    p = gb_w(dst, p, "(");
+                    p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+                    p = gb_w(dst, p, ")");
+                } else {
+                    p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+                }
+                wrote = 1;
+            }
+            i = i + 1;
+        }
+        return p;
+    }
+    if k == PEG_CHOICE {
+        var i: i64 = 0;
+
+        while i < ccount[id] {
+            if i > 0 {
+                p = gb_w(dst, p, " | ");
+            }
+            let ch = children[cfirst[id] + i];
+            let ek = gb_eff(ch, kind, children, cfirst);
+
+            if ek == PEG_CHOICE {
+                p = gb_w(dst, p, "(");
+                p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+                p = gb_w(dst, p, ")");
+            } else {
+                p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+            }
+            i = i + 1;
+        }
+        return p;
+    }
+    if k == PEG_REP {
+        let ch = children[cfirst[id]];
+        let ek = gb_eff(ch, kind, children, cfirst);
+
+        if gb_need(ch, kind, children, cfirst) != 0 {
+            p = gb_w(dst, p, "(");
+            p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+            p = gb_w(dst, p, ")");
+        } else {
+            p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+        }
+        return gb_rep_suffix(dst, p, mn[id], mx[id]);
+    }
+    // Schema and unknown kinds: caller checks meta[3].
+    return p;
+}
+
+fn gb_has_rule(rids: i64[:], n: i64, name: const u8[:], kind: const i64[:], sidx: const i64[:],
+               dstart: const i64[:], dcount: const i64[:], pool: const u8[:]) -> i64 {
+    var i: i64 = 0;
+
+    while i < n {
+        let sid = sidx[rids[i]];
+
+        if dcount[sid] == name.len {
+            var same: i64 = 1;
+            var j: i64 = 0;
+
+            while j < name.len {
+                if pool[dstart[sid] + j] != name[j] {
+                    same = 0;
+                }
+                j = j + 1;
+            }
+            if same != 0 {
+                return 1;
+            }
+        }
+        i = i + 1;
+    }
+    return 0;
+}
+
+recursive fn gb_collect(id: i64, kind: const i64[:], cfirst: const i64[:], ccount: const i64[:],
+              children: const i64[:], sidx: const i64[:], dstart: const i64[:],
+              dcount: const i64[:], pool: const u8[:], vis: i64[:], rids: i64[:],
+              hids: i64[:], meta: i64[:]) -> i64 {
+    if vis[id] != 0 {
+        return 0;
+    }
+    vis[id] = 1;
+    let k = kind[id];
+
+    if k == PEG_SCHEMA {
+        meta[3] = 1;
+        return 0;
+    }
+    if k == PEG_SPACE {
+        meta[4] = 1;
+    }
+    if k == PEG_RULE {
+        let sid = sidx[id];
+        let nm = pool[dstart[sid] .. dstart[sid] + dcount[sid]];
+
+        if gb_has_rule(rids, meta[1], nm, kind, sidx, dstart, dcount, pool) == 0 {
+            rids[meta[1]] = id;
+            meta[1] = meta[1] + 1;
+        }
+        return gb_collect(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, pool, vis, rids, hids, meta);
+    }
+    if k == PEG_UNTIL {
+        if sidx[id] >= 0 {
+            var i: i64 = 0;
+            var found: i64 = 0;
+
+            while i < meta[2] {
+                if hids[i] == id {
+                    found = 1;
+                }
+                i = i + 1;
+            }
+            if found == 0 {
+                hids[meta[2]] = id;
+                meta[2] = meta[2] + 1;
+            }
+        }
+        return 0;
+    }
+    if k == PEG_AC {
+        var i: i64 = 0;
+        var found: i64 = 0;
+
+        while i < meta[2] {
+            if hids[i] == id {
+                found = 1;
+            }
+            i = i + 1;
+        }
+        if found == 0 {
+            hids[meta[2]] = id;
+            meta[2] = meta[2] + 1;
+        }
+        return 0;
+    }
+    var i: i64 = 0;
+
+    while i < ccount[id] {
+        gb_collect(children[cfirst[id] + i], kind, cfirst, ccount, children, sidx, dstart, dcount, pool, vis, rids, hids, meta);
+        i = i + 1;
+    }
+    return 0;
+}
+
+fn gb_add_entry(nm: const u8[:], body: const u8[:], scratch: u8[:], meta: i64[:],
+                roff: i64[:], rlen: i64[:], boff: i64[:], blen: i64[:], at: i64) -> i64 {
+    let e = meta[0];
+    let p = gb_w(scratch, at, nm);
+    roff[e] = at;
+    rlen[e] = p - at;
+    let q = gb_w(scratch, p, body);
+    boff[e] = p;
+    blen[e] = q - p;
+    meta[0] = e + 1;
+    return q;
+}
+
+// Emit the state rules of a single-delimiter Aho-Corasick automaton, matching
+// gbnf_ac_grammar: including for Ac, excluding for Until.
+fn gb_pat_has(pat: const u8[:], c: u8) -> i64 {
+    var i: i64 = 0;
+
+    while i < pat.len {
+        if pat[i] == c {
+            return 1;
+        }
+        i = i + 1;
+    }
+    return 0;
+}
+
+fn gb_ac_next(st0: i64, c: u8, pat: const u8[:], fail: const i64[:]) -> i64 {
+    var st = st0;
+
+    while st > 0 {
+        if st < pat.len && pat[st] == c {
+            return st + 1;
+        }
+        st = fail[st];
+    }
+
+    if pat.len > 0 && pat[0] == c {
+        return 1;
+    }
+    return 0;
+}
+
+fn gb_class(dst: u8[:], at: i64, pat: const u8[:], q: i64, want: i64,
+            fail: const i64[:], negate: i64) -> i64 {
+    var p = at;
+
+    if negate != 0 {
+        p = gb_w(dst, p, "[^");
+    } else {
+        p = gb_w(dst, p, "[");
+    }
+    var c: i64 = 0;
+
+    while c < 256 {
+        let ch = c as u8;
+
+        if gb_pat_has(pat, ch) != 0 {
+            let d = gb_ac_next(q, ch, pat, fail);
+
+            if want == 0 - 1 {
+                if d == pat.len {
+                    p = gb_cc_char(dst, p, ch);
+                }
+            } else if want == 0 {
+                if d != 0 {
+                    p = gb_cc_char(dst, p, ch);
+                }
+            } else if d == want {
+                p = gb_cc_char(dst, p, ch);
+            }
+        }
+        c = c + 1;
+    }
+    return gb_w(dst, p, "]");
+}
+
+fn gb_cc_char(dst: u8[:], at: i64, c: u8) -> i64 {
+    var p = at;
+
+    if c == 45 || c == 93 || c == 91 || c == 92 {
+        p = gb_w(dst, p, "\\");
+        var b: u8[1] = [0];
+        b[0] = c;
+        return gb_w(dst, p, b[0..1]);
+    }
+    if c == 10 {
+        return gb_w(dst, p, "\\n");
+    }
+    if c == 9 {
+        return gb_w(dst, p, "\\t");
+    }
+    if c == 13 {
+        return gb_w(dst, p, "\\r");
+    }
+    var b: u8[1] = [0];
+    b[0] = c;
+    return gb_w(dst, p, b[0..1]);
+}
+
+fn gb_state_name(dst: u8[:], at: i64, pid: i64, q: i64, is_ac: i64) -> i64 {
+    var p = at;
+
+    if is_ac != 0 {
+        p = gb_w(dst, p, "ac-");
+    } else {
+        p = gb_w(dst, p, "until-");
+    }
+    p = gb_wi(dst, p, pid);
+
+    if q > 0 {
+        p = gb_w(dst, p, "-");
+        if q < 10 {
+            p = gb_w(dst, p, "0");
+        }
+        p = gb_wi(dst, p, q);
+    }
+    return p;
+}
+
+fn gb_hoist(id: i64, kind: const i64[:], sidx: const i64[:], dstart: const i64[:],
+            dcount: const i64[:], mn: const i64[:], pool: const u8[:], scratch: u8[:], meta: i64[:],
+            roff: i64[:], rlen: i64[:], boff: i64[:], blen: i64[:], at: i64) -> i64 {
+    let sid = sidx[id];
+    let pat = pool[dstart[sid] .. dstart[sid] + dcount[sid]];
+    var pid: i64 = mn[id];
+
+    if pid == 0 {
+        pid = id;
+    }
+    var fail: i64[64] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    fail[0] = 0;
+    var k: i64 = 0;
+    var i: i64 = 1;
+
+    while i < pat.len {
+        while k > 0 && pat[i] != pat[k] {
+            k = fail[k];
+        }
+        if pat[i] == pat[k] {
+            k = k + 1;
+        }
+        fail[i + 1] = k;
+        i = i + 1;
+    }
+    var body: u8[1024] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var nm: u8[64] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var p = at;
+    var q: i64 = 0;
+
+    while q < pat.len {
+        var is_ac: i64 = 0;
+
+        if kind[id] == PEG_AC {
+            is_ac = 1;
+        }
+        var b = gb_state_name(nm, 0, pid, q, is_ac);
+        var bp = 0;
+        var d: i64 = 1;
+        var first: i64 = 1;
+
+        if is_ac != 0 {
+            var hascomp: i64 = 0;
+            var c: i64 = 0;
+
+            while c < 256 {
+                let ch = c as u8;
+
+                if gb_pat_has(pat, ch) != 0 && gb_ac_next(q, ch, pat, fail) == pat.len {
+                    hascomp = 1;
+                }
+                c = c + 1;
+            }
+            if hascomp != 0 {
+                bp = gb_class(body, bp, pat, q, 0 - 1, fail, 0);
+                first = 0;
+            }
+            while d < pat.len {
+                var has: i64 = 0;
+                var c2: i64 = 0;
+
+                while c2 < 256 {
+                    let ch = c2 as u8;
+
+                    if gb_pat_has(pat, ch) != 0 && gb_ac_next(q, ch, pat, fail) == d {
+                        has = 1;
+                    }
+                    c2 = c2 + 1;
+                }
+                if has != 0 {
+                    if first == 0 {
+                        bp = gb_w(body, bp, " | ");
+                    }
+                    bp = gb_class(body, bp, pat, q, d, fail, 0);
+                    bp = gb_w(body, bp, " ");
+                    bp = gb_state_name(body, bp, pid, d, is_ac);
+                    first = 0;
+                }
+                d = d + 1;
+            }
+            if first == 0 {
+                bp = gb_w(body, bp, " | ");
+            }
+            bp = gb_class(body, bp, pat, q, 0, fail, 1);
+            bp = gb_w(body, bp, " ");
+            bp = gb_state_name(body, bp, pid, 0, is_ac);
+        } else {
+            bp = gb_w(body, bp, "|");
+            while d < pat.len {
+                var has: i64 = 0;
+                var c3: i64 = 0;
+
+                while c3 < 256 {
+                    let ch = c3 as u8;
+
+                    if gb_pat_has(pat, ch) != 0 && gb_ac_next(q, ch, pat, fail) == d {
+                        has = 1;
+                    }
+                    c3 = c3 + 1;
+                }
+                if has != 0 {
+                    bp = gb_w(body, bp, " ");
+                    bp = gb_class(body, bp, pat, q, d, fail, 0);
+                    bp = gb_w(body, bp, " ");
+                    bp = gb_state_name(body, bp, pid, d, is_ac);
+                    bp = gb_w(body, bp, " |");
+                }
+                d = d + 1;
+            }
+            bp = gb_w(body, bp, " ");
+            bp = gb_class(body, bp, pat, q, 0, fail, 1);
+            bp = gb_w(body, bp, " ");
+            bp = gb_state_name(body, bp, pid, 0, is_ac);
+        }
+        p = gb_add_entry(nm[0..b], body[0..bp], scratch, meta, roff, rlen, boff, blen, p);
+        q = q + 1;
+    }
+    return p;
+}
+
+fn gb_name_cmp(aoff: i64, alen: i64, boff2: i64, blen2: i64, scratch: const u8[:]) -> i64 {
+    var i: i64 = 0;
+
+    while i < alen && i < blen2 {
+        if scratch[aoff + i] < scratch[boff2 + i] {
+            return 0 - 1;
+        }
+        if scratch[aoff + i] > scratch[boff2 + i] {
+            return 1;
+        }
+        i = i + 1;
+    }
+    if alen < blen2 {
+        return 0 - 1;
+    }
+    if alen > blen2 {
+        return 1;
+    }
+    return 0;
+}
+
+export fn autoparser_arena_gbnf(
+    root: i64,
+    lazy: i64,
+    nnodes: i64,
+    kind: const i64[:],
+    cfirst: const i64[:],
+    ccount: const i64[:],
+    children: const i64[:],
+    sidx: const i64[:],
+    dstart: const i64[:],
+    dcount: const i64[:],
+    mn: const i64[:],
+    mx: const i64[:],
+    pool: const u8[:],
+    meta: i64[:],
+    vis: i64[:],
+    rids: i64[:],
+    hids: i64[:],
+    roff: i64[:],
+    rlen: i64[:],
+    boff: i64[:],
+    blen: i64[:],
+    scratch: u8[:],
+    out: u8[:]) -> i64 {
+    meta[0] = 0;
+    meta[1] = 0;
+    meta[2] = 0;
+    meta[3] = 0;
+    meta[4] = 0;
+    var i: i64 = 0;
+
+    while i < nnodes {
+        vis[i] = 0;
+        i = i + 1;
+    }
+    var starts: i64[256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var nstart: i64 = 0;
+
+    if lazy != 0 {
+        i = 0;
+        while i < nnodes {
+            if kind[i] == PEG_RULE {
+                let sid = sidx[i];
+                let nm = pool[dstart[sid] .. dstart[sid] + dcount[sid]];
+                var trig: i64 = 0;
+
+                if nm.len == 9 {
+                    var same: i64 = 1;
+                    var j: i64 = 0;
+                    let lit: u8[9] = [116, 111, 111, 108, 45, 99, 97, 108, 108];
+                    while j < 9 {
+                        if nm[j] != lit[j] {
+                            same = 0;
+                        }
+                        j = j + 1;
+                    }
+                    if same != 0 {
+                        trig = 1;
+                    }
+                }
+                if trig != 0 {
+                    starts[nstart] = i;
+                    nstart = nstart + 1;
+                }
+            }
+            i = i + 1;
+        }
+        i = 0;
+        while i < nstart {
+            gb_collect(starts[i], kind, cfirst, ccount, children, sidx, dstart, dcount, pool, vis, rids, hids, meta);
+            i = i + 1;
+        }
+    } else {
+        gb_collect(root, kind, cfirst, ccount, children, sidx, dstart, dcount, pool, vis, rids, hids, meta);
+    }
+    var p: i64 = 0;
+    i = 0;
+    while i < meta[2] {
+        p = gb_hoist(hids[i], kind, sidx, dstart, dcount, mn, pool, scratch, meta, roff, rlen, boff, blen, p);
+        i = i + 1;
+    }
+    var bodybuf: u8[1024] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    i = 0;
+    while i < meta[1] {
+        let rid = rids[i];
+        let sid = sidx[rid];
+        var e = meta[0];
+        let nm0 = pool[dstart[sid] .. dstart[sid] + dcount[sid]];
+        p = gb_w(scratch, p, nm0);
+        roff[e] = p - nm0.len;
+        rlen[e] = nm0.len;
+        let bs = gb_node(children[cfirst[rid]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, bodybuf, 0);
+        boff[e] = p;
+        let q2 = gb_w(scratch, p, bodybuf[0..bs]);
+        blen[e] = q2 - p;
+        meta[0] = e + 1;
+        p = q2;
+        i = i + 1;
+    }
+    // The native builder always exposes the space primitive rule.
+    let spnm: u8[5] = [115, 112, 97, 99, 101];
+    let spbody = "| \" \" | \"\\n\"{1,2} [ \\t]{0,20}";
+    p = gb_add_entry(spnm[0..5], spbody, scratch, meta, roff, rlen, boff, blen, p);
+    // root rule
+    let rnm: u8[4] = [114, 111, 111, 116];
+    if lazy != 0 {
+        var rb: u8[512] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var rp: i64 = 0;
+        var k: i64 = 0;
+        while k < nstart {
+            let sid = sidx[starts[k]];
+            if k > 0 {
+                rp = gb_w(rb, rp, " | ");
+            }
+            rp = gb_w(rb, rp, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
+            k = k + 1;
+        }
+        p = gb_add_entry(rnm[0..4], rb[0..rp], scratch, meta, roff, rlen, boff, blen, p);
+    } else {
+        let bs = gb_node(root, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, bodybuf, 0);
+        p = gb_add_entry(rnm[0..4], bodybuf[0..bs], scratch, meta, roff, rlen, boff, blen, p);
+    }
+    // sort entries by name
+    var a: i64 = 1;
+    while a < meta[0] {
+        var key_off = roff[a];
+        var key_len = rlen[a];
+        var key_boff = boff[a];
+        var key_blen = blen[a];
+        var b: i64 = a - 1;
+        while b >= 0 && gb_name_cmp(roff[b], rlen[b], key_off, key_len, scratch) > 0 {
+            roff[b + 1] = roff[b];
+            rlen[b + 1] = rlen[b];
+            boff[b + 1] = boff[b];
+            blen[b + 1] = blen[b];
+            b = b - 1;
+        }
+        roff[b + 1] = key_off;
+        rlen[b + 1] = key_len;
+        boff[b + 1] = key_boff;
+        blen[b + 1] = key_blen;
+        a = a + 1;
+    }
+    var o: i64 = 0;
+    i = 0;
+    while i < meta[0] {
+        o = gb_w(out, o, scratch[roff[i] .. roff[i] + rlen[i]]);
+        o = gb_w(out, o, " ::= ");
+        o = gb_w(out, o, scratch[boff[i] .. boff[i] + blen[i]]);
+        o = gb_w(out, o, "\n");
+        i = i + 1;
+    }
+    return o;
+}
+
+// collect_preserved_tokens from chat-diff-analyzer.cpp: trim, drop empties,
+// keep first occurrence. additional_stops are copied from the analysis as is.
+fn ap_add_token(tok: const u8[:], out: u8[:], off: i64[:], len: i64[:], count: i64) -> i64 {
+    let t = ap_trim(tok);
+
+    if t.len == 0 {
+        return count;
+    }
+    var i: i64 = 0;
+
+    while i < count {
+        if len[i] == t.len {
+            var same: i64 = 1;
+            var j: i64 = 0;
+
+            while j < t.len {
+                if out[off[i] + j] != t[j] {
+                    same = 0;
+                }
+                j = j + 1;
+            }
+            if same != 0 {
+                return count;
+            }
+        }
+        i = i + 1;
+    }
+    var at: i64 = 0;
+
+    if count > 0 {
+        at = off[count - 1] + len[count - 1];
+    }
+    var k: i64 = 0;
+    while k < t.len {
+        out[at + k] = t[k];
+        k = k + 1;
+    }
+    off[count] = at;
+    len[count] = t.len;
+    return count + 1;
+}
+
+export fn autoparser_collect_preserved(
+    rstart: const u8[:], rend: const u8[:],
+    cstart: const u8[:], cend: const u8[:],
+    ss: const u8[:], se: const u8[:],
+    pcs: const u8[:], pce: const u8[:],
+    fnp: const u8[:], fns: const u8[:], fsep: const u8[:], fclose: const u8[:],
+    ast: const u8[:], ae: const u8[:],
+    anp: const u8[:], ans: const u8[:], asep: const u8[:],
+    avp: const u8[:], avs: const u8[:],
+    cip: const u8[:], cis: const u8[:],
+    out: u8[:], off: i64[:], len: i64[:]) -> i64 {
+    var n: i64 = 0;
+    n = ap_add_token(rstart, out, off, len, n);
+    n = ap_add_token(rend, out, off, len, n);
+    n = ap_add_token(cstart, out, off, len, n);
+    n = ap_add_token(cend, out, off, len, n);
+    n = ap_add_token(ss, out, off, len, n);
+    n = ap_add_token(se, out, off, len, n);
+    n = ap_add_token(pcs, out, off, len, n);
+    n = ap_add_token(pce, out, off, len, n);
+    n = ap_add_token(fnp, out, off, len, n);
+    n = ap_add_token(fns, out, off, len, n);
+    n = ap_add_token(fsep, out, off, len, n);
+    n = ap_add_token(fclose, out, off, len, n);
+    n = ap_add_token(ast, out, off, len, n);
+    n = ap_add_token(ae, out, off, len, n);
+    n = ap_add_token(anp, out, off, len, n);
+    n = ap_add_token(ans, out, off, len, n);
+    n = ap_add_token(asep, out, off, len, n);
+    n = ap_add_token(avp, out, off, len, n);
+    n = ap_add_token(avs, out, off, len, n);
+    n = ap_add_token(cip, out, off, len, n);
+    n = ap_add_token(cis, out, off, len, n);
+    return n;
 }
