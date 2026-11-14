@@ -258,7 +258,7 @@ def main():
         f.write("|---|---|---|---|---|\n")
         for mid, category, verdict, reason, first in results:
             f.write(f"| {mid} | {category} | {reason} | {verdict} | `{first.replace('|', '/')}` |\n")
-    return 0 if caught == len(MUTATIONS) else 1
+    return 0 if caught == len(batch) else 1
 
 
 if __name__ == "__main__":

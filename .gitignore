@@ -216,3 +216,17 @@ node_modules/
 # Generated Goose output inside experiment sources.
 experiments/**/source/runtime-gen.c
 experiments/**/source/runtime-gen.h
+
+# Generated artefacts inside experiments: reproducible from the Goose source.
+# Keep the Goose source, the scripts, the mutation descriptions and the recorded
+# results; never the generated C, objects or binaries.
+experiments/*/tests/draft.c
+experiments/*/tests/draft.h
+experiments/*/tests/host
+experiments/*/tests/*.o
+experiments/*/tests/mut/*/draft.c
+experiments/*/tests/mut/*/draft.h
+experiments/*/tests/mut/*/draft.goose
+experiments/*/tests/mut/*/host
+experiments/*/source/*-gen.c
+experiments/*/source/*-gen.h
