@@ -6348,3 +6348,53 @@ export fn chat_probe_second_call_mask(A: const i64[:], B: const u8[:], st: const
     }
     return A[st[27] + fnobj];
 }
+
+// chat.cpp concat_content_parts: join text parts with a newline, but never
+// around a media marker; unknown part types are skipped.
+export fn chat_concat_parts(
+    blob: const u8[:],
+    type_off: i64[:],
+    type_len: i64[:],
+    text_off: i64[:],
+    text_len: i64[:],
+    n: i64,
+    out: u8[:]) -> i64 {
+    var p: i64 = 0;
+    var last_media: i64 = 0;
+    var i: i64 = 0;
+
+    while i < n {
+        let ty = blob[type_off[i] .. type_off[i] + type_len[i]];
+        var add_nl: i64 = 1;
+
+        if bytes_is(ty, "text") {
+            if last_media == 0 && p > 0 {
+                add_nl = 1;
+            } else {
+                add_nl = 0;
+            }
+            last_media = 0;
+        } else if bytes_is(ty, "media_marker") {
+            add_nl = 0;
+            last_media = 1;
+        } else {
+            i = i + 1;
+            continue;
+        }
+
+        if add_nl != 0 {
+            out[p] = 10;
+            p = p + 1;
+        }
+        let tx = blob[text_off[i] .. text_off[i] + text_len[i]];
+        var k: i64 = 0;
+
+        while k < tx.len {
+            out[p] = tx[k];
+            p = p + 1;
+            k = k + 1;
+        }
+        i = i + 1;
+    }
+    return p;
+}

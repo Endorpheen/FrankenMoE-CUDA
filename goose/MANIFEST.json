@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T04:08:41.520643+00:00",
+  "updated_at": "2026-11-14T04:24:07.184781+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -70,11 +70,11 @@
       "native_targets": [
         "common/jinja/runtime.cpp"
       ],
-      "experiment": "EXP-2026-11-14-536-p7-08-caps-reasoning",
+      "experiment": "EXP-2026-11-14-537-p7-08-typed-content",
       "task": "",
       "status": "ported",
-      "sha256": "7fdeb1709ec190acaecccecb5d8f0194312ee23bfcebaf2beff022cc351cfad5",
-      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789"
+      "sha256": "e5f01d906b0faa14b948aabb1ea4878d1fe460c9cfdb74dbbb7af28a0b24b56c",
+      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789, typed content 436/797"
     },
     {
       "goose": "cpu/goose-runtime/allocator-coalesce/kernel-v1.goose",
