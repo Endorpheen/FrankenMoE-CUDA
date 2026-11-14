@@ -6849,7 +6849,10 @@ export fn chat_tools_parse(
     maxn: i64,
     out: u8[:],
     offs: i64[:],
-    lens: i64[:]) -> i64 {
+    lens: i64[:],
+    fail: i64[:]) -> i64 {
+    fail[0] = 0;
+    fail[1] = 0;
     var p: i64 = js_ws(t, 0);
 
     if p + 4 <= t.len && bytes_is(t[p .. p + 4], "null") {
@@ -6857,6 +6860,8 @@ export fn chat_tools_parse(
     }
 
     if p >= t.len || t[p] != 91 {
+        fail[0] = p;
+        fail[1] = js_value(t, p, 0);
         return 0 - 2;
     }
     p = js_ws(t, p + 1);
@@ -6880,6 +6885,9 @@ export fn chat_tools_parse(
             return 0 - 6;
         }
         var span: i64[2] = [0, 0];
+
+        fail[0] = ostart;
+        fail[1] = oend;
 
         if js_member(t, ostart, oend, "type", span) == 0 {
             return 0 - 3;
@@ -6907,11 +6915,15 @@ export fn chat_tools_parse(
         var nspan: i64[2] = [0, 0];
 
         if js_member(t, fs, fe, "name", nspan) == 0 {
-            return 0 - 6;
+            fail[0] = fs;
+            fail[1] = fe;
+            return 0 - 7;
         }
 
         if nspan[1] - nspan[0] < 2 || t[nspan[0]] != 34 {
-            return 0 - 6;
+            fail[0] = fs;
+            fail[1] = fe;
+            return 0 - 7;
         }
         var dspan: i64[2] = [0, 0];
         var has_desc: i64 = js_member(t, fs, fe, "description", dspan);
@@ -6919,26 +6931,14 @@ export fn chat_tools_parse(
         var has_parm: i64 = js_member(t, fs, fe, "parameters", pspan);
 
         let noff = np;
-        var k: i64 = nspan[0] + 1;
-
-        while k < nspan[1] - 1 {
-            out[np] = t[k];
-            np = np + 1;
-            k = k + 1;
-        }
+        np = js_decode(t, nspan[0], nspan[1], out, np);
         offs[3 * count] = noff;
         lens[3 * count] = np - noff;
 
         let doff = np;
 
         if has_desc != 0 && dspan[1] - dspan[0] >= 2 {
-            k = dspan[0] + 1;
-
-            while k < dspan[1] - 1 {
-                out[np] = t[k];
-                np = np + 1;
-                k = k + 1;
-            }
+            np = js_decode(t, dspan[0], dspan[1], out, np);
         }
         offs[3 * count + 1] = doff;
         lens[3 * count + 1] = np - doff;
@@ -6946,7 +6946,7 @@ export fn chat_tools_parse(
         let poff2 = np;
 
         if has_parm != 0 {
-            k = pspan[0];
+            var k: i64 = pspan[0];
 
             while k < pspan[1] {
                 out[np] = t[k];
@@ -6974,4 +6974,358 @@ export fn chat_tools_parse(
         }
     }
     return 0 - 6;
+}
+
+fn hex4(t: const u8[:], i: i64) -> i64 {
+    var v: i64 = 0;
+    var k: i64 = 0;
+
+    while k < 4 {
+        let c = t[i + k];
+        var d: i64 = 0;
+
+        if c >= 48 && c <= 57 {
+            d = c - 48;
+        } else if c >= 65 && c <= 70 {
+            d = c - 55;
+        } else if c >= 97 && c <= 102 {
+            d = c - 87;
+        }
+        v = v * 16 + d;
+        k = k + 1;
+    }
+    return v;
+}
+
+fn utf8_put(out: u8[:], p: i64, cp: i64) -> i64 {
+    if cp < 128 {
+        out[p] = cp as u8;
+        return p + 1;
+    }
+
+    if cp < 2048 {
+        out[p] = (192 + cp / 64) as u8;
+        out[p + 1] = (128 + cp % 64) as u8;
+        return p + 2;
+    }
+
+    if cp < 65536 {
+        out[p] = (224 + cp / 4096) as u8;
+        out[p + 1] = (128 + (cp / 64) % 64) as u8;
+        out[p + 2] = (128 + cp % 64) as u8;
+        return p + 3;
+    }
+    out[p] = (240 + cp / 262144) as u8;
+    out[p + 1] = (128 + (cp / 4096) % 64) as u8;
+    out[p + 2] = (128 + (cp / 64) % 64) as u8;
+    out[p + 3] = (128 + cp % 64) as u8;
+    return p + 4;
+}
+
+// Decode a JSON string span (start at the opening quote, end one past the
+// closing quote) into out at `at`; returns the new cursor.
+fn js_decode(t: const u8[:], start: i64, end: i64, out: u8[:], at: i64) -> i64 {
+    var p = start + 1;
+    var q = at;
+
+    while p < end - 1 {
+        let c = t[p];
+
+        if c != 92 {
+            out[q] = c;
+            q = q + 1;
+            p = p + 1;
+        } else {
+            let e = t[p + 1];
+            p = p + 2;
+
+            if e == 34 {
+                out[q] = 34;
+                q = q + 1;
+            } else if e == 92 {
+                out[q] = 92;
+                q = q + 1;
+            } else if e == 47 {
+                out[q] = 47;
+                q = q + 1;
+            } else if e == 98 {
+                out[q] = 8;
+                q = q + 1;
+            } else if e == 102 {
+                out[q] = 12;
+                q = q + 1;
+            } else if e == 110 {
+                out[q] = 10;
+                q = q + 1;
+            } else if e == 114 {
+                out[q] = 13;
+                q = q + 1;
+            } else if e == 116 {
+                out[q] = 9;
+                q = q + 1;
+            } else if e == 117 {
+                var cp = hex4(t, p);
+                p = p + 4;
+
+                if cp >= 55296 && cp <= 56319 && p + 6 <= end && t[p] == 92 && t[p + 1] == 117 {
+                    let lo = hex4(t, p + 2);
+
+                    if lo >= 56320 && lo <= 57343 {
+                        cp = 65536 + (cp - 55296) * 1024 + (lo - 56320);
+                        p = p + 6;
+                    }
+                }
+                q = utf8_put(out, q, cp);
+            }
+        }
+    }
+    return q;
+}
+
+fn pp_ind(out: u8[:], p: i64, lvl: i64) -> i64 {
+    var k: i64 = 0;
+
+    while k < lvl * 2 {
+        out[p + k] = 32;
+        k = k + 1;
+    }
+    return p + lvl * 2;
+}
+
+// nlohmann dump(2): two spaces per level, ": " after keys, ",\n" between items.
+recursive fn js_pretty(t: const u8[:], out: u8[:], xs: i64[:], lvl: i64, depth: i64) -> i64 {
+    if depth > 64 {
+        return 0;
+    }
+    let p = js_ws(t, xs[0]);
+    xs[0] = p;
+
+    if p >= t.len {
+        return 0;
+    }
+    let c = t[p];
+    let e = js_value(t, p, 0);
+
+    if e < 0 {
+        return 0;
+    }
+
+    if c != 123 && c != 91 {
+        var k = p;
+
+        while k < e {
+            out[xs[1]] = t[k];
+            xs[1] = xs[1] + 1;
+            k = k + 1;
+        }
+        xs[0] = e;
+        return 0;
+    }
+    var close: i64 = 125;
+
+    if c == 91 {
+        close = 93;
+    }
+    let f = js_ws(t, p + 1);
+
+    if f < t.len && t[f] == close {
+        out[xs[1]] = c;
+        xs[1] = xs[1] + 1;
+        out[xs[1]] = close as u8;
+        xs[1] = xs[1] + 1;
+        xs[0] = f + 1;
+        return 0;
+    }
+    out[xs[1]] = c;
+    xs[1] = xs[1] + 1;
+    var q = f;
+    var first: i64 = 1;
+
+    while q < t.len {
+        if first == 0 {
+            out[xs[1]] = 44;
+            xs[1] = xs[1] + 1;
+        }
+        out[xs[1]] = 10;
+        xs[1] = xs[1] + 1;
+        xs[1] = pp_ind(out, xs[1], lvl + 1);
+
+        if c == 123 {
+            let ks = js_ws(t, q);
+            let ke = js_string_end(t, ks);
+
+            if ke < 0 {
+                return 0;
+            }
+            let colon = js_ws(t, ke);
+            var k = ks;
+
+            while k < ke {
+                out[xs[1]] = t[k];
+                xs[1] = xs[1] + 1;
+                k = k + 1;
+            }
+            out[xs[1]] = 58;
+            xs[1] = xs[1] + 1;
+            out[xs[1]] = 32;
+            xs[1] = xs[1] + 1;
+            xs[0] = js_ws(t, colon + 1);
+        } else {
+            xs[0] = js_ws(t, q);
+        }
+        js_pretty(t, out, xs, lvl + 1, depth + 1);
+        first = 0;
+        let after = js_ws(t, xs[0]);
+
+        if after < t.len && t[after] == 44 {
+            q = js_ws(t, after + 1);
+        } else {
+            out[xs[1]] = 10;
+            xs[1] = xs[1] + 1;
+            xs[1] = pp_ind(out, xs[1], lvl);
+            out[xs[1]] = close as u8;
+            xs[1] = xs[1] + 1;
+            xs[0] = after + 1;
+            return 0;
+        }
+    }
+    return 0;
+}
+
+
+// nlohmann dump() without indentation: no spaces after ':' or ','.
+recursive fn js_compact(t: const u8[:], out: u8[:], xs: i64[:], depth: i64) -> i64 {
+    if depth > 64 {
+        return 0;
+    }
+    let p = js_ws(t, xs[0]);
+    xs[0] = p;
+
+    if p >= t.len {
+        return 0;
+    }
+    let c = t[p];
+    let e = js_value(t, p, 0);
+
+    if e < 0 {
+        return 0;
+    }
+
+    if c != 123 && c != 91 {
+        var k = p;
+
+        while k < e {
+            out[xs[1]] = t[k];
+            xs[1] = xs[1] + 1;
+            k = k + 1;
+        }
+        xs[0] = e;
+        return 0;
+    }
+    var close: i64 = 125;
+
+    if c == 91 {
+        close = 93;
+    }
+    let f = js_ws(t, p + 1);
+
+    if f < t.len && t[f] == close {
+        out[xs[1]] = c;
+        xs[1] = xs[1] + 1;
+        out[xs[1]] = close as u8;
+        xs[1] = xs[1] + 1;
+        xs[0] = f + 1;
+        return 0;
+    }
+    out[xs[1]] = c;
+    xs[1] = xs[1] + 1;
+    var q = f;
+    var first: i64 = 1;
+
+    while q < t.len {
+        if first == 0 {
+            out[xs[1]] = 44;
+            xs[1] = xs[1] + 1;
+        }
+
+        if c == 123 {
+            let ks = js_ws(t, q);
+            let ke = js_string_end(t, ks);
+
+            if ke < 0 {
+                return 0;
+            }
+            let colon = js_ws(t, ke);
+            var k = ks;
+
+            while k < ke {
+                out[xs[1]] = t[k];
+                xs[1] = xs[1] + 1;
+                k = k + 1;
+            }
+            out[xs[1]] = 58;
+            xs[1] = xs[1] + 1;
+            xs[0] = js_ws(t, colon + 1);
+        } else {
+            xs[0] = js_ws(t, q);
+        }
+        js_compact(t, out, xs, depth + 1);
+        first = 0;
+        let after = js_ws(t, xs[0]);
+
+        if after < t.len && t[after] == 44 {
+            q = js_ws(t, after + 1);
+        } else {
+            out[xs[1]] = close as u8;
+            xs[1] = xs[1] + 1;
+            xs[0] = after + 1;
+            return 0;
+        }
+    }
+    return 0;
+}
+
+fn dump_span(t: const u8[:], a: i64, b: i64, out: u8[:], p: i64) -> i64 {
+    var xs: i64[2] = [a, p];
+    js_compact(t, out, xs, 0);
+    return xs[1];
+}
+
+fn copy_span(t: const u8[:], a: i64, b: i64, out: u8[:], p: i64) -> i64 {
+    var k = a;
+    var q = p;
+
+    while k < b && k < t.len {
+        out[q] = t[k];
+        q = q + 1;
+        k = k + 1;
+    }
+    return q;
+}
+
+// The native wrapper text: "Failed to parse tools: <inner>; tools = <dump(2)>".
+export fn chat_tools_error(t: const u8[:], code: i64, fs: i64, fe: i64, out: u8[:]) -> i64 {
+    var p: i64 = apps(out, 0, "Failed to parse tools: ");
+
+    if code == 0 - 2 {
+        p = apps(out, p, "Expected 'tools' to be an array, got ");
+        p = dump_span(t, fs, fe, out, p);
+    } else if code == 0 - 3 {
+        p = apps(out, p, "Missing tool type: ");
+        p = dump_span(t, fs, fe, out, p);
+    } else if code == 0 - 4 {
+        p = apps(out, p, "Unsupported tool type: ");
+        p = dump_span(t, fs, fe, out, p);
+    } else if code == 0 - 5 {
+        p = apps(out, p, "Missing tool function: ");
+        p = dump_span(t, fs, fe, out, p);
+    } else if code == 0 - 7 {
+        p = apps(out, p, "[json.exception.out_of_range.403] key 'name' not found");
+    } else {
+        p = apps(out, p, "malformed tools");
+    }
+    p = apps(out, p, "; tools = ");
+    var xs: i64[2] = [0, p];
+    js_pretty(t, out, xs, 0, 0);
+    return xs[1];
 }
