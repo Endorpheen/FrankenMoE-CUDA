@@ -32,6 +32,12 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("cli/cli-protocol.goose", "EXP-2026-11-14-572-p9-06-cli-protocol", "source/cli_protocol.goose",
+     "runtime/cli/main.cpp (session line protocol)", "17 cases / 26 values / 0 failures, 15/15 mutations"),
+    ("json/json-parser.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",
+     "common/json.cpp (parser)", "accepted in P7-09 EXP493"),
+    ("cli/jsonparse.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",
+     "common/json.cpp (CLI protocol dependency)", "accepted in P7-09 EXP493, byte-identical copy"),
     ("model/gguf-metadata.goose", "EXP-2026-11-14-571-p7-02-gguf-metadata", "source/s1_metadata.goose",
      "ggml/src/gguf.cpp (context and metadata)", "46 records / 0 failures, 12/12 mutations"),
     ("jinja/lexer.goose", "EXP-2026-11-13-502-p7-08-jinja-lexer", "source/lexer.goose",
