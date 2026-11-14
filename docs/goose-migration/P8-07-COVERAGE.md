@@ -36,6 +36,30 @@ unknown tool, error result, success). Mutations must cover the version string,
 the request id walk, the init-once rule, the tool-name lookup and the error
 mapping.
 
+## S4 plan (decision core)
+
+Native anchors in `tools/server/server-decision.cpp`: `decision_question_type_name`
+(10), `decision_meta_str` (26), `init` (36, model-dependent parts excluded),
+`decision_is_payload` (216), `parse_questions` (220), `parse_state` (359),
+`decision_replace_text` (420), `decision_sort_keys` (444), `decision_kev_render`
+(467), `escape_special_tokens` (499), `decision_kev_text` (526),
+`decision_d1omni_escape` (531), the Python-compatible string/float/space helpers
+(557-718), `h2o_cut_state`/`h2o_quote` (725-748), `prepare_state` (774),
+`render_h2o` (782), the D1-omni markers (827-836), `n_variants`/`n_outputs`
+(838-846), the confidence functions and `format_answer`/`group_tasks`.
+
+The slice is offline: questions and state are JSON documents, score vectors are
+fabricated, and tokenization (`D1OMNI`, d1_labels) stays with D6. `init` from
+model metadata, image/audio payload loading (`decision_load_image`/`audio`) and
+`fill_task_laya` belong to S5.
+
+The gate compares the parsed structures, the KEV/H2O/D1-omni rendered text, the
+Python `dumps` output (indent, separators, ensure_ascii, float formatting) and
+the confidence/answer formatting against a transcription with cited lines over
+a fixed corpus and deterministic random documents. Mutations must cover the
+renderer escapes, the option numbering, the cut/quote markers and the float
+formatting.
+
 ## Boundaries and dependencies
 
 - S1 excludes `json_schema_to_grammar` (already canonical) and the `tools` /
