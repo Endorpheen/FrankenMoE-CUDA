@@ -90,9 +90,10 @@ carry different bodies under one name. Status:
   `server-schema`, `tools-pure`) composes and typechecks as one unit with 595
   specializations and writes 1.4 MB of generated C; `decision-core` now calls
   the parser through its `extern "json_parse"` ABI, as the other modules do;
-- the GGUF stack still conflicts: `gguf-writer` and `gguf-split` carry
-  different `s2_write` bodies, so the composer exits 1 for that set until the
-  two are unified;
+- the GGUF stack (`gguf-metadata`, `gguf-writer`, `gguf-tensors`,
+  `gguf-split`) also composes: 103 specializations. `gguf-split` and
+  `gguf-tensors` now carry the writer's exact `s2_write` body instead of their
+  own variants; their gates stay at 39/587 and 41/307;
 - the quantizer stack (`quant-types`, `quant-allow`, `quant-rows`,
   `quant-rows2`, `quant-dequant`, `quant-dequant2`) also composes: 310
   specializations and 876 KB of generated C. Its helper copies are renamed by

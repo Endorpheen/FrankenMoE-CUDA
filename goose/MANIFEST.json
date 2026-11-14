@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T21:56:04.512802+00:00",
+  "updated_at": "2026-11-14T21:57:07.811903+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -649,7 +649,7 @@
       "experiment": "EXP-2026-11-14-609-p7-02-gguf-split",
       "task": "",
       "status": "ported",
-      "sha256": "f8c887ea3fb690132df33fc8e129f962c0f2b31fec09e7718752eebac5cac36a",
+      "sha256": "5ef2aee995474ce29aaf0e4f07e364fbb11774fa836bd5ee76eaaeac8178d200",
       "gate": "39 cases / 587 checks / 0 failures, 12/12 mutations"
     },
     {
@@ -661,7 +661,7 @@
       "experiment": "EXP-2026-11-14-601-p7-02-gguf-tensors",
       "task": "",
       "status": "ported",
-      "sha256": "9f8fdf38c9c0efdf923de54ae9ccbfea958493ce9222e1e536d77779f53fe282",
+      "sha256": "884ac25bc495e9953ae6043c4847e031e01dac23c47c8fc858220a557e6f27fe",
       "gate": "41 cases / 307 checks / 0 failures, 12/12 mutations"
     },
     {
@@ -11500,12 +11500,15 @@
     },
     {
       "goose": "jinja/json-escape.goose",
-      "native": "common/jinja/runtime.c",
+      "native": "src/llama-chat.cpp",
       "native_targets": [
-        "common/jinja/runtime.c"
+        "src/llama-chat.cpp",
+        "common/chat*.cpp",
+        "common/jinja/**",
+        "common/parsers/**"
       ],
       "experiment": "EXP-2026-11-14-615-p7-08-json-escape",
-      "task": "",
+      "task": "P7-08",
       "status": "slice",
       "sha256": "bcb3c167a392f4de6df8c9f98177b9911dcd4c1f98839f2a124a4dc3d48fc021"
     },

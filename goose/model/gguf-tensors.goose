@@ -413,8 +413,58 @@ export fn s2_write(st: i64[:], pool: const u8[:], key_off: const i64[:],
                    key_len: const i64[:], types: const i64[:], arr: const i64[:],
                    v0: const i64[:], v1: const i64[:], v2: const i64[:],
                    out: u8[:], version: i64, alignment: i64, only_meta: i64) -> i64 {
-    let p: i64 = w_meta(st, pool, key_off, key_len, types, arr, v0, v1, v2, out, version, 0 as i64);
-    return w_pad(out, p, alignment);
+    var p: i64 = 0;
+
+    p = w_u8(out, p, W_MAGIC_0);
+    p = w_u8(out, p, W_MAGIC_1);
+    p = w_u8(out, p, W_MAGIC_2);
+    p = w_u8(out, p, W_MAGIC_3);
+    p = w_u32(out, p, version);
+    p = w_u64(out, p, 0 as i64);
+    p = w_u64(out, p, st[S_N]);
+
+    var i: i64 = 0;
+    while i < st[S_N] {
+        p = w_str(out, p, pool, key_off[i], key_len[i]);
+        let t = types[i];
+
+        if arr[i] != 0 as i64 {
+            p = w_u32(out, p, 9 as i64);
+            p = w_u32(out, p, t);
+            p = w_u64(out, p, v1[i]);
+            if arr[i] == 1 as i64 {
+                p = w_bytes(out, p, pool, v0[i], v2[i]);
+            } else {
+                let lim = v0[i] + v2[i];
+                var q = v0[i];
+                var k: i64 = 0;
+                while k < v1[i] {
+                    var e = q;
+                    while e < lim && pool[e] != 0 as u8 {
+                        e = e + (1 as i64);
+                    }
+                    p = w_str(out, p, pool, q, e - q);
+                    q = e + (1 as i64);
+                    k = k + (1 as i64);
+                }
+            }
+        } else {
+            p = w_u32(out, p, t);
+            if t == 8 as i64 {
+                p = w_str(out, p, pool, v0[i], v1[i]);
+            } else {
+                p = w_bits(out, p, v0[i], w_type_size(t));
+            }
+        }
+        i = i + (1 as i64);
+    }
+
+    let a = alignment;
+    while p % a != 0 as i64 {
+        out[p] = 0 as u8;
+        p = p + (1 as i64);
+    }
+    return p;
 }
 
 // ---- S3: tensor descriptors, data section, type size / block size ---------
