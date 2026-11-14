@@ -1919,6 +1919,9 @@ const K_SET_NODE: i64 = 6;
 const K_SELECT: i64 = 25;
 const K_TEST: i64 = 26;
 const K_VALUE: i64 = 27;
+const K_SLICE: i64 = 28;
+const K_TERNARY: i64 = 29;
+const K_COMMENT: i64 = 30;
 const K_FOR: i64 = 2;
 const K_MACRO: i64 = 7;
 const K_CALL: i64 = 21;
@@ -2089,6 +2092,18 @@ fn node_name(k: i64) -> const u8[:] {
     if k == K_VALUE {
         return "ValueLiteral";
     }
+
+    if k == K_SLICE {
+        return "SliceExpression";
+    }
+
+    if k == K_TERNARY {
+        return "Ternary";
+    }
+
+    if k == K_COMMENT {
+        return "Comment";
+    }
     return "UnaryExpression";
 }
 // prefix the message with the node wrapper the native statement::execute adds
@@ -2203,6 +2218,166 @@ fn method_value(A: i64[:], F: f64[:], B: const u8[:], st: i64[:], recv: i64, pro
     return f;
 }
 
+
+// value.cpp slice(): defaults depend on the step direction, negative bounds count
+// from the end, and the walk is bounded by direction * i < direction * stop.
+recursive fn eval_slice(
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:],
+    ctxc: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    obj: i64,
+    node: i64,
+    pos: i64) -> i64 {
+    let ok = vk(A, st, obj);
+    let is_arr = ok == V_ARRAY || ok == V_TUPLE;
+    let is_str = ok == V_STRING;
+
+    if !is_arr && !is_str {
+        var p = apps(E, 0, "Unknown (built-in) function 'slice' for type ");
+        let tn = type_name(A, B, st, obj, E[p..]);
+        p = p + tn;
+        return fail_node(K_MEMBER, pos, E[0..p], E, st);
+    }
+    var len: i64 = 0;
+
+    if is_arr {
+        len = vcc(A, st, obj);
+    } else {
+        len = vstr(B, A, st, obj).len;
+    }
+    var step: i64 = 1;
+    var start: i64 = 0;
+    var stop: i64 = len;
+    var has_start: bool = false;
+    var has_stop: bool = false;
+    let sn = ac2(A, st, node);
+    let an = ac0(A, st, node);
+    let bn = ac1(A, st, node);
+
+    if sn >= 0 {
+        step = vi(A, st, eval_node(sn, ctxc, noff, nlen, cval, A, F, B, E, out, st));
+
+        if st[1] != 0 {
+            return -1;
+        }
+    }
+
+    if step == 0 {
+        return fail_node(K_MEMBER, pos, "slice step cannot be zero", E, st);
+    }
+
+    if an >= 0 {
+        start = vi(A, st, eval_node(an, ctxc, noff, nlen, cval, A, F, B, E, out, st));
+
+        if st[1] != 0 {
+            return -1;
+        }
+        has_start = true;
+    }
+
+    if bn >= 0 {
+        stop = vi(A, st, eval_node(bn, ctxc, noff, nlen, cval, A, F, B, E, out, st));
+
+        if st[1] != 0 {
+            return -1;
+        }
+        has_stop = true;
+    }
+
+    if !has_start && step < 0 {
+        start = len - 1;
+    }
+
+    if !has_stop && step < 0 {
+        stop = 0 - 1;
+    }
+    var sv: i64 = start;
+    var tv: i64 = stop;
+    var dir: i64 = 1;
+
+    if step < 0 {
+        dir = 0 - 1;
+
+        if sv < 0 {
+            sv = len + sv;
+
+            if sv < 0 {
+                sv = 0;
+            }
+        } else if sv > len - 1 {
+            sv = len - 1;
+        }
+
+        if tv < 0 - 1 {
+            tv = len + tv;
+
+            if tv < 0 - 1 {
+                tv = 0 - 1;
+            }
+        } else if tv > len - 1 {
+            tv = len - 1;
+        }
+    } else {
+        if sv < 0 {
+            sv = len + sv;
+
+            if sv < 0 {
+                sv = 0;
+            }
+        } else if sv > len {
+            sv = len;
+        }
+
+        if tv < 0 {
+            tv = len + tv;
+
+            if tv < 0 {
+                tv = 0;
+            }
+        } else if tv > len {
+            tv = len;
+        }
+    }
+
+    if is_arr {
+        let res = arr_new(A, F, st);
+
+        if ok == V_TUPLE {
+            A[st[16] + res] = V_TUPLE;
+        }
+        var i: i64 = sv;
+
+        while dir * i < dir * tv {
+            if i >= 0 && i < len {
+                arr_push(A, st, res, A[pool(A, st) + vcs(A, st, obj) + i]);
+            }
+            i = i + step;
+        }
+        return res;
+    }
+    let base = st[7];
+    var n: i64 = 0;
+    var i: i64 = sv;
+
+    while dir * i < dir * tv {
+        if i >= 0 && i < len {
+            out[base + n] = B[vfo(A, st, obj) + i];
+            n = n + 1;
+        }
+        i = i + step;
+    }
+    let res = mk_str(A, F, B, st, out[base .. base + n]);
+    st[7] = base;
+    return res;
+}
+
 recursive fn eval_member(
     id: i64,
     ctxc: i64,
@@ -2223,6 +2398,9 @@ recursive fn eval_member(
     var prop: i64 = -1;
 
     if aiv(A, st, id) != 0 {
+        if ak(A, st, ac1(A, st, id)) == K_SLICE {
+            return eval_slice(A, F, B, E, out, st, ctxc, noff, nlen, cval, obj, ac1(A, st, id), apos(A, st, id));
+        }
         prop = eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
 
         if st[1] != 0 {
@@ -4700,6 +4878,23 @@ recursive fn eval_node(
         return aiv(A, st, id);
     }
 
+    if k == K_SLICE {
+        return fail_node(K_MEMBER, apos(A, st, id), "must be handled by MemberExpression", E, st);
+    }
+
+    if k == K_TERNARY {
+        let cond = eval_node(ac0(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+        if st[1] != 0 {
+            return -1;
+        }
+
+        if v_bool(A, F, st, cond) != 0 {
+            return eval_node(ac1(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+        }
+        return eval_node(ac2(A, st, id), ctxc, noff, nlen, cval, A, F, B, E, out, st);
+    }
+
     if k == K_FLOAT {
         return mk_float(A, F, st, F[st[10] + id]);
     }
@@ -5884,6 +6079,10 @@ recursive fn exec_stmt(
 
     if k == 6 {
         return exec_set(id, cnoff, cnlen, cval, A, F, B, E, out, st);
+    }
+
+    if k == K_COMMENT {
+        return 0;
     }
 
     if k == 3 {
