@@ -8057,3 +8057,362 @@ export fn chat_parse_content_only(gp: const u8[:], text: const u8[:], out: u8[:]
     }
     return n;
 }
+
+// PEG builder, first slice, from common/peg-parser.h (common_peg_parser_builder)
+// and common/chat-peg-parser.h (common_chat_peg_builder). The arena is the same
+// flat shape the parser and the dump already use: node kinds, a child range per
+// node, a string index for literals and tag names, and min/max for repetitions.
+//
+// Scope: content/reasoning tags, tool_open/tool_name/tool_close/tool_arg tags,
+// literal/sequence/choice/repetition/atomic/until/end/epsilon. chars, string,
+// schema, rule/ref and the standard JSON/XML tool builders stay native.
+//
+// Owned decisions:
+//   - nodes are appended, so the root is the last node of a build;
+//   - a parent copies its child ids into one contiguous run;
+//   - string indices refer to a pool of (offset, length) pairs.
+
+const PEG_EPS: i64 = 0;
+const PEG_START: i64 = 1;
+const PEG_END: i64 = 2;
+const PEG_LIT: i64 = 3;
+const PEG_SEQ: i64 = 4;
+const PEG_CHOICE: i64 = 5;
+const PEG_REP: i64 = 6;
+const PEG_UNTIL: i64 = 13;
+const PEG_ATOMIC: i64 = 16;
+const PEG_TAG: i64 = 17;
+
+// st[60] node count, st[61] child cursor, st[62] pool cursor, st[63] string count.
+fn peg_reset(st: i64[:]) -> i64 {
+    st[60] = 0;
+    st[61] = 0;
+    st[62] = 0;
+    st[63] = 0;
+    return 0;
+}
+
+fn peg_pool_add(pool: u8[:], st: i64[:], dstart: i64[:], dcount: i64[:], text: const u8[:]) -> i64 {
+    let sid = st[63];
+    let at = st[62];
+    var i: i64 = 0;
+
+    while i < text.len {
+        pool[at + i] = text[i];
+        i = i + 1;
+    }
+    dstart[sid] = at;
+    dcount[sid] = text.len;
+    st[62] = at + text.len;
+    st[63] = sid + 1;
+    return sid;
+}
+
+fn peg_node(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:], k: i64, sid: i64) -> i64 {
+    let id = st[60];
+    kind[id] = k;
+    cfirst[id] = st[61];
+    ccount[id] = 0;
+    sidx[id] = sid;
+    st[60] = id + 1;
+    return id;
+}
+
+export fn peg_rest(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_UNTIL, 0 - 1);
+}
+
+export fn peg_end_node(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_END, 0 - 1);
+}
+
+export fn peg_eps_node(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_EPS, 0 - 1);
+}
+
+export fn peg_literal(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    text: const u8[:]) -> i64 {
+    let sid = peg_pool_add(pool, st, dstart, dcount, text);
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_LIT, sid);
+}
+
+export fn peg_child_one(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    k: i64,
+    sid: i64,
+    child: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, k, sid);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+export fn peg_tag(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    name: const u8[:],
+    child: i64) -> i64 {
+    let sid = peg_pool_add(pool, st, dstart, dcount, name);
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_TAG, sid);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+export fn peg_atomic(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    child: i64) -> i64 {
+    return peg_child_one(kind, cfirst, ccount, children, sidx, st, PEG_ATOMIC, 0 - 1, child);
+}
+
+// common_peg_parser_builder::sequence/choice flatten a nested node of the same
+// kind into the parent, so the dump shows one flat list.
+fn peg_flat(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    want: i64,
+    kids: const i64[:]) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, want, 0 - 1);
+    var n: i64 = 0;
+    var i: i64 = 0;
+
+    while i < kids.len {
+        let kid = kids[i];
+
+        if kind[kid] == want {
+            var j: i64 = 0;
+
+            while j < ccount[kid] {
+                children[st[61] + n] = children[cfirst[kid] + j];
+                n = n + 1;
+                j = j + 1;
+            }
+        } else {
+            children[st[61] + n] = kid;
+            n = n + 1;
+        }
+        i = i + 1;
+    }
+    ccount[id] = n;
+    st[61] = st[61] + n;
+    return id;
+}
+
+export fn peg_seq(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    kids: const i64[:]) -> i64 {
+    return peg_flat(kind, cfirst, ccount, children, sidx, st, PEG_SEQ, kids);
+}
+
+export fn peg_choice(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    kids: const i64[:]) -> i64 {
+    return peg_flat(kind, cfirst, ccount, children, sidx, st, PEG_CHOICE, kids);
+}
+
+export fn peg_repeat(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    st: i64[:],
+    child: i64,
+    lo: i64,
+    hi: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_REP, 0 - 1);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    mn[id] = lo;
+    mx[id] = hi;
+    return id;
+}
+
+// Textual dump of the built arena, matching common_peg_arena::dump for the node
+// kinds this slice builds. st[70] is the output cursor.
+fn peg_app(out: u8[:], at: i64, text: const u8[:]) -> i64 {
+    var i: i64 = 0;
+
+    while i < text.len {
+        if at + i < out.len {
+            out[at + i] = text[i];
+        }
+        i = i + 1;
+    }
+    return at + text.len;
+}
+
+fn peg_app_i64(out: u8[:], at: i64, v: i64) -> i64 {
+    if v == 0 {
+        out[at] = 48;
+        return at + 1;
+    }
+    var neg: bool = false;
+    var x = v;
+
+    if x < 0 {
+        neg = true;
+        x = 0 - x;
+    }
+    var n: i64 = 0;
+
+    while x > 0 {
+        out[at + n] = (48 + (x % 10)) as u8;
+        x = x / 10;
+        n = n + 1;
+    }
+
+    if neg {
+        out[at + n] = 45;
+        n = n + 1;
+    }
+    var i: i64 = 0;
+
+    while i < n / 2 {
+        let t = out[at + i];
+        out[at + i] = out[at + n - 1 - i];
+        out[at + n - 1 - i] = t;
+        i = i + 1;
+    }
+    return at + n;
+}
+
+recursive fn peg_dump_node(
+    id: i64,
+    kind: const i64[:],
+    cfirst: const i64[:],
+    ccount: const i64[:],
+    children: const i64[:],
+    sidx: const i64[:],
+    dstart: const i64[:],
+    dcount: const i64[:],
+    mn: const i64[:],
+    mx: const i64[:],
+    pool: const u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let k = kind[id];
+    var p = st[70];
+
+    if k == PEG_EPS {
+        p = peg_app(out, p, "Epsilon");
+    } else if k == PEG_END {
+        p = peg_app(out, p, "End");
+    } else if k == PEG_UNTIL {
+        p = peg_app(out, p, "Until()");
+    } else if k == PEG_LIT {
+        let sid = sidx[id];
+        p = peg_app(out, p, "Literal(");
+        p = peg_app(out, p, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
+        p = peg_app(out, p, ")");
+    } else if k == PEG_TAG {
+        let sid = sidx[id];
+        p = peg_app(out, p, "Tag(");
+        p = peg_app(out, p, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
+        p = peg_app(out, p, ", ");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ")");
+    } else if k == PEG_ATOMIC {
+        p = peg_app(out, p, "Atomic(");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ")");
+    } else if k == PEG_REP {
+        p = peg_app(out, p, "Repetition(");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ", ");
+        p = peg_app_i64(out, p, mn[id]);
+        p = peg_app(out, p, ", ");
+
+        if mx[id] < 0 {
+            p = peg_app(out, p, "unbounded");
+        } else {
+            p = peg_app_i64(out, p, mx[id]);
+        }
+        p = peg_app(out, p, ")");
+    } else if k == PEG_SEQ || k == PEG_CHOICE {
+        if k == PEG_SEQ {
+            p = peg_app(out, p, "Sequence(");
+        } else {
+            p = peg_app(out, p, "Choice(");
+        }
+        var i: i64 = 0;
+
+        while i < ccount[id] {
+            if i > 0 {
+                p = peg_app(out, p, ", ");
+            }
+            st[70] = p;
+            p = peg_dump_node(children[cfirst[id] + i], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+            i = i + 1;
+        }
+        p = peg_app(out, p, ")");
+    }
+    st[70] = p;
+    return p;
+}
+
+export fn peg_dump_basic(
+    root: i64,
+    kind: const i64[:],
+    cfirst: const i64[:],
+    ccount: const i64[:],
+    children: const i64[:],
+    sidx: const i64[:],
+    dstart: const i64[:],
+    dcount: const i64[:],
+    mn: const i64[:],
+    mx: const i64[:],
+    pool: const u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    st[70] = 0;
+    let n = peg_dump_node(root, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+    return n;
+}
