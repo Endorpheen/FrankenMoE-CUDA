@@ -23,6 +23,20 @@ code; "pending" means still native.
 | `common/chat.cpp`, `chat.h`, `chat-*.cpp` | — | pending — chat parsing, tool calls, reasoning extraction |
 | `common/parsers/**` | ~3 360 | pending — per-model output parsers |
 
+## Hoisted rule names
+
+`gb_hoist` (`goose/jinja/runtime.goose`) names hoisted `until-*`/`ac-*` rules
+from `pid = mn[id]`, a builder-local id, falling back to `id`. Native
+`to_gbnf` names the same rules from the arena insertion index (`"ac-" +
+std::to_string(id)` and the matching `until-*` form). The local gate therefore
+matches the port's own policy 4/4 while the native comparison is 0/4.
+
+The fix is a separate slice, not a rename: the builder must carry a native
+insertion index per node (a new column or a builder that does not flatten), and
+the gate must compare the full GBNF text of the four hoisted cases against
+`common_peg_arena::to_gbnf`. Renaming `pid` to `id` alone is wrong because
+autoparser nodes are not created in native insertion order.
+
 ## Canonical composition
 
 Every canonical module is built standalone, but the migration target is one
