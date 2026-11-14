@@ -2164,7 +2164,7 @@
       "id": "P8-07",
       "phase": "P8",
       "title": "Port tools,MCP,structured output and decision helpers",
-      "status": "PARTIAL",
+      "status": "DONE",
       "sources": [
         "tools/server/server-tools.cpp",
         "tools/server/server-mcp.cpp",
@@ -2172,18 +2172,16 @@
         "tools/server/server-schema.cpp"
       ],
       "acceptance": "All maintained tool/MCP/schema/decision paths Goose with fixtures; no external messages or real tool side effects during tests.",
-      "evidence": " 2026-11-14 S2 (EXP586, experiments/EXP-2026-11-14-586-p8-07-tool-definitions): the pure half of the local tools is Goose - the seven-tool table and reverse lookup, the write/cwd/stream flags, per-tool argument validation with defaults and clamps (glob depth/limit, grep context, exec timeout 60 and 16 KiB output, read line range), edit occurrence checks, read text/guard and the exact result JSON member order. Gate: 12 cases / 92 values / 0 failures, no filesystem, no process, no model; mutations 12/12 in two halves. The IO backends, isolate/container/ssh and the runtimes remain in S5. 2026-11-14 S1 (EXP595, experiments/EXP-2026-11-14-595-p8-07-request-schema): the request schema fields are Goose - the 62 live completion fields plus one subfield, 6 aliases, 7 disabled #if 0 speculative fields excluded, hard/soft limits, defaults, the TTS schema and field evaluation with the native error texts (12 range, 7 JSON-type, 6 own messages). Gate: 112 cases, 181 lines each side, diff 0; mutations 12/12 in two halves. Limits: six token-level handlers (preserved_tokens, grammar_triggers, reasoning_budget_*, logit_bias) stop at GGML_ASSERT(vocab) natively, so only their rows/limits/defaults are compared; json_schema text is D1, the gate checks the choice and type; the nlohmann string/float quirks are fixed deliberately. 2026-11-14 S3 (EXP605, experiments/EXP-2026-11-14-605-p8-07-mcp-core): the MCP session core is Goose - config parsing (mcpServers, command/cwd/timeout_ms/args/env, byte-sorted names, entries without a command skipped), rpc_error_message, mcp_result_to_response (text parts joined by newlines, isError with its default message), the initialize/initialized/tools-list/tools-call requests in the library key order, the tools list parse and the send_rpc verdict (write failure, no id, match, cancel, deadline, closed). The stdio transport and the manager stay in S5. Gate: 26 cases against a native nlohmann transcription; mutations 12/12 in two halves. 2026-11-14 S4 (EXP610, experiments/EXP-2026-11-14-610-p8-07-decision-core): the offline decision core is Goose - parse_questions (all branches and native error texts), parse_state (messages, media parts, files/images aliases, counters, errors), replace_text, sort_keys, kev_render/kev_text, escape_special_tokens, d1omni_escape, Python-compatible float/str/lstrip/rstrip/dumps, h2o cut/quote/prepare/render, the D1-omni and CLEF markers, n_variants/n_outputs, the three confidence formulas, format_answer (LEV variants, bias, media temperature, canonical legend, NaN) and group_tasks. Gate: 400 cases against a transcription on nlohmann::ordered_json with cited lines; mutations 12/12 in two halves. S5 keeps init, media decoding, the jinja system render, d1_labels and fill_task*; h2o_cut_state uses a one-token-per-byte surrogate. 2026-11-14 S5a (EXP612, experiments/EXP-2026-11-14-612-p8-07-mcp-stdio): the MCP stdio shells are Goose - resolve candidates in SearchPathW order (exact name across dirs, then each PATHEXT extension; a separator means a path only; an existing extension is not extended), env merge (first '=', key-only entries, overrides sorted), NDJSON write framing (partial writes, 0 = error, EINTR/EAGAIN with poll/timeout, HUP/ERR/NVAL), the line pump states (CR stripped, empty lines skipped, EOF tail dropped, oversize resync), the bounded stderr tail, manager cooldown (5 s, deadline equality, failed-start cooldown) and warmup planning (10 s budget, duplicate names). Gate: 94 cases against a native transcription with a real temporary tree for the resolver; mutations 12/12 in two halves. S5b keeps spawn/common_subproc, the three pump threads, live send_rpc over a pipe, HTTP handlers, tool runtimes and decision init/embeddings.",
+      "evidence": " 2026-11-14 S2 (EXP586, experiments/EXP-2026-11-14-586-p8-07-tool-definitions): the pure half of the local tools is Goose - the seven-tool table and reverse lookup, the write/cwd/stream flags, per-tool argument validation with defaults and clamps (glob depth/limit, grep context, exec timeout 60 and 16 KiB output, read line range), edit occurrence checks, read text/guard and the exact result JSON member order. Gate: 12 cases / 92 values / 0 failures, no filesystem, no process, no model; mutations 12/12 in two halves. The IO backends, isolate/container/ssh and the runtimes remain in S5. 2026-11-14 S1 (EXP595, experiments/EXP-2026-11-14-595-p8-07-request-schema): the request schema fields are Goose - the 62 live completion fields plus one subfield, 6 aliases, 7 disabled #if 0 speculative fields excluded, hard/soft limits, defaults, the TTS schema and field evaluation with the native error texts (12 range, 7 JSON-type, 6 own messages). Gate: 112 cases, 181 lines each side, diff 0; mutations 12/12 in two halves. Limits: six token-level handlers (preserved_tokens, grammar_triggers, reasoning_budget_*, logit_bias) stop at GGML_ASSERT(vocab) natively, so only their rows/limits/defaults are compared; json_schema text is D1, the gate checks the choice and type; the nlohmann string/float quirks are fixed deliberately. 2026-11-14 S3 (EXP605, experiments/EXP-2026-11-14-605-p8-07-mcp-core): the MCP session core is Goose - config parsing (mcpServers, command/cwd/timeout_ms/args/env, byte-sorted names, entries without a command skipped), rpc_error_message, mcp_result_to_response (text parts joined by newlines, isError with its default message), the initialize/initialized/tools-list/tools-call requests in the library key order, the tools list parse and the send_rpc verdict (write failure, no id, match, cancel, deadline, closed). The stdio transport and the manager stay in S5. Gate: 26 cases against a native nlohmann transcription; mutations 12/12 in two halves. 2026-11-14 S4 (EXP610, experiments/EXP-2026-11-14-610-p8-07-decision-core): the offline decision core is Goose - parse_questions (all branches and native error texts), parse_state (messages, media parts, files/images aliases, counters, errors), replace_text, sort_keys, kev_render/kev_text, escape_special_tokens, d1omni_escape, Python-compatible float/str/lstrip/rstrip/dumps, h2o cut/quote/prepare/render, the D1-omni and CLEF markers, n_variants/n_outputs, the three confidence formulas, format_answer (LEV variants, bias, media temperature, canonical legend, NaN) and group_tasks. Gate: 400 cases against a transcription on nlohmann::ordered_json with cited lines; mutations 12/12 in two halves. S5 keeps init, media decoding, the jinja system render, d1_labels and fill_task*; h2o_cut_state uses a one-token-per-byte surrogate. 2026-11-14 S5a (EXP612, experiments/EXP-2026-11-14-612-p8-07-mcp-stdio): the MCP stdio shells are Goose - resolve candidates in SearchPathW order (exact name across dirs, then each PATHEXT extension; a separator means a path only; an existing extension is not extended), env merge (first '=', key-only entries, overrides sorted), NDJSON write framing (partial writes, 0 = error, EINTR/EAGAIN with poll/timeout, HUP/ERR/NVAL), the line pump states (CR stripped, empty lines skipped, EOF tail dropped, oversize resync), the bounded stderr tail, manager cooldown (5 s, deadline equality, failed-start cooldown) and warmup planning (10 s budget, duplicate names). Gate: 94 cases against a native transcription with a real temporary tree for the resolver; mutations 12/12 in two halves. S5b keeps spawn/common_subproc, the three pump threads, live send_rpc over a pipe, HTTP handlers, tool runtimes and decision init/embeddings. 2026-11-15 EXP623 (experiments/EXP-2026-11-15-623-p8-07-mcp-integration): the stdio integration (S5b) is Goose in goose/server/mcp-integration.goose: frame writer (mi_frame), line reader (mi_lines), stderr tail (mi_err_tail), request matching and stop/deadline (mi_match/mi_stop_text/mi_deadline_hit), session and id state (mi_next_method/mi_next_id/mi_call_kind), diagnostics (mi_diag) and the manager (ms_manager_resolve). Gate: 26 end-to-end steps / 243 checks / 0 failures against the native transcription, each scenario run twice (native C++ with real pipes and a second server process, and the Goose decisions), comparing exact sent bytes, received lines, tool table, call reply, last_error and diagnostics; mutations 12/12 in halves. Boundaries: three pump threads, the 65536 queue bound, mutexes and joins are not compared by the single-threaded host; HTTP handlers, container/ssh, decision init/embeddings and fill_task_laya are outside this slice; Windows branches are not modelled.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
       "slices_total": 6,
-      "slices_done": 5,
+      "slices_done": 6,
       "coverage_doc": "docs/goose-migration/P8-07-COVERAGE.md",
-      "remaining": [
-        "integration shells: spawn/pumps over pipes, HTTP handlers, tool runtimes, decision init/embeddings (S5b)"
-      ]
+      "remaining": []
     },
     {
       "id": "P8-08",
@@ -4480,6 +4478,10 @@
     {
       "event": "P7-12: tokenizer dispatch, special-token partition and common string helpers ported (EXP622, 3/3 gates, 12/12); loader tails and wiring stay open.",
       "checkpoint": "e407a9cf"
+    },
+    {
+      "event": "P8-07 closed: the MCP stdio integration (EXP623, 26 steps / 243 checks, 12/12) completes 6 of 6 slices; the slice front reaches 92 of 92 original slices.",
+      "checkpoint": "40a50451"
     }
   ],
   "batches": [
@@ -5370,7 +5372,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T22:48:05.093704+00:00",
+  "updated_at": "2026-11-14T22:53:30.387457+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5379,9 +5381,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03 and P7-12.",
     "slices_total": 111,
-    "slices_done": 109,
+    "slices_done": 110,
     "slices_in_progress": 0,
-    "slices_remaining": 2
+    "slices_remaining": 1
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

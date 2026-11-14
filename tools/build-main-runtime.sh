@@ -54,6 +54,7 @@ MODULES=(
     goose/misc/spec-decode-decisions.goose
     goose/server/mcp-core.goose
     goose/server/mcp-stdio.goose
+    goose/server/mcp-integration.goose
     goose/server/decision-core.goose
     goose/server/server-schema.goose
     goose/server/tools-pure.goose
