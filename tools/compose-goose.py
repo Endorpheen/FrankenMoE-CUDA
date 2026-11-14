@@ -46,6 +46,7 @@ RENAMES = {
         "ld_f32": "ld2_f32",
     },
     "format-grammar.goose": {
+        "K_NULL": "FG_K_NULL",
         "K_STRING": "FG_K_STRING",
         "K_ARRAY": "FG_K_ARRAY",
         "K_TUPLE": "FG_K_TUPLE",
@@ -66,6 +67,25 @@ RENAMES = {
     },
     "file-io.goose": {
         "st_i64": "fio_st_i64",
+    },
+    # The Jinja runtime's K_* are AST node kinds (13..18); the JSON parser's K_*
+    # are value kinds (0..7). Same names, different domains: scope the runtime's
+    # family so both can share one unit.
+    "runtime.goose": {
+        "K_NULL": "JR_K_NULL",
+        "K_BOOL": "JR_K_BOOL",
+        "K_INT": "JR_K_INT",
+        "K_UINT": "JR_K_UINT",
+        "K_FLOAT": "JR_K_FLOAT",
+        "K_STRING": "JR_K_STRING",
+        "K_ARRAY": "JR_K_ARRAY",
+        "K_OBJECT": "JR_K_OBJECT",
+        "K_TUPLE": "JR_K_TUPLE",
+    },
+    # The CLI protocol's escaper takes a byte slice; the Jinja one escapes a code
+    # point. Same private name, different functions.
+    "cli-protocol.goose": {
+        "cp_escape": "cp_escape_text",
     },
     "quant-dequant2.goose": {
         "iq2_grid": "qd_iq2_grid",

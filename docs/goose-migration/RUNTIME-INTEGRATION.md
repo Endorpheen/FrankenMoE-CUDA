@@ -31,8 +31,14 @@ GPU, and never block or rewrite the migration.
 Compose the accepted sets with `tools/compose-goose.py`, build each into a
 shared object at `-O2 -fPIC`, link a smoke host, and prove there are no duplicate
 symbols and that every set loads. Sets today: server (6 modules), quantizer (6),
-GGUF (4), P9-06 (3), runtime+schema (2). This is the current in-flight step and
-touches no production file.
+GGUF (4), P9-06 (3), runtime+schema (2), app (9) and core (5).
+
+The full unit (core + app, 14 modules) is the first end-to-end check: 1678
+specializations, 35 164 lines, 14.1 MB of generated C, compiles at -O0 in 13 s
+into a 6.8 MB object with 201 global symbols and no duplicate definitions. It
+still cannot link because the native helper entry points are extern symbols
+supplied by the per-slice test fixtures; wiring them to the runtime is S1 work.
+This step touches no production file.
 
 ### S1 — leaf modules with a native oracle
 

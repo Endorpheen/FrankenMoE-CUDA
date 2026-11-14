@@ -34,9 +34,15 @@ check app      "$ROOT"/goose/server/{mcp-core,mcp-stdio,decision-core,server-sch
 check core     "$ROOT"/goose/model/{goose-model-graph,goose-model-loader,file-io}.goose \
                "$ROOT"/goose/jinja/runtime.goose \
                "$ROOT"/goose/json/format-grammar.goose || fails=$((fails+1))
+check full     "$ROOT"/goose/model/{goose-model-graph,goose-model-loader,file-io}.goose \
+               "$ROOT"/goose/jinja/runtime.goose \
+               "$ROOT"/goose/json/format-grammar.goose \
+               "$ROOT"/goose/server/{mcp-core,mcp-stdio,decision-core,server-schema,tools-pure}.goose \
+               "$ROOT"/goose/chat/{thinking-control,parse-params}.goose \
+               "$ROOT"/goose/cli/cli-protocol.goose || fails=$((fails+1))
 
 if [ "$fails" -ne 0 ]; then
     echo "composition: $fails set(s) failed"
     exit 1
 fi
-echo "composition: 7 set(s) ok"
+echo "composition: 8 set(s) ok"

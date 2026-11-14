@@ -128,9 +128,18 @@ carry different bodies under one name. Status:
   helper declarations, not in the logic: the model modules bind different
   extern symbols under the same local names (`fail`, `ensure`, `st_i64`), so
   the local names are scoped per module while the extern symbols stay intact;
-- `tools/check-composition.sh` composes the seven accepted sets (server, quant,
-  GGUF, P9-06, runtime+schema, app, core) and runs `goose check` on each; it is
-  the fast smoke test for the composition step.
+- the full decision+core unit (the core set plus the five server modules,
+  `chat/thinking-control`, `chat/parse-params` and `cli/cli-protocol`) composes
+  too: 1678 specializations, 35 164 lines, 14.1 MB of generated C, which compiles
+  at -O0 in 13 s into a 6.8 MB object with 201 global symbols and no duplicate
+  definitions. The last collisions were genuine name clashes across domains:
+  the Jinja runtime's `K_*` are AST node kinds (13..18) and the JSON parser's
+  `K_*` are value kinds (0..7); the schema converter also uses `K_NULL` with a
+  different meaning. All three families are scoped per module in the composed
+  unit while the sources keep their names;
+- `tools/check-composition.sh` composes the eight accepted sets (server, quant,
+  GGUF, P9-06, runtime+schema, app, core, full) and runs `goose check` on each;
+  it is the fast smoke test for the composition step.
 
 ## Slice plan
 
