@@ -6225,3 +6225,67 @@ export fn chat_probe_content_mask(A: const i64[:], B: const u8[:], st: const i64
     }
     return 0;
 }
+
+fn obj_get(A: const i64[:], B: const u8[:], st: const i64[:], obj: i64, key: const u8[:]) -> i64 {
+    if vk(A, st, obj) != V_OBJECT {
+        return 0 - 1;
+    }
+    let n = vkc(A, st, obj);
+    var i: i64 = 0;
+
+    while i < n {
+        let k = A[pool(A, st) + vks(A, st, obj) + i];
+        let koff = A[st[18] + k];
+        let klen = A[st[19] + k];
+
+        if bytes_is(B[koff .. koff + klen], key) {
+            return A[pool(A, st) + vvs(A, st, obj) + i];
+        }
+        i = i + 1;
+    }
+    return 0 - 1;
+}
+
+fn arr_at(A: const i64[:], st: const i64[:], arr: i64, i: i64) -> i64 {
+    if vk(A, st, arr) != V_ARRAY && vk(A, st, arr) != V_TUPLE {
+        return 0 - 1;
+    }
+
+    if i < 0 || i >= vcc(A, st, arr) {
+        return 0 - 1;
+    }
+    return A[pool(A, st) + vcs(A, st, arr) + i];
+}
+
+export fn chat_probe_tool_name_mask(A: const i64[:], B: const u8[:], st: const i64[:], tools: i64) -> i64 {
+    let t0 = arr_at(A, st, tools, 0);
+
+    if t0 < 0 {
+        return 0 - 1;
+    }
+    let fnobj = obj_get(A, B, st, t0, "function");
+
+    if fnobj < 0 {
+        return 0 - 1;
+    }
+    let name = obj_get(A, B, st, fnobj, "name");
+
+    if name < 0 {
+        return 0 - 1;
+    }
+    return A[st[27] + name];
+}
+
+export fn chat_probe_tool_calls_mask(A: const i64[:], B: const u8[:], st: const i64[:], msgs: i64) -> i64 {
+    let m1 = arr_at(A, st, msgs, 1);
+
+    if m1 < 0 {
+        return 0 - 1;
+    }
+    let calls = obj_get(A, B, st, m1, "tool_calls");
+
+    if calls < 0 {
+        return 0 - 1;
+    }
+    return A[st[27] + calls];
+}
