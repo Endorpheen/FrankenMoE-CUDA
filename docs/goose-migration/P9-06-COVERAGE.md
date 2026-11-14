@@ -12,7 +12,7 @@ is open.
 | S1. Chat parse and rendering | `chat_parse.cpp`, the chat-path helpers around it | open |
 | S2. CLI line protocol | `main.cpp` stdin reader, the six stdout emitters, the delta rule, recoverability | **done (EXP572)** |
 | S3. Thinking control | `ThinkControl` Template/Prefill/None, `add_no_think_prefill`, `probe_think_control` | open (port written, not accepted) |
-| S4. Serialized parser load | `build_parse_params`, `common_peg_arena::load` from JSON | open (port written, not accepted) |
+| S4. Serialized parser load | `build_parse_params`, `common_peg_arena::load` from JSON | **done (EXP575)** |
 
 ## S2 — accepted
 

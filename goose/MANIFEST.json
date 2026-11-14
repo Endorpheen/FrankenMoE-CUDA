@@ -1,9 +1,33 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T18:12:19.251187+00:00",
+  "updated_at": "2026-11-14T18:14:09.068708+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
+    {
+      "goose": "chat/parse-params.goose",
+      "native": "common/peg-parser.cpp (arena load) and runtime chat_parse.cpp",
+      "native_targets": [
+        "common/peg-parser.cpp (arena load) and runtime chat_parse.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-575-p9-06-arena-load",
+      "task": "",
+      "status": "ported",
+      "sha256": "562fa9152a6eeecd001f0ffb08ff83fbccbe90033a2ca171dc008bc45e80b711",
+      "gate": "10 cases / 58 values / 0 failures, 15/15 mutations"
+    },
+    {
+      "goose": "chat/jsonparse.goose",
+      "native": "common/json.cpp (arena-load dependency)",
+      "native_targets": [
+        "common/json.cpp (arena-load dependency)"
+      ],
+      "experiment": "EXP-2026-11-13-493-p7-09-json-parser",
+      "task": "",
+      "status": "ported",
+      "sha256": "ee56f4e479dd05b65f57589ca4916767d923d13e73187087a95ab27416bfd70e",
+      "gate": "accepted in P7-09 EXP493, byte-identical copy"
+    },
     {
       "goose": "chat/thinking-control.goose",
       "native": "runtime/core/src/engine/thinking_control.cpp",
