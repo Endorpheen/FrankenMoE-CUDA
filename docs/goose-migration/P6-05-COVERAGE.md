@@ -1,5 +1,7 @@
 # P6-05 coverage — modern text model architecture builders
 
+Status: DONE (20 of 20 audited architectures ported; structural gates, no native link).
+
 Updated: 2026-11-14. Native tree: `src/models/*.cpp` of the pinned llama.cpp
 plus the shared graph helpers (`src/llama-graph.cpp`), with the accepted
 `goose/model/goose-model-graph.goose` slice as the common base.
@@ -23,8 +25,8 @@ structure gate and mutations.
 | 11 | kimi-linear | `kimi-linear.cpp` | S3 + S4 | **done (EXP594)** |
 | 12 | glm5-next | `glm5-next.cpp` | S3 + S4 + HC | **done (EXP591)** |
 | 13 | glm4-moe | `glm4-moe.cpp` | S2 | **done (EXP584)** |
-| 14 | glm4 | `glm4.cpp` | S1 + nextn | in acceptance |
-| 15 | glm-dsa | `glm-dsa.cpp` | S3 | in acceptance |
+| 14 | glm4 | `glm4.cpp` | S1 + nextn | **done (EXP599)** |
+| 15 | glm-dsa | `glm-dsa.cpp` | S3 | **done (EXP599)** |
 | 16 | gemma3 | `gemma3.cpp` | S5 SWA | **done (EXP598)** |
 | 17 | gemma3n | `gemma3n.cpp` | S5 PLE | **done (EXP598)** |
 | 18 | gemma4 | `gemma4.cpp` | S5 + MoE | **done (EXP597)** |
