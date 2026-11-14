@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T18:33:37.566438+00:00",
+  "updated_at": "2026-11-14T18:34:40.909419+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -135,6 +135,42 @@
       "status": "ported",
       "sha256": "f1a86afc4099f029b73f4b85d0d94244ecc62ebddb22637e2049826cbba51eee",
       "gate": "73 lines / 0 diffs, 16/16 mutations"
+    },
+    {
+      "goose": "model/qwen3moe.goose",
+      "native": "src/models/qwen3moe.cpp",
+      "native_targets": [
+        "src/models/qwen3moe.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-584-p6-05-moe-families",
+      "task": "",
+      "status": "ported",
+      "sha256": "3fae209c1623248fc23c2896735f8f85f95e9a3ae34e589c8eb475bb65204109",
+      "gate": "10 cases / 78 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/qwen2moe.goose",
+      "native": "src/models/qwen2moe.cpp",
+      "native_targets": [
+        "src/models/qwen2moe.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-584-p6-05-moe-families",
+      "task": "",
+      "status": "ported",
+      "sha256": "779404f8f564f6f0256f213de3f2df46db0f5d4077b9bb75d6613b3c9eaeabaa",
+      "gate": "10 cases / 58 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/glm4-moe.goose",
+      "native": "src/models/glm4-moe.cpp",
+      "native_targets": [
+        "src/models/glm4-moe.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-584-p6-05-moe-families",
+      "task": "",
+      "status": "ported",
+      "sha256": "2b709441eee8611b2c2754c040a4467f8fb4fb3bf692eb9b8c7d04af0f95ba14",
+      "gate": "10 cases / 78 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "model/qwen3.goose",

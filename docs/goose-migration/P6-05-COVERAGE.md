@@ -13,16 +13,16 @@ structure gate and mutations.
 | 1 | qwen35moe | `qwen35moe.cpp` | S2 MoE + S4 hybrid | **done (EXP577)** |
 | 2 | qwen4exp | `qwen4exp.cpp` | S2 + S3 indexer + S4 hybrid + PLE | **done (EXP580)** |
 | 3 | qwen3 | `qwen3.cpp` | S1 dense | **done (EXP583)** |
-| 4 | qwen3moe | `qwen3moe.cpp` | S2 | open |
+| 4 | qwen3moe | `qwen3moe.cpp` | S2 | **done (EXP584)** |
 | 5 | qwen3next | `qwen3next.cpp` | S4 | open |
 | 6 | qwen2 | `qwen2.cpp` | S1 | **done (EXP583)** |
-| 7 | qwen2moe | `qwen2moe.cpp` | S2 | open |
+| 7 | qwen2moe | `qwen2moe.cpp` | S2 | **done (EXP584)** |
 | 8 | deepseek32 | `deepseek32.cpp` | S3 MLA + indexer | open |
 | 9 | deepseek4 | `deepseek4.cpp` | S3 + compressor | open |
 | 10 | kimi-k3 | `kimi-k3.cpp` | S3 + S4 | open |
 | 11 | kimi-linear | `kimi-linear.cpp` | S3 + S4 | open |
 | 12 | glm5-next | `glm5-next.cpp` | S3 + S4 + HC | open |
-| 13 | glm4-moe | `glm4-moe.cpp` | S2 | open |
+| 13 | glm4-moe | `glm4-moe.cpp` | S2 | **done (EXP584)** |
 | 14 | glm4 | `glm4.cpp` | S1 + nextn | open |
 | 15 | glm-dsa | `glm-dsa.cpp` | S3 | open |
 | 16 | gemma3 | `gemma3.cpp` | S5 SWA | open |
