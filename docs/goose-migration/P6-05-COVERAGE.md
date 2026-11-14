@@ -25,8 +25,8 @@ structure gate and mutations.
 | 13 | glm4-moe | `glm4-moe.cpp` | S2 | **done (EXP584)** |
 | 14 | glm4 | `glm4.cpp` | S1 + nextn | in acceptance |
 | 15 | glm-dsa | `glm-dsa.cpp` | S3 | in acceptance |
-| 16 | gemma3 | `gemma3.cpp` | S5 SWA | in acceptance |
-| 17 | gemma3n | `gemma3n.cpp` | S5 PLE | in acceptance |
+| 16 | gemma3 | `gemma3.cpp` | S5 SWA | **done (EXP598)** |
+| 17 | gemma3n | `gemma3n.cpp` | S5 PLE | **done (EXP598)** |
 | 18 | gemma4 | `gemma4.cpp` | S5 + MoE | **done (EXP597)** |
 | 19 | gemma4-assistant | `gemma4-assistant.cpp` | S5 + nextn | **done (EXP597)** |
 | 20 | mistral3 | `mistral3.cpp` | S5 + MoE | **done (EXP597)** |

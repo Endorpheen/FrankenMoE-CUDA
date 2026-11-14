@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T19:16:59.340543+00:00",
+  "updated_at": "2026-11-14T19:18:18.468620+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -255,6 +255,42 @@
       "status": "ported",
       "sha256": "3fd237ca58d41e91a946d829eb81f591d5f6ab0b44670b58548ee243b5ee3c26",
       "gate": "24 cases / 80 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/gemma3.goose",
+      "native": "src/models/gemma3.cpp",
+      "native_targets": [
+        "src/models/gemma3.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-598-p6-05-gemma3-gemma3n",
+      "task": "",
+      "status": "ported",
+      "sha256": "18ce27c71904b7d25966dd8db1a8cf11f0d421e9308e356edc11fb135c88254f",
+      "gate": "50 cases / 116 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/gemma3n.goose",
+      "native": "src/models/gemma3n.cpp",
+      "native_targets": [
+        "src/models/gemma3n.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-598-p6-05-gemma3-gemma3n",
+      "task": "",
+      "status": "ported",
+      "sha256": "510c16616a92aa43e74ca8d7362023040996b6a3435cd5198d43bf4620b00def",
+      "gate": "62 cases / 157 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/base/gemma.goose",
+      "native": "src/models/gemma3.cpp and gemma3n.cpp (shared skeleton)",
+      "native_targets": [
+        "src/models/gemma3.cpp and gemma3n.cpp (shared skeleton)"
+      ],
+      "experiment": "EXP-2026-11-14-598-p6-05-gemma3-gemma3n",
+      "task": "",
+      "status": "ported",
+      "sha256": "2298680c151bbe89d8c49e546af724871400a94dfdfc347295268d5e5141bb6b",
+      "gate": "shared module"
     },
     {
       "goose": "model/mistral3.goose",
