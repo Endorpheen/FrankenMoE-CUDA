@@ -66,11 +66,12 @@ Eight slices; `tasks.json` mirrors this count (`slices_total`/`slices_done`).
 3. Value model: types, conversions, flags, equality, `value_compare`, repr — done (EXP504).
 4. JSON output: `value_to_json`, `float_repr`, `float_json` — done (EXP505).
 5. Builtins and filters: `func_args`/`value_func`, `global_builtins`, the
-   per-type tables, and the arithmetic operators — in progress. EXP506 ports
-   `func_args` and the int/float tables (51 cases, 14/14 mutations, final -O2
-   gate); bool/none/undefined, string, array/object and `global_builtins` are
-   still native.
-6. Runtime: expression evaluation and statement execution — in progress.
+   per-type tables, and the arithmetic operators — done piecewise: EXP506
+   (`func_args`, int/float tables, 51 cases), EXP512-527 (filters, tests, methods,
+   containers), EXP522 (`range`/`raise_exception`), EXP523 (`dict`/`namespace`)
+   and EXP551 (`strftime_now`). The `global_builtins` table is exercised through
+   those exports rather than as a standalone map.
+6. Runtime: expression evaluation and statement execution — done (EXP507-527, 545-570, 574, 593; the canonical runtime is 19025 lines).
    EXP507 ports literals, identifiers, unary/binary operators and membership
    (81 cases, 14/14 mutations, final -O2 gate); EXP508 ports `program`, `if`,
    `set` (block form and tuple unpacking) and the output path (27 cases, 12/12
