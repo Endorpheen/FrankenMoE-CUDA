@@ -4948,6 +4948,49 @@ recursive fn eval_node(
         return mk_undef_hint(A, F, B, st, name);
     }
 
+    if k == K_OBJECT {
+        let kn = al0c(A, st, id);
+
+        if kn > 16 {
+            return fail_node(K_OBJECT, apos(A, st, id), "Too many object literal entries", E, st);
+        }
+        var kk: i64[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var vv: i64[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var i: i64 = 0;
+
+        while i < kn {
+            let knode = A[apool(A, st) + al0s(A, st, id) + i];
+            let key = eval_node(knode, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+            let vnode = A[apool(A, st) + al1s(A, st, id) + i];
+            let val = eval_node(vnode, ctxc, noff, nlen, cval, A, F, B, E, out, st);
+
+            if st[1] != 0 {
+                return -1;
+            }
+            kk[i] = key;
+            vv[i] = val;
+            i = i + 1;
+        }
+        let obj = vnew(A, F, st, V_OBJECT);
+        i = 0;
+
+        while i < kn {
+            obj_key(A, st, obj, kk[i]);
+            i = i + 1;
+        }
+        i = 0;
+
+        while i < kn {
+            obj_val(A, st, obj, vv[i]);
+            i = i + 1;
+        }
+        return obj;
+    }
+
     if k == K_ARRAY || k == K_TUPLE {
         let arr = arr_new(A, F, st);
 
@@ -6252,8 +6295,51 @@ recursive fn exec_set(
             }
             i = i + 1;
         }
-        // A key that does not exist yet is appended; the value array of a
-        // namespace created last stays contiguous, a later object would not.
+        // A key that does not exist yet cannot be appended in place: the key and
+        // value arrays of an object must stay contiguous, so the object is rebuilt
+        // with one more pair and the identifier is rebound.
+        if ak(A, st, ac0(A, st, assignee)) == K_IDENT {
+            let m = vkc(A, st, objv);
+
+            if m >= 16 {
+                return fail_node(K_SET_NODE, pos, "Too many object keys after assignment", E, st);
+            }
+            var kk2: i64[17] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            var vv2: i64[17] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            var j: i64 = 0;
+
+            while j < m {
+                kk2[j] = A[pool(A, st) + vks(A, st, objv) + j];
+                vv2[j] = A[pool(A, st) + vvs(A, st, objv) + j];
+                j = j + 1;
+            }
+            kk2[m] = key;
+            vv2[m] = rhs;
+            let obj2 = vnew(A, F, st, V_OBJECT);
+            j = 0;
+
+            while j <= m {
+                obj_key(A, st, obj2, kk2[j]);
+                j = j + 1;
+            }
+            j = 0;
+
+            while j <= m {
+                obj_val(A, st, obj2, vv2[j]);
+                j = j + 1;
+            }
+            let nm = astr(B, A, st, ac0(A, st, assignee));
+
+            if ctx_set(nm, obj2, cnoff, cnlen, cval, B, A, F, st, E) < 0 {
+                return -1;
+            }
+            return 0;
+        }
+        // Without a name to rebind, only an empty object can take a new pair in
+        // place; anything else would split the contiguous key/value arrays.
+        if vkc(A, st, objv) != 0 {
+            return fail_node(K_SET_NODE, pos, "New keys need a named object", E, st);
+        }
         obj_key(A, st, objv, key);
         obj_val(A, st, objv, rhs);
         return 0;

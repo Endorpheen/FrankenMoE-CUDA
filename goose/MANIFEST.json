@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T07:06:07.182697+00:00",
+  "updated_at": "2026-11-14T07:17:22.303676+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -70,11 +70,11 @@
       "native_targets": [
         "common/jinja/runtime.cpp"
       ],
-      "experiment": "EXP-2026-11-14-546-p7-08-slice",
+      "experiment": "EXP-2026-11-14-547-p7-08-object-literal",
       "task": "",
       "status": "ported",
-      "sha256": "8ce4c192d92360d71dc5fa5ab97bddb05dcff9ecb2b81587bd9461ee4f17fcbd",
-      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789, typed content 436/797, media content 445/806, message fields 452/813, tool schemas 460/821, tools parse 471/832, tools decode 476/842, strict json 494/860, format single 502/868, real templates 507/878, slice 526/916"
+      "sha256": "53740afdbdce9997ab37a67e5112ab27d40faaeb48ac7fa4f1893d461f7748ab",
+      "gate": "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789, typed content 436/797, media content 445/806, message fields 452/813, tool schemas 460/821, tools parse 471/832, tools decode 476/842, strict json 494/860, format single 502/868, real templates 507/878, slice 526/916, object literal 532/928"
     },
     {
       "goose": "cpu/goose-runtime/allocator-coalesce/kernel-v1.goose",
