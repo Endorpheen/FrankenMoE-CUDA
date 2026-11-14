@@ -106,23 +106,23 @@ a rename. It starts only after the composition of those copies is designed.
 All of the above selected by default, the C++ implementations retained one
 release as the fallback, and the Apex baseline re-measured on the same flags.
 
-## In-flight module streams (2026-11-15)
+## Accepted module streams (2026-11-15)
 
-| stream | requirement | expected stage | what it feeds |
-|---|---|---|---|
-| MCP stdio integration | P8-07 S5b | S2 | server request path with a real process transport |
-| hoisted native index | P7-08 | S3 | chat grammar text parity (not a runtime link) |
-| composed artifact | S0 | S0 | duplicate-symbol and load proof for every set |
-| config/recipe/registry | P9-01 | S2 | startup, flags and architecture selection |
-| dense/expert streaming | P9-03 | S1 | data path: LRU, placement, prefetch planning |
-| metrics/traces/workload | P9-07 | S1 | instrumentation and replay, no hot-path change |
-| meta backend/threading | P4-12 | S1 | device and thread policy decisions |
-| MTP/speculative draft | P6-11 | S2 | decode speculation and rollback decisions |
-| loader/tokenizer/common | P7-12 | S1 | tokenizer registry, special tokens, common helpers |
+| stream | requirement | stage | experiment | state |
+|---|---|---|---|---|
+| config/recipe/registry | P9-01 | S2 | EXP620 | accepted, 3/3 gates, call sites native |
+| dense/expert streaming | P9-03 | S1 | EXP621 | accepted, 74/198, call sites native |
+| metrics/traces/workload | P9-07 | S1 | EXP618 | accepted, 106/203, sinks native |
+| meta backend/threading | P4-12 | S1 | EXP617 | accepted, 67/67; optimizer slice open |
+| MTP/speculative draft | P6-11 | S2 | EXP619 | accepted, 9828/0, engine wiring open |
+| loader/tokenizer/common | P7-12 | S1 | EXP622 | accepted, 3/3 gates, wiring open |
+| MCP stdio integration | P8-07 S5b | S2 | EXP623 | accepted, 26/243; P8-07 DONE 6/6 |
 
-Each stream produces standalone modules with their own gates and an explicit
-integration step; the lead accepts them into the canon before any stage uses
-them.
+Still in flight: the hoisted native index (P7-08, chat grammar text parity, not a
+runtime link), the composed-artifact smoke build (S0), the ggml-opt optimizer
+(P4-12, the last slice) and the isolated S1.1 staging build. Each stream lands
+in the canon on its own gate before a stage consumes it; the main runtime build
+already composes all accepted modules that share one unit.
 
 ## Verification protocol per stage
 
