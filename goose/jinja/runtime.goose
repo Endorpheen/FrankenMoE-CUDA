@@ -8079,7 +8079,10 @@ const PEG_LIT: i64 = 3;
 const PEG_SEQ: i64 = 4;
 const PEG_CHOICE: i64 = 5;
 const PEG_REP: i64 = 6;
+const PEG_NOT: i64 = 8;
+const PEG_ANY: i64 = 9;
 const PEG_UNTIL: i64 = 13;
+const PEG_RULE: i64 = 14;
 const PEG_ATOMIC: i64 = 16;
 const PEG_TAG: i64 = 17;
 
@@ -8130,7 +8133,7 @@ export fn peg_eps_node(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:
     return peg_node(kind, cfirst, ccount, sidx, st, PEG_EPS, 0 - 1);
 }
 
-export fn peg_literal(
+fn peg_literal_impl(
     kind: i64[:],
     cfirst: i64[:],
     ccount: i64[:],
@@ -8143,6 +8146,19 @@ export fn peg_literal(
     let sid = peg_pool_add(pool, st, dstart, dcount, text);
     return peg_node(kind, cfirst, ccount, sidx, st, PEG_LIT, sid);
 }
+
+export fn peg_literal(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    text: const u8[:]) -> i64 { return peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, text); }
+
+
 
 export fn peg_child_one(
     kind: i64[:],
@@ -8161,7 +8177,7 @@ export fn peg_child_one(
     return id;
 }
 
-export fn peg_tag(
+fn peg_tag_impl(
     kind: i64[:],
     cfirst: i64[:],
     ccount: i64[:],
@@ -8181,6 +8197,21 @@ export fn peg_tag(
     return id;
 }
 
+export fn peg_tag(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    name: const u8[:],
+    child: i64) -> i64 { return peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, name, child); }
+
+
+
 export fn peg_atomic(
     kind: i64[:],
     cfirst: i64[:],
@@ -8193,7 +8224,57 @@ export fn peg_atomic(
 }
 
 // common_peg_parser_builder::sequence/choice flatten a nested node of the same
-// kind into the parent, so the dump shows one flat list.
+// kind into the parent, so the dump shows one flat list. Children are passed
+// explicitly because slicing a fixed-size local array does not infer a signature.
+fn peg_kid_at(a: i64, b: i64, c: i64, idx: i64) -> i64 {
+    if idx == 0 {
+        return a;
+    }
+
+    if idx == 1 {
+        return b;
+    }
+    return c;
+}
+
+fn peg_flat_n(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    want: i64,
+    n: i64,
+    a: i64,
+    b: i64,
+    c: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, want, 0 - 1);
+    var out_n: i64 = 0;
+    var i: i64 = 0;
+
+    while i < n {
+        let kid = peg_kid_at(a, b, c, i);
+
+        if kind[kid] == want {
+            var j: i64 = 0;
+
+            while j < ccount[kid] {
+                children[st[61] + out_n] = children[cfirst[kid] + j];
+                out_n = out_n + 1;
+                j = j + 1;
+            }
+        } else {
+            children[st[61] + out_n] = kid;
+            out_n = out_n + 1;
+        }
+        i = i + 1;
+    }
+    ccount[id] = out_n;
+    st[61] = st[61] + out_n;
+    return id;
+}
+
 fn peg_flat(
     kind: i64[:],
     cfirst: i64[:],
@@ -8203,33 +8284,62 @@ fn peg_flat(
     st: i64[:],
     want: i64,
     kids: const i64[:]) -> i64 {
-    let id = peg_node(kind, cfirst, ccount, sidx, st, want, 0 - 1);
-    var n: i64 = 0;
-    var i: i64 = 0;
+    var a: i64 = 0;
+    var b: i64 = 0;
+    var c: i64 = 0;
 
-    while i < kids.len {
-        let kid = kids[i];
-
-        if kind[kid] == want {
-            var j: i64 = 0;
-
-            while j < ccount[kid] {
-                children[st[61] + n] = children[cfirst[kid] + j];
-                n = n + 1;
-                j = j + 1;
-            }
-        } else {
-            children[st[61] + n] = kid;
-            n = n + 1;
-        }
-        i = i + 1;
+    if kids.len > 0 {
+        a = kids[0];
     }
-    ccount[id] = n;
-    st[61] = st[61] + n;
-    return id;
+
+    if kids.len > 1 {
+        b = kids[1];
+    }
+
+    if kids.len > 2 {
+        c = kids[2];
+    }
+    return peg_flat_n(kind, cfirst, ccount, children, sidx, st, want, kids.len, a, b, c);
 }
 
-export fn peg_seq(
+fn peg_seq2(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    a: i64,
+    b: i64) -> i64 {
+    return peg_flat_n(kind, cfirst, ccount, children, sidx, st, PEG_SEQ, 2, a, b, 0);
+}
+
+fn peg_seq3(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    a: i64,
+    b: i64,
+    c: i64) -> i64 {
+    return peg_flat_n(kind, cfirst, ccount, children, sidx, st, PEG_SEQ, 3, a, b, c);
+}
+
+fn peg_choice2(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    a: i64,
+    b: i64) -> i64 {
+    return peg_flat_n(kind, cfirst, ccount, children, sidx, st, PEG_CHOICE, 2, a, b, 0);
+}
+
+fn peg_seq_impl(
     kind: i64[:],
     cfirst: i64[:],
     ccount: i64[:],
@@ -8240,7 +8350,18 @@ export fn peg_seq(
     return peg_flat(kind, cfirst, ccount, children, sidx, st, PEG_SEQ, kids);
 }
 
-export fn peg_choice(
+export fn peg_seq(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    kids: const i64[:]) -> i64 { return peg_seq_impl(kind, cfirst, ccount, children, sidx, st, kids); }
+
+
+
+fn peg_choice_impl(
     kind: i64[:],
     cfirst: i64[:],
     ccount: i64[:],
@@ -8250,6 +8371,17 @@ export fn peg_choice(
     kids: const i64[:]) -> i64 {
     return peg_flat(kind, cfirst, ccount, children, sidx, st, PEG_CHOICE, kids);
 }
+
+export fn peg_choice(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    kids: const i64[:]) -> i64 { return peg_choice_impl(kind, cfirst, ccount, children, sidx, st, kids); }
+
+
 
 export fn peg_repeat(
     kind: i64[:],
@@ -8343,7 +8475,30 @@ recursive fn peg_dump_node(
     } else if k == PEG_END {
         p = peg_app(out, p, "End");
     } else if k == PEG_UNTIL {
-        p = peg_app(out, p, "Until()");
+        let usid = sidx[id];
+
+        if usid >= 0 {
+            p = peg_app(out, p, "Until(");
+            p = peg_app(out, p, pool[dstart[usid] .. dstart[usid] + dcount[usid]]);
+            p = peg_app(out, p, ")");
+        } else {
+            p = peg_app(out, p, "Until()");
+        }
+    } else if k == PEG_ANY {
+        p = peg_app(out, p, "Any");
+    } else if k == PEG_NOT {
+        p = peg_app(out, p, "Not(");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ")");
+    } else if k == PEG_RULE {
+        let rsid = sidx[id];
+        p = peg_app(out, p, "Rule(");
+        p = peg_app(out, p, pool[dstart[rsid] .. dstart[rsid] + dcount[rsid]]);
+        p = peg_app(out, p, ", ");
+        st[70] = p;
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_app(out, p, ")");
     } else if k == PEG_LIT {
         let sid = sidx[id];
         p = peg_app(out, p, "Literal(");
@@ -8415,4 +8570,217 @@ export fn peg_dump_basic(
     st[70] = 0;
     let n = peg_dump_node(root, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
     return n;
+}
+
+// Nodes and helpers from common/chat-peg-parser.cpp: any/negate/until(marker),
+// rule(name, p), optspace, prefix and tag_with_safe_content.
+export fn peg_any_node(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_ANY, 0 - 1);
+}
+
+export fn peg_not_node(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    child: i64) -> i64 {
+    return peg_child_one(kind, cfirst, ccount, children, sidx, st, PEG_NOT, 0 - 1, child);
+}
+
+fn peg_until_marker(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    marker: const u8[:]) -> i64 {
+    if marker.len == 0 {
+        return peg_node(kind, cfirst, ccount, sidx, st, PEG_UNTIL, 0 - 1);
+    }
+    let sid = peg_pool_add(pool, st, dstart, dcount, marker);
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_UNTIL, sid);
+}
+
+fn peg_rule_node(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    name: const u8[:],
+    child: i64) -> i64 {
+    let sid = peg_pool_add(pool, st, dstart, dcount, name);
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_RULE, sid);
+    children[st[61]] = child;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+fn peg_optional(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    st: i64[:],
+    child: i64) -> i64 {
+    return peg_repeat(kind, cfirst, ccount, children, sidx, mn, mx, st, child, 0, 1);
+}
+
+fn peg_is_space(c: u8) -> i64 {
+    if c == 32 || c == 9 || c == 10 || c == 13 || c == 11 || c == 12 {
+        return 1;
+    }
+    return 0;
+}
+
+// chat-peg-parser.cpp optspace: an eps root, then one optional literal per
+// leading space, the literal tag body, and one optional literal per trailing
+// space. Sequence flattening keeps the eps root as the first child, as native.
+export fn peg_optspace(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    tag: const u8[:]) -> i64 {
+    var pre_end: i64 = tag.len;
+    var i: i64 = 0;
+
+    while i < tag.len {
+        if peg_is_space(tag[i]) == 0 {
+            pre_end = i;
+            i = tag.len;
+        } else {
+            i = i + 1;
+        }
+    }
+    var suf_start: i64 = tag.len;
+    var j: i64 = tag.len;
+
+    while j > 0 {
+        if peg_is_space(tag[j - 1]) == 0 {
+            suf_start = j;
+            j = 0;
+        } else {
+            j = j - 1;
+        }
+    }
+    var acc = peg_eps_node(kind, cfirst, ccount, sidx, st);
+    var a: i64 = 0;
+
+    while a < pre_end {
+        let lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, tag[a .. a + 1]);
+        let opt = peg_optional(kind, cfirst, ccount, children, sidx, mn, mx, st, lit);
+        acc = peg_seq2(kind, cfirst, ccount, children, sidx, st, acc, opt);
+        a = a + 1;
+    }
+    let body = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, tag[pre_end .. suf_start]);
+    acc = peg_seq2(kind, cfirst, ccount, children, sidx, st, acc, body);
+    var b: i64 = suf_start;
+
+    while b < tag.len {
+        let lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, tag[b .. b + 1]);
+        let opt = peg_optional(kind, cfirst, ccount, children, sidx, mn, mx, st, lit);
+        acc = peg_seq2(kind, cfirst, ccount, children, sidx, st, acc, opt);
+        b = b + 1;
+    }
+    return acc;
+}
+
+// chat-peg-parser.cpp prefix: literal up to the delimiter, eps for an empty
+// string, and the whole string when no delimiter is given.
+export fn peg_prefix(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    s: const u8[:],
+    delim: const u8[:]) -> i64 {
+    if s.len == 0 {
+        return peg_eps_node(kind, cfirst, ccount, sidx, st);
+    }
+
+    if delim.len == 0 {
+        return peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, s);
+    }
+    var cut: i64 = s.len;
+    var i: i64 = 0;
+
+    while i + delim.len <= s.len {
+        var same: bool = true;
+        var k: i64 = 0;
+
+        while k < delim.len {
+            if s[i + k] != delim[k] {
+                same = false;
+            }
+            k = k + 1;
+        }
+
+        if same {
+            cut = i;
+            i = s.len;
+        } else {
+            i = i + 1;
+        }
+    }
+    return peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, s[0 .. cut]);
+}
+
+// chat-peg-parser.cpp tag_with_safe_content: zero or more of the parser itself
+// or a rule that consumes content up to the marker.
+export fn peg_tag_safe(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    mn: i64[:],
+    mx: i64[:],
+    pool: u8[:],
+    st: i64[:],
+    tag_name: const u8[:],
+    marker: const u8[:],
+    p: i64) -> i64 {
+    var inner: i64 = 0;
+
+    if marker.len == 0 {
+        let anyv = peg_any_node(kind, cfirst, ccount, sidx, st);
+        inner = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content", anyv);
+    } else {
+        let litm = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, marker);
+        let notm = peg_not_node(kind, cfirst, ccount, children, sidx, st, litm);
+        let anyv = peg_any_node(kind, cfirst, ccount, sidx, st);
+        let untm = peg_until_marker(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, marker);
+        let seqb = peg_seq3(kind, cfirst, ccount, children, sidx, st, notm, anyv, untm);
+        inner = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "content", seqb);
+    }
+    let ruled = peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, tag_name, inner);
+    let ch = peg_choice2(kind, cfirst, ccount, children, sidx, st, p, ruled);
+    return peg_repeat(kind, cfirst, ccount, children, sidx, mn, mx, st, ch, 0, 0 - 1);
 }
