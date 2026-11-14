@@ -4097,6 +4097,98 @@ recursive fn eval_filter(
     return fail_node(K_FILTER, apos(A, st, id), E[0..p], E, st);
 }
 
+fn mk_builtin(A: i64[:], F: f64[:], st: i64[:], bid: i64) -> i64 {
+    let f = vnew(A, F, st, V_FUNC);
+    A[st[17] + f] = 0 - 1;
+    A[st[18] + f] = bid;
+    return f;
+}
+
+recursive fn call_builtin(
+    bid: i64,
+    id: i64,
+    noff: i64[:],
+    nlen: i64[:],
+    cval: i64[:],
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    out: u8[:],
+    st: i64[:]) -> i64 {
+    let argc = al0c(A, st, id);
+    var argv: i64[4] = [0, 0, 0, 0];
+
+    if argc > 4 {
+        return fail_node(K_CALL, apos(A, st, id), "Too many arguments", E, st);
+    }
+    var i: i64 = 0;
+
+    while i < argc {
+        let argn = A[apool(A, st) + al0s(A, st, id) + i];
+        let av = eval_node(argn, st[11], noff, nlen, cval, A, F, B, E, out, st);
+
+        if st[1] != 0 {
+            return -1;
+        }
+        argv[i] = av;
+        i = i + 1;
+    }
+
+    if bid == 1 {
+        if argc < 1 || argc > 3 {
+            return fail_node(K_CALL, apos(A, st, id), "range() expects 1 to 3 arguments", E, st);
+        }
+        var start: i64 = 0;
+        var stop: i64 = 0;
+        var step: i64 = 1;
+
+        if argc == 1 {
+            stop = vi(A, st, argv[0]);
+        } else {
+            start = vi(A, st, argv[0]);
+            stop = vi(A, st, argv[1]);
+
+            if argc == 3 {
+                step = vi(A, st, argv[2]);
+            }
+        }
+
+        if step == 0 {
+            return fail_node(K_CALL, apos(A, st, id), "range() step argument must not be zero", E, st);
+        }
+        let arr = arr_new(A, F, st);
+        var v: i64 = start;
+
+        if step > 0 {
+            while v < stop {
+                arr_push(A, st, arr, mk_int(A, F, st, v));
+                v = v + step;
+            }
+        } else {
+            while v > stop {
+                arr_push(A, st, arr, mk_int(A, F, st, v));
+                v = v + step;
+            }
+        }
+        return arr;
+    }
+
+    if bid == 2 {
+        if argc < 1 || vk(A, st, argv[0]) != V_STRING {
+            return fail_node(K_CALL, apos(A, st, id), "raise_exception() expects a string", E, st);
+        }
+        let base = st[7];
+        var p = apps(out, base, "Jinja Exception: ");
+        let msg = vstr(B, A, st, argv[0]);
+        p = app(out, p, msg, 0, msg.len);
+        let r = fail_node(K_CALL, apos(A, st, id), out[base..p], E, st);
+        st[7] = base;
+        return r;
+    }
+    return fail_node(K_CALL, apos(A, st, id), "Unknown builtin", E, st);
+}
+
 recursive fn eval_call(
     id: i64,
     ctxc: i64,
@@ -4120,6 +4212,10 @@ recursive fn eval_call(
         let tn = type_name(A, B, st, callee, E[p..]);
         p = p + tn;
         return fail_node(K_CALL, apos(A, st, id), E[0..p], E, st);
+    }
+
+    if vi(A, st, callee) == 0 - 1 {
+        return call_builtin(A[st[18] + callee], id, noff, nlen, cval, A, F, B, E, out, st);
     }
     return invoke_func(callee, id, K_CALL, noff, nlen, cval, A, F, B, E, out, st);
 }
@@ -4235,6 +4331,13 @@ recursive fn eval_node(
                 }
             }
             i = i - 1;
+        }
+        if filter_name_is(name, "range") {
+            return mk_builtin(A, F, st, 1);
+        }
+
+        if filter_name_is(name, "raise_exception") {
+            return mk_builtin(A, F, st, 2);
         }
         return mk_undef_hint(A, F, B, st, name);
     }
