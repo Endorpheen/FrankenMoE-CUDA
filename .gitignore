@@ -254,3 +254,7 @@ experiments/*/probe
 experiments/*/probe2
 experiments/*/goose_detok
 experiments/*/native_detok
+
+# Generated Goose C under src/ as well as source/ (EXP470 layout).
+experiments/*/src/*-gen.c
+experiments/*/src/*-gen.h
