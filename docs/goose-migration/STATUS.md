@@ -1,12 +1,12 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-14 (3). This file is the current state; update it in the same change
+Updated: 2026-11-14 (4). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 103**, **PARTIAL 7**, **TODO 42** of
-152 functional requirements. Slice front: **75 / 88** done, 13 remaining.
+`docs/goose-migration/tasks.json`: **DONE 104**, **PARTIAL 6**, **TODO 42** of
+152 functional requirements. Slice front: **80 / 90** done, 10 remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
@@ -14,13 +14,12 @@ The remaining partial requirements and their slice fronts:
 
 | requirement | slices | what is open |
 |---|---|---|
-| P6-09 | 2 / 5 | LoRA apply (in acceptance), saver writer, saver from model |
-| P7-02 | 2 / 5 | tensor data (in acceptance), split/merge, model saver |
-| P7-04 | 2 / 6 | imatrix loader and row quantizers S3a (in acceptance), K/IQ/TQ, weighted, dequant closure |
+| P6-09 | 2 / 5 | LoRA apply and saver writer (in acceptance), saver from model |
+| P7-02 | 3 / 5 | split/merge (in acceptance), model saver |
+| P7-04 | 4 / 7 | K/IQ/TQ (S3b, in acceptance), weighted, dequant closure |
 | P7-08 | 4 / 8 | plan-level split: chat apply and time injection, hoisted native names |
 | P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
-| P8-07 | 2 / 5 | MCP session core (in acceptance), decision core, integration shells |
-| P9-06 | 4 / 4 | acceptance names the session-loop budget/interrupt behavior |
+| P8-07 | 3 / 5 | decision core (in acceptance), integration shells |
 
 ## What the canonical tree contains
 
