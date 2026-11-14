@@ -262,3 +262,8 @@ experiments/*/src/*-gen.h
 # Per-experiment run directories: generated C, objects and gate binaries.
 experiments/**/run/
 experiments/**/run/*
+
+# Per-mutation copies: each one is regenerated from the Goose source by the
+# experiment's mutate script (source, generated C, object, binary, output TSV).
+experiments/**/tests/mut_*/
+experiments/**/tests/mut/*/
