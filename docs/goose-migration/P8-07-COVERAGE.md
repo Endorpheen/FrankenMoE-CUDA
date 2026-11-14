@@ -15,6 +15,27 @@ gate. S1 is in acceptance; the rest is open.
 | S4. Decision core | `parse_questions`, `parse_state`, value transforms and renderers, options, variants/outputs, confidence, `format_answer`, `group_tasks` | open |
 | S5. Integration shells | isolate/container/ssh IO, tool runtimes, stdio MCP transport, HTTP handlers, decision init/embeddings | open (integration fixture) |
 
+## S3 plan (MCP session core)
+
+Native anchors in `tools/server/server-mcp.cpp`: `parse_from_json` (136),
+`parse_cursor_format` (140), `rpc_error_message` (182),
+`mcp_result_to_response` (197), `send_rpc` (215), `ensure_init` (255),
+`list_tools` (284), `call_tool` (316), and the manager at 639-799.
+
+The port takes the transport as data: the session functions receive the next
+request id, the JSON-RPC response text and the tool table, and return the next
+request or the decoded result. The pwnd process transport (344-636) and the
+stdio pumps stay in S5, so no process, thread or socket is involved.
+
+The gate compares the request/response decisions against a transcription of the
+native static functions and a fake in-process transport with canned replies:
+config parsing (names, commands, args, env, cursor format), the
+`MCP_PROTOCOL_VERSION` handshake, the error-message table, the
+`result`/`content` unwrapping, tool listing and the call path (unknown server,
+unknown tool, error result, success). Mutations must cover the version string,
+the request id walk, the init-once rule, the tool-name lookup and the error
+mapping.
+
 ## Boundaries and dependencies
 
 - S1 excludes `json_schema_to_grammar` (already canonical) and the `tools` /
