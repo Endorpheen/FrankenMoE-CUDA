@@ -96,6 +96,23 @@ runs at `-O1` and mutations at `-O0`. The lead accepts personally; there is no
 automatic accept step. Keep the helper count at the level the lead can review
 (5-6 is the current point); adjust it by the queue, not by ambition.
 
+## Integration-ready assignments
+
+Every helper result must fit the single Goose runtime without a rewrite. Before
+assigning a task, check what it depends on, whether another helper is writing the
+same structure, ABI or error contract, and where exactly the result will be
+integrated. State the base SHA, the interfaces that already exist in it, the
+files the helper must not touch, and the acceptance criteria for the module and
+for its interaction with the runtime.
+
+A helper delivers: the code in its isolated directory, the list of interfaces it
+uses, the exact integration step, compatibility checks against the current
+runtime, and its assumptions and possible conflicts. If a task depends on a
+module that is not accepted yet, assign analysis only.
+
+At acceptance, check that existing behaviour and interfaces are preserved, not
+just that the new module is locally correct.
+
 ## Experiment storage
 
 Evidence stays, build artefacts do not. Commit the Goose source, the build and
