@@ -37,6 +37,9 @@ goose/jinja/runtime.goose	chat_tools_json
 goose/jinja/runtime.goose	chat_tools_parse
 goose/jinja/runtime.goose	eval_expr
 goose/jinja/runtime.goose	exec_program
+goose/jinja/runtime.goose	legacy_apply
+goose/jinja/runtime.goose	legacy_detect
+goose/jinja/runtime.goose	legacy_merge
 goose/jinja/runtime.goose	peg_any_node
 goose/jinja/runtime.goose	peg_atomic
 goose/jinja/runtime.goose	peg_child_one

@@ -1,0 +1,54 @@
+=== name chatml ===
+  [legacy] format=Content-only prompt_len=194 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=0 delims=0
+    prompt=<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\nHi there<|im_end|>\n<|im_star...
+  [jinja] format=peg-native prompt_len=194 grammar_len=0 lazy=0 genp_len=22 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=10 delims=2
+    prompt=<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\nHi there<|im_end|>\n<|im_star...
+    genp=<|im_start|>assistant\n
+
+=== name llama3 ===
+  [legacy] format=Content-only prompt_len=315 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=0 delims=0
+    prompt=<|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHello<|eot_id|><|...
+  [jinja] format=peg-native prompt_len=6 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=10 delims=0
+    prompt=llama3
+
+=== name gemma ===
+  [legacy] format=Content-only prompt_len=179 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=0 delims=0
+    prompt=<start_of_turn>user\nYou are a helpful assistant.\n\nHello<end_of_turn>\n<start_of_turn>model\nHi there<end_of_turn>\n<start_of_turn>user\nWho are y...
+  [jinja] format=peg-native prompt_len=5 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=10 delims=0
+    prompt=gemma
+
+=== real source, legacy vs jinja ===
+--- llama3 ---
+  [legacy] format=Content-only prompt_len=315 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=0 delims=0
+    prompt=<|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHello<|eot_id|><|...
+  [jinja] format=peg-native prompt_len=315 grammar_len=0 lazy=0 genp_len=47 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=10 delims=2
+    prompt=<|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHello<|eot_id|><|...
+    genp=<|start_header_id|>assistant<|end_header_id|>\n\n
+
+--- gemma ---
+  [legacy] format=Content-only prompt_len=179 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=0 delims=0
+    prompt=<start_of_turn>user\nYou are a helpful assistant.\n\nHello<end_of_turn>\n<start_of_turn>model\nHi there<end_of_turn>\n<start_of_turn>user\nWho are y...
+  [jinja] format=peg-native prompt_len=217 grammar_len=0 lazy=0 genp_len=21 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=10 delims=2
+    prompt=<start_of_turn>system\nYou are a helpful assistant.<end_of_turn>\n<start_of_turn>user\nHello<end_of_turn>\n<start_of_turn>assistant\nHi there<end_...
+    genp=<start_of_turn>model\n
+
+--- granite ---
+  [legacy] format=Content-only prompt_len=309 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=0 delims=0
+    prompt=<|start_of_role|>system<|end_of_role|>You are a helpful assistant.<|end_of_text|>\n<|start_of_role|>user<|end_of_role|>Hello<|end_of_text|>\n<|...
+  [jinja] format=peg-native prompt_len=309 grammar_len=0 lazy=0 genp_len=41 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=10 delims=2
+    prompt=<|start_of_role|>system<|end_of_role|>You are a helpful assistant.<|end_of_text|>\n<|start_of_role|>user<|end_of_role|>Hello<|end_of_text|>\n<|...
+    genp=<|start_of_role|>assistant<|end_of_role|>
+
+=== json_schema ===
+  [legacy] format=Content-only prompt_len=194 grammar_len=211 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=0 delims=0
+    prompt=<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\nHi there<|im_end|>\n<|im_star...
+    grammar=char ::= [^"\\\\\\x7F\\x00-\\x1F] | [\\\\] (["\\\\bfnrt] | "u" [0-9a-fA-F]{4})\nroot ::= "{" space x-kv space "...
+  [jinja] format=peg-native prompt_len=194 grammar_len=977 lazy=0 genp_len=22 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=114 delims=2
+    prompt=<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\nHi there<|im_end|>\n<|im_star...
+    genp=<|im_start|>assistant\n
+    grammar=char ::= [^"\\\\\\x7F\\x00-\\x1F] | [\\\\] (["\\\\bfnrt] | "u" [0-9a-fA-F]{4})\njson-array ::= "[" space ("]" |...
+
+=== unsupported source ===
+  [legacy] exception: this custom template is not supported, try using --jinja
+  [jinja] format=peg-native prompt_len=0 grammar_len=0 lazy=0 genp_len=0 thinking=0 think_start=0 think_end=0 triggers=0 preserved=0 stops=0 parser_len=10 delims=0
+    prompt=

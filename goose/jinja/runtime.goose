@@ -10540,3 +10540,1285 @@ export fn peg_map_minimax(
     out[MO_NCALLS] = st[MS_NCALLS];
     return st[MS_NCALLS];
 }
+
+// Legacy chat-template path (use_jinja = false) in Goose.
+//
+// Native source: src/llama-chat.cpp (llm_chat_template_from_str,
+// llm_chat_detect_template, llm_chat_apply_template) and the small wrapper in
+// src/llama.cpp (llama_chat_apply_template). The port owns:
+//
+//   - the 54 builtin names and the 55 formats of the enum;
+//   - the ordered substring detection, including its precedences;
+//   - the per-format message builders and their add_generation_prompt tails.
+//
+// The port does NOT own (gaps listed at the end): formats whose builder is not
+// written yet, json_schema_to_grammar, and the caller's buffer-retry loop.
+//
+// Input is flat, like the rest of goose/chat: roles and contents live in two
+// byte buffers with per-message offset/length arrays. The prompt is written to
+// `dst`; meta[0] receives the detected format id (or -1) and the return value
+// is the full prompt length. A negative return means "unsupported".
+//
+// Format ids are the enum order of src/llama-chat.h, so a differential host can
+// compare them with llm_chat_detect_template() directly.
+
+import std;
+
+const FMT_CHATML: i64 = 0;
+const FMT_LLAMA_2: i64 = 1;
+const FMT_LLAMA_2_SYS: i64 = 2;
+const FMT_LLAMA_2_SYS_BOS: i64 = 3;
+const FMT_LLAMA_2_SYS_STRIP: i64 = 4;
+const FMT_MISTRAL_V1: i64 = 5;
+const FMT_MISTRAL_V3: i64 = 6;
+const FMT_MISTRAL_V3_TEKKEN: i64 = 7;
+const FMT_MISTRAL_V7: i64 = 8;
+const FMT_MISTRAL_V7_TEKKEN: i64 = 9;
+const FMT_PHI_3: i64 = 10;
+const FMT_PHI_4: i64 = 11;
+const FMT_FALCON_3: i64 = 12;
+const FMT_ZEPHYR: i64 = 13;
+const FMT_MONARCH: i64 = 14;
+const FMT_GEMMA: i64 = 15;
+const FMT_ORION: i64 = 16;
+const FMT_OPENCHAT: i64 = 17;
+const FMT_VICUNA: i64 = 18;
+const FMT_VICUNA_ORCA: i64 = 19;
+const FMT_DEEPSEEK: i64 = 20;
+const FMT_DEEPSEEK_2: i64 = 21;
+const FMT_DEEPSEEK_3: i64 = 22;
+const FMT_DEEPSEEK_OCR: i64 = 23;
+const FMT_COMMAND_R: i64 = 24;
+const FMT_LLAMA_3: i64 = 25;
+const FMT_CHATGLM_3: i64 = 26;
+const FMT_CHATGLM_4: i64 = 27;
+const FMT_GLMEDGE: i64 = 28;
+const FMT_MINICPM: i64 = 29;
+const FMT_EXAONE_3: i64 = 30;
+const FMT_EXAONE_4: i64 = 31;
+const FMT_EXAONE_MOE: i64 = 32;
+const FMT_RWKV_WORLD: i64 = 33;
+const FMT_GRANITE_3_X: i64 = 34;
+const FMT_GRANITE_4_0: i64 = 35;
+const FMT_GRANITE_4_1: i64 = 36;
+const FMT_GIGACHAT: i64 = 37;
+const FMT_MEGREZ: i64 = 38;
+const FMT_YANDEX: i64 = 39;
+const FMT_BAILING: i64 = 40;
+const FMT_BAILING_THINK: i64 = 41;
+const FMT_BAILING2: i64 = 42;
+const FMT_LLAMA4: i64 = 43;
+const FMT_SMOLVLM: i64 = 44;
+const FMT_DOTS1: i64 = 45;
+const FMT_HUNYUAN_MOE: i64 = 46;
+const FMT_OPENAI_MOE: i64 = 47;
+const FMT_HUNYUAN_DENSE: i64 = 48;
+const FMT_HUNYUAN_VL: i64 = 49;
+const FMT_KIMI_K2: i64 = 50;
+const FMT_SEED_OSS: i64 = 51;
+const FMT_GROK_2: i64 = 52;
+const FMT_PANGU_EMBED: i64 = 53;
+const FMT_SOLAR_OPEN: i64 = 54;
+const FMT_UNKNOWN: i64 = 55;
+
+// The 54 names of LLM_CHAT_TEMPLATES. DOTS1 is reachable by source detection
+// only, exactly as natively.
+const NAME_ID: i64[] = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+];
+
+fn has(t: const u8[:], sub: const u8[:]) -> bool {
+    return find(t, sub) >= 0 as i64;
+}
+
+fn starts(t: const u8[:], sub: const u8[:]) -> bool {
+    return starts_with(t, sub);
+}
+
+// Native trim() uses C isspace on unsigned char: space, \t, \n, \v, \f, \r.
+// The stdlib trim() omits \v and \f, so the byte test is repeated here.
+fn is_space_native(c: u8) -> bool {
+    return c == 32 as u8 || (c >= 9 as u8 && c <= 13 as u8);
+}
+
+fn trim_native(s: const u8[:]) -> const u8[:] {
+    var a: i64 = 0 as i64;
+    var b: i64 = s.len;
+    while a < b && is_space_native(s[a]) {
+        a += 1 as i64;
+    }
+    while b > a && is_space_native(s[b - 1 as i64]) {
+        b -= 1 as i64;
+    }
+    return s[a..b];
+}
+
+fn name_id(t: const u8[:]) -> i64 {
+    // Ordered exactly as LLM_CHAT_TEMPLATES (a std::map lookup natively, but the
+    // map has no duplicate keys, so a scan is equivalent).
+    const names: const u8[:][] = [
+        "chatml", "llama2", "llama2-sys", "llama2-sys-bos", "llama2-sys-strip",
+        "mistral-v1", "mistral-v3", "mistral-v3-tekken", "mistral-v7", "mistral-v7-tekken",
+        "phi3", "phi4", "falcon3", "zephyr", "monarch", "gemma", "orion", "openchat",
+        "vicuna", "vicuna-orca", "deepseek", "deepseek2", "deepseek3", "deepseek-ocr",
+        "command-r", "llama3", "chatglm3", "chatglm4", "glmedge", "minicpm",
+        "exaone3", "exaone4", "exaone-moe", "rwkv-world", "granite", "granite-4.0",
+        "granite-4.1", "gigachat", "megrez", "yandex", "bailing", "bailing-think",
+        "bailing2", "llama4", "smolvlm", "hunyuan-moe", "gpt-oss", "hunyuan-dense",
+        "hunyuan-vl", "kimi-k2", "seed_oss", "grok-2", "pangu-embedded", "solar-open",
+    ];
+    var i: i64 = 0 as i64;
+    while i < names.len {
+        if t == names[i] {
+            return NAME_ID[i];
+        }
+        i += 1 as i64;
+    }
+    return FMT_UNKNOWN;
+}
+
+// Ordered substring detection, copied from llm_chat_detect_template.
+fn detect(t: const u8[:]) -> i64 {
+    let by_name: i64 = name_id(t);
+    if by_name != FMT_UNKNOWN {
+        return by_name;
+    }
+    if has(t, "<|im_start|>") {
+        if has(t, "<|im_sep|>") {
+            return FMT_PHI_4;
+        }
+        if has(t, "<end_of_utterance>") {
+            return FMT_SMOLVLM;
+        }
+        return FMT_CHATML;
+    }
+    if starts(t, "mistral") || has(t, "[INST]") {
+        if has(t, "[SYSTEM_PROMPT]") {
+            return FMT_MISTRAL_V7;
+        }
+        if has(t, "' [INST] ' + system_message") || has(t, "[AVAILABLE_TOOLS]") {
+            if has(t, " [INST]") {
+                return FMT_MISTRAL_V1;
+            }
+            if has(t, "\"[INST]\"") {
+                return FMT_MISTRAL_V3_TEKKEN;
+            }
+            return FMT_MISTRAL_V3;
+        }
+        if has(t, "content.strip()") {
+            return FMT_LLAMA_2_SYS_STRIP;
+        }
+        if has(t, "bos_token + '[INST]") {
+            return FMT_LLAMA_2_SYS_BOS;
+        }
+        if has(t, "<<SYS>>") {
+            return FMT_LLAMA_2_SYS;
+        }
+        return FMT_LLAMA_2;
+    }
+    if has(t, "<|assistant|>") && has(t, "<|end|>") {
+        return FMT_PHI_3;
+    }
+    if has(t, "[gMASK]<sop>") {
+        return FMT_CHATGLM_4;
+    }
+    if has(t, "<|assistant|>") && has(t, "<|user|>") {
+        if has(t, "<|tool_declare|>") {
+            return FMT_EXAONE_MOE;
+        }
+        if has(t, "</s>") {
+            return FMT_FALCON_3;
+        }
+        return FMT_GLMEDGE;
+    }
+    if has(t, "<|{{ item['role'] }}|>") && has(t, "<|begin_of_image|>") {
+        return FMT_GLMEDGE;
+    }
+    if has(t, "<|user|>") && has(t, "<|endoftext|>") {
+        return FMT_ZEPHYR;
+    }
+    if has(t, "bos_token + message['role']") {
+        return FMT_MONARCH;
+    }
+    if has(t, "<start_of_turn>") {
+        return FMT_GEMMA;
+    }
+    if has(t, "'\\n\\nAssistant: ' + eos_token") {
+        return FMT_ORION;
+    }
+    if has(t, "GPT4 Correct ") {
+        return FMT_OPENCHAT;
+    }
+    if has(t, "USER: ") && has(t, "ASSISTANT: ") {
+        if has(t, "SYSTEM: ") {
+            return FMT_VICUNA_ORCA;
+        }
+        return FMT_VICUNA;
+    }
+    if has(t, "### Instruction:") && has(t, "<|EOT|>") {
+        return FMT_DEEPSEEK;
+    }
+    if has(t, "<|START_OF_TURN_TOKEN|>") && has(t, "<|USER_TOKEN|>") {
+        return FMT_COMMAND_R;
+    }
+    if has(t, "<|start_header_id|>") && has(t, "<|end_header_id|>") {
+        return FMT_LLAMA_3;
+    }
+    if has(t, "[gMASK]sop") {
+        return FMT_CHATGLM_3;
+    }
+    if has(t, "<用户>") {
+        return FMT_MINICPM;
+    }
+    if has(t, "'Assistant: ' + message['content'] + eos_token") {
+        return FMT_DEEPSEEK_2;
+    }
+    if has(t, "<｜Assistant｜>") && has(t, "<｜User｜>") && has(t, "<｜end▁of▁sentence｜>") {
+        return FMT_DEEPSEEK_3;
+    }
+    if has(t, "[|system|]") && has(t, "[|assistant|]") && has(t, "[|endofturn|]") {
+        if has(t, "[|tool|]") {
+            return FMT_EXAONE_4;
+        }
+        return FMT_EXAONE_3;
+    }
+    if has(t, "rwkv-world") || has(t, "{{- 'User: ' + message['content']|trim + '\\n\\n' -}}") {
+        return FMT_RWKV_WORLD;
+    }
+    if has(t, "<|start_of_role|>") {
+        if has(t, "<tool_call>") || has(t, "<tools>") {
+            if has(t, "g4_default_system_message") {
+                return FMT_GRANITE_4_0;
+            }
+            return FMT_GRANITE_4_1;
+        }
+        return FMT_GRANITE_3_X;
+    }
+    if has(t, "message['role'] + additional_special_tokens[0] + message['content'] + additional_special_tokens[1]") {
+        return FMT_GIGACHAT;
+    }
+    if has(t, "<|role_start|>") {
+        return FMT_MEGREZ;
+    }
+    if has(t, " Ассистент:") {
+        return FMT_YANDEX;
+    }
+    if has(t, "<role>ASSISTANT</role>") && has(t, "'HUMAN'") {
+        return FMT_BAILING;
+    }
+    if has(t, "<role>ASSISTANT</role>") && has(t, "\"HUMAN\"") && has(t, "<think>") {
+        return FMT_BAILING_THINK;
+    }
+    if has(t, "<role>ASSISTANT</role>") && has(t, "<role>HUMAN</role>") && has(t, "<|role_end|>") {
+        return FMT_BAILING2;
+    }
+    if has(t, "<|header_start|>") && has(t, "<|header_end|>") {
+        return FMT_LLAMA4;
+    }
+    if has(t, "<|endofuserprompt|>") {
+        return FMT_DOTS1;
+    }
+    if has(t, "<|extra_0|>") && has(t, "<|extra_4|>") {
+        return FMT_HUNYUAN_MOE;
+    }
+    if has(t, "<|start|>") && has(t, "<|channel|>") {
+        return FMT_OPENAI_MOE;
+    }
+    if has(t, "<｜hy_Assistant｜>") && has(t, "<｜hy_begin▁of▁sentence｜>") {
+        return FMT_HUNYUAN_VL;
+    }
+    if has(t, "<｜hy_Assistant｜>") && has(t, "<｜hy_place▁holder▁no▁3｜>") {
+        return FMT_HUNYUAN_DENSE;
+    }
+    if has(t, "<|im_assistant|>assistant<|im_middle|>") {
+        return FMT_KIMI_K2;
+    }
+    if has(t, "<seed:bos>") {
+        return FMT_SEED_OSS;
+    }
+    if has(t, "'Assistant: '  + message['content'] + '<|separator|>") {
+        return FMT_GROK_2;
+    }
+    if has(t, "[unused9]系统：[unused10]") {
+        return FMT_PANGU_EMBED;
+    }
+    if has(t, "<|begin|>") && has(t, "<|end|>") && has(t, "<|content|>") {
+        return FMT_SOLAR_OPEN;
+    }
+    return FMT_UNKNOWN;
+}
+
+fn putb(dst: u8[:], o: i64, s: const u8[:]) -> i64 {
+    var k: i64 = 0 as i64;
+    while k < s.len {
+        if o + k < dst.len {
+            dst[o + k] = s[k];
+        }
+        k += 1 as i64;
+    }
+    return o + s.len;
+}
+
+fn putc(dst: u8[:], o: i64, c: u8) -> i64 {
+    if o < dst.len {
+        dst[o] = c;
+    }
+    return o + 1 as i64;
+}
+
+fn upper_ascii(dst: u8[:], o: i64, s: const u8[:]) -> i64 {
+    var k: i64 = 0 as i64;
+    while k < s.len {
+        var c: u8 = s[k];
+        if c >= 97 as u8 && c <= 122 as u8 {
+            c = c - 32 as u8;
+        }
+        if o + k < dst.len {
+            dst[o + k] = c;
+        }
+        k += 1 as i64;
+    }
+    return o + s.len;
+}
+
+// Writes one plain `<prefix>role<suffix>content<tail>` message.
+fn plain(dst: u8[:], o: i64, pre: const u8[:], role: const u8[:], mid: const u8[:],
+         content: const u8[:], tail: const u8[:]) -> i64 {
+    var p: i64 = putb(dst, o, pre);
+    p = putb(dst, p, role);
+    p = putb(dst, p, mid);
+    p = putb(dst, p, content);
+    return putb(dst, p, tail);
+}
+
+fn get_role(roles: const u8[:], ro: i64, rl: i64) -> const u8[:] {
+    return roles[ro..ro + rl];
+}
+
+fn get_content(cs: const u8[:], co: i64, cl: i64) -> const u8[:] {
+    return cs[co..co + cl];
+}
+
+fn apply_one(fmt: i64, n: i64, roles: const u8[:], roffs: i64[:], rlens: i64[:],
+             cs: const u8[:], coffs: i64[:], clens: i64[:], add_ass: i64, dst: u8[:]) -> i64 {
+    var o: i64 = 0 as i64;
+    var i: i64 = 0 as i64;
+
+    if fmt == FMT_LLAMA_2 || fmt == FMT_LLAMA_2_SYS || fmt == FMT_LLAMA_2_SYS_BOS || fmt == FMT_LLAMA_2_SYS_STRIP {
+        // One turn opens with "[INST] " (plus "<s>" inside history for the BOS
+        // variant); a system message is wrapped in <<SYS>> only when supported.
+        var inside: i64 = 1 as i64;
+        o = putb(dst, o, "[INST] ");
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            var content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if fmt == FMT_LLAMA_2_SYS_STRIP {
+                content = trim_native(content);
+            }
+            if inside == 0 as i64 {
+                inside = 1 as i64;
+                if fmt == FMT_LLAMA_2_SYS_BOS {
+                    o = putb(dst, o, "<s>[INST] ");
+                } else {
+                    o = putb(dst, o, "[INST] ");
+                }
+            }
+            if role == "system" {
+                if fmt != FMT_LLAMA_2 {
+                    o = putb(dst, o, "<<SYS>>\n");
+                    o = putb(dst, o, content);
+                    o = putb(dst, o, "\n<</SYS>>\n\n");
+                } else {
+                    o = putb(dst, o, content);
+                    o = putb(dst, o, "\n");
+                }
+            } else if role == "user" {
+                o = putb(dst, o, content);
+                o = putb(dst, o, " [/INST]");
+            } else {
+                o = putb(dst, o, content);
+                o = putb(dst, o, "</s>");
+                inside = 0 as i64;
+            }
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_MISTRAL_V1 || fmt == FMT_MISTRAL_V3 || fmt == FMT_MISTRAL_V3_TEKKEN {
+        // A turn opens with the leading space (v1 only) and "[INST]"; the user
+        // text closes it; the assistant text closes the turn with "</s>".
+        var inside: i64 = 0 as i64;
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            var content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if inside == 0 as i64 {
+                if fmt == FMT_MISTRAL_V1 {
+                    o = putb(dst, o, " [INST] ");
+                } else if fmt == FMT_MISTRAL_V3_TEKKEN {
+                    o = putb(dst, o, "[INST]");
+                } else {
+                    o = putb(dst, o, "[INST] ");
+                }
+                inside = 1 as i64;
+            }
+            if role == "system" {
+                o = putb(dst, o, content);
+                o = putb(dst, o, "\n\n");
+            } else if role == "user" {
+                o = putb(dst, o, content);
+                if fmt == FMT_MISTRAL_V1 {
+                    o = putb(dst, o, " [/INST]");
+                } else {
+                    o = putb(dst, o, "[/INST]");
+                }
+            } else {
+                if fmt == FMT_MISTRAL_V3_TEKKEN {
+                    o = putb(dst, o, content);
+                } else {
+                    o = putb(dst, o, " ");
+                    if fmt == FMT_MISTRAL_V3 {
+                        o = putb(dst, o, trim_native(content));
+                    } else {
+                        o = putb(dst, o, content);
+                    }
+                }
+                o = putb(dst, o, "</s>");
+                inside = 0 as i64;
+            }
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_MISTRAL_V7 || fmt == FMT_MISTRAL_V7_TEKKEN {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                if fmt == FMT_MISTRAL_V7 {
+                    o = plain(dst, o, "[SYSTEM_PROMPT] ", "", "", content, "[/SYSTEM_PROMPT]");
+                } else {
+                    o = plain(dst, o, "[SYSTEM_PROMPT]", "", "", content, "[/SYSTEM_PROMPT]");
+                }
+            } else if role == "user" {
+                if fmt == FMT_MISTRAL_V7 {
+                    o = plain(dst, o, "[INST] ", "", "", content, "[/INST]");
+                } else {
+                    o = plain(dst, o, "[INST]", "", "", content, "[/INST]");
+                }
+            } else {
+                if fmt == FMT_MISTRAL_V7 {
+                    o = putb(dst, o, " ");
+                }
+                o = putb(dst, o, content);
+                o = putb(dst, o, "</s>");
+            }
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_CHATML {
+        while i < n {
+            o = plain(dst, o, "<|im_start|>", get_role(roles, roffs[i], rlens[i]), "\n",
+                      get_content(cs, coffs[i], clens[i]), "<|im_end|>\n");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|im_start|>assistant\n");
+        }
+        return o;
+    }
+    if fmt == FMT_PHI_3 {
+        while i < n {
+            o = plain(dst, o, "<|", get_role(roles, roffs[i], rlens[i]), "|>\n",
+                      get_content(cs, coffs[i], clens[i]), "<|end|>\n");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|assistant|>\n");
+        }
+        return o;
+    }
+    if fmt == FMT_PHI_4 {
+        while i < n {
+            o = plain(dst, o, "<|im_start|>", get_role(roles, roffs[i], rlens[i]), "<|im_sep|>",
+                      get_content(cs, coffs[i], clens[i]), "<|im_end|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|im_start|>assistant<|im_sep|>");
+        }
+        return o;
+    }
+    if fmt == FMT_LLAMA_3 {
+        while i < n {
+            o = plain(dst, o, "<|start_header_id|>", get_role(roles, roffs[i], rlens[i]),
+                      "<|end_header_id|>\n\n", trim_native(get_content(cs, coffs[i], clens[i])), "<|eot_id|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|start_header_id|>assistant<|end_header_id|>\n\n");
+        }
+        return o;
+    }
+    if fmt == FMT_LLAMA4 {
+        while i < n {
+            o = plain(dst, o, "<|header_start|>", get_role(roles, roffs[i], rlens[i]),
+                      "<|header_end|>\n\n", trim_native(get_content(cs, coffs[i], clens[i])), "<|eot|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|header_start|>assistant<|header_end|>\n\n");
+        }
+        return o;
+    }
+    if fmt == FMT_ZEPHYR {
+        while i < n {
+            o = plain(dst, o, "<|", get_role(roles, roffs[i], rlens[i]), "|>\n",
+                      get_content(cs, coffs[i], clens[i]), "<|endoftext|>\n");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|assistant|>\n");
+        }
+        return o;
+    }
+    if fmt == FMT_FALCON_3 {
+        while i < n {
+            o = plain(dst, o, "<|", get_role(roles, roffs[i], rlens[i]), "|>\n",
+                      get_content(cs, coffs[i], clens[i]), "\n");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|assistant|>\n");
+        }
+        return o;
+    }
+    if fmt == FMT_GEMMA {
+        // System text has no turn of its own: every system message is trimmed
+        // and prepended to the next non-model turn (assistant becomes model).
+        // A system message seen before a model turn stays pending, as natively.
+        var sys_from: i64 = 0 as i64;
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                i += 1 as i64;
+            } else {
+                var out_role: const u8[:] = role;
+                if role == "assistant" {
+                    out_role = "model";
+                }
+                o = putb(dst, o, "<start_of_turn>");
+                o = putb(dst, o, out_role);
+                o = putb(dst, o, "\n");
+                var j: i64 = sys_from;
+                var pending: i64 = 0 as i64;
+                while j < i {
+                    if get_role(roles, roffs[j], rlens[j]) == "system" {
+                        o = putb(dst, o, trim_native(get_content(cs, coffs[j], clens[j])));
+                        pending = 1 as i64;
+                    }
+                    j += 1 as i64;
+                }
+                if pending != 0 as i64 && role != "model" {
+                    o = putb(dst, o, "\n\n");
+                    sys_from = i + 1 as i64;
+                }
+                o = putb(dst, o, trim_native(content));
+                o = putb(dst, o, "<end_of_turn>\n");
+                i += 1 as i64;
+            }
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<start_of_turn>model\n");
+        }
+        return o;
+    }
+    if fmt == FMT_ORION {
+        // Untrimmed system text is held back and prefixed to the next user turn
+        // after "Human: ", so it lands inside that turn instead of on its own.
+        var sys_from: i64 = 0 as i64;
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                i += 1 as i64;
+            } else if role == "user" {
+                o = putb(dst, o, "Human: ");
+                var j: i64 = sys_from;
+                var pending: i64 = 0 as i64;
+                while j < i {
+                    if get_role(roles, roffs[j], rlens[j]) == "system" {
+                        o = putb(dst, o, get_content(cs, coffs[j], clens[j]));
+                        pending = 1 as i64;
+                    }
+                    j += 1 as i64;
+                }
+                if pending != 0 as i64 {
+                    o = putb(dst, o, "\n\n");
+                }
+                sys_from = i + 1 as i64;
+                o = putb(dst, o, content);
+                o = putb(dst, o, "\n\nAssistant: </s>");
+                i += 1 as i64;
+            } else {
+                o = putb(dst, o, content);
+                o = putb(dst, o, "</s>");
+                i += 1 as i64;
+            }
+        }
+        return o;
+    }
+    if fmt == FMT_OPENCHAT {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = putb(dst, o, content);
+            } else {
+                o = putb(dst, o, "GPT4 Correct ");
+                if role.len > 0 as i64 {
+                    o = upper_ascii(dst, o, role[0..1 as i64]);
+                }
+                let one: i64 = 1 as i64;
+                let rest: const u8[:] = role[one..];
+                o = putb(dst, o, rest);
+                o = putb(dst, o, ": ");
+                o = putb(dst, o, content);
+            }
+            o = putb(dst, o, "<|end_of_turn|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "GPT4 Correct Assistant:");
+        }
+        return o;
+    }
+    if fmt == FMT_VICUNA || fmt == FMT_VICUNA_ORCA {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                if fmt == FMT_VICUNA_ORCA {
+                    o = putb(dst, o, "SYSTEM: ");
+                    o = putb(dst, o, content);
+                    o = putb(dst, o, "\n");
+                } else {
+                    o = putb(dst, o, content);
+                    o = putb(dst, o, "\n\n");
+                }
+            } else if role == "user" {
+                o = putb(dst, o, "USER: ");
+                o = putb(dst, o, content);
+                o = putb(dst, o, "\n");
+            } else if role == "assistant" {
+                o = putb(dst, o, "ASSISTANT: ");
+                o = putb(dst, o, content);
+                o = putb(dst, o, "</s>\n");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "ASSISTANT:");
+        }
+        return o;
+    }
+    if fmt == FMT_DEEPSEEK_3 {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = putb(dst, o, content);
+                o = putb(dst, o, "\n\n");
+            } else if role == "user" {
+                o = putb(dst, o, "<｜User｜>");
+                o = putb(dst, o, content);
+            } else if role == "assistant" {
+                o = putb(dst, o, "<｜Assistant｜>");
+                o = putb(dst, o, content);
+                o = putb(dst, o, "<｜end▁of▁sentence｜>");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<｜Assistant｜>");
+        }
+        return o;
+    }
+    if fmt == FMT_COMMAND_R {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            if role == "system" {
+                o = plain(dst, o, "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>", "", "",
+                          trim_native(get_content(cs, coffs[i], clens[i])), "<|END_OF_TURN_TOKEN|>");
+            } else if role == "user" {
+                o = plain(dst, o, "<|START_OF_TURN_TOKEN|><|USER_TOKEN|>", "", "",
+                          trim_native(get_content(cs, coffs[i], clens[i])), "<|END_OF_TURN_TOKEN|>");
+            } else if role == "assistant" {
+                o = plain(dst, o, "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>", "", "",
+                          trim_native(get_content(cs, coffs[i], clens[i])), "<|END_OF_TURN_TOKEN|>");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>");
+        }
+        return o;
+    }
+    if fmt == FMT_GRANITE_3_X || fmt == FMT_GRANITE_4_0 || fmt == FMT_GRANITE_4_1 {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            if role == "assistant_tool_call" {
+                if fmt == FMT_GRANITE_3_X {
+                    o = putb(dst, o, "<|start_of_role|>assistant_tool_call<|end_of_role|><|tool_call|>");
+                } else {
+                    o = putb(dst, o, "<|start_of_role|>assistant<|end_of_role|><|tool_call|>");
+                }
+            } else {
+                o = putb(dst, o, "<|start_of_role|>");
+                o = putb(dst, o, role);
+                o = putb(dst, o, "<|end_of_role|>");
+            }
+            o = putb(dst, o, get_content(cs, coffs[i], clens[i]));
+            o = putb(dst, o, "<|end_of_text|>\n");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|start_of_role|>assistant<|end_of_role|>");
+        }
+        return o;
+    }
+    if fmt == FMT_PANGU_EMBED {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if i == 0 as i64 && role != "system" {
+                o = putb(dst, o, "[unused9]系统：[unused10]");
+            }
+            if role == "system" {
+                o = putb(dst, o, "[unused9]系统：");
+            } else if role == "user" {
+                o = putb(dst, o, "[unused9]用户：");
+            } else if role == "assistant" {
+                o = putb(dst, o, "[unused9]助手：");
+            } else if role == "tool" {
+                o = putb(dst, o, "[unused9]工具：");
+            } else if role == "function" {
+                o = putb(dst, o, "[unused9]方法：");
+            }
+            o = putb(dst, o, content);
+            o = putb(dst, o, "[unused10]");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "[unused9]助手：");
+        }
+        return o;
+    }
+    if fmt == FMT_SOLAR_OPEN {
+        while i < n {
+            o = plain(dst, o, "<|begin|>", get_role(roles, roffs[i], rlens[i]), "<|content|>",
+                      get_content(cs, coffs[i], clens[i]), "<|end|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|begin|>assistant");
+        }
+        return o;
+    }
+    if fmt == FMT_KIMI_K2 {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = putb(dst, o, "<|im_system|>system<|im_middle|>");
+            } else if role == "user" {
+                o = putb(dst, o, "<|im_user|>user<|im_middle|>");
+            } else if role == "assistant" {
+                o = putb(dst, o, "<|im_assistant|>assistant<|im_middle|>");
+            } else if role == "tool" {
+                o = putb(dst, o, "<|im_system|>tool<|im_middle|>");
+            }
+            o = putb(dst, o, content);
+            o = putb(dst, o, "<|im_end|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|im_assistant|>assistant<|im_middle|>");
+        }
+        return o;
+    }
+    if fmt == FMT_CHATGLM_3 {
+        o = putb(dst, o, "[gMASK]sop");
+        while i < n {
+            o = plain(dst, o, "<|", get_role(roles, roffs[i], rlens[i]), "|>\n ",
+                      get_content(cs, coffs[i], clens[i]), "");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|assistant|>");
+        }
+        return o;
+    }
+    if fmt == FMT_GLMEDGE {
+        while i < n {
+            o = plain(dst, o, "<|", get_role(roles, roffs[i], rlens[i]), "|>\n",
+                      get_content(cs, coffs[i], clens[i]), "");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|assistant|>");
+        }
+        return o;
+    }
+    if fmt == FMT_MONARCH {
+        while i < n {
+            if i != 0 as i64 {
+                o = putb(dst, o, "<s>");
+            }
+            o = plain(dst, o, "", get_role(roles, roffs[i], rlens[i]), "\n",
+                      get_content(cs, coffs[i], clens[i]), "</s>\n");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<s>assistant\n");
+        }
+        return o;
+    }
+    if fmt == FMT_DEEPSEEK {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = putb(dst, o, content);
+            } else if role == "user" {
+                o = plain(dst, o, "### Instruction:\n", "", "", content, "\n");
+            } else if role == "assistant" {
+                o = plain(dst, o, "### Response:\n", "", "", content, "\n<|EOT|>\n");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "### Response:\n");
+        }
+        return o;
+    }
+    if fmt == FMT_DEEPSEEK_2 {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = putb(dst, o, content);
+                o = putb(dst, o, "\n\n");
+            } else if role == "user" {
+                o = plain(dst, o, "User: ", "", "", content, "\n\n");
+            } else if role == "assistant" {
+                o = plain(dst, o, "Assistant: ", "", "", content, "<｜end▁of▁sentence｜>");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "Assistant:");
+        }
+        return o;
+    }
+    if fmt == FMT_GIGACHAT {
+        // The first message owns the "<s>" opening; a leading system message is
+        // folded into it, otherwise "<s>" stands alone.
+        var first: i64 = 0 as i64;
+        if n > 0 as i64 && get_role(roles, roffs[0], rlens[0]) == "system" {
+            o = putb(dst, o, "<s>");
+            o = putb(dst, o, get_content(cs, coffs[0], clens[0]));
+            o = putb(dst, o, "<|message_sep|>");
+            first = 1 as i64;
+        } else {
+            o = putb(dst, o, "<s>");
+        }
+        i = first;
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "user" {
+                o = putb(dst, o, "user<|role_sep|>");
+                o = putb(dst, o, content);
+                o = putb(dst, o, "<|message_sep|>available functions<|role_sep|>[]<|message_sep|>");
+            } else if role == "assistant" {
+                o = putb(dst, o, "assistant<|role_sep|>");
+                o = putb(dst, o, content);
+                o = putb(dst, o, "<|message_sep|>");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "assistant<|role_sep|>");
+        }
+        return o;
+    }
+    if fmt == FMT_YANDEX {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "user" {
+                o = plain(dst, o, " Пользователь: ", "", "", content, "\n\n");
+            } else if role == "assistant" {
+                o = plain(dst, o, " Ассистент: ", "", "", content, "\n\n");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, " Ассистент:[SEP]");
+        }
+        return o;
+    }
+    if fmt == FMT_DEEPSEEK_OCR {
+        // No template at all: every message contributes its content verbatim.
+        while i < n {
+            o = putb(dst, o, get_content(cs, coffs[i], clens[i]));
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_CHATGLM_4 {
+        o = putb(dst, o, "[gMASK]<sop>");
+        while i < n {
+            o = plain(dst, o, "<|", get_role(roles, roffs[i], rlens[i]), "|>\n",
+                      get_content(cs, coffs[i], clens[i]), "");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|assistant|>\n");
+        }
+        return o;
+    }
+    if fmt == FMT_MINICPM {
+        // User turns are wrapped in <用户> ... <AI>; other roles are trimmed text.
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = trim_native(get_content(cs, coffs[i], clens[i]));
+            if role == "user" {
+                o = putb(dst, o, "<用户>");
+                o = putb(dst, o, content);
+                o = putb(dst, o, "<AI>");
+            } else {
+                o = putb(dst, o, content);
+            }
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_EXAONE_3 || fmt == FMT_EXAONE_4 || fmt == FMT_EXAONE_MOE {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = trim_native(get_content(cs, coffs[i], clens[i]));
+            if fmt == FMT_EXAONE_MOE {
+                if role == "system" {
+                    o = putb(dst, o, "<|system|>\n");
+                } else if role == "user" {
+                    o = putb(dst, o, "<|user|>\n");
+                } else if role == "assistant" {
+                    o = putb(dst, o, "<|assistant|>\n");
+                } else if role == "tool" {
+                    o = putb(dst, o, "<|tool|>\n");
+                }
+                o = putb(dst, o, content);
+                o = putb(dst, o, "<|endofturn|>\n");
+            } else if role == "system" {
+                o = plain(dst, o, "[|system|]", "", "", content, "[|endofturn|]\n");
+            } else if role == "user" {
+                o = plain(dst, o, "[|user|]", "", "", content, "\n");
+            } else if role == "assistant" {
+                o = plain(dst, o, "[|assistant|]", "", "", content, "[|endofturn|]\n");
+            } else if fmt == FMT_EXAONE_4 && role == "tool" {
+                o = plain(dst, o, "[|tool|]", "", "", content, "[|endofturn|]\n");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            if fmt == FMT_EXAONE_MOE {
+                o = putb(dst, o, "<|assistant|>\n");
+            } else {
+                o = putb(dst, o, "[|assistant|]");
+            }
+        }
+        return o;
+    }
+    if fmt == FMT_MEGREZ {
+        while i < n {
+            o = putb(dst, o, "<|role_start|>");
+            o = putb(dst, o, get_role(roles, roffs[i], rlens[i]));
+            o = putb(dst, o, "<|role_end|>");
+            o = putb(dst, o, get_content(cs, coffs[i], clens[i]));
+            o = putb(dst, o, "<|turn_end|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|role_start|>assistant<|role_end|>");
+        }
+        return o;
+    }
+    if fmt == FMT_DOTS1 {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = plain(dst, o, "<|system|>", "", "", content, "<|endofsystem|>");
+            } else if role == "user" {
+                o = plain(dst, o, "<|userprompt|>", "", "", content, "<|endofuserprompt|>");
+            } else {
+                o = plain(dst, o, "<|response|>", "", "", content, "<|endofresponse|>");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|response|>");
+        }
+        return o;
+    }
+    if fmt == FMT_SEED_OSS {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            var content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "assistant" {
+                content = trim_native(content);
+            }
+            o = putb(dst, o, "<seed:bos>");
+            o = putb(dst, o, role);
+            o = putb(dst, o, "\n");
+            o = putb(dst, o, content);
+            o = putb(dst, o, "<seed:eos>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<seed:bos>assistant\n");
+        }
+        return o;
+    }
+    if fmt == FMT_BAILING || fmt == FMT_BAILING_THINK {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            o = putb(dst, o, "<role>");
+            if role == "user" {
+                o = putb(dst, o, "HUMAN");
+            } else {
+                o = upper_ascii(dst, o, role);
+            }
+            o = putb(dst, o, "</role>");
+            o = putb(dst, o, get_content(cs, coffs[i], clens[i]));
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<role>ASSISTANT</role>");
+            if fmt == FMT_BAILING_THINK {
+                o = putb(dst, o, "<think>");
+            }
+        }
+        return o;
+    }
+    if fmt == FMT_HUNYUAN_MOE {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = plain(dst, o, "<|startoftext|>", "", "", content, "<|extra_4|>");
+            } else if role == "assistant" {
+                o = plain(dst, o, "", "", "", content, "<|eos|>");
+            } else {
+                o = plain(dst, o, "<|startoftext|>", "", "", content, "<|extra_0|>");
+            }
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_GROK_2 {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = plain(dst, o, "System: ", "", "", trim_native(content), "<|separator|>\n\n");
+            } else if role == "user" {
+                o = plain(dst, o, "Human: ", "", "", trim_native(content), "<|separator|>\n\n");
+            } else if role == "assistant" {
+                o = plain(dst, o, "Assistant: ", "", "", content, "<|separator|>\n\n");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "Assistant:");
+        }
+        return o;
+    }
+    if fmt == FMT_RWKV_WORLD {
+        // The last user turn is the one that opens the assistant reply.
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = trim_native(get_content(cs, coffs[i], clens[i]));
+            if role == "system" {
+                o = plain(dst, o, "System: ", "", "", content, "\n\n");
+            } else if role == "user" {
+                o = plain(dst, o, "User: ", "", "", content, "\n\n");
+                if i == n - 1 as i64 {
+                    o = putb(dst, o, "Assistant:");
+                }
+            } else if role == "assistant" {
+                o = plain(dst, o, "Assistant: ", "", "", content, "\n\n");
+            }
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_SMOLVLM {
+        o = putb(dst, o, "<|im_start|>");
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if role == "system" {
+                o = plain(dst, o, "", "", "", content, "\n\n");
+            } else if role == "user" {
+                o = plain(dst, o, "User: ", "", "", content, "<end_of_utterance>\n");
+            } else {
+                o = plain(dst, o, "Assistant: ", "", "", content, "<end_of_utterance>\n");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "Assistant:");
+        }
+        return o;
+    }
+    if fmt == FMT_BAILING2 {
+        // A missing system turn is replaced by a fixed one before the history.
+        let has_system: bool = n > 0 as i64 && get_role(roles, roffs[0], rlens[0]) == "system";
+        if !has_system {
+            o = putb(dst, o, "<role>SYSTEM</role>detailed thinking off<|role_end|>");
+        }
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            o = putb(dst, o, "<role>");
+            if role == "user" {
+                o = putb(dst, o, "HUMAN");
+            } else {
+                o = upper_ascii(dst, o, role);
+            }
+            o = putb(dst, o, "</role>");
+            o = putb(dst, o, get_content(cs, coffs[i], clens[i]));
+            o = putb(dst, o, "<|role_end|>");
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<role>ASSISTANT</role>");
+        }
+        return o;
+    }
+    if fmt == FMT_HUNYUAN_DENSE {
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if i == 0 as i64 && role == "system" {
+                o = putb(dst, o, content);
+                o = putb(dst, o, "<｜hy_place▁holder▁no▁3｜>");
+            }
+            if role == "assistant" {
+                o = plain(dst, o, "<｜hy_Assistant｜>", "", "", content, "<｜hy_place▁holder▁no▁2｜>");
+            } else if role == "user" {
+                o = plain(dst, o, "<｜hy_User｜>", "", "", content, "<｜hy_Assistant｜>");
+            }
+            i += 1 as i64;
+        }
+        return o;
+    }
+    if fmt == FMT_HUNYUAN_VL {
+        o = putb(dst, o, "<｜hy_begin▁of▁sentence｜>");
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            let content: const u8[:] = get_content(cs, coffs[i], clens[i]);
+            if i == 0 as i64 && role == "system" {
+                o = putb(dst, o, content);
+                o = putb(dst, o, "<｜hy_place▁holder▁no▁3｜>");
+                i += 1 as i64;
+            } else {
+                if role == "user" {
+                    o = plain(dst, o, "", "", "", content, "<｜hy_User｜>");
+                } else if role == "assistant" {
+                    o = plain(dst, o, "", "", "", content, "<｜hy_Assistant｜>");
+                }
+                i += 1 as i64;
+            }
+        }
+        return o;
+    }
+    if fmt == FMT_OPENAI_MOE {
+        // Harmony-style envelope: the assistant message closes with <|return|>,
+        // every other role with <|end|>.
+        while i < n {
+            let role: const u8[:] = get_role(roles, roffs[i], rlens[i]);
+            o = putb(dst, o, "<|start|>");
+            o = putb(dst, o, role);
+            o = putb(dst, o, "<|message|>");
+            o = putb(dst, o, get_content(cs, coffs[i], clens[i]));
+            if role == "assistant" {
+                o = putb(dst, o, "<|return|>");
+            } else {
+                o = putb(dst, o, "<|end|>");
+            }
+            i += 1 as i64;
+        }
+        if add_ass != 0 as i64 {
+            o = putb(dst, o, "<|start|>assistant");
+        }
+        return o;
+    }
+    // All 55 formats are now built. This branch is unreachable for a valid
+    // format id and stays as a guard for future enum additions.
+    return -(fmt + 1 as i64);
+}
+
+// Content-parts merge from common/chat.cpp:3755-3768. Every accepted part is
+// appended after a newline whenever the content is already non-empty, so the
+// separator is produced by the content itself, not by the part type. The host
+// passes only text and media_marker parts, as the native loop does.
+export fn legacy_merge(content: const u8[:], texts: const u8[:], toffs: i64[:],
+                       tlens: i64[:], nparts: i64, dst: u8[:]) -> i64 {
+    var o: i64 = putb(dst, 0 as i64, content);
+    var k: i64 = 0 as i64;
+    while k < nparts {
+        if o > 0 as i64 {
+            o = putc(dst, o, 10 as u8);
+        }
+        o = putb(dst, o, texts[toffs[k]..toffs[k] + tlens[k]]);
+        k += 1 as i64;
+    }
+    return o;
+}
+
+// Detection alone, exported so a host can gate all 54 names without building
+// a prompt. Returns the format id or FMT_UNKNOWN.
+export fn legacy_detect(tmpl: const u8[:]) -> i64 {
+    return detect(tmpl);
+}
+
+export fn legacy_apply(tmpl: const u8[:], roles: const u8[:], roffs: i64[:], rlens: i64[:],
+                       cs: const u8[:], coffs: i64[:], clens: i64[:], n: i64, add_ass: i64,
+                       dst: u8[:], meta: i64[:]) -> i64 {
+    let fmt: i64 = detect(tmpl);
+    meta[0] = fmt;
+    if fmt == FMT_UNKNOWN {
+        return -1 as i64;
+    }
+    if n < 0 as i64 || roffs.len < n || rlens.len < n || coffs.len < n || clens.len < n {
+        return -2 as i64;
+    }
+    let len: i64 = apply_one(fmt, n, roles, roffs, rlens, cs, coffs, clens, add_ass, dst);
+    if len < 0 as i64 {
+        // Unsupported builder: the caller sees the format id in meta[0] and the
+        // negative gap code here.
+        return len;
+    }
+    if len > dst.len {
+        // The native wrapper retries with a bigger buffer; the full length is
+        // returned so the caller can do the same.
+        return len;
+    }
+    return len;
+}
