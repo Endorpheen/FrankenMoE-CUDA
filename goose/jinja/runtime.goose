@@ -8455,6 +8455,9 @@ fn peg_app_i64(out: u8[:], at: i64, v: i64) -> i64 {
 
 recursive fn peg_dump_node(
     id: i64,
+    vis: i64[:],
+    vis2: i64[:],
+    vbase: i64,
     kind: const i64[:],
     cfirst: const i64[:],
     ccount: const i64[:],
@@ -8467,6 +8470,18 @@ recursive fn peg_dump_node(
     pool: const u8[:],
     out: u8[:],
     st: i64[:]) -> i64 {
+    var vi: i64 = vbase;
+
+    while vi < st[71] {
+        if vis[vi] == id {
+            let cyc = peg_app(out, st[70], "[cycle]");
+            st[70] = cyc;
+            return cyc;
+        }
+        vi = vi + 1;
+    }
+    vis[st[71]] = id;
+    st[71] = st[71] + 1;
     let k = kind[id];
     var p = st[70];
 
@@ -8489,7 +8504,7 @@ recursive fn peg_dump_node(
     } else if k == PEG_NOT {
         p = peg_app(out, p, "Not(");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ")");
     } else if k == PEG_RULE {
         let rsid = sidx[id];
@@ -8497,7 +8512,7 @@ recursive fn peg_dump_node(
         p = peg_app(out, p, pool[dstart[rsid] .. dstart[rsid] + dcount[rsid]]);
         p = peg_app(out, p, ", ");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ")");
     } else if k == PEG_LIT {
         let sid = sidx[id];
@@ -8510,17 +8525,19 @@ recursive fn peg_dump_node(
         p = peg_app(out, p, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
         p = peg_app(out, p, ", ");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        let vbase2 = st[71];
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase2, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        st[71] = vbase2;
         p = peg_app(out, p, ")");
     } else if k == PEG_ATOMIC {
         p = peg_app(out, p, "Atomic(");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ")");
     } else if k == PEG_REP {
         p = peg_app(out, p, "Repetition(");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ", ");
         p = peg_app_i64(out, p, mn[id]);
         p = peg_app(out, p, ", ");
@@ -8544,7 +8561,7 @@ recursive fn peg_dump_node(
                 p = peg_app(out, p, ", ");
             }
             st[70] = p;
-            p = peg_dump_node(children[cfirst[id] + i], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+            p = peg_dump_node(children[cfirst[id] + i], vis, vis2, vbase, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
             i = i + 1;
         }
         p = peg_app(out, p, ")");
@@ -8555,6 +8572,8 @@ recursive fn peg_dump_node(
 
 export fn peg_dump_basic(
     root: i64,
+    vis: i64[:],
+    vis2: i64[:],
     kind: const i64[:],
     cfirst: const i64[:],
     ccount: const i64[:],
@@ -8568,7 +8587,9 @@ export fn peg_dump_basic(
     out: u8[:],
     st: i64[:]) -> i64 {
     st[70] = 0;
-    let n = peg_dump_node(root, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+    st[71] = 0;
+    st[73] = 0;
+    let n = peg_dump_node(root, vis, vis2, 0, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
     return n;
 }
 
@@ -8785,6 +8806,126 @@ export fn peg_tag_safe(
     return peg_repeat(kind, cfirst, ccount, children, sidx, mn, mx, st, ch, 0, 0 - 1);
 }
 
+// chat-peg-parser.cpp permute: every parser matches exactly once, in any order.
+// Subsets are numbered by a bit mask and cached by mask, so a repeated subset
+// reuses the same node and the dump prints it as [cycle], like native.
+fn peg_choice1(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    a: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_CHOICE, 0 - 1);
+    children[st[61]] = a;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+fn peg_seq1(
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    st: i64[:],
+    a: i64) -> i64 {
+    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_SEQ, 0 - 1);
+    children[st[61]] = a;
+    ccount[id] = 1;
+    st[61] = st[61] + 1;
+    return id;
+}
+
+export fn peg_permute(
+    prefix: const u8[:],
+    parsers: const i64[:],
+    n: i64,
+    rule_id: i64[:],
+    namebuf: u8[:],
+    kind: i64[:],
+    cfirst: i64[:],
+    ccount: i64[:],
+    children: i64[:],
+    sidx: i64[:],
+    dstart: i64[:],
+    dcount: i64[:],
+    pool: u8[:],
+    st: i64[:]) -> i64 {
+    let eps0 = peg_eps_node(kind, cfirst, ccount, sidx, st);
+
+    if n == 0 {
+        return eps0;
+    }
+
+    if n == 1 {
+        return peg_seq1(kind, cfirst, ccount, children, sidx, st, parsers[0]);
+    }
+
+    if n > 6 {
+        var seq_acc = parsers[0];
+        var q: i64 = 1;
+
+        while q < n {
+            seq_acc = peg_seq2(kind, cfirst, ccount, children, sidx, st, seq_acc, parsers[q]);
+            q = q + 1;
+        }
+        return seq_acc;
+    }
+    rule_id[0] = eps0;
+    let full = (1 << n) - 1;
+    var mask: i64 = 1;
+
+    while mask <= full {
+        var acc: i64 = 0;
+        var alt_count: i64 = 0;
+        var i: i64 = 0;
+
+        while i < n {
+            let bit = 1 << i;
+
+            if (mask & bit) != 0 {
+                var rest: i64 = 0;
+
+                if mask - bit == 0 {
+                    rest = peg_eps_node(kind, cfirst, ccount, sidx, st);
+                } else {
+                    rest = rule_id[mask - bit];
+                }
+                let pair = peg_seq2(kind, cfirst, ccount, children, sidx, st, parsers[i], rest);
+
+                if alt_count == 0 {
+                    acc = pair;
+                } else {
+                    acc = peg_choice2(kind, cfirst, ccount, children, sidx, st, acc, pair);
+                }
+                alt_count = alt_count + 1;
+            }
+            i = i + 1;
+        }
+
+        if alt_count == 1 {
+            acc = peg_choice1(kind, cfirst, ccount, children, sidx, st, acc);
+        }
+        var nl: i64 = 0;
+        var k: i64 = 0;
+
+        while k < prefix.len {
+            namebuf[k] = prefix[k];
+            k = k + 1;
+        }
+        nl = k;
+        namebuf[nl] = 45;
+        nl = nl + 1;
+        nl = peg_app_i64(namebuf, nl, mask);
+        rule_id[mask] = peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, namebuf[0 .. nl], acc);
+        mask = mask + 1;
+    }
+    return rule_id[full];
+}
+
 // common/chat-peg-parser.cpp (from_ast/map). The gemma4 and minimax_m3
 // subclasses, streaming, the chat session and the tool builders are outside
 // this slice: the input is a finished arena plus the tag ids, the output is
@@ -8828,7 +8969,6 @@ export fn peg_tag_safe(
 // tool-arg-name, tool-arg-value and tool-arg-string-value in that order; a
 // negative id never matches.
 
-import std;
 
 // tid indices
 const M_REASONING: i64 = 0;
