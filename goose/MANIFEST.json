@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T16:58:01.629901+00:00",
+  "updated_at": "2026-11-14T17:06:16.066573+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -34,11 +34,11 @@
       "native_targets": [
         "common/jinja/value.cpp (value model)"
       ],
-      "experiment": "EXP-2026-11-13-504-p7-08-jinja-values",
+      "experiment": "EXP-2026-11-14-565-p7-08-json-escapers",
       "task": "",
       "status": "ported",
-      "sha256": "f9072fe15b5dcb17c5a2427debd984894961e22a41254c7b109ef2f6de69f452",
-      "gate": "271 cases / 271 values / 0 failures, 20/20 mutations"
+      "sha256": "4330072d0127ea91a7456540e6027b5c31eb524aa787bbf56cf6892c0376d057",
+      "gate": "285 cases / 285 values / 0 failures, 14/14 mutations"
     },
     {
       "goose": "jinja/value-json.goose",
@@ -46,11 +46,11 @@
       "native_targets": [
         "common/jinja/value.cpp (JSON output)"
       ],
-      "experiment": "EXP-2026-11-13-505-p7-08-value-json",
+      "experiment": "EXP-2026-11-14-565-p7-08-json-escapers",
       "task": "",
       "status": "ported",
-      "sha256": "e793a852747be9256fe62acf1a58aad251fea58e435e9872c378052c028bfa9d",
-      "gate": "192 cases / 384 values / 0 failures, 20/20 mutations"
+      "sha256": "861acfc9f71ff86a1cd077d2da60b50780056e411f3bc7e91fa31160ac16db87",
+      "gate": "285 cases / 285 values / 0 failures, 14/14 mutations"
     },
     {
       "goose": "jinja/builtins.goose",
@@ -10738,32 +10738,15 @@
       "sha256": "29442dab8129465adfee5dd3c0c5977ea461420b3e93f13c0cdc2b38bcdf76a9"
     },
     {
-      "goose": "json/json-escapers/value-json.goose",
-      "native": "common/json*.cpp",
+      "goose": "jinja/delimiters.goose",
+      "native": "common/jinja/runtime.c",
       "native_targets": [
-        "common/json*.cpp",
-        "common/peg-parser.cpp",
-        "common/json-schema-to-grammar.cpp",
-        "common/trie.cpp"
+        "common/jinja/runtime.c"
       ],
-      "experiment": "EXP-2026-11-14-565-p7-08-json-escapers",
-      "task": "P7-09",
+      "experiment": "EXP-2026-11-14-566-p7-08-delimiters",
+      "task": "",
       "status": "slice",
-      "sha256": "861acfc9f71ff86a1cd077d2da60b50780056e411f3bc7e91fa31160ac16db87"
-    },
-    {
-      "goose": "json/json-escapers/value.goose",
-      "native": "common/json*.cpp",
-      "native_targets": [
-        "common/json*.cpp",
-        "common/peg-parser.cpp",
-        "common/json-schema-to-grammar.cpp",
-        "common/trie.cpp"
-      ],
-      "experiment": "EXP-2026-11-14-565-p7-08-json-escapers",
-      "task": "P7-09",
-      "status": "slice",
-      "sha256": "4330072d0127ea91a7456540e6027b5c31eb524aa787bbf56cf6892c0376d057"
+      "sha256": "77a9cdddea40be96757ddadd057957409bb8e2fe9545a5689bada130423789b0"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
@@ -41446,6 +41429,16 @@
       "sha256": "2dc1bbf8fb195740bfd9de870e95249b5e8d12ae1e32dc53a425274d242f5c1c"
     },
     {
+      "goose": "_archive/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-504-p7-08-jinja-values/source/values.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-504-p7-08-jinja-values/source/values.goose",
+      "status": "external",
+      "sha256": "f9072fe15b5dcb17c5a2427debd984894961e22a41254c7b109ef2f6de69f452"
+    },
+    {
       "goose": "_archive/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-508-p7-08-jinja-runtime-stmt/source/runtime.goose",
       "native": "",
       "native_targets": [],
@@ -41454,6 +41447,16 @@
       "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-508-p7-08-jinja-runtime-stmt/source/runtime.goose",
       "status": "external",
       "sha256": "25ee0a1f7af141d470499274aeba6c222ae7dec8795e6e5728fc024e85fd3108"
+    },
+    {
+      "goose": "_archive/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-505-p7-08-value-json/source/valuesjson.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "source": "/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-505-p7-08-value-json/source/valuesjson.goose",
+      "status": "external",
+      "sha256": "e793a852747be9256fe62acf1a58aad251fea58e435e9872c378052c028bfa9d"
     },
     {
       "goose": "_archive/franken-goose-exp150-restored-20261108/experiments/EXP-2026-11-13-507-p7-08-jinja-runtime-expr/source/runtime.goose",

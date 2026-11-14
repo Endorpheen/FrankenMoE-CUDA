@@ -1,0 +1,7 @@
+# Canonical files must keep these snippets. A sync that restores an older slice
+# drops them, and check-goose-tree.py then fails instead of accepting the
+# regression silently.
+# path<TAB>snippet
+jinja/value.goose	\\u00
+jinja/value.goose	\\b
+jinja/value-json.goose	\\u00

@@ -772,46 +772,12 @@ recursive fn vcompare(
 }
 // ---- escaped output --------------------------------------------------------
 
+// The same writer as json_string above: the repr/dump output must not invent
+// \xNN, which no JSON reader accepts. json_string already follows nlohmann:
+// \b \f \n \r \t short forms, \u00XX for the other control bytes, raw
+// UTF-8 above 0x7e.
 fn esc(out: u8[:], at: i64, s: const u8[:]) -> i64 {
-    var p = appc(out, at, '"');
-    var i: i64 = 0;
-
-    while i < s.len {
-        let c = s[i];
-
-        if c == '"' {
-            p = appc(out, p, 92);
-            p = appc(out, p, '"');
-        } else
-
-        if c == 92 {
-            p = appc(out, p, 92);
-            p = appc(out, p, 92);
-        } else
-
-        if c == 10 {
-            p = apps(out, p, "\\n");
-        } else
-
-        if c == 13 {
-            p = apps(out, p, "\\r");
-        } else
-
-        if c == 9 {
-            p = apps(out, p, "\\t");
-        } else
-
-        if c < 32 || c >= 127 {
-            let d: const u8[:] = "0123456789abcdef";
-            p = apps(out, p, "\\x");
-            p = appc(out, p, d[ ( (c as i64) / 16) % 16]);
-            p = appc(out, p, d[ (c as i64) % 16]);
-        } else {
-            p = appc(out, p, c);
-        }
-        i = i + 1;
-    }
-    return appc(out, p, '"');
+    return json_string(out, at, s);
 }
 // ---- entry -----------------------------------------------------------------
 
