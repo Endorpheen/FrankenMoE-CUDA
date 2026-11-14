@@ -2379,6 +2379,7 @@ recursive fn eval_slice(
         i = i + step;
     }
     let res = mk_str(A, F, B, st, out[base .. base + n]);
+    inherit_input(A, st, obj, res);
     st[7] = base;
     return res;
 }
@@ -2998,6 +2999,16 @@ fn attr_of(item: i64, attr: i64, defid: i64, A: i64[:], B: const u8[:], F: f64[:
     return defid;
 }
 
+
+// string.h: a one-to-one transform keeps is_input, a one-to-many marks every
+// result, a many-to-one marks the result only when all inputs are input.
+fn inherit_input(A: i64[:], st: i64[:], src: i64, dst: i64) -> i64 {
+    if (A[st[27] + src] & 16) != 0 {
+        A[st[27] + dst] = A[st[27] + dst] | 16;
+    }
+    return 0;
+}
+
 recursive fn eval_filter(
     id: i64,
     ctxc: i64,
@@ -3161,6 +3172,7 @@ recursive fn eval_filter(
             i = i + 1;
         }
         let res = mk_str(A, F, B, st, out[base .. base + src.len]);
+        inherit_input(A, st, sval, res);
         st[7] = base;
         return res;
     }
@@ -3236,6 +3248,7 @@ recursive fn eval_filter(
             i = i + 1;
         }
         let res = mk_str(A, F, B, st, out[base .. base + (b - a)]);
+        inherit_input(A, st, sval, res);
         st[7] = base;
         return res;
     }
@@ -3269,6 +3282,7 @@ recursive fn eval_filter(
             i = i + 1;
         }
         let res = mk_str(A, F, B, st, out[base .. base + src.len]);
+        inherit_input(A, st, sval, res);
         st[7] = base;
         return res;
     }
@@ -3354,6 +3368,7 @@ recursive fn eval_filter(
             j = j + 1;
         }
         let res = mk_str(A, F, B, st, out[base .. base + (b - a)]);
+        inherit_input(A, st, sval, res);
         st[7] = base;
         return res;
     }
@@ -3530,6 +3545,7 @@ recursive fn eval_filter(
             }
         }
         let res = mk_str(A, F, B, st, out[base .. base + n]);
+        inherit_input(A, st, sval, res);
         st[7] = base;
         return res;
     }
@@ -3564,6 +3580,7 @@ recursive fn eval_filter(
         if n < 0 || st[1] != 0 {
             return -1;
         }
+        // tojson builds a fresh string; the native implementation does not mark it
         let res = mk_str(A, F, B, st, out[base..n]);
         st[7] = base;
         return res;
@@ -3614,6 +3631,7 @@ recursive fn eval_filter(
             return -1;
         }
         let res = mk_str(A, F, B, st, out[base..base + n]);
+        inherit_input(A, st, sval, res);
         st[7] = base;
         return res;
     }
@@ -3849,12 +3867,15 @@ recursive fn eval_filter(
                 if pos < 0 {
                     go = 0;
                 } else {
+                    // native split marks only the remaining tail, not the cut tokens
                     arr_push(A, st, arr, mk_str(A, F, B, st, src[cur..pos]));
                     cur = pos + delim.len;
                     maxsplit = maxsplit - 1;
                 }
             }
-            arr_push(A, st, arr, mk_str(A, F, B, st, src[cur..]));
+            let last1 = mk_str(A, F, B, st, src[cur..]);
+            inherit_input(A, st, sval, last1);
+            arr_push(A, st, arr, last1);
         } else {
             var cur: i64 = src.len;
             var go: i64 = 1;
@@ -3909,6 +3930,7 @@ recursive fn eval_filter(
         var p: i64 = 0;
         var i: i64 = 0;
         var ai: i64 = 0;
+        var first_flag: i64 = 0 - 1;
 
         while i < src.len {
             let c = src[i];
@@ -3923,6 +3945,13 @@ recursive fn eval_filter(
                     if n < 0 || st[1] != 0 {
                         return -1;
                     }
+                    if first_flag < 0 {
+                        if (A[st[27] + argv[ai]] & 16) != 0 {
+                            first_flag = 1;
+                        } else {
+                            first_flag = 0;
+                        }
+                    }
                     p = p + n;
                     ai = ai + 1;
                     i = i + 2;
@@ -3930,12 +3959,23 @@ recursive fn eval_filter(
                     return fail_raw("format() only supports simple '{}' placeholders", E, st);
                 }
             } else {
+                if first_flag < 0 {
+                    if (A[st[27] + sval] & 16) != 0 {
+                        first_flag = 1;
+                    } else {
+                        first_flag = 0;
+                    }
+                }
                 out[base + p] = c;
                 p = p + 1;
                 i = i + 1;
             }
         }
         let res = mk_str(A, F, B, st, out[base .. base + p]);
+
+        if first_flag > 0 {
+            A[st[27] + res] = A[st[27] + res] | 16;
+        }
         st[7] = base;
         return res;
     }
@@ -4063,6 +4103,7 @@ recursive fn eval_filter(
             }
         }
         let res = mk_str(A, F, B, st, out[cstart .. p]);
+        inherit_input(A, st, sval, res);
         st[7] = base;
         return res;
     }
