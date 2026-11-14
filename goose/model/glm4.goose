@@ -91,8 +91,8 @@ export fn g4_n_layer_all(p: i64[:]) -> i64 {
     return t_n_layer_all(p[P_N_LAYER], p[P_N_NEXTN]);
 }
 
-// g4_plan: one kind per block; trunk below n_layer, NextN above.
-export fn g4_plan(p: i64[:], kinds: i64[:]) -> i64 {
+// gl4_plan: one kind per block; trunk below n_layer, NextN above.
+export fn gl4_plan(p: i64[:], kinds: i64[:]) -> i64 {
     e_ensure(p.len >= P_LEN, 13);
     return t_plan(p[P_N_LAYER], g4_n_layer_all(p), kinds);
 }
@@ -174,7 +174,7 @@ export fn g4_head_split_ok(p: i64[:]) -> i64 {
 // owns the tensor for this block kind, 0 otherwise. Per-layer rows are the
 // same on trunk and NextN blocks: glm4 declares them with TENSOR_SKIP, not
 // with fewer names.
-export fn g4_shape(p: i64[:], kind: i64, tid: i64, out: i64[:]) -> i64 {
+export fn gl4_shape(p: i64[:], kind: i64, tid: i64, out: i64[:]) -> i64 {
     e_ensure(p.len >= P_LEN, 40);
     e_ensure(out.len >= 3, 41);
 

@@ -60,7 +60,7 @@ static void check_shape(const char * name, const std::vector<int64_t> & p, int64
     ++g_cases;
     std::vector<int64_t> pp = p;
     std::vector<int64_t> out(3, -1);
-    const int64_t ok = g4_shape(sli(pp), kind, tid, sli(out));
+    const int64_t ok = gl4_shape(sli(pp), kind, tid, sli(out));
     g_values += 3;
     if (ok != 1 || out[0] != a || out[1] != b || out[2] != c) {
         bad(name, "got {" + std::to_string((long long) out[0]) + "," + std::to_string((long long) out[1]) +
@@ -74,7 +74,7 @@ static void check_absent(const char * name, const std::vector<int64_t> & p, int6
     ++g_cases;
     std::vector<int64_t> pp = p;
     std::vector<int64_t> out(3, -1);
-    const int64_t ok = g4_shape(sli(pp), kind, tid, sli(out));
+    const int64_t ok = gl4_shape(sli(pp), kind, tid, sli(out));
     ++g_values;
     if (ok != 0) {
         bad(name, "tensor present (ok=" + std::to_string((long long) ok) + "), expected absent");
@@ -88,7 +88,7 @@ int main() {
     // 1. plan: 40 trunk blocks plus one NextN block (glm4.cpp:8-9, :32-64)
     {
         std::vector<int64_t> pp = p, kinds(41, -1);
-        const int64_t n = g4_plan(sli(pp), sli(kinds));
+        const int64_t n = gl4_plan(sli(pp), sli(kinds));
         check_val("plan-len", n, 41);
         check_val("plan-layer0-trunk", kinds[0], 0);
         check_val("plan-layer39-trunk", kinds[39], 0);
