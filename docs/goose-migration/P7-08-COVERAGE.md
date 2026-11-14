@@ -23,6 +23,26 @@ code; "pending" means still native.
 | `common/chat.cpp`, `chat.h`, `chat-*.cpp` | — | pending — chat parsing, tool calls, reasoning extraction |
 | `common/parsers/**` | ~3 360 | pending — per-model output parsers |
 
+## Chat apply and time
+
+`common_chat_templates_apply` (`src/llama-chat.cpp`) is still native. It owns
+template selection (explicit source, built-in variants, arch defaults), the
+per-format rendering handlers, the caps-driven branches, the tool/reasoning
+prefixes and the returned `common_chat_params` (format, prompt, grammar,
+parser text, preserved tokens, generation prompt).
+
+Time is not passed through `common_chat_templates_inputs`: the Jinja context
+sets `current_time = std::time(nullptr)` (`common/jinja/runtime.h:73,79`) and
+`strftime_now` reads it. EXP551 already ports `strftime_now` through a libc shim
+with an injectable clock, so the Goose side can render deterministic time once
+the apply entry point is ported; the native renderer used by the P9-06 gate does
+not inject time at all.
+
+The slice is a full renderer port, not a small fix: it should land behind a
+differential gate over real templates (the EXP545-550 corpus) and must own the
+`common_chat_params` assembly, with the parser text still produced by the
+accepted PEG/schema slices.
+
 ## Hoisted rule names
 
 `gb_hoist` (`goose/jinja/runtime.goose`) names hoisted `until-*`/`ac-*` rules
