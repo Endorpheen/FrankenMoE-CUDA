@@ -6553,3 +6553,50 @@ export fn chat_message_full_json(
     }
     return appc(out, q, 125);
 }
+
+// common_chat_tools_to_json_oaicompat: null for no tools, otherwise one object
+// per tool with {type, function:{name, description, parameters}}. The parameters
+// text is spliced verbatim (native parses it; a valid JSON text round-trips).
+export fn chat_tools_json(
+    blob: const u8[:],
+    name_off: i64[:],
+    name_len: i64[:],
+    desc_off: i64[:],
+    desc_len: i64[:],
+    parm_off: i64[:],
+    parm_len: i64[:],
+    n: i64,
+    out: u8[:]) -> i64 {
+    if n == 0 {
+        return apps(out, 0, "null");
+    }
+    var q: i64 = appc(out, 0, 91);
+    var i: i64 = 0;
+
+    while i < n {
+        if i > 0 {
+            q = appc(out, q, 44);
+        }
+        q = apps(out, q, "{\"type\": \"function\", \"function\": {\"name\": ");
+        q = esc(out, q, blob[name_off[i] .. name_off[i] + name_len[i]]);
+        q = apps(out, q, ", \"description\": ");
+        q = esc(out, q, blob[desc_off[i] .. desc_off[i] + desc_len[i]]);
+        q = apps(out, q, ", \"parameters\": ");
+        q = app(out, q, blob, parm_off[i], parm_len[i]);
+        q = appc(out, q, 125);
+        q = appc(out, q, 125);
+        i = i + 1;
+    }
+    return appc(out, q, 93);
+}
+
+// common_chat_tool_parameters: a missing, null or empty-object parameters value
+// falls back to {type: object, properties: {}}.
+export fn chat_tool_parameters_json(blob: const u8[:], off: i64, len: i64, out: u8[:]) -> i64 {
+    let raw = blob[off .. off + len];
+
+    if len == 0 || bytes_is(raw, "null") || bytes_is(raw, "{}") {
+        return apps(out, 0, "{\"type\": \"object\", \"properties\": {}}");
+    }
+    return app(out, 0, raw, 0, raw.len);
+}
