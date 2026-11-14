@@ -258,3 +258,7 @@ experiments/*/native_detok
 # Generated Goose C under src/ as well as source/ (EXP470 layout).
 experiments/*/src/*-gen.c
 experiments/*/src/*-gen.h
+
+# Per-experiment run directories: generated C, objects and gate binaries.
+experiments/**/run/
+experiments/**/run/*
