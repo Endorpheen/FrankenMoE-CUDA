@@ -6020,6 +6020,45 @@ recursive fn exec_set(
         }
         return 0;
     }
+    if akind == K_MEMBER {
+        let objv = eval_node(ac0(A, st, assignee), st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
+
+        if st[1] != 0 {
+            return -1;
+        }
+        var key: i64 = -1;
+
+        if aiv(A, st, assignee) != 0 {
+            key = eval_node(ac1(A, st, assignee), st[11], cnoff, cnlen, cval, A, F, B, E, out, st);
+        } else {
+            key = mk_str(A, F, B, st, astr(B, A, st, ac1(A, st, assignee)));
+        }
+
+        if st[1] != 0 {
+            return -1;
+        }
+
+        if vk(A, st, objv) != V_OBJECT {
+            return fail_node(K_SET_NODE, pos, "Cannot assign to an attribute of a non-object", E, st);
+        }
+        let n = vkc(A, st, objv);
+        var i: i64 = 0;
+
+        while i < n {
+            let k = A[st[26] + vks(A, st, objv) + i];
+
+            if eqv(A, B, F, st, k, key) {
+                A[st[26] + vvs(A, st, objv) + i] = rhs;
+                return 0;
+            }
+            i = i + 1;
+        }
+        // A key that does not exist yet is appended; the value array of a
+        // namespace created last stays contiguous, a later object would not.
+        obj_key(A, st, objv, key);
+        obj_val(A, st, objv, rhs);
+        return 0;
+    }
     return fail_node(K_SET_NODE, pos, "Invalid LHS inside assignment expression", E, st);
 }
 
