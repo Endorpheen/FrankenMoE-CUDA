@@ -6416,7 +6416,7 @@ export fn chat_content_json(
         let ty = blob[type_off[i] .. type_off[i] + type_len[i]];
 
         if bytes_is(ty, "media_marker") {
-            has_media = 0;
+            has_media = 1;
             i = n;
         } else {
             i = i + 1;
@@ -6484,4 +6484,72 @@ export fn chat_content_json(
         i = i + 1;
     }
     return appc(out, q, 93);
+}
+
+// common_chat_msg::to_json_oaicompat for a string content message, including the
+// optional reasoning/name/tool_call_id fields and the tool_calls array.
+export fn chat_message_full_json(
+    blob: const u8[:],
+    role_off: i64,
+    role_len: i64,
+    cont_off: i64,
+    cont_len: i64,
+    reas_off: i64,
+    reas_len: i64,
+    name_off: i64,
+    name_len: i64,
+    call_off: i64,
+    call_len: i64,
+    tc_name_off: i64[:],
+    tc_name_len: i64[:],
+    tc_args_off: i64[:],
+    tc_args_len: i64[:],
+    tc_id_off: i64[:],
+    tc_id_len: i64[:],
+    ntc: i64,
+    out: u8[:]) -> i64 {
+    var q: i64 = apps(out, 0, "{\"role\": ");
+    q = esc(out, q, blob[role_off .. role_off + role_len]);
+    q = apps(out, q, ", \"content\": ");
+    q = esc(out, q, blob[cont_off .. cont_off + cont_len]);
+
+    if reas_len > 0 {
+        q = apps(out, q, ", \"reasoning_content\": ");
+        q = esc(out, q, blob[reas_off .. reas_off + reas_len]);
+    }
+
+    if name_len > 0 {
+        q = apps(out, q, ", \"name\": ");
+        q = esc(out, q, blob[name_off .. name_off + name_len]);
+    }
+
+    if call_len > 0 {
+        q = apps(out, q, ", \"tool_call_id\": ");
+        q = esc(out, q, blob[call_off .. call_off + call_len]);
+    }
+
+    if ntc > 0 {
+        q = apps(out, q, ", \"tool_calls\": [");
+        var i: i64 = 0;
+
+        while i < ntc {
+            if i > 0 {
+                q = appc(out, q, 44);
+            }
+            q = apps(out, q, "{\"type\": \"function\", \"function\": {\"name\": ");
+            q = esc(out, q, blob[tc_name_off[i] .. tc_name_off[i] + tc_name_len[i]]);
+            q = apps(out, q, ", \"arguments\": ");
+            q = esc(out, q, blob[tc_args_off[i] .. tc_args_off[i] + tc_args_len[i]]);
+            q = appc(out, q, 125);
+
+            if tc_id_len[i] > 0 {
+                q = apps(out, q, ", \"id\": ");
+                q = esc(out, q, blob[tc_id_off[i] .. tc_id_off[i] + tc_id_len[i]]);
+            }
+            q = appc(out, q, 125);
+            i = i + 1;
+        }
+        q = appc(out, q, 93);
+    }
+    return appc(out, q, 125);
 }
