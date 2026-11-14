@@ -54,62 +54,62 @@ static uint8_t g_scratch[4096] __attribute__((aligned(16)));
 
 extern "C" {
 
-float qz_ld_f32(uint64_t a) {
+float qz2_ld_f32(uint64_t a) {
     float v;
     memcpy(&v, (const void *) (uintptr_t) a, sizeof(v));
     return v;
 }
 
-void qz_st_f32(uint64_t a, float v) {
+void qz2_st_f32(uint64_t a, float v) {
     memcpy((void *) (uintptr_t) a, &v, sizeof(v));
 }
 
-float qz_ld_f16(uint64_t a) {
+float qz2_ld_f16(uint64_t a) {
     ggml_fp16_t h;
     memcpy(&h, (const void *) (uintptr_t) a, sizeof(h));
     return ggml_fp16_to_fp32(h);
 }
 
-void qz_st_f16(uint64_t a, float v) {
+void qz2_st_f16(uint64_t a, float v) {
     ggml_fp16_t h = ggml_fp32_to_fp16(v);
     memcpy((void *) (uintptr_t) a, &h, sizeof(h));
 }
 
-void qz_st_u8(uint64_t a, int64_t v) {
+void qz2_st_u8(uint64_t a, int64_t v) {
     uint8_t b = (uint8_t) v;
     memcpy((void *) (uintptr_t) a, &b, sizeof(b));
 }
 
-int64_t qz_ld_u8(uint64_t a) {
+int64_t qz2_ld_u8(uint64_t a) {
     uint8_t b;
     memcpy(&b, (const void *) (uintptr_t) a, sizeof(b));
     return b;
 }
 
-void qz_st_u16(uint64_t a, int64_t v) {
+void qz2_st_u16(uint64_t a, int64_t v) {
     uint8_t b[2] = { (uint8_t) v, (uint8_t) (v >> 8) };
     memcpy((void *) (uintptr_t) a, b, sizeof(b));
 }
 
-void qz_st_u32(uint64_t a, int64_t v) {
+void qz2_st_u32(uint64_t a, int64_t v) {
     uint8_t b[4] = { (uint8_t) v, (uint8_t) (v >> 8), (uint8_t) (v >> 16), (uint8_t) (v >> 24) };
     memcpy((void *) (uintptr_t) a, b, sizeof(b));
 }
 
-float qz_abs(float v) { return fabsf(v); }
-float qz_sqrtf(float v) { return sqrtf(v); }
-float qz_log2f(float v) { return log2f(v); }
-float qz_floorf(float v) { return floorf(v); }
-int64_t qz_lroundf(float v) { return (int64_t) lroundf(v); }
-float qz_ldexpf(float v, int64_t e) { return ldexpf(v, (int) e); }
+float qz2_abs(float v) { return fabsf(v); }
+float qz2_sqrtf(float v) { return sqrtf(v); }
+float qz2_log2f(float v) { return log2f(v); }
+float qz2_floorf(float v) { return floorf(v); }
+int64_t qz2_lroundf(float v) { return (int64_t) lroundf(v); }
+float qz2_ldexpf(float v, int64_t e) { return ldexpf(v, (int) e); }
 
-int64_t qz_bits(float v) {
+int64_t qz2_bits(float v) {
     uint32_t b;
     memcpy(&b, &v, sizeof(b));
     return (int64_t) b;
 }
 
-float qz_of_bits(int64_t b) {
+float qz2_of_bits(int64_t b) {
     uint32_t u = (uint32_t) b;
     float v;
     memcpy(&v, &u, sizeof(v));
@@ -118,28 +118,28 @@ float qz_of_bits(int64_t b) {
 
 // The native nearest_int, without its debug-only range assert: the reference
 // library is built with NDEBUG, so the port must see the same conversion.
-int64_t qz_nearest(float fval) {
+int64_t qz2_nearest(float fval) {
     float val = fval + 12582912.0f;
     int32_t i;
     memcpy(&i, &val, sizeof(i));
     return (int64_t) ((i & 0x007fffff) - 0x00400000);
 }
 
-uint64_t qz_tmp(int64_t off) {
+uint64_t qz2_tmp(int64_t off) {
     return (uint64_t) (uintptr_t) (g_scratch + off);
 }
 
-void qz_fail(int64_t code) {
+void qz2_fail(int64_t code) {
     fprintf(stderr, "port failure %lld\n", (long long) code);
     abort();
 }
 
-int64_t qz_iq2_grid(int64_t g, int64_t i) { return (int64_t) tbl_iq2_grid((int) g, (int) i); }
-int64_t qz_iq2_map(int64_t g, int64_t u) { return tbl_iq2_map((int) g, (int) u); }
-int64_t qz_iq2_nb(int64_t g, int64_t off) { return tbl_iq2_nb((int) g, (int) off); }
-int64_t qz_iq3_grid(int64_t g, int64_t i) { return (int64_t) tbl_iq3_grid((int) g, (int) i); }
-int64_t qz_iq3_map(int64_t g, int64_t u) { return tbl_iq3_map((int) g, (int) u); }
-int64_t qz_iq3_nb(int64_t g, int64_t off) { return tbl_iq3_nb((int) g, (int) off); }
+int64_t qz2_iq2_grid(int64_t g, int64_t i) { return (int64_t) tbl_iq2_grid((int) g, (int) i); }
+int64_t qz2_iq2_map(int64_t g, int64_t u) { return tbl_iq2_map((int) g, (int) u); }
+int64_t qz2_iq2_nb(int64_t g, int64_t off) { return tbl_iq2_nb((int) g, (int) off); }
+int64_t qz2_iq3_grid(int64_t g, int64_t i) { return (int64_t) tbl_iq3_grid((int) g, (int) i); }
+int64_t qz2_iq3_map(int64_t g, int64_t u) { return tbl_iq3_map((int) g, (int) u); }
+int64_t qz2_iq3_nb(int64_t g, int64_t off) { return tbl_iq3_nb((int) g, (int) off); }
 
 // The IQ1_M split search sorts n records of {value, index} by value only, as
 // iq1_sort_helper does. Equal keys are ordered by the C library; the fixture
@@ -150,7 +150,7 @@ static int iq1_cmp(const void * l, const void * r) {
     return *a < *b ? -1 : *a > *b ? 1 : 0;
 }
 
-void qz_sort16(uint64_t pairs, int64_t n) {
+void qz2_sort16(uint64_t pairs, int64_t n) {
     qsort((void *) (uintptr_t) pairs, (size_t) n, 2 * sizeof(float), iq1_cmp);
 }
 
@@ -344,11 +344,11 @@ static void run_case(ggml_type t, const char * tname, int p, int64_t nper,
             return;
         }
         r_ref  = oracle(t, src.data(), dst_ref.data(), 0, nrows, nper);
-        r_port = qz_quantize_row((int64_t) t, (uint64_t) (uintptr_t) src.data(),
+        r_port = qz2_quantize_row((int64_t) t, (uint64_t) (uintptr_t) src.data(),
                                  (uint64_t) (uintptr_t) dst_port.data(), nrows * nper);
     } else {
         r_ref  = oracle(t, src.data(), dst_ref.data(), start, nrows, nper);
-        r_port = qz_quantize_chunk((int64_t) t, (uint64_t) (uintptr_t) src.data(),
+        r_port = qz2_quantize_chunk((int64_t) t, (uint64_t) (uintptr_t) src.data(),
                                    (uint64_t) (uintptr_t) dst_port.data(), start, nrows, nper);
     }
 
@@ -387,7 +387,7 @@ static void run_geometry(void) {
     for (const TypeRow & tr : TYPES) {
         const int64_t b_ref  = ggml_blck_size(tr.t);
         const int64_t ts_ref = (int64_t) ggml_type_size(tr.t);
-        if (qz_blck((int64_t) tr.t) != b_ref || qz_type_size((int64_t) tr.t) != ts_ref) {
+        if (qz2_blck((int64_t) tr.t) != b_ref || qz2_type_size((int64_t) tr.t) != ts_ref) {
             fail("geometry", std::string(tr.name) + " blck/type_size mismatch");
             continue;
         }
@@ -397,16 +397,16 @@ static void run_geometry(void) {
                 want = (int64_t) ggml_row_size(tr.t, ne);
             }
             ++g_cases;
-            if (qz_row_size((int64_t) tr.t, ne) != want) {
+            if (qz2_row_size((int64_t) tr.t, ne) != want) {
                 fail("row_size", std::string(tr.name) + " ne=" + std::to_string(ne));
             }
         }
     }
     // types outside the slice
-    if (qz_blck(0) != -1 || qz_type_size(0) != -1 || qz_row_size(0, 32) != -1) {
+    if (qz2_blck(0) != -1 || qz2_type_size(0) != -1 || qz2_row_size(0, 32) != -1) {
         fail("outside", "type 0 is not refused");
     }
-    if (qz_blck(2) != -1) { fail("outside", "q4_0 is S3a, not S3b"); }
+    if (qz2_blck(2) != -1) { fail("outside", "q4_0 is S3a, not S3b"); }
 }
 
 // ---- refusals -------------------------------------------------------------
@@ -433,7 +433,7 @@ static void run_refusals(void) {
     };
     for (const Case & c : cases) {
         ++g_cases;
-        const int64_t got = qz_quantize_chunk(c.t, s, d, c.start, c.nrows, c.nper);
+        const int64_t got = qz2_quantize_chunk(c.t, s, d, c.start, c.nrows, c.nper);
         if (got != c.want) {
             fail(std::string("refusal ") + c.what,
                  "want " + std::to_string(c.want) + " got " + std::to_string(got));
@@ -441,11 +441,11 @@ static void run_refusals(void) {
     }
     // row entry geometry
     ++g_cases;
-    if (qz_quantize_row(10, s, d, 255) != -2) { fail("refusal", "row k not a block multiple"); }
+    if (qz2_quantize_row(10, s, d, 255) != -2) { fail("refusal", "row k not a block multiple"); }
     ++g_cases;
-    if (qz_quantize_row(0, s, d, 256) != -1) { fail("refusal", "row unknown type"); }
+    if (qz2_quantize_row(0, s, d, 256) != -1) { fail("refusal", "row unknown type"); }
     ++g_cases;
-    if (qz_quantize_row(15, s, d, 512) != 292 * 2) { fail("refusal", "q8_K row size"); }
+    if (qz2_quantize_row(15, s, d, 512) != 292 * 2) { fail("refusal", "q8_K row size"); }
 }
 
 // ---- main -----------------------------------------------------------------

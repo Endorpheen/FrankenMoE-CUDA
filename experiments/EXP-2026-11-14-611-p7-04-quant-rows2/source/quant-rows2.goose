@@ -35,13 +35,13 @@
 //     ggml_quantize_requires_imatrix. They belong to S4 and are not ported.
 //   - q8_K is not a case of ggml_quantize_chunk in this tree (the switch has no
 //     GGML_TYPE_Q8_K, so the native entry aborts). It is gated against
-//     quantize_row_q8_K_ref directly, and qz_quantize_chunk refuses it.
+//     quantize_row_q8_K_ref directly, and qz2_quantize_chunk refuses it.
 //   - the IQ grid code tables, the code -> grid map and the neighbour lists are
 //     built by ggml_quantize_init and are file-static in the native library.
-//     They are host primitives here (qz_iq*_grid, qz_iq*_map, qz_iq*_nb), the
+//     They are host primitives here (qz2_iq*_grid, qz2_iq*_map, qz2_iq*_nb), the
 //     same way the IQ decoders in goose/kv read grid and sign tables.
-//   - fp16 rounding (qz_st_f16/qz_ld_f16), sqrtf/log2f/floorf/lroundf/ldexpf
-//     and float <-> bit reinterpretation (qz_bits/qz_of_bits) are primitives:
+//   - fp16 rounding (qz2_st_f16/qz2_ld_f16), sqrtf/log2f/floorf/lroundf/ldexpf
+//     and float <-> bit reinterpretation (qz2_bits/qz2_of_bits) are primitives:
 //     hardware or libm operations, not decisions of the quantizer.
 //   - the native (int8_t)/(uint8_t) cast of a float is undefined outside the
 //     target range. The port truncates toward zero and keeps the low eight
@@ -49,7 +49,7 @@
 //     truncation). Blocks whose scale underflows to inf are therefore still
 //     byte-identical, but NaN and +-inf rows are outside the corpus.
 //   - IQ1_M sorts 16 records with qsort and a value-only comparator. The port
-//     uses the host sort primitive qz_sort16 (the same libc call, the same
+//     uses the host sort primitive qz2_sort16 (the same libc call, the same
 //     comparator) because the order of equal keys is not defined by the C
 //     library and cannot be reproduced by a comparison-only rewrite.
 //   - the native asserts on bad geometry. The port returns -1 (unknown type)
@@ -57,35 +57,35 @@
 //
 // Pointer form: buffers are u64 addresses, as in goose/model/read-path.goose.
 // The port carries no arrays; intermediate vectors live in a host scratch block
-// (qz_tmp) at fixed byte offsets, which is the same boundary the decoders use
+// (qz2_tmp) at fixed byte offsets, which is the same boundary the decoders use
 // for their tables.
 
-extern "qz_ld_f32" fn ld_f32(a: u64) -> f32;
-extern "qz_st_f32" fn st_f32(a: u64, v: f32);
-extern "qz_ld_f16" fn ld_f16(a: u64) -> f32;
-extern "qz_st_f16" fn st_f16(a: u64, v: f32);
-extern "qz_st_u8" fn st_u8(a: u64, v: i64);
-extern "qz_ld_u8" fn ld_u8(a: u64) -> i64;
-extern "qz_st_u16" fn st_u16(a: u64, v: i64);
-extern "qz_st_u32" fn st_u32(a: u64, v: i64);
-extern "qz_abs" fn fabs32(v: f32) -> f32;
-extern "qz_sqrtf" fn sqrt32(v: f32) -> f32;
-extern "qz_log2f" fn log232(v: f32) -> f32;
-extern "qz_floorf" fn floor32(v: f32) -> f32;
-extern "qz_lroundf" fn lround32(v: f32) -> i64;
-extern "qz_ldexpf" fn ldexp32(v: f32, e: i64) -> f32;
-extern "qz_bits" fn f32_bits(v: f32) -> i64;
-extern "qz_of_bits" fn f32_of_bits(b: i64) -> f32;
-extern "qz_nearest" fn nearest(v: f32) -> i64;
-extern "qz_tmp" fn tmp(off: i64) -> u64;
-extern "qz_fail" fn fail(code: i64);
-extern "qz_iq2_grid" fn iq2_grid(g: i64, i: i64) -> i64;
-extern "qz_iq2_map" fn iq2_map(g: i64, u: i64) -> i64;
-extern "qz_iq2_nb" fn iq2_nb(g: i64, off: i64) -> i64;
-extern "qz_iq3_grid" fn iq3_grid(g: i64, i: i64) -> i64;
-extern "qz_iq3_map" fn iq3_map(g: i64, u: i64) -> i64;
-extern "qz_iq3_nb" fn iq3_nb(g: i64, off: i64) -> i64;
-extern "qz_sort16" fn sort16(pairs: u64, n: i64);
+extern "qz2_ld_f32" fn ld_f32(a: u64) -> f32;
+extern "qz2_st_f32" fn st_f32(a: u64, v: f32);
+extern "qz2_ld_f16" fn ld_f16(a: u64) -> f32;
+extern "qz2_st_f16" fn st_f16(a: u64, v: f32);
+extern "qz2_st_u8" fn st_u8(a: u64, v: i64);
+extern "qz2_ld_u8" fn ld_u8(a: u64) -> i64;
+extern "qz2_st_u16" fn st_u16(a: u64, v: i64);
+extern "qz2_st_u32" fn st_u32(a: u64, v: i64);
+extern "qz2_abs" fn fabs32(v: f32) -> f32;
+extern "qz2_sqrtf" fn sqrt32(v: f32) -> f32;
+extern "qz2_log2f" fn log232(v: f32) -> f32;
+extern "qz2_floorf" fn floor32(v: f32) -> f32;
+extern "qz2_lroundf" fn lround32(v: f32) -> i64;
+extern "qz2_ldexpf" fn ldexp32(v: f32, e: i64) -> f32;
+extern "qz2_bits" fn f32_bits(v: f32) -> i64;
+extern "qz2_of_bits" fn f32_of_bits(b: i64) -> f32;
+extern "qz2_nearest" fn nearest(v: f32) -> i64;
+extern "qz2_tmp" fn tmp(off: i64) -> u64;
+extern "qz2_fail" fn fail(code: i64);
+extern "qz2_iq2_grid" fn iq2_grid(g: i64, i: i64) -> i64;
+extern "qz2_iq2_map" fn iq2_map(g: i64, u: i64) -> i64;
+extern "qz2_iq2_nb" fn iq2_nb(g: i64, off: i64) -> i64;
+extern "qz2_iq3_grid" fn iq3_grid(g: i64, i: i64) -> i64;
+extern "qz2_iq3_map" fn iq3_map(g: i64, u: i64) -> i64;
+extern "qz2_iq3_nb" fn iq3_nb(g: i64, off: i64) -> i64;
+extern "qz2_sort16" fn sort16(pairs: u64, n: i64);
 
 // ---- ggml type ids and per-type geometry ----------------------------------
 
@@ -133,7 +133,7 @@ const B_IQ2_S: i64 = 82;   // d + 64 qs + 8 qh + 8 scales
 const B_IQ1_M: i64 = 56;   // 32 qs + 16 qh + 8 scales
 
 // ggml_blck_size for the types of this slice, -1 outside it.
-export fn qz_blck(t: i64) -> i64 {
+export fn qz2_blck(t: i64) -> i64 {
     if t == T_Q2_K { return QK_K; }
     if t == T_Q3_K { return QK_K; }
     if t == T_Q4_K { return QK_K; }
@@ -153,7 +153,7 @@ export fn qz_blck(t: i64) -> i64 {
     return -1;
 }
 
-export fn qz_type_size(t: i64) -> i64 {
+export fn qz2_type_size(t: i64) -> i64 {
     if t == T_Q2_K { return B_Q2_K; }
     if t == T_Q3_K { return B_Q3_K; }
     if t == T_Q4_K { return B_Q4_K; }
@@ -173,10 +173,10 @@ export fn qz_type_size(t: i64) -> i64 {
     return -1;
 }
 
-export fn qz_row_size(t: i64, ne: i64) -> i64 {
-    let blck = qz_blck(t);
+export fn qz2_row_size(t: i64, ne: i64) -> i64 {
+    let blck = qz2_blck(t);
     if blck < 0 { return -1; }
-    let ts = qz_type_size(t);
+    let ts = qz2_type_size(t);
     if ne <= 0 || ne % blck != 0 { return -2; }
     return ts * ne / blck;
 }
@@ -533,7 +533,7 @@ fn make_qx(n: i64, nmax: i64, x: u64, L: u64, rmse_type: i64, qw: u64) -> f32 {
 
 // ---- q2_K -----------------------------------------------------------------
 
-fn qz_row_q2_K(x: u64, y: u64, k: i64) {
+fn qz2_row_q2_K(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let laux = tmp(S_LAUX);
@@ -621,7 +621,7 @@ fn qz_row_q2_K(x: u64, y: u64, k: i64) {
 
 // ---- q3_K -----------------------------------------------------------------
 
-fn qz_row_q3_K(x: u64, y: u64, k: i64) {
+fn qz2_row_q3_K(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     var i = 0 as i64;
@@ -722,7 +722,7 @@ fn qz_row_q3_K(x: u64, y: u64, k: i64) {
 
 // ---- q4_K -----------------------------------------------------------------
 
-fn qz_row_q4_K(x: u64, y: u64, k: i64) {
+fn qz2_row_q4_K(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let laux = tmp(S_LAUX);
@@ -811,7 +811,7 @@ fn qz_row_q4_K(x: u64, y: u64, k: i64) {
 
 // ---- q5_K -----------------------------------------------------------------
 
-fn qz_row_q5_K(x: u64, y: u64, k: i64) {
+fn qz2_row_q5_K(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let laux = tmp(S_LAUX);
@@ -917,7 +917,7 @@ fn qz_row_q5_K(x: u64, y: u64, k: i64) {
 
 // ---- q6_K -----------------------------------------------------------------
 
-fn qz_row_q6_K(x: u64, y: u64, k: i64) {
+fn qz2_row_q6_K(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     var i = 0 as i64;
@@ -992,7 +992,7 @@ fn qz_row_q6_K(x: u64, y: u64, k: i64) {
 
 // ---- q8_K -----------------------------------------------------------------
 
-fn qz_row_q8_K(x: u64, y: u64, k: i64) {
+fn qz2_row_q8_K(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     var i = 0 as i64;
     while i < nb {
@@ -1045,7 +1045,7 @@ fn qz_row_q8_K(x: u64, y: u64, k: i64) {
 
 // ---- TQ1_0 and TQ2_0 ------------------------------------------------------
 
-fn qz_row_tq1_0(x: u64, y: u64, k: i64) {
+fn qz2_row_tq1_0(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     var i = 0 as i64;
     while i < nb {
@@ -1108,7 +1108,7 @@ fn qz_row_tq1_0(x: u64, y: u64, k: i64) {
     }
 }
 
-fn qz_row_tq2_0(x: u64, y: u64, k: i64) {
+fn qz2_row_tq2_0(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     var i = 0 as i64;
     while i < nb {
@@ -1191,7 +1191,7 @@ fn best_index_mxfp4(xv: f32, e: f32) -> i64 {
     return best;
 }
 
-fn qz_row_mxfp4(x: u64, y: u64, k: i64) {
+fn qz2_row_mxfp4(x: u64, y: u64, k: i64) {
     let nb = k / QK_MXFP4;
     var i = 0 as i64;
     while i < nb {
@@ -1259,7 +1259,7 @@ fn ue4m3_to_f32(ue: i64) -> f32 {
     return raw * 0.5;
 }
 
-fn qz_row_nvfp4(x: u64, y: u64, k: i64) {
+fn qz2_row_nvfp4(x: u64, y: u64, k: i64) {
     let nb = k / QK_NVFP4;
     let nsub = QK_NVFP4 / QK_NVFP4_SUB;
     var i = 0 as i64;
@@ -1394,7 +1394,7 @@ fn iq4_nl_block(xb: u64, L: u64, wa: u64, ntry: i64) -> f32 {
     return d;
 }
 
-fn qz_row_iq4_nl(x: u64, y: u64, k: i64) {
+fn qz2_row_iq4_nl(x: u64, y: u64, k: i64) {
     let nb = k / QK4_NL;
     let L = tmp(S_L);
     let wa = tmp(S_WEIGHTS);
@@ -1426,7 +1426,7 @@ fn qz_row_iq4_nl(x: u64, y: u64, k: i64) {
     }
 }
 
-fn qz_row_iq4_xs(x: u64, y: u64, k: i64) {
+fn qz2_row_iq4_xs(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let wa = tmp(S_WEIGHTS);
@@ -1501,28 +1501,28 @@ fn qz_row_iq4_xs(x: u64, y: u64, k: i64) {
 
 // ---- row and chunk entry points -------------------------------------------
 
-fn qz_rows(t: i64, src: u64, dst: u64, nrows: i64, n_per_row: i64) -> i64 {
-    let rs = qz_row_size(t, n_per_row);
+fn qz2_rows(t: i64, src: u64, dst: u64, nrows: i64, n_per_row: i64) -> i64 {
+    let rs = qz2_row_size(t, n_per_row);
     var r = 0 as i64;
     while r < nrows {
         let x = src + (r * n_per_row) as u64 * 4;
         let y = dst + (r * rs) as u64;
-        if t == T_Q2_K { qz_row_q2_K(x, y, n_per_row); }
-        else if t == T_Q3_K { qz_row_q3_K(x, y, n_per_row); }
-        else if t == T_Q4_K { qz_row_q4_K(x, y, n_per_row); }
-        else if t == T_Q5_K { qz_row_q5_K(x, y, n_per_row); }
-        else if t == T_Q6_K { qz_row_q6_K(x, y, n_per_row); }
-        else if t == T_Q8_K { qz_row_q8_K(x, y, n_per_row); }
-        else if t == T_TQ1_0 { qz_row_tq1_0(x, y, n_per_row); }
-        else if t == T_TQ2_0 { qz_row_tq2_0(x, y, n_per_row); }
-        else if t == T_MXFP4 { qz_row_mxfp4(x, y, n_per_row); }
-        else if t == T_NVFP4 { qz_row_nvfp4(x, y, n_per_row); }
-        else if t == T_IQ4_NL { qz_row_iq4_nl(x, y, n_per_row); }
-        else if t == T_IQ4_XS { qz_row_iq4_xs(x, y, n_per_row); }
-        else if t == T_IQ3_XXS { qz_row_iq3_xxs(x, y, n_per_row); }
-        else if t == T_IQ3_S { qz_row_iq3_s(x, y, n_per_row); }
-        else if t == T_IQ2_S { qz_row_iq2_s(x, y, n_per_row); }
-        else if t == T_IQ1_M { qz_row_iq1_m(x, y, n_per_row); }
+        if t == T_Q2_K { qz2_row_q2_K(x, y, n_per_row); }
+        else if t == T_Q3_K { qz2_row_q3_K(x, y, n_per_row); }
+        else if t == T_Q4_K { qz2_row_q4_K(x, y, n_per_row); }
+        else if t == T_Q5_K { qz2_row_q5_K(x, y, n_per_row); }
+        else if t == T_Q6_K { qz2_row_q6_K(x, y, n_per_row); }
+        else if t == T_Q8_K { qz2_row_q8_K(x, y, n_per_row); }
+        else if t == T_TQ1_0 { qz2_row_tq1_0(x, y, n_per_row); }
+        else if t == T_TQ2_0 { qz2_row_tq2_0(x, y, n_per_row); }
+        else if t == T_MXFP4 { qz2_row_mxfp4(x, y, n_per_row); }
+        else if t == T_NVFP4 { qz2_row_nvfp4(x, y, n_per_row); }
+        else if t == T_IQ4_NL { qz2_row_iq4_nl(x, y, n_per_row); }
+        else if t == T_IQ4_XS { qz2_row_iq4_xs(x, y, n_per_row); }
+        else if t == T_IQ3_XXS { qz2_row_iq3_xxs(x, y, n_per_row); }
+        else if t == T_IQ3_S { qz2_row_iq3_s(x, y, n_per_row); }
+        else if t == T_IQ2_S { qz2_row_iq2_s(x, y, n_per_row); }
+        else if t == T_IQ1_M { qz2_row_iq1_m(x, y, n_per_row); }
         r += 1 as i64;
     }
     return nrows * rs;
@@ -1530,35 +1530,35 @@ fn qz_rows(t: i64, src: u64, dst: u64, nrows: i64, n_per_row: i64) -> i64 {
 
 // quantize_row_XXX_ref for every type of this slice. q8_K is included: the
 // native row entry exists even though the chunk switch does not list it.
-export fn qz_quantize_row(t: i64, x: u64, y: u64, k: i64) -> i64 {
-    let blck = qz_blck(t);
+export fn qz2_quantize_row(t: i64, x: u64, y: u64, k: i64) -> i64 {
+    let blck = qz2_blck(t);
     if blck < 0 { return -1; }
     if k <= 0 || k % blck != 0 { return -2; }
-    return qz_rows(t, x, y, k / blck, blck);
+    return qz2_rows(t, x, y, k / blck, blck);
 }
 
 // ggml_quantize_chunk(type, src, dst, start, nrows, n_per_row, nullptr).
 // -1: type outside this slice. -2: geometry the native asserts on. -3: q8_K,
 // which the native chunk switch does not handle at all (its default branch
 // asserts).
-export fn qz_quantize_chunk(t: i64, src: u64, dst: u64, start: i64, nrows: i64, n_per_row: i64) -> i64 {
-    let blck = qz_blck(t);
+export fn qz2_quantize_chunk(t: i64, src: u64, dst: u64, start: i64, nrows: i64, n_per_row: i64) -> i64 {
+    let blck = qz2_blck(t);
     if blck < 0 { return -1; }
     if t == T_Q8_K { return -3; }
     if nrows <= 0 || n_per_row <= 0 || start < 0 { return -2; }
     if n_per_row % blck != 0 { return -2; }
     if start % blck != 0 { return -2; }
     if start % n_per_row != 0 { return -2; }
-    let row_size = qz_row_size(t, n_per_row);
+    let row_size = qz2_row_size(t, n_per_row);
     if row_size < 0 { return -2; }
     let start_row = start / n_per_row;
     let s = src + start as u64 * 4;
     let d = dst + (start_row * row_size) as u64;
-    return qz_rows(t, s, d, nrows, n_per_row);
+    return qz2_rows(t, s, d, nrows, n_per_row);
 }
 
 fn main() {
-    let t = qz_quantize_chunk(0 as i64, 0 as u64, 0 as u64, 0 as i64, 0 as i64, 0 as i64);
+    let t = qz2_quantize_chunk(0 as i64, 0 as u64, 0 as u64, 0 as i64, 0 as i64, 0 as i64);
     let r = t;
 }
 
@@ -1645,7 +1645,7 @@ fn iq2_best_nb(g: i64, off: i64, xv: u64, wv: u64, scale: f32, L: u64) -> i64 {
 // ---- IQ3_XXS --------------------------------------------------------------
 // grid 256 (iq3_data index 0); destination is d + 96 bytes.
 
-fn qz_row_iq3_xxs(x: u64, y: u64, k: i64) {
+fn qz2_row_iq3_xxs(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let laux = tmp(S_LAUX);
@@ -1906,7 +1906,7 @@ fn qz_row_iq3_xxs(x: u64, y: u64, k: i64) {
 // ---- IQ3_S ----------------------------------------------------------------
 // grid 512 (iq3_data index 1); d + qs[64] + qh[8] + signs[32] + scales[8].
 
-fn qz_row_iq3_s(x: u64, y: u64, k: i64) {
+fn qz2_row_iq3_s(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let laux = tmp(S_LAUX);
@@ -2138,7 +2138,7 @@ fn qz_row_iq3_s(x: u64, y: u64, k: i64) {
 // ---- IQ2_S ----------------------------------------------------------------
 // iq2_data index 3 (grid 1024); d + qs[64] + qh[8] + scales[8].
 
-fn qz_row_iq2_s(x: u64, y: u64, k: i64) {
+fn qz2_row_iq2_s(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let laux = tmp(S_LAUX);
@@ -2410,7 +2410,7 @@ fn iq1_best_nb2(off: i64, xv: u64, wv: u64, scale: f32, xg: u64, L: u64, ngrid: 
     return gi;
 }
 
-fn qz_row_iq1_m(x: u64, y: u64, k: i64) {
+fn qz2_row_iq1_m(x: u64, y: u64, k: i64) {
     let nb = k / QK_K;
     let L = tmp(S_L);
     let wa = tmp(S_WEIGHTS);
