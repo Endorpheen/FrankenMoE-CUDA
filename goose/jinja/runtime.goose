@@ -43,6 +43,7 @@ extern "gs_json_fmt_e" fn libc_fmt_e(out: u8[:], prec: i64, x: f64) -> i64;
 extern "gs_json_strtod" fn libc_strtod(s: const u8[:]) -> f64;
 extern "gs_frexp_mant" fn libc_frexp_mant(x: f64) -> f64;
 extern "gs_to_string_f64" fn libc_to_string_f64(out: u8[:], x: f64) -> i64;
+extern "gs_strftime_epoch" fn libc_strftime_epoch(out: u8[:], epoch: i64, fmt: const u8[:]) -> i64;
 
 fn apps(dst: u8[:], at: i64, lit: const u8[:]) -> i64 {
     return app(dst, at, lit, 0, lit.len);
@@ -4576,6 +4577,30 @@ recursive fn call_builtin(
         i = i + 1;
     }
 
+    if bid == 5 {
+        if argc < 1 || vk(A, st, argv[0]) != V_STRING {
+            return fail_node(K_CALL, apos(A, st, id), "strftime_now() expects a format string", E, st);
+        }
+        // The native runtime reads ctx.current_time. The chat API exposes no way to
+        // set it, so the Goose build reads the clock from the process too, and the
+        // harness injects `now_epoch` for a deterministic comparison.
+        let epoch_v = ctx_find("now_epoch", noff, nlen, cval, B, st);
+        var epoch: i64 = 0 - 1;
+
+        if epoch_v >= 0 && vk(A, st, epoch_v) == V_INT {
+            epoch = vi(A, st, epoch_v);
+        }
+        let base = st[7];
+        let n = libc_strftime_epoch(out[base ..], epoch, vstr(B, A, st, argv[0]));
+
+        if n < 0 {
+            return fail_node(K_CALL, apos(A, st, id), "strftime_now: failed to format time", E, st);
+        }
+        let res = mk_str(A, F, B, st, out[base .. base + n]);
+        st[7] = base;
+        return res;
+    }
+
     if bid == 3 || bid == 4 {
         var kk: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
         var vv: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -4954,6 +4979,10 @@ recursive fn eval_node(
 
         if filter_name_is(name, "raise_exception") {
             return mk_builtin(A, F, st, 2);
+        }
+
+        if filter_name_is(name, "strftime_now") {
+            return mk_builtin(A, F, st, 5);
         }
 
         if filter_name_is(name, "dict") {

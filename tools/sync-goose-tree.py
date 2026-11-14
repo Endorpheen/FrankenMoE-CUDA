@@ -42,8 +42,8 @@ CANONICAL_SOURCES = [
      "common/jinja/value.cpp (JSON output)", "192 cases / 384 values / 0 failures, 20/20 mutations"),
     ("jinja/builtins.goose", "EXP-2026-11-13-506-p7-08-builtins-scalar", "source/builtins.goose",
      "common/jinja/value.cpp (built-ins)", "51 cases / 100 values / 0 failures, 14/14 mutations"),
-    ("jinja/runtime.goose", "EXP-2026-11-14-550-p7-08-2026-templates", "source/runtime.goose",
-     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789, typed content 436/797, media content 445/806, message fields 452/813, tool schemas 460/821, tools parse 471/832, tools decode 476/842, strict json 494/860, format single 502/868, real templates 507/878, slice 526/916, object literal 532/928, modern templates 561/986, reasoning 570/1002, 2026 templates 578/1018"),
+    ("jinja/runtime.goose", "EXP-2026-11-14-551-p7-08-strftime", "source/runtime.goose",
+     "common/jinja/runtime.cpp", "expressions 81/162, statements 27/54, for/loop 56/112, macro 81/162, filters 153/306, tests 187/374, ordering+prefix 206/412, split 225/450, format+indent 242/484, containers 257/514, map/select/dictsort 269/538, list/min/max/append/pop 287/574, funcvals 301/602, dict/namespace 314/628, test forms 320/640, methods 336/672, scalar methods 350/700, default 365/730, chat harness 370/740, message shape 378/748, chat roles 385/762, caps detector 394/775, content flags 400/784, for/select probes 404/780, tools caps 410/783, parallel caps 419/786, reasoning caps 428/789, typed content 436/797, media content 445/806, message fields 452/813, tool schemas 460/821, tools parse 471/832, tools decode 476/842, strict json 494/860, format single 502/868, real templates 507/878, slice 526/916, object literal 532/928, modern templates 561/986, reasoning 570/1002, 2026 templates 578/1018, strftime 587/1036"),
 ]
 
 CANONICAL = {
@@ -93,6 +93,7 @@ CANONICAL = {
     "EXP-2026-11-14-547-p7-08-object-literal",
     "EXP-2026-11-14-548-p7-08-modern-templates",
     "EXP-2026-11-14-549-p7-08-reasoning-msgs",
+    "EXP-2026-11-14-550-p7-08-2026-templates",
 }
 
 # An experiment already published as a canonical module is not copied again as a
