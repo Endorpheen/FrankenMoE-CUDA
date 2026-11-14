@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T18:19:50.751259+00:00",
+  "updated_at": "2026-11-14T18:22:15.066852+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -111,6 +111,30 @@
       "status": "ported",
       "sha256": "f1a86afc4099f029b73f4b85d0d94244ecc62ebddb22637e2049826cbba51eee",
       "gate": "73 lines / 0 diffs, 16/16 mutations"
+    },
+    {
+      "goose": "model/qwen35moe.goose",
+      "native": "src/models/qwen35moe.cpp",
+      "native_targets": [
+        "src/models/qwen35moe.cpp"
+      ],
+      "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
+      "task": "",
+      "status": "ported",
+      "sha256": "38c915be90c822a9962dac8fe201892b918de0e3ece6abcf035374ebcd1d5a6a",
+      "gate": "10/26 + extended 43/149, 12/12 mutations"
+    },
+    {
+      "goose": "model/base/model_graph.goose",
+      "native": "src/llama-graph.cpp (shared module, no main)",
+      "native_targets": [
+        "src/llama-graph.cpp (shared module, no main)"
+      ],
+      "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
+      "task": "",
+      "status": "ported",
+      "sha256": "8c83ca66a50322a20c76a13b55038b87646785d7fb7973531bdac15f70bd5fcc",
+      "gate": "imported by the architecture builders"
     },
     {
       "goose": "model/gguf-metadata.goose",
@@ -10923,26 +10947,28 @@
       "sha256": "e98a2a7ce3f9d58f82e2686051e02f8f7ece43fe51942f9946d4466b11bfaaaa"
     },
     {
-      "goose": "cpu/qwen35moe/base/model_graph.goose",
-      "native": "src/models/qwen35moe.c",
+      "goose": "misc/qwen4exp/base/model_graph.goose",
+      "native": "src/models/qwen4exp.c",
       "native_targets": [
-        "src/models/qwen35moe.c"
+        "src/models/qwen4exp.c",
+        "src/models/qwen4exp.c"
       ],
-      "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
+      "experiment": "EXP-2026-11-14-580-p6-05-qwen4exp",
       "task": "",
       "status": "slice",
       "sha256": "8c83ca66a50322a20c76a13b55038b87646785d7fb7973531bdac15f70bd5fcc"
     },
     {
-      "goose": "cpu/qwen35moe/qwen35moe.goose",
-      "native": "src/models/qwen35moe.c",
+      "goose": "misc/qwen4exp/qwen4exp.goose",
+      "native": "src/models/qwen4exp.c",
       "native_targets": [
-        "src/models/qwen35moe.c"
+        "src/models/qwen4exp.c",
+        "src/models/qwen4exp.c"
       ],
-      "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
+      "experiment": "EXP-2026-11-14-580-p6-05-qwen4exp",
       "task": "",
       "status": "slice",
-      "sha256": "38c915be90c822a9962dac8fe201892b918de0e3ece6abcf035374ebcd1d5a6a"
+      "sha256": "8d07a8eaf3f92f7288bdf4a49605662c35d26c6f0042861e873b0a9beea4f88c"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
