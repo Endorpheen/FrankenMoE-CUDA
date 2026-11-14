@@ -16,7 +16,7 @@ accepted in two steps; the rest is open.
 | S3b. K/IQ/MXFP4/NVFP4/TQ quantizers | the remaining unweighted types | **done (EXP611)** |
 | S4. Weighted quantizers | imatrix branches of q2_K…q6_K and IQ1/2/3/4 | open |
 | S5a. Basic dequantizers | q4_0/q4_1/q5_0/q5_1/q8_0 row dequant | **done (EXP607)** |
-| S5b. Dequant closure | K/IQ/MX/TQ dequant, different-type copy, q8_K, f16/bf16 output | open |
+| S5b. Dequant closure | K/IQ/MX/TQ dequant, different-type copy, q8_K, f16/bf16 output | **done (EXP613)** |
 
 ## S1b — accepted
 
