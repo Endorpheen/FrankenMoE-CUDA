@@ -64,6 +64,8 @@ CANONICAL_SOURCES = [
      "common/json.cpp (tool-validate dependency)", "accepted in P7-09 EXP493, byte-identical copy"),
     ("server/http-url-policy.goose", "EXP-2026-11-14-578-p7-11-http-url", "source/http-url-policy.goose",
      "common/http.h", "20000 cases / 0 diffs, 14/14 mutations"),
+    ("model/model-saver.goose", "EXP-2026-11-14-606-p6-09-saver-writer", "source/model-saver.goose",
+     "src/llama-model-saver.cpp (writer path)", "29 cases / 154 checks / 0 failures, 12/12 mutations"),
     ("model/lora-manifest.goose", "EXP-2026-11-14-600-p6-09-lora-manifest", "source/lora-manifest.goose",
      "src/llama-adapter.cpp (LoRA manifest)", "26 cases / 139 values / 0 failures, 12/12 mutations"),
     ("model/control-vectors.goose", "EXP-2026-11-14-582-p6-09-control-vectors", "source/cvec.goose",
