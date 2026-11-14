@@ -8455,9 +8455,6 @@ fn peg_app_i64(out: u8[:], at: i64, v: i64) -> i64 {
 
 recursive fn peg_dump_node(
     id: i64,
-    vis: i64[:],
-    vis2: i64[:],
-    slot: i64,
     kind: const i64[:],
     cfirst: const i64[:],
     ccount: const i64[:],
@@ -8470,18 +8467,6 @@ recursive fn peg_dump_node(
     pool: const u8[:],
     out: u8[:],
     st: i64[:]) -> i64 {
-    var vi: i64 = 0;
-
-    while vi < st[slot] {
-        if vis[vi] == id {
-            let cyc = peg_app(out, st[70], "[cycle]");
-            st[70] = cyc;
-            return cyc;
-        }
-        vi = vi + 1;
-    }
-    vis[st[slot]] = id;
-    st[slot] = st[slot] + 1;
     let k = kind[id];
     var p = st[70];
 
@@ -8504,7 +8489,7 @@ recursive fn peg_dump_node(
     } else if k == PEG_NOT {
         p = peg_app(out, p, "Not(");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], vis, vis2, slot, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ")");
     } else if k == PEG_RULE {
         let rsid = sidx[id];
@@ -8512,7 +8497,7 @@ recursive fn peg_dump_node(
         p = peg_app(out, p, pool[dstart[rsid] .. dstart[rsid] + dcount[rsid]]);
         p = peg_app(out, p, ", ");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], vis, vis2, slot, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ")");
     } else if k == PEG_LIT {
         let sid = sidx[id];
@@ -8525,23 +8510,17 @@ recursive fn peg_dump_node(
         p = peg_app(out, p, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
         p = peg_app(out, p, ", ");
         st[70] = p;
-        if slot == 71 {
-            st[73] = 0;
-            p = peg_dump_node(children[cfirst[id]], vis2, vis, 73, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
-        } else {
-            st[71] = 0;
-            p = peg_dump_node(children[cfirst[id]], vis, vis2, 71, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
-        }
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ")");
     } else if k == PEG_ATOMIC {
         p = peg_app(out, p, "Atomic(");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], vis, vis2, slot, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ")");
     } else if k == PEG_REP {
         p = peg_app(out, p, "Repetition(");
         st[70] = p;
-        p = peg_dump_node(children[cfirst[id]], vis, vis2, slot, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+        p = peg_dump_node(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
         p = peg_app(out, p, ", ");
         p = peg_app_i64(out, p, mn[id]);
         p = peg_app(out, p, ", ");
@@ -8565,7 +8544,7 @@ recursive fn peg_dump_node(
                 p = peg_app(out, p, ", ");
             }
             st[70] = p;
-            p = peg_dump_node(children[cfirst[id] + i], vis, vis2, slot, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+            p = peg_dump_node(children[cfirst[id] + i], kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
             i = i + 1;
         }
         p = peg_app(out, p, ")");
@@ -8576,8 +8555,6 @@ recursive fn peg_dump_node(
 
 export fn peg_dump_basic(
     root: i64,
-    vis: i64[:],
-    vis2: i64[:],
     kind: const i64[:],
     cfirst: const i64[:],
     ccount: const i64[:],
@@ -8591,9 +8568,7 @@ export fn peg_dump_basic(
     out: u8[:],
     st: i64[:]) -> i64 {
     st[70] = 0;
-    st[71] = 0;
-    st[73] = 0;
-    let n = peg_dump_node(root, vis, vis2, 71, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
+    let n = peg_dump_node(root, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, out, st);
     return n;
 }
 
@@ -8810,122 +8785,917 @@ export fn peg_tag_safe(
     return peg_repeat(kind, cfirst, ccount, children, sidx, mn, mx, st, ch, 0, 0 - 1);
 }
 
-// chat-peg-parser.cpp permute: every parser matches exactly once, in any order.
-// Subsets are numbered by a bit mask and cached by mask, so a repeated subset
-// reuses the same node and the dump prints it as [cycle], like native.
-fn peg_choice1(
-    kind: i64[:],
-    cfirst: i64[:],
-    ccount: i64[:],
-    children: i64[:],
-    sidx: i64[:],
-    st: i64[:],
-    a: i64) -> i64 {
-    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_CHOICE, 0 - 1);
-    children[st[61]] = a;
-    ccount[id] = 1;
-    st[61] = st[61] + 1;
-    return id;
-}
+// common/chat-peg-parser.cpp (from_ast/map). The gemma4 and minimax_m3
+// subclasses, streaming, the chat session and the tool builders are outside
+// this slice: the input is a finished arena plus the tag ids, the output is
+// content/reasoning text and the tool-call table.
+//
+// Owned decisions, all copied from the native code rather than "fixed":
+//   - the walk is the arena pre-order DFS (node, then its children in order),
+//     and every node is dispatched by its tag, so a tagged node nested in a
+//     tagged node contributes its text again at its own position;
+//   - content and reasoning use sanitized_text (invalid UTF-8 runs become
+//     U+FFFD) and concatenate with no separator and no trim; every other tag
+//     uses the raw node text;
+//   - reasoning that is only spaces/newlines is dropped at the end;
+//   - trim() removes at most ONE leading space and every trailing space;
+//   - tool-open starts a fresh pending call and drops an unnamed pending one;
+//   - tool-id trims trailing space and strips one pair of surrounding double
+//     quotes; it is not JSON-escaped;
+//   - tool-name flushes args_buffer into arguments (or "{" when empty) and
+//     pushes the call immediately, so later argument writes go to the pushed
+//     entry; tool-args overwrites the arguments with a complete JSON object
+//     only when the trimmed text starts with '{';
+//   - arg-name is ", name:" with the name JSON-quoted, and creates the "{"
+//     when the target is empty; arg-value appends the normalized text, and a
+//     schema-declared string value appends its JSON-escaped inner text inside
+//     one pair of quotes closed by arg-close;
+//   - tool-close closes a pending quote and every unclosed '{' by brace depth,
+//     pushes only a named pending call, and leaves a call pushed at tool-name
+//     untouched;
+//   - from_ast flushes a named pending call with its args_buffer and closing
+//     quote, then drops whitespace-only reasoning.
+//
+// Flat representation (no structs in this port):
+//   st  - mapper state, see the S_* indices below;
+//   out - out[0] content length, out[1] reasoning length, out[2] call count,
+//         then six i64 per call: name off/len, args off/len, id off/len, all
+//         offsets into tcb;
+//   cont/reas/tcb - the content, reasoning and tool-call byte buffers.
+//
+// The tag id table `tid` holds the sdir ids of reasoning, content, tool-open,
+// tool-close, tool-name, tool-id, tool-args, tool-arg-open, tool-arg-close,
+// tool-arg-name, tool-arg-value and tool-arg-string-value in that order; a
+// negative id never matches.
 
-fn peg_seq1(
-    kind: i64[:],
-    cfirst: i64[:],
-    ccount: i64[:],
-    children: i64[:],
-    sidx: i64[:],
-    st: i64[:],
-    a: i64) -> i64 {
-    let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_SEQ, 0 - 1);
-    children[st[61]] = a;
-    ccount[id] = 1;
-    st[61] = st[61] + 1;
-    return id;
-}
+import std;
 
-export fn peg_permute(
-    prefix: const u8[:],
-    parsers: const i64[:],
-    n: i64,
-    rule_id: i64[:],
-    namebuf: u8[:],
-    kind: i64[:],
-    cfirst: i64[:],
-    ccount: i64[:],
-    children: i64[:],
-    sidx: i64[:],
-    dstart: i64[:],
-    dcount: i64[:],
-    pool: u8[:],
-    st: i64[:]) -> i64 {
-    let eps0 = peg_eps_node(kind, cfirst, ccount, sidx, st);
+// tid indices
+const M_REASONING: i64 = 0;
+const M_CONTENT: i64 = 1;
+const M_TOOL_OPEN: i64 = 2;
+const M_TOOL_CLOSE: i64 = 3;
+const M_TOOL_NAME: i64 = 4;
+const M_TOOL_ID: i64 = 5;
+const M_TOOL_ARGS: i64 = 6;
+const M_ARG_OPEN: i64 = 7;
+const M_ARG_CLOSE: i64 = 8;
+const M_ARG_NAME: i64 = 9;
+const M_ARG_VALUE: i64 = 10;
+const M_ARG_STRING_VALUE: i64 = 11;
+const M_TAGS: i64 = 12;
 
-    if n == 0 {
-        return eps0;
+// st indices
+const S_CONT: i64 = 0;      // content cursor
+const S_REAS: i64 = 1;      // reasoning cursor
+const S_TCB: i64 = 2;       // tool-call buffer cursor
+const S_NCALLS: i64 = 3;    // calls committed to out
+const S_PEND: i64 = 4;      // 1 when a pending call exists
+const S_PNAME_OFF: i64 = 5;
+const S_PNAME_LEN: i64 = 6;
+const S_PARGS_OFF: i64 = 7;
+const S_PARGS_LEN: i64 = 8;
+const S_PID_OFF: i64 = 9;
+const S_PID_LEN: i64 = 10;
+const S_ARGC: i64 = 11;     // arguments already written for the current call
+const S_QUOTE: i64 = 12;    // 1 when a string quote is still open
+const S_BUF_OFF: i64 = 13;  // args_buffer
+const S_BUF_LEN: i64 = 14;
+const S_SLOT: i64 = 15;     // committed call index when S_CUR == 2
+const S_CUR: i64 = 16;      // 0 none, 1 pending, 2 pushed slot
+const S_STATE: i64 = 24;
+
+// out indices
+const O_CONTENT: i64 = 0;
+const O_REASONING: i64 = 1;
+const O_NCALLS: i64 = 2;
+const O_CALLS: i64 = 3;
+const O_CALL_STRIDE: i64 = 6;
+
+fn m_is_space(c: u8) -> bool {
+    if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+        return true;
     }
 
-    if n == 1 {
-        return peg_seq1(kind, cfirst, ccount, children, sidx, st, parsers[0]);
+    if c == 11 || c == 12 {
+        return true;
     }
+    return false;
+}
 
-    if n > 6 {
-        var seq_acc = parsers[0];
-        var q: i64 = 1;
+fn m_trim_trail(s: const u8[:]) -> const u8[:] {
+    var n = s.len;
 
-        while q < n {
-            seq_acc = peg_seq2(kind, cfirst, ccount, children, sidx, st, seq_acc, parsers[q]);
-            q = q + 1;
+    while n > 0 && m_is_space(s[n - 1]) {
+        n = n - 1;
+    }
+    return s[0 .. n];
+}
+
+fn m_trim_lead1(s: const u8[:]) -> const u8[:] {
+    if s.len > 0 && m_is_space(s[0]) {
+        return s[1 .. s.len];
+    }
+    return s;
+}
+
+// One leading space at most, every trailing space: the native asymmetry.
+fn m_trim(s: const u8[:]) -> const u8[:] {
+    return m_trim_trail(m_trim_lead1(s));
+}
+
+fn m_app(dst: u8[:], at: i64, s: const u8[:], off: i64, len: i64) -> i64 {
+    var k: i64 = 0;
+
+    while k < len {
+        if at + k < dst.len {
+            dst[at + k] = s[off + k];
         }
-        return seq_acc;
+        k = k + 1;
     }
-    rule_id[0] = eps0;
-    let full = (1 << n) - 1;
-    var mask: i64 = 1;
+    return at + len;
+}
 
-    while mask <= full {
-        var acc: i64 = 0;
-        var alt_count: i64 = 0;
-        var i: i64 = 0;
+fn m_appc(dst: u8[:], at: i64, c: u8) -> i64 {
+    if at < dst.len {
+        dst[at] = c;
+    }
+    return at + 1;
+}
 
-        while i < n {
-            let bit = 1 << i;
+// ---- JSON text helpers -----------------------------------------------------
 
-            if (mask & bit) != 0 {
-                var rest: i64 = 0;
+fn m_word(c: u8) -> bool {
+    if c >= 'a' && c <= 'z' {
+        return true;
+    }
 
-                if mask - bit == 0 {
-                    rest = peg_eps_node(kind, cfirst, ccount, sidx, st);
+    if c >= 'A' && c <= 'Z' {
+        return true;
+    }
+
+    if c >= '0' && c <= '9' {
+        return true;
+    }
+    return c == '_';
+}
+
+// ---- target emitters -------------------------------------------------------
+// Escaping writes straight into the active target: the native code appends to
+// a std::string, so a staging copy would alias with the target region when the
+// arguments buffer is still empty.
+
+// The tool buffer is a stack: every write moves the cursor past its own bytes,
+// so a later name or buffer never lands inside an earlier call's region. The
+// native code has one std::string per field and needs no such rule.
+fn m_bump(st: i64[:], off: i64, len: i64) -> i64 {
+    if st[S_TCB] < off + len {
+        st[S_TCB] = off + len;
+    }
+    return len;
+}
+
+// An empty args_buffer has no bytes of its own, so it is anchored at the
+// current tool-buffer cursor on first write. Without this an empty buffer
+// would share an offset with the tool name written in between.
+fn m_buf_anchor(st: i64[:]) -> i64 {
+    if st[S_BUF_LEN] == 0 {
+        st[S_BUF_OFF] = st[S_TCB];
+    }
+    return st[S_BUF_OFF];
+}
+
+fn m_tgt_putc(tcb: u8[:], st: i64[:], out: i64[:], c: u8) -> i64 {
+    if m_name_len(st, out) == 0 {
+        let off = m_buf_anchor(st);
+        let len = st[S_BUF_LEN];
+
+        m_appc(tcb, off + len, c);
+        st[S_BUF_LEN] = m_bump(st, off, len + 1);
+        return st[S_BUF_LEN];
+    }
+
+    if st[S_CUR] == 1 {
+        let off = st[S_PARGS_OFF];
+        let len = st[S_PARGS_LEN];
+
+        m_appc(tcb, off + len, c);
+        st[S_PARGS_LEN] = m_bump(st, off, len + 1);
+        return st[S_PARGS_LEN];
+    }
+    let off = m_args_off(st, out);
+    let len = m_args_len(st, out);
+
+    m_appc(tcb, off + len, c);
+    return m_args_set(st, out, off, m_bump(st, off, len + 1));
+}
+
+fn m_tgt_puts(tcb: u8[:], st: i64[:], out: i64[:], s: const u8[:]) -> i64 {
+    if m_name_len(st, out) == 0 {
+        let off = m_buf_anchor(st);
+        let len = st[S_BUF_LEN];
+
+        m_app(tcb, off + len, s, 0, s.len);
+        st[S_BUF_LEN] = m_bump(st, off, len + s.len);
+        return st[S_BUF_LEN];
+    }
+
+    if st[S_CUR] == 1 {
+        let off = st[S_PARGS_OFF];
+        let len = st[S_PARGS_LEN];
+
+        m_app(tcb, off + len, s, 0, s.len);
+        st[S_PARGS_LEN] = m_bump(st, off, len + s.len);
+        return st[S_PARGS_LEN];
+    }
+    let off = m_args_off(st, out);
+    let len = m_args_len(st, out);
+
+    m_app(tcb, off + len, s, 0, s.len);
+    return m_args_set(st, out, off, m_bump(st, off, len + s.len));
+}
+
+fn m_emit_hex4(tcb: u8[:], st: i64[:], out: i64[:], v: i64) -> i64 {
+    let digits: const u8[:] = "0123456789abcdef";
+
+    m_tgt_puts(tcb, st, out, "\\u00");
+    m_tgt_putc(tcb, st, out, digits[(v >> 4) & 15]);
+    return m_tgt_putc(tcb, st, out, digits[v & 15]);
+}
+
+// JSON string body escaping, without the surrounding quotes
+// (native: ordered_json(s).dump() minus the two quote bytes, and
+// escape_json_string_inner).
+fn m_emit_esc_inner(tcb: u8[:], st: i64[:], out: i64[:], s: const u8[:]) -> i64 {
+    var i: i64 = 0;
+
+    while i < s.len {
+        let c = s[i];
+
+        if c == '"' {
+            m_tgt_puts(tcb, st, out, "\\\"");
+        } else
+
+        if c == '\\' {
+            m_tgt_puts(tcb, st, out, "\\\\");
+        } else
+
+        if c == 8 {
+            m_tgt_puts(tcb, st, out, "\\b");
+        } else
+
+        if c == 12 {
+            m_tgt_puts(tcb, st, out, "\\f");
+        } else
+
+        if c == 10 {
+            m_tgt_puts(tcb, st, out, "\\n");
+        } else
+
+        if c == 13 {
+            m_tgt_puts(tcb, st, out, "\\r");
+        } else
+
+        if c == 9 {
+            m_tgt_puts(tcb, st, out, "\\t");
+        } else
+
+        if c < 32 {
+            m_emit_hex4(tcb, st, out, c);
+        } else {
+            m_tgt_putc(tcb, st, out, c);
+        }
+        i = i + 1;
+    }
+    return m_tgt_len(st, out);
+}
+
+fn m_emit_esc_quoted(tcb: u8[:], st: i64[:], out: i64[:], s: const u8[:]) -> i64 {
+    m_tgt_putc(tcb, st, out, '"');
+    m_emit_esc_inner(tcb, st, out, s);
+    return m_tgt_putc(tcb, st, out, '"');
+}
+
+// Python-style quotes and literals to JSON, from normalize_quotes_to_json.
+// Approximated: the word scan is ASCII-only and no UTF-8 validation happens.
+fn m_emit_norm(tcb: u8[:], st: i64[:], out: i64[:], s: const u8[:]) -> i64 {
+    var i: i64 = 0;
+    var in_single: i64 = 0;
+    var in_double: i64 = 0;
+
+    while i < s.len {
+        let c = s[i];
+
+        if c == '\\' && i + 1 < s.len {
+            let nxt = s[i + 1];
+
+            if in_single != 0 {
+                if nxt == '\'' {
+                    m_tgt_putc(tcb, st, out, '\'');
+                    i = i + 1;
+                } else
+
+                if nxt == '"' {
+                    m_tgt_puts(tcb, st, out, "\\\"");
+                    i = i + 1;
                 } else {
-                    rest = rule_id[mask - bit];
+                    m_tgt_putc(tcb, st, out, c);
+                    m_tgt_putc(tcb, st, out, nxt);
+                    i = i + 1;
                 }
-                let pair = peg_seq2(kind, cfirst, ccount, children, sidx, st, parsers[i], rest);
+            } else
 
-                if alt_count == 0 {
-                    acc = pair;
-                } else {
-                    acc = peg_choice2(kind, cfirst, ccount, children, sidx, st, acc, pair);
-                }
-                alt_count = alt_count + 1;
+            if in_double != 0 {
+                m_tgt_putc(tcb, st, out, c);
+                m_tgt_putc(tcb, st, out, nxt);
+                i = i + 1;
+            } else {
+                m_tgt_putc(tcb, st, out, c);
             }
             i = i + 1;
-        }
+        } else
 
-        if alt_count == 1 {
-            acc = peg_choice1(kind, cfirst, ccount, children, sidx, st, acc);
-        }
-        var nl: i64 = 0;
-        var k: i64 = 0;
+        if c == '"' {
+            if in_single != 0 {
+                m_tgt_puts(tcb, st, out, "\\\"");
+            } else {
+                in_double = 1 - in_double;
+                m_tgt_putc(tcb, st, out, '"');
+            }
+            i = i + 1;
+        } else
 
-        while k < prefix.len {
-            namebuf[k] = prefix[k];
-            k = k + 1;
+        if c == '\'' {
+            if in_double != 0 {
+                m_tgt_putc(tcb, st, out, c);
+            } else
+
+            if in_single != 0 {
+                in_single = 0;
+                m_tgt_putc(tcb, st, out, '"');
+            } else {
+                in_single = 1;
+                m_tgt_putc(tcb, st, out, '"');
+            }
+            i = i + 1;
+        } else
+
+        if in_single == 0 && in_double == 0 && (c == 'T' || c == 'F' || c == 'N') &&
+           (i == 0 || !m_word(s[i - 1])) {
+            // Prefix match keeps streamed partials monotonic, as native does.
+            var n: i64 = 0;
+
+            while i + n < s.len && m_word(s[i + n]) {
+                n = n + 1;
+            }
+            var lit: const u8[:] = "";
+            var rep: const u8[:] = "";
+
+            if c == 'T' {
+                lit = "True";
+                rep = "true";
+            } else
+
+            if c == 'F' {
+                lit = "False";
+                rep = "false";
+            } else {
+                lit = "None";
+                rep = "null";
+            }
+
+            if n <= lit.len {
+                var same: bool = true;
+                var k: i64 = 0;
+
+                while k < n {
+                    if s[i + k] != lit[k] {
+                        same = false;
+                    }
+                    k = k + 1;
+                }
+
+                if same {
+                    m_tgt_puts(tcb, st, out, rep[0 .. n]);
+                    i = i + n;
+                } else {
+                    m_tgt_putc(tcb, st, out, c);
+                    i = i + 1;
+                }
+            } else {
+                m_tgt_putc(tcb, st, out, c);
+                i = i + 1;
+            }
+        } else {
+            m_tgt_putc(tcb, st, out, c);
+            i = i + 1;
         }
-        nl = k;
-        namebuf[nl] = 45;
-        nl = nl + 1;
-        nl = peg_app_i64(namebuf, nl, mask);
-        rule_id[mask] = peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, namebuf[0 .. nl], acc);
-        mask = mask + 1;
     }
-    return rule_id[full];
+    return m_tgt_len(st, out);
+}
+
+// Unclosed '{' count, skipping braces inside quoted strings.
+fn m_brace_depth(s: const u8[:], off: i64, len: i64) -> i64 {
+    var depth: i64 = 0;
+    var in_string: i64 = 0;
+    var escaped: i64 = 0;
+    var i: i64 = 0;
+
+    while i < len {
+        let c = s[off + i];
+
+        if escaped != 0 {
+            escaped = 0;
+        } else
+
+        if c == '\\' && in_string != 0 {
+            escaped = 1;
+        } else
+
+        if c == '"' {
+            in_string = 1 - in_string;
+        } else
+
+        if in_string == 0 {
+            if c == '{' {
+                depth = depth + 1;
+            } else
+
+            if c == '}' {
+                depth = depth - 1;
+            }
+        }
+        i = i + 1;
+    }
+    return depth;
+}
+
+// sanitized_text: every recorded invalid run becomes U+FFFD.
+fn m_san(
+    dst: u8[:],
+    at: i64,
+    input: const u8[:],
+    off: i64,
+    len: i64,
+    is: i64,
+    ic: i64,
+    inv: const i64[:]) -> i64 {
+    if ic == 0 {
+        return m_app(dst, at, input, off, len);
+    }
+    var p: i64 = at;
+    var cur: i64 = 0;
+    var r: i64 = 0;
+
+    while r < ic {
+        let ri = is + r;
+        let pos = inv[ri * 2 + 0] - off;
+        let run_len = inv[ri * 2 + 1];
+
+        if pos > cur {
+            p = m_app(dst, p, input, off + cur, pos - cur);
+        }
+        p = m_appc(dst, p, 239);
+        p = m_appc(dst, p, 191);
+        p = m_appc(dst, p, 189);
+        cur = pos + run_len;
+        r = r + 1;
+    }
+
+    if cur < len {
+        p = m_app(dst, p, input, off + cur, len - cur);
+    }
+    return p;
+}
+
+// ---- current-call fields ---------------------------------------------------
+
+fn m_slot_base(st: const i64[:]) -> i64 {
+    return O_CALLS + O_CALL_STRIDE * st[S_SLOT];
+}
+
+fn m_name_len(st: const i64[:], out: const i64[:]) -> i64 {
+    if st[S_CUR] == 1 {
+        return st[S_PNAME_LEN];
+    }
+    return out[m_slot_base(st) + 1];
+}
+
+fn m_name_off(st: const i64[:], out: const i64[:]) -> i64 {
+    if st[S_CUR] == 1 {
+        return st[S_PNAME_OFF];
+    }
+    return out[m_slot_base(st) + 0];
+}
+
+fn m_name_set(st: i64[:], out: i64[:], off: i64, len: i64) -> i64 {
+    if st[S_CUR] == 1 {
+        st[S_PNAME_OFF] = off;
+        st[S_PNAME_LEN] = len;
+    } else {
+        out[m_slot_base(st) + 0] = off;
+        out[m_slot_base(st) + 1] = len;
+    }
+    return len;
+}
+
+fn m_args_off(st: const i64[:], out: const i64[:]) -> i64 {
+    if st[S_CUR] == 1 {
+        return st[S_PARGS_OFF];
+    }
+    return out[m_slot_base(st) + 2];
+}
+
+fn m_args_len(st: const i64[:], out: const i64[:]) -> i64 {
+    if st[S_CUR] == 1 {
+        return st[S_PARGS_LEN];
+    }
+    return out[m_slot_base(st) + 3];
+}
+
+fn m_args_set(st: i64[:], out: i64[:], off: i64, len: i64) -> i64 {
+    if st[S_CUR] == 1 {
+        st[S_PARGS_OFF] = off;
+        st[S_PARGS_LEN] = len;
+    } else {
+        out[m_slot_base(st) + 2] = off;
+        out[m_slot_base(st) + 3] = len;
+    }
+    return len;
+}
+
+fn m_id_set(st: i64[:], out: i64[:], off: i64, len: i64) -> i64 {
+    if st[S_CUR] == 1 {
+        st[S_PID_OFF] = off;
+        st[S_PID_LEN] = len;
+    } else {
+        out[m_slot_base(st) + 4] = off;
+        out[m_slot_base(st) + 5] = len;
+    }
+    return len;
+}
+
+// args_target(): the buffer until the call has a name, its arguments after.
+fn m_tgt_len(st: const i64[:], out: const i64[:]) -> i64 {
+    if m_name_len(st, out) == 0 {
+        return st[S_BUF_LEN];
+    }
+    return m_args_len(st, out);
+}
+
+fn m_tgt_append(tcb: u8[:], st: i64[:], out: i64[:], s: const u8[:]) -> i64 {
+    if m_name_len(st, out) == 0 {
+        let off = m_buf_anchor(st);
+        let len = st[S_BUF_LEN];
+        m_app(tcb, off + len, s, 0, s.len);
+        st[S_BUF_LEN] = m_bump(st, off, len + s.len);
+        return st[S_BUF_LEN];
+    }
+
+    if st[S_CUR] == 1 {
+        let off = st[S_PARGS_OFF];
+        let len = st[S_PARGS_LEN];
+        m_app(tcb, off + len, s, 0, s.len);
+        st[S_PARGS_LEN] = m_bump(st, off, len + s.len);
+        return st[S_PARGS_LEN];
+    }
+    let off = m_args_off(st, out);
+    let len = m_args_len(st, out);
+    m_app(tcb, off + len, s, 0, s.len);
+    return m_args_set(st, out, off, m_bump(st, off, len + s.len));
+}
+
+// Replace the target with raw bytes, as tool-args does for a JSON object.
+fn m_tgt_replace(tcb: u8[:], st: i64[:], out: i64[:], s: const u8[:]) -> i64 {
+    let off = st[S_TCB];
+    let end = m_app(tcb, off, s, 0, s.len);
+
+    st[S_TCB] = end;
+
+    if m_name_len(st, out) == 0 {
+        st[S_BUF_OFF] = off;
+        st[S_BUF_LEN] = s.len;
+        return s.len;
+    }
+    return m_args_set(st, out, off, s.len);
+}
+
+fn m_push(st: i64[:], out: i64[:]) -> i64 {
+    let i = st[S_NCALLS];
+    let b = O_CALLS + O_CALL_STRIDE * i;
+
+    if b + O_CALL_STRIDE > out.len {
+        return st[S_NCALLS];
+    }
+    out[b + 0] = st[S_PNAME_OFF];
+    out[b + 1] = st[S_PNAME_LEN];
+    out[b + 2] = st[S_PARGS_OFF];
+    out[b + 3] = st[S_PARGS_LEN];
+    out[b + 4] = st[S_PID_OFF];
+    out[b + 5] = st[S_PID_LEN];
+    st[S_NCALLS] = i + 1;
+    st[S_PEND] = 0;
+    st[S_CUR] = 2;
+    st[S_SLOT] = i;
+    return i + 1;
+}
+
+// ---- tag dispatch ----------------------------------------------------------
+
+fn m_tag_is(tag: i64, tid: const i64[:], which: i64) -> bool {
+    if tag < 0 {
+        return false;
+    }
+    return tag == tid[which];
+}
+
+fn m_map(
+    id: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64 {
+    let tag = a_tag[id];
+
+    if tag < 0 {
+        return 0;
+    }
+    let off = a_toff[id];
+    let len = a_tlen[id];
+    let text = input[off .. off + len];
+
+    if m_tag_is(tag, tid, M_REASONING) {
+        // More than one reasoning block is possible, so concatenate.
+        st[S_REAS] = m_san(reas, st[S_REAS], input, off, len, a_is[id], a_ic[id], inv);
+    }
+
+    if m_tag_is(tag, tid, M_CONTENT) {
+        st[S_CONT] = m_san(cont, st[S_CONT], input, off, len, a_is[id], a_ic[id], inv);
+    }
+
+    if m_tag_is(tag, tid, M_TOOL_OPEN) {
+        st[S_PEND] = 1;
+        st[S_CUR] = 1;
+        st[S_PNAME_OFF] = 0;
+        st[S_PNAME_LEN] = 0;
+        st[S_PARGS_OFF] = 0;
+        st[S_PARGS_LEN] = 0;
+        st[S_PID_OFF] = 0;
+        st[S_PID_LEN] = 0;
+        st[S_ARGC] = 0;
+        st[S_BUF_OFF] = st[S_TCB];
+        st[S_BUF_LEN] = 0;
+        st[S_QUOTE] = 0;
+    }
+
+    if m_tag_is(tag, tid, M_TOOL_ID) && st[S_CUR] != 0 {
+        var t = m_trim_trail(text);
+
+        if t.len >= 2 && t[0] == '"' && t[t.len - 1] == '"' {
+            t = t[1 .. t.len - 1];
+        }
+        let d = st[S_TCB];
+        let e = m_app(tcb, d, t, 0, t.len);
+
+        st[S_TCB] = e;
+        m_id_set(st, out, d, t.len);
+    }
+
+    if m_tag_is(tag, tid, M_TOOL_NAME) && st[S_CUR] != 0 {
+        let t = m_trim_trail(text);
+        let d = st[S_TCB];
+        let e = m_app(tcb, d, t, 0, t.len);
+
+        st[S_TCB] = e;
+        m_name_set(st, out, d, t.len);
+
+        if st[S_BUF_LEN] > 0 {
+            m_args_set(st, out, st[S_BUF_OFF], st[S_BUF_LEN]);
+            st[S_BUF_LEN] = 0;
+        } else
+
+        if m_args_len(st, out) == 0 {
+            let b = st[S_TCB];
+
+            st[S_TCB] = m_appc(tcb, b, '{');
+            m_args_set(st, out, b, 1);
+        }
+
+        if st[S_PEND] == 1 {
+            m_push(st, out);
+        }
+    }
+
+    if m_tag_is(tag, tid, M_TOOL_ARGS) && st[S_CUR] != 0 {
+        let t = m_trim_trail(text);
+
+        if t.len > 0 && t[0] == '{' {
+            m_tgt_replace(tcb, st, out, t);
+        }
+    }
+
+    if m_tag_is(tag, tid, M_ARG_OPEN) {
+        st[S_QUOTE] = 0;
+    }
+
+    if m_tag_is(tag, tid, M_ARG_NAME) && st[S_CUR] != 0 {
+        if st[S_ARGC] > 0 {
+            m_tgt_append(tcb, st, out, ",");
+        }
+
+        if m_tgt_len(st, out) == 0 {
+            m_tgt_append(tcb, st, out, "{");
+        }
+        m_emit_esc_quoted(tcb, st, out, m_trim(text));
+        m_tgt_append(tcb, st, out, ":");
+        st[S_ARGC] = st[S_ARGC] + 1;
+    }
+
+    if (m_tag_is(tag, tid, M_ARG_VALUE) || m_tag_is(tag, tid, M_ARG_STRING_VALUE)) && st[S_CUR] != 0 {
+        let is_str = m_tag_is(tag, tid, M_ARG_STRING_VALUE);
+
+        if text.len == 0 && is_str {
+            // Empty string: arg-close adds the closing quote.
+            m_tgt_append(tcb, st, out, "\"");
+            st[S_QUOTE] = 1;
+        } else
+
+        if text.len > 0 && is_str {
+            if st[S_QUOTE] == 0 {
+                m_tgt_append(tcb, st, out, "\"");
+                st[S_QUOTE] = 1;
+            }
+            m_emit_esc_inner(tcb, st, out, text);
+        } else
+
+        if text.len > 0 {
+            m_emit_norm(tcb, st, out, text);
+        }
+    }
+
+    if m_tag_is(tag, tid, M_ARG_CLOSE) && st[S_CUR] != 0 {
+        if st[S_QUOTE] == 1 {
+            m_tgt_append(tcb, st, out, "\"");
+            st[S_QUOTE] = 0;
+        }
+    }
+
+    if m_tag_is(tag, tid, M_TOOL_CLOSE) && st[S_CUR] != 0 {
+        if m_name_len(st, out) == 0 && st[S_BUF_LEN] > 0 {
+            m_args_set(st, out, st[S_BUF_OFF], st[S_BUF_LEN]);
+            st[S_BUF_LEN] = 0;
+        }
+
+        if st[S_QUOTE] == 1 {
+            m_tgt_append(tcb, st, out, "\"");
+            st[S_QUOTE] = 0;
+        }
+
+        var d = m_brace_depth(tcb, m_args_off(st, out), m_args_len(st, out));
+
+        while d > 0 {
+            m_tgt_append(tcb, st, out, "}");
+            d = d - 1;
+        }
+
+        if st[S_PEND] == 1 {
+            if m_name_len(st, out) > 0 {
+                m_push(st, out);
+            }
+            st[S_PEND] = 0;
+            st[S_CUR] = 0;
+        }
+    }
+    return 0;
+}
+
+recursive fn m_walk(
+    id: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64 {
+    m_map(id, input, a_tag, a_toff, a_tlen, a_is, a_ic, inv, tid, cont, reas, tcb, st, out);
+    let base = a_cs[id];
+    let n = a_cc[id];
+    var i: i64 = 0;
+
+    while i < n {
+        m_walk(achild[base + i], input, a_tag, a_toff, a_tlen, a_cs, a_cc, achild, a_is, a_ic, inv, tid, cont, reas, tcb, st, out);
+        i = i + 1;
+    }
+    return 0;
+}
+
+fn m_ws_only(s: const u8[:], n: i64) -> bool {
+    var i: i64 = 0;
+
+    while i < n {
+        let c = s[i];
+
+        if c != ' ' && c != '\n' && c != '\r' && c != '\t' {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+// Entry point: walk the result nodes, flush the pending call, drop
+// whitespace-only reasoning. Returns the committed tool-call count and leaves
+// the buffers and `out` as described at the top of the file.
+export fn peg_map_msg(
+    roots: const i64[:],
+    nroots: i64,
+    input: const u8[:],
+    a_tag: const i64[:],
+    a_toff: const i64[:],
+    a_tlen: const i64[:],
+    a_cs: const i64[:],
+    a_cc: const i64[:],
+    achild: const i64[:],
+    a_is: const i64[:],
+    a_ic: const i64[:],
+    inv: const i64[:],
+    tid: const i64[:],
+    cont: u8[:],
+    reas: u8[:],
+    tcb: u8[:],
+    st: i64[:],
+    out: i64[:]) -> i64 {
+    st[S_CONT] = 0;
+    st[S_REAS] = 0;
+    st[S_TCB] = 0;
+    st[S_NCALLS] = 0;
+    st[S_PEND] = 0;
+    st[S_PNAME_OFF] = 0;
+    st[S_PNAME_LEN] = 0;
+    st[S_PARGS_OFF] = 0;
+    st[S_PARGS_LEN] = 0;
+    st[S_PID_OFF] = 0;
+    st[S_PID_LEN] = 0;
+    st[S_ARGC] = 0;
+    st[S_QUOTE] = 0;
+    st[S_BUF_OFF] = 0;
+    st[S_BUF_LEN] = 0;
+    st[S_SLOT] = 0;
+    st[S_CUR] = 0;
+    out[O_CONTENT] = 0;
+    out[O_REASONING] = 0;
+    out[O_NCALLS] = 0;
+
+    var i: i64 = 0;
+
+    while i < nroots {
+        m_walk(roots[i], input, a_tag, a_toff, a_tlen, a_cs, a_cc, achild, a_is, a_ic, inv, tid, cont, reas, tcb, st, out);
+        i = i + 1;
+    }
+
+    // A call started but never named still flushes when it has a name.
+    if st[S_PEND] == 1 && st[S_PNAME_LEN] > 0 {
+        if st[S_BUF_LEN] > 0 {
+            st[S_PARGS_OFF] = st[S_BUF_OFF];
+            st[S_PARGS_LEN] = st[S_BUF_LEN];
+            st[S_BUF_LEN] = 0;
+        }
+
+        if st[S_QUOTE] == 1 && st[S_PARGS_LEN] > 0 {
+            let off = st[S_PARGS_OFF];
+            let len = st[S_PARGS_LEN];
+
+            m_app(tcb, off + len, "\"", 0, 1);
+            st[S_PARGS_LEN] = len + 1;
+            st[S_QUOTE] = 0;
+        }
+        m_push(st, out);
+    }
+    out[O_CONTENT] = st[S_CONT];
+    out[O_REASONING] = st[S_REAS];
+    out[O_NCALLS] = st[S_NCALLS];
+
+    if out[O_REASONING] > 0 && m_ws_only(reas, out[O_REASONING]) {
+        out[O_REASONING] = 0;
+    }
+    return st[S_NCALLS];
 }
