@@ -420,3 +420,86 @@ rule and its measurement discipline exist before any work begins.
 
 This note does not reserve the GPU, does not schedule an experiment and does not
 change the current measurement discipline.
+
+## Long-term research direction: Kernel Optimization Factory
+
+Status: recorded direction, **not started**. No pipeline, no experiment and no
+change to a working CUDA kernel is authorised by this note.
+
+### Idea
+
+Mirror the agent-driven kernel-optimisation approach popularised by Databricks
+Kernel Factory: profile the real runtime, pick a measured bottleneck, let an AI
+agent propose an optimised kernel (or a fused sequence), build it, prove
+correctness against the accepted reference, measure it on the same hardware and
+keep only a confirmed improvement. The loop repeats and keeps failures as
+evidence, so later iterations do not rediscover them.
+
+Databricks reports a 2.5x average speed-up over SGLang kernels on the Muse Spark
+Open Kernel Challenge. That number is their result on their workload; it is not
+a target or a guarantee for FrankenMoE. The internal implementation of Kernel
+Factory is not published, so the open material below is the starting point, not
+a specification.
+
+### Pipeline
+
+1. Profile FrankenMoE and locate real bottlenecks (never guess).
+2. Select one kernel or operation sequence.
+3. An agent proposes an optimised implementation.
+4. Build it automatically and verify correctness against the accepted reference.
+5. Measure performance against the original on identical hardware and flags.
+6. Keep the best confirmed variant together with the experiment record.
+7. Repeat, feeding back both successes and failures.
+
+### Priorities
+
+Chosen strictly from profiles, in this order of likely value, not of assumption:
+
+- MoE: expert routing, matrix work, operator fusion.
+- Dequantisation: fuse weight unpacking with the compute that consumes it.
+- Prefill: overhead reduction and faster compute.
+- Decode: fewer launches, lower latency, fewer memory round-trips.
+- KV cache: data movement and placement.
+- VRAM/RAM management and CPU↔GPU transfers.
+
+### Experiment rules
+
+- Primary platform: RTX 4070 12 GB.
+- Correctness against the accepted reference is a precondition, not a trade-off.
+- Use diverse inputs the agent has not seen before.
+- Measure the effect on prefill, decode, VRAM/RAM and runtime stability, not only
+  the isolated kernel.
+- Repeat measurements and account for statistical noise.
+- Reject any change with a performance regression above 2% or any correctness
+  failure.
+- Never promote an experimental change into the working runtime automatically;
+  the best stable variant is kept with a rollback path.
+- Keep optimisation work isolated from the main development tree.
+
+### Model comparison (January 2027 or later)
+
+Compare Anthropic, OpenAI and other providers on identical tasks, hardware and
+budgets: share of correct solutions, actual speed-up, successful iterations,
+time and token cost, and stability. Do not bind the pipeline architecture to a
+single provider.
+
+### Goose compatibility
+
+Goose remains the project language. CUDA and low-level optimisation must fit the
+existing architecture without giving up safety, correctness or maintainability.
+Optimising the Fried Goose compiler is a separate direction, explored only if
+the kernel work needs it.
+
+### Open material to study
+
+- https://openkernelchallenge.dev/
+- https://openkernelchallenge.dev/rules
+- https://github.com/NVlabs/kda
+- https://github.com/meta-pytorch/KernelAgent
+
+### Start criteria
+
+Only after: the full runtime migration is closed, the single runtime is
+integrated, and reproducible baseline benchmarks exist. Until then this section
+is a recorded direction with its dependencies and acceptance rules; it creates
+no work for the active agents and does not touch the CUDA kernels.
