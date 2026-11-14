@@ -1,22 +1,21 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-14. This file is the current state; update it in the same change
+Updated: 2026-11-14 (2). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 102**, **PARTIAL 8**, **TODO 42** of
-152 functional requirements. Slice front: **62 / 88** done, 26 remaining.
+`docs/goose-migration/tasks.json`: **DONE 103**, **PARTIAL 7**, **TODO 42** of
+152 functional requirements. Slice front: **74 / 88** done, 14 remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
-The eight partial requirements and their slice fronts:
+The remaining partial requirements and their slice fronts:
 
 | requirement | slices | what is open |
 |---|---|---|
-| P6-05 | 13 / 20 | glm4, glm-dsa, gemma3, gemma3n, gemma4, gemma4-assistant, mistral3 |
 | P6-09 | 1 / 5 | LoRA manifest, LoRA apply, saver writer, saver from model |
-| P7-02 | 1 / 5 | GGUF writer, tensor data, split/merge, model saver |
+| P7-02 | 2 / 5 | tensor data (in acceptance), split/merge, model saver |
 | P7-04 | 2 / 6 | imatrix loader, unweighted quantizers, weighted quantizers, dequant closure |
 | P7-08 | 4 / 8 | plan-level split: chat apply and time injection, hoisted native names |
 | P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
@@ -37,7 +36,7 @@ The eight partial requirements and their slice fronts:
 - HTTP URL policy, HF cache naming, download selection, log policy, console
   editing (P7-11 complete);
 - server tool definitions and request schema;
-- thirteen model architecture builders over one shared model-graph module.
+- twenty model architecture builders over shared model-graph and family modules (P6-05 closed).
 
 ## Sources and evidence
 
