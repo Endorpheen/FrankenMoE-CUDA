@@ -84,6 +84,22 @@ Checked on 2026-11-15, all against the current main build:
 Integrating an alternative is a merge decision (pick a body, delete the other),
 not a composition step; it is out of scope until a stage needs that subsystem.
 
+### S1.2-S2.1 — in flight (isolated staged builds)
+
+Four staged builds run in parallel on the same pattern as S1.1, each behind its
+own build flag, each in its own copy of the CPU-only tree:
+
+| stream | flag | module | gate |
+|---|---|---|---|
+| GGUF write/plan | `FG_GOOSE_GGUF` | gguf-metadata/writer/tensors/split | byte parity on synthetic inputs |
+| quantizers | `FG_GOOSE_QUANT` | quant-types/allow/rows/rows2/dequant/dequant2/weighted | byte parity of quant/dequant blocks |
+| config validation | `FG_GOOSE_CONFIG` | config-validate (+ arch-registry, config-resolve) | 48 rules and 6 order pins |
+| metrics/traces | `FG_GOOSE_METRICS` | metrics-traces | byte parity of CSV fields and trace rows |
+
+Each must show: OFF build unchanged, ON build dispatches into Goose
+(`goose_calls > 0`), exactly one definition of the Goose symbol in ON and none
+in OFF, and no model run.
+
 ### S1.1 — proven on the schema converter (EXP626, isolated)
 
 The staged build is reproduced in
