@@ -12024,3 +12024,514 @@ export fn chat_content_string_caps_json(
     out: u8[:]) -> i64 {
     return content_string_caps(blob, off, len, supports_string, supports_typed, out);
 }
+
+// ---- token-aligned chat message delimiters --------------------------------
+//
+// Port of common/chat.h and common/chat.cpp (flint tree):
+//   - common_chat_msg_delimiters::add        (chat.h:213-215)
+//   - common_chat_msg_delimiters::tokenize   (chat.cpp:116-120)  [bound ids]
+//   - common_chat_msg_delimiters::split      (chat.cpp:122-155)
+//   - common_chat_msg_spans::is_user_start   (chat.h:182-189)
+//   - common_chat_msg_spans::last_user_message_pos (chat.h:191-198)
+//   - the autoparser hand-off that fills the list (chat.cpp:1417-1425)
+//
+// Owned decisions: delimiter store order and append (no dedup, no trim); the
+// construction policy (assistant marker first, user second, empty skipped);
+// matching at a position in insertion order with the first match winning and
+// an empty token list matching everywhere; skip regions taken only at their
+// exact start, never matched inside, still counted as span content; one span
+// per consecutive match pair ending at the tokens.size() sentinel; the role
+// name table.
+//
+// Tokenization stays native: the caller tokenizes each delimiter with
+// common_tokenize(vocab, delimiter, false, true) and binds the ids through
+// dl_bind_tokens / dl_bind_all. No C symbol is declared here.
+//
+// Flat layouts:
+//   D (i64): [0] count, [1] delimiter bytes used, [2] token ids used, then five
+//            slots per delimiter at dl_dent(i): role, byte offset in B, byte
+//            length, token offset in T, token count.
+//   B (u8) : delimiter bytes, concatenated in insertion order.
+//   T (i64): token ids, concatenated in binding order.
+//
+// Return codes: 0 ok; -1 bad argument/store/table; -2 arena too small;
+// dl_split: >= 0 span count, -11 negative skip length, -12 unsorted skip starts.
+const ROLE_UNKNOWN: i64 = 0;
+const ROLE_SYSTEM: i64 = 1;
+const ROLE_ASSISTANT: i64 = 2;
+const ROLE_USER: i64 = 3;
+const ROLE_TOOL: i64 = 4;
+
+const D_SLOTS: i64 = 5;
+const D_HEAD: i64 = 3;
+
+fn dl_dent(i: i64) -> i64 {
+    return D_HEAD + D_SLOTS * i;
+}
+
+fn dl_bytes_eq(a: const u8[:], b: const u8[:]) -> bool {
+    if a.len != b.len {
+        return false;
+    }
+
+    var i: i64 = 0;
+
+    while i < a.len {
+        if a[i] != b[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+fn dl_put(dst: u8[:], at: i64, s: const u8[:]) -> i64 {
+    var k: i64 = 0;
+
+    while k < s.len {
+        if at + k < dst.len {
+            dst[at + k] = s[k];
+        }
+        k = k + 1;
+    }
+    return at + s.len;
+}
+
+// ---- delimiter store -------------------------------------------------------
+
+export fn dl_reset(D: i64[:]) -> i64 {
+    if D.len < D_HEAD {
+        return -1;
+    }
+    D[0] = 0;
+    D[1] = 0;
+    D[2] = 0;
+    return 0;
+}
+
+fn dl_add_impl(D: i64[:], B: u8[:], role: i64, s: const u8[:]) -> i64 {
+    let n = D[0];
+    let b = dl_dent(n);
+
+    if b + D_SLOTS > D.len {
+        return -1;
+    }
+    if D[1] + s.len > B.len {
+        return -2;
+    }
+    D[b]     = role;
+    D[b + 1] = D[1];
+    D[b + 2] = s.len;
+    D[b + 3] = D[2];
+    D[b + 4] = 0;
+
+    var k: i64 = 0;
+
+    while k < s.len {
+        B[D[1] + k] = s[k];
+        k = k + 1;
+    }
+    D[1] = D[1] + s.len;
+    D[0] = n + 1;
+    return 0;
+}
+
+// Exported entry: a thin wrapper, so the implementation keeps a single call
+// shape for the internal construction path (an exported function that is also
+// called internally makes the C signature ambiguous).
+export fn dl_add(D: i64[:], B: u8[:], role: i64, s: const u8[:]) -> i64 {
+    return dl_add_impl(D, B, role, s);
+}
+
+// Assistant marker first, then the user marker; an empty marker is not added.
+// This is the map from the autoparser analysis to the delimiter list.
+export fn build_msg_delims(D: i64[:], B: u8[:], assistant_start: const u8[:], user_start: const u8[:]) -> i64 {
+    if assistant_start.len > 0 {
+        let ra = dl_add_impl(D, B, ROLE_ASSISTANT, assistant_start);
+
+        if ra != 0 {
+            return ra;
+        }
+    }
+    if user_start.len > 0 {
+        let ru = dl_add_impl(D, B, ROLE_USER, user_start);
+
+        if ru != 0 {
+            return ru;
+        }
+    }
+    return 0;
+}
+
+// ---- token binding ---------------------------------------------------------
+//
+// Tokenization contract: the caller tokenizes every delimiter string with
+// common_tokenize(vocab, delimiter, false, true) and supplies the resulting ids.
+// A delimiter whose string is empty yields an empty id list and stays empty.
+//
+// dl_bind_tokens: bind one delimiter. ids are copied to the token arena at
+// D[2]; the delimiter's token offset/count become that copy. Append-only, so a
+// second bind of the same delimiter adds a second copy (native tokenize runs
+// once, see chat.cpp:1729).
+export fn dl_bind_tokens(D: i64[:], T: i64[:], i: i64, ids: const i64[:]) -> i64 {
+    if D[0] < 0 || D[2] < 0 || D[2] > T.len {
+        return -1;
+    }
+    if i < 0 || i >= D[0] {
+        return -1;
+    }
+    if D[2] + ids.len > T.len {
+        return -2;
+    }
+    let b = dl_dent(i);
+    D[b + 3] = D[2];
+    D[b + 4] = ids.len;
+
+    var k: i64 = 0;
+
+    while k < ids.len {
+        T[D[2] + k] = ids[k];
+        k = k + 1;
+    }
+    D[2] = D[2] + ids.len;
+    return 0;
+}
+
+// dl_bind_all: bind the whole list from one flat pool. off/len are indexed by
+// delimiter (off/len must hold at least D[0] entries); ids is the concatenation
+// of every delimiter's ids. All slices are validated before anything is written,
+// so a failure leaves the store unchanged.
+export fn dl_bind_all(
+    D: i64[:],
+    T: i64[:],
+    off: const i64[:],
+    len: const i64[:],
+    ids: const i64[:]) -> i64 {
+
+    let n = D[0];
+
+    if n < 0 || D[2] < 0 || D[2] > T.len {
+        return -1;
+    }
+    if off.len < n || len.len < n {
+        return -1;
+    }
+    var total: i64 = 0;
+    var i: i64 = 0;
+
+    while i < n {
+        if off[i] < 0 || len[i] < 0 || off[i] + len[i] > ids.len {
+            return -1;
+        }
+        total = total + len[i];
+        i = i + 1;
+    }
+    if D[2] + total > T.len {
+        return -2;
+    }
+    var at: i64 = D[2];
+
+    i = 0;
+    while i < n {
+        let b = dl_dent(i);
+        D[b + 3] = at;
+        D[b + 4] = len[i];
+
+        var k: i64 = 0;
+
+        while k < len[i] {
+            T[at + k] = ids[off[i] + k];
+            k = k + 1;
+        }
+        at = at + len[i];
+        i = i + 1;
+    }
+    D[2] = at;
+    return 0;
+}
+
+// ---- split -----------------------------------------------------------------
+
+// Index of the first delimiter matching at tokens[i], or -1. Insertion order is
+// the tie-break order: the first match wins. An empty delimiter matches every
+// position, exactly like std::equal over an empty token range.
+fn dl_match_at(D: const i64[:], T: const i64[:], tokens: const i64[:], i: i64) -> i64 {
+    var d: i64 = 0;
+
+    while d < D[0] {
+        let b = dl_dent(d);
+        let cnt = D[b + 4];
+
+        if cnt >= 0 && i + cnt <= tokens.len && D[b + 3] >= 0 && D[b + 3] + cnt <= T.len {
+            let toff = D[b + 3];
+            var j: i64 = 0;
+            var same: bool = true;
+
+            while j < cnt {
+                if T[toff + j] != tokens[i + j] {
+                    same = false;
+                }
+                j = j + 1;
+            }
+            if same {
+                return d;
+            }
+        }
+        d = d + 1;
+    }
+    return -1;
+}
+
+// Write one span per consecutive match pair. Returns the total span count; the
+// tables receive the first min(count, out_role.len) entries, so a caller can
+// size the tables from the return value.
+//
+// Every error is detected before the first write, so on a negative return the
+// span tables are untouched. Skipped regions must arrive sorted and strictly
+// increasing, as std::map guarantees natively (chat.cpp:122-131). A zero-length
+// skip is legal: it consumes the skip cursor without moving i, which is exactly
+// what the native ++skip does (chat.cpp:127-130).
+export fn dl_split(
+    D: const i64[:],
+    T: const i64[:],
+    tokens: const i64[:],
+    sk_start: const i64[:],
+    sk_len: const i64[:],
+    n_skips: i64,
+    out_role: i64[:],
+    out_pos: i64[:],
+    out_len: i64[:]) -> i64 {
+
+    if n_skips < 0 || sk_start.len < n_skips || sk_len.len < n_skips {
+        return -1;
+    }
+    var k: i64 = 0;
+
+    while k < n_skips {
+        if sk_start[k] < 0 {
+            return -12;
+        }
+        if k > 0 && sk_start[k] <= sk_start[k - 1] {
+            return -12;
+        }
+        if sk_len[k] < 0 {
+            return -11;
+        }
+        k = k + 1;
+    }
+
+    let cap_a: i64 = if out_pos.len < out_role.len {
+        out_pos.len
+    } else {
+        out_role.len
+    };
+    let cap: i64 = if out_len.len < cap_a {
+        out_len.len
+    } else {
+        cap_a
+    };
+    var n: i64 = 0;
+    var have: bool = false;
+    var prev_role: i64 = ROLE_UNKNOWN;
+    var prev_pos: i64 = 0;
+    var s: i64 = 0;
+    var i: i64 = 0;
+
+    while i < tokens.len {
+        if s < n_skips && i == sk_start[s] {
+            i = i + sk_len[s];
+            s = s + 1;
+            continue;
+        }
+        let d = dl_match_at(D, T, tokens, i);
+
+        if d >= 0 {
+            if have {
+                if n < cap {
+                    out_role[n] = prev_role;
+                    out_pos[n] = prev_pos;
+                    out_len[n] = i - prev_pos;
+                }
+                n = n + 1;
+            }
+            have = true;
+            prev_role = D[dl_dent(d)];
+            prev_pos = i;
+        }
+        i = i + 1;
+    }
+
+    if have {
+        if n < cap {
+            out_role[n] = prev_role;
+            out_pos[n] = prev_pos;
+            out_len[n] = tokens.len - prev_pos;
+        }
+        n = n + 1;
+    }
+    return n;
+}
+
+// ---- span queries ----------------------------------------------------------
+
+// Returns 1 or 0; the native bool is mapped to i64 so the exported C header
+// needs no stdbool.h.
+export fn sp_is_user_start(out_role: const i64[:], out_pos: const i64[:], n: i64, p: i64) -> i64 {
+    var i: i64 = 0;
+
+    while i < n {
+        if out_role[i] == ROLE_USER && p == out_pos[i] {
+            return 1;
+        }
+        i = i + 1;
+    }
+    return 0;
+}
+
+export fn sp_last_user_pos(out_role: const i64[:], out_pos: const i64[:], n: i64) -> i64 {
+    var i: i64 = n - 1;
+
+    while i >= 0 {
+        if out_role[i] == ROLE_USER {
+            return out_pos[i];
+        }
+        i = i - 1;
+    }
+    return -1;
+}
+
+// ---- incremental message-start probe --------------------------------------
+//
+// Linkage for a future streaming path. The server today precomputes the whole
+// span table (server_tokens::find_message_spans -> dl_split) and only asks
+// sp_is_user_start / sp_last_user_pos about token positions
+// (server-context.cpp:4326, 4370, 4408). dl_split cannot answer "does a
+// message start at the cursor" without rescanning the prompt, so this probe
+// answers the same question locally, using the same store, tokens and skips.
+//
+// Contract: p is the first token the caller has not consumed yet.
+//   - returns the role of the first delimiter (insertion order) that matches
+//     exactly at p, or -1 when none matches;
+//   - a marker that begins before p and overlaps p is not a new message;
+//     the caller must probe every position while feeding tokens;
+//   - a position inside or at the start of a positive-length skip returns -1;
+//     a zero-length skip is the native no-op jump, so matching at p is allowed
+//     (dl_split performs i += 0, ++skip, then tests p again);
+//   - skips must be sorted, unique and non-overlapping, and p in [0, len);
+//     malformed arrays return -1.
+//
+// This is the incremental equivalent of sp_is_user_start for one position; it
+// does not hold streaming state and does not modify the caller's buffers.
+fn dl_message_start_at_impl(
+    D: const i64[:],
+    T: const i64[:],
+    tokens: const i64[:],
+    sk_start: const i64[:],
+    sk_len: const i64[:],
+    n_skips: i64,
+    p: i64) -> i64 {
+
+    if p < 0 || p >= tokens.len {
+        return -1;
+    }
+    if n_skips < 0 || sk_start.len < n_skips || sk_len.len < n_skips {
+        return -1;
+    }
+    var k: i64 = 0;
+    var prev_s: i64 = -1;
+    var prev_end: i64 = 0;
+
+    while k < n_skips {
+        let s = sk_start[k];
+        let l = sk_len[k];
+
+        if s < 0 || l < 0 {
+            return -1;
+        }
+        if s <= prev_s || s < prev_end {
+            return -1;
+        }
+        if l > 0 && p >= s && p < s + l {
+            return -1;
+        }
+        prev_s = s;
+        prev_end = s + l;
+        k = k + 1;
+    }
+
+    let d = dl_match_at(D, T, tokens, p);
+
+    if d < 0 {
+        return -1;
+    }
+    return D[dl_dent(d)];
+}
+
+export fn dl_message_start_at(
+    D: const i64[:],
+    T: const i64[:],
+    tokens: const i64[:],
+    sk_start: const i64[:],
+    sk_len: const i64[:],
+    n_skips: i64,
+    p: i64) -> i64 {
+
+    return dl_message_start_at_impl(D, T, tokens, sk_start, sk_len, n_skips, p);
+}
+
+// 1 when a USER delimiter starts exactly at p, 0 when something else or
+// nothing starts there, -1 on the contract errors above. This mirrors
+// common_chat_msg_spans::is_user_start (chat.h:182-189) for one position.
+export fn dl_user_message_start_at(
+    D: const i64[:],
+    T: const i64[:],
+    tokens: const i64[:],
+    sk_start: const i64[:],
+    sk_len: const i64[:],
+    n_skips: i64,
+    p: i64) -> i64 {
+
+    let r = dl_message_start_at_impl(D, T, tokens, sk_start, sk_len, n_skips, p);
+
+    if r < 0 {
+        return -1;
+    }
+    if r == ROLE_USER {
+        return 1;
+    }
+    return 0;
+}
+
+// ---- role names ------------------------------------------------------------
+
+export fn role_from_string(s: const u8[:]) -> i64 {
+    if dl_bytes_eq(s, "system") {
+        return ROLE_SYSTEM;
+    }
+    if dl_bytes_eq(s, "assistant") {
+        return ROLE_ASSISTANT;
+    }
+    if dl_bytes_eq(s, "user") {
+        return ROLE_USER;
+    }
+    if dl_bytes_eq(s, "tool") {
+        return ROLE_TOOL;
+    }
+    return ROLE_UNKNOWN;
+}
+
+export fn role_to_string(role: i64, out: u8[:]) -> i64 {
+    if role == ROLE_SYSTEM {
+        return dl_put(out, 0, "system");
+    }
+    if role == ROLE_ASSISTANT {
+        return dl_put(out, 0, "assistant");
+    }
+    if role == ROLE_USER {
+        return dl_put(out, 0, "user");
+    }
+    if role == ROLE_TOOL {
+        return dl_put(out, 0, "tool");
+    }
+    return 0;
+}
