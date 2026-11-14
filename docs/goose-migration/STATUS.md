@@ -1,50 +1,65 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-13. This file is the current state; update it in the same change
+Updated: 2026-11-14. This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 102**, **PARTIAL 1** (P7-08),
-**TODO 49** of 152 functional requirements. Slice front: **34 / 38** done.
+`docs/goose-migration/tasks.json`: **DONE 102**, **PARTIAL 8**, **TODO 42** of
+152 functional requirements. Slice front: **62 / 88** done, 26 remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
-## Active requirement: P7-08 (Jinja, templates, reasoning)
+The eight partial requirements and their slice fronts:
 
-Four of eight slices are complete:
-
-| slice | experiment | state |
+| requirement | slices | what is open |
 |---|---|---|
-| lexer | EXP502 | done, 107 cases / 131025 values, 20/20 mutations |
-| parser | EXP503 | done, 105 cases / 210 values, 19/19 mutations |
-| value model | EXP504 | done, 271 cases / 271 values, 20/20 mutations |
-| JSON output | EXP505 | done, 192 cases / 384 values, 20/20 mutations |
-| built-ins | EXP506 | partial: scalar tables done, 51 cases, 14/14 mutations; string/array/object and global built-ins open |
-| runtime | EXP507 / EXP508 | partial: expressions (81/162) and program/if/set (27/54, 12/12) done |
-| runtime `for` | EXP509 | **in progress, not accepted**: port written, fixture and gate not finished |
-| string/caps | — | not started |
-| chat layer | — | not started |
+| P6-05 | 13 / 20 | glm4, glm-dsa, gemma3, gemma3n, gemma4, gemma4-assistant, mistral3 |
+| P6-09 | 1 / 5 | LoRA manifest, LoRA apply, saver writer, saver from model |
+| P7-02 | 1 / 5 | GGUF writer, tensor data, split/merge, model saver |
+| P7-04 | 2 / 6 | imatrix loader, unweighted quantizers, weighted quantizers, dequant closure |
+| P7-08 | 4 / 8 | plan-level split: chat apply and time injection, hoisted native names |
+| P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
+| P8-07 | 2 / 5 | MCP session core, decision core, integration shells |
+| P9-06 | 4 / 4 | acceptance names the session-loop budget/interrupt behavior |
 
-The final `-O2` gate is deferred for EXP508 and EXP509: `gcc -O2` on the
-generated module does not finish inside the five-minute per-step limit. ASan is
-deferred for the same reason.
+## What the canonical tree contains
 
-## What the runtime already uses
+`goose/` holds 4107 verified files. The accepted slices of this phase cover:
 
-The C++ fork at `/home/end0/AI/LlamaServer/llama.cpp-flint-cuda` still provides
-the transport; the Goose modules are compiled to `.so` and linked into it. The
-accepted work covers CPU and CUDA operators, MoE, allocator, KV/batch/context,
-server decisions, JSON/schema/PEG/GBNF and the Jinja stack.
+- Jinja runtime 19025 lines (expressions, statements, filters, tests, macros,
+  chat layer, streaming, delimiters, autoparser, tool builders, nine parser
+  families) with differential gates;
+- JSON/schema/PEG/GBNF: parser, dump, schema-to-GBNF converter, four tool gates;
+- chat: parse params, thinking control, CLI line protocol, arena load;
+- GGUF metadata context (writer, tensor data, split/merge still native);
+- quantization type selection and allow-cuts (imatrix loader still native);
+- HTTP URL policy, HF cache naming, download selection, log policy, console
+  editing (P7-11 complete);
+- server tool definitions and request schema;
+- thirteen model architecture builders over one shared model-graph module.
 
 ## Sources and evidence
 
-- Sources: [`goose/`](../goose/README.md), 4061 files grouped by subsystem.
+- Sources: [`goose/`](../goose/README.md), grouped by subsystem.
 - Map: `goose/MANIFEST.json` (experiment, native path, gate, SHA256 per file).
-- Tools: `tools/sync-goose-tree.py` rebuilds the tree, `tools/check-goose-tree.py`
-  verifies it (currently 4061 entries, green).
-- Coverage: every `.goose` under `experiments/` and every LlamaServer checkout
-  has a content-identical copy in `goose/` (6340 files checked, 0 missing).
+- Tools: `tools/sync-goose-tree.py` rebuilds the tree,
+  `tools/check-goose-tree.py` verifies hashes and experiments (green).
+- Every accepted slice has a card under `experiments/EXP-*` with the gate
+  script, mutation table and recorded results.
+
+## Composition debt
+
+An export-name audit over the 34 canonical files finds five shared names that a
+single linked runtime must deduplicate: `builtin_call`/`builtin_names`
+(builtins vs runtime), `value_cmp`/`value_info` (value vs value-json) and
+`json_parse` (the parser plus three byte-identical module copies required by
+Goose's name-based import). Every standalone gate is green; deduplication is a
+composition step and must be done with the gates re-run.
+
+The GGUF writer is the next composition-sensitive piece: the writer core is a
+separate slice, and its byte-exact gate must be added before split/merge can
+depend on it.
 
 ## Open documentation debt
 
@@ -53,11 +68,14 @@ server decisions, JSON/schema/PEG/GBNF and the Jinja stack.
 2. `docs/goose-migration/HANDOFF.md` is a historical narrative (EXP237-244), not
    the current state; this file replaces it as the status source.
 3. 26 slice files have no native target in the ledger and sit under `misc/`.
+4. Older experiments still track build artefacts committed before the storage
+   rule; a cleanup needs Igor's explicit approval and must not delete sources.
 
 ## Next
 
-1. Finish EXP509: fixture for `for`/`break`/`continue` and the loop object, gate
-   and mutations, then update P7-08-COVERAGE and the ledger.
-2. Continue P7-08 with macro/call, filters and tests, string/caps, then the chat
-   layer.
-3. Keep `goose/` and this file current with every accepted slice.
+1. Accept the in-flight slices: seven P6-05 architectures, imatrix loader,
+   LoRA manifest, GGUF writer.
+2. Then P8-07 S3/S4 (MCP session core, decision core) and P6-09 S2.
+3. P7-08: hoisted native names need a native insertion index per node; chat
+   apply and time injection are the remaining chat-layer work.
+4. Keep `goose/` and this file current with every accepted slice.
