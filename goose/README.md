@@ -7,18 +7,18 @@ grouped by what it does rather than by the experiment that proved it.
 
 | directory | files | what is inside |
 |---|---:|---|
-| `jinja/` | 17 | the Jinja stack: lexer, parser, value model, JSON output, built-ins, runtime |
+| `jinja/` | 16 | the Jinja stack: lexer, parser, value model, JSON output, built-ins, runtime |
 | `json/` | 34 | JSON text parsing, rendering, JSON-schema decoding and introspection |
 | `grammar/` | 1 | GBNF grammar text parsing |
-| `server/` | 52 | HTTP server decisions: routing, limits, SSE, providers, startup and shutdown |
-| `cpu/` | 239 | CPU backends, quantized kernels, MoE, allocator and scheduler work |
+| `server/` | 56 | HTTP server decisions: routing, limits, SSE, providers, MCP and startup/shutdown |
+| `cpu/` | 241 | CPU backends, quantized kernels, MoE, allocator, scheduler and optimizer work |
 | `cuda/` | 233 | CUDA operators: attention, quantization, reductions, RoPE, SSM, MoE |
 | `kv/` | 90 | KV cache, memory, batch, context and recurrent state |
-| `model/` | 59 | model loading, GGUF, tokenizer and graph construction |
+| `model/` | 76 | model loading, GGUF, tokenizer, quantization and graph construction |
 | `sampling/` | 5 | sampler decisions and output selection |
-| `chat/` | 17 | chat templates, tool calls and message conversion |
-| `cli/` | 2 | the session line protocol and its JSON parser dependency |
-| `misc/` | 34 | slices whose native file the ledger does not name |
+| `chat/` | 18 | chat templates, tool calls and message conversion |
+| `cli/` | 4 | the session line protocol, config validation and resolution |
+| `misc/` | 36 | common helpers and slices whose native file the ledger does not name |
 | `_archive/` | 3335 | sources preserved from other checkouts and branches, not part of the tree |
 
 A complete module is one file named after the native module it replaces
@@ -26,6 +26,11 @@ A complete module is one file named after the native module it replaces
 named after the decision it implements (`server/route-table.goose`,
 `cuda/flash-attention/...`). The experiment that proved each file, its gate
 result and its SHA256 are in `MANIFEST.json`.
+
+An accepted module is not automatically one unit: `tools/build-main-runtime.sh`
+composes the compatible ones into the growing main build (38 modules, 2347
+specializations), and `tools/check-composition.sh` keeps the per-set smoke test
+green. Alternative ports of one subsystem are merged by decision, not concatenated.
 
 ## Reading the tree
 
