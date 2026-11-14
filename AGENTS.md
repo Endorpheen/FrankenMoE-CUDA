@@ -71,6 +71,20 @@ If you are the senior helper in Codex consulted by Igor, diagnose the reported
 blocker and give Igor concrete guidance for the local agent in OpenCode. Do not
 apply the rule above recursively by sending Igor to another helper.
 
+## Parallel helper agents
+
+Keep the agreed number of helper agents busy. When several are free, hand them
+their next independent tasks in ONE batched block (several tool calls in the
+same message), never one after another: the lead's own review must not serialize
+task assignment. After each delivered result, immediately give that helper its
+next task, in the same batched block as any other assignment that is due.
+
+Give each helper its own isolated directory; helpers never touch the shared
+source or commit. The lead reviews, reproduces and integrates. Serious findings
+go back to the author before a new task; small integration fixes may be done by
+the lead. Do not exceed the agreed number of helpers, and never stop other
+running agents (Codex, the compiler agent, the user's processes).
+
 ## Experiment storage
 
 Evidence stays, build artefacts do not. Commit the Goose source, the build and
