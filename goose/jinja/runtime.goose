@@ -6398,3 +6398,90 @@ export fn chat_concat_parts(
     }
     return p;
 }
+
+// common_chat_msg::to_json_oaicompat content shape: a joined string when the
+// parts contain a media marker, otherwise an array of {type, text} parts.
+export fn chat_content_json(
+    blob: const u8[:],
+    type_off: i64[:],
+    type_len: i64[:],
+    text_off: i64[:],
+    text_len: i64[:],
+    n: i64,
+    out: u8[:]) -> i64 {
+    var has_media: i64 = 0;
+    var i: i64 = 0;
+
+    while i < n {
+        let ty = blob[type_off[i] .. type_off[i] + type_len[i]];
+
+        if bytes_is(ty, "media_marker") {
+            has_media = 0;
+            i = n;
+        } else {
+            i = i + 1;
+        }
+    }
+
+    if has_media != 0 {
+        let base = out.len / 2;
+        var p: i64 = 0;
+        var last_media: i64 = 0;
+        i = 0;
+
+        while i < n {
+            let ty = blob[type_off[i] .. type_off[i] + type_len[i]];
+            var add_nl: i64 = 1;
+
+            if bytes_is(ty, "text") {
+                if last_media == 0 && p > 0 {
+                    add_nl = 1;
+                } else {
+                    add_nl = 0;
+                }
+                last_media = 0;
+            } else if bytes_is(ty, "media_marker") {
+                add_nl = 0;
+                last_media = 1;
+            } else {
+                i = i + 1;
+                continue;
+            }
+
+            if add_nl != 0 {
+                out[base + p] = 10;
+                p = p + 1;
+            }
+            let tx = blob[text_off[i] .. text_off[i] + text_len[i]];
+            var k: i64 = 0;
+
+            while k < tx.len {
+                out[base + p] = tx[k];
+                p = p + 1;
+                k = k + 1;
+            }
+            i = i + 1;
+        }
+        return esc(out, 0, out[base .. base + p]);
+    }
+
+    if n == 0 {
+        return esc(out, 0, "");
+    }
+    var q: i64 = appc(out, 0, 91);
+    i = 0;
+
+    while i < n {
+        if i > 0 {
+            q = appc(out, q, 44);
+            q = appc(out, q, 32);
+        }
+        q = apps(out, q, "{\"type\": ");
+        q = esc(out, q, blob[type_off[i] .. type_off[i] + type_len[i]]);
+        q = apps(out, q, ", \"text\": ");
+        q = esc(out, q, blob[text_off[i] .. text_off[i] + text_len[i]]);
+        q = appc(out, q, 125);
+        i = i + 1;
+    }
+    return appc(out, q, 93);
+}
