@@ -36,6 +36,8 @@ CANONICAL_SOURCES = [
      "common/jinja/lexer.cpp", "107 cases / 131025 values / 0 failures, 20/20 mutations"),
     ("jinja/parser.goose", "EXP-2026-11-13-503-p7-08-jinja-parser", "source/parser.goose",
      "common/jinja/parser.cpp", "105 cases / 210 values / 0 failures, 19/19 mutations"),
+    ("json/format-grammar.goose", "EXP-2026-11-14-570-p7-08-schema", "source/format-grammar.goose",
+     "common/json-schema-to-grammar.cpp", "30 cases / 182 values / 0 failures, 12/12 mutations"),
     ("jinja/value.goose", "EXP-2026-11-14-565-p7-08-json-escapers", "source/value.goose",
      "common/jinja/value.cpp (value model)", "285 cases / 285 values / 0 failures, 14/14 mutations"),
     ("jinja/value-json.goose", "EXP-2026-11-14-565-p7-08-json-escapers", "source/value-json.goose",
@@ -52,6 +54,8 @@ CANONICAL = {
     "EXP-2026-11-13-504-p7-08-jinja-values",
     "EXP-2026-11-13-505-p7-08-value-json",
     "EXP-2026-11-13-506-p7-08-builtins-scalar",
+    # P7-09 grammar-output slices are folded into the canonical schema file (EXP570).
+    "EXP-2026-11-13-496-p7-09-format-grammar",
     "EXP-2026-11-13-508-p7-08-jinja-runtime-stmt",
     "EXP-2026-11-13-507-p7-08-jinja-runtime-expr",
     "EXP-2026-11-13-509-p7-08-jinja-runtime-for",
