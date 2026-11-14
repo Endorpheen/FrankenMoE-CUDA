@@ -31,6 +31,24 @@ Gate: a white-box `TestModel` (the seven pure virtuals stubbed, because
 2447 values, 0 failures; mutations 16/16 in two halves. The pool is seeded so a
 skipped zeroing is visible, and a negative control produces 284 failures.
 
+## S4/S5 plan (model saving)
+
+Native anchors in `src/llama-model-saver.cpp`: `llama_model_saver_supports_arch`
+(16), the two constructors (31, 36), `add_kv` overloads (45-130), `add_tensor`
+(133), `add_kv_from_model` (147), `add_tensors_from_model` (473) and `save`
+(521), over the accepted GGUF writer (P7-02 S2/S3).
+
+S4 is the writer path: the saver accepts an arch name and a GGUF context and
+appends the metadata/tensor records for a given set of values; the gate runs it
+against a synthetic context and compares the resulting bytes with the native
+saver on the same values. No model is needed.
+
+S5 is the model path: `add_kv_from_model` reads hparams and vocabulary, and
+`add_tensors_from_model` scans layer pointers with architecture-specific
+aliasing. That cannot be proven offline; acceptance must be an integration
+fixture with a tiny synthetic model/hparams/vocab, and the report must say so
+instead of claiming a byte gate.
+
 ## Open boundaries
 
 - The native `init()` allocation path is not executed; the fixture installs the
