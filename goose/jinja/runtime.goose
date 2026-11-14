@@ -1204,6 +1204,9 @@ recursive fn json_into(
 // st[0] node count, st[3] string cursor, st[4] pool cursor, st[10] capacity.
 
 fn reset_io(A: const i64[:], st: i64[:], blen: i64) -> i64 {
+    st[45] = 0;
+    st[46] = 0 - 1;
+    st[47] = 0 - 1;
     st[10] = A[0];
     st[0] = A[1];
     st[4] = A[2];
@@ -5690,6 +5693,17 @@ fn out_bytes(out: u8[:], st: i64[:], s: const u8[:]) -> i64 {
 }
 recursive fn append_rendered(v: i64, A: i64[:], B: u8[:], F: f64[:], st: i64[:], out: u8[:], E: u8[:]) -> i64 {
     A[st[27] + v] = A[st[27] + v] | 1;
+    var in_flag: i64 = 0;
+
+    if (A[st[27] + v] & 16) != 0 {
+        in_flag = 1;
+    }
+
+    if st[45] == 0 {
+        st[46] = in_flag;
+    }
+    st[47] = in_flag;
+    st[45] = st[45] + 1;
     let k = vk(A, st, v);
 
     if k == V_STRING {
@@ -7798,4 +7812,118 @@ export fn chat_format_single(past: const u8[:], full: const u8[:], add_ass: i64,
         i = i + 1;
     }
     return p;
+}
+
+// Mark every string value in the encoded template context as input, matching
+// from_json(..., mark_input=true) on the native side.
+export recursive fn chat_mark_value(A: i64[:], st: i64[:], id: i64, depth: i64) -> i64 {
+    if depth > 8 {
+        return 0;
+    }
+    let k = vk(A, st, id);
+
+    if k == V_STRING {
+        A[st[27] + id] = A[st[27] + id] | 16;
+        return 0;
+    }
+
+    if k == V_ARRAY || k == V_TUPLE {
+        let n = vcc(A, st, id);
+        var i: i64 = 0;
+
+        while i < n {
+            chat_mark_value(A, st, A[pool(A, st) + vcs(A, st, id) + i], depth + 1);
+            i = i + 1;
+        }
+        return 0;
+    }
+
+    if k == V_OBJECT {
+        let n = vkc(A, st, id);
+        var i: i64 = 0;
+
+        while i < n {
+            chat_mark_value(A, st, A[pool(A, st) + vks(A, st, id) + i], depth + 1);
+            chat_mark_value(A, st, A[pool(A, st) + vvs(A, st, id) + i], depth + 1);
+            i = i + 1;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+// bit 0: the first rendered part came from input; bit 1: the last one did.
+export fn chat_input_parts(st: const i64[:]) -> i64 {
+    var r: i64 = 0;
+
+    if st[45] > 0 && st[46] != 0 {
+        r = r | 1;
+    }
+
+    if st[45] > 0 && st[47] != 0 {
+        r = r | 2;
+    }
+    return r;
+}
+
+// common/chat.cpp strips BOS/EOS from the first/last prompt part only when that
+// part is not input.
+export fn chat_strip_affix(
+    text: const u8[:],
+    bos: const u8[:],
+    eos: const u8[:],
+    add_bos: i64,
+    add_eos: i64,
+    marks: i64,
+    out: u8[:]) -> i64 {
+    var s: i64 = 0;
+    var e: i64 = text.len;
+
+    if add_bos != 0 && (marks & 1) == 0 && bos.len > 0 && e - s >= bos.len {
+        var same: bool = true;
+        var k: i64 = 0;
+
+        while k < bos.len {
+            if text[s + k] != bos[k] {
+                same = false;
+            }
+            k = k + 1;
+        }
+
+        if same {
+            s = s + bos.len;
+        }
+    }
+
+    if add_eos != 0 && (marks & 2) == 0 && eos.len > 0 && e - s >= eos.len {
+        var same: bool = true;
+        var k: i64 = 0;
+
+        while k < eos.len {
+            if text[e - eos.len + k] != eos[k] {
+                same = false;
+            }
+            k = k + 1;
+        }
+
+        if same {
+            e = e - eos.len;
+        }
+    }
+    var p: i64 = 0;
+
+    while s < e {
+        out[p] = text[s];
+        p = p + 1;
+        s = s + 1;
+    }
+    return p;
+}
+
+// Set the arena row bases without touching the cursor state, so a caller can
+// mark context values before the render starts (reset_io computes the same bases).
+export fn chat_bases(st: i64[:], n: i64) -> i64 {
+    st[10] = n;
+    bases(st);
+    return 0;
 }
