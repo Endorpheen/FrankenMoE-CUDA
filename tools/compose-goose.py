@@ -38,6 +38,19 @@ RENAMES = {
         "PJ_K_ARRAY": "TP_K_ARRAY",
         "PJ_K_OBJECT": "TP_K_OBJECT",
     },
+    "quant-rows2.goose": {
+        "st_f16": "st2_f16",
+        "st_u8": "st2_u8",
+        "st_u32": "st2_u32",
+        "fabs32": "fabs2_32",
+        "ld_f32": "ld2_f32",
+    },
+    "quant-dequant2.goose": {
+        "iq2_grid": "qd_iq2_grid",
+        "iq3_grid": "qd_iq3_grid",
+        "e8m0_half": "qd_e8m0_half",
+        "scale_min_k4": "qd_scale_min_k4",
+    },
 }
 
 ALIASES = {
@@ -132,6 +145,8 @@ def emit(path: Path, seen: dict, conflicts: list) -> str:
     rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
     kept = []
     for kind, name, block in declarations(text):
+        if kind == "fn" and name == "main":
+            continue
         if kind == "tail":
             kept.append(block)
             continue

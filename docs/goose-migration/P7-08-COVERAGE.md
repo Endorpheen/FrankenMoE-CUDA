@@ -93,8 +93,17 @@ carry different bodies under one name. Status:
 - the GGUF stack still conflicts: `gguf-writer` and `gguf-split` carry
   different `s2_write` bodies, so the composer exits 1 for that set until the
   two are unified;
-- the jinja runtime, value/builtins and the quantizer helper families still
-  need the same treatment before one runtime can link.
+- the quantizer stack (`quant-types`, `quant-allow`, `quant-rows`,
+  `quant-rows2`, `quant-dequant`, `quant-dequant2`) also composes: 310
+  specializations and 876 KB of generated C. Its helper copies are renamed by
+  module (`st2_*`, `fabs2_32`, `ld2_f32`, `qd_*`) and a library unit drops
+  `fn main`;
+- the 20 architecture builders are per-architecture modules, not one unit: they
+  reuse names like `T_FFN_GATE_SHEXP` with different values for different
+  architectures, and one runtime links exactly one builder plus the base
+  modules. Composing them together is therefore not a goal;
+- the jinja runtime, value/builtins still need the same treatment before one
+  runtime can link.
 
 ## Slice plan
 
