@@ -1,12 +1,12 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-14 (4). This file is the current state; update it in the same change
+Updated: 2026-11-15. This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 104**, **PARTIAL 6**, **TODO 42** of
-152 functional requirements. Slice front: **80 / 90** done, 10 remaining.
+152 functional requirements. Slice front: **86 / 91** done, 5 remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
@@ -14,12 +14,12 @@ The remaining partial requirements and their slice fronts:
 
 | requirement | slices | what is open |
 |---|---|---|
-| P6-09 | 2 / 5 | LoRA apply and saver writer (in acceptance), saver from model |
-| P7-02 | 3 / 5 | split/merge (in acceptance), model saver |
-| P7-04 | 4 / 7 | K/IQ/TQ (S3b, in acceptance), weighted, dequant closure |
+| P6-09 | 4 / 5 | saver from model (in acceptance) |
+| P7-02 | 4 / 5 | model saver (shared with P6-09 S5) |
+| P7-04 | 6 / 8 | weighted quantizers and dequant closure S5b (in acceptance) |
 | P7-08 | 4 / 8 | plan-level split: chat apply and time injection, hoisted native names |
 | P7-11 | 5 / 5 | acceptance wording only; all five slices are accepted |
-| P8-07 | 3 / 5 | decision core (in acceptance), integration shells |
+| P8-07 | 4 / 5 | MCP stdio shells (in acceptance) |
 
 ## What the canonical tree contains
 
