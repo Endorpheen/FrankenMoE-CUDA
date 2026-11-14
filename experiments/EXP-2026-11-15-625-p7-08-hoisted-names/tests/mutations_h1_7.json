@@ -1,0 +1,81 @@
+[
+ {
+  "id": "M01",
+  "mutation": "M01 constructed default start marker",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-4",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=3"
+ },
+ {
+  "id": "M02",
+  "mutation": "M02 constructed parallel one_or_more->zero_or_more",
+  "status": "caught",
+  "failing_cases": [
+   "CT-2",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=2"
+ },
+ {
+  "id": "M03",
+  "mutation": "M03 constructed arg name drops single quotes",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=3"
+ },
+ {
+  "id": "M04",
+  "mutation": "M04 constructed param suffix uses param prefix",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=3"
+ },
+ {
+  "id": "M05",
+  "mutation": "M05 json digits CharRepeat min 1 -> 0",
+  "status": "caught",
+  "failing_cases": [
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=8"
+ },
+ {
+  "id": "M06",
+  "mutation": "M06 flat fields sorted descending",
+  "status": "caught",
+  "failing_cases": [
+   "J-2"
+  ],
+  "gate": "cases=13 failures=1"
+ },
+ {
+  "id": "M07",
+  "mutation": "M07 constructed tool-args tag renamed",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=3"
+ }
+]

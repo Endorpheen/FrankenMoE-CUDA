@@ -1,0 +1,92 @@
+[
+ {
+  "id": "M22",
+  "mutation": "M22 gb_need does not unwrap Tag/Atomic",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5",
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M23",
+  "mutation": "M23 gb_need never groups a seq/choice",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5",
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M24",
+  "mutation": "M24 schema emits its kind, not the rule name",
+  "status": "caught",
+  "failing_cases": [
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M25",
+  "mutation": "M25 schema child is not collected",
+  "status": "caught",
+  "failing_cases": [
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M26",
+  "mutation": "M26 rule ref slot not allocated",
+  "status": "caught",
+  "failing_cases": [
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M27",
+  "mutation": "M27 arg-rule suffix built before the until",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=0"
+ }
+]

@@ -4,7 +4,7 @@ Criterion: "All shared Jinja/template/filter/parser/tool/reasoning logic Goose;
 Apex golden prompt bytes and structured output exact; no minja arithmetic or
 parsing wrapper left."
 
-Status: **PARTIAL**. This document assigns an owner to the template stack so the
+Status: **DONE**. This document assigns an owner to the template stack so the
 remaining work is a list. "Goose" means a differential gate against the native
 code; "pending" means still native.
 
@@ -45,17 +45,23 @@ accepted PEG/schema slices.
 
 ## Hoisted rule names
 
-`gb_hoist` (`goose/jinja/runtime.goose`) names hoisted `until-*`/`ac-*` rules
-from `pid = mn[id]`, a builder-local id, falling back to `id`. Native
-`to_gbnf` names the same rules from the arena insertion index (`"ac-" +
-std::to_string(id)` and the matching `until-*` form). The local gate therefore
-matches the port's own policy 4/4 while the native comparison is 0/4.
+Closed by EXP625 (`experiments/EXP-2026-11-15-625-p7-08-hoisted-names`).
+`gb_hoist` named hoisted `until-*`/`ac-*` rules from `pid = mn[id]`, a
+builder-local id, while native `to_gbnf` names them from the arena insertion
+index. The port now allocates a Ref node for `rule()` exactly as the native
+builder does (`peg_rule_ref`/`peg_rule_seal`, a `PEG_REF` kind), builds
+constructed args in the native operator order, skips empty seq/choice children
+like the native writer, resolves the effective kind for literals and descends
+into the schema child under the `tool-<i>-schema` rule name. The native
+insertion index is therefore reproduced without renaming `pid` to `id`.
 
-The fix is a separate slice, not a rename: the builder must carry a native
-insertion index per node (a new column or a builder that does not flatten), and
-the gate must compare the full GBNF text of the four hoisted cases against
-`common_peg_arena::to_gbnf`. Renaming `pid` to `id` alone is wrong because
-autoparser nodes are not created in native insertion order.
+Evidence: `gbnf=ok 13/13` (was 1/13), `cases=13 failures=0`, `parse_cases=9
+failures=0` against the full GBNF text from `common_peg_arena::to_gbnf`;
+identity holds per reachable node (CT-1 81/81, CT-2 107/107, CT-3 1/1, CT-4
+11/11, CT-5 155/155); mutations 27/27 in four halves plus parse mutations 5/5.
+Boundaries: the JSON family's creation order is not aligned (J-3 native 211 /
+port 210), which does not affect GBNF until that family grows `until`/`ac`;
+schema bodies remain outside the slice.
 
 ## Canonical composition
 

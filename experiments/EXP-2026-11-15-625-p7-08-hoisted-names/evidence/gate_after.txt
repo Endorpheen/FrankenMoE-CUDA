@@ -1,0 +1,14 @@
+CT-1  ok   nodes=81 bytes=888 identity=ok gbnf=ok
+CT-2  ok   nodes=107 bytes=1202 identity=ok gbnf=ok
+CT-3  ok   nodes=1 bytes=7 identity=ok gbnf=ok
+CT-4  ok   nodes=11 bytes=94 identity=ok gbnf=ok
+CT-5  ok   nodes=155 bytes=1589 identity=ok gbnf=ok
+J-1   ok   nodes=151 bytes=1444 identity=ok gbnf=ok
+J-2   ok   nodes=188 bytes=2122 identity=ok gbnf=ok
+J-3   ok   nodes=211 bytes=2230 identity=ok gbnf=ok
+J-4   ok   nodes=184 bytes=1703 identity=ok gbnf=ok
+J-5   ok   nodes=196 bytes=1779 identity=ok gbnf=ok
+T-1   ok   nodes=141 bytes=1417 identity=ok gbnf=ok
+T-2   ok   nodes=187 bytes=2101 identity=ok gbnf=ok
+T-3   ok   nodes=179 bytes=2010 identity=ok gbnf=ok
+cases=13 failures=0

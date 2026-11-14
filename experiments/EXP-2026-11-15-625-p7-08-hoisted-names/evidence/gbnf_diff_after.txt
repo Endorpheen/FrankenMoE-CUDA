@@ -1,0 +1,12 @@
+### CT-1
+CT-1  ok   nodes=81 bytes=888 identity=ok gbnf=ok
+cases=1 failures=0
+### CT-2
+CT-2  ok   nodes=107 bytes=1202 identity=ok gbnf=ok
+cases=1 failures=0
+### CT-5
+CT-5  ok   nodes=155 bytes=1589 identity=ok gbnf=ok
+cases=1 failures=0
+### J-1
+J-1   ok   nodes=151 bytes=1444 identity=ok gbnf=ok
+cases=1 failures=0

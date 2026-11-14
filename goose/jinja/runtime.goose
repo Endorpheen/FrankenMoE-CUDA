@@ -8114,6 +8114,7 @@ const PEG_CHARS: i64 = 11;
 const PEG_STRING: i64 = 12;
 const PEG_SCHEMA: i64 = 18;
 const PEG_AC: i64 = 20;
+const PEG_REF: i64 = 15;
 
 // st[60] node count, st[61] child cursor, st[62] pool cursor, st[63] string count.
 fn peg_reset(st: i64[:]) -> i64 {
@@ -9086,6 +9087,16 @@ fn sb_rule_name(sb: u8[:], st: i64[:], prefix: const u8[:], i: i64) -> const u8[
     return sb[0 .. st[80]];
 }
 
+// "tool-" + i + "-schema": the schema rule name the native json builder passes
+// to schema(json(), name, params).
+fn sb_schema_name(sb: u8[:], st: i64[:], i: i64) -> const u8[:] {
+    sb_reset(sb, st);
+    sb_add(sb, st, "tool-");
+    sb_i64(sb, st, i);
+    sb_add(sb, st, "-schema");
+    return sb[0 .. st[80]];
+}
+
 // "\"key\""
 fn sb_qkey(sb: u8[:], st: i64[:], key: const u8[:]) -> const u8[:] {
     sb_reset(sb, st);
@@ -9214,11 +9225,16 @@ fn peg_schema_node(
     dstart: i64[:],
     dcount: i64[:],
     pool: u8[:],
+    mn: i64[:],
+    mx: i64[:],
     st: i64[:],
     schema_kind: const u8[:],
+    schema_name: const u8[:],
     child: i64) -> i64 {
     let sid = peg_pool_add(pool, st, dstart, dcount, schema_kind);
     let id = peg_node(kind, cfirst, ccount, sidx, st, PEG_SCHEMA, sid);
+    // The GBNF rule name is a second string: mx is unused for schema nodes.
+    mx[id] = peg_pool_add(pool, st, dstart, dcount, schema_name);
     children[st[61]] = child;
     ccount[id] = 1;
     st[61] = st[61] + 1;
@@ -9244,6 +9260,23 @@ fn peg_rule_begin(
 fn peg_rule_end(cfirst: const i64[:], children: i64[:], id: i64, body: i64) -> i64 {
     children[cfirst[id]] = body;
     return id;
+}
+
+// native rule() ends with ref(name), and resolve_refs() rewrites the children
+// that pointed at it, so the arena keeps one unreachable Ref node per rule.
+// The port links the rule id directly; allocating the same slot keeps the arena
+// insertion order - and with it every hoisted until-*/ac-* name - identical.
+fn peg_rule_ref(kind: i64[:], cfirst: i64[:], ccount: i64[:], sidx: i64[:], st: i64[:]) -> i64 {
+    return peg_node(kind, cfirst, ccount, sidx, st, PEG_REF, 0 - 1);
+}
+
+// peg_rule_end plus the native ref slot. The body argument is evaluated before
+// the call, so the ref lands after the body exactly like the native lambda form.
+fn peg_rule_seal(kind: i64[:], cfirst: i64[:], ccount: i64[:], children: i64[:], sidx: i64[:],
+                 st: i64[:], rid: i64, body: i64) -> i64 {
+    let sealed = peg_rule_end(cfirst, children, rid, body);
+    var ref_slot: i64 = peg_rule_ref(kind, cfirst, ccount, sidx, st);
+    return sealed;
 }
 
 // ---- json() rule family ----------------------------------------------------
@@ -9280,7 +9313,7 @@ recursive fn jrule_value(
                       jrule_bool(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st));
     acc = peg_choice2(kind, cfirst, ccount, children, sidx, st, acc,
                       jrule_null(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st));
-    return peg_rule_end(cfirst, children, rid, acc);
+    return peg_rule_seal(kind, cfirst, ccount, children, sidx, st, rid, acc);
 }
 
 recursive fn jrule_object(
@@ -9327,7 +9360,7 @@ recursive fn jrule_object(
     var alt = peg_choice2(kind, cfirst, ccount, children, sidx, st, rbrace_empty, inner);
     var body = peg_seq2(kind, cfirst, ccount, children, sidx, st, lbrace, ws);
     body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, alt);
-    return peg_rule_end(cfirst, children, rid, body);
+    return peg_rule_seal(kind, cfirst, ccount, children, sidx, st, rid, body);
 }
 
 recursive fn jrule_array(
@@ -9365,7 +9398,7 @@ recursive fn jrule_array(
     var alt = peg_choice2(kind, cfirst, ccount, children, sidx, st, rb_empty, inner);
     var body = peg_seq2(kind, cfirst, ccount, children, sidx, st, lb, ws);
     body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, alt);
-    return peg_rule_end(cfirst, children, rid, body);
+    return peg_rule_seal(kind, cfirst, ccount, children, sidx, st, rid, body);
 }
 
 fn jrule_string(
@@ -9388,7 +9421,7 @@ fn jrule_string(
     let content = peg_string_node(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "\"");
     var body = peg_seq2(kind, cfirst, ccount, children, sidx, st, quote1, content);
     body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, quote2);
-    return peg_rule_end(cfirst, children, rid, body);
+    return peg_rule_seal(kind, cfirst, ccount, children, sidx, st, rid, body);
 }
 
 fn jrule_number(
@@ -9434,7 +9467,7 @@ fn jrule_number(
                     peg_repeat(kind, cfirst, ccount, children, sidx, mn, mx, st, expo, 0, 1));
     body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body,
                     peg_not_node(kind, cfirst, ccount, children, sidx, st, ncont));
-    return peg_rule_end(cfirst, children, rid, body);
+    return peg_rule_seal(kind, cfirst, ccount, children, sidx, st, rid, body);
 }
 
 fn jrule_bool(
@@ -9454,7 +9487,7 @@ fn jrule_bool(
     st[95] = rid;
     let t = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "true");
     let f = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, "false");
-    return peg_rule_end(cfirst, children, rid, peg_choice2(kind, cfirst, ccount, children, sidx, st, t, f));
+    return peg_rule_seal(kind, cfirst, ccount, children, sidx, st, rid, peg_choice2(kind, cfirst, ccount, children, sidx, st, t, f));
 }
 
 fn jrule_null(
@@ -9524,25 +9557,30 @@ fn constructed_arg_rule(
     let dq = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, sb_dq(sb, st, prop));
     let sq = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, sb_sq(sb, st, prop));
     let names = peg_choice3(kind, cfirst, ccount, children, sidx, st, bare, dq, sq);
-    var body = peg_atomic(kind, cfirst, ccount, children, sidx, st,
+    // The native expression is one `+` chain and the compiler builds its
+    // operands right to left, so the arena ids of the hoisted until node only
+    // match when the nodes are created in that same order:
+    //   E tool_arg_close(literal(closer)), D tool_arg_value(until(closer)),
+    //   C literal(suffix), B tool_arg_name(names), A tool_arg_open(literal(prefix)).
+    let closer = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, param_closer);
+    let close_n = peg_atomic(kind, cfirst, ccount, children, sidx, st,
+                             peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                          "tool-arg-close", closer));
+    let val = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                           "tool-arg-value",
+                           peg_until_marker(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, param_closer));
+    let suffix = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, param_suffix);
+    let nm = peg_atomic(kind, cfirst, ccount, children, sidx, st,
+                        peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                     "tool-arg-name", names));
+    let open = peg_atomic(kind, cfirst, ccount, children, sidx, st,
                           peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
                                        "tool-arg-open",
                                        peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, param_prefix)));
-    body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body,
-                    peg_atomic(kind, cfirst, ccount, children, sidx, st,
-                               peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                            "tool-arg-name", names)));
-    body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body,
-                    peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, param_suffix));
-    body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body,
-                    peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                 "tool-arg-value",
-                                 peg_until_marker(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, param_closer)));
-    body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body,
-                    peg_atomic(kind, cfirst, ccount, children, sidx, st,
-                               peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                            "tool-arg-close",
-                                            peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, param_closer))));
+    var body = peg_seq2(kind, cfirst, ccount, children, sidx, st, open, nm);
+    body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, suffix);
+    body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, val);
+    body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, close_n);
     return peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, "tool-arg", body);
 }
 
@@ -9627,58 +9665,71 @@ export fn chat_standard_constructed_tools(
                                   0, 0 - 1);
             }
 
-            // tool-open(opener + tool-name(name) + suffix)
-            var open_seq = peg_seq2(kind, cfirst, ccount, children, sidx, st,
-                                    peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_opener),
-                                    peg_atomic(kind, cfirst, ccount, children, sidx, st,
-                                               peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                                            "tool-name",
-                                                            peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, name))));
-            open_seq = peg_seq2(kind, cfirst, ccount, children, sidx, st, open_seq,
-                                peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_name_suffix));
-            var tool_body = peg_atomic(kind, cfirst, ccount, children, sidx, st,
-                                       peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                                    "tool-open", open_seq));
-            tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_body,
-                                 peg_space_node(kind, cfirst, ccount, sidx, st));
-            tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_body,
-                                 peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                              "tool-args", args));
-            tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_body,
-                                 peg_space_node(kind, cfirst, ccount, sidx, st));
-            tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_body,
-                                 peg_atomic(kind, cfirst, ccount, children, sidx, st,
-                                            peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                                         "tool-close",
-                                                         peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_closer))));
+            // Native tool_body is one `+` chain evaluated right to left:
+            //   close, space, tool_args, space, tool-open(opener+name+suffix).
+            let func_close_lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_closer);
+            let tool_close_n = peg_atomic(kind, cfirst, ccount, children, sidx, st,
+                                          peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                                       "tool-close", func_close_lit));
+            let space_near_close = peg_space_node(kind, cfirst, ccount, sidx, st);
+            let args_tag = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                        "tool-args", args);
+            let space_near_open = peg_space_node(kind, cfirst, ccount, sidx, st);
+            // open_seq: literal(opener) + tool_name(literal(name)) + literal(suffix)
+            let name_suffix_lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_name_suffix);
+            let name_tag = peg_atomic(kind, cfirst, ccount, children, sidx, st,
+                                      peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                                   "tool-name",
+                                                   peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, name)));
+            let opener_lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, func_opener);
+            var open_seq = peg_seq2(kind, cfirst, ccount, children, sidx, st, opener_lit, name_tag);
+            open_seq = peg_seq2(kind, cfirst, ccount, children, sidx, st, open_seq, name_suffix_lit);
+            let tool_open_n = peg_atomic(kind, cfirst, ccount, children, sidx, st,
+                                         peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                                      "tool-open", open_seq));
+            var tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_open_n, space_near_open);
+            tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_body, args_tag);
+            tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_body, space_near_close);
+            tool_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_body, tool_close_n);
             let tool_parser = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
                                            "tool", tool_body);
-            tool_choices = peg_choice2(kind, cfirst, ccount, children, sidx, st, tool_choices,
-                                       peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                                     sb_rule_name(sb, st, "tool-", i), tool_parser));
+            let tool_rule = peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                          sb_rule_name(sb, st, "tool-", i), tool_parser);
+            var ref_slot: i64 = peg_rule_ref(kind, cfirst, ccount, sidx, st);
+            tool_choices = peg_choice2(kind, cfirst, ccount, children, sidx, st, tool_choices, tool_rule);
         }
         i = i + 1;
     }
 
-    var section = peg_seq2(kind, cfirst, ccount, children, sidx, st,
-                           peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start),
-                           peg_space_node(kind, cfirst, ccount, sidx, st));
+    // Native trigger_rule body is a `+` chain evaluated right to left:
+    //   literal(end), space, one_or_more(tool_choices + space), space,
+    //   literal(start), then the sequence nodes.
+    let section_end_lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end);
+    var section = section_end_lit;
 
     if parallel != 0 {
-        section = peg_seq2(kind, cfirst, ccount, children, sidx, st, section,
-                           peg_repeat(kind, cfirst, ccount, children, sidx, mn, mx, st,
-                                      peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_choices,
-                                               peg_space_node(kind, cfirst, ccount, sidx, st)),
-                                      1, 0 - 1));
+        let rep_space_tail = peg_space_node(kind, cfirst, ccount, sidx, st);
+        let rep_body = peg_seq2(kind, cfirst, ccount, children, sidx, st, tool_choices, rep_space_tail);
+        let rep = peg_repeat(kind, cfirst, ccount, children, sidx, mn, mx, st, rep_body, 1, 0 - 1);
+        let tail_space = peg_space_node(kind, cfirst, ccount, sidx, st);
+        let start_lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start);
+        var body = peg_seq2(kind, cfirst, ccount, children, sidx, st, start_lit, tail_space);
+        body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, rep);
+        body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, section_end_lit);
+        section = body;
     } else {
-        section = peg_seq2(kind, cfirst, ccount, children, sidx, st, section, tool_choices);
-        section = peg_seq2(kind, cfirst, ccount, children, sidx, st, section,
-                           peg_space_node(kind, cfirst, ccount, sidx, st));
+        let tail_space = peg_space_node(kind, cfirst, ccount, sidx, st);
+        let head_space = peg_space_node(kind, cfirst, ccount, sidx, st);
+        let start_lit = peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_start);
+        var body = peg_seq2(kind, cfirst, ccount, children, sidx, st, start_lit, head_space);
+        body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, tool_choices);
+        body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, tail_space);
+        body = peg_seq2(kind, cfirst, ccount, children, sidx, st, body, section_end_lit);
+        section = body;
     }
-    section = peg_seq2(kind, cfirst, ccount, children, sidx, st, section,
-                       peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end));
     let section_rule = peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
                                      "tool-call", section);
+    var section_ref: i64 = peg_rule_ref(kind, cfirst, ccount, sidx, st);
 
     if force != 0 {
         return section_rule;
@@ -9750,11 +9801,12 @@ fn json_args_field(
     sb: u8[:],
     key: const u8[:],
     schema_kind: const u8[:],
+    schema_name: const u8[:],
     with_key: i64) -> i64 {
     let args = peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
                             "tool-args",
-                            peg_schema_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                            schema_kind,
+                            peg_schema_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, mn, mx, st,
+                                            schema_kind, schema_name,
                                             jrule_value(kind, cfirst, ccount, children, sidx, dstart, dcount,
                                                         pool, mn, mx, st)));
     if with_key == 0 {
@@ -9920,6 +9972,7 @@ export fn chat_standard_json_tools(
                 }
                 let args_field = json_args_field(kind, cfirst, ccount, children, sidx, dstart, dcount, pool,
                                                  mn, mx, st, sb, eff_args_key, schema_kind,
+                                                 sb_schema_name(sb, st, i),
                                                  if args_key.len == 0 { 0 } else { 1 });
                 var inner = args_field;
 
@@ -10018,7 +10071,8 @@ export fn chat_standard_json_tools(
                                   peg_space_node(kind, cfirst, ccount, sidx, st));
                 nested = peg_seq2(kind, cfirst, ccount, children, sidx, st, nested,
                                   json_args_field(kind, cfirst, ccount, children, sidx, dstart, dcount, pool,
-                                                  mn, mx, st, sb, nested_args_field, schema_kind, 1));
+                                                  mn, mx, st, sb, nested_args_field, schema_kind,
+                                                  sb_schema_name(sb, st, i), 1));
                 nested = peg_seq2(kind, cfirst, ccount, children, sidx, st, nested,
                                   peg_space_node(kind, cfirst, ccount, sidx, st));
                 nested = peg_seq2(kind, cfirst, ccount, children, sidx, st, nested,
@@ -10068,7 +10122,8 @@ export fn chat_standard_json_tools(
                 let nf = json_name_field(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st, sb,
                                          eff_name_key, name);
                 let af = json_args_field(kind, cfirst, ccount, children, sidx, dstart, dcount, pool,
-                                         mn, mx, st, sb, eff_args_key, schema_kind, 1);
+                                         mn, mx, st, sb, eff_args_key, schema_kind,
+                                         sb_schema_name(sb, st, i), 1);
                 var fid: i64[4] = [0, 0, 0, 0];
                 var fkey: i64[4] = [0, 0, 0, 0];
                 var nflat: i64 = 0;
@@ -10161,11 +10216,12 @@ export fn chat_standard_json_tools(
                                 peg_close_brace(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st));
             }
 
-            tool_choices = peg_choice2(kind, cfirst, ccount, children, sidx, st, tool_choices,
-                                       peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                                     sb_rule_name(sb, st, "tool-", i),
-                                                     peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
-                                                                  "tool", body)));
+            let tool_rule = peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                          sb_rule_name(sb, st, "tool-", i),
+                                          peg_tag_impl(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
+                                                       "tool", body));
+            var ref_slot2: i64 = peg_rule_ref(kind, cfirst, ccount, sidx, st);
+            tool_choices = peg_choice2(kind, cfirst, ccount, children, sidx, st, tool_choices, tool_rule);
         }
         i = i + 1;
     }
@@ -10205,6 +10261,7 @@ export fn chat_standard_json_tools(
                        peg_literal_impl(kind, cfirst, ccount, sidx, dstart, dcount, pool, st, section_end));
     let section_rule = peg_rule_node(kind, cfirst, ccount, children, sidx, dstart, dcount, pool, st,
                                      "tool-call", section);
+    var section_ref2: i64 = peg_rule_ref(kind, cfirst, ccount, sidx, st);
 
     if force != 0 {
         return section_rule;
@@ -16796,7 +16853,10 @@ recursive fn gb_need(id: i64, kind: const i64[:], children: const i64[:], cfirst
     return 0;
 }
 
-// Effective kind: unwrap Tag and Atomic like build_grammar's effective_parser.
+// Effective kind: unwrap Tag and Atomic like build_grammar's effective_parser
+// and return the KIND of the effective node, not its id. Returning the id made
+// the choice branch compare a node number against PEG_CHOICE, so a literal whose
+// id happened to be 5 was printed as a parenthesised group.
 fn gb_eff(id: i64, kind: const i64[:], children: const i64[:], cfirst: const i64[:]) -> i64 {
     var cur = id;
     var go: i64 = 1;
@@ -16808,7 +16868,7 @@ fn gb_eff(id: i64, kind: const i64[:], children: const i64[:], cfirst: const i64
             go = 0;
         }
     }
-    return cur;
+    return kind[cur];
 }
 
 fn gb_name(kind: const i64[:], sidx: const i64[:], dstart: const i64[:], dcount: const i64[:],
@@ -16923,23 +16983,28 @@ recursive fn gb_node(id: i64, kind: const i64[:], cfirst: const i64[:], ccount: 
 
         while i < ccount[id] {
             let ch = children[cfirst[id] + i];
-            let ek = gb_eff(ch, kind, children, cfirst);
-            var empty: i64 = 0;
+            // build_grammar skips a child whose text is empty and only then adds
+            // the separating space, so render first and rewind on an empty child.
+            var start = p;
 
-            if kind[ch] == PEG_EPS || kind[ch] == PEG_END || kind[ch] == PEG_AND || kind[ch] == PEG_NOT {
-                empty = 1;
+            if wrote != 0 {
+                dst[p] = 32;
+                start = p + 1;
             }
-            if empty == 0 {
-                if wrote != 0 {
-                    p = gb_w(dst, p, " ");
+            var q = start;
+            var par: i64 = 0;
+
+            if gb_need(ch, kind, children, cfirst) != 0 {
+                par = 1;
+                q = gb_w(dst, q, "(");
+            }
+            let body = q;
+            q = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, q);
+            if q != body {
+                if par != 0 {
+                    q = gb_w(dst, q, ")");
                 }
-                if gb_need(ch, kind, children, cfirst) != 0 {
-                    p = gb_w(dst, p, "(");
-                    p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
-                    p = gb_w(dst, p, ")");
-                } else {
-                    p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
-                }
+                p = q;
                 wrote = 1;
             }
             i = i + 1;
@@ -16948,20 +17013,32 @@ recursive fn gb_node(id: i64, kind: const i64[:], cfirst: const i64[:], ccount: 
     }
     if k == PEG_CHOICE {
         var i: i64 = 0;
+        var wrote: i64 = 0;
 
         while i < ccount[id] {
-            if i > 0 {
-                p = gb_w(dst, p, " | ");
-            }
             let ch = children[cfirst[id] + i];
-            let ek = gb_eff(ch, kind, children, cfirst);
+            let before = p;
+            var q = p;
 
-            if ek == PEG_CHOICE {
-                p = gb_w(dst, p, "(");
-                p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
-                p = gb_w(dst, p, ")");
+            if wrote != 0 {
+                q = gb_w(dst, q, " | ");
+            }
+            var par: i64 = 0;
+
+            if gb_eff(ch, kind, children, cfirst) == PEG_CHOICE {
+                par = 1;
+                q = gb_w(dst, q, "(");
+            }
+            let body = q;
+            q = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, q);
+            if q != body {
+                if par != 0 {
+                    q = gb_w(dst, q, ")");
+                }
+                p = q;
+                wrote = 1;
             } else {
-                p = gb_node(ch, kind, cfirst, ccount, children, sidx, dstart, dcount, mn, mx, pool, dst, p);
+                p = before;
             }
             i = i + 1;
         }
@@ -16980,7 +17057,13 @@ recursive fn gb_node(id: i64, kind: const i64[:], cfirst: const i64[:], ccount: 
         }
         return gb_rep_suffix(dst, p, mn[id], mx[id]);
     }
-    // Schema and unknown kinds: caller checks meta[3].
+    if k == PEG_SCHEMA {
+        // build_grammar calls builder.add_schema(name, node) and prints the
+        // returned rule name; the schema body itself comes from that builder.
+        let sid = mx[id];
+        return gb_w(dst, p, pool[dstart[sid] .. dstart[sid] + dcount[sid]]);
+    }
+    // Unknown kinds emit nothing.
     return p;
 }
 
@@ -17022,7 +17105,9 @@ recursive fn gb_collect(id: i64, kind: const i64[:], cfirst: const i64[:], ccoun
 
     if k == PEG_SCHEMA {
         meta[3] = 1;
-        return 0;
+        // build_grammar's collect_reachable_rules visits the schema child, so
+        // the json-* rules under it are emitted as rules.
+        return gb_collect(children[cfirst[id]], kind, cfirst, ccount, children, sidx, dstart, dcount, pool, vis, rids, hids, meta);
     }
     if k == PEG_SPACE {
         meta[4] = 1;

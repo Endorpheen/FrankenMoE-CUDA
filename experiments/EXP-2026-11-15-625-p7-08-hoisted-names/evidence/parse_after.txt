@@ -1,0 +1,10 @@
+P1-json-single         ok   SUCCESS  end=89 ast_nodes=15
+P2-json-two-calls      ok   SUCCESS  end=134 ast_nodes=23
+P3-json-args-first     ok   SUCCESS  end=78 ast_nodes=12
+P4-json-partial        ok   PARTIAL  end=61 ast_nodes=11
+P5-json-trailing-junk  ok   SUCCESS  end=78 ast_nodes=12
+P6-xml-single          ok   SUCCESS  end=85 ast_nodes=12
+P7-xml-two-calls       ok   SUCCESS  end=147 ast_nodes=23
+P8-xml-partial         ok   PARTIAL  end=52 ast_nodes=10
+P9-json-bad-exp        ok   FAIL     end=11 ast_nodes=0
+parse_cases=9 failures=0

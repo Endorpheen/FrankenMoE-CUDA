@@ -1,0 +1,110 @@
+[
+ {
+  "id": "M16",
+  "mutation": "M16 effective kind is the node id again",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M17",
+  "mutation": "M17 seq always writes the separator",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-4",
+   "CT-5",
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M18",
+  "mutation": "M18 seq inverted group-paren test",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-4",
+   "CT-5",
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M19",
+  "mutation": "M19 seq treats an empty child as written",
+  "status": "caught",
+  "failing_cases": [
+   "CT-2",
+   "CT-4",
+   "CT-5",
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M20",
+  "mutation": "M20 choice always writes the separator",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5",
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ },
+ {
+  "id": "M21",
+  "mutation": "M21 choice inverted group-paren test",
+  "status": "caught",
+  "failing_cases": [
+   "CT-1",
+   "CT-2",
+   "CT-5",
+   "J-1",
+   "J-2",
+   "J-3",
+   "J-4",
+   "J-5",
+   "T-1",
+   "T-2",
+   "T-3"
+  ],
+  "gate": "cases=13 failures=0"
+ }
+]
