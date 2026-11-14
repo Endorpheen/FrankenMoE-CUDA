@@ -120,7 +120,8 @@ fn bases(st: i64[:]) -> i64 {
     st[23] = b + 7 * n;
     st[24] = b + 8 * n;
     st[25] = b + 9 * n;
-    st[26] = b + 10 * n;
+    st[27] = b + 10 * n;
+    st[26] = b + 11 * n;
     return 0;
 }
 
@@ -394,8 +395,12 @@ fn json_string(out: u8[:], at: i64, s: const u8[:]) -> i64 {
     }
     return appc(out, p, '"');
 }
+export fn chat_probe_used(A: const i64[:], st: const i64[:], id: i64) -> i64 {
+    return A[st[27] + id];
+}
+
 recursive fn as_string_into(
-    A: const i64[:],
+    A: i64[:],
     B: const u8[:],
     F: const f64[:],
     st: i64[:],
@@ -1221,6 +1226,7 @@ fn vnew(A: i64[:], F: f64[:], st: i64[:], kind: i64) -> i64 {
     A[st[23] + id] = 0;
     A[st[24] + id] = 0;
     A[st[25] + id] = 0;
+    A[st[27] + id] = 0;
     F[id] = 0.0;
     return id;
 }
@@ -1925,7 +1931,7 @@ fn ast_bases(A: const i64[:], st: i64[:]) -> i64 {
     let vc = A[0];
     let pc = A[5];
     let ac = A[3];
-    var b: i64 = 32 + 10 * vc + pc;
+    var b: i64 = 32 + 11 * vc + pc;
     st[30] = b;
     st[31] = b + ac;
     st[32] = b + 2 * ac;
@@ -5392,6 +5398,7 @@ fn out_bytes(out: u8[:], st: i64[:], s: const u8[:]) -> i64 {
     return 0;
 }
 recursive fn append_rendered(v: i64, A: i64[:], B: u8[:], F: f64[:], st: i64[:], out: u8[:], E: u8[:]) -> i64 {
+    A[st[27] + v] = 1;
     let k = vk(A, st, v);
 
     if k == V_STRING {
@@ -6155,4 +6162,25 @@ export fn chat_normalize(
         i = i + 1;
     }
     return json_into(arr, 0, -1, ", ", ": ", A, B, F, st, out, 0, E);
+}
+// Caps probe helper: was messages[0].content used during the render?
+export fn chat_probe_content_used(A: const i64[:], B: const u8[:], st: const i64[:], msgs: i64) -> i64 {
+    if vcc(A, st, msgs) == 0 {
+        return 0;
+    }
+    let first = A[pool(A, st) + vcs(A, st, msgs)];
+    let n = vkc(A, st, first);
+    var i: i64 = 0;
+
+    while i < n {
+        let k = A[pool(A, st) + vks(A, st, first) + i];
+        let ks = B[st[18] + k .. st[18] + k + A[st[19] + k]];
+
+        if bytes_is(ks, "content") {
+            let v = A[pool(A, st) + vvs(A, st, first) + i];
+            return A[st[27] + v];
+        }
+        i = i + 1;
+    }
+    return 0;
 }
