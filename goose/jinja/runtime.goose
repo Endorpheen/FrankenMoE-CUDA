@@ -6034,3 +6034,24 @@ export fn exec_program(
     return st[7];
 }
 
+// Chat-layer message shape: {"role": ..., "content": ...} in the same field
+// order as the native to_json_oaicompat, serialized with the module JSON writer.
+export fn chat_message_json(
+    A: i64[:],
+    F: f64[:],
+    B: u8[:],
+    E: u8[:],
+    st: i64[:],
+    role: const u8[:],
+    content: const u8[:],
+    out: u8[:]) -> i64 {
+    reset_io(A, st, 0);
+    let obj = vnew(A, F, st, V_OBJECT);
+    obj_key(A, st, obj, mk_str(A, F, B, st, "role"));
+    obj_key(A, st, obj, mk_str(A, F, B, st, "content"));
+    obj_val(A, st, obj, mk_str(A, F, B, st, role));
+    obj_val(A, st, obj, mk_str(A, F, B, st, content));
+    let arr = arr_new(A, F, st);
+    arr_push(A, st, arr, obj);
+    return json_into(arr, 0, -1, ", ", ": ", A, B, F, st, out, 0, E);
+}
