@@ -51,6 +51,28 @@ It still cannot link because the native helper entry points are extern symbols
 supplied by the per-slice test fixtures; wiring them to the runtime is S1 work.
 This step touches no production file.
 
+### Compatibility rule
+
+The build grows only with modules that share one unit. A subsystem whose
+canonical files are alternative ports of the same functions is not added as a
+set; the build keeps one representative per such family. The composer enforces
+this by refusing a set where two modules carry different bodies under one name,
+and by failing the export-set check when a dedup would drop a public entry.
+
+Checked on 2026-11-15, all against the current main build:
+
+| candidate group | result |
+|---|---|
+| `goose/kv/*` (85) | 508 body conflicts (`put`, `get`, `fail`, ...) - alternative KV ports, not one unit |
+| `goose/cuda/*` (34) | 168 body conflicts - alternative CUDA ports |
+| `goose/cpu/*` (16) | 78 body conflicts (`ld_u8`, `st_i64`, ...) - alternative CPU ports |
+| `goose/misc/*` (30) | 125 body conflicts (`put`, `get`, `fail`, ...) - alternative live-run ports |
+| `goose/sampling/*` (5) | 5 body conflicts (`fail`, `run`, ...) - alternative sampler ports |
+| `goose/json/*` (31) | alternative schema ports: `ac` vs `ac-grammar`, `format-grammar` vs `schema` vs `pattern`; one representative (`format-grammar`) is in the build |
+
+Integrating an alternative is a merge decision (pick a body, delete the other),
+not a composition step; it is out of scope until a stage needs that subsystem.
+
 ### S1 — leaf modules with a native oracle
 
 Swap one leaf at a time into a copy of the runtime build, starting where the
