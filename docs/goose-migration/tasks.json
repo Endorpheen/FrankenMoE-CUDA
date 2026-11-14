@@ -2034,22 +2034,20 @@
         "common/debug.cpp"
       ],
       "acceptance": "Owned network/cache/resume/logging/console/subprocess decisions Goose; OS/TLS/libcurl primitives explicitly imported; no downloads or destructive cache work during migration tests.",
-      "evidence": " 2026-11-14 S1 (EXP578, experiments/EXP-2026-11-14-578-p7-11-http-url): the HTTP URL and authority policy of common/http.h is Goose - scheme detection, userinfo split, path offsets with the invented slash, bracketed IPv6 statuses, stoi-compatible port parsing and defaults, the full loopback rule (including the native zero-shape and .localhost quirks), NO_PROXY matching and the masked URL renderer. Gate: one generator drives the header-only native probe and the Goose driver over 20000 cases; diff 0. Mutations 14/14 in two halves. Divergence found: goose/server/prerouting.goose still uses its own origin_is_localhost and differs on six corpus rows; replacing it needs the CORS regression and is a separate integration step. 2026-11-14 S3 (EXP579, experiments/EXP-2026-11-14-579-p7-11-download-selection): download selection is Goose - GGUF split names and tags, quant bits, part lists, split groups, best model and best sibling selection, sidecar detection/planning, repo/tag splitting and the resume decision/header. Gate: one generator drives the native probe (download.cpp included, libc only) and the Goose driver over 31 cases; diff 0; mutations 16/16 in two halves. Deviation recorded: tag matching is literal rather than a constructed std::regex, identical for every real GGUF quant tag and different only for adversarial tags. 2026-11-14 S2 (EXP585, experiments/EXP-2026-11-14-585-p7-11-hf-cache): HF cache naming is Goose - the repo/token/commit/oid validators, repo folder naming and its reverse, absolute-path and subpath rules, dot-dot truncation, file path assembly and the refs/finalize decisions. Gate: one generator emits the native probe (hf-cache.cpp included, --gc-sections drops network/filesystem code) and the Goose driver; 1556 cases compare byte for byte with diff 0; mutations 12/12 in two halves. Limits: the cache root is an argument (HF_HOME/XDG_CACHE_HOME/LLAMA_CACHE reads stay native), normalization assumes an already normalized POSIX base, and get_cached_ref/finalize_file loops are transcribed next to the native code.",
+      "evidence": " 2026-11-14 S1 (EXP578, experiments/EXP-2026-11-14-578-p7-11-http-url): the HTTP URL and authority policy of common/http.h is Goose - scheme detection, userinfo split, path offsets with the invented slash, bracketed IPv6 statuses, stoi-compatible port parsing and defaults, the full loopback rule (including the native zero-shape and .localhost quirks), NO_PROXY matching and the masked URL renderer. Gate: one generator drives the header-only native probe and the Goose driver over 20000 cases; diff 0. Mutations 14/14 in two halves. Divergence found: goose/server/prerouting.goose still uses its own origin_is_localhost and differs on six corpus rows; replacing it needs the CORS regression and is a separate integration step. 2026-11-14 S3 (EXP579, experiments/EXP-2026-11-14-579-p7-11-download-selection): download selection is Goose - GGUF split names and tags, quant bits, part lists, split groups, best model and best sibling selection, sidecar detection/planning, repo/tag splitting and the resume decision/header. Gate: one generator drives the native probe (download.cpp included, libc only) and the Goose driver over 31 cases; diff 0; mutations 16/16 in two halves. Deviation recorded: tag matching is literal rather than a constructed std::regex, identical for every real GGUF quant tag and different only for adversarial tags. 2026-11-14 S2 (EXP585, experiments/EXP-2026-11-14-585-p7-11-hf-cache): HF cache naming is Goose - the repo/token/commit/oid validators, repo folder naming and its reverse, absolute-path and subpath rules, dot-dot truncation, file path assembly and the refs/finalize decisions. Gate: one generator emits the native probe (hf-cache.cpp included, --gc-sections drops network/filesystem code) and the Goose driver; 1556 cases compare byte for byte with diff 0; mutations 12/12 in two halves. Limits: the cache root is an argument (HF_HOME/XDG_CACHE_HOME/LLAMA_CACHE reads stay native), normalization assumes an already normalized POSIX base, and get_cached_ref/finalize_file loops are transcribed next to the native code. 2026-11-14 S4 and S5 (EXP590, experiments/EXP-2026-11-14-590-p7-11-log-console): the log policy and console editing are Goose. Log: level/verbosity names, prefix and timestamp rendering, JSONL, colors, the stream gate and reset, the debug filter string, NaN abort, F32 dumps, ne_string and level/color tables (905 cases). Console: key decoding and encoding, cursor positions, ctrl modifiers, width/space decisions, word-left/right, backspace, mid-line insert and history rules (291 cases). Both gates compare against the real log.cpp/debug.cpp/console.cpp with tty probes stubbed; mutations 12/12 in two halves (6 log, 6 console). Without a tty: termios/raw mode, cursor position queries, wcwidth, Windows console API, the completion callback and the real isatty path are not covered; std::regex filters fall back to a literal prefix and %f is exact only within the printed precision.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 204,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
       "remaining": [
-        "log policy (plus the debug filter/NaN-abort part)",
-        "console line editing",
         "model file discovery (shared with the loader requirement)",
         "HF download and cache wiring (shared with the loader requirement)"
       ],
       "coverage_doc": "docs/goose-migration/P7-11-COVERAGE.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
       "slices_total": 5,
-      "slices_done": 3
+      "slices_done": 5
     },
     {
       "id": "P7-12",
@@ -4348,6 +4346,10 @@
     {
       "event": "P6-05 architecture 5 (EXP589): qwen3next joins the canon as goose/model/qwen3next.goose with a 53-case gate and 12/12 mutations.",
       "checkpoint": "766c2344"
+    },
+    {
+      "event": "P7-11 fourth and fifth slices (EXP590): log policy and console editing join the canon as goose/server/log-policy.goose and goose/server/console-editing.goose with 905+291 cases and 12/12 mutations.",
+      "checkpoint": "5e98f094"
     }
   ],
   "batches": [
@@ -5238,7 +5240,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-14T18:46:28.287017+00:00",
+  "updated_at": "2026-11-14T18:51:47.802957+00:00",
   "status_totals": {
     "DONE": 102,
     "TODO": 49,
@@ -5247,9 +5249,9 @@
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09 and P8-07.",
     "slices_total": 88,
-    "slices_done": 55,
+    "slices_done": 57,
     "slices_in_progress": 0,
-    "slices_remaining": 33
+    "slices_remaining": 31
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

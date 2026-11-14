@@ -1,0 +1,75 @@
+surface	case	description	native line (escaped: ?xx for control bytes)
+R	0	NONE, no prefix: body only	R|0|hi
+R	445	DEBUG with a timestamp prefix	R|445|12.34.000.123 D {"a":1}
+R	572	INFO prefix in color	R|572|?1b[34m12.34.000.123?1b[0m ?1b[32mI ?1b[0mx?09y
+R	135	WARN, reset before the newline	R|135|?1b[35mW привет?1b[0m
+R	166	ERROR prefix in color	R|166|?1b[34m0.59.999.999?1b[0m ?1b[31mE ?01ctl?1b[0m
+R	11	CONT suppresses the prefix	R|11|hi
+R	24	NONE as a JSONL object	R|24|{"type":"log","time":999,"level":"none","msg":"abc\n"}?0a
+R	13	JSONL pass-through of an is_json message	R|13|hi?0a
+R	10	DEBUG reset placement with colors	R|10|E hi
+T	721	DEBUG level, threshold 0	T|721|0|{"type":"log","time":0,"level":"none","msg":"hi"}?0a
+T	745	DEBUG level, threshold 2	T|745|0|{"type":"log","time":0,"level":"none","msg":"hi"}?0a
+T	757	DEBUG level, threshold 3	T|757|0|{"type":"log","time":0,"level":"none","msg":"hi"}?0a
+T	769	DEBUG level, threshold 4	T|769|0|{"type":"log","time":0,"level":"none","msg":"hi"}?0a
+T	781	DEBUG level, threshold 5	V|781|1
+T	780	thold 5, INFO non-jsonl: stderr	V|780|1
+T	781	thold 5, INFO jsonl: stdout	V|781|1
+V	786	INFO passes the gate at threshold 0	V|786|0
+V	787	INFO passes the gate at threshold 1	V|787|0
+V	788	INFO passes the gate at threshold 2	V|788|0
+V	789	INFO passes the gate at threshold 3	V|789|0
+V	790	INFO passes the gate at threshold 4	V|790|0
+V	791	INFO passes the gate at threshold 5	V|791|1
+S	816	level_str = none	S|816|{"type":"log","time":0,"level":"none","msg":"m"}?0a
+S	817	level_str = debug	S|817|{"type":"log","time":0,"level":"debug","msg":"m"}?0a
+S	818	level_str = info	S|818|{"type":"log","time":0,"level":"info","msg":"m"}?0a
+S	819	level_str = warn	S|819|{"type":"log","time":0,"level":"warn","msg":"m"}?0a
+S	820	level_str = error	S|820|{"type":"log","time":0,"level":"error","msg":"m"}?0a
+S	821	level_str = cont	S|821|{"type":"log","time":0,"level":"cont","msg":"m"}?0a
+C	822	colors mode=-1 tty_can=0 ansi=0	C|822|0
+C	823	colors mode=-1 tty_can=0 ansi=1	C|823|0
+C	824	colors mode=-1 tty_can=1 ansi=0	C|824|0
+C	825	colors mode=-1 tty_can=1 ansi=1	C|825|1
+C	826	colors mode=0 tty_can=0 ansi=0	C|826|0
+C	827	colors mode=0 tty_can=0 ansi=1	C|827|0
+C	828	colors mode=0 tty_can=1 ansi=1	C|828|0
+C	829	colors mode=1 tty_can=0 ansi=0	C|829|0
+C	830	colors mode=1 tty_can=0 ansi=1	C|830|0
+C	831	colors mode=1 tty_can=1 ansi=0	C|831|1
+C	832	colors mode=1 tty_can=1 ansi=1	C|832|0
+C	833	colors mode=0 tty_can=1 ansi=0	C|833|1
+F	834	filter: empty set matches every name	F|834|1
+F	841	filter: "blk." matches blk.0...	F|841|1
+F	842	filter: "blk." does not match attn	F|842|0
+F	869	filter: nomatch does not match	F|869|0
+F	884	filter: two-pattern set, second entry	F|884|1
+E	890	ne_string	E|890|1, 1, 1, 1
+E	891	ne_string	E|891|4096, 32, 1, 1
+E	892	ne_string	E|892|2, 3, 5, 7
+E	893	ne_string	E|893|0, 1, 1, 1
+D	894	F32 2x1 dump, finite sum	D|894|0|    [?0a        [?0a            [      1.2500,       0.5000  ],?0a        ],?0a    ]?0a    sum = 1.750000?0a
+D	895	F32 3x2 dump	D|895|0|    [?0a        [?0a            [      1.2500,       2.0000,       0.5000  ],?0a            [     -1.5000,       0.0000,       3.7500  ],?0a        ],?0a    ]?0a    sum = 6.000000?0a
+D	896	NaN without abort	D|896|0|    [?0a        [?0a            [      1.0000,          nan  ],?0a        ],?0a    ]?0a    sum = nan?0a
+D	897	NaN with abort	D|897|1|    [?0a        [?0a            [      1.0000,          nan  ],?0a        ],?0a    ]?0a    sum = nan?0aencountered NaN - aborting?0a
+D	898	+inf sum without abort	D|898|0|    [?0a        [?0a            [         inf,       1.0000,       0.5000,      -1.5000  ],?0a            [      2.0000,       0.2500,       0.0000,       0.0000  ],?0a        ],?0a    ]?0a    sum = inf?0a
+D	899	finite sum, abort armed	D|899|0|    [?0a        [?0a            [         inf,       1.0000,       0.0000,       0.0000  ],?0a        ],?0a    ]?0a    sum = inf?0a
+D	900	8x1 truncation of i0	D|900|0|    [?0a        [?0a            [      1.2500,       0.5000  ],?0a        ],?0a    ]?0a    sum = 1.750000?0a
+D	901	1x8 truncation of i1	D|901|0|    [?0a        [?0a            [      0.2500,       0.5000,       0.7500,    ...,       1.5000,       1.7500,       2.0000  ],?0a        ],?0a    ]?0a    sum = 9.000000?0a
+D	902	1x1x8 truncation of i2	D|902|0|    [?0a        [?0a            [      0.2500  ],?0a            [      0.5000  ],?0a            [      0.7500  ],?0a            ..., ?0a            [      1.5000  ],?0a            [      1.7500  ],?0a            [      2.0000  ],?0a        ],?0a    ]?0a    sum = 9.000000?0a
+D	903	negative values	D|903|0|    [?0a        [?0a            [      0.2500  ],?0a        ],?0a        [?0a            [      0.5000  ],?0a        ],?0a        [?0a            [      0.7500  ],?0a        ],?0a        ..., ?0a        [?0a            [      1.5000  ],?0a        ],?0a        [?0a            [      1.7500  ],?0a        ],?0a        [?0a            [      2.0000  ],?0a        ],?0a    ]?0a    sum = 9.000000...
+C	122	script: plain line	C|122|1|abc?0a|abc?0a|1|abc
+C	123	script: left,left,insert	C|123|0|aXbc?0a|abc?08?08Xbc?08?08?0a|2|abc|aXbc
+C	124	script: home/end	C|124|1|abc?0a|abc?08?08?08?1b[C?1b[C?1b[C?0a|3|abc|aXbc|abc
+C	125	script: delete at cursor	C|125|0|bc?0a|abc?08?08?08bc ?08?08?08?0a|4|abc|aXbc|abc|bc
+C	128	script: backspace DEL	C|128|0|ab?0a|abc?08 ?08?0a|7|abc|aXbc|abc|bc|abc|Xabc|ab
+C	130	script: UTF-8 insert	C|130|0|привет?0a|привет?0a|8|abc|aXbc|abc|bc|abc|Xabc|ab|привет
+C	132	script: ctrl-left word move	C|132|0|a b  c?0a|a b  c?08?0a|10|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c
+C	135	script: history up on a non-empty history	C|135|0|a b  c?0a|abc?08?08?08   ?08?08?08a b  c?0a|10|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c
+C	138	script: two history steps	C|138|0|line1?0a|line2?08?08?08?08?08     ?08?08?08?08?08line1?0a|13|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c|line1|line2|line1
+C	139	script: backslash continuation	C|139|1|abc?0a|abc\?08\?08 ?08?0a|14|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c|line1|line2|line1|abc
+C	142	script: slash alone	C|142|0|?0a|/?08/?08 ?08|16|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c|line1|line2|line1|abc|def|abc
+C	146	script: unknown CSI final	C|146|0|abc?0a|abc?0a|16|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c|line1|line2|line1|abc|def|abc
+C	148	script: unknown tilde digit	C|148|0|abc?0a|abc?0a|16|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c|line1|line2|line1|abc|def|abc
+C	152	script: tab as a plain char	C|152|0|a?09b?0a|a?09b?0a|17|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c|line1|line2|line1|abc|def|abc|a?09b
+C	167	script: right arrow at the end	C|167|0|?0a|?0a|27|abc|aXbc|abc|bc|abc|Xabc|ab|привет|Xпр|a b  c|line1|line2|line1|abc|def|abc|a?09b|abc|при вет|ac|a|abcdef|abc|  |a?01b|abc|a 
