@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T04:02:03.775492+00:00",
+  "updated_at": "2026-11-15T04:18:22.331643+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -855,6 +855,54 @@
       "status": "ported",
       "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682",
       "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/tallies.goose",
+      "native": "runtime/core/src/engine/session.cpp (GenTally/PrefillTally, aggregates)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (GenTally/PrefillTally, aggregates)"
+      ],
+      "experiment": "EXP-2026-11-15-650-p10-12-tallies-prefill-trace",
+      "task": "",
+      "status": "ported",
+      "sha256": "8d47331880c75262580c9bf77406072b3c22b4d7847fab9465843ec85d5764ce",
+      "gate": "28 cases / 847 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/prefill-plan.goose",
+      "native": "runtime/core/src/engine/session.cpp (prefill chunk plan)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (prefill chunk plan)"
+      ],
+      "experiment": "EXP-2026-11-15-650-p10-12-tallies-prefill-trace",
+      "task": "",
+      "status": "ported",
+      "sha256": "d40e29910f193a37f5df9622bdc7572fcfd9e55c658c1b7b972929e1c1d342a5",
+      "gate": "16 cases / 432 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/trace-frame-order.goose",
+      "native": "runtime/core/src/engine/session.cpp (trace frame order)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (trace frame order)"
+      ],
+      "experiment": "EXP-2026-11-15-650-p10-12-tallies-prefill-trace",
+      "task": "",
+      "status": "ported",
+      "sha256": "241a2d39240a6a6187a28bcddf5f0f7a57fd651969376abc7738bc6c07708014",
+      "gate": "42 cases / 433 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/moe-predict-report.goose",
+      "native": "runtime/cli/main.cpp (moe-predict report)",
+      "native_targets": [
+        "runtime/cli/main.cpp (moe-predict report)"
+      ],
+      "experiment": "EXP-2026-11-15-650-p10-12-tallies-prefill-trace",
+      "task": "",
+      "status": "ported",
+      "sha256": "b71f9527841b76ca3724907152d632507c7443dc0e2fa2af5a31d08f36480342",
+      "gate": "15 cases / 1064 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/file-reader-windows.goose",

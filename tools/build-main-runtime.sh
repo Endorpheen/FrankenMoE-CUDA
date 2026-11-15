@@ -93,6 +93,10 @@ MODULES=(
     goose/misc/load-admission.goose
     goose/misc/perplexity-plan.goose
     goose/misc/kv-turn-state.goose
+    goose/misc/tallies.goose
+    goose/misc/prefill-plan.goose
+    goose/misc/trace-frame-order.goose
+    goose/misc/moe-predict-report.goose
     goose/server/mcp-core.goose
     goose/server/mcp-stdio.goose
     goose/server/mcp-integration.goose
