@@ -37,11 +37,26 @@ an explicit exception; the backend header splits 99/16 between `libggml-base.so`
 and `libggml.so`; the ledger describes `libllama-exp371.so.0.7.0` against
 `libllama.so.0`; the GGUF key is 17 bytes, not 18.
 
+## Additional slices (EXP654)
+
+| slice | content | exports |
+|---|---|---|
+| S7 device headers | 14 headers, 14 macros, all 84 `GGML_BACKEND_API` declarations with arity/return/parameter classes, 12-capability matrix | 69 `devh_*` |
+| S8 `ggml-cpp.h` | 7 RAII wrappers with release-call counts, includes, 3 carrier enums, 55 config defaults, layout facts | `cpph_*` |
+| S9 scheduler-eval | ask/observe/cancel machine, event order, cancel, two eval callback shapes, 6 log levels with routing, progress contract | `sched_*` |
+
+Evidence: 143/620 + 78/435 + 21/9482 values, 0 failures, byte-identical at -O0;
+mutations 36/36. The oracle re-reads the headers and the `ggml-backend.cpp` loop
+each build, expands macros with the compiler, uses `decltype` and `--wrap`, and
+measures log routing through `libggml-base`. Two facts: `ggml_log_set(nullptr)`
+reinstalls the default callback instead of clearing the slot, and
+`ggml-hexagon.h` declares no buffer type while `ggml-virtgpu.h` declares only
+`reg`.
+
 ## Remaining
 
-Device backend headers (`ggml-cuda.h` and siblings), `ggml-cpp.h` and
-carrier/runtime headers; the scheduler-eval callback runtime sequence (only the
-typedef shape is frozen); wiring the slices into the runtime/CLI.
+Host wiring of the ABI/header slices; the decision on the SONAME ledger library
+mismatch.
 
 ## Boundaries
 

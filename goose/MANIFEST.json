@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T04:37:57.201497+00:00",
+  "updated_at": "2026-11-15T05:08:56.075140+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -1083,6 +1083,42 @@
       "status": "ported",
       "sha256": "b073599a4ac4881615e5ca04d57ba891922991009a5da79c388ff64e3f68a3b7",
       "gate": "80 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/device-headers.goose",
+      "native": "device backend headers (14 headers, 84 GGML_BACKEND_API declarations, capability matrix, ceilings)",
+      "native_targets": [
+        "device backend headers (14 headers, 84 GGML_BACKEND_API declarations, capability matrix, ceilings)"
+      ],
+      "experiment": "EXP-2026-11-15-654-p10-08c-header-surface",
+      "task": "",
+      "status": "ported",
+      "sha256": "d7ea2c7b061b7ce1d6eb26b83ce8330329b2e33298b857a15013f9c8adfa6cf5",
+      "gate": "143 cases / 620 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/cpp-headers.goose",
+      "native": "ggml-cpp.h RAII wrappers, includes, carrier enums and 55 config defaults",
+      "native_targets": [
+        "ggml-cpp.h RAII wrappers, includes, carrier enums and 55 config defaults"
+      ],
+      "experiment": "EXP-2026-11-15-654-p10-08c-header-surface",
+      "task": "",
+      "status": "ported",
+      "sha256": "8e4b18b1fad0c6a75e46c4302c6bcf5de868ef7ffa7b2ccb581095645f4cbedc",
+      "gate": "78 cases / 435 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/sched-eval.goose",
+      "native": "ggml-backend scheduler ask/observe/cancel machine, eval callback shapes, log routing, progress contract",
+      "native_targets": [
+        "ggml-backend scheduler ask/observe/cancel machine, eval callback shapes, log routing, progress contract"
+      ],
+      "experiment": "EXP-2026-11-15-654-p10-08c-header-surface",
+      "task": "",
+      "status": "ported",
+      "sha256": "b6bea618947c47761ebd34b5bd7c64a7151a6b019dbfdddbff9ec70bcf556d8b",
+      "gate": "21 cases / 9482 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/backend-headers.goose",

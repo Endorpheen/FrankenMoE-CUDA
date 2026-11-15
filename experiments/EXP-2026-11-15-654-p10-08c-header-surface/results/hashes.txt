@@ -1,0 +1,60 @@
+# Artifact hashes, P10-08 S7-S9 (EXP-2026-11-15-659)
+# generated 2026-11-15T05:02:50Z
+
+## Goose sources and harness
+8e4b18b1fad0c6a75e46c4302c6bcf5de868ef7ffa7b2ccb581095645f4cbedc  source/cpp-headers.goose
+d7ea2c7b061b7ce1d6eb26b83ce8330329b2e33298b857a15013f9c8adfa6cf5  source/device-headers.goose
+b6bea618947c47761ebd34b5bd7c64a7151a6b019dbfdddbff9ec70bcf556d8b  source/sched-eval.goose
+efc2bdc0aaaa415567c782f0ce785d959e825908b4827b1e781cdda0343d29fe  tests/extract_native.py
+5a4d84294e1dd269a099a8d91fc355067d5abd721460e26539045334b6cf4b0e  tests/mutate.py
+77d5a4dcff0689e4aa9ac6394d5d6c121df0d7a65e99d581b3f8dcdb5708435a  tests/build.sh
+0e8cc588d7cc57132d1cd1ad17ba147a581e4a7d2b0182871fc111ac2fbc6e64  tests/fixture_cpph.cpp
+d4efb58604be2d2c93148ec6d124313b9cee5704cb1ee69d9946814fe51c8000  tests/fixture_devh.cpp
+a5a5f8fff2e66394c81a37bd5243c6407657affecb2b0c6cce5d8dcedbce65bc  tests/fixture_sched.cpp
+6bb3247e0eca23c40edb1c6502aa42f9270a999a4f8eafcb51522b77860920d3  tests/version_probe.cpp
+
+## Native inputs (llama.cpp 0b5be7e4a)
+9cbfcea49f6da4d07f41dc22fa8dbf870825faaa2a68e34e65fe30ea6c41e042  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-cuda.h
+322f36cd30f3e9e7aad7b5b9bc63078012fd0b7706ac4e24f5721b604f3d8980  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-metal.h
+7eae5dad2cc7bb4d3eca828539f441816d5fd59fdc7b224d49aa229fc7b7248c  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-vulkan.h
+505c01e4575c06a3b01cdbbb5688368baaabf6223a36eeafd918057251da6e43  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-rpc.h
+8e443e1aa9c8bc6e0cf116c4cc3f42f4858938fa15e65b06bc07b26686e1233a  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-opencl.h
+b2c12bac390f14707b16bdd27c8c75ce4f075ed509c729ee28fd4f03b17e7375  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-hexagon.h
+58429f8045b335f5e740faa2198caf72ba3beb04df0eb970103b932340daca8b  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-sycl.h
+2cdb134f27fe5c4ec19d52f1eb58f5355aa42b8f54bf385f0e487501c5df7362  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-cann.h
+e76cb8594dc9866d99e7d63191b9fff6ab8b50244b4a28ce3af0f962964a6b5b  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-blas.h
+33118c0642b8059a99ea930fd4e4a045e78ccb41760b173ede221f1297c35977  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-et.h
+ed231e7db3f0f58b84073f5ee67f9ec9d63046d1a7ed091c36a6cfe9f685a463  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-virtgpu.h
+ee1d79c95ade45ba195a6b71f59a05c18617de4a596d2b2b03ecf38975a9a448  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-zdnn.h
+2cb034b842438281616ce647232d922fb224450323f0d422d2af567c334aa8ff  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-zendnn.h
+a91d855313a9e85e75ba597ff869a267247dea936a2c0faef03aeb7f1ea6e79c  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-webgpu.h
+bc15ba002c68685df23faae42df0d2b3d58032011f88b649021ab92485862c72  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-cpp.h
+f9bafda615fafa73306bed0a2c3d5a459cba2c19c9d76e1dc0adc2b3fd0cb2c8  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml-backend.h
+c6e7e86d00ee042e384aa3c738f4d4a80aa29eef26430da178a8d0abfece6d42  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include/ggml.h
+3d1b18eda626c1b9ecf5bda0798e65b974a8f70f30d56726610633a980cb4160  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/include/llama.h
+76e1b42abecb92958ddaa2499616daaadfe48b067a8360d5f2d722028d704d0c  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/src/ggml-backend.cpp
+61b2972c5292234953453de09ab23b7c55fe4e6294cdb9b72a07131bb7b40d2f  /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/src/llama-model-loader.cpp
+
+## Carrier inputs
+f6a05f3f2ea84d95dce33c19956320c4ea6df338b0df88771f5cda06b782a83d  /home/end0/AI/FrankenMoE-CUDA/runtime/core/include/bmoe/config.h
+aa3689291c5d62a282275d2e93332c4366a0e2570c6def823457151fee61c454  /home/end0/AI/FrankenMoE-CUDA/runtime/core/include/bmoe/session.h
+8bf9d7bf639a8d6be48f91fdad5aabbaf8d89d59d6055b0f278b8d3abe3bc86c  /home/end0/AI/FrankenMoE-CUDA/runtime/core/include/bmoe/version.h
+a1757ec76476ad928f1ed703eec4547d064501ddef5e73f702a8fa706894808f  /home/end0/AI/FrankenMoE-CUDA/runtime/core/include/bmoe/runtime.h
+e6334cbf4976e49ac7c0c6b08b1b02743f72eaa9dd593f614ef197bf1611120f  /home/end0/AI/FrankenMoE-CUDA/runtime/core/include/bmoe/metrics.h
+
+## Reference shared object
+3f3dbfdb2b887399ed24099cff423f8ac2fbe9922992fef7b4324a854cad2173  /home/end0/AI/FrankenMoE-CUDA/build/exp054-dflash/bin/libggml-base.so.0.22.0
+
+## Generated C (reproducible, not an input)
+cf14046b9fffe2cb5b8fe5f58f4e46d46c7aed82fe9c28455e82ae73365dd6e1  build/devh.c
+76386318282d8d7afa9ff2ff513a33e945c231902c9a02970989941b2cc2d691  build/cpph.c
+791b71134f8913a4f9e8c9803340d60a3652f8ed970b741191f6bd7a1703d4e3  build/sched.c
+
+## Documents and logs
+e217b72a5def12e0f9c3c25ced6ac0a20efde9b1c3b8dd8da156b9d747384ceb  README.md
+7849697f72ad51d9919c590fca21efe9b750a227ed18567d3817d3bcf8822baf  REPORT.md
+e6a8bdf431e25c0f1d8475628a70b4b03d3fe84a585cebcdba615d042c4d7baa  results/gate-final.log
+d2482d5e227f23474faf19ca48496847eb4cfc0f6c0f02ca4c559b5b05921b0c  results/gate-o0.log
+7aaf5485cf65cc164c646eab5d2dbcedbecd66689565ae28e0f73df34e9c2109  results/gate-o1.log
+441e70a298600c8235d7a890bb612158b3f1b2812b2396cf755caa13fc1e887f  results/mutate-1.log
+e5036bb78f6c1712cd8af01e4dd666c0ca34aa56771a956467cf60e529289254  results/mutate-2.log

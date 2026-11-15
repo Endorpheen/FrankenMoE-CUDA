@@ -79,6 +79,9 @@ MODULES=(
     goose/misc/backend-headers.goose
     goose/misc/gguf-headers.goose
     goose/misc/soname-exports.goose
+    goose/misc/device-headers.goose
+    goose/misc/cpp-headers.goose
+    goose/misc/sched-eval.goose
     goose/cuda/dispatch.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
