@@ -57,9 +57,10 @@ revert.
 - **R-1:** deleting the native quantisation bodies removes the only byte-parity
   fallback on the decode path while only 2 of 172 row types are gated and no Apex
   A/B exists yet (P11-02/P11-03 are TODO).
-- **R-2:** the reference binary `runtime/reconstructed/build/stage-run/llama-server`
-  (`badbfc5c…`) is not in the tree; `builds/` is empty and
-  `build/expert-tier-franken-cuda/bin/llama-server` is a different binary
-  (`3cd3586e…`). The rollback anchor must be restored before the first deletion.
+- **R-2 (closed):** the reference binary was restored from the GitHub release
+  `v0.1.0`: `llama-server` SHA-256 `badbfc5c…`, 15 960 bytes, bundle manifest 8/8,
+  at `/home/end0/AI/LlamaServer/apex-reference-v0.1.0/`. Details in
+  `APEX-REFERENCE.md`. The anchor is available for the first A/B; the binary has
+  not been started.
 
 P11-04 is not closed by this plan: even D1 removes 7 of 18 units.
