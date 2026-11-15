@@ -1,0 +1,6 @@
+FG_TENSOR_DATA rc=0 tensors=287 total=1837991168 copied=1837991168 layout=0 mismatches=0 first_size=8192 last_size=4456448 first_byte=0 last_byte=173
+FG_STANDALONE_V3 init_runs=1 types=43 file=/run/media/end0/CAE3-E74B/AI/Models/GGUF/LFM3-1.7B-Q8_0.gguf kv=45 tensors=287 first_key="general.architecture" goose_built=45 goose_first="general.architecture" agree=yes tensors_added=287 tdir_n=287 align=32 ne0_sum=652187
+FG_TENSOR_DATA rc=0 tensors=334 total=629227328 copied=629227328 layout=0 mismatches=0 first_size=4608 last_size=10616832 first_byte=0 last_byte=0
+FG_STANDALONE_V3 init_runs=1 types=43 file=/run/media/end0/CAE3-E74B/AI/Models/GGUF/Ternary-Bonsai-2-27B-mmproj-Q8_0.gguf kv=26 tensors=334 first_key="general.architecture" goose_built=26 goose_first="general.architecture" agree=yes tensors_added=334 tdir_n=334 align=32 ne0_sum=629248
+FG_TENSOR_DATA rc=0 tensors=319 total=570823712 copied=570823688 layout=0 mismatches=0 first_size=9216 last_size=8388608 first_byte=0 last_byte=167
+FG_STANDALONE_V3 init_runs=1 types=43 file=/run/media/end0/CAE3-E74B/AI/Models/GGUF/mmproj-LFM3-Audio-2B-BF16.gguf kv=40 tensors=319 first_key="general.architecture" goose_built=40 goose_first="general.architecture" agree=yes tensors_added=319 tdir_n=319 align=32 ne0_sum=251399
