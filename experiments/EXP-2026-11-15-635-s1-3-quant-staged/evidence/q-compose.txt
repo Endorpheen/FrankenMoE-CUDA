@@ -1,0 +1,11 @@
+composed 7 modules -> goose-gen/quant-stack.goose
+bytes=371021 lines=10462
+fn declarations=228 const declarations=154
+sha256=d3cbd7c28c19a0d9c8cc7871d143f607a6f130cef0aa1b91cea80fd1b3b1233c
+input f9ca7bdbdc5a39f9d8f70d117e4ce8782f56f8294cfa0fd035ce781a00b0c767 goose/model-staged/quant-types.goose
+input f1a86afc4099f029b73f4b85d0d94244ecc62ebddb22637e2049826cbba51eee goose/model-staged/quant-allow.goose
+input 4362fc29d389c2be9b7337b2dad8cc8b1a4a6af6af1f964aa456ee35e19bffc6 goose/model-staged/quant-rows.goose
+input 0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9 goose/model-staged/quant-rows2.goose
+input 2e2fa40bee89652969665869798191de8e63047f6923e895f650662893c95e70 goose/model-staged/quant-dequant.goose
+input 43a13e0bc34bca890875bed2da3b664c6866a335f23d03951e5cfff57f0eeb14 goose/model-staged/quant-dequant2.goose
+input 6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f goose/model-staged/quant-weighted.goose

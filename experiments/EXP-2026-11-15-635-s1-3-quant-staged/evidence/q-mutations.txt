@@ -1,0 +1,51 @@
+S1.3 mutation run — the Goose quant port inside a CPU-only copy
+module compiled at -O0 (FG_GOOSE_QUANT_O0=ON), tree at Release
+gates: fg-goose-quant-smoke (seam) and fg-goose-quant-arms (module arms)
+
+baseline      smoke: FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+baseline      arms : ARMS_RESULT mode=goose cases=112 failures=0
+
+id   half file                   mechanism                                                  result
+--------------------------------------------------------------------------------------------------
+A1   A    quant-rows.goose       quantization level: q4_0 scale divisor -8 -> -7            DETECTED   smoke rc=0 fails=0; arms rc=1 fails=3
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=3
+A2   A    quant-dequant.goose    sign of zero: q4_0 dequant adds the (zero) min again       DETECTED   smoke rc=1 fails=3; arms rc=0 fails=0
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=3 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=0
+A3   A    quant-dequant.goose    sign of zero: half decode returns 0.0 - v                  DETECTED   smoke rc=1 fails=2; arms rc=0 fails=0
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=2 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=0
+A4   A    quant-dequant.goose    min offset: q4_1 dequant halves the min                    DETECTED   smoke rc=1 fails=2; arms rc=1 fails=2
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=2 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=2
+A5   A    quant-rows.goose       tail rounding: q8_0 quantizer truncates instead of rounding DETECTED   smoke rc=1 fails=5; arms rc=0 fails=0
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=5 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=0
+A6   A    quant-rows.goose       block boundary: row stride uses n_per_row, not row_size    DETECTED   smoke rc=1 fails=6; arms rc=1 fails=12
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=6 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=12
+B1   B    quant-rows2.goose      super-scale: q3_K scale encoding -32 -> -31                DETECTED   smoke rc=0 fails=0; arms rc=1 fails=2
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=2
+B2   B    quant-weighted.goose   imatrix: q4_0 weighted arm ignores quant_weights           DETECTED   smoke rc=0 fails=0; arms rc=1 fails=1
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=1
+B3   B    quant-weighted.goose   imatrix: q2_K sigma2 factor 1 -> 2                         DETECTED   smoke rc=0 fails=0; arms rc=1 fails=2
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=2
+B4   B    quant-rows2.goose      IQ neighbour search: iq4_nl trial count 7 -> 6             DETECTED   smoke rc=0 fails=0; arms rc=1 fails=1
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=1
+B5   B    quant-rows2.goose      quantization level: q2_K level count 3 -> 4                DETECTED   smoke rc=0 fails=0; arms rc=1 fails=2
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=2
+B6   B    quant-dequant2.goose   dequant zero point: q6_K offset -32 -> -31                 DETECTED   smoke rc=0 fails=0; arms rc=1 fails=2
+     smoke FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+     arms  ARMS_RESULT mode=goose cases=112 failures=2
+
+half A: caught 6/6
+half B: caught 6/6
+
+after restore smoke: FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+after restore arms : ARMS_RESULT mode=goose cases=112 failures=0

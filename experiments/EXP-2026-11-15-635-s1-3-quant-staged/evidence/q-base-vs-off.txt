@@ -1,0 +1,3 @@
+44f954d6a281887c435f8622418066dbf395faa58a0d44db3248201fabb74568  build-base/bin/libggml-base.so.0.22.0
+44f954d6a281887c435f8622418066dbf395faa58a0d44db3248201fabb74568  build-off/bin/libggml-base.so.0.22.0
+cmp: base and OFF libraries are bit identical

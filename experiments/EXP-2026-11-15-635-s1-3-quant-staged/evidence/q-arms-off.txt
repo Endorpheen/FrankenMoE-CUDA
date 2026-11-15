@@ -1,0 +1,1 @@
+ARMS_RESULT mode=native cases=0 failures=0 skipped=1

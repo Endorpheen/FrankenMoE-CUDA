@@ -1,0 +1,5 @@
+ARMS mode=goose corpus=synthetic
+ARMS stage=chunk cases=38 failures=0
+ARMS stage=chunk_im cases=70 failures=0
+ARMS stage=dequant cases=112 failures=0
+ARMS_RESULT mode=goose cases=112 failures=0

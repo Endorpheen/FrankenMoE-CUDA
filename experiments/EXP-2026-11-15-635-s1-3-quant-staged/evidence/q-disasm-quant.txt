@@ -1,0 +1,10 @@
+   7eedb:	call   19290 <fg_goose_quant_quantize_row_q8_0@plt>
+   7eee0:	test   %eax,%eax
+   7eee2:	je     7f01d <quantize_row_q8_0_ref+0x15d>
+   7eee8:	test   %r14,%r14
+   7eef7:	test   %r14d,%r14d
+   7ef39:	jne    7ef20 <quantize_row_q8_0_ref+0x60>
+   7ef54:	je     7ef68 <quantize_row_q8_0_ref+0xa8>
+   7efec:	call   19740 <roundf@plt>
+   7f002:	jne    7efe0 <quantize_row_q8_0_ref+0x120>
+   7f017:	jne    7ef10 <quantize_row_q8_0_ref+0x50>

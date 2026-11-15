@@ -1,0 +1,1565 @@
+parsed ok: 578 top-level declarations, 2 file(s)
+goose-gen/quant-stack.goose:900: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:901: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:902: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:1577: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:1578: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:1582: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:1603: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1611: warning: redundant `as f32`: 3.4028234663852886e38 is an f32 here
+goose-gen/quant-stack.goose:1621: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1627: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:1628: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:1630: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:1653: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1655: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1680: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1682: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1711: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1714: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1742: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1745: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1765: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1770: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:1774: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1776: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1793: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1797: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:1800: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1802: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:1805: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:1809: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1811: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1835: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1838: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:1838: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:1840: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:1843: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1845: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:1857: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1859: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:1881: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2215: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2217: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2217: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2219: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2222: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2225: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2227: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2228: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2230: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2233: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2235: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2239: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2247: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2247: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2251: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2254: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2257: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2258: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2258: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2259: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2260: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2263: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2266: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2267: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2271: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2273: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2277: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2280: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2283: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2290: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2308: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2311: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2314: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2316: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2321: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2325: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2328: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2329: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2329: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2330: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2335: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2340: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2341: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2342: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2342: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2344: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2346: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2347: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2347: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2348: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2352: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2356: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2359: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2361: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2364: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2366: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2367: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2383: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2386: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2389: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2391: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2396: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2399: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2400: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2402: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2411: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2415: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2419: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2421: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2422: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2422: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2423: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2426: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2428: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2428: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2429: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2435: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2436: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2437: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2438: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2441: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2444: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2446: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2447: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2447: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2448: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2450: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2451: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2454: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2455: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2461: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2485: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2493: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2495: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2497: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2500: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2504: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2507: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2509: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2511: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2513: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2517: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2521: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2523: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2525: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2526: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2527: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2531: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2532: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2535: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2546: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2548: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:2550: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2574: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2576: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2579: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2581: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2583: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2586: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2595: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2597: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2599: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2601: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2607: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2608: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2612: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2613: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2616: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2621: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2625: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2631: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2633: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2636: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2647: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2649: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:2651: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2676: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2679: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2682: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2690: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2694: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2695: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2696: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2710: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2714: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2717: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2718: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2719: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2723: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2724: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2727: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2736: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2738: warning: redundant `as i64`: 64 fits i64 here
+goose-gen/quant-stack.goose:2740: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2765: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2768: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2771: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2779: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2783: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2784: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2785: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2799: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2803: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2806: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2807: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2808: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2812: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2813: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2816: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2821: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2840: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2844: warning: redundant `as i64`: 64 fits i64 here
+goose-gen/quant-stack.goose:2846: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2863: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:2870: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2876: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2878: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2879: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2883: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2884: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2887: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2891: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:2892: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2896: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2897: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2900: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2917: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2919: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:2921: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2942: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2944: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2945: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:2946: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2949: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2951: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2955: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2960: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2962: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:2968: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2971: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2973: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:2974: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2990: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:2994: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3004: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3008: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3010: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3018: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3022: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3024: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3032: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3037: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3039: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3053: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3057: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3068: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3071: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3073: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3075: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3113: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3116: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3121: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3137: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3140: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3145: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3150: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3152: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3158: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3182: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3187: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3187: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3189: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3209: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3214: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3219: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3221: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3223: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3249: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3250: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3255: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3257: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3257: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3269: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3273: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3281: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3284: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3286: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3287: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3288: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3291: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3300: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3302: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3303: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3305: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3307: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3308: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3309: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3310: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3318: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3320: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3324: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3340: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3342: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3346: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3346: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3347: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3350: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3352: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3355: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3357: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3372: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3374: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3386: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3390: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3393: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3398: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3398: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3399: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3402: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3403: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3405: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3405: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3409: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3420: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3423: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3428: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3430: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3458: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3519: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3521: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3527: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3535: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3553: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3555: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3561: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3569: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3591: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3595: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3603: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3605: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3616: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3625: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3629: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3632: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3638: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3646: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3653: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3656: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3659: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3661: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3664: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3667: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3668: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3676: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3680: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3681: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3684: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3687: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3688: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3691: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3694: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3700: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3703: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3707: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3713: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3715: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3718: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3721: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3723: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3726: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3729: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3732: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3734: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3735: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3737: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3738: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3739: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3743: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3746: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3748: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3753: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3757: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3760: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3763: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3767: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3773: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3775: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3777: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3779: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3782: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3785: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3791: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3796: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3802: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3804: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3808: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3810: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3815: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3816: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3819: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3825: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3829: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3831: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3855: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3857: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3864: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3866: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3877: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3885: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3891: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3894: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3897: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3900: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3902: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3905: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3907: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3908: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3909: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3917: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3921: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:3922: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3925: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3928: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3929: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3932: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3935: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3941: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3944: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3948: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3954: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3956: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3959: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3962: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3964: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3967: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3970: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3973: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3975: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3976: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3978: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:3979: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:3980: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3983: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3986: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3987: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:3992: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3996: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:3999: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4001: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4005: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4011: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4013: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4015: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4017: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4020: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4023: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4029: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4036: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4038: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4041: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4045: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4047: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4048: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4053: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:4054: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4057: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4059: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4061: warning: redundant `as i64`: 2 fits i64 here
+goose-gen/quant-stack.goose:4063: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4087: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4089: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4096: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4098: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4109: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4117: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4123: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4126: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4129: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4132: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4134: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4137: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4140: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4141: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4150: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4151: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:4154: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4157: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4158: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4161: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4164: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4170: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4173: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4177: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4183: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4185: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4188: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4191: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4196: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4199: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4200: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4201: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4202: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:4207: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4210: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4213: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4217: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4221: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4225: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4231: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4233: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4235: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4243: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4246: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4255: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4259: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4261: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4262: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4267: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:4268: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4271: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4277: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4279: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4304: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4310: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4323: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4329: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4337: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4366: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4374: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4376: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4384: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4387: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4390: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4393: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4395: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4398: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4400: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4403: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4407: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4415: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4416: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4417: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4418: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4423: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4433: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4479: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4488: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4495: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4497: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4499: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4502: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4504: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4507: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4509: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4512: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4518: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4520: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4521: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4524: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4545: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4551: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4555: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4560: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4576: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4578: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4580: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4580: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4590: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4592: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4593: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4601: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:4604: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4607: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:4623: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4640: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4643: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4645: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4647: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4650: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:4659: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4668: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:4695: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:4699: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:4703: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:4714: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4717: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4784: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4785: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4787: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4788: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4816: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4817: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4819: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4820: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:4972: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:4976: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:4980: warning: redundant `as i64`: a u8 converts to i64 implicitly here
+goose-gen/quant-stack.goose:5093: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5100: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5183: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5209: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5210: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5213: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5220: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5221: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5224: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5260: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5267: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5272: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5279: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5306: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5307: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5308: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5309: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5313: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5318: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5345: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5346: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5347: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5348: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5356: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5363: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5393: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5394: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5395: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5396: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5414: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5438: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5454: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5468: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5492: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5514: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5515: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5535: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5536: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5554: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5555: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5572: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5576: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5577: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5597: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5606: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5607: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5631: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5632: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5648: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5649: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5675: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5676: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5714: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5715: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5746: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:5896: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6368: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6370: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6370: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6372: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6375: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6378: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6380: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6381: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6383: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6386: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6388: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6392: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6400: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6400: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6404: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6407: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6410: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6411: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6411: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6412: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6413: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6416: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6419: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6420: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6424: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6426: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6430: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6433: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6436: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6443: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6466: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6468: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6468: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6470: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6473: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6476: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6478: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6479: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6481: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6484: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6486: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6489: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6497: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6497: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6501: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6505: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6505: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6508: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6509: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6509: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6510: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6511: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6514: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6517: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6518: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6522: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6524: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6527: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6530: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6533: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6540: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6554: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6557: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6560: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6562: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6564: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6565: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6568: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6570: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6572: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6574: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6576: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6581: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6582: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6584: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6587: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6589: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6596: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6600: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6605: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6606: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6606: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6607: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6612: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6617: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6618: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6618: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6619: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6619: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6622: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6623: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6623: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6628: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6632: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6635: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6637: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6638: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6653: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6656: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6659: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6661: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6666: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6670: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6673: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6674: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6674: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6675: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6680: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6685: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6686: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6687: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6687: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6689: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6691: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6692: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6692: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6693: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6697: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6701: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6704: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6706: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6709: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6711: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6712: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6728: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6731: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6734: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6736: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6741: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6744: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6745: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6747: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6756: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6760: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6764: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6766: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6767: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6767: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6768: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6771: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6773: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6773: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6774: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6780: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6781: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6782: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6783: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6786: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6789: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6791: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6792: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6792: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6793: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6795: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6796: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6799: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6800: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6806: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6830: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6838: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6840: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6842: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6845: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6849: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6852: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6854: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6856: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6858: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6862: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6866: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6868: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6870: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6871: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6872: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6876: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6877: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6880: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6891: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6893: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:6895: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6919: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6921: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6924: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6926: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6928: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6931: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6940: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6942: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:6944: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6946: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6952: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:6953: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:6957: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6958: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6961: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6966: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6970: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6976: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6978: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:6981: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6992: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:6994: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:6996: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7021: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7024: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7027: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7035: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7039: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7040: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7041: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7055: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7059: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7062: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7063: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7064: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7068: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7069: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7072: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7081: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7083: warning: redundant `as i64`: 64 fits i64 here
+goose-gen/quant-stack.goose:7085: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7110: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7113: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7116: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7124: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7128: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7129: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7130: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7144: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7148: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7151: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7152: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7153: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7157: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7158: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7161: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7166: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7185: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7189: warning: redundant `as i64`: 64 fits i64 here
+goose-gen/quant-stack.goose:7191: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7208: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:7215: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7221: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7223: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7224: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7228: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:7229: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7232: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7236: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7237: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7241: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7242: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7245: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7262: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7264: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:7266: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7289: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7290: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7297: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7299: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7300: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7310: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7317: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7325: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7328: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7330: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7332: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7333: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7334: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7338: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7339: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7342: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7353: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7355: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:7357: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7376: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7378: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7389: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7394: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7396: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7399: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7402: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7413: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7416: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7422: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7423: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7427: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7428: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7431: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7436: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7440: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7446: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7448: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7451: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7462: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7464: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:7466: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7488: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7490: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7501: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7508: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7512: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7524: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7528: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7531: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7532: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7533: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7537: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7538: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7541: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7550: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7552: warning: redundant `as i64`: 64 fits i64 here
+goose-gen/quant-stack.goose:7554: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7576: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7578: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7589: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7596: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7600: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7612: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7616: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7619: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7620: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7621: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7625: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7626: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7629: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7634: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7653: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7657: warning: redundant `as i64`: 64 fits i64 here
+goose-gen/quant-stack.goose:7659: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7682: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7688: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7690: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7691: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7695: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:7696: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7699: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7703: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7704: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7708: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7709: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7712: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7729: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7731: warning: redundant `as i64`: 128 fits i64 here
+goose-gen/quant-stack.goose:7733: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7748: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7750: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7760: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7764: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7767: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7769: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7784: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7786: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7796: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7801: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7804: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7806: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7819: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7821: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7831: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7836: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7843: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7846: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7861: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7863: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:7873: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7879: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7886: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7889: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7910: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7912: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7913: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7914: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7917: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7919: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7923: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7928: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7930: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7936: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7939: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7941: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:7942: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7958: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7962: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:7972: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7976: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7978: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:7986: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7990: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:7992: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8000: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8005: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8007: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8021: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8025: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8036: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8039: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8041: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8043: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8081: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8084: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8089: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8105: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8108: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8113: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8118: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8120: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8126: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8150: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8155: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8155: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8157: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8177: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8182: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8187: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8189: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8191: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8217: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8218: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8223: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8225: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8225: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8243: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8247: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8255: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8258: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8260: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8261: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8262: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8265: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8274: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8276: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8277: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8279: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8281: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8282: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8283: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8284: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8292: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8294: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8298: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8316: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8318: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8324: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8329: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8329: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8330: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8333: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8335: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8338: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8340: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8357: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8359: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8363: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8365: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8379: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8383: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8386: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8391: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8391: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8392: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8395: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8396: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8398: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8398: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8402: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8413: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8416: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8421: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8423: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8471: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8472: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8473: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8474: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8475: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8476: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8478: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8491: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8523: warning: redundant `as u64`: 0 fits u64 here
+goose-gen/quant-stack.goose:8565: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8567: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8573: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8581: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8599: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8601: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8607: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8615: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8637: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8642: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8650: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8652: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8663: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8672: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8676: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8679: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8685: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8693: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8700: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8703: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8706: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8709: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8710: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8713: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8715: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8720: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8721: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8722: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8725: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8727: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8733: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8734: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8735: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8740: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8741: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8744: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8747: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8751: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8754: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8758: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8764: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8766: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8769: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8772: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8775: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8777: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8778: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8779: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8785: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8787: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8792: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8796: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8799: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8801: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8805: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8811: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8813: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8815: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8816: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8817: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8820: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8823: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8829: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8837: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8841: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8843: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8844: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8849: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8850: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8853: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8856: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8861: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8863: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8882: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8887: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8889: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8892: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8900: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8902: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8913: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8922: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8926: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8929: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8935: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8943: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8950: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8953: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8956: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8958: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8961: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8964: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:8965: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8974: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:8975: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:8976: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8981: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8982: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8985: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8988: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:8994: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:8997: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9001: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9007: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9009: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9012: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9015: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9020: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9023: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9024: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9025: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9026: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9027: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9034: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9037: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9041: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9045: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9049: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9055: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9057: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9059: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9060: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9064: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9070: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9075: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9079: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9081: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9082: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9087: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9088: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9091: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9097: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9102: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9104: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9125: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9129: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9137: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9139: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:9153: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9162: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9166: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9169: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9175: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9183: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9190: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9193: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9196: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9198: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9201: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9204: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9205: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9213: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9217: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:9218: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9221: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9224: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9225: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9228: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9231: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9237: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9240: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9244: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9250: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9252: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9255: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9258: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9260: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9263: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9266: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9269: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9271: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9272: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9274: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9275: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9276: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9280: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9283: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9285: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9290: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9294: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9297: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9300: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9304: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9310: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9312: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9314: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9316: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9319: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9322: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9328: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9333: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9339: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9341: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9345: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9347: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9352: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9353: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9356: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9362: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9366: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9368: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9392: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9394: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9401: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9403: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:9417: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9425: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9431: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9434: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9437: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9440: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9442: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9445: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9447: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9448: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9449: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9457: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9461: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:9462: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9465: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9468: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9469: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9472: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9475: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9481: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9484: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9488: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9494: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9496: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9499: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9502: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9504: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9507: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9510: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9513: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9515: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9516: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9518: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9519: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9520: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9523: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9526: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9527: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9532: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9536: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9539: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9541: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9545: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9551: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9553: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9555: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9557: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9560: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9563: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9569: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9576: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9578: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9581: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9585: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9587: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9588: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9593: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9594: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9597: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9599: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9601: warning: redundant `as i64`: 2 fits i64 here
+goose-gen/quant-stack.goose:9603: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9627: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9629: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9636: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9638: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:9652: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9660: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9666: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9669: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9672: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9675: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9677: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9680: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9683: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9684: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9693: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:9694: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9697: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9700: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9701: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9704: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9707: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9713: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9716: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9720: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9726: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9728: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9731: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9734: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9739: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9742: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9743: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9744: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9745: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9750: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9753: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9756: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9760: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9764: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9768: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9774: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9776: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9778: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9786: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9789: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9798: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9802: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9804: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9805: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9810: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:9811: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9814: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9820: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9822: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9847: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9853: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9866: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9872: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9880: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9909: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9917: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9919: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:9931: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9934: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9937: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9940: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9942: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9945: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9947: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9950: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9954: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:9962: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9963: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9964: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9965: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:9970: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:9980: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10026: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10035: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10042: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10044: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10046: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10049: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10051: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10054: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10056: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10059: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10065: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10067: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10068: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10071: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10092: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10098: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10102: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10107: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10123: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10125: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10127: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10127: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10137: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10139: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10140: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10148: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:10151: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10154: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10174: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10191: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:10194: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10196: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10198: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10201: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10210: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10238: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10242: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10244: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10247: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10255: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10257: warning: redundant `as f32`: an i64 converts to f32 implicitly here
+goose-gen/quant-stack.goose:10266: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10269: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10272: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10275: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10277: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10280: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10282: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10285: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10289: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10292: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10293: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10301: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10324: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10337: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10342: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10344: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10346: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10349: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10351: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10354: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10356: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10359: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10365: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10367: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10368: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10371: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10373: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10374: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10385: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10391: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10395: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10400: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10410: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10412: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10414: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10414: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10417: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10422: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10428: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10430: warning: redundant `as f32`: 0 is an f32 here
+goose-gen/quant-stack.goose:10431: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10436: warning: redundant `as f32`: 1 is an f32 here
+goose-gen/quant-stack.goose:10437: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10440: warning: redundant `as i64`: 0 fits i64 here
+goose-gen/quant-stack.goose:10448: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10450: warning: redundant `as i64`: 1 fits i64 here
+goose-gen/quant-stack.goose:10459: warning: redundant `as i64`: 1 fits i64 here
+typechecked ok: 402 specialization(s), 2 struct/0 enum instance(s); optimized -O1: 299 inlined, 0 base case(s), 2409 folded, 1445 propagated, 0 tail loop(s), 0 reassociated
+bce: elided 70/273 index and 0/3 slice checks

@@ -185,7 +185,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | sessions/runtime/draft source | P9-05 | S3 | EXP632 | accepted, 332 checks, wiring open |
 | signed-zero dequantizer fix | P7-04 | S1 | EXP633 | accepted, bit-exact 300/300, 12/12 + 3/3 |
 | GGUF write/plan (done, EXP634) | S1.2 | S1 | EXP634 | smoke 14/14, split 17/0, mutations 12/12 |
-| quantizers | S1.3 | S1 | in flight | OFF/ON build proven, mutation set pending |
+| quantizers (done, EXP635) | S1.3 | S1 | EXP635 | smoke 46/58, arms 112/112, mutations 12/12; IQ off-grid defect open |
 | CLI tools | P10-02 | S4 | in flight | inventory-first |
 | standalone engine | P9-08 | S3 | in flight | inventory-first |
 

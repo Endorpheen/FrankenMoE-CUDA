@@ -1,0 +1,129 @@
+0000000000086370 <dequantize_row_q4_0>:
+   86370:	endbr64
+   86374:	push   %r12
+   86376:	mov    %rdi,%r12
+   86379:	push   %rbp
+   8637a:	mov    %rsi,%rbp
+   8637d:	push   %rbx
+   8637e:	mov    %rdx,%rbx
+   86381:	call   19de0 <fg_goose_quant_dequant_row_q4_0@plt>
+   86386:	test   %eax,%eax
+   86388:	je     86570 <dequantize_row_q4_0+0x200>
+   8638e:	test   %rbx,%rbx
+   86391:	lea    0x1f(%rbx),%rax
+   86395:	cmovns %rbx,%rax
+   86399:	sar    $0x5,%rax
+   8639d:	test   %eax,%eax
+   8639f:	jle    86570 <dequantize_row_q4_0+0x200>
+   863a5:	sub    $0x1,%eax
+   863a8:	movss  0x641d8(%rip),%xmm7        # ea588 <__func__.8+0x18>
+   863b0:	mov    %r12,%rdi
+   863b3:	mov    %rbp,%rdx
+   863b6:	shl    $0x7,%rax
+   863ba:	movss  0x646f6(%rip),%xmm6        # eaab8 <__func__.8+0x548>
+   863c2:	lea    0x80(%rbp,%rax,1),%rsi
+   863ca:	mov    $0xf0f0f0f,%eax
+   863cf:	movd   %eax,%xmm4
+   863d3:	mov    $0xf8f8f8f8,%eax
+   863d8:	movd   %eax,%xmm3
+   863dc:	pshufd $0x0,%xmm4,%xmm4
+   863e1:	pshufd $0x0,%xmm3,%xmm3
+   863e6:	jmp    86536 <dequantize_row_q4_0+0x1c6>
+   863eb:	nopl   0x0(%rax,%rax,1)
+   863f0:	shr    $0x11,%eax
+   863f3:	or     $0x3f000000,%eax
+   863f8:	movd   %eax,%xmm1
+   863fc:	subss  %xmm6,%xmm1
+   86400:	movd   %xmm1,%eax
+   86404:	movdqu 0x2(%rdi),%xmm2
+   86409:	pxor   %xmm10,%xmm10
+   8640e:	or     %eax,%ecx
+   86410:	sub    $0xffffffffffffff80,%rdx
+   86414:	movd   %ecx,%xmm9
+   86419:	add    $0x12,%rdi
+   8641d:	movdqa %xmm2,%xmm0
+   86421:	pand   %xmm4,%xmm2
+   86425:	shufps $0x0,%xmm9,%xmm9
+   8642a:	psrlw  $0x4,%xmm0
+   8642f:	pand   %xmm4,%xmm0
+   86433:	paddb  %xmm3,%xmm0
+   86437:	pcmpgtb %xmm0,%xmm10
+   8643c:	movdqa %xmm0,%xmm1
+   86440:	punpckhbw %xmm10,%xmm0
+   86445:	punpcklbw %xmm10,%xmm1
+   8644a:	pxor   %xmm10,%xmm10
+   8644f:	movdqa %xmm0,%xmm8
+   86454:	movdqa %xmm2,%xmm0
+   86458:	paddb  %xmm3,%xmm0
+   8645c:	pcmpgtb %xmm0,%xmm10
+   86461:	movdqa %xmm0,%xmm2
+   86465:	punpcklbw %xmm10,%xmm2
+   8646a:	punpckhbw %xmm10,%xmm0
+   8646f:	movdqa %xmm2,%xmm11
+   86474:	movdqa %xmm2,%xmm10
+   86479:	psraw  $0xf,%xmm11
+   8647f:	punpcklwd %xmm11,%xmm10
+   86484:	punpckhwd %xmm11,%xmm2
+   86489:	cvtdq2ps %xmm10,%xmm10
+   8648d:	mulps  %xmm9,%xmm10
+   86491:	cvtdq2ps %xmm2,%xmm2
+   86494:	mulps  %xmm9,%xmm2
+   86498:	movups %xmm10,-0x80(%rdx)
+   8649d:	movdqa %xmm0,%xmm10
+   864a2:	psraw  $0xf,%xmm10
+   864a8:	movups %xmm2,-0x70(%rdx)
+   864ac:	movdqa %xmm0,%xmm2
+   864b0:	punpcklwd %xmm10,%xmm2
+   864b5:	cvtdq2ps %xmm2,%xmm2
+   864b8:	mulps  %xmm9,%xmm2
+   864bc:	movups %xmm2,-0x60(%rdx)
+   864c0:	movdqa %xmm0,%xmm2
+   864c4:	movdqa %xmm1,%xmm0
+   864c8:	punpckhwd %xmm10,%xmm2
+   864cd:	cvtdq2ps %xmm2,%xmm2
+   864d0:	mulps  %xmm9,%xmm2
+   864d4:	movups %xmm2,-0x50(%rdx)
+   864d8:	movdqa %xmm1,%xmm2
+   864dc:	psraw  $0xf,%xmm2
+   864e1:	punpckhwd %xmm2,%xmm1
+   864e5:	punpcklwd %xmm2,%xmm0
+   864e9:	cvtdq2ps %xmm1,%xmm1
+   864ec:	mulps  %xmm9,%xmm1
+   864f0:	cvtdq2ps %xmm0,%xmm0
+   864f3:	mulps  %xmm9,%xmm0
+   864f7:	movups %xmm1,-0x30(%rdx)
+   864fb:	movdqa %xmm8,%xmm1
+   86500:	psraw  $0xf,%xmm1
+   86505:	movups %xmm0,-0x40(%rdx)
+   86509:	movdqa %xmm8,%xmm0
+   8650e:	punpcklwd %xmm1,%xmm0
+   86512:	cvtdq2ps %xmm0,%xmm0
+   86515:	mulps  %xmm9,%xmm0
+   86519:	movups %xmm0,-0x20(%rdx)
+   8651d:	movdqa %xmm8,%xmm0
+   86522:	punpckhwd %xmm1,%xmm0
+   86526:	cvtdq2ps %xmm0,%xmm0
+   86529:	mulps  %xmm9,%xmm0
+   8652d:	movups %xmm0,-0x10(%rdx)
+   86531:	cmp    %rdx,%rsi
+   86534:	je     86570 <dequantize_row_q4_0+0x200>
+   86536:	movzwl (%rdi),%eax
+   86539:	mov    %eax,%ecx
+   8653b:	shl    $0x11,%eax
+   8653e:	shl    $0x10,%ecx
+   86541:	and    $0x80000000,%ecx
+   86547:	cmp    $0x7ffffff,%eax
+   8654c:	jbe    863f0 <dequantize_row_q4_0+0x80>
+   86552:	shr    $0x4,%eax
+   86555:	add    $0x70000000,%eax
+   8655a:	movd   %eax,%xmm1
+   8655e:	mulss  %xmm7,%xmm1
+   86562:	movd   %xmm1,%eax
+   86566:	jmp    86404 <dequantize_row_q4_0+0x94>
+   8656b:	nopl   0x0(%rax,%rax,1)
+   86570:	pop    %rbx
+   86571:	pop    %rbp
+   86572:	pop    %r12
+   86574:	ret
+   86575:	data16 cs nopw 0x0(%rax,%rax,1)
+

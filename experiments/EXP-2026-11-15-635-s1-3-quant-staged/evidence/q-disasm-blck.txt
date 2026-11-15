@@ -1,0 +1,19 @@
+000000000001eff0 <ggml_blck_size>:
+   1eff0:	endbr64
+   1eff4:	push   %rbx
+   1eff5:	mov    %edi,%ebx
+   1eff7:	mov    %ebx,%edi
+   1eff9:	call   191d0 <fg_goose_quant_blck_size@plt>
+   1effe:	test   %eax,%eax
+   1f000:	jg     1f018 <ggml_blck_size+0x28>
+   1f002:	imul   $0x38,%rbx,%rbx
+   1f006:	lea    0xea313(%rip),%rax        # 109320 <type_traits>
+   1f00d:	mov    0x8(%rax,%rbx,1),%rax
+   1f012:	pop    %rbx
+   1f013:	ret
+   1f014:	nopl   0x0(%rax)
+   1f018:	cltq
+   1f01a:	pop    %rbx
+   1f01b:	ret
+   1f01c:	nopl   0x0(%rax)
+
