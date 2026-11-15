@@ -1,19 +1,14 @@
 --- a/llama.cpp/common/json-schema-to-grammar.h
 +++ b/llama.cpp/common/json-schema-to-grammar.h
-@@ -9,6 +9,20 @@
+@@ -9,6 +9,15 @@
  std::string json_schema_to_grammar(const common_json & schema,
                                     bool force_gbnf = false);
  
-+// The native converter body, unchanged. Compiled in every configuration and
-+// used as the oracle of the Goose differential gate; json_schema_to_grammar()
-+// calls it directly when FG_GOOSE_JSON_SCHEMA is off.
-+std::string json_schema_to_grammar_native(const common_json & schema,
-+                                          bool force_gbnf = false);
-+
++// P11-04 D1: the native converter is gone; there is no *_native twin.
 +#ifdef FG_GOOSE_JSON_SCHEMA
-+// Staged S1.1 bridge (common/fg-goose-schema-bridge.cpp): Goose
-+// goose/json/format-grammar.goose replaces the converter. The bridge keeps the
-+// flat node-table seam and reports how many calls reached the Goose module.
++// S1.1 bridge (common/fg-goose-schema-bridge.cpp): Goose
++// goose/json/format-grammar.goose owns the converter. The bridge keeps the flat
++// node-table seam and reports how many calls reached the module.
 +std::string fg_goose_json_schema_to_grammar(const common_json & schema);
 +extern "C" long fg_goose_json_schema_calls(void);
 +#endif

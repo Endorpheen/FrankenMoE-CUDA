@@ -1,13 +1,14 @@
-// Staged S1.1 smoke gate: the selected grammar path against the native oracle.
+// Staged S1.1 smoke gate: the selected grammar path against the frozen oracle.
 //
 // No model, no GPU, no server: the gate needs only libllama-common.
 //
 // In an FG_GOOSE_JSON_SCHEMA=ON build json_schema_to_grammar() dispatches to
-// the Goose module through common/fg-goose-schema-bridge.cpp, and
-// json_schema_to_grammar_native() is the oracle. In an OFF build both sides are
-// the native body, which proves the switch-off path still builds and behaves;
-// the output line says which mode was measured and how many calls reached the
-// Goose module, so an ON build cannot pass by silently keeping the native path.
+// the Goose module through common/fg-goose-schema-bridge.cpp.
+// json_schema_to_grammar_oracle() below is the frozen copy of the native body
+// that P11-04 D1 deleted from json-schema-to-grammar.cpp. An OFF build carries
+// no converter and must answer the empty grammar, which the gate pins; the
+// output line says which mode was measured and how many calls reached the Goose
+// module, so an ON build cannot pass by silently keeping a native path.
 //
 // Output: FG629_SMOKE mode=<goose|native> cases=N rules=M failures=K goose_calls=C
 
@@ -22,6 +23,25 @@
 #include "json.h"
 
 #include "fg_goose_cases.h"
+
+// P11-04 D1 (EXP665): the native converter body is deleted from
+// common/json-schema-to-grammar.cpp. What it did is reproduced here, frozen, so
+// the gate keeps an independent oracle: build_grammar() is public API, and the
+// three steps are the whole removed body.
+static std::string json_schema_to_grammar_oracle(const common_json & schema, bool force_gbnf) {
+#ifdef LLAMA_USE_LLGUIDANCE
+    if (!force_gbnf) {
+        return "%llguidance {}\nstart: %json " + schema.dump();
+    }
+#else
+    (void) force_gbnf;
+#endif
+    return build_grammar([&](const common_grammar_builder & callbacks) {
+        auto copy = schema;
+        callbacks.resolve_refs(copy);
+        callbacks.add_schema("", copy);
+    });
+}
 
 static std::map<std::string, std::string> parse_rules(const std::string & g) {
     std::map<std::string, std::string> m;
@@ -58,9 +78,9 @@ static void run_case(const char * name, const char * schema_text) {
     std::string expected;
     std::string actual;
     try {
-        expected = json_schema_to_grammar_native(common_json::parse(schema_text), true);
+        expected = json_schema_to_grammar_oracle(common_json::parse(schema_text), true);
     } catch (const std::exception & e) {
-        report_fail(name, std::string("native oracle threw: ") + e.what());
+        report_fail(name, std::string("oracle threw: ") + e.what());
         return;
     }
     try {
@@ -69,6 +89,17 @@ static void run_case(const char * name, const char * schema_text) {
         report_fail(name, std::string("selected path threw: ") + e.what());
         return;
     }
+
+#ifndef FG_GOOSE_JSON_SCHEMA
+    // P11-04 D1: the isolation build carries no converter at all. Pin the empty
+    // answer here, and still count the rules the oracle produced so the case
+    // list keeps its size.
+    rules += (int) parse_rules(expected).size();
+    if (!actual.empty()) {
+        report_fail(name, "isolation build answered a non-empty grammar");
+    }
+    return;
+#endif
 
     const auto native = parse_rules(expected);
     const auto ported = parse_rules(actual);

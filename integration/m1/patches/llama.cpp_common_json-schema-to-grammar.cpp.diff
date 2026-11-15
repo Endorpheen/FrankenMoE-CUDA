@@ -1,29 +1,37 @@
 --- a/llama.cpp/common/json-schema-to-grammar.cpp
 +++ b/llama.cpp/common/json-schema-to-grammar.cpp
-@@ -1230,7 +1230,7 @@
+@@ -1230,19 +1230,23 @@
      return check(schema);
  }
  
--std::string json_schema_to_grammar(const common_json & schema, bool force_gbnf) {
-+std::string json_schema_to_grammar_native(const common_json & schema, bool force_gbnf) {
- #ifdef LLAMA_USE_LLGUIDANCE
-     if (!force_gbnf) {
-         return "%llguidance {}\nstart: %json " + schema.dump();
-@@ -1245,6 +1245,17 @@
-     });
++// P11-04 D1 (EXP665): the native converter body is deleted. The converter is
++// goose/json/format-grammar.goose, reached through the S1.1 bridge; the frozen
++// copy of the removed body is the oracle of the S1.1 gate
++// (gates/s11/fg_goose_smoke.cpp, json_schema_to_grammar_oracle).
++//
++// A build with FG_GOOSE_JSON_SCHEMA off is a unit-isolation build: it carries no
++// converter and answers an empty grammar, which the gate pins. It is not a
++// product build.
+ std::string json_schema_to_grammar(const common_json & schema, bool force_gbnf) {
+-#ifdef LLAMA_USE_LLGUIDANCE
+-    if (!force_gbnf) {
+-        return "%llguidance {}\nstart: %json " + schema.dump();
+-    }
++#ifdef FG_GOOSE_JSON_SCHEMA
++    (void) force_gbnf;
++    return fg_goose_json_schema_to_grammar(schema);
+ #else
+-    (void)force_gbnf;
+-#endif // LLAMA_USE_LLGUIDANCE
+-    return build_grammar([&](const common_grammar_builder & callbacks) {
+-        auto copy = schema;
+-        callbacks.resolve_refs(copy);
+-        callbacks.add_schema("", copy);
+-    });
++    (void) force_gbnf;
++    (void) schema;
++    return std::string();
++#endif
  }
  
-+std::string json_schema_to_grammar(const common_json & schema, bool force_gbnf) {
-+#ifdef FG_GOOSE_JSON_SCHEMA
-+    // Staged S1.1: the Goose converter. json_schema_to_grammar_native() above
-+    // stays compiled as the fallback and as the differential oracle.
-+    (void)force_gbnf;
-+    return fg_goose_json_schema_to_grammar(schema);
-+#else
-+    return json_schema_to_grammar_native(schema, force_gbnf);
-+#endif
-+}
-+
  std::string build_grammar(const std::function<void(const common_grammar_builder &)> & cb, const common_grammar_options & options) {
-     common_schema_converter converter([&](const std::string &) { return json(); }, options.dotall);
-     common_grammar_builder builder {

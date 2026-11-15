@@ -1,9 +1,9 @@
 // Goose bridge for the JSON-schema to GBNF converter (staged S1.1 trial).
 //
-// Built only when FG_GOOSE_JSON_SCHEMA=ON. The native converter in
-// json-schema-to-grammar.cpp stays compiled and keeps its original body under
-// json_schema_to_grammar_native(); this file is the only consumer of the Goose
-// module.
+// Built only when FG_GOOSE_JSON_SCHEMA=ON. P11-04 D1 deleted the native
+// converter body; json-schema-to-grammar.cpp now has one path, this bridge, and
+// the removed body survives as the frozen oracle of the S1.1 gate. This file is
+// the only consumer of the Goose module.
 //
 // Contract: the Goose module (goose/json/format-grammar.goose, export
 // json_schema_convert) does not parse JSON. The host flattens the parsed

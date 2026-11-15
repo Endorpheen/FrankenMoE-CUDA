@@ -1,12 +1,13 @@
 # M1 of P11-01: one Apex-capable runtime, ten Goose stages behind ten flags.
 #
-# Every flag defaults OFF. OFF is the shipped path: the ten Goose stages are
-# neither compiled nor linked, and the tree is llama.cpp with the six carrier
-# patches applied but inactive (each patch keeps the native body selected).
+# Every flag defaults ON (rule 10): a plain `cmake -B build` gets the ten Goose
+# stages, and each flag exists only to turn one of them off for a bisect, an A/B
+# or a rollback. A build with any flag off is a diagnostic or isolation build,
+# not the shipped one.
 #
-# ON compiles the ONE composed unit (goose-gen/main.c, 91 modules) and the ONE
-# host adapter (host/goose_host.c) exactly once, and every stage bridge calls
-# into them. There is one goose_init in the whole link.
+# ON compiles the ONE composed unit (goose-gen/main.c) and the ONE host adapter
+# (host/goose_host.c) exactly once, and every stage bridge calls into them.
+# There is one goose_init in the whole link.
 #
 # The unit and the adapter are one static library, `fg-goose-runtime`. It needs
 # nothing from ggml: the 14 IQ table views the unit declares dispatch through a
@@ -15,7 +16,8 @@
 # ggml-base -> fg-goose-runtime, so no static-library cycle exists and no
 # --start-group is needed.
 #
-# Nothing here is a repository file: this tree is a staged copy under /tmp.
+# This project is tracked at integration/m1; tools/stage-m1-tree.sh assembles
+# the staged tree from it, upstream/llama.cpp and goose/.
 
 cmake_minimum_required(VERSION 3.21)
 
@@ -24,28 +26,32 @@ project(fg-goose-apex-m1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# --- the ten stage flags, all OFF by default ---------------------------------
+# --- the ten stage flags, all ON by default ----------------------------------
 #
-# The env/CLI convention of this repository is that a flag exists to turn a
-# feature OFF; these ten exist because the feature is not promoted yet, and M1
-# is the increment that measures that decision.
+# These are not opt-in switches: they exist so a bisect, an A/B or a rollback can
+# take one stage back to its native body. Set one to OFF to disable that stage.
 
-option(FG_GOOSE_JSON_SCHEMA "S1.1 schema-to-GBNF converter"                         OFF)
-option(FG_GOOSE_GGUF        "S1.2 GGUF writer and split plan"                       OFF)
-option(FG_GOOSE_QUANT       "S1.3 quant stack (dequant/quantize/blck)"              OFF)
-option(FG_GOOSE_METRICS     "S1.4 metrics and trace text encoders"                  OFF)
-option(FG_GOOSE_TOKENIZER   "S1.5 tokenizer decisions (vocab type/partition/strip)" OFF)
-option(FG_GOOSE_STREAM      "S1.6 stream decisions (xl/dw/ov/rs)"                   OFF)
-option(FG_GOOSE_CONFIG      "S2.1 config validator"                                 OFF)
-option(FG_GOOSE_SPEC        "S2.2 speculative-decoding decisions"                   OFF)
-option(FG_GOOSE_MODELS      "S3.1 model-management decisions"                       OFF)
-option(FG_GOOSE_SESSION     "S3.2 session/runtime/draft-source decisions"           OFF)
+option(FG_GOOSE_JSON_SCHEMA "S1.1 schema-to-GBNF converter"                         ON)
+option(FG_GOOSE_GGUF        "S1.2 GGUF writer and split plan"                       ON)
+option(FG_GOOSE_QUANT       "S1.3 quant stack (dequant/quantize/blck)"              ON)
+option(FG_GOOSE_METRICS     "S1.4 metrics and trace text encoders"                  ON)
+option(FG_GOOSE_TOKENIZER   "S1.5 tokenizer decisions (vocab type/partition/strip)" ON)
+option(FG_GOOSE_STREAM      "S1.6 stream decisions (xl/dw/ov/rs)"                   ON)
+option(FG_GOOSE_CONFIG      "S2.1 config validator"                                 ON)
+option(FG_GOOSE_SPEC        "S2.2 speculative-decoding decisions"                   ON)
+option(FG_GOOSE_MODELS      "S3.1 model-management decisions"                       ON)
+option(FG_GOOSE_SESSION     "S3.2 session/runtime/draft-source decisions"           ON)
 
 set(FG_GOOSE_RUNTIME OFF)
 foreach(flag
         FG_GOOSE_JSON_SCHEMA FG_GOOSE_GGUF FG_GOOSE_QUANT FG_GOOSE_METRICS
         FG_GOOSE_TOKENIZER FG_GOOSE_STREAM FG_GOOSE_CONFIG FG_GOOSE_SPEC
         FG_GOOSE_MODELS FG_GOOSE_SESSION)
+    # option() treats every non-false value as ON, so `-DFG_GOOSE_X=bogus` would
+    # silently enable a stage. Reject the value instead of guessing (P11-05).
+    if(DEFINED ${flag} AND NOT "${${flag}}" MATCHES "^(ON|OFF|TRUE|FALSE|YES|NO|1|0)$")
+        message(FATAL_ERROR "${flag} must be ON or OFF, got '${${flag}}'")
+    endif()
     if(${flag})
         set(FG_GOOSE_RUNTIME ON)
     endif()
