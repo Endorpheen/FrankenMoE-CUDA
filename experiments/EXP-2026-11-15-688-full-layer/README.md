@@ -42,16 +42,43 @@ thing:
    and crashed in `fg158_prop` — a loud failure, which is the point of the binding
    reading handles rather than guessing.
 
+## 2b. The wiring is proven against ggml's own constructors
+
+The gate now builds the same layer twice: once through `gb_common` and the QG split
+module, once with `ggml_rms_norm`, `ggml_mul_mat`, `ggml_view_3d`, `ggml_rope_ext`,
+`ggml_flash_attn_ext`, `ggml_sigmoid`, `ggml_mul`, `ggml_add`. Eleven intermediate
+tensors and the final output are compared bit for bit:
+
+```
+cmp normed   n=2048 differs=0     cmp attn   n=4096 differs=0
+cmp qg       n=8192 differs=0     cmp g4     n=4096 differs=0
+cmp k4       n=512  differs=0     cmp gs     n=4096 differs=0
+cmp v4       n=512  differs=0     cmp gated  n=4096 differs=0
+cmp qr       n=4096 differs=0     cmp proj   n=2048 differs=0
+cmp kr       n=512  differs=0
+wiring_differs=0 vs_ggml=0
+```
+
+This is the strongest statement available without a reference model run: the
+Goose-built graph is the same graph a native builder would produce, node for node
+and element for element.
+
+It also caught the last real defect: the first comparison diverged in every rope
+element because the layer passed only `freq_base`. `ggml_rope_impl` also needs
+`freq_scale`, `ext_factor`, `attn_factor`, `beta_fast` and `beta_slow`, and the
+per-node rope gate had passed precisely because it supplied all six. Comparing
+intermediates located it in one run.
+
 ## 3. What the gate does and does not prove
 
 **Proves**: the fifteen nodes are wired in the right order with the right shapes, the
 graph executes, the output is finite, it is not the input, and it is deterministic.
 Each node's arithmetic is proven bit-exact against the substrate in EXP-681/685.
 
-**Does not prove**: that the layer matches the reference implementation numerically.
-That needs a differential run against llama.cpp's own layer on the same weights,
-which is the next meaningful check and does not require a model run if the layer is
-fed identical inputs on both sides.
+**Does not prove**: that a 42-layer stack, KV cache and sampler produce the reference
+token sequence. That needs the stack and a model run. What it does prove is that one
+layer's graph is identical to the graph a native builder would emit - so a remaining
+mismatch could only come from the layers above it, not from this one.
 
 ## 4. Where this leaves the runtime
 

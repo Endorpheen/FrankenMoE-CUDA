@@ -52,13 +52,14 @@ static struct ggml_tensor * call(int64_t mode, struct ggml_context * gc,
                                  struct ggml_tensor * a, struct ggml_tensor * b,
                                  struct ggml_tensor * d, int64_t op, int64_t inplace,
                                  int64_t a7, int64_t a8, int64_t a9,
-                                 int64_t a10, int64_t a11) {
+                                 int64_t a10, int64_t a11, int64_t a12,
+                                 int64_t a13, int64_t a14) {
     uint64_t args[16] = {
         (uint64_t) mode, (uint64_t) (uintptr_t) gc,
         (uint64_t) (uintptr_t) a, (uint64_t) (uintptr_t) b, (uint64_t) (uintptr_t) d,
         (uint64_t) op, (uint64_t) inplace,
         (uint64_t) a7, (uint64_t) a8, (uint64_t) a9, (uint64_t) a10, (uint64_t) a11,
-        0, 0, 0, 0
+        (uint64_t) a12, (uint64_t) a13, (uint64_t) a14, 0
     };
     return (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) args);
 }
@@ -145,11 +146,11 @@ int main(int argc, char ** argv) {
 
     // 1. rms_norm
     struct ggml_tensor * normed = call(4, gc, x, NULL, NULL, GGML_OP_RMS_NORM, 0,
-                                       (int64_t) float_bits_of(eps), 0, 0, 0, 0);
+                                       (int64_t) float_bits_of(eps), 0, 0, 0, 0, 0, 0, 0);
     // 2-4. the three projections
-    struct ggml_tensor * qg = call(11, gc, wq, normed, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0);
-    struct ggml_tensor * kf = call(11, gc, wk, normed, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0);
-    struct ggml_tensor * vf = call(11, gc, wv, normed, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0);
+    struct ggml_tensor * qg = call(11, gc, wq, normed, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0,0,0,0);
+    struct ggml_tensor * kf = call(11, gc, wk, normed, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0,0,0,0);
+    struct ggml_tensor * vf = call(11, gc, wv, normed, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0,0,0,0);
     if (!normed || !qg || !kf || !vf) { printf("FG_APEX_LAYER projection failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
@@ -164,17 +165,27 @@ int main(int argc, char ** argv) {
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
     // 6-7. k and v as [HD, HKV, 1, 1]
-    struct ggml_tensor * k4 = call(24, gc, kf, NULL, NULL, GGML_OP_CONT, 0, HDKV, HKV, 1, 1, 0);
-    struct ggml_tensor * v4 = call(24, gc, vf, NULL, NULL, GGML_OP_CONT, 0, HDKV, HKV, 1, 1, 0);
+    struct ggml_tensor * k4 = call(24, gc, kf, NULL, NULL, GGML_OP_CONT, 0, HDKV, HKV, 1, 1, 0, 0, 0, 0);
+    struct ggml_tensor * v4 = call(24, gc, vf, NULL, NULL, GGML_OP_CONT, 0, HDKV, HKV, 1, 1, 0, 0, 0, 0);
     if (!k4 || !v4) { printf("FG_APEX_LAYER k/v view failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
     // 8-10. rope on q and k
-    const int64_t fb = float_bits_of(10000.0f), ctx_orig = 4096;
+    // The full rope parameter set, in the order ggml_rope_impl writes it:
+    // arg8 n_ctx_orig, arg9 freq_base, arg10 freq_scale, arg11 ext_factor,
+    // arg12 attn_factor, arg13 beta_fast, arg14 beta_slow. Leaving freq_scale,
+    // attn_factor and the betas at zero made the Goose arm diverge from the
+    // ggml-constructor arm in every element.
+    const int64_t fb  = float_bits_of(10000.0f);
+    const int64_t fs  = float_bits_of(1.0f);
+    const int64_t af  = float_bits_of(1.0f);
+    const int64_t bf  = float_bits_of(32.0f);
+    const int64_t bs  = float_bits_of(1.0f);
+    const int64_t ctx_orig = 4096;
     struct ggml_tensor * qr = call(25, gc, qv, pos, NULL, GGML_ROPE_TYPE_NORMAL, 0,
-                                   HD, ctx_orig, fb, 0, 0);
+                                   HD, ctx_orig, fb, fs, 0 /*ext_factor*/, af, bf, bs);
     struct ggml_tensor * kr = call(25, gc, k4, pos, NULL, GGML_ROPE_TYPE_NORMAL, 0,
-                                   HDKV, ctx_orig, fb, 0, 0);
+                                   HDKV, ctx_orig, fb, fs, 0, af, bf, bs);
     if (!qr || !kr) { printf("FG_APEX_LAYER rope failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
@@ -184,7 +195,7 @@ int main(int argc, char ** argv) {
     // treat a float bit pattern as a tensor pointer.
     struct ggml_tensor * attn = call(26, gc, qr, kr, v4, 0, 0,
                                      0 /* mask */, (int64_t) float_bits_of(scale),
-                                     0 /* max_bias */, 0 /* logit_softcap */, 0);
+                                     0 /* max_bias */, 0 /* logit_softcap */, 0, 0, 0, 0);
     if (!attn) { printf("FG_APEX_LAYER attention failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
@@ -192,30 +203,68 @@ int main(int argc, char ** argv) {
     // Its layout is [HD, H, 1, 1] while the attention result is [HD, 1, H, 1], so it
     // is reshaped to the attention layout before the multiply - the element count is
     // the same 4096.
-    struct ggml_tensor * g4 = call(24, gc, gv, NULL, NULL, GGML_OP_CONT, 0, HD, 1, H, 1, 0);
+    struct ggml_tensor * g4 = call(24, gc, gv, NULL, NULL, GGML_OP_CONT, 0, HD, 1, H, 1, 0, 0, 0, 0);
     if (!g4) { printf("FG_APEX_LAYER gate reshape failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
-    struct ggml_tensor * gs = call(3, gc, g4, NULL, NULL, GGML_UNARY_OP_SIGMOID, 0, 0,0,0,0,0);
+    struct ggml_tensor * gs = call(3, gc, g4, NULL, NULL, GGML_UNARY_OP_SIGMOID, 0, 0,0,0,0,0,0,0,0);
     if (!gs) { printf("FG_APEX_LAYER gate sigmoid failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
     // 13. attn * sigmoid(gate)
-    struct ggml_tensor * gated = call(0, gc, attn, gs, NULL, GGML_OP_MUL, 0, 0,0,0,0,0);
+    struct ggml_tensor * gated = call(0, gc, attn, gs, NULL, GGML_OP_MUL, 0, 0,0,0,0,0,0,0,0);
     if (!gated) { printf("FG_APEX_LAYER gate multiply failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
     // 14. flatten to [wo_k, 1] and project back
-    struct ggml_tensor * a2 = call(24, gc, gated, NULL, NULL, GGML_OP_CONT, 0, wo_k, 1, 1, 1, 0);
+    struct ggml_tensor * a2 = call(24, gc, gated, NULL, NULL, GGML_OP_CONT, 0, wo_k, 1, 1, 1, 0, 0, 0, 0);
     if (!a2) { printf("FG_APEX_LAYER flatten failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
-    struct ggml_tensor * proj = call(11, gc, wo, a2, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0);
+    struct ggml_tensor * proj = call(11, gc, wo, a2, NULL, GGML_OP_MUL_MAT, 0, 0,0,0,0,0,0,0,0);
     if (!proj) { printf("FG_APEX_LAYER output projection failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
     // 15. residual
-    struct ggml_tensor * y = call(0, gc, proj, x, NULL, GGML_OP_ADD, 0, 0,0,0,0,0);
+    struct ggml_tensor * y = call(0, gc, proj, x, NULL, GGML_OP_ADD, 0, 0,0,0,0,0,0,0,0);
     if (!y) { printf("FG_APEX_LAYER residual failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
+
+    // ---- arm B: the same layer built with ggml's own constructors ----
+    // This is the wiring oracle. Each node's arithmetic is already proven bit-exact
+    // against the substrate; what this compares is the ORDER and the SHAPES, which
+    // is exactly what a hand-wired graph can get wrong while every node is right.
+    const size_t elem = sizeof(float);
+    struct ggml_tensor * b_normed = ggml_rms_norm(gc, x, eps);
+    struct ggml_tensor * b_qg = ggml_mul_mat(gc, wq, b_normed);
+    struct ggml_tensor * b_q = ggml_view_3d(gc, b_qg, HD, H, 1,
+        elem * HD * 2, elem * HD * 2 * H, 0);
+    struct ggml_tensor * b_g = ggml_view_3d(gc, b_qg, HD, H, 1,
+        elem * HD * 2, elem * HD * 2 * H, elem * HD);
+    struct ggml_tensor * b_k = ggml_mul_mat(gc, wk, b_normed);
+    struct ggml_tensor * b_k4 = ggml_view_3d(gc, b_k, HDKV, HKV, 1,
+        elem * HDKV, elem * HDKV * HKV, 0);
+    struct ggml_tensor * b_v = ggml_mul_mat(gc, wv, b_normed);
+    struct ggml_tensor * b_v4 = ggml_view_3d(gc, b_v, HDKV, HKV, 1,
+        elem * HDKV, elem * HDKV * HKV, 0);
+    struct ggml_tensor * b_qr = ggml_rope_ext(gc, b_q, pos, NULL, (int) HD,
+        GGML_ROPE_TYPE_NORMAL, 4096, 10000.0f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
+    struct ggml_tensor * b_kr = ggml_rope_ext(gc, b_k4, pos, NULL, (int) HDKV,
+        GGML_ROPE_TYPE_NORMAL, 4096, 10000.0f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
+    struct ggml_tensor * b_attn = ggml_flash_attn_ext(gc, b_qr, b_kr, b_v4, NULL,
+        scale, 0.0f, 0.0f);
+    struct ggml_tensor * b_gc = ggml_cont(gc, b_g);
+    struct ggml_tensor * b_g4 = ggml_reshape_4d(gc, b_gc, HD, 1, H, 1);
+    struct ggml_tensor * b_gs = ggml_sigmoid(gc, b_g4);
+    struct ggml_tensor * b_gated = ggml_mul(gc, b_attn, b_gs);
+    struct ggml_tensor * b_a2 = ggml_reshape_2d(gc, b_gated, wo_k, 1);
+    struct ggml_tensor * b_proj = ggml_mul_mat(gc, wo, b_a2);
+    struct ggml_tensor * y_b = ggml_add(gc, b_proj, x);
+    ggml_backend_alloc_ctx_tensors(gc, backend);
+
+    struct ggml_cgraph * gb = ggml_new_graph(gc);
+    ggml_build_forward_expand(gb, y_b);
+    const enum ggml_status st_b = ggml_backend_graph_compute(backend, gb);
+    float * ob = (float *) malloc((size_t) ggml_nelements(y_b) * sizeof(float));
+    ggml_backend_tensor_get(y_b, ob, 0, (size_t) ggml_nelements(y_b) * sizeof(float));
 
     struct ggml_cgraph * gf = ggml_new_graph(gc);
     ggml_build_forward_expand(gf, y);
@@ -237,14 +286,49 @@ int main(int argc, char ** argv) {
     for (int64_t i = 0; i < n_out; ++i) if (!isfinite(o1[i])) ++nonfinite;
     for (int64_t i = 0; i < n_out && i < K; ++i) if (o1[i] != xd[i]) ++changed;
 
+    // Compare the intermediate nodes to locate the divergence.
+    {
+        struct { const char * n; struct ggml_tensor * a; struct ggml_tensor * b; } cmp[] = {
+            { "normed", normed, b_normed }, { "qg", qg, b_qg },
+            { "k4", k4, b_k4 }, { "v4", v4, b_v4 },
+            { "qr", qr, b_qr }, { "kr", kr, b_kr },
+            { "attn", attn, b_attn }, { "g4", g4, b_g4 },
+            { "gs", gs, b_gs }, { "gated", gated, b_gated },
+            { "proj", proj, b_proj },
+        };
+        for (size_t i = 0; i < sizeof cmp / sizeof cmp[0]; ++i) {
+            const int64_t n = ggml_nelements(cmp[i].a);
+            if (n != ggml_nelements(cmp[i].b)) {
+                printf("  cmp %-8s ELEMENT COUNT %lld vs %lld\n", cmp[i].n,
+                       (long long) n, (long long) ggml_nelements(cmp[i].b));
+                continue;
+            }
+            float * pa = (float *) malloc((size_t) n * sizeof(float));
+            float * pb = (float *) malloc((size_t) n * sizeof(float));
+            ggml_backend_tensor_get(cmp[i].a, pa, 0, (size_t) n * sizeof(float));
+            ggml_backend_tensor_get(cmp[i].b, pb, 0, (size_t) n * sizeof(float));
+            int d = 0;
+            for (int64_t j = 0; j < n; ++j) if (memcmp(&pa[j], &pb[j], sizeof(float)) != 0) ++d;
+            printf("  cmp %-8s n=%lld differs=%d\n", cmp[i].n, (long long) n, d);
+            free(pa); free(pb);
+        }
+    }
+
+    int wiring_diff = 0;
+    for (int64_t i = 0; i < n_out && i < ggml_nelements(y_b); ++i) {
+        if (memcmp(&o1[i], &ob[i], sizeof(float)) != 0) ++wiring_diff;
+    }
+
     const int shape_ok = y->ne[0] == K && y->ne[1] == 1;
     printf("FG_APEX_LAYER nodes=15 K=%lld H=%lld HKV=%lld HD=%lld HDKV=%lld "
-           "out=[%lld %lld] shape_ok=%d status=%d,%d nonfinite=%d changed=%d nondet=%d %s\n",
+           "out=[%lld %lld] shape_ok=%d status=%d,%d nonfinite=%d changed=%d nondet=%d "
+           "wiring_differs=%d vs_ggml=%d %s\n",
            (long long) K, (long long) H, (long long) HKV, (long long) HD, (long long) HDKV,
            (long long) y->ne[0], (long long) y->ne[1], shape_ok,
-           (int) st1, (int) st2, nonfinite, changed, nondet,
+           (int) st1, (int) st2, nonfinite, changed, nondet, wiring_diff, (int) st_b,
            (shape_ok && st1 == GGML_STATUS_SUCCESS && st2 == GGML_STATUS_SUCCESS &&
-            nonfinite == 0 && changed > 0 && nondet == 0) ? "PASS" : "FAIL");
+            nonfinite == 0 && changed > 0 && nondet == 0 &&
+            wiring_diff == 0 && st_b == GGML_STATUS_SUCCESS) ? "PASS" : "FAIL");
 
     free(o1); free(o2); free(xd);
     ggml_backend_free(backend);
