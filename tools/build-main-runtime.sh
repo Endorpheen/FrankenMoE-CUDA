@@ -73,6 +73,7 @@ MODULES=(
     goose/misc/cpu-features.goose
     goose/misc/platform-paths.goose
     goose/misc/backend-select.goose
+    goose/cuda/dispatch.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose
