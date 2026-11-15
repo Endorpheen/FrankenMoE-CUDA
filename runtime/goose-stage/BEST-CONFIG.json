@@ -1,15 +1,13 @@
 {
-  "name": "apex-best-20261115",
+  "name": "apex-best-20261115-v2",
   "role": "pinned rollback baseline for Goose optimisation work",
   "created": "2026-11-15",
   "why": "The next optimisation stage must start here, not from a rebuild that silently loses what was measured. Every field below is what produced the recorded numbers; nothing is inferred.",
-
   "launch": {
     "script": "runtime/goose-stage/run-apex.sh",
     "cache_mib": 4352,
     "command": "bash runtime/goose-stage/run-apex.sh --cache 4352"
   },
-
   "libraries": {
     "dir": "runtime/goose-stage/lib",
     "accepted_cpu": "63ad4984881220e55e41463981faa3bba5d4a0d7218880e9b205c8c8c460a9a7",
@@ -17,13 +15,11 @@
     "libggml-base": "libggml-base-scheduler-bafe3955c9ea (sha e213fa19...) - the build that defines fg160_fusion_enabled and fg160_query; the plain libggml-base.so.0 build defines neither",
     "libllama": "abfe9400488e (stage-run, 327 fg bindings). NOT libllama-exp244 (2bc628a1, 214 bindings): it fails with cudaMalloc OOM at 1124 MiB against this ggml, an ABI mismatch, not memory pressure."
   },
-
   "environment": {
     "source": "runtime/exp244/results-apex-or244-or-goose/environment.json",
     "note": "18 GGML_GOOSE_* values plus GGML_EXPERT_HOTSTORE=0, applied verbatim by run-apex.sh from that file",
     "ggml_backend_path": "must NOT be set - it was measured at prefill 2006.50 versus 2222.38, and registering the same CPU backend twice appears to initialise it twice"
   },
-
   "measured": {
     "at_512_tokens": {
       "prefill_tok_s": 2429.9,
@@ -42,26 +38,104 @@
     "content_sha256_128": "9d90a010775f2e72fbea3fec7e0d34b8e57b52aab9dd16e90eb9cd5151ba7560",
     "content_sha256_note": "identical to the 2026-11-13 reference; the same answer, not a similar one"
   },
-
   "reference_for_comparison": {
     "at_512": 41.94,
     "at_256": 41.0,
     "at_128": 39.6,
     "rule": "compare only at the same generation length; the reference itself gives 39.6 at 128 and 41.94 at 512, and mixing them made a 95% result look like 82%"
   },
-
   "known_good_neighbours": {
-    "3584": {"decode_tok_s": 33.81, "prefill": 2261.4, "vram_mib": 6784, "role": "economical - 768 MiB cheaper for 17.9% less decode"},
-    "4096": {"decode_tok_s": 39.40, "prefill": 2409.4, "vram_mib": 7298},
-    "4480": {"decode_tok_s": 39.81, "prefill": 2384.1, "vram_mib": 7682, "note": "loses to 4352 on prefill and VRAM, decode within noise"},
-    "4608": {"decode_tok_s": 38.65, "prefill": 2313.3, "vram_mib": 7810, "note": "a local dip - this is why 'more cache is better' was wrong"}
+    "3584": {
+      "decode_tok_s": 33.81,
+      "prefill": 2261.4,
+      "vram_mib": 6784,
+      "role": "economical - 768 MiB cheaper for 17.9% less decode"
+    },
+    "4096": {
+      "decode_tok_s": 39.4,
+      "prefill": 2409.4,
+      "vram_mib": 7298
+    },
+    "4480": {
+      "decode_tok_s": 39.81,
+      "prefill": 2384.1,
+      "vram_mib": 7682,
+      "note": "loses to 4352 on prefill and VRAM, decode within noise"
+    },
+    "4608": {
+      "decode_tok_s": 38.65,
+      "prefill": 2313.3,
+      "vram_mib": 7810,
+      "note": "a local dip - this is why 'more cache is better' was wrong"
+    }
   },
-
   "limits": {
     "cache_oom_above": 5120,
     "oom_evidence": "5120 failed twice, the second time with 8568 MiB showing free - the allocation is contiguous and the device cannot provide it",
     "headroom_at_4352": "~570 MiB"
   },
-
-  "rollback": "bash runtime/goose-stage/run-apex.sh --cache 4352. The script verifies both CPU hashes and a free port before starting, so a wrong library or a busy port is refused rather than silently measured. Libraries are symlinks into the stage-run tree; nothing in that tree is modified."
+  "rollback": "bash runtime/goose-stage/run-apex.sh --cache 4352. The script verifies both CPU hashes and a free port before starting, so a wrong library or a busy port is refused rather than silently measured. Libraries are symlinks into the stage-run tree; nothing in that tree is modified.",
+  "updates": "Revised after the ubatch and cache sweep. Two configurations are now named: the reference profile for long prompts, and a long-generation profile that reaches 42.35 decode - above the 41.94 historical reference - at the cost of 16.9% prefill.",
+  "configurations": {
+    "long_prompt_short_generation": {
+      "name": "reference-profile",
+      "argv_extra": [
+        "--moe-cache-mib",
+        "4352"
+      ],
+      "note": "ubatch 512 (the reference argv), best prefill",
+      "measured_512_tokens": {
+        "prefill_tok_s": 2429.9,
+        "decode_tok_s": 39.86,
+        "vram_mib": 7552,
+        "runs": 3
+      }
+    },
+    "long_generation": {
+      "name": "best-balance",
+      "argv_extra": [
+        "-ub",
+        "2048",
+        "--moe-cache-mib",
+        "5376"
+      ],
+      "note": "ubatch 2048; cache 5376 is a THRESHOLD not a limit - 5504 runs 1.9 tok/s slower and 5632 fails intermittently",
+      "measured_512_tokens": {
+        "prefill_tok_s": 2019.3,
+        "decode_tok_s": 42.35,
+        "vram_mib": 7972,
+        "runs": 6,
+        "decode_range": "41.97-42.56"
+      }
+    },
+    "maximum_decode": {
+      "name": "decode-max",
+      "argv_extra": [
+        "-ub",
+        "1024",
+        "--moe-cache-mib",
+        "5632"
+      ],
+      "note": "highest decode measured; prefill sacrificed",
+      "measured_512_tokens": {
+        "prefill_tok_s": 1488.7,
+        "decode_tok_s": 42.74,
+        "vram_mib": 7972,
+        "runs": 3
+      }
+    }
+  },
+  "thresholds": {
+    "cache_5376": "maximum safe; 5504 is 1.9 tok/s SLOWER (residency cliff), 5632 intermittent OOM",
+    "ubatch_2048": "optimal; 1536 and 1024 both cost prefill with no decode gain over 2048+cache",
+    "closed_levers": [
+      "more cache than 5376",
+      "--n-cpu-moe placement (OOM)",
+      "--no-kv-offload (aborts)",
+      "--cache-ram (host RAM, not VRAM)",
+      "polling flags (parity)",
+      "CUDA dispatch ablations (parity)"
+    ]
+  },
+  "history": "superseded first entry: cache 4352 alone gave 39.86; see configurations above"
 }
