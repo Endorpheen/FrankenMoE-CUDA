@@ -10,7 +10,7 @@ but could not join the common unit: it imports `base/model_graph.goose`, whose
 same collision that excluded `q4e-expert-layout` in EXP677.
 
 The resolution is the one the build script already implied: an architecture gets a
-unit of its own. `tools/build-apex-unit.sh` derives the module list from
+unit of its own. `tools/build-arch-unit.sh qwen35moe` derives the module list from
 `build-main-runtime.sh` - never typed twice - and appends the architecture module.
 `base/model_graph.goose` is deliberately not composed: it is
 `goose-model-graph.goose` minus its `main()`, which the common unit already
@@ -89,7 +89,7 @@ exist in any object) and one gate compile. No repeated builds.
 ## 6. Reproduce
 
 ```
-bash tools/build-apex-unit.sh
+bash tools/build-arch-unit.sh qwen35moe
 gcc-13 -O1 -std=c11 -I build/goose-apex -I upstream/llama.cpp/ggml/include \
     -c integration/goose-standalone/tests/apex_plan.c -o /tmp/apex_plan.o
 g++-13 -O1 -fopenmp build/goose-apex/main.o builds/goose-standalone/host.o \

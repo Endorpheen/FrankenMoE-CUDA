@@ -84,6 +84,16 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     Integrate modules in large batches. Collect the errors a batch produces and
     fix them together; between builds use only the cheap local gate. A build per
     module is the failure mode this rule exists to prevent.
+17. Apex is not the only architecture. Before any C++ is deleted, prove that the
+    support for the other architectures and the ability to port them to Goose are
+    intact: the shared loaders, graphs, backends and APIs must stay
+    multi-architecture and must not acquire Apex-specific shortcuts. A working
+    Apex obtained at the cost of the rest of FrankenMoE is a failed migration.
+    Keep an explicit dependency map of what is shared and what is
+    per-architecture, and keep every piece an unported architecture still needs.
+    The removal order is unchanged and stricter: proven Apex readiness, then a
+    compatibility check of the other architectures, then Igor's manual
+    acceptance, then removal.
 
 The migration target is full functional coverage, not a module count: for every
 own C++ file, the shipped binary's call path must reach the Goose export, the
@@ -258,7 +268,7 @@ technical terms. The section set and their order are fixed:
     Рабочее дерево: чистое | <state>
     Текущая фаза: <P# and short goal>
 
-    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 16 rules above, current wording
+    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 17 rules above, current wording
     АКТУАЛЬНЫЙ РЕЖИМ               — binary, launcher, EHS, THREADS, model,
                                      hardware
     BASELINE                       — tok/s medians and ranges per thread count,
