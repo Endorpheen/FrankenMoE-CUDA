@@ -198,9 +198,22 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | model-management switch (done, EXP642) | P8-06 | S3 | EXP642 | 84/84 both paths, goose_calls=84, nm 1/0 |
 | session switch (done, EXP643) | P9-05 | S3 | EXP643 | 191/929 both paths, goose_calls=376, dumps identical |
 
-The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.4
-metrics switch (EXP628) and the S2.1 config switch (EXP630) are accepted. The
-main runtime build composes every accepted module that shares one unit.
+The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.2
+GGUF switch (EXP634), the S1.3 quantizer switch (EXP635), the S1.4 metrics switch
+(EXP628), the S1.5 tokenizer switch (EXP639), the S1.6 streaming switch (EXP637),
+the S2.1 config switch (EXP630), the S2.2 speculative switch (EXP640), the S3.1
+model-management switch (EXP642) and the S3.2 session switch (EXP643) are
+accepted. The main runtime build composes every accepted module that shares one
+unit.
+
+Additional accepted module streams: P10-05 build/release/artifact policy
+(EXP645), P10-07 vendored dependency licence/provenance/selection (EXP651),
+P10-08 public ABI tables, constants, names, backend/GGUF headers and SONAME
+exports (EXP646/EXP649), P10-09 test runner, fixture plan and bench diagnostics
+(EXP652), P10-10 CPU features, platform paths and backend selection (EXP648),
+P10-11 licensing/reproducibility audit, P10-12 residual I/O and the G1/G2/G3/G6
+engine gaps (EXP647/EXP650), and P8-09 web asset serving, MIME and ETag
+(EXP653). 
 
 ## Verification protocol per stage
 
