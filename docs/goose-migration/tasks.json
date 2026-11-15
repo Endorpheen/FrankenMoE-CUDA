@@ -2707,7 +2707,7 @@
         "all audited roots"
       ],
       "acceptance": "Every Apex/shared implementation path and public entrypoint maps to completed Goose task or audited primitive; remaining architecture/platform sources are explicit compatibility tasks, never hidden exemptions.",
-      "evidence": " 2026-11-15 EXP647 (experiments/EXP-2026-11-15-647-p10-12-residual-io): the residual inventory covers 237 owned files: 15 of 19 carrier .cpp are covered by accepted slices, 3 were uncovered and are now ported (file_reader.cpp read windows/alignment, platform_io.cpp /proc grammar and residency, gguf_offsets.cpp shard naming), 2 files keep 7 regions (session.cpp tallies/prefill/trace/MTP/sampler, cli main moe-predict/driver), 3 units are substrate by decision and 98 files are non-production. Gates 105/486 + 132/417 + 97/145, 0 failures, identical at -O0; mutations 36/36. 15 gaps are recorded with owners; 3 are closed by these slices and 12 remain. Entry points were checked: no unaccounted copy of a ported decision was found. 2026-11-15 EXP650 closes G1, G2, G3 and G6 from the audit; 8 gaps remain.",
+      "evidence": " 2026-11-15 EXP647 (experiments/EXP-2026-11-15-647-p10-12-residual-io): the residual inventory covers 237 owned files: 15 of 19 carrier .cpp are covered by accepted slices, 3 were uncovered and are now ported (file_reader.cpp read windows/alignment, platform_io.cpp /proc grammar and residency, gguf_offsets.cpp shard naming), 2 files keep 7 regions (session.cpp tallies/prefill/trace/MTP/sampler, cli main moe-predict/driver), 3 units are substrate by decision and 98 files are non-production. Gates 105/486 + 132/417 + 97/145, 0 failures, identical at -O0; mutations 36/36. 15 gaps are recorded with owners; 3 are closed by these slices and 12 remain. Entry points were checked: no unaccounted copy of a ported decision was found. 2026-11-15 EXP650 closes G1, G2, G3 and G6 from the audit; 8 gaps remain. 2026-11-15: G1/G2/G3/G6 closed by EXP650 and G4/G5/G7 by EXP655; the audit remainder is now G8 (native GGUF container walk), G12 (proof artefact) and G15 (byte-identical libggml-base, owned by P10-06/P10-11). G9-G11/G13/G14 belong to P10-09/P10-05/P10-02/P10-07, which are accepted.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
@@ -2716,7 +2716,9 @@
       "slices_total": 3,
       "slices_done": 3,
       "remaining": [
-        "close the 8 remaining gaps from the audit (G4 MTP warm-up, G5 sampler chain, G7 CLI driver, and the rest listed in the reports)"
+        "G8: the GGUF container walk stays an audited native primitive",
+        "G12: the reconstruction harness is a proof artefact, not on the runtime path",
+        "G15: byte-identical libggml-base reconstruction belongs to P10-06/P10-11"
       ],
       "coverage_doc": "docs/goose-migration/P10-12-COVERAGE.md"
     },
@@ -5581,7 +5583,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T05:53:35.195865+00:00",
+  "updated_at": "2026-11-15T05:54:56.311264+00:00",
   "status_totals": {
     "DONE": 113,
     "PARTIAL": 20,
