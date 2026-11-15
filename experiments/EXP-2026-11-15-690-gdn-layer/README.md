@@ -36,12 +36,20 @@ norm/projection/residual half is the same as the attention layer, proven in EXP-
 From those: `head_k=128`, `n_k=16`, `head_v=128`, `n_v=32`. The repeat arm therefore
 runs (32 % 16 == 0), which is why it is exercised rather than skipped.
 
-## 3. What is honest about this gate
+## 3. The stride decision moved into Goose
 
-The three `view_4d` calls carry their stride numbers in the gate, not in Goose. That
-is the same debt the QG split had before EXP-687c, and it is recorded here rather
-than glossed: the stride decision belongs in a Goose export beside `qgate-split`,
-and this gate calls the primitive directly in the meantime.
+The first version of this gate carried the three `view_4d` stride numbers itself -
+the same debt the QG split had before EXP-687c. That debt is now closed:
+`gdn_qkv_view` in `goose/model/gdn-ops.goose` computes
+
+    nb1 = elem * (2*head_k*n_k + head_v*n_v)
+
+and the three offsets, and the gate only names which view it wants. One symbol with
+a `which` selector rather than an array out-parameter, so the C side calls it with
+plain integers and the decision never leaves Goose.
+
+The evidence file `evidence-691.txt` is the same gate rerun after the move: still
+`differs=0` at all ten nodes, with the stride arithmetic now on the module side.
 
 The rest of the chain goes through Goose: conv and gated_delta_net are `gb_common`
 modes 27 and 28, l2_norm and repeat are `gdn-ops` exports.

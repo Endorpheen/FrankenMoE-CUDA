@@ -21,11 +21,9 @@
 #include "main.h"
 
 extern int64_t gb_common(int64_t p);
-// The view primitive directly: the module's `view4` name is the Goose side. The
-// stride decision currently sits in this gate and is the next thing to move into a
-// Goose export, exactly as the QG split did in EXP-687c.
-extern int64_t fg158_view4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2,
-                           int64_t n3, int64_t nb1, int64_t nb2, int64_t nb3, int64_t offset);
+extern int64_t gdn_qkv_view(int64_t c, int64_t mixed, int64_t which, int64_t head_k,
+                            int64_t n_k, int64_t head_v, int64_t n_v, int64_t n_tokens,
+                            int64_t n_seqs, int64_t elem);
 extern void fg_goose_host_ensure_init(void);
 
 static int32_t float_bits_of(float f) { int32_t b; memcpy(&b, &f, sizeof b); return b; }
@@ -111,20 +109,17 @@ int main(int argc, char ** argv) {
     if (!siluA) { printf("FG_GDN_LAYER silu failed\n"); return 1; }
 
     const int64_t nb1_qkv = conv_channels * (int64_t) elem;   // row stride of the mixed output
-    struct ggml_tensor * qvA = (struct ggml_tensor *) (uintptr_t) fg158_view4(
-        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) siluA,
-        head_k, n_k_heads, tokens, seqs,
-        elem * head_k, nb1_qkv, nb1_qkv * tokens, 0);
-    struct ggml_tensor * kvA = (struct ggml_tensor *) (uintptr_t) fg158_view4(
-        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) siluA,
-        head_k, n_k_heads, tokens, seqs,
-        elem * head_k, nb1_qkv, nb1_qkv * tokens,
-        elem * head_k * n_k_heads);
-    struct ggml_tensor * vvA = (struct ggml_tensor *) (uintptr_t) fg158_view4(
-        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) siluA,
-        head_v, n_v_heads, tokens, seqs,
-        elem * head_v, nb1_qkv, nb1_qkv * tokens,
-        elem * 2 * head_k * n_k_heads);
+    // The stride, the extents and the offsets are the module's decision now; the gate
+    // only names which view it wants.
+    struct ggml_tensor * qvA = (struct ggml_tensor *) (uintptr_t) gdn_qkv_view(
+        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) siluA, 0, head_k, n_k_heads,
+        head_v, n_v_heads, tokens, seqs, (int64_t) elem);
+    struct ggml_tensor * kvA = (struct ggml_tensor *) (uintptr_t) gdn_qkv_view(
+        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) siluA, 1, head_k, n_k_heads,
+        head_v, n_v_heads, tokens, seqs, (int64_t) elem);
+    struct ggml_tensor * vvA = (struct ggml_tensor *) (uintptr_t) gdn_qkv_view(
+        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) siluA, 2, head_k, n_k_heads,
+        head_v, n_v_heads, tokens, seqs, (int64_t) elem);
     if (!qvA || !kvA || !vvA) { printf("FG_GDN_LAYER views failed\n"); return 1; }
 
     const int64_t qnA = gdn_l2norm((int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) qvA,
