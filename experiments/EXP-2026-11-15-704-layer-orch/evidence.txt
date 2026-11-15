@@ -1,0 +1,1 @@
+FG_LAYER_ORCH k=32 differs_ab=0 differs_wrong_postnorm=32 differs_wrong_input=32 distinguishable=1 PASS
