@@ -2812,12 +2812,12 @@
       "id": "P11-06",
       "phase": "P11",
       "title": "Publish unavoidable dependency and remaining-limit report",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "dependency/import/link audit"
       ],
       "acceptance": "List exact OS,C runtime,CUDA driver/toolchain/vendor primitive dependencies with reasons/ABI/licenses; replaceable owned code not renamed external; unresolved native dependency blocks full completion.",
-      "evidence": "",
+      "evidence": "2026-11-15 report (docs/goose-migration/P11-06-DEPENDENCIES.md): the 99 extern symbols are inventoried as 34 libc/libm/POSIX plus 65 Goose helper entry points (26 qz2_*, 26 qz_*, 4 qd_* and 9 formatting/JSON/file helpers). The report names the data that stays native (IQ init tables, the GGUF container walk, model weights), the platform surface (SIMD kernels, CUDA driver/runtime, Apple/Windows branches), and the measurement limits (transcribed static helpers, libc float formatting, no model/GPU run yet, batched verify, the fixed iq1_m/IQ defects). It explicitly does not claim full migration or a performance result.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
@@ -4692,6 +4692,10 @@
     {
       "event": "P11-01 M1: Apex runtime builds and links with all ten flags OFF/ON, 10/10 gates, nm clean, no model run (EXP658).",
       "checkpoint": "eb11a22f"
+    },
+    {
+      "event": "P11-06 closed: unavoidable externs, native data, platform surface and measurement limits published.",
+      "checkpoint": "7a821c05"
     }
   ],
   "batches": [
@@ -5582,11 +5586,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T06:05:42.348288+00:00",
+  "updated_at": "2026-11-15T06:09:13.017330+00:00",
   "status_totals": {
-    "DONE": 113,
+    "DONE": 114,
     "PARTIAL": 20,
-    "TODO": 19
+    "TODO": 18
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
