@@ -1,11 +1,11 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (23). This file is the current state; update it in the same change
+Updated: 2026-11-15 (24). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 114**, **PARTIAL 24**, **TODO 14** of
+`docs/goose-migration/tasks.json`: **DONE 115**, **PARTIAL 23**, **TODO 14** of
 152 functional requirements. Slice front: **174 / 174** done, none remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
@@ -32,7 +32,7 @@ The remaining partial requirements and their slice fronts:
 | P10-09 | 3 / 3 | wire the runner, fixture and diagnostics decisions into tests/tools |
 | P8-09 | 6 / 6 | wire web_serve and the API-key middleware into server-http.cpp; live server run needs approval |
 | P11-01 | — | IQ tables at init; switch the remaining layers; run the Apex A/B once approved |
-| P1-12 | — | Igor's decision: reclassify SIMD dot kernels as substrate, wait for a Goose vector surface, or split the criterion |
+| P1-12 | — | the four single-block dots are Goose-owned behind a runtime switch (EXP667); a multi-block row needs a row-level SIMD entry point (EXP668) |
 
 ## What the canonical tree contains
 

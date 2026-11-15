@@ -1,0 +1,12 @@
+[1] missing generated unit fails the ON link
+  ok: ON build failed and named the missing unit
+[2] wrong stage-flag value is rejected at configure
+  ok: configure stopped with the flag-validation message
+[3] unbound IQ provider aborts loudly
+  ok: unbound view aborted and all 15360 comparisons match
+[4] partially switched build links and runs the native path
+  ok: one stage ON: linked, the enabled gate uses Goose and the disabled one stays native
+[5] rollback recovers after the failed ON build
+  ok: OFF build links with zero goose_init definitions
+
+failure recovery: ok (5 checks, 0 skipped)

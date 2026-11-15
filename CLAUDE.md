@@ -29,6 +29,13 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     `GGML_EXPERT_PINNED_RING=0`), never to opt in.
 11. When this file changes, update `CLAUDE.md` synchronously in the same
     commit: `cp AGENTS.md CLAUDE.md`.
+12. Every check must support selective re-run. If one of N checks fails, fix the
+    cause and re-run only that check and the checks that genuinely depend on the
+    change. Keep the passing results and reuse them while their inputs are
+    unchanged; do not re-run a whole suite for reassurance. This applies to every
+    test, gate and build, present and future. Correctness is not reduced by this
+    rule: the full set still runs at a final acceptance, on a control point, or
+    when the inputs of the skipped checks actually changed.
 
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
@@ -172,7 +179,7 @@ technical terms. The section set and their order are fixed:
     Рабочее дерево: чистое | <state>
     Текущая фаза: <P# and short goal>
 
-    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 11 rules above, current wording
+    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 12 rules above, current wording
     АКТУАЛЬНЫЙ РЕЖИМ               — binary, launcher, EHS, THREADS, model,
                                      hardware
     BASELINE                       — tok/s medians and ranges per thread count,
