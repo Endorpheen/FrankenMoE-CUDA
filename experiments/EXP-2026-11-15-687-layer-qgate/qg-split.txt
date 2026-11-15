@@ -1,0 +1,1 @@
+FG_QG_SPLIT head_dim=512 n_head=16 elements=8192 q_differs=0 gate_differs=0 q_at_zero=1 gate_at_head=1 PASS

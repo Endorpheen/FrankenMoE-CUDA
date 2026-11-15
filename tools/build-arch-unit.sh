@@ -38,13 +38,14 @@ mkdir -p "$OUT"
 # import to the canonical module instead.
 ARCH=(
     "$ARCH_MODULE"
+    goose/model/qgate-split.goose
 )
 
 mapfile -t COMMON < <(awk '/^MODULES=\(/{f=1;next} /^\)/{f=0} f && /\.goose/{gsub(/^ +/,"");print}' \
                       "$ROOT/tools/build-main-runtime.sh")
 MODULES=("${COMMON[@]}" "${ARCH[@]}")
 
-echo "[1/5] compose ${#MODULES[@]} modules (${#COMMON[@]} common + ${#ARCH[@]} arch)"
+echo "[1/5] compose ${#MODULES[@]} modules (${#COMMON[@]} common + ${#ARCH[@]} arch/family)"
 python3 "$ROOT/tools/compose-goose.py" "$UNIT" "${MODULES[@]/#/$ROOT/}"
 
 echo "[2/5] typecheck"

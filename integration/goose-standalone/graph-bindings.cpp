@@ -85,6 +85,22 @@ int64_t fg158_dup(int64_t c, int64_t a) {
     return (int64_t) (intptr_t) ggml_dup_tensor((struct ggml_context *) (intptr_t) c, (const struct ggml_tensor *) (intptr_t) a);
 }
 
+// View with explicit strides and offset. fg158_view maps to ggml_view_tensor, which
+// has neither, and the q/gate split needs both: q and gate are interleaved per head,
+// so the head stride is 2*n_embd_head and the gate offset is n_embd_head inside it.
+// Translation only - the extents, strides and offsets are decided in Goose.
+int64_t fg158_view4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, int64_t n3,
+                    int64_t nb1, int64_t nb2, int64_t nb3, int64_t offset) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
+    if (ctx == nullptr || src == nullptr) {
+        return 0;
+    }
+    return (int64_t) (intptr_t) ggml_view_4d(ctx, src, n0, n1, n2, n3,
+                                             (size_t) nb1, (size_t) nb2, (size_t) nb3,
+                                             (size_t) offset);
+}
+
 int64_t fg158_view(int64_t c, int64_t a) {
     return (int64_t) (intptr_t) ggml_view_tensor((struct ggml_context *) (intptr_t) c, (struct ggml_tensor *) (intptr_t) a);
 }
