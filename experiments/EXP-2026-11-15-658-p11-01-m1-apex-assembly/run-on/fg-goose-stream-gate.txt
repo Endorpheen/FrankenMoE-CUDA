@@ -1,0 +1,1 @@
+FG641_SMOKE mode=goose cases=71 failures=0 goose_calls=74 decisions=4 entries=6

@@ -1,0 +1,1 @@
+FG_M1_HOST threads=2 calls=512 goose_init_runs=1 cfg_validate=-1 PASS

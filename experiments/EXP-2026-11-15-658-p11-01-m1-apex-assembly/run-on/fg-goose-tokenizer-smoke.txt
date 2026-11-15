@@ -1,0 +1,1 @@
+FG639_SMOKE mode=goose vt=146/146 part=20/20 strip=16/16 cases=182/182 failures=0 goose_calls=182 pins=2

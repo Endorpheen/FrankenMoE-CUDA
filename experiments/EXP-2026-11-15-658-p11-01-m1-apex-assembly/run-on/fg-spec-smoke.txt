@@ -1,0 +1,1 @@
+FG642_SPEC loop runs=33 emitted=567 drafted=368 accepted=353 steps=150 decodes=223 trims=9 eog_runs=9 floor_runs=3

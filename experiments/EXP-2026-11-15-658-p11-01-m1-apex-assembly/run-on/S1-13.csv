@@ -1,0 +1,4 @@
+# compute_trace v1
+# model=/models/apex-35b-a3b-Q4_K_M.gguf arch=qwen3moe n_layer=48 n_threads=8 io_threads=16 o_direct=1 overlap=1
+turn,phase,step,seq,layer,op,name,wall_ns,majflt
+0,1,7,13,12,ÿ€,field,1013,13

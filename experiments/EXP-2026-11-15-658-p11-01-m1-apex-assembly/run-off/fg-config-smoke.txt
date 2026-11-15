@@ -1,0 +1,2 @@
+FG632_SMOKE mode=native cases=66 pins=6 fuzz=40000 failures=0 rules=48/48 ok=6703 fail=33297 goose_calls=0
+all config-validate checks passed

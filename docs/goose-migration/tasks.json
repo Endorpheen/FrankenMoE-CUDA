@@ -2724,17 +2724,23 @@
       "id": "P11-01",
       "phase": "P11",
       "title": "Assemble one fully migrated Apex-capable common runtime",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "all selected Goose modules"
       ],
       "acceptance": "One isolated artifact combines CPU,CUDA,GGML,memory,KV,model,GGUF,tokenizer,server and owned infrastructure; every Apex-path owned component Goose, not a collection of separate partial variants.",
-      "evidence": "",
+      "evidence": "2026-11-15 M1 (experiments/EXP-2026-11-15-658-p11-01-m1-apex-assembly): the Apex runtime assembles and links with all ten Goose flags. OFF builds and links llama-server (17 794 640 B); ON-all builds and links it (20 316 528 B); the ten accepted gates pass in both configurations (goose_calls match their cards); nm shows exactly one goose_init in the 12 ON binaries, zero in OFF, max one definition per switch export, and no op_sqrt; a two-thread init smoke reports goose_init_runs=1; the Apex reference binary is unchanged. The unit is deterministic (7f29ca5e...). Seam: unit and adapter are compiled into ggml-base because the native IQ tables are file-static in ggml-quants.c; passing them at init is the next step. No model was started, so no performance or correctness claim is made yet.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "remaining": [
+        "pass the IQ tables at init instead of linking into ggml-base",
+        "switch the remaining native layers (server/chat/Jinja) behind flags",
+        "run the Apex A/B protocol once Igor approves goal, duration and run count"
+      ],
+      "coverage_doc": "experiments/EXP-2026-11-15-658-p11-01-m1-apex-assembly/README.md"
     },
     {
       "id": "P11-02",
@@ -4681,6 +4687,10 @@
     {
       "event": "P10-06 CUDA: architecture, flags/link and install layout ported (EXP657, 124 cases, 36/36).",
       "checkpoint": "9f5e2adb"
+    },
+    {
+      "event": "P11-01 M1: Apex runtime builds and links with all ten flags OFF/ON, 10/10 gates, nm clean, no model run (EXP658).",
+      "checkpoint": "eb11a22f"
     }
   ],
   "batches": [
@@ -5571,11 +5581,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T05:45:54.529964+00:00",
+  "updated_at": "2026-11-15T05:53:35.195865+00:00",
   "status_totals": {
     "DONE": 113,
-    "PARTIAL": 19,
-    "TODO": 20
+    "PARTIAL": 20,
+    "TODO": 19
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",

@@ -1,0 +1,1 @@
+FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7

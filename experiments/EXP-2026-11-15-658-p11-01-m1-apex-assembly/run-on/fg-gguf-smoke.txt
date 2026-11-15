@@ -1,0 +1,1 @@
+FG630_SMOKE mode=goose cases=14 checks=55 failures=0 goose_calls=394 (write=13 meta_size=14 meta_data=14 split=347 layout=6)

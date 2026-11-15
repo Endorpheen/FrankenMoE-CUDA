@@ -1,0 +1,1 @@
+FG629_SMOKE mode=goose cases=30 rules=182 failures=0 goose_calls=30
