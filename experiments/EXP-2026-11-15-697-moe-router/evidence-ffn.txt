@@ -1,0 +1,20 @@
+command: cat goose/cpu/goose-moe-router.goose .../tests/ffn.goose > ffn.goose && goose run ffn.goose
+bce: elided 49/51 index and 0/0 slice checks
+range_bad
+0
+mono_bad
+0
+up_doubles_mismatch
+0
+gate_linear_would_be
+61
+add_bad
+0
+avg_bad
+63
+comm_bad
+0
+failures
+0
+FG_MOE_FFN PASS
+exit: 0

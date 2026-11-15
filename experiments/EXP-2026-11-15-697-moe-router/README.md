@@ -67,7 +67,51 @@ since they compare values already rounded into the same f32 probabilities. That 
 before any comparison against ggml, so the next step does not chase a difference that is
 supposed to exist.
 
-## 6. What is still missing
+## 6. The shared-expert branch and the combine
+
+`moe_shared_gate`, `moe_ffn_par`, `moe_shared_apply` and `moe_combine` carry the rest of
+`qwen35moe.cpp:530-548`. They are one-liners each, and they are exactly the decisions
+that are easy to get subtly wrong while every node stays correct:
+
+- the sigmoid belongs on the **shared** gate, not on the router;
+- the silu belongs on the **gate** half of the PAR pair, not on the up half;
+- the two branches are **added**, not averaged and not replaced.
+
+The check is property-based rather than a second copy of the same formula, because
+recomputing sigmoid the same way would only prove the code agrees with itself:
+
+```
+range_bad=0            sigmoid strictly inside (0,1)
+mono_bad=0             sigmoid monotonic in its input
+up_doubles=0           doubling `up` doubles the result exactly
+gate_not_linear=63     doubling `gate` does NOT double the result (silu is not linear)
+add_bad=0              combine is a plain add
+comm_bad=0             combine is commutative
+avg_bad=63             combine is not an average
+failures=0   FG_MOE_FFN PASS
+```
+
+`gate_not_linear=63` is the check that would fail if silu had been applied to the wrong
+half: with silu on `up`, doubling `gate` would double the result and the count would be 0.
+
+### Three expectations wrong again, module right again
+
+The first run of this harness reported FAIL three times, and each time the harness was
+wrong:
+
+1. `silu(2x) != 2*silu(x)` for **all** 64 elements - but silu is locally linear for
+   large positive x, so three elements coincide.
+2. `combine != average` for **all** 64 - but a sum equals its average wherever the
+   branches are zero, so one element coincides.
+3. the counter named `gate_not_linear` was incrementing on the **equal** case, so the
+   verdict read the property backwards.
+
+That is the third card in a row where the model was right and the check was wrong
+(EXP-688b was the reverse). The pattern is consistent enough to state as a rule: when a
+check fails, first ask whether the expected value was derived correctly, and write down
+why that value is expected before running.
+
+## 7. What is still missing
 
 The expert matmuls (`mul_mat_id` over the selected ids, weighted sum), the shared expert
 branch with its own sigmoid gate, and the 42-layer stack. The arithmetic of the experts

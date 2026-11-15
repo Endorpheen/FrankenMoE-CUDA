@@ -155,3 +155,72 @@ export fn moe_route(logits: f32[:], n_used: i64, do_norm: i64, scale: f32,
     }
     return moe_weights(probs, ids, n_used, do_norm, scale, weights);
 }
+
+// ---- the shared-expert branch and the combine (qwen35moe.cpp:530-548) ----
+//
+//   shared_gate = sigmoid(ffn_gate_inp_shexp * cur)     one value per token
+//   ffn_shexp   = down(silu(gate_shexp * cur) * (up_shexp * cur))
+//   ffn_shexp   = ffn_shexp * shared_gate
+//   cur'        = moe_out + ffn_shexp
+//
+// Three one-line decisions, recorded here because they are ORDER decisions: the sigmoid
+// belongs on the shared gate and not on the router, the silu belongs on the gate half of
+// the PAR pair and not on the up half, and the two branches are added rather than
+// averaged. Each is easy to get subtly wrong while every individual node stays correct.
+
+fn moe_sigmoid(x: f64) -> f64 {
+    return 1.0 / (1.0 + exp64(0.0 - x));
+}
+
+export fn moe_shared_gate(proj: f32[:], out: f32[:]) -> i64 {
+    if out.len < proj.len {
+        return -1;
+    }
+    var i: i64 = 0;
+    while i < proj.len {
+        out[i] = moe_sigmoid(proj[i] as f64) as f32;
+        i = i + 1;
+    }
+    return proj.len as i64;
+}
+
+// LLM_FFN_PAR with SILU: silu(gate) * up, elementwise.
+export fn moe_ffn_par(gate: f32[:], up: f32[:], out: f32[:]) -> i64 {
+    if up.len < gate.len || out.len < gate.len {
+        return -1;
+    }
+    var i: i64 = 0;
+    while i < gate.len {
+        let x: f64 = gate[i] as f64;
+        let s: f64 = x / (1.0 + exp64(0.0 - x));
+        out[i] = (s * (up[i] as f64)) as f32;
+        i = i + 1;
+    }
+    return gate.len as i64;
+}
+
+// The gated shared output: ffn_shexp * sigmoid(shared_gate).
+export fn moe_shared_apply(shexp: f32[:], sg: f32[:], out: f32[:]) -> i64 {
+    if sg.len < shexp.len || out.len < shexp.len {
+        return -1;
+    }
+    var i: i64 = 0;
+    while i < shexp.len {
+        out[i] = (shexp[i] as f64 * sg[i] as f64) as f32;
+        i = i + 1;
+    }
+    return shexp.len as i64;
+}
+
+// The two branches added, not averaged and not replaced.
+export fn moe_combine(moe: f32[:], sh: f32[:], out: f32[:]) -> i64 {
+    if sh.len < moe.len || out.len < moe.len {
+        return -1;
+    }
+    var i: i64 = 0;
+    while i < moe.len {
+        out[i] = (moe[i] as f64 + sh[i] as f64) as f32;
+        i = i + 1;
+    }
+    return moe.len as i64;
+}
