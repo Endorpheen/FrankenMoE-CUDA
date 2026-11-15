@@ -88,6 +88,9 @@ MODULES=(
     goose/server/console-editing.goose
     goose/server/hf-cache-naming.goose
     goose/server/download-selection.goose
+    goose/server/http-url-policy.goose
+    goose/server/jsonparse.goose
+    goose/server/route-table.goose
     goose/chat/thinking-control.goose
     goose/chat/parse-params.goose
     goose/chat/session-loop.goose
