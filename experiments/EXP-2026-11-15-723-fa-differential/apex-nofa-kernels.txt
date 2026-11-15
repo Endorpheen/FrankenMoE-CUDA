@@ -1,0 +1,12 @@
+2.335|2448|0.95|void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_pre
+1.357|80|16.96|void flash_attn_ext_f16<(int)256, (int)256, (int)8, (int)8
+0.742|464|1.6|void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_pre
+0.642|240|2.67|void fg174m_kernel<(int)128, (int)1>(ggml_cuda_gdn_mma_arg
+0.543|936|0.58|fg181m_kernel(const char *, char *, char *, char *, int, i
+0.266|300|0.89|void fg175c_nc_kernel<(int)0>(const char *, const char *, 
+0.252|2304|0.11|void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)0>(con
+0.244|1216|0.2|void fg166_kernel<(int)2, (int)7, (int)0>(fg166_plan)
+0.23|469|0.49|fg179w_kernel(const char *, const char *, const char *, ch
+0.203|240|0.84|void fg170s_kernel<(int)4, (bool)1, (bool)1>(fg170s_plan)
+0.156|624|0.25|void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)1>(con
+0.153|480|0.32|fg183f_kernel(const char *, float *, int, long, float)
