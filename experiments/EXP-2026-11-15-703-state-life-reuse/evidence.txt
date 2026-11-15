@@ -1,0 +1,6 @@
+=== state_life
+FG_STATE_LIFE tokens=6 rebuilt=6 lost=0 stray=0 PASS
+exit: 0
+=== state_reuse
+FG_STATE_REUSE split_at=2 differs=0 distinguishable=1 PASS
+exit: 0

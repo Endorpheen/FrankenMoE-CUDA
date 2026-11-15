@@ -2734,15 +2734,13 @@
         "all selected Goose modules"
       ],
       "acceptance": "One isolated artifact combines CPU,CUDA,GGML,memory,KV,model,GGUF,tokenizer,server and owned infrastructure; every Apex-path owned component Goose, not a collection of separate partial variants.",
-      "evidence": "2026-11-15 (EXP-688b..701): attention layer bit-identical over 15 nodes incl. per-head q/k RMS norm and IMRoPE (sequence checked vs qwen35moe.cpp:311-345); recurrent layer bit-identical over 13 nodes incl. beta/gate, gated_delta_net output/state slice, gated norm, ssm_out; 41 layer kinds decided by q35_plan and verified against the FILE (EXP-699 corrected an off-by-one: n_layer is block_count-nextn = 40, distribution 10 attn / 30 recr / 1 MTP); 32 tensor shapes match the GGUF (EXP-700b); MoE router, shared-expert/combine and expert matmul wiring verified (EXP-697b/697c/698); one slot mechanism now serves both caches, 22 slots identical to the specialised exports (EXP-702); attention KV cache write-keep-read bit-identical to a rebuild (EXP-701); state ledger split into 8 units in docs/goose-migration/STATE.md.",
+      "evidence": "2026-11-15 (EXP-688b..701): attention layer bit-identical over 15 nodes incl. per-head q/k RMS norm and IMRoPE (sequence checked vs qwen35moe.cpp:311-345); recurrent layer bit-identical over 13 nodes incl. beta/gate, gated_delta_net output/state slice, gated norm, ssm_out; 41 layer kinds decided by q35_plan and verified against the FILE (EXP-699 corrected an off-by-one: n_layer is block_count-nextn = 40, distribution 10 attn / 30 recr / 1 MTP); 32 tensor shapes match the GGUF (EXP-700b); MoE router, shared-expert/combine and expert matmul wiring verified (EXP-697b/697c/698); one slot mechanism now serves both caches, 22 slots identical to the specialised exports (EXP-702); attention KV cache write-keep-read bit-identical to a rebuild (EXP-701); state ledger closed 8/8: cache outlives a graph rebuild (EXP-703), reuse from n_past bit-identical to a single pass (EXP-703).",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
       "remaining": [
-        "state unit 6: buffer survives a graph rebuild",
-        "state unit 7: reuse from n_past (skip already-cached positions)",
         "41-layer stack with kind dispatch",
         "prefill and decode loops",
         "CUDA backend symbols in the standalone",
@@ -2750,7 +2748,7 @@
       ],
       "coverage_doc": "experiments/EXP-2026-11-15-678-coverage-map/README.md",
       "slices_total": 12,
-      "slices_done": 6
+      "slices_done": 8
     },
     {
       "id": "P11-02",
@@ -5639,9 +5637,9 @@
     "TODO": 14
   },
   "work_front": {
-    "note": "state between calls: 6 of 8 units done (KV slot, KV persist, conv state, SSM state, unified slot, recompute comparison).",
+    "note": "state between calls: 8 of 8 units done. Remaining: stack, prefill/decode, CUDA, tokenizer, HTTP.",
     "slices_total": 12,
-    "slices_done": 6
+    "slices_done": 8
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

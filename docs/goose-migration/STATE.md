@@ -11,12 +11,18 @@ Status legend: **DONE** has a passing check and a commit. **OPEN** has a named n
 | 2 | attention KV write/keep/read | DONE | EXP-701, same check: positions persist across tokens |
 | 3 | recurrent conv state write/read | DONE | EXP-692, `gdn_conv_input`/`tail`/`slot`/`store`, 2 tokens, state_nonzero=10120 |
 | 4 | recurrent SSM state as an output | DONE | EXP-696, `view_4d` of the `gated_delta_net` result, `core` 4096 elements |
-| 5 | one mechanism for both caches | OPEN | KV uses `attn_kv_slot`, recurrent uses `gdn_conv_slot`; they should be one allocator with two layouts |
-| 6 | buffer survives a graph rebuild | OPEN | every gate allocates its own context; nothing yet hands a buffer between two `ggml_init` calls |
-| 7 | reuse: skip what is already computed | OPEN | needs the position cursor and the `n_past` boundary |
+| 5 | one mechanism for both caches | DONE | EXP-702, `state_slot` with two layouts, 22 slots identical |
+| 6 | buffer survives a graph rebuild | DONE | EXP-703, six graphs freed, cache persists, stray=0 |
+| 7 | reuse: skip what is already computed | DONE | EXP-703, split at 2 equals a single pass, distinguishable=1 |
 | 8 | comparison against a full recompute | DONE for KV and conv | EXP-701 (KV), EXP-692 (conv); not yet for the SSM state across calls |
 
-## What each OPEN unit needs, concretely
+## All eight units are closed
+
+Units 5-7 were the open ones; they closed in EXP-702 and EXP-703. The sections below are
+kept as the record of what each required, since they describe the shape of the mechanisms
+that now exist.
+
+## What each unit required
 
 **5 — one mechanism.** Both slots answer the same question: "give me the view of this
 layer's state for these positions". `attn_kv_slot` takes `n_kv_heads, n_ctx`; `gdn_conv_slot`
