@@ -2569,19 +2569,27 @@
       "id": "P10-08",
       "phase": "P10",
       "title": "Preserve public headers,FFI and binary interoperability",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "include/**",
         "ggml/include/**",
         "carrier/runtime/core/include/**"
       ],
       "acceptance": "C ABI symbols/layout/statuses compatible; header-only declaration wrappers allowed, executable C++ compatibility logic ported or remains unfinished.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP646 (experiments/EXP-2026-11-15-646-p10-08-public-headers-abi): the ggml type table (abi_: 43 entries, name/blck/type_size/is_quantized/row_size/nbytes), 187 public constants (hdr_: format magics/versions, limits, status/prec/op_hint/ftype, all llama enums, max_devices=16, max_buft_overrides=4096) and the public name tables (nm_: ftype_name with the guessed prefix, load_mode_name/from_str, flash_attn type, meta keys, status strings) are Goose. Gates 106/274 + 197/384 + 106/153, 0 failures, identical at -O0; mutations 12/12. Oracles extract the tables from the native sources at build time and freeze public struct sizes with compile-time asserts. P10-08 is NOT closable yet: backend headers, gguf.h, SONAME/export compatibility and callback semantics remain.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "ggml_backend_* and gguf.h headers",
+        "backend headers and SONAME/export symbol compatibility against abi-ledger.json",
+        "callback semantics"
+      ],
+      "coverage_doc": "docs/goose-migration/P10-08-COVERAGE.md"
     },
     {
       "id": "P10-09",
@@ -4564,6 +4572,10 @@
     {
       "event": "P10-05: release plan, build environment and artifact policy ported (EXP645, 171 values, 36/36); script wiring is open.",
       "checkpoint": "cf59f78e"
+    },
+    {
+      "event": "P10-08: public ABI tables, 187 constants and name tables ported (EXP646, 811 comparisons, 12/12); headers/SONAME remain open.",
+      "checkpoint": "51305fd5"
     }
   ],
   "batches": [
@@ -5454,16 +5466,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T03:06:44.650089+00:00",
+  "updated_at": "2026-11-15T03:13:16.044481+00:00",
   "status_totals": {
     "DONE": 112,
-    "PARTIAL": 11,
-    "TODO": 29
+    "PARTIAL": 12,
+    "TODO": 28
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 130,
-    "slices_done": 130,
+    "slices_total": 133,
+    "slices_done": 133,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

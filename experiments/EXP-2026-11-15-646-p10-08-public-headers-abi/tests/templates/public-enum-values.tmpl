@@ -1,0 +1,88 @@
+// P10-08 S2: the numeric surface of the public headers.
+//
+// Native sources at the base commit: include/llama.h, ggml/include/ggml.h,
+// ggml/include/ggml-backend.h, plus two limits that are functions in
+// src/llama.cpp (llama_max_devices at 84-86, llama_max_tensor_buft_overrides at
+// 89-91).
+//
+// Every entry below is a value a consumer of the shared libraries can observe
+// and depend on:
+//
+//   - file and session format: GGML_FILE_MAGIC, GGML_FILE_VERSION,
+//     GGML_QNT_VERSION, GGML_QNT_VERSION_FACTOR, LLAMA_SESSION_MAGIC,
+//     LLAMA_SESSION_VERSION, LLAMA_STATE_SEQ_MAGIC, LLAMA_STATE_SEQ_VERSION and
+//     the state-sequence flag bits;
+//   - object geometry and limits: GGML_MAX_DIMS, GGML_MAX_SRC, GGML_MAX_NAME,
+//     GGML_MAX_OP_PARAMS and the rest, which decide the size of arrays that
+//     cross the FFI boundary;
+//   - call contract: LLAMA_DEFAULT_SEED, LLAMA_TOKEN_NULL;
+//   - every public enum: ggml_status, ggml_prec, ggml_op_hint, ggml_ftype,
+//     llama_vocab_type, llama_rope_type (which re-exports the GGML_ROPE_TYPE
+//     modes), llama_token_type, llama_token_attr (bit flags), llama_ftype,
+//     llama_rope_scaling_type, llama_pooling_type, llama_attention_type,
+//     llama_flash_attn_type, llama_split_mode, llama_load_mode,
+//     llama_lazy_mode, llama_context_type, llama_model_kv_override_type and
+//     the GGML metadata keys of llama_model_meta_key.
+//
+// The ggml_type enum is deliberately absent: its numeric value is the index of
+// the S1 table, and abi_type_count() is GGML_TYPE_COUNT, so the values are
+// frozen there and are not repeated here.
+//
+// The table is keyed by the header identifier itself, so a reviewer can read a
+// mismatch as a diff of one C name, and the gate can compare it against the
+// same identifier compiled from the header.
+//
+// The prefix is hdr_.
+
+import std;
+
+const HDR_N: i64 = 187;
+
+const HDR_KEY: const u8[:][187] = [
+@@HDR_KEY@@
+];
+
+const HDR_VAL: i64[187] = [
+@@HDR_VAL@@
+];
+
+fn hd_copy(s: const u8[:], out: u8[:]) -> i64 {
+    var i: i64 = 0;
+    while i < s.len && i < out.len {
+        out[i] = s[i];
+        i = i + 1;
+    }
+    return i;
+}
+
+export fn hdr_count() -> i64 {
+    return HDR_N;
+}
+
+// The i-th key, in ascending order, so a gate can enumerate the table without
+// carrying its own copy of the name list.
+export fn hdr_key_at(i: i64, out: u8[:]) -> i64 {
+    if i < 0 || i >= HDR_N {
+        return 0 - 1;
+    }
+    return hd_copy(HDR_KEY[i], out);
+}
+
+// The value of one public name. found[0] is 1 when the name is in the table and
+// 0 otherwise, where the return value is meaningless.
+export fn hdr_value(key: const u8[:], found: i64[:]) -> i64 {
+    var i: i64 = 0;
+    while i < HDR_N {
+        if HDR_KEY[i] == key {
+            if found.len > 0 {
+                found[0] = 1;
+            }
+            return HDR_VAL[i];
+        }
+        i = i + 1;
+    }
+    if found.len > 0 {
+        found[0] = 0;
+    }
+    return 0;
+}

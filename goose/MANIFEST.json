@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T03:06:48.099137+00:00",
+  "updated_at": "2026-11-15T03:13:19.415172+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -855,6 +855,42 @@
       "status": "ported",
       "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682",
       "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/ggml-type-table.goose",
+      "native": "ggml/src/ggml.c type_traits[43] (name, blck_size, type_size, is_quantized, row_size, nbytes)",
+      "native_targets": [
+        "ggml/src/ggml.c type_traits[43] (name, blck_size, type_size, is_quantized, row_size, nbytes)"
+      ],
+      "experiment": "EXP-2026-11-15-646-p10-08-public-headers-abi",
+      "task": "",
+      "status": "ported",
+      "sha256": "c2bbe6e9f4c415e8b37460214131553cc2cfa155ac8d8cbdabd3af8806a53dd6",
+      "gate": "106 cases / 274 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/public-enum-values.goose",
+      "native": "public headers (187 constants: format magics/versions, limits, status/prec/op_hint/ftype, llama enums)",
+      "native_targets": [
+        "public headers (187 constants: format magics/versions, limits, status/prec/op_hint/ftype, llama enums)"
+      ],
+      "experiment": "EXP-2026-11-15-646-p10-08-public-headers-abi",
+      "task": "",
+      "status": "ported",
+      "sha256": "e8e5d05a2a34be46c478dfc369bbb4b5dadd625ae56284c81baeb101d9731973",
+      "gate": "197 cases / 384 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/public-name-tables.goose",
+      "native": "public header name tables (ftype/load_mode/flash_attn/meta_key/status strings)",
+      "native_targets": [
+        "public header name tables (ftype/load_mode/flash_attn/meta_key/status strings)"
+      ],
+      "experiment": "EXP-2026-11-15-646-p10-08-public-headers-abi",
+      "task": "",
+      "status": "ported",
+      "sha256": "12514b4b363d80ef992d485ff94a79c9a76269346b31bbb0add579b225e6d336",
+      "gate": "106 cases / 153 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/release-plan.goose",

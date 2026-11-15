@@ -64,6 +64,9 @@ MODULES=(
     goose/misc/release-plan.goose
     goose/misc/build-env.goose
     goose/misc/generated-artifact-policy.goose
+    goose/misc/ggml-type-table.goose
+    goose/misc/public-enum-values.goose
+    goose/misc/public-name-tables.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose
