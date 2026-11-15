@@ -30,7 +30,10 @@ OBJ=$OUT/main.o
 mkdir -p "$OUT"
 
 # Accepted canonical modules. Model builders stay out: they are per-architecture
-# alternatives, not one unit.
+# alternatives, not one unit. Checked 2026-11-15: qwen35moe.goose, qwen3next.goose
+# and the other arch builders import base/model_graph.goose, whose fail/ensure
+# collide with the canonical ones in a shared unit. An Apex graph build therefore
+# needs a per-architecture unit of its own, not a bigger common one.
 MODULES=(
     goose/model/goose-model-graph.goose
     goose/model/goose-model-loader.goose
