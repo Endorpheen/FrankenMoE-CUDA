@@ -98,6 +98,12 @@ MODULES=(
     goose/chat/session-loop.goose
     goose/cli/jsonparse.goose
     goose/json/json-dump.goose
+    goose/json/ac.goose
+    goose/json/allof.goose
+    goose/json/ast-helpers.goose
+    goose/json/builder.goose
+    goose/json/json-parser.goose
+    goose/json/peg-invalid.goose
 )
 
 echo "[1/5] compose ${#MODULES[@]} modules"

@@ -49,6 +49,14 @@ RENAMES = {
         "ld_f32": "ld2_f32",
         "fail": "qz2_fail",
     },
+    "builder.goose": {
+        "K_SEQ": "JB_K_SEQ",
+        "K_ALT": "JB_K_ALT",
+        "K_OPT": "JB_K_OPT",
+        "K_REP": "JB_K_REP",
+        "K_LIT": "JB_K_LIT",
+        "K_REF": "JB_K_REF",
+    },
     "format-grammar.goose": {
         "K_NULL": "FG_K_NULL",
         "K_STRING": "FG_K_STRING",
