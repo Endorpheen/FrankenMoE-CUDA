@@ -1,0 +1,11 @@
+  cmp conv    n=8192 differs=0
+  cmp silu    n=8192 differs=0
+  cmp q_view  n=2048 differs=0
+  cmp k_view  n=2048 differs=0
+  cmp v_view  n=4096 differs=0
+  cmp q_norm  n=2048 differs=0
+  cmp k_norm  n=2048 differs=0
+  cmp q_rep   n=4096 differs=0
+  cmp k_rep   n=4096 differs=0
+  cmp gdn     n=528384 differs=0
+FG_GDN_LAYER kernel=4 chan=8192 head_k=128 n_k=16 head_v=128 n_v=32 bad_nodes=0 PASS

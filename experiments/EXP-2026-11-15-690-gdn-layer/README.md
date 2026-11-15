@@ -1,0 +1,63 @@
+# EXP-2026-11-15-690 — the recurrent layer's chain is bit-identical to a native build
+
+Base: `71f085df`. No model run, no GPU.
+
+## 1. Result
+
+```
+cmp conv    n=8192   differs=0     cmp q_norm  n=2048 differs=0
+cmp silu    n=8192   differs=0     cmp k_norm  n=2048 differs=0
+cmp q_view  n=2048   differs=0     cmp q_rep   n=4096 differs=0
+cmp k_view  n=2048   differs=0     cmp k_rep   n=4096 differs=0
+cmp v_view  n=4096   differs=0     cmp gdn     n=528384 differs=0
+
+FG_GDN_LAYER kernel=4 chan=8192 head_k=128 n_k=16 head_v=128 n_v=32 bad_nodes=0 PASS
+```
+
+Ten nodes, every one bit-identical to the graph a native builder would emit:
+
+```
+conv  -> silu -> view q/k/v (qkv stride) -> l2_norm q,k -> repeat to v heads
+      -> gated_delta_net
+```
+
+This is the recurrent half of the layer - the path 31 of the 42 Apex layers take. The
+norm/projection/residual half is the same as the attention layer, proven in EXP-688b.
+
+## 2. The dimensions, from the weights
+
+| tensor | extent | meaning |
+|---|---|---|
+| `blk.0.ssm_conv1d.weight` | [4, 8192] | kernel 4, 8192 conv channels |
+| `blk.0.ssm_norm.weight` | [128, 1] | value head width 128 |
+| `blk.0.ssm_out.weight` | [4096, 2048] | value dim 4096 -> 32 value heads |
+| `blk.0.attn_qkv.weight` | [2048, 8192] | 2*head_k*n_k + head_v*n_v |
+
+From those: `head_k=128`, `n_k=16`, `head_v=128`, `n_v=32`. The repeat arm therefore
+runs (32 % 16 == 0), which is why it is exercised rather than skipped.
+
+## 3. What is honest about this gate
+
+The three `view_4d` calls carry their stride numbers in the gate, not in Goose. That
+is the same debt the QG split had before EXP-687c, and it is recorded here rather
+than glossed: the stride decision belongs in a Goose export beside `qgate-split`,
+and this gate calls the primitive directly in the meantime.
+
+The rest of the chain goes through Goose: conv and gated_delta_net are `gb_common`
+modes 27 and 28, l2_norm and repeat are `gdn-ops` exports.
+
+## 4. State
+
+| piece | state |
+|---|---|
+| attention layer, 15 nodes | bit-identical to a native build (EXP-688b) |
+| recurrent layer chain, 10 nodes | bit-identical to a native build (this card) |
+| conv/ssm state buffers | **not built** - the recurrent layer's KV cache |
+| 42-layer stack, prefill, decode, CUDA, tokenizer, HTTP | not built |
+
+The two layer kinds are now proven at the node and chain level. What remains before
+a real inference is the state plumbing and the stack, not the arithmetic.
+
+## 5. Cost
+
+Gate compile only; no unit rebuild.
