@@ -151,6 +151,20 @@ build.
     `tools/compose-goose.py`, `goose check` on the composed file) catches everything
     else, and its cost is seconds.
 
+    Every heavy run is started as a tracked background process with its output going
+    to a named log, and its pid recorded:
+
+        PIDFILE=builds/.<name>.pid bash tools/<script>.sh [args] \
+            > builds/.<name>.log 2>&1 &
+        echo $! > builds/.<name>.pid
+
+    While it runs, progress is reported with `bash tools/progress.sh
+    builds/.<name>.log builds/.<name>.pid`: the stage, the elapsed time, the last log
+    lines and the verdict. Never leave a long run as an opaque silence and never ask
+    the human to watch an empty screen. Identify the process by its recorded pid -
+    `pgrep -f` on the command line matches the pgrep itself and reports a finished
+    build as running.
+
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 

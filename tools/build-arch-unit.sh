@@ -19,6 +19,10 @@
 # Usage: bash tools/build-arch-unit.sh <arch> [out-dir]
 #   <arch> is a builder name under goose/model, e.g. qwen35moe, deepseek4, gemma3.
 set -euo pipefail
+
+# Record our own pid: a `pgrep -f` on this command line matches the pgrep itself and
+# would report a finished build as running.
+echo $$ > "${PIDFILE:-/dev/null}" 2>/dev/null || true
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 GOOSE=${GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
 CC=${CC:-gcc-13}
