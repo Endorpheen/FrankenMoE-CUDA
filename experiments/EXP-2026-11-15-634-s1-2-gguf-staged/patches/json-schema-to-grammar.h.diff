@@ -1,0 +1,23 @@
+--- /home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/common/json-schema-to-grammar.h	2026-08-30 15:28:14.138568429 +0300
++++ llama.cpp/common/json-schema-to-grammar.h	2026-11-15 02:05:22.992187600 +0300
+@@ -9,6 +9,20 @@
+ std::string json_schema_to_grammar(const common_json & schema,
+                                    bool force_gbnf = false);
+ 
++// The native converter body, unchanged. Compiled in every configuration and
++// used as the oracle of the Goose differential gate; json_schema_to_grammar()
++// calls it directly when FG_GOOSE_JSON_SCHEMA is off.
++std::string json_schema_to_grammar_native(const common_json & schema,
++                                          bool force_gbnf = false);
++
++#ifdef FG_GOOSE_JSON_SCHEMA
++// Staged S1.1 bridge (common/fg-goose-schema-bridge.cpp): Goose
++// goose/json/format-grammar.goose replaces the converter. The bridge keeps the
++// flat node-table seam and reports how many calls reached the Goose module.
++std::string fg_goose_json_schema_to_grammar(const common_json & schema);
++extern "C" long fg_goose_json_schema_calls(void);
++#endif
++
+ class common_schema_converter;
+ 
+ // Probes a JSON schema to extract information about its structure and type constraints.

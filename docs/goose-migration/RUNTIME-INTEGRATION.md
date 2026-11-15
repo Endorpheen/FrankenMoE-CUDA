@@ -184,7 +184,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | model manager/reload/connectors | P8-06 | S3 | EXP631 | accepted, 49 cases / 521 values, wiring open |
 | sessions/runtime/draft source | P9-05 | S3 | EXP632 | accepted, 332 checks, wiring open |
 | signed-zero dequantizer fix | P7-04 | S1 | EXP633 | accepted, bit-exact 300/300, 12/12 + 3/3 |
-| GGUF write/plan | S1.2 | S1 | in flight | OFF/ON build proven, mutation set pending |
+| GGUF write/plan (done, EXP634) | S1.2 | S1 | EXP634 | smoke 14/14, split 17/0, mutations 12/12 |
 | quantizers | S1.3 | S1 | in flight | OFF/ON build proven, mutation set pending |
 | CLI tools | P10-02 | S4 | in flight | inventory-first |
 | standalone engine | P9-08 | S3 | in flight | inventory-first |

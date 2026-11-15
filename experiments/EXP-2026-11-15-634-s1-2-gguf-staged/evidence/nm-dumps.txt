@@ -1,0 +1,13 @@
+--- ON: goose exports in libggml-base.so
+00000000000ba620 T goose_init
+00000000000bf9f0 T gsp_should_split
+00000000000bfa60 T gsp_split_layout
+00000000000ba8a0 T s1_init
+00000000000bc1f0 T s2_write
+00000000000bd880 T s3_write
+--- OFF: the same
+(none)
+--- ON split tool: fg_goose symbols
+1
+--- OFF split tool: fg_goose symbols
+0

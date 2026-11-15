@@ -1,0 +1,11 @@
+composed goose bytes: 73685
+generated c bytes: 454666
+generated h bytes: 7346
+goose object bytes: 73432
+953672 build-base/bin/libggml-base.so.0.22.0
+953672 build-off/bin/libggml-base.so.0.22.0
+1040336 build-on/bin/libggml-base.so.0.22.0
+45400 build-off/fg-gguf-smoke
+45456 build-on/fg-gguf-smoke
+47896 build-off/fg-gguf-split
+47952 build-on/fg-gguf-split

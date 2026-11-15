@@ -1,0 +1,10 @@
+--- definitions in the ON library
+s1_init            ON=1 OFF=0
+s2_write           ON=1 OFF=0
+s3_write           ON=1 OFF=0
+s3_add_tensor      ON=1 OFF=0
+gsp_should_split   ON=1 OFF=0
+gsp_split_layout   ON=1 OFF=0
+goose_init         ON=1 OFF=0
+--- any reference in the OFF library
+(none)

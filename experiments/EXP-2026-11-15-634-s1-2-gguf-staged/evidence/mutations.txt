@@ -1,0 +1,19 @@
+FG630_MUTATIONS
+unit: composed/gguf-stack.goose (4 modules), mutated unit built at -O0, native build-off as the oracle
+
+A1	A	gguf-writer	DETECTED	KV order: keys emitted in reverse while the values stay in place	smoke: FAIL scalars-all full-bytes size native=320 goose=288; split: FAIL size-1M shard-bytes shard-00001-of-00003.gguf differs
+A2	A	gguf-writer	DETECTED	scalar type size: f32 written as 8 bytes	smoke: FAIL scalars-all full-bytes first_diff=159 native=0x05 goose=0x00
+A3	A	gguf-writer	DETECTED	string length prefix: u32 instead of u64	smoke: FAIL scalars-all full-bytes size native=320 goose=256; split: FAIL size-1M shard-bytes shard-00001-of-00003.gguf differs
+A4	A	gguf-writer	DETECTED	array tag: ARRAY(9) written as STRING(8) in the live KV writer	smoke: FAIL arrays-numeric full-bytes first_diff=37 native=0x09 goose=0x08
+A5	A	gguf-tensors	DETECTED	alignment pad: always pads one extra block	smoke: FAIL empty full-bytes size native=32 goose=64; split: FAIL size-1M shard-bytes shard-00001-of-00003.gguf differs
+A6	A	gguf-tensors	DETECTED	metadata framing: n_kv written as n_kv + 1	smoke: FAIL empty full-bytes first_diff=16 native=0x00 goose=0x01; split: FAIL size-1M shard-bytes shard-00001-of-00003.gguf differs
+B1	B	gguf-tensors	DETECTED	tensor descriptor: n_dims always 1	smoke: FAIL tensor-f32-2d full-bytes first_diff=84 native=0x02 goose=0x01
+B2	B	gguf-tensors	DETECTED	tensor offsets: cumulative stride without the alignment pad	smoke: FAIL tensor-f16-i8 full-bytes first_diff=89 native=0x60 goose=0x42
+B3	B	gguf-tensors	DETECTED	data section: no pad after each tensor's data	smoke: FAIL tensor-f16-i8 full-bytes size native=256 goose=211
+B4	B	gguf-split	DETECTED	split threshold by size: >= instead of >	split: FAIL exact-1M plan-text differs
+B5	B	gguf-split	DETECTED	split threshold by tensor count: boundary shifted by one	split: FAIL tensor-32 plan-and-log stdout differs
+B6	B	gguf-split	DETECTED	plan bounds: last shard ends at n_tensors - 1	smoke: FAIL plan-uniform-size plan-ranges 
+
+half A: caught 6/6
+half B: caught 6/6
+total: caught 12/12

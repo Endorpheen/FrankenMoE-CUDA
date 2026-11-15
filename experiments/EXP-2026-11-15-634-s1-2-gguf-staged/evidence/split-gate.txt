@@ -1,0 +1,18 @@
+OK	make	full-file-bytes
+OK	size-1M	plan-and-log
+OK	size-1M	shard-count=3
+OK	size-1M	shard-bytes
+OK	tensor-32	plan-and-log
+OK	tensor-32	shard-count=4
+OK	tensor-32	shard-bytes
+OK	tensor-40-notf	plan-and-log
+OK	tensor-40-notf	shard-count=5
+OK	tensor-40-notf	shard-bytes
+OK	dryrun-1M	plan-text
+OK	exact-1M	plan-text
+OK	exact-1M	shard-count=1
+OK	merge	merged-bytes
+OK	merge	log
+OK	witness	goose split calls=128
+OK	witness	goose meta_size calls=8
+FG630_SPLIT checks=17 failures=0

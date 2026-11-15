@@ -1,0 +1,4 @@
+0000000000380c60 T goose_init
+00000000003818d0 T grammar_text
+0000000000381bc0 T json_schema_convert
+0000000000381010 T schema_build
