@@ -1,0 +1,8 @@
+command: ./builds/goose-standalone/state_slot
+FG_STATE_SLOT checks=22 bad=0 PASS
+exit: 0
+
+command: FG_STATE_SLOT_OVERRANGE=1 ./builds/goose-standalone/state_slot
+integration/goose-standalone/graph-bindings.cpp:281: Goose graph builder validation failed:code=103
+Aborted (core dumped)
+(aborts by design: fail() terminal, code 103 = pos+n_tokens > n_ctx)

@@ -211,3 +211,69 @@ export fn attn_kv_slot(c: i64, cache: i64, layer: i64, pos: i64, head_dim: i64,
     let offset: i64 = layer * nb3 + pos * nb1;
     return view4(c, cache, head_dim, n_tokens, n_kv_heads, 1, nb1, nb2, nb3, offset);
 }
+
+// ---- one slot mechanism for both caches ----
+//
+// The attention KV cache and the recurrent conv cache answer the same question: "give me
+// the view of this layer's state for these positions". They differ only in layout, so the
+// layout is a parameter and the arithmetic is written once.
+//
+// Layout 0 - attention KV: the cache is [head_dim, n_ctx, n_kv_heads, n_layers] and a
+// position writes one row of head_dim into its layer's head block.
+//
+//   offset = layer * (n_kv_heads * n_ctx * head_dim * elem) + pos * (head_dim * elem)
+//   view   = [head_dim, n_tokens, n_kv_heads, 1]
+//
+// Layout 1 - recurrent conv: the cache is flat, one slot per (sequence, layer), each
+// holding (kernel-1) rows of the conv channel count.
+//
+//   offset = (layer * mem_size + kv_head) * ((kernel-1) * channels * elem)
+//   view   = [(kernel-1) * channels, n_seqs]
+//
+// Having one function rather than two copies means a fix to the range checks or to the
+// offset form cannot land in one cache and miss the other.
+export fn state_slot(c: i64, cache: i64, layout: i64, layer: i64, pos: i64,
+                     a: i64, b: i64, c2: i64, n_layers: i64, n_tokens: i64,
+                     elem: i64) -> i64 {
+    if cache == 0 || n_layers <= 0 || n_tokens <= 0 || elem <= 0 {
+        fail(100);
+    }
+    if layer < 0 || layer >= n_layers {
+        fail(101);
+    }
+
+    if layout == 0 {
+        // a = head_dim, b = n_ctx, c2 = n_kv_heads
+        if a <= 0 || b <= 0 || c2 <= 0 {
+            fail(102);
+        }
+        if pos < 0 || pos + n_tokens > b {
+            fail(103);
+        }
+        let nb1 = elem * a;
+        let nb2 = nb1 * b;
+        let nb3 = nb2 * c2;
+        let offset = layer * nb3 + pos * nb1;
+        return view4(c, cache, a, n_tokens, c2, 1, nb1, nb2, nb3, offset);
+    }
+
+    if layout == 1 {
+        // a = kernel (the slot holds kernel-1 rows), b = channels, c2 = mem_size,
+        // pos = kv_head inside the sequence. The view is the one gdn_conv_slot returns:
+        // [(kernel-1)*channels, n_seqs] with a flat slot stride, so a caller swapping one
+        // for the other gets an identical tensor and not merely an equivalent one.
+        if a < 2 || b <= 0 || c2 <= 0 {
+            fail(104);
+        }
+        if pos < 0 || pos >= c2 {
+            fail(105);
+        }
+        let row_count = (a - 1) * b;
+        let row_size = elem * row_count;
+        let offset = (layer * c2 + pos) * row_size;
+        return view2(c, cache, row_count, n_tokens, row_size, offset);
+    }
+
+    fail(106);
+    return 0;
+}
