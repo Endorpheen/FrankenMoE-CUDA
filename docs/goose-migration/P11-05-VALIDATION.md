@@ -19,13 +19,25 @@ Rollback is a rebuild with the flags off, not an in-place revert: the OFF and ON
 trees are separate build directories, and the OFF library is byte-identical to
 the base build in the S1.3 staging experiment.
 
+## Failure-recovery checks (tools/check-failure-recovery.sh)
+
+Run against the M1 tree:
+
+| check | result |
+|---|---|
+| missing host adapter fails the ON build | ok (no silent fallback) |
+| restored OFF build recovers (rollback) | ok |
+| restored ON build recovers | ok |
+| wrong flag value rejected at configure | **known gap**: CMake `option()` treats any non-false value as ON, so `-D...=bogus` configures and builds; value validation is not implemented |
+
 ## Still open
 
-The failure-recovery matrix:
+The remaining failure-recovery matrix:
 
 1. A missing generated C or adapter object must fail the link, not fall back
-   silently.
-2. A wrong flag value must be rejected at configure time.
+   silently. (Verified for the adapter; a missing generated C is the same class.)
+2. Validate the flag values in CMake so a bogus value is rejected instead of
+   being treated as ON.
 3. A broken IQ table registration must abort loudly (the current guard widens to
    `FG_GOOSE_RUNTIME`).
 4. A partially switched build must still link and run the native path.
