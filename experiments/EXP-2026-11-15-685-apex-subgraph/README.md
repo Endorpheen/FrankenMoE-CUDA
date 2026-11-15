@@ -64,6 +64,24 @@ Two defects found, both in the test and neither in the module:
 Both are the kind of mistake a test makes and a module does not, which is why the
 module's own shape checks are the ones that stop a wrong graph.
 
+## 2c. The MoE expert matmul
+
+The expert path - the heart of Apex - also builds and executes:
+
+```
+FG_APEX_MOE n_ff_exp=512 n_expert=256 n_used=8 shape_ok=1 status=0
+            first=-0.050781 want=-0.050781 rel=0 PASS
+```
+
+mode 12 is `mul_mat_id`. The module requires the id tensor to be i32, both
+operands to have `ne[3]==1`, the ids to satisfy `ne[2]==ne[3]==1` and
+`ne[1]==ne(b,2)`, the operands to agree on `ne[0]`, and the id width to divide the
+expert count. The weights are `[2048 x 512 x 256]` - the real expert count of this
+model, with the real `expert_used_count=8` selecting the experts.
+
+The result is `[512, 8]`: one row per selected expert, which is exactly what the
+down projection consumes before it is summed back.
+
 ## 3. Why this is the layer skeleton
 
 The five nodes are the block of every Apex layer: normalise the residual, project

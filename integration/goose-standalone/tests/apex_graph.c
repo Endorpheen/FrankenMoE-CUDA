@@ -244,6 +244,62 @@ int main(int argc, char ** argv) {
     ggml_backend_tensor_get(out, &got0, 0, sizeof got0);
     const double rel = (want0 != 0.0) ? (fabs((double) got0 - want0) / fabs(want0)) : fabs((double) got0);
 
+    // ---- the MoE expert matmul, common to all 42 layers ----
+    // mode 12 = mul_mat_id. The module requires: ids are i32, a and b are 3D-free
+    // (ne[3]==1), ids have ne[2]==ne[3]==1 and ne[1]==ne(b,2), a and b agree on
+    // ne[0], and ids' width divides the expert count.
+    {
+        int64_t n_ff_exp = kv_u32(gguf, "qwen35moe.expert_feed_forward_length", 0);
+        int64_t n_expert = p[P_N_EXPERT];
+        int64_t n_used   = p[P_N_EXPERT_USED];
+        if (n_ff_exp <= 0) n_ff_exp = 512;
+
+        struct ggml_tensor * ew = ggml_new_tensor_3d(gc, GGML_TYPE_F32, K, n_ff_exp, n_expert);
+        struct ggml_tensor * eb = ggml_new_tensor_3d(gc, GGML_TYPE_F32, K, 1, 1);
+        struct ggml_tensor * ids = ggml_new_tensor_2d(gc, GGML_TYPE_I32, n_used, 1);
+        ggml_backend_alloc_ctx_tensors(gc, backend);
+
+        float * ewd = (float *) malloc((size_t) (K * n_ff_exp * n_expert) * sizeof(float));
+        float * ebd = (float *) malloc((size_t) K * sizeof(float));
+        int32_t * idd = (int32_t *) malloc((size_t) n_used * sizeof(int32_t));
+        if (!ewd || !ebd || !idd) { printf("FG_APEX_GRAPH moe alloc failed\n"); return 2; }
+        for (int64_t i = 0; i < K * n_ff_exp * n_expert; ++i) ewd[i] = (float) ((i % 11) - 5) / 64.0f;
+        for (int64_t i = 0; i < K; ++i) ebd[i] = (float) ((i % 3) + 1) / 4.0f;
+        for (int64_t i = 0; i < n_used; ++i) idd[i] = (int32_t) i;   // experts 0..n_used-1
+        ggml_backend_tensor_set(ew, ewd, 0, (size_t) (K * n_ff_exp * n_expert) * sizeof(float));
+        ggml_backend_tensor_set(eb, ebd, 0, (size_t) K * sizeof(float));
+        ggml_backend_tensor_set(ids, idd, 0, (size_t) n_used * sizeof(int32_t));
+
+        uint64_t a_moe[8] = { 12, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) ew,
+                              (uint64_t) (uintptr_t) eb, (uint64_t) (uintptr_t) ids,
+                              (uint64_t) GGML_OP_MUL_MAT_ID, 0, 0 };
+        struct ggml_tensor * moe =
+            (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_moe);
+        if (moe == NULL) {
+            printf("FG_APEX_GRAPH mul_mat_id returned null\n");
+        } else {
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            struct ggml_cgraph * mf = ggml_new_graph(gc);
+            ggml_build_forward_expand(mf, moe);
+            const enum ggml_status mst = ggml_backend_graph_compute(backend, mf);
+
+            // Expert 0, row 0: the host computes it from the same buffers.
+            double want_e0 = 0.0;
+            for (int64_t i = 0; i < K; ++i) want_e0 += (double) ewd[i] * (double) ebd[i];
+            float got_e0 = 0.0f;
+            ggml_backend_tensor_get(moe, &got_e0, 0, sizeof got_e0);
+            const double erel = (want_e0 != 0.0) ? fabs((double) got_e0 - want_e0) / fabs(want_e0)
+                                                 : fabs((double) got_e0);
+            const int mshape_ok = moe->ne[0] == n_ff_exp && moe->ne[1] == n_used;
+            printf("FG_APEX_MOE n_ff_exp=%lld n_expert=%lld n_used=%lld shape_ok=%d "
+                   "status=%d first=%.6f want=%.6f rel=%.3g %s\n",
+                   (long long) n_ff_exp, (long long) n_expert, (long long) n_used,
+                   mshape_ok, (int) mst, got_e0, want_e0, erel,
+                   (mshape_ok && mst == GGML_STATUS_SUCCESS && erel < 1e-4) ? "PASS" : "FAIL");
+        }
+        free(ewd); free(ebd); free(idd);
+    }
+
     printf("FG_APEX_GRAPH nodes=5 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",
            (long long) K, (long long) N, (long long) declared, declared_ok, shape_ok,
