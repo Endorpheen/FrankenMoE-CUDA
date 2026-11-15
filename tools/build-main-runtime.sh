@@ -61,6 +61,9 @@ MODULES=(
     goose/model/special-partition.goose
     goose/misc/common-strings.goose
     goose/misc/edge0-pack-index.goose
+    goose/misc/release-plan.goose
+    goose/misc/build-env.goose
+    goose/misc/generated-artifact-policy.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T02:24:19.114694+00:00",
+  "updated_at": "2026-11-15T03:06:48.099137+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -855,6 +855,42 @@
       "status": "ported",
       "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682",
       "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/release-plan.goose",
+      "native": "scripts/ release plan (tag validation, asset rules, limits, retention, SHA256SUMS, manifest)",
+      "native_targets": [
+        "scripts/ release plan (tag validation, asset rules, limits, retention, SHA256SUMS, manifest)"
+      ],
+      "experiment": "EXP-2026-11-15-645-p10-05-owned-infra",
+      "task": "",
+      "status": "ported",
+      "sha256": "d970ab3e4113b49e419ba4d2cd4db86229274ee03548cb69379f9850f64eb4c2",
+      "gate": "73 cases / 73 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/build-env.goose",
+      "native": "build scripts (${VAR:-default}, cmake vector, build type, option table, pins, patch states)",
+      "native_targets": [
+        "build scripts (${VAR:-default}, cmake vector, build type, option table, pins, patch states)"
+      ],
+      "experiment": "EXP-2026-11-15-645-p10-05-owned-infra",
+      "task": "",
+      "status": "ported",
+      "sha256": "aba4a46c1be8ecf5beb46ed15f8d6613e64ee2679cef9c7345c2755799538de3",
+      "gate": "44 cases / 44 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/generated-artifact-policy.goose",
+      "native": "tools/check-generated-files.py and packaging (generated-C marker, limits, manifest, orphans, verdict)",
+      "native_targets": [
+        "tools/check-generated-files.py and packaging (generated-C marker, limits, manifest, orphans, verdict)"
+      ],
+      "experiment": "EXP-2026-11-15-645-p10-05-owned-infra",
+      "task": "",
+      "status": "ported",
+      "sha256": "a7966bab0d1ce2c0a02552b9af5efce7d34fd5d3a5060a7476a58b105e177f1d",
+      "gate": "54 cases / 54 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/common-strings.goose",

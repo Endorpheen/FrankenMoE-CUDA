@@ -1,0 +1,76 @@
+# P10-05 S1 case table: release and package planning.
+# Fields are tab separated; \n and \t inside a text field are escapes decoded by
+# both arms. Lines starting with # are comments and are not counted as rows.
+version	v0.1.0
+version	v10.20.30
+version	v0.1.0-rc.1
+version	v0.1.0-rc
+version	v0.1
+version	V0.1.0
+version	v0.1.0-rc.x
+version	v0.1.0-extra
+version	v0.01.0
+version	 v0.1.0
+version	v0.1.0\n
+version	v1.2.3-rc.10
+version	
+prerelease	v0.1.0-rc.1
+prerelease	v0.1.0
+prerelease	v0.1.0-rc.
+prerelease	v0.1.0-RC.1
+prerelease	rc.1
+prerelease	v1.2.3-rc.10-rc.2
+prerelease	v0.1.0-rc1
+prerelease	v0.1.0-rc2.
+basename	assets/goose-runtime-linux.tar.zst
+basename	goose-runtime-x
+basename	a/b/
+basename	/
+basename	
+basename	a//b
+basename	plain.tar.gz
+basename	./x
+runtime_asset	assets/goose-runtime-linux.tar.zst
+runtime_asset	goose-runtime-x
+runtime_asset	GOOSE-RUNTIME-x
+runtime_asset	goose-runtime
+runtime_asset	/goose-runtime-a
+runtime_asset	
+asset_selected	goose-runtime-linux.tar.zst
+asset_selected	dir/goose-runtime-x
+asset_selected	GOOSE-RUNTIME-x
+asset_selected	goose-runtim
+asset_selected	
+asset_limit	0
+asset_limit	2147483647
+asset_limit	2147483648
+asset_limit	2147483649
+asset_limit	1099511627776
+tree_limit	0
+tree_limit	100000000
+tree_limit	100000001
+tree_limit	268435456
+keep	1	0	v0.2.0	v0.1.0	goose-runtime-linux.tar.zst
+keep	1	0	v0.1.0	v0.1.0	goose-runtime-linux.tar.zst
+keep	0	0	v0.2.0	v0.1.0	goose-runtime-linux.tar.zst
+keep	1	1	v0.2.0	v0.1.0	goose-runtime-linux.tar.zst
+keep	1	0	v0.2.0	v0.1.0	notes.md
+keep	1	0		v0.1.0	goose-runtime-x
+module_count	    goose/model/x.goose\n    goose/cli/y.goose\n
+module_count	    goose/model/x.goose   \n
+module_count	goose/model/x.goose\n
+module_count	    goose/.goose\n
+module_count	    goose/a.goose b.goose\n
+module_count	# comment goose/x.goose\n    goose/z.goose
+module_count	\tgoose/t.goose\t\n
+module_count	    MODULES=(\n        goose/model/x.goose\n    )\n
+module_count	
+module_count	    goose/x.goose\r\n
+version_line	goose runtime 1e714e6146bc\n
+version_line	v1\nv2
+version_line	a\n\n
+version_line	ver 3  \n
+version_line	
+dist_files	-
+sha256sums	-
+manifest	7	123	456	9	11	goose runtime 1e714e6146bc
