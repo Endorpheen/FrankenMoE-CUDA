@@ -49,8 +49,13 @@ int main(int argc, char ** argv) {
     int64_t p[19] = {0};
     p[0]  = kv_u32(g, "qwen35moe.embedding_length", 0);              // n_embd
     p[1]  = kv_u32(g, "qwen35moe.vocab_size", 0);                    // n_vocab
-    p[2]  = kv_u32(g, "qwen35moe.block_count", 0);                   // n_layer
-    p[3]  = p[2] + kv_u32(g, "qwen35moe.nextn_predict_layers", 0);   // n_layer_all
+    // blk.40 carries both the regular block tensors and nextn.*: the MTP block is stored
+    // at index n_layer, which is why n_layer is block_count minus the nextn count and
+    // NOT block_count. Treating the MTP block as an ordinary layer put every kind one
+    // place out and made layer 40 look recurrent.
+    const int64_t n_nextn = kv_u32(g, "qwen35moe.nextn_predict_layers", 0);
+    p[2]  = kv_u32(g, "qwen35moe.block_count", 0) - n_nextn;          // n_layer
+    p[3]  = p[2] + n_nextn;                                           // n_layer_all
     p[4]  = kv_u32(g, "qwen35moe.attention.head_count", 0);
     p[5]  = kv_u32(g, "qwen35moe.attention.head_count_kv", 0);
     p[6]  = kv_u32(g, "qwen35moe.feed_forward_length", 0);

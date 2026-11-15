@@ -1,4 +1,9 @@
-# EXP-2026-11-15-693 — the type of every one of the 42 layers, decided by Goose
+# EXP-2026-11-15-693 — the type of every layer, decided by Goose
+
+> CORRECTED by EXP-699. The counts in this card were wrong: 10 attention / 31 recurrent /
+> 1 MTP. The MTP block is stored at index `n_layer`, so `n_layer` is `block_count` minus
+> the nextn count (40, not 41), and the true distribution is 10 /
+> 30 / 1 over 41 layers. The 42nd layer never existed.
 
 Base: `40894016`. No model run, no GPU.
 
