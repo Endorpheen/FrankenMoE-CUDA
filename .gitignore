@@ -276,3 +276,7 @@ experiments/EXP-2026-11-15-641-p7-04-iq-qgrid/results/bin/
 experiments/EXP-2026-11-15-644-p7-04-iq1m/results/gen/
 experiments/EXP-2026-11-15-644-p7-04-iq1m/results/bin/
 experiments/EXP-2026-11-15-644-p7-04-iq1m/results/work/
+
+# EXP661: generated server C/header are reproducible
+experiments/EXP-2026-11-15-661-p8-12b-server-switches/source/server.c
+experiments/EXP-2026-11-15-661-p8-12b-server-switches/source/server.h
