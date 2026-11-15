@@ -1,0 +1,276 @@
+--- a/goose/model/quant-rows2.goose
++++ b/goose/model/quant-rows2.goose
+@@ -2480,84 +2480,70 @@
+                 i2 += 1 as i64;
+             }
+             sort16(pairs, 16);
++            var j = 0 as i64;
+             var best_score = 0 as f32 - 3.4028234663852886e38;
+             var scale = mx;
+             var besti1 = 0 as i64 - 1;
+             var besti2 = 0 as i64 - 1;
+             var bestk = 0 as i64 - 1;
+-            st_f32(px, 0 as f32);
+-            st_f32(px + 68, 0 as f32);
+-            st_f32(pw, 0 as f32);
+-            st_f32(pw + 68, 0 as f32);
+-            var j = 0 as i64;
+-            while j < 16 {
+-                let ii2 = ld_u8(pairs + (j as u64) * 8 + 4);
+-                var h = 1 as i64;
+-                if ii2 < 8 { h = 0 as i64; }
+-                let wx = ld_f32(wa + (ii2 as u64) * 4) * ld_f32(xg + (ii2 as u64) * 4);
+-                st_f32(px + ((h * 17 + j + 1) as u64) * 4,
+-                       ld_f32(px + ((h * 17 + j) as u64) * 4) + wx);
+-                st_f32(px + (((1 - h) * 17 + j + 1) as u64) * 4,
+-                       ld_f32(px + (((1 - h) * 17 + j) as u64) * 4));
+-                st_f32(pw + ((h * 17 + j + 1) as u64) * 4,
+-                       ld_f32(pw + ((h * 17 + j) as u64) * 4) + ld_f32(wa + (ii2 as u64) * 4));
+-                st_f32(pw + (((1 - h) * 17 + j + 1) as u64) * 4,
+-                       ld_f32(pw + (((1 - h) * 17 + j) as u64) * 4));
+-                j += 1 as i64;
+-            }
+-            let txs0 = ld_f32(px + 16 * 4);
+-            let txs1 = ld_f32(px + (17 + 16) * 4);
+-            let tws0 = ld_f32(pw + 16 * 4);
+-            let tws1 = ld_f32(pw + (17 + 16) * 4);
+-            let p2 = 1.125;
+-            let m2 = 0.875;
+-            let cp1 = 0.75;
+-            let cp2 = -1.25;
+-            let cm1 = 1.25;
+-            let cm2 = -0.75;
+             var i1 = 0 as i64;
+             while i1 <= 16 {
+                 var i2b = i1;
+                 while i2b <= 16 {
+-                    var qx_p0 = 0 as f32;
+-                    var qx_p1 = 0 as f32;
+-                    var qx_m0 = 0 as f32;
+-                    var qx_m1 = 0 as f32;
+-                    var q2_p0 = 0 as f32;
+-                    var q2_p1 = 0 as f32;
+-                    var q2_m0 = 0 as f32;
+-                    var q2_m1 = 0 as f32;
+-                    var h = 0 as i64;
+-                    while h < 2 {
+-                        let sx = ld_f32(px + ((h * 17 + i1) as u64) * 4) + ld_f32(px + ((h * 17 + i2b) as u64) * 4);
+-                        var txs = txs0;
+-                        var tws = tws0;
+-                        if h == 1 {
+-                            txs = txs1;
+-                            tws = tws1;
+-                        }
+-                        let qxp = txs * p2 - sx;
+-                        let qxm = txs * m2 - sx;
+-                        let q2p = tws * p2 * p2
+-                                  + ld_f32(pw + ((h * 17 + i1) as u64) * 4) * cp1
+-                                  + ld_f32(pw + ((h * 17 + i2b) as u64) * 4) * cp2;
+-                        let q2m = tws * m2 * m2
+-                                  + ld_f32(pw + ((h * 17 + i1) as u64) * 4) * cm1
+-                                  + ld_f32(pw + ((h * 17 + i2b) as u64) * 4) * cm2;
+-                        if h == 0 {
+-                            qx_p0 = qxp; qx_m0 = qxm; q2_p0 = q2p; q2_m0 = q2m;
+-                        } else {
+-                            qx_p1 = qxp; qx_m1 = qxm; q2_p1 = q2p; q2_m1 = q2m;
++                    var sx0 = 0 as f32;
++                    var sx1 = 0 as f32;
++                    var sx2 = 0 as f32;
++                    var sx3 = 0 as f32;
++                    var s20 = 0 as f32;
++                    var s21 = 0 as f32;
++                    var s22 = 0 as f32;
++                    var s23 = 0 as f32;
++                    var g = 0 as i64;
++                    while g < 3 {
++                        var lo = 0 as i64;
++                        var hi = 0 as i64;
++                        if g == 0 { lo = 0; hi = i1; }
++                        else if g == 1 { lo = i1; hi = i2b; }
++                        else { lo = i2b; hi = 16; }
++                        var pp = 0 as f32 - 0.875;
++                        var mm = 0 as f32 - 1.125;
++                        if g == 1 { pp = 0.125; mm = 0 as f32 - 0.125; }
++                        else if g == 2 { pp = 1.125; mm = 0.875; }
++                        j = lo;
++                        while j < hi {
++                            let ii2 = ld_u8(pairs + (j as u64) * 8 + 4);
++                            let xv2 = ld_f32(xg + (ii2 as u64) * 4);
++                            let w = ld_f32(wa + (ii2 as u64) * 4);
++                            if ii2 < 8 {
++                                sx0 += w * pp * xv2;
++                                sx1 += w * pp * xv2;
++                                sx2 += w * mm * xv2;
++                                sx3 += w * mm * xv2;
++                                s20 += w * pp * pp;
++                                s21 += w * pp * pp;
++                                s22 += w * mm * mm;
++                                s23 += w * mm * mm;
++                            } else {
++                                sx0 += w * pp * xv2;
++                                sx2 += w * pp * xv2;
++                                sx1 += w * mm * xv2;
++                                sx3 += w * mm * xv2;
++                                s20 += w * pp * pp;
++                                s22 += w * pp * pp;
++                                s21 += w * mm * mm;
++                                s23 += w * mm * mm;
++                            }
++                            j += 1 as i64;
+                         }
+-                        h += 1 as i64;
++                        g += 1 as i64;
+                     }
+                     var k = 0 as i64;
+                     while k < 4 {
+-                        var sumqx = qx_m0 + qx_p1;
+-                        var sumq2 = q2_m0 + q2_p1;
+-                        if k == 0 { sumqx = qx_p0 + qx_p1; sumq2 = q2_p0 + q2_p1; }
+-                        else if k == 1 { sumqx = qx_p0 + qx_m1; sumq2 = q2_p0 + q2_m1; }
+-                        else if k == 3 { sumqx = qx_m0 + qx_m1; sumq2 = q2_m0 + q2_m1; }
++                        var sumqx = sx3;
++                        var sumq2 = s23;
++                        if k == 0 { sumqx = sx0; sumq2 = s20; }
++                        else if k == 1 { sumqx = sx1; sumq2 = s21; }
++                        else if k == 2 { sumqx = sx2; sumq2 = s22; }
+                         if sumq2 > 0 as f32 && sumqx * sumqx > best_score * sumq2 {
+                             scale = sumqx / sumq2;
+                             best_score = scale * sumqx;
+--- a/goose/model/quant-weighted.goose
++++ b/goose/model/quant-weighted.goose
+@@ -3923,84 +3923,70 @@
+                 i2 += 1 as i64;
+             }
+             sort16(pairs, 16);
++            var j = 0 as i64;
+             var best_score = 0 as f32 - 3.4028234663852886e38;
+             var scale = mx;
+             var besti1 = 0 as i64 - 1;
+             var besti2 = 0 as i64 - 1;
+             var bestk = 0 as i64 - 1;
+-            st_f32(px, 0 as f32);
+-            st_f32(px + 68, 0 as f32);
+-            st_f32(pw, 0 as f32);
+-            st_f32(pw + 68, 0 as f32);
+-            var j = 0 as i64;
+-            while j < 16 {
+-                let ii2 = ld_u8(pairs + (j as u64) * 8 + 4);
+-                var h = 1 as i64;
+-                if ii2 < 8 { h = 0 as i64; }
+-                let wx = ld_f32(wa + (ii2 as u64) * 4) * ld_f32(xg + (ii2 as u64) * 4);
+-                st_f32(px + ((h * 17 + j + 1) as u64) * 4,
+-                       ld_f32(px + ((h * 17 + j) as u64) * 4) + wx);
+-                st_f32(px + (((1 - h) * 17 + j + 1) as u64) * 4,
+-                       ld_f32(px + (((1 - h) * 17 + j) as u64) * 4));
+-                st_f32(pw + ((h * 17 + j + 1) as u64) * 4,
+-                       ld_f32(pw + ((h * 17 + j) as u64) * 4) + ld_f32(wa + (ii2 as u64) * 4));
+-                st_f32(pw + (((1 - h) * 17 + j + 1) as u64) * 4,
+-                       ld_f32(pw + (((1 - h) * 17 + j) as u64) * 4));
+-                j += 1 as i64;
+-            }
+-            let txs0 = ld_f32(px + 16 * 4);
+-            let txs1 = ld_f32(px + (17 + 16) * 4);
+-            let tws0 = ld_f32(pw + 16 * 4);
+-            let tws1 = ld_f32(pw + (17 + 16) * 4);
+-            let p2 = 1.125;
+-            let m2 = 0.875;
+-            let cp1 = 0.75;
+-            let cp2 = -1.25;
+-            let cm1 = 1.25;
+-            let cm2 = -0.75;
+             var i1 = 0 as i64;
+             while i1 <= 16 {
+                 var i2b = i1;
+                 while i2b <= 16 {
+-                    var qx_p0 = 0 as f32;
+-                    var qx_p1 = 0 as f32;
+-                    var qx_m0 = 0 as f32;
+-                    var qx_m1 = 0 as f32;
+-                    var q2_p0 = 0 as f32;
+-                    var q2_p1 = 0 as f32;
+-                    var q2_m0 = 0 as f32;
+-                    var q2_m1 = 0 as f32;
+-                    var h = 0 as i64;
+-                    while h < 2 {
+-                        let sx = ld_f32(px + ((h * 17 + i1) as u64) * 4) + ld_f32(px + ((h * 17 + i2b) as u64) * 4);
+-                        var txs = txs0;
+-                        var tws = tws0;
+-                        if h == 1 {
+-                            txs = txs1;
+-                            tws = tws1;
+-                        }
+-                        let qxp = txs * p2 - sx;
+-                        let qxm = txs * m2 - sx;
+-                        let q2p = tws * p2 * p2
+-                                  + ld_f32(pw + ((h * 17 + i1) as u64) * 4) * cp1
+-                                  + ld_f32(pw + ((h * 17 + i2b) as u64) * 4) * cp2;
+-                        let q2m = tws * m2 * m2
+-                                  + ld_f32(pw + ((h * 17 + i1) as u64) * 4) * cm1
+-                                  + ld_f32(pw + ((h * 17 + i2b) as u64) * 4) * cm2;
+-                        if h == 0 {
+-                            qx_p0 = qxp; qx_m0 = qxm; q2_p0 = q2p; q2_m0 = q2m;
+-                        } else {
+-                            qx_p1 = qxp; qx_m1 = qxm; q2_p1 = q2p; q2_m1 = q2m;
++                    var sx0 = 0 as f32;
++                    var sx1 = 0 as f32;
++                    var sx2 = 0 as f32;
++                    var sx3 = 0 as f32;
++                    var s20 = 0 as f32;
++                    var s21 = 0 as f32;
++                    var s22 = 0 as f32;
++                    var s23 = 0 as f32;
++                    var g = 0 as i64;
++                    while g < 3 {
++                        var lo = 0 as i64;
++                        var hi = 0 as i64;
++                        if g == 0 { lo = 0; hi = i1; }
++                        else if g == 1 { lo = i1; hi = i2b; }
++                        else { lo = i2b; hi = 16; }
++                        var pp = 0 as f32 - 0.875;
++                        var mm = 0 as f32 - 1.125;
++                        if g == 1 { pp = 0.125; mm = 0 as f32 - 0.125; }
++                        else if g == 2 { pp = 1.125; mm = 0.875; }
++                        j = lo;
++                        while j < hi {
++                            let ii2 = ld_u8(pairs + (j as u64) * 8 + 4);
++                            let xv2 = ld_f32(xg + (ii2 as u64) * 4);
++                            let w = ld_f32(wa + (ii2 as u64) * 4);
++                            if ii2 < 8 {
++                                sx0 += w * pp * xv2;
++                                sx1 += w * pp * xv2;
++                                sx2 += w * mm * xv2;
++                                sx3 += w * mm * xv2;
++                                s20 += w * pp * pp;
++                                s21 += w * pp * pp;
++                                s22 += w * mm * mm;
++                                s23 += w * mm * mm;
++                            } else {
++                                sx0 += w * pp * xv2;
++                                sx2 += w * pp * xv2;
++                                sx1 += w * mm * xv2;
++                                sx3 += w * mm * xv2;
++                                s20 += w * pp * pp;
++                                s22 += w * pp * pp;
++                                s21 += w * mm * mm;
++                                s23 += w * mm * mm;
++                            }
++                            j += 1 as i64;
+                         }
+-                        h += 1 as i64;
++                        g += 1 as i64;
+                     }
+                     var k = 0 as i64;
+                     while k < 4 {
+-                        var sumqx = qx_m0 + qx_p1;
+-                        var sumq2 = q2_m0 + q2_p1;
+-                        if k == 0 { sumqx = qx_p0 + qx_p1; sumq2 = q2_p0 + q2_p1; }
+-                        else if k == 1 { sumqx = qx_p0 + qx_m1; sumq2 = q2_p0 + q2_m1; }
+-                        else if k == 3 { sumqx = qx_m0 + qx_m1; sumq2 = q2_m0 + q2_m1; }
++                        var sumqx = sx3;
++                        var sumq2 = s23;
++                        if k == 0 { sumqx = sx0; sumq2 = s20; }
++                        else if k == 1 { sumqx = sx1; sumq2 = s21; }
++                        else if k == 2 { sumqx = sx2; sumq2 = s22; }
+                         if sumq2 > 0 as f32 && sumqx * sumqx > best_score * sumq2 {
+                             scale = sumqx / sumq2;
+                             best_score = scale * sumqx;

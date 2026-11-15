@@ -1,0 +1,33 @@
+EXP642 mutation run - iq1_m split search
+module at -O0, gate: iq1_m corpus (12 patterns x 2 lengths) vs native libggml-base
+
+baseline: EXP642 type=iq1_m cases=24 bytes=4032 mismatches=0 offgrid_lookups=166 nb_calls=12835
+A1 A DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=22 offgrid_lookups=141 nb_calls=10698
+      h=0 branch: group 1 uses the negative level set
+A2 A DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=22 offgrid_lookups=147 nb_calls=11759
+      h=1 branch: group 2 swaps the level sign
+A3 A DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=14 offgrid_lookups=152 nb_calls=11323
+      half-block boundary 8 -> 7 in the level assignment
+A4 A DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=16 offgrid_lookups=150 nb_calls=11923
+      group 2 level constants swapped
+A5 A DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=24 offgrid_lookups=925 nb_calls=63409
+      squared level becomes a linear level in one sum
+A6 A DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=16 offgrid_lookups=151 nb_calls=10730
+      middle group starts at 0 instead of i1
+B1 B DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=18 offgrid_lookups=30 nb_calls=746
+      scale estimate halved
+B2 B DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=18 offgrid_lookups=320 nb_calls=18652
+      score comparison scaled by 0.5
+B3 B DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=18 offgrid_lookups=216 nb_calls=8158
+      best score built from the wrong factor
+B4 B DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=6 offgrid_lookups=166 nb_calls=12835
+      shift mask 0x80 -> 0x40
+B5 B DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=24 offgrid_lookups=166 nb_calls=12835
+      final scale fudge factor 1.1125 -> 1.125
+B6 B DETECTED  EXP642 type=iq1_m cases=24 bytes=4032 mismatches=12 offgrid_lookups=166 nb_calls=12835
+      super-scale denominator 15 -> 16
+
+half A: caught 6/6
+half B: caught 6/6
+
+after restore: EXP642 type=iq1_m cases=24 bytes=4032 mismatches=0 offgrid_lookups=166 nb_calls=12835

@@ -106,9 +106,11 @@ extern "qz_nearest" fn nearest(v: f32) -> i64;
 extern "qz_tmp" fn tmp(off: i64) -> u64;
 extern "qz_fail" fn fail(code: i64);
 extern "qz_iq2_grid" fn iq2_grid(g: i64, i: i64) -> i64;
+extern "qz_iq2_qgrid" fn iq2_qgrid(g: i64, i: i64) -> i64;
 extern "qz_iq2_map" fn iq2_map(g: i64, u: i64) -> i64;
 extern "qz_iq2_nb" fn iq2_nb(g: i64, off: i64) -> i64;
 extern "qz_iq3_grid" fn iq3_grid(g: i64, i: i64) -> i64;
+extern "qz_iq3_qgrid" fn iq3_qgrid(g: i64, i: i64) -> i64;
 extern "qz_iq3_map" fn iq3_map(g: i64, u: i64) -> i64;
 extern "qz_iq3_nb" fn iq3_nb(g: i64, off: i64) -> i64;
 extern "qz_sort16" fn sort16(pairs: u64, n: i64);
@@ -2524,7 +2526,7 @@ fn iq3_best_nb(g: i64, off: i64, xv: u64, wv: u64, scale: f32, L: u64) -> i64 {
     var j = 1 as i64;
     while j <= n {
         let idx = iq3_nb(g, off + j);
-        let gv = iq3_grid(g, idx);
+        let gv = iq3_qgrid(g, idx);
         var d2 = 0 as f32;
         var i = 0 as i64;
         while i < 4 {
@@ -2540,7 +2542,7 @@ fn iq3_best_nb(g: i64, off: i64, xv: u64, wv: u64, scale: f32, L: u64) -> i64 {
         j += 1 as i64;
     }
     if gi < 0 { fail(1202); }
-    let gv = iq3_grid(g, gi);
+    let gv = iq3_qgrid(g, gi);
     var i = 0 as i64;
     while i < 4 {
         let q = i8val((gv >> (8 * i)) & 255);
@@ -2558,7 +2560,7 @@ fn iq2_best_nb(g: i64, off: i64, xv: u64, wv: u64, scale: f32, L: u64) -> i64 {
     var j = 1 as i64;
     while j <= n {
         let idx = iq2_nb(g, off + j);
-        let gv = iq2_grid(g, idx);
+        let gv = iq2_qgrid(g, idx);
         var d2 = 0 as f32;
         var i = 0 as i64;
         while i < 8 {
@@ -2574,7 +2576,7 @@ fn iq2_best_nb(g: i64, off: i64, xv: u64, wv: u64, scale: f32, L: u64) -> i64 {
         j += 1 as i64;
     }
     if gi < 0 { fail(1212); }
-    let gv = iq2_grid(g, gi);
+    let gv = iq2_qgrid(g, gi);
     var i = 0 as i64;
     while i < 8 {
         let q = i8val((gv >> (8 * i)) & 255);
@@ -2759,7 +2761,7 @@ fn qz_row_iq2_xxs(x: u64, y: u64, k: i64, qwb: u64) {
                         gidx = iq2_best_nb(0, 0 as i64 - gi - 1, xv + ((8 * kk) as u64) * 4,
                                            waux + ((8 * kk) as u64) * 4, scale, L + ((8 * kk) as u64));
                     }
-                    let gv = iq2_grid(0, gidx);
+                    let gv = iq2_qgrid(0, gidx);
                     i4 = 0 as i64;
                     while i4 < 8 {
                         st_u8(L + ((8 * kk + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
@@ -3257,7 +3259,7 @@ fn qz_row_iq3_xxs(x: u64, y: u64, k: i64, qwb: u64) {
                             gidx = iq3_best_nb(0, 0 as i64 - gi - 1, xv + ((4 * kk2) as u64) * 4,
                                                waux + ((4 * kk2) as u64) * 4, scale, L + ((4 * kk2) as u64));
                         }
-                        let gv = iq3_grid(0, gidx);
+                        let gv = iq3_qgrid(0, gidx);
                         i4 = 0 as i64;
                         while i4 < 4 {
                             st_u8(L + ((4 * kk2 + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
@@ -3499,7 +3501,7 @@ fn qz_row_iq3_s(x: u64, y: u64, k: i64, qwb: u64) {
                         gidx = iq3_best_nb(1, 0 as i64 - gi - 1, xv + ((4 * kk2) as u64) * 4,
                                            waux + ((4 * kk2) as u64) * 4, scale, L + ((4 * kk2) as u64));
                     }
-                    let gv = iq3_grid(1, gidx);
+                    let gv = iq3_qgrid(1, gidx);
                     i4 = 0 as i64;
                     while i4 < 4 {
                         st_u8(L + ((4 * kk2 + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
@@ -3804,7 +3806,7 @@ fn iq1_best_nb2(off: i64, xv: u64, wv: u64, scale: f32, xg: u64, L: u64, ngrid: 
     var j = 1 as i64;
     while j <= n {
         let idx = iq2_nb(2, off + j);
-        let gv = iq2_grid(2, idx);
+        let gv = iq2_qgrid(2, idx);
         var d2 = 0 as f32;
         var i = 0 as i64;
         while i < 8 {
@@ -3822,7 +3824,7 @@ fn iq1_best_nb2(off: i64, xv: u64, wv: u64, scale: f32, xg: u64, L: u64, ngrid: 
     if gi < 0 {
         var g = 0 as i64;
         while g < ngrid {
-            let gv = iq2_grid(2, g);
+            let gv = iq2_qgrid(2, g);
             var d2 = 0 as f32;
             var jj = 0 as i64;
             while jj < 8 {
@@ -3840,7 +3842,7 @@ fn iq1_best_nb2(off: i64, xv: u64, wv: u64, scale: f32, xg: u64, L: u64, ngrid: 
         }
     }
     if gi < 0 { fail(1252); }
-    let gv = iq2_grid(2, gi);
+    let gv = iq2_qgrid(2, gi);
     var i = 0 as i64;
     while i < 8 {
         st_u8(L + (i as u64), (i8val((gv >> (8 * i)) & 255) - 1) / 2);
@@ -3921,84 +3923,70 @@ fn qz_row_iq1_m(x: u64, y: u64, k: i64, qwb: u64) {
                 i2 += 1 as i64;
             }
             sort16(pairs, 16);
+            var j = 0 as i64;
             var best_score = 0 as f32 - 3.4028234663852886e38;
             var scale = mx;
             var besti1 = 0 as i64 - 1;
             var besti2 = 0 as i64 - 1;
             var bestk = 0 as i64 - 1;
-            st_f32(px, 0 as f32);
-            st_f32(px + 68, 0 as f32);
-            st_f32(pw, 0 as f32);
-            st_f32(pw + 68, 0 as f32);
-            var j = 0 as i64;
-            while j < 16 {
-                let ii2 = ld_u8(pairs + (j as u64) * 8 + 4);
-                var h = 1 as i64;
-                if ii2 < 8 { h = 0 as i64; }
-                let wx = ld_f32(wa + (ii2 as u64) * 4) * ld_f32(xg + (ii2 as u64) * 4);
-                st_f32(px + ((h * 17 + j + 1) as u64) * 4,
-                       ld_f32(px + ((h * 17 + j) as u64) * 4) + wx);
-                st_f32(px + (((1 - h) * 17 + j + 1) as u64) * 4,
-                       ld_f32(px + (((1 - h) * 17 + j) as u64) * 4));
-                st_f32(pw + ((h * 17 + j + 1) as u64) * 4,
-                       ld_f32(pw + ((h * 17 + j) as u64) * 4) + ld_f32(wa + (ii2 as u64) * 4));
-                st_f32(pw + (((1 - h) * 17 + j + 1) as u64) * 4,
-                       ld_f32(pw + (((1 - h) * 17 + j) as u64) * 4));
-                j += 1 as i64;
-            }
-            let txs0 = ld_f32(px + 16 * 4);
-            let txs1 = ld_f32(px + (17 + 16) * 4);
-            let tws0 = ld_f32(pw + 16 * 4);
-            let tws1 = ld_f32(pw + (17 + 16) * 4);
-            let p2 = 1.125;
-            let m2 = 0.875;
-            let cp1 = 0.75;
-            let cp2 = -1.25;
-            let cm1 = 1.25;
-            let cm2 = -0.75;
             var i1 = 0 as i64;
             while i1 <= 16 {
                 var i2b = i1;
                 while i2b <= 16 {
-                    var qx_p0 = 0 as f32;
-                    var qx_p1 = 0 as f32;
-                    var qx_m0 = 0 as f32;
-                    var qx_m1 = 0 as f32;
-                    var q2_p0 = 0 as f32;
-                    var q2_p1 = 0 as f32;
-                    var q2_m0 = 0 as f32;
-                    var q2_m1 = 0 as f32;
-                    var h = 0 as i64;
-                    while h < 2 {
-                        let sx = ld_f32(px + ((h * 17 + i1) as u64) * 4) + ld_f32(px + ((h * 17 + i2b) as u64) * 4);
-                        var txs = txs0;
-                        var tws = tws0;
-                        if h == 1 {
-                            txs = txs1;
-                            tws = tws1;
+                    var sx0 = 0 as f32;
+                    var sx1 = 0 as f32;
+                    var sx2 = 0 as f32;
+                    var sx3 = 0 as f32;
+                    var s20 = 0 as f32;
+                    var s21 = 0 as f32;
+                    var s22 = 0 as f32;
+                    var s23 = 0 as f32;
+                    var g = 0 as i64;
+                    while g < 3 {
+                        var lo = 0 as i64;
+                        var hi = 0 as i64;
+                        if g == 0 { lo = 0; hi = i1; }
+                        else if g == 1 { lo = i1; hi = i2b; }
+                        else { lo = i2b; hi = 16; }
+                        var pp = 0 as f32 - 0.875;
+                        var mm = 0 as f32 - 1.125;
+                        if g == 1 { pp = 0.125; mm = 0 as f32 - 0.125; }
+                        else if g == 2 { pp = 1.125; mm = 0.875; }
+                        j = lo;
+                        while j < hi {
+                            let ii2 = ld_u8(pairs + (j as u64) * 8 + 4);
+                            let xv2 = ld_f32(xg + (ii2 as u64) * 4);
+                            let w = ld_f32(wa + (ii2 as u64) * 4);
+                            if ii2 < 8 {
+                                sx0 += w * pp * xv2;
+                                sx1 += w * pp * xv2;
+                                sx2 += w * mm * xv2;
+                                sx3 += w * mm * xv2;
+                                s20 += w * pp * pp;
+                                s21 += w * pp * pp;
+                                s22 += w * mm * mm;
+                                s23 += w * mm * mm;
+                            } else {
+                                sx0 += w * pp * xv2;
+                                sx2 += w * pp * xv2;
+                                sx1 += w * mm * xv2;
+                                sx3 += w * mm * xv2;
+                                s20 += w * pp * pp;
+                                s22 += w * pp * pp;
+                                s21 += w * mm * mm;
+                                s23 += w * mm * mm;
+                            }
+                            j += 1 as i64;
                         }
-                        let qxp = txs * p2 - sx;
-                        let qxm = txs * m2 - sx;
-                        let q2p = tws * p2 * p2
-                                  + ld_f32(pw + ((h * 17 + i1) as u64) * 4) * cp1
-                                  + ld_f32(pw + ((h * 17 + i2b) as u64) * 4) * cp2;
-                        let q2m = tws * m2 * m2
-                                  + ld_f32(pw + ((h * 17 + i1) as u64) * 4) * cm1
-                                  + ld_f32(pw + ((h * 17 + i2b) as u64) * 4) * cm2;
-                        if h == 0 {
-                            qx_p0 = qxp; qx_m0 = qxm; q2_p0 = q2p; q2_m0 = q2m;
-                        } else {
-                            qx_p1 = qxp; qx_m1 = qxm; q2_p1 = q2p; q2_m1 = q2m;
-                        }
-                        h += 1 as i64;
+                        g += 1 as i64;
                     }
                     var k = 0 as i64;
                     while k < 4 {
-                        var sumqx = qx_m0 + qx_p1;
-                        var sumq2 = q2_m0 + q2_p1;
-                        if k == 0 { sumqx = qx_p0 + qx_p1; sumq2 = q2_p0 + q2_p1; }
-                        else if k == 1 { sumqx = qx_p0 + qx_m1; sumq2 = q2_p0 + q2_m1; }
-                        else if k == 3 { sumqx = qx_m0 + qx_m1; sumq2 = q2_m0 + q2_m1; }
+                        var sumqx = sx3;
+                        var sumq2 = s23;
+                        if k == 0 { sumqx = sx0; sumq2 = s20; }
+                        else if k == 1 { sumqx = sx1; sumq2 = s21; }
+                        else if k == 2 { sumqx = sx2; sumq2 = s22; }
                         if sumq2 > 0 as f32 && sumqx * sumqx > best_score * sumq2 {
                             scale = sumqx / sumq2;
                             best_score = scale * sumqx;
@@ -4080,7 +4068,7 @@ fn qz_row_iq1_m(x: u64, y: u64, k: i64, qwb: u64) {
                         if bestk % 2 == 0 { xx = xp; }
                     }
                     let gidx = ld_u32v(tmp(S_IDX) + (kk as u64) * 4);
-                    let gv = iq2_grid(2, gidx);
+                    let gv = iq2_qgrid(2, gidx);
                     var i4 = 0 as i64;
                     while i4 < 8 {
                         let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);
@@ -4151,7 +4139,7 @@ fn qz_row_iq1_m(x: u64, y: u64, k: i64, qwb: u64) {
                 let qsb = ld_u8(yb + ((2 * ib + kk) as u64));
                 let qhb = ld_u8(yb + 32 + (ib as u64));
                 let idx2 = qsb + ((qhb << (8 - 4 * kk)) & 1792);
-                let gv = iq2_grid(2, idx2);
+                let gv = iq2_qgrid(2, idx2);
                 var i4 = 0 as i64;
                 while i4 < 8 {
                     let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);
@@ -4367,7 +4355,7 @@ fn qz_row_iq1_s(x: u64, y: u64, k: i64, qwb: u64) {
                 kk = 0 as i64;
                 while kk < 4 {
                     let gidx = ld_u32v(ix + (kk as u64) * 4);
-                    let gv = iq2_grid(2, gidx);
+                    let gv = iq2_qgrid(2, gidx);
                     var i4 = 0 as i64;
                     while i4 < 8 {
                         let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);

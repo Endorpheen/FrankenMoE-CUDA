@@ -1,0 +1,3 @@
+== fixed (canon + EXP641 qgrid + iq1m split), iq1_m corpus
+EXP642 type=iq1_m cases=24 bytes=4032 mismatches=0 offgrid_lookups=166 nb_calls=12835
+exit=0

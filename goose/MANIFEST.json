@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T01:50:52.968408+00:00",
+  "updated_at": "2026-11-15T02:24:19.114694+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -310,10 +310,10 @@
       "native_targets": [
         "ggml/src/ggml-quants.c (imatrix branches)"
       ],
-      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "experiment": "EXP-2026-11-15-644-p7-04-iq1m",
       "task": "",
       "status": "ported",
-      "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f",
+      "sha256": "fa697aa233d74d02f91fef2c3e01a79cc425badf22dfbff6a32e1903ac0cac02",
       "gate": "28308 cases / 13053520 comparisons / 0 failures, 12/12 mutations"
     },
     {
@@ -322,10 +322,10 @@
       "native_targets": [
         "ggml/src/ggml-quants.c (K/IQ/MX/NV/TQ)"
       ],
-      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "experiment": "EXP-2026-11-15-644-p7-04-iq1m",
       "task": "",
       "status": "ported",
-      "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9",
+      "sha256": "aa9e52daa81686a0c8a56b8d633fe58e1ccbfff21442d0fe091c8b9be9f036e5",
       "gate": "3764 cases / 1897854 comparisons / 0 failures, 12/12 mutations"
     },
     {
@@ -12484,6 +12484,314 @@
       "task": "",
       "status": "slice",
       "sha256": "f744f1a7a31ffa52c62024388e28363858b9a2a47d7a5c09bef47b0637e8a5d2"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.canon.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.debug.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "ea54ad7cf55f45f9ce933989246ab6109cadb16bed31fa3eb556cf71b5918bbc"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.debug2.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "b22518d3f76c3092a37b6db96bbcdbadc42a04054f5b6150e91521f81b16d74e"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.debug3.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "a8bd6d75747afa3c453a8d94aa0642907333d4eeea394a5a5b4353b86d9db731"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.fixed.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "58fb646f889567eaa0515138d9ff89c5f1c86ed878798173e3c02355e2940e85"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-A1.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "73359d8a8d21305173c1075a4343908a5f25854e6b3f5efd92e64d6607945c66"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-A2.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "01772121efb0e2973c7676d56e260636cc447dca60bd966e62406ba5124fc4a7"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-A3.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "64caf37710f9f8170071318ff6f66204670218b02fc56fd57cabf39f54c7fba3"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-A4.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "2283fe9bac71482a8d1838016e55d5bc8594bde5b6a3eaaf6a1682efc4e452b8"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-A5.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "10297982807e9e7836180ec93f770f51889bddf41332bd492994590cc4d48696"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-A6.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "9d4b9ce279642a939ec4477ea4ce06150924b3cb92c333cbaa31987083c9da24"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-B1.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "d4b553de280481d0630f3a1eaeaf44d22598897b82a5dcf68c6378460ca7bebf"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-B2.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "81487ae0f8898d4d3f0ea06e921ccf5adbe9a23c02700aee4d83a5af413869f9"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-B3.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "3fee9e7dc0989ab1abb803f75138ca14aa14981c8b84053e4839474f3ef69e9c"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-B4.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "23b36ea0a5513426bbbf69bae844af1a3459ff9584afbdf0e938940d986390dc"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-B5.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "42b2afc754a43cbdcdde29a69fe206c772bf77e5ed01036122f07bad487330fa"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.mut-B6.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "033075c8088ef4356c3e4bc5ea5c49fb05b205e07ae72b077b851fd0a2a6fa7e"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.naive.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "ee06957fb8d6866b3cdd854cc6148be5d8ce9768ec364cca78c9e37bcdf05f4e"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-rows2.patch-in.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "58fb646f889567eaa0515138d9ff89c5f1c86ed878798173e3c02355e2940e85"
+    },
+    {
+      "goose": "model/iq-qgrid/results/work/quant-weighted.fixed.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "ced46fffd100fbb641b638af5f28050fdd135b81d429a1deb99e6a75dfff6961"
+    },
+    {
+      "goose": "model/iq-qgrid/quant-rows2.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9"
+    },
+    {
+      "goose": "model/iq-qgrid/quant-weighted.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",

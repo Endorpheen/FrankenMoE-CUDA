@@ -1,0 +1,5 @@
+== before (canon + EXP641 qgrid), iq1_m corpus
+FAIL iq1_m pat=10 rows=1 byte=4 native=ff port=05
+FAIL iq1_m pat=10 rows=2 byte=4 native=ff port=05
+EXP642 type=iq1_m cases=24 bytes=4032 mismatches=12 offgrid_lookups=166 nb_calls=12835
+exit=0

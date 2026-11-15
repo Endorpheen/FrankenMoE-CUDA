@@ -271,3 +271,8 @@ experiments/**/tests/mut/*/
 # EXP641: generated mutation C and gate binaries are reproducible
 experiments/EXP-2026-11-15-641-p7-04-iq-qgrid/results/gen/
 experiments/EXP-2026-11-15-641-p7-04-iq-qgrid/results/bin/
+
+# EXP644: generated mutation C, binaries and materialised copies
+experiments/EXP-2026-11-15-644-p7-04-iq1m/results/gen/
+experiments/EXP-2026-11-15-644-p7-04-iq1m/results/bin/
+experiments/EXP-2026-11-15-644-p7-04-iq1m/results/work/

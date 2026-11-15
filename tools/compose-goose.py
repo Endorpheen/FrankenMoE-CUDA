@@ -90,6 +90,8 @@ RENAMES = {
     # schema converter already own; its exports are qw_*, so scope the internals
     # the same way.
     "quant-weighted.goose": {
+        "iq2_qgrid": "qw_iq2_qgrid",
+        "iq3_qgrid": "qw_iq3_qgrid",
         "f32_bits": "qw_f32_bits",
         "f32_of_bits": "qw_f32_of_bits",
         "floor32": "qw_floor32",
