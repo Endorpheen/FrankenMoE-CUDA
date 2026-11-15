@@ -92,6 +92,14 @@ Goose export must answer, and the native body must be dead code. A file is
 the wiring is proven and the native body is removed. Legacy, test, duplicate and
 alternative modules are never counted toward coverage.
 
+`bash tools/migration-status.sh` is the single accounting command. It prints
+three separate counters - modules in the composed unit, own C++ files, own C++
+functions wired to Goose - and never blends them, because a module being present
+says nothing about a native body being gone. `docs/goose-migration/BUILD-SET.md`
+records the build set by name and every exclusion with its reason. Both are
+derived from the repository; neither is typed by hand, and neither requires a
+build.
+
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
