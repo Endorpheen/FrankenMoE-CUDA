@@ -1,0 +1,2 @@
+layers: 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 2
+FG_GDN_PLAN n=42 attn=10 recr=31 mtp=1 bad=0 | expected 10/31/1 PASS
