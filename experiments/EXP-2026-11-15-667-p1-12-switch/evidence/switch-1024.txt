@@ -1,0 +1,5 @@
+[1/3] objects
+[2/3] link (the delivered object is the only Goose kernel source)
+[3/3] run both arms
+  goose  : FG665 mode=goose available=1 cases=4097 failures=0 goose_calls=4096
+  native : FG665 mode=native available=1 cases=1 failures=0 goose_calls=0
