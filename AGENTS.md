@@ -81,6 +81,9 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     `bash tools/build-main-runtime.sh --repro` after every edit. Reuse a
     successful result while the sources and dependencies are unchanged, and never
     rebuild for a report, for confirmation or for reassurance.
+    Integrate modules in large batches. Collect the errors a batch produces and
+    fix them together; between builds use only the cheap local gate. A build per
+    module is the failure mode this rule exists to prevent.
 
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.

@@ -58,6 +58,11 @@ RENAMES = {
         "K_REF": "JB_K_REF",
     },
     "format-grammar.goose": {
+        # Private helpers whose names collide with exported entries elsewhere;
+        # the exports keep their public names, so these move (EXP677).
+        "format_literal": "fg_format_literal",
+        "add_rule": "fg_add_rule",
+        "object_branch": "fg_object_branch",
         "K_NULL": "FG_K_NULL",
         "K_STRING": "FG_K_STRING",
         "K_ARRAY": "FG_K_ARRAY",
@@ -83,6 +88,44 @@ RENAMES = {
     # gguf-offsets.goose binds the i64 accessors to fg457_* while file-io.goose
     # binds the same names to fg458_*; the two symbols are separate primitives, so
     # the names must be scoped per module rather than merged.
+    # refs.goose exports sanitize_into(s, start, out, dst); format-grammar.goose
+    # has a private sanitize_into(s, dst, at) with a different meaning. Scope the
+    # refs family so the exported entry keeps its own name.
+    # visit.goose is an independent JSON visitor; its private helpers collide with
+    # format-grammar.goose's by name but not by signature or meaning.
+    "visit.goose": {
+        # visit.goose's sanitize_into(s, dst, dst_off) differs from the exported
+        # refs.goose one (s, start, out, dst) and from format-grammar's private
+        # (s, dst, at); all three are separate helpers with one name.
+        "sanitize_into": "vis_sanitize_into",
+        "append_s": "vis_append_s",
+        "append_c": "vis_append_c",
+        "append_dec": "vis_append_dec",
+        "rep_impl": "vis_rep_impl",
+        "object_rule": "vis_object_rule",
+    },
+    "refs.goose": {
+        "is_reserved": "refs_is_reserved",
+        "rule_name": "refs_rule_name",
+        "sanitize_into": "refs_sanitize_into",
+        "sanitize_into_impl": "refs_sanitize_into_impl",
+        # add_rule here is the exported table builder; format-grammar.goose has a
+        # private add_rule with a different signature.
+    },
+    # mmq-dispatch binds its own fail (fg203d_*) and ensure; both collide by name
+    # with earlier modules that bind different symbols.
+    "goose-mmq-dispatch.goose": {
+        "fail": "mmqd_fail",
+        "ensure": "mmqd_ensure",
+    },
+    # shards.goose binds its own storage primitives (fg459_*) and has a private
+    # put(out, i, v) distinct from the offsets one.
+    "shards.goose": {
+        "put": "shards_put",
+        "st_u8": "shards_st_u8",
+        "st_i64": "shards_st_i64",
+        "ld_i64": "shards_ld_i64",
+    },
     "gguf-offsets.goose": {
         "st_i64": "off_st_i64",
         "ld_i64": "off_ld_i64",
@@ -253,15 +296,27 @@ STRING = re.compile(r'"(?:[^"\\]|\\.)*"')
 
 
 def rename_text(text: str, old: str, new: str) -> str:
-    """Rename an identifier outside string literals (extern symbols keep their name)."""
-    parts = []
-    at = 0
-    for m in STRING.finditer(text):
-        parts.append(re.sub(r"\b" + re.escape(old) + r"\b", new, text[at:m.start()]))
-        parts.append(m.group(0))
-        at = m.end()
-    parts.append(re.sub(r"\b" + re.escape(old) + r"\b", new, text[at:]))
-    return "".join(parts)
+    """Rename an identifier outside string literals and comments.
+
+    String literals keep their bytes because an extern symbol may appear inside
+    one; comments are skipped because a stray quote in prose (for example
+    `escape \' \\ \"`) used to make the string scanner swallow the code that
+    followed it, so a declaration after such a comment kept its old name while
+    its callers were renamed.
+    """
+    out = []
+    for line in text.splitlines(keepends=True):
+        # Split the code part from a trailing comment.
+        code, sep, comment = line.partition("//")
+        parts = []
+        at = 0
+        for m in STRING.finditer(code):
+            parts.append(re.sub(r"\b" + re.escape(old) + r"\b", new, code[at:m.start()]))
+            parts.append(m.group(0))
+            at = m.end()
+        parts.append(re.sub(r"\b" + re.escape(old) + r"\b", new, code[at:]))
+        out.append("".join(parts) + sep + comment)
+    return "".join(out)
 
 
 def emit(path: Path, seen: dict, conflicts: list, expected: set) -> str:

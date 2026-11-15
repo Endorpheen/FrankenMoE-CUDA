@@ -56,6 +56,10 @@ MODULES=(
     goose/model/row-select.goose
     goose/cpu/goose-meta-backend.goose
     goose/cpu/goose-graph-builders.goose
+    goose/model/q4t-tensor-map.goose
+    goose/model/shards.goose
+    goose/misc/fixture-plan.goose
+    goose/cuda/goose-mmq-dispatch.goose
     goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
     goose/model/control-vectors.goose
@@ -144,6 +148,8 @@ MODULES=(
     goose/json/builder.goose
     goose/json/json-parser.goose
     goose/json/peg-invalid.goose
+    goose/json/visit.goose
+    goose/json/refs.goose
 )
 
 echo "[1/5] compose ${#MODULES[@]} modules"

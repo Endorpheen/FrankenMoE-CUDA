@@ -416,6 +416,18 @@ fn should_use_mmq(
     return 0 as i64;
 }
 
+// Exported decision (P11-01, EXP677). The module had no export, so the one
+// decision that covers 39.5% of Apex kernel time was unreachable from a host.
+// The fourteen facts about the device arrive as arguments; Goose owns the tree.
+export fn mg_should_use_mmq(
+    t: i64, cc: i64, ne11: i64, n_experts: i64, smpbo: i64,
+    highest_arch: i64, turing_mma: i64, fp16_mma_hw: i64,
+    mfma: i64, wmma: i64, force_cublas: i64, force_mmq: i64) -> i64 {
+    return should_use_mmq(t, cc, ne11, n_experts, smpbo, highest_arch,
+                          turing_mma, fp16_mma_hw, mfma, wmma,
+                          force_cublas, force_mmq);
+}
+
 fn main() {
     mmq_type_supported(12 as i64);
     should_use_mmq(
