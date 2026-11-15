@@ -1,0 +1,4 @@
+FG_TENSOR_DATA rc=0 tensors=65 total=116128 copied=115304 layout=0 mismatches=0 first_size=4 last_size=8192 first_byte=0 last_byte=0
+FG_TENSOR_DATA rc=0 tensors=75 total=117952 copied=116928 layout=0 mismatches=0 first_size=4 last_size=4 first_byte=0 last_byte=0
+FG_TENSOR_DATA rc=0 tensors=55 total=114304 copied=113680 layout=0 mismatches=0 first_size=128 last_size=4 first_byte=0 last_byte=0
+FG_TENSOR_DATA rc=0 tensors=0 (no payload)
