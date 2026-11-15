@@ -267,3 +267,7 @@ experiments/**/run/*
 # experiment's mutate script (source, generated C, object, binary, output TSV).
 experiments/**/tests/mut_*/
 experiments/**/tests/mut/*/
+
+# EXP641: generated mutation C and gate binaries are reproducible
+experiments/EXP-2026-11-15-641-p7-04-iq-qgrid/results/gen/
+experiments/EXP-2026-11-15-641-p7-04-iq-qgrid/results/bin/
