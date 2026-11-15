@@ -1,12 +1,12 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (16). This file is the current state; update it in the same change
+Updated: 2026-11-15 (17). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 113**, **PARTIAL 19**, **TODO 20** of
-152 functional requirements. Slice front: **155 / 155** done, none remaining.
+152 functional requirements. Slice front: **164 / 164** done, none remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
@@ -22,7 +22,7 @@ The remaining partial requirements and their slice fronts:
 | P9-04 | 3 / 3 | rewrite on_eval to the rh_ plan and replace the overlap/row-source call sites |
 | P9-05 | 3 / 3 | extract expert_bytes_per_slot and wire rts_n_batch/rts_ubatch |
 | P9-07 | 3 / 3 | wire the three sinks and DeterministicWorkload |
-| P9-08 | 3 / 3 | wire the engine closure points; decide the two characterised behaviours |
+| P9-08 | 10 / 10 | wire the closure points; decide the two characterised behaviours |
 | P10-02 | 3 / 3 | wire llama-bench report, tokenize output and fit-params line into their hosts |
 | P10-05 | 3 / 3 | wire the release plan, build environment and artifact policy into scripts/tools |
 | P10-08 | 6 / 6 | device backend headers, ggml-cpp.h and the scheduler-eval runtime sequence |
@@ -30,7 +30,7 @@ The remaining partial requirements and their slice fronts:
 | P10-12 | 3 / 3 | close the 8 remaining audit gaps (G4 MTP warm-up, G5 sampler chain, G7 CLI driver, ...) |
 | P10-07 | 3 / 3 | replace or plan replacement of the 9 replaceable vendored components |
 | P10-09 | 3 / 3 | wire the runner, fixture and diagnostics decisions into tests/tools |
-| P8-09 | 3 / 3 | CORS, query decode, API-key middleware, web_serve wiring |
+| P8-09 | 6 / 6 | wire web_serve and the API-key middleware into server-http.cpp; live server run needs approval |
 | P1-12 | — | Igor's decision: reclassify SIMD dot kernels as substrate, wait for a Goose vector surface, or split the criterion |
 
 ## What the canonical tree contains
