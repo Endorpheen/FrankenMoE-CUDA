@@ -33,10 +33,41 @@ Nothing about the geometry is decided by the test: mode 4 requires padded-1d, mo
 rows. A wrong shape stops at the builder with a distinct code instead of producing
 a silently wrong tensor.
 
+## 2b. Five nodes: the block closes
+
+The graph now runs the whole attention block bar the attention itself:
+
+| node | mode | op |
+|---|---|---|
+| rms_norm | 4 | `GGML_OP_RMS_NORM` |
+| qkv projection | 11 | `GGML_OP_MUL_MAT` |
+| silu | 3 | unary `GGML_UNARY_OP_SILU` |
+| output projection back to K | 11 | `GGML_OP_MUL_MAT` |
+| residual add | 0 | `GGML_OP_ADD` |
+
+```
+FG_APEX_GRAPH nodes=5 K=2048 N=8192 shape_ok=1 status=0
+              first=0.134777 want=0.134777 rel=8.07e-08 PASS
+```
+
+The host reference now covers the whole block: RMS over 2048, all 8192 projection
+columns, silu on each, one output-projection column, plus the residual. 17 million
+host operations agreeing to 8.07e-08.
+
+Two defects found, both in the test and neither in the module:
+
+1. ggml stores tensors column-major, so element (i,j) of a [K,N] tensor is at
+   `i + j*K`, not `i*N + j`. The first run was 8.8% off purely from that.
+2. After the output projection the result is [K,1], not [N,1]; the shape check was
+   asserting the wrong width.
+
+Both are the kind of mistake a test makes and a module does not, which is why the
+module's own shape checks are the ones that stop a wrong graph.
+
 ## 3. Why this is the layer skeleton
 
-The three nodes are the first three of every Apex layer: normalise the residual,
-project to the fused qkv width, gate the result. The remaining nodes of a layer
+The five nodes are the block of every Apex layer: normalise the residual, project
+to the fused qkv width, gate, project back, add the residual. The remaining nodes
 follow the same pattern - each is one `gb_common` mode with the module deciding
 shape legality.
 

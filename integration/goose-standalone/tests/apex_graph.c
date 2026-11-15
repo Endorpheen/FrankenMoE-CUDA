@@ -176,10 +176,38 @@ int main(int argc, char ** argv) {
 
     uint64_t a_silu[8] = { 3, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) proj,
                            0, 0, (uint64_t) GGML_UNARY_OP_SILU, 0, 0 };
-    struct ggml_tensor * out =
+    struct ggml_tensor * gated =
         (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_silu);
-    if (out == NULL) {
+    if (gated == NULL) {
         printf("FG_APEX_GRAPH silu returned null\n");
+        return 1;
+    }
+    ggml_backend_alloc_ctx_tensors(gc, backend);
+
+    // mode 11 again: the output projection back to the embedding width.
+    struct ggml_tensor * w2 = ggml_new_tensor_2d(gc, GGML_TYPE_F32, N, K);
+    ggml_backend_alloc_ctx_tensors(gc, backend);
+    float * w2d = (float *) malloc((size_t) (N * K) * sizeof(float));
+    for (int64_t i = 0; i < N * K; ++i) w2d[i] = (float) ((i % 13) - 6) / 128.0f;
+    ggml_backend_tensor_set(w2, w2d, 0, (size_t) (N * K) * sizeof(float));
+
+    uint64_t a_mm2[8] = { 11, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) w2,
+                          (uint64_t) (uintptr_t) gated, 0, (uint64_t) GGML_OP_MUL_MAT, 0, 0 };
+    struct ggml_tensor * proj_out =
+        (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_mm2);
+    if (proj_out == NULL) {
+        printf("FG_APEX_GRAPH out projection returned null\n");
+        return 1;
+    }
+    ggml_backend_alloc_ctx_tensors(gc, backend);
+
+    // mode 0 with op ADD: the residual connection back to the activation.
+    uint64_t a_add[8] = { 0, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) proj_out,
+                          (uint64_t) (uintptr_t) x, 0, (uint64_t) GGML_OP_ADD, 0, 0 };
+    struct ggml_tensor * out =
+        (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_add);
+    if (out == NULL) {
+        printf("FG_APEX_GRAPH residual add returned null\n");
         return 1;
     }
     ggml_backend_alloc_ctx_tensors(gc, backend);
@@ -188,7 +216,8 @@ int main(int argc, char ** argv) {
     ggml_build_forward_expand(gf, out);
     const enum ggml_status st = ggml_backend_graph_compute(backend, gf);
 
-    const int shape_ok = out->ne[0] == N && out->ne[1] == 1;
+    // The output projection returns to the embedding width, so the result is [K, 1].
+    const int shape_ok = out->ne[0] == K && out->ne[1] == 1;
 
     // The host computes the same prefix independently: rms_norm over K elements,
     // one dot product per output column, then silu on the first.
@@ -197,19 +226,32 @@ int main(int argc, char ** argv) {
     const double rms = sqrt(ss / (double) K + (double) eps);
     double acc0 = 0.0;
     for (int64_t i = 0; i < K; ++i) acc0 += (double) wd[i] * ((double) xd[i] / rms);
-    const double want0 = acc0 / (1.0 + exp(-acc0));   // silu
+    (void) acc0;
+    // Five-node host reference: silu on all N columns, then one output projection
+    // column, then the residual.
+    double out_acc = 0.0;
+    for (int64_t j = 0; j < N; ++j) {
+        double pj = 0.0;
+        for (int64_t i = 0; i < K; ++i) {
+            pj += (double) wd[i + j * K] * ((double) xd[i] / rms);
+        }
+        const double sj = pj / (1.0 + exp(-pj));
+        out_acc += (double) w2d[j] * sj;   // w2 is [N, K]: column 0 is j + 0*N
+    }
+    const double want0 = out_acc + (double) xd[0];
 
     float got0 = 0.0f;
     ggml_backend_tensor_get(out, &got0, 0, sizeof got0);
     const double rel = (want0 != 0.0) ? (fabs((double) got0 - want0) / fabs(want0)) : fabs((double) got0);
 
-    printf("FG_APEX_GRAPH nodes=3 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
+    printf("FG_APEX_GRAPH nodes=5 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",
            (long long) K, (long long) N, (long long) declared, declared_ok, shape_ok,
            (int) st, got0, want0, rel,
            (declared_ok && shape_ok && st == GGML_STATUS_SUCCESS && rel < 1e-4) ? "PASS" : "FAIL");
 
     free(wd);
+    free(w2d);
     free(xd);
     ggml_backend_free(backend);
     ggml_free(gc);
