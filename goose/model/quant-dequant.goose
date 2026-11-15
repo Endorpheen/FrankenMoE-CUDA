@@ -48,7 +48,9 @@ fn dq_half(u: i64) -> f32 {
         v = f;
     }
     if sign != 0 {
-        return 0.0 - v;
+        // 0.0 - v flips the sign of a non-zero value but turns -0.0 into
+        // +0.0; negation keeps the sign bit, as GGML_FP16_TO_FP32 does.
+        return -v;
     }
     return v;
 }
@@ -98,8 +100,15 @@ fn dq_impl(t: i64, src: const u8[:], n: i64, out: f32[:]) -> i64 {
                     x0 = x0 - 8;
                     x1 = x1 - 8;
                 }
-                out[i * QK + j] = (x0 as f32) * d + m;
-                out[i * QK + j + QK / 2] = (x1 as f32) * d + m;
+                // q4_0 has no min: adding m (0.0) would turn a -0.0 product
+                // into +0.0, which the native dequantizer does not do.
+                if t == T_Q4_0 {
+                    out[i * QK + j] = (x0 as f32) * d;
+                    out[i * QK + j + QK / 2] = (x1 as f32) * d;
+                } else {
+                    out[i * QK + j] = (x0 as f32) * d + m;
+                    out[i * QK + j + QK / 2] = (x1 as f32) * d + m;
+                }
                 j = j + 1;
             }
         } else {
@@ -124,8 +133,14 @@ fn dq_impl(t: i64, src: const u8[:], n: i64, out: f32[:]) -> i64 {
                     x0 = x0 - 16;
                     x1 = x1 - 16;
                 }
-                out[i * QK + j] = (x0 as f32) * d + m;
-                out[i * QK + j + QK / 2] = (x1 as f32) * d + m;
+                // q5_0 has no min either; see the q4_0 note above.
+                if t == T_Q5_0 {
+                    out[i * QK + j] = (x0 as f32) * d;
+                    out[i * QK + j + QK / 2] = (x1 as f32) * d;
+                } else {
+                    out[i * QK + j] = (x0 as f32) * d + m;
+                    out[i * QK + j + QK / 2] = (x1 as f32) * d + m;
+                }
                 j = j + 1;
             }
         }

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T00:42:12.313785+00:00",
+  "updated_at": "2026-11-15T00:50:38.788247+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -294,15 +294,15 @@
     },
     {
       "goose": "model/quant-dequant.goose",
-      "native": "ggml/src/ggml-quants.c (basic dequantizers)",
+      "native": "ggml/src/ggml-quants.c (dequantize_row_q4_0/q4_1/q5_0/q5_1/q8_0, bit-exact signed zero)",
       "native_targets": [
-        "ggml/src/ggml-quants.c (basic dequantizers)"
+        "ggml/src/ggml-quants.c (dequantize_row_q4_0/q4_1/q5_0/q5_1/q8_0, bit-exact signed zero)"
       ],
-      "experiment": "EXP-2026-11-14-607-p7-04-dequant",
+      "experiment": "EXP-2026-11-15-633-p7-04-signed-zero",
       "task": "",
       "status": "ported",
-      "sha256": "cea9b3457c1da0502ba041432be9d9d31dbbfca18bfa11f7b51d650f994b0011",
-      "gate": "300 cases / 0 failures, 12/12 mutations"
+      "sha256": "2e2fa40bee89652969665869798191de8e63047f6923e895f650662893c95e70",
+      "gate": "300 cases / 0 failures bit-exact, 12/12 + 3/3 signed-zero mutations"
     },
     {
       "goose": "model/quant-weighted.goose",
@@ -11799,6 +11799,20 @@
       "task": "P6-09",
       "status": "slice",
       "sha256": "083c01f6a1f20785a7c3aa358080680c2306bb3ddfac5339bdedab56fba29b18"
+    },
+    {
+      "goose": "cpu/dequant.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-14-607-p7-04-dequant",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "cea9b3457c1da0502ba041432be9d9d31dbbfca18bfa11f7b51d650f994b0011"
     },
     {
       "goose": "jinja/json-escape.goose",
