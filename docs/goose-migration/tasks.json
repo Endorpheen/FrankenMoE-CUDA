@@ -2743,7 +2743,7 @@
       "remaining": [
         "41-layer stack: real builders over real weights (dispatch itself verified, EXP-705)",
         "prefill/decode equality: contract established, gate not passing - see PREFILL-DECODE.md",
-        "CUDA backend symbols in the standalone",
+        "CUDA buffer-control modules: blocked on a substrate gap - vendored ggml lacks alloc_buffer_n/multi_buffer, the 25 fg162_* primitives exist (docs/goose-migration/CUDA-BLOCKER.md)",
         "tokenizer engine and HTTP server"
       ],
       "coverage_doc": "experiments/EXP-2026-11-15-678-coverage-map/README.md",

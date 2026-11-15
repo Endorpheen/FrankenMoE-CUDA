@@ -138,7 +138,7 @@ for the stated reason, and is re-tested when the reason changes.
 | `goose/misc/test-runner.goose` | `export fn` cannot resolve one concrete signature without a caller; a composing property, not a defect |
 | `goose/model/goose-model-graph.goose` | in the unit, but exports zero functions: it holds the per-layer decisions a builder makes, not a builder |
 | `goose/cuda/dispatch.goose` | no exports and no externs; nothing to call |
-| `goose/cuda/goose-backend-buffers.goose` | needs 25 `fg162_*` host primitives that do not exist yet; an ABI surface, not a wiring gap |
+| `goose/cuda/goose-backend-buffers.goose` | the 25 `fg162_*` primitives DO exist (EXP-162 `buffers-bridge.h`, 53 lines, accepted); the bridge will not compile because the vendored ggml lacks `alloc_buffer_n` / `multi_buffer` / `alloc_buffer_n_plan_item`. Substrate gap, see CUDA-BLOCKER.md |
 | `goose/cuda/goose-graph-gating.goose` | 15 `fg162_*` externs, same seam as above |
 | `goose/kv/*` (85 files) | alternative KV ports: 508 body conflicts among themselves, one representative family only |
 | `goose/json/schema.goose`, `pattern.goose`, `s1-*-staged.goose` | alternative schema ports of the accepted `format-grammar.goose` |
