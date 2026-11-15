@@ -115,6 +115,33 @@ int64_t fg158_repeat4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, 
 
 // The three nodes the recurrent state update needs. Translation only: when to
 // transpose, what to concatenate and where to write are decided in Goose.
+// IMRoPE. The Apex layers use ggml_rope_multi with four dimension sections, not the
+// plain ggml_rope_ext the simpler rope gate exercises; the sections are a family
+// decision and arrive from Goose.
+int64_t fg158_rope_multi(int64_t c, int64_t a, int64_t pos, int64_t n_rot,
+                         int64_t s0, int64_t s1, int64_t s2, int64_t s3,
+                         int64_t mode, int64_t n_ctx_orig, int64_t fb_bits,
+                         int64_t fs_bits, int64_t ef_bits, int64_t af_bits,
+                         int64_t bf_bits, int64_t bs_bits) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
+    struct ggml_tensor  * p   = (struct ggml_tensor *) (intptr_t) pos;
+    if (ctx == nullptr || src == nullptr) {
+        return 0;
+    }
+    int sections[4] = { (int) s0, (int) s1, (int) s2, (int) s3 };
+    float fb, fs, ef, af, bf, bs;
+    int32_t b;
+    b = (int32_t) fb_bits; memcpy(&fb, &b, sizeof fb);
+    b = (int32_t) fs_bits; memcpy(&fs, &b, sizeof fs);
+    b = (int32_t) ef_bits; memcpy(&ef, &b, sizeof ef);
+    b = (int32_t) af_bits; memcpy(&af, &b, sizeof af);
+    b = (int32_t) bf_bits; memcpy(&bf, &b, sizeof bf);
+    b = (int32_t) bs_bits; memcpy(&bs, &b, sizeof bs);
+    return (int64_t) (intptr_t) ggml_rope_multi(ctx, src, p, nullptr, (int) n_rot,
+        sections, (int) mode, (int) n_ctx_orig, fb, fs, ef, af, bf, bs);
+}
+
 int64_t fg158_transpose(int64_t c, int64_t a) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;

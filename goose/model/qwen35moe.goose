@@ -216,3 +216,28 @@ export fn q35_shape(p: i64[:], kind: i64, tid: i64, out: i64[:]) -> i64 {
 
     return 0;
 }
+
+// ---- IMRoPE, the family's rope variant ----
+//
+// qwen35moe.cpp:9 reads rope.dimension_sections (four values, [11 11 10 0] for Apex)
+// and passes them to ggml_rope_multi. This is NOT ggml_rope_ext: the sections split
+// the rotary dimension into bands, and using the plain variant produced a layer whose
+// arms agreed with each other while neither matched the model.
+extern "fg158_rope_multi" fn rope_multi(c: i64, a: i64, pos: i64, n_rot: i64,
+    s0: i64, s1: i64, s2: i64, s3: i64, mode: i64, n_ctx_orig: i64,
+    fb: i64, fs: i64, ef: i64, af: i64, bf: i64, bs: i64) -> i64;
+
+export fn q35_rope_multi(c: i64, a: i64, pos: i64, n_rot: i64,
+                         s0: i64, s1: i64, s2: i64, s3: i64, mode: i64,
+                         n_ctx_orig: i64, fb: i64, fs: i64, ef: i64,
+                         af: i64, bf: i64, bs: i64) -> i64 {
+    if a == 0 || n_rot <= 0 {
+        q_ensure(false, 30);
+    }
+    let r: i64 = rope_multi(c, a, pos, n_rot, s0, s1, s2, s3, mode,
+                            n_ctx_orig, fb, fs, ef, af, bf, bs);
+    if r == 0 {
+        q_ensure(false, 32);
+    }
+    return r;
+}

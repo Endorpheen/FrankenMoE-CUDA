@@ -1,0 +1,14 @@
+  cmp normed   n=2048 differs=0
+  cmp qg       n=8192 differs=0
+  cmp k4       n=512 differs=0
+  cmp v4       n=512 differs=0
+  cmp q_norm   n=4096 differs=0
+  cmp k_norm   n=512 differs=0
+  cmp qr       n=4096 differs=0
+  cmp kr       n=512 differs=0
+  cmp attn     n=4096 differs=0
+  cmp g4       n=4096 differs=0
+  cmp gs       n=4096 differs=0
+  cmp gated    n=4096 differs=0
+  cmp proj     n=2048 differs=0
+FG_APEX_LAYER nodes=15 K=2048 H=16 HKV=2 HD=256 HDKV=256 out=[2048 1] shape_ok=1 status=0,0 nonfinite=0 changed=2048 nondet=0 wiring_differs=0 vs_ggml=0 PASS

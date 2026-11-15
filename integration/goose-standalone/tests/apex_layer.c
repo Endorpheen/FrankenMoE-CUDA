@@ -121,6 +121,12 @@ int main(int argc, char ** argv) {
     struct ggml_tensor * wk = ggml_new_tensor_2d(gc, GGML_TYPE_F32, K, wk_n);
     struct ggml_tensor * wv = ggml_new_tensor_2d(gc, GGML_TYPE_F32, K, wv_n);
     struct ggml_tensor * wo = ggml_new_tensor_2d(gc, GGML_TYPE_F32, wo_k, wo_n);
+    // blk.3.attn_q_norm.weight and attn_k_norm.weight are [256,1]: a per-head RMS
+    // weight applied to q and k BEFORE rope. The first version of this gate omitted
+    // them, and because both arms omitted them the comparison still agreed - which is
+    // the failure mode a wiring-only gate cannot catch on its own.
+    struct ggml_tensor * qnw = ggml_new_tensor_1d(gc, GGML_TYPE_F32, HD);
+    struct ggml_tensor * knw = ggml_new_tensor_1d(gc, GGML_TYPE_F32, HDKV);
     struct ggml_tensor * pos = ggml_new_tensor_1d(gc, GGML_TYPE_I32, 1);
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
@@ -131,9 +137,9 @@ int main(int argc, char ** argv) {
     ggml_backend_tensor_set(pos, &zero, 0, sizeof zero);
 
     struct { struct ggml_tensor * t; int seed; } ws[] = {
-        { wq, 3 }, { wk, 5 }, { wv, 7 }, { wo, 11 },
+        { wq, 3 }, { wk, 5 }, { wv, 7 }, { wo, 11 }, { qnw, 2 }, { knw, 2 },
     };
-    for (size_t i = 0; i < 4; ++i) {
+    for (size_t i = 0; i < 6; ++i) {
         const int64_t n = ggml_nelements(ws[i].t);
         float * wd = (float *) malloc((size_t) n * sizeof(float));
         for (int64_t j = 0; j < n; ++j) wd[j] = (float) ((j % ws[i].seed) - ws[i].seed / 2) / 256.0f;
@@ -176,16 +182,33 @@ int main(int argc, char ** argv) {
     // arg12 attn_factor, arg13 beta_fast, arg14 beta_slow. Leaving freq_scale,
     // attn_factor and the betas at zero made the Goose arm diverge from the
     // ggml-constructor arm in every element.
-    const int64_t fb  = float_bits_of(10000.0f);
+    // Per-head RMS norm of q and k, then multiply by the head weight (build_norm with
+    // a weight vector is rms_norm followed by mul). This is qwen35moe.cpp:311-321 and
+    // it happens BEFORE rope, not after.
+    struct ggml_tensor * qn = call(4, gc, qv, NULL, NULL, GGML_OP_RMS_NORM, 0,
+                                   (int64_t) float_bits_of(eps), 0, 0, 0, 0, 0, 0, 0);
+    qn = call(0, gc, qn, qnw, NULL, GGML_OP_MUL, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    struct ggml_tensor * kn = call(4, gc, k4, NULL, NULL, GGML_OP_RMS_NORM, 0,
+                                   (int64_t) float_bits_of(eps), 0, 0, 0, 0, 0, 0, 0);
+    kn = call(0, gc, kn, knw, NULL, GGML_OP_MUL, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    if (!qn || !kn) { printf("FG_APEX_LAYER q/k norm failed\n"); return 1; }
+    ggml_backend_alloc_ctx_tensors(gc, backend);
+
+    // IMRoPE: rope.dimension_count 64, dimension_sections [11 11 10 0], freq_base 1e7.
+    // The plain ggml_rope_ext used before is a different op with a different result.
+    const int64_t fb  = float_bits_of(1e7f);
     const int64_t fs  = float_bits_of(1.0f);
     const int64_t af  = float_bits_of(1.0f);
     const int64_t bf  = float_bits_of(32.0f);
     const int64_t bs  = float_bits_of(1.0f);
     const int64_t ctx_orig = 4096;
-    struct ggml_tensor * qr = call(25, gc, qv, pos, NULL, GGML_ROPE_TYPE_NORMAL, 0,
-                                   HD, ctx_orig, fb, fs, 0 /*ext_factor*/, af, bf, bs);
-    struct ggml_tensor * kr = call(25, gc, k4, pos, NULL, GGML_ROPE_TYPE_NORMAL, 0,
-                                   HDKV, ctx_orig, fb, fs, 0, af, bf, bs);
+    const int64_t n_rot = 64;
+    struct ggml_tensor * qr = (struct ggml_tensor *) (uintptr_t) q35_rope_multi(
+        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) qn, (int64_t) (uintptr_t) pos,
+        n_rot, 11, 11, 10, 0, GGML_ROPE_TYPE_NORMAL, ctx_orig, fb, fs, 0, af, bf, bs);
+    struct ggml_tensor * kr = (struct ggml_tensor *) (uintptr_t) q35_rope_multi(
+        (int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) kn, (int64_t) (uintptr_t) pos,
+        n_rot, 11, 11, 10, 0, GGML_ROPE_TYPE_NORMAL, ctx_orig, fb, fs, 0, af, bf, bs);
     if (!qr || !kr) { printf("FG_APEX_LAYER rope failed\n"); return 1; }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
@@ -245,10 +268,13 @@ int main(int argc, char ** argv) {
     struct ggml_tensor * b_v = ggml_mul_mat(gc, wv, b_normed);
     struct ggml_tensor * b_v4 = ggml_view_3d(gc, b_v, HDKV, HKV, 1,
         elem * HDKV, elem * HDKV * HKV, 0);
-    struct ggml_tensor * b_qr = ggml_rope_ext(gc, b_q, pos, NULL, (int) HD,
-        GGML_ROPE_TYPE_NORMAL, 4096, 10000.0f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
-    struct ggml_tensor * b_kr = ggml_rope_ext(gc, b_k4, pos, NULL, (int) HDKV,
-        GGML_ROPE_TYPE_NORMAL, 4096, 10000.0f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
+    int b_sections[4] = { 11, 11, 10, 0 };
+    struct ggml_tensor * b_qn = ggml_mul(gc, ggml_rms_norm(gc, b_q, eps), qnw);
+    struct ggml_tensor * b_kn = ggml_mul(gc, ggml_rms_norm(gc, b_k4, eps), knw);
+    struct ggml_tensor * b_qr = ggml_rope_multi(gc, b_qn, pos, NULL, 64, b_sections,
+        GGML_ROPE_TYPE_NORMAL, 4096, 1e7f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
+    struct ggml_tensor * b_kr = ggml_rope_multi(gc, b_kn, pos, NULL, 64, b_sections,
+        GGML_ROPE_TYPE_NORMAL, 4096, 1e7f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
     struct ggml_tensor * b_attn = ggml_flash_attn_ext(gc, b_qr, b_kr, b_v4, NULL,
         scale, 0.0f, 0.0f);
     struct ggml_tensor * b_gc = ggml_cont(gc, b_g);
@@ -291,6 +317,7 @@ int main(int argc, char ** argv) {
         struct { const char * n; struct ggml_tensor * a; struct ggml_tensor * b; } cmp[] = {
             { "normed", normed, b_normed }, { "qg", qg, b_qg },
             { "k4", k4, b_k4 }, { "v4", v4, b_v4 },
+            { "q_norm", qn, b_qn }, { "k_norm", kn, b_kn },
             { "qr", qr, b_qr }, { "kr", kr, b_kr },
             { "attn", attn, b_attn }, { "g4", g4, b_g4 },
             { "gs", gs, b_gs }, { "gated", gated, b_gated },
