@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T05:08:56.075140+00:00",
+  "updated_at": "2026-11-15T05:16:01.294081+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -927,6 +927,42 @@
       "status": "ported",
       "sha256": "c79f6718fff6d671b80603716f6052bb3b3cfc6712dc04f77bb160da0f07d00f",
       "gate": "66/66 rows identical over 16 cases, 12/12 mutations"
+    },
+    {
+      "goose": "misc/sampler-chain.goose",
+      "native": "runtime/core/src/engine/session.cpp (sampler chain presence, order and arguments)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (sampler chain presence, order and arguments)"
+      ],
+      "experiment": "EXP-2026-11-15-655-p9-08-mtp-sampler-driver",
+      "task": "",
+      "status": "ported",
+      "sha256": "4cd6c37efb41e2e1e9567647bf743cd89abf7b10779b3208b8a58db2e1d19eac",
+      "gate": "14 cases / 214 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/mtp-capture-warmup.goose",
+      "native": "runtime/core/src/engine/session.cpp (MTP capture warm-up plan and audit rules)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (MTP capture warm-up plan and audit rules)"
+      ],
+      "experiment": "EXP-2026-11-15-655-p9-08-mtp-sampler-driver",
+      "task": "",
+      "status": "ported",
+      "sha256": "0e07ec6f071e1980b3d6ff3971b5e4082b93f532bef4f23dc3f08e4dee5e9f0e",
+      "gate": "38 cases / 324 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/cli-driver-loop.goose",
+      "native": "runtime/cli/main.cpp (argument loop, harvest rules, refusals, --ppl arithmetic)",
+      "native_targets": [
+        "runtime/cli/main.cpp (argument loop, harvest rules, refusals, --ppl arithmetic)"
+      ],
+      "experiment": "EXP-2026-11-15-655-p9-08-mtp-sampler-driver",
+      "task": "",
+      "status": "ported",
+      "sha256": "1d1e0e174ded264384e569cf66fe51c847a244ff3ab0674fac3c8bdc24710ad1",
+      "gate": "93 cases / 3106 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/tallies.goose",

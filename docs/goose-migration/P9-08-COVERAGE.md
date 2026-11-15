@@ -27,11 +27,15 @@ defects are open.
 
 Both are recorded as candidates for a decision, not silently changed.
 
+## Additional slices (EXP650/EXP655)
+
+G1/G2/G3/G6 (tallies, prefill plan, trace order, moe-predict) and G4/G5/G7 (MTP
+capture warm-up, sampler chain, CLI driver) are accepted; P9-08 is 10/10 slices.
+
 ## Remaining
 
-Wire the engine closure points and decide the two behaviours above. Still
-native: `GenTally::record`/`PrefillTally`, the prefill chunk plan, trace frame
-order, MTP capture warm-up, sampler chain construction and the CLI driver.
+Wire the engine closure points into `session.cpp` and `cli/main.cpp`, and decide
+the two characterised behaviours above.
 
 ## Boundaries
 

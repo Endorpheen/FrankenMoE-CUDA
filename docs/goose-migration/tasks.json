@@ -2456,18 +2456,16 @@
         "carrier/runtime/**"
       ],
       "acceptance": "All standalone public API,CLI and enabled optional paths Goose; existing eight test modules ported/retained as independent oracle; source/link closure checked.",
-      "evidence": " 2026-11-15 EXP636 (experiments/EXP-2026-11-15-636-p9-08-engine-closure): session load admission and init order (lga_, 10 exports), perplexity planning (ppl_, 12) and KV/turn state (kvp_, 9) are Goose. Gates 118/512 + 287/2455 + 62/281, 467 cases / 3248 checks, 0 failures, identical at -O0; mutations 36/36 (12 per slice, halves 6/6). Two behaviours are characterised but not changed: perplexity step mode never scores position 0 (floor=1), and rollback_turn resizes kv_tokens after a seq_rm refusal. Remaining: GenTally::record/PrefillTally, prefill chunk plan, trace frame order, MTP capture warm-up, sampler chain, CLI driver. 2026-11-15 EXP650 (experiments/EXP-2026-11-15-650-p10-12-tallies-prefill-trace): the four audit gaps G1/G2/G3/G6 are closed: GenTally/PrefillTally and aggregates (tl_), the prefill chunk plan (pf_), trace frame order (tr_) and the moe-predict report (mp_) are Goose. Gates 28/847 + 16/432 + 42/433 + 15/1064 values, 0 failures, bit-identical at -O0; mutations 48/48 (12 per slice, halves 24/24). Three findings were fixed, not renamed: integer i64/i64 division in mp_pct, a pf mutation that hung the plan, and a 0.998 warning threshold that needed a 0.9985 corpus control.",
+      "evidence": " 2026-11-15 EXP636 (experiments/EXP-2026-11-15-636-p9-08-engine-closure): session load admission and init order (lga_, 10 exports), perplexity planning (ppl_, 12) and KV/turn state (kvp_, 9) are Goose. Gates 118/512 + 287/2455 + 62/281, 467 cases / 3248 checks, 0 failures, identical at -O0; mutations 36/36 (12 per slice, halves 6/6). Two behaviours are characterised but not changed: perplexity step mode never scores position 0 (floor=1), and rollback_turn resizes kv_tokens after a seq_rm refusal. Remaining: GenTally::record/PrefillTally, prefill chunk plan, trace frame order, MTP capture warm-up, sampler chain, CLI driver. 2026-11-15 EXP650 (experiments/EXP-2026-11-15-650-p10-12-tallies-prefill-trace): the four audit gaps G1/G2/G3/G6 are closed: GenTally/PrefillTally and aggregates (tl_), the prefill chunk plan (pf_), trace frame order (tr_) and the moe-predict report (mp_) are Goose. Gates 28/847 + 16/432 + 42/433 + 15/1064 values, 0 failures, bit-identical at -O0; mutations 48/48 (12 per slice, halves 24/24). Three findings were fixed, not renamed: integer i64/i64 division in mp_pct, a pf mutation that hung the plan, and a 0.998 warning threshold that needed a 0.9985 corpus control. 2026-11-15 EXP655 (experiments/EXP-2026-11-15-655-p9-08-mtp-sampler-driver): the remaining engine gaps are closed: sampler chain presence/order/arguments (sch_), the MTP capture warm-up plan and audit rules (mw_) and the CLI driver loop with its refusals and --ppl arithmetic (drv_) are Goose. Gates 14/214 + 38/324 + 93/3106 (145 cases / 3644 comparisons), 0 failures, byte-identical at -O0; mutations 36/36 plus 6 extra --ppl arithmetic cases (42/42). The differential gates run against the literally extracted native text with unique anchors, and the argument loop runs in a forked child because two branches exit the process. Gate holes were fixed, not renamed: the warm-up plan now compares pos0/all_logits and decode width, a bos=0 equivalent mutation was replaced, a negative llama_decode return was added, and the --ppl refusal paths got an end-to-end case.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 54,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
-      "slices_total": 7,
-      "slices_done": 7,
+      "slices_total": 10,
+      "slices_done": 10,
       "remaining": [
-        "MTP capture warm-up (G4)",
-        "sampler chain construction (G5, API-bound)",
-        "CLI driver loop (G7)"
+        "wire the closure decisions into session.cpp and cli/main.cpp"
       ],
       "coverage_doc": "docs/goose-migration/P9-08-COVERAGE.md"
     },
@@ -4673,6 +4671,10 @@
     {
       "event": "P10-08c: device/cpp headers and scheduler-eval ported (EXP654, 10537 values, 36/36); P10-08 at 9/9.",
       "checkpoint": "91035553"
+    },
+    {
+      "event": "P9-08 G4/G5/G7 closed (EXP655, 3644 comparisons, 42/42); P9-08 is 10/10 with wiring left.",
+      "checkpoint": "51a3744e"
     }
   ],
   "batches": [
@@ -5563,7 +5565,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T05:08:52.522712+00:00",
+  "updated_at": "2026-11-15T05:15:57.772795+00:00",
   "status_totals": {
     "DONE": 113,
     "PARTIAL": 19,
@@ -5571,8 +5573,8 @@
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 158,
-    "slices_done": 158,
+    "slices_total": 161,
+    "slices_done": 161,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

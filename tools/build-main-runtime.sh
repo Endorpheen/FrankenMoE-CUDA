@@ -103,6 +103,9 @@ MODULES=(
     goose/misc/prefill-plan.goose
     goose/misc/trace-frame-order.goose
     goose/misc/moe-predict-report.goose
+    goose/misc/sampler-chain.goose
+    goose/misc/mtp-capture-warmup.goose
+    goose/misc/cli-driver-loop.goose
     goose/server/mcp-core.goose
     goose/server/mcp-stdio.goose
     goose/server/mcp-integration.goose
