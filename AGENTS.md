@@ -131,6 +131,26 @@ records the build set by name and every exclusion with its reason. Both are
 derived from the repository; neither is typed by hand, and neither requires a
 build.
 
+18. Waiting has no fixed duration, and a heavy build has a threshold.
+
+    Never wait for work with a fixed sleep. A command that takes minutes is waited
+    on through its own completion - `wait`, `shell_output` with `wait: "exit"`, or a
+    status poll that returns immediately - never through a fixed several-minute
+    pause. A fixed pause either overshoots (idle time) or undershoots (a second check
+    of the same thing), and both waste the same resource. Polling is a status read,
+    not a delay.
+
+    Never start a build that is already running, and never re-run one to confirm a
+    result it already produced. If a build is in flight, wait for that process.
+
+    A heavy build (arch unit, composed runtime, full build) is justified by a large
+    batch of necessary changes - tens of units - or by a risk the cheap local gate
+    genuinely cannot see: generated-C compilation, the link, the symbol table, the
+    ABI, or runtime behaviour. Adding one or two exports is not a batch: collect the
+    next ones and build once. The local gate (`goose check <module>`,
+    `tools/compose-goose.py`, `goose check` on the composed file) catches everything
+    else, and its cost is seconds.
+
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
