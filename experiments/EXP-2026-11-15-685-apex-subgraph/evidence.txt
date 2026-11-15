@@ -3,4 +3,5 @@ FG_APEX_ROPE pos=0 elements=2048 bitwise_differs=0 status goose=0 ggml=0 PASS
 FG_APEX_ROPE pos=1 elements=2048 bitwise_differs=0 status goose=0 ggml=0 PASS
 FG_APEX_ATTN elements=2048 bitwise_differs=0 status goose=0 ggml=0 PASS
 FG_APEX_GDN_CONV d_conv=4 chans=8192 tokens=1 elements=8192 bitwise_differs=0 status goose=0 ggml=0 PASS
+FG_APEX_GDN S_v=128 H=16 elements=264192 bitwise_differs=0 status goose=0 ggml=0 PASS
 FG_APEX_GRAPH nodes=5 K=2048 N=8192 declared=1 declared_ok=1 shape_ok=1 status=0 first=0.134777 want=0.134777 rel=8.07e-08 PASS

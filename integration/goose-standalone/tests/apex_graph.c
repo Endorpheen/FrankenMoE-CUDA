@@ -523,6 +523,89 @@ int main(int argc, char ** argv) {
         }
     }
 
+    // ---- GDN: gated_delta_net (mode 28), against ggml_gated_delta_net ----
+    // The module's preconditions are ggml's own: q/k/v are [S_v, H, T, B], gate and
+    // beta are [1, H, T, B], state is [S_v, S_v, H, B], and the snapshot count K is
+    // an op parameter. Result: [S_v*H, T*B + K*S_v*B].
+    {
+        const int64_t S_v = K / p[P_N_HEAD];   // 128-wide heads, as in the block
+        const int64_t H = p[P_N_HEAD];
+        const int64_t T = 1, B = 1, Ksnap = 1;
+
+        struct ggml_tensor * q = ggml_new_tensor_4d(gc, GGML_TYPE_F32, S_v, H, T, B);
+        struct ggml_tensor * kk = ggml_new_tensor_4d(gc, GGML_TYPE_F32, S_v, H, T, B);
+        struct ggml_tensor * v = ggml_new_tensor_4d(gc, GGML_TYPE_F32, S_v, H, T, B);
+        struct ggml_tensor * gt = ggml_new_tensor_4d(gc, GGML_TYPE_F32, 1, H, T, B);
+        struct ggml_tensor * bt = ggml_new_tensor_4d(gc, GGML_TYPE_F32, 1, H, T, B);
+        struct ggml_tensor * st = ggml_new_tensor_4d(gc, GGML_TYPE_F32, S_v, S_v, H, B);
+        ggml_backend_alloc_ctx_tensors(gc, backend);
+
+        const int64_t nq = ggml_nelements(q), ng = ggml_nelements(gt), ns = ggml_nelements(st);
+        float * qd = (float *) malloc((size_t) nq * sizeof(float));
+        float * kd = (float *) malloc((size_t) nq * sizeof(float));
+        float * vd = (float *) malloc((size_t) nq * sizeof(float));
+        float * gd = (float *) malloc((size_t) ng * sizeof(float));
+        float * bd = (float *) malloc((size_t) ng * sizeof(float));
+        float * sd = (float *) malloc((size_t) ns * sizeof(float));
+        for (int64_t i = 0; i < nq; ++i) {
+            qd[i] = (float) ((i % 7) - 3) / 32.0f;
+            kd[i] = (float) ((i % 5) - 2) / 32.0f;
+            vd[i] = (float) ((i % 3) - 1) / 16.0f;
+        }
+        for (int64_t i = 0; i < ng; ++i) { gd[i] = -0.5f; bd[i] = 0.5f; }
+        for (int64_t i = 0; i < ns; ++i) sd[i] = (float) ((i % 9) - 4) / 64.0f;
+        ggml_backend_tensor_set(q, qd, 0, (size_t) nq * sizeof(float));
+        ggml_backend_tensor_set(kk, kd, 0, (size_t) nq * sizeof(float));
+        ggml_backend_tensor_set(v, vd, 0, (size_t) nq * sizeof(float));
+        ggml_backend_tensor_set(gt, gd, 0, (size_t) ng * sizeof(float));
+        ggml_backend_tensor_set(bt, bd, 0, (size_t) ng * sizeof(float));
+        ggml_backend_tensor_set(st, sd, 0, (size_t) ns * sizeof(float));
+
+        // args: mode, c, a(q), b(k), d(v), op, inplace, gate(arg7), beta(arg8),
+        //       state(arg9), count(arg10)
+        uint64_t a_gdn[16] = { 28, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) q,
+                               (uint64_t) (uintptr_t) kk, (uint64_t) (uintptr_t) v,
+                               0, 0,
+                               (uint64_t) (uintptr_t) gt, (uint64_t) (uintptr_t) bt,
+                               (uint64_t) (uintptr_t) st, (uint64_t) Ksnap,
+                               0, 0, 0, 0, 0 };
+        struct ggml_tensor * ra =
+            (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_gdn);
+        if (ra == NULL) {
+            printf("FG_APEX_GDN builder returned null\n");
+        } else {
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            struct ggml_cgraph * fa = ggml_new_graph(gc);
+            ggml_build_forward_expand(fa, ra);
+            const enum ggml_status sa = ggml_backend_graph_compute(backend, fa);
+            const int64_t on = ggml_nelements(ra);
+            float * va = (float *) malloc((size_t) on * sizeof(float));
+            ggml_backend_tensor_get(ra, va, 0, (size_t) on * sizeof(float));
+
+            struct ggml_tensor * rb = ggml_gated_delta_net(gc, q, kk, v, gt, bt, st, Ksnap);
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            struct ggml_cgraph * fb = ggml_new_graph(gc);
+            ggml_build_forward_expand(fb, rb);
+            const enum ggml_status sb = ggml_backend_graph_compute(backend, fb);
+            float * vb = (float *) malloc((size_t) on * sizeof(float));
+            ggml_backend_tensor_get(rb, vb, 0, (size_t) on * sizeof(float));
+
+            int diff = 0;
+            for (int64_t i = 0; i < on; ++i) {
+                if (memcmp(&va[i], &vb[i], sizeof(float)) != 0) ++diff;
+            }
+            printf("FG_APEX_GDN S_v=%lld H=%lld elements=%lld bitwise_differs=%d "
+                   "status goose=%d ggml=%d %s\n",
+                   (long long) S_v, (long long) H, (long long) on, diff,
+                   (int) sa, (int) sb,
+                   (diff == 0 && sa == GGML_STATUS_SUCCESS && sb == GGML_STATUS_SUCCESS)
+                       ? "PASS" : "FAIL");
+            free(va);
+            free(vb);
+        }
+        free(qd); free(kd); free(vd); free(gd); free(bd); free(sd);
+    }
+
     printf("FG_APEX_GRAPH nodes=5 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",
            (long long) K, (long long) N, (long long) declared, declared_ok, shape_ok,
