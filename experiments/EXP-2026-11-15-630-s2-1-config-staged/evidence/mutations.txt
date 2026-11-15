@@ -1,0 +1,103 @@
+S2.1 mutation gate — Goose config validator (cfg_validate)
+work tree   : /tmp/opencode/sub-632/tree
+build       : build-mut (FG_GOOSE_CONFIG=ON, FG_GATE_OPT=-O0)
+pristine    : goose-gen/config-slice.c sha256 3c177364c2d89e02cb91ddca938e7b0883d664dc1e2ee49e21331bfba4d5ab13
+baseline    : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=0 rules=48/48 ok=6703 fail=33297 goose_calls=40072
+
+A mutant is DETECTED when the gate exits non-zero: accept/reject, error text,
+rule number and the pin are all checked against bmoe::validate_native().
+
+=== mutants ===
+[A1] A     module  cache_min_mb 1500 -> 1400 (pathological band widened)
+      expect   : case 'cache in pathological band' (cache_mb=1499) and fuzz 1498
+      verdict  : DETECTED  
+      caught by: [FAIL] cache in pathological band: accept/reject native=0 selected=1
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=48/48 ok=3675 fail=18428 goose_calls=22176
+[A2] A     module  n_ubatch > n_ctx -> n_ubatch >= n_ctx (equality rejected)
+      expect   : case 'ubatch equal ctx is valid' (2048/2048)
+      verdict  : DETECTED  
+      caught by: [FAIL] ubatch equal ctx is valid: accept/reject native=1 selected=0
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=48/48 ok=453 fail=2204 goose_calls=2730
+[A3] A     module  n_predict <= 0 -> n_predict < 0 (zero accepted)
+      expect   : case 'n_predict zero'
+      verdict  : DETECTED  
+      caught by: [FAIL] n_predict zero: accept/reject native=0 selected=1
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=47/48 ok=93 fail=540 goose_calls=706
+[A4] A     module  rule order: CFG_R_CACHE_AUTO_BOTH moved before CFG_R_CACHE_BAND
+      expect   : order pin 'cache band before auto conflict' (cache 1000 + cache_auto)
+      verdict  : DETECTED  
+      caught by: [FAIL] order: cache band before auto conflict: text differs
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=48/48 ok=5806 fail=28861 goose_calls=34740
+[A5] A     module  rule order: CFG_R_DROP_RANGE moved before CFG_R_DROP_CACHE
+      expect   : order pin 'drop cache before drop range' (drop 5.0, no cache)
+      verdict  : DETECTED  
+      caught by: [FAIL] order: drop cache before drop range: text differs
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=48/48 ok=1271 fail=6401 goose_calls=7745
+[A6] A     module  drop range: negated inclusive range -> positive range (NaN passes)
+      expect   : case 'drop NaN' (NaN slips through every comparison)
+      verdict  : DETECTED  
+      caught by: [FAIL] drop NaN: accept/reject native=0 selected=1
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=7 rules=48/48 ok=6707 fail=33293 goose_calls=40072
+[B1] B     bridge  DraftSource::ngram mapped to 1 (MTP) instead of 2 (NGRAM)
+      expect   : cases 'ngram rejects p_min', 'ngram min zero' (rule 19/21 become 18/…)
+      verdict  : DETECTED  
+      caught by: [FAIL] ngram rejects p_min: accept/reject native=0 selected=1
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=45/48 ok=155 fail=771 goose_calls=999
+[B2] B     bridge  drop_cold_frac not narrowed: single-precision value plus a double epsilon
+      expect   : case 'drop at one' (1.0 becomes 1.000000001 > 1.0 -> rule 46)
+      verdict  : DETECTED  
+      caught by: [FAIL] drop at one: accept/reject native=1 selected=0
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=47/48 ok=88 fail=556 goose_calls=717
+[B3] B     carrier carrier text for rule 4 changed
+      expect   : case 'n_ctx zero': text differs, message maps to 0 rules
+      verdict  : DETECTED  
+      caught by: [FAIL] message maps to 0 rules: n_ctx must be >= 1
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=47/48 ok=337 fail=1611 goose_calls=2021
+[B4] B     module  rule number: expert_hot_slots returns CFG_R_VRAM_NEG (11) instead of CFG_R_SLOTS_NEG (12)
+      expect   : case 'slots negative': rule 11 instead of 12, and the vram text
+      verdict  : DETECTED  
+      caught by: [FAIL] slots negative: text differs
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=47/48 ok=253 fail=1218 goose_calls=1544
+[B5] B     module  io_threads_max 8 -> 7
+      expect   : fuzz with io_threads=8 (accepted natively, rejected by the module)
+      verdict  : DETECTED  
+      caught by: [FAIL] fuzz 756: native.ok=1 selected.ok=0
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=12 rules=48/48 ok=2974 fail=15027 goose_calls=18074
+[B6] B     module  route_ahead_max 8 -> 9
+      expect   : case 'route_ahead range' (9 accepted by the module, rejected natively)
+      verdict  : DETECTED  
+      caught by: [FAIL] route_ahead range: accept/reject native=0 selected=1
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=7 rules=47/48 ok=6704 fail=33296 goose_calls=40072
+
+=== extra probe ===
+[X1] extra module  prefetch_layers_max 8 -> 7
+      expect   : fuzz with prefetch_layers=8 (accepted natively, rejected by the module)
+      verdict  : DETECTED  
+      caught by: [FAIL] fuzz 3708: native.ok=0 selected.ok=0
+      gate     : FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=10 rules=48/48 ok=6702 fail=33298 goose_calls=40072
+
+=== restore ===
+generated C sha256 3c177364c2d89e02cb91ddca938e7b0883d664dc1e2ee49e21331bfba4d5ab13 MATCHES pristine
+baseline after restore: FG632_SMOKE mode=goose cases=66 pins=6 fuzz=40000 failures=0 rules=48/48 ok=6703 fail=33297 goose_calls=40072
+72/72 (66 cases + 6 order pins): PASS
+
+half A: caught 6/6
+half B: caught 6/6
+counted: caught 12/12
+extra X1: DETECTED (prefetch_layers_max 8 -> 7)
+
+| id | half | target | mutation | expected catch | caught by |
+|---|---|---|---|---|---|
+| A1 | A | config-validate.goose | cache_min_mb 1500 -> 1400 (pathological band widened) | case 'cache in pathological band' (cache_mb=1499) and fuzz 1498 | [FAIL] cache in pathological band: accept/reject native=0 selected=1 |
+| A2 | A | config-validate.goose | n_ubatch > n_ctx -> n_ubatch >= n_ctx (equality rejected) | case 'ubatch equal ctx is valid' (2048/2048) | [FAIL] ubatch equal ctx is valid: accept/reject native=1 selected=0 |
+| A3 | A | config-validate.goose | n_predict <= 0 -> n_predict < 0 (zero accepted) | case 'n_predict zero' | [FAIL] n_predict zero: accept/reject native=0 selected=1 |
+| A4 | A | config-validate.goose | rule order: CFG_R_CACHE_AUTO_BOTH moved before CFG_R_CACHE_BAND | order pin 'cache band before auto conflict' (cache 1000 + cache_auto) | [FAIL] order: cache band before auto conflict: text differs |
+| A5 | A | config-validate.goose | rule order: CFG_R_DROP_RANGE moved before CFG_R_DROP_CACHE | order pin 'drop cache before drop range' (drop 5.0, no cache) | [FAIL] order: drop cache before drop range: text differs |
+| A6 | A | config-validate.goose | drop range: negated inclusive range -> positive range (NaN passes) | case 'drop NaN' (NaN slips through every comparison) | [FAIL] drop NaN: accept/reject native=0 selected=1 |
+| B1 | B | fg-goose-config-bridge.cpp | DraftSource::ngram mapped to 1 (MTP) instead of 2 (NGRAM) | cases 'ngram rejects p_min', 'ngram min zero' (rule 19/21 become 18/…) | [FAIL] ngram rejects p_min: accept/reject native=0 selected=1 |
+| B2 | B | fg-goose-config-bridge.cpp | drop_cold_frac not narrowed: single-precision value plus a double epsilon | case 'drop at one' (1.0 becomes 1.000000001 > 1.0 -> rule 46) | [FAIL] drop at one: accept/reject native=1 selected=0 |
+| B3 | B | config.cpp | carrier text for rule 4 changed | case 'n_ctx zero': text differs, message maps to 0 rules | [FAIL] message maps to 0 rules: n_ctx must be >= 1 |
+| B4 | B | config-validate.goose | rule number: expert_hot_slots returns CFG_R_VRAM_NEG (11) instead of CFG_R_SLOTS_NEG (12) | case 'slots negative': rule 11 instead of 12, and the vram text | [FAIL] slots negative: text differs |
+| B5 | B | config-validate.goose | io_threads_max 8 -> 7 | fuzz with io_threads=8 (accepted natively, rejected by the module) | [FAIL] fuzz 756: native.ok=1 selected.ok=0 |
+| B6 | B | config-validate.goose | route_ahead_max 8 -> 9 | case 'route_ahead range' (9 accepted by the module, rejected natively) | [FAIL] route_ahead range: accept/reject native=0 selected=1 |
+| X1 | extra | config-validate.goose | prefetch_layers_max 8 -> 7 | fuzz with prefetch_layers=8 (accepted natively, rejected by the module) | [FAIL] fuzz 3708: native.ok=0 selected.ok=0 |

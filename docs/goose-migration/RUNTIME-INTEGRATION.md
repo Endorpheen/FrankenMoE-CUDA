@@ -101,7 +101,7 @@ own build flag, each in its own copy of the CPU-only tree:
 |---|---|---|---|
 | GGUF write/plan | `FG_GOOSE_GGUF` | gguf-metadata/writer/tensors/split | byte parity on synthetic inputs |
 | quantizers | `FG_GOOSE_QUANT` | quant-types/allow/rows/rows2/dequant/dequant2/weighted | byte parity of quant/dequant blocks |
-| config validation | `FG_GOOSE_CONFIG` | config-validate (+ arch-registry, config-resolve) | 48 rules and 6 order pins |
+| config validation (done, EXP630) | `FG_GOOSE_CONFIG` | config-validate (+ arch-registry, config-resolve) | 48 rules and 6 order pins: 72/72 both paths, 12/12 mutations |
 | metrics/traces (done, EXP628) | `FG_GOOSE_METRICS` | metrics-traces | byte parity of CSV fields and trace rows: 53/53 both paths, 4/4 mutations |
 
 Each must show: OFF build unchanged, ON build dispatches into Goose

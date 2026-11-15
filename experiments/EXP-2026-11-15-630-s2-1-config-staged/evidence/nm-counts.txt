@@ -1,0 +1,5 @@
+ON  cfg_validate definitions : 1
+OFF cfg_validate definitions : 0
+OFF cfg_validate occurrences : 0
+ON  validate_native          : 1
+OFF validate_native          : 1

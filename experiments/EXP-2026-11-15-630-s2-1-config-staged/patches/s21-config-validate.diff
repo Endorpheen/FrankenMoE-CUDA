@@ -1,0 +1,202 @@
+--- /home/end0/AI/FrankenMoE-CUDA/runtime/core/src/config.cpp	2026-11-14 20:34:19.383600854 +0300
++++ runtime/core/src/config.cpp	2026-11-15 02:59:54.743756899 +0300
+@@ -1,10 +1,17 @@
+ #include "bmoe/config.h"
++#include "fg-config-native.h"
++
++#ifdef FG_GOOSE_CONFIG
++#include <cstdint>
++
++#include "fg-goose-config-bridge.h"
++#endif
+ 
+ #include <utility>
+ 
+ namespace bmoe {
+ 
+-ValidationResult validate(const RunConfig & cfg) {
++ValidationResult validate_native(const RunConfig & cfg) {
+     ValidationResult r;
+     auto fail = [&](std::string msg) {
+         r.ok = false;
+@@ -262,4 +269,180 @@
+     return r;
+ }
+ 
++#ifdef FG_GOOSE_CONFIG
++
++// FG_GOOSE_CONFIG: the decision chain runs in the Goose module (cfg_validate),
++// the English texts stay here. Every case quotes the native fail() it replaces,
++// in the module's rule order (CFG_R_* in goose/cli/config-validate.goose), and
++// formats values exactly as the native body does above. The gate compares the
++// text of both paths, so a transcription slip is a failure, not a nuance.
++ValidationResult validate(const RunConfig & cfg) {
++    int64_t iv[32];
++    double fv[5];
++    fg_config_to_flat(cfg, iv, fv);
++    const long long rule = fg_config_validate_flat(iv, fv);
++
++    ValidationResult r;
++    auto fail = [&](std::string msg) {
++        r.ok = false;
++        r.error = std::move(msg);
++        return r;
++    };
++
++    switch (rule) {
++    case 0:
++        return r; // CFG_OK
++    case 1:
++        return fail("model_path is required");
++    case 2:
++        return fail("n_predict must be positive");
++    case 3:
++        return fail("n_threads must be positive");
++    case 4:
++        return fail("n_ctx must be positive");
++    case 5:
++        return fail("n_ubatch must be >= 0 (0 = as wide as the context)");
++    case 6:
++        return fail("n_ubatch=" + std::to_string(cfg.n_ubatch) + " exceeds n_ctx=" + std::to_string(cfg.n_ctx) +
++                    ": the compute buffers would be reserved for a batch that cannot occur.");
++    case 7:
++        return fail("n_expert_used must be >= 0 (0 = model default)");
++    case 8:
++        return fail("workload capture and replay are mutually exclusive");
++    case 9:
++        return fail("deterministic workload capture/replay requires moe.enabled");
++    case 10:
++        return fail("deterministic workload capture/replay does not yet support speculative decoding");
++    case 11:
++        return fail("vram_cache_mb must be >= 0");
++    case 12:
++        return fail("expert_hot_slots must be >= 0");
++    case 13:
++        return fail("VRAM expert cache requires n_gpu_layers != 0");
++    case 14:
++        return fail("sampling.top_k must be >= 0 (0 disables the top-k stage)");
++    case 15:
++        return fail("sampling.top_p must be in (0, 1]");
++    case 16:
++        return fail("speculative decoding requires greedy decoding (sampling.temp <= 0): verification is "
++                    "token-identical to single-token decode only under argmax.");
++    case 17:
++        return fail("spec.draft_max must be in [1, " + std::to_string(SpecConfig::draft_max_limit) + "]");
++    case 18:
++        return fail("spec.draft_p_min must be in [0, 1]");
++    case 19:
++        return fail("spec.draft_p_min is an MTP knob (the head's own confidence in its proposal) and has "
++                    "no meaning for the n-gram source, which has no probabilities — its confidence gate "
++                    "is spec.ngram_min_match.");
++    case 20:
++        return fail("spec.ngram_max_match must be in [1, " + std::to_string(SpecConfig::ngram_match_limit) + "]");
++    case 21:
++        return fail("spec.ngram_min_match must be in [1, spec.ngram_max_match=" +
++                    std::to_string(cfg.spec.ngram_max_match) +
++                    "]: a floor above the longest suffix considered would never draft anything.");
++    case 22:
++        return fail("n_ubatch=" + std::to_string(cfg.n_ubatch) + " is narrower than the verify batch (" +
++                    std::to_string(cfg.spec.draft_max + 1) +
++                    " positions): the graph would be split back into single-token passes and speculation "
++                    "would draft at a cost with nothing to show for it. Raise n_ubatch or lower "
++                    "spec.draft_max.");
++    case 23:
++        return fail("moe.overlap requires moe.enabled");
++    case 24:
++        return fail("moe.predict_log requires moe.enabled");
++    case 25:
++        return fail("moe.predict_prefetch requires moe.enabled");
++    case 26:
++        return fail("moe.route_ahead requires moe.enabled: it attaches to the routing nodes the "
++                    "streamer isolates, and off the streaming path there is nothing to commit to");
++    case 27:
++        return fail("moe.row_stream requires moe.enabled: the tables it serves are discovered by the "
++                    "capture pass and fed by the eval callback, neither of which runs off the streaming path");
++    case 28:
++        return fail("moe.row_stream_mb must be >= 0 (0 = the built-in window)");
++    case 29:
++        return fail("moe.io_threads must be in [1, " + std::to_string(MoeStreamConfig::io_threads_max) + "]");
++    case 30:
++        return fail("moe.cache_mb must be >= 0");
++    case 31:
++        return fail("moe.cache_mb=" + std::to_string(cfg.moe.cache_mb) + " is in the pathological band (< " +
++                    std::to_string(MoeStreamConfig::cache_min_mb) +
++                    " MiB): a cache smaller than one token's routed working set thrashes and is "
++                    "slower than no cache. Use 0 to disable the cache, a value >= " +
++                    std::to_string(MoeStreamConfig::cache_min_mb) + ", or set force_cache to override.");
++    case 32:
++        return fail("moe.prefetch_layers must be in [0, " + std::to_string(MoeStreamConfig::prefetch_layers_max) +
++                    "]");
++    case 33:
++        return fail("moe.cache_auto and an explicit moe.cache_mb are mutually exclusive: choose "
++                    "auto-sizing (cache_mb = 0, cache_auto) or a fixed budget (cache_mb > 0).");
++    case 34:
++        return fail("moe.cache_floor_mb must be >= 0");
++    case 35:
++        return fail("moe.cache_ceil_mb must be >= 0 (0 = no explicit ceiling)");
++    case 36:
++        return fail("moe.prefetch_layers requires the LRU cache (cache_mb > 0 or cache_auto): "
++                    "speculative reads land in the per-layer cache buffers, which do not exist "
++                    "with the cache off.");
++    case 37:
++        return fail("moe.predict_prefetch requires the LRU cache (cache_mb > 0 or cache_auto): "
++                    "speculative reads land in the per-layer cache buffers, which do not exist "
++                    "with the cache off.");
++    case 38:
++        return fail("moe.io_two_wave requires moe.overlap: without overlap the caller drains the "
++                    "batch synchronously and there is no lane idling on the publish to wake early.");
++    case 39:
++        return fail("moe.io_two_wave requires the LRU cache (cache_mb > 0 or cache_auto): the wave "
++                    "split exists to move per-expert page commits off the publish path, and the "
++                    "shared-slot path has none.");
++    case 40:
++        return fail("moe.predict_spec_max must be in [0, 8] (0 = retention only, no speculation)");
++    case 41:
++        return fail("moe.predict_prefetch and moe.prefetch_layers are mutually exclusive: they "
++                    "are two predictors for the same speculative read lanes, and running both "
++                    "doubles the speculated bytes for the same future.");
++    case 42:
++        return fail("moe.route_ahead must be in [0, " + std::to_string(MoeStreamConfig::route_ahead_max) +
++                    "] (0 = off)");
++    case 43:
++        return fail("moe.route_ahead excludes predict_log, predict_prefetch and prefetch_layers: "
++                    "the probe would grade a predictor against a routing rewritten from that same "
++                    "predictor, and a speculative prefetch would bet lanes on a future route-ahead "
++                    "has already fixed.");
++    case 44:
++        return fail("moe.route_ahead and self-speculative decoding are mutually exclusive: a "
++                    "verify decode is several positions wide, so route-ahead declines to commit "
++                    "on every one of them while still paying for its prediction and its early "
++                    "reads. Turn off --mtp/--ngram, or turn off --route-ahead.");
++    case 45:
++        return fail("moe.drop_cold_frac requires the LRU cache (cache_mb > 0 or cache_auto): with the "
++                    "cache off every expert is a miss, so the policy stops being cache-aware and "
++                    "degenerates into an unconditional weight cut — which is what n_expert_used already "
++                    "does, without pretending to consult residency.");
++    case 46:
++        return fail("moe.drop_cold_frac must be in [0, 1] (0 = off). Above 1.0 the threshold can "
++                    "exceed the largest weight in a routing, which would discard every expert of a "
++                    "layer; 1.0 is the uniform share 1/n_expert_used and the useful maximum.");
++    case 47:
++        return fail("moe.substitute_lambda requires the LRU cache (cache_mb > 0 or cache_auto): with the "
++                    "cache off nothing is resident, so there is nothing to prefer and the re-ranking "
++                    "would be the router's own.");
++    case 48:
++        return fail("moe.substitute_lambda must be in [0, 1] (0 = off). At 1.0 a resident expert "
++                    "outranks every non-resident one whatever their scores, which is the strongest "
++                    "preference the margin can express.");
++    default:
++        // -1 is the module's "the flat layout was not filled" code; anything else
++        // is a rule number this carrier does not know. Both are bridge bugs, not
++        // verdicts about the config, so they are reported as failures with the
++        // number instead of being mistaken for a validation result.
++        return fail("config validation failed inside the Goose module (rule " + std::to_string(rule) + ")");
++    }
++}
++
++#else
++
++ValidationResult validate(const RunConfig & cfg) { return validate_native(cfg); }
++
++#endif
+ } // namespace bmoe
