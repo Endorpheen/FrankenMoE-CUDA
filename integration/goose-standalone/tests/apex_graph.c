@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "gguf.h"
 #include "ggml.h"
@@ -145,32 +146,64 @@ int main(int argc, char ** argv) {
     ggml_backend_tensor_set(w, wd, 0, (size_t) (K * N) * sizeof(float));
     ggml_backend_tensor_set(x, xd, 0, (size_t) K * sizeof(float));
 
-    // mode 11 = mul_mat; the module validates can_mul_mat and derives the result
-    // shape from the operand extents.
-    uint64_t args[8] = { 11, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) w,
-                         (uint64_t) (uintptr_t) x, 0, (uint64_t) GGML_OP_MUL_MAT, 0, 0 };
-    struct ggml_tensor * r =
-        (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) args);
-    if (r == NULL) {
-        printf("FG_APEX_GRAPH builder returned null\n");
+    // A three-node prefix of an Apex layer, each node emitted by the Goose builder:
+    //   mode 4  rms_norm on the activation      (GGML_OP_RMS_NORM, eps in param 0)
+    //   mode 11 mul_mat against the real weight (GGML_OP_MUL_MAT)
+    //   mode 3  silu on the projection          (unary, GGML_UNARY_OP_SILU)
+    const float eps = 1e-6f;
+    int32_t eps_bits;
+    memcpy(&eps_bits, &eps, sizeof eps_bits);
+
+    uint64_t a_norm[8] = { 4, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) x,
+                           0, 0, (uint64_t) GGML_OP_RMS_NORM, 0, (uint64_t) (int64_t) eps_bits };
+    struct ggml_tensor * normed =
+        (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_norm);
+    if (normed == NULL) {
+        printf("FG_APEX_GRAPH rms_norm returned null\n");
+        return 1;
+    }
+    ggml_backend_alloc_ctx_tensors(gc, backend);
+
+    uint64_t a_mm[8] = { 11, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) w,
+                         (uint64_t) (uintptr_t) normed, 0, (uint64_t) GGML_OP_MUL_MAT, 0, 0 };
+    struct ggml_tensor * proj =
+        (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_mm);
+    if (proj == NULL) {
+        printf("FG_APEX_GRAPH mul_mat returned null\n");
+        return 1;
+    }
+    ggml_backend_alloc_ctx_tensors(gc, backend);
+
+    uint64_t a_silu[8] = { 3, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) proj,
+                           0, 0, (uint64_t) GGML_UNARY_OP_SILU, 0, 0 };
+    struct ggml_tensor * out =
+        (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_silu);
+    if (out == NULL) {
+        printf("FG_APEX_GRAPH silu returned null\n");
         return 1;
     }
     ggml_backend_alloc_ctx_tensors(gc, backend);
 
     struct ggml_cgraph * gf = ggml_new_graph(gc);
-    ggml_build_forward_expand(gf, r);
+    ggml_build_forward_expand(gf, out);
     const enum ggml_status st = ggml_backend_graph_compute(backend, gf);
 
-    // Two checks that the node is real: the result extent, and a value computed
-    // independently on the host for the first output row.
-    const int shape_ok = r->ne[0] == N && r->ne[1] == 1;
-    double want0 = 0.0;
-    for (int64_t i = 0; i < K; ++i) want0 += (double) wd[i] * (double) xd[i];
-    float got0 = 0.0f;
-    ggml_backend_tensor_get(r, &got0, 0, sizeof got0);
-    const double rel = (want0 != 0.0) ? ((double) got0 - want0) / want0 : (double) got0;
+    const int shape_ok = out->ne[0] == N && out->ne[1] == 1;
 
-    printf("FG_APEX_GRAPH K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
+    // The host computes the same prefix independently: rms_norm over K elements,
+    // one dot product per output column, then silu on the first.
+    double ss = 0.0;
+    for (int64_t i = 0; i < K; ++i) ss += (double) xd[i] * (double) xd[i];
+    const double rms = sqrt(ss / (double) K + (double) eps);
+    double acc0 = 0.0;
+    for (int64_t i = 0; i < K; ++i) acc0 += (double) wd[i] * ((double) xd[i] / rms);
+    const double want0 = acc0 / (1.0 + exp(-acc0));   // silu
+
+    float got0 = 0.0f;
+    ggml_backend_tensor_get(out, &got0, 0, sizeof got0);
+    const double rel = (want0 != 0.0) ? (fabs((double) got0 - want0) / fabs(want0)) : fabs((double) got0);
+
+    printf("FG_APEX_GRAPH nodes=3 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",
            (long long) K, (long long) N, (long long) declared, declared_ok, shape_ok,
            (int) st, got0, want0, rel,

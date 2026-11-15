@@ -1,2 +1,2 @@
-FG_APEX_GRAPH K=2048 N=8192 declared=1 declared_ok=1 shape_ok=1 status=0 first=-0.175781 want=-0.175781 rel=-0 PASS
+FG_APEX_GRAPH nodes=3 K=2048 N=8192 declared=1 declared_ok=1 shape_ok=1 status=0 first=-0.167770 want=-0.167770 rel=1.46e-08 PASS
 rc=0
