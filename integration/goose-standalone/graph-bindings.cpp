@@ -165,6 +165,14 @@ void fg158_fail(int64_t code) {
     ggml_abort(__FILE__, __LINE__, "Goose graph builder validation failed:code=%" PRId64, code);
 }
 
+void fg200g_fail(int64_t code) {
+    ggml_abort(__FILE__, __LINE__, "model graph refused:code=%" PRId64, code);
+}
+
+void fg202t_fail(int64_t code) {
+    ggml_abort(__FILE__, __LINE__, "tokenizer decision refused:code=%" PRId64, code);
+}
+
 void fg203d_fail(int64_t code) {
     ggml_abort(__FILE__, __LINE__, "mmq dispatch refused:code=%" PRId64, code);
 }

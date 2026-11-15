@@ -120,6 +120,20 @@ RENAMES = {
     },
     # shards.goose binds its own storage primitives (fg459_*) and has a private
     # put(out, i, v) distinct from the offsets one.
+    # The tokenizer fragment has its own ensure and utf8_len; json-dump.goose and
+    # the graph builders already own those names with different bodies.
+    # The Apex architecture builder's base module has its own ensure, plus the
+    # per-layer decisions (is_recr, gating_kind, group_select, crops) that the
+    # graph builder calls. Scoped so an Apex unit can carry both.
+
+    "goose-tokenizer.goose": {
+        "ensure": "tok_ensure",
+        "utf8_len": "tok_utf8_impl",
+        # Its native bindings are fg202t_*, which are different symbols from the
+        # fg158_*/fg457_* ones bound to the same local names elsewhere.
+        "fail": "tok_fail",
+        "st_i64": "tok_st_i64",
+    },
     "shards.goose": {
         "put": "shards_put",
         "st_u8": "shards_st_u8",
@@ -207,6 +221,10 @@ RENAMES = {
 
 ALIASES = {
     "jsonparse": GOOSE / "json" / "json-parser.goose",
+    # base/model_graph.goose is goose-model-graph.goose minus its main(), and the
+    # latter is already in the common unit. Aliasing keeps the architecture
+    # builder's import resolvable without composing a duplicate of the module.
+    "base.model_graph": GOOSE / "model" / "goose-model-graph.goose",
 }
 
 IMPORT = re.compile(r"(?m)^import\s+([A-Za-z0-9_.]+)\s*;\s*$")
@@ -215,11 +233,14 @@ IMPORT = re.compile(r"(?m)^import\s+([A-Za-z0-9_.]+)\s*;\s*$")
 def resolve(name: str, near: Path) -> Path | None:
     if name in ("std", "math"):
         return None
+    # An explicit alias wins over a sibling file: base/model_graph.goose exists on
+    # disk as a duplicate of goose-model-graph.goose, and composing both is a
+    # conflict, so the alias redirects the import to the canonical module.
+    if name in ALIASES and ALIASES[name].is_file():
+        return ALIASES[name]
     sibling = near.parent / (name.replace(".", "/") + ".goose")
     if sibling.is_file():
         return sibling
-    if name in ALIASES and ALIASES[name].is_file():
-        return ALIASES[name]
     return None
 
 

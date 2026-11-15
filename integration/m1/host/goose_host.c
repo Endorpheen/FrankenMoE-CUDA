@@ -284,6 +284,18 @@ int64_t fg457_ld_i64(uint64_t p, uint64_t o) {
     return *(const int64_t *) ((const char *) (uintptr_t) p + o);
 }
 
+// EXP684: goose-model-graph.goose reads the native per-layer flags array.
+int64_t fg200g_ld_u32(uint64_t base, int64_t index) {
+    uint32_t v = 0;
+    memcpy(&v, (const char *) (uintptr_t) base + index * (int64_t) sizeof v, sizeof v);
+    return (int64_t) v;
+}
+
+// EXP683: goose-tokenizer.goose binds its i64 store to fg202t_*.
+void fg202t_st_i64(uint64_t p, uint64_t o, int64_t v) {
+    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
+}
+
 void fg457_st_i64(uint64_t p, uint64_t o, int64_t v) {
     *(int64_t *) ((char *) (uintptr_t) p + o) = v;
 }
