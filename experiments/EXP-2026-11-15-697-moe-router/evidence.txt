@@ -1,0 +1,25 @@
+command: cat goose/cpu/goose-moe-router.goose experiments/.../tests/router.goose > rt.goose && goose run rt.goose
+parsed ok: 15 top-level declarations, 1 file(s)
+bce: elided 36/39 index and 0/0 slice checks
+trial
+0
+ids_differ
+0
+weights_mismatch
+0
+sum_x1000
+2500.0
+trial
+1
+ids_differ
+0
+weights_mismatch
+0
+sum_x1000
+2500.000000660648
+dominant_first
+173
+FG_MOE_ROUTER PASS
+256
+8
+exit: 0

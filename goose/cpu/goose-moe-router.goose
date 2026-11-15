@@ -102,10 +102,10 @@ fn moe_id_used(ids: i64[:], n: i64, id: i64) -> bool {
 }
 
 // Gather the weights of the selected experts, normalise when asked, and scale.
-// `scale` is passed as f32 bits so the host does not reinterpret a float through an
-// integer parameter.
+// The scale is a plain f32: passing it as bits only makes sense when an integer-only
+// ABI forces it, and this module has no such constraint.
 export fn moe_weights(probs: f32[:], ids: i64[:], n_used: i64,
-                      do_norm: i64, scale_bits: i64, out: f32[:]) -> i64 {
+                      do_norm: i64, scale: f32, out: f32[:]) -> i64 {
     if n_used <= 0 || out.len < n_used || ids.len < n_used {
         return -1;
     }
@@ -134,7 +134,7 @@ export fn moe_weights(probs: f32[:], ids: i64[:], n_used: i64,
             i = i + 1;
         }
     }
-    let sc: f32 = f32_from_bits(scale_bits);
+    let sc: f32 = scale;
     i = 0;
     while i < n_used {
         out[i] = out[i] * sc;
@@ -143,10 +143,8 @@ export fn moe_weights(probs: f32[:], ids: i64[:], n_used: i64,
     return n_used;
 }
 
-extern "fg158_f32bits" fn f32_from_bits(b: i64) -> f32;
-
 // One token end to end: logits -> softmax -> top-k -> weighted selection.
-export fn moe_route(logits: f32[:], n_used: i64, do_norm: i64, scale_bits: i64,
+export fn moe_route(logits: f32[:], n_used: i64, do_norm: i64, scale: f32,
                     ids: i64[:], weights: f32[:], probs: f32[:]) -> i64 {
     if moe_softmax(logits, probs) != 0 {
         return -1;
@@ -155,5 +153,5 @@ export fn moe_route(logits: f32[:], n_used: i64, do_norm: i64, scale_bits: i64,
     if got != n_used {
         return -1;
     }
-    return moe_weights(probs, ids, n_used, do_norm, scale_bits, weights);
+    return moe_weights(probs, ids, n_used, do_norm, scale, weights);
 }
