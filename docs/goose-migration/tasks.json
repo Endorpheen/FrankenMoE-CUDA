@@ -2734,17 +2734,17 @@
         "all selected Goose modules"
       ],
       "acceptance": "One isolated artifact combines CPU,CUDA,GGML,memory,KV,model,GGUF,tokenizer,server and owned infrastructure; every Apex-path owned component Goose, not a collection of separate partial variants.",
-      "evidence": "2026-11-15 (EXP-688b..701): attention layer bit-identical over 15 nodes incl. per-head q/k RMS norm and IMRoPE (sequence checked vs qwen35moe.cpp:311-345); recurrent layer bit-identical over 13 nodes incl. beta/gate, gated_delta_net output/state slice, gated norm, ssm_out; 41 layer kinds decided by q35_plan and verified against the FILE (EXP-699 corrected an off-by-one: n_layer is block_count-nextn = 40, distribution 10 attn / 30 recr / 1 MTP); 32 tensor shapes match the GGUF (EXP-700b); MoE router, shared-expert/combine and expert matmul wiring verified (EXP-697b/697c/698); one slot mechanism now serves both caches, 22 slots identical to the specialised exports (EXP-702); attention KV cache write-keep-read bit-identical to a rebuild (EXP-701); state ledger closed 8/8: cache outlives a graph rebuild (EXP-703), reuse from n_past bit-identical to a single pass (EXP-703). Stack dispatch verified positionally: attention at 3,7,..,39, shifted plan distinguishable in 20 layers (EXP-705). Prefill/decode: substrate contract established and recorded (axis permute between rope and flash_attn, F16 4-D mask, K-wide projection) in docs/goose-migration/PREFILL-DECODE.md; the equality gate is NOT passing and is not claimed.",
+      "evidence": "2026-11-15 (EXP-688b..701): attention layer bit-identical over 15 nodes incl. per-head q/k RMS norm and IMRoPE (sequence checked vs qwen35moe.cpp:311-345); recurrent layer bit-identical over 13 nodes incl. beta/gate, gated_delta_net output/state slice, gated norm, ssm_out; 41 layer kinds decided by q35_plan and verified against the FILE (EXP-699 corrected an off-by-one: n_layer is block_count-nextn = 40, distribution 10 attn / 30 recr / 1 MTP); 32 tensor shapes match the GGUF (EXP-700b); MoE router, shared-expert/combine and expert matmul wiring verified (EXP-697b/697c/698); one slot mechanism now serves both caches, 22 slots identical to the specialised exports (EXP-702); attention KV cache write-keep-read bit-identical to a rebuild (EXP-701); state ledger closed 8/8: cache outlives a graph rebuild (EXP-703), reuse from n_past bit-identical to a single pass (EXP-703). Stack dispatch verified positionally: attention at 3,7,..,39, shifted plan distinguishable in 20 layers (EXP-705). Prefill/decode: substrate contract established and recorded (axis permute between rope and flash_attn, F16 4-D mask, K-wide projection) in docs/goose-migration/PREFILL-DECODE.md; the equality gate is NOT passing and is not claimed. Pinned optimal configuration runtime/goose-stage/BEST-CONFIG.json: cache 4352 MiB, verified both libggml-cpu hashes, defaults in run-apex.sh; measured 2429.9 prefill / 39.86-40.29 decode at 512 tokens, VRAM 7552 MiB, RAM 20.8 GiB, output identical to the reference (EXP-718/f27f2f57).",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
       "remaining": [
-        "41-layer stack: real builders over real weights (dispatch itself verified, EXP-705)",
-        "prefill/decode equality: contract established, gate not passing - see PREFILL-DECODE.md",
-        "CUDA buffer-control modules: blocked on a substrate gap - vendored ggml lacks alloc_buffer_n/multi_buffer, the 25 fg162_* primitives exist (docs/goose-migration/CUDA-BLOCKER.md)",
-        "tokenizer engine and HTTP server"
+        "standalone runtime has no CUDA, tokenizer engine or HTTP (the working Apex path is the INTEGRATED stage-run, not the standalone - rule 15 forbids reporting one as the other)",
+        "full 41-layer stack execution (dispatch verified in EXP-705, not run as a stack)",
+        "port the llama-side routes into the standalone so libllama is not needed",
+        "A/B at 128/256/512 for every candidate before acceptance (rule 20)"
       ],
       "coverage_doc": "experiments/EXP-2026-11-15-678-coverage-map/README.md",
       "slices_total": 12,
@@ -5637,7 +5637,7 @@
     "TODO": 14
   },
   "work_front": {
-    "note": "state 8/8 done; stack dispatch verified. Remaining: full stack over real weights, prefill/decode, CUDA, tokenizer, HTTP.",
+    "note": "Integrated stage-run: pinned at 4352 MiB cache, 2429.9 prefill / 39.86 decode at 512. Standalone still lacks CUDA, tokenizer engine, HTTP and full-stack execution.",
     "slices_total": 12,
     "slices_done": 9
   },
