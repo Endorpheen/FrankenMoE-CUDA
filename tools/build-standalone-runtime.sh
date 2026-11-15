@@ -69,6 +69,16 @@ else
     printf '  v2:     skipped (substrate not found at %s)\n' "$SUB"
 fi
 
+echo "[4c/5] v3: the GGUF tensor directory"
+if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v3.c" ]; then
+    $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$ROOT/upstream/llama.cpp/ggml/include" \
+        -c "$ROOT/integration/goose-standalone/host_v3.c" -o "$OUT/host_v3.o"
+    $CC -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v3.o" \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -lstdc++ \
+        -o "$OUT/frankenmoe-v3"
+    printf '  v3:     %s (%s B)\n' "$OUT/frankenmoe-v3" "$(stat -c%s "$OUT/frankenmoe-v3")"
+fi
+
 echo "[5/5] result"
 printf '  binary: %s (%s B)\n' "$OUT/frankenmoe-standalone" \
     "$(stat -c%s "$OUT/frankenmoe-standalone")"

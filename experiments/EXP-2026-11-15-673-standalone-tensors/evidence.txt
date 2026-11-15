@@ -1,0 +1,7 @@
+# v3 on the three tiny-hybrid fixtures (substrate ne0_sum comparison in the card)
+FG_STANDALONE_V3 init_runs=1 types=43 file=experiments/EXP-2026-11-12-342-p6-06-tiny-hybrid/tiny-hybrid.gguf kv=32 tensors=65 first_key="general.architecture" goose_built=32 goose_first="general.architecture" agree=yes tensors_added=65 tdir_n=65 align=32 ne0_sum=1022
+n=65 ne0_sum=1022
+FG_STANDALONE_V3 init_runs=1 types=43 file=experiments/EXP-2026-11-12-342-p6-06-tiny-hybrid/tiny-rr.gguf kv=32 tensors=75 first_key="general.architecture" goose_built=32 goose_first="general.architecture" agree=yes tensors_added=75 tdir_n=75 align=32 ne0_sum=1016
+n=75 ne0_sum=1016
+FG_STANDALONE_V3 init_runs=1 types=43 file=experiments/EXP-2026-11-12-342-p6-06-tiny-hybrid/tiny-mutant.gguf kv=32 tensors=55 first_key="general.architecture" goose_built=32 goose_first="general.architecture" agree=yes tensors_added=55 tdir_n=55 align=32 ne0_sum=1028
+n=55 ne0_sum=1028
