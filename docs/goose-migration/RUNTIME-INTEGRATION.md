@@ -212,6 +212,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | IQ off-grid fix (done, EXP644) | P7-04 | S1 | EXP644 | qgrid 40 cases / 122245 lookups / 0; iq1_m 24 cases / 0 mismatches; 12/12 each |
 | model-management switch (done, EXP642) | P8-06 | S3 | EXP642 | 84/84 both paths, goose_calls=84, nm 1/0 |
 | session switch (done, EXP643) | P9-05 | S3 | EXP643 | 191/929 both paths, goose_calls=376, dumps identical |
+| server asset/cache/tool switches (done, EXP663) | P8-12 | S2 | EXP663 | 150/150 in five runs, mutations 36/36, two native bodies deleted |
 
 The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.2
 GGUF switch (EXP634), the S1.3 quantizer switch (EXP635), the S1.4 metrics switch

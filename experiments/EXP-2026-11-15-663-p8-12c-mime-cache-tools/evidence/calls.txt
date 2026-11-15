@@ -1,0 +1,21 @@
+# unit exports and bridge wrappers, OFF
+0000000000a8a8d0 T fgs_cache_text
+0000000000a8a8e0 T fgs_cors_localhost
+0000000000a8a890 T fgs_init_early
+0000000000a8a8c0 T fgs_mime_text
+0000000000a8a8a0 T fgs_model_status_text
+0000000000a8a8b0 T fgs_tool_index
+# unit exports and bridge wrappers, ON
+0000000000a9869b T cors_is_localhost
+0000000000a8ae90 T fgs_cache_text
+0000000000a8afa0 T fgs_cors_localhost
+0000000000a8aa80 T fgs_init_early
+0000000000a8ad60 T fgs_mime_text
+0000000000a8ab40 T fgs_model_status_text
+0000000000a8ac50 T fgs_tool_index
+0000000000a93cb6 T goose_init
+0000000000a94353 T mg_status_str
+0000000000a98155 T mime_of
+0000000000a9822b T mime_text
+0000000000a96de8 T tool_index
+0000000000a9801b T web_cache_text

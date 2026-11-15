@@ -1,0 +1,764 @@
+### build gate binaries  [rc=0]
+built /tmp/opencode/sub-668/gate/gate-on <- build-on (yes unit)
+built /tmp/opencode/sub-668/gate/gate-off <- build-off (no unit)
+built /tmp/opencode/sub-668/gate/gate-default <- build-default (yes unit)
+### ON, Goose arm, explicit goose_init  [rc=0]
+status	0	downloading	downloading	OK
+status	1	incomplete	incomplete	OK
+status	2	downloaded	downloaded	OK
+status	3	unloaded	unloaded	OK
+status	4	loading	loading	OK
+status	5	loaded	loaded	OK
+status	6	sleeping	sleeping	OK
+status	-1	unknown	unknown	OK
+status	7	unknown	unknown	OK
+cors	http://localhost:8080	true	true	OK
+cors	https://127.0.0.1	true	true	OK
+cors	http://[::1]:9000	true	true	OK
+cors	https://example.com	false	false	OK
+cors	http://127.0.0.1.evil.com	false	false	OK
+cors	ftp://localhost	false	false	OK
+mime	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime	_app/immutable/entry.js	application/javascript	application/javascript	OK
+mime	sw.js	application/javascript	application/javascript	OK
+mime	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime	build.json	application/json	application/json	OK
+mime	_app/version.json	application/json	application/json	OK
+mime	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime	logo.png	image/png	image/png	OK
+mime	photo.jpg	image/jpeg	image/jpeg	OK
+mime	photo.jpeg	image/jpeg	image/jpeg	OK
+mime	favicon.ico	image/x-icon	image/x-icon	OK
+mime	font.woff	font/woff	font/woff	OK
+mime	font.woff2	font/woff2	font/woff2	OK
+mime	noext	application/octet-stream	application/octet-stream	OK
+mime	index.	application/octet-stream	application/octet-stream	OK
+mime	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z.js	application/javascript	application/javascript	OK
+mime	<empty>	application/octet-stream	application/octet-stream	OK
+mime-asset	_app/immutable/assets/bundle.D9-6832b.css	text/css	text/css	OK
+mime-asset	_app/immutable/bundle.CHX5bAvj.js	application/javascript	application/javascript	OK
+mime-asset	_app/version.json	application/json	application/json	OK
+mime-asset	apple-splash-landscape-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-750x1334.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-750x1334.png	image/png	image/png	OK
+mime-asset	apple-touch-icon-180x180.png	image/png	image/png	OK
+mime-asset	build.json	application/json	application/json	OK
+mime-asset	favicon-dark.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon-dark.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	favicon.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-asset	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime-asset	maskable-icon-512x512.png	image/png	image/png	OK
+mime-asset	pwa-192x192.png	image/png	image/png	OK
+mime-asset	pwa-512x512.png	image/png	image/png	OK
+mime-asset	pwa-64x64.png	image/png	image/png	OK
+mime-asset	recommended-mcp/context7.png	image/png	image/png	OK
+mime-asset	recommended-mcp/exa.ico	image/x-icon	image/x-icon	OK
+mime-asset	recommended-mcp/github-dark.png	image/png	image/png	OK
+mime-asset	recommended-mcp/github-light.png	image/png	image/png	OK
+mime-asset	recommended-mcp/huggingface.ico	image/x-icon	image/x-icon	OK
+mime-asset	sw.js	application/javascript	application/javascript	OK
+mime-asset	workbox-b3c04f83.js	application/javascript	application/javascript	OK
+cache	0 immutable	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache	1 revalidate	no-cache	no-cache	OK
+cache	2 nocache	no-cache	no-cache	OK
+cache	-1 out of range	no-cache	no-cache	OK
+cache	-2 out of range	no-cache	no-cache	OK
+cache	3 out of range	no-cache	no-cache	OK
+cache	4 out of range	no-cache	no-cache	OK
+cache	100 out of range	no-cache	no-cache	OK
+cache	INT64_MIN out of range	no-cache	no-cache	OK
+cache	INT64_MAX out of range	no-cache	no-cache	OK
+tools	read_file	0	0	OK
+tools	file_glob_search	1	1	OK
+tools	grep_search	2	2	OK
+tools	exec_shell_command	3	3	OK
+tools	write_file	4	4	OK
+tools	edit_file	5	5	OK
+tools	get_info	6	6	OK
+tools	Read_File	-1	-1	OK
+tools	read_fil	-1	-1	OK
+tools	read_file 	-1	-1	OK
+tools	<empty>	-1	-1	OK
+tools	mcp__fs__read_file	-1	-1	OK
+tools-table	builtin order, grep_search	2	2	OK
+tools-table	reordered table, grep_search	4	4	OK
+tools-table	MCP appended, mcp name	7	7	OK
+tools-table	empty table, read_file	-1	-1	OK
+mime-raw	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-raw	sw.js	application/javascript	application/javascript	OK
+mime-raw	noext	application/octet-stream	application/octet-stream	OK
+mime-raw	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime-raw	<empty>	application/octet-stream	application/octet-stream	OK
+cache-raw	0	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache-raw	1	no-cache	no-cache	OK
+cache-raw	2	no-cache	no-cache	OK
+cache-raw	3	ERR	ERR	OK
+cache-raw	-1	ERR	ERR	OK
+tools-raw	read_file	0	0	OK
+tools-raw	file_glob_search	1	1	OK
+tools-raw	grep_search	2	2	OK
+tools-raw	exec_shell_command	3	3	OK
+tools-raw	write_file	4	4	OK
+tools-raw	edit_file	5	5	OK
+tools-raw	get_info	6	6	OK
+tools-raw	nope	ERR	ERR	OK
+tools-raw	<empty>	ERR	ERR	OK
+tools-raw	read_fil	ERR	ERR	OK
+# cases=150 divergences=0
+### ON, Goose arm, bridge lazy goose_init  [rc=0]
+status	0	downloading	downloading	OK
+status	1	incomplete	incomplete	OK
+status	2	downloaded	downloaded	OK
+status	3	unloaded	unloaded	OK
+status	4	loading	loading	OK
+status	5	loaded	loaded	OK
+status	6	sleeping	sleeping	OK
+status	-1	unknown	unknown	OK
+status	7	unknown	unknown	OK
+cors	http://localhost:8080	true	true	OK
+cors	https://127.0.0.1	true	true	OK
+cors	http://[::1]:9000	true	true	OK
+cors	https://example.com	false	false	OK
+cors	http://127.0.0.1.evil.com	false	false	OK
+cors	ftp://localhost	false	false	OK
+mime	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime	_app/immutable/entry.js	application/javascript	application/javascript	OK
+mime	sw.js	application/javascript	application/javascript	OK
+mime	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime	build.json	application/json	application/json	OK
+mime	_app/version.json	application/json	application/json	OK
+mime	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime	logo.png	image/png	image/png	OK
+mime	photo.jpg	image/jpeg	image/jpeg	OK
+mime	photo.jpeg	image/jpeg	image/jpeg	OK
+mime	favicon.ico	image/x-icon	image/x-icon	OK
+mime	font.woff	font/woff	font/woff	OK
+mime	font.woff2	font/woff2	font/woff2	OK
+mime	noext	application/octet-stream	application/octet-stream	OK
+mime	index.	application/octet-stream	application/octet-stream	OK
+mime	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z.js	application/javascript	application/javascript	OK
+mime	<empty>	application/octet-stream	application/octet-stream	OK
+mime-asset	_app/immutable/assets/bundle.D9-6832b.css	text/css	text/css	OK
+mime-asset	_app/immutable/bundle.CHX5bAvj.js	application/javascript	application/javascript	OK
+mime-asset	_app/version.json	application/json	application/json	OK
+mime-asset	apple-splash-landscape-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-750x1334.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-750x1334.png	image/png	image/png	OK
+mime-asset	apple-touch-icon-180x180.png	image/png	image/png	OK
+mime-asset	build.json	application/json	application/json	OK
+mime-asset	favicon-dark.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon-dark.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	favicon.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-asset	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime-asset	maskable-icon-512x512.png	image/png	image/png	OK
+mime-asset	pwa-192x192.png	image/png	image/png	OK
+mime-asset	pwa-512x512.png	image/png	image/png	OK
+mime-asset	pwa-64x64.png	image/png	image/png	OK
+mime-asset	recommended-mcp/context7.png	image/png	image/png	OK
+mime-asset	recommended-mcp/exa.ico	image/x-icon	image/x-icon	OK
+mime-asset	recommended-mcp/github-dark.png	image/png	image/png	OK
+mime-asset	recommended-mcp/github-light.png	image/png	image/png	OK
+mime-asset	recommended-mcp/huggingface.ico	image/x-icon	image/x-icon	OK
+mime-asset	sw.js	application/javascript	application/javascript	OK
+mime-asset	workbox-b3c04f83.js	application/javascript	application/javascript	OK
+cache	0 immutable	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache	1 revalidate	no-cache	no-cache	OK
+cache	2 nocache	no-cache	no-cache	OK
+cache	-1 out of range	no-cache	no-cache	OK
+cache	-2 out of range	no-cache	no-cache	OK
+cache	3 out of range	no-cache	no-cache	OK
+cache	4 out of range	no-cache	no-cache	OK
+cache	100 out of range	no-cache	no-cache	OK
+cache	INT64_MIN out of range	no-cache	no-cache	OK
+cache	INT64_MAX out of range	no-cache	no-cache	OK
+tools	read_file	0	0	OK
+tools	file_glob_search	1	1	OK
+tools	grep_search	2	2	OK
+tools	exec_shell_command	3	3	OK
+tools	write_file	4	4	OK
+tools	edit_file	5	5	OK
+tools	get_info	6	6	OK
+tools	Read_File	-1	-1	OK
+tools	read_fil	-1	-1	OK
+tools	read_file 	-1	-1	OK
+tools	<empty>	-1	-1	OK
+tools	mcp__fs__read_file	-1	-1	OK
+tools-table	builtin order, grep_search	2	2	OK
+tools-table	reordered table, grep_search	4	4	OK
+tools-table	MCP appended, mcp name	7	7	OK
+tools-table	empty table, read_file	-1	-1	OK
+mime-raw	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-raw	sw.js	application/javascript	application/javascript	OK
+mime-raw	noext	application/octet-stream	application/octet-stream	OK
+mime-raw	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime-raw	<empty>	application/octet-stream	application/octet-stream	OK
+cache-raw	0	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache-raw	1	no-cache	no-cache	OK
+cache-raw	2	no-cache	no-cache	OK
+cache-raw	3	ERR	ERR	OK
+cache-raw	-1	ERR	ERR	OK
+tools-raw	read_file	0	0	OK
+tools-raw	file_glob_search	1	1	OK
+tools-raw	grep_search	2	2	OK
+tools-raw	exec_shell_command	3	3	OK
+tools-raw	write_file	4	4	OK
+tools-raw	edit_file	5	5	OK
+tools-raw	get_info	6	6	OK
+tools-raw	nope	ERR	ERR	OK
+tools-raw	<empty>	ERR	ERR	OK
+tools-raw	read_fil	ERR	ERR	OK
+# cases=150 divergences=0
+### ON, native arms (Origin + tools only)  [rc=0]
+status	0	downloading	downloading	OK
+status	1	incomplete	incomplete	OK
+status	2	downloaded	downloaded	OK
+status	3	unloaded	unloaded	OK
+status	4	loading	loading	OK
+status	5	loaded	loaded	OK
+status	6	sleeping	sleeping	OK
+status	-1	unknown	unknown	OK
+status	7	unknown	unknown	OK
+cors	http://localhost:8080	true	true	OK
+cors	https://127.0.0.1	true	true	OK
+cors	http://[::1]:9000	true	true	OK
+cors	https://example.com	false	false	OK
+cors	http://127.0.0.1.evil.com	false	false	OK
+cors	ftp://localhost	false	false	OK
+mime	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime	_app/immutable/entry.js	application/javascript	application/javascript	OK
+mime	sw.js	application/javascript	application/javascript	OK
+mime	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime	build.json	application/json	application/json	OK
+mime	_app/version.json	application/json	application/json	OK
+mime	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime	logo.png	image/png	image/png	OK
+mime	photo.jpg	image/jpeg	image/jpeg	OK
+mime	photo.jpeg	image/jpeg	image/jpeg	OK
+mime	favicon.ico	image/x-icon	image/x-icon	OK
+mime	font.woff	font/woff	font/woff	OK
+mime	font.woff2	font/woff2	font/woff2	OK
+mime	noext	application/octet-stream	application/octet-stream	OK
+mime	index.	application/octet-stream	application/octet-stream	OK
+mime	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z.js	application/javascript	application/javascript	OK
+mime	<empty>	application/octet-stream	application/octet-stream	OK
+mime-asset	_app/immutable/assets/bundle.D9-6832b.css	text/css	text/css	OK
+mime-asset	_app/immutable/bundle.CHX5bAvj.js	application/javascript	application/javascript	OK
+mime-asset	_app/version.json	application/json	application/json	OK
+mime-asset	apple-splash-landscape-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-750x1334.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-750x1334.png	image/png	image/png	OK
+mime-asset	apple-touch-icon-180x180.png	image/png	image/png	OK
+mime-asset	build.json	application/json	application/json	OK
+mime-asset	favicon-dark.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon-dark.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	favicon.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-asset	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime-asset	maskable-icon-512x512.png	image/png	image/png	OK
+mime-asset	pwa-192x192.png	image/png	image/png	OK
+mime-asset	pwa-512x512.png	image/png	image/png	OK
+mime-asset	pwa-64x64.png	image/png	image/png	OK
+mime-asset	recommended-mcp/context7.png	image/png	image/png	OK
+mime-asset	recommended-mcp/exa.ico	image/x-icon	image/x-icon	OK
+mime-asset	recommended-mcp/github-dark.png	image/png	image/png	OK
+mime-asset	recommended-mcp/github-light.png	image/png	image/png	OK
+mime-asset	recommended-mcp/huggingface.ico	image/x-icon	image/x-icon	OK
+mime-asset	sw.js	application/javascript	application/javascript	OK
+mime-asset	workbox-b3c04f83.js	application/javascript	application/javascript	OK
+cache	0 immutable	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache	1 revalidate	no-cache	no-cache	OK
+cache	2 nocache	no-cache	no-cache	OK
+cache	-1 out of range	no-cache	no-cache	OK
+cache	-2 out of range	no-cache	no-cache	OK
+cache	3 out of range	no-cache	no-cache	OK
+cache	4 out of range	no-cache	no-cache	OK
+cache	100 out of range	no-cache	no-cache	OK
+cache	INT64_MIN out of range	no-cache	no-cache	OK
+cache	INT64_MAX out of range	no-cache	no-cache	OK
+tools	read_file	0	0	OK
+tools	file_glob_search	1	1	OK
+tools	grep_search	2	2	OK
+tools	exec_shell_command	3	3	OK
+tools	write_file	4	4	OK
+tools	edit_file	5	5	OK
+tools	get_info	6	6	OK
+tools	Read_File	-1	-1	OK
+tools	read_fil	-1	-1	OK
+tools	read_file 	-1	-1	OK
+tools	<empty>	-1	-1	OK
+tools	mcp__fs__read_file	-1	-1	OK
+tools-table	builtin order, grep_search	2	2	OK
+tools-table	reordered table, grep_search	4	4	OK
+tools-table	MCP appended, mcp name	7	7	OK
+tools-table	empty table, read_file	-1	-1	OK
+mime-raw	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-raw	sw.js	application/javascript	application/javascript	OK
+mime-raw	noext	application/octet-stream	application/octet-stream	OK
+mime-raw	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime-raw	<empty>	application/octet-stream	application/octet-stream	OK
+cache-raw	0	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache-raw	1	no-cache	no-cache	OK
+cache-raw	2	no-cache	no-cache	OK
+cache-raw	3	ERR	ERR	OK
+cache-raw	-1	ERR	ERR	OK
+tools-raw	read_file	0	0	OK
+tools-raw	file_glob_search	1	1	OK
+tools-raw	grep_search	2	2	OK
+tools-raw	exec_shell_command	3	3	OK
+tools-raw	write_file	4	4	OK
+tools-raw	edit_file	5	5	OK
+tools-raw	get_info	6	6	OK
+tools-raw	nope	ERR	ERR	OK
+tools-raw	<empty>	ERR	ERR	OK
+tools-raw	read_fil	ERR	ERR	OK
+# cases=150 divergences=0
+### OFF bridge: stubs for mime and Cache-Control  [rc=0]
+status	0	unknown	unknown	OK
+status	1	unknown	unknown	OK
+status	2	unknown	unknown	OK
+status	3	unknown	unknown	OK
+status	4	unknown	unknown	OK
+status	5	unknown	unknown	OK
+status	6	unknown	unknown	OK
+status	-1	unknown	unknown	OK
+status	7	unknown	unknown	OK
+cors	http://localhost:8080	true	true	OK
+cors	https://127.0.0.1	true	true	OK
+cors	http://[::1]:9000	true	true	OK
+cors	https://example.com	false	false	OK
+cors	http://127.0.0.1.evil.com	false	false	OK
+cors	ftp://localhost	false	false	OK
+mime	index.html	application/octet-stream	application/octet-stream	OK
+mime	_app/immutable/entry.js	application/octet-stream	application/octet-stream	OK
+mime	sw.js	application/octet-stream	application/octet-stream	OK
+mime	manifest.webmanifest	application/octet-stream	application/octet-stream	OK
+mime	build.json	application/octet-stream	application/octet-stream	OK
+mime	_app/version.json	application/octet-stream	application/octet-stream	OK
+mime	favicon.svg	application/octet-stream	application/octet-stream	OK
+mime	logo.png	application/octet-stream	application/octet-stream	OK
+mime	photo.jpg	application/octet-stream	application/octet-stream	OK
+mime	photo.jpeg	application/octet-stream	application/octet-stream	OK
+mime	favicon.ico	application/octet-stream	application/octet-stream	OK
+mime	font.woff	application/octet-stream	application/octet-stream	OK
+mime	font.woff2	application/octet-stream	application/octet-stream	OK
+mime	noext	application/octet-stream	application/octet-stream	OK
+mime	index.	application/octet-stream	application/octet-stream	OK
+mime	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z.js	application/octet-stream	application/octet-stream	OK
+mime	<empty>	application/octet-stream	application/octet-stream	OK
+mime-asset	_app/immutable/assets/bundle.D9-6832b.css	application/octet-stream	application/octet-stream	OK
+mime-asset	_app/immutable/bundle.CHX5bAvj.js	application/octet-stream	application/octet-stream	OK
+mime-asset	_app/version.json	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-1136x640.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-1334x750.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2266x1488.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2360x1640.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2388x1668.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2532x1170.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2556x1179.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2622x1206.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2732x2048.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2778x1284.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2796x1290.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-2868x1320.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-1136x640.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-1334x750.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2266x1488.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2360x1640.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2388x1668.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2532x1170.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2556x1179.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2622x1206.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2732x2048.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2778x1284.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2796x1290.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-landscape-dark-2868x1320.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1170x2532.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1179x2556.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1206x2622.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1284x2778.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1290x2796.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1320x2868.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1488x2266.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1640x2360.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-1668x2388.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-2048x2732.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-640x1136.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-750x1334.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1170x2532.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1179x2556.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1206x2622.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1284x2778.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1290x2796.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1320x2868.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1488x2266.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1640x2360.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-1668x2388.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-2048x2732.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-640x1136.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-splash-portrait-dark-750x1334.png	application/octet-stream	application/octet-stream	OK
+mime-asset	apple-touch-icon-180x180.png	application/octet-stream	application/octet-stream	OK
+mime-asset	build.json	application/octet-stream	application/octet-stream	OK
+mime-asset	favicon-dark.ico	application/octet-stream	application/octet-stream	OK
+mime-asset	favicon-dark.svg	application/octet-stream	application/octet-stream	OK
+mime-asset	favicon.ico	application/octet-stream	application/octet-stream	OK
+mime-asset	favicon.svg	application/octet-stream	application/octet-stream	OK
+mime-asset	index.html	application/octet-stream	application/octet-stream	OK
+mime-asset	manifest.webmanifest	application/octet-stream	application/octet-stream	OK
+mime-asset	maskable-icon-512x512.png	application/octet-stream	application/octet-stream	OK
+mime-asset	pwa-192x192.png	application/octet-stream	application/octet-stream	OK
+mime-asset	pwa-512x512.png	application/octet-stream	application/octet-stream	OK
+mime-asset	pwa-64x64.png	application/octet-stream	application/octet-stream	OK
+mime-asset	recommended-mcp/context7.png	application/octet-stream	application/octet-stream	OK
+mime-asset	recommended-mcp/exa.ico	application/octet-stream	application/octet-stream	OK
+mime-asset	recommended-mcp/github-dark.png	application/octet-stream	application/octet-stream	OK
+mime-asset	recommended-mcp/github-light.png	application/octet-stream	application/octet-stream	OK
+mime-asset	recommended-mcp/huggingface.ico	application/octet-stream	application/octet-stream	OK
+mime-asset	sw.js	application/octet-stream	application/octet-stream	OK
+mime-asset	workbox-b3c04f83.js	application/octet-stream	application/octet-stream	OK
+cache	0 immutable	no-cache	no-cache	OK
+cache	1 revalidate	no-cache	no-cache	OK
+cache	2 nocache	no-cache	no-cache	OK
+cache	-1 out of range	no-cache	no-cache	OK
+cache	-2 out of range	no-cache	no-cache	OK
+cache	3 out of range	no-cache	no-cache	OK
+cache	4 out of range	no-cache	no-cache	OK
+cache	100 out of range	no-cache	no-cache	OK
+cache	INT64_MIN out of range	no-cache	no-cache	OK
+cache	INT64_MAX out of range	no-cache	no-cache	OK
+tools	read_file	0	0	OK
+tools	file_glob_search	1	1	OK
+tools	grep_search	2	2	OK
+tools	exec_shell_command	3	3	OK
+tools	write_file	4	4	OK
+tools	edit_file	5	5	OK
+tools	get_info	6	6	OK
+tools	Read_File	-1	-1	OK
+tools	read_fil	-1	-1	OK
+tools	read_file 	-1	-1	OK
+tools	<empty>	-1	-1	OK
+tools	mcp__fs__read_file	-1	-1	OK
+tools-table	builtin order, grep_search	2	2	OK
+tools-table	reordered table, grep_search	4	4	OK
+tools-table	MCP appended, mcp name	7	7	OK
+tools-table	empty table, read_file	-1	-1	OK
+mime-raw	index.html	ERR	ERR	OK
+mime-raw	sw.js	ERR	ERR	OK
+mime-raw	noext	ERR	ERR	OK
+mime-raw	INDEX.HTML	ERR	ERR	OK
+mime-raw	<empty>	ERR	ERR	OK
+cache-raw	0	ERR	ERR	OK
+cache-raw	1	ERR	ERR	OK
+cache-raw	2	ERR	ERR	OK
+cache-raw	3	ERR	ERR	OK
+cache-raw	-1	ERR	ERR	OK
+tools-raw	read_file	ERR	ERR	OK
+tools-raw	file_glob_search	ERR	ERR	OK
+tools-raw	grep_search	ERR	ERR	OK
+tools-raw	exec_shell_command	ERR	ERR	OK
+tools-raw	write_file	ERR	ERR	OK
+tools-raw	edit_file	ERR	ERR	OK
+tools-raw	get_info	ERR	ERR	OK
+tools-raw	nope	ERR	ERR	OK
+tools-raw	<empty>	ERR	ERR	OK
+tools-raw	read_fil	ERR	ERR	OK
+# cases=150 divergences=0
+### default configure, Goose arm  [rc=0]
+status	0	downloading	downloading	OK
+status	1	incomplete	incomplete	OK
+status	2	downloaded	downloaded	OK
+status	3	unloaded	unloaded	OK
+status	4	loading	loading	OK
+status	5	loaded	loaded	OK
+status	6	sleeping	sleeping	OK
+status	-1	unknown	unknown	OK
+status	7	unknown	unknown	OK
+cors	http://localhost:8080	true	true	OK
+cors	https://127.0.0.1	true	true	OK
+cors	http://[::1]:9000	true	true	OK
+cors	https://example.com	false	false	OK
+cors	http://127.0.0.1.evil.com	false	false	OK
+cors	ftp://localhost	false	false	OK
+mime	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime	_app/immutable/entry.js	application/javascript	application/javascript	OK
+mime	sw.js	application/javascript	application/javascript	OK
+mime	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime	build.json	application/json	application/json	OK
+mime	_app/version.json	application/json	application/json	OK
+mime	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime	logo.png	image/png	image/png	OK
+mime	photo.jpg	image/jpeg	image/jpeg	OK
+mime	photo.jpeg	image/jpeg	image/jpeg	OK
+mime	favicon.ico	image/x-icon	image/x-icon	OK
+mime	font.woff	font/woff	font/woff	OK
+mime	font.woff2	font/woff2	font/woff2	OK
+mime	noext	application/octet-stream	application/octet-stream	OK
+mime	index.	application/octet-stream	application/octet-stream	OK
+mime	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z	application/octet-stream	application/octet-stream	OK
+mime	_app/x.y/z.js	application/javascript	application/javascript	OK
+mime	<empty>	application/octet-stream	application/octet-stream	OK
+mime-asset	_app/immutable/assets/bundle.D9-6832b.css	text/css	text/css	OK
+mime-asset	_app/immutable/bundle.CHX5bAvj.js	application/javascript	application/javascript	OK
+mime-asset	_app/version.json	application/json	application/json	OK
+mime-asset	apple-splash-landscape-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1136x640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-1334x750.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2266x1488.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2360x1640.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2388x1668.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2532x1170.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2556x1179.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2622x1206.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2732x2048.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2778x1284.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2796x1290.png	image/png	image/png	OK
+mime-asset	apple-splash-landscape-dark-2868x1320.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-750x1334.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1170x2532.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1179x2556.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1206x2622.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1284x2778.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1290x2796.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1320x2868.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1488x2266.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1640x2360.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-1668x2388.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-2048x2732.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-640x1136.png	image/png	image/png	OK
+mime-asset	apple-splash-portrait-dark-750x1334.png	image/png	image/png	OK
+mime-asset	apple-touch-icon-180x180.png	image/png	image/png	OK
+mime-asset	build.json	application/json	application/json	OK
+mime-asset	favicon-dark.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon-dark.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	favicon.ico	image/x-icon	image/x-icon	OK
+mime-asset	favicon.svg	image/svg+xml	image/svg+xml	OK
+mime-asset	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-asset	manifest.webmanifest	application/manifest+json	application/manifest+json	OK
+mime-asset	maskable-icon-512x512.png	image/png	image/png	OK
+mime-asset	pwa-192x192.png	image/png	image/png	OK
+mime-asset	pwa-512x512.png	image/png	image/png	OK
+mime-asset	pwa-64x64.png	image/png	image/png	OK
+mime-asset	recommended-mcp/context7.png	image/png	image/png	OK
+mime-asset	recommended-mcp/exa.ico	image/x-icon	image/x-icon	OK
+mime-asset	recommended-mcp/github-dark.png	image/png	image/png	OK
+mime-asset	recommended-mcp/github-light.png	image/png	image/png	OK
+mime-asset	recommended-mcp/huggingface.ico	image/x-icon	image/x-icon	OK
+mime-asset	sw.js	application/javascript	application/javascript	OK
+mime-asset	workbox-b3c04f83.js	application/javascript	application/javascript	OK
+cache	0 immutable	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache	1 revalidate	no-cache	no-cache	OK
+cache	2 nocache	no-cache	no-cache	OK
+cache	-1 out of range	no-cache	no-cache	OK
+cache	-2 out of range	no-cache	no-cache	OK
+cache	3 out of range	no-cache	no-cache	OK
+cache	4 out of range	no-cache	no-cache	OK
+cache	100 out of range	no-cache	no-cache	OK
+cache	INT64_MIN out of range	no-cache	no-cache	OK
+cache	INT64_MAX out of range	no-cache	no-cache	OK
+tools	read_file	0	0	OK
+tools	file_glob_search	1	1	OK
+tools	grep_search	2	2	OK
+tools	exec_shell_command	3	3	OK
+tools	write_file	4	4	OK
+tools	edit_file	5	5	OK
+tools	get_info	6	6	OK
+tools	Read_File	-1	-1	OK
+tools	read_fil	-1	-1	OK
+tools	read_file 	-1	-1	OK
+tools	<empty>	-1	-1	OK
+tools	mcp__fs__read_file	-1	-1	OK
+tools-table	builtin order, grep_search	2	2	OK
+tools-table	reordered table, grep_search	4	4	OK
+tools-table	MCP appended, mcp name	7	7	OK
+tools-table	empty table, read_file	-1	-1	OK
+mime-raw	index.html	text/html; charset=utf-8	text/html; charset=utf-8	OK
+mime-raw	sw.js	application/javascript	application/javascript	OK
+mime-raw	noext	application/octet-stream	application/octet-stream	OK
+mime-raw	INDEX.HTML	application/octet-stream	application/octet-stream	OK
+mime-raw	<empty>	application/octet-stream	application/octet-stream	OK
+cache-raw	0	public, max-age=31536000, immutable	public, max-age=31536000, immutable	OK
+cache-raw	1	no-cache	no-cache	OK
+cache-raw	2	no-cache	no-cache	OK
+cache-raw	3	ERR	ERR	OK
+cache-raw	-1	ERR	ERR	OK
+tools-raw	read_file	0	0	OK
+tools-raw	file_glob_search	1	1	OK
+tools-raw	grep_search	2	2	OK
+tools-raw	exec_shell_command	3	3	OK
+tools-raw	write_file	4	4	OK
+tools-raw	edit_file	5	5	OK
+tools-raw	get_info	6	6	OK
+tools-raw	nope	ERR	ERR	OK
+tools-raw	<empty>	ERR	ERR	OK
+tools-raw	read_fil	ERR	ERR	OK
+# cases=150 divergences=0

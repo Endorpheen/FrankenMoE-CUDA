@@ -2274,19 +2274,18 @@
         "common/**"
       ],
       "acceptance": "Goose entrypoint owns HTTP/API lifecycle; link/source/import audit shows no owned original C++ server/parser/task logic remains.",
-      "evidence": "2026-11-15 analysis (docs/goose-migration/P8-12-P4-13-ANALYSIS.md): the merged server sources exist (all four ports in one server-context.cpp, 29 references, 158 changed lines) and link_server.py relinks libllama-server-impl.so with the four bridges (rc=0, 19 defined / 0 undefined fg symbols). The shipped llama-server is not built from them yet, the S2.3 call sites (49 files / 18318 lines) are not switched, and the removal order must follow the switch order. Prerequisite: the M1 staged build that links llama-server with the server flags and does not run a model. 2026-11-15 EXP661 (experiments/EXP-2026-11-15-661-p8-12b-server-switches): the merged server sources build and link (OFF/ON 19 608 544 / 19 692 888 B phase A, 19 608 376 / 19 692 728 B phase B; step-1 baselines byte-identical). Two call sites are runtime switches with Goose as the default (rule 10): model status and Origin host. The native server_model_status_to_string body is removed; the OFF arm answers unknown, which the gate records. The gate passes 15/15 on ON (9 statuses + 3 localhost hosts + 3 refusals) and mutations 12/12 in halves. A previous-step defect was fixed: goose_init was never called, so fgs_init_early now runs at the start of llama_server plus a lazy start in the bridge.",
+      "evidence": "2026-11-15 analysis (docs/goose-migration/P8-12-P4-13-ANALYSIS.md): the merged server sources exist (all four ports in one server-context.cpp, 29 references, 158 changed lines) and link_server.py relinks libllama-server-impl.so with the four bridges (rc=0, 19 defined / 0 undefined fg symbols). The shipped llama-server is not built from them yet, the S2.3 call sites (49 files / 18318 lines) are not switched, and the removal order must follow the switch order. Prerequisite: the M1 staged build that links llama-server with the server flags and does not run a model. 2026-11-15 EXP661 (experiments/EXP-2026-11-15-661-p8-12b-server-switches): the merged server sources build and link (OFF/ON 19 608 544 / 19 692 888 B phase A, 19 608 376 / 19 692 728 B phase B; step-1 baselines byte-identical). Two call sites are runtime switches with Goose as the default (rule 10): model status and Origin host. The native server_model_status_to_string body is removed; the OFF arm answers unknown, which the gate records. The gate passes 15/15 on ON (9 statuses + 3 localhost hosts + 3 refusals) and mutations 12/12 in halves. A previous-step defect was fixed: goose_init was never called, so fgs_init_early now runs at the start of llama_server plus a lazy start in the bridge. 2026-11-15 EXP663 (experiments/EXP-2026-11-15-663-p8-12c-mime-cache-tools): the remaining three sites are promoted and ON by default. Asset content type (mime-table.goose) and Cache-Control (web-assets.goose) lost their native bodies in the serve path; the built-in tool dispatch (tools-pure.goose tool_index) keeps its native linear scan because find_tool also serves MCP tools appended at run time, and the module index is trusted only when the native vector holds the same name at that position. OFF/ON 19 608 584 / 19 692 904 B, default configure 19 692 904 B with goose_init once; the differential gate is 150/150 in five runs (explicit init, lazy init, native arms, OFF stubs, default) and the mutations are 36/36 in three halves of twelve. Re-verified independently at acceptance.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B4",
       "remaining": [
-        "switch MIME, then Cache-Control, then the tool dispatch (find_tool also serves MCP)",
-        "remove the remaining native server bodies after each switch is accepted",
+        "remove the remaining native server bodies after each switch is accepted: the Origin three-compare arm and the find_tool linear scan are the last two that still have one",
         "relink the shipped application binary and remove the native server files",
         "run the Apex A/B once approved"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-15-661-p8-12b-server-switches/README.md",
+      "coverage_doc": "experiments/EXP-2026-11-15-663-p8-12c-mime-cache-tools/README.md",
       "slices_total": 3,
       "slices_done": 3
     },
@@ -5632,7 +5631,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T06:58:23.280302+00:00",
+  "updated_at": "2026-11-15T10:50:00+00:00",
   "status_totals": {
     "DONE": 114,
     "PARTIAL": 24,

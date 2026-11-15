@@ -1,6 +1,6 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (22). This file is the current state; update it in the same change
+Updated: 2026-11-15 (23). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
@@ -50,6 +50,9 @@ entries including the archive). The accepted slices of this phase cover:
   editing (P7-11 complete);
 - server tool definitions and request schema, plus the MCP stdio integration
   (framing, pumps, reply matching, diagnostics, manager) closing P8-07 at 6/6;
+  the five P8-12 server call sites now ask the composed unit first by default
+  (model status, Origin host, asset content type, Cache-Control, tool dispatch),
+  three of them with the native body deleted (EXP661, EXP663);
 - config validation (48 ordered rules), the MoE recipe registry and CLI
   resolution (flags > env > defaults);
 - expert LRU, dense placement and row-stream planning;
