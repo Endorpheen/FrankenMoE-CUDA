@@ -36,6 +36,14 @@ extern int64_t s1_init(sl_i64 st, sl_i64 key_off, sl_i64 key_len, sl_i64 types,
 extern int64_t s1_set_val(sl_i64 st, sl_u8 pool, sl_i64 key_off, sl_i64 key_len,
                           sl_i64 types, sl_i64 arr, sl_i64 v0, sl_i64 v1, sl_i64 v2,
                           sl_u8 key, int64_t t, int64_t bits, sl_i64 out);
+// Array setters. s1_set_arr stages raw element bytes; s1_set_arr_str takes the
+// NUL-separated concatenation plus the element count.
+extern int64_t s1_set_arr(sl_i64 st, sl_u8 pool, sl_i64 key_off, sl_i64 key_len,
+                          sl_i64 types, sl_i64 arr, sl_i64 v0, sl_i64 v1, sl_i64 v2,
+                          sl_u8 key, int64_t atype, sl_u8 data, int64_t n, sl_i64 out);
+extern int64_t s1_set_arr_str(sl_i64 st, sl_u8 pool, sl_i64 key_off, sl_i64 key_len,
+                              sl_i64 types, sl_i64 arr, sl_i64 v0, sl_i64 v1, sl_i64 v2,
+                              sl_u8 key, sl_u8 data, int64_t n, sl_i64 out);
 
 // The metadata table layout the module documents: one int64 per entry for the
 // state word, plus parallel offset/length/type arrays.
@@ -63,7 +71,7 @@ int main(int argc, char ** argv) {
 
     // The same table, built by Goose: s1_init fills the state words and copies
     // the keys into a caller pool.
-    static char pool[1 << 16];
+    static char pool[1 << 24];   // tokenizers carry tens of thousands of strings
     static int64_t st[MAX_KV];
     static int64_t key_off[MAX_KV];
     static int64_t key_len[MAX_KV];
@@ -104,7 +112,58 @@ int main(int argc, char ** argv) {
     for (int64_t i = 0; i < n_kv && i < MAX_KV; ++i) {
         const enum gguf_type t = gguf_get_kv_type(ctx, (int) i);
         if (t == GGUF_TYPE_ARRAY) {
-            continue;   // the array setters take a staged payload; not this host
+            const enum gguf_type at = gguf_get_arr_type(ctx, (int) i);
+            const int64_t an = (int64_t) gguf_get_arr_n(ctx, (int) i);
+            const char * ak = gguf_get_key(ctx, (int) i);
+            const size_t akl = strlen(ak);
+            memcpy(pool + pool_at, ak, akl);
+            const sl_u8 akey = { (uint8_t *) pool + pool_at, (int64_t) akl };
+            pool_at += (int64_t) akl;
+
+            int64_t rc = -1;
+            if (at == GGUF_TYPE_STRING) {
+                // NUL-separated concatenation of the elements, as the module's
+                // string-array contract specifies.
+                static char strdata[1 << 22];
+                int64_t sdl = 0;
+                for (int64_t e = 0; e < an; ++e) {
+                    const char * el = gguf_get_arr_str(ctx, (int) i, (int) e);
+                    const size_t eln = strlen(el);
+                    if (sdl + (int64_t) eln + 1 >= (int64_t) sizeof strdata) break;
+                    memcpy(strdata + sdl, el, eln);
+                    sdl += (int64_t) eln;
+                    strdata[sdl++] = '\0';
+                }
+                rc = s1_set_arr_str(
+                    (sl_i64) { st, MAX_KV }, (sl_u8) { (uint8_t *) pool, (int64_t) sizeof pool },
+                    (sl_i64) { key_off, MAX_KV }, (sl_i64) { key_len, MAX_KV },
+                    (sl_i64) { types, MAX_KV }, (sl_i64) { arr, MAX_KV },
+                    (sl_i64) { v0, MAX_KV }, (sl_i64) { v1, MAX_KV }, (sl_i64) { v2, MAX_KV },
+                    akey, (sl_u8) { (uint8_t *) strdata, sdl }, an, (sl_i64) { out, 1 });
+            } else {
+                // Raw element bytes, one element at a time into a staging buffer.
+                static uint8_t raw[1 << 20];
+                int64_t rl = 0;
+                for (int64_t e = 0; e < an; ++e) {
+                    int64_t word = 0;
+                    if (at == GGUF_TYPE_UINT8)        word = gguf_get_arr_data(ctx, (int) i) ? (int64_t) ((const uint8_t *) gguf_get_arr_data(ctx, (int) i))[e] : 0;
+                    else if (at == GGUF_TYPE_INT32)   word = (int64_t) ((const int32_t *) gguf_get_arr_data(ctx, (int) i))[e];
+                    else if (at == GGUF_TYPE_UINT32)  word = (int64_t) ((const uint32_t *) gguf_get_arr_data(ctx, (int) i))[e];
+                    else if (at == GGUF_TYPE_FLOAT32) { float f = ((const float *) gguf_get_arr_data(ctx, (int) i))[e]; memcpy(&word, &f, 4); }
+                    else                              break;
+                    if (rl + 8 > (int64_t) sizeof raw) break;
+                    memcpy(raw + rl, &word, 8);
+                    rl += 8;
+                }
+                rc = s1_set_arr(
+                    (sl_i64) { st, MAX_KV }, (sl_u8) { (uint8_t *) pool, (int64_t) sizeof pool },
+                    (sl_i64) { key_off, MAX_KV }, (sl_i64) { key_len, MAX_KV },
+                    (sl_i64) { types, MAX_KV }, (sl_i64) { arr, MAX_KV },
+                    (sl_i64) { v0, MAX_KV }, (sl_i64) { v1, MAX_KV }, (sl_i64) { v2, MAX_KV },
+                    akey, (int64_t) at, (sl_u8) { raw, rl }, an, (sl_i64) { out, 1 });
+            }
+            if (rc == 0) { ++built; ++scalar_kv; }
+            continue;
         }
         ++scalar_kv;
         int64_t bits = 0;
@@ -175,9 +234,9 @@ int main(int argc, char ** argv) {
            (long long) runs, (long long) abi_type_count(), argv[1],
            (long long) n_kv, (long long) n_tensor, first_key,
            (long long) built, goose_first,
-           // The module must accept every non-array key of the file and agree on
-           // the first key's bytes. Arrays are skipped above by design.
-           (built == scalar_kv && strcmp(first_key, goose_first) == 0) ? "yes" : "no");
+           // The module must accept EVERY key of the file and agree on the first
+           // key's bytes. Nothing is skipped any more, so this is the full set.
+           (built == n_kv && strcmp(first_key, goose_first) == 0) ? "yes" : "no");
 
     gguf_free(ctx);
     return (runs == 1 && built > 0) ? 0 : 1;

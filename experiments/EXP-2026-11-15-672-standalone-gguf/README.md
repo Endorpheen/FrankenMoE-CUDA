@@ -18,11 +18,14 @@ builds/goose-standalone/frankenmoe-v2 <model.gguf>
 
 Three real vocab GGUFs from the upstream tree:
 
-| file | kv | non-array | Goose accepted | agree |
-|---|---:|---:|---:|---|
-| `ggml-vocab-bert-bge.gguf` | 20 | 18 | 18 | yes |
-| `ggml-vocab-gpt-neox.gguf` | 17 | 14 | 14 | yes |
-| `ggml-vocab-llama-spm.gguf` | 22 | 19 | 19 | yes |
+| file | kv | Goose accepted | agree |
+|---|---:|---:|---|
+| `ggml-vocab-bert-bge.gguf` | 20 | 20 | yes |
+| `ggml-vocab-gpt-neox.gguf` | 17 | 17 | yes |
+| `ggml-vocab-llama-spm.gguf` | 22 | 22 | yes |
+| `ggml-vocab-aquila.gguf` | 18 | 18 | yes |
+
+Every key of every file is accepted, arrays included.
 
 `agree=yes` means the substrate reader and the Goose table report the same first
 key, byte for byte, and that Goose accepted every key it was offered.
@@ -57,10 +60,11 @@ Each is recorded because each would have shipped as a silent or loud failure:
 
 ## 4. What this does not do yet
 
-1. **Arrays are skipped by design.** The array setters (`s1_set_arr`,
-   `s1_set_arr_str`) take a staged payload the host has not built. On the three
-   files above that is 2 of 20, 3 of 17 and 3 of 19 keys; the scalar path is what
-   this experiment proves.
+1. Array payloads are staged by the host: numeric arrays as 8-byte words, string
+   arrays as the NUL-separated concatenation the module's contract names. The
+   first attempt used a 64 KiB pool and the tokenizer arrays overflowed it
+   (`index 65536 out of bounds`); the pool is now 16 MiB and the string staging
+   4 MiB, sized for a real tokenizer.
 2. **No tensor data.** `no_alloc = true`: the container is read, the tensor
    directory is not materialised.
 3. **No model, no graph, no GPU, no HTTP.** This is still the runtime core.
