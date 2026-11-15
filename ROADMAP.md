@@ -145,7 +145,120 @@ History: [experiments/EXPERIMENTS.md](experiments/EXPERIMENTS.md), the individua
 | P8 — mixed quant | Deferred: no representative quality baseline and no quality budget. |
 | P9 — REAP | Deferred for the same reason; do not change the model and the top-k. |
 | P10 — batching | Deferred until the stable single-request path and the lifetime check under several requests. Aggregate tok/s is a separate metric. |
-| P11 — API/autotuning | The OpenAI-compatible server already works. Autotuning and UI are not the next step. |
+| P11 — API/autotuning | The OpenAI-compatible server already works. Autotuning and UI are not the next step. After P11-08 the delivery order is fixed in "Delivery sequence after P11": Apex performance acceptance, GitHub Release, manual acceptance, agreed optimisation, then Qwen3.8-Next/Edge0. |
+
+## Delivery sequence after P11
+
+This section fixes the order of work after P11-08. It is a recorded plan: it
+starts no experiment, launches no server and changes no working runtime.
+
+## Rule
+
+Completing P11-08 does **not** open Qwen3.8-Next, Edge0 or any other
+architecture automatically. The order below is strict, and each arrow is a
+blocking gate: the next stage starts only after the previous one is accepted in
+writing.
+
+    Apex performance acceptance
+        -> GitHub Release
+        -> manual acceptance by the end user
+        -> agreed Apex optimisation
+        -> Qwen3.8-Next / Edge0 on the same runtime
+
+The priority of P11-01 – P11-08 and of the full removal of the project's own
+C/C++/CUDA logic is unchanged until P11-08 is complete.
+
+## 1. Apex performance acceptance
+
+Compare the new Goose runtime with the last optimised small Apex path, not with
+vanilla llama.cpp.
+
+Reference values to preserve:
+
+| item | value |
+|---|---|
+| prefill | 2228.76 tok/s |
+| decode | 41.62 tok/s (best observed around 43 tok/s) |
+| GPU | RTX 4070 12 GB |
+| flags | `--cpu-moe -ngl all -fa on`, KV `q4_0`, context 262144, batch/ubatch 4096, threads 8/16, MoE cache 3584 MiB |
+
+Check prefill and decode speed, token correctness, RAM/VRAM and stability. Keep
+the reference binary and a rollback path. Do not accept an unexplained
+regression, and measure with an identical configuration and comparable load.
+
+A real model and GPU benchmarks require the project owner's separate approval.
+
+## 2. GitHub Release
+
+After the technical acceptance:
+
+1. Build the release binary with the new Goose runtime.
+2. Publish it to GitHub Releases with checksums and build details.
+3. Provide the exact verified run command with the same optimal Apex settings,
+   on port 8081.
+4. Provide start, stop and rollback instructions.
+
+Never replace the working reference binary automatically.
+
+## 3. Manual acceptance by the end user
+
+After the release candidate is published, a separate manual check is mandatory:
+
+1. Start the new `llama-server` on port 8081.
+2. The server web interface is reachable.
+3. Prompts are sent and answers are received.
+4. Generation quality, speed and stability under normal use.
+5. Tasks run through OpenCode against the API on port 8081.
+6. The existing agent profile works through the same API.
+7. Agent scenarios, long requests, streaming generation and no functional
+   regressions.
+
+This stage blocks everything after it: further work starts only after the project
+owner explicitly confirms that manual acceptance passed.
+
+Public wording stays neutral: "manual acceptance", "end-user verification",
+"project owner confirmation". Do not include names, personal circumstances or
+first-person wording.
+
+## 4. Additional Apex optimisation
+
+Only after successful manual acceptance. Priorities:
+
+- prefilling speed;
+- decoding speed;
+- lower VRAM/RAM use;
+- kernels, memory, scheduler and data transfer where profiles show a confirmed
+  bottleneck.
+
+Every improvement is measured against the accepted reference. Correctness and
+generation quality are not traded for speed. Scope and duration are agreed
+separately; the stage does not start automatically.
+
+## 5. Qwen3.8-Next and Edge0
+
+Only after the agreed Apex optimisation. Extend the **same** unified Goose
+runtime; do not fork it. Check:
+
+- architecture and loader compatibility;
+- GGUF, quantisation and numerical accuracy;
+- tokenizer and context;
+- prefill/decode and memory use;
+- correctness and generation quality;
+- API and agent scenarios;
+- no regression against the accepted Apex.
+
+## Blocking conditions
+
+| transition | condition |
+|---|---|
+| P11-08 -> stage 1 | P11-01 – P11-08 complete, own C/C++/CUDA logic removed |
+| stage 1 -> stage 2 | Apex acceptance passed, no unexplained regression, rollback verified |
+| stage 2 -> stage 3 | release published with checksums and run/rollback instructions |
+| stage 3 -> stage 4 | project owner explicitly confirms manual acceptance |
+| stage 4 -> stage 5 | optimisation stage accepted in writing |
+
+No model, server for real tests, or GPU benchmark is started without the
+required approval.
 
 ## Execution queue
 
