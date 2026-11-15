@@ -91,6 +91,40 @@ mismatch could only come from the layers above it, not from this one.
 | CUDA | not built |
 | tokenizer, HTTP | not built |
 
+## 4b. The recurrent layer: what it needs, read from the native builder
+
+31 of the 42 layers are recurrent, so this is the majority path. `qwen35moe.cpp`
+:404-470 gives the order, and it needs more than the attention layer did:
+
+```
+conv_states = get_r_l(il)          persistent per-layer conv state
+ssm_states  = get_s_l(il)          persistent per-layer SSM state
+conv_input  = build_conv_state(inp, conv_states, qkv_mixed, kernel_size, channels)
+state       = reshape(get_rs(...), head_v_dim, head_v_dim, num_v_heads, n_seqs)
+conv_out    = ggml_ssm_conv(conv_input, ssm_conv1d)
+conv_silu   = ggml_silu(conv_out)
+q/k/v       = view_4d over conv_silu with the qkv stride
+q, k        = ggml_l2_norm(q, eps), ggml_l2_norm(k, eps)
+repeat      = q/k repeated to num_v_heads when the head counts differ
+...         = gated_delta_net(q, k, v, gate, beta, state)
+```
+
+Three things the runtime does not have yet, and each is a specific piece rather
+than a vague gap:
+
+1. **State buffers.** `conv_states` and `ssm_states` are the recurrent layer's KV
+   cache: they persist across tokens and are read and written by every step. The
+   one-layer gate can pass a zeroed state, but prefill and decode cannot.
+2. **`l2_norm`.** The module has 28 modes and none of them is `ggml_l2_norm`, so a
+   new mode or export is needed. `ggml_repeat_4d` is likewise absent.
+3. **The qkv stride view.** The conv output carries q, k and v at a
+   `head_k_dim*num_k_heads*2 + head_v_dim*num_v_heads` stride, which is a
+   `view_4d` with an offset - the primitive added in EXP-687c covers this.
+
+Node-level work for that path is already proven: `ssm_conv` and
+`gated_delta_net` are bit-exact against the substrate (EXP-685g/685h). What is
+missing is the state plumbing and two ops.
+
 ## 5. Cost
 
 One arch-unit build (for `qg_split`), then gate compiles only. No model was started.
