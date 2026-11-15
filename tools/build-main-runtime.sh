@@ -116,6 +116,9 @@ MODULES=(
     goose/server/http-url-policy.goose
     goose/server/jsonparse.goose
     goose/server/route-table.goose
+    goose/server/web-assets.goose
+    goose/server/mime-table.goose
+    goose/server/asset-etag.goose
     goose/chat/thinking-control.goose
     goose/chat/parse-params.goose
     goose/chat/session-loop.goose

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T04:36:31.992111+00:00",
+  "updated_at": "2026-11-15T04:37:57.201497+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -783,6 +783,42 @@
       "status": "ported",
       "sha256": "56cc6dd0883b282bee945cc6658125561aef663c335a9c482a720d54933da44c",
       "gate": "gbnf 13/13, cases 13/0, parse 9/9, 27/27 mutations + parse 5/5; base EXP593 gates unchanged"
+    },
+    {
+      "goose": "server/web-assets.goose",
+      "native": "tools/server/server-http.cpp (embedded asset serving, gzip gate, ETag/304, cache headers)",
+      "native_targets": [
+        "tools/server/server-http.cpp (embedded asset serving, gzip gate, ETag/304, cache headers)"
+      ],
+      "experiment": "EXP-2026-11-15-653-p8-09-web-serving",
+      "task": "",
+      "status": "ported",
+      "sha256": "0315674e23129694f19b99e28287ce747ee2bc40ca389107c05edd2b632f69c7",
+      "gate": "51 cases / 294 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "server/mime-table.goose",
+      "native": "tools/ui/embed.cpp (mime_from_ext, basename, required bundle labels)",
+      "native_targets": [
+        "tools/ui/embed.cpp (mime_from_ext, basename, required bundle labels)"
+      ],
+      "experiment": "EXP-2026-11-15-653-p8-09-web-serving",
+      "task": "",
+      "status": "ported",
+      "sha256": "59fbb6778ac6d1251c276b68e295bf54e2bdc7f849804b3fb61542e41d5f1bdb",
+      "gate": "73 cases / 156 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "server/asset-etag.goose",
+      "native": "tools/ui/embed.cpp (FNV-1a and ETag literal)",
+      "native_targets": [
+        "tools/ui/embed.cpp (FNV-1a and ETag literal)"
+      ],
+      "experiment": "EXP-2026-11-15-653-p8-09-web-serving",
+      "task": "",
+      "status": "ported",
+      "sha256": "9f74aeb283ebd86f2b99d47476da9a837f35b2a1309e2b379a3e8258efbdecce",
+      "gate": "42 cases / 108 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "server/model-manager.goose",
