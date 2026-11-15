@@ -24,9 +24,15 @@ json); SSE is sent for unmatched names; the alias pass is order-sensitive;
 unloading a model in LOADING kills the process without an exit command
 (`send_exit = false`), while other states get the soft command first.
 
+## Staged switch
+
+Wired in the isolated staged build (EXP642, `FG_GOOSE_MODELS`): 84/84 cases /
+198 values, `goose_calls=84`, nm 1/0, three negative controls caught.
+
 ## Remaining
 
-Wire `runtime/core/src/engine/model_router.cpp` to `mg_`/`hr_`/`cn_` in order:
+Remove the staged pin once the runtime uses the switch by default; the call order
+in `runtime/core/src/engine/model_router.cpp` is:
 `server_lru_sched` -> unload/remove/request_stop/update_status -> load_models
 reload -> server_connect -> sidecar/hf-repo.
 

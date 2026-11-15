@@ -18,9 +18,14 @@ Status: **PARTIAL** — 3 of 3 slices accepted; the runtime wiring is open.
 - Mutations: 36/36 (12 per slice, halves 6/6), each mutant passes `goose check`
   and fails its slice gate.
 
+## Staged switch
+
+Wired in the isolated staged build (EXP643, `FG_GOOSE_SESSION`): 191 cases / 929
+checks, `goose_calls=376`, byte-identical dumps, 28 transcription anchors.
+
 ## Remaining
 
-Extract `expert_bytes_per_slot(meta)` from `hot_slots_from_budget`, keep
+Remove the staged pin once the runtime uses the switch by default; keep
 `rts_config` as a drift pin (it is not a replacement for
 `session_config_from`), and wire only `rts_n_batch` / `rts_ubatch`. The MTP head
 admission must stay strictly before the hook/stream bound.
