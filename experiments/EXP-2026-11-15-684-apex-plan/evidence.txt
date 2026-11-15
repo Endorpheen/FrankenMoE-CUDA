@@ -1,3 +1,4 @@
+--- apex_plan ---
 FG_APEX_PLAN arch=qwen35moe layers=42 attn=10 recr=31 mtp=1 other=0 embd=2048 head=16 head_kv=2 experts=256 used=8 interval=4
-rc=0
-55
+--- apex_shape (24 tensors vs the real GGUF) ---
+FG_APEX_SHAPE cases=24 mismatches=0 PASS

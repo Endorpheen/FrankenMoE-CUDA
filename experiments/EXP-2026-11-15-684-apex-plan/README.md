@@ -43,6 +43,33 @@ This is the value of running against the real file: the synthetic parameter sets
 EXP-577 accepted exercise the interval formula, but only a real model shows which
 key name carries it.
 
+## 3b. The declared shapes match the real weights
+
+`integration/goose-standalone/tests/apex_shape.c` compares `q35_shape`'s
+declaration against the GGUF tensor list, tensor by tensor, for one recurrent
+layer and one attention layer plus the model-level tensors:
+
+```
+FG_APEX_SHAPE cases=24 mismatches=0 PASS
+```
+
+24 of 24 extents agree exactly. That covers the norm vectors, the whole expert
+FFN stack (gate_inp, down_exps, gate_exps, up_exps), the shared-expert stack, and
+for the recurrent layer the entire SSM/GDN stack (conv1d, a, beta, alpha, norm,
+out).
+
+Two things this check taught:
+
+1. `token_embd` first reported `declared=[2048 0 1]` against `[2048 248320 1]`.
+   The cause was the gate, not the module: the model carries no
+   `qwen35moe.vocab_size`, so the vocabulary comes from the tokenizer's token
+   list. Counting that list fixes it.
+2. Attention layers in this file carry **separate** `attn_q`, `attn_k`, `attn_v`,
+   while the module declares one fused `T_ATTN_QKV`. Both are legitimate layouts
+   of the same architecture, so those tensors are deliberately not compared: a
+   difference there is a variant, not a defect, and reporting it as a failure
+   would be false precision.
+
 ## 4. What this does and does not prove
 
 **Proves**: the architecture builder answers for the actual Apex weights file -
