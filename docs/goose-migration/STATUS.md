@@ -34,7 +34,7 @@ The remaining partial requirements and their slice fronts:
 
 ## What the canonical tree contains
 
-`goose/` holds 891 canonical files outside `_archive` (4226 verified manifest
+`goose/` holds 919 canonical files outside `_archive` (4254 verified manifest
 entries including the archive). The accepted slices of this phase cover:
 
 - Jinja runtime 19025 lines (expressions, statements, filters, tests, macros,

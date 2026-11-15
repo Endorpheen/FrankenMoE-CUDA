@@ -10,16 +10,16 @@ grouped by what it does rather than by the experiment that proved it.
 | `jinja/` | 16 | the Jinja stack: lexer, parser, value model, JSON output, built-ins, runtime |
 | `json/` | 73 | JSON text parsing, rendering, JSON-schema decoding and introspection |
 | `grammar/` | 1 | GBNF grammar text parsing |
-| `server/` | 59 | HTTP server decisions: routing, limits, SSE, providers, MCP and startup/shutdown |
+| `server/` | 62 | HTTP server decisions: routing, limits, SSE, providers, MCP and startup/shutdown |
 | `cpu/` | 245 | CPU backends, quantized kernels, MoE, allocator, scheduler and optimizer work |
 | `cuda/` | 233 | CUDA operators: attention, quantization, reductions, RoPE, SSM, MoE |
 | `kv/` | 90 | KV cache, memory, batch, context and recurrent state |
 | `model/` | 101 | model loading, GGUF, tokenizer, quantization and graph construction |
 | `sampling/` | 5 | sampler decisions and output selection |
-| `metrics/` | 1 | metrics, trace and deterministic-workload text encoders |
+| `metrics/` | 2 | metrics, trace and deterministic-workload text encoders |
 | `chat/` | 18 | chat templates, tool calls and message conversion |
 | `cli/` | 7 | the session line protocol, config validation and resolution |
-| `misc/` | 42 | common helpers and slices whose native file the ledger does not name |
+| `misc/` | 66 | common helpers and slices whose native file the ledger does not name |
 | `_archive/` | 3335 | sources preserved from other checkouts and branches, not part of the tree |
 
 A complete module is one file named after the native module it replaces
