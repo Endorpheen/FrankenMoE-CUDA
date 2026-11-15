@@ -60,6 +60,13 @@ It still cannot link because the native helper entry points are extern symbols
 supplied by the per-slice test fixtures; wiring them to the runtime is S1 work.
 This step touches no production file.
 
+Determinism, measured on 2026-11-15: the composer gives byte-identical output
+for the same module list, the C generator gives byte-identical output for the
+same composed file, and two consecutive builds into the same output directory
+give identical `main.c` and `main.o` hashes. Only the output path changes the
+hash, because the generated C embeds it in `gs_file0`; a fixed `OUT` is therefore
+required for byte-level comparison.
+
 ### Compatibility rule
 
 The build grows only with modules that share one unit. A subsystem whose
