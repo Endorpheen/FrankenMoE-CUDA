@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-14T23:40:28.688065+00:00",
+  "updated_at": "2026-11-15T00:26:57.127804+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -855,6 +855,42 @@
       "status": "ported",
       "sha256": "cfdf41c3e97a899aa055a5f7d84e201dfa2272430b06f078d46403f61b028212",
       "gate": "37 cases / 55 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/hook-rules.goose",
+      "native": "runtime/core/src/moe/router_hook.cpp (names, arming, isolation, call order)",
+      "native_targets": [
+        "runtime/core/src/moe/router_hook.cpp (names, arming, isolation, call order)"
+      ],
+      "experiment": "EXP-2026-11-15-629-p9-04-stream-hooks",
+      "task": "",
+      "status": "ported",
+      "sha256": "0a2de5e66c08857be3b8d221b3dc7941c75fd9be7a1759f29c0e34adcc3f4ef8",
+      "gate": "302 cases / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/overlap-rules.goose",
+      "native": "runtime/core/src/moe/expert_stream_source.cpp and stall_union.h (waves, publication, drain, gate)",
+      "native_targets": [
+        "runtime/core/src/moe/expert_stream_source.cpp and stall_union.h (waves, publication, drain, gate)"
+      ],
+      "experiment": "EXP-2026-11-15-629-p9-04-stream-hooks",
+      "task": "",
+      "status": "ported",
+      "sha256": "f47d0d44dd15a188473d8ee6ee685f751e001e3ba5f4854e9f438cf857481507",
+      "gate": "560 cases / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/row-select.goose",
+      "native": "runtime/core/src/moe expert source selection (materialised index, ref/table verdict, takeover)",
+      "native_targets": [
+        "runtime/core/src/moe expert source selection (materialised index, ref/table verdict, takeover)"
+      ],
+      "experiment": "EXP-2026-11-15-629-p9-04-stream-hooks",
+      "task": "",
+      "status": "ported",
+      "sha256": "f418a174e79c47ce1d2240db836fdfadc3b99f6ba0fd1e42d20660b39f241fd6",
+      "gate": "145 cases / 0 failures, 12/12 mutations"
     },
     {
       "goose": "model/stream-plan.goose",
@@ -11705,6 +11741,17 @@
       "task": "P7-08",
       "status": "slice",
       "sha256": "bcb3c167a392f4de6df8c9f98177b9911dcd4c1f98839f2a124a4dc3d48fc021"
+    },
+    {
+      "goose": "json/s1-1-apex-staging.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c"
+      ],
+      "experiment": "EXP-2026-11-15-626-s1-1-apex-staging",
+      "task": "",
+      "status": "slice",
+      "sha256": "a5c66d60de35378b4378bfb5e65f13f94f5f89551aa33020bdd903c460dfa3f2"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",

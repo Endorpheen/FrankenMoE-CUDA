@@ -1,0 +1,19 @@
+# SHA-256 of the P9-04 artifacts (generated build output excluded)
+# host: Linux 7.0.0-43-generic x86_64; date: 2026-11-15T00:21:19Z
+# goose runtime: goose runtime 1e714e6146bc
+# compiler: gcc-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0
+
+4b8e7ff34a5f82d97c66154bd56475cd3ea6053b44d2f2ef2f84e979a3901c73  README.md
+cd89ebe0a7f897133573f354d647136bc786b27eb2e78cf60969092a8d020ec6  REPORT.md
+0a2de5e66c08857be3b8d221b3dc7941c75fd9be7a1759f29c0e34adcc3f4ef8  source/hook_rules.goose
+f47d0d44dd15a188473d8ee6ee685f751e001e3ba5f4854e9f438cf857481507  source/overlap_rules.goose
+f418a174e79c47ce1d2240db836fdfadc3b99f6ba0fd1e42d20660b39f241fd6  source/row_select.goose
+0b69be7af9c9ba494ccbccde48897720516de99d40a907e746ea0efd5a2da01c  source/stream_hooks.goose
+66f2b6a31463e2638ae2bb8767f18f7b5a323edf8beb1f92c41bae1844ccf486  tests/fixture.cpp
+2be77cf43cc9720db5e51116f1d5a8ccf4f01a31a1a7e6e8414cc1a87ef16296  tests/build.sh
+f6cd8f05cff11483e0a8006c39e131617a143c501ffbb7c844f600e69c92f84e  tests/mutate.py
+4f73c290104a009928503681056b5508d014f517337448b29112a9d33257f54d  results/gate-o1.log
+39a613249ba70bed4f218e7b0173d62de7f5da33fe9bc798be7367930b3399e2  results/gate-o0.log
+a0f078c69a95f032d62fe3070732daaa6f47ec835d3bfddf4405333cadda9ee2  results/mutate-1.log
+13ef61f9f70a2b7f19daa680cf18ffac566f60b6a78c3dba10f33a807a772b9d  results/mutate-2.log
+02206bf1a5a415d38f3f942a2ead2744d386f965e002b2977e6a4559fa2d495d  results/canon-compat.log

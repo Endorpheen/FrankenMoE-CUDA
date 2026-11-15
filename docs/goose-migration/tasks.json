@@ -2330,19 +2330,25 @@
       "id": "P9-04",
       "phase": "P9",
       "title": "Port row streaming,router hooks and I/O-compute overlap",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "carrier/runtime/core/src/moe/row_stream.cpp",
         "carrier/runtime/core/src/moe/router_hook.cpp",
         "carrier/runtime/core/src/moe/stall_union.h"
       ],
       "acceptance": "Exact route/readiness/row-slice outputs,overlap ordering,cancel/failure and bounded RAM/VRAM behavior; native policy callbacks removed.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP629 (experiments/EXP-2026-11-15-629-p9-04-stream-hooks): router hook rules (rh_: is_moe_node, parse_layer_tail with the 2^20 ceiling, match_layer_node, four weight-chain names, arming, isolation, terminal-node learn/forget, refusal, call-order plans), overlap rules (ov_: p0/two_wave/commit_only, staged/wave_jobs/publish, drain_done/worker_wait/drain_more, gate scope, stall union) and row-source selection (rs_: materialised index transitions, ref/table verdict, session filter, takeover, gather/materialize/scan dispatch) are Goose. Gate 302+560+145 cases, 0 failures, identical at -O0; mutations 12/12 in halves. Boundaries: term_variant_ needs an i64 adapter, the StallUnion window is i64[3], rh_topk_plan is an order contract that requires rewriting on_eval, and three experiments generate identical typedef headers that cannot share one TU.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 54,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "rewrite on_eval to the rh_topk_plan/rh_ask_plan contract and replace the overlap/row-source call sites"
+      ],
+      "coverage_doc": "docs/goose-migration/P9-04-COVERAGE.md"
     },
     {
       "id": "P9-05",
@@ -4496,6 +4502,10 @@
     {
       "event": "P10-01 closed: the canonical tree is consolidated (811 files, full manifest, green tree check); experiments stay as proof.",
       "checkpoint": "bcad2ccd"
+    },
+    {
+      "event": "P9-04: router hook, overlap and row-source decisions ported (EXP629, 1007 checks, 12/12); on_eval wiring is open.",
+      "checkpoint": "645838b5"
     }
   ],
   "batches": [
@@ -5386,16 +5396,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T00:19:47.609262+00:00",
+  "updated_at": "2026-11-15T00:26:53.235839+00:00",
   "status_totals": {
     "DONE": 112,
-    "PARTIAL": 5,
-    "TODO": 35
+    "PARTIAL": 6,
+    "TODO": 34
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03 and P7-12.",
-    "slices_total": 112,
-    "slices_done": 112,
+    "slices_total": 115,
+    "slices_done": 115,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

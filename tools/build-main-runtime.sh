@@ -42,6 +42,9 @@ MODULES=(
     goose/model/expert-lru.goose
     goose/model/dense-place.goose
     goose/model/stream-plan.goose
+    goose/model/hook-rules.goose
+    goose/model/overlap-rules.goose
+    goose/model/row-select.goose
     goose/cpu/goose-meta-backend.goose
     goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
