@@ -60,6 +60,9 @@ for f in libggml-cpu.so.0 libggml-cpu-shared-dd5a40e47065.so.0.27.0; do
 done
 
 export LD_LIBRARY_PATH="$STAGE/lib"
+# GGML_BACKEND_PATH was tried here and REMOVED: it made prefill worse (2006 vs 2222) even
+# though both CPU files are already the accepted build. Registered twice, the backend is
+# apparently initialised twice. Do not re-add it without a measurement that beats 2222.
 
 # The 18 GGML_GOOSE_* switches from the saved environment, applied verbatim so the run is
 # the same profile rather than a similar one.
