@@ -53,30 +53,23 @@ $CC -O1 -std=c11 -w -I "$OUT/inc" \
 $CC -O1 "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/smoke.o" \
     -lm -pthread -o "$OUT/frankenmoe-standalone"
 
-echo "[4b/5] v2: the GGUF path (substrate reader + Goose metadata table)"
-# The GGUF container is substrate; every metadata decision is Goose. v2 links the
-# OFF ggml libraries, because the ON ones carry the carrier bridges that would
-# introduce a second goose_init into the same process.
-SUB=${FG_SUBSTRATE:-/tmp/opencode/sub-661/tree/build-off/llama.cpp/ggml/src}
-if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v2.c" ]; then
+echo "[4b/5] v4: metadata, tensor directory and payload"
+# One host covers what v2 and v3 did separately; the superseded copies are gone,
+# because a superseded adapter is pure debt (AGENTS.md).
+if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
     $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$ROOT/upstream/llama.cpp/ggml/include" \
-        -c "$ROOT/integration/goose-standalone/host_v2.c" -o "$OUT/host_v2.o"
-    $CC -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v2.o" \
+        -I "$ROOT/integration/goose-standalone" \
+        -c "$ROOT/integration/goose-standalone/host_v4.c" -o "$OUT/host_v4.o"
+    $CXX -O1 -std=c++17 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
+        -I "$ROOT/integration/goose-standalone" \
+        -c "$ROOT/integration/goose-standalone/tensor-data.cpp" -o "$OUT/tensor-data.o"
+    $CXX -O1 -std=c++17 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
+        -c "$ROOT/integration/goose-standalone/graph-bindings.cpp" -o "$OUT/graph-bindings.o"
+    $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v4.o" \
+        "$OUT/tensor-data.o" "$OUT/graph-bindings.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -lstdc++ \
-        -o "$OUT/frankenmoe-v2"
-    printf '  v2:     %s (%s B)\n' "$OUT/frankenmoe-v2" "$(stat -c%s "$OUT/frankenmoe-v2")"
-else
-    printf '  v2:     skipped (substrate not found at %s)\n' "$SUB"
-fi
-
-echo "[4c/5] v3: the GGUF tensor directory"
-if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v3.c" ]; then
-    $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$ROOT/upstream/llama.cpp/ggml/include" \
-        -c "$ROOT/integration/goose-standalone/host_v3.c" -o "$OUT/host_v3.o"
-    $CC -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v3.o" \
-        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -lstdc++ \
-        -o "$OUT/frankenmoe-v3"
-    printf '  v3:     %s (%s B)\n' "$OUT/frankenmoe-v3" "$(stat -c%s "$OUT/frankenmoe-v3")"
+        -o "$OUT/frankenmoe-v4"
+    printf '  v4:     %s (%s B)\n' "$OUT/frankenmoe-v4" "$(stat -c%s "$OUT/frankenmoe-v4")"
 fi
 
 echo "[5/5] result"

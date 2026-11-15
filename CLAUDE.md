@@ -105,7 +105,13 @@ Substrate lines (OS and memory primitives) are never counted as debt.
     as completed migration. This project does not build a new C++ application with
     Goose inside it; it replaces the C++ runtime with Goose. A host adapter is
     acceptable only while the substrate has no Goose-callable surface, and it must
-    shrink as that surface appears, never grow into a parallel implementation. `docs/goose-migration/BUILD-SET.md`
+    shrink as that surface appears, never grow into a parallel implementation.
+    Reuse an existing binding instead of writing a second one for the same symbol:
+    a duplicate definition is debt with no purpose, and it fails the link the
+    moment two adapters meet. A new adapter is created only when no existing one
+    covers the symbol, and it carries no runtime logic - translation only. Every
+    temporary adapter is removed in one pass after the Goose runtime passes full
+    acceptance; none of them survives that pass. `docs/goose-migration/BUILD-SET.md`
 records the build set by name and every exclusion with its reason. Both are
 derived from the repository; neither is typed by hand, and neither requires a
 build.

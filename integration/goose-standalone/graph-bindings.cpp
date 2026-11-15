@@ -173,9 +173,9 @@ void q4t_fail(int64_t code) {
     ggml_abort(__FILE__, __LINE__, "tensor map refused:code=%" PRId64, code);
 }
 
-// gguf-offsets.goose binds its i64 store as fg457_st_i64.
-void fg457_st_i64(uint64_t p, uint64_t o, int64_t v) {
-    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
-}
+// fg457_st_i64 and the libc-level primitives live in integration/m1/host/
+// goose_host.c, which is the shared host adapter. They are not repeated here: a
+// second definition of the same binding is pure debt, and the linker would reject
+// a runtime that linked both.
 
 } // extern "C"
