@@ -1,194 +1,181 @@
-// Graph primitives for the Goose graph builder (P11-01, EXP680).
+// Graph primitives for the Goose graph builder (P11-01, EXP681).
 //
-// goose/cpu/goose-graph-builders.goose owns every decision about which node to
-// create, with which operands and which parameters. It cannot create a node by
-// itself: ggml owns the context, the tensor struct and the op codes. This file is
-// the binding between those two, nothing more - it holds no policy, it translates
-// the module's calls into ggml calls and reads fields back.
+// The implementations are taken from the authoritative fixture of the experiment
+// that first ported this module - experiments/EXP-2026-11-08-158-goose-graph-
+// builders/source/builders.h - rather than written fresh. That fixture is the
+// code the differential gates accepted, so its semantics are the ones the Goose
+// module was validated against. Two hand-written versions of these had already
+// drifted (`prop` returned a different field, `arg` read the wrong width), which
+// is exactly the failure a rewrite invites.
 //
-// Handles are i64 so the module can pass them through untouched; each one is a
-// pointer to a ggml_tensor, exactly as ggml itself uses them.
-//
-// Failure policy: an invalid handle or an unsupported predicate aborts through
-// ggml_abort rather than returning a plausible-looking zero, because a silently
-// wrong graph is far more expensive than a loud stop.
+// What was removed from the fixture: its own generated entry point, the atomic
+// "seen modes" counters and the constructor that read GGML_GOOSE_GRAPH_BUILDERS.
+// Those belong to the fixture's reporting, not to a runtime binding.
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "ggml.h"
-#include "ggml-backend.h"
 
 extern "C" {
 
-// ---- handles ---------------------------------------------------------------
+// ---- the fixture's helpers, verbatim in behaviour ---------------------------
 
-static inline ggml_tensor * T(int64_t h) { return (ggml_tensor *) (uintptr_t) h; }
-static inline int64_t H(const ggml_tensor * t) { return (int64_t) (uintptr_t) t; }
-
-// ---- creation --------------------------------------------------------------
-
-int64_t fg158_new(int64_t ctx, int64_t ty, int64_t n0, int64_t n1, int64_t n2, int64_t n3) {
-    ggml_context * c = (ggml_context *) (uintptr_t) ctx;
-    if (c == nullptr) {
-        return 0;
-    }
-    return H(ggml_new_tensor_4d(c, (enum ggml_type) ty, n0, n1, n2, n3));
+static int64_t fg_arg(int64_t p, int64_t i) {
+    return (int64_t) ((const uint64_t *) (intptr_t) p)[i];
 }
 
-int64_t fg158_dup(int64_t ctx, int64_t a) {
-    ggml_context * c = (ggml_context *) (uintptr_t) ctx;
-    if (c == nullptr || a == 0) {
-        return 0;
-    }
-    return H(ggml_dup_tensor(c, T(a)));
+static int64_t fg_ne(int64_t t, int64_t i) {
+    return ((const struct ggml_tensor *) (intptr_t) t)->ne[i];
 }
 
-int64_t fg158_view(int64_t ctx, int64_t a) {
-    ggml_context * c = (ggml_context *) (uintptr_t) ctx;
-    if (c == nullptr || a == 0) {
-        return 0;
-    }
-    return H(ggml_view_tensor(c, T(a)));
-}
-
-// ---- fields ----------------------------------------------------------------
-
-int64_t fg158_ne(int64_t t, int64_t i) {
-    const ggml_tensor * x = T(t);
-    if (x == nullptr || i < 0 || i >= GGML_MAX_DIMS) {
-        return 0;
-    }
-    return x->ne[i];
-}
-
-int64_t fg158_prop(int64_t t, int64_t k) {
-    const ggml_tensor * x = T(t);
-    if (x == nullptr) {
-        return 0;
-    }
+static int64_t fg_prop(int64_t t, int64_t k) {
+    const struct ggml_tensor * a = (const struct ggml_tensor *) (intptr_t) t;
     switch (k) {
-        case 0: return (int64_t) x->type;
-        case 1: return (int64_t) x->op;
-        case 2: return 0;   // reserved: the module asks for an id it never sets
-        default: return 0;
+        case 0: return a->type;
+        case 1: return ggml_is_quantized(a->type);
+        case 2: return a->op;
+        case 3: return a->name[0] != 0;
+        default: ggml_abort(__FILE__, __LINE__, "Invalid builder field"); return 0;
     }
 }
+
+static int32_t fg_get_op_i32(const struct ggml_tensor * t, uint32_t i) {
+    int32_t v = 0;
+    memcpy(&v, (const char *) t->op_params + i * sizeof v, sizeof v);
+    return v;
+}
+
+static void fg_set_op_i32(struct ggml_tensor * t, uint32_t i, int32_t v) {
+    memcpy((char *) t->op_params + i * sizeof v, &v, sizeof v);
+}
+
+int64_t fg158_arg(int64_t p, int64_t i) { return fg_arg(p, i); }
+int64_t fg158_ne(int64_t t, int64_t i) { return fg_ne(t, i); }
+int64_t fg158_prop(int64_t t, int64_t k) { return fg_prop(t, k); }
 
 int64_t fg158_src(int64_t t, int64_t i) {
-    const ggml_tensor * x = T(t);
-    if (x == nullptr || i < 0 || i >= GGML_MAX_SRC) {
-        return 0;
-    }
-    return H(x->src[i]);
+    return (int64_t) (intptr_t) ((const struct ggml_tensor *) (intptr_t) t)->src[i];
 }
 
 int64_t fg158_param(int64_t t, int64_t i) {
-    const ggml_tensor * x = T(t);
-    if (x == nullptr || i < 0 || i >= GGML_MAX_OP_PARAMS / (int) sizeof(int64_t)) {
-        return 0;
-    }
-    int64_t v = 0;
-    // The parameter block is declared as int32_t[] but holds op-specific payloads;
-    // read the int64 word the module writes.
-    memcpy(&v, (const char *) x->op_params + i * sizeof(int64_t), sizeof v);
-    return v;
+    return fg_get_op_i32((const struct ggml_tensor *) (intptr_t) t, (uint32_t) i);
 }
 
 void fg158_set_op(int64_t t, int64_t op) {
-    ggml_tensor * x = T(t);
-    if (x != nullptr) {
-        x->op = (enum ggml_op) op;
-    }
+    ((struct ggml_tensor *) (intptr_t) t)->op = (enum ggml_op) op;
 }
 
 void fg158_set_src(int64_t t, int64_t i, int64_t v) {
-    ggml_tensor * x = T(t);
-    if (x != nullptr && i >= 0 && i < GGML_MAX_SRC) {
-        x->src[i] = T(v);
-    }
+    ((struct ggml_tensor *) (intptr_t) t)->src[i] = (struct ggml_tensor *) (intptr_t) v;
 }
 
 void fg158_set_param(int64_t t, int64_t i, int64_t v) {
-    ggml_tensor * x = T(t);
-    if (x == nullptr || i < 0 || i >= GGML_MAX_OP_PARAMS / (int) sizeof(int64_t)) {
-        return;
-    }
-    memcpy((char *) x->op_params + i * sizeof(int64_t), &v, sizeof v);
+    fg_set_op_i32((struct ggml_tensor *) (intptr_t) t, (uint32_t) i, (int32_t) v);
 }
 
-// ---- comparisons the builder uses as opaque predicates ---------------------
+int64_t fg158_new(int64_t c, int64_t ty, int64_t n0, int64_t n1, int64_t n2, int64_t n3) {
+    int64_t ne[] = { n0, n1, n2, n3 };
+    return (int64_t) (intptr_t) ggml_new_tensor((struct ggml_context *) (intptr_t) c, (enum ggml_type) ty, 4, ne);
+}
 
+int64_t fg158_dup(int64_t c, int64_t a) {
+    return (int64_t) (intptr_t) ggml_dup_tensor((struct ggml_context *) (intptr_t) c, (const struct ggml_tensor *) (intptr_t) a);
+}
+
+int64_t fg158_view(int64_t c, int64_t a) {
+    return (int64_t) (intptr_t) ggml_view_tensor((struct ggml_context *) (intptr_t) c, (struct ggml_tensor *) (intptr_t) a);
+}
+
+// Three predicates the fixture used are static helpers inside ggml.c, so they are
+// spelled out here from their definitions there (ggml.c:1544, 3270, 3357). The
+// semantics are ggml's, not this file's choice.
+static bool fg_is_padded_1d(const struct ggml_tensor * t) {
+    return t->nb[0] == ggml_type_size(t->type) &&
+           t->nb[2] == t->nb[1] * t->ne[1] &&
+           t->nb[3] == t->nb[2] * t->ne[2];
+}
+
+static bool fg_can_mul_mat(const struct ggml_tensor * t0, const struct ggml_tensor * t1) {
+    return t0->ne[0] == t1->ne[0] &&
+           t1->ne[2] % t0->ne[2] == 0 &&
+           t1->ne[3] % t0->ne[3] == 0;
+}
+
+static bool fg_can_out_prod(const struct ggml_tensor * t0, const struct ggml_tensor * t1) {
+    return t0->ne[1] == t1->ne[1] &&
+           t1->ne[2] % t0->ne[2] == 0 &&
+           t1->ne[3] % t0->ne[3] == 0;
+}
+
+static bool fg_can_repeat_rows(const struct ggml_tensor * t0, const struct ggml_tensor * t1) {
+    return t0->ne[0] == t1->ne[0] && ggml_can_repeat(t0, t1);
+}
+
+// The full predicate table, taken from the accepted fixture. Fifteen kinds, and
+// every one of them is a ggml query - the module supplies only the choice.
 int64_t fg158_pred(int64_t which, int64_t a, int64_t b) {
+    const struct ggml_tensor * x = (const struct ggml_tensor *) (intptr_t) a;
+    const struct ggml_tensor * y = (const struct ggml_tensor *) (intptr_t) b;
     switch (which) {
-        case 0: return T(a) == T(b) ? 1 : 0;          // identity
-        case 1: return a == b ? 1 : 0;                // integer equality
-        case 2: return a != b ? 1 : 0;
-        case 3: return a <  b ? 1 : 0;
-        case 4: return a <= b ? 1 : 0;
-        default:
-            ggml_abort(__FILE__, __LINE__, "fg158_pred: unknown predicate %lld", (long long) which);
-            return 0;
+        case 0:  return ggml_is_contiguous(x);
+        case 1:  return ggml_is_contiguous_rows(x);
+        case 2:  return fg_is_padded_1d(x);
+        case 3:  return ggml_are_same_shape(x, y);
+        case 4:  return ggml_can_repeat(x, y);
+        case 5:  return ggml_is_scalar(x);
+        case 6:  return fg_can_repeat_rows(x, y);
+        case 7:  return ggml_is_contiguous_1(x);
+        case 8:  return fg_can_mul_mat(x, y);
+        case 9:  return fg_can_out_prod(x, y);
+        case 10: return ggml_is_transposed(x);
+        case 11: return ggml_is_matrix(x);
+        case 12: return ggml_is_empty(x);
+        case 13: return ggml_nelements(x);
+        case 14: return ggml_is_vector(x);
+        default: ggml_abort(__FILE__, __LINE__, "Invalid builder predicate"); return 0;
     }
 }
-
-// ---- plain memory and naming ----------------------------------------------
 
 int64_t fg158_i32(int64_t p, int64_t i) {
-    if (p == 0 || i < 0) {
-        return 0;
+    return ((const int32_t *) (intptr_t) p)[i];
+}
+
+void fg158_name(int64_t t, int64_t a, int64_t b, int64_t style) {
+    struct ggml_tensor * r = (struct ggml_tensor *) (intptr_t) t;
+    const struct ggml_tensor * x = (const struct ggml_tensor *) (intptr_t) a;
+    const struct ggml_tensor * y = (const struct ggml_tensor *) (intptr_t) b;
+    if (style == 0) {
+        ggml_format_name(r, "%s (copy of %s)", y->name, x->name);
+    } else {
+        ggml_format_name(r, style == 1 ? "%s (copy)" : "%s (cont)", x->name);
     }
-    int32_t v = 0;
-    memcpy(&v, (const char *) (uintptr_t) p + i * (int64_t) sizeof v, sizeof v);
-    return v;
 }
 
-int64_t fg158_name(int64_t t, int64_t a, int64_t b, int64_t style) {
-    ggml_tensor * x = T(t);
-    if (x == nullptr) {
-        return 0;
-    }
-    // style 0: "%s-%lld"? The module passes two ids and a style; the concrete
-    // spelling is the module's choice, so this is a plain "<a>.<b>" join.
-    (void) style;
-    snprintf(x->name, sizeof x->name, "%lld.%lld", (long long) a, (long long) b);
-    return 0;
-}
-
-int64_t fg158_float_bits(int64_t x) {
-    // The module passes the raw bit pattern; ggml wants the same word reinterpreted.
-    int64_t out = 0;
-    memcpy(&out, &x, sizeof x);
-    return out;
-}
-
-int64_t fg158_arg(int64_t p, int64_t i) { return fg158_i32(p, i); }
-
-void fg158_float(int64_t x) {
-    // The module binds a float store; ggml has no equivalent, so this is the
-    // primitive itself: write the raw word where the caller pointed.
-    (void) x;
-}
-
-// gguf-offsets.goose binds its i64 store as fg457_st_i64; the m1 adapter already
-// has this body, so the standalone uses the same definition.
-void fg457_st_i64(uint64_t p, uint64_t o, int64_t v) {
-    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
+float fg158_float(int64_t x) {
+    uint32_t bits = (uint32_t) x;
+    float f;
+    memcpy(&f, &bits, sizeof f);
+    return f;
 }
 
 void fg158_fail(int64_t code) {
-    ggml_abort(__FILE__, __LINE__, "fg158_fail: the graph builder refused (code %lld)", (long long) code);
+    ggml_abort(__FILE__, __LINE__, "Goose graph builder validation failed:code=%" PRId64, code);
 }
 
-// ---- the other two families the batch brought in ---------------------------
-
 void fg203d_fail(int64_t code) {
-    ggml_abort(__FILE__, __LINE__, "fg203d_fail: mmq dispatch refused (code %lld)", (long long) code);
+    ggml_abort(__FILE__, __LINE__, "mmq dispatch refused:code=%" PRId64, code);
 }
 
 void q4t_fail(int64_t code) {
-    ggml_abort(__FILE__, __LINE__, "q4t_fail: tensor map refused (code %lld)", (long long) code);
+    ggml_abort(__FILE__, __LINE__, "tensor map refused:code=%" PRId64, code);
+}
+
+// gguf-offsets.goose binds its i64 store as fg457_st_i64.
+void fg457_st_i64(uint64_t p, uint64_t o, int64_t v) {
+    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
 }
 
 } // extern "C"

@@ -60,6 +60,19 @@ runtime/core/src/engine/runtime.cpp"
 need_fns=0
 for f in $needed; do need_fns=$((need_fns + $(fn_count "$f"))); done
 
+# ---- 3. adapter debt ------------------------------------------------------
+# Every C/C++ line written to connect Goose to a substrate is debt, not progress
+# (AGENTS.md). It is listed so it can be removed once the substrate gains a
+# Goose-callable surface; adapters must shrink, never grow into a parallel runtime.
+adapters=$(ls integration/goose-standalone/*.c integration/goose-standalone/*.cpp \
+              integration/m1/host/*.c 2>/dev/null)
+adapter_lines=0
+adapter_files=0
+for f in $adapters; do
+    adapter_lines=$((adapter_lines + $(wc -l < "$f")))
+    adapter_files=$((adapter_files + 1))
+done
+
 # ---- report ----------------------------------------------------------------
 say "MIGRATION ACCOUNTING (derived from the repository; no build)"
 say ""
@@ -70,7 +83,11 @@ say "   substrate (stays native):  $(printf '%s ' $substrate | tr '\n' ' ')$sub_
 say "   superseded by Goose:       $sup_fns fns in $(printf '%s\n' $superseded | grep -c .) files"
 say "   still needed:              $need_fns fns in $(printf '%s\n' $needed | grep -c .) files"
 say ""
-say "3. Standalone runtime capabilities (evidence: EXP671-673, tools/build-standalone-runtime.sh):"
+say "3. Adapter debt (to be REMOVED, never counted as migration):"
+say "   files: $adapter_files   lines: $adapter_lines"
+for f in $adapters; do printf '     %5s  %s\n' "$(wc -l < "$f")" "$f"; done
+say ""
+say "4. Standalone runtime capabilities (evidence: EXP671-673, tools/build-standalone-runtime.sh):"
 say "   GGUF container read          yes  (substrate reader)"
 say "   GGUF metadata, every key     yes  (4 files, agree=yes)"
 say "   GGUF tensor directory        yes  (3 fixtures, extents verified)"

@@ -99,7 +99,13 @@ standalone runtime's capability list - and never blends them. A call into Goose
 from the old C++ is never counted as progress: the migration's goal is a
 standalone runtime that answers the capability without that C++ at all, so adding
 Goose calls to the old runtime is forbidden as a way to improve a number.
-Substrate lines (OS and memory primitives) are never counted as debt. `docs/goose-migration/BUILD-SET.md`
+Substrate lines (OS and memory primitives) are never counted as debt.
+    Every new C/C++ adapter written to connect Goose to a substrate is DEBT, not
+    progress: it is added to the ledger as a removal target and is never counted
+    as completed migration. This project does not build a new C++ application with
+    Goose inside it; it replaces the C++ runtime with Goose. A host adapter is
+    acceptable only while the substrate has no Goose-callable surface, and it must
+    shrink as that surface appears, never grow into a parallel implementation. `docs/goose-migration/BUILD-SET.md`
 records the build set by name and every exclusion with its reason. Both are
 derived from the repository; neither is typed by hand, and neither requires a
 build.
