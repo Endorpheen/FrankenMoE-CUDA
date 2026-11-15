@@ -45,6 +45,13 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     `upstream/llama.cpp` and touches nothing), fix it there, and reuse an
     existing tree and its build results whenever that is correct. A full rebuild
     happens only when it is genuinely required.
+14. Every build, test and check writes its full log from the start: the exact
+    command, the output, the exit code and the result, to a file (use `tee` or
+    an equivalent so the output is both shown and kept). Reuse an existing log
+    and result whenever the inputs are unchanged. Re-running a build or a test
+    solely to produce evidence, a README or a report is forbidden: the log the
+    run already wrote is the evidence. On a failure, repeat only the affected
+    checks.
 
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
@@ -188,7 +195,7 @@ technical terms. The section set and their order are fixed:
     Рабочее дерево: чистое | <state>
     Текущая фаза: <P# and short goal>
 
-    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 13 rules above, current wording
+    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 14 rules above, current wording
     АКТУАЛЬНЫЙ РЕЖИМ               — binary, launcher, EHS, THREADS, model,
                                      hardware
     BASELINE                       — tok/s medians and ranges per thread count,
