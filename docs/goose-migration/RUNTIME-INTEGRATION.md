@@ -63,7 +63,9 @@ This step touches no production file.
 Determinism, measured on 2026-11-15: the composer gives byte-identical output
 for the same module list, the C generator gives byte-identical output for the
 same composed file, and two consecutive builds into the same output directory
-give identical `main.c` and `main.o` hashes. Only the output path changes the
+give identical `main.c` and `main.o` hashes. `build-main-runtime.sh --repro`
+turns this into a gate: it builds twice and fails on any difference (currently
+`repro: ok`, C 5eb80b27..., object a0f76015...). Only the output path changes the
 hash, because the generated C embeds it in `gs_file0`; a fixed `OUT` is therefore
 required for byte-level comparison.
 

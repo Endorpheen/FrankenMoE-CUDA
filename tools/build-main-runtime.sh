@@ -8,13 +8,21 @@
 # extern symbols supplied by the per-slice fixtures until the runtime wiring
 # stage lands them.
 #
-# Usage: bash tools/build-main-runtime.sh [out-dir]
+# Usage: bash tools/build-main-runtime.sh [out-dir | --repro]
 #   out-dir defaults to build/goose-main (build artefacts are not committed).
+#   --repro builds twice into the default directory and fails unless main.c and
+#   main.o are byte-identical, which is the determinism gate for P10-06.
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 GOOSE=${GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
 CC=${CC:-gcc-13}
-OUT=${1:-$ROOT/build/goose-main}
+REPRO=0
+if [ "${1:-}" = "--repro" ]; then
+    REPRO=1
+    OUT=$ROOT/build/goose-main
+else
+    OUT=${1:-$ROOT/build/goose-main}
+fi
 UNIT=$OUT/main.goose
 C=$OUT/main.c
 H=$OUT/main.h
@@ -96,3 +104,16 @@ if [ "$dups" -ne 0 ]; then
 fi
 printf 'main runtime ok: %s global symbols, 0 duplicates, %s extern, C %s bytes, object %s bytes\n' \
     "$defined" "$ext" "$(stat -c %s "$C")" "$(stat -c %s "$OBJ")"
+
+if [ "$REPRO" -eq 1 ]; then
+    first_c=$(sha256sum "$C" | cut -d' ' -f1)
+    first_o=$(sha256sum "$OBJ" | cut -d' ' -f1)
+    bash "$0" "$OUT" >/dev/null
+    second_c=$(sha256sum "$C" | cut -d' ' -f1)
+    second_o=$(sha256sum "$OBJ" | cut -d' ' -f1)
+    if [ "$first_c" != "$second_c" ] || [ "$first_o" != "$second_o" ]; then
+        echo "repro: FAIL (C $first_c -> $second_c, object $first_o -> $second_o)"
+        exit 1
+    fi
+    echo "repro: ok (C ${first_c:0:16}, object ${first_o:0:16})"
+fi
