@@ -59,13 +59,42 @@ output-preserving, and this confirms the implementation in this build is.
 
 +0.4% inside an overlapping range is not evidence. **No configuration change.**
 
-## 6. Open item
+## 6. The MTP item is closed: it needs two copies of the weights
+
+Tried the obvious fix - pass the model itself as the draft with `-md`:
+
+```
+ggml_backend_cuda_buffer_type_alloc_buffer: allocating 20424.28 MiB:
+    cudaMalloc failed: out of memory
+llama_model_load: error loading model: unable to allocate CUDA0 buffer
+```
+
+**20,424 MiB - exactly twice the weights.** The MTP head lives inside the same GGUF, but the draft
+path loads it as a *separate model instance*, so the runtime asks for a second full copy. On a 12 GiB
+device that cannot fit, and no flag changes it: this is how the path is built, not how it is
+configured.
+
+So MTP is closed for this hardware rather than "open pending configuration". The only way to use it
+here would be to load the expert weights on the CPU for the draft instance as well, which would make
+the draft so slow that speculation could not pay for itself.
+
+Two diagnostics on the way, worth recording because both would mislead the next attempt:
+
+1. `-md` with the model inherited `LD_LIBRARY_PATH` from the saved profile, which pointed at
+   `measured-apex-or244-or-goose/run` - a **different** library set. That produced
+   `undefined symbol: fg160_fusion_enabled` from a CUDA library that was not ours. Setting our
+   directory *after* the profile fixed it. The lesson: the saved environment sets a library path
+   that must be overridden last, not first.
+2. The ad-hoc shell wrapper broke because `mapfile` is unavailable in the shell these commands run
+   in, which silently produced an empty argv and an empty log. Driven from Python instead.
+
+## 7. Open item
 
 `draft-mtp` is the only speculative mode that could plausibly be worth more than parity, and it is
 blocked on a missing MTP context configuration rather than on anything fundamental. Closing it needs:
 the draft context parameters this build expects, a correctness gate on the output hash, and a
 measurement at the three lengths.
 
-## 7. Cost
+## 8. Cost
 
 Four configurations, nine successful runs, one failed start.
