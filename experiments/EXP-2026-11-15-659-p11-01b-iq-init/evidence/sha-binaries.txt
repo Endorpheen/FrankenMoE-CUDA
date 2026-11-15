@@ -1,0 +1,6 @@
+ba0208d0fbb402f54c05ff48e63b410afc68d3f470f91abba249f5acafed0b03  tree/build-off/bin/llama-server
+54cf30a4863a9b6e629d05256f55538fe32e4b2f22c6deb6c69f18e73ae9bb1b  tree/build-on/bin/llama-server
+8b754cab6903d55c86e505f45cf64fad442563f2b140d2c90bd3b08fee48fcf3  tree/build-on/fg-host-smoke
+106d25e1a544424e041d9bd31ee0c7ebabee0058d882fc4c8cf8ca0c567f8549  tree/build-on/fg-iq-seam
+3f78bbff4a23a4cf24286ac349465fbda0cfc4177cdd643940e2cc1b6d8ad380  tree/build-on/libfg-goose-runtime.a
+f096d1a044027cd1867052f29875eebe68ee53d890b9ac07400f1e6ac2c04e68  tree/build-on/llama.cpp/ggml/src/libggml-base.a

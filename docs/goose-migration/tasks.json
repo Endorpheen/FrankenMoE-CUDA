@@ -2730,18 +2730,19 @@
         "all selected Goose modules"
       ],
       "acceptance": "One isolated artifact combines CPU,CUDA,GGML,memory,KV,model,GGUF,tokenizer,server and owned infrastructure; every Apex-path owned component Goose, not a collection of separate partial variants.",
-      "evidence": "2026-11-15 M1 (experiments/EXP-2026-11-15-658-p11-01-m1-apex-assembly): the Apex runtime assembles and links with all ten Goose flags. OFF builds and links llama-server (17 794 640 B); ON-all builds and links it (20 316 528 B); the ten accepted gates pass in both configurations (goose_calls match their cards); nm shows exactly one goose_init in the 12 ON binaries, zero in OFF, max one definition per switch export, and no op_sqrt; a two-thread init smoke reports goose_init_runs=1; the Apex reference binary is unchanged. The unit is deterministic (7f29ca5e...). Seam: unit and adapter are compiled into ggml-base because the native IQ tables are file-static in ggml-quants.c; passing them at init is the next step. No model was started, so no performance or correctness claim is made yet.",
+      "evidence": "2026-11-15 M1 (experiments/EXP-2026-11-15-658-p11-01-m1-apex-assembly): the Apex runtime assembles and links with all ten Goose flags. OFF builds and links llama-server (17 794 640 B); ON-all builds and links it (20 316 528 B); the ten accepted gates pass in both configurations (goose_calls match their cards); nm shows exactly one goose_init in the 12 ON binaries, zero in OFF, max one definition per switch export, and no op_sqrt; a two-thread init smoke reports goose_init_runs=1; the Apex reference binary is unchanged. The unit is deterministic (7f29ca5e...). Seam: unit and adapter are compiled into ggml-base because the native IQ tables are file-static in ggml-quants.c; passing them at init is the next step. No model was started, so no performance or correctness claim is made yet. 2026-11-15 M1-b (experiments/EXP-2026-11-15-659-p11-01b-iq-init): the ggml-base seam is removed structurally. The unit and adapter are libfg-goose-runtime.a; IQ tables arrive through an ABI-1 descriptor (ctx + 6 pointers), registered in the single pthread_once before goose_init, with the CPU provider in ggml-quants.c reached by a weak reference. OFF links llama-server at 17 794 640 B, ON at 22 050 592 B (the +1.73 MB is measured: the M1 unit was compiled at -O3 while the staged target declares -O1); 10/10 gates pass in both configurations with the expected goose_calls; one goose_init in each of 13 ON binaries and none in 11 OFF; 55 switch exports max 1/0; op_sqrt absent; the threaded init smoke reports goose_init_runs=1 and iq_bound=1; the IQ-view gate reports 15 360 comparisons with 0 failures and the unbound case aborts loudly; the target graph has 73 nodes and no cycles.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
       "remaining": [
-        "pass the IQ tables at init instead of linking into ggml-base",
-        "switch the remaining native layers (server/chat/Jinja) behind flags",
-        "run the Apex A/B protocol once Igor approves goal, duration and run count"
+        "six side libraries (S1.4, S1.6, S2.1, S2.2, S3.1, S3.2) are still gate-only and not engine switches; S3.1 has no carrier",
+        "move the S1.2/S1.3 carriers out of ggml-base so the edge becomes llama-common -> runtime",
+        "runtime library size (the unit links whole, 4191 symbols at -O1)",
+        "run the Apex A/B once Igor approves goal, duration and run count"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-15-658-p11-01-m1-apex-assembly/README.md"
+      "coverage_doc": "experiments/EXP-2026-11-15-659-p11-01b-iq-init/README.md"
     },
     {
       "id": "P11-02",
@@ -4705,6 +4706,10 @@
     {
       "event": "P11-05 PARTIAL: clean build and flag-off rollback proven by M1; the failure-recovery matrix remains.",
       "checkpoint": "3b5e7c92"
+    },
+    {
+      "event": "P11-01 M1-b: IQ tables bind at init, the unit is its own static library, no ggml-base seam (EXP659).",
+      "checkpoint": "d22d3c4b"
     }
   ],
   "batches": [
@@ -5595,7 +5600,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T06:10:25.907974+00:00",
+  "updated_at": "2026-11-15T06:25:33.034561+00:00",
   "status_totals": {
     "DONE": 114,
     "PARTIAL": 21,
