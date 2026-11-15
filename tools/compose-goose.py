@@ -80,6 +80,14 @@ RENAMES = {
     "file-io.goose": {
         "st_i64": "fio_st_i64",
     },
+    # gguf-offsets.goose binds the i64 accessors to fg457_* while file-io.goose
+    # binds the same names to fg458_*; the two symbols are separate primitives, so
+    # the names must be scoped per module rather than merged.
+    "gguf-offsets.goose": {
+        "st_i64": "off_st_i64",
+        "ld_i64": "off_ld_i64",
+        "put": "off_put",
+    },
     # The Jinja runtime's K_* are AST node kinds (13..18); the JSON parser's K_*
     # are value kinds (0..7). Same names, different domains: scope the runtime's
     # family so both can share one unit.

@@ -69,15 +69,18 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     rather than weakening the check. A real model or GPU run is never part of
     this preparation without Igor's permission: prepare everything and hand the
     run over for his acceptance.
-16. A full build of the 111-module runtime runs only when it is genuinely needed:
-    after a large integration batch or at a mandatory acceptance point. Small
-    changes are checked locally instead - syntax, the touched modules, symbols,
-    the ABI, an incremental compile. Do not run
+16. A full build of the composed runtime runs only when it is genuinely needed:
+    after a large integration batch (tens of units, not a handful of lines) or at
+    a mandatory acceptance point. A few dozen changed lines are not a batch: keep
+    grouping them and verify locally. The local gate, in increasing cost, is
+    `goose check <module>`, `tools/compose-goose.py` over the module list, and
+    `goose check` on the composed file; those catch a broken module, a conflict
+    and a type error without a C compiler. A full build is justified only for a
+    risk they cannot see: generated-C compilation, the link, the symbol table, the
+    ABI, or the binary's behaviour. Name that risk before starting. Do not run
     `bash tools/build-main-runtime.sh --repro` after every edit. Reuse a
     successful result while the sources and dependencies are unchanged, and never
-    rebuild for a report, for confirmation or for reassurance. Before any heavy
-    build, name the specific risk that no cheaper check covers; if there is no
-    such risk, do not start it.
+    rebuild for a report, for confirmation or for reassurance.
 
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.

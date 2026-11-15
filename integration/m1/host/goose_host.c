@@ -278,6 +278,16 @@ static char * host_dupz(sl_u8 s) {
 
 // ---- the extern entry points the unit asks for -----------------------------
 
+// EXP675: gguf-offsets.goose reads and writes through its own binding names.
+// Same primitive as fg458_st_i64, bound under the name that module declares.
+int64_t fg457_ld_i64(uint64_t p, uint64_t o) {
+    return *(const int64_t *) ((const char *) (uintptr_t) p + o);
+}
+
+void fg457_st_i64(uint64_t p, uint64_t o, int64_t v) {
+    *(int64_t *) ((char *) (uintptr_t) p + o) = v;
+}
+
 void fg458_st_i64(uint64_t p, uint64_t o, int64_t v) {
     *(int64_t *) ((char *) (uintptr_t) p + o) = v;
 }

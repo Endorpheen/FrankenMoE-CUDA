@@ -44,6 +44,7 @@ MODULES=(
     goose/model/quant-dequant2.goose
     goose/model/quant-weighted.goose
     goose/model/gguf-metadata.goose
+    goose/model/gguf-offsets.goose
     goose/model/gguf-writer.goose
     goose/model/gguf-tensors.goose
     goose/model/gguf-split.goose
