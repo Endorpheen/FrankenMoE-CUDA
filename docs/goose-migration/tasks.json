@@ -2781,17 +2781,23 @@
       "id": "P11-04",
       "phase": "P11",
       "title": "Remove every replaced owned C/C++/CUDA implementation",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "all candidate source/build/link manifests"
       ],
       "acceptance": "Zero owned hand-written native executable logic in candidate; no renamed original symbols/callbacks/embedded C arithmetic; old experiment/oracle code retained outside selected link.",
-      "evidence": "",
+      "evidence": "2026-11-15 plan (docs/goose-migration/P11-04-REMOVAL.md): nothing in the tracked tree can be deleted yet - every carrier lives only in /tmp copies, the native tree has zero FG_GOOSE occurrences and all ten flags default to OFF. 18 candidates are inventoried (10 fully replaced: the schema converter entry, three GGUF write/size functions, the split branch, two quantisation rows, the vocab-type/string-strip/validate native bodies; 8 partial), and 10 substrate groups are named as never-deletable. Order D0-D4: D0 flips flags and restores the Apex anchor without deletions, D1 removes F1-F7, D2 F10 plus config/spec, D3 F8/F9 and the P2 remainder, D4 all *_native and #ifdefs after the A/B. Risks: R-1, removing native quant bodies drops the only byte-parity fallback while only 2 of 172 row types are gated and no Apex A/B exists; R-2, the documented Apex reference binary (badbfc5c...) is absent from the tree and build/expert-tier-franken-cuda/bin/llama-server is a different binary (3cd3586e...), so the rollback anchor must be restored first.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "remaining": [
+        "D0: put carriers into the canonical tree, flip flags ON, take a --repro rollback copy, restore the Apex reference anchor",
+        "close the five failure-recovery items from P11-05",
+        "D1-D4 removals in order, each with the symbol audit and Apex A/B approval"
+      ],
+      "coverage_doc": "docs/goose-migration/P11-04-REMOVAL.md"
     },
     {
       "id": "P11-05",
@@ -4720,6 +4726,10 @@
     {
       "event": "C1-02: Qwen4Exp metadata, tensor map and expert layout ported (EXP660, 934 comparisons, 36/36).",
       "checkpoint": "6ee05be2"
+    },
+    {
+      "event": "P11-04: removal plan accepted (18 candidates, 10 substrate groups, D0-D4); R-1/R-2 recorded.",
+      "checkpoint": "eccb95f2"
     }
   ],
   "batches": [
@@ -5610,11 +5620,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T06:35:57.436220+00:00",
+  "updated_at": "2026-11-15T06:37:04.315294+00:00",
   "status_totals": {
     "DONE": 114,
-    "PARTIAL": 22,
-    "TODO": 16
+    "PARTIAL": 23,
+    "TODO": 15
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
