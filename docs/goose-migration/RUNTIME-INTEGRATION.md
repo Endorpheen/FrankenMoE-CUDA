@@ -44,9 +44,9 @@ output path, so the artifact hash is reproducible at a fixed `OUT`.
 
 The growing main build is `tools/build-main-runtime.sh`. It composes every
 accepted module that shares one unit, typechecks, generates C, compiles an
-object and fails on any duplicate global symbol. Current state: 47 modules,
-2585 specializations, 16.7 MB of C, 3 s to typecheck and 13 s to compile,
-518 global symbols, 0 duplicates, 97 extern helper entry points at -O1.
+object and fails on any duplicate global symbol. Current state: 50 modules,
+2616 specializations, 16.8 MB of C, 3 s to typecheck and 13 s to compile,
+549 global symbols, 0 duplicates, 97 extern helper entry points at -O1.
 
 The build holds the model graph/loader/file-io/arch-registry, the six quantizer
 modules plus weighted, the four GGUF modules, expert LRU, dense placement,
@@ -236,7 +236,7 @@ requirements that carry no slices yet:
 | P9-04 | S1 | router hooks and I/O-compute overlap (in flight) |
 | P8-09 | S3 | web/UI serving and application integration |
 | P9-05 | S3 | standalone sessions/runtime/ngram draft (accepted, EXP632) |
-| P9-08 | S3 | standalone engine closure |
+| P9-08 | S3 | standalone engine closure (accepted, EXP636) |
 | P4-13, P1-12 | S1 | allocation/scheduler unification and CPU MoE closure |
 | P10-* | S4 | build integration, packaging, headers/FFI, tools, licensing |
 | P11-*, C1-*, C2-*, F1-* | S4+ | Apex integration, Qwen extension and final qualification |

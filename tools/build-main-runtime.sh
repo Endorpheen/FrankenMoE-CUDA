@@ -68,6 +68,9 @@ MODULES=(
     goose/misc/session-lifecycle.goose
     goose/misc/runtime-facade.goose
     goose/misc/draft-source.goose
+    goose/misc/load-admission.goose
+    goose/misc/perplexity-plan.goose
+    goose/misc/kv-turn-state.goose
     goose/server/mcp-core.goose
     goose/server/mcp-stdio.goose
     goose/server/mcp-integration.goose

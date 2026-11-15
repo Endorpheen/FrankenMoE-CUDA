@@ -1,0 +1,89 @@
+{
+  "experiment": "EXP-2026-11-15-634-p9-08-engine-closure",
+  "requirement": "P9-08",
+  "base_commit": "137bc40c",
+  "production_changed": false,
+  "models_run": false,
+  "gpu_used": false,
+  "working_tree": "/tmp/opencode/sub-638",
+  "compiler": {
+    "name": "goose-2026.3-string",
+    "path": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+    "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+    "runtime": "1e714e6146bc"
+  },
+  "host": {
+    "cc": "gcc-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0",
+    "cxx": "g++-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0",
+    "os": "Linux 7.0.0-43-generic"
+  },
+  "slices": [
+    {
+      "id": "S1",
+      "prefix": "lga_",
+      "module": "source/lga-load-admission.goose",
+      "canon_path": "goose/chat/engine-load-admission.goose",
+      "native_target": "runtime/core/src/engine/session.cpp Session::open (628-1271)",
+      "exports": 10,
+      "sha256": "e89755c12fe2cc10596935c7f52cb4fb1ac4a46579c91a5abdcbf36f3b4c3276",
+      "gate": { "cases": 118, "checks": 512, "failures": 0 },
+      "mutations": { "total": 12, "caught": 12, "halves": "6/6" }
+    },
+    {
+      "id": "S2",
+      "prefix": "ppl_",
+      "module": "source/ppl-perplexity-plan.goose",
+      "canon_path": "goose/chat/perplexity-plan.goose",
+      "native_target": "runtime/core/src/engine/session.cpp Session::perplexity (459-622)",
+      "exports": 12,
+      "sha256": "4a6508718a6328aabeddbbb2510495f18b5a3f45128657c7d43605a7310188ac",
+      "gate": { "cases": 287, "checks": 2455, "failures": 0 },
+      "mutations": { "total": 12, "caught": 12, "halves": "6/6" }
+    },
+    {
+      "id": "S3",
+      "prefix": "kvp_",
+      "module": "source/kvp-kv-turn-state.goose",
+      "canon_path": "goose/chat/kv-turn-state.goose",
+      "native_target": "runtime/core/src/engine/session.cpp clear_kv/prefix reuse/rollback/append",
+      "exports": 9,
+      "sha256": "aa2fb64bf8918758fa710be5722a497b49436660120752038f9117c9c1bc609e",
+      "gate": { "cases": 62, "checks": 281, "failures": 0 },
+      "mutations": { "total": 12, "caught": 12, "halves": "6/6" }
+    }
+  ],
+  "totals": {
+    "cases": 467,
+    "checks": 3248,
+    "failures": 0,
+    "identical_at_O0": true,
+    "mutations_caught": 36,
+    "mutations_total": 36
+  },
+  "prefix_check": { "lga_": 0, "ppl_": 0, "kvp_": 0 },
+  "link_check": {
+    "duplicate_symbol": "goose_init",
+    "resolution": "objcopy --redefine-sym goose_init=<prefix>_goose_init per module, explicit init call per module"
+  },
+  "artifacts": {
+    "tests/fixture_lga.cpp": "c40a8b7a18034049d5fdab273e3c2cc3c70d37ed34857cef6df3efe15668045a",
+    "tests/fixture_ppl.cpp": "f945f2e57bbf6bf59fd3cbc6996066e94ad0b70894f11def961a146d8511c696",
+    "tests/fixture_kvp.cpp": "dece13cc796e7d3683ac76c2f7095de5610517024d730efac719e996d8d8e4ac",
+    "tests/build.sh": "fb1d65c9b04e744282b0c790db1f90a1260e6a9c474d9d69f3decfc5a5d77fc2",
+    "tests/mutate.py": "592b68f9e5d2385cf94f7d12fd833efa2bf59306c0a70fb442a89275373877a0",
+    "results/gate-O1.log": "5f2ddb9280f7308f3177668a08f75a7fb98fb92ec494afcb17da747a691fe622",
+    "results/gate-O0.log": "0605163129b686c61e244f394ecebdc4942cfa686d6c2540e7aa9f9aa156b093",
+    "results/mutations.log": "74fcf9599013e3b6d3faebbb4e16998e287ea12fd5730f95902f8189f1c91c07",
+    "results/prefix-check.log": "cc1222f89421c75929e828e8f93a8f6edb95a5a49dddf710414227de12fd9fff",
+    "results/link-check.log": "a2794f7d8245022218b57547590439a38aac010d1bec52a93725c5615b7bf92d"
+  },
+  "remainder": [
+    "GenTally::record and PrefillTally arithmetic (session.cpp:157-285)",
+    "prefill chunk plan (session.cpp:1565-1591)",
+    "trace framing order (session.cpp:1480-1530)",
+    "MTP capture warm-up sequence (session.cpp:988-1150)",
+    "sampler chain construction (session.cpp:937-951)",
+    "CLI driver loop beyond the EXP572 line protocol",
+    "runtime.cpp: complete"
+  ]
+}

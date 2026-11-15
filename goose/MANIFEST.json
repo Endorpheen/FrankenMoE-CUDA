@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T00:50:38.788247+00:00",
+  "updated_at": "2026-11-15T01:23:50.692338+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -975,6 +975,42 @@
       "status": "ported",
       "sha256": "01dae1c99e143cf2fd3f97918246e9d4659682f624dc0d76ecd4092eba218a91",
       "gate": "936 matrix + 20000 fuzz / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/load-admission.goose",
+      "native": "runtime/core/src/engine/session.cpp (Session::open admission, mparams/cparams projection, 20-stage init)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (Session::open admission, mparams/cparams projection, 20-stage init)"
+      ],
+      "experiment": "EXP-2026-11-15-636-p9-08-engine-closure",
+      "task": "",
+      "status": "ported",
+      "sha256": "e89755c12fe2cc10596935c7f52cb4fb1ac4a46579c91a5abdcbf36f3b4c3276",
+      "gate": "118 cases / 512 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/perplexity-plan.goose",
+      "native": "runtime/core/src/engine/session.cpp (Session::perplexity gates, scoring positions, choices, aggregates)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (Session::perplexity gates, scoring positions, choices, aggregates)"
+      ],
+      "experiment": "EXP-2026-11-15-636-p9-08-engine-closure",
+      "task": "",
+      "status": "ported",
+      "sha256": "4a6508718a6328aabeddbbb2510495f18b5a3f45128657c7d43605a7310188ac",
+      "gate": "287 cases / 2455 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/kv-turn-state.goose",
+      "native": "runtime/core/src/engine/session.cpp (clear_kv, prefix reuse, rewind, rollback_turn, add tokens)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (clear_kv, prefix reuse, rewind, rollback_turn, add tokens)"
+      ],
+      "experiment": "EXP-2026-11-15-636-p9-08-engine-closure",
+      "task": "",
+      "status": "ported",
+      "sha256": "aa2fb64bf8918758fa710be5722a497b49436660120752038f9117c9c1bc609e",
+      "gate": "62 cases / 281 checks / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/session-lifecycle.goose",
@@ -11894,6 +11930,314 @@
       "task": "",
       "status": "slice",
       "sha256": "b39540dc868f73b32e4840c3221593646e933e0c156d062576c6f4f2bf2130bb"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/format-grammar.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "a5c66d60de35378b4378bfb5e65f13f94f5f89551aa33020bdd903c460dfa3f2"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model/quant-allow.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f1a86afc4099f029b73f4b85d0d94244ecc62ebddb22637e2049826cbba51eee"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model/quant-dequant.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "cea9b3457c1da0502ba041432be9d9d31dbbfca18bfa11f7b51d650f994b0011"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model/quant-dequant2.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "43a13e0bc34bca890875bed2da3b664c6866a335f23d03951e5cfff57f0eeb14"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model/quant-rows.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "4362fc29d389c2be9b7337b2dad8cc8b1a4a6af6af1f964aa456ee35e19bffc6"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model/quant-rows2.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model/quant-types.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f9ca7bdbdc5a39f9d8f70d117e4ce8782f56f8294cfa0fd035ce781a00b0c767"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model/quant-weighted.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-base/quant-allow.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f1a86afc4099f029b73f4b85d0d94244ecc62ebddb22637e2049826cbba51eee"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-base/quant-dequant.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "2e2fa40bee89652969665869798191de8e63047f6923e895f650662893c95e70"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-base/quant-dequant2.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "43a13e0bc34bca890875bed2da3b664c6866a335f23d03951e5cfff57f0eeb14"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-base/quant-rows.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "4362fc29d389c2be9b7337b2dad8cc8b1a4a6af6af1f964aa456ee35e19bffc6"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-base/quant-rows2.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-base/quant-types.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f9ca7bdbdc5a39f9d8f70d117e4ce8782f56f8294cfa0fd035ce781a00b0c767"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-base/quant-weighted.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-staged/quant-allow.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f1a86afc4099f029b73f4b85d0d94244ecc62ebddb22637e2049826cbba51eee"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-staged/quant-dequant.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "2e2fa40bee89652969665869798191de8e63047f6923e895f650662893c95e70"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-staged/quant-dequant2.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "43a13e0bc34bca890875bed2da3b664c6866a335f23d03951e5cfff57f0eeb14"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-staged/quant-rows.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "4362fc29d389c2be9b7337b2dad8cc8b1a4a6af6af1f964aa456ee35e19bffc6"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-staged/quant-rows2.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-staged/quant-types.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f9ca7bdbdc5a39f9d8f70d117e4ce8782f56f8294cfa0fd035ce781a00b0c767"
+    },
+    {
+      "goose": "json/s1-3-quant-staged/goose/model-staged/quant-weighted.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml-quants.c",
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-15-635-s1-3-quant-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
