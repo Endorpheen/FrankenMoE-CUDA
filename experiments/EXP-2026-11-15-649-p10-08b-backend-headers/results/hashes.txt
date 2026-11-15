@@ -1,0 +1,49 @@
+# EXP-2026-11-15-651 — SHA-256 of artifacts and inputs
+# generated 2026-11-15T03:57:08Z
+
+## artifacts
+2affebc2e0902b985a9b4411e57c271c6305bcfcea129254c35047eba27602fc  source/backend-headers.goose
+936bc8869df254c4bbd03829c37ec0e729828fe3c2713e27d3202376ca79144c  source/gguf-headers.goose
+13478706814929340edf2b444ca3585c42b07b1d1030000a81f4d0dc1c833e6c  source/soname-exports.goose
+cea1f2ab35dc1e29c4b66a56d70f6984fcbe31e8dce4a82a74365d47692c7d45  tests/extract_native.py
+42dc867e1c79e336e4d27da703b71b9f9ba183aceac292473d45e36e1172df17  tests/mutate.py
+da421ee35bf02262b6367c4a97df58b564d709cc8eb24fcc759d4513d735f84b  tests/fixture_bkh.cpp
+c9778cfc8d42eda1443703d9bf2a3b9498eab1a584297dde5c83d77e99665c6e  tests/fixture_ggh.cpp
+bd94f9c8b53c2cb4288b5679e0b3de4ce12ca982bbdd60d8107bc50365e45ba2  tests/fixture_son.cpp
+2586789257350eb2ffd94a53d56a6b368e447c537a61d03fe9d5536a186c4120  tests/native_bkh.inc
+1516b36ff59b169ca6d1c6de9ae1069c39b05b84361fd08de97ad07ab91d5089  tests/native_ggh.inc
+785b4e1313c6ffb2685d35734b5711ff5818eb3fbf5801f4db141cc8db3a2bfa  tests/build.sh
+11f7c23ed4fce2e8484c04541c7b14bd3c70e729d85b3bdf6cd78be1a3c045af  README.md
+465d75ed60159d22faa5b5541c4b18afc1a2f2af4a6db3b9fc89b98b3d2da0cb  REPORT.md
+7395009b0bb204b8632bcc7a425ac456093b741fcdbecf179731e8866daaf384  results/gate-final.log
+452f850214af255fa8991a51b5516e361f07e7bac83f2acedcf893c70b9a2699  results/gate-o0.log
+e425a4b5fdcd0ff9b852abae487bac40c804cdb6eabd5c0bc7fccfb710c84517  results/gate-o1.log
+4658183532cac603f78b0f6948003e27e34ba0e3f46b9f14c3db4af6ac1a5ed8  results/mutate-1.log
+f2adcb118cb2a0fb97a8f7e0055f1c19cb81fb406ec024e1e658be9e92b9ff3c  results/mutate-2.log
+
+## native sources (upstream/llama.cpp 0b5be7e4a)
+c6e7e86d00ee042e384aa3c738f4d4a80aa29eef26430da178a8d0abfece6d42  upstream/llama.cpp/ggml/include/ggml.h
+f9bafda615fafa73306bed0a2c3d5a459cba2c19c9d76e1dc0adc2b3fd0cb2c8  upstream/llama.cpp/ggml/include/ggml-backend.h
+e56714aab702e5ce62ee587a409643c08f7e93e8fbb77f48ef7cc85075f96fa4  upstream/llama.cpp/ggml/include/gguf.h
+3586de1bc8a934b5c72339e2b6937b0641e8f149b512231e666f67de0736eea2  upstream/llama.cpp/ggml/include/ggml-opt.h
+94e4cd069b9313b2ceb35dacec901981e0bb478d8bb31035b7126be091998c23  upstream/llama.cpp/ggml/include/ggml-alloc.h
+3d1b18eda626c1b9ecf5bda0798e65b974a8f70f30d56726610633a980cb4160  upstream/llama.cpp/include/llama.h
+615894b49182f94d711280d570a215860e1247ecc05d4289c9382295170b53bc  upstream/llama.cpp/ggml/src/gguf.cpp
+76e1b42abecb92958ddaa2499616daaadfe48b067a8360d5f2d722028d704d0c  upstream/llama.cpp/ggml/src/ggml-backend.cpp
+890f527a231068c1a3f6cad4515dbeba36d4d32889f12f20fc35af7bf97c3216  upstream/llama.cpp/ggml/src/ggml-backend-meta.cpp
+3af6c5ff1fdb622ef4ab4fe3f630995e0785e5967012694b98432952b4aabbab  upstream/llama.cpp/ggml/CMakeLists.txt
+04c16dc102dfcce1d10da90e8689a7d9540f19fb441ad1dbdfca68e52e74f6b2  upstream/llama.cpp/CMakeLists.txt
+9b036e8cdb90dc3db5144d01c91d867cde32583d7ea8103c87f9d8cb08b53c2d  upstream/llama.cpp/src/CMakeLists.txt
+e15f28090782582b554183a3509f9d80646d9568bc3d9da4135f972c1a8d169e  upstream/llama.cpp/common/CMakeLists.txt
+699b24cd2861200d659d2ca5376a1cf208cb54120378b2e2538019359b491a80  upstream/llama.cpp/tools/mtmd/CMakeLists.txt
+
+## reference shared objects (build/exp054-dflash/bin)
+413b6ef7af09eff3669574a176a68c4f31ea92bcc5204322cfe07d025d3abdfd  build/exp054-dflash/bin/libllama.so.0.3.0
+92ce8d704bbfee11b89aebd9e4bbd70eea4dbc7e85c1d05b633e8d5a9b0b9555  build/exp054-dflash/bin/libllama-common.so.0.3.0
+1ed2e589d57b3381062c3cd1c6df1528779968b7c2fbeb0216b5cf74674d3ebb  build/exp054-dflash/bin/libmtmd.so.0.3.0
+17263e983ac36c9c69a3fd5fca4d9e8857621bf478dc44e7138bd32f0c9f55a2  build/exp054-dflash/bin/libggml.so.0.22.0
+3f3dbfdb2b887399ed24099cff423f8ac2fbe9922992fef7b4324a854cad2173  build/exp054-dflash/bin/libggml-base.so.0.22.0
+01f46e2f59c827cb5e50b11985bbc9243f12384de749c5f0d65a77cbbf5b9ef5  build/exp054-dflash/bin/libggml-cpu.so.0.22.0
+
+## ledger
+7c37a1f73d01d616874cc0093c191aa30a300d1ed5427a0a6f77857ab3d63850  docs/goose-migration/abi-ledger.json

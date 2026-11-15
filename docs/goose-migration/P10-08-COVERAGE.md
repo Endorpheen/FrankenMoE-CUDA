@@ -21,10 +21,27 @@ compatibility and callback semantics remain open.
   (`ggml.c`, `llama.cpp`, `llama-model.cpp`, `llama-model-loader.cpp`) and freeze
   public struct sizes with compile-time asserts.
 
+## Additional slices (EXP649)
+
+| slice | content | exports |
+|---|---|---|
+| S4 backend header | 39 constants/layout records, struct offsets 5/56/16/2128/32, 11 callback typedef shapes, 8 axis names | 11 `bkh_*` |
+| S5 GGUF header | magic `0x46554747`, version 3, alignment 32, 17-byte key, 13 types, power-of-two and pad rules, reader callback protocol | 7 `ggh_*` |
+| S6 SONAME and exports | 7 library SONAME/symlink chains, required/forbidden `DT_NEEDED`, 462 declarations vs `nm`, 6 declared-less `llama_*` exports | `son_*` |
+
+Evidence: 628 cases / 993 values, 0 failures, byte-identical at -O0; mutations
+36/36. Findings: all 235 `llama.h` declarations are exported, but 6 symbols
+(`llama_save_session_file` and siblings) are exported without declarations;
+`ggml_backend_op_alloc_size_may_expand` is newer than the reference build and is
+an explicit exception; the backend header splits 99/16 between `libggml-base.so`
+and `libggml.so`; the ledger describes `libllama-exp371.so.0.7.0` against
+`libllama.so.0`; the GGUF key is 17 bytes, not 18.
+
 ## Remaining
 
-`ggml_backend_*` and `gguf.h` headers, backend headers, `.so` SONAME/export
-symbol compatibility against `abi-ledger.json`, and callback semantics.
+Device backend headers (`ggml-cuda.h` and siblings), `ggml-cpp.h` and
+carrier/runtime headers; the scheduler-eval callback runtime sequence (only the
+typedef shape is frozen); wiring the slices into the runtime/CLI.
 
 ## Boundaries
 

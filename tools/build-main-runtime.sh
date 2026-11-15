@@ -73,6 +73,9 @@ MODULES=(
     goose/misc/cpu-features.goose
     goose/misc/platform-paths.goose
     goose/misc/backend-select.goose
+    goose/misc/backend-headers.goose
+    goose/misc/gguf-headers.goose
+    goose/misc/soname-exports.goose
     goose/cuda/dispatch.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose

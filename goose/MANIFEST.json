@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T03:26:57.736309+00:00",
+  "updated_at": "2026-11-15T04:02:03.775492+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -927,6 +927,42 @@
       "status": "ported",
       "sha256": "b073599a4ac4881615e5ca04d57ba891922991009a5da79c388ff64e3f68a3b7",
       "gate": "80 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/backend-headers.goose",
+      "native": "ggml-backend.h (39 constants/layouts, struct offsets, callback typedef shapes, axis names)",
+      "native_targets": [
+        "ggml-backend.h (39 constants/layouts, struct offsets, callback typedef shapes, axis names)"
+      ],
+      "experiment": "EXP-2026-11-15-649-p10-08b-backend-headers",
+      "task": "",
+      "status": "ported",
+      "sha256": "2affebc2e0902b985a9b4411e57c271c6305bcfcea129254c35047eba27602fc",
+      "gate": "65 cases / 184 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/gguf-headers.goose",
+      "native": "gguf.h (25 constants, magic, version, alignment, key rules, type names, power-of-two, pad rule)",
+      "native_targets": [
+        "gguf.h (25 constants, magic, version, alignment, key rules, type names, power-of-two, pad rule)"
+      ],
+      "experiment": "EXP-2026-11-15-649-p10-08b-backend-headers",
+      "task": "",
+      "status": "ported",
+      "sha256": "936bc8869df254c4bbd03829c37ec0e729828fe3c2713e27d3202376ca79144c",
+      "gate": "65 cases / 239 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/soname-exports.goose",
+      "native": "library SONAME/symlink chain, required/forbidden DT_NEEDED, 462 header declarations vs nm exports",
+      "native_targets": [
+        "library SONAME/symlink chain, required/forbidden DT_NEEDED, 462 header declarations vs nm exports"
+      ],
+      "experiment": "EXP-2026-11-15-649-p10-08b-backend-headers",
+      "task": "",
+      "status": "ported",
+      "sha256": "13478706814929340edf2b444ca3585c42b07b1d1030000a81f4d0dc1c833e6c",
+      "gate": "498 cases / 570 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/ggml-type-table.goose",
