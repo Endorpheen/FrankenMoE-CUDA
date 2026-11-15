@@ -85,6 +85,13 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     fix them together; between builds use only the cheap local gate. A build per
     module is the failure mode this rule exists to prevent.
 
+The migration target is full functional coverage, not a module count: for every
+own C++ file, the shipped binary's call path must reach the Goose export, the
+Goose export must answer, and the native body must be dead code. A file is
+"owned" when the Goose module holds its decisions; it is "replaced" only when
+the wiring is proven and the native body is removed. Legacy, test, duplicate and
+alternative modules are never counted toward coverage.
+
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
