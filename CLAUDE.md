@@ -92,10 +92,14 @@ Goose export must answer, and the native body must be dead code. A file is
 the wiring is proven and the native body is removed. Legacy, test, duplicate and
 alternative modules are never counted toward coverage.
 
-`bash tools/migration-status.sh` is the single accounting command. It prints
-three separate counters - modules in the composed unit, own C++ files, own C++
-functions wired to Goose - and never blends them, because a module being present
-says nothing about a native body being gone. `docs/goose-migration/BUILD-SET.md`
+`bash tools/migration-status.sh` is the single accounting command. It reports the
+composed unit's module count, the own C++ classified by role (substrate that must
+stay native, superseded by an accepted Goose module, still needed), and the
+standalone runtime's capability list - and never blends them. A call into Goose
+from the old C++ is never counted as progress: the migration's goal is a
+standalone runtime that answers the capability without that C++ at all, so adding
+Goose calls to the old runtime is forbidden as a way to improve a number.
+Substrate lines (OS and memory primitives) are never counted as debt. `docs/goose-migration/BUILD-SET.md`
 records the build set by name and every exclusion with its reason. Both are
 derived from the repository; neither is typed by hand, and neither requires a
 build.
