@@ -1,0 +1,3 @@
+  token 0: conv n=8192 differs=0 | tail n=24576 differs=0 | slot_off=0 ok=1
+  token 1: conv n=8192 differs=0 | tail n=24576 differs=0 | slot_off=0 ok=1
+FG_GDN_RECUR tokens=2 state_elems=24576 state_differs=0 state_nonzero=10120 PASS

@@ -113,6 +113,55 @@ int64_t fg158_repeat4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, 
     return (int64_t) (intptr_t) ggml_repeat_4d(ctx, src, n0, n1, n2, n3);
 }
 
+// The three nodes the recurrent state update needs. Translation only: when to
+// transpose, what to concatenate and where to write are decided in Goose.
+int64_t fg158_transpose(int64_t c, int64_t a) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
+    if (ctx == nullptr || src == nullptr) {
+        return 0;
+    }
+    return (int64_t) (intptr_t) ggml_transpose(ctx, src);
+}
+
+int64_t fg158_concat(int64_t c, int64_t a, int64_t b, int64_t dim) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * x = (struct ggml_tensor *) (intptr_t) a;
+    struct ggml_tensor  * y = (struct ggml_tensor *) (intptr_t) b;
+    if (ctx == nullptr || x == nullptr || y == nullptr) {
+        return 0;
+    }
+    return (int64_t) (intptr_t) ggml_concat(ctx, x, y, (int) dim);
+}
+
+int64_t fg158_cpy(int64_t c, int64_t a, int64_t b) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * x = (struct ggml_tensor *) (intptr_t) a;
+    struct ggml_tensor  * y = (struct ggml_tensor *) (intptr_t) b;
+    if (ctx == nullptr || x == nullptr || y == nullptr) {
+        return 0;
+    }
+    return (int64_t) (intptr_t) ggml_cpy(ctx, x, y);
+}
+
+int64_t fg158_view2(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t nb1, int64_t offset) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
+    if (ctx == nullptr || src == nullptr) {
+        return 0;
+    }
+    return (int64_t) (intptr_t) ggml_view_2d(ctx, src, n0, n1, (size_t) nb1, (size_t) offset);
+}
+
+int64_t fg158_reshape3(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
+    if (ctx == nullptr || src == nullptr) {
+        return 0;
+    }
+    return (int64_t) (intptr_t) ggml_reshape_3d(ctx, src, n0, n1, n2);
+}
+
 int64_t fg158_view4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, int64_t n3,
                     int64_t nb1, int64_t nb2, int64_t nb3, int64_t offset) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
