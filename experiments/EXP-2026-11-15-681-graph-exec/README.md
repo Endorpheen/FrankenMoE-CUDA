@@ -11,9 +11,19 @@ the CPU backend, and its output checked against arithmetic the host computed
 independently.
 
 ```
-FG_GRAPH_EXEC op=2 rc=0 result=[11 22 33 44] PASS     (GGML_OP_ADD)
-FG_GRAPH_EXEC op=7 rc=0 result=[10 40 90 160] PASS    (GGML_OP_MUL)
+FG_GRAPH_EXEC ADD backend=cpu status=0 result=[11 22 33 44] PASS
+FG_GRAPH_EXEC MUL backend=cpu status=0 result=[10 40 90 160] PASS
 ```
+
+**Update (backend seam).** The compute now goes through `ggml_backend`, not
+through a bare `ggml_graph_compute` on a CPU context: `ggml_backend_cpu_init`,
+`ggml_backend_alloc_ctx_tensors`, `ggml_backend_graph_compute`,
+`ggml_backend_tensor_set/get`. Only public API is used, so no struct field is
+touched and the gate cannot drift from ggml's internals.
+
+That abstraction is the seam a GPU backend plugs into. Proving it on CPU is the
+prerequisite for wiring CUDA without changing the Goose side: the module still
+chooses the node, and the backend only decides where the arithmetic runs.
 
 Inputs are `a = [1 2 3 4]`, `b = [10 20 30 40]`; the expected values are the
 host's own sums and products, not a copy of what the graph produced.
