@@ -1,0 +1,1 @@
+FG_APEX_LAYER nodes=15 K=2048 H=16 HKV=2 HD=256 HDKV=256 out=[2048 1] shape_ok=1 status=0,0 nonfinite=0 changed=2048 nondet=0 PASS

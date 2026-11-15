@@ -27,7 +27,11 @@ int main(int argc, char ** argv) {
 
     // Apex attention geometry, from the model file.
     const int64_t K = 2048, H = 16;
-    const int64_t head_dim_q = 512;          // 8192 / 16: query and gate interleaved
+    // n_embd_head is the ATTENTION head width, not the q projection width divided by
+    // the head count. The projection emits 2 * n_embd_head per head, so 8192 with 16
+    // heads means n_embd_head = 256 and a head stride of 512. Using 512 here made the
+    // test agree with itself while describing a layout the model does not have.
+    const int64_t head_dim_q = 256;          // n_embd_head
     const int64_t elem = 4;                  // f32
 
     struct ggml_init_params gp = { 256 * 1024 * 1024, NULL, /*.no_alloc =*/ false };
