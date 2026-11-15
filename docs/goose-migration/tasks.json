@@ -423,13 +423,13 @@
       "id": "P1-12",
       "phase": "P1",
       "title": "Close CPU MoE subsystem with native compute disabled",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "ggml/src/ggml-cpu/**",
         "src/llama-expert-*"
       ],
       "acceptance": "All supported MoE formats/modes pass graph corpus and real Apex milestone; replaced native symbols unavailable in candidate link; rollback preserved externally.",
-      "evidence": "",
+      "evidence": "2026-11-15 decision note (docs/goose-migration/P1-12-DECISION.md): the CPU MoE orchestration is Goose (ar_ recipe matching, xl_ LRU/residency/budget, dw_ dense placement, sp_ row-stream plan, rh_/ov_/rs_ router hooks and overlap, meta backend and optimizer). The dot-product kernels themselves are SIMD and cannot move: Goose has no intrinsic surface, so they are substrate in the same category as libc/libm. Closing the criterion needs Igor's decision: (A) reclassify SIMD as substrate and close, (B) keep it open until a Goose vector surface exists, (C) close only the orchestration part. Recommendation: B, unless Igor states that SIMD is substrate project-wide.",
       "depends_on": [
         "P1-06",
         "P1-07",
@@ -442,9 +442,9 @@
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B1",
       "remaining": [
-        "native compute inside the CPU MoE dot products cannot move (Goose has no SIMD); only the orchestration around it is ported. Closing the criterion needs an owner decision to reclassify or a substrate change."
+        "Igor's decision: reclassify SIMD kernels as substrate (A), wait for a Goose vector surface (B, recommended), or split the criterion (C)"
       ],
-      "coverage_doc": "docs/goose-migration/cpu-moe-structure.md",
+      "coverage_doc": "docs/goose-migration/P1-12-DECISION.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
@@ -4665,6 +4665,10 @@
     {
       "event": "P8-09: web asset serving, MIME table and ETag ported (EXP653, 12/12); CORS/query/middleware and server wiring remain.",
       "checkpoint": "df937de2"
+    },
+    {
+      "event": "P1-12 moved to PARTIAL with a decision note: orchestration ported, SIMD dot kernels need Igor's reclassification decision.",
+      "checkpoint": "17c1b1bd"
     }
   ],
   "batches": [
@@ -5555,11 +5559,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T05:04:03.700116+00:00",
+  "updated_at": "2026-11-15T05:04:50.404224+00:00",
   "status_totals": {
     "DONE": 113,
-    "PARTIAL": 18,
-    "TODO": 21
+    "PARTIAL": 19,
+    "TODO": 20
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
