@@ -58,6 +58,7 @@ MODULES=(
     goose/model/vocab-type.goose
     goose/model/special-partition.goose
     goose/misc/common-strings.goose
+    goose/misc/edge0-pack-index.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose
