@@ -236,7 +236,8 @@ engine gaps (EXP647/EXP650), and P8-09 web asset serving, MIME and ETag
 4. In flight: GGUF (S1.2), quantizers (S1.3), config validation (S2.1), model
    management (P8-06) and router/overlap (P9-04).
 5. Ask Igor for the first model A/B with the exact plan (goal, duration, number
-   of runs) before any server is started.
+   of runs) before any server is started; the draft protocol is
+   `docs/goose-migration/APEX-TEST-PLAN.md`.
 
 ## Remaining work map
 
