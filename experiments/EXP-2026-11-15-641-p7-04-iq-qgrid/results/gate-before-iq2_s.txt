@@ -1,0 +1,4 @@
+== canon, iq2_s
+FAIL iq2_s pat=0 rows=1 byte=31 native=50 port=ff
+FAIL iq2_s pat=0 rows=2 byte=31 native=50 port=ff
+exit=0

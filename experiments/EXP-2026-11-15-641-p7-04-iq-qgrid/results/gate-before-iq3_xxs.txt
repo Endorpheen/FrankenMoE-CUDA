@@ -1,0 +1,5 @@
+== canon, iq3_xxs
+FAIL iq3_xxs pat=0 rows=1 byte=0 native=b2 port=b3
+FAIL iq3_xxs pat=0 rows=2 byte=0 native=b2 port=b3
+EXP636 module failure 1221
+exit=0

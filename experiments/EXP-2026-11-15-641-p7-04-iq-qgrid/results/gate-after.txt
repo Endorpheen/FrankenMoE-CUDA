@@ -1,0 +1,3 @@
+== fixed, full offgrid corpus
+EXP636 type=offgrid cases=40 bytes=10800 mismatches=0 offgrid_lookups=122245 nb_calls=1137684
+exit=0

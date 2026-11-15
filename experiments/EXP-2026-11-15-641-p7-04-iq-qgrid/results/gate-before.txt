@@ -1,0 +1,5 @@
+== canon, full offgrid corpus (iq2_s + iq3_xxs)
+FAIL iq2_s pat=0 rows=1 byte=31 native=50 port=ff
+FAIL iq2_s pat=0 rows=2 byte=31 native=50 port=ff
+/bin/bash: строка 1: 2034591 Ошибка сегментирования                (образ памяти сброшен на диск) ./results/bin/canon
+exit=139

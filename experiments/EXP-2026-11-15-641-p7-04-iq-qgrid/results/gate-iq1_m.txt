@@ -1,0 +1,13 @@
+== fixed, iq1_m (second, independent defect, not part of this slice)
+FAIL iq1_m pat=0 rows=1 byte=8 native=00 port=05
+FAIL iq1_m pat=0 rows=2 byte=8 native=00 port=05
+FAIL iq1_m pat=2 rows=1 byte=6 native=05 port=ff
+FAIL iq1_m pat=2 rows=2 byte=6 native=05 port=ff
+FAIL iq1_m pat=3 rows=1 byte=2 native=05 port=ff
+FAIL iq1_m pat=3 rows=2 byte=2 native=05 port=ff
+FAIL iq1_m pat=5 rows=1 byte=2 native=ff port=05
+FAIL iq1_m pat=5 rows=2 byte=2 native=ff port=05
+FAIL iq1_m pat=6 rows=1 byte=0 native=ff port=05
+FAIL iq1_m pat=6 rows=2 byte=0 native=ff port=05
+EXP636 type=iq1_m cases=20 bytes=3360 mismatches=10 offgrid_lookups=139 nb_calls=10819
+exit=1

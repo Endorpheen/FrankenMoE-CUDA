@@ -193,7 +193,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | tokenizer switch (done, EXP639) | S1.5 | S1 | EXP639 | 182/182 both paths, goose_calls=182, nm 1/0 |
 | streaming switch (done, EXP637) | S1.6 | S1 | EXP637 | 71/71 both paths, goose_calls=74, nm 1/0 |
 | speculative switch (done, EXP640) | S2.2 | S2 | EXP640 | 6146/6146 both paths, goose_calls=2572, nm 1/0 |
-| IQ off-grid fix | P7-04 | S1 | in flight | canonical IQ2_S/IQ3_XXS/IQ1_M defect |
+| IQ off-grid fix (done, EXP641) | P7-04 | S1 | EXP641 | 40 cases / 122245 lookups / 0 mismatches, 12/12; iq1_m stays open |
 
 The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.4
 metrics switch (EXP628) and the S2.1 config switch (EXP630) are accepted. The

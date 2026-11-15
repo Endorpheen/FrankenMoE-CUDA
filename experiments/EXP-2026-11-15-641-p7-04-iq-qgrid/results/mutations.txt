@@ -1,0 +1,33 @@
+EXP636 mutation run - IQ off-grid quantizers
+module at -O0, gate: OFFGRID corpus (iq2_s, iq3_xxs) vs native libggml-base
+
+baseline: EXP636 type=offgrid cases=40 bytes=10800 mismatches=0 offgrid_lookups=122245 nb_calls=1137684
+A1 A DETECTED  FAIL iq2_s pat=0 rows=2 byte=31 native=50 port=ff
+      iq2 quantizers read the static (dequant) grid again
+A2 A DETECTED  EXP636 module failure 1221
+      iq3 quantizers read the static (dequant) grid again
+A3 A DETECTED  FAIL iq2_s pat=0 rows=2 byte=31 native=50 port=ff
+      iq2_best_nb scores neighbours on the wrong grid
+A4 A DETECTED  EXP636 type=offgrid cases=40 bytes=10800 mismatches=18 offgrid_lookups=122417 nb_calls=1149200
+      iq3_best_nb scores neighbours on the wrong grid
+A5 A DETECTED  EXP636 module failure 1221
+      iq3_xxs decodes the chosen neighbour on the wrong grid
+A6 A DETECTED  
+      iq2_s looks its final group up in the IQ1 table
+B1 B DETECTED  EXP636 type=offgrid cases=40 bytes=10800 mismatches=20 offgrid_lookups=122245 nb_calls=1137684
+      iq3_xxs decodes the neighbour one grid entry too far
+B2 B DETECTED  EXP636 type=offgrid cases=40 bytes=10800 mismatches=12 offgrid_lookups=121590 nb_calls=1136176
+      iq3_xxs scale search step 0.2 -> 0.1
+B3 B DETECTED  EXP636 type=offgrid cases=40 bytes=10800 mismatches=20 offgrid_lookups=121993 nb_calls=888732
+      iq3_xxs flips the parity rule for the sign correction
+B4 B DETECTED  EXP636 type=offgrid cases=40 bytes=10800 mismatches=1 offgrid_lookups=124914 nb_calls=1278517
+      iq3_xxs level clamp 7 -> 6
+B5 B DETECTED  EXP636 type=offgrid cases=40 bytes=10800 mismatches=18 offgrid_lookups=122134 nb_calls=1141553
+      iq3_xxs level-to-value map drops the +1 offset
+B6 B DETECTED  EXP636 type=offgrid cases=40 bytes=10800 mismatches=20 offgrid_lookups=122245 nb_calls=1137684
+      iq3_xxs super-scale denominator 31 -> 32
+
+half A: caught 6/6
+half B: caught 6/6
+
+after restore: EXP636 type=offgrid cases=40 bytes=10800 mismatches=0 offgrid_lookups=122245 nb_calls=1137684

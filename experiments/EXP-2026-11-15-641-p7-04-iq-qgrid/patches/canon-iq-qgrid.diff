@@ -1,0 +1,244 @@
+--- a/goose/model/quant-rows2.goose
++++ b/goose/model/quant-rows2.goose
+@@ -80,9 +80,11 @@
+ extern "qz2_tmp" fn tmp(off: i64) -> u64;
+ extern "qz2_fail" fn fail(code: i64);
+ extern "qz2_iq2_grid" fn iq2_grid(g: i64, i: i64) -> i64;
++extern "qz2_iq2_qgrid" fn iq2_qgrid(g: i64, i: i64) -> i64;
+ extern "qz2_iq2_map" fn iq2_map(g: i64, u: i64) -> i64;
+ extern "qz2_iq2_nb" fn iq2_nb(g: i64, off: i64) -> i64;
+ extern "qz2_iq3_grid" fn iq3_grid(g: i64, i: i64) -> i64;
++extern "qz2_iq3_qgrid" fn iq3_qgrid(g: i64, i: i64) -> i64;
+ extern "qz2_iq3_map" fn iq3_map(g: i64, u: i64) -> i64;
+ extern "qz2_iq3_nb" fn iq3_nb(g: i64, off: i64) -> i64;
+ extern "qz2_sort16" fn sort16(pairs: u64, n: i64);
+@@ -1582,7 +1584,7 @@
+     var j = 1 as i64;
+     while j <= n {
+         let idx = iq3_nb(g, off + j);
+-        let gv = iq3_grid(g, idx);
++        let gv = iq3_qgrid(g, idx);
+         var d2 = 0 as f32;
+         var i = 0 as i64;
+         while i < 4 {
+@@ -1598,7 +1600,7 @@
+         j += 1 as i64;
+     }
+     if gi < 0 { fail(1202); }
+-    let gv = iq3_grid(g, gi);
++    let gv = iq3_qgrid(g, gi);
+     var i = 0 as i64;
+     while i < 4 {
+         let q = i8val((gv >> (8 * i)) & 255);
+@@ -1616,7 +1618,7 @@
+     var j = 1 as i64;
+     while j <= n {
+         let idx = iq2_nb(g, off + j);
+-        let gv = iq2_grid(g, idx);
++        let gv = iq2_qgrid(g, idx);
+         var d2 = 0 as f32;
+         var i = 0 as i64;
+         while i < 8 {
+@@ -1632,7 +1634,7 @@
+         j += 1 as i64;
+     }
+     if gi < 0 { fail(1212); }
+-    let gv = iq2_grid(g, gi);
++    let gv = iq2_qgrid(g, gi);
+     var i = 0 as i64;
+     while i < 8 {
+         let q = i8val((gv >> (8 * i)) & 255);
+@@ -1824,7 +1826,7 @@
+                             gidx = iq3_best_nb(0, 0 as i64 - gi - 1, xv + ((4 * kk2) as u64) * 4,
+                                                waux + ((4 * kk2) as u64) * 4, scale, L + ((4 * kk2) as u64));
+                         }
+-                        let gv = iq3_grid(0, gidx);
++                        let gv = iq3_qgrid(0, gidx);
+                         i4 = 0 as i64;
+                         while i4 < 4 {
+                             st_u8(L + ((4 * kk2 + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
+@@ -2063,7 +2065,7 @@
+                         gidx = iq3_best_nb(1, 0 as i64 - gi - 1, xv + ((4 * kk2) as u64) * 4,
+                                            waux + ((4 * kk2) as u64) * 4, scale, L + ((4 * kk2) as u64));
+                     }
+-                    let gv = iq3_grid(1, gidx);
++                    let gv = iq3_qgrid(1, gidx);
+                     i4 = 0 as i64;
+                     while i4 < 4 {
+                         st_u8(L + ((4 * kk2 + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
+@@ -2365,7 +2367,7 @@
+     var j = 1 as i64;
+     while j <= n {
+         let idx = iq2_nb(2, off + j);
+-        let gv = iq2_grid(2, idx);
++        let gv = iq2_qgrid(2, idx);
+         var d2 = 0 as f32;
+         var i = 0 as i64;
+         while i < 8 {
+@@ -2383,7 +2385,7 @@
+     if gi < 0 {
+         var g = 0 as i64;
+         while g < ngrid {
+-            let gv = iq2_grid(2, g);
++            let gv = iq2_qgrid(2, g);
+             var d2 = 0 as f32;
+             var jj = 0 as i64;
+             while jj < 8 {
+@@ -2401,7 +2403,7 @@
+         }
+     }
+     if gi < 0 { fail(1252); }
+-    let gv = iq2_grid(2, gi);
++    let gv = iq2_qgrid(2, gi);
+     var i = 0 as i64;
+     while i < 8 {
+         st_u8(L + (i as u64), (i8val((gv >> (8 * i)) & 255) - 1) / 2);
+@@ -2637,7 +2639,7 @@
+                         if bestk % 2 == 0 { xx = xp; }
+                     }
+                     let gidx = ld_u32v(tmp(S_IDX) + (kk as u64) * 4);
+-                    let gv = iq2_grid(2, gidx);
++                    let gv = iq2_qgrid(2, gidx);
+                     var i4 = 0 as i64;
+                     while i4 < 8 {
+                         let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);
+@@ -2704,7 +2706,7 @@
+                 let qsb = ld_u8(yb + ((2 * ib + kk) as u64));
+                 let qhb = ld_u8(yb + 32 + (ib as u64));
+                 let idx2 = qsb + ((qhb << (8 - 4 * kk)) & 1792);
+-                let gv = iq2_grid(2, idx2);
++                let gv = iq2_qgrid(2, idx2);
+                 var i4 = 0 as i64;
+                 while i4 < 8 {
+                     let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);
+--- a/goose/model/quant-weighted.goose
++++ b/goose/model/quant-weighted.goose
+@@ -106,9 +106,11 @@
+ extern "qz_tmp" fn tmp(off: i64) -> u64;
+ extern "qz_fail" fn fail(code: i64);
+ extern "qz_iq2_grid" fn iq2_grid(g: i64, i: i64) -> i64;
++extern "qz_iq2_qgrid" fn iq2_qgrid(g: i64, i: i64) -> i64;
+ extern "qz_iq2_map" fn iq2_map(g: i64, u: i64) -> i64;
+ extern "qz_iq2_nb" fn iq2_nb(g: i64, off: i64) -> i64;
+ extern "qz_iq3_grid" fn iq3_grid(g: i64, i: i64) -> i64;
++extern "qz_iq3_qgrid" fn iq3_qgrid(g: i64, i: i64) -> i64;
+ extern "qz_iq3_map" fn iq3_map(g: i64, u: i64) -> i64;
+ extern "qz_iq3_nb" fn iq3_nb(g: i64, off: i64) -> i64;
+ extern "qz_sort16" fn sort16(pairs: u64, n: i64);
+@@ -2524,7 +2526,7 @@
+     var j = 1 as i64;
+     while j <= n {
+         let idx = iq3_nb(g, off + j);
+-        let gv = iq3_grid(g, idx);
++        let gv = iq3_qgrid(g, idx);
+         var d2 = 0 as f32;
+         var i = 0 as i64;
+         while i < 4 {
+@@ -2540,7 +2542,7 @@
+         j += 1 as i64;
+     }
+     if gi < 0 { fail(1202); }
+-    let gv = iq3_grid(g, gi);
++    let gv = iq3_qgrid(g, gi);
+     var i = 0 as i64;
+     while i < 4 {
+         let q = i8val((gv >> (8 * i)) & 255);
+@@ -2558,7 +2560,7 @@
+     var j = 1 as i64;
+     while j <= n {
+         let idx = iq2_nb(g, off + j);
+-        let gv = iq2_grid(g, idx);
++        let gv = iq2_qgrid(g, idx);
+         var d2 = 0 as f32;
+         var i = 0 as i64;
+         while i < 8 {
+@@ -2574,7 +2576,7 @@
+         j += 1 as i64;
+     }
+     if gi < 0 { fail(1212); }
+-    let gv = iq2_grid(g, gi);
++    let gv = iq2_qgrid(g, gi);
+     var i = 0 as i64;
+     while i < 8 {
+         let q = i8val((gv >> (8 * i)) & 255);
+@@ -2759,7 +2761,7 @@
+                         gidx = iq2_best_nb(0, 0 as i64 - gi - 1, xv + ((8 * kk) as u64) * 4,
+                                            waux + ((8 * kk) as u64) * 4, scale, L + ((8 * kk) as u64));
+                     }
+-                    let gv = iq2_grid(0, gidx);
++                    let gv = iq2_qgrid(0, gidx);
+                     i4 = 0 as i64;
+                     while i4 < 8 {
+                         st_u8(L + ((8 * kk + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
+@@ -3257,7 +3259,7 @@
+                             gidx = iq3_best_nb(0, 0 as i64 - gi - 1, xv + ((4 * kk2) as u64) * 4,
+                                                waux + ((4 * kk2) as u64) * 4, scale, L + ((4 * kk2) as u64));
+                         }
+-                        let gv = iq3_grid(0, gidx);
++                        let gv = iq3_qgrid(0, gidx);
+                         i4 = 0 as i64;
+                         while i4 < 4 {
+                             st_u8(L + ((4 * kk2 + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
+@@ -3499,7 +3501,7 @@
+                         gidx = iq3_best_nb(1, 0 as i64 - gi - 1, xv + ((4 * kk2) as u64) * 4,
+                                            waux + ((4 * kk2) as u64) * 4, scale, L + ((4 * kk2) as u64));
+                     }
+-                    let gv = iq3_grid(1, gidx);
++                    let gv = iq3_qgrid(1, gidx);
+                     i4 = 0 as i64;
+                     while i4 < 4 {
+                         st_u8(L + ((4 * kk2 + i4) as u64), (i8val((gv >> (8 * i4)) & 255) - 1) / 2);
+@@ -3804,7 +3806,7 @@
+     var j = 1 as i64;
+     while j <= n {
+         let idx = iq2_nb(2, off + j);
+-        let gv = iq2_grid(2, idx);
++        let gv = iq2_qgrid(2, idx);
+         var d2 = 0 as f32;
+         var i = 0 as i64;
+         while i < 8 {
+@@ -3822,7 +3824,7 @@
+     if gi < 0 {
+         var g = 0 as i64;
+         while g < ngrid {
+-            let gv = iq2_grid(2, g);
++            let gv = iq2_qgrid(2, g);
+             var d2 = 0 as f32;
+             var jj = 0 as i64;
+             while jj < 8 {
+@@ -3840,7 +3842,7 @@
+         }
+     }
+     if gi < 0 { fail(1252); }
+-    let gv = iq2_grid(2, gi);
++    let gv = iq2_qgrid(2, gi);
+     var i = 0 as i64;
+     while i < 8 {
+         st_u8(L + (i as u64), (i8val((gv >> (8 * i)) & 255) - 1) / 2);
+@@ -4080,7 +4082,7 @@
+                         if bestk % 2 == 0 { xx = xp; }
+                     }
+                     let gidx = ld_u32v(tmp(S_IDX) + (kk as u64) * 4);
+-                    let gv = iq2_grid(2, gidx);
++                    let gv = iq2_qgrid(2, gidx);
+                     var i4 = 0 as i64;
+                     while i4 < 8 {
+                         let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);
+@@ -4151,7 +4153,7 @@
+                 let qsb = ld_u8(yb + ((2 * ib + kk) as u64));
+                 let qhb = ld_u8(yb + 32 + (ib as u64));
+                 let idx2 = qsb + ((qhb << (8 - 4 * kk)) & 1792);
+-                let gv = iq2_grid(2, idx2);
++                let gv = iq2_qgrid(2, idx2);
+                 var i4 = 0 as i64;
+                 while i4 < 8 {
+                     let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);
+@@ -4367,7 +4369,7 @@
+                 kk = 0 as i64;
+                 while kk < 4 {
+                     let gidx = ld_u32v(ix + (kk as u64) * 4);
+-                    let gv = iq2_grid(2, gidx);
++                    let gv = iq2_qgrid(2, gidx);
+                     var i4 = 0 as i64;
+                     while i4 < 8 {
+                         let w = ld_f32(wa + ((8 * kk + i4) as u64) * 4);

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T01:40:32.563243+00:00",
+  "updated_at": "2026-11-15T01:50:52.968408+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -310,7 +310,7 @@
       "native_targets": [
         "ggml/src/ggml-quants.c (imatrix branches)"
       ],
-      "experiment": "EXP-2026-11-14-616-p7-04-quant-weighted",
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
       "task": "",
       "status": "ported",
       "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f",
@@ -322,7 +322,7 @@
       "native_targets": [
         "ggml/src/ggml-quants.c (K/IQ/MX/NV/TQ)"
       ],
-      "experiment": "EXP-2026-11-14-611-p7-04-quant-rows2",
+      "experiment": "EXP-2026-11-15-641-p7-04-iq-qgrid",
       "task": "",
       "status": "ported",
       "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9",
@@ -11887,6 +11887,20 @@
       "sha256": "cea9b3457c1da0502ba041432be9d9d31dbbfca18bfa11f7b51d650f994b0011"
     },
     {
+      "goose": "cpu/quant-rows2.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-14-611-p7-04-quant-rows2",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "0ddce390e5fa69875fb70655bd26ebf4521d054cc8244934d3feb796941fe0d9"
+    },
+    {
       "goose": "jinja/json-escape.goose",
       "native": "src/llama-chat.cpp",
       "native_targets": [
@@ -11899,6 +11913,34 @@
       "task": "P7-08",
       "status": "slice",
       "sha256": "bcb3c167a392f4de6df8c9f98177b9911dcd4c1f98839f2a124a4dc3d48fc021"
+    },
+    {
+      "goose": "cpu/quant-weighted/quant-weighted.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-14-616-p7-04-quant-weighted",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f"
+    },
+    {
+      "goose": "cpu/quant-weighted/tests/s3b/quant-rows2.goose",
+      "native": "src/llama-quant.cpp",
+      "native_targets": [
+        "src/llama-quant.cpp",
+        "common/imatrix-loader.cpp",
+        "tools/quantize/**",
+        "tools/imatrix/**"
+      ],
+      "experiment": "EXP-2026-11-14-616-p7-04-quant-weighted",
+      "task": "P7-04",
+      "status": "slice",
+      "sha256": "3fd3671893abf3d160b08479535ae9275b07097cabf10c7417bc5671d8d6cfb4"
     },
     {
       "goose": "json/s1-1-apex-staging.goose",
@@ -12386,6 +12428,62 @@
       "task": "",
       "status": "slice",
       "sha256": "36003bf7e506dd5a28ad99d17834c18848eeee7e2deb4ebf647b0266468df12f"
+    },
+    {
+      "goose": "json/s1-5-tokenizer-staged/goose/common-strings.goose",
+      "native": "src/llama-vocab.c",
+      "native_targets": [
+        "src/llama-vocab.c",
+        "common/json-schema.c",
+        "common/common.c",
+        "src/llama-vocab.c"
+      ],
+      "experiment": "EXP-2026-11-15-639-s1-5-tokenizer-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f6647d3636090a1ded775976945f9f6b2b7b8ca4c5f3da57a69e2f2e89026c5b"
+    },
+    {
+      "goose": "json/s1-5-tokenizer-staged/goose/format-grammar.goose",
+      "native": "src/llama-vocab.c",
+      "native_targets": [
+        "src/llama-vocab.c",
+        "common/json-schema.c",
+        "common/common.c",
+        "src/llama-vocab.c"
+      ],
+      "experiment": "EXP-2026-11-15-639-s1-5-tokenizer-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "a5c66d60de35378b4378bfb5e65f13f94f5f89551aa33020bdd903c460dfa3f2"
+    },
+    {
+      "goose": "json/s1-5-tokenizer-staged/goose/special-partition.goose",
+      "native": "src/llama-vocab.c",
+      "native_targets": [
+        "src/llama-vocab.c",
+        "common/json-schema.c",
+        "common/common.c",
+        "src/llama-vocab.c"
+      ],
+      "experiment": "EXP-2026-11-15-639-s1-5-tokenizer-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682"
+    },
+    {
+      "goose": "json/s1-5-tokenizer-staged/goose/vocab-type.goose",
+      "native": "src/llama-vocab.c",
+      "native_targets": [
+        "src/llama-vocab.c",
+        "common/json-schema.c",
+        "common/common.c",
+        "src/llama-vocab.c"
+      ],
+      "experiment": "EXP-2026-11-15-639-s1-5-tokenizer-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f744f1a7a31ffa52c62024388e28363858b9a2a47d7a5c09bef47b0637e8a5d2"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
