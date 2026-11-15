@@ -8,17 +8,18 @@ grouped by what it does rather than by the experiment that proved it.
 | directory | files | what is inside |
 |---|---:|---|
 | `jinja/` | 16 | the Jinja stack: lexer, parser, value model, JSON output, built-ins, runtime |
-| `json/` | 34 | JSON text parsing, rendering, JSON-schema decoding and introspection |
+| `json/` | 39 | JSON text parsing, rendering, JSON-schema decoding and introspection |
 | `grammar/` | 1 | GBNF grammar text parsing |
-| `server/` | 56 | HTTP server decisions: routing, limits, SSE, providers, MCP and startup/shutdown |
-| `cpu/` | 241 | CPU backends, quantized kernels, MoE, allocator, scheduler and optimizer work |
+| `server/` | 59 | HTTP server decisions: routing, limits, SSE, providers, MCP and startup/shutdown |
+| `cpu/` | 242 | CPU backends, quantized kernels, MoE, allocator, scheduler and optimizer work |
 | `cuda/` | 233 | CUDA operators: attention, quantization, reductions, RoPE, SSM, MoE |
 | `kv/` | 90 | KV cache, memory, batch, context and recurrent state |
-| `model/` | 76 | model loading, GGUF, tokenizer, quantization and graph construction |
+| `model/` | 79 | model loading, GGUF, tokenizer, quantization and graph construction |
 | `sampling/` | 5 | sampler decisions and output selection |
+| `metrics/` | 1 | metrics, trace and deterministic-workload text encoders |
 | `chat/` | 18 | chat templates, tool calls and message conversion |
 | `cli/` | 4 | the session line protocol, config validation and resolution |
-| `misc/` | 36 | common helpers and slices whose native file the ledger does not name |
+| `misc/` | 39 | common helpers and slices whose native file the ledger does not name |
 | `_archive/` | 3335 | sources preserved from other checkouts and branches, not part of the tree |
 
 A complete module is one file named after the native module it replaces
