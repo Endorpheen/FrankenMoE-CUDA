@@ -1332,12 +1332,18 @@
         "source/*/bridge.h"
       ],
       "acceptance": "Single Goose ownership model serves Apex; no duplicated hidden native policy; complete borrowed/owned lifetime table.",
-      "evidence": "",
+      "evidence": "2026-11-15 analysis (docs/goose-migration/P8-12-P4-13-ANALYSIS.md): the allocator and backend criteria are closed (P4-05/06/07, P4-12) and the streaming/hook decisions are ported (P9-03/P9-04), but the two lineages still expose different allocation and scheduler entry points. A single interface needs an owner decision for block tables and eviction callbacks, then an adapter with a differential gate before any call site changes.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B3"
+      "batch": "B3",
+      "remaining": [
+        "document the two allocation/scheduler interfaces",
+        "choose the owning side",
+        "port the adapter with a differential gate, then switch call sites"
+      ],
+      "coverage_doc": "docs/goose-migration/P8-12-P4-13-ANALYSIS.md"
     },
     {
       "id": "P4-14",
@@ -2272,12 +2278,18 @@
         "common/**"
       ],
       "acceptance": "Goose entrypoint owns HTTP/API lifecycle; link/source/import audit shows no owned original C++ server/parser/task logic remains.",
-      "evidence": "",
+      "evidence": "2026-11-15 analysis (docs/goose-migration/P8-12-P4-13-ANALYSIS.md): the merged server sources exist (all four ports in one server-context.cpp, 29 references, 158 changed lines) and link_server.py relinks libllama-server-impl.so with the four bridges (rc=0, 19 defined / 0 undefined fg symbols). The shipped llama-server is not built from them yet, the S2.3 call sites (49 files / 18318 lines) are not switched, and the removal order must follow the switch order. Prerequisite: the M1 staged build that links llama-server with the server flags and does not run a model.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B4"
+      "batch": "B4",
+      "remaining": [
+        "build llama-server from the merged copies and relink the application binary",
+        "switch the S2.3 server/CLI call sites to the Goose decisions",
+        "remove the native server files after each stage is accepted"
+      ],
+      "coverage_doc": "docs/goose-migration/P8-12-P4-13-ANALYSIS.md"
     },
     {
       "id": "P9-01",
@@ -5543,7 +5555,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T04:37:53.813038+00:00",
+  "updated_at": "2026-11-15T05:04:03.700116+00:00",
   "status_totals": {
     "DONE": 113,
     "PARTIAL": 18,
