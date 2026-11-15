@@ -1,0 +1,7 @@
+mg_pred ON=1 OFF=0
+mg_unload_action ON=1 OFF=0
+mg_victim ON=1 OFF=0
+hr_preset_norm ON=1 OFF=0
+hr_unload_set ON=1 OFF=0
+cn_find_binary ON=1 OFF=0
+cn_upstream_host ON=1 OFF=0

@@ -1,0 +1,72 @@
+0000000000004d0c T goose_init
+0000000000005654 T nd_draft_ubatch
+0000000000005581 T nd_enabled
+00000000000055a8 T nd_load_mtp
+00000000000055d0 T nd_mtp_admit
+00000000000056b2 T nd_ri_draft_max
+000000000000570a T nd_ri_ngram_min
+00000000000056da T nd_ri_p_min
+000000000000562c T nd_rs_seq
+0000000000005507 T nd_source_name
+0000000000005600 T nd_stream_layers
+0000000000005689 T nd_verify_batch
+000000000000535c T rts_config
+000000000000533b T rts_n_batch
+0000000000005405 T rts_plan
+0000000000005491 T rts_request
+00000000000054d5 T rts_result
+00000000000053dd T rts_ubatch
+0000000000004fd9 T ss_hot_reason
+0000000000004fb2 T ss_hot_slots
+0000000000005111 T ss_probe_budget
+00000000000050e0 T ss_probe_margin
+0000000000005156 T ss_resize_plan
+0000000000005041 T ss_sentinel_mib
+0000000000004f88 T ss_sentinels
+0000000000005271 T ss_teardown_before
+00000000000052c3 T ss_teardown_check
+000000000000524a T ss_teardown_rank
+0000000000005095 T ss_vram_clamp
+0000000000003d64 T fg_session::hot_reason(long, long, long, long, long)
+0000000000003d88 T fg_session::vram_clamp(long, long, long)
+0000000000004243 T fg_session::goose_calls()
+0000000000003dbe T fg_session::resize_plan(long, long, long, long, long, long, long, long, long)
+0000000000003e47 T fg_session::draft_ubatch(long, long)
+0000000000003dac T fg_session::probe_budget(long, long)
+0000000000003d9a T fg_session::probe_margin(long)
+0000000000003d76 T fg_session::sentinel_mib(long, long)
+0000000000003e59 T fg_session::verify_batch(long, long)
+00000000000041ff T fg_session::plan_open_native(fg_session::OpenState const&)
+0000000000003afa T fg_session::native::hot_reason(long, long, long, long, long)
+0000000000003b88 T fg_session::native::vram_clamp(long, long, long)
+0000000000003bf5 T fg_session::native::resize_plan(long, long, long, long, long, long, long, long, long)
+0000000000003d14 T fg_session::native::draft_ubatch(long, long)
+0000000000003bd1 T fg_session::native::probe_budget(long, long)
+0000000000003bb9 T fg_session::native::probe_margin(long)
+0000000000003b5d T fg_session::native::sentinel_mib(long, long)
+0000000000003d30 T fg_session::native::verify_batch(long, long)
+0000000000003c92 T fg_session::native::ubatch(long, long)
+0000000000003c8a T fg_session::native::n_batch(long)
+0000000000003ca1 T fg_session::native::run_plan(long, long, long*, long)
+0000000000003a8a T fg_session::native::hot_slots(long, long, long, long, long)
+0000000000003a79 T fg_session::native::sentinels(long)
+0000000000003e23 T fg_session::ubatch(long, long)
+0000000000003e11 T fg_session::n_batch(long)
+0000000000003e35 T fg_session::run_plan(long, long, long*, long)
+0000000000003d52 T fg_session::hot_slots(long, long, long, long, long)
+00000000000041bb T fg_session::plan_open(fg_session::OpenState const&)
+0000000000003d40 T fg_session::sentinels(long)
+0000000000004400 T fg_goose_session::hot_reason(long, long, long, long, long)
+0000000000004474 T fg_goose_session::vram_clamp(long, long, long)
+00000000000044f3 T fg_goose_session::resize_plan(long, long, long, long, long, long, long, long, long)
+000000000000467b T fg_goose_session::draft_ubatch(long, long)
+00000000000044c4 T fg_goose_session::probe_budget(long, long)
+00000000000044a5 T fg_goose_session::probe_margin(long)
+0000000000004445 T fg_goose_session::sentinel_mib(long, long)
+00000000000046aa T fg_goose_session::verify_batch(long, long)
+0000000000004390 T fg_goose_session::calls()
+0000000000004609 T fg_goose_session::ubatch(long, long)
+00000000000045ea T fg_goose_session::n_batch(long)
+0000000000004638 T fg_goose_session::run_plan(long, long, long*, long)
+00000000000043bb T fg_goose_session::hot_slots(long, long, long, long, long)
+000000000000439c T fg_goose_session::sentinels(long)

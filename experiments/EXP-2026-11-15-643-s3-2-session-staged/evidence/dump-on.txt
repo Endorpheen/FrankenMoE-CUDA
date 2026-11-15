@@ -1,0 +1,24 @@
+budget off                 ok=1 vram=0 slots=0 reason=0 sent_mib=1 probe=0/0/0 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=5 1 2 3 4 5
+no metadata                ok=0 vram=4096 slots=-1 reason=1 sent_mib=1 probe=0/0/0 n_batch=0 n_ubatch=0 draft=0 verify=0 steps=0
+no expert tensors          ok=0 vram=4096 slots=-1 reason=2 sent_mib=0 probe=0/0/0 n_batch=0 n_ubatch=0 draft=0 verify=0 steps=0
+too small for sentinels    ok=0 vram=1 slots=-1 reason=3 sent_mib=1 probe=0/0/0 n_batch=0 n_ubatch=0 draft=0 verify=0 steps=0
+preflight 4096 exact       ok=0 vram=-1 slots=-1 reason=0 sent_mib=0 probe=0/0/0 n_batch=0 n_ubatch=0 draft=0 verify=0 steps=0
+preflight 4097             ok=0 vram=1 slots=-1 reason=0 sent_mib=1 probe=0/0/0 n_batch=0 n_ubatch=0 draft=0 verify=0 steps=0
+preflight below reserve    ok=0 vram=-1 slots=-1 reason=0 sent_mib=0 probe=0/0/0 n_batch=0 n_ubatch=0 draft=0 verify=0 steps=0
+probe keeps plan           ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=5 1 2 3 4 5
+probe resizes              ok=1 vram=2048 slots=64 reason=0 sent_mib=1 probe=1/2048/64 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=5 1 2 3 4 5
+probe disables             ok=1 vram=4096 slots=0 reason=0 sent_mib=1 probe=2/4096/0 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=5 1 2 3 4 5
+probe resizes mtp          ok=1 vram=1536 slots=64 reason=0 sent_mib=1 probe=1/1536/64 n_batch=4096 n_ubatch=4096 draft=32 verify=4096 steps=5 1 2 3 4 5
+ngram resizes              ok=1 vram=1536 slots=64 reason=0 sent_mib=1 probe=1/1536/64 n_batch=4096 n_ubatch=4096 draft=0 verify=4096 steps=5 1 2 3 4 5
+no gpu layers              ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=5 1 2 3 4 5
+ubatch explicit 256        ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=8192 n_ubatch=256 draft=0 verify=0 steps=5 1 2 3 4 5
+ubatch follows ctx         ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=2048 n_ubatch=2048 draft=0 verify=0 steps=5 1 2 3 4 5
+ctx 1                      ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=1 n_ubatch=1 draft=0 verify=0 steps=5 1 2 3 4 5
+mtp draft 0                ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=32 verify=4096 steps=5 1 2 3 4 5
+mtp draft 31               ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=32 verify=4096 steps=5 1 2 3 4 5
+mtp draft 63               ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=64 verify=4096 steps=5 1 2 3 4 5
+mtp draft 511              ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=512 verify=4096 steps=5 1 2 3 4 5
+top_k 12, 4 MiB slots      ok=1 vram=8192 slots=256 reason=0 sent_mib=48 probe=0/8192/256 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=5 1 2 3 4 5
+clamped budget             ok=1 vram=4096 slots=256 reason=0 sent_mib=4 probe=0/4096/256 n_batch=4096 n_ubatch=512 draft=0 verify=0 steps=5 1 2 3 4 5
+validate fails             ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=1 1
+open fails                 ok=1 vram=4096 slots=64 reason=0 sent_mib=1 probe=0/4096/64 n_batch=4096 n_ubatch=4096 draft=0 verify=0 steps=3 1 2 3

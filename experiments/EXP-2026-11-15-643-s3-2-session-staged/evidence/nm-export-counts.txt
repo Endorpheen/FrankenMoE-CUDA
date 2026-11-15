@@ -1,0 +1,13 @@
+ss_sentinels       ON=1 OFF=0
+ss_hot_slots       ON=1 OFF=0
+ss_hot_reason      ON=1 OFF=0
+ss_sentinel_mib    ON=1 OFF=0
+ss_vram_clamp      ON=1 OFF=0
+ss_probe_margin    ON=1 OFF=0
+ss_probe_budget    ON=1 OFF=0
+ss_resize_plan     ON=1 OFF=0
+rts_n_batch        ON=1 OFF=0
+rts_ubatch         ON=1 OFF=0
+rts_plan           ON=1 OFF=0
+nd_draft_ubatch    ON=1 OFF=0
+nd_verify_batch    ON=1 OFF=0

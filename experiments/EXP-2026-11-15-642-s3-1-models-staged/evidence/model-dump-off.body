@@ -1,0 +1,288 @@
+-- pred_downloading
+pred_downloading         ready      0
+pred_downloading         running    0
+pred_downloading         ready_or_sleep 0
+pred_downloading         failed     0
+-- pred_incomplete
+pred_incomplete          ready      0
+pred_incomplete          running    0
+pred_incomplete          ready_or_sleep 0
+pred_incomplete          failed     0
+-- pred_downloaded
+pred_downloaded          ready      0
+pred_downloaded          running    0
+pred_downloaded          ready_or_sleep 0
+pred_downloaded          failed     0
+-- pred_unloaded_ok
+pred_unloaded_ok         ready      0
+pred_unloaded_ok         running    0
+pred_unloaded_ok         ready_or_sleep 0
+pred_unloaded_ok         failed     0
+-- pred_unloaded_fail
+pred_unloaded_fail       ready      0
+pred_unloaded_fail       running    0
+pred_unloaded_fail       ready_or_sleep 0
+pred_unloaded_fail       failed     1
+-- pred_unloaded_neg
+pred_unloaded_neg        ready      0
+pred_unloaded_neg        running    0
+pred_unloaded_neg        ready_or_sleep 0
+pred_unloaded_neg        failed     1
+-- pred_loading
+pred_loading             ready      0
+pred_loading             running    1
+pred_loading             ready_or_sleep 0
+pred_loading             failed     0
+-- pred_loaded
+pred_loaded              ready      1
+pred_loaded              running    1
+pred_loaded              ready_or_sleep 1
+pred_loaded              failed     0
+-- pred_sleeping
+pred_sleeping            ready      0
+pred_sleeping            running    1
+pred_sleeping            ready_or_sleep 1
+pred_sleeping            failed     0
+-- pred_loaded_code
+pred_loaded_code         ready      1
+pred_loaded_code         running    1
+pred_loaded_code         ready_or_sleep 1
+pred_loaded_code         failed     0
+-- pred_unknown
+pred_unknown             ready      0
+pred_unknown             running    0
+pred_unknown             ready_or_sleep 0
+pred_unknown             failed     0
+-- pred_unknown_code
+pred_unknown_code        ready      0
+pred_unknown_code        running    0
+pred_unknown_code        ready_or_sleep 0
+pred_unknown_code        failed     0
+-- pred_sleeping_code
+pred_sleeping_code       ready      0
+pred_sleeping_code       running    1
+pred_sleeping_code       ready_or_sleep 1
+pred_sleeping_code       failed     0
+-- pred_loading_fail
+pred_loading_fail        ready      0
+pred_loading_fail        running    1
+pred_loading_fail        ready_or_sleep 0
+pred_loading_fail        failed     0
+FG643_MODEL pred         cases=14  values=56   failures=0
+-- unload_unmapped
+unload_unmapped          action     0
+unload_unmapped          send_exit  0
+unload_unmapped          terminate  0
+-- unload_unmapped_loaded
+unload_unmapped_loaded   action     0
+unload_unmapped_loaded   send_exit  0
+unload_unmapped_loaded   terminate  0
+-- unload_downloading
+unload_downloading       action     1
+unload_downloading       send_exit  0
+unload_downloading       terminate  0
+-- unload_incomplete
+unload_incomplete        action     3
+unload_incomplete        send_exit  0
+unload_incomplete        terminate  0
+-- unload_downloaded
+unload_downloaded        action     3
+unload_downloaded        send_exit  0
+unload_downloaded        terminate  0
+-- unload_unloaded
+unload_unloaded          action     3
+unload_unloaded          send_exit  0
+unload_unloaded          terminate  0
+-- unload_loading
+unload_loading           action     2
+unload_loading           send_exit  0
+unload_loading           terminate  1
+-- unload_loaded
+unload_loaded            action     2
+unload_loaded            send_exit  1
+unload_loaded            terminate  0
+-- unload_sleeping
+unload_sleeping          action     2
+unload_sleeping          send_exit  1
+unload_sleeping          terminate  0
+-- unload_unknown
+unload_unknown           action     3
+unload_unknown           send_exit  0
+unload_unknown           terminate  0
+-- unload_unmapped_loading
+unload_unmapped_loading  action     0
+unload_unmapped_loading  send_exit  0
+unload_unmapped_loading  terminate  0
+-- unload_unmapped_unknown
+unload_unmapped_unknown  action     0
+unload_unmapped_unknown  send_exit  0
+unload_unmapped_unknown  terminate  0
+-- unload_loaded_again
+unload_loaded_again      action     2
+unload_loaded_again      send_exit  1
+unload_loaded_again      terminate  0
+-- unload_downloading_again
+unload_downloading_again action     1
+unload_downloading_again send_exit  0
+unload_downloading_again terminate  0
+FG643_MODEL unload       cases=14  values=42   failures=0
+-- victim_empty
+victim_empty             victim     -1
+victim_empty             victim_name "<none>"
+-- victim_one
+victim_one               victim     0
+victim_one               victim_name "a"
+-- victim_two_order
+victim_two_order         victim     1
+victim_two_order         victim_name "a"
+-- victim_tie
+victim_tie               victim     1
+victim_tie               victim_name "alpha"
+-- victim_busy
+victim_busy              victim     5
+victim_busy              victim_name "f"
+-- victim_all_skipped
+victim_all_skipped       victim     -1
+victim_all_skipped       victim_name "<none>"
+-- victim_sleeping
+victim_sleeping          victim     1
+victim_sleeping          victim_name "b"
+-- victim_map_order
+victim_map_order         victim     1
+victim_map_order         victim_name "alpha"
+-- victim_negative_stamp
+victim_negative_stamp    victim     0
+victim_negative_stamp    victim_name "a"
+-- victim_zero_stamp
+victim_zero_stamp        victim     0
+victim_zero_stamp        victim_name "a"
+-- victim_mixed_status
+victim_mixed_status      victim     1
+victim_mixed_status      victim_name "b"
+-- victim_busy_newest
+victim_busy_newest       victim     1
+victim_busy_newest       victim_name "b"
+-- victim_reverse_stamps
+victim_reverse_stamps    victim     1
+victim_reverse_stamps    victim_name "b"
+-- victim_wide
+victim_wide              victim     7
+victim_wide              victim_name "n02"
+FG643_MODEL victim       cases=14  values=28   failures=0
+-- preset_empty
+preset_empty             text       ""
+-- preset_model_only
+preset_model_only        text       "LLAMA_ARG_MODEL=/m/a.gguf"
+-- preset_host_only
+preset_host_only         text       ""
+-- preset_port_only
+preset_port_only         text       ""
+-- preset_alias_only
+preset_alias_only        text       ""
+-- preset_colors_only
+preset_colors_only       text       ""
+-- preset_all_four
+preset_all_four          text       ""
+-- preset_keep_two
+preset_keep_two          text       "LLAMA_ARG_MODEL=/m/a.gguf|LLAMA_ARG_NGL=99"
+-- preset_unsorted_keep
+preset_unsorted_keep     text       "LLAMA_ARG_CTX=4096|LLAMA_ARG_NGL=99|LLAMA_ARG_TAGS=fast"
+-- preset_alias_value
+preset_alias_value       text       "LLAMA_ARG_CTX=4096"
+-- preset_value_with_eq
+preset_value_with_eq     text       "LLAMA_ARG_CHAT_TEMPLATE=hello=world|LLAMA_ARG_CTX=2048"
+-- preset_long_value
+preset_long_value        text       "LLAMA_ARG_MODEL=/models/a-very-long-model-name-2026-11-15.gguf|LLAMA_ARG_NGL=999"
+FG643_MODEL preset       cases=12  values=12   failures=0
+-- set_empty
+set_empty                set        "0:"
+set_empty                count      0
+-- set_no_change
+set_no_change            set        "0:"
+set_no_change            count      0
+-- set_all_removed
+set_all_removed          set        "4:1r1,2r1,4r1,0r1"
+set_all_removed          count      4
+-- set_host_port_only
+set_host_port_only       set        "0:"
+set_host_port_only       count      0
+-- set_alias_colors_only
+set_alias_colors_only    set        "0:"
+set_alias_colors_only    count      0
+-- set_ngl_changed
+set_ngl_changed          set        "1:0r2"
+set_ngl_changed          count      1
+-- set_added_only
+set_added_only           set        "0:"
+set_added_only           count      0
+-- set_not_running
+set_not_running          set        "1:3r2"
+set_not_running          count      1
+-- set_name_order
+set_name_order           set        "3:1r2,2r2,0r2"
+set_name_order           count      3
+-- set_mixed
+set_mixed                set        "2:1r1,4r1"
+set_mixed                count      2
+-- set_loading_changed
+set_loading_changed      set        "1:0r2"
+set_loading_changed      count      1
+-- set_sleeping_removed
+set_sleeping_removed     set        "1:0r1"
+set_sleeping_removed     count      1
+-- set_one_of_many
+set_one_of_many          set        "1:2r2"
+set_one_of_many          count      1
+FG643_MODEL unload_set   cases=13  values=26   failures=0
+-- conn_sibling
+conn_sibling             binary     0
+conn_sibling             host       "127.0.0.1"
+-- conn_path_first
+conn_path_first          binary     1
+conn_path_first          host       "127.0.0.1"
+-- conn_path_second
+conn_path_second         binary     2
+conn_path_second         host       "127.0.0.1"
+-- conn_path_third
+conn_path_third          binary     3
+conn_path_third          host       "[::1]"
+-- conn_none
+conn_none                binary     -1
+conn_none                host       "127.0.0.1"
+-- conn_no_dirs
+conn_no_dirs             binary     -1
+conn_no_dirs             host       "127.0.0.1"
+-- conn_sock_only
+conn_sock_only           binary     0
+conn_sock_only           host       ""
+-- conn_sock_then_v4
+conn_sock_then_v4        binary     0
+conn_sock_then_v4        host       "192.168.1.5"
+-- conn_sock_then_wildcard
+conn_sock_then_wildcard  binary     0
+conn_sock_then_wildcard  host       "127.0.0.1"
+-- conn_sock_then_any
+conn_sock_then_any       binary     0
+conn_sock_then_any       host       "[::1]"
+-- conn_ipv6_literal
+conn_ipv6_literal        binary     0
+conn_ipv6_literal        host       "[fe80::1]"
+-- conn_ipv6_bracketed
+conn_ipv6_bracketed      binary     0
+conn_ipv6_bracketed      host       "[::1]"
+-- conn_empty_hosts
+conn_empty_hosts         binary     0
+conn_empty_hosts         host       ""
+-- conn_v4_plain
+conn_v4_plain            binary     1
+conn_v4_plain            host       "10.0.0.7"
+-- conn_short_sock
+conn_short_sock          binary     0
+conn_short_sock          host       "localhost"
+-- conn_name_host
+conn_name_host           binary     0
+conn_name_host           host       "localhost"
+-- conn_none_but_sock
+conn_none_but_sock       binary     -1
+conn_none_but_sock       host       "127.0.0.1"
+FG643_MODEL connector    cases=17  values=34   failures=0

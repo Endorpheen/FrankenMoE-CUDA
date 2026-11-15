@@ -1,0 +1,2 @@
+FG644_SESSION mode=native cases=191 checks=929 failures=0 goose_calls=0
+FG644_SESSION mode=goose cases=191 checks=929 failures=0 goose_calls=376

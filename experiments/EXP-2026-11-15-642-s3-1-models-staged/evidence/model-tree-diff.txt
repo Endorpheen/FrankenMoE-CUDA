@@ -1,0 +1,14 @@
+# llama.cpp untouched against the S1.1 staged copy
+llama.cpp: no difference
+
+# files added or changed by this stage
+changed? CMakeLists.txt
+added    common/fg-model-decide.h
+added    common/fg-model-decide.cpp
+added    common/fg-goose-model-bridge.h
+added    common/fg-goose-model-bridge.cpp
+added    tests/fg_model_smoke.cpp
+added    scripts/models-gate.sh
+added    goose/server/model-manager.goose
+added    goose/server/hot-reload.goose
+added    goose/server/connectors.goose

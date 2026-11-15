@@ -1,0 +1,7 @@
+FG643_MODEL pred         cases=14  values=56   failures=0
+FG643_MODEL unload       cases=14  values=42   failures=0
+FG643_MODEL victim       cases=14  values=28   failures=0
+FG643_MODEL preset       cases=12  values=12   failures=0
+FG643_MODEL unload_set   cases=13  values=26   failures=0
+FG643_MODEL connector    cases=17  values=34   failures=0
+FG643_MODEL mode=goose cases=84 values=198 failures=0 goose_calls=84

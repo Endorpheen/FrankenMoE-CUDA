@@ -183,8 +183,8 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | MCP stdio integration | P8-07 S5b | S2 | EXP623 | accepted, 26/243; P8-07 DONE 6/6 |
 | hoisted native index | P7-08 | S3 | EXP625 | accepted, gbnf 13/13, parse 9/9; P7-08 DONE 9/9 |
 | router hooks/overlap | P9-04 | S1 | EXP629 | accepted, 1007 checks, on_eval wiring open |
-| model manager/reload/connectors | P8-06 | S3 | EXP631 | accepted, 49 cases / 521 values, wiring open |
-| sessions/runtime/draft source | P9-05 | S3 | EXP632 | accepted, 332 checks, wiring open |
+| model manager/reload/connectors | P8-06 | S3 | EXP631 | accepted; switch wired in EXP642 |
+| sessions/runtime/draft source | P9-05 | S3 | EXP632 | accepted; switch wired in EXP643 |
 | signed-zero dequantizer fix | P7-04 | S1 | EXP633 | accepted, bit-exact 300/300, 12/12 + 3/3 |
 | GGUF write/plan (done, EXP634) | S1.2 | S1 | EXP634 | smoke 14/14, split 17/0, mutations 12/12 |
 | quantizers (done, EXP635) | S1.3 | S1 | EXP635 | smoke 46/58, arms 112/112, mutations 12/12; IQ off-grid defect open |
@@ -194,6 +194,8 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | streaming switch (done, EXP637) | S1.6 | S1 | EXP637 | 71/71 both paths, goose_calls=74, nm 1/0 |
 | speculative switch (done, EXP640) | S2.2 | S2 | EXP640 | 6146/6146 both paths, goose_calls=2572, nm 1/0 |
 | IQ off-grid fix (done, EXP641) | P7-04 | S1 | EXP641 | 40 cases / 122245 lookups / 0 mismatches, 12/12; iq1_m stays open |
+| model-management switch (done, EXP642) | P8-06 | S3 | EXP642 | 84/84 both paths, goose_calls=84, nm 1/0 |
+| session switch (done, EXP643) | P9-05 | S3 | EXP643 | 191/929 both paths, goose_calls=376, dumps identical |
 
 The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.4
 metrics switch (EXP628) and the S2.1 config switch (EXP630) are accepted. The

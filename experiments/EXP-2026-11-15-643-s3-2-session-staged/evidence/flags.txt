@@ -1,0 +1,6 @@
+== -O1 core CXX_FLAGS
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17 -fPIC -O1
+== -O1 goose C_FLAGS
+C_FLAGS = -O3 -DNDEBUG -std=gnu11 -fPIC -O1 -w
+== -O0 core CXX_FLAGS
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17 -fPIC -O0

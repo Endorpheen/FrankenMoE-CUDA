@@ -1,0 +1,14 @@
+16491 goose/server/model-manager.goose
+21994 goose/server/hot-reload.goose
+15433 goose/server/connectors.goose
+54070 goose-gen/models.goose
+371420 goose-gen/models.c
+6142 goose-gen/models.h
+7748 common/fg-model-decide.cpp
+7167 common/fg-goose-model-bridge.cpp
+15987 tests/fg_model_smoke.cpp
+42976 build-model-off/libfg-model-core.so
+123424 build-model-on/libfg-model-core.so
+63536 build-model-off/fg-model-smoke
+63536 build-model-on/fg-model-smoke
+53248 build-model-on/CMakeFiles/fg-goose-models.dir/goose-gen/models.c.o

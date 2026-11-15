@@ -1,0 +1,5 @@
+f29a7652ce956280f378b66c89ddcfd911496b8f5cf54bc347c5d76e84fd79f1  build-base/bin/libllama-common.so.0.3.0
+fda849564d2fe450eae0f755dba8040b6d97f59a23e94a6d7b94daec84b0c8d5  build-base/bin/libllama.so.0.3.0
+743a4265ea9170e6a8e27ad43422e44787df0443b0a58d22677c578e2d967ccb  build-base/bin/libggml.so.0.22.0
+bcc44588b33007b426f0b33275829600be40d0dd25b65fa130e43cd297985439  build-base/bin/libggml-base.so.0.22.0
+dd8042536e55ead29e6d968fdf63a6e0049705e3710a87d7a4ad8fb764816478  build-base/bin/libggml-cpu.so.0.22.0

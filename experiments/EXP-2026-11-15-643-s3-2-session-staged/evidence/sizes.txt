@@ -1,0 +1,13 @@
+-rwxrwxr-x 1 end0 end0  43496 Nov 15 05:05 build-sess-off/fg-session-smoke
+-rwxrwxr-x 1 end0 end0  17464 Nov 15 05:05 build-sess-off/libfg-session-core.so
+-rw-rw-r-- 1 end0 end0  15704 Nov 15 05:05 build-sess-on/CMakeFiles/fg-goose-session.dir/goose-gen/session.c.o
+-rwxrwxr-x 1 end0 end0  43536 Nov 15 05:05 build-sess-on/fg-session-smoke
+-rwxrwxr-x 1 end0 end0  43504 Nov 15 05:05 build-sess-on/libfg-session-core.so
+-rw-rw-r-- 1 end0 end0   3466 Nov 15 04:52 common/fg-goose-session-bridge.cpp
+-rw-rw-r-- 1 end0 end0   2106 Nov 15 04:51 common/fg-goose-session-bridge.h
+-rw-rw-r-- 1 end0 end0  13495 Nov 15 04:55 common/fg-session-decide.cpp
+-rw-rw-r-- 1 end0 end0   7073 Nov 15 04:54 common/fg-session-decide.h
+-rw-rw-r-- 1 end0 end0 189669 Nov 15 05:05 goose-gen/session.c
+-rw-rw-r-- 1 end0 end0  21322 Nov 15 05:05 goose-gen/session.goose
+-rw-rw-r-- 1 end0 end0   3312 Nov 15 05:05 goose-gen/session.h
+-rw-rw-r-- 1 end0 end0  24294 Nov 15 04:58 tests/fg_session_smoke.cpp

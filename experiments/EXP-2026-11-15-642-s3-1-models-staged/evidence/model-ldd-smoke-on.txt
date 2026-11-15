@@ -1,0 +1,7 @@
+	linux-vdso.so.1 (0x00007dc034ced000)
+	libfg-model-core.so => /tmp/opencode/sub-643/tree/build-model-on/libfg-model-core.so (0x00007dc034cbd000)
+	libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007dc034800000)
+	libgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007dc034c5a000)
+	libc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x00007dc034400000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007dc034cef000)
+	libm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x00007dc034b34000)
