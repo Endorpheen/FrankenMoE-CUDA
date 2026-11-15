@@ -60,6 +60,9 @@ MODULES=(
     goose/server/mcp-core.goose
     goose/server/mcp-stdio.goose
     goose/server/mcp-integration.goose
+    goose/server/model-manager.goose
+    goose/server/hot-reload.goose
+    goose/server/connectors.goose
     goose/server/decision-core.goose
     goose/server/server-schema.goose
     goose/server/tools-pure.goose

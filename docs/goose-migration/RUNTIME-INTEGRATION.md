@@ -44,9 +44,9 @@ output path, so the artifact hash is reproducible at a fixed `OUT`.
 
 The growing main build is `tools/build-main-runtime.sh`. It composes every
 accepted module that shares one unit, typechecks, generates C, compiles an
-object and fails on any duplicate global symbol. Current state: 41 modules,
-2408 specializations, 16.5 MB of C, 3 s to typecheck and 13 s to compile,
-457 global symbols, 0 duplicates, 97 extern helper entry points at -O1.
+object and fails on any duplicate global symbol. Current state: 44 modules,
+2556 specializations, 16.7 MB of C, 3 s to typecheck and 13 s to compile,
+490 global symbols, 0 duplicates, 97 extern helper entry points at -O1.
 
 The build holds the model graph/loader/file-io/arch-registry, the six quantizer
 modules plus weighted, the four GGUF modules, expert LRU, dense placement,
@@ -218,7 +218,7 @@ requirements that carry no slices yet:
 | P9-01 | S2 | wire `validate()`, `arch_registry.cpp` and `main.cpp` |
 | P9-03 | S1 | replace the 25 streaming call sites |
 | P9-07 | S2 | wire the three sinks and `DeterministicWorkload` |
-| P8-06 | S3 | model management, connectors and hot reload (in flight) |
+| P8-06 | S3 | model management, connectors and hot reload (accepted, EXP631) |
 | P9-04 | S1 | router hooks and I/O-compute overlap (in flight) |
 | P8-09 | S3 | web/UI serving and application integration |
 | P9-05, P9-08 | S3 | standalone sessions/runtime/ngram draft and engine closure |

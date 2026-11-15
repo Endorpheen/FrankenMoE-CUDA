@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T00:26:57.127804+00:00",
+  "updated_at": "2026-11-15T00:35:38.166053+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -783,6 +783,42 @@
       "status": "ported",
       "sha256": "56cc6dd0883b282bee945cc6658125561aef663c335a9c482a720d54933da44c",
       "gate": "gbnf 13/13, cases 13/0, parse 9/9, 27/27 mutations + parse 5/5; base EXP593 gates unchanged"
+    },
+    {
+      "goose": "server/model-manager.goose",
+      "native": "tools/server/server-models.cpp (status, unload/remove, request_stop, LRU, SSE, slots, tick)",
+      "native_targets": [
+        "tools/server/server-models.cpp (status, unload/remove, request_stop, LRU, SSE, slots, tick)"
+      ],
+      "experiment": "EXP-2026-11-15-631-p8-06-model-management",
+      "task": "",
+      "status": "ported",
+      "sha256": "4a3eb02d2a30ab564f6998d9a27e5762a454894c0895d0418ba42262ca6915ff",
+      "gate": "22 cases / 290 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "server/hot-reload.goose",
+      "native": "tools/server/server-models.cpp (preset normalisation, reload/erase sets, alias pass, startup guard)",
+      "native_targets": [
+        "tools/server/server-models.cpp (preset normalisation, reload/erase sets, alias pass, startup guard)"
+      ],
+      "experiment": "EXP-2026-11-15-631-p8-06-model-management",
+      "task": "",
+      "status": "ported",
+      "sha256": "5b9a6d710679a4fedc3ead6355d05005596b8f9c36989251d550e675d6f8b57c",
+      "gate": "14 cases / 98 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "server/connectors.goose",
+      "native": "tools/server/server-connect.cpp and server-models.cpp (share code, dial address, refusals, source choice)",
+      "native_targets": [
+        "tools/server/server-connect.cpp and server-models.cpp (share code, dial address, refusals, source choice)"
+      ],
+      "experiment": "EXP-2026-11-15-631-p8-06-model-management",
+      "task": "",
+      "status": "ported",
+      "sha256": "e2e151e3ee62782dedf5611bd1fa1fba348ccedad0791f44c6658c6bd4cb5f4b",
+      "gate": "13 cases / 133 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "server/mcp-integration.goose",
@@ -11752,6 +11788,62 @@
       "task": "",
       "status": "slice",
       "sha256": "a5c66d60de35378b4378bfb5e65f13f94f5f89551aa33020bdd903c460dfa3f2"
+    },
+    {
+      "goose": "json/s2-1-config-staged/goose/cli/config-resolve.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/arch_registry.c",
+        "src/moe/router_hook.c",
+        "src/config.c"
+      ],
+      "experiment": "EXP-2026-11-15-630-s2-1-config-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "01dae1c99e143cf2fd3f97918246e9d4659682f624dc0d76ecd4092eba218a91"
+    },
+    {
+      "goose": "json/s2-1-config-staged/goose/cli/config-validate.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/arch_registry.c",
+        "src/moe/router_hook.c",
+        "src/config.c"
+      ],
+      "experiment": "EXP-2026-11-15-630-s2-1-config-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "bf61ad2fa42c863380d078df24cf5217d42433c39227f941c89b4f9c0066d054"
+    },
+    {
+      "goose": "json/s2-1-config-staged/goose/format-grammar.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/arch_registry.c",
+        "src/moe/router_hook.c",
+        "src/config.c"
+      ],
+      "experiment": "EXP-2026-11-15-630-s2-1-config-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "a5c66d60de35378b4378bfb5e65f13f94f5f89551aa33020bdd903c460dfa3f2"
+    },
+    {
+      "goose": "json/s2-1-config-staged/goose/model/arch-registry.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/arch_registry.c",
+        "src/moe/router_hook.c",
+        "src/config.c"
+      ],
+      "experiment": "EXP-2026-11-15-630-s2-1-config-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "b39540dc868f73b32e4840c3221593646e933e0c156d062576c6f4f2bf2130bb"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
