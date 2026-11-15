@@ -193,7 +193,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | tokenizer switch (done, EXP639) | S1.5 | S1 | EXP639 | 182/182 both paths, goose_calls=182, nm 1/0 |
 | streaming switch (done, EXP637) | S1.6 | S1 | EXP637 | 71/71 both paths, goose_calls=74, nm 1/0 |
 | speculative switch (done, EXP640) | S2.2 | S2 | EXP640 | 6146/6146 both paths, goose_calls=2572, nm 1/0 |
-| IQ off-grid fix (done, EXP641) | P7-04 | S1 | EXP641 | 40 cases / 122245 lookups / 0 mismatches, 12/12; iq1_m stays open |
+| IQ off-grid fix (done, EXP644) | P7-04 | S1 | EXP644 | qgrid 40 cases / 122245 lookups / 0; iq1_m 24 cases / 0 mismatches; 12/12 each |
 | model-management switch (done, EXP642) | P8-06 | S3 | EXP642 | 84/84 both paths, goose_calls=84, nm 1/0 |
 | session switch (done, EXP643) | P9-05 | S3 | EXP643 | 191/929 both paths, goose_calls=376, dumps identical |
 
