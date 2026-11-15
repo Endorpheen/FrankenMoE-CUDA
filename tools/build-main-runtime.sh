@@ -83,6 +83,10 @@ MODULES=(
     goose/server/decision-core.goose
     goose/server/server-schema.goose
     goose/server/tools-pure.goose
+    goose/server/log-policy.goose
+    goose/server/console-editing.goose
+    goose/server/hf-cache-naming.goose
+    goose/server/download-selection.goose
     goose/chat/thinking-control.goose
     goose/chat/parse-params.goose
 )
