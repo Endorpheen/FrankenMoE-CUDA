@@ -178,3 +178,36 @@ export fn gdn_conv_store(c: i64, tail: i64, dst: i64) -> i64 {
     }
     return r;
 }
+
+// ---- attention KV cache slot ----
+//
+// The cache is one flat tensor per kind: [head_dim, n_ctx, n_kv_heads, n_layers]. A token
+// at position `pos` writes `n_tokens` consecutive positions into its own layer's head
+// block, so the slot is
+//
+//   offset = ((layer * n_kv_heads + head) * n_ctx + pos) * head_dim * elem
+//
+// and the returned view is [head_dim, n_tokens, n_kv_heads, 1]. The layout and the
+// arithmetic are a decision, so they live here rather than in the gate that happens to
+// allocate the buffer.
+export fn attn_kv_slot(c: i64, cache: i64, layer: i64, pos: i64, head_dim: i64,
+                       n_ctx: i64, n_kv_heads: i64, n_layers: i64, n_tokens: i64,
+                       elem: i64) -> i64 {
+    if cache == 0 || head_dim <= 0 || n_ctx <= 0 || n_kv_heads <= 0 || n_layers <= 0 {
+        fail(90);
+    }
+    if n_tokens <= 0 || elem <= 0 {
+        fail(91);
+    }
+    if layer < 0 || layer >= n_layers {
+        fail(92);
+    }
+    if pos < 0 || pos + n_tokens > n_ctx {
+        fail(93);
+    }
+    let nb1: i64 = elem * head_dim;
+    let nb2: i64 = nb1 * n_ctx;
+    let nb3: i64 = nb2 * n_kv_heads;
+    let offset: i64 = layer * nb3 + pos * nb1;
+    return view4(c, cache, head_dim, n_tokens, n_kv_heads, 1, nb1, nb2, nb3, offset);
+}

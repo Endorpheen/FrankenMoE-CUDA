@@ -1,0 +1,4 @@
+  token 0: differs=0
+  token 1: differs=0
+  token 2: differs=0
+FG_KV_CACHE tokens=3 head_dim=8 n_ctx=8 bad=0 PASS
