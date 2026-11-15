@@ -7,6 +7,13 @@
 // Only the tensors whose mapping is read directly from that block are included. Anything
 // whose name would have to be guessed is left out on purpose: a guessed mapping produces
 // differences that are the gate's fault, and this project has already lost time to that.
+//
+// T_ATTN_QKV (id 5) is excluded on that basis and for a second reason: in the attention
+// branch it declares [n_embd, q_width + n_embd_k_gqa + n_embd_v_gqa], a single fused
+// q+k+v tensor, and this GGUF carries separate attn_q/attn_k/attn_v instead. It describes
+// a layout the file does not use, so there is nothing to compare it against.
+// T_WQKV (9) and T_WQKV_GATE (10) are the recurrent branch's attn_qkv and attn_gate and
+// are included.
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +74,8 @@ int main(int argc, char ** argv) {
         {  6, "blk.%lld.attn_output.weight",         0 },
         {  7, "blk.%lld.attn_q_norm.weight",         0 },
         {  8, "blk.%lld.attn_k_norm.weight",         0 },
+        {  9, "blk.%lld.attn_qkv.weight",            1 },
+        { 10, "blk.%lld.attn_gate.weight",           1 },
         { 11, "blk.%lld.ssm_conv1d.weight",          1 },
         { 12, "blk.%lld.ssm_dt.bias",                1 },
         { 13, "blk.%lld.ssm_a",                      1 },
