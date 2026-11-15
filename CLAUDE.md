@@ -194,6 +194,30 @@ build.
     runtime. The balancing rule governs how speed is pursued, not what the end
     state must be.
 
+20. Every A/B test reports all four axes, and promising configurations are
+    checked at three generation lengths.
+
+    A configuration is never accepted or rejected on one number. Each comparison
+    is one table: prefill tok/s and %, decode tok/s and %, VRAM MiB and %, RAM
+    MiB and %, measured under identical conditions, ideally as paired repeats,
+    comparing medians and spread. A small decode gain may come with a prefill gain
+    or a memory saving, and a small decode loss may be offset the same way - the
+    table is what settles it, not the decode column alone.
+
+    If the difference is not statistically convincing, keep BOTH configurations as
+    candidates. Do not declare a loser.
+
+    Generation length changes the answer: decode tok/s rises with length because
+    fixed per-request cost is amortised. Run 128, 256 and 512 predicted tokens,
+    several warmed repeats each, and report the median per length. Compare against
+    historical figures only at the SAME length - the recorded references are 39.6
+    at 128, 41.0 at 256 and 41.94-43.04 at 512, and quoting one against another is
+    the mistake that made a 96% result look like 82%.
+
+    Filter candidates with short runs first, then verify the winners at all three
+    lengths. Everything goes into benchmarks/experiment-history.jsonl with its
+    length; absent measurements stay null.
+
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
