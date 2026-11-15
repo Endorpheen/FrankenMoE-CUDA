@@ -64,8 +64,10 @@ for f in $needed; do need_fns=$((need_fns + $(fn_count "$f"))); done
 # Every C/C++ line written to connect Goose to a substrate is debt, not progress
 # (AGENTS.md). It is listed so it can be removed once the substrate gains a
 # Goose-callable surface; adapters must shrink, never grow into a parallel runtime.
+# Tests are not adapters: a gate holds no runtime logic and nothing links it into
+# the shipped host. Only files under a tests/ directory are excluded this way.
 adapters=$(ls integration/goose-standalone/*.c integration/goose-standalone/*.cpp \
-              integration/m1/host/*.c 2>/dev/null)
+              integration/m1/host/*.c 2>/dev/null | grep -v '/tests/')
 adapter_lines=0
 adapter_files=0
 for f in $adapters; do
@@ -95,7 +97,7 @@ say "   tensor payload in memory     yes  (EXP680: 65-75 tensors, mismatches=0)"
 say "   type table / block sizes     yes  (abi_type_count, abi_blck_size)"
 say "   config validator             yes  (cfg_validate, 48 rules)"
 say "   tool + MIME tables           yes  (tool_index, mime_of/mime_text)"
-say "   graph builder                partial (ids + 16 primitives bound; not driven)"
+say "   graph builder + execution    yes  (EXP681: Goose builds the node, ggml runs it)"
 say "   allocator                    arithmetic + verified placement (nbytes/layout)"
 say "   backend (CPU/GPU)            no"
 say "   KV cache buffers             no"

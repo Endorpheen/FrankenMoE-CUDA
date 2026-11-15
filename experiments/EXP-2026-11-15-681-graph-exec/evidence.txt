@@ -1,0 +1,4 @@
+FG_GRAPH_EXEC op=2 rc=0 result=[11 22 33 44] PASS
+FG_GRAPH_EXEC op=7 rc=0 result=[10 40 90 160] PASS
+gate rc=0
+FG_TENSOR_DATA rc=0 tensors=65 total=116128 copied=115304 layout=0 mismatches=0 first_size=4 last_size=8192 first_byte=0 last_byte=0
