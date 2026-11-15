@@ -57,7 +57,32 @@ timestamp-correlation test can separate them - but it needs a marker for the tok
 profile does not have. Adding one is the next step: without knowing where each token starts, "before
 or after sampling" cannot be answered from timestamps alone.
 
-## 5. What I am not doing
+## 5. What precedes a long sync: one and a half tokens of queued work
+
+Correlating the 322 long syncs against the kernel stream that precedes them:
+
+| observation | value |
+|---|---:|
+| kernels per token (measured) | 41.1 |
+| kernels in the 50 ms before each long sync | **62** |
+| 62 kernels expressed in tokens of work | **1.51** |
+| long syncs per token | 0.63, i.e. one per 1.59 tokens |
+| `fg166` (CUDA activations) calls per long sync | 6.8 |
+
+**One long synchronisation every 1.59 tokens, each preceded by 1.51 tokens of queued kernel work.**
+The two numbers agree, which is what makes this a coherent picture rather than a coincidence: the CPU
+is waiting for a batch of roughly one and a half tokens to drain.
+
+So the stall is not attached to a layer boundary, a token boundary or a cache event. It is attached to
+**how much work is queued between two waits** - the CPU batches ~1.5 tokens, blocks, and repeats. That
+also explains why 56% of all synchronisations are free: those are the calls taken when nothing is in
+flight, between batches.
+
+And it explains why the kernel most often preceding a long sync is `fg166` (an activation kernel): the
+sync lands after the last activation of the batch, whatever layer that happens to be, which is why the
+preceding kernel is nearly always the same one rather than one per layer.
+
+## 6. What I am not doing
 
 Not changing any synchronisation. The cheap ones are cheap and harmless; the expensive ones are
 presumably where correctness requires a wait. Removing a required wait would be a correctness bug, not
@@ -66,6 +91,6 @@ rather than slow output.
 
 The next step is the correlation measurement above, which costs nothing and needs no change.
 
-## 6. Cost
+## 7. Cost
 
 Analysis of the existing profile only. No server run, no rebuild.
