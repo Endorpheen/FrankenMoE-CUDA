@@ -70,6 +70,12 @@ entries including the archive). The accepted slices of this phase cover:
 - Map: `goose/MANIFEST.json` (experiment, native path, gate, SHA256 per file).
 - Tools: `tools/sync-goose-tree.py` rebuilds the tree,
   `tools/check-goose-tree.py` verifies hashes and experiments (green).
+- Integration layer: `integration/m1/` holds the eleven carrier patches, the
+  eight stage bridges, the host adapter and the twelve gates; the M1 project
+  there builds both configurations. `tools/stage-m1-tree.sh` assembles the whole
+  staged tree from `upstream/llama.cpp` + `integration/m1` + `goose/` (EXP664),
+  so the staged tree is now a function of tracked inputs instead of a `/tmp`
+  copy. Generated C is not committed: `--with-unit` composes it.
 - Every accepted slice has a card under `experiments/EXP-*` with the gate
   script, mutation table and recorded results.
 

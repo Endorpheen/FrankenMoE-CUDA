@@ -1,0 +1,36 @@
+// The 30-schema corpus of the staged S1.1 gate, shared by the smoke test and
+// the base-vs-staged dump so both measure the same inputs.
+#pragma once
+
+static const char * const fg_schema_cases[][2] = {
+        {"empty", R"({})"},
+        {"boolean", R"({"type":"boolean"})"},
+        {"integer", R"({"type":"integer"})"},
+        {"number", R"({"type":"number"})"},
+        {"const-string", R"({"const":"foo"})"},
+        {"const-number", R"({"const":123})"},
+        {"enum", R"({"enum":["red","amber","green",null,42,["foo"]]})"},
+        {"object-required", R"({"type":"object","properties":{"b":{"type":"string"},"c":{"type":"string"},"a":{"type":"string"}},"required":["a","b","c"],"additionalProperties":false,"definitions":{}})"},
+        {"object-optional-1", R"({"properties":{"a":{"type":"string"}},"additionalProperties":false})"},
+        {"object-optional-n", R"({"properties":{"a":{"type":"string"},"b":{"type":"string"},"c":{"type":"string"}},"additionalProperties":false})"},
+        {"array-minItems", R"({"items":{"type":"boolean"},"minItems":2})"},
+        {"array-maxItems2", R"({"items":{"type":"boolean"},"maxItems":2})"},
+        {"type-array-nullable", R"({"type":["array","null"],"prefixItems":{"type":"string"}})"},
+        {"anyOf", R"({"anyOf":[{"$ref":"#/definitions/foo"},{"$ref":"#/definitions/bar"}],"definitions":{"foo":{"properties":{"a":{"type":"number"}}},"bar":{"properties":{"b":{"type":"number"}}}},"type":"object"})"},
+        {"anyOf-ref", R"({"properties":{"a":{"anyOf":[{"type":"string"},{"type":"number"}]},"b":{"anyOf":[{"$ref":"#/properties/a/anyOf/0"},{"type":"boolean"}]}},"type":"object"})"},
+        {"ref-top", R"({"$ref":"#/definitions/foo","definitions":{"foo":{"type":"object","properties":{"a":{"type":"string"}},"required":["a"],"additionalProperties":false}}})"},
+        {"pattern-simple", R"({"type":"string","pattern":"^abc?d*efg+(hij)?kl$"})"},
+        {"pattern-complex", R"({"type":"string","pattern":"^(\\([0-9]{1,3}\\))?[0-9]{3}-[0-9]{4} a{3,5}nd...$"})"},
+        {"pattern-noncapture", R"({"type":"string","pattern":"^(?:foo|bar)baz$"})"},
+        {"pattern-unanchored", R"({"type":"string","pattern":"[0-9]+"})"},
+        {"string-length", R"({"type":"string","minLength":1,"maxLength":4})"},
+        {"integer-bounds", R"({"type":"integer","minimum":0,"maximum":23})"},
+        {"allOf-mix", R"({"allOf":[{"$ref":"#/definitions/foo"},{"$ref":"#/definitions/bar"},{"anyOf":[{"$ref":"#/definitions/baz"},{"$ref":"#/definitions/bam"}]}],"definitions":{"foo":{"properties":{"a":{"type":"number"}}},"bar":{"properties":{"b":{"type":"number"}}},"bam":{"properties":{"c":{"type":"number"}}},"baz":{"properties":{"d":{"type":"number"}}}},"type":"object"})"},
+        {"allOf-enum", R"({"allOf":[{"$ref":"#/definitions/foo"},{"$ref":"#/definitions/bar"}],"definitions":{"foo":{"type":"string","enum":["a","b","c"]},"bar":{"type":"string","enum":["b","c","d"]}}})"},
+        {"tuple1", R"({"prefixItems":[{"type":"string"}]})"},
+        {"tuple2", R"({"prefixItems":[{"type":"string"},{"type":"number"}]})"},
+        {"tuple-formats", R"({"items":[{"format":"date"},{"format":"uuid"},{"format":"time"},{"format":"date-time"}]})"},
+        {"items-priority", R"({"type":"array","items":{},"prefixItems":{"type":"string"}})"},
+        {"additional-notstrings", R"({"type":"object","properties":{"and":{"type":"number"},"also":{"type":"number"}},"required":["and"],"additionalProperties":{"type":"number"}})"},
+        {"additional-true-props", R"({"type":"object","properties":{"a":{"type":"number"}},"required":["a"],"additionalProperties":true})"},
+    };

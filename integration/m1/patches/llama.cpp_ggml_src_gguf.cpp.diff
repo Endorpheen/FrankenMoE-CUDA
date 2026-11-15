@@ -1,0 +1,96 @@
+--- a/llama.cpp/ggml/src/gguf.cpp
++++ b/llama.cpp/ggml/src/gguf.cpp
+@@ -3,6 +3,13 @@
+ #include "ggml-impl.h"
+ #include "gguf.h"
+ 
++// Staged S1.2 (FG_GOOSE_GGUF): the native bodies below stay compiled under
++// *_native(); the public entry points dispatch into the composed Goose module.
++#include "fg-goose-gguf-native.h"
++#ifdef FG_GOOSE_GGUF
++#include "fg-goose-gguf-bridge.h"
++#endif
++
+ #include <cinttypes>
+ #include <cstddef>
+ #include <cstdint>
+@@ -227,6 +234,10 @@
+     void * data = nullptr;
+ };
+ 
++#ifdef FG_GOOSE_GGUF
++#include "fg-goose-gguf-adapter.inl"
++#endif
++
+ struct gguf_reader {
+     gguf_reader(
+             gguf_reader_callback_t callback,
+@@ -1657,11 +1668,22 @@
+     }
+ }
+ 
+-void gguf_write_to_buf(const struct gguf_context * ctx, std::vector<int8_t> & buf, bool only_meta) {
++void gguf_write_to_buf_native(const struct gguf_context * ctx, std::vector<int8_t> & buf, bool only_meta) {
+     gguf_writer_buf gw(buf);
+     gguf_write_out(ctx, gw, only_meta);
+ }
+ 
++void gguf_write_to_buf(const struct gguf_context * ctx, std::vector<int8_t> & buf, bool only_meta) {
++#ifdef FG_GOOSE_GGUF
++    if (fg_gguf_goose_write(ctx, buf, only_meta, fg_goose::ENTRY_WRITE)) {
++        return;
++    }
++    GGML_ABORT("FG_GOOSE_GGUF: the Goose GGUF writer refused the context");
++#else
++    gguf_write_to_buf_native(ctx, buf, only_meta);
++#endif
++}
++
+ bool gguf_write_to_file_ptr(const struct gguf_context * ctx, FILE * file, bool only_meta) {
+     GGML_ASSERT(file);
+ 
+@@ -1692,15 +1714,40 @@
+     return success;
+ }
+ 
+-size_t gguf_get_meta_size(const struct gguf_context * ctx) {
++size_t gguf_get_meta_size_native(const struct gguf_context * ctx) {
+     // only return size
+     std::vector<int8_t> buf;
+-    gguf_write_to_buf(ctx, buf, /*only_meta =*/ true);
++    gguf_write_to_buf_native(ctx, buf, /*only_meta =*/ true);
+     return buf.size();
+ }
+ 
+-void gguf_get_meta_data(const struct gguf_context * ctx, void * data) {
++size_t gguf_get_meta_size(const struct gguf_context * ctx) {
++#ifdef FG_GOOSE_GGUF
+     std::vector<int8_t> buf;
+-    gguf_write_to_buf(ctx, buf, /*only_meta =*/ true);
++    if (fg_gguf_goose_write(ctx, buf, /*only_meta =*/ true, fg_goose::ENTRY_META_SIZE)) {
++        return buf.size();
++    }
++    GGML_ABORT("FG_GOOSE_GGUF: the Goose GGUF writer refused the context");
++#else
++    return gguf_get_meta_size_native(ctx);
++#endif
++}
++
++void gguf_get_meta_data_native(const struct gguf_context * ctx, void * data) {
++    std::vector<int8_t> buf;
++    gguf_write_to_buf_native(ctx, buf, /*only_meta =*/ true);
+     memcpy(data, buf.data(), buf.size());
+ }
++
++void gguf_get_meta_data(const struct gguf_context * ctx, void * data) {
++#ifdef FG_GOOSE_GGUF
++    std::vector<int8_t> buf;
++    if (fg_gguf_goose_write(ctx, buf, /*only_meta =*/ true, fg_goose::ENTRY_META_DATA)) {
++        memcpy(data, buf.data(), buf.size());
++        return;
++    }
++    GGML_ABORT("FG_GOOSE_GGUF: the Goose GGUF writer refused the context");
++#else
++    gguf_get_meta_data_native(ctx, data);
++#endif
++}

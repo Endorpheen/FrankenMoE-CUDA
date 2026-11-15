@@ -1,0 +1,23 @@
+# gate transcripts, staged tree rebuilt from the repository (EXP664)
+OFF	fg-goose-smoke	FG629_SMOKE mode=native cases=30 rules=182 failures=0 goose_calls=0
+OFF	fg-gguf-smoke	FG630_SMOKE mode=native cases=14 checks=41 failures=0 goose_calls=0
+OFF	fg-goose-quant-smoke	FGQ_SMOKE_RESULT mode=native cases=46 dequant=24 quant=12 failures=0 row_calls=0 blck_calls=0
+OFF	fg-goose-metrics-smoke	FG633 mode=native cases=53 values=91 failures=0 goose_calls=0
+OFF	fg-goose-tokenizer-smoke	FG639_SMOKE mode=native vt=146/146 part=20/20 strip=16/16 cases=182/182 failures=0 goose_calls=0 pins=0
+OFF	fg-goose-stream-gate	FG641_SMOKE mode=native cases=71 failures=0 goose_calls=0 decisions=4 entries=6
+OFF	fg-config-smoke	all config-validate checks passed
+OFF	fg-spec-smoke	FG642_SPEC loop runs=33 emitted=567 drafted=368 accepted=353 steps=150 decodes=223 trims=9 eog_runs=9 floor_runs=3
+OFF	fg-model-smoke	FG643_MODEL mode=native cases=84 values=198 failures=0 goose_calls=0
+OFF	fg-session-smoke	FG644_SESSION mode=native cases=191 checks=929 failures=0 goose_calls=0
+ON	fg-goose-smoke	FG629_SMOKE mode=goose cases=30 rules=182 failures=0 goose_calls=30
+ON	fg-gguf-smoke	FG630_SMOKE mode=goose cases=14 checks=55 failures=0 goose_calls=394 (write=13 meta_size=14 meta_data=14 split=347 layout=6)
+ON	fg-goose-quant-smoke	FGQ_SMOKE_RESULT mode=goose cases=58 dequant=24 quant=12 failures=0 row_calls=24 blck_calls=7
+ON	fg-goose-metrics-smoke	FG633 mode=goose cases=53 values=91 failures=0 goose_calls=53
+ON	fg-goose-tokenizer-smoke	FG639_SMOKE mode=goose vt=146/146 part=20/20 strip=16/16 cases=182/182 failures=0 goose_calls=182 pins=2
+ON	fg-goose-stream-gate	FG641_SMOKE mode=goose cases=71 failures=0 goose_calls=74 decisions=4 entries=6
+ON	fg-config-smoke	all config-validate checks passed
+ON	fg-spec-smoke	FG642_SPEC loop runs=33 emitted=567 drafted=368 accepted=353 steps=150 decodes=223 trims=9 eog_runs=9 floor_runs=3
+ON	fg-model-smoke	FG643_MODEL mode=goose cases=84 values=198 failures=0 goose_calls=84
+ON	fg-session-smoke	FG644_SESSION mode=goose cases=191 checks=929 failures=0 goose_calls=376
+ON	fg-host-smoke	FG_M1_HOST threads=2 calls=512 goose_init_runs=1 iq_bound=1 bind_errors=0 cfg_validate=-1 PASS
+ON	fg-iq-seam	FG_IQ_SEAM unbound_aborts=1 bind_rc=0 iq_bound=1 goose_init_runs=1 rebind_rc=0 replace_rc=-4 checks=15360 failures=0 PASS

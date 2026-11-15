@@ -1,0 +1,29 @@
+--- a/llama.cpp/ggml/src/ggml.c
++++ b/llama.cpp/ggml/src/ggml.c
+@@ -10,6 +10,11 @@
+ // FIXME: required here for quantization functions
+ #include "ggml-quants.h"
+ 
++#ifdef FG_GOOSE_QUANT
++// Staged S1.3: ggml_blck_size() asks the Goose quant stack first.
++#include "fg-goose-quant-bridge.h"
++#endif
++
+ #ifdef GGML_USE_CPU_HBM
+ #include <hbwmalloc.h>
+ #endif
+@@ -1326,6 +1331,14 @@
+ int64_t ggml_blck_size(enum ggml_type type) {
+     assert(type >= 0);
+     assert(type < GGML_TYPE_COUNT);
++#ifdef FG_GOOSE_QUANT
++    // The module owns the block size of the seven types its row code covers;
++    // every other type keeps the native type-traits answer.
++    const int gs_blck = fg_goose_quant_blck_size((int) type);
++    if (gs_blck > 0) {
++        return gs_blck;
++    }
++#endif
+     return type_traits[type].blck_size;
+ }
+ 

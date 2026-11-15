@@ -1,0 +1,46 @@
+--- a/llama.cpp/common/common.cpp
++++ b/llama.cpp/common/common.cpp
+@@ -3,6 +3,10 @@
+ 
+ #include "build-info.h"
+ #include "common.h"
++
++#ifdef FG_GOOSE_TOKENIZER
++#include "../src/fg-goose-tokenizer-bridge.h"
++#endif
+ #include "fit.h"
+ #include "log.h"
+ #include "llama.h"
+@@ -455,7 +459,7 @@
+     return std::string(buf.data(), size);
+ }
+ 
+-std::string string_strip(const std::string & str) {
++static std::string string_strip_native(const std::string & str) {
+     size_t start = 0;
+     size_t end = str.size();
+     while (start < end && std::isspace(str[start])) {
+@@ -467,6 +471,23 @@
+     return str.substr(start, end - start);
+ }
+ 
++std::string string_strip(const std::string & str) {
++#ifdef FG_GOOSE_TOKENIZER
++    // The module owns the whitespace decision; the buffer is always large
++    // enough, so -1 cannot happen and the native body stays the fallback.
++    std::string out(str.size() + 1, '\0');
++    const int64_t n = fg_goose_cs_strip(str.data(), (int64_t) str.size(),
++                                        out.data(), (int64_t) out.size());
++    if (n < 0) {
++        return string_strip_native(str);
++    }
++    out.resize((size_t) n);
++    return out;
++#else
++    return string_strip_native(str);
++#endif
++}
++
+ std::string string_lcs(std::string_view a, std::string_view b) {
+     if (a.empty() || b.empty()) return {};
+ 

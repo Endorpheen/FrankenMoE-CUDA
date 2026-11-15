@@ -1,0 +1,12 @@
+# patch file<TAB>target path relative to the staged tree root<TAB>lines
+llama.cpp_ggml_src_gguf.cpp.diff	llama.cpp/ggml/src/gguf.cpp	96
+llama.cpp_ggml_src_ggml.c.diff	llama.cpp/ggml/src/ggml.c	29
+llama.cpp_ggml_src_ggml-quants.c.diff	llama.cpp/ggml/src/ggml-quants.c	180
+llama.cpp_src_llama-vocab.cpp.diff	llama.cpp/src/llama-vocab.cpp	1237
+llama.cpp_common_common.cpp.diff	llama.cpp/common/common.cpp	46
+llama.cpp_common_json-schema-to-grammar.cpp.diff	llama.cpp/common/json-schema-to-grammar.cpp	29
+llama.cpp_common_json-schema-to-grammar.h.diff	llama.cpp/common/json-schema-to-grammar.h	23
+llama.cpp_tools_gguf-split_gguf-split.cpp.diff	llama.cpp/tools/gguf-split/gguf-split.cpp	42
+runtime_core_src_config.cpp.diff	runtime/core/src/config.cpp	202
+runtime_core_src_metrics_decode_trace_sink.cpp.diff	runtime/core/src/metrics/decode_trace_sink.cpp	79
+runtime_core_src_metrics_route_trace_sink.cpp.diff	runtime/core/src/metrics/route_trace_sink.cpp	36

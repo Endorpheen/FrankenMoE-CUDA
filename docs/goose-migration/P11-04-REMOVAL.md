@@ -1,13 +1,30 @@
 # P11-04 — removal plan for replaced owned implementations
 
-Status: **PARTIAL** — the plan and inventory are accepted; no file is removable
-in the tracked tree today.
+Status: **PARTIAL** — D0 is done (the carriers are tracked and the tree is
+reproducible from the repository); D1–D4 are open.
 
-## Key finding
+## D0 — done (EXP664)
 
-Nothing in the tracked tree can be deleted now. Every carrier patch lives only in
-`/tmp` copies, the native tree has zero `FG_GOOSE` occurrences, and all ten flags
-default to OFF. Removal is a function-level operation, not a file-level one.
+The key finding below was that no file was deletable because every carrier lived
+only in a `/tmp` copy. That is fixed: `integration/m1/` holds the eleven carrier
+patches, the eight stage bridges, the host adapter, the IQ descriptor header and
+the twelve gates, and `tools/stage-m1-tree.sh` rebuilds the whole staged tree
+from `upstream/llama.cpp` + `integration/m1` + `goose/`.
+
+Reproduced at acceptance: 11/11 patches apply, OFF and ON-all configure and
+build clean, `llama-server` is 17 794 640 / 22 136 040 B, `goose_init` is 0 in
+OFF and 1 in ON, all ten accepted gates are green in both configurations with
+the counters the cards record, and the IQ seam gate passes 15 360 comparisons
+with 0 failures. The Apex reference binary was not touched.
+
+The ON size differs from M1's 22 050 592 B because the unit is composed from the
+current 110-module list rather than M1's frozen 98; the carrier behaviour, which
+is what this step proves, is identical.
+
+## Key finding (superseded by D0)
+
+Every carrier patch now lives in `integration/m1/patches/` with a `TARGETS`
+manifest. Removal is still a function-level operation, not a file-level one.
 
 ## Candidates (18: 10 full, 8 partial)
 
@@ -40,6 +57,8 @@ compiler runtime. The adapter and the 65 helper entry points are primitives
 1. **D0, no deletions:** put the carriers into the canonical tree, flip the flags
    ON by default, take a rollback copy with `--repro`, restore the Apex reference,
    and close the five failure-recovery items from P11-05.
+   **Carriers: done (EXP664).** Flipping the ten flags ON by default and the
+   five failure-recovery items are still open.
 2. **D1 (S1):** delete F1–F7; the quantisation bodies last or at D4.
 3. **D2 (S2):** F10 plus the config/spec side libraries after their call sites
    are switched.

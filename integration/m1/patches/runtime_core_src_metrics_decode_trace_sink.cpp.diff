@@ -1,0 +1,79 @@
+--- a/runtime/core/src/metrics/decode_trace_sink.cpp
++++ b/runtime/core/src/metrics/decode_trace_sink.cpp
+@@ -2,6 +2,10 @@
+ 
+ #include <cstdio>
+ 
++#ifdef FG_GOOSE_METRICS
++#include "fg-goose-metrics-bridge.h"
++#endif
++
+ namespace bmoe {
+ 
+ namespace {
+@@ -16,7 +20,16 @@
+ }
+ 
+ // A node name can carry anything ggml put there; commas and quotes would break the column count.
+-void write_csv_field(std::FILE * f, const std::string & v) {
++// In the ON build the row encoders do this work themselves, so this function is only the
++// switch-off path — kept compiled so turning the flag off is a rebuild, not a revert.
++[[maybe_unused]] void write_csv_field(std::FILE * f, const std::string & v) {
++#ifdef FG_GOOSE_METRICS
++    // S1.4: the field text comes from the Goose encoder. Same predicate, same quote
++    // doubling, same newline-to-space substitution, same bytes; one std::string carrying
++    // the encoder's own length instead of a per-character fputc loop.
++    const std::string enc = fgmt::field_encode(v);
++    std::fwrite(enc.data(), 1, enc.size(), f);
++#else
+     if (v.find_first_of(",\"\n") == std::string::npos) {
+         std::fputs(v.c_str(), f);
+         return;
+@@ -27,6 +40,7 @@
+         std::fputc(c == '\n' ? ' ' : c, f);
+     }
+     std::fputc('"', f);
++#endif
+ }
+ 
+ class CsvComputeTraceSink final : public IComputeTraceSink {
+@@ -45,11 +59,19 @@
+     void on_rows(const ComputeTraceRow * rows, size_t n) override {
+         for (size_t i = 0; i < n; ++i) {
+             const ComputeTraceRow & r = rows[i];
++#ifdef FG_GOOSE_METRICS
++            // S1.4: the whole row (five integers, both escaped strings, the two counters and
++            // every separator) comes from the Goose encoder in the native print order.
++            const std::string line = fgmt::compute_row(r.turn, r.phase, r.step, r.seq, r.layer, r.op, r.name,
++                                                       r.wall_ns, r.majflt);
++            std::fwrite(line.data(), 1, line.size(), f_);
++#else
+             std::fprintf(f_, "%d,%d,%d,%d,%d,", r.turn, r.phase, r.step, r.seq, r.layer);
+             write_csv_field(f_, r.op);
+             std::fputc(',', f_);
+             write_csv_field(f_, r.name);
+             std::fprintf(f_, ",%llu,%llu\n", (unsigned long long) r.wall_ns, (unsigned long long) r.majflt);
++#endif
+         }
+         std::fflush(f_); // once per decode, not per row
+     }
+@@ -74,10 +96,19 @@
+     void on_rows(const IoTraceRow * rows, size_t n) override {
+         for (size_t i = 0; i < n; ++i) {
+             const IoTraceRow & r = rows[i];
++#ifdef FG_GOOSE_METRICS
++            // S1.4: twelve integer columns in the native order and width (expert is signed,
++            // spec/offset/req_bytes/read_bytes/latency_ns unsigned, proj/lane signed bytes).
++            const std::string line =
++                fgmt::io_row(r.turn, r.phase, r.step, r.layer, r.expert, r.proj, r.lane, r.spec, r.offset,
++                             r.req_bytes, r.read_bytes, r.latency_ns);
++            std::fwrite(line.data(), 1, line.size(), f_);
++#else
+             std::fprintf(f_, "%d,%d,%d,%d,%d,%d,%d,%u,%llu,%llu,%llu,%llu\n", r.turn, r.phase, r.step, r.layer,
+                          (int) r.expert, (int) r.proj, (int) r.lane, (unsigned) r.spec, (unsigned long long) r.offset,
+                          (unsigned long long) r.req_bytes, (unsigned long long) r.read_bytes,
+                          (unsigned long long) r.latency_ns);
++#endif
+         }
+         std::fflush(f_);
+     }
