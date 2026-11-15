@@ -1,6 +1,6 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (21). This file is the current state; update it in the same change
+Updated: 2026-11-15 (22). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
