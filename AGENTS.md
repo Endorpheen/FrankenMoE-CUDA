@@ -165,6 +165,35 @@ build.
     `pgrep -f` on the command line matches the pgrep itself and reports a finished
     build as running.
 
+19. Optimisation is balanced across three axes: prefill, decode, and memory
+    (VRAM and RAM). Never chase one number at the cost of the others without
+    stating the trade.
+
+    Compare RELATIVE changes, not absolute figures alone. Example: decode rising
+    from 35 to 40 tok/s is +14.3%, and prefill falling from 2200 to 2100 tok/s is
+    -4.5%; that exchange can be worth taking because the decode gain outweighs the
+    prefill loss. Report all four numbers - prefill %, decode %, VRAM %, RAM % -
+    together, every time.
+
+    Rules that follow from this:
+
+    - A compromise is allowed when the practical total improves; it must be
+      stated as a compromise, with the numbers.
+    - Choose libraries, dependencies, execution routes and build settings by
+      measurement across several configurations, not by maximising one test.
+    - No OOM, no correctness change, no unjustified memory growth. A configuration
+      that breaks any of those is rejected regardless of its speed.
+    - Record each best configuration with its numbers and a stated way to roll
+      back.
+    - On equal effectiveness prefer the option with fewer C/C++ dependencies and a
+      larger Goose share.
+    - Temporary library combinations are acceptable while searching for the
+      optimum, but must not harden a C++ dependency into the final runtime.
+
+    The architectural goal is unchanged: a complete, high-performance Goose
+    runtime. The balancing rule governs how speed is pursued, not what the end
+    state must be.
+
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 

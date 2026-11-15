@@ -92,3 +92,44 @@ then measure. The acceptance test is unchanged: content sha256 must stay
 
 This is a build-from-Goose task, not a configuration task, and it removes C++ rather than
 adding it - so it satisfies the "no new C++ dependency" criterion by construction.
+
+## 7. Root cause, confirmed by disassembly
+
+The Goose entry points in the accepted CPU library are reachable only through functions named
+`*_unused_main`, and **none of those 15 are called by anything**:
+
+```
+defined: 15   called: 0
+uncalled: fg139_activation_unused_main, fg140_unused_main, fg141_unused_main,
+          fg143_control_unused_main, fg143_executor_unused_main,
+          fg143_state_unused_main, fg143_unused_main, fg145_unused_main, ...
+```
+
+Each of them calls `gg_function_0`, the generated Goose entry, and returning through
+`gg_function_0` is what increments the `calls` counter that `report` prints. Since nothing calls
+the `_unused_main` wrappers, `gg_function_0` never runs from those paths, so `FG148_QUANT`,
+`FG150_EXPERT` and the rest print nothing.
+
+The name is the record: whoever produced this build marked those entry points unused. The
+library is a valid Goose build with the routes compiled in and the call sites dropped.
+
+What the reference must have run is the same Goose code with those `_unused_main` wrappers
+wired into the real dispatchers. That build is not in this tree, in `runtime/exp160/run/`, or in
+any checkpoint - and `runtime/exp160/build/` holds only four shared objects that do not
+reference `fg148_row_q4_0`.
+
+## 8. What that means for the next step, concretely
+
+Not a library swap. The fix is to wire the dispatchers to the Goose entries, and the Goose
+sources for them are in this repository:
+
+| route | Goose source | wrapper that must be called |
+|---|---|---|
+| quantised dot | `goose/cpu/goose-cpu-q4k-dot*.goose`, `goose-cpu-q6k-dot.goose` | `fg148_unused_main` |
+| pool | `goose/cpu/goose-cpu-pool` | `fg143_executor_unused_main` |
+| expert / MoE control | `goose/cpu/goose-moe-control`, `goose-quantized-moe` | `fg_moe_unused_main` |
+| tiled matmul | `goose/cpu/goose-compute-blocks` | `fg_tiled_unused_main` |
+| elementwise | `goose/cpu/goose-opt.goose` | `fg_element_unused_main` |
+
+That is a build from Goose sources with the call sites present - which is the migration itself,
+and it removes C++ rather than adding it.
