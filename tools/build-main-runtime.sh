@@ -59,6 +59,7 @@ MODULES=(
     goose/model/row-select.goose
     goose/cpu/goose-meta-backend.goose
     goose/cpu/goose-graph-builders.goose
+    goose/cpu/goose-moe-router.goose
     goose/model/q4t-tensor-map.goose
     goose/model/shards.goose
     goose/misc/fixture-plan.goose
@@ -112,6 +113,7 @@ MODULES=(
     goose/misc/perplexity-plan.goose
     goose/misc/kv-turn-state.goose
     goose/misc/tallies.goose
+    goose/misc/goose-tokenizer.goose
     goose/misc/prefill-plan.goose
     goose/misc/trace-frame-order.goose
     goose/misc/moe-predict-report.goose

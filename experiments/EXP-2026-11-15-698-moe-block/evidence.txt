@@ -1,0 +1,1 @@
+FG_MOE_BLOCK n_embd=32 n_ff=16 n_expert=8 n_used=2 ids_match=1 out_n=32 nonzero=1 wsum=2.500000 router=PASS
