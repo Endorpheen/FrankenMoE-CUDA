@@ -69,6 +69,15 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     rather than weakening the check. A real model or GPU run is never part of
     this preparation without Igor's permission: prepare everything and hand the
     run over for his acceptance.
+16. A full build of the 111-module runtime runs only when it is genuinely needed:
+    after a large integration batch or at a mandatory acceptance point. Small
+    changes are checked locally instead - syntax, the touched modules, symbols,
+    the ABI, an incremental compile. Do not run
+    `bash tools/build-main-runtime.sh --repro` after every edit. Reuse a
+    successful result while the sources and dependencies are unchanged, and never
+    rebuild for a report, for confirmation or for reassurance. Before any heavy
+    build, name the specific risk that no cheaper check covers; if there is no
+    such risk, do not start it.
 
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
@@ -212,7 +221,7 @@ technical terms. The section set and their order are fixed:
     Рабочее дерево: чистое | <state>
     Текущая фаза: <P# and short goal>
 
-    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 15 rules above, current wording
+    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 16 rules above, current wording
     АКТУАЛЬНЫЙ РЕЖИМ               — binary, launcher, EHS, THREADS, model,
                                      hardware
     BASELINE                       — tok/s medians and ranges per thread count,

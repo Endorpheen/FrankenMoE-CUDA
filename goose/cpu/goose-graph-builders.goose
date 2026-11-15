@@ -727,12 +727,13 @@ fn common(p: i64) -> i64 {
                 set_src(a, slot, 0);
                 return 0;
             }
-            ensure(prop(a, 2) == if op == 7 {
-                op_soft_max()
-            } else {
-                op_flash_attn_ext()
+            // The emitter rejects an if-expression in an argument position, so
+            // the expected op is bound first (P11-01, EXP675).
+            var want_op: i64 = op_flash_attn_ext();
+            if op == 7 {
+                want_op = op_soft_max();
             }
-            , 57);
+            ensure(prop(a, 2) == want_op, 57);
             ensure(src(a, slot) == 0 && ne(src(a, 0), 2) == ne(b, 0) && prop(b, 0) == type_f32(), 58);
             set_src(a, slot, b);
             return 0;
@@ -740,6 +741,40 @@ fn common(p: i64) -> i64 {
     }
     fail(99);
     return 0;
+}
+
+// Exported entry points (P11-01, EXP675). The module had none, so every function
+// here was unreachable from a host even though the logic existed. These are thin
+// forwards: the decisions stay in the functions above, unchanged.
+//
+// `pack` in the host carries the six positional arguments common() reads through
+// arg(); the host builds it and this entry passes it through.
+
+export fn gb_common(p: i64) -> i64 {
+    return common(p);
+}
+
+// The operator id table, for a host that must name an op without hard-coding it.
+export fn gb_op(op: i64) -> i64 {
+    if op == 0 { return op_add(); }
+    if op == 1 { return op_mul_mat(); }
+    if op == 2 { return op_mul_mat_id(); }
+    if op == 3 { return op_rope(); }
+    if op == 4 { return op_soft_max(); }
+    if op == 5 { return op_flash_attn_ext(); }
+    if op == 6 { return op_glu(); }
+    if op == 7 { return op_sum_rows(); }
+    if op == 8 { return op_get_rows(); }
+    if op == 9 { return op_set_rows(); }
+    return -(1 as i64);
+}
+
+// Type ids the builder needs, likewise without hard-coding.
+export fn gb_type(t: i64) -> i64 {
+    if t == 0 { return type_f32(); }
+    if t == 1 { return type_f16(); }
+    if t == 2 { return type_bf16(); }
+    return -1;
 }
 
 fn main() {

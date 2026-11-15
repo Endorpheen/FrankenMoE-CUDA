@@ -54,6 +54,7 @@ MODULES=(
     goose/model/overlap-rules.goose
     goose/model/row-select.goose
     goose/cpu/goose-meta-backend.goose
+    goose/cpu/goose-graph-builders.goose
     goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
     goose/model/control-vectors.goose

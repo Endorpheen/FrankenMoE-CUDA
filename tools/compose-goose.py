@@ -277,6 +277,29 @@ def emit(path: Path, seen: dict, conflicts: list, expected: set) -> str:
             if line:
                 code.append(re.sub(r"\s+", " ", line))
         norm = "\n".join(code)
+        # An extern declaration binds a native symbol; it carries no body and must
+        # not collide with a Goose function of the same name (fg158_fail is bound
+        # as `fail`, while format-grammar.goose defines its own `fail`). Identical
+        # bindings are emitted once, because a second identical declaration makes
+        # the call ambiguous in the typechecker.
+        # A leading comment may precede the declaration inside the same block.
+        first_code = ""
+        for l in block.splitlines():
+            l = re.sub(r"//.*$", "", l).strip()
+            if l:
+                first_code = l
+                break
+        if first_code.startswith("extern"):
+            # A binding lives in its own namespace: it never defines the name, so
+            # it must neither collide with a Goose function of the same name nor
+            # be reported as one.
+            bkey = ("extern", name)
+            if bkey not in seen:
+                seen[bkey] = norm
+                kept.append(block)
+            elif seen[bkey] != norm:
+                conflicts.append(f"extern {name}: {rel} binds a different signature")
+            continue
         if key in seen:
             if seen[key] != norm:
                 conflicts.append(f"{kind} {name}: {rel} differs from an earlier module")
