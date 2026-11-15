@@ -2641,7 +2641,7 @@
       "id": "P10-11",
       "phase": "P10",
       "title": "Preserve licensing,attribution and source reproducibility",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "LICENSE",
         "UPSTREAMS.md",
@@ -2649,7 +2649,7 @@
         "runtime/LICENSE.BigMoeOnEdge"
       ],
       "acceptance": "All derived source attribution/licenses retained; producer/source/generated hashes and reproducible external dependency manifest included.",
-      "evidence": "",
+      "evidence": "2026-11-15 audit (docs/goose-migration/P10-11-LICENSING.md): the repository and inherited runtime licences are Apache-2.0 and unmodified; the upstream llama.cpp and BigMoeOnEdge licence trees are preserved under upstream/; README carries the attribution statement; UPSTREAMS.md pins the four upstream revisions and related PRs; every canonical file is mapped to its experiment, native path, gate and SHA-256 in goose/MANIFEST.json and cites the native source in its header. Reproducibility: sync-goose-tree rebuilds the tree, check-goose-tree verifies all 4238 entries, build-main-runtime --repro proves a byte-identical rebuild, package-main-runtime writes SHA256SUMS and manifest.json, and experiments record input hashes. A root NOTICE summary is an optional documentation improvement, not a licensing gap.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
@@ -4599,6 +4599,10 @@
     {
       "event": "P10-10: CPU features, platform paths and backend selection ported (EXP648, 384 checks, 36/36); wiring and non-Linux branches open.",
       "checkpoint": "63ecd39e"
+    },
+    {
+      "event": "P10-11 closed: licences preserved, attribution and pinned upstreams recorded, and the canonical tree is reproducible (sync/check/repro/package).",
+      "checkpoint": "f1219a58"
     }
   ],
   "batches": [
@@ -5489,11 +5493,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T03:26:53.816584+00:00",
+  "updated_at": "2026-11-15T03:44:25.017278+00:00",
   "status_totals": {
-    "DONE": 112,
+    "DONE": 113,
     "PARTIAL": 14,
-    "TODO": 26
+    "TODO": 25
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
