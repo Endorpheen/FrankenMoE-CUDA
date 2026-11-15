@@ -2582,17 +2582,18 @@
         "common/jinja/**"
       ],
       "acceptance": "Each JSON/Jinja/HTTP/regex/image/audio helper classified; replace owned/replaceable logic or explicitly justify true external primitive. Vendored C++ is not automatically unavoidable.",
-      "evidence": " 2026-11-15 EXP651 (experiments/EXP-2026-11-15-651-p10-07-vendored-deps): the inventory covers 14 dependencies (13 vendored plus the in-tree ggml-cuda vendor headers): 9 replaceable, 4 justified, 1 not-a-dependency. Three decisions are Goose: the licence payload (lic_: payload registration, inline notices, per-component licence wiring), provenance (vnd_: pinned sources and the reproducibility rule for latest/branch entries) and selection/linkage (sys_: component masks, system vs in-tree, required links). Gates 60 + 141 + 39 comparisons, 0 failures, identical at -O0; mutations 12/12. Findings: the production tree carries cpp-httplib 0.53.1 against the 0.54.1 pin, 3 of 18 sync_vendor entries are not reproducible, only cpp-httplib registers a licence file, nlohmann is always added but linked by one component, and the first port missed the cpp-httplib link from common.",
+      "evidence": " 2026-11-15 EXP651 (experiments/EXP-2026-11-15-651-p10-07-vendored-deps): the inventory covers 14 dependencies (13 vendored plus the in-tree ggml-cuda vendor headers): 9 replaceable, 4 justified, 1 not-a-dependency. Three decisions are Goose: the licence payload (lic_: payload registration, inline notices, per-component licence wiring), provenance (vnd_: pinned sources and the reproducibility rule for latest/branch entries) and selection/linkage (sys_: component masks, system vs in-tree, required links). Gates 60 + 141 + 39 comparisons, 0 failures, identical at -O0; mutations 12/12. Findings: the production tree carries cpp-httplib 0.53.1 against the 0.54.1 pin, 3 of 18 sync_vendor entries are not reproducible, only cpp-httplib registers a licence file, nlohmann is always added but linked by one component, and the first port missed the cpp-httplib link from common. 2026-11-15 EXP662 (experiments/EXP-2026-11-15-662-p10-07b-json-consumer): nlohmann/json is replaced by the Goose parser in one real consumer, detect_gguf_filename() in tests/gguf-model-data.cpp. The adapter maps the seven calls the function uses onto the flat json_parse arrays; parsing rules stay in Goose. FG_GOOSE_JSON_REPLACE: OFF = nlohmann, ON = Goose+adapter, and the native body stays compiled as the in-process oracle. Gate: 20 documents (success, parse/format/type errors, no match, escapes, UTF-8, duplicates, u64, trailing junk, empty) with 0 divergences; OFF/ON transcripts byte-identical; nm shows goose_init/json_parse/hf_pick_goose/pick_goose 1 in ON and 0 in OFF while the nlohmann pick stays 1 in both; mutations 12/12. Remaining: the common_json pimpl used by server-schema/models/chat/tools/GGUF, a wider adapter, and pinning the nlohmann header source.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
-      "slices_total": 3,
-      "slices_done": 3,
+      "slices_total": 4,
+      "slices_done": 4,
       "remaining": [
-        "remove/replace the replaceable vendored components (nlohmann json, miniaudio, stb_image, xxhash, sha1, the in-tree Jinja, UI JS assets) or record the replacement plan",
-        "wire the three decisions into cmake/vendor and sync_vendor.py"
+        "replace the common_json pimpl used by server-schema, models, chat, tools and GGUF metadata",
+        "widen the adapter beyond the seven nlohmann calls the first consumer needs",
+        "pin the nlohmann/json.hpp source instead of releases/latest"
       ],
       "coverage_doc": "docs/goose-migration/P10-07-COVERAGE.md"
     },
@@ -4737,6 +4738,10 @@
     {
       "event": "P8-12b: model status and Origin host default to Goose; the native status body is removed (EXP661, 15/15, 12/12).",
       "checkpoint": "7f1ce109"
+    },
+    {
+      "event": "P10-07b: nlohmann replaced by the Goose parser in one consumer (EXP662, 20/20, 12/12).",
+      "checkpoint": "a175e249"
     }
   ],
   "batches": [
@@ -5627,7 +5632,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T06:52:02.784325+00:00",
+  "updated_at": "2026-11-15T06:53:57.422091+00:00",
   "status_totals": {
     "DONE": 114,
     "PARTIAL": 24,
@@ -5635,8 +5640,8 @@
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 173,
-    "slices_done": 173,
+    "slices_total": 174,
+    "slices_done": 174,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

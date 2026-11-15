@@ -1,0 +1,2 @@
+off goose_init=0 json_parse=0 hf_pick_goose=0 pick_goose=0 pick_nlohmann=1 hf_pick_native=1
+on goose_init=1 json_parse=1 hf_pick_goose=1 pick_goose=1 pick_nlohmann=1 hf_pick_native=1

@@ -1,0 +1,20 @@
+01-basic	Q4_K_M	plain siblings, mixed extensions
+02-split	Q8_0	split shards plus mmproj; prefix extraction
+03-no-siblings	Q4_K_M	no siblings key -> format error
+04-siblings-object	Q4_K_M	siblings is an object, not an array
+05-empty-siblings	Q4_K_M	empty array -> no match
+06-no-match	Q4_K_M	only an F16 file -> no match
+07-escapes	Q4_K_M	escaped dot, dash, quote, backslash, newline, latin-1
+08-unicode	Q4_K_M	raw UTF-8 file names
+09-dupkeys	Q4_K_M	duplicate siblings key: last value wins
+10-order	q4_k_m	lowercase quant, keys out of order
+11-numbers	Q4_K_M	u64 max, negatives, floats with exponents
+12-nested	Q4_K_M	deeply nested extra data next to the file list
+13-bad-json	Q4_K_M	truncated object -> parse error
+14-trailing	Q4_K_M	trailing garbage after a valid object
+15-empty-body	Q4_K_M	empty input -> parse error
+16-rfilename-number	Q4_K_M	rfilename is a number -> type error
+17-root-array	Q4_K_M	root is an array -> format error
+18-last-match	Q4_K_M	the only match is the last array element
+19-tabs	Q4_K_M	pretty-printed with tabs, CRLF and spaces
+20-nul-escape	Q4_K_M	\u0000 inside a file name

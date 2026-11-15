@@ -1,0 +1,6 @@
+{
+	"siblings" : [
+		{ "rfilename" : "model-Q4_K_M.gguf" },
+		{ "rfilename" : "mmproj-Q4_K_M.gguf" }
+	]
+}
