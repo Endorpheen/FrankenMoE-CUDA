@@ -1,0 +1,9 @@
+[1/5] compose the unit
+[2/5] stage the unit header and the per-stage shims
+[3/5] compile the unit and the adapter
+[4/5] compile and link the smoke host
+[5/5] result
+  binary: /home/end0/AI/FrankenMoE-CUDA/builds/goose-standalone/frankenmoe-standalone (4276288 B)
+  deps:   linux-vdso.so.1 libm.so.6 libc.so.6 /lib64/ld-linux-x86-64.so.2 
+  run:    FG_STANDALONE init_runs=1 iq_bound=0 types=43 blck_q4k=256 cfg_rule=1 tool_read_file=0 mime_id=0 mime=text/html; charset=utf-8
+standalone runtime: ok (single Goose runtime, libc/libm/pthread only)

@@ -21,9 +21,25 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-OUT=${1:?usage: stage-m1-tree.sh <out-dir> [--with-unit]}
+
+# Arguments.
+#   <out-dir> [--with-unit]   assemble a tree
+#   --check-patches           dry-run every carrier against upstream, touch nothing
+CHECK_PATCHES=0
 WITH_UNIT=0
-[ "${2:-}" = "--with-unit" ] && WITH_UNIT=1
+OUT=""
+for arg in "$@"; do
+    case "$arg" in
+        --check-patches) CHECK_PATCHES=1 ;;
+        --with-unit)     WITH_UNIT=1 ;;
+        -*)              echo "stage-m1-tree: unknown option $arg" >&2; exit 2 ;;
+        *)               OUT=$arg ;;
+    esac
+done
+if [ "$CHECK_PATCHES" -eq 0 ] && [ -z "$OUT" ]; then
+    echo "usage: stage-m1-tree.sh <out-dir> [--with-unit] | --check-patches" >&2
+    exit 2
+fi
 
 UPSTREAM=$ROOT/upstream/llama.cpp
 INTEGRATION=$ROOT/integration/m1
@@ -35,6 +51,38 @@ for d in "$UPSTREAM" "$INTEGRATION"; do
 done
 [ -f "$UPSTREAM/CMakeLists.txt" ] || {
     echo "stage-m1-tree: $UPSTREAM is not a llama.cpp tree" >&2; exit 1; }
+
+# --check-patches: dry-run every carrier against upstream and report, without
+# creating a tree. This is the cheap pre-flight rule 13 asks for: a malformed
+# patch is caught here, before an expensive staging run.
+if [ "$CHECK_PATCHES" -eq 1 ]; then
+    bad=0
+    total=0
+    while IFS=$'\t' read -r patch_file target_rel _lines; do
+        case "$patch_file" in ''|\#*) continue ;; esac
+        src="$INTEGRATION/patches/$patch_file"
+        [ -f "$src" ] || { echo "  MISSING patch $patch_file" >&2; bad=$((bad+1)); continue; }
+        total=$((total + 1))
+        # Carrier patches carry paths relative to the repository layout
+        # (llama.cpp/ggml/..., llama.cpp/src/...), and upstream/ is the directory
+        # that contains llama.cpp/ - so upstream/ is the dry-run root for them.
+        # Runtime patches carry runtime/... paths and are rooted at the repository.
+        case "$target_rel" in
+            llama.cpp/*) dir="$ROOT/upstream" ;;
+            *)           dir="$ROOT" ;;
+        esac
+        if ( cd "$dir" && patch -p1 --dry-run --silent < "$src" >/dev/null 2>&1 ); then
+            printf '  ok    %s\n' "$patch_file"
+        else
+            printf '  FAIL  %s\n' "$patch_file"
+            ( cd "$dir" && patch -p1 --dry-run < "$src" 2>&1 | head -4 | sed 's/^/        /' )
+            bad=$((bad+1))
+        fi
+    done < "$INTEGRATION/patches/TARGETS"
+    echo "check-patches: $((total - bad))/$total apply, $bad failed"
+    [ "$bad" -eq 0 ] || exit 1
+    exit 0
+fi
 
 if [ -d "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ]; then
     echo "stage-m1-tree: $OUT is not empty; refusing to overwrite" >&2

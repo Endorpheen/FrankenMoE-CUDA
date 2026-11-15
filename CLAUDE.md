@@ -36,6 +36,15 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     test, gate and build, present and future. Correctness is not reduced by this
     rule: the full set still runs at a final acceptance, on a control point, or
     when the inputs of the skipped checks actually changed.
+13. Preparing the staged tree is expensive: minimise how often it happens.
+    Accumulate the largest safe independent batch of removals (20-50+ units),
+    then prepare the tree once, run one incremental build and the required
+    checks. Do not recreate the tree after every edit or patch error. Validate a
+    patch on its own before the tree is prepared
+    (`bash tools/stage-m1-tree.sh --check-patches` dry-runs every carrier against
+    `upstream/llama.cpp` and touches nothing), fix it there, and reuse an
+    existing tree and its build results whenever that is correct. A full rebuild
+    happens only when it is genuinely required.
 
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
@@ -179,7 +188,7 @@ technical terms. The section set and their order are fixed:
     Рабочее дерево: чистое | <state>
     Текущая фаза: <P# and short goal>
 
-    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 12 rules above, current wording
+    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 13 rules above, current wording
     АКТУАЛЬНЫЙ РЕЖИМ               — binary, launcher, EHS, THREADS, model,
                                      hardware
     BASELINE                       — tok/s medians and ranges per thread count,
