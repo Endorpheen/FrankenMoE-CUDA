@@ -60,6 +60,9 @@ static int64_t kv_u32(struct gguf_context * c, const char * key, int64_t dflt) {
     }
 }
 
+// Bits of a float, which is how ggml stores its rope parameters.
+static int32_t float_bits_of(float f) { int32_t b; memcpy(&b, &f, sizeof b); return b; }
+
 int main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "usage: %s <apex.gguf>\n", argv[0]);
@@ -299,6 +302,13 @@ int main(int argc, char ** argv) {
         }
         free(ewd); free(ebd); free(idd);
     }
+
+    // rope is NOT tested here. mode 25 exists and the node builds, but the result
+    // came out NaN: the parameter set the gate passed (freq_base, freq_scale,
+    // ext_factor, attn_factor, beta_fast, beta_slow) does not match what the ggml
+    // rope kernel reads, and guessing it further would be a false positive waiting
+    // to happen. Recorded as "not proven" in EXP-2026-11-15-688 rather than shipped
+    // as a passing test.
 
     printf("FG_APEX_GRAPH nodes=5 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",

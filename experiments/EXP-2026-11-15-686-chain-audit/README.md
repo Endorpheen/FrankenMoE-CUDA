@@ -35,7 +35,7 @@ None of them allocates a KV buffer, runs a prefill or loops a decode.
 | node construction | `gb_common`, 16 primitives, 15 predicates | — | **works** for the nodes tried |
 | attention block compute | modes 4/11/3/11/0 | ggml CPU backend | **works** (5 nodes, 8.07e-08) |
 | MoE expert matmul | mode 12 | ggml CPU backend | **works** (256 experts, 8 used, exact) |
-| rope | mode 25 exists, **never exercised** | — | **not proven** |
+| rope | mode 25 exists; **tried, produced NaN** | — | **not proven**, see §7 |
 | attention (flash_attn_ext) | mode 26 exists, **never exercised** | — | **not proven** |
 | GDN stack (31 recurrent layers) | `op_ssm_conv`, `op_gated_delta_net` exist, **never exercised** | — | **not proven** |
 | full 42-layer graph | **not built** | — | **absent** |
@@ -87,6 +87,29 @@ they hold no runtime logic and nothing links them into a shippable host.
 
 Until 1–6 are done, nothing gets deleted. That is rule 15, and this audit is the
 evidence that it is being followed rather than asserted.
+
+## 7. The rope attempt, recorded because it failed
+
+Mode 25 builds a rope node and the graph executes it, but the output was NaN:
+
+```
+rope debug in=[-0.2500 -0.1875 -0.1250 -0.0625] out=[-nan -nan -nan -nan]
+```
+
+The gate passed `freq_base`, `freq_scale`, `ext_factor`, `attn_factor`,
+`beta_fast` and `beta_slow` as float bit patterns at the parameter indices the
+module writes, and that set does not match what the ggml rope kernel reads. Rather
+than keep guessing until something looked right, the attempt was removed and the
+capability recorded as not proven.
+
+Two things make this worth writing down:
+
+1. A rope that runs and produces NaN is worse than no rope, because "the node
+   builds and the graph executes" reads like success.
+2. The parameter contract has to be derived from ggml's own `ggml_rope_ext` (the
+   index and the type of each word), not from what the module's `set_param`
+   ordering suggests. That is the next step for this capability, and it needs a
+   real unit test of the kernel, not an inference.
 
 ## 6. Evidence reuse
 
