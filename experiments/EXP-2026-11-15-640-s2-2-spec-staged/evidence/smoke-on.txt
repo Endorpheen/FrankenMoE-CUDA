@@ -1,0 +1,6 @@
+FG642_SPEC ngram    cases=112 failures=0
+FG642_SPEC accept   cases=344 failures=0
+FG642_SPEC budget   cases=4167 failures=0
+FG642_SPEC loop     cases=1523 failures=0
+FG642_SPEC mode=goose cases=6146 failures=0 goose_calls=2572
+FG642_SPEC loop runs=33 emitted=567 drafted=368 accepted=353 steps=150 decodes=223 trims=9 eog_runs=9 floor_runs=3

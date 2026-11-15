@@ -1,0 +1,11 @@
+0000000000006e8d T sdp_accept
+0000000000006f63 T sdp_emit_count
+00000000000070ff T sdp_mtp_catchup
+000000000000705a T sdp_mtp_head_clamp
+0000000000007094 T sdp_mtp_rewind
+0000000000006f9a T sdp_mtp_width
+0000000000006bdb T sdp_ngram_draft
+0000000000007220 T sdp_rollback
+0000000000007272 T sdp_step_advance
+000000000000715d T sdp_step_plan
+00000000000072b5 T sdp_tail_trim

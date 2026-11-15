@@ -1,0 +1,11 @@
+sdp_ngram_draft        ON=1 OFF=0
+sdp_accept             ON=1 OFF=0
+sdp_emit_count         ON=1 OFF=0
+sdp_mtp_width          ON=1 OFF=0
+sdp_mtp_head_clamp     ON=1 OFF=0
+sdp_mtp_rewind         ON=1 OFF=0
+sdp_mtp_catchup        ON=1 OFF=0
+sdp_step_plan          ON=1 OFF=0
+sdp_rollback           ON=1 OFF=0
+sdp_step_advance       ON=1 OFF=0
+sdp_tail_trim          ON=1 OFF=0

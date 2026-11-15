@@ -1,0 +1,144 @@
+--- a/runtime/core/src/engine/session.cpp
++++ b/runtime/core/src/engine/session.cpp
+@@ -4,6 +4,7 @@
+ #include "bmoe/decode_trace.h"
+ #include "bmoe/version.h"
+ #include "bmoe/ngram_draft.h"
++#include "fg-spec-decide.h" // staged S2.2: the speculative-decoding decisions
+ #include "chat_parse.h"
+ #include "thinking_control.h"
+ #include "../moe/router_hook.h"
+@@ -1642,6 +1643,11 @@
+     if (spec_on) mtp_ctx = tokens;
+     std::vector<llama_token> verify_toks; // [confirmed token, drafts...] for the verify batch
+     std::vector<llama_token> confirmed;   // what one decode confirmed, in order
++    // S2.2: what the accept decision consumes. argmax and the eog test stay native; these two
++    // arrays are the host's flattened view of the verify rows.
++    std::vector<int32_t> drafts_buf;
++    std::vector<int32_t> target_buf;
++    std::vector<int32_t> eog_buf;
+     const long long mtp0_drafted = im.mtp_drafted;
+     const long long mtp0_accepted = im.mtp_accepted;
+     const long long mtp0_decodes = im.mtp_decodes;
+@@ -1674,8 +1680,13 @@
+         // goes in BEFORE drafting, so no source is ever asked for tokens with nowhere to go.
+         int n_draft = 0;
+         double draft_s = 0.0;                       // this group's drafting + catch-up (see below)
+-        const int room = req.n_predict - n_gen - 1; // tokens still wanted after `tok` itself
+-        if (spec_on && room > 0) {
++        // S2.2: room, the cap that goes in BEFORE drafting, and whether a source is asked at
++        // all come from one decision. With the flag off this is step_plan_native(), the same
++        // arithmetic as before; with it on, the Goose module's sdp_step_plan.
++        const fg_spec::plan_t plan0 = fg_spec::step_plan(req.n_predict, n_gen, im.cfg.spec.draft_max,
++                                                         spec_on ? 1 : 0, /*n_draft_in*/ 0);
++        const int room = (int) plan0.room; // tokens still wanted after `tok` itself
++        if (plan0.call != 0) {
+             const auto d0 = clock_t_::now();
+             const uint64_t db0 = moe.enabled ? im.source.stats().read_bytes : 0;
+             im.draft_buf.clear();
+@@ -1704,7 +1715,9 @@
+                 // it finds no confident match it returns 0 and the step below is an ordinary
+                 // single-token decode — the property the head does not have, and the reason the
+                 // floor of this source is the baseline rather than a loss.
+-                n_draft = ngram_draft(mtp_ctx, tok, std::min(im.cfg.spec.draft_max, room), im.cfg.spec.ngram_min_match,
++                // The decided cap replaces std::min(draft_max, room); the source is the
++                // shipped ngram_draft either way, only its budget comes from the decision.
++                n_draft = ngram_draft(mtp_ctx, tok, (int) plan0.n_max, im.cfg.spec.ngram_min_match,
+                                       im.cfg.spec.ngram_max_match, im.draft_buf);
+             }
+             im.mtp_drafted += n_draft;
+@@ -1720,7 +1733,13 @@
+         // it IS the loop's floor: a step that drafts nothing must cost exactly what it would have
+         // cost with speculation off, or a source that abstains would still be paying for the
+         // scaffolding. It applies to the head too, whenever p_min stops it drafting.
+-        const bool wide = spec_on && n_draft > 0;
++        // The defensive cap on the proposal (the MTP arm's resize after the source returns)
++        // and the verify width, both from the same decision.
++        const fg_spec::plan_t plan1 = fg_spec::step_plan(req.n_predict, n_gen, im.cfg.spec.draft_max,
++                                                         spec_on ? 1 : 0, n_draft);
++        n_draft = (int) plan1.n_draft;
++        if (n_draft >= 0 && (int) im.draft_buf.size() > n_draft) im.draft_buf.resize((size_t) n_draft);
++        const bool wide = plan1.wide != 0;
+         llama_batch step;
+         if (spec_on) {
+             verify_toks.clear();
+@@ -1769,20 +1788,21 @@
+         // confirmed only while it matches what the target itself would have produced at that
+         // position — no approximation enters here. The batch's arithmetic is still not bit-identical
+         // to a single-token pass, so a near-tie can land differently; see docs/mtp.md.
+-        confirmed.clear();
+-        confirmed.push_back(tok);
+-        int n_acc = 0;
+-        bool eog_hit = false;
++        // The host still supplies what the decision consumes: the target's own argmax at each
++        // verify row and its end-of-generation verdict. argmax and llama_vocab_is_eog stay
++        // native; the accept rule itself is fg_spec::accept (sdp_accept with the flag on).
++        drafts_buf.assign(im.draft_buf.begin(), im.draft_buf.begin() + n_draft);
++        target_buf.resize((size_t) n_draft);
++        eog_buf.resize((size_t) n_draft);
+         for (int i = 0; i < n_draft; ++i) {
+             const llama_token want = argmax(llama_get_logits_ith(ctx, i), im.n_vocab);
+-            if (want != im.draft_buf[i]) break;
+-            ++n_acc; // accepted: it is in the KV whether or not the caller gets to see it
+-            if (llama_vocab_is_eog(im.vocab, want)) {
+-                eog_hit = true; // end-of-generation is never emitted, here as on the plain path
+-                break;
+-            }
+-            confirmed.push_back(want);
++            target_buf[(size_t) i] = want;
++            eog_buf[(size_t) i] = llama_vocab_is_eog(im.vocab, want) ? 1 : 0;
+         }
++        const fg_spec::accept_t acc =
++            fg_spec::accept(drafts_buf, target_buf, eog_buf, tok, &confirmed);
++        const int n_acc = (int) acc.n_acc;
++        const bool eog_hit = acc.eog_hit != 0;
+         if (spec_on) {
+             im.mtp_accepted += n_acc;
+ 
+@@ -1818,8 +1838,9 @@
+             // Drop the rejected tail from the target; the bounded-rollback snapshots asked for at
+             // context creation are what make this a restore rather than a replay. The draft context
+             // needs no rollback of its own — it was never given the tail.
+-            if (n_acc < n_draft) {
+-                const llama_pos keep = n_past + 1 + n_acc;
++            const fg_spec::rollback_t rb = fg_spec::rollback(n_past, n_draft, n_acc);
++            if (rb.needed != 0) {
++                const llama_pos keep = (llama_pos) rb.keep;
+                 if (!llama_memory_seq_rm(llama_get_memory(ctx), /*seq*/ 0, keep, -1))
+                     return fail("failed to roll back the rejected draft tokens from the KV cache");
+             }
+@@ -1845,7 +1866,9 @@
+             prev_ra_issue_ns = ri;
+             prev_ra_wd_ns = rw;
+         }
+-        for (size_t e = 0; e < confirmed.size() && n_gen < req.n_predict; ++e) {
++        const size_t emit_n =
++            (size_t) fg_spec::emit_count(req.n_predict, n_gen, (long long) confirmed.size());
++        for (size_t e = 0; e < emit_n; ++e) {
+             const llama_token out = confirmed[e];
+             char piece[256];
+             int np = llama_token_to_piece(im.vocab, out, piece, sizeof(piece), 0, true);
+@@ -1885,8 +1908,9 @@
+         // The accepted group is now KV-resident, and the logits at the first unverified position
+         // hold the target's own continuation — the next token, arrived at for free. Off the
+         // speculative path the row index stays -1, exactly as before: one token, one row.
+-        n_past += 1 + n_acc;
+-        const int32_t row = wide ? n_acc : -1;
++        const fg_spec::advance_t adv = fg_spec::advance(n_past, n_acc, wide ? 1 : 0);
++        n_past = (llama_pos) adv.n_past; // n_past + 1 + n_acc
++        const int32_t row = (int32_t) adv.row; // n_acc on a wide step, -1 otherwise
+         logits = llama_get_logits_ith(ctx, row);
+         tok = im.smpl ? llama_sampler_sample(im.smpl, ctx, row) : argmax(logits, im.n_vocab);
+     }
+@@ -1896,7 +1920,10 @@
+     // kv_tokens must agree exactly or the next turn's prefix reuse decodes from a state that never
+     // produced this answer, so trim back to what was actually emitted.
+     if (spec_on) {
+-        const llama_pos emitted_end = (llama_pos) n_prompt + n_gen;
++        // n_past is the stored end after the last step (the rollback keeps exactly this
++        // point), so it is the kv_end the trim decision compares against the emitted end.
++        const fg_spec::trim_t tm = fg_spec::tail_trim(n_prompt, n_gen, n_past);
++        const llama_pos emitted_end = (llama_pos) tm.emitted_end;
+         if (!llama_memory_seq_rm(llama_get_memory(ctx), 0, emitted_end, -1)) {
+             // Nothing survives that we can still describe, so say so rather than leave kv_tokens
+             // asserting a prefix the context no longer holds. The next turn re-prefills in full.

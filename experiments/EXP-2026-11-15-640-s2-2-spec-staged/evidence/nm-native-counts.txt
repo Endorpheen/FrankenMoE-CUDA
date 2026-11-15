@@ -1,0 +1,9 @@
+== native bodies and the draft source, both libraries ==
+ngram_draft_native         ON=1 OFF=1
+accept_native              ON=1 OFF=1
+emit_count_native          ON=1 OFF=1
+step_plan_native           ON=1 OFF=1
+rollback_native            ON=1 OFF=1
+advance_native             ON=1 OFF=1
+tail_trim_native           ON=1 OFF=1
+bmoe::ngram_draft          ON=1 OFF=1

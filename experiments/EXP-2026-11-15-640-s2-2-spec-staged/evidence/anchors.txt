@@ -1,0 +1,13 @@
+FG642_ANCHORS session /tmp/opencode/sub-642/tree/reference/session.cpp lines=2070
+[ ok ] draft budget (1675-1679)
+[ ok ] mtp resize (1691-1692)
+[ ok ] ngram call (1707-1708)
+[ ok ] verify width (1723-1723)
+[ ok ] accept loop (1772-1800)
+[ ok ] rollback (1821-1826)
+[ ok ] emit bound (1848-1848)
+[ ok ] advance (1888-1889)
+[ ok ] tail trim (1899-1912)
+FG642_ANCHORS ngram /tmp/opencode/sub-642/tree/runtime/core/src/engine/ngram_draft.cpp lines=68
+[ ok ] draft source (1-20)
+FG642_ANCHORS anchors=10 missing=0

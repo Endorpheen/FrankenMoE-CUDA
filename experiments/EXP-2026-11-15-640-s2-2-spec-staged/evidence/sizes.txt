@@ -1,0 +1,10 @@
+182043 goose-gen/spec-decide.c
+2050 goose-gen/spec-decide.h
+15087 common/fg-spec-decide.cpp
+4027 common/fg-goose-spec-bridge.cpp
+20253 tests/fg_spec_smoke.cpp
+30840 build-spec-off/libfg-spec-core.so
+51216 build-spec-on/libfg-spec-core.so
+62576 build-spec-off/fg-spec-smoke
+62576 build-spec-on/fg-spec-smoke
+12904 build-spec-on/CMakeFiles/fg-goose-spec.dir/goose-gen/spec-decide.c.o

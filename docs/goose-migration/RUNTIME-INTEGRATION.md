@@ -192,7 +192,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | standalone engine | P9-08 | S3 | in flight | inventory-first |
 | tokenizer switch (done, EXP639) | S1.5 | S1 | EXP639 | 182/182 both paths, goose_calls=182, nm 1/0 |
 | streaming switch (done, EXP637) | S1.6 | S1 | EXP637 | 71/71 both paths, goose_calls=74, nm 1/0 |
-| speculative switch | S2.2 | S2 | in flight | staged build behind FG_GOOSE_SPEC |
+| speculative switch (done, EXP640) | S2.2 | S2 | EXP640 | 6146/6146 both paths, goose_calls=2572, nm 1/0 |
 | IQ off-grid fix | P7-04 | S1 | in flight | canonical IQ2_S/IQ3_XXS/IQ1_M defect |
 
 The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.4
