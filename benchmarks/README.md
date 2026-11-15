@@ -68,6 +68,28 @@ contradictory numbers before. When included they stay visibly separate.
 6. `source` is `measured`, `historical:<where>` or `reconstructed:<where>`, and `completeness`
    says what is missing. A reconstructed row is never presented as measured.
 
+## The pinned baseline
+
+`runtime/goose-stage/BEST-CONFIG.json` is the configuration the next optimisation stage must
+start from. It is verified, not asserted:
+
+```
+bash runtime/goose-stage/run-apex.sh          # defaults: cache 4352, port 8081
+```
+
+The script refuses to start if either `libggml-cpu` hash differs from `63ad4984` or the port is
+busy, so a session cannot silently measure a different runtime.
+
+Measured at 4352 MiB, 512 tokens: **decode 39.86-40.29, prefill 2429.9, VRAM 7552 MiB, RAM 20.8
+GiB**, content sha `c2ff42cc` - the same 512-token answer as the reference.
+
+Two neighbours are kept deliberately, not as failures:
+- **3584 MiB** - economical: 33.81 decode at 6784 MiB, i.e. 768 MiB cheaper for 17.9% less decode.
+- **4096 MiB** - 39.40 decode at 7298 MiB.
+
+4608 MiB is recorded as a **local dip** (38.65), not an improvement. That dip is the reason
+"more cache is better" was wrong twice in this session.
+
 ## What is in it now
 
 - 18 measured rows from the 2026-11-15 session, heading from 855.71 / 18.21 (first end-to-end

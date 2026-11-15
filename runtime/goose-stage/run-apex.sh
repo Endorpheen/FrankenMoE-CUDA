@@ -21,9 +21,16 @@ BIN=/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/rec
 MODEL=/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
 
 PORT=8081
-if [ "${1:-}" = "--port" ] && [ -n "${2:-}" ]; then
-    PORT=$2
-fi
+# 4352 is the measured optimum (EXP-718): best prefill AND decode of every configuration tried,
+# and 258 MiB less than 4608. See runtime/goose-stage/BEST-CONFIG.json.
+CACHE=4352
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port)  PORT=${2:?--port needs a value}; shift 2 ;;
+        --cache) CACHE=${2:?--cache needs a value}; shift 2 ;;
+        *) echo "unknown option: $1" >&2; exit 1 ;;
+    esac
+done
 
 # Refuse to start on a port that is already serving something: the agreed profile uses
 # 8081 and the guard exists so this script cannot disturb a server that is already up.
@@ -81,7 +88,7 @@ a=json.load(open('$REF/argv.json'))
 a[0]='$BIN'
 for i,x in enumerate(a):
     if x=='--port': a[i+1]='$PORT'
-a+=['--moe-cache-mib','3584']
+a+=['--moe-cache-mib','$CACHE']
 print('\n'.join(a))
 ")
 
@@ -89,6 +96,7 @@ echo "runtime : $BIN"
 echo "libraries: $STAGE/lib  (libggml-cpu 63ad49848812)"
 echo "model   : $MODEL"
 echo "port    : $PORT"
+echo "cache   : $CACHE MiB"
 echo "open    : http://127.0.0.1:$PORT/"
 echo
 
