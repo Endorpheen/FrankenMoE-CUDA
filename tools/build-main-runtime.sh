@@ -70,6 +70,9 @@ MODULES=(
     goose/misc/file-reader-windows.goose
     goose/misc/proc-readers.goose
     goose/misc/shard-naming.goose
+    goose/misc/cpu-features.goose
+    goose/misc/platform-paths.goose
+    goose/misc/backend-select.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose

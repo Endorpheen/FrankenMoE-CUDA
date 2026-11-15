@@ -2614,20 +2614,28 @@
       "id": "P10-10",
       "phase": "P10",
       "title": "Preserve cross-platform and alternate CPU/device support",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "cmake/**",
         "ggml/src/ggml-cpu/arch/**",
         "ggml/src/ggml-cuda/vendors/**"
       ],
       "acceptance": "Every original maintained platform/build option represented in capability ledger; compile-only/emulated/unavailable hardware scope explicit; no unsupported path claimed verified.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP648 (experiments/EXP-2026-11-15-648-p10-10-cross-platform): CPU feature decoding and x86 score (feat_: 228 checks), platform paths (plat_: separators, cwd, executable prefix, temp dir; 76 checks) and backend/device selection (dev_: registry order, name matching, fallbacks; 80 checks) are Goose. Gates 384 checks, 0 failures, byte-identical at -O0; mutations 36/36 (12 per slice, halves 6/6). Honest limits: Apple/Windows branches are transcription only on this host, and AVX512/AVX-VNNI/AMX accept paths are synthetic-gated because the host reports bits=63.",
       "depends_on": [],
       "workstream": "OTHER_COMPATIBILITY",
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B7",
-      "notes": " NVFP4 software fallback + capability dispatch for non-Blackwell GPUs is POST-05; Ampere/Ada/Blackwell are supported in code, acceptance only on RTX 4070."
+      "notes": " NVFP4 software fallback + capability dispatch for non-Blackwell GPUs is POST-05; Ampere/Ada/Blackwell are supported in code, acceptance only on RTX 4070.",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "Apple/Windows branches are transcription only on this host",
+        "AVX512/AVX-VNNI/AMX accept paths are synthetic-gated, not executed on real hardware",
+        "wire the three decisions into ggml-cpu/backend registry and common paths"
+      ],
+      "coverage_doc": "docs/goose-migration/P10-10-COVERAGE.md"
     },
     {
       "id": "P10-11",
@@ -4587,6 +4595,10 @@
     {
       "event": "P10-12: residual I/O audit plus three ported slices (EXP647, 1048 values, 36/36); 12 gaps remain with owners.",
       "checkpoint": "570c4e2d"
+    },
+    {
+      "event": "P10-10: CPU features, platform paths and backend selection ported (EXP648, 384 checks, 36/36); wiring and non-Linux branches open.",
+      "checkpoint": "63ecd39e"
     }
   ],
   "batches": [
@@ -5477,16 +5489,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T03:20:12.540362+00:00",
+  "updated_at": "2026-11-15T03:26:53.816584+00:00",
   "status_totals": {
     "DONE": 112,
-    "PARTIAL": 13,
-    "TODO": 27
+    "PARTIAL": 14,
+    "TODO": 26
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 136,
-    "slices_done": 136,
+    "slices_total": 139,
+    "slices_done": 139,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },
