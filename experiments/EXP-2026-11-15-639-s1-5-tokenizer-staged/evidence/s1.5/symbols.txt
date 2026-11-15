@@ -1,0 +1,43 @@
+--- definitions of the switched Goose exports (all symbols, one object)
+  build-off libllama.so  vt_dispatch: 0
+  build-off libllama.so  stp_partition: 0
+  build-off libllama.so  cs_strip: 0
+  build-off libllama-common.so definitions: 0
+  build-off libllama-common.so references to the bridge: 0
+  build-on libllama.so  vt_dispatch: 1
+  build-on libllama.so  stp_partition: 1
+  build-on libllama.so  cs_strip: 1
+  build-on libllama-common.so definitions: 0
+  build-on libllama-common.so references to the bridge: 1
+--- exported (dynamic) Goose names
+  build-off: 0 module exports
+  build-on: 0 module exports
+--- exported surface: base vs OFF vs ON (libllama.so)
+  build-off: removed=0 added=3
+    + _ZN11llama_vocab4impl20determine_vocab_typeER18llama_model_loaderRK6LLM_KV
+    + _ZN11llama_vocab4impl27determine_vocab_type_nativeER18llama_model_loaderRK6LLM_KV
+    + _ZNK11llama_vocab4impl29tokenizer_st_partition_nativeERSt12forward_listI23fragment_buffer_variantSaIS2_EEb
+  build-on: removed=0 added=10
+    + _Z17fg_goose_cs_stripPKclPcl
+    + _Z21fg_goose_st_partitionPKcllPKlS2_S0_S2_S2_llPlS3_S3_S3_l
+    + _Z23fg_goose_tokenizer_pinsv
+    + _Z24fg_goose_tokenizer_callsv
+    + _Z26fg_goose_vocab_type_decideRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES6_RK19fg_goose_vt_answersR20fg_goose_vt_decision
+    + _ZN11llama_vocab4impl20determine_vocab_typeER18llama_model_loaderRK6LLM_KV
+    + _ZN11llama_vocab4impl26determine_vocab_type_gooseER18llama_model_loaderRK6LLM_KV
+    + _ZN11llama_vocab4impl27determine_vocab_type_nativeER18llama_model_loaderRK6LLM_KV
+    + _ZNK11llama_vocab4impl29tokenizer_st_partition_nativeERSt12forward_listI23fragment_buffer_variantSaIS2_EEb
+    + gs_json_strtod
+--- exported surface: base vs OFF vs ON (libllama-common.so)
+  build-off: removed=0 added=0
+  build-on: removed=0 added=0
+--- the switched public functions are still there, same mangled name
+  base   string_strip     1
+  off    string_strip     1
+  on     string_strip     1
+  base   llama_tokenize   1
+  off    llama_tokenize   1
+  on     llama_tokenize   1
+  base   llama_vocab_type 2
+  off    llama_vocab_type 2
+  on     llama_vocab_type 2

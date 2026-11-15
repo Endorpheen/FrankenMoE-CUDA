@@ -1,0 +1,2 @@
+0000000000255620 T json_schema_to_grammar[abi:cxx11](common_json const&, bool)
+0000000000255570 T json_schema_to_grammar_native[abi:cxx11](common_json const&, bool)

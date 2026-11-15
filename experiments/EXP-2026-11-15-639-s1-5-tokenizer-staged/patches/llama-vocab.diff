@@ -1,0 +1,1237 @@
+--- reference/llama-vocab.cpp.orig	2026-11-15 04:03:56.041559632 +0300
++++ llama.cpp/src/llama-vocab.cpp	2026-11-15 04:12:53.757369321 +0300
+@@ -1,5 +1,9 @@
+ #include "llama-vocab.h"
+ 
++#ifdef FG_GOOSE_TOKENIZER
++#include "fg-goose-tokenizer-bridge.h"
++#endif
++
+ #include "ggml.h"
+ #include "gguf.h"
+ #include "llama-impl.h"
+@@ -1871,7 +1875,15 @@
+ 
+     void init_tokenizer(enum llama_vocab_type type);
+ 
++    // staged: the two tokenizer decisions behind FG_GOOSE_TOKENIZER
++    bool determine_vocab_type(llama_model_loader & ml, const LLM_KV & kv);
++    bool determine_vocab_type_native(llama_model_loader & ml, const LLM_KV & kv);
++#ifdef FG_GOOSE_TOKENIZER
++    bool determine_vocab_type_goose(llama_model_loader & ml, const LLM_KV & kv);
++#endif
++
+     void tokenizer_st_partition(std::forward_list<fragment_buffer_variant> & buffer, bool parse_special) const;
++    void tokenizer_st_partition_native(std::forward_list<fragment_buffer_variant> & buffer, bool parse_special) const;
+ 
+     std::string token_to_piece_for_cache(
+                   llama_token   token,
+@@ -1920,499 +1932,653 @@
+     const llama_vocab & vocab;
+ };
+ 
+-void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
+-    struct gguf_context * ctx = ml.metadata;
++bool llama_vocab::impl::determine_vocab_type(llama_model_loader & ml, const LLM_KV & kv) {
++#ifdef FG_GOOSE_TOKENIZER
++    return determine_vocab_type_goose(ml, kv);
++#else
++    return determine_vocab_type_native(ml, kv);
++#endif
++}
+ 
+-    // determine vocab type
+-    {
+-        ml.get_key(LLM_KV_TOKENIZER_MODEL, tokenizer_model);
+-        ml.get_key(LLM_KV_TOKENIZER_PRE,   tokenizer_pre, false);
++// Native body of the "determine vocab type" block of load(), moved here
++// unchanged apart from __func__ -> "load" (log prefix) and the early return.
++bool llama_vocab::impl::determine_vocab_type_native(llama_model_loader & ml, const LLM_KV & kv) {
++    struct gguf_context * ctx = ml.metadata;
+ 
+-        ml.get_key(LLM_KV_TOKENIZER_TOKEN_TYPE_COUNT, n_token_types, false);
++    ml.get_key(LLM_KV_TOKENIZER_MODEL, tokenizer_model);
++    ml.get_key(LLM_KV_TOKENIZER_PRE,   tokenizer_pre, false);
+ 
+-        if (tokenizer_model == "no_vocab" || tokenizer_model == "none") {
+-            type = LLAMA_VOCAB_TYPE_NONE;
++    ml.get_key(LLM_KV_TOKENIZER_TOKEN_TYPE_COUNT, n_token_types, false);
+ 
+-            // default special tokens
+-            special_bos_id  = LLAMA_TOKEN_NULL;
+-            special_eos_id  = LLAMA_TOKEN_NULL;
+-            special_unk_id  = LLAMA_TOKEN_NULL;
+-            special_sep_id  = LLAMA_TOKEN_NULL;
+-            special_pad_id  = LLAMA_TOKEN_NULL;
+-            special_mask_id = LLAMA_TOKEN_NULL;
+-            linefeed_id     = LLAMA_TOKEN_NULL;
+-
+-            // read vocab size from metadata
+-            uint32_t n_tokens = 0;
+-            if (ml.get_key(LLM_KV_VOCAB_SIZE, n_tokens, false)) {
+-                LLAMA_LOG_WARN("%s: adding %u dummy tokens\n", __func__, n_tokens);
+-                id_to_token.resize(n_tokens);
+-            }
++    if (tokenizer_model == "no_vocab" || tokenizer_model == "none") {
++        type = LLAMA_VOCAB_TYPE_NONE;
+ 
+-            return;
+-        }
++        // default special tokens
++        special_bos_id  = LLAMA_TOKEN_NULL;
++        special_eos_id  = LLAMA_TOKEN_NULL;
++        special_unk_id  = LLAMA_TOKEN_NULL;
++        special_sep_id  = LLAMA_TOKEN_NULL;
++        special_pad_id  = LLAMA_TOKEN_NULL;
++        special_mask_id = LLAMA_TOKEN_NULL;
++        linefeed_id     = LLAMA_TOKEN_NULL;
++
++        // read vocab size from metadata
++        uint32_t n_tokens = 0;
++        if (ml.get_key(LLM_KV_VOCAB_SIZE, n_tokens, false)) {
++            LLAMA_LOG_WARN("%s: adding %u dummy tokens\n", "load", n_tokens);
++            id_to_token.resize(n_tokens);
++        }
++
++        return true;
++    }
++
++    if (tokenizer_model == "llama") {
++        type = LLAMA_VOCAB_TYPE_SPM;
++
++        // default special tokens
++        special_bos_id  = 1;
++        special_eos_id  = 2;
++        special_unk_id  = 0;
++        special_sep_id  = LLAMA_TOKEN_NULL;
++        special_pad_id  = LLAMA_TOKEN_NULL;
++        special_mask_id = LLAMA_TOKEN_NULL;
++    } else if (tokenizer_model == "bert") {
++        type = LLAMA_VOCAB_TYPE_WPM;
++
++        // default special tokens
++        special_bos_id  = 101;
++        special_eos_id  = LLAMA_TOKEN_NULL;
++        special_unk_id  = 100;
++        special_sep_id  = 102;
++        special_pad_id  = 0;
++        special_mask_id = 103;
++
++        add_sep = true;
++    } else if (tokenizer_model == "gpt2" || tokenizer_model == "hybriddna" || tokenizer_model == "whitespace") {
++        type = LLAMA_VOCAB_TYPE_BPE;
++
++        // read bpe merges and populate bpe ranks
++        const int merges_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
++        // Kimi-K2 uses custom tokenization without traditional BPE merges
++        const bool is_kimi_k2 = (tokenizer_pre == "kimi-k2");
+ 
+-        if (tokenizer_model == "llama") {
+-            type = LLAMA_VOCAB_TYPE_SPM;
++        if (merges_keyidx == -1) {
++            if (!is_kimi_k2) {
++                throw std::runtime_error("cannot find tokenizer merges in model file\n");
++            }
++            // Kimi-K2 doesn't need merges, skip
++            LLAMA_LOG_INFO("%s: Kimi-K2 tokenizer detected, skipping BPE merges\n", "load");
++        } else {
++            if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
++                gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
++                throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
++            }
++            const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
++            for (int i = 0; i < n_merges; i++) {
++                const std::string word = gguf_get_arr_str(ctx, merges_keyidx, i);
++                //GGML_ASSERT(unicode_cpts_from_utf8(word).size() > 0);
+ 
+-            // default special tokens
+-            special_bos_id  = 1;
+-            special_eos_id  = 2;
+-            special_unk_id  = 0;
+-            special_sep_id  = LLAMA_TOKEN_NULL;
+-            special_pad_id  = LLAMA_TOKEN_NULL;
+-            special_mask_id = LLAMA_TOKEN_NULL;
+-        } else if (tokenizer_model == "bert") {
+-            type = LLAMA_VOCAB_TYPE_WPM;
+-
+-            // default special tokens
+-            special_bos_id  = 101;
+-            special_eos_id  = LLAMA_TOKEN_NULL;
+-            special_unk_id  = 100;
+-            special_sep_id  = 102;
+-            special_pad_id  = 0;
+-            special_mask_id = 103;
++                std::string first;
++                std::string second;
+ 
+-            add_sep = true;
+-        } else if (tokenizer_model == "gpt2" || tokenizer_model == "hybriddna" || tokenizer_model == "whitespace") {
+-            type = LLAMA_VOCAB_TYPE_BPE;
++                const size_t pos = word.find(' ', 1);
+ 
+-            // read bpe merges and populate bpe ranks
+-            const int merges_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
+-            // Kimi-K2 uses custom tokenization without traditional BPE merges
+-            const bool is_kimi_k2 = (tokenizer_pre == "kimi-k2");
+-
+-            if (merges_keyidx == -1) {
+-                if (!is_kimi_k2) {
+-                    throw std::runtime_error("cannot find tokenizer merges in model file\n");
++                if (pos != std::string::npos) {
++                    first  = word.substr(0, pos);
++                    second = word.substr(pos + 1);
+                 }
+-                // Kimi-K2 doesn't need merges, skip
+-                LLAMA_LOG_INFO("%s: Kimi-K2 tokenizer detected, skipping BPE merges\n", __func__);
+-            } else {
+-                if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
+-                    gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
+-                    throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
+-                }
+-                const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
+-                for (int i = 0; i < n_merges; i++) {
+-                    const std::string word = gguf_get_arr_str(ctx, merges_keyidx, i);
+-                    //GGML_ASSERT(unicode_cpts_from_utf8(word).size() > 0);
+-
+-                    std::string first;
+-                    std::string second;
+ 
+-                    const size_t pos = word.find(' ', 1);
+-
+-                    if (pos != std::string::npos) {
+-                        first  = word.substr(0, pos);
+-                        second = word.substr(pos + 1);
+-                    }
+-
+-                    bpe_ranks.emplace(std::make_pair(first, second), i);
+-                }
++                bpe_ranks.emplace(std::make_pair(first, second), i);
+             }
++        }
+ 
+-            // default special tokens
+-            special_bos_id  = 11;
+-            special_eos_id  = 11;
+-            special_unk_id  = LLAMA_TOKEN_NULL;
+-            special_sep_id  = LLAMA_TOKEN_NULL;
+-            special_pad_id  = LLAMA_TOKEN_NULL;
+-            special_mask_id = LLAMA_TOKEN_NULL;
+-        } else if (tokenizer_model == "t5") {
+-            type = LLAMA_VOCAB_TYPE_UGM;
++        // default special tokens
++        special_bos_id  = 11;
++        special_eos_id  = 11;
++        special_unk_id  = LLAMA_TOKEN_NULL;
++        special_sep_id  = LLAMA_TOKEN_NULL;
++        special_pad_id  = LLAMA_TOKEN_NULL;
++        special_mask_id = LLAMA_TOKEN_NULL;
++    } else if (tokenizer_model == "t5") {
++        type = LLAMA_VOCAB_TYPE_UGM;
+ 
+-            // default special tokens
+-            special_bos_id  = LLAMA_TOKEN_NULL;
+-            special_eos_id  = 1;
+-            special_unk_id  = 2;
+-            special_sep_id  = LLAMA_TOKEN_NULL;
+-            special_pad_id  = 0;
+-            special_mask_id = LLAMA_TOKEN_NULL;
++        // default special tokens
++        special_bos_id  = LLAMA_TOKEN_NULL;
++        special_eos_id  = 1;
++        special_unk_id  = 2;
++        special_sep_id  = LLAMA_TOKEN_NULL;
++        special_pad_id  = 0;
++        special_mask_id = LLAMA_TOKEN_NULL;
+ 
+-            const int precompiled_charsmap_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str());
+-            if (precompiled_charsmap_keyidx != -1) {
+-                if (gguf_get_kv_type(ctx, precompiled_charsmap_keyidx) != GGUF_TYPE_ARRAY) {
+-                    throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str()));
+-                }
+-                const gguf_type pc_type = gguf_get_arr_type(ctx, precompiled_charsmap_keyidx);
+-                if (pc_type != GGUF_TYPE_INT8 && pc_type != GGUF_TYPE_UINT8) {
+-                    throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str()));
+-                }
++        const int precompiled_charsmap_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str());
++        if (precompiled_charsmap_keyidx != -1) {
++            if (gguf_get_kv_type(ctx, precompiled_charsmap_keyidx) != GGUF_TYPE_ARRAY) {
++                throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str()));
++            }
++            const gguf_type pc_type = gguf_get_arr_type(ctx, precompiled_charsmap_keyidx);
++            if (pc_type != GGUF_TYPE_INT8 && pc_type != GGUF_TYPE_UINT8) {
++                throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str()));
++            }
+ 
+-                const size_t n_precompiled_charsmap = gguf_get_arr_n(ctx, precompiled_charsmap_keyidx);
+-                const char * pc = (const char *) gguf_get_arr_data(ctx, precompiled_charsmap_keyidx);
+-                precompiled_charsmap.assign(pc, pc + n_precompiled_charsmap);
+-                if (precompiled_charsmap.size() < sizeof(uint32_t)) {
+-                    throw std::runtime_error("precompiled_charsmap too small for xcda_blob_size header!");
+-                }
+-                uint32_t * xcda_blob_size = (uint32_t *) &precompiled_charsmap[0];
++            const size_t n_precompiled_charsmap = gguf_get_arr_n(ctx, precompiled_charsmap_keyidx);
++            const char * pc = (const char *) gguf_get_arr_data(ctx, precompiled_charsmap_keyidx);
++            precompiled_charsmap.assign(pc, pc + n_precompiled_charsmap);
++            if (precompiled_charsmap.size() < sizeof(uint32_t)) {
++                throw std::runtime_error("precompiled_charsmap too small for xcda_blob_size header!");
++            }
++            uint32_t * xcda_blob_size = (uint32_t *) &precompiled_charsmap[0];
+ #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+-                *xcda_blob_size = __builtin_bswap32(*xcda_blob_size);
++            *xcda_blob_size = __builtin_bswap32(*xcda_blob_size);
+ #endif
+-                if (*xcda_blob_size + sizeof(uint32_t) >= precompiled_charsmap.size()) {
+-                    throw std::runtime_error("Index out of array bounds in precompiled charsmap!");
+-                }
++            if (*xcda_blob_size + sizeof(uint32_t) >= precompiled_charsmap.size()) {
++                throw std::runtime_error("Index out of array bounds in precompiled charsmap!");
++            }
+ #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+-                // correct endianness of data in precompiled_charsmap binary blob
+-                size_t xcda_array_size = *xcda_blob_size / sizeof(uint32_t);
+-                uint32_t * xcda_array = (uint32_t *) &precompiled_charsmap[sizeof(uint32_t)];
+-                for (size_t i = 0; i < xcda_array_size; ++i) {
+-                    xcda_array[i] = __builtin_bswap32(xcda_array[i]);
+-                }
+-#endif
++            // correct endianness of data in precompiled_charsmap binary blob
++            size_t xcda_array_size = *xcda_blob_size / sizeof(uint32_t);
++            uint32_t * xcda_array = (uint32_t *) &precompiled_charsmap[sizeof(uint32_t)];
++            for (size_t i = 0; i < xcda_array_size; ++i) {
++                xcda_array[i] = __builtin_bswap32(xcda_array[i]);
+             }
+-        } else if (tokenizer_model == "rwkv") {
+-            type = LLAMA_VOCAB_TYPE_RWKV;
++#endif
++        }
++    } else if (tokenizer_model == "rwkv") {
++        type = LLAMA_VOCAB_TYPE_RWKV;
+ 
+-            // default special tokens
+-            special_bos_id = LLAMA_TOKEN_NULL;
+-            special_eos_id = LLAMA_TOKEN_NULL;
+-            special_unk_id = LLAMA_TOKEN_NULL;
+-            special_sep_id = LLAMA_TOKEN_NULL;
+-            special_pad_id = LLAMA_TOKEN_NULL;
+-        } else if (tokenizer_model == "plamo2") {
+-            type = LLAMA_VOCAB_TYPE_PLAMO2;
+-
+-            // PLaMo-2 default special tokens (these will be overridden by model config)
+-            special_bos_id = 1;  // <|plamo:bos|>
+-            special_eos_id = 2;  // <|plamo:eos|>
+-            special_unk_id = 0;  // <|plamo:unk|>
+-            special_sep_id = LLAMA_TOKEN_NULL;
+-            special_pad_id = 3;  // <|plamo:pad|>
+-            special_mask_id = LLAMA_TOKEN_NULL;
+-        } else if (tokenizer_model == "gemma4") {
+-            type = LLAMA_VOCAB_TYPE_BPE;
+-
+-            // read bpe merges and populate bpe ranks
+-            const int merges_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
+-            if (merges_keyidx == -1) {
+-                throw std::runtime_error("cannot find tokenizer merges in model file\n");
++        // default special tokens
++        special_bos_id = LLAMA_TOKEN_NULL;
++        special_eos_id = LLAMA_TOKEN_NULL;
++        special_unk_id = LLAMA_TOKEN_NULL;
++        special_sep_id = LLAMA_TOKEN_NULL;
++        special_pad_id = LLAMA_TOKEN_NULL;
++    } else if (tokenizer_model == "plamo2") {
++        type = LLAMA_VOCAB_TYPE_PLAMO2;
++
++        // PLaMo-2 default special tokens (these will be overridden by model config)
++        special_bos_id = 1;  // <|plamo:bos|>
++        special_eos_id = 2;  // <|plamo:eos|>
++        special_unk_id = 0;  // <|plamo:unk|>
++        special_sep_id = LLAMA_TOKEN_NULL;
++        special_pad_id = 3;  // <|plamo:pad|>
++        special_mask_id = LLAMA_TOKEN_NULL;
++    } else if (tokenizer_model == "gemma4") {
++        type = LLAMA_VOCAB_TYPE_BPE;
++
++        // read bpe merges and populate bpe ranks
++        const int merges_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
++        if (merges_keyidx == -1) {
++            throw std::runtime_error("cannot find tokenizer merges in model file\n");
++        }
++        {
++            if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
++                gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
++                throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
+             }
+-            {
+-                if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
+-                    gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
+-                    throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
+-                }
+-                const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
+-                for (int i = 0; i < n_merges; i++) {
+-                    const std::string word = gguf_get_arr_str(ctx, merges_keyidx, i);
+-
+-                    std::string first;
+-                    std::string second;
++            const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
++            for (int i = 0; i < n_merges; i++) {
++                const std::string word = gguf_get_arr_str(ctx, merges_keyidx, i);
+ 
+-                    const size_t pos = word.find(' ', 1);
++                std::string first;
++                std::string second;
+ 
+-                    if (pos != std::string::npos) {
+-                        first  = word.substr(0, pos);
+-                        second = word.substr(pos + 1);
+-                    }
++                const size_t pos = word.find(' ', 1);
+ 
+-                    bpe_ranks.emplace(std::make_pair(first, second), i);
++                if (pos != std::string::npos) {
++                    first  = word.substr(0, pos);
++                    second = word.substr(pos + 1);
+                 }
++
++                bpe_ranks.emplace(std::make_pair(first, second), i);
+             }
++        }
+ 
+-            // default special tokens (to be read from GGUF)
+-            special_bos_id  = LLAMA_TOKEN_NULL;
+-            special_eos_id  = LLAMA_TOKEN_NULL;
+-            special_unk_id  = LLAMA_TOKEN_NULL;
+-            special_sep_id  = LLAMA_TOKEN_NULL;
+-            special_pad_id  = LLAMA_TOKEN_NULL;
+-            special_mask_id = LLAMA_TOKEN_NULL;
++        // default special tokens (to be read from GGUF)
++        special_bos_id  = LLAMA_TOKEN_NULL;
++        special_eos_id  = LLAMA_TOKEN_NULL;
++        special_unk_id  = LLAMA_TOKEN_NULL;
++        special_sep_id  = LLAMA_TOKEN_NULL;
++        special_pad_id  = LLAMA_TOKEN_NULL;
++        special_mask_id = LLAMA_TOKEN_NULL;
+ 
+-            tokenizer_pre = "gemma4";
+-        } else {
+-            throw std::runtime_error(format("unknown tokenizer: '%s'", tokenizer_model.c_str()));
+-        }
++        tokenizer_pre = "gemma4";
++    } else {
++        throw std::runtime_error(format("unknown tokenizer: '%s'", tokenizer_model.c_str()));
++    }
+ 
+-        // for now, only BPE models have pre-tokenizers
+-        if (type == LLAMA_VOCAB_TYPE_BPE) {
+-            add_space_prefix = false;
+-            escape_whitespaces = false;
+-            clean_spaces = true;
+-            if (tokenizer_pre.empty()) {
+-                LLAMA_LOG_WARN("%s: missing pre-tokenizer type, using: 'default'\n", __func__);
+-                LLAMA_LOG_WARN("%s:                                             \n", __func__);
+-                LLAMA_LOG_WARN("%s: ************************************        \n", __func__);
+-                LLAMA_LOG_WARN("%s: GENERATION QUALITY WILL BE DEGRADED!        \n", __func__);
+-                LLAMA_LOG_WARN("%s: CONSIDER REGENERATING THE MODEL             \n", __func__);
+-                LLAMA_LOG_WARN("%s: ************************************        \n", __func__);
+-                LLAMA_LOG_WARN("%s:                                             \n", __func__);
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
+-            } else if (tokenizer_pre == "default") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
+-            } else if (tokenizer_pre == "minicpm5") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_MINICPM5;
+-                ignore_merges = true;
+-            } else if (
+-                    tokenizer_pre == "llama3"   ||
+-                    tokenizer_pre == "llama-v3" ||
+-                    tokenizer_pre == "llama-bpe"||
+-                    tokenizer_pre == "falcon3"  ||
+-                    tokenizer_pre == "falcon-h1" ||
+-                    tokenizer_pre == "pixtral"  ||
+-                    tokenizer_pre == "midm-2.0" ||
+-                    tokenizer_pre == "lfm2"     ||
+-                    tokenizer_pre == "jina-v5-nano") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_LLAMA3;
+-                ignore_merges = true;
+-                add_bos = true;
+-            } else if (
+-                    tokenizer_pre == "deepseek-llm") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_DEEPSEEK_LLM;
+-                clean_spaces = false;
+-            } else if (
+-                    tokenizer_pre == "deepseek-coder") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_DEEPSEEK_CODER;
+-                clean_spaces = false;
+-            } else if (
+-                    tokenizer_pre == "deepseek-v3") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_DEEPSEEK3_LLM;
+-                clean_spaces = false;
+-            } else if (
+-                    tokenizer_pre == "youtu") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_YOUTU;
+-                clean_spaces = false;
+-                ignore_merges = true;
+-            } else if (
+-                    tokenizer_pre == "falcon") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_FALCON;
+-            } else if (
+-                    tokenizer_pre == "mpt") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_MPT;
+-            } else if (
+-                    tokenizer_pre == "starcoder") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_STARCODER;
+-            } else if (
+-                    tokenizer_pre == "gpt-2"   ||
+-                    tokenizer_pre == "phi-2"   ||
+-                    tokenizer_pre == "jina-es" ||
+-                    tokenizer_pre == "jina-de" ||
+-                    tokenizer_pre == "gigachat"   ||
+-                    tokenizer_pre == "jina-v2-es" ||
+-                    tokenizer_pre == "jina-v2-de" ||
+-                    tokenizer_pre == "a.x-4.0" ||
+-                    tokenizer_pre == "mellum"  ||
+-                    tokenizer_pre == "modern-bert") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GPT2;
+-            } else if (
+-                    tokenizer_pre == "jais-2") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_JAIS2;
+-            } else if (
+-                    tokenizer_pre == "gemma4" ||
+-                    tokenizer_pre == "granite-embed-multi-311m") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GEMMA4;
+-                escape_whitespaces = true;
+-            } else if (
+-                    tokenizer_pre == "sarvam-moe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_SARVAM_MOE;
+-                escape_whitespaces = true;
+-                clean_spaces = false;
+-            } else if (
+-                    tokenizer_pre == "jina-v1-en" ||
+-                    tokenizer_pre == "jina-v2-code" ||
+-                    tokenizer_pre == "roberta-bpe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GPT2;
+-                add_sep = true;
+-            } else if (
+-                    tokenizer_pre == "whitespace") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_WHITESPACE;
+-                normalizer_opts.lowercase = false;
+-            } else if (
+-                    tokenizer_pre == "refact") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_REFACT;
+-            } else if (
+-                tokenizer_pre == "command-r") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_COMMAND_R;
+-                clean_spaces = false;
+-            } else if (
+-                    tokenizer_pre == "qwen2" ||
+-                    tokenizer_pre == "deepseek-r1-qwen" ||
+-                    tokenizer_pre == "kormo" ||
+-                    tokenizer_pre == "f2llmv2") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_QWEN2;
+-                clean_spaces = false;
+-            } else if (
+-                    tokenizer_pre == "qwen35") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_QWEN35;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "stablelm2") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_STABLELM2;
+-            } else if (
+-                tokenizer_pre == "olmo") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_OLMO;
+-            } else if (
+-                tokenizer_pre == "dbrx") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_DBRX;
+-            } else if (
+-                tokenizer_pre == "smaug-bpe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_SMAUG;
+-            } else if (
+-                tokenizer_pre == "poro-chat") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_PORO;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "glm4" ||
+-                tokenizer_pre == "chatglm-bpe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_CHATGLM4;
+-                special_bos_id = LLAMA_TOKEN_NULL;
+-            } else if (
+-                tokenizer_pre == "viking") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_VIKING;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "jais") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_JAIS;
+-            } else if (
+-                tokenizer_pre == "tekken") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_TEKKEN;
+-                clean_spaces = false;
+-                ignore_merges = true;
+-                add_bos = true;
+-            } else if (
+-                tokenizer_pre == "smollm") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_SMOLLM;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "codeshell") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_CODESHELL;
+-            } else if (
+-                tokenizer_pre == "bloom") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_BLOOM;
+-            } else if (
+-                tokenizer_pre == "gpt3-finnish") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GPT3_FINNISH;
+-            } else if (
+-                tokenizer_pre == "exaone") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_EXAONE;
+-            } else if (
+-                tokenizer_pre == "exaone4") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GPT2;
+-            } else if (
+-                tokenizer_pre == "exaone-moe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_EXAONE_MOE;
+-            } else if (
+-                tokenizer_pre == "chameleon") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_CHAMELEON;
+-                add_bos = true;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "minerva-7b") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_MINERVA;
+-            } else if (
+-                tokenizer_pre == "megrez") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_QWEN2;
+-            } else if (
+-                tokenizer_pre == "gpt-4o" ||
+-                tokenizer_pre == "llama4" ||
+-                tokenizer_pre == "kanana2" ||
+-                tokenizer_pre == "talkie") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GPT4O;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "granite-embed-multi-97m") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GRANITE_EMB_MULTI;
+-                clean_spaces = false;
+-                ignore_merges = true;
+-            } else if (
+-                tokenizer_pre == "tiny_aya" ||
+-                tokenizer_pre == "cohere2moe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_TINY_AYA;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "superbpe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_SUPERBPE;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "trillion") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_TRILLION;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "granite-docling") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GRANITE_DOCLING;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "bailingmoe" ||
+-                tokenizer_pre == "bailingmoe2" ||
+-                tokenizer_pre == "llada-moe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_BAILINGMOE;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "seed-coder") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_SEED_CODER;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "hunyuan") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_HUNYUAN;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "hunyuan-dense") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_HUNYUAN_DENSE;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "joyai-llm") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_JOYAI_LLM;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "kimi-k2") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_KIMI_K2;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "grok-2") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_GROK_2;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "afmoe") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_AFMOE;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "laguna") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_LAGUNA;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "minimax-m2") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_MINIMAX_M2;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "solar-open") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_SOLAR_OPEN;
+-                clean_spaces = false;
+-            } else if (
+-                tokenizer_pre == "mellum2") {
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_MELLUM2;
+-            } else {
+-                throw std::runtime_error(format("unknown pre-tokenizer type: '%s'", tokenizer_pre.c_str()));
+-            }
+-        } else if (type == LLAMA_VOCAB_TYPE_SPM) {
++    // for now, only BPE models have pre-tokenizers
++    if (type == LLAMA_VOCAB_TYPE_BPE) {
++        add_space_prefix = false;
++        escape_whitespaces = false;
++        clean_spaces = true;
++        if (tokenizer_pre.empty()) {
++            LLAMA_LOG_WARN("%s: missing pre-tokenizer type, using: 'default'\n", "load");
++            LLAMA_LOG_WARN("%s:                                             \n", "load");
++            LLAMA_LOG_WARN("%s: ************************************        \n", "load");
++            LLAMA_LOG_WARN("%s: GENERATION QUALITY WILL BE DEGRADED!        \n", "load");
++            LLAMA_LOG_WARN("%s: CONSIDER REGENERATING THE MODEL             \n", "load");
++            LLAMA_LOG_WARN("%s: ************************************        \n", "load");
++            LLAMA_LOG_WARN("%s:                                             \n", "load");
+             pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
+-            add_space_prefix = true;
+-            clean_spaces = false;
+-            add_bos = true;
+-            add_eos = false;
+-        } else if (type == LLAMA_VOCAB_TYPE_WPM) {
++        } else if (tokenizer_pre == "default") {
+             pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
+-            add_space_prefix = false;
+-            clean_spaces = true;
++        } else if (tokenizer_pre == "minicpm5") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_MINICPM5;
++            ignore_merges = true;
++        } else if (
++                tokenizer_pre == "llama3"   ||
++                tokenizer_pre == "llama-v3" ||
++                tokenizer_pre == "llama-bpe"||
++                tokenizer_pre == "falcon3"  ||
++                tokenizer_pre == "falcon-h1" ||
++                tokenizer_pre == "pixtral"  ||
++                tokenizer_pre == "midm-2.0" ||
++                tokenizer_pre == "lfm2"     ||
++                tokenizer_pre == "jina-v5-nano") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_LLAMA3;
++            ignore_merges = true;
+             add_bos = true;
+-            add_eos = false;
++        } else if (
++                tokenizer_pre == "deepseek-llm") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_DEEPSEEK_LLM;
++            clean_spaces = false;
++        } else if (
++                tokenizer_pre == "deepseek-coder") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_DEEPSEEK_CODER;
++            clean_spaces = false;
++        } else if (
++                tokenizer_pre == "deepseek-v3") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_DEEPSEEK3_LLM;
++            clean_spaces = false;
++        } else if (
++                tokenizer_pre == "youtu") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_YOUTU;
++            clean_spaces = false;
++            ignore_merges = true;
++        } else if (
++                tokenizer_pre == "falcon") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_FALCON;
++        } else if (
++                tokenizer_pre == "mpt") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_MPT;
++        } else if (
++                tokenizer_pre == "starcoder") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_STARCODER;
++        } else if (
++                tokenizer_pre == "gpt-2"   ||
++                tokenizer_pre == "phi-2"   ||
++                tokenizer_pre == "jina-es" ||
++                tokenizer_pre == "jina-de" ||
++                tokenizer_pre == "gigachat"   ||
++                tokenizer_pre == "jina-v2-es" ||
++                tokenizer_pre == "jina-v2-de" ||
++                tokenizer_pre == "a.x-4.0" ||
++                tokenizer_pre == "mellum"  ||
++                tokenizer_pre == "modern-bert") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GPT2;
++        } else if (
++                tokenizer_pre == "jais-2") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_JAIS2;
++        } else if (
++                tokenizer_pre == "gemma4" ||
++                tokenizer_pre == "granite-embed-multi-311m") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GEMMA4;
++            escape_whitespaces = true;
++        } else if (
++                tokenizer_pre == "sarvam-moe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_SARVAM_MOE;
++            escape_whitespaces = true;
++            clean_spaces = false;
++        } else if (
++                tokenizer_pre == "jina-v1-en" ||
++                tokenizer_pre == "jina-v2-code" ||
++                tokenizer_pre == "roberta-bpe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GPT2;
+             add_sep = true;
+-        } else if (type == LLAMA_VOCAB_TYPE_UGM) {
+-            pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
+-            add_bos = false;
+-            add_eos = true;
+-        } else if (type == LLAMA_VOCAB_TYPE_RWKV) {
+-            pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
+-            add_space_prefix = false;
++        } else if (
++                tokenizer_pre == "whitespace") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_WHITESPACE;
++            normalizer_opts.lowercase = false;
++        } else if (
++                tokenizer_pre == "refact") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_REFACT;
++        } else if (
++            tokenizer_pre == "command-r") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_COMMAND_R;
++            clean_spaces = false;
++        } else if (
++                tokenizer_pre == "qwen2" ||
++                tokenizer_pre == "deepseek-r1-qwen" ||
++                tokenizer_pre == "kormo" ||
++                tokenizer_pre == "f2llmv2") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_QWEN2;
++            clean_spaces = false;
++        } else if (
++                tokenizer_pre == "qwen35") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_QWEN35;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "stablelm2") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_STABLELM2;
++        } else if (
++            tokenizer_pre == "olmo") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_OLMO;
++        } else if (
++            tokenizer_pre == "dbrx") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_DBRX;
++        } else if (
++            tokenizer_pre == "smaug-bpe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_SMAUG;
++        } else if (
++            tokenizer_pre == "poro-chat") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_PORO;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "glm4" ||
++            tokenizer_pre == "chatglm-bpe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_CHATGLM4;
++            special_bos_id = LLAMA_TOKEN_NULL;
++        } else if (
++            tokenizer_pre == "viking") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_VIKING;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "jais") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_JAIS;
++        } else if (
++            tokenizer_pre == "tekken") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_TEKKEN;
++            clean_spaces = false;
++            ignore_merges = true;
++            add_bos = true;
++        } else if (
++            tokenizer_pre == "smollm") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_SMOLLM;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "codeshell") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_CODESHELL;
++        } else if (
++            tokenizer_pre == "bloom") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_BLOOM;
++        } else if (
++            tokenizer_pre == "gpt3-finnish") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GPT3_FINNISH;
++        } else if (
++            tokenizer_pre == "exaone") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_EXAONE;
++        } else if (
++            tokenizer_pre == "exaone4") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GPT2;
++        } else if (
++            tokenizer_pre == "exaone-moe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_EXAONE_MOE;
++        } else if (
++            tokenizer_pre == "chameleon") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_CHAMELEON;
++            add_bos = true;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "minerva-7b") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_MINERVA;
++        } else if (
++            tokenizer_pre == "megrez") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_QWEN2;
++        } else if (
++            tokenizer_pre == "gpt-4o" ||
++            tokenizer_pre == "llama4" ||
++            tokenizer_pre == "kanana2" ||
++            tokenizer_pre == "talkie") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GPT4O;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "granite-embed-multi-97m") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GRANITE_EMB_MULTI;
++            clean_spaces = false;
++            ignore_merges = true;
++        } else if (
++            tokenizer_pre == "tiny_aya" ||
++            tokenizer_pre == "cohere2moe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_TINY_AYA;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "superbpe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_SUPERBPE;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "trillion") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_TRILLION;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "granite-docling") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GRANITE_DOCLING;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "bailingmoe" ||
++            tokenizer_pre == "bailingmoe2" ||
++            tokenizer_pre == "llada-moe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_BAILINGMOE;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "seed-coder") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_SEED_CODER;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "hunyuan") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_HUNYUAN;
+             clean_spaces = false;
+-            add_bos = false;
+-            add_eos = false;
++        } else if (
++            tokenizer_pre == "hunyuan-dense") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_HUNYUAN_DENSE;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "joyai-llm") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_JOYAI_LLM;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "kimi-k2") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_KIMI_K2;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "grok-2") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_GROK_2;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "afmoe") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_AFMOE;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "laguna") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_LAGUNA;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "minimax-m2") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_MINIMAX_M2;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "solar-open") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_SOLAR_OPEN;
++            clean_spaces = false;
++        } else if (
++            tokenizer_pre == "mellum2") {
++            pre_type = LLAMA_VOCAB_PRE_TYPE_MELLUM2;
+         } else {
+-            pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
++            throw std::runtime_error(format("unknown pre-tokenizer type: '%s'", tokenizer_pre.c_str()));
+         }
++    } else if (type == LLAMA_VOCAB_TYPE_SPM) {
++        pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
++        add_space_prefix = true;
++        clean_spaces = false;
++        add_bos = true;
++        add_eos = false;
++    } else if (type == LLAMA_VOCAB_TYPE_WPM) {
++        pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
++        add_space_prefix = false;
++        clean_spaces = true;
++        add_bos = true;
++        add_eos = false;
++        add_sep = true;
++    } else if (type == LLAMA_VOCAB_TYPE_UGM) {
++        pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
++        add_bos = false;
++        add_eos = true;
++    } else if (type == LLAMA_VOCAB_TYPE_RWKV) {
++        pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
++        add_space_prefix = false;
++        clean_spaces = false;
++        add_bos = false;
++        add_eos = false;
++    } else {
++        pre_type = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
++    }
++
++    ml.get_key(LLM_KV_TOKENIZER_ADD_PREFIX,      add_space_prefix,         false);
++    ml.get_key(LLM_KV_TOKENIZER_REMOVE_EXTRA_WS, remove_extra_whitespaces, false);
++    return false;
++}
++
++#ifdef FG_GOOSE_TOKENIZER
++// The Goose path. The module decides everything the native block decides; the
++// host still reads the gguf keys, hands the answers over, and owns the arrays
++// (bpe ranks, charsmap bytes, dummy tokens for a model without vocab).
++bool llama_vocab::impl::determine_vocab_type_goose(llama_model_loader & ml, const LLM_KV & kv) {
++    struct gguf_context * ctx = ml.metadata;
+ 
+-        ml.get_key(LLM_KV_TOKENIZER_ADD_PREFIX,      add_space_prefix,         false);
+-        ml.get_key(LLM_KV_TOKENIZER_REMOVE_EXTRA_WS, remove_extra_whitespaces, false);
++    ml.get_key(LLM_KV_TOKENIZER_MODEL, tokenizer_model);
++    ml.get_key(LLM_KV_TOKENIZER_PRE,   tokenizer_pre, false);
++
++    ml.get_key(LLM_KV_TOKENIZER_TOKEN_TYPE_COUNT, n_token_types, false);
++
++    fg_goose_vt_answers answers;
++
++    // tokenizer.ggml.merges: presence and the two gguf types, never the values
++    const int merges_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
++    if (merges_keyidx != -1) {
++        answers.has_merges         = 1;
++        answers.merges_kv_is_array = gguf_get_kv_type(ctx, merges_keyidx) == GGUF_TYPE_ARRAY;
++        answers.merges_arr_is_string =
++            answers.merges_kv_is_array && gguf_get_arr_type(ctx, merges_keyidx) == GGUF_TYPE_STRING;
++        answers.n_merges = (int64_t) gguf_get_arr_n(ctx, merges_keyidx);
++    }
++
++    // tokenizer.ggml.precompiled_charsmap: presence, array type, element type,
++    // length and the xcda_blob_size header value. The blob is only read when
++    // the element type is a byte type and the blob holds the 4-byte header; the
++    // module classifies the other cases itself.
++    const int charsmap_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str());
++    if (charsmap_keyidx != -1) {
++        answers.charsmap_present    = 1;
++        answers.charsmap_kv_is_array = gguf_get_kv_type(ctx, charsmap_keyidx) == GGUF_TYPE_ARRAY;
++        if (answers.charsmap_kv_is_array) {
++            const gguf_type pc_type = gguf_get_arr_type(ctx, charsmap_keyidx);
++            answers.charsmap_is_i8_or_u8 = (pc_type == GGUF_TYPE_INT8 || pc_type == GGUF_TYPE_UINT8);
++            answers.charsmap_len = (int64_t) gguf_get_arr_n(ctx, charsmap_keyidx);
++            if (answers.charsmap_is_i8_or_u8 && answers.charsmap_len >= (int64_t) sizeof(uint32_t)) {
++                memcpy(&answers.charsmap_blob, gguf_get_arr_data(ctx, charsmap_keyidx), sizeof(uint32_t));
++#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
++                answers.charsmap_blob = __builtin_bswap32(answers.charsmap_blob);
++#endif
++            }
++        }
++    }
++
++    fg_goose_vt_decision decision;
++    if (fg_goose_vocab_type_decide(tokenizer_model, tokenizer_pre, answers, decision) != 0) {
++        // The refusal text is the native one, byte for byte.
++        throw std::runtime_error(decision.error);
++    }
++
++    type     = (enum llama_vocab_type)     decision.type;
++    pre_type = (enum llama_vocab_pre_type) decision.pre_type;
++
++    special_bos_id  = decision.bos;
++    special_eos_id  = decision.eos;
++    special_unk_id  = decision.unk;
++    special_sep_id  = decision.sep;
++    special_pad_id  = decision.pad;
++    special_mask_id = decision.mask;
++
++    add_space_prefix   = decision.add_space_prefix   != 0;
++    escape_whitespaces = decision.escape_whitespaces != 0;
++    clean_spaces       = decision.clean_spaces       != 0;
++    ignore_merges      = decision.ignore_merges      != 0;
++    add_bos            = decision.add_bos            != 0;
++    add_eos            = decision.add_eos            != 0;
++    add_sep            = decision.add_sep            != 0;
++
++    normalizer_opts.lowercase = decision.lower_case != 0;
++
++    if (!decision.pre_out.empty()) {
++        tokenizer_pre = decision.pre_out;
++    }
++
++    if (type == LLAMA_VOCAB_TYPE_NONE) {
++        linefeed_id = LLAMA_TOKEN_NULL;
++
++        // read vocab size from metadata
++        uint32_t n_tokens = 0;
++        if (ml.get_key(LLM_KV_VOCAB_SIZE, n_tokens, false)) {
++            LLAMA_LOG_WARN("%s: adding %u dummy tokens\n", "load", n_tokens);
++            id_to_token.resize(n_tokens);
++        }
++
++        return true;
++    }
++
++    // Arrays stay host-owned. The module counted the merges and validated the
++    // charsmap header; the values are read here, exactly as native reads them.
++    if (type == LLAMA_VOCAB_TYPE_BPE && merges_keyidx != -1) {
++        const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
++        for (int i = 0; i < n_merges; i++) {
++            const std::string word = gguf_get_arr_str(ctx, merges_keyidx, i);
++
++            std::string first;
++            std::string second;
++
++            const size_t pos = word.find(' ', 1);
++
++            if (pos != std::string::npos) {
++                first  = word.substr(0, pos);
++                second = word.substr(pos + 1);
++            }
++
++            bpe_ranks.emplace(std::make_pair(first, second), i);
++        }
++    }
++
++    if (type == LLAMA_VOCAB_TYPE_UGM && charsmap_keyidx != -1 &&
++        answers.charsmap_kv_is_array && answers.charsmap_is_i8_or_u8) {
++        const size_t n_precompiled_charsmap = gguf_get_arr_n(ctx, charsmap_keyidx);
++        const char * pc = (const char *) gguf_get_arr_data(ctx, charsmap_keyidx);
++        precompiled_charsmap.assign(pc, pc + n_precompiled_charsmap);
++#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
++        // correct endianness of data in precompiled_charsmap binary blob
++        if (precompiled_charsmap.size() >= sizeof(uint32_t)) {
++            uint32_t * xcda_blob_size = (uint32_t *) &precompiled_charsmap[0];
++            *xcda_blob_size = __builtin_bswap32(*xcda_blob_size);
++            size_t xcda_array_size = *xcda_blob_size / sizeof(uint32_t);
++            uint32_t * xcda_array = (uint32_t *) &precompiled_charsmap[sizeof(uint32_t)];
++            for (size_t i = 0; i < xcda_array_size; ++i) {
++                xcda_array[i] = __builtin_bswap32(xcda_array[i]);
++            }
++        }
++#endif
++    }
++
++    ml.get_key(LLM_KV_TOKENIZER_ADD_PREFIX,      add_space_prefix,         false);
++    ml.get_key(LLM_KV_TOKENIZER_REMOVE_EXTRA_WS, remove_extra_whitespaces, false);
++
++    return false;
++}
++#endif
++
++void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
++    struct gguf_context * ctx = ml.metadata;
++
++    // determine vocab type
++    // staged: the decision lives in determine_vocab_type(); a true return means
++    // the model carries no vocabulary and the rest of load() is skipped.
++    if (determine_vocab_type(ml, kv)) {
++        return;
+     }
+ 
+     const int token_idx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_LIST).c_str());
+@@ -3206,6 +3372,99 @@
+ // #define PRETOKENIZERDEBUG
+ 
+ void llama_vocab::impl::tokenizer_st_partition(std::forward_list<fragment_buffer_variant> & buffer, bool parse_special) const {
++#ifdef FG_GOOSE_TOKENIZER
++    // No special tokens: the native function would walk the buffer and change
++    // nothing, so take the same shortcut without building the module arrays.
++    if (cache_special_tokens.empty()) {
++        tokenizer_st_partition_native(buffer, parse_special);
++        return;
++    }
++
++    const int64_t n_tok   = (int64_t) id_to_token.size();
++    const int64_t n_order = (int64_t) cache_special_tokens.size();
++
++    int64_t text_bytes = 0;
++    for (const auto & t : id_to_token) {
++        if (t.text.empty()) {
++            // The native loop cannot advance past a zero-length match; the
++            // loader refuses such a vocab upstream. Refuse it loudly instead of
++            // spinning.
++            throw std::runtime_error("tokenizer_st_partition: empty special token text");
++        }
++        text_bytes += (int64_t) t.text.size();
++    }
++
++    std::vector<int64_t> tok_off (n_tok);
++    std::vector<int64_t> tok_len (n_tok);
++    std::vector<int64_t> tok_attr(n_tok);
++    std::vector<char>    tok_text((size_t) text_bytes + 1);
++
++    int64_t at = 0;
++    for (int64_t i = 0; i < n_tok; ++i) {
++        tok_off[i]  = at;
++        tok_len[i]  = (int64_t) id_to_token[i].text.size();
++        tok_attr[i] = (int64_t) id_to_token[i].attr;
++        memcpy(tok_text.data() + at, id_to_token[i].text.data(), (size_t) tok_len[i]);
++        at += tok_len[i];
++    }
++
++    std::vector<int64_t> order(n_order);
++    for (int64_t i = 0; i < n_order; ++i) {
++        order[i] = (int64_t) cache_special_tokens[i];
++    }
++
++    std::forward_list<fragment_buffer_variant> out;
++    auto it_out = out.before_begin();
++
++    for (const auto & fragment : buffer) {
++        if (fragment.type != FRAGMENT_BUFFER_VARIANT_TYPE_RAW_TEXT) {
++            it_out = out.emplace_after(it_out, fragment.token);
++            continue;
++        }
++
++        const int64_t base = (int64_t) fragment.offset;
++        const int64_t len  = (int64_t) fragment.length;
++
++        // Each match adds at most two fragments; the bound is the one the gate
++        // was measured on (see special-partition.goose).
++        const int64_t cap = 4 * (len + 2) + 16 * n_order + 16;
++
++        std::vector<int64_t> out_kind((size_t) cap);
++        std::vector<int64_t> out_tok ((size_t) cap);
++        std::vector<int64_t> out_off ((size_t) cap);
++        std::vector<int64_t> out_len ((size_t) cap);
++
++        const int64_t n = fg_goose_st_partition(fragment.raw_text.data() + base, len,
++                                                n_tok,
++                                                tok_off.data(), tok_len.data(),
++                                                tok_text.data(), tok_attr.data(),
++                                                order.data(), n_order,
++                                                parse_special ? 1 : 0,
++                                                out_kind.data(), out_tok.data(),
++                                                out_off.data(), out_len.data(),
++                                                cap);
++        if (n < 0) {
++            throw std::runtime_error("tokenizer_st_partition: fragment budget exhausted");
++        }
++
++        for (int64_t i = 0; i < n; ++i) {
++            if (out_kind[i] == 0) {
++                it_out = out.emplace_after(it_out, (llama_token) out_tok[i]);
++            } else {
++                it_out = out.emplace_after(it_out, fragment.raw_text,
++                                           base + out_off[i], out_len[i]);
++            }
++        }
++    }
++
++    buffer = std::move(out);
++#else
++    tokenizer_st_partition_native(buffer, parse_special);
++#endif
++}
++
++void llama_vocab::impl::tokenizer_st_partition_native(
++std::forward_list<fragment_buffer_variant> & buffer, bool parse_special) const {
+     // for each special token
+     for (const llama_token special_id : cache_special_tokens) {
+         const auto & data = vocab.get_token_data(special_id);

@@ -1,0 +1,193 @@
+OK vt/no-vocab | st=0 type=NONE pre=DEFAULT ids=-1,-1,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/none | st=0 type=NONE pre=DEFAULT ids=-1,-1,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/no-vocab-vocab-size | st=0 type=NONE pre=DEFAULT ids=-1,-1,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/llama | st=0 type=SPM pre=DEFAULT ids=1,2,0,-1,-1,-1 fl=1,1,0,0,1,0,0 lo=1 nm=0 err=
+OK vt/llama-pre-ignored | st=0 type=SPM pre=DEFAULT ids=1,2,0,-1,-1,-1 fl=1,1,0,0,1,0,0 lo=1 nm=0 err=
+OK vt/bert | st=0 type=WPM pre=DEFAULT ids=101,-1,100,102,0,103 fl=0,1,1,0,1,0,1 lo=1 nm=0 err=
+OK vt/bert-pre-ignored | st=0 type=WPM pre=DEFAULT ids=101,-1,100,102,0,103 fl=0,1,1,0,1,0,1 lo=1 nm=0 err=
+OK vt/rwkv | st=0 type=RWKV pre=DEFAULT ids=-1,-1,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/plamo2 | st=0 type=PLAMO2 pre=DEFAULT ids=1,2,0,-1,3,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/test-tree-gap | st=1 err=unknown tokenizer: 'test'
+OK vt/plamo3-tree-gap | st=1 err=unknown tokenizer: 'plamo3'
+OK vt/unknown-model | st=1 err=unknown tokenizer: 'nope'
+OK vt/gpt2-empty-pre | st=0 type=BPE pre=DEFAULT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-default | st=0 type=BPE pre=DEFAULT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-qwen2 | st=0 type=BPE pre=QWEN2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-llama3 | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/gpt2-chatglm | st=0 type=BPE pre=CHATGLM4 ids=-1,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-glm4 | st=0 type=BPE pre=CHATGLM4 ids=-1,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-tekken | st=0 type=BPE pre=TEKKEN ids=11,11,-1,-1,-1,-1 fl=0,0,0,1,1,0,0 lo=1 nm=4 err=
+OK vt/gpt2-gpt4o | st=0 type=BPE pre=GPT4O ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-youtu | st=0 type=BPE pre=YOUTU ids=11,11,-1,-1,-1,-1 fl=0,0,0,1,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-gemma4-pre | st=0 type=BPE pre=GEMMA4 ids=11,11,-1,-1,-1,-1 fl=0,1,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-sarvam | st=0 type=BPE pre=SARVAM_MOE ids=11,11,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-deepseek-v3 | st=0 type=BPE pre=DEEPSEEK3_LLM ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-jina-sep | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,1 lo=1 nm=4 err=
+OK vt/gpt2-chameleon | st=0 type=BPE pre=CHAMELEON ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,1,0,0 lo=1 nm=4 err=
+OK vt/gpt2-megrez | st=0 type=BPE pre=QWEN2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-exaone4 | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-minicpm5 | st=0 type=BPE pre=MINICPM5 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,0,0,0 lo=1 nm=4 err=
+OK vt/gpt2-no-merges-kimi | st=0 type=BPE pre=KIMI_K2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/gpt2-no-merges | st=3 err=cannot find tokenizer merges in model file
+OK vt/gpt2-merges-not-arr | st=4 err=invalid gguf type for tokenizer.ggml.merges
+OK vt/gpt2-merges-not-str | st=4 err=invalid gguf type for tokenizer.ggml.merges
+OK vt/gpt2-unknown-pre | st=2 err=unknown pre-tokenizer type: 'no-such-pre'
+OK vt/gpt2-pre-flint-gap | st=2 err=unknown pre-tokenizer type: 'flint'
+OK vt/hybriddna | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/whitespace-model | st=0 type=BPE pre=WHITESPACE ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=0 nm=4 err=
+OK vt/gpt2-zero-merges | st=0 type=BPE pre=DEFAULT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=0 err=
+OK vt/t5-no-charsmap | st=0 type=UGM pre=DEFAULT ids=-1,1,2,-1,0,-1 fl=0,1,0,0,0,1,0 lo=1 nm=0 err=
+OK vt/t5-charsmap-ok | st=0 type=UGM pre=DEFAULT ids=-1,1,2,-1,0,-1 fl=0,1,0,0,0,1,0 lo=1 nm=0 err=
+OK vt/t5-charsmap-blob | st=6 err=Index out of array bounds in precompiled charsmap!
+OK vt/t5-charsmap-small | st=5 err=precompiled_charsmap too small for xcda_blob_size header!
+OK vt/t5-charsmap-kv-type | st=4 err=invalid gguf type for tokenizer.ggml.precompiled_charsmap
+OK vt/t5-charsmap-el-type | st=4 err=invalid gguf type for tokenizer.ggml.precompiled_charsmap
+OK vt/gemma4 | st=0 type=BPE pre=GEMMA4 ids=-1,-1,-1,-1,-1,-1 fl=0,1,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gemma4-pre | st=0 type=BPE pre=GEMMA4 ids=-1,-1,-1,-1,-1,-1 fl=0,1,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/gemma4-no-merges | st=3 err=cannot find tokenizer merges in model file
+OK vt/gemma4-merges-type | st=4 err=invalid gguf type for tokenizer.ggml.merges
+OK vt/sweep-model/bert | st=0 type=WPM pre=DEFAULT ids=101,-1,100,102,0,103 fl=0,1,1,0,1,0,1 lo=1 nm=0 err=
+OK vt/sweep-model/gemma4 | st=0 type=BPE pre=GEMMA4 ids=-1,-1,-1,-1,-1,-1 fl=0,1,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-model/gpt2 | st=0 type=BPE pre=DEFAULT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-model/hybriddna | st=0 type=BPE pre=DEFAULT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-model/llama | st=0 type=SPM pre=DEFAULT ids=1,2,0,-1,-1,-1 fl=1,1,0,0,1,0,0 lo=1 nm=0 err=
+OK vt/sweep-model/no_vocab | st=0 type=NONE pre=DEFAULT ids=-1,-1,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/sweep-model/none | st=0 type=NONE pre=DEFAULT ids=-1,-1,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/sweep-model/plamo2 | st=0 type=PLAMO2 pre=DEFAULT ids=1,2,0,-1,3,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/sweep-model/rwkv | st=0 type=RWKV pre=DEFAULT ids=-1,-1,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=0 err=
+OK vt/sweep-model/t5 | st=0 type=UGM pre=DEFAULT ids=-1,1,2,-1,0,-1 fl=0,1,0,0,0,1,0 lo=1 nm=0 err=
+OK vt/sweep-model/whitespace | st=0 type=BPE pre=DEFAULT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/a.x-4.0 | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/afmoe | st=0 type=BPE pre=AFMOE ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/bailingmoe | st=0 type=BPE pre=BAILINGMOE ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/bailingmoe2 | st=0 type=BPE pre=BAILINGMOE ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/bloom | st=0 type=BPE pre=BLOOM ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/chameleon | st=0 type=BPE pre=CHAMELEON ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/chatglm-bpe | st=0 type=BPE pre=CHATGLM4 ids=-1,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/codeshell | st=0 type=BPE pre=CODESHELL ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/cohere2moe | st=0 type=BPE pre=TINY_AYA ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/command-r | st=0 type=BPE pre=COMMAND_R ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/dbrx | st=0 type=BPE pre=DBRX ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/deepseek-coder | st=0 type=BPE pre=DEEPSEEK_CODER ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/deepseek-llm | st=0 type=BPE pre=DEEPSEEK_LLM ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/deepseek-r1-qwen | st=0 type=BPE pre=QWEN2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/deepseek-v3 | st=0 type=BPE pre=DEEPSEEK3_LLM ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/default | st=0 type=BPE pre=DEFAULT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/exaone | st=0 type=BPE pre=EXAONE ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/exaone-moe | st=0 type=BPE pre=EXAONE_MOE ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/exaone4 | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/f2llmv2 | st=0 type=BPE pre=QWEN2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/falcon | st=0 type=BPE pre=FALCON ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/falcon-h1 | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/falcon3 | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/gemma4 | st=0 type=BPE pre=GEMMA4 ids=11,11,-1,-1,-1,-1 fl=0,1,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/gigachat | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/glm4 | st=0 type=BPE pre=CHATGLM4 ids=-1,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/gpt-2 | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/gpt-4o | st=0 type=BPE pre=GPT4O ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/gpt3-finnish | st=0 type=BPE pre=GPT3_FINNISH ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/granite-docling | st=0 type=BPE pre=GRANITE_DOCLING ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/granite-embed-multi-311m | st=0 type=BPE pre=GEMMA4 ids=11,11,-1,-1,-1,-1 fl=0,1,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/granite-embed-multi-97m | st=0 type=BPE pre=GRANITE_EMB_MULTI ids=11,11,-1,-1,-1,-1 fl=0,0,0,1,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/grok-2 | st=0 type=BPE pre=GROK_2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/hunyuan | st=0 type=BPE pre=HUNYUAN ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/hunyuan-dense | st=0 type=BPE pre=HUNYUAN_DENSE ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/jais | st=0 type=BPE pre=JAIS ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/jais-2 | st=0 type=BPE pre=JAIS2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/jina-de | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/jina-es | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/jina-v1-en | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,1 lo=1 nm=4 err=
+OK vt/sweep-pre/jina-v2-code | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,1 lo=1 nm=4 err=
+OK vt/sweep-pre/jina-v2-de | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/jina-v2-es | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/jina-v5-nano | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/joyai-llm | st=0 type=BPE pre=JOYAI_LLM ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/kanana2 | st=0 type=BPE pre=GPT4O ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/kimi-k2 | st=0 type=BPE pre=KIMI_K2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/kormo | st=0 type=BPE pre=QWEN2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/laguna | st=0 type=BPE pre=LAGUNA ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/lfm2 | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/llada-moe | st=0 type=BPE pre=BAILINGMOE ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/llama-bpe | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/llama-v3 | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/llama3 | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/llama4 | st=0 type=BPE pre=GPT4O ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/megrez | st=0 type=BPE pre=QWEN2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/mellum | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/mellum2 | st=0 type=BPE pre=MELLUM2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/midm-2.0 | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/minerva-7b | st=0 type=BPE pre=MINERVA ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/minicpm5 | st=0 type=BPE pre=MINICPM5 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/minimax-m2 | st=0 type=BPE pre=MINIMAX_M2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/modern-bert | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/mpt | st=0 type=BPE pre=MPT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/olmo | st=0 type=BPE pre=OLMO ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/phi-2 | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/pixtral | st=0 type=BPE pre=LLAMA3 ids=11,11,-1,-1,-1,-1 fl=0,0,1,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/poro-chat | st=0 type=BPE pre=PORO ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/qwen2 | st=0 type=BPE pre=QWEN2 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/qwen35 | st=0 type=BPE pre=QWEN35 ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/refact | st=0 type=BPE pre=REFACT ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/roberta-bpe | st=0 type=BPE pre=GPT2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,1 lo=1 nm=4 err=
+OK vt/sweep-pre/sarvam-moe | st=0 type=BPE pre=SARVAM_MOE ids=11,11,-1,-1,-1,-1 fl=0,1,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/seed-coder | st=0 type=BPE pre=SEED_CODER ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/smaug-bpe | st=0 type=BPE pre=SMAUG ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/smollm | st=0 type=BPE pre=SMOLLM ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/solar-open | st=0 type=BPE pre=SOLAR_OPEN ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/stablelm2 | st=0 type=BPE pre=STABLELM2 ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/starcoder | st=0 type=BPE pre=STARCODER ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/superbpe | st=0 type=BPE pre=SUPERBPE ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/talkie | st=0 type=BPE pre=GPT4O ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/tekken | st=0 type=BPE pre=TEKKEN ids=11,11,-1,-1,-1,-1 fl=0,0,0,1,1,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/tiny_aya | st=0 type=BPE pre=TINY_AYA ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/trillion | st=0 type=BPE pre=TRILLION ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/viking | st=0 type=BPE pre=VIKING ids=11,11,-1,-1,-1,-1 fl=0,0,0,0,0,0,0 lo=1 nm=4 err=
+OK vt/sweep-pre/whitespace | st=0 type=BPE pre=WHITESPACE ids=11,11,-1,-1,-1,-1 fl=0,0,1,0,0,0,0 lo=0 nm=4 err=
+OK vt/sweep-pre/youtu | st=0 type=BPE pre=YOUTU ids=11,11,-1,-1,-1,-1 fl=0,0,0,1,0,0,0 lo=1 nm=4 err=
+OK part/plain-no-special | 1:-1:0:11;
+OK part/one-token | 1:-1:0:1;0:0:0:0;1:-1:4:1;
+OK part/adjacent | 0:0:0:0;0:0:0:0;
+OK part/token-only | 0:0:0:0;
+OK part/leading | 0:0:0:0;1:-1:3:3;
+OK part/trailing | 1:-1:0:3;0:0:0:0;
+OK part/control-skip | 1:-1:0:5;
+OK part/unknown-skip | 1:-1:0:5;
+OK part/user-kept | 1:-1:0:1;0:0:0:0;1:-1:4:1;
+OK part/control-and-user | 1:-1:0:5;
+OK part/lstrip | 1:-1:0:1;0:0:0:0;1:-1:7:1;
+OK part/rstrip | 1:-1:0:1;0:0:0:0;1:-1:7:1;
+OK part/both-strip | 1:-1:0:1;0:0:0:0;1:-1:8:1;
+OK part/strip-to-empty | 0:0:0:0;
+OK part/two-tokens-order | 1:-1:0:1;0:1:0:0;1:-1:4:1;0:0:0:0;1:-1:8:1;
+OK part/nested-order | 0:1:0:0;0:0:0:0;
+OK part/repeat-overlap | 0:0:0:0;0:0:0:0;
+OK part/utf8 | 1:-1:0:6;0:0:0:0;1:-1:9:6;
+OK part/no-match | 1:-1:0:10;
+OK part/three-specials | 0:0:0:0;0:1:0:0;0:2:0:0;
+OK strip/<empty> | []
+OK strip/  | []
+OK strip/    | []
+OK strip/a | [a]
+OK strip/  a   | [a]
+OK strip/ a b  | [a b]
+OK strip/	
+ a 	
+ | [a]
+OK strip/
+
+x
+
+ | [x]
+OK strip/ x	y  | [x	y]
+OK strip/	 | []
+OK strip/a  b | [a  b]
+OK strip/  hello   world   | [hello   world]
+OK strip/ héllo  | [héllo]
+OK strip/
+line
+ | [line]
+OK strip/no-space-at-all | [no-space-at-all]
+OK strip/ 	two
+words  | [two
+words]
+FG639_SMOKE mode=goose vt=146/146 part=20/20 strip=16/16 cases=182/182 failures=0 goose_calls=182 pins=2

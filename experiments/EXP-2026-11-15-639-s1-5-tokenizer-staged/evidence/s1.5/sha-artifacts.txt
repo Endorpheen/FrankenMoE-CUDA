@@ -1,0 +1,7 @@
+0be7c3e4eb44d3607b9d2cf463a344082da02bd4c2f87bd79458a56ec690fdd1  build-off/bin/libllama.so.0.3.0
+e6177d16ca289032bba64b104c11dc15bdeb338b37d5dc18fc09c7ddaecd5953  build-off/bin/libllama-common.so.0.3.0
+4af19ebf4d4a2862fb555e7c5ec186835248b9fc2c9706328063279804083670  build-on/bin/libllama.so.0.3.0
+aaef4e0c768391af4bc1fb363082c43726c4c475c3e3b46b5a891e61cdf3a827  build-on/bin/libllama-common.so.0.3.0
+5e09b88e1da028f575e31ea2e73d1c7e5c24546d419e0f0b35f2cf69a1cd33cf  build-on/CMakeFiles/fg-goose-tokenizer.dir/goose-gen/tokenizer-decisions.c.o
+432c4f73ecdf35648a47d1b686b3288f1116210b2f7c2864dad7b072286ff329  build-gate/fg-goose-tokenizer-smoke-off
+9b94c6d2b967cf08f7de27650cfa2b3ee0c8a9cd2edf66f75ed19a2f170b7bf1  build-gate/fg-goose-tokenizer-smoke-on

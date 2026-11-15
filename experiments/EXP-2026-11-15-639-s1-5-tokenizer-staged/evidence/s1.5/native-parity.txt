@@ -1,0 +1,4 @@
+PARITY ok    src/llama-vocab.cpp: determine vocab type (481 native lines)
+PARITY ok    src/llama-vocab.cpp: tokenizer_st_partition (115 native lines)
+PARITY ok    common/common.cpp: string_strip (9 native lines)
+PARITY PASS 3/3

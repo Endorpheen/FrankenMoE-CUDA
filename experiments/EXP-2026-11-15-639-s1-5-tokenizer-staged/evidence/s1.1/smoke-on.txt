@@ -1,0 +1,2 @@
+WARNING: JSON schema conversion was incomplete: pattern [0-9]+ is not supported (not anchored with '^' and '$'), accepting any string
+FG629_SMOKE mode=goose cases=30 rules=182 failures=0 goose_calls=30
