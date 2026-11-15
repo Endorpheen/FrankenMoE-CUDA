@@ -50,6 +50,40 @@ a view with an offset is what the module's modes 23/24 provide (`cont` over a
 slice). Building that is the next step; guessing the order would produce a graph
 that runs and computes the wrong thing.
 
+## 2b. The exact split, from the native builder
+
+`upstream/llama.cpp/src/models/qwen35moe.cpp:293-300` gives the contract, so it does
+not have to be guessed:
+
+```c
+// Order: joint QG projection, QG split, Q norm, KV projection, K norm, RoPE, attention
+ggml_tensor * Qcur_full = build_lora_mm(wq, cur);   // [(n_embd_head * 2) * n_head, n_tokens]
+ggml_tensor * Qcur = ggml_view_3d(ctx0, Qcur_full, n_embd_head, n_head, n_tokens,
+    ggml_element_size(Qcur_full) * n_embd_head * 2,
+    ggml_element_size(Qcur_full) * n_embd_head * 2 * n_head, 0);
+```
+
+So q and gate are **interleaved per head**, not split into two halves: the head
+stride is `2 * n_embd_head` and the gate sits at offset `n_embd_head * element_size`
+inside each head. A half-and-half split would produce a graph that runs and computes
+nonsense.
+
+What that requires of the runtime, stated precisely:
+
+1. A view-with-offset-and-stride primitive. The module's `fg158_view` maps to
+   `ggml_view_tensor`, which has no offset, so this is the one missing translation.
+   Its signature has to carry `nb1`, `nb2`, `nb3` and `offset`, not just extents,
+   because the stride is what encodes the interleaving.
+2. A Goose decision for the two views: extents `[n_embd_head, n_head, n_tokens, 1]`,
+   stride `2*n_embd_head`, offsets `0` and `n_embd_head` elements. That is a
+   three-line export, but it is a decision and belongs in Goose rather than in the
+   host.
+3. The gate application after attention: `attn * silu(gate)`, then the output
+   projection.
+
+Adding (1) without (2) would be an adapter with no Goose caller, which the debt rule
+forbids; so both land together or not at all.
+
 ## 3. What is still proven
 
 Each node individually, bit-exact against the substrate, at real Apex extents:
