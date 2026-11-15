@@ -1,0 +1,12 @@
+--- /tmp/opencode/cmake-bak.txt	2026-11-15 09:30:16.297063475 +0300
++++ /tmp/opencode/sub-659/tree/CMakeLists.txt	2026-11-15 09:30:16.314055750 +0300
+@@ -49,6 +49,9 @@
+         FG_GOOSE_JSON_SCHEMA FG_GOOSE_GGUF FG_GOOSE_QUANT FG_GOOSE_METRICS
+         FG_GOOSE_TOKENIZER FG_GOOSE_STREAM FG_GOOSE_CONFIG FG_GOOSE_SPEC
+         FG_GOOSE_MODELS FG_GOOSE_SESSION)
++    if(DEFINED ${flag} AND NOT "${${flag}}" MATCHES "^(ON|OFF|TRUE|FALSE|YES|NO|1|0)$")
++        message(FATAL_ERROR "${flag} must be ON or OFF, got '${${flag}}'")
++    endif()
+     if(${flag})
+         set(FG_GOOSE_RUNTIME ON)
+     endif()

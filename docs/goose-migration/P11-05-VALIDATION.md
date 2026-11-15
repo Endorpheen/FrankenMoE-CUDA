@@ -28,7 +28,7 @@ Run against the M1 tree:
 | missing host adapter fails the ON build | ok (no silent fallback) |
 | restored OFF build recovers (rollback) | ok |
 | restored ON build recovers | ok |
-| wrong flag value rejected at configure | **known gap**: CMake `option()` treats any non-false value as ON, so `-D...=bogus` configures and builds; value validation is not implemented |
+| wrong flag value rejected at configure | ok with `patches/cmake-flag-validation.diff`: `FG_GOOSE_*` must match ON/OFF/TRUE/FALSE/YES/NO/1/0, and `-DFG_GOOSE_JSON_SCHEMA=bogus` now stops configure with `FATAL_ERROR` (verified on the M1 tree) |
 
 ## Still open
 
@@ -36,8 +36,8 @@ The remaining failure-recovery matrix:
 
 1. A missing generated C or adapter object must fail the link, not fall back
    silently. (Verified for the adapter; a missing generated C is the same class.)
-2. Validate the flag values in CMake so a bogus value is rejected instead of
-   being treated as ON.
+2. Apply the flag-validation patch (verified in isolation; not yet in the
+   staged trees).
 3. A broken IQ table registration must abort loudly (the current guard widens to
    `FG_GOOSE_RUNTIME`).
 4. A partially switched build must still link and run the native path.
