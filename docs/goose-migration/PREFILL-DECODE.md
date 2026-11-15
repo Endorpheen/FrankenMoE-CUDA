@@ -23,7 +23,22 @@ These are not opinions; every one terminated a run.
 5. **The projection output is `n_embd` wide, not the head width.** `wo` maps `HD` back to
    `K`, so a per-token row of the result is `K` floats.
 
-## The failure that stopped me
+## RESOLVED — EXP-2026-11-15-706
+
+The 27-of-32 discrepancy was f32 rounding between flash-attention tilings, not a wiring
+failure. Rebuilt as ONE shared chain with the arms differing only in `n_q` and mask width:
+
+```
+tokens=4 bit_diff=27 max_abs=4.77e-07 rel=1.14e-07 wrong_pos_max=3.33 sensitive=1 PASS
+```
+
+The bound (rel < 1e-5) is stated before the run, and a sensitivity control runs the same
+decode with the wrong rope position, which differs seven orders of magnitude more. That
+control is what makes the comparison meaningful.
+
+The section below is kept as the record of the failed attempt and of what it cost.
+
+## The failure that stopped the first attempt
 
 With 1-5 all satisfied, a 4-token prefill and a decode step over the same k/v still
 disagree in 27 of 32 output elements. Both arms run, both produce finite values, the mask
