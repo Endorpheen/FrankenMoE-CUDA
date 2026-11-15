@@ -56,6 +56,8 @@ MODULES=(
     goose/cpu/goose-meta-backend.goose
     goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
+    goose/model/control-vectors.goose
+    goose/model/lora-apply.goose
     goose/model/special-partition.goose
     goose/misc/common-strings.goose
     goose/misc/edge0-pack-index.goose
