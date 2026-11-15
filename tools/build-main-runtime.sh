@@ -83,6 +83,9 @@ MODULES=(
     goose/misc/cpp-headers.goose
     goose/misc/sched-eval.goose
     goose/cuda/dispatch.goose
+    goose/cuda/cuda-arch-policy.goose
+    goose/cuda/cuda-target-flags.goose
+    goose/cuda/cuda-install-layout.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose

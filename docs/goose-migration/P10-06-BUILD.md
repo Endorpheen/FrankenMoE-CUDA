@@ -28,7 +28,20 @@ byte-identical for the same input.
 - `manifest.json` with the compiler version, module count, C/object sizes,
   global and extern symbol counts and per-file hashes.
 
+## CUDA artefacts (EXP657)
+
+Three decisions are Goose in `goose/cuda/`:
+
+| slice | content | gate |
+|---|---|---|
+| architecture list | `CMAKE_CUDA_ARCHITECTURES` by `GGML_NATIVE`/toolkit/CMake version, `12X -> 12Xa`, adopted native probe | 60/60 |
+| target flags and link set | `CUDA_FLAGS`, `-Xcompiler` joining, MSVC branch, defines, cublasLt/VMM/NCCL | 34/34 |
+| backend install layout | library type, install dir, VERSION/SOVERSION, installed names, `GGML_AVAILABLE_BACKENDS` | 30/30 |
+
+All 124 cases pass at -O1 and -O0; mutations 36/36. The oracles execute
+`cmake -P`, a real configure and `cmake --install` without nvcc or GPU.
+
 ## Remaining
 
-CUDA generated artefacts and the install/release tails (dist install rules,
-signing, release assets beyond the unit package).
+Wire the CUDA arch/flags/install decisions into the host (version, probe,
+options, ggml version) and the dist install/release tails.

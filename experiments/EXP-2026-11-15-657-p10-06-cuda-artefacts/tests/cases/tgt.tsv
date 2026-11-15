@@ -1,0 +1,41 @@
+# P10-06 S2 case table: CUDA compile flags, defines and link set.
+# Tab separated, positional fields per kind:
+#   flags  cuda_major cuda_minor debug fatal mode
+#   final  cuda_major cuda_minor debug fatal mode msvc all_warn host_flags
+#   defs   peer graphs mmq cublas novmm fa nopeer nccl nccl_found debug
+#   link   static win cuda_major cuda_minor novmm nccl_found cub
+# Lines starting with # are not rows.
+flags	12	7	0	0	speed
+flags	12	8	0	0	speed
+flags	12	8	1	0	speed
+flags	12	8	1	1	balance
+flags	12	8	0	1	size
+flags	13	0	0	0	none
+flags	12	8	0	0	balance
+flags	11	8	1	1	speed
+final	12	8	0	0	speed	0	0	-
+final	12	8	0	0	speed	0	1	-Wno-unused-parameter GNU-12.3.0 -Wno-format-truncation
+final	12	8	1	1	speed	1	0	-
+final	12	8	1	0	speed	1	1	-Wno-unused-parameter GNU-12.3.0 -Wno-format-truncation
+final	12	7	0	0	speed	0	1	-Wno-unused-parameter GNU-12.3.0 -Wno-format-truncation
+final	12	9	0	0	size	0	0	-
+defs	64	0	0	0	0	1	0	0	0	0
+defs	64	1	0	0	0	1	0	0	0	0
+defs	128	0	1	0	0	1	0	0	0	0
+defs	32	0	0	1	0	1	0	0	0	0
+defs	64	0	0	0	1	1	0	0	0	0
+defs	64	0	0	0	0	0	0	0	0	0
+defs	64	0	0	0	0	1	1	0	0	0
+defs	64	0	0	0	0	1	0	1	1	1
+defs	64	0	0	0	0	1	0	1	0	1
+defs		1	1	1	1	0	1	0	1	1
+link	0	0	12	8	0	0	0
+link	0	0	12	8	1	0	0
+link	0	0	12	8	0	1	0
+link	0	0	12	8	1	1	1
+link	1	0	12	8	0	0	0
+link	1	0	12	8	1	1	0
+link	1	0	10	0	0	0	0
+link	1	1	12	8	0	0	0
+link	1	1	12	8	1	1	0
+link	1	0	10	1	0	0	0

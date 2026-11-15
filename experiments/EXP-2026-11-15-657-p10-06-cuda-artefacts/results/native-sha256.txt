@@ -1,0 +1,4 @@
+vendored llama.cpp checkout 0b5be7e4a25862bc2777d0c47eae18788a8c963a (upstream/ is gitignored, verified clean for ggml/)
+3af6c5ff1fdb622ef4ab4fe3f630995e0785e5967012694b98432952b4aabbab  tests/native/ggml-CMakeLists.txt
+893edd71a30e6990b88ff86a916fa7e5edbbb7a572d942a05a7fc083706c63e7  tests/native/ggml-cuda-CMakeLists.txt
+0e5783b891796c122f6bfcd6ee107e18fa60eceb9c04433b6c44f8096fd2acf2  tests/native/ggml-src-CMakeLists.txt

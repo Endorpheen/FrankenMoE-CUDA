@@ -1,0 +1,70 @@
+# P10-06 S1 case table: CUDA architecture list policy.
+# Tab separated. Fields are positional per case kind:
+#   default   cuda_major cuda_minor ggml_native cmake_major cmake_minor
+#   rewrite   list
+#   final     cuda_major cuda_minor ggml_native cmake_major cmake_minor native_value
+#   native_ok value
+#   valid     value list_mode
+#   kind      token
+#   sm        token
+# Lines starting with # are not rows.
+default	11	7	0	3	28
+default	11	8	0	3	28
+default	12	7	0	3	28
+default	12	8	0	3	28
+default	12	9	0	3	28
+default	13	0	0	3	28
+default	12	8	1	3	24
+default	12	8	1	3	22
+default	11	5	1	3	24
+default	10	2	0	3	28
+default	13	0	1	3	30
+rewrite	86-real
+rewrite	120-real
+rewrite	120
+rewrite	121-virtual
+rewrite	120a-real;89-real
+rewrite	119
+rewrite	1200
+rewrite	
+rewrite	129
+rewrite	120-real;120a-real;75-virtual
+final	12	8	1	3	24	89-real
+final	12	8	1	3	24	89-real;86-real
+final	12	8	1	3	24	No CUDA devices found.-real
+final	12	8	1	3	24	;89
+final	12	8	1	3	24	120a-real
+final	12	9	0	3	28	89-real
+final	11	7	0	3	28	89-real
+final	12	8	1	3	24	
+native_ok	89-real
+native_ok	89-real;86-real
+native_ok	89;
+native_ok	89;86;75-virtual
+native_ok	No CUDA devices found.-real
+native_ok	89f-real
+valid	89	0
+valid	89a	0
+valid	89-REAL	0
+valid	89-	0
+valid	a89	0
+valid	89-real	1
+valid	89f-virtual	1
+valid		0
+valid	120a	0
+kind	89
+kind	89-real
+kind	89-virtual
+kind	120a
+kind	120a-real
+kind	120a-virtual
+sm	50-virtual
+sm	61-real
+sm	70
+sm	75-virtual
+sm	80-real
+sm	86
+sm	89-real
+sm	90-virtual
+sm	120a-real
+sm	abc

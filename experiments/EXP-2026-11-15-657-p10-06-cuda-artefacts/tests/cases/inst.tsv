@@ -1,0 +1,43 @@
+# P10-06 S3 case table: install and dist layout of the CUDA backend artefact.
+# Tab separated, positional fields per kind:
+#   kind      dl shared
+#   dest      dl dir_set
+#   files     dl shared dir
+#   versioned dl apple
+#   privdefs  dl shared
+#   pubdefs   shared
+#   avail     existing
+#   version   which
+#   guard     dl dir_set
+# GGML_BACKEND_DIR is "libexec/ggml" when the case exercises it.
+# Lines starting with # are not rows.
+kind	0	1
+kind	0	0
+kind	1	0
+kind	1	1
+dest	0	0
+dest	1	0
+dest	1	1
+files	0	1	lib
+files	0	0	lib
+files	1	1	bin
+files	1	0	bin
+files	1	1	libexec/ggml
+versioned	1	1
+versioned	1	0
+versioned	0	1
+versioned	0	0
+privdefs	0	1
+privdefs	1	1
+privdefs	0	0
+privdefs	1	0
+pubdefs	1
+pubdefs	0
+avail	
+avail	ggml-cpu
+avail	ggml-cuda;ggml-cpu
+version	version
+version	soversion
+guard	0	1
+guard	0	0
+guard	1	1

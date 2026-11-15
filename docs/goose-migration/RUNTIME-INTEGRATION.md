@@ -44,9 +44,9 @@ output path, so the artifact hash is reproducible at a fixed `OUT`.
 
 The growing main build is `tools/build-main-runtime.sh`. It composes every
 accepted module that shares one unit, typechecks, generates C, compiles an
-object and fails on any duplicate global symbol. Current state: 106 modules,
-3677 specializations, 18.5 MB of C, 3 s to typecheck and 13 s to compile,
-974 global symbols, 0 duplicates, 99 extern helper entry points at -O1.
+object and fails on any duplicate global symbol. Current state: 109 modules,
+3756 specializations, 18.6 MB of C, 3 s to typecheck and 13 s to compile,
+998 global symbols, 0 duplicates, 99 extern helper entry points at -O1.
 
 The build holds the model graph/loader/file-io/arch-registry, the six quantizer
 modules plus weighted, the four GGUF modules, expert LRU, dense placement,

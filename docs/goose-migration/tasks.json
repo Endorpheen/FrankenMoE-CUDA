@@ -2553,7 +2553,7 @@
         "carrier/runtime/CMakeLists.txt"
       ],
       "acceptance": "Clean isolated build uses pinned self-hosted Goose for all owned logic; generated outputs reproducible; CPU/CUDA compile/link manifest machine-audited.",
-      "evidence": "2026-11-15: the deterministic Goose build and unit packaging are proven. tools/build-main-runtime.sh composes every accepted compatible module, typechecks, generates C, compiles at -O1 and rejects duplicate globals; --repro builds twice and fails on any byte difference (repro: ok). tools/package-main-runtime.sh writes build/goose-main/dist with the unit, C, header, object, SHA256SUMS and manifest.json (84 modules, 17971868 C bytes, 765 global symbols, 99 extern). The generated C embeds only the output path, so a fixed OUT is required for byte-level comparison. Still open: CUDA artefact generation and install/release tails.",
+      "evidence": "2026-11-15: the deterministic Goose build and unit packaging are proven. tools/build-main-runtime.sh composes every accepted compatible module, typechecks, generates C, compiles at -O1 and rejects duplicate globals; --repro builds twice and fails on any byte difference (repro: ok). tools/package-main-runtime.sh writes build/goose-main/dist with the unit, C, header, object, SHA256SUMS and manifest.json (84 modules, 17971868 C bytes, 765 global symbols, 99 extern). The generated C embeds only the output path, so a fixed OUT is required for byte-level comparison. Still open: CUDA artefact generation and install/release tails. 2026-11-15 EXP657 (experiments/EXP-2026-11-15-657-p10-06-cuda-artefacts): the CUDA architecture list (arch_: GGML_NATIVE/CUDAToolkit/CMAKE_VERSION rules, 12X->12Xa, adopted native probe), the target flags and link set (tgt_: CUDA_FLAGS, -Xcompiler joining, MSVC, defines, cublasLt/VMM/NCCL) and the backend install layout (inst_: library type, install dir, VERSION/SOVERSION, installed names, GGML_AVAILABLE_BACKENDS) are Goose. Gates 60 + 34 + 30 cases, 0 failures, byte-identical at -O0; mutations 36/36. Oracles execute cmake -P, a real cmake configure and cmake --install without nvcc or GPU. One surviving mutation was closed by adding a CUDA 12.7 threshold case.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
@@ -2561,12 +2561,13 @@
       "batch": "B5",
       "notes": "Byte-identical reproducibility of the deployed libggml-base (five lost objects, link determinism proven) is tracked here per the 2026-11-13 coordinator decision.",
       "remaining": [
-        "CUDA generated artefacts and install/packaging tails (dist install rules, signing, release assets beyond the unit package)"
+        "wire the CUDA arch/flags/install decisions into the host (version, probe, options, ggml version)",
+        "dist install/release tails beyond the unit package"
       ],
       "coverage_doc": "docs/goose-migration/P10-06-BUILD.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
-      "slices_total": 0,
-      "slices_done": 0
+      "slices_total": 3,
+      "slices_done": 3
     },
     {
       "id": "P10-07",
@@ -4676,6 +4677,10 @@
     {
       "event": "P8-09b: CORS, query transport and API-key middleware ported (EXP656, 2066 values, 36/36); P8-09 at 6/6.",
       "checkpoint": "bb144387"
+    },
+    {
+      "event": "P10-06 CUDA: architecture, flags/link and install layout ported (EXP657, 124 cases, 36/36).",
+      "checkpoint": "9f5e2adb"
     }
   ],
   "batches": [
@@ -5566,7 +5571,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T05:24:18.634418+00:00",
+  "updated_at": "2026-11-15T05:45:54.529964+00:00",
   "status_totals": {
     "DONE": 113,
     "PARTIAL": 19,
@@ -5574,8 +5579,8 @@
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 164,
-    "slices_done": 164,
+    "slices_total": 167,
+    "slices_done": 167,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

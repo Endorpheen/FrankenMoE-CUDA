@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T05:24:22.222614+00:00",
+  "updated_at": "2026-11-15T05:45:57.891341+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -1155,6 +1155,42 @@
       "status": "ported",
       "sha256": "b073599a4ac4881615e5ca04d57ba891922991009a5da79c388ff64e3f68a3b7",
       "gate": "80 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "cuda/cuda-arch-policy.goose",
+      "native": "ggml-cuda CMakeLists (CMAKE_CUDA_ARCHITECTURES by GGML_NATIVE/version, 12X->12Xa, native probe)",
+      "native_targets": [
+        "ggml-cuda CMakeLists (CMAKE_CUDA_ARCHITECTURES by GGML_NATIVE/version, 12X->12Xa, native probe)"
+      ],
+      "experiment": "EXP-2026-11-15-657-p10-06-cuda-artefacts",
+      "task": "",
+      "status": "ported",
+      "sha256": "6973453e9da497901c2cd9998679e5c648904748ceccffbc5a6ebbea43970c8d",
+      "gate": "60 cases / 60 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "cuda/cuda-target-flags.goose",
+      "native": "ggml-cuda CUDA_FLAGS, -Xcompiler joining, MSVC branch, defines, link set (cublasLt/VMM/NCCL)",
+      "native_targets": [
+        "ggml-cuda CUDA_FLAGS, -Xcompiler joining, MSVC branch, defines, link set (cublasLt/VMM/NCCL)"
+      ],
+      "experiment": "EXP-2026-11-15-657-p10-06-cuda-artefacts",
+      "task": "",
+      "status": "ported",
+      "sha256": "2e6f8c62f17ff83057e90eba59a370b05a2eff44c4da3d7b15d2fdabf343d634",
+      "gate": "34 cases / 34 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "cuda/cuda-install-layout.goose",
+      "native": "ggml_add_backend_library (library type, install dir, VERSION/SOVERSION, installed names, backend list)",
+      "native_targets": [
+        "ggml_add_backend_library (library type, install dir, VERSION/SOVERSION, installed names, backend list)"
+      ],
+      "experiment": "EXP-2026-11-15-657-p10-06-cuda-artefacts",
+      "task": "",
+      "status": "ported",
+      "sha256": "538c99a401fdee1891b1b77005682b480ee25c01493eeb6d43a17a9ef3f1a94d",
+      "gate": "30 cases / 30 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/device-headers.goose",
