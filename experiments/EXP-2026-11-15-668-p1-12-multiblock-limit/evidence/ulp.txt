@@ -1,0 +1,4 @@
+nb=1 iters=128 differs=0 max_ulp=0 max_rel=0
+nb=2 iters=128 differs=59 max_ulp=2 max_rel=1.84e-07
+nb=4 iters=128 differs=62 max_ulp=2 max_rel=1.84e-07
+nb=8 iters=128 differs=56 max_ulp=3 max_rel=2.67e-07
