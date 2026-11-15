@@ -2605,7 +2605,7 @@
       "id": "P10-09",
       "phase": "P10",
       "title": "Port test runners,fixtures and diagnostics as needed for native-free builds",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "tests/**",
         "tools/server/tests/**",
@@ -2613,12 +2613,19 @@
         "benchmarks/**"
       ],
       "acceptance": "Candidate can be functionally tested without linking owned original implementation; original C++ tests/oracles allowed only outside production artifact.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP652 (experiments/EXP-2026-11-15-652-p10-09-test-runners): the test runner policy (tr_: registry shape, fixtures, filters, statuses, summary line, exit code), the tiny-MoE fixture plan (fx_: 195 rows - metadata, tensors, seeds, writer constructors, banners) and bench diagnostics (dg_: 22 analysed fields, throughput row, cache hit/sizing over 16 cases) are Goose. Gates: 23 scenarios, 195/195 rows and 66/66 rows, 0 failures, identical at -O0; mutations 36/36 (tr 15 including a third block). The oracles are the real CTest, the real make-tiny-moe.py and the real analyze() from bench-analyze.py. These modules cannot join the single-unit build without their drivers; the unit of typechecking is module plus driver.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "wire the runner, fixture and diagnostics decisions into runtime/tests and tools",
+        "the modules cannot join the single-unit build without their drivers (slice parameters specialize only with a caller)"
+      ],
+      "coverage_doc": "docs/goose-migration/P10-09-COVERAGE.md"
     },
     {
       "id": "P10-10",
@@ -4628,6 +4635,10 @@
     {
       "event": "P10-07: vendored-dependency licence, provenance and selection decisions ported (EXP651, 240 comparisons, 12/12); replacement plan remains.",
       "checkpoint": "9ac3eab0"
+    },
+    {
+      "event": "P10-09: test runner, fixture plan and bench diagnostics ported (EXP652, 36/36); host wiring remains.",
+      "checkpoint": "40ed8c1c"
     }
   ],
   "batches": [
@@ -5518,16 +5529,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T04:24:46.105662+00:00",
+  "updated_at": "2026-11-15T04:36:28.543373+00:00",
   "status_totals": {
     "DONE": 113,
-    "PARTIAL": 16,
-    "TODO": 23
+    "PARTIAL": 17,
+    "TODO": 22
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 149,
-    "slices_done": 149,
+    "slices_total": 152,
+    "slices_done": 152,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

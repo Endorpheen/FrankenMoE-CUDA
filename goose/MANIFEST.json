@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T04:24:49.774239+00:00",
+  "updated_at": "2026-11-15T04:36:31.992111+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -855,6 +855,42 @@
       "status": "ported",
       "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682",
       "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/test-runner.goose",
+      "native": "runtime/tests/CMakeLists.txt (test registry, fixtures, filters, statuses, summary, exit code)",
+      "native_targets": [
+        "runtime/tests/CMakeLists.txt (test registry, fixtures, filters, statuses, summary, exit code)"
+      ],
+      "experiment": "EXP-2026-11-15-652-p10-09-test-runners",
+      "task": "",
+      "status": "ported",
+      "sha256": "2f42df0fe0d69ea70913667d5f22b2695070e6c96b3f8f3c659f87d4d53a7465",
+      "gate": "23 scenarios / 0 failures, 15/15 mutations"
+    },
+    {
+      "goose": "misc/fixture-plan.goose",
+      "native": "tiny-MoE fixture generator (tensor shapes, seeds, metadata, writer modes)",
+      "native_targets": [
+        "tiny-MoE fixture generator (tensor shapes, seeds, metadata, writer modes)"
+      ],
+      "experiment": "EXP-2026-11-15-652-p10-09-test-runners",
+      "task": "",
+      "status": "ported",
+      "sha256": "3a6ed27760f9842768431c1aa984a01acff0cee700aa0e5d433040fa4786893d",
+      "gate": "195/195 rows identical, 12/12 mutations"
+    },
+    {
+      "goose": "metrics/bench-diagnostics.goose",
+      "native": "bench-analyze.py and trace_io.percentile (22 fields, throughput row, cache hit/sizing)",
+      "native_targets": [
+        "bench-analyze.py and trace_io.percentile (22 fields, throughput row, cache hit/sizing)"
+      ],
+      "experiment": "EXP-2026-11-15-652-p10-09-test-runners",
+      "task": "",
+      "status": "ported",
+      "sha256": "c79f6718fff6d671b80603716f6052bb3b3cfc6712dc04f77bb160da0f07d00f",
+      "gate": "66/66 rows identical over 16 cases, 12/12 mutations"
     },
     {
       "goose": "misc/tallies.goose",
