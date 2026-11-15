@@ -67,6 +67,9 @@ MODULES=(
     goose/misc/ggml-type-table.goose
     goose/misc/public-enum-values.goose
     goose/misc/public-name-tables.goose
+    goose/misc/file-reader-windows.goose
+    goose/misc/proc-readers.goose
+    goose/misc/shard-naming.goose
     goose/jinja/runtime.goose
     goose/json/format-grammar.goose
     goose/cli/config-validate.goose

@@ -2658,18 +2658,25 @@
       "id": "P10-12",
       "phase": "P10",
       "title": "Verify complete source/entrypoint inventory has no residual native logic",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "docs/goose-migration/source-audit.json",
         "all audited roots"
       ],
       "acceptance": "Every Apex/shared implementation path and public entrypoint maps to completed Goose task or audited primitive; remaining architecture/platform sources are explicit compatibility tasks, never hidden exemptions.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP647 (experiments/EXP-2026-11-15-647-p10-12-residual-io): the residual inventory covers 237 owned files: 15 of 19 carrier .cpp are covered by accepted slices, 3 were uncovered and are now ported (file_reader.cpp read windows/alignment, platform_io.cpp /proc grammar and residency, gguf_offsets.cpp shard naming), 2 files keep 7 regions (session.cpp tallies/prefill/trace/MTP/sampler, cli main moe-predict/driver), 3 units are substrate by decision and 98 files are non-production. Gates 105/486 + 132/417 + 97/145, 0 failures, identical at -O0; mutations 36/36. 15 gaps are recorded with owners; 3 are closed by these slices and 12 remain. Entry points were checked: no unaccounted copy of a ported decision was found.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "close the 12 residual gaps from the audit (G1 tallies, G2/G3 prefill plan and trace order, G6 moe-predict report, and the rest listed in REPORT.md)",
+        "unaccounted entry points: none found; E2/E3/E4/E5 stay native substrate"
+      ],
+      "coverage_doc": "docs/goose-migration/P10-12-COVERAGE.md"
     },
     {
       "id": "P11-01",
@@ -4576,6 +4583,10 @@
     {
       "event": "P10-08: public ABI tables, 187 constants and name tables ported (EXP646, 811 comparisons, 12/12); headers/SONAME remain open.",
       "checkpoint": "51305fd5"
+    },
+    {
+      "event": "P10-12: residual I/O audit plus three ported slices (EXP647, 1048 values, 36/36); 12 gaps remain with owners.",
+      "checkpoint": "570c4e2d"
     }
   ],
   "batches": [
@@ -5466,16 +5477,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T03:13:16.044481+00:00",
+  "updated_at": "2026-11-15T03:20:12.540362+00:00",
   "status_totals": {
     "DONE": 112,
-    "PARTIAL": 12,
-    "TODO": 28
+    "PARTIAL": 13,
+    "TODO": 27
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 133,
-    "slices_done": 133,
+    "slices_total": 136,
+    "slices_done": 136,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T03:13:19.415172+00:00",
+  "updated_at": "2026-11-15T03:20:16.651236+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -855,6 +855,42 @@
       "status": "ported",
       "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682",
       "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/file-reader-windows.goose",
+      "native": "runtime/core/src/io/file_reader.cpp (read windows, alignment, short reads)",
+      "native_targets": [
+        "runtime/core/src/io/file_reader.cpp (read windows, alignment, short reads)"
+      ],
+      "experiment": "EXP-2026-11-15-647-p10-12-residual-io",
+      "task": "",
+      "status": "ported",
+      "sha256": "44831274e670930ae86ac73fb677c9599c7cb64cfdf8b5c5f81b6cabc03384e1",
+      "gate": "105 cases / 486 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/proc-readers.goose",
+      "native": "runtime/core/src/io/platform_io.cpp (/proc grammar, residency window, platform predicates)",
+      "native_targets": [
+        "runtime/core/src/io/platform_io.cpp (/proc grammar, residency window, platform predicates)"
+      ],
+      "experiment": "EXP-2026-11-15-647-p10-12-residual-io",
+      "task": "",
+      "status": "ported",
+      "sha256": "45d22a30c1020e0047ffb8303ee54fa88bc1ccc1a9e5a2546637be7d975f2e00",
+      "gate": "132 cases / 417 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/shard-naming.goose",
+      "native": "runtime/core/src/moe/gguf_offsets.cpp (split shard naming and resolution)",
+      "native_targets": [
+        "runtime/core/src/moe/gguf_offsets.cpp (split shard naming and resolution)"
+      ],
+      "experiment": "EXP-2026-11-15-647-p10-12-residual-io",
+      "task": "",
+      "status": "ported",
+      "sha256": "7b1650b4ae437fab4b7ab5231e75669732727a550267db2e9b9ba443ce7f40b3",
+      "gate": "97 cases / 145 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/ggml-type-table.goose",
