@@ -454,6 +454,75 @@ int main(int argc, char ** argv) {
         free(qd); free(kd); free(vd);
     }
 
+    // ---- GDN: ssm_conv (mode 27), against ggml_ssm_conv ----
+    // This is the path 31 of the 42 layers take, so it matters more than attention.
+    // The kernel extent comes from q35_shape(T_SSM_CONV1D) = [d_conv, conv_d], which
+    // keeps the test tied to the architecture builder rather than to a guess.
+    {
+        int64_t conv_shape[3] = { 0, 0, 0 };
+        const int recr_ok = q35_shape((sl_i64) { p, 32 }, 1 /* K_RECR */, 11 /* T_SSM_CONV1D */,
+                                      (sl_i64) { conv_shape, 3 });
+        if (recr_ok == 1 && conv_shape[0] > 0 && conv_shape[1] > 0) {
+            const int64_t d_conv = conv_shape[0];
+            const int64_t chans  = conv_shape[1];
+            const int64_t tokens = 1;
+
+            struct ggml_tensor * sx = ggml_new_tensor_4d(gc, GGML_TYPE_F32, d_conv + tokens - 1, chans, 1, 1);
+            struct ggml_tensor * ck = ggml_new_tensor_2d(gc, GGML_TYPE_F32, d_conv, chans);
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+
+            const int64_t nsx = ggml_nelements(sx), nck = ggml_nelements(ck);
+            float * sxd = (float *) malloc((size_t) nsx * sizeof(float));
+            float * ckd = (float *) malloc((size_t) nck * sizeof(float));
+            for (int64_t i = 0; i < nsx; ++i) sxd[i] = (float) ((i % 11) - 5) / 32.0f;
+            for (int64_t i = 0; i < nck; ++i) ckd[i] = (float) ((i % 7) - 3) / 16.0f;
+            ggml_backend_tensor_set(sx, sxd, 0, (size_t) nsx * sizeof(float));
+            ggml_backend_tensor_set(ck, ckd, 0, (size_t) nck * sizeof(float));
+
+            uint64_t a_conv[16] = { 27, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) sx,
+                                    (uint64_t) (uintptr_t) ck, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            struct ggml_tensor * ra =
+                (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_conv);
+            if (ra == NULL) {
+                printf("FG_APEX_GDN conv builder returned null\n");
+            } else {
+                ggml_backend_alloc_ctx_tensors(gc, backend);
+                struct ggml_cgraph * fa = ggml_new_graph(gc);
+                ggml_build_forward_expand(fa, ra);
+                const enum ggml_status sa = ggml_backend_graph_compute(backend, fa);
+                const int64_t on = ggml_nelements(ra);
+                float * va = (float *) malloc((size_t) on * sizeof(float));
+                ggml_backend_tensor_get(ra, va, 0, (size_t) on * sizeof(float));
+
+                struct ggml_tensor * rb = ggml_ssm_conv(gc, sx, ck);
+                ggml_backend_alloc_ctx_tensors(gc, backend);
+                struct ggml_cgraph * fb = ggml_new_graph(gc);
+                ggml_build_forward_expand(fb, rb);
+                const enum ggml_status sb = ggml_backend_graph_compute(backend, fb);
+                float * vb = (float *) malloc((size_t) on * sizeof(float));
+                ggml_backend_tensor_get(rb, vb, 0, (size_t) on * sizeof(float));
+
+                int diff = 0;
+                for (int64_t i = 0; i < on; ++i) {
+                    if (memcmp(&va[i], &vb[i], sizeof(float)) != 0) ++diff;
+                }
+                printf("FG_APEX_GDN_CONV d_conv=%lld chans=%lld tokens=%lld elements=%lld "
+                       "bitwise_differs=%d status goose=%d ggml=%d %s\n",
+                       (long long) d_conv, (long long) chans, (long long) tokens,
+                       (long long) on, diff, (int) sa, (int) sb,
+                       (diff == 0 && sa == GGML_STATUS_SUCCESS && sb == GGML_STATUS_SUCCESS)
+                           ? "PASS" : "FAIL");
+                free(va);
+                free(vb);
+            }
+            free(sxd);
+            free(ckd);
+        } else {
+            printf("FG_APEX_GDN_CONV q35_shape refused the conv descriptor (%lld)\n",
+                   (long long) recr_ok);
+        }
+    }
+
     printf("FG_APEX_GRAPH nodes=5 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",
            (long long) K, (long long) N, (long long) declared, declared_ok, shape_ok,
