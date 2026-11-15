@@ -382,6 +382,78 @@ int main(int argc, char ** argv) {
         free(qd);
     }
 
+    // ---- attention (mode 26), against ggml_flash_attn_ext ----
+    // Same oracle as rope: build the node twice, compare bit for bit. The module
+    // requires can_mul_mat(b, a), matching ne[3] across q/k/v, and a float
+    // max_bias only when a mask is present - so both are 0 here.
+    {
+        const int64_t head_dim = K / p[P_N_HEAD];
+        const int64_t n_head   = p[P_N_HEAD];
+        const int64_t n = head_dim * n_head;
+        const float scale = 1.0f / sqrtf((float) head_dim);
+
+        float * qd = (float *) malloc((size_t) n * sizeof(float));
+        float * kd = (float *) malloc((size_t) n * sizeof(float));
+        float * vd = (float *) malloc((size_t) n * sizeof(float));
+        for (int64_t i = 0; i < n; ++i) {
+            qd[i] = (float) ((i % 7) - 3) / 16.0f;
+            kd[i] = (float) ((i % 5) - 2) / 16.0f;
+            vd[i] = (float) ((i % 3) - 1) / 8.0f;
+        }
+
+        struct ggml_tensor * q = ggml_new_tensor_4d(gc, GGML_TYPE_F32, head_dim, n_head, 1, 1);
+        struct ggml_tensor * k = ggml_new_tensor_4d(gc, GGML_TYPE_F32, head_dim, n_head, 1, 1);
+        struct ggml_tensor * v = ggml_new_tensor_4d(gc, GGML_TYPE_F32, head_dim, n_head, 1, 1);
+        ggml_backend_alloc_ctx_tensors(gc, backend);
+        ggml_backend_tensor_set(q, qd, 0, (size_t) n * sizeof(float));
+        ggml_backend_tensor_set(k, kd, 0, (size_t) n * sizeof(float));
+        ggml_backend_tensor_set(v, vd, 0, (size_t) n * sizeof(float));
+
+        uint64_t a_attn[16] = {
+            26, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) q,
+            (uint64_t) (uintptr_t) k, (uint64_t) (uintptr_t) v,
+            0 /* op */, 0 /* inplace */, 0 /* mask */,
+            (uint64_t) (int64_t) float_bits_of(scale),  // arg8  scale
+            0,                                          // arg9  max_bias
+            0, 0, 0, 0, 0, 0                            // arg10 logit_softcap
+        };
+        struct ggml_tensor * ra =
+            (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_attn);
+        if (ra == NULL) {
+            printf("FG_APEX_ATTN builder returned null\n");
+        } else {
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            struct ggml_cgraph * fa = ggml_new_graph(gc);
+            ggml_build_forward_expand(fa, ra);
+            const enum ggml_status sa = ggml_backend_graph_compute(backend, fa);
+
+            const int64_t out_n = ggml_nelements(ra);
+            float * va = (float *) malloc((size_t) out_n * sizeof(float));
+            ggml_backend_tensor_get(ra, va, 0, (size_t) out_n * sizeof(float));
+
+            struct ggml_tensor * rb = ggml_flash_attn_ext(
+                gc, q, k, v, NULL, scale, 0.0f, 0.0f);
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            struct ggml_cgraph * fb = ggml_new_graph(gc);
+            ggml_build_forward_expand(fb, rb);
+            const enum ggml_status sb = ggml_backend_graph_compute(backend, fb);
+            float * vb = (float *) malloc((size_t) out_n * sizeof(float));
+            ggml_backend_tensor_get(rb, vb, 0, (size_t) out_n * sizeof(float));
+
+            int diff = 0;
+            for (int64_t i = 0; i < out_n; ++i) {
+                if (memcmp(&va[i], &vb[i], sizeof(float)) != 0) ++diff;
+            }
+            printf("FG_APEX_ATTN elements=%lld bitwise_differs=%d status goose=%d ggml=%d %s\n",
+                   (long long) out_n, diff, (int) sa, (int) sb,
+                   (diff == 0 && sa == GGML_STATUS_SUCCESS && sb == GGML_STATUS_SUCCESS)
+                       ? "PASS" : "FAIL");
+            free(va);
+            free(vb);
+        }
+        free(qd); free(kd); free(vd);
+    }
+
     printf("FG_APEX_GRAPH nodes=5 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",
            (long long) K, (long long) N, (long long) declared, declared_ok, shape_ok,
