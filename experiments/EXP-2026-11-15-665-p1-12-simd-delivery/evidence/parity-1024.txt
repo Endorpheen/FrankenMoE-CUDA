@@ -1,0 +1,5 @@
+[1/3] native objects
+[2/3] link
+[3/3] run
+FG_P112_AVX2_SPREAD cases=1024 differs_from_scalar=0 (FMA association, informational)
+FG_P112_NATIVE_PARITY kernels=4 cases=4096 features=0x7 failures=0 PASS

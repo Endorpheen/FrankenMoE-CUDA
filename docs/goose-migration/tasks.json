@@ -429,7 +429,7 @@
         "src/llama-expert-*"
       ],
       "acceptance": "All supported MoE formats/modes pass graph corpus and real Apex milestone; replaced native symbols unavailable in candidate link; rollback preserved externally.",
-      "evidence": "2026-11-15 decision note (docs/goose-migration/P1-12-DECISION.md): the CPU MoE orchestration is Goose (ar_ recipe matching, xl_ LRU/residency/budget, dw_ dense placement, sp_ row-stream plan, rh_/ov_/rs_ router hooks and overlap, meta backend and optimizer). The dot-product kernels themselves are SIMD and cannot move: Goose has no intrinsic surface, so they are substrate in the same category as libc/libm. Closing the criterion needs Igor's decision: (A) reclassify SIMD as substrate and close, (B) keep it open until a Goose vector surface exists, (C) close only the orchestration part. Recommendation: B, unless Igor states that SIMD is substrate project-wide.",
+      "evidence": "2026-11-15 decision note (docs/goose-migration/P1-12-DECISION.md): the CPU MoE orchestration is Goose (ar_ recipe matching, xl_ LRU/residency/budget, dw_ dense placement, sp_ row-stream plan, rh_/ov_/rs_ router hooks and overlap, meta backend and optimizer). The dot-product kernels themselves are SIMD and cannot move: Goose has no intrinsic surface, so they are substrate in the same category as libc/libm. Closing the criterion needs Igor's decision: (A) reclassify SIMD as substrate and close, (B) keep it open until a Goose vector surface exists, (C) close only the orchestration part. Recommendation: B, unless Igor states that SIMD is substrate project-wide. 2026-11-15 EXP665 (experiments/EXP-2026-11-15-665-p1-12-simd-delivery): the compiler owner's SIMD delivery 8b7a56bb (commit 7738b34a) is VERIFIED from the runtime side. Both published hashes match (compiler 8b7a56bb..., blocks.o 67f7f760...). The author's verifier reproduces 16384 blocks per arm, integer exact, float bit-exact on five arms. A second, independent oracle in integration/p1-12/tests links blocks.o against the unmodified native sources ggml-quants.c, ggml-cpu/quants.c and ggml-cpu/arch/x86/quants.c: 16384 comparisons, 0 failures, integer minima and fp32 bit-identical including signed zero, and 0 spread against the native AVX2 kernels. Four single-block entry points q4_K x q8_K, q6_K x q8_K, q8_0 x q8_0, q4_0 x q8_0 on AVX2+FMA with scalar fallback. Not covered: NEON/SVE/AVX512/VNNI, multi-thread application support, performance. The substrate blocker is gone; integration into the CPU MoE switch is the remaining work.",
       "depends_on": [
         "P1-06",
         "P1-07",
@@ -442,9 +442,10 @@
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B1",
       "remaining": [
-        "Igor's decision: reclassify SIMD kernels as substrate (A), wait for a Goose vector surface (B, recommended), or split the criterion (C)"
+        "integrate the four accepted single-block kernels behind a runtime switch in the CPU MoE path (native kernels are the OFF arm)",
+        "decide with Igor whether the remaining ggml_vec_dot_* families that the SIMD delivery does not cover stay substrate"
       ],
-      "coverage_doc": "docs/goose-migration/P1-12-DECISION.md",
+      "coverage_doc": "experiments/EXP-2026-11-15-665-p1-12-simd-delivery/README.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices."
     },
     {
@@ -5630,7 +5631,7 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T11:30:00+00:00",
+  "updated_at": "2026-11-15T12:35:00+00:00",
   "status_totals": {
     "DONE": 114,
     "PARTIAL": 24,
