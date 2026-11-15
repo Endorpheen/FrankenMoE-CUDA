@@ -58,14 +58,19 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
     $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$ROOT/upstream/llama.cpp/ggml/include" \
         -I "$ROOT/integration/goose-standalone" \
         -c "$ROOT/integration/goose-standalone/host_v4.c" -o "$OUT/host_v4.o"
-    $CXX -O1 -std=c++17 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
+    $CC -O1 -std=c11 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
         -I "$ROOT/integration/goose-standalone" \
-        -c "$ROOT/integration/goose-standalone/tensor-data.cpp" -o "$OUT/tensor-data.o"
-    $CXX -O1 -std=c++17 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
-        -c "$ROOT/integration/goose-standalone/graph-bindings.cpp" -o "$OUT/graph-bindings.o"
+        -c "$ROOT/integration/goose-standalone/tensor-data.c" -o "$OUT/tensor-data.o"
+    $CC -O1 -std=c11 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
+        -c "$ROOT/integration/goose-standalone/graph-bindings.c" -o "$OUT/graph-bindings.o"
+    # Link with $CXX, and the reason matters: libggml-base.a itself contains six C++ objects
+    # (ggml.cpp, ggml-backend.cpp, ggml-backend-meta.cpp, ggml-opt.cpp, ggml-threading.cpp) and
+    # ggml_critical_section_start references std::__throw_system_error. So libstdc++ is a
+    # SUBSTRATE dependency, not ours. Our own sources are now all C - graph-bindings and
+    # tensor-data were converted - which is the part we control.
     $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v4.o" \
         "$OUT/tensor-data.o" "$OUT/graph-bindings.o" \
-        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -lstdc++ \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/frankenmoe-v4"
     printf '  v4:     %s (%s B)\n' "$OUT/frankenmoe-v4" "$(stat -c%s "$OUT/frankenmoe-v4")"
 
@@ -75,7 +80,7 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
         -c "$ROOT/integration/goose-standalone/tests/graph_exec.c" -o "$OUT/graph_exec.o"
     $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" \
         "$OUT/graph-bindings.o" "$OUT/graph_exec.o" \
-        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -lstdc++ \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/graph_exec"
     printf '  gate:   %s\n' "$OUT/graph_exec"
 fi

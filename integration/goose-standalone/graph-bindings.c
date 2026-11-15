@@ -19,8 +19,6 @@
 
 #include "ggml.h"
 
-extern "C" {
-
 // ---- the fixture's helpers, verbatim in behaviour ---------------------------
 
 static int64_t fg_arg(int64_t p, int64_t i) {
@@ -95,7 +93,7 @@ int64_t fg158_dup(int64_t c, int64_t a) {
 int64_t fg158_l2norm(int64_t c, int64_t a, int64_t eps_bits) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
-    if (ctx == nullptr || src == nullptr) {
+    if (ctx == NULL || src == NULL) {
         return 0;
     }
     float eps = 0.0f;
@@ -107,7 +105,7 @@ int64_t fg158_l2norm(int64_t c, int64_t a, int64_t eps_bits) {
 int64_t fg158_repeat4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, int64_t n3) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
-    if (ctx == nullptr || src == nullptr) {
+    if (ctx == NULL || src == NULL) {
         return 0;
     }
     return (int64_t) (intptr_t) ggml_repeat_4d(ctx, src, n0, n1, n2, n3);
@@ -126,7 +124,7 @@ int64_t fg158_rope_multi(int64_t c, int64_t a, int64_t pos, int64_t n_rot,
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
     struct ggml_tensor  * p   = (struct ggml_tensor *) (intptr_t) pos;
-    if (ctx == nullptr || src == nullptr) {
+    if (ctx == NULL || src == NULL) {
         return 0;
     }
     int sections[4] = { (int) s0, (int) s1, (int) s2, (int) s3 };
@@ -138,14 +136,14 @@ int64_t fg158_rope_multi(int64_t c, int64_t a, int64_t pos, int64_t n_rot,
     b = (int32_t) af_bits; memcpy(&af, &b, sizeof af);
     b = (int32_t) bf_bits; memcpy(&bf, &b, sizeof bf);
     b = (int32_t) bs_bits; memcpy(&bs, &b, sizeof bs);
-    return (int64_t) (intptr_t) ggml_rope_multi(ctx, src, p, nullptr, (int) n_rot,
+    return (int64_t) (intptr_t) ggml_rope_multi(ctx, src, p, NULL, (int) n_rot,
         sections, (int) mode, (int) n_ctx_orig, fb, fs, ef, af, bf, bs);
 }
 
 int64_t fg158_transpose(int64_t c, int64_t a) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
-    if (ctx == nullptr || src == nullptr) {
+    if (ctx == NULL || src == NULL) {
         return 0;
     }
     return (int64_t) (intptr_t) ggml_transpose(ctx, src);
@@ -155,7 +153,7 @@ int64_t fg158_concat(int64_t c, int64_t a, int64_t b, int64_t dim) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * x = (struct ggml_tensor *) (intptr_t) a;
     struct ggml_tensor  * y = (struct ggml_tensor *) (intptr_t) b;
-    if (ctx == nullptr || x == nullptr || y == nullptr) {
+    if (ctx == NULL || x == NULL || y == NULL) {
         return 0;
     }
     return (int64_t) (intptr_t) ggml_concat(ctx, x, y, (int) dim);
@@ -165,7 +163,7 @@ int64_t fg158_cpy(int64_t c, int64_t a, int64_t b) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * x = (struct ggml_tensor *) (intptr_t) a;
     struct ggml_tensor  * y = (struct ggml_tensor *) (intptr_t) b;
-    if (ctx == nullptr || x == nullptr || y == nullptr) {
+    if (ctx == NULL || x == NULL || y == NULL) {
         return 0;
     }
     return (int64_t) (intptr_t) ggml_cpy(ctx, x, y);
@@ -174,7 +172,7 @@ int64_t fg158_cpy(int64_t c, int64_t a, int64_t b) {
 int64_t fg158_view2(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t nb1, int64_t offset) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
-    if (ctx == nullptr || src == nullptr) {
+    if (ctx == NULL || src == NULL) {
         return 0;
     }
     return (int64_t) (intptr_t) ggml_view_2d(ctx, src, n0, n1, (size_t) nb1, (size_t) offset);
@@ -183,7 +181,7 @@ int64_t fg158_view2(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t nb1, i
 int64_t fg158_reshape3(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
-    if (ctx == nullptr || src == nullptr) {
+    if (ctx == NULL || src == NULL) {
         return 0;
     }
     return (int64_t) (intptr_t) ggml_reshape_3d(ctx, src, n0, n1, n2);
@@ -193,7 +191,7 @@ int64_t fg158_view4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, in
                     int64_t nb1, int64_t nb2, int64_t nb3, int64_t offset) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
     struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
-    if (ctx == nullptr || src == nullptr) {
+    if (ctx == NULL || src == NULL) {
         return 0;
     }
     return (int64_t) (intptr_t) ggml_view_4d(ctx, src, n0, n1, n2, n3,
@@ -302,4 +300,3 @@ void q4t_fail(int64_t code) {
 // second definition of the same binding is pure debt, and the linker would reject
 // a runtime that linked both.
 
-} // extern "C"

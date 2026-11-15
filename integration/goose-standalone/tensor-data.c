@@ -17,24 +17,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace {
-
 typedef struct { int64_t * data; int64_t len; } sl_i64;
 
-// The composed unit is C, so every export binds with C linkage.
-extern "C" {
+// The composed unit is C; these are plain C declarations.
 int64_t layout(sl_i64 rel, sl_i64 nb, int64_t align, int64_t data_start, sl_i64 out);
 int64_t align_ok(int64_t a);
-}
 
-constexpr int64_t kMaxTensors = 4096;
+#define kMaxTensors 4096
 
-} // namespace
-
-extern "C" int fg_goose_tensor_load(const struct gguf_context * ctx,
+int fg_goose_tensor_load(const struct gguf_context * ctx,
                                     struct ggml_context * gctx,
                                     fg_tensor_arena * out) {
-    if (ctx == nullptr || gctx == nullptr || out == nullptr) {
+    if (ctx == NULL || gctx == NULL || out == NULL) {
         return -2;
     }
     memset(out, 0, sizeof *out);
@@ -62,8 +56,8 @@ extern "C" int fg_goose_tensor_load(const struct gguf_context * ctx,
         nb[i]  = (int64_t) gguf_get_tensor_size(ctx, (int) i);
     }
 
-    const int64_t rc = layout(sl_i64{ rel, n }, sl_i64{ nb, n }, align, data_start,
-                              sl_i64{ off_out, n + 1 });
+    const int64_t rc = layout((sl_i64){ rel, n }, (sl_i64){ nb, n }, align, data_start,
+                              (sl_i64){ off_out, n + 1 });
     out->layout_rc = rc;
     if (rc != 0) {
         return -1;
@@ -72,7 +66,7 @@ extern "C" int fg_goose_tensor_load(const struct gguf_context * ctx,
 
     void ** data = (void **) calloc((size_t) n, sizeof(void *));
     size_t * size = (size_t *) calloc((size_t) n, sizeof(size_t));
-    if (data == nullptr || size == nullptr) {
+    if (data == NULL || size == NULL) {
         free(data);
         free(size);
         return -2;
@@ -90,7 +84,7 @@ extern "C" int fg_goose_tensor_load(const struct gguf_context * ctx,
     for (int64_t i = 0; i < n; ++i) {
         const char * name = gguf_get_tensor_name(ctx, (int) i);
         struct ggml_tensor * t = ggml_get_tensor(gctx, name);
-        if (t == nullptr) {
+        if (t == NULL) {
             continue;
         }
         data[i] = t->data;
@@ -98,7 +92,7 @@ extern "C" int fg_goose_tensor_load(const struct gguf_context * ctx,
         copied += size[i];
 
         // ggml's own placement versus the Goose layout, compared by delta.
-        if (base != nullptr) {
+        if (base != NULL) {
             const int64_t ggml_rel = (int64_t) ((const uint8_t *) t->data - base);
             const int64_t delta = ggml_rel - off_out[i];
             if (!have_delta) {
@@ -118,8 +112,8 @@ extern "C" int fg_goose_tensor_load(const struct gguf_context * ctx,
     return 0;
 }
 
-extern "C" void fg_goose_tensor_free(fg_tensor_arena * a) {
-    if (a == nullptr) {
+void fg_goose_tensor_free(fg_tensor_arena * a) {
+    if (a == NULL) {
         return;
     }
     // The payload belongs to the reader's context, not to this struct.
