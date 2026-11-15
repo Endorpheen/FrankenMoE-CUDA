@@ -1,12 +1,12 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (10). This file is the current state; update it in the same change
+Updated: 2026-11-15 (11). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 112**, **PARTIAL 9**, **TODO 31** of
-152 functional requirements. Slice front: **124 / 124** done, none remaining.
+`docs/goose-migration/tasks.json`: **DONE 112**, **PARTIAL 10**, **TODO 30** of
+152 functional requirements. Slice front: **127 / 127** done, none remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
@@ -23,6 +23,7 @@ The remaining partial requirements and their slice fronts:
 | P9-05 | 3 / 3 | extract expert_bytes_per_slot and wire rts_n_batch/rts_ubatch |
 | P9-07 | 3 / 3 | wire the three sinks and DeterministicWorkload |
 | P9-08 | 3 / 3 | wire the engine closure points; decide the two characterised behaviours |
+| P10-02 | 3 / 3 | wire llama-bench report, tokenize output and fit-params line into their hosts |
 
 ## What the canonical tree contains
 
