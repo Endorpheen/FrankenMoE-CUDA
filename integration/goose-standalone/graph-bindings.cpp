@@ -89,6 +89,30 @@ int64_t fg158_dup(int64_t c, int64_t a) {
 // has neither, and the q/gate split needs both: q and gate are interleaved per head,
 // so the head stride is 2*n_embd_head and the gate offset is n_embd_head inside it.
 // Translation only - the extents, strides and offsets are decided in Goose.
+// L2 normalisation and repeat-to-extents: the two ops the recurrent path needs and
+// the graph builder has no mode for. Translation only; the epsilon and the target
+// extents are decided in Goose.
+int64_t fg158_l2norm(int64_t c, int64_t a, int64_t eps_bits) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
+    if (ctx == nullptr || src == nullptr) {
+        return 0;
+    }
+    float eps = 0.0f;
+    int32_t bits = (int32_t) eps_bits;
+    memcpy(&eps, &bits, sizeof eps);
+    return (int64_t) (intptr_t) ggml_l2_norm(ctx, src, eps);
+}
+
+int64_t fg158_repeat4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, int64_t n3) {
+    struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;
+    struct ggml_tensor  * src = (struct ggml_tensor *) (intptr_t) a;
+    if (ctx == nullptr || src == nullptr) {
+        return 0;
+    }
+    return (int64_t) (intptr_t) ggml_repeat_4d(ctx, src, n0, n1, n2, n3);
+}
+
 int64_t fg158_view4(int64_t c, int64_t a, int64_t n0, int64_t n1, int64_t n2, int64_t n3,
                     int64_t nb1, int64_t nb2, int64_t nb3, int64_t offset) {
     struct ggml_context * ctx = (struct ggml_context *) (intptr_t) c;

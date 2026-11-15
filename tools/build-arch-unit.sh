@@ -39,6 +39,7 @@ mkdir -p "$OUT"
 ARCH=(
     "$ARCH_MODULE"
     goose/model/qgate-split.goose
+    goose/model/gdn-ops.goose
 )
 
 mapfile -t COMMON < <(awk '/^MODULES=\(/{f=1;next} /^\)/{f=0} f && /\.goose/{gsub(/^ +/,"");print}' \

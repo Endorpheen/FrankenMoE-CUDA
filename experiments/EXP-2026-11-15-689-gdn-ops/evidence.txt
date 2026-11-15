@@ -1,0 +1,3 @@
+FG_GDN_OPS l2norm elements=256 eps=1e-06 differs=0
+FG_GDN_OPS repeat elements=512 n_k=2 n_v=4 differs=0
+FG_GDN_OPS skip_when_equal=1 PASS
