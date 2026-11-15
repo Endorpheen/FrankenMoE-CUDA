@@ -52,6 +52,23 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     solely to produce evidence, a README or a report is forbidden: the log the
     run already wrote is the evidence. On a failure, repeat only the affected
     checks.
+15. No C++ is deleted before the new Goose runtime is fully accepted. The order
+    is fixed and is not reordered: complete integration (GGUF, tensors, graph,
+    CPU/GPU, KV cache, server, prefill/decode), then proven behaviour with the
+    checks that are actually needed (clean build, link, ABI, functional and
+    numerical tests, comparison against the existing Apex, regressions, required
+    execution paths), then Igor's final manual acceptance, and only then one
+    largest possible pass that removes the replaced C++ runtime, the carrier
+    patches and the now-unneeded dependencies. Until the new runtime has proven
+    full working order, removing the old C++ or any of its working fallbacks is
+    forbidden. Do not delete on assumption: every removal needs the evidence
+    that the replacement already carries the behaviour. Do not over-verify
+    either: reuse the evidence already produced and repeat a successful check
+    only when its inputs changed. After the removal, verify the clean build and
+    that nothing still references the deleted code; if that fails, fix the cause
+    rather than weakening the check. A real model or GPU run is never part of
+    this preparation without Igor's permission: prepare everything and hand the
+    run over for his acceptance.
 
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
@@ -195,7 +212,7 @@ technical terms. The section set and their order are fixed:
     Рабочее дерево: чистое | <state>
     Текущая фаза: <P# and short goal>
 
-    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 14 rules above, current wording
+    ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА           — the 15 rules above, current wording
     АКТУАЛЬНЫЙ РЕЖИМ               — binary, launcher, EHS, THREADS, model,
                                      hardware
     BASELINE                       — tok/s medians and ranges per thread count,
