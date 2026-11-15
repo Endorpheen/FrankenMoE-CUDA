@@ -188,6 +188,10 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | quantizers (done, EXP635) | S1.3 | S1 | EXP635 | smoke 46/58, arms 112/112, mutations 12/12; IQ off-grid defect open |
 | CLI tools | P10-02 | S4 | in flight | inventory-first |
 | standalone engine | P9-08 | S3 | in flight | inventory-first |
+| tokenizer switch | S1.5 | S1 | in flight | staged build behind FG_GOOSE_TOKENIZER |
+| streaming switch | S1.6 | S1 | in flight | staged build behind FG_GOOSE_STREAM |
+| speculative switch | S2.2 | S2 | in flight | staged build behind FG_GOOSE_SPEC |
+| IQ off-grid fix | P7-04 | S1 | in flight | canonical IQ2_S/IQ3_XXS/IQ1_M defect |
 
 The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.4
 metrics switch (EXP628) and the S2.1 config switch (EXP630) are accepted. The
