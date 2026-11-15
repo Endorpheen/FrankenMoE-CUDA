@@ -22,9 +22,9 @@ Status: **PARTIAL** — 3 of 3 slices accepted; the sinks are still native.
 
 ## Remaining
 
-Wire the CSV, decode-trace and route-trace sinks and `DeterministicWorkload` to
-the Goose rows (the 29-column CSV and `mt_wl_*` are not switched in the staged
-slice yet).
+The field and row encoders are wired in the isolated staged build (EXP628):
+53/53 parity on both paths, `goose_calls=53`. Still open: the 29-column metrics
+CSV and `DeterministicWorkload` (`mt_wl_*`).
 
 ## Boundaries
 

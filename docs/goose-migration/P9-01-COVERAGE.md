@@ -23,7 +23,9 @@ Status: **PARTIAL** — 3 of 3 slices accepted; the call sites are still native.
 
 ## Remaining
 
-Wire `validate()`, `arch_registry.cpp` and `main.cpp` to the Goose decisions.
+`validate()` is wired in the isolated staged build (EXP630): OFF keeps the
+native body, ON dispatches every call into `cfg_validate` (40072 calls, 72/72
+cases, 12/12 mutations). Still open: `arch_registry.cpp` and `main.cpp`.
 Host rules: narrow f64 to float before `validate()`, give the recipe table static
 lifetime because `RouterHook` keeps references, keep atoi overflow and
 NUL-in-name outside the corpus.
