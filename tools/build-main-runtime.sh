@@ -36,6 +36,9 @@ mkdir -p "$OUT"
 # needs a per-architecture unit of its own, not a bigger common one.
 MODULES=(
     goose/model/goose-model-graph.goose
+    goose/model/qwen35moe.goose
+    goose/model/qgate-split.goose
+    goose/model/gdn-ops.goose
     goose/model/goose-model-loader.goose
     goose/model/file-io.goose
     goose/model/arch-registry.goose
