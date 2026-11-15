@@ -241,10 +241,25 @@ def declarations(text: str):
 EXPORT = re.compile(r"(?m)^export fn (\w+)")
 
 
+STRING = re.compile(r'"(?:[^"\\]|\\.)*"')
+
+
+def rename_text(text: str, old: str, new: str) -> str:
+    """Rename an identifier outside string literals (extern symbols keep their name)."""
+    parts = []
+    at = 0
+    for m in STRING.finditer(text):
+        parts.append(re.sub(r"\b" + re.escape(old) + r"\b", new, text[at:m.start()]))
+        parts.append(m.group(0))
+        at = m.end()
+    parts.append(re.sub(r"\b" + re.escape(old) + r"\b", new, text[at:]))
+    return "".join(parts)
+
+
 def emit(path: Path, seen: dict, conflicts: list, expected: set) -> str:
     text = path.read_text()
     for old, new in RENAMES.get(path.name, {}).items():
-        text = re.sub(r"\b" + re.escape(old) + r"\b", new, text)
+        text = rename_text(text, old, new)
     text = IMPORT.sub("", text)
     expected.update(EXPORT.findall(text))
     rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
