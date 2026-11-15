@@ -2796,17 +2796,22 @@
       "id": "P11-05",
       "phase": "P11",
       "title": "Validate clean build,rollback and failure recovery",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "build/package/reproduction manifests"
       ],
       "acceptance": "Rebuild full artifact from checked-in Goose and pinned producer; test rollback to frozen runtime and bad-input/OOM/cancel/shutdown recovery without touching production.",
-      "evidence": "",
+      "evidence": "2026-11-15 M1 (EXP658) and docs/goose-migration/P11-05-VALIDATION.md: the clean configure and build succeed OFF and ON-all; llama-server links in both (17 794 640 / 20 316 528 B); rollback by flags OFF rebuilds the native path with zero goose_init in the 12 OFF binaries; the Apex reference binary is unchanged; the unit reproduces byte-identically. Still open: the failure-recovery matrix (missing generated C/adapter must fail the link, wrong flag rejected at configure, broken IQ registration aborts, a partially switched build still links, rollback after a failed ON build) needs scripted checks and exit codes.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "remaining": [
+        "script the five failure-recovery cases with recorded exit codes",
+        "exercise rollback after a failed ON build"
+      ],
+      "coverage_doc": "docs/goose-migration/P11-05-VALIDATION.md"
     },
     {
       "id": "P11-06",
@@ -4696,6 +4701,10 @@
     {
       "event": "P11-06 closed: unavoidable externs, native data, platform surface and measurement limits published.",
       "checkpoint": "7a821c05"
+    },
+    {
+      "event": "P11-05 PARTIAL: clean build and flag-off rollback proven by M1; the failure-recovery matrix remains.",
+      "checkpoint": "3b5e7c92"
     }
   ],
   "batches": [
@@ -5586,11 +5595,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T06:09:13.017330+00:00",
+  "updated_at": "2026-11-15T06:10:25.907974+00:00",
   "status_totals": {
     "DONE": 114,
-    "PARTIAL": 20,
-    "TODO": 18
+    "PARTIAL": 21,
+    "TODO": 17
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
