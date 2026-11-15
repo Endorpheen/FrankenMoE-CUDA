@@ -303,12 +303,84 @@ int main(int argc, char ** argv) {
         free(ewd); free(ebd); free(idd);
     }
 
-    // rope is NOT tested here. mode 25 exists and the node builds, but the result
-    // came out NaN: the parameter set the gate passed (freq_base, freq_scale,
-    // ext_factor, attn_factor, beta_fast, beta_slow) does not match what the ggml
-    // rope kernel reads, and guessing it further would be a false positive waiting
-    // to happen. Recorded as "not proven" in EXP-2026-11-15-688 rather than shipped
-    // as a passing test.
+    // ---- rope, checked against ggml_rope_ext itself ----
+    // Reimplementing the rotation as an invariant was wrong twice: first the
+    // parameter offsets, then the pairing, and the second attempt showed the kernel
+    // does not write the pair back where a hand-derived model expects. The honest
+    // oracle is ggml's own entry point: build the same node through the Goose
+    // builder and through ggml_rope_ext, then compare the two tensors bit for bit.
+    {
+        const int64_t head_dim = K / p[P_N_HEAD];
+        const int64_t n_head   = p[P_N_HEAD];
+        const int64_t n = head_dim * n_head;
+
+        float * qd = (float *) malloc((size_t) n * sizeof(float));
+        for (int64_t i = 0; i < n; ++i) qd[i] = (float) ((i % 9) - 4) / 16.0f;
+
+        for (int pos_val = 0; pos_val <= 1; ++pos_val) {
+            // Arm A: the Goose builder.
+            struct ggml_tensor * qa = ggml_new_tensor_4d(gc, GGML_TYPE_F32, head_dim, n_head, 1, 1);
+            struct ggml_tensor * pa = ggml_new_tensor_1d(gc, GGML_TYPE_I32, 1);
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            int32_t pv = pos_val;
+            ggml_backend_tensor_set(qa, qd, 0, (size_t) n * sizeof(float));
+            ggml_backend_tensor_set(pa, &pv, 0, sizeof pv);
+
+            uint64_t a_rope[16] = {
+                25, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) qa,
+                (uint64_t) (uintptr_t) pa, 0, 0 /* GGML_ROPE_TYPE_NORMAL */,
+                0, (uint64_t) head_dim,
+                4096, (uint64_t) (int64_t) float_bits_of(10000.0f),
+                (uint64_t) (int64_t) float_bits_of(1.0f), 0,
+                (uint64_t) (int64_t) float_bits_of(1.0f),
+                (uint64_t) (int64_t) float_bits_of(32.0f),
+                (uint64_t) (int64_t) float_bits_of(1.0f), 0
+            };
+            struct ggml_tensor * ra =
+                (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) a_rope);
+            if (ra == NULL) {
+                printf("FG_APEX_ROPE builder returned null\n");
+                free(qd);
+                break;
+            }
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            struct ggml_cgraph * fa = ggml_new_graph(gc);
+            ggml_build_forward_expand(fa, ra);
+            const enum ggml_status sa = ggml_backend_graph_compute(backend, fa);
+
+            float * va = (float *) malloc((size_t) n * sizeof(float));
+            ggml_backend_tensor_get(ra, va, 0, (size_t) n * sizeof(float));
+
+            // Arm B: ggml's own constructor, same inputs, same parameters.
+            struct ggml_tensor * qb = ggml_new_tensor_4d(gc, GGML_TYPE_F32, head_dim, n_head, 1, 1);
+            struct ggml_tensor * pb = ggml_new_tensor_1d(gc, GGML_TYPE_I32, 1);
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            ggml_backend_tensor_set(qb, qd, 0, (size_t) n * sizeof(float));
+            ggml_backend_tensor_set(pb, &pv, 0, sizeof pv);
+            struct ggml_tensor * rb = ggml_rope_ext(
+                gc, qb, pb, NULL, (int) head_dim, GGML_ROPE_TYPE_NORMAL, 4096,
+                10000.0f, 1.0f, 0.0f, 1.0f, 32.0f, 1.0f);
+            ggml_backend_alloc_ctx_tensors(gc, backend);
+            struct ggml_cgraph * fb = ggml_new_graph(gc);
+            ggml_build_forward_expand(fb, rb);
+            const enum ggml_status sb = ggml_backend_graph_compute(backend, fb);
+
+            float * vb = (float *) malloc((size_t) n * sizeof(float));
+            ggml_backend_tensor_get(rb, vb, 0, (size_t) n * sizeof(float));
+
+            int diff = 0;
+            for (int64_t i = 0; i < n; ++i) {
+                if (memcmp(&va[i], &vb[i], sizeof(float)) != 0) ++diff;
+            }
+            printf("FG_APEX_ROPE pos=%d elements=%lld bitwise_differs=%d status goose=%d "
+                   "ggml=%d %s\n", pos_val, (long long) n, diff, (int) sa, (int) sb,
+                   (diff == 0 && sa == GGML_STATUS_SUCCESS && sb == GGML_STATUS_SUCCESS)
+                       ? "PASS" : "FAIL");
+            free(va);
+            free(vb);
+        }
+        free(qd);
+    }
 
     printf("FG_APEX_GRAPH nodes=5 K=%lld N=%lld declared=%lld declared_ok=%d shape_ok=%d "
            "status=%d first=%.6f want=%.6f rel=%.3g %s\n",

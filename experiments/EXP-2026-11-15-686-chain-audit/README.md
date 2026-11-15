@@ -35,7 +35,7 @@ None of them allocates a KV buffer, runs a prefill or loops a decode.
 | node construction | `gb_common`, 16 primitives, 15 predicates | — | **works** for the nodes tried |
 | attention block compute | modes 4/11/3/11/0 | ggml CPU backend | **works** (5 nodes, 8.07e-08) |
 | MoE expert matmul | mode 12 | ggml CPU backend | **works** (256 experts, 8 used, exact) |
-| rope | mode 25 exists; **tried, produced NaN** | — | **not proven**, see §7 |
+| rope | mode 25 | — | **works**, bit-for-bit vs `ggml_rope_ext` (EXP-685e) |
 | attention (flash_attn_ext) | mode 26 exists, **never exercised** | — | **not proven** |
 | GDN stack (31 recurrent layers) | `op_ssm_conv`, `op_gated_delta_net` exist, **never exercised** | — | **not proven** |
 | full 42-layer graph | **not built** | — | **absent** |
@@ -88,28 +88,33 @@ they hold no runtime logic and nothing links them into a shippable host.
 Until 1–6 are done, nothing gets deleted. That is rule 15, and this audit is the
 evidence that it is being followed rather than asserted.
 
-## 7. The rope attempt, recorded because it failed
+## 7. Rope: from NaN to bit-exact, and why the oracle changed
 
-Mode 25 builds a rope node and the graph executes it, but the output was NaN:
+The first attempt produced NaN. The second produced values that changed at
+position 1 but did not satisfy the invariant I had derived by hand. Both failures
+had the same root: I was modelling the kernel instead of comparing against it.
+
+The fix was to stop modelling. The gate now builds the same node twice - once
+through the Goose builder, once through `ggml_rope_ext` - and compares the two
+tensors bit for bit:
 
 ```
-rope debug in=[-0.2500 -0.1875 -0.1250 -0.0625] out=[-nan -nan -nan -nan]
+FG_APEX_ROPE pos=0 elements=2048 bitwise_differs=0 PASS
+FG_APEX_ROPE pos=1 elements=2048 bitwise_differs=0 PASS
 ```
 
-The gate passed `freq_base`, `freq_scale`, `ext_factor`, `attn_factor`,
-`beta_fast` and `beta_slow` as float bit patterns at the parameter indices the
-module writes, and that set does not match what the ggml rope kernel reads. Rather
-than keep guessing until something looked right, the attempt was removed and the
-capability recorded as not proven.
+Three things this settled, and each was a real mistake before it was settled:
 
-Two things make this worth writing down:
-
-1. A rope that runs and produces NaN is worse than no rope, because "the node
-   builds and the graph executes" reads like success.
-2. The parameter contract has to be derived from ggml's own `ggml_rope_ext` (the
-   index and the type of each word), not from what the module's `set_param`
-   ordering suggests. That is the next step for this capability, and it needs a
-   real unit test of the kernel, not an inference.
+1. **The parameter contract** comes from `ggml_rope_impl` (`ggml.c:4236`):
+   `params[4]` is `n_ctx_orig`, not `freq_base`; `freq_base` starts at
+   `params[5]`. Everything shifted by one put a garbage `n_ctx_orig` into the YaRN
+   path and produced NaN.
+2. **The pairing is not a safe assumption.** My hand-derived (i, i+n_dims/2) model
+   disagreed with what the kernel writes, and a norm-preservation invariant was
+   therefore the wrong test.
+3. **The oracle is ggml itself.** A differential comparison against the constructor
+   the substrate ships is stronger than any invariant I invent, and it does not
+   depend on understanding the kernel's internal index arithmetic.
 
 ## 6. Evidence reuse
 

@@ -1,4 +1,4 @@
---- attention block (5 nodes) ---
-FG_APEX_GRAPH nodes=5 K=2048 N=8192 declared=1 declared_ok=1 shape_ok=1 status=0 first=0.134777 want=0.134777 rel=8.07e-08 PASS
---- MoE expert matmul ---
 FG_APEX_MOE n_ff_exp=512 n_expert=256 n_used=8 shape_ok=1 status=0 first=-0.050781 want=-0.050781 rel=0 PASS
+FG_APEX_ROPE pos=0 elements=2048 bitwise_differs=0 status goose=0 ggml=0 PASS
+FG_APEX_ROPE pos=1 elements=2048 bitwise_differs=0 status goose=0 ggml=0 PASS
+FG_APEX_GRAPH nodes=5 K=2048 N=8192 declared=1 declared_ok=1 shape_ok=1 status=0 first=0.134777 want=0.134777 rel=8.07e-08 PASS

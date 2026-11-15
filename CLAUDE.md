@@ -93,7 +93,12 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     per-architecture, and keep every piece an unported architecture still needs.
     The removal order is unchanged and stricter: proven Apex readiness, then a
     compatibility check of the other architectures, then Igor's manual
-    acceptance, then removal.
+    acceptance, then removal. The scope of "other architectures" is the current
+    ones: the modern 2026 models, the 2025 architectures selectively, and older
+    legacy only for a stated reason. Porting all 151 substrate architectures is
+    not the goal and must not become an endless migration of dead code. What must
+    be preserved is the universal runtime and the ability to plug in the
+    architectures that matter.
 
 The migration target is full functional coverage, not a module count: for every
 own C++ file, the shipped binary's call path must reach the Goose export, the

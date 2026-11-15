@@ -16,6 +16,13 @@ against what the unported architectures still need.
 The migration is therefore 13 of 151 architectures, and Apex is one of the 13. Any
 statement that "the migration is nearly done" refers to Apex only.
 
+**Scope (AGENTS.md rule 17).** The target is the current architectures - the 2026
+models, the 2025 ones selectively, and older legacy only with a stated reason.
+Porting all 151 is explicitly not the goal: the substrate keeps them, and the
+requirement is that the universal runtime can accept a new builder without being
+rebuilt around one architecture. The 151 figure measures what the substrate
+carries, not a work queue.
+
 ## 2. What is shared, and must stay architecture-neutral
 
 These carry no per-architecture decision. They are the pieces an unported
