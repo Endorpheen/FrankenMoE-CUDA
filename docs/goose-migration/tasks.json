@@ -2427,14 +2427,14 @@
       "id": "P10-01",
       "phase": "P10",
       "title": "Consolidate experimental modules into canonical Goose source tree",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "experiments/**/source/**",
         "src/**",
         "ggml/src/**"
       ],
       "acceptance": "One canonical selected module per subsystem under appropriate src paths; frozen experiment history preserved; no duplicate runtime implementations.",
-      "evidence": "",
+      "evidence": "2026-11-15: consolidated. Every accepted slice lives in goose/ (811 files outside _archive), MANIFEST.json maps all 811 to their experiment, native path, gate and SHA256, and check-goose-tree.py verifies hashes and experiments (green). The experiments remain the proof, not a second source: tools/sync-goose-tree.py rebuilds goose/ from them and the tree check fails on drift.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
@@ -4492,6 +4492,10 @@
     {
       "event": "P7-11 closed at 5/5; model discovery and HF cache wiring move to P7-12, where the loader owns them.",
       "checkpoint": "403b9118"
+    },
+    {
+      "event": "P10-01 closed: the canonical tree is consolidated (811 files, full manifest, green tree check); experiments stay as proof.",
+      "checkpoint": "bcad2ccd"
     }
   ],
   "batches": [
@@ -5382,11 +5386,11 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T00:19:29.004046+00:00",
+  "updated_at": "2026-11-15T00:19:47.609262+00:00",
   "status_totals": {
-    "DONE": 111,
+    "DONE": 112,
     "PARTIAL": 5,
-    "TODO": 36
+    "TODO": 35
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03 and P7-12.",
