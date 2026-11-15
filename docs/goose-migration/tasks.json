@@ -2555,19 +2555,26 @@
       "id": "P10-07",
       "phase": "P10",
       "title": "Replace or justify vendored executable dependencies",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "vendor/**",
         "ggml/src/ggml-cuda/vendors/**",
         "common/jinja/**"
       ],
       "acceptance": "Each JSON/Jinja/HTTP/regex/image/audio helper classified; replace owned/replaceable logic or explicitly justify true external primitive. Vendored C++ is not automatically unavoidable.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP651 (experiments/EXP-2026-11-15-651-p10-07-vendored-deps): the inventory covers 14 dependencies (13 vendored plus the in-tree ggml-cuda vendor headers): 9 replaceable, 4 justified, 1 not-a-dependency. Three decisions are Goose: the licence payload (lic_: payload registration, inline notices, per-component licence wiring), provenance (vnd_: pinned sources and the reproducibility rule for latest/branch entries) and selection/linkage (sys_: component masks, system vs in-tree, required links). Gates 60 + 141 + 39 comparisons, 0 failures, identical at -O0; mutations 12/12. Findings: the production tree carries cpp-httplib 0.53.1 against the 0.54.1 pin, 3 of 18 sync_vendor entries are not reproducible, only cpp-httplib registers a licence file, nlohmann is always added but linked by one component, and the first port missed the cpp-httplib link from common.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 3541,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "slices_total": 3,
+      "slices_done": 3,
+      "remaining": [
+        "remove/replace the replaceable vendored components (nlohmann json, miniaudio, stb_image, xxhash, sha1, the in-tree Jinja, UI JS assets) or record the replacement plan",
+        "wire the three decisions into cmake/vendor and sync_vendor.py"
+      ],
+      "coverage_doc": "docs/goose-migration/P10-07-COVERAGE.md"
     },
     {
       "id": "P10-08",
@@ -4617,6 +4624,10 @@
     {
       "event": "P10-12 gaps G1/G2/G3/G6 closed (EXP650, 2776 values, 48/48); P9-08 is 7/7 slices with MTP warm-up, sampler chain and CLI driver open.",
       "checkpoint": "ec50a32d"
+    },
+    {
+      "event": "P10-07: vendored-dependency licence, provenance and selection decisions ported (EXP651, 240 comparisons, 12/12); replacement plan remains.",
+      "checkpoint": "9ac3eab0"
     }
   ],
   "batches": [
@@ -5507,16 +5518,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T04:18:18.997689+00:00",
+  "updated_at": "2026-11-15T04:24:46.105662+00:00",
   "status_totals": {
     "DONE": 113,
-    "PARTIAL": 15,
-    "TODO": 24
+    "PARTIAL": 16,
+    "TODO": 23
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 146,
-    "slices_done": 146,
+    "slices_total": 149,
+    "slices_done": 149,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

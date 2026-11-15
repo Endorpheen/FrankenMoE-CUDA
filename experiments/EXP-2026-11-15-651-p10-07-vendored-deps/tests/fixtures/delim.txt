@@ -1,0 +1,2 @@
+text with )=L= inside
+and a "quote" and a \ backslash

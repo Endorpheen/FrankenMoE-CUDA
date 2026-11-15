@@ -1,0 +1,40 @@
+# P10-07 S3 cases: ggml plan, vendor dirs, component linkage, mismatch masks
+ggml	0	0
+ggml	0	1
+ggml	1	0
+ggml	1	1
+dirs	0
+dirs	1
+deps	0
+deps	1
+deps	2
+deps	3
+deps	4
+closure	0	0	0
+closure	0	0	1
+closure	0	1	0
+closure	0	1	1
+closure	1	0	0
+closure	1	0	1
+closure	1	1	0
+closure	1	1	1
+added_not_linked	63	63
+linked_not_added	63	63
+added_not_linked	31	59
+linked_not_added	31	59
+added_not_linked	63	12
+linked_not_added	63	12
+added_not_linked	0	0
+linked_not_added	0	0
+added_not_linked	32	63
+linked_not_added	32	63
+added_not_linked	12	12
+linked_not_added	12	12
+added_not_linked	59	63
+linked_not_added	59	63
+added_not_linked	63	0
+linked_not_added	63	0
+added_not_linked	1	27
+linked_not_added	1	27
+added_not_linked	16	16
+linked_not_added	16	16

@@ -1,0 +1,60 @@
+absolute	/x
+absolute	
+absolute	C:/x
+absolute	C:x
+absolute	\\srv\share
+absolute	c:/x
+absolute	./x
+absolute	C:
+absolute	/
+resolve	/proj	vendor/x.h
+resolve	/proj/	vendor/x.h
+resolve	/proj	/etc/x.h
+resolve	/proj	C:/tools/x.h
+resolve	/proj	C:x
+resolve	/proj	a\\b
+resolve	/	x
+resolve	/proj	
+title	
+title	cpp-httplib
+title	miniaudio 0.11.24
+title	a\tb
+title	line\nbreak
+title	\xc3\xa9t\xc3\xa9
+title	x\ty\nz
+underline	
+underline	cpp-httplib
+underline	line\nbreak
+underline	a\tb
+underline	\xc3\xa9t\xc3\xa9
+underline	two\n\nbreaks
+underline	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+entry	cpp-httplib	cpp-httplib-LICENSE
+entry	llama.cpp	llama-LICENSE
+entry	empty	empty
+entry	no-eol	no-eol
+entry	crlf	crlf
+entry	delim	delim.txt
+entry	name with space	cpp-httplib-LICENSE
+body	
+body	cpp-httplib:cpp-httplib-LICENSE
+body	cpp-httplib:cpp-httplib-LICENSE|llama.cpp:llama-LICENSE|empty:empty
+body	no-eol:no-eol|crlf:crlf|delim:delim.txt
+missing	/proj	vendor/x.h
+missing	/proj	/etc/x.h
+missing	/proj	C:/tools/x.h
+missing	/proj/	rel.txt
+missing	/proj	
+no_target	
+no_target	llama-server
+no_target	a'b
+file_text	plain text\nwith newline
+file_text	a\rb\r\nc\n\rd\r\r\n
+file_text	
+file_text	a\r
+file_text	\r\n\r\n
+file_text	~512~\r\n~512~
+file_text	\r\r\r
+file_text	\r
+file_text	\r\n
+file_text	a\n\r

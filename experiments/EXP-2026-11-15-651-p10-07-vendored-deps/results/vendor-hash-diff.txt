@@ -1,0 +1,4 @@
+# vendored files whose bytes differ between the canon and the shipped tree
+vendor/cpp-httplib/httplib.cpp	canon=c796420a111cd2c5f4a3efaa48f9dc6f5ad8086c39646b5e3921fa3e30e7e4ee	shipped=8b1de0a587d68006d1c3cb3e056e0b80363b93f12d0ad3a26a9c83a236515f40
+vendor/cpp-httplib/httplib.h	canon=300a319f104096c8308b2c760a6d2b14de2505ac8e76a16cb51e2dd7787b55d0	shipped=b36e352ed5c39eabd26540f2089c83aafbcb29c5f36feb48a63575c63451ed7d
+# 2 of 27 files differ

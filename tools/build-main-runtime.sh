@@ -70,6 +70,9 @@ MODULES=(
     goose/misc/file-reader-windows.goose
     goose/misc/proc-readers.goose
     goose/misc/shard-naming.goose
+    goose/misc/vendor-licence-payload.goose
+    goose/misc/vendor-provenance.goose
+    goose/misc/vendor-selection.goose
     goose/misc/cpu-features.goose
     goose/misc/platform-paths.goose
     goose/misc/backend-select.goose
