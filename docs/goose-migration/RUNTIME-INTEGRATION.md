@@ -173,9 +173,13 @@ the ten accepted gates pass in both configurations with the expected
 `goose_calls`; nm shows exactly one `goose_init` in the twelve ON binaries, none
 in OFF, at most one definition per switch export and no `op_sqrt`; a two-thread
 init smoke reports `goose_init_runs=1`; the Apex reference binary is unchanged.
-The unit+adapter currently compile into `ggml-base` because the native IQ tables
-are file-static in `ggml-quants.c`; passing them at init is the next step. No
-model was started, so no performance or correctness claim is made yet.
+M1-b (EXP659) removes that seam: the unit and adapter are
+`libfg-goose-runtime.a`, and the IQ tables arrive through an ABI-1 descriptor
+registered before `goose_init`, with the CPU provider in `ggml-quants.c` reached
+by a weak reference. OFF/ON link at 17 794 640 / 22 050 592 B, the ten gates pass
+in both, the threaded init smoke reports `goose_init_runs=1` and `iq_bound=1`, and
+the IQ-view gate reports 15 360 comparisons with 0 failures. No model was started,
+so no performance or correctness claim is made yet.
 
 
 All of the above selected by default, the C++ implementations retained one
