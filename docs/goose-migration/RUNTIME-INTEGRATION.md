@@ -167,6 +167,17 @@ a rename. It starts only after the composition of those copies is designed.
 
 ### S4 — full runtime
 
+M1 (EXP658) is the first assembly: the CPU-only tree builds and links
+`llama-server` with all ten flags OFF (17 794 640 B) and ON-all (20 316 528 B);
+the ten accepted gates pass in both configurations with the expected
+`goose_calls`; nm shows exactly one `goose_init` in the twelve ON binaries, none
+in OFF, at most one definition per switch export and no `op_sqrt`; a two-thread
+init smoke reports `goose_init_runs=1`; the Apex reference binary is unchanged.
+The unit+adapter currently compile into `ggml-base` because the native IQ tables
+are file-static in `ggml-quants.c`; passing them at init is the next step. No
+model was started, so no performance or correctness claim is made yet.
+
+
 All of the above selected by default, the C++ implementations retained one
 release as the fallback, and the Apex baseline re-measured on the same flags.
 
