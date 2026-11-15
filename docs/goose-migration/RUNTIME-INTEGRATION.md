@@ -236,15 +236,22 @@ requirements that carry no slices yet:
 | P9-01 | S2 | wire `validate()`, `arch_registry.cpp` and `main.cpp` |
 | P9-03 | S1 | replace the 25 streaming call sites |
 | P9-07 | S2 | wire the three sinks and `DeterministicWorkload` |
-| P8-06 | S3 | model management, connectors and hot reload (accepted, EXP631) |
-| P9-04 | S1 | router hooks and I/O-compute overlap (in flight) |
+| P8-06 | S3 | switch wired in EXP642; remove the staged pin and default it on |
+| P9-04 | S1 | rewrite `on_eval` to the rh_ plan and replace the overlap/row-source call sites |
+| P9-05 | S3 | switch wired in EXP643; remove the staged pin and default it on |
+| P9-08 | S3 | engine closure switch not built yet; decide the two characterised behaviours |
 | P8-09 | S3 | web/UI serving and application integration |
-| P9-05 | S3 | standalone sessions/runtime/ngram draft (accepted, EXP632) |
-| P9-08 | S3 | standalone engine closure (accepted, EXP636) |
 | P4-13, P1-12 | S1 | allocation/scheduler unification and CPU MoE closure |
-| P10-* | S4 | build integration, packaging, headers/FFI, tools, licensing |
-| P11-*, C1-*, C2-*, F1-* | S4+ | Apex integration, Qwen extension and final qualification |
+| P10-05 | S4 | release/build/artifact policy ported (EXP645); wire into scripts/tools |
+| P10-06 | S4 | deterministic build and packaging done (`--repro`, `dist/`); CUDA/packaging tails open |
+| P10-08 | S4 | ABI tables/constants/names ported (EXP646); backend headers, SONAME and callbacks open |
+| P10-10 | S4 | CPU features, platform paths and backend selection ported (EXP648); non-Linux branches open |
+| P10-12 | S4 | audit done (EXP647); 12 gaps remain, G1/G6 and G2/G3 in flight |
+| P10-07, P10-09, P10-11 | S4 | vendored deps, test runners, licensing/reproducibility |
+| P11-*, C1-*, C2-*, F1-* | S4+ | Apex integration, Qwen extension and final qualification (model runs need Igor's approval) |
 
-P10-01 (consolidation) is already true in practice: every accepted slice is in
-`goose/`, `MANIFEST.json` covers all 811 files outside `_archive`, and
-`check-goose-tree.py` is green; it needs a criterion decision, not more work.
+P10-01 (consolidation) is done: every accepted slice is in `goose/`,
+`MANIFEST.json` covers all 891 files outside `_archive`, and
+`check-goose-tree.py` is green. P10-06's determinism half is proven by
+`build-main-runtime.sh --repro` and its packaging half by
+`package-main-runtime.sh` (`dist/` with SHA256SUMS and manifest.json).
