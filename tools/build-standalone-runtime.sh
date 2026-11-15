@@ -53,6 +53,22 @@ $CC -O1 -std=c11 -w -I "$OUT/inc" \
 $CC -O1 "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/smoke.o" \
     -lm -pthread -o "$OUT/frankenmoe-standalone"
 
+echo "[4b/5] v2: the GGUF path (substrate reader + Goose metadata table)"
+# The GGUF container is substrate; every metadata decision is Goose. v2 links the
+# OFF ggml libraries, because the ON ones carry the carrier bridges that would
+# introduce a second goose_init into the same process.
+SUB=${FG_SUBSTRATE:-/tmp/opencode/sub-661/tree/build-off/llama.cpp/ggml/src}
+if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v2.c" ]; then
+    $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$ROOT/upstream/llama.cpp/ggml/include" \
+        -c "$ROOT/integration/goose-standalone/host_v2.c" -o "$OUT/host_v2.o"
+    $CC -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v2.o" \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -lstdc++ \
+        -o "$OUT/frankenmoe-v2"
+    printf '  v2:     %s (%s B)\n' "$OUT/frankenmoe-v2" "$(stat -c%s "$OUT/frankenmoe-v2")"
+else
+    printf '  v2:     skipped (substrate not found at %s)\n' "$SUB"
+fi
+
 echo "[5/5] result"
 printf '  binary: %s (%s B)\n' "$OUT/frankenmoe-standalone" \
     "$(stat -c%s "$OUT/frankenmoe-standalone")"
