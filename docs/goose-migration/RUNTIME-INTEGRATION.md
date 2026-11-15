@@ -190,8 +190,35 @@ already composes all accepted modules that share one unit.
 
 ## Immediate next actions
 
-1. Accept the composed artifact from S0 (no model run).
-2. Prepare the S1.1 build switch (JSON escaper + schema converter) and its unit
-   gates.
-3. Ask Igor for the first model A/B with the exact plan (goal, duration, number
+1. S0 is accepted (EXP627): the sets link into one artifact and every one loads.
+2. S1.1 is accepted (EXP626): the schema converter runs behind a build flag with
+   identical grammar text and a native fallback.
+3. S1.4 is accepted (EXP628): metrics encoders behind a flag with byte parity.
+4. In flight: GGUF (S1.2), quantizers (S1.3), config validation (S2.1), model
+   management (P8-06) and router/overlap (P9-04).
+5. Ask Igor for the first model A/B with the exact plan (goal, duration, number
    of runs) before any server is started.
+
+## Remaining work map
+
+The slice front is complete (112/112). What is left is integration and the
+requirements that carry no slices yet:
+
+| requirement | stage | what it needs |
+|---|---|---|
+| P6-11 | S2 | wire `ngram_draft.cpp` and `session.cpp` to the sdp_ decisions |
+| P7-12 | S1 | wire vocab dispatch, special partition and common strings |
+| P9-01 | S2 | wire `validate()`, `arch_registry.cpp` and `main.cpp` |
+| P9-03 | S1 | replace the 25 streaming call sites |
+| P9-07 | S2 | wire the three sinks and `DeterministicWorkload` |
+| P8-06 | S3 | model management, connectors and hot reload (in flight) |
+| P9-04 | S1 | router hooks and I/O-compute overlap (in flight) |
+| P8-09 | S3 | web/UI serving and application integration |
+| P9-05, P9-08 | S3 | standalone sessions/runtime/ngram draft and engine closure |
+| P4-13, P1-12 | S1 | allocation/scheduler unification and CPU MoE closure |
+| P10-* | S4 | build integration, packaging, headers/FFI, tools, licensing |
+| P11-*, C1-*, C2-*, F1-* | S4+ | Apex integration, Qwen extension and final qualification |
+
+P10-01 (consolidation) is already true in practice: every accepted slice is in
+`goose/`, `MANIFEST.json` covers all 811 files outside `_archive`, and
+`check-goose-tree.py` is green; it needs a criterion decision, not more work.
