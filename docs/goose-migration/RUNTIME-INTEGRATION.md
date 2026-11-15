@@ -189,7 +189,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | CLI tools | P10-02 | S4 | in flight | inventory-first |
 | standalone engine | P9-08 | S3 | in flight | inventory-first |
 | tokenizer switch | S1.5 | S1 | in flight | staged build behind FG_GOOSE_TOKENIZER |
-| streaming switch | S1.6 | S1 | in flight | staged build behind FG_GOOSE_STREAM |
+| streaming switch (done, EXP637) | S1.6 | S1 | EXP637 | 71/71 both paths, goose_calls=74, nm 1/0 |
 | speculative switch | S2.2 | S2 | in flight | staged build behind FG_GOOSE_SPEC |
 | IQ off-grid fix | P7-04 | S1 | in flight | canonical IQ2_S/IQ3_XXS/IQ1_M defect |
 

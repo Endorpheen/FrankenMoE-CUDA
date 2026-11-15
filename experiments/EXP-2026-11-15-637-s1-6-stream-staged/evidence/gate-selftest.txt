@@ -1,0 +1,9 @@
+# gate self-test: mutated native transcription vs the untouched Goose module
+reread_off caught=yes FG641_SMOKE mode=goose cases=71 failures=1 goose_calls=74 decisions=4 entries=6
+budget_no_clamp caught=yes FG641_SMOKE mode=goose cases=71 failures=1 goose_calls=74 decisions=4 entries=6
+wave_hits_emitted caught=yes FG641_SMOKE mode=goose cases=71 failures=10 goose_calls=74 decisions=4 entries=6
+subtract_tail_closed caught=yes FG641_SMOKE mode=goose cases=71 failures=1 goose_calls=74 decisions=4 entries=6
+promote_ignored caught=yes FG641_SMOKE mode=goose cases=71 failures=1 goose_calls=74 decisions=4 entries=6
+verdict_ignores_veto caught=yes FG641_SMOKE mode=goose cases=71 failures=5 goose_calls=74 decisions=4 entries=6
+evict_ever_clear caught=yes FG641_SMOKE mode=goose cases=71 failures=14 goose_calls=74 decisions=4 entries=6
+FG641_SELFTEST caught=7/7

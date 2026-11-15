@@ -1,0 +1,13 @@
+# the six switched exports, defined text symbols
+## build-stream-off
+(none)
+## build-stream-on
+00000000003550d0 T dw_subtract
+0000000000352ea0 T ov_wave_list
+0000000000352540 T rs_table_verdict
+0000000000355d60 T xl_evict_tail
+0000000000355fb0 T xl_set_budget
+0000000000355990 T xl_touch
+# the native transcription must exist in both
+## build-stream-off fg_native_ defined: 6
+## build-stream-on fg_native_ defined: 6

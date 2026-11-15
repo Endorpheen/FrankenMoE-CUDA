@@ -1,0 +1,5 @@
+0000000000351c80 T fg_goose_json_schema_calls
+0000000000380c60 T goose_init
+0000000000255230 T json_schema_to_grammar[abi:cxx11](common_json const&, bool)
+00000000002568f0 T json_schema_to_grammar_native[abi:cxx11](common_json const&, bool)
+0000000000357410 T fg_goose_json_schema_to_grammar[abi:cxx11](common_json const&)

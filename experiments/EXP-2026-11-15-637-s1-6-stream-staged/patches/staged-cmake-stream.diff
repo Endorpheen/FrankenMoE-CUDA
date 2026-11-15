@@ -1,0 +1,87 @@
+--- /tmp/opencode/sub-629/tree/CMakeLists.txt	2026-11-15 02:12:47.722486711 +0300
++++ CMakeLists.txt	2026-11-15 04:19:37.057880870 +0300
+@@ -1,11 +1,14 @@
+-# Staged S1.1 build: llama.cpp (CPU only) with one Goose module behind a flag.
++# Staged build: llama.cpp (CPU only) with the Goose modules behind flags.
+ #
+-#   OFF (default): the native json-schema-to-grammar.cpp body is selected, the
+-#                  Goose object is not compiled and not linked.
+-#   ON           : json_schema_to_grammar() dispatches to the Goose module
+-#                  (goose/json/format-grammar.goose -> goose-gen/json-schema-grammar.c)
+-#                  through common/fg-goose-schema-bridge.cpp. The native body
+-#                  stays compiled under json_schema_to_grammar_native().
++#   FG_GOOSE_JSON_SCHEMA  S1.1: the schema-to-GBNF converter.
++#   FG_GOOSE_STREAM       S1.6: the P9-03/P9-04 stream decisions.
++#
++# FG_GOOSE_STREAM OFF (default): fg_xl_*/fg_dw_*/fg_ov_*/fg_rs_* run the native
++#                  transcription in common/fg-stream-policy.cpp; the Goose object
++#                  is not compiled and not linked.
++# FG_GOOSE_STREAM ON           : the same entry points enter the Goose module
++#                  (goose/stream_policy.goose -> goose-gen/stream-policy.c). The
++#                  native transcription stays compiled as fg_native_*.
+ #
+ # Nothing here touches the production tree: this file, tests/ and goose-gen/
+ # live only in the staged copy.
+@@ -17,6 +20,14 @@
+        "Select the Goose json-schema-to-grammar module instead of the native converter"
+        OFF)
+ 
++# S1.6: the P9-03/P9-04 stream decisions. OFF runs the native transcription,
++# ON runs the Goose module (goose/stream_policy.goose -> goose-gen/stream-policy.c)
++# through common/fg-stream-policy.cpp. The transcription stays compiled in both
++# configurations, so switching the flag off is a rebuild, not a revert.
++option(FG_GOOSE_STREAM
++       "Select the Goose stream decisions (xl_/dw_/ov_/rs_) instead of the native transcription"
++       OFF)
++
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ 
+@@ -56,6 +67,28 @@
+     target_link_libraries(llama-common PRIVATE fg-goose-json-schema)
+ endif()
+ 
++# --- the stream decisions (S1.6) -------------------------------------------
++#
++# The bridge lives in the library in both configurations: its native half is
++# what the flag falls back to. Only the generated Goose translation unit is
++# conditional.
++target_sources(llama-common PRIVATE common/fg-stream-policy.cpp)
++
++if(FG_GOOSE_STREAM)
++    add_library(fg-goose-stream OBJECT goose-gen/stream-policy.c)
++    set_target_properties(fg-goose-stream PROPERTIES
++        C_STANDARD 11
++        C_STANDARD_REQUIRED ON
++        POSITION_INDEPENDENT_CODE ON)
++    target_include_directories(fg-goose-stream PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/goose-gen)
++    # Generated code: keep llama.cpp's warning set out of it.
++    target_compile_options(fg-goose-stream PRIVATE -w)
++
++    target_compile_definitions(llama-common PRIVATE FG_GOOSE_STREAM=1)
++    target_include_directories(llama-common PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/goose-gen)
++    target_link_libraries(llama-common PRIVATE fg-goose-stream)
++endif()
++
+ # --- gate -------------------------------------------------------------------
+ 
+ add_executable(fg-goose-smoke tests/fg_goose_smoke.cpp)
+@@ -64,9 +97,18 @@
+     target_compile_definitions(fg-goose-smoke PRIVATE FG_GOOSE_JSON_SCHEMA=1)
+ endif()
+ 
++# Differential gate for the stream decisions: the selected implementation and
++# the native transcription in one process, synthetic state only. -O1 is the
++# repository's gate convention.
++add_executable(fg-goose-stream-gate tests/fg_goose_stream_gate.cpp)
++target_include_directories(fg-goose-stream-gate PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/common)
++target_compile_options(fg-goose-stream-gate PRIVATE -O1)
++target_link_libraries(fg-goose-stream-gate PRIVATE llama-common)
++
+ # Prints the selected grammar text per corpus schema; the base and OFF builds
+ # must print the same text (switch-off parity).
+ add_executable(fg-goose-dump tests/fg_goose_dump.cpp)
+ target_link_libraries(fg-goose-dump PRIVATE llama-common)
+ 
+ message(STATUS "FG_GOOSE_JSON_SCHEMA = ${FG_GOOSE_JSON_SCHEMA}")
++message(STATUS "FG_GOOSE_STREAM = ${FG_GOOSE_STREAM}")
