@@ -90,6 +90,9 @@ MODULES=(
     goose/server/download-selection.goose
     goose/chat/thinking-control.goose
     goose/chat/parse-params.goose
+    goose/chat/session-loop.goose
+    goose/cli/jsonparse.goose
+    goose/json/json-dump.goose
 )
 
 echo "[1/5] compose ${#MODULES[@]} modules"
