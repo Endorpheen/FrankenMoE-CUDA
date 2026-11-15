@@ -169,19 +169,27 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 
 | stream | requirement | stage | experiment | state |
 |---|---|---|---|---|
-| config/recipe/registry | P9-01 | S2 | EXP620 | accepted, 3/3 gates, call sites native |
+| config/recipe/registry | P9-01 | S2 | EXP620 | accepted, 3/3 gates; `validate()` wired in EXP630 |
 | dense/expert streaming | P9-03 | S1 | EXP621 | accepted, 74/198, call sites native |
-| metrics/traces/workload | P9-07 | S1 | EXP618 | accepted, 106/203, sinks native |
-| meta backend/threading | P4-12 | S1 | EXP617 | accepted, 67/67; optimizer slice open |
+| metrics/traces/workload | P9-07 | S1 | EXP618 | accepted, 106/203; field/row encoders wired in EXP628 |
+| meta backend/threading | P4-12 | S1 | EXP617 | accepted, 67/67 |
+| ggml-opt optimizer | P4-12 | S1 | EXP624 | accepted, 132/132; P4-12 DONE 4/4 |
 | MTP/speculative draft | P6-11 | S2 | EXP619 | accepted, 9828/0, engine wiring open |
 | loader/tokenizer/common | P7-12 | S1 | EXP622 | accepted, 3/3 gates, wiring open |
 | MCP stdio integration | P8-07 S5b | S2 | EXP623 | accepted, 26/243; P8-07 DONE 6/6 |
+| hoisted native index | P7-08 | S3 | EXP625 | accepted, gbnf 13/13, parse 9/9; P7-08 DONE 9/9 |
+| router hooks/overlap | P9-04 | S1 | EXP629 | accepted, 1007 checks, on_eval wiring open |
+| model manager/reload/connectors | P8-06 | S3 | EXP631 | accepted, 49 cases / 521 values, wiring open |
+| sessions/runtime/draft source | P9-05 | S3 | EXP632 | accepted, 332 checks, wiring open |
+| signed-zero dequantizer fix | P7-04 | S1 | EXP633 | accepted, bit-exact 300/300, 12/12 + 3/3 |
+| GGUF write/plan | S1.2 | S1 | in flight | OFF/ON build proven, mutation set pending |
+| quantizers | S1.3 | S1 | in flight | OFF/ON build proven, mutation set pending |
+| CLI tools | P10-02 | S4 | in flight | inventory-first |
+| standalone engine | P9-08 | S3 | in flight | inventory-first |
 
-Still in flight: the hoisted native index (P7-08, chat grammar text parity, not a
-runtime link), the composed-artifact smoke build (S0), the ggml-opt optimizer
-(P4-12, the last slice) and the isolated S1.1 staging build. Each stream lands
-in the canon on its own gate before a stage consumes it; the main runtime build
-already composes all accepted modules that share one unit.
+The composed artifact (S0, EXP627), the S1.1 schema switch (EXP626), the S1.4
+metrics switch (EXP628) and the S2.1 config switch (EXP630) are accepted. The
+main runtime build composes every accepted module that shares one unit.
 
 ## Verification protocol per stage
 
