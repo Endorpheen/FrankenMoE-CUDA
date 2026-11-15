@@ -44,9 +44,9 @@ output path, so the artifact hash is reproducible at a fixed `OUT`.
 
 The growing main build is `tools/build-main-runtime.sh`. It composes every
 accepted module that shares one unit, typechecks, generates C, compiles an
-object and fails on any duplicate global symbol. Current state: 50 modules,
-2616 specializations, 16.8 MB of C, 3 s to typecheck and 13 s to compile,
-549 global symbols, 0 duplicates, 97 extern helper entry points at -O1.
+object and fails on any duplicate global symbol. Current state: 53 modules,
+2700 specializations, 16.9 MB of C, 3 s to typecheck and 13 s to compile,
+581 global symbols, 0 duplicates, 99 extern helper entry points at -O1.
 
 The build holds the model graph/loader/file-io/arch-registry, the six quantizer
 modules plus weighted, the four GGUF modules, expert LRU, dense placement,
@@ -188,7 +188,7 @@ release as the fallback, and the Apex baseline re-measured on the same flags.
 | signed-zero dequantizer fix | P7-04 | S1 | EXP633 | accepted, bit-exact 300/300, 12/12 + 3/3 |
 | GGUF write/plan (done, EXP634) | S1.2 | S1 | EXP634 | smoke 14/14, split 17/0, mutations 12/12 |
 | quantizers (done, EXP635) | S1.3 | S1 | EXP635 | smoke 46/58, arms 112/112, mutations 12/12; IQ off-grid defect open |
-| CLI tools | P10-02 | S4 | in flight | inventory-first |
+| CLI tools (accepted, EXP638) | P10-02 | S4 | EXP638 | 182/40/28 cases, mutations 36/36 |
 | standalone engine | P9-08 | S3 | in flight | inventory-first |
 | tokenizer switch | S1.5 | S1 | in flight | staged build behind FG_GOOSE_TOKENIZER |
 | streaming switch (done, EXP637) | S1.6 | S1 | EXP637 | 71/71 both paths, goose_calls=74, nm 1/0 |

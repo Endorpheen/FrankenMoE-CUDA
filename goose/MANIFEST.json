@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T01:23:50.692338+00:00",
+  "updated_at": "2026-11-15T01:40:32.563243+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -939,6 +939,42 @@
       "status": "ported",
       "sha256": "12abe5892f594862d133a7d48528d98fbef5d0fb9e7ee8baafe19e12fdedbb2a",
       "gate": "22 cases / 63 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "cli/llama-bench-report.goose",
+      "native": "tools/llama-bench/llama-bench.cpp (report format, defaults, ranges, aggregates, table/JSON/CSV/SQL)",
+      "native_targets": [
+        "tools/llama-bench/llama-bench.cpp (report format, defaults, ranges, aggregates, table/JSON/CSV/SQL)"
+      ],
+      "experiment": "EXP-2026-11-15-638-p10-02-cli-tools",
+      "task": "",
+      "status": "ported",
+      "sha256": "0a3b37cfcba1b4a6985de87c2a9b1851e83e78178dd106af2cf6b9afae6bbed4",
+      "gate": "182 cases / 503 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "cli/tokenize-cli.goose",
+      "native": "tools/tokenize (prompt source, escapes, add_bos, ids/pieces, show-count)",
+      "native_targets": [
+        "tools/tokenize (prompt source, escapes, add_bos, ids/pieces, show-count)"
+      ],
+      "experiment": "EXP-2026-11-15-638-p10-02-cli-tools",
+      "task": "",
+      "status": "ported",
+      "sha256": "5ca4a50e8e80aa0a81a973441ca66e3b2ff4f0a1131f2af01e5b838aac28fc28",
+      "gate": "40 cases / 40 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "cli/fit-params-line.goose",
+      "native": "tools/fit-params (the -c/-ngl/-ts/-ot line, zero-split trim, uint32 conversion)",
+      "native_targets": [
+        "tools/fit-params (the -c/-ngl/-ts/-ot line, zero-split trim, uint32 conversion)"
+      ],
+      "experiment": "EXP-2026-11-15-638-p10-02-cli-tools",
+      "task": "",
+      "status": "ported",
+      "sha256": "ca1ee2263d2b97446786d18012572ae031bb4e2ce4d77e28c3fc8371c57b3161",
+      "gate": "28 cases / 28 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "cli/config-validate.goose",
@@ -12238,6 +12274,118 @@
       "task": "",
       "status": "slice",
       "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/format-grammar.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "a5c66d60de35378b4378bfb5e65f13f94f5f89551aa33020bdd903c460dfa3f2"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/stream/dense_place.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "cfdf41c3e97a899aa055a5f7d84e201dfa2272430b06f078d46403f61b028212"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/stream/expert_lru.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "72eae3cac7c4fa704947bea734d40d8b60fe49be759cc94a40cc2e73bff26010"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/stream/hook_rules.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "0a2de5e66c08857be3b8d221b3dc7941c75fd9be7a1759f29c0e34adcc3f4ef8"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/stream/overlap_rules.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f47d0d44dd15a188473d8ee6ee685f751e001e3ba5f4854e9f438cf857481507"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/stream/row_select.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "f418a174e79c47ce1d2240db836fdfadc3b99f6ba0fd1e42d20660b39f241fd6"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/stream/stream_plan.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "12abe5892f594862d133a7d48528d98fbef5d0fb9e7ee8baafe19e12fdedbb2a"
+    },
+    {
+      "goose": "json/s1-6-stream-staged/goose/stream/stream_policy_all.goose",
+      "native": "common/json-schema.c",
+      "native_targets": [
+        "common/json-schema.c",
+        "src/moe/expert_stream_source.c",
+        "src/moe/stall_union.h",
+        "src/moe/dense_weights.c"
+      ],
+      "experiment": "EXP-2026-11-15-637-s1-6-stream-staged",
+      "task": "",
+      "status": "slice",
+      "sha256": "36003bf7e506dd5a28ad99d17834c18848eeee7e2deb4ebf647b0266468df12f"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",

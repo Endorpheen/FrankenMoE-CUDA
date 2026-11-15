@@ -63,6 +63,9 @@ MODULES=(
     goose/cli/config-validate.goose
     goose/cli/config-resolve.goose
     goose/cli/cli-protocol.goose
+    goose/cli/llama-bench-report.goose
+    goose/cli/tokenize-cli.goose
+    goose/cli/fit-params-line.goose
     goose/metrics/metrics-traces.goose
     goose/misc/spec-decode-decisions.goose
     goose/misc/session-lifecycle.goose
