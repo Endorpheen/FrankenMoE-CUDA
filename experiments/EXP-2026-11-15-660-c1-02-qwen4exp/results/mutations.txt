@@ -1,0 +1,12 @@
+== q4m 0 6
+q4m mutations 6/6 caught (range 0:6) missed=[]
+== q4m 6 12
+q4m mutations 6/6 caught (range 6:12) missed=[]
+== q4t 0 6
+q4t mutations 6/6 caught (range 0:6) missed=[]
+== q4t 6 12
+q4t mutations 6/6 caught (range 6:12) missed=[]
+== q4e 0 6
+q4e mutations 6/6 caught (range 0:6) missed=[]
+== q4e 6 12
+q4e mutations 6/6 caught (range 6:12) missed=[]

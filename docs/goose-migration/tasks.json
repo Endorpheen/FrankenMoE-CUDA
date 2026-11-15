@@ -2889,14 +2889,14 @@
       "phase": "C1",
       "workstream": "QWEN_COMPATIBILITY",
       "title": "Extend general model graph/metadata support to Qwen4Exp",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "src/models/qwen4exp.cpp",
         "src/llama-arch.cpp",
         "src/llama-graph.cpp"
       ],
       "acceptance": "Use existing shared Goose graph/runtime; architecture adapter only where source semantics differ; no cloned backend/runtime.",
-      "evidence": "",
+      "evidence": " 2026-11-15 EXP660 (experiments/EXP-2026-11-15-660-c1-02-qwen4exp): Qwen4Exp metadata (q4m_: 27 GGUF keys with mandatory/arity classes, PLE/HC/indexer/SSM guards, recurrence from full_attention_interval and the n_layer==48 A3B type), tensor map (q4t_: 52 ids with name, arity, suffix, bucket, loader flags and presence) and expert layout (q4e_: routed/shared experts, fused/split gate-up and QKV probes, shared widths, reusing base/model_graph functions) are Goose. Gates 15/222 + 13/528 + 12/28 plus a join gate 3/156 (43 cases / 934 comparisons), 0 failures, byte-identical at -O0; mutations 36/36. The join gate checks that q4t_present agrees with q4_shape for 3 layer kinds x 51 ids. Boundaries: the T_NEXTN_HC_HEAD ids exist only in the integration tree, the skip-PLE branch is not modelled, the HC gamma rank differs between canon and native (same element count), the gate is structural and no GGUF/weights are loaded.",
       "depends_on": [
         "P11-07"
       ],
@@ -2904,10 +2904,15 @@
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B6",
       "remaining": [
-        "general model graph/metadata builders needed by Qwen"
+        "T_NEXTN_HC_HEAD ids exist only in the integration tree, not the pinned upstream",
+        "the skip-PLE tensor branch of the integration tree is not modelled",
+        "HC gamma rank differs (canon {n_embd, hc} vs native {hc_dim}); element count matches",
+        "the gate is structural (transcription oracle), no GGUF load or weights"
       ],
-      "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "coverage_doc": "docs/goose-migration/C1-02-COVERAGE.md",
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "slices_total": 3,
+      "slices_done": 3
     },
     {
       "id": "C1-03",
@@ -4711,6 +4716,10 @@
     {
       "event": "P11-01 M1-b: IQ tables bind at init, the unit is its own static library, no ggml-base seam (EXP659).",
       "checkpoint": "d22d3c4b"
+    },
+    {
+      "event": "C1-02: Qwen4Exp metadata, tensor map and expert layout ported (EXP660, 934 comparisons, 36/36).",
+      "checkpoint": "6ee05be2"
     }
   ],
   "batches": [
@@ -5601,16 +5610,16 @@
     "2026-11-11-exp245": "SET closed the last P3-03 item without an implementation. Nine Goose implementations now exist, eight integrated and one deliberately not. The distinction introduced here is worth keeping: 'ported' and 'shipped' are not the same act. A gated implementation of an unreachable kernel is a deliverable; putting it into the DSO is a liability, because the witness that proves a route works is exactly the thing that reads zero when it does not.",
     "2026-11-11-expert-used-width": "Checked whether the other mm_ids_helper n_expert_used widths are worth porting. A grep turned up n_expert_used=10 in results/, which would have contradicted the ported <(int)8> specialisation -- but both hits are results/archive/EXP-2026-09-16-072, a different model and profile. Apex uses 8, consistent with the specialisation EXP181 ported and with that route's live witness (FG181M host=0x1 paths=0x1). So the remaining widths are DORMANT for this profile: port them under the EXP245/246/247 rule -- implement and gate, do not integrate -- if and when a profile reaches them. The near-miss is worth recording because the grep result looked like a contradiction and was resolved by looking at WHERE the match came from, not by reasoning about what the number probably meant."
   },
-  "updated_at": "2026-11-15T06:32:01.213494+00:00",
+  "updated_at": "2026-11-15T06:35:57.436220+00:00",
   "status_totals": {
     "DONE": 114,
-    "PARTIAL": 21,
-    "TODO": 17
+    "PARTIAL": 22,
+    "TODO": 16
   },
   "work_front": {
     "note": "DONE counts requirements, not slices. Slice-bearing requirements are P7-08, P7-09, P7-02, P9-06, P7-04, P7-11, P6-05, P6-09, P8-07, P4-12, P9-07, P6-11, P9-01, P9-03, P7-12, P9-04, P8-06 and P9-05.",
-    "slices_total": 167,
-    "slices_done": 167,
+    "slices_total": 170,
+    "slices_done": 170,
     "slices_in_progress": 0,
     "slices_remaining": 0
   },

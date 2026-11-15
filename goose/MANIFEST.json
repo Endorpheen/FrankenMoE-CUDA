@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T05:45:57.891341+00:00",
+  "updated_at": "2026-11-15T06:36:01.472847+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -903,6 +903,42 @@
       "status": "ported",
       "sha256": "5e690752d7941802d76fa9500596606bc0cb67dd112a9f770506f4c7a366c174",
       "gate": "26 steps / 243 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/q4m-metadata.goose",
+      "native": "src/models/qwen4exp.cpp (27 GGUF keys, PLE/HC/indexer/SSM guards, recurrence, model type)",
+      "native_targets": [
+        "src/models/qwen4exp.cpp (27 GGUF keys, PLE/HC/indexer/SSM guards, recurrence, model type)"
+      ],
+      "experiment": "EXP-2026-11-15-660-c1-02-qwen4exp",
+      "task": "",
+      "status": "ported",
+      "sha256": "c5de38da03c433c0e7ecfeaf37ccd1061617c88d9ac8341f045de4cb3e4e93a6",
+      "gate": "15 cases / 222 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/q4t-tensor-map.goose",
+      "native": "src/models/qwen4exp.cpp (52 tensor ids: name, arity, suffix, bucket, flags, presence)",
+      "native_targets": [
+        "src/models/qwen4exp.cpp (52 tensor ids: name, arity, suffix, bucket, flags, presence)"
+      ],
+      "experiment": "EXP-2026-11-15-660-c1-02-qwen4exp",
+      "task": "",
+      "status": "ported",
+      "sha256": "4e5e5595b47df0392480b286293361aafaf73a6a92c7346f1ad562a08acedbba",
+      "gate": "13 cases / 528 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "model/q4e-expert-layout.goose",
+      "native": "src/models/qwen4exp.cpp (routed/shared experts, fused/split probes, QKV widths)",
+      "native_targets": [
+        "src/models/qwen4exp.cpp (routed/shared experts, fused/split probes, QKV widths)"
+      ],
+      "experiment": "EXP-2026-11-15-660-c1-02-qwen4exp",
+      "task": "",
+      "status": "ported",
+      "sha256": "c286704f15f464653ed9761d9bc9e5ffc871f93a6f120e1b620d56fae1d29cd4",
+      "gate": "12 cases / 28 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "model/vocab-type.goose",

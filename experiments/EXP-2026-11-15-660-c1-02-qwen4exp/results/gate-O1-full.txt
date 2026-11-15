@@ -1,0 +1,24 @@
+### q4m
+[c1-02:q4m] gen.o cached
+[c1-02:q4m] cxx -O1
+[c1-02:q4m] link
+[c1-02:q4m] run
+C1_02_Q4M cases=15 values=222 failures=0
+### q4t
+[c1-02:q4t] gen.o cached
+[c1-02:q4t] cxx -O1
+[c1-02:q4t] link
+[c1-02:q4t] run
+C1_02_Q4T cases=13 values=528 failures=0
+### q4e
+[c1-02:q4e] gen.o cached
+[c1-02:q4e] cxx -O1
+[c1-02:q4e] link
+[c1-02:q4e] run
+C1_02_Q4E cases=12 values=28 failures=0
+### join
+[c1-02:join] gen.o cached
+[c1-02:join] cxx -O1
+[c1-02:join] link
+[c1-02:join] run
+C1_02_JOIN cases=3 values=156 failures=0
