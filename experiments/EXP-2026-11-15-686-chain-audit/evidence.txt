@@ -1,0 +1,19 @@
+=== linked libraries ===
+linux-vdso.so.1
+libstdc++.so.6
+libm.so.6
+libgomp.so.1
+libgcc_s.so.1
+libc.so.6
+/lib64/ld-linux-x86-64.so.2
+=== symbol counts ===
+llama_*   0
+bmoe::*   0
+cuda      0
+=== these are decisions, not engines ===
+0000000000399fe1 T ce_decode
+000000000038c52a T kvp_prefill_span
+00000000003a7379 T kv_rule
+00000000003a2182 T qry_decode_path
+00000000003a21b4 T qry_decode_query
+00000000003a35ff T tc_add_prefill
