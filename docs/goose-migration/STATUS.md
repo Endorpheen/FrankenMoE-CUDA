@@ -1,11 +1,11 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (15). This file is the current state; update it in the same change
+Updated: 2026-11-15 (16). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 113**, **PARTIAL 18**, **TODO 21** of
+`docs/goose-migration/tasks.json`: **DONE 113**, **PARTIAL 19**, **TODO 20** of
 152 functional requirements. Slice front: **155 / 155** done, none remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
@@ -31,6 +31,7 @@ The remaining partial requirements and their slice fronts:
 | P10-07 | 3 / 3 | replace or plan replacement of the 9 replaceable vendored components |
 | P10-09 | 3 / 3 | wire the runner, fixture and diagnostics decisions into tests/tools |
 | P8-09 | 3 / 3 | CORS, query decode, API-key middleware, web_serve wiring |
+| P1-12 | — | Igor's decision: reclassify SIMD dot kernels as substrate, wait for a Goose vector surface, or split the criterion |
 
 ## What the canonical tree contains
 
