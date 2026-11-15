@@ -1,11 +1,11 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (12). This file is the current state; update it in the same change
+Updated: 2026-11-15 (13). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 112**, **PARTIAL 14**, **TODO 26** of
+`docs/goose-migration/tasks.json`: **DONE 113**, **PARTIAL 14**, **TODO 25** of
 152 functional requirements. Slice front: **139 / 139** done, none remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
