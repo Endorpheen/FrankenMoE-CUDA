@@ -57,6 +57,9 @@ MODULES=(
     goose/cli/cli-protocol.goose
     goose/metrics/metrics-traces.goose
     goose/misc/spec-decode-decisions.goose
+    goose/misc/session-lifecycle.goose
+    goose/misc/runtime-facade.goose
+    goose/misc/draft-source.goose
     goose/server/mcp-core.goose
     goose/server/mcp-stdio.goose
     goose/server/mcp-integration.goose

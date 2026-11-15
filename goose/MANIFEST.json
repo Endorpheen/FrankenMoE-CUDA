@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T00:35:38.166053+00:00",
+  "updated_at": "2026-11-15T00:42:12.313785+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -975,6 +975,42 @@
       "status": "ported",
       "sha256": "01dae1c99e143cf2fd3f97918246e9d4659682f624dc0d76ecd4092eba218a91",
       "gate": "936 matrix + 20000 fuzz / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/session-lifecycle.goose",
+      "native": "runtime/core/src/engine/session.cpp (VRAM hot-store sizing, preflight clamp, probe, teardown order)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (VRAM hot-store sizing, preflight clamp, probe, teardown order)"
+      ],
+      "experiment": "EXP-2026-11-15-632-p9-05-sessions-runtime",
+      "task": "",
+      "status": "ported",
+      "sha256": "ae013aef00c8d37e742d369373c70b1e924b46057c8837c620ebedf94f3e537c",
+      "gate": "17 cases / 119 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/runtime-facade.goose",
+      "native": "runtime/core/src/engine/runtime.cpp and session.cpp (config projection, n_batch, run order, result invariant)",
+      "native_targets": [
+        "runtime/core/src/engine/runtime.cpp and session.cpp (config projection, n_batch, run order, result invariant)"
+      ],
+      "experiment": "EXP-2026-11-15-632-p9-05-sessions-runtime",
+      "task": "",
+      "status": "ported",
+      "sha256": "f69307f4579e80d19572bdda8304b38243a8b9a172b5da231ca3957ae1c3caf7",
+      "gate": "11 cases / 135 checks / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "misc/draft-source.goose",
+      "native": "runtime/core/src/engine/session.cpp (load_mtp, head admission, stream bound, draft/verify widths, RunInfo)",
+      "native_targets": [
+        "runtime/core/src/engine/session.cpp (load_mtp, head admission, stream bound, draft/verify widths, RunInfo)"
+      ],
+      "experiment": "EXP-2026-11-15-632-p9-05-sessions-runtime",
+      "task": "",
+      "status": "ported",
+      "sha256": "15ef8fef31fd23421b7b33058c83a26460460941648482584367c5af45502d79",
+      "gate": "36 cases / 78 checks / 0 failures, 12/12 mutations"
     },
     {
       "goose": "misc/spec-decode-decisions.goose",

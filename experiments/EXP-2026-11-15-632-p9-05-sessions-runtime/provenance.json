@@ -1,0 +1,51 @@
+{
+  "experiment": "EXP-2026-11-15-636-p9-05-session-runtime-draft",
+  "task": "P9-05",
+  "base_commit": "e920c612",
+  "sources_read_at": "6aec5a2f73c4913c0089f5e25d3fe5ecf8478e30",
+  "sources_identical_between_base_and_read": true,
+  "compiler": {
+    "path": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+    "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+    "version": "goose-2026.3-string",
+    "runtime_version": "1e714e6146bc"
+  },
+  "host": {
+    "cc": "gcc-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0",
+    "cxx": "g++-13 (Ubuntu 13.4.0-10ubuntu1) 13.4.0"
+  },
+  "production_changed": false,
+  "model_or_gpu_run": false,
+  "files": [
+    {
+      "path": "source/ss-session-lifecycle.goose",
+      "slice": "S1 ss_",
+      "source_sha256": "ae013aef00c8d37e742d369373c70b1e924b46057c8837c620ebedf94f3e537c",
+      "generated_c_sha256": "d8eb9b12f5a5035a6184013e0b4fe6f9213dcb1c03d874ddcc9067e33b3935ee",
+      "generated_h_sha256": "af12cfb794fb1159646c2c1703128b09de94151d693c78d0ef7527643d1cd4b4"
+    },
+    {
+      "path": "source/rts-runtime-facade.goose",
+      "slice": "S2 rts_",
+      "source_sha256": "f69307f4579e80d19572bdda8304b38243a8b9a172b5da231ca3957ae1c3caf7",
+      "generated_c_sha256": "cd3acbe8dbf4ac359da11db326e3fc669fa6d4166a35d47128d22011515472f3",
+      "generated_h_sha256": "bc762a84baeb4540d0a5e2ceaf3c862aab55296d950309f275366d1f098de909"
+    },
+    {
+      "path": "source/nd-draft-source.goose",
+      "slice": "S3 nd_",
+      "source_sha256": "15ef8fef31fd23421b7b33058c83a26460460941648482584367c5af45502d79",
+      "generated_c_sha256": "8e1325885dc30178d3cba10b4bf24eebb988a3424340a806b59a41c48c6519d9",
+      "generated_h_sha256": "c0b0fad93aa9aadfc0145b07d6c609d689f75f250249741bf36b536a84d31029"
+    }
+  ],
+  "gate": {
+    "cases": 64,
+    "checks": 332,
+    "failures": 0,
+    "opt_levels": ["-O1", "-O0"],
+    "mutations_caught": 36,
+    "mutations_total": 36
+  },
+  "status": "SLICES_GATED_PRODUCTION_UNCHANGED"
+}
