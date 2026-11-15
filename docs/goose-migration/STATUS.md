@@ -1,12 +1,12 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-15 (11). This file is the current state; update it in the same change
+Updated: 2026-11-15 (12). This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 112**, **PARTIAL 10**, **TODO 30** of
-152 functional requirements. Slice front: **127 / 127** done, none remaining.
+`docs/goose-migration/tasks.json`: **DONE 112**, **PARTIAL 14**, **TODO 26** of
+152 functional requirements. Slice front: **139 / 139** done, none remaining.
 Do not read the DONE count as project percentage; it counts requirements, not
 code or time.
 
@@ -24,6 +24,10 @@ The remaining partial requirements and their slice fronts:
 | P9-07 | 3 / 3 | wire the three sinks and DeterministicWorkload |
 | P9-08 | 3 / 3 | wire the engine closure points; decide the two characterised behaviours |
 | P10-02 | 3 / 3 | wire llama-bench report, tokenize output and fit-params line into their hosts |
+| P10-05 | 3 / 3 | wire the release plan, build environment and artifact policy into scripts/tools |
+| P10-08 | 3 / 3 | backend/gguf headers, SONAME/export compatibility and callback semantics |
+| P10-10 | 3 / 3 | wire CPU features, platform paths and backend selection; non-Linux branches |
+| P10-12 | 3 / 3 | close the 12 residual gaps (G1 tallies, G2/G3 prefill/trace, G6 moe-predict, ...) |
 
 ## What the canonical tree contains
 
