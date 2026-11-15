@@ -25,11 +25,22 @@ inside the registered handler (an unknown path is 404, not 415), and the four
 no-cache names bypass ETag. Embedded assets have no range requests natively, so
 there is nothing to port there.
 
+## Additional slices (EXP656)
+
+| slice | content | exports |
+|---|---|---|
+| S4 CORS | allow-origin branches, preflight, `origin_is_localhost` | `cors_*` |
+| S5 query transport | path decode, `get_params`, query build/decode/encode | `qry_*` |
+| S6 API key | frontend paths, public endpoints, middleware, 401 body | `key_*` |
+
+Evidence: 194/622 + 133/287 + 1121/1157 values, 0 failures, identical at -O0;
+mutations 36/36. The oracle links the real vendored httplib and builds the 401
+body with the real nlohmann ordered_json.
+
 ## Remaining
 
-CORS and `origin_is_localhost`, percent-decoding and query parsing, the API-key
-middleware, wiring `web_serve` into `server-http.cpp`, and a live server run
-(needs Igor's explicit approval).
+Wire `web_serve` and the API-key middleware into `server-http.cpp`; a live server
+run needs Igor's explicit approval.
 
 ## Boundaries
 

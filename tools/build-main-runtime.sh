@@ -125,6 +125,9 @@ MODULES=(
     goose/server/web-assets.goose
     goose/server/mime-table.goose
     goose/server/asset-etag.goose
+    goose/server/cors-policy.goose
+    goose/server/query-transport.goose
+    goose/server/api-key-policy.goose
     goose/chat/thinking-control.goose
     goose/chat/parse-params.goose
     goose/chat/session-loop.goose

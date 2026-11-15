@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T05:16:01.294081+00:00",
+  "updated_at": "2026-11-15T05:24:22.222614+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -783,6 +783,42 @@
       "status": "ported",
       "sha256": "56cc6dd0883b282bee945cc6658125561aef663c335a9c482a720d54933da44c",
       "gate": "gbnf 13/13, cases 13/0, parse 9/9, 27/27 mutations + parse 5/5; base EXP593 gates unchanged"
+    },
+    {
+      "goose": "server/cors-policy.goose",
+      "native": "tools/server/server-http.cpp (CORS allow-origin, preflight, origin_is_localhost)",
+      "native_targets": [
+        "tools/server/server-http.cpp (CORS allow-origin, preflight, origin_is_localhost)"
+      ],
+      "experiment": "EXP-2026-11-15-656-p8-09b-cors-query-key",
+      "task": "",
+      "status": "ported",
+      "sha256": "d92abb48465ffadd640e6ea7b3219863f31966911912697c4baab8c5c330f5a9",
+      "gate": "194 cases / 622 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "server/query-transport.goose",
+      "native": "server-http.cpp and vendor httplib (path decode, get_params, query build/decode/encode)",
+      "native_targets": [
+        "server-http.cpp and vendor httplib (path decode, get_params, query build/decode/encode)"
+      ],
+      "experiment": "EXP-2026-11-15-656-p8-09b-cors-query-key",
+      "task": "",
+      "status": "ported",
+      "sha256": "6133979670ea29e815c05f0521b446f0c76d94bf11ab5edf9d53ee29d97a5825",
+      "gate": "133 cases / 287 values / 0 failures, 12/12 mutations"
+    },
+    {
+      "goose": "server/api-key-policy.goose",
+      "native": "server-http.cpp (frontend paths, public endpoints, API-key middleware, 401 body)",
+      "native_targets": [
+        "server-http.cpp (frontend paths, public endpoints, API-key middleware, 401 body)"
+      ],
+      "experiment": "EXP-2026-11-15-656-p8-09b-cors-query-key",
+      "task": "",
+      "status": "ported",
+      "sha256": "3559df070128ae56bfdd73c62bf99ed6fc998616faa0f79ee5291f5d8803c3c9",
+      "gate": "1121 cases / 1157 values / 0 failures, 12/12 mutations"
     },
     {
       "goose": "server/web-assets.goose",

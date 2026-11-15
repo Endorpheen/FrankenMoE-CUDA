@@ -1,0 +1,45 @@
+P8-09 batch 2 - SHA-256 of every input and every recorded log
+recorded 2026-11-15T05:18:00Z on Linux 7.0.0-43-generic x86_64
+
+native inputs
+fc9d307525d7db13fcee3d32e0d4587cbd2f3d93bcc70a86b2cedc16b336ce11  upstream/llama.cpp/tools/server/server-http.cpp
+7d9a690ba1f6efa5a518b3a0720fa9c4b682d2d5303b19cc8957ba083ad57343  upstream/llama.cpp/common/http.h
+d8c556445cef8e7c93b0857f6ca7ae7ebd8295f169403ac66641b72f6b0598f2  upstream/llama.cpp/common/json.cpp
+300a319f104096c8308b2c760a6d2b14de2505ac8e76a16cb51e2dd7787b55d0  upstream/llama.cpp/vendor/cpp-httplib/httplib.h
+c796420a111cd2c5f4a3efaa48f9dc6f5ad8086c39646b5e3921fa3e30e7e4ee  upstream/llama.cpp/vendor/cpp-httplib/httplib.cpp
+aaf127c04cb31c406e5b04a63f1ae89369fccde6d8fa7cdda1ed4f32dfc5de63  upstream/llama.cpp/vendor/nlohmann/json.hpp
+
+port sources
+3559df070128ae56bfdd73c62bf99ed6fc998616faa0f79ee5291f5d8803c3c9  source/api-key-policy.goose
+d92abb48465ffadd640e6ea7b3219863f31966911912697c4baab8c5c330f5a9  source/cors-policy.goose
+6133979670ea29e815c05f0521b446f0c76d94bf11ab5edf9d53ee29d97a5825  source/query-transport.goose
+
+gate harness
+c599c813bcaf1d944edb6b5d44a745dea7c1f23058000d309d5c9a3eadb494f2  tests/build.sh
+e40977ede9e3a04546af8c7acbef3fc845f8b1f8b3f893726e33cf0adedbdb86  tests/mutate.py
+dccc921a3efaac3852960a294ee10e40f26f9748998f9a4f8a74d539e4df09ed  tests/fixture_cors.cpp
+97ccc04e71f72d47df5843cff461e9cb523c8e4659c4572984483bc74c9da498  tests/fixture_qry.cpp
+e7475bfdf7428207cc98017627df221a6e613aa213bcdf553316bb312b80a4b5  tests/fixture_key.cpp
+
+generated C the gates compiled (not committed)
+04fedf2110d6b945869d408ecac5109710c16733b27a3ef6b11cf704f4304c08  build/cors.c
+bb2eeb790d558d495bc55e746ecda8d6d0ff887af7f85bc380cbb077f865228d  build/qry.c
+40edf5a970ba0fb0362845fa110efbdce7af0d6eeaa2c53dca195c6a30f7c478  build/key.c
+
+three-module composition check (one translation unit)
+6a065ca78c5f20031b2b81d652e1f3c71ed32e1474f5f708c4e07da4e9096381  build/compose-check.goose
+d396b8aaa9d7147ce097592f3590b53d496288aa489897b20b1d17c61e65fdda  build/compose-check.c
+9fe97c947dc2651c1c7d53f5f9c0bdd746ae992bbc606e841acbbfa2a04746e9  results/compose.log
+
+logs
+7511aeebdee2882a5e494eab7587a40065f5c69ba75ccf1690bf00d025885d1e  results/gate-o1.log
+37fcd7f807fbf2b5016010bb1408912395faadf5362953c8d8c66ef41e078fd1  results/gate-o0.log
+e884754e0a4afe4687e849da555305a4ce3274a98dc63ac83546e84aa23dd515  results/mutate-1.log
+eacf1c214478b7de97b16272094d219d45a935998538fbd770beac3c043006fb  results/mutate-2.log
+
+toolchain
+goose       664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab
+gcc         13.4.0
+g++         13.4.0
+base commit 050354e9
+gate -O1   mutations -O0   fixtures -O2
