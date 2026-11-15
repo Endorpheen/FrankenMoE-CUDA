@@ -1,0 +1,19 @@
+# route_trace v1
+# model=/models/apex-35b-a3b-Q4_K_M.gguf arch=qwen3moe n_layer=48 n_expert=128 n_expert_used=8
+# layer=0 expert_bytes=2359296 dense_bytes=1048576
+# layer=1 expert_bytes=2359296 dense_bytes=1048576
+# layer=2 expert_bytes=2359296 dense_bytes=1048576
+turn,phase,step,layer,slot,expert,weight,residency,expert_bytes,dropped
+0,0,0,0,0,0,0.5,0,2359296,0
+1,1,13,1,1,9,0,1,0,0
+2,0,26,2,2,18,-0,2,0,0
+0,1,39,3,3,27,nan,0,2359296,0
+1,0,52,4,4,36,nan,1,0,1
+2,1,65,5,5,45,0.333333,2,0,0
+0,0,78,6,6,54,9.99995e-41,0,2359296,0
+1,1,91,7,7,63,3.40282e+38,1,0,0
+2,0,104,8,0,72,inf,2,0,0
+0,1,117,9,7,-1,-inf,0,2359296,0
+1,0,130,10,2,90,1.23457e+06,1,18446744073709551615,0
+2,1,143,11,3,99,0.000123456,2,0,0
+0,0,156,12,4,108,1,0,2359296,0

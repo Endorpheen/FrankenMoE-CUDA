@@ -1,0 +1,5 @@
+FG633_S1 cases=16 values=48 failures=0
+FG633_S2 cases=12 values=14 failures=0
+FG633_S3 cases=12 values=14 failures=0
+FG633_S4 cases=13 values=15 failures=0
+FG633 mode=native cases=53 values=91 failures=0 goose_calls=n/a

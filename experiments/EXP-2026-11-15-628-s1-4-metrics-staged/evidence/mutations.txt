@@ -1,0 +1,8 @@
+mutation 1: comma dropped from the field quote predicate
+MUT 1 caught   failures=3
+mutation 2: newline written raw inside a quoted field
+MUT 2 caught   failures=10
+mutation 3: io row prints the requested size as the read size
+MUT 3 caught   failures=12
+mutation 4: NaN route weight takes the numeric arm
+MUT 4 caught   failures=1

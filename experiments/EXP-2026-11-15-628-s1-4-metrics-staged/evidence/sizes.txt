@@ -1,0 +1,9 @@
+     15835  goose/metrics/metrics-traces.goose
+     15924  goose-gen/metrics-traces.composed.goose
+    191753  goose-gen/metrics-traces.c
+      3411  goose-gen/metrics-traces.h
+     18056  build-metrics-on/CMakeFiles/fg-goose-metrics.dir/goose-gen/metrics-traces.c.o
+     19248  build-metrics-off/libfg-bmoe-metrics.so
+     44408  build-metrics-on/libfg-bmoe-metrics.so
+     19160  build-metrics-on/libfg-metrics-base.so
+     56920  build-metrics-on/fg-goose-metrics-smoke
