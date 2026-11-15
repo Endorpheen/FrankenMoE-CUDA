@@ -33,7 +33,17 @@ The remaining partial requirements and their slice fronts:
 - quantization type selection and allow-cuts (imatrix loader still native);
 - HTTP URL policy, HF cache naming, download selection, log policy, console
   editing (P7-11 complete);
-- server tool definitions and request schema;
+- server tool definitions and request schema, plus the MCP stdio integration
+  (framing, pumps, reply matching, diagnostics, manager) closing P8-07 at 6/6;
+- config validation (48 ordered rules), the MoE recipe registry and CLI
+  resolution (flags > env > defaults);
+- expert LRU, dense placement and row-stream planning;
+- metrics/trace formatting and deterministic-workload validation;
+- speculative decoding decisions (draft source, accept, MTP state, budget,
+  rollback, trim);
+- tokenizer type dispatch, special-token partition and common string helpers;
+- meta backend, registry identity and threading/config acceptance; the ggml-opt
+  optimizer closes P4-12 at 4/4;
 - twenty model architecture builders over shared model-graph and family modules (P6-05 closed).
 
 ## Sources and evidence
