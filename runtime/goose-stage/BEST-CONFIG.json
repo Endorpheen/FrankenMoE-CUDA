@@ -83,7 +83,7 @@
         "--moe-cache-mib",
         "4352"
       ],
-      "note": "ubatch 512 (the reference argv), best prefill",
+      "note": "ubatch 4096 (the reference argv value), best prefill",
       "measured_512_tokens": {
         "prefill_tok_s": 2429.9,
         "decode_tok_s": 39.86,
@@ -159,5 +159,6 @@
   },
   "history": "superseded first entry: cache 4352 alone gave 39.86; see configurations above",
   "default": "long_generation (ub 2048, cache 5376) - now the script default",
-  "full_matrix_measured": true
+  "full_matrix_measured": true,
+  "correction": "Every 'baseline' arm in this session used -ub 4096 from the reference argv, not 512 as several cards stated. The ubatch sweep varied it downward from 4096. Measurements are unaffected; only the labels were wrong, and they are corrected here."
 }

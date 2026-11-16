@@ -7,7 +7,7 @@ CPU queueing a batch and waiting. `--ubatch-size` controls exactly that batch, s
 
 | configuration | prefill | decode | VRAM | prefill % | decode % |
 |---|---:|---:|---:|---:|---:|
-| ub 512, cache 4352 (baseline) | 2429.9 | **39.86** | 7552 | +0.0% | +0.0% |
+| ub 4096 (reference), cache 4352 (baseline) | 2429.9 | **39.86** | 7552 | +0.0% | +0.0% |
 | ub 1024, cache 4352 | 1423.8 | **39.50** | 6690 | -41.4% | -0.9% |
 | ub 2048, cache 4352 | 1984.3 | **39.13** | 6948 | -18.3% | -1.8% |
 | ub 768, cache 4864 | 1181.9 | **39.00** | 7168 | -51.4% | -2.2% |
@@ -17,7 +17,7 @@ CPU queueing a batch and waiting. `--ubatch-size` controls exactly that batch, s
 ## 2. What it shows
 
 **`--ubatch-size` trades prefill against decode, sharply.** Lower ubatch means more synchronisations
-per token, which is why prefill collapses - 1423.8 at ub 1024 against 2429.9 at ub 512. But with the
+per token, which is why prefill collapses - 1423.8 at ub 1024 against 2429.9 at ub 4096 (the reference value). But with the
 memory freed by the smaller batch handed to the expert cache, decode climbs steadily:
 
 | ub | cache | decode |

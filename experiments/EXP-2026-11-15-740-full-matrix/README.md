@@ -49,7 +49,7 @@ against 14.7 s. For anything generation-heavy it is repaid within a few hundred 
 
 | configuration | 128 | 256 | 512 | when |
 |---|---:|---:|---:|---|
-| ub 512, cache 4352 | 38.17 | 39.50 | 40.04 | highest prefill, reference profile |
+| ub 4096 (reference), cache 4352 | 38.17 | 39.50 | 40.04 | highest prefill, reference profile |
 | **ub 2048, cache 5376** | **41.27** | **42.43** | **42.35** | **best balance, ahead at all lengths** |
 | ub 1024, cache 5632 | - | - | 42.74 | max decode at 512, prefill sacrificed |
 

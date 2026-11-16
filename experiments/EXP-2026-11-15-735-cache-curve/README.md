@@ -22,7 +22,7 @@ Incremental gain per 256 MiB:
 still climbing when the device runs out of memory. So 5376 is not an optimum in the tuning sense; it
 is simply the most that fits.
 
-That also means the earlier non-monotone curve measured at ub 512 (which had a dip at 4608) was a
+That also means the earlier non-monotone curve measured at ub 4096 (the reference value) (which had a dip at 4608) was a
 property of that batch size, not of the cache mechanism. At ub 2048 the relation is clean.
 
 ## 2. Attempts to free more VRAM, both closed
@@ -48,7 +48,7 @@ not need memory.
 
 | configuration | prefill | decode | VRAM | when |
 |---|---:|---:|---:|---|
-| ub 512, cache 4352 | 2429.9 | 39.86 | 7552 | long prompt, short generation (reference) |
+| ub 4096 (reference), cache 4352 | 2429.9 | 39.86 | 7552 | long prompt, short generation (reference) |
 | **ub 2048, cache 5376** | **2019.3** | **42.35** | **7972** | long generation |
 | ub 1024, cache 5632 | 1488.7 | 42.74 | 7972 | maximum decode, prefill sacrificed |
 

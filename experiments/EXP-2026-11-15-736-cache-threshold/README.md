@@ -44,7 +44,7 @@ gradient is monotone toward 2048 and there is nothing to gain below it.
 
 | configuration | prefill | decode | VRAM | when |
 |---|---:|---:|---:|---|
-| ub 512, cache 4352 | 2429.9 | 39.86 | 7552 | long prompt, short generation (reference profile) |
+| ub 4096 (reference), cache 4352 | 2429.9 | 39.86 | 7552 | long prompt, short generation (reference profile) |
 | **ub 2048, cache 5376** | **2019.3** | **42.35** | **7972** | long generation - best balance |
 | ub 1024, cache 5632 | 1488.7 | 42.74 | 7972 | maximum decode, prefill sacrificed |
 

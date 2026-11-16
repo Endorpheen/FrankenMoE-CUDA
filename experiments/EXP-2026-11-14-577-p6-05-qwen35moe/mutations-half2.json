@@ -1,0 +1,78 @@
+{
+  "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
+  "half": 2,
+  "opt": "-O0",
+  "gate_binary": "/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-14-577-p6-05-qwen35moe/build/mut/fg579-arch1",
+  "source_sha256": "38c915be90c822a9962dac8fe201892b918de0e3ece6abcf035374ebcd1d5a6a",
+  "fixture_sha256": "868e64871412f847fab768b91aeca95ab38309f4633767ad60aae75ef3e86546",
+  "total": 6,
+  "caught": 6,
+  "mutations": [
+    {
+      "index": 1,
+      "name": "the GDN output node is lost",
+      "status": "CAUGHT",
+      "failures": 1,
+      "exit_code": 1,
+      "summary": [
+        "FG579_ARCH1 cases=10 values=26 failures=0",
+        "FG579_ARCH1_EXT cases=43 values=149 failures=1"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "qk-norm uses the embedding width",
+      "status": "CAUGHT",
+      "failures": 4,
+      "exit_code": 1,
+      "summary": [
+        "FG579_ARCH1 cases=10 values=26 failures=1",
+        "FG579_ARCH1_EXT cases=43 values=149 failures=3"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "n_expert_used fills the router table",
+      "status": "CAUGHT",
+      "failures": 1,
+      "exit_code": 1,
+      "summary": [
+        "FG579_ARCH1 cases=10 values=26 failures=0",
+        "FG579_ARCH1_EXT cases=43 values=149 failures=1"
+      ]
+    },
+    {
+      "index": 4,
+      "name": "the shared expert ignores its declared width",
+      "status": "CAUGHT",
+      "failures": 2,
+      "exit_code": 1,
+      "summary": [
+        "FG579_ARCH1 cases=10 values=26 failures=0",
+        "FG579_ARCH1_EXT cases=43 values=149 failures=2"
+      ]
+    },
+    {
+      "index": 5,
+      "name": "the output tensor is lost",
+      "status": "CAUGHT",
+      "failures": 1,
+      "exit_code": 1,
+      "summary": [
+        "FG579_ARCH1 cases=10 values=26 failures=0",
+        "FG579_ARCH1_EXT cases=43 values=149 failures=1"
+      ]
+    },
+    {
+      "index": 6,
+      "name": "attention QKV forgets the value block",
+      "status": "CAUGHT",
+      "failures": 2,
+      "exit_code": 1,
+      "summary": [
+        "FG579_ARCH1 cases=10 values=26 failures=1",
+        "FG579_ARCH1_EXT cases=43 values=149 failures=1"
+      ]
+    }
+  ]
+}

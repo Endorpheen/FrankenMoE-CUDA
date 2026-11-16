@@ -17,7 +17,7 @@ Configuration: `--ubatch-size 2048`, `--moe-cache-mib 5376`, everything else as 
 
 ## 2. Against the pinned baseline, per rule 19
 
-| axis | baseline (ub512/cache4352) | this (ub2048/cache5376) | change |
+| axis | baseline (ub4096/cache4352) | this (ub2048/cache5376) | change |
 |---|---:|---:|---:|
 | prefill | 2429.9 | 2019.3 | **-16.9%** |
 | decode | 39.86 | 42.35 | **+6.2%** |
@@ -40,7 +40,7 @@ So both are kept as named configurations, and neither is declared the winner:
 
 | configuration | when to use |
 |---|---|
-| ub 512, cache 4352 | long prompts, short generations - the reference profile |
+| ub 4096 (reference), cache 4352 | long prompts, short generations - the reference profile |
 | **ub 2048, cache 5376** | long generations, latency-tolerant prefill |
 | ub 1024, cache 5632 | maximum decode (42.74), prefill sacrificed |
 
@@ -50,7 +50,7 @@ Plotting decode against prefill across all measured points:
 
 | ub | cache | prefill | decode |
 |---:|---:|---:|---:|
-| 512 | 4352 | 2429.9 | 39.86 |
+| 4096 | 4352 | 2429.9 | 39.86 |
 | 2048 | 4352 | 1984.3 | 39.13 |
 | 2048 | 5376 | **2019.3** | **42.35** |
 | 1024 | 5120 | 1465.3 | 41.55 |
