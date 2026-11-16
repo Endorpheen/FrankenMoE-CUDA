@@ -424,14 +424,13 @@ void run_strip(int & cases, int & passed) {
         ++cases;
         const std::string in(c);
         const std::string got  = string_strip(in);
-#ifdef FG_GOOSE_TOKENIZER
+        // Both arms compare against the reference extraction, not against "the input unchanged".
+        // The OFF arm used to do the latter on the premise that the native body had been deleted;
+        // nm on libllama-common.so shows `T string_strip` still defined, so that premise was false
+        // and the arm reported 12 false failures (all leading/trailing whitespace). Comparing both
+        // arms with the same reference is what makes the pairing meaningful: ON then proves the
+        // Goose body equals the native text, OFF proves the native body does.
         const std::string want = native_strip_base(in);
-#else
-        // P11-04 D1: the native body is deleted, so an isolation build has no
-        // strip decision left and answers its input unchanged. Pin that arm
-        // instead of comparing it with the body it no longer has.
-        const std::string want = in;
-#endif
         const std::string what = std::string("strip/") + (in.empty() ? "<empty>" : in);
         const int before = g_failures;
         report(what.c_str(), "[" + got + "]", "[" + want + "]");
