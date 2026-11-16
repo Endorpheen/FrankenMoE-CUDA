@@ -183,7 +183,7 @@ print('slru objects compiled:', len(_slru_objs))
 extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
              # compiled here from repository sources instead of taken prebuilt
              _slru_objs[0], _slru_objs[1], _slru_objs[2],
-             W/'fg-q35.o', W/'fg-q35-bridge.o', W/'fg-plan-ffi.o'] + [Path(x) for x in _goose_objs]
+             ] + [Path(x) for x in _goose_objs]
 # The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
 # linking a DSO with an undefined fg756s/slru symbol.
 for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
