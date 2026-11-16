@@ -52,3 +52,33 @@ ISWA variants are not. Proximity in the architecture is not reachability of a ca
 The remaining native bodies are kept for exactly these unexercised functions. Before this measurement the reason
 was a reasoned guess; now it is a list. Removing their C++ needs a configuration or harness that produces
 `rows=2`, `rows=3`, `rows=4` or `rows=8` in a log - a condition that can be checked in one line instead of argued.
+
+## Why rows=2/3/4/8 cannot be reached with what is on disk
+
+The remaining variants belong to memory and attention configurations that this machine has no model for:
+
+- `rows=2` is `attn_kv`/`attn_k`, plain attention-only memory. Apex is hybrid, so it never builds that input;
+- `rows=3` is `attn_kv_msa` (multi-stream attention, DeepSeek-style) or `embd_h` (needs a state embedding in the
+  batch, which the pinned request does not send);
+- `rows=4` is `rs` (recurrent-only context, as opposed to the hybrid one Apex uses) or `attn_k_iswa` (needs
+  sliding-window layers, which Apex does not have);
+- `rows=8` is `mem_hybrid_iswa`, hybrid **with** SWA layers.
+
+Only two models exist here: Apex (hybrid, no SWA) and flint. Neither has SWA layers, and neither is
+attention-only. So no flag on the pinned profile can produce those counts - it is a property of the model, not of
+the configuration.
+
+A harness that constructs the inputs directly would need a real `llama_kv_cache_context` (for `get_base()`), a
+real recurrent memory context (for `get_n_rs()`, `get_head()`, `get_rs_z()`) and SWA layers for the iswa variants.
+That is a model, not a stub, so the harness would end up testing a fake of the thing it is supposed to verify.
+
+## Consequence, stated plainly
+
+The five unexercised functions keep their native bodies, and that is not a temporary inconvenience to be worked
+around - it is the correct state until a model with the matching memory configuration is available. Their Goose
+ports are written, compile, and are proven equal by construction to the native expressions (same guards, same
+order, same sub-decisions), but they are not verified against a run, and the difference between "ported" and
+"verified" is the whole subject of EXP-892.
+
+The reachability witness stays in the bridge permanently. When a model with SWA or attention-only memory is added,
+one run prints `rows=2`, `rows=3`, `rows=4` or `rows=8` and the question is answered without any new tooling.
