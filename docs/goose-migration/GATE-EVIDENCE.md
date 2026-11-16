@@ -38,3 +38,21 @@ That gap is inherent to these ports and must be stated with each of them, not hi
 replaced. Neither is evidence any more. Re-run them only against a build from before the corresponding commit:
 
     git show <commit>^:runtime/reconstructed/src/unicode.cpp    # the native body
+
+## Blocked: qwen2 and llama3 need `unicode_tolower` as FFI
+
+Both splitters open with a case-insensitive contraction test and call `unicode_tolower` on the following codepoints.
+A Goose module cannot reach a C++ function without a bridge entry point, and comparing against ASCII cases only would
+differ on non-ASCII input and be unprovable by the gate that is supposed to prove it.
+
+Unblock by adding to `integration/m1/common/fg-unicode-*.c`, in the same way `fg_unicode_flags_view_c` was added:
+
+    extern "C" int64_t fg_unicode_tolower_c(int64_t cpt);   /* wrapper over unicode_tolower */
+    int64_t tl(int64_t c) { return (int64_t) fg_unicode_tolower_c(c); }
+
+Then the contraction branch compares `tl(cpt_next)` against 's', 't', 'm', 'd' and so on, exactly as the native code
+does. Until that exists, qwen2 (133 lines) and llama3 (139 lines) stay in C++ - and they stay there *knowingly*, not
+because nobody got to them.
+
+The rest of qwen2 is portable as it stands; only this one call is missing. Everything else in the file that could be
+ported without new FFI has been.
