@@ -164,3 +164,20 @@ than per layer. PASS-COMPOSITION-20261117 names all five missing pieces.
 
 What the twenty do establish is that composition is a **wiring** problem, not a correctness one: every
 component, at real Apex dimensions, on the real file, produces correct and deterministic output.
+
+## The tally moved to 22, and two of them are the important ones
+
+This card was written when the list held 20. Two harnesses were added afterwards, both of which test what the
+other twenty do not:
+
+| harness | what it adds |
+|---|---|
+| `real_values` | a **real** q4_K / q6_K / f32 tensor from the file through a kernel - the other twenty run at real dimensions with fabricated values |
+| `real_chain` | two real tensors **chained** through the Goose builder, the first node feeding the second, `builder_vs_ggml=0` |
+
+So the number in this card's title is out of date and its "20/20" is now "22/22". Recorded here rather than
+edited above, because the earlier transcript is what it was.
+
+The list is checked against the tree by construction: every harness on disk is either listed or explicitly
+excluded (the two the build runs, plus `layer_real` as superseded) - 22 listed, 22 present, none missing and
+none invented.
