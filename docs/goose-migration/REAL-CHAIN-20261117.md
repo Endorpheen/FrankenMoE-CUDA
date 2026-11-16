@@ -215,3 +215,33 @@ Each attempt removed one obstacle and exposed the next, and both were in the har
 builder, the split or ggml.
 
 Harness reverted to its committed state (`nodes=4`, `builder_vs_ggml=0`, PASS).
+
+### Third attempt: the chain runs, the two arms disagree - and that is the harness's guessing, not a defect
+
+With `ROWS` at the full 8192 and a `CONT` + `reshape_2d` for the split's output, the chain executes:
+
+```
+FG_REAL_CHAIN norm -> wq[2048x8192 q4_K] -> wo[4096x256 q4_K] nodes=4 out=256
+              builder_vs_ggml=2.138e+00 nonfinite=0 nonzero=256 FAIL
+```
+
+No abort, finite output, and the arms differ by 2.1 on an output whose scale is order 1. That difference is
+mine: the raw arm reproduces the q half with `ggml_view_3d(..., HD, 16, 1, r1->nb[1] * 2, r1->nb[2], 0)` - a
+**guess** at the interleaving - while `qg_split(gc, q, HD, H, 1, 4, views)` decides the actual layout behind
+two numeric mode arguments whose meaning this harness does not read.
+
+So the three attempts produced a clean progression, and none of the failures was in the components:
+
+| attempt | got past | failed at | whose fault |
+|---|---|---|---|
+| 1 | - | `qg_split` | trimmed projection hid the head structure |
+| 2 | head width | `gb(11, wo, qv)` | `qv` is 3-D, no `CONT` |
+| 3 | the whole chain | the comparison | the raw arm guesses the split's interleaving |
+
+`qg_split` itself passes its own gate: `q_differs=0 gate_differs=0 q_at_zero=1 gate_at_head=1`.
+
+**What the next attempt needs is not more code but one fact**: what `arg4 = 4` and `arg3 = 1` mean for
+`qg_split`, so the raw view can reproduce the layout instead of approximating it. That is in
+`goose/model/qgate-split.goose` and is a read, not an experiment.
+
+Harness reverted to its committed state (`nodes=4`, `builder_vs_ggml=0`, PASS).
