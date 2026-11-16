@@ -116,7 +116,8 @@ extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates
              W/'fg-han.o', W/'fg-han-bridge.o',
              W/'fg-nl.o', W/'fg-nl-bridge.o',
              W/'fg-b2u.o', W/'fg-b2u-bridge.o',
-             W/'fg-afmoe.o', W/'fg-afmoe-bridge.o']
+             W/'fg-afmoe.o', W/'fg-afmoe-bridge.o',
+             W/'fg-gpt2.o', W/'fg-gpt2-bridge.o']
 # The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
 # linking a DSO with an undefined fg756s/slru symbol.
 for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
