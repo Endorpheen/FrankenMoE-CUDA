@@ -46,3 +46,37 @@ keeps finding.
 
 Exercise the upload path without the memory wall: a smaller model, or `-ngl` reduced so the pinned host
 buffers fit, and check for the `FG377S_FILE_ALIGN` witness plus an unchanged output.
+
+
+## Resolved differently: the decision is verified, the loader branch is unreachable in this build
+
+`--no-mmap` does not exist in this server build ("invalid argument: --no-mmap"), and `--help` exposes no mmap
+or mlock flag at all. `upload_backend` is null whenever `use_mmap`, so **the aligned-read branch inside the
+loader cannot be reached from the server in this build, by any flag**. That is a fact about the build, not a
+gap in the wiring.
+
+So the check moved to the decision itself, which is where the C++ arithmetic was:
+
+```
+tests/run.sh
+FG377S_FILE_ALIGN first call calls=1
+FG377S_EQ cases=168 mismatches=0 PASS
+```
+
+168 cases = 4 alignments (1, 8, 16, 4096) x 7 offsets (0, 1, 7, 15, 4095, 4096, 100000) x 6 sizes (0, 1, 7,
+4096, 100000, 1000000), each comparing the module's `{aligned_offset, bytes_to_read, skip}` against
+`align(o+s) - ao` and `o - ao`.
+
+**The witness fires**, so the Goose code executes, and every value matches. That is stronger than watching one
+branch on one tensor: the decision is proven equal over the corner cases (offset inside a block, offset on a
+boundary, size zero, size far beyond the cap) rather than observed once.
+
+## State of this bridge
+
+- wired: yes, in `llama-model-loader.cpp`, default on, native arithmetic behind `GGML_GOOSE_FILE_ALIGN=0`;
+- exercised in the shipped server: **no**, and cannot be, because the branch needs `use_mmap = false` which
+  this build does not expose;
+- decision verified: **yes**, 168/168 against the expressions it replaced, witness confirmed.
+
+No Go-side claim is made about a path the server cannot take. The wiring is correct and inert on the pinned
+profile; it becomes live the moment the loader is driven with a non-mmap upload backend.
