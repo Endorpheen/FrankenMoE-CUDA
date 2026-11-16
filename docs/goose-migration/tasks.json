@@ -5637,7 +5637,7 @@
     "TODO": 14
   },
   "work_front": {
-    "note": "Integrated stage-run: pinned at 4352 MiB cache, 2429.9 prefill / 39.86 decode at 512. Standalone still lacks CUDA, tokenizer engine, HTTP and full-stack execution.",
+    "note": "Integrated stage-run: pinned at 4992 MiB cache, ctx 262144, reference argv (-b 4096 -ub 4096, -t 8 -tb 16). Best reference-equivalent decode: 41.61 @512, 41.01 @256, 39.49 @128, prefill ~2432, VRAM 11735 MiB; every accepted figure carries the reference answer hash. At ctx 65536 the same cache reaches 43.45 @512 (EXP-754). The expert cache is the dominant lever: removing it halves decode (20.66, EXP-752). Standalone still lacks CUDA, tokenizer engine, HTTP and full-stack execution.",
     "slices_total": 12,
     "slices_done": 9
   },
