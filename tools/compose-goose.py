@@ -111,6 +111,7 @@ RENAMES = {
         "sanitize_into_impl": "refs_sanitize_into_impl",
         # add_rule here is the exported table builder; format-grammar.goose has a
         # private add_rule with a different signature.
+        "add_rule": "refs_add_rule",
     },
     # mmq-dispatch binds its own fail (fg203d_*) and ensure; both collide by name
     # with earlier modules that bind different symbols.

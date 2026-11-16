@@ -83,6 +83,18 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/graph_exec"
     printf '  gate:   %s\n' "$OUT/graph_exec"
+
+    # The tokenizer gate calls every tok_* decision the unit exports with known inputs, so the status
+    # line can say "answers" rather than "linked". It needs only the unit and the host primitives.
+    # --gc-sections on the unit: the gate calls eight decisions, and without it the linker demands every
+    # host symbol the whole unit references. Function sections let the unused ones drop.
+    $CC -O1 -ffunction-sections -fdata-sections -std=c11 -w -c "$ROOT/build/goose-main/main.c" \
+        -o "$OUT/main-gc.o"
+    $CC -O1 -std=c11 -w -I "$ROOT/build/goose-main" -I "$ROOT/integration/m1/host" \
+        -c "$ROOT/integration/goose-standalone/tests/tokenizer_decisions.c" -o "$OUT/tokenizer_decisions.o"
+    $CXX -O1 -Wl,--gc-sections "$OUT/tokenizer_decisions.o" "$OUT/main-gc.o" "$OUT/host.o" \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/tokenizer_decisions"
+    printf '  gate:   %s\n' "$OUT/tokenizer_decisions"
 fi
 
 echo "[5/5] result"
@@ -102,6 +114,17 @@ if [ "$CHECK" -eq 1 ]; then
         printf '  gate:   %s\n' "$(printf '%s' "$g" | tr '\n' '|')"
         case "$g" in
             *FAIL*) echo "standalone runtime: graph execution gate failed" >&2; exit 1 ;;
+        esac
+    fi
+
+    # Every tok_* decision the unit exports, called with known inputs. This is what makes the status
+    # line say the tokenizer decisions ANSWER rather than are merely linked.
+    if [ -x "$OUT/tokenizer_decisions" ]; then
+        t=$("$OUT/tokenizer_decisions" 2>&1 | tail -1)
+        printf '  gate:   %s\n' "$t"
+        case "$t" in
+            *PASS*) ;;
+            *) echo "standalone runtime: tokenizer decisions gate failed" >&2; exit 1 ;;
         esac
     fi
     if [ -x "$OUT/frankenmoe-v4" ] && [ -f "$ROOT/experiments/EXP-2026-11-12-342-p6-06-tiny-hybrid/tiny-hybrid.gguf" ]; then

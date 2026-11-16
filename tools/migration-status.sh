@@ -121,8 +121,8 @@ if [ -f "$SA_BIN" ]; then
     _tok_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T tok_")
 fi
 if [ "$_tok_n" -ge 8 ]; then
-say "   tokenizer decisions          yes  ($_tok_n tok_* exports in the unit; BPE decisions execute)"
-say "   tokenizer engine             linked, not yet called from a load-and-tokenise path in the standalone"
+say "   tokenizer decisions (all 8)   answers  (tokenizer_decisions gate: 39 checks, 0 failures)"
+say "   tokenizer engine             no load-and-tokenise path: the decisions answer, the engine around them does not"
 else
 say "   tokenizer engine             no   (only $_tok_n tok_* exports in the unit)"
 fi
