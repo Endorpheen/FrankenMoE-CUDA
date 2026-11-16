@@ -36,28 +36,59 @@ static void fill_vec(float * v, int64_t n, int seed) {
     }
 }
 
+// One tensor of every quantised type the model actually contains, so the value path is covered for the
+// whole model and not for q4_K alone. Apex holds Q4_K (379 tensors), F32 (310) and Q6_K (64).
+static const char * DEFAULT_TENSORS[] = {
+    "blk.3.attn_q.weight",      // q4_K - the widest tensor in an attention block
+    "output.weight",            // q6_K
+    "output_norm.weight",       // f32
+};
+
+static int check_one(struct gguf_context * gguf, const char * model_path, const char * name);
+
 int main(int argc, char ** argv) {
-    if (argc < 2) { fprintf(stderr, "usage: %s <apex.gguf>\n", argv[0]); return 2; }
+    if (argc < 2) { fprintf(stderr, "usage: %s <apex.gguf> [tensor...]\n", argv[0]); return 2; }
+
+    if (argc > 2) {
+        int bad = 0;
+        for (int i = 2; i < argc; ++i) bad |= check_one(NULL, argv[1], argv[i]);
+        return bad ? 1 : 0;
+    }
+    int bad = 0;
+    for (size_t i = 0; i < sizeof DEFAULT_TENSORS / sizeof *DEFAULT_TENSORS; ++i) {
+        bad |= check_one(NULL, argv[1], DEFAULT_TENSORS[i]);
+    }
+    printf("FG_VALUES_ALL %s\n", bad ? "FAIL" : "PASS");
+    return bad ? 1 : 0;
+}
+
+static int check_one(struct gguf_context * gguf_unused, const char * model_path, const char * tname) {
+    (void) gguf_unused;
 
     struct gguf_init_params mp = { /*.no_alloc =*/ true, /*.ctx =*/ NULL };
     struct ggml_context * meta = NULL;
     mp.ctx = &meta;
-    struct gguf_context * gguf = gguf_init_from_file(argv[1], mp);
-    if (gguf == NULL) { printf("FG_VALUES cannot read %s\n", argv[1]); return 2; }
+    struct gguf_context * gguf = gguf_init_from_file(model_path, mp);
+    if (gguf == NULL) { printf("FG_VALUES cannot read %s\n", model_path); return 2; }
 
     // blk.3 is an attention layer (stack_dispatch: first_attn=3) and its q projection is the widest tensor
     // in the block, so a misread offset shows up immediately.
-    const int ti = gguf_find_tensor(gguf, "blk.3.attn_q.weight");
-    if (ti < 0) { printf("FG_VALUES no blk.3.attn_q.weight\n"); gguf_free(gguf); return 2; }
+    const int ti = gguf_find_tensor(gguf, tname);
+    if (ti < 0) { printf("FG_VALUES no %s\n", tname); gguf_free(gguf); return 2; }
 
     const enum ggml_type type = gguf_get_tensor_type(gguf, ti);
-    const int64_t ne0 = gguf_get_tensor_ne(gguf, ti)[0];
-    const int64_t ne1 = gguf_get_tensor_ne(gguf, ti)[1];
+    const int64_t ne0_full = gguf_get_tensor_ne(gguf, ti)[0];
+    const int64_t ne1_full = gguf_get_tensor_ne(gguf, ti)[1];
+    const int64_t ne0 = ne0_full;
+    // Row stride and block layout are per row, so testing the first R rows exercises the same
+    // dequantisation as all of them. output.weight is 151936 rows (1.2 GB dequantised), which is why the
+    // comparison is bounded rather than laid out in full.
+    const int64_t ne1 = ne1_full < 256 ? ne1_full : 256;
     const size_t  off = gguf_get_tensor_offset(gguf, ti);
     const size_t  nb  = ggml_row_size(type, ne0);
 
     // read the tensor's bytes straight out of the file at its declared offset
-    FILE * fp = fopen(argv[1], "rb");
+    FILE * fp = fopen(model_path, "rb");
     if (fp == NULL) { printf("FG_VALUES cannot reopen the file\n"); gguf_free(gguf); return 2; }
     // the data section starts where the tensor directory ends; gguf gives the offset relative to it
     const size_t data_start = gguf_get_data_offset(gguf);
@@ -81,12 +112,18 @@ int main(int argc, char ** argv) {
     free(raw);
 
     // dequantise through ggml's own table: the independent path the quantised mul_mat must agree with
-    const struct ggml_type_traits * tr = ggml_get_type_traits(type);
-    if (tr == NULL || tr->to_float == NULL) { printf("FG_VALUES no to_float for type %d\n", (int) type); ggml_free(gc); gguf_free(gguf); return 2; }
+    // F32 has no to_float - it is already the reference - so that case is a copy. Every other type in this
+    // model (q4_K, q6_K) goes through the table.
     const size_t row_size_q = ggml_row_size(type, ne0);
-    for (int64_t r = 0; r < ne1; ++r) {
-        tr->to_float((const uint8_t *) wq->data + (size_t) r * row_size_q,
-                     (float *) ((uint8_t *) wf->data + (size_t) r * wf->nb[1]), ne0);
+    if (type == GGML_TYPE_F32) {
+        memcpy(wf->data, wq->data, row_size_q * (size_t) ne1);
+    } else {
+        const struct ggml_type_traits * tr = ggml_get_type_traits(type);
+        if (tr == NULL || tr->to_float == NULL) { printf("FG_VALUES no to_float for type %d\n", (int) type); ggml_free(gc); gguf_free(gguf); return 2; }
+        for (int64_t r = 0; r < ne1; ++r) {
+            tr->to_float((const uint8_t *) wq->data + (size_t) r * row_size_q,
+                         (float *) ((uint8_t *) wf->data + (size_t) r * wf->nb[1]), ne0);
+        }
     }
 
     float * xd = (float *) malloc((size_t) ne0 * sizeof(float));
@@ -129,9 +166,9 @@ int main(int argc, char ** argv) {
     const double max_rel = scale > 0.0 ? max_abs / scale : 0.0;
 
     const int ok = (nonfinite == 0) && (nonzero > 0) && (max_rel <= MAX_REL);
-    printf("FG_VALUES tensor=blk.3.attn_q.weight type=%s ne=[%lld %lld] bytes=%zu max_abs=%.6e max_rel=%.3e "
+    printf("FG_VALUES tensor=%s type=%s ne=[%lld %lld] bytes=%zu max_abs=%.6e max_rel=%.3e "
            "rms=%.6e nonfinite=%d nonzero=%d %s\n",
-           ggml_type_name(type), (long long) ne0, (long long) ne1, nb * (size_t) ne1,
+           tname, ggml_type_name(type), (long long) ne0_full, (long long) ne1_full, nb * (size_t) ne1,
            max_abs, max_rel, rms, nonfinite, nonzero, ok ? "PASS" : "FAIL");
 
     ggml_free(gc);

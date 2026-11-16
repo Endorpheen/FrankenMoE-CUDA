@@ -48,3 +48,24 @@ the standalone's arithmetic to the known-good implementation rather than to ggml
 | compose 41 layers over real values | no | no |
 
 So the two halves - reading the model and computing on it - now meet at exactly one tensor.
+
+## All three types the model contains
+
+The model holds exactly three: Q4_K (379 tensors), F32 (310), Q6_K (64). The harness now checks one of each.
+
+```
+FG_VALUES tensor=blk.3.attn_q.weight   type=q4_K ne=[2048 8192]   max_abs=5.944166e-04 max_rel=3.532e-03 PASS
+FG_VALUES tensor=output.weight         type=q6_K ne=[2048 248320] max_abs=6.660819e-04 max_rel=2.889e-03 PASS
+FG_VALUES tensor=output_norm.weight    type=f32  ne=[2048 1]      max_abs=0.000000e+00 max_rel=0.000e+00 PASS
+FG_VALUES_ALL PASS
+```
+
+F32 gives exactly zero - it is the reference against itself, which is the control that shows the comparison
+is wired (a broken comparison would report a non-zero difference here).
+
+Two allowances, both justified rather than convenient:
+
+- **256 rows instead of all of them.** Row stride and block layout are per row, so the first 256 rows
+  exercise the same dequantisation. `output.weight` is 248320 rows, 1.2 GB once dequantised, which the
+  harness has no reason to hold.
+- **5e-3 tolerance on the quantised types.** Explained above; F32 needs none and gets none.
