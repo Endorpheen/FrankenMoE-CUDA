@@ -149,7 +149,7 @@ int main(int argc, char ** argv) {
         }
     }
     const int ok = h2 != NULL && nonfinite == 0 && nonzero > 0 && max_abs == 0.0;
-    printf("FG_REAL_CHAIN wq[%lldx%lld %s] -> wo[%lldx%lld %s] nodes=2 out=%lld "
+    printf("FG_REAL_CHAIN norm -> wq[%lldx%lld %s] -> wo[%lldx%lld %s] nodes=4 out=%lld "
            "builder_vs_ggml=%.3e nonfinite=%d nonzero=%d %s\n",
            (long long) q_ne0, (long long) ROWS, ggml_type_name(tq_type),
            (long long) o_ne0, (long long) o_rows, ggml_type_name(to_type),
