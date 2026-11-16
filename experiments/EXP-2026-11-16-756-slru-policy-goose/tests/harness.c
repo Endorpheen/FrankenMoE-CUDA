@@ -17,7 +17,7 @@ typedef struct { int64_t *data; int64_t len; } sl_i64;
 int64_t slru_plan(uint64_t key_of, uint64_t prev, uint64_t next, uint64_t prot,
                   uint64_t head, uint64_t tail, sl_i64 seen, uint64_t slots,
                   uint64_t ids, int64_t n_ids,
-                  int64_t il, int64_t n_expert, int64_t n_slots,
+                  int64_t il, int64_t n_expert, int64_t n_slots, int64_t prot_limit,
                   sl_i64 scal, uint64_t uniq, uint64_t fills_e, uint64_t fills_s, uint64_t evicted);
 void goose_init(int argc, char **argv);
 
@@ -53,6 +53,9 @@ int main(int argc, char **argv) {
     const int64_t n_layer  = strtoll(find_key(buf, "\"n_layer\":"), NULL, 10);
     const int64_t n_expert = strtoll(find_key(buf, "\"n_expert\":"), NULL, 10);
     const int64_t n_slots  = strtoll(find_key(buf, "\"n_slots\":"), NULL, 10);
+    // protected ceiling as num/den: the gate drives both the native 1/2 and the chosen policy
+    const int64_t prot_num = strtoll(find_key(buf, "\"prot_num\":"), NULL, 10);
+    const int64_t prot_den = strtoll(find_key(buf, "\"prot_den\":"), NULL, 10);
 
     const char *rq = find_key(buf, "\"requests\":");
     int64_t n_req = 0;
@@ -115,7 +118,7 @@ int main(int argc, char **argv) {
             (uint64_t) (uintptr_t) head_arr, (uint64_t) (uintptr_t) tail_arr,
             (sl_i64){ seen, n_expert }, (uint64_t) (uintptr_t) (maps + il * n_expert),
             (uint64_t) (uintptr_t) ids, n_ids,
-            il, n_expert, n_slots,
+            il, n_expert, n_slots, (int64_t) (n_slots * prot_num / prot_den),
             (sl_i64){ scal_arr, 5 }, (uint64_t) (uintptr_t) uniq,
             (uint64_t) (uintptr_t) fe, (uint64_t) (uintptr_t) fs,
             (uint64_t) (uintptr_t) ev);

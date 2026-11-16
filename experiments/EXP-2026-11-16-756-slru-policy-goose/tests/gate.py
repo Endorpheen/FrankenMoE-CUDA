@@ -34,7 +34,8 @@ HARNESS = Path(__file__).resolve().parent / "harness.c"
 class Slru:
     """The native implementation, transcribed to Python with the same semantics."""
 
-    def __init__(self, n_layer, n_expert, n_slots):
+    def __init__(self, n_layer, n_expert, n_slots, prot_num=1, prot_den=2):
+        self.prot_limit = n_slots * prot_num // prot_den
         self.n_expert = n_expert
         self.n_slots = n_slots
         self.maps = [[-1] * n_expert for _ in range(n_layer)]
@@ -73,7 +74,7 @@ class Slru:
 
     def _touch(self, s):
         self._move(s, 1)
-        if self.n_prot > self.n_slots // 2:
+        if self.n_prot > self.prot_limit:
             self._move(self.head[1], 0)
 
     def _victim(self, il):
@@ -150,6 +151,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--cases", type=int, default=200)
     ap.add_argument("--seed", type=int, default=1234)
+    ap.add_argument("--prot", default="1/2",
+                    help="protected ceiling num/den; 1/2 is the native policy (provenance), "
+                         "7/8 is the chosen one (specification)")
     a = ap.parse_args()
 
     # The C harness prints one line per request so the two implementations can be compared
@@ -157,6 +161,9 @@ def main() -> int:
     tmpdir = tempfile.mkdtemp(prefix="slru-gate.")
     exe = compile_harness(Path(tmpdir))
     print(f"harness: {exe}")
+
+    prot_num, prot_den = (int(x) for x in a.prot.split("/"))
+    print(f"protected ceiling: {prot_num}/{prot_den}")
 
     rng = random.Random(a.seed)
     bad = 0
@@ -172,7 +179,7 @@ def main() -> int:
             ids = [rng.randrange(n_expert) for _ in range(k)]
             requests.append((il, ids))
 
-        ref = Slru(n_layer, n_expert, n_slots)
+        ref = Slru(n_layer, n_expert, n_slots, prot_num, prot_den)
         ref_lines = []
         for il, ids in requests:
             fills, n_hit = ref.plan(il, ids)
@@ -186,6 +193,7 @@ def main() -> int:
             + f" HEAD {ref.head[0]},{ref.head[1]} TAIL {ref.tail[0]},{ref.tail[1]} NP {ref.n_prot}")
 
         case = {"n_layer": n_layer, "n_expert": n_expert, "n_slots": n_slots,
+                "prot_num": prot_num, "prot_den": prot_den,
                 "requests": [[il, ids] for il, ids in requests]}
         out = subprocess.run([str(exe)], input=json.dumps(case), capture_output=True, text=True)
         if out.returncode:
