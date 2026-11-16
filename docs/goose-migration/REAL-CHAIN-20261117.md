@@ -102,3 +102,32 @@ Two consequences, and they are different in kind:
 The second is the migration-correct answer and the first is the expedient one. Per rule 17 the choice matters:
 an adapter that calls raw ggml inside a Goose graph is the kind of debt the rules call for counting rather
 than accumulating quietly. Recorded before anything is written.
+
+## The exact shape of the missing MUL, with the pieces already present
+
+`mode 11` is not generic. Line 313 of `goose/cpu/goose-graph-builders.goose`:
+
+```goose
+if mode == 11 { ensure(pred(8, a, b) != 0, 17); }
+```
+
+and `pred(8)` is `fg_can_mul_mat` (`integration/goose-standalone/graph-bindings.c:241`). So mode 11 validates
+its operands as a matrix product before emitting anything; an elementwise multiply fails that predicate by
+construction, not by misuse.
+
+**So the builder has no mode for elementwise binary ops**, and adding MUL needs four things, all small and all
+identifiable:
+
+| piece | where | what |
+|---|---|---|
+| the op code | `op_*()` block | `fn op_mul() -> i64 { return 7; }` - ggml's `MUL` in this tree |
+| the table entry | `gb_op` | `if op == 10 { return op_mul(); }` (10 is free: the table stops at 9) |
+| the mode | `common()` | a mode that emits `MUL`, or mode 11 made op-aware so its predicate is chosen per op |
+| the shape rule | `fg158_pred` | `case 4: ggml_can_repeat(x, y)` already exists and is exactly the broadcast check a scale needs |
+
+The last row is the reason this is a small change rather than a new subsystem: the predicate the new mode
+needs is already implemented and exposed.
+
+**What is not done, and why**: no edit to the Goose module. Changing a hot builder whose gate is 100/100
+cross-checks against native, in a session that has already found seven stale claims, needs the change to be
+made with the gate updated in the same step - not appended at the end of a long run.
