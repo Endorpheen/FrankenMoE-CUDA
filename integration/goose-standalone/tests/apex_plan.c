@@ -138,8 +138,25 @@ int main(int argc, char ** argv) {
            (long long) p[P_N_EMBD], (long long) p[P_N_HEAD], (long long) p[P_N_HEAD_KV],
            (long long) p[P_N_EXPERT], (long long) p[P_N_EXPERT_USED],
            (long long) p[P_INTERVAL]);
+    const char * verdict = "";
 
+    // Assert, do not merely print. This harness had no PASS string, so it was reclassified as
+    // informational and nothing compared its numbers with gdn_plan's - which is how it stayed wrong through
+    // two different corrections while gdn_plan and stack_dispatch were right. The expected values are the
+    // ones those two independently produce on this file.
+    const int64_t exp_n = p[P_N_LAYER] + 1;   // 40 transformer layers + the MTP block
+    const int ok = n_other == 0 && n > 0
+                && n == exp_n
+                && n_attn + n_recr + n_mtp == n
+                && n_mtp == 1
+                && n_attn == 10 && n_recr == 30;
+    if (!ok) {
+        printf("FG_APEX_PLAN_FAIL expected layers=%lld attn=10 recr=30 mtp=1 (gdn_plan/stack_dispatch); "
+               "got layers=%lld attn=%lld recr=%lld mtp=%lld other=%lld\n",
+               (long long) exp_n, (long long) n, (long long) n_attn,
+               (long long) n_recr, (long long) n_mtp, (long long) n_other);
+    }
     gguf_free(ctx);
     if (gctx) ggml_free(gctx);
-    return (n_other == 0 && n > 0) ? 0 : 1;
+    return ok ? 0 : 1;
 }

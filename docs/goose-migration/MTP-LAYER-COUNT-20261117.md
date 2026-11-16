@@ -85,3 +85,19 @@ route is harder to notice than the original error.
 A composition loop iterating `n_layer_all` with the original `42` would have run one layer too many and read a
 block that does not exist. The failure would have surfaced as a shape error in the last layer - the failure
 mode that is easiest to misread as a builder defect, which is exactly what this sweep was looking for.
+
+
+## Why it stayed wrong: the harness never asserted
+
+`apex_plan` contained **no `PASS` string at all** - it printed the plan and returned 0 unless the kinds were
+malformed. That has two consequences and both hid the defect:
+
+1. `verify-standalone-apex.sh` required a PASS line, so it first reported `apex_plan` as a failure for the
+   wrong reason, then it was reclassified informational and stopped being checked at all.
+2. In neither state did anything compare its numbers with `gdn_plan`'s. Two harnesses agreeing on 10
+   attention layers while differing by one everywhere else went unexamined, because only the first number was
+   ever read.
+
+It now asserts: `layers == n_layer + 1`, `attn + recr + mtp == layers`, `mtp == 1`, `attn == 10`,
+`recr == 30`, and prints `FG_APEX_PLAN_FAIL` with both the expected and the actual counts when it does not
+hold. A harness that reports rather than asserts is not a check - it is a log line that happens to be green.
