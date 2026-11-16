@@ -41,6 +41,7 @@ HARNESSES=(
     gdn_planfile
     stack_dispatch
     real_values
+    real_chain
     apex_layer
     apex_graph
     gdn_layer
