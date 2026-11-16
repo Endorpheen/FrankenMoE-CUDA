@@ -14,10 +14,10 @@
 typedef struct { int64_t *data; int64_t len; } sl_i64;
 
 int64_t slru_plan(sl_i64 key_of, sl_i64 prev, sl_i64 next, sl_i64 prot,
-                  sl_i64 head, sl_i64 tail, sl_i64 seen, sl_i64 maps,
+                  sl_i64 head, sl_i64 tail, sl_i64 seen, sl_i64 slots,
                   sl_i64 ids, int64_t n_ids,
-                  int64_t il, int64_t n_expert, int64_t n_slots, int64_t n_layer,
-                  sl_i64 scal, sl_i64 uniq, sl_i64 fills_e, sl_i64 fills_s);
+                  int64_t il, int64_t n_expert, int64_t n_slots,
+                  sl_i64 scal, sl_i64 uniq, sl_i64 fills_e, sl_i64 fills_s, sl_i64 evicted);
 void goose_init(int argc, char **argv);
 
 static char buf[1 << 22];
@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
     int64_t *prot   = malloc((size_t) n_slots * sizeof(int64_t));
     int64_t *seen   = malloc((size_t) n_expert * sizeof(int64_t));
     int64_t *uniq   = malloc((size_t) n_slots * sizeof(int64_t));
+    int64_t *ev     = malloc((size_t) (n_expert + n_slots) * sizeof(int64_t));
     int64_t *fe     = malloc((size_t) (n_expert + n_slots) * sizeof(int64_t));
     int64_t *fs     = malloc((size_t) (n_expert + n_slots) * sizeof(int64_t));
     int64_t head_arr[2] = { 0, -1 };
@@ -93,15 +94,21 @@ int main(int argc, char **argv) {
             (sl_i64){ key_of, n_slots }, (sl_i64){ prev, n_slots },
             (sl_i64){ next, n_slots },   (sl_i64){ prot, n_slots },
             (sl_i64){ head_arr, 2 },     (sl_i64){ tail_arr, 2 },
-            (sl_i64){ seen, n_expert },  (sl_i64){ maps, n_layer * n_expert },
+            (sl_i64){ seen, n_expert },  (sl_i64){ maps + il * n_expert, n_expert },
             (sl_i64){ ids, n_ids }, n_ids,
-            il, n_expert, n_slots, n_layer,
+            il, n_expert, n_slots,
             (sl_i64){ scal_arr, 5 }, (sl_i64){ uniq, n_slots },
-            (sl_i64){ fe, n_expert + n_slots }, (sl_i64){ fs, n_expert + n_slots });
+            (sl_i64){ fe, n_expert + n_slots }, (sl_i64){ fs, n_expert + n_slots },
+            (sl_i64){ ev, n_expert + n_slots });
 
         if (nf < 0 || scal_arr[4] == 0) {
             printf("REFUSE\n");
         } else {
+            // the module reports the evicted key; clearing that layer's map is the caller's job
+            for (int64_t i = 0; i < nf; ++i) {
+                const int64_t old = ev[i];
+                if (old >= 0) maps[(old / n_expert) * n_expert + old % n_expert] = -1;
+            }
             printf("F");
             for (int64_t i = 0; i < nf; ++i) printf(" %lld:%lld", (long long) fe[i], (long long) fs[i]);
             printf(" H%lld\n", (long long) scal_arr[3]);

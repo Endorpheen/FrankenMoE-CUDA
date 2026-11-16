@@ -85,10 +85,10 @@ fn sl_victim(key_of: const i64[:], next: const i64[:], head: const i64[:],
 
 export fn slru_plan(
     key_of: i64[:], prev: i64[:], next: i64[:], prot: i64[:],
-    head: i64[:], tail: i64[:], seen: i64[:], maps: i64[:],
+    head: i64[:], tail: i64[:], seen: i64[:], slots: i64[:],
     ids: const i64[:], n_ids: i64,
-    il: i64, n_expert: i64, n_slots: i64, n_layer: i64,
-    scal: i64[:], uniq: i64[:], fills_e: i64[:], fills_s: i64[:]
+    il: i64, n_expert: i64, n_slots: i64,
+    scal: i64[:], uniq: i64[:], fills_e: i64[:], fills_s: i64[:], evicted: i64[:]
 ) -> i64 {
     scal[2] = 0;
     scal[3] = 0;
@@ -135,7 +135,7 @@ export fn slru_plan(
     i = 0;
     while i < nu {
         let e: i64 = uniq[i];
-        let slot: i64 = maps[base + e];
+        let slot: i64 = slots[e];
         if slot >= 0 {
             sl_touch(prev, next, prot, head, tail, scal, slot, n_slots);
             n_hit = n_hit + 1;
@@ -160,23 +160,18 @@ export fn slru_plan(
     i = 0;
     while i < nu {
         let e: i64 = uniq[i];
-        if maps[base + e] < 0 {
+        if slots[e] < 0 {
             let s: i64 = sl_victim(key_of, next, head, seen, gen, n_expert, il);
             if s < 0 {
                 scal[4] = 0;
                 return 0 - 1;
             }
-            let old: i64 = key_of[s];
-            if old >= 0 {
-                // the evicted expert belongs to some layer; clear its entry in that layer's map.
-                // Same reason as above: no index is formed from a negative sentinel.
-                let ol: i64 = old / n_expert;
-                if ol < n_layer {
-                    maps[ol * n_expert + old % n_expert] = SL_NIL;
-                }
-            }
+            // The evicted expert may belong to another layer, whose map this module cannot reach.
+            // It is reported through `evicted` and the caller clears that entry: this keeps the
+            // policy here and the per-layer storage there, with no copy of the whole map set.
+            evicted[nf] = key_of[s];
             key_of[s] = base + e;
-            maps[base + e] = s;
+            slots[e] = s;
             sl_move(prev, next, prot, head, tail, scal, s, 0);
             fills_e[nf] = e;
             fills_s[nf] = s;

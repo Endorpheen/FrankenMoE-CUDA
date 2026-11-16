@@ -82,3 +82,40 @@ links the emitted runtime. That is 63 KB of runtime for one module - acceptable,
 2. Rebuild `libllama-exp371.so` and check the reference hash still matches at 128/256/512.
 3. Measure decode: the plan runs once per layer per token (41 times per token), so a Goose call there
    must be free. If it costs decode, it is rejected regardless of the gate passing.
+
+## 8. A design constraint found at the wiring step
+
+Wiring this into `llama-moe-cache.cpp` runs into a real constraint, and it should be stated before anyone
+retries the integration.
+
+**The native SLRU state is `int32_t`, `uint32_t` and `bool`; Goose slices are `i64` only.** The five
+arrays a plan call needs are `key_of[n_slots]`, `prev[n_slots]`, `next[n_slots]`, `is_protected[n_slots]`
+and `seen[n_expert]`. Passing them as typed slices therefore requires a widening copy per call - and the
+plan runs **once per layer per token**, 41 times per token.
+
+That cost is what makes the straightforward wiring unattractive, and it is not a detail:
+
+- at n_slots ~ 500 it is ~650 KB of copying per token, ~27 MB/s at 41 tok/s - not fatal, but pure waste
+  on a path that EXP-752 showed is the dominant one;
+- the alternative, changing the native arrays to `int64_t`, is invasive in a working hot path.
+
+**The existing `fg263c` bridge already solves this, and that is the pattern to follow.** It does not pass
+typed slices: it passes raw `u64` addresses and defines `fg263c_ld_i32` / `fg263c_st_i64` as FFI, so the
+Goose code reads and writes the native `int32` arrays directly with no conversion at all. That is why it
+costs nothing measurable.
+
+So the module as written is the right *policy* and proven equal to the native one, but the right
+*interface* is the `fg263c` one: raw pointers plus typed load/store FFI. Converting this module to that
+style is a mechanical rewrite of the array accesses, and it should be done before the wiring, not after.
+
+Recorded here so the next attempt does not start by discovering it in a profile.
+
+## 9. Re-verified after the interface change
+
+The module now takes the current layer's `slots` slice and reports evicted keys through `evicted`, so the
+caller clears the other layer's entry. This removes the need to pass every layer's map and keeps the
+per-layer storage where it belongs.
+
+```
+slru gate: 100/100 cases match
+```
