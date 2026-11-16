@@ -161,3 +161,25 @@ It verifies relative-cwd resolution, implicit static-archive inputs, generated
 source mapping, and that default status cannot execute a supplied probe.
 The opt-in probe check uses a harmless fake shell executable and fake model
 file, never Apex. Model launches in this experiment: **zero**.
+
+## EXP912: a Goose-callable graph-construction entry
+
+The canonical graph builder now exposes `gb_common_args(i64[:])` alongside its
+legacy packet-pointer API. The new entry accepts a caller-owned workspace of at
+least sixteen int64 values and shares the same constructor body. Goose can
+prepare operations, carry tensor handles and invoke the next constructor without
+a per-node C packet callback. Tensor/context and auxiliary pointer lifetimes
+remain the caller's responsibility; this API does not replace native allocation.
+
+All 36 constructor modes match native GGML: 10408 checks/558 paired tensors per
+route for frozen control, candidate legacy and candidate typed; native fallback
+also passes. Protected-page and short-slice gates pass. A five-node chain is
+orchestrated wholly in Goose and matches 18432 computed FP32 values, with a
+positive legacy packet-read witness and zero packet reads on the typed path.
+The 123-module main composition typechecks with the entry; no full runtime
+build or model run was needed. Two targeted mutations fail semantic assertions.
+
+This is an accepted composition capability, not full-model or server coverage.
+The EXP906 binary set does not consume this canonical module and remains
+unchanged. See EXP912 for the independent oracles, preserved failed numerical
+test assumption about non-materialized CPU fusion outputs, and raw evidence.

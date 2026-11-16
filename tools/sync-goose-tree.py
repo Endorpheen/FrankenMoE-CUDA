@@ -32,6 +32,9 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("cpu/goose-graph-builders.goose", "EXP-2026-11-17-912-goose-typed-graph", "source/runtime.goose",
+     "ggml/src/ggml.c (graph constructors; typed and legacy Goose entry points)",
+     "36 modes / 558 tensors / 10408 checks per route; protected legacy packet; 18432 exact numeric values; 2/2 mutations"),
     ("chat/parse-params.goose", "EXP-2026-11-14-575-p9-06-arena-load", "source/parse_params.goose",
      "common/peg-parser.cpp (arena load) and runtime chat_parse.cpp", "10 cases / 58 values / 0 failures, 15/15 mutations"),
     ("chat/jsonparse.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",

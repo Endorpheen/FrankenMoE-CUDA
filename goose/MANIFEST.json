@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-15T06:36:01.472847+00:00",
+  "updated_at": "2026-11-16T23:08:40.061403+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -5012,14 +5012,16 @@
     },
     {
       "goose": "cpu/goose-graph-builders.goose",
-      "native": "ggml/src/ggml-cpu/",
+      "native": "ggml/src/ggml.c (graph constructors)",
       "native_targets": [
-        "ggml/src/ggml-cpu/"
+        "ggml/src/ggml.c"
       ],
-      "experiment": "EXP-2026-11-08-158-goose-graph-builders",
+      "experiment": "EXP-2026-11-17-912-goose-typed-graph",
       "task": "",
       "status": "slice",
-      "sha256": "f4627b71b2a06165bdb0b48e459028dcadda3d932b81c3a16966d20b57b389f8"
+      "sha256": "306c2514309017b7b6603ac464c1f5071086d3209f93e0233f770800275473d8",
+      "source": "source/runtime.goose",
+      "gate": "36 modes / 558 tensors / 10408 checks per route; guarded legacy packet; 18432 exact values; 2/2 mutations; 123-module typecheck"
     },
     {
       "goose": "cuda/goose-graph-lifecycle.goose",
