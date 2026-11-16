@@ -6,7 +6,6 @@
 #include <cassert>
 
 // Goose Apex graph decisions (EXP200). GGML_GOOSE_MODEL_GRAPH=0 restores the native bodies.
-extern "C" int fg200g_enabled(void);
 extern "C" int64_t fg200g_is_recr(int64_t il, int64_t n_layer_all, uint64_t flags);
 extern "C" int64_t fg200g_gating_kind(int64_t gating_op);
 extern "C" int64_t fg200g_group_select(int64_t n_expert_groups, int64_t n_tokens);
@@ -266,16 +265,13 @@ uint32_t llama_hparams::n_embd_s() const {
 }
 
 bool llama_hparams::is_recr(uint32_t il) const {
-    if (fg200g_enabled()) {
-        // Goose answers from the recorded per-layer flags; out-of-range stays fatal here so the
-        // native abort message is unchanged.
-        const int64_t r = fg200g_is_recr((int64_t)il, (int64_t)n_layer_all,
-                                         (uint64_t)(uintptr_t)is_recr_impl.data());
-        if (r >= 0) return r != 0;
-    }
-    if (il < n_layer_all) {
-        return is_recr_impl[il];
-    }
+    // The decision is Goose (fg200g_is_recr), and it is equal by construction rather than by sampling: the module is
+    // handed the same is_recr_impl array this function used to index, and answers -1 exactly where the array has no
+    // entry. The native lookup and its GGML_GOOSE switch are deleted; the abort stays, because an out-of-range layer
+    // must remain fatal and the message must not change.
+    const int64_t r = fg200g_is_recr((int64_t)il, (int64_t)n_layer_all,
+                                     (uint64_t)(uintptr_t)is_recr_impl.data());
+    if (r >= 0) return r != 0;
 
     GGML_ABORT("%s: il (%u) out of bounds (n_layer_all: %u)\n", __func__, il, n_layer_all);
 }
