@@ -186,3 +186,32 @@ chain and the split belongs to the next harness. Trimming rows to connect two te
 what put the head structure out of reach.
 
 Harness reverted to its committed state (`nodes=4`, `builder_vs_ggml=0`, PASS).
+
+### Second attempt with the full projection: code=17, and the exact cause
+
+Carrying the real 8192-wide projection got past the head-width problem and stopped one node later:
+
+```
+graph-bindings.c:279: Goose graph builder validation failed: code=17
+```
+
+`code 17` is the mode-11 assertion `ensure(pred(8, a, b) != 0, 17)`, i.e. `fg_can_mul_mat` refused. The failing
+call is `gb(11, gc, wo, qv)`: `wo` is `[4096, 256]` and `qv` comes out of `qg_split` as a **3-D view**
+`[HD, H, 1] = [256, 16, 1]`, not as a flat `[4096, 1]`. `can_mul_mat` compares `ne[0]` and sees 4096 against
+256.
+
+`apex_layer` does the reshape the split's callers need - it takes `qv` and continues with `k4 = call(24, ...)`
+(`GGML_OP_CONT` with explicit extents). That step is what this chain is missing, and it is a missing **reshape
+between two nodes**, not a wrong mode, a missing builder op, or a bad split.
+
+So the two attempts bracket the problem:
+
+| attempt | carried | stopped at | cause |
+|---|---|---|---|
+| first | 4096-wide (trimmed) | `qg_split` | head structure not derivable from a trimmed projection |
+| second | 8192-wide (real) | `gb(11, wo, qv)` | `qv` is `[HD,H,1]`, needs a reshape before a 2-D matmul |
+
+Each attempt removed one obstacle and exposed the next, and both were in the harness rather than in the
+builder, the split or ggml.
+
+Harness reverted to its committed state (`nodes=4`, `builder_vs_ggml=0`, PASS).
