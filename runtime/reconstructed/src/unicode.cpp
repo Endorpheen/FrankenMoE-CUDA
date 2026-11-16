@@ -8,12 +8,6 @@ extern "C" int64_t q35s_split(int64_t packet);
 extern "C" void    fg_qwen35_split_init(void);
 extern "C" int64_t fg_han_is_han(int64_t cpt);
 extern "C" int64_t fg_unicode_byte_map(uint32_t * out);
-extern "C" int64_t fg_unicode_llama3_split(const uint32_t * cpts, size_t n_cpts,
-                                          const size_t * offsets, size_t n_off,
-                                          size_t * out, size_t cap);
-extern "C" int64_t fg_unicode_qwen2_split(const uint32_t * cpts, size_t n_cpts,
-                                         const size_t * offsets, size_t n_off,
-                                         size_t * out, size_t cap);
 extern "C" int64_t fg_unicode_gpt2_split(const uint32_t * cpts, size_t n_cpts,
                                         const size_t * offsets, size_t n_off,
                                         size_t * out, size_t cap);
@@ -273,20 +267,6 @@ static std::vector<size_t> unicode_regex_split_custom_gpt2(const std::string & t
     return out;
 }
 
-// Llama3 pre-tokenisation: the Goose module (goose/misc/unicode-llama3.goose). Differs from Qwen2 in one branch -
-// a digit run is emitted in groups of three - and that branch is the only thing that was changed when this was
-// derived from the already-proved Qwen2 module, so the shared branches carry their proof with them.
-static std::vector<size_t> unicode_regex_split_custom_llama3(const std::string & text, const std::vector<size_t> & offsets) {
-    const std::vector<uint32_t> cpts = unicode_cpts_from_utf8(text);
-    std::vector<size_t> out(cpts.size() + offsets.size() + 8);
-    const int64_t n = fg_unicode_llama3_split(cpts.data(), cpts.size(), offsets.data(), offsets.size(),
-                                              out.data(), out.size());
-    if (n < 0) {
-        return {};
-    }
-    out.resize((size_t) n);
-    return out;
-}
 
 static std::vector<size_t> unicode_regex_split_custom_k2_horizon(const std::string & text, const std::vector<size_t> & offsets) {
     std::vector<size_t> bpe_offsets; // store the offset of each word
@@ -435,20 +415,6 @@ static std::vector<size_t> unicode_regex_split_custom_k2_horizon(const std::stri
     return bpe_offsets;
 }
 
-// Qwen2 pre-tokenisation: the Goose module (goose/misc/unicode-qwen2.goose). Proved equal over 28 cases covering
-// case-insensitive contractions, single digits vs runs, letters carrying combining marks, a prefix that is not a space,
-// the \s*[\r\n]+ jump, whitespace runs, CJK and an empty segment.
-static std::vector<size_t> unicode_regex_split_custom_qwen2(const std::string & text, const std::vector<size_t> & offsets) {
-    const std::vector<uint32_t> cpts = unicode_cpts_from_utf8(text);
-    std::vector<size_t> out(cpts.size() + offsets.size() + 8);
-    const int64_t n = fg_unicode_qwen2_split(cpts.data(), cpts.size(), offsets.data(), offsets.size(),
-                                             out.data(), out.size());
-    if (n < 0) {
-        return {};
-    }
-    out.resize((size_t) n);
-    return out;
-}
 
 // Qwen3.5 system regex: "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
 // Compared to Qwen2, letter-runs also consume Unicode combining marks (\p{M}): [\p{L}\p{M}]+ instead of \p{L}+
@@ -723,13 +689,6 @@ static std::vector<size_t> unicode_regex_split_custom(const std::string & text, 
 
     if (regex_expr == "'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)") {
         bpe_offsets = unicode_regex_split_custom_gpt2(text, offsets);
-    } else if (
-            regex_expr == "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+" ||
-            regex_expr == "(?:'[sS]|'[tT]|'[rR][eE]|'[vV][eE]|'[mM]|'[lL][lL]|'[dD])|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+") {
-        bpe_offsets = unicode_regex_split_custom_llama3(text, offsets);
-    } else if (
-           regex_expr == "(?:'[sS]|'[tT]|'[rR][eE]|'[vV][eE]|'[mM]|'[lL][lL]|'[dD])|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+") {
-        bpe_offsets = unicode_regex_split_custom_qwen2(text, offsets);
     } else if (
            regex_expr == "(?:'[sS]|'[tT]|'[rR][eE]|'[vV][eE]|'[mM]|'[lL][lL]|'[dD])|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+") {
         bpe_offsets = unicode_regex_split_custom_qwen35(text, offsets);
