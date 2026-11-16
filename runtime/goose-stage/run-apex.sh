@@ -32,9 +32,9 @@ PORT=8081
 # Defaults are now the measured best balance (EXP-740): ahead of the reference at 128, 256 and 512.
 #   reference profile:  --ub 512  --cache 4352   2429.9 prefill / 39.86 decode
 #   max decode:        --ub 1024 --cache 5632   1488.7 prefill / 42.74 decode (512 only)
-# Reverted to the reference argv (EXP-743): every other ubatch value changes the model's logits and
-# therefore the generated answer, so it is not a faster way to compute the reference output.
-CACHE=4352
+# Reference argv (EXP-743: any other -b/-ub changes the generated answer).
+# Cache 4608 is the highest that fits at ub 4096 and reproduces the reference hash (EXP-750).
+CACHE=4608
 UB=4096
 while [ $# -gt 0 ]; do
     case "$1" in

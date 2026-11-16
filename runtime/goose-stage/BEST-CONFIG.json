@@ -1,12 +1,12 @@
 {
-  "name": "apex-best-20261115-v4",
+  "name": "apex-best-20261115-v5",
   "role": "pinned rollback baseline for Goose optimisation work",
   "created": "2026-11-15",
   "why": "The next optimisation stage must start here, not from a rebuild that silently loses what was measured. Every field below is what produced the recorded numbers; nothing is inferred.",
   "launch": {
     "script": "runtime/goose-stage/run-apex.sh",
-    "cache_mib": 4352,
-    "command": "bash runtime/goose-stage/run-apex.sh --cache 4352"
+    "cache_mib": 4608,
+    "command": "bash runtime/goose-stage/run-apex.sh --cache 4608"
   },
   "libraries": {
     "dir": "runtime/goose-stage/lib",
@@ -74,7 +74,13 @@
     "oom_evidence": "5120 failed twice, the second time with 8568 MiB showing free - the allocation is contiguous and the device cannot provide it",
     "headroom_at_4352": "~570 MiB"
   },
-  "rollback": "bash runtime/goose-stage/run-apex.sh --cache 4352. The script verifies both CPU hashes and a free port before starting, so a wrong library or a busy port is refused rather than silently measured. Libraries are symlinks into the stage-run tree; nothing in that tree is modified.",
+  "rollback": {
+    "command": "bash runtime/goose-stage/run-apex.sh --cache 4352",
+    "measured_20261115": {
+      "decode_512": 39.84,
+      "note": "same reference hash; 2.2% slower, 252 MiB less VRAM"
+    }
+  },
   "updates": "v3: the long-generation configuration was measured at all three lengths (EXP-740) and is ahead of the reference at each. It is now the script default. The reference profile remains available for prefill-dominated workloads.",
   "configurations": {
     "long_prompt_short_generation": {
@@ -170,5 +176,6 @@
   "default": "long_generation (ub 2048, cache 5376) - now the script default",
   "full_matrix_measured": true,
   "correction": "Every 'baseline' arm in this session used -ub 4096 from the reference argv, not 512 as several cards stated. The ubatch sweep varied it downward from 4096. Measurements are unaffected; only the labels were wrong, and they are corrected here.",
-  "CORRECTION_743": "Every configuration with ubatch != 4096 produces a DIFFERENT answer than the reference (three ubatch values, three stable hashes). The cache does not affect the answer; the batch size does, and the divergence is at token 1 with logprobs differing by 0.77 - not rounding. Those configurations are therefore NOT reference-equivalent and are not recommended as defaults, however fast they measure. The only reference-equivalent configuration is ub 4096."
+  "CORRECTION_743": "Every configuration with ubatch != 4096 produces a DIFFERENT answer than the reference (three ubatch values, three stable hashes). The cache does not affect the answer; the batch size does, and the divergence is at token 1 with logprobs differing by 0.77 - not rounding. Those configurations are therefore NOT reference-equivalent and are not recommended as defaults, however fast they measure. The only reference-equivalent configuration is ub 4096.",
+  "ACCEPTED_750": "cache 4608 with the reference batch shape (-b 4096 -ub 4096) reproduces the reference hash and is faster at every length: +1.5% @128, +2.4% @256, +2.2% @512, for +252 MiB VRAM. This is the first config accepted under hash-checked-in-the-same-run discipline."
 }
