@@ -134,6 +134,9 @@ for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
         print('MISSING', need, '- run: bash experiments/EXP-2026-11-16-756-slru-policy-goose/build.sh', W)
         sys.exit(1)
 bridge_objs += [str(x) for x in extra_mod if x.exists()]
+# REVERTED: compiling only llama-*.cpp and models/*.cpp dropped sources that the Unity objects also carried
+# (ggml backend registration among them) and the runtime failed at start with a CUDA allocation error. Restored to the
+# prebuilt objects until the vendor compile list covers everything the Unity units contained.
 flint_objs = sorted(str(x) for x in (FLB/'build-cuda/src/CMakeFiles/llama.dir').rglob('*.o')
                     if x.name not in [c + '.o' for c in changed])
 cmd = ['/usr/bin/c++','-fPIC','-O3','-DNDEBUG','-shared','-Wl,-soname,libllama.so.0','-o',str(OUT)]
