@@ -204,6 +204,28 @@ void llm_graph_input_embd_h::set_input(const llama_ubatch * ubatch) {
 }
 
 bool llm_graph_input_embd_h::can_reuse(const llm_graph_params & params) {
+    // Same family as llm_graph_input_embd: three rows, "absent or equal". A required row whose tensor is
+    // missing carries INT64_MIN so it cannot match, which reproduces the native `tokens && ...` guard.
+    if (fg_gr_enabled()) {
+        const int64_t miss = INT64_MIN;
+        const int64_t present[3] = {
+            params.ubatch.token      != nullptr,
+            params.ubatch.embd       != nullptr,
+            params.ubatch.embd_state != nullptr,
+        };
+        const int64_t want[3] = {
+            (int64_t) params.ubatch.n_tokens,
+            (int64_t) params.ubatch.n_tokens,
+            (int64_t) params.ubatch.n_tokens,
+        };
+        const int64_t have[3] = {
+            tokens ? (int64_t) tokens->ne[0] : miss,
+            embd   ? (int64_t) embd->ne[1]   : miss,
+            h      ? (int64_t) h->ne[1]      : miss,
+        };
+        return fg_gr_check(present, want, have, 3) != 0;
+    }
+
     bool res = true;
 
     res &= (!params.ubatch.token)      || (tokens && tokens->ne[0] == params.ubatch.n_tokens);
