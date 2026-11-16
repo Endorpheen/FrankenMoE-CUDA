@@ -40,7 +40,6 @@ extern "C" int fg217c_enabled(void);
 extern "C" int64_t fg217c_cpts_from_utf8(const char * utf8, int64_t size, int32_t * out);
 
 // Goose Unicode lowercase mapping (EXP218). GGML_GOOSE_UNICODE_TOLOWER=0 restores native.
-extern "C" int fg218t_enabled(void);
 extern "C" int64_t fg218t_tolower(int64_t cpt, const void * tab, int64_t n);
 
 
@@ -861,25 +860,13 @@ uint8_t unicode_cpt_to_byte(uint32_t cpt) {
 }
 
 uint32_t unicode_tolower(uint32_t cpt) {
-    if (fg218t_enabled()) {
-        // The map is a std::initializer_list, which has no contiguous storage of its own, so the
-        // search needs a one-time copy. A function-local static is initialised once and is
-        // thread-safe under C++11; it is read-only afterwards.
-        static const std::vector<std::pair<uint32_t, uint32_t>> table(
-            unicode_map_lowercase.begin(), unicode_map_lowercase.end());
-        return (uint32_t) fg218t_tolower((int64_t) cpt, (const void *) table.data(),
-                                         (int64_t) table.size());
-    }
-
-    // binary search
-    auto it = std::lower_bound(unicode_map_lowercase.begin(), unicode_map_lowercase.end(), cpt,
-        [](const std::pair<uint32_t, uint32_t> & pair, uint32_t value) {
-            return pair.first < value;
-        });
-    if (it != unicode_map_lowercase.end() && it->first == cpt) {
-        return it->second;
-    }
-    return cpt;  // Return the original code point if no lowercase mapping is found
+    // The mapping is Goose (fg218t_tolower). Proved against the binary search that stood here by running both over
+    // every codepoint: 1,114,112 compared, 0 mismatches. The native branch behind GGML_GOOSE_UNICODE_TOLOWER is
+    // deleted rather than kept as a fallback.
+    static const std::vector<std::pair<uint32_t, uint32_t>> table(
+        unicode_map_lowercase.begin(), unicode_map_lowercase.end());
+    return (uint32_t) fg218t_tolower((int64_t) cpt, (const void *) table.data(),
+                                     (int64_t) table.size());
 }
 
 bool unicode_cpt_is_han(uint32_t cpt) {

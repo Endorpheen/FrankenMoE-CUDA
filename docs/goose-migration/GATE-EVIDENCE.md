@@ -193,3 +193,5 @@ The lesson is the same one this file keeps recording in other forms: a failure t
 caused by it, and "the environment is at fault" is a claim that costs one nvidia-smi to check and was not checked
 before it was written down. Both builds above are measured; 1ff74c90 is verified after all.
 
+
+| `fg218t` tolower | this commit | 1114112 | 0 mismatches | both paths run over every codepoint with the env flag toggled; native binary search against Goose |
