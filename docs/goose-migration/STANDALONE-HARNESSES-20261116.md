@@ -181,3 +181,22 @@ edited above, because the earlier transcript is what it was.
 The list is checked against the tree by construction: every harness on disk is either listed or explicitly
 excluded (the two the build runs, plus `layer_real` as superseded) - 22 listed, 22 present, none missing and
 none invented.
+
+## Definitive re-run after every change: 22/22
+
+One invocation, no arguments, on the real 21.7 GB file, after the whole session's edits - the `apex_plan`
+layer-count fix, the assert added to it, `real_chain` gaining the real norm, and its label corrected from 2
+nodes to 4.
+
+```
+ok   real_chain      norm -> wq[2048x4096 q4_K] -> wo[4096x256 q4_K] nodes=4 builder_vs_ggml=0.000e+00 PASS
+ok   apex_layer      nodes=15 nondet=0 wiring_differs=0 vs_ggml=0 PASS
+ok   apex_graph      first=0.134777 want=0.134777 rel=8.07e-08 PASS
+ok   gdn_layer       bad_nodes=0 PASS
+ok   gdn_layer_full  bad=0 PASS
+...
+standalone-apex: 22/22 harness(es) pass
+```
+
+No regression from the edits, including the one that changed a plan from 42 layers to 41 - the three
+independent plan checks agree and everything downstream still passes.
