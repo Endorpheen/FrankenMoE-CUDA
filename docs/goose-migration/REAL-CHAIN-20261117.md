@@ -73,3 +73,32 @@ or to call `gb_op_g` with candidate indices and see which one returns ggml's `MU
 
 That is a lookup with a clear success criterion - the chain's two arms agreeing again - and it is where the
 next attempt should start, not from another guess at the mode argument.
+
+
+## Resolved: the builder has no elementwise multiply
+
+Called `gb_op(i)` for every index instead of guessing the mode argument. The map is short and it is decisive:
+
+```
+ggml enum here:  ADD=2  MUL=7  RMS_NORM=25  MUL_MAT=29  CONT=35
+gb_op logical:   0->2 (ADD)  1->29 (MUL_MAT)  2->30  3->48  4->46
+                 5->74  6->100  7->15  8->40  9->42
+                 10.. -> -1  (unsupported)
+```
+
+**`MUL` is not in the map.** The Goose builder supports ten operations and an elementwise multiply is not
+one of them, so `mode 11 + GGML_OP_MUL` did not abort because of the call syntax - the op simply is not
+reachable through `gb_common`. That is a fact about the builder, not about this harness.
+
+Two consequences, and they are different in kind:
+
+1. **For the test**: the norm scale has to be a raw `ggml_mul` between two builder nodes, or the comparison
+   arms will never match. That is honest for a harness whose subject is the matmuls, but it means the norm
+   weight is not exercised through Goose.
+2. **For the migration**: a layer needs `rms_norm` followed by a scale by `attn_norm.weight`. `RMS_NORM (25)`
+   is reachable, the scale is not. So either the pass calls `ggml_mul` directly - C++ in the middle of a
+   Goose-built graph - or `gb_op` gains `MUL`, which is a change to the Goose graph-builder module.
+
+The second is the migration-correct answer and the first is the expedient one. Per rule 17 the choice matters:
+an adapter that calls raw ggml inside a Goose graph is the kind of debt the rules call for counting rather
+than accumulating quietly. Recorded before anything is written.
