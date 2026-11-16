@@ -157,8 +157,27 @@ for _mod, _br, _stem in _GOOSE_PAIRS:
     _goose_objs += [str(_mo), str(_bo)]
 print('goose modules compiled from sources:', len(_goose_objs)//2)
 
+# SLRU pieces are compiled from repository sources: two generated C files that live in experiments/ and the runtime
+# shim in integration/. They replace three prebuilt objects and are the policy the expert cache depends on.
+_slru_src = [
+    (Path(_REPO)/'experiments'/'EXP-2026-11-16-756-slru-policy-goose'/'build'/'slru-policy.c', 'slru-policy.o'),
+    (Path(_REPO)/'experiments'/'EXP-2026-11-16-756-slru-policy-goose'/'build'/'slru-runtime.c', 'slru-runtime.o'),
+    (Path(_REPO)/'integration'/'goose-standalone'/'slru-runtime-shim.c', 'slru-shim.o'),
+]
+_sobj = W/'slru-obj'; _sobj.mkdir(exist_ok=True)
+_slru_objs = []
+for _s, _n in _slru_src:
+    _o = _sobj/_n
+    _r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w','-c', str(_s), '-o', str(_o)],
+                        capture_output=True, text=True)
+    if _r.returncode != 0:
+        print('slru compile failed:', _s.name); print(_r.stderr[:800]); sys.exit(1)
+    _slru_objs.append(_o)
+print('slru objects compiled:', len(_slru_objs))
+
 extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
-             W/'slru-policy.o', W/'slru-runtime.o', W/'slru-shim.o',
+             # compiled here from repository sources instead of taken prebuilt
+             _slru_objs[0], _slru_objs[1], _slru_objs[2],
              W/'fg-ar.o', W/'fg-ar-bridge.o',
              W/'fg-q35.o', W/'fg-qg.o', W/'fg-q35-bridge.o', W/'fg-plan-ffi.o',
              W/'fg-gr.o', W/'fg-gr-bridge.o'] + [Path(x) for x in _goose_objs]
