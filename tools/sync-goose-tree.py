@@ -576,7 +576,7 @@ def destination(targets: list[str], experiment: str, count: int, relative: Path)
     return GOOSE / group / topic / Path(*parts)
 
 
-def build(check: bool) -> int:
+def build(check: bool, force: bool = False) -> int:
     ledger = ledger_map()
     canonical = {}
     for target, experiment, source, native, gate in CANONICAL_SOURCES:
@@ -596,8 +596,19 @@ def build(check: bool) -> int:
     written = 0
     used: set[Path] = set()
     if not check:
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain", "--", "goose", ":(exclude)goose/_archive"],
+            cwd=ROOT, capture_output=True, text=True,
+        ).stdout.strip()
+        if dirty and not force:
+            print("sync-goose-tree: refusing to rewrite goose/ while it has uncommitted work:",
+                  file=sys.stderr)
+            print(dirty, file=sys.stderr)
+            print("commit it or copy it outside the tree, or pass --force", file=sys.stderr)
+            return 1
         for stale in list(GOOSE.iterdir()):
-            if stale.is_dir():
+            # The archive is imported from other branches and is not rebuilt here.
+            if stale.is_dir() and stale.name != "_archive":
                 shutil.rmtree(stale)
         for target, experiment, source, native, gate in CANONICAL_SOURCES:
             path = GOOSE / target
@@ -737,8 +748,10 @@ def build(check: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--force", action="store_true",
+                        help="rewrite goose/ even when it has uncommitted work")
     args = parser.parse_args()
-    return build(args.check)
+    return build(args.check, args.force)
 
 
 if __name__ == "__main__":
