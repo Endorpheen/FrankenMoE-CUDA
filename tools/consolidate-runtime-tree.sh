@@ -11,7 +11,7 @@ BASE=${BASE:-/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108}
 FL=${FL:-/home/end0/AI/LlamaServer/llama.cpp-flint-cuda}
 [ -e "$DST" ] && { echo "refusing to overwrite $DST"; exit 1; }
 
-mkdir -p "$DST"/{our-src,modules,bridges,flint-objects,extra-objects,libs,build}
+mkdir -p "$DST"/{our-src,modules,module-src,bridges,flint-objects,extra-objects,libs,build,upstream-include,upstream-src}
 cp "$ROOT"/runtime/reconstructed/src/*.cpp "$ROOT"/runtime/reconstructed/src/*.c "$DST/our-src/" 2>/dev/null || true
 cp "$ROOT"/runtime/reconstructed/src/*.h "$DST/our-src/" 2>/dev/null || true
 
@@ -37,6 +37,11 @@ for p in prefixes:
     if cands:
         exp, hu = max(cands)
         shutil.copy2(hu, dst/'modules'/(p + hu.suffix))
+        # a module may #include a generated companion from its own directory; freeze the whole directory
+        d = dst/'module-src'/hu.parent.parent.name
+        d.mkdir(parents=True, exist_ok=True)
+        for f in hu.parent.iterdir():
+            if f.is_file(): shutil.copy2(f, d/f.name)
         chosen.append((p, exp, hu.name))
 for p, exp, name in chosen: print(f"{p} EXP{exp} {name}")
 PY
@@ -47,6 +52,15 @@ for m in $(grep -oE "EXP-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-[a-z0-9-]+" "$ROOT/ru
         mkdir -p "$DST/bridges/$m"; cp -r "$BASE/experiments/$m/source/." "$DST/bridges/$m/"
     fi
 done
+
+# Upstream headers and sources: our files include llama.h / ggml.h, and a module may include a generated
+# companion from its own experiment directory. Both are inputs, so both are frozen here.
+cp "$FL"/include/*.h "$DST/upstream-include/" 2>/dev/null || true
+cp -r "$FL"/ggml/include/. "$DST/upstream-include/" 2>/dev/null || true
+cp "$FL"/src/*.h "$DST/upstream-src/" 2>/dev/null || true
+cp -r "$FL"/src/models "$DST/upstream-src/" 2>/dev/null || true
+for d in "$FL"/src/*/; do cp -r "$d". "$DST/upstream-src/" 2>/dev/null || true; done
+cp "$FL"/ggml/src/*.h "$DST/upstream-src/" 2>/dev/null || true
 
 # Prebuilt objects and libraries, as bytes.
 find "$FL/build-cuda/src/CMakeFiles/llama.dir" -name '*.o' -exec cp {} "$DST/flint-objects/" \;
