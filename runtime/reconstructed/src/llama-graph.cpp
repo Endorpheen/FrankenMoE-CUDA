@@ -870,6 +870,40 @@ bool llm_graph_input_attn_kv_iswa::can_reuse(const llm_graph_params & params) {
 
     bool res = true;
 
+    // The conjunction is the Goose graph-reuse decision, but each row is BUILT inside the same guard the native
+    // code used. That is what preserves short-circuiting: the row arrays are evaluated eagerly, so a guarded
+    // sub-decision such as can_reuse_kq_mask is only computed when its tensor exists. A guarded-out row is
+    // simply absent. The earlier batch flattened these guards to present = 1 and evaluated the sub-decisions
+    // unconditionally; that was a behaviour change, and this shape is what fixes it.
+    if (fg_gr_enabled()) {
+        int64_t present[4], want[4], have[4];
+        int64_t n = 0;
+
+        // base tensors may not be allocated if there are no non-SWA attention layers
+        if (self_k_idxs && self_k_idxs->buffer) {
+            present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+            have[n] = (int64_t) self_k_idxs->ne[0]; ++n;
+        }
+
+        if (self_kq_mask && self_kq_mask->buffer) {
+            present[n] = 1; want[n] = 1;
+            have[n] = can_reuse_kq_mask(self_kq_mask, mctx->get_base(), params.ubatch, params.cparams) ? 1 : 0; ++n;
+        }
+
+        // swa tensors may not be allocated if there are no SWA attention layers
+        if (self_k_idxs_swa && self_k_idxs_swa->buffer) {
+            present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+            have[n] = (int64_t) self_k_idxs_swa->ne[0]; ++n;
+        }
+
+        if (self_kq_mask_swa && self_kq_mask_swa->buffer) {
+            present[n] = 1; want[n] = 1;
+            have[n] = can_reuse_kq_mask(self_kq_mask_swa, mctx->get_swa(), params.ubatch, params.cparams) ? 1 : 0; ++n;
+        }
+
+        return fg_gr_check(present, want, have, n) != 0;
+    }
+
     // base tensors may not be allocated if there are no non-SWA attention layers
     if (self_k_idxs && self_k_idxs->buffer) {
         res &= self_k_idxs->ne[0] == params.ubatch.n_tokens;
