@@ -33,8 +33,9 @@ PORT=8081
 #   reference profile:  --ub 512  --cache 4352   2429.9 prefill / 39.86 decode
 #   max decode:        --ub 1024 --cache 5632   1488.7 prefill / 42.74 decode (512 only)
 # Reference argv (EXP-743: any other -b/-ub changes the generated answer).
-# Cache 4608 is the highest that fits at ub 4096 and reproduces the reference hash (EXP-750).
-CACHE=4608
+# Cache 4992 is the highest that fits at ub 4096 across every context size, reproduces the
+# reference hash, and is faster than 4608 at every context (EXP-754). 5056+ OOM.
+CACHE=4992
 UB=4096
 while [ $# -gt 0 ]; do
     case "$1" in
