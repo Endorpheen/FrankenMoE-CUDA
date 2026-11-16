@@ -61,3 +61,44 @@ after the restore.
 
 Sample `vmstat` and `pidstat -d` (or `/proc/<pid>/io` of the server) **during** one slow run, at the same time as
 a per-request timing capture, so the paging claim is either demonstrated or dropped. One run, not a series.
+
+## The paging hypothesis is DISPROVEN, and the swing is between identical runs
+
+Two targeted single runs, each with instrumentation active for its whole duration. Same binary, same argv, same
+reference hash, back to back.
+
+| run | decode tok/s | prefill tok/s | paging during the run |
+|---|---|---|---|
+| `paging_512` (133 s) | 27.78 | 1587.4 | pswpin 65 pages = 0.3 MiB, pswpout 334 pages = 1.3 MiB |
+| `gpu_512` | 38.34 | 2236.4 | not sampled, but GPU sampled instead |
+
+So: **no paging during a slow run**. 0.3 MiB of swap-in over 133 seconds is nothing, and the hypothesis that expert
+reads fall back to disk is dead. It was a reasonable guess from a full swap file; the measurement does not support
+it and it is withdrawn.
+
+And the more useful result: **the two runs differ by 38% with no code change between them.** 27.78 then 38.34, same
+binary, same arguments, same hash, minutes apart. That is larger than the gap between the "fast" session (42.01)
+and the slow ones (23-28).
+
+Therefore the 42 -> 26 observation is not evidence of a code regression at all. It is the same phenomenon as the
+swing between these two consecutive runs: this host's throughput varies by ~40% session to session, which matches
+what was already recorded earlier in this project as session drift.
+
+GPU during `gpu_512`: 96-97% utilisation, 2520-2850 MHz of a 3105 MHz maximum, 127-152 W of a 200 W limit, throttle
+reason `0x0` except one sample at `0x4` (SW power cap). No throttling, no contention, no idling.
+
+## What this means for the earlier conclusions
+
+- The "regression" is not attributable to any commit, and the two-build A/B (26.23 vs 27.44) was measuring the same
+  variance rather than isolating a change.
+- The unchanged MoE cache statistics and unchanged hash now read consistently: the code is doing the same work, and
+  the wall-clock number moves because the host does.
+- What is NOT established: why this host varies by 40%. Candidates remain CPU frequency/power state, memory
+  bandwidth contention from long-running processes, and GPU power-cap behaviour. None is measured yet, and the
+  earlier attempt to pin it on swap was wrong.
+
+## Consequence
+
+A single measurement cannot decide accept/reject for this project, which is exactly what AGENTS.md rule 20 says
+about paired repeats. Any future comparison here has to be interleaved and paired, not sequential, because
+sequential runs on this host can differ by 40% on their own.
