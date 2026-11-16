@@ -1,0 +1,59 @@
+{
+  "source_checkpoint": "cd67aa3f8622385969dec4577c145cb71d56fe2f",
+  "result": "ACCEPTED_DESCRIPTOR_ONLY_NOT_SERVER_INTEGRATED",
+  "checks": 199850,
+  "mutations_killed": 6,
+  "model_runs": 0,
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp909-edge0-layout-20261117/layout.so",
+      "bytes": 44112,
+      "sha256": "6f435e85b5dcff0f002b372abc9dde2a088bed8eb2a0dafead0ccf4666c15ffb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp909-edge0-layout-20261117/runtime.c",
+      "bytes": 170937,
+      "sha256": "b173b7f62cbfd3474a3e9b6a33899ef33ec599b3e125f914ba7a5703b43a342a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp909-edge0-layout-20261117/runtime.h",
+      "bytes": 1139,
+      "sha256": "4ea656c1e5f99da121b4630e3c216a925190803c3e55baeffc778c495f4434aa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp909-edge0-layout-20261117/check.log",
+      "bytes": 610,
+      "sha256": "407630d99cd12f81949d1b7f41236f2a714b4799e1619645dabe671f3946c96a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp909-edge0-layout-20261117/build.log",
+      "bytes": 1118,
+      "sha256": "23089c33f233d85715f7ebead22e8b2d29a7595e7850bdec65af825d6c81288e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp909-edge0-layout-20261117/gate.log",
+      "bytes": 399,
+      "sha256": "793e30a7fd650c883a8148f3f545cd9069ced286de3f533e39c7b851f545efff"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp909-edge0-layout-20261117/mutations.log",
+      "bytes": 14897,
+      "sha256": "7b0205c0bea74485bd3b74379f5c054c9a23dff3a1d2adb89c14636adcaf02e1"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-909-edge0-layout/source/runtime.goose",
+      "bytes": 3236,
+      "sha256": "2b2a4d8611e95b13b21c1f11726b1c14c3a9ce4e5a716c67611cef270b65063e"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-909-edge0-layout/tests/gate.py",
+      "bytes": 6561,
+      "sha256": "a4af5aa857d6d13baf072d097aafba6aeb59d3cb5e1df2213727b8c7a593f626"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-909-edge0-layout/tests/build.py",
+      "bytes": 4295,
+      "sha256": "a8fc1e82b5275a7fbba1465966b7f426ba6bc97322d32f48e126d0697ebe6c34"
+    }
+  ]
+}
