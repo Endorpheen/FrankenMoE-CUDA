@@ -6,6 +6,7 @@
 #include "ggml-cpp.h"
 
 #include <algorithm>
+#include <atomic>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -608,6 +609,34 @@ struct llama_moe_cache::impl {
         log_stats();
     }
 
+    // The destructor alone is not enough: a server stopped by a signal never runs it, so the cache
+    // statistics - hit rate, uploaded MiB, experts served from the cache - were never seen in the logs of
+    // any measured run. Printing them periodically from the hot path costs one comparison per call and
+    // makes the numbers visible while the process is alive.
+    void log_stats_periodic() const {
+        // Every 4096 calls: at ~41 calls per token that is ~100 tokens - frequent enough to watch in a
+        // short run, rare enough not to dominate the log.
+        //
+        // Written with fprintf rather than LLAMA_LOG_INFO on purpose. A probe that measured plan() calls
+        // proved the path runs ~21k times per 512-token request, while every LLAMA_LOG_INFO from this file
+        // was absent from the log - so the macro does not reach this translation unit's output. An
+        // observability line that cannot be seen is worse than none, and this one is verified.
+        static size_t n_calls = 0;
+        if ((++n_calls & ((1u << 12) - 1)) != 0) {
+            return;
+        }
+        const size_t n_small = stats_small.hits + stats_small.misses;
+        const size_t n_large = stats_large.hits + stats_large.misses;
+        fprintf(stderr,
+                "moe_cache: plans=%zu small[h=%zu m=%zu up=%.1fMiB] large[h=%zu m=%zu up=%.1fMiB]"
+                " copied_from_cache=%zu (%.1fMiB)\n",
+                n_calls, stats_small.hits, stats_small.misses, stats_small.bytes/1048576.0,
+                stats_large.hits, stats_large.misses, stats_large.bytes/1048576.0,
+                stats_copy.hits, stats_copy.bytes/1048576.0);
+        fflush(stderr);
+        (void) n_small; (void) n_large;
+    }
+
     ggml_tensor * get_slot_map(int32_t il, int64_t n_tokens, int64_t n_expert_used) const {
         if (il < 0 || il >= (int32_t) layers.size() || layers[il].ig < 0) {
             return nullptr;
@@ -738,6 +767,8 @@ struct llama_moe_cache::impl {
 
         // the next copy synchronizes the backend before it changes the slot map again
         ggml_backend_tensor_set_async(backend, dst, src->data, 0, ggml_nbytes(src));
+
+        log_stats_periodic();
 
         return true;
     }
