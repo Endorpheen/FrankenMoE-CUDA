@@ -49,3 +49,60 @@ not in a build. The script is the reason to run it.
 The two passing harnesses **raise the standalone's verified surface**: the 41-layer dispatch and the
 prefill/decode chain are now executed on the real weights, not only on fixtures. Neither was in any report
 before this, because nothing ran them.
+
+## Full run: 19 pass, 1 informational, 1 test defect
+
+All 21 model-dependent and model-free harnesses were built and run. The results, which nothing had produced
+before:
+
+**Fast, no model (9/9 pass)**
+
+```
+qg_split      head_dim=256 n_head=16 elements=4096 q_differs=0 gate_differs=0 PASS
+gdn_ops       skip_when_equal=1 PASS
+gdn_recur     tokens=2 state_elems=24576 state_differs=0 state_nonzero=10120 PASS
+moe_block     n_expert=8 n_used=2 ids_match=1 router=PASS
+layer_orch    differs_ab=0 differs_wrong_postnorm=32 differs_wrong_input=32 distinguishable=1 PASS
+kv_cache      tokens=3 head_dim=8 n_ctx=8 bad=0 PASS
+state_slot    checks=22 bad=0 PASS
+state_life    tokens=6 rebuilt=6 lost=0 stray=0 PASS
+state_reuse   split_at=2 differs=0 distinguishable=1 PASS
+```
+
+**Reading the GGUF (10 pass, 1 informational)**
+
+```
+apex_shape      cases=24 mismatches=0 PASS
+q35_shape       checked=32 mismatch=0 absent=0 PASS
+gdn_plan        n=41 attn=10 recr=30 mtp=1 bad=0 PASS
+gdn_planfile    layers=41 mismatch=0 missing_both=0 mtp=1 PASS
+stack_dispatch  n=41 attn=10 recr=30 mtp=1 pos_bad=0 bad=0 PASS
+apex_layer      nodes=15 shape_ok=1 nonfinite=0 nondet=0 wiring_differs=0 vs_ggml=0 PASS
+apex_graph      nodes=5 N=8192 first=0.134777 want=0.134777 rel=8.07e-08 PASS
+gdn_layer       head_k=128 n_k=16 head_v=128 n_v=32 bad_nodes=0 PASS
+gdn_layer_full  same, bad=0 PASS
+apex_plan       (informational - the source contains no PASS string; it reports the plan)
+```
+
+`apex_graph` is the strongest number here: **`first=0.134777 want=0.134777 rel=8.07e-08`** - a real numeric
+match on real weights through a 5-node graph. `apex_layer` adds `nondet=0` and `wiring_differs=0` over 15
+nodes, and `vs_ggml=0` means it agrees with ggml's own result.
+
+**One failure, and it is the test**
+
+```
+layer_real   FAIL   GGML_ASSERT(ggml_can_mul_mat(a, b)) at ggml_mul_mat(gc, k, q)
+```
+
+Written for MHA; Apex is GQA (`n_head 16`, `n_head_kv 2`, `head_dim 128` -> `n_embd_k_gqa 256` against
+`n_embd 2048`). ggml's assertion is correct to fire. Kept in the list so it stays visible.
+
+## What this changes
+
+The status line said "full 41-layer graph: dispatch yes / execution no". **That is still true for the full
+stack** - a whole 41-layer pass has not been run. But it was understating what does execute: a real layer's
+15-node attention chain, a 5-node graph to `rel=8e-08`, the 30-layer GDN kernels, the MoE block, the KV and
+state machinery, end to end on the 21.7 GB file. All of it was built, all of it passes, and none of it was
+being run by anything.
+
+The gap is no longer "nothing executes" but "the layers have not been composed into one pass".

@@ -22,12 +22,30 @@ trap 'rm -rf "$OUT"' EXIT
 # Harnesses that take a model path and assert something about the real file. A harness whose name is added
 # here is expected to PASS; one that does not pass is reported as a failure, not skipped.
 HARNESSES=(
-    stack_dispatch
+    # fast: no model read
+    qg_split
+    gdn_ops
+    gdn_recur
+    moe_block
+    layer_orch
+    kv_cache
+    state_slot
+    state_life
+    state_reuse
     prefill_decode
-    # layer_real FAILS on Apex and the cause is the test, not the runtime: it builds q/k/v with the full
-    # n_embd projection and then does mul_mat(k, q) expecting both at n_embd, while this model is GQA
-    # (n_head 16, n_head_kv 2, head_dim 128 -> n_embd_k_gqa 256). The shape assertion in ggml_mul_mat is
-    # correct to fire. Kept in the list so the failure stays visible rather than being quietly dropped.
+    # read the GGUF
+    apex_plan
+    apex_shape
+    q35_shape
+    gdn_plan
+    gdn_planfile
+    stack_dispatch
+    apex_layer
+    apex_graph
+    gdn_layer
+    gdn_layer_full
+    # known failing: the harness is written for MHA while Apex is GQA (n_head 16, n_head_kv 2 ->
+    # n_embd_k_gqa 256 vs n_embd 2048). ggml's shape assertion is correct to fire. Kept visible.
     layer_real
 )
 
@@ -39,6 +57,9 @@ if [ ! -f "$W/main-gc.o" ]; then
     echo "build the standalone first: bash tools/build-standalone-runtime.sh" >&2
     exit 2
 fi
+
+# Harnesses that report rather than assert (no PASS string in the source).
+INFORMATIONAL="apex_plan"
 
 want=("$@")
 [ ${#want[@]} -eq 0 ] && want=("${HARNESSES[@]}")
@@ -60,6 +81,19 @@ for h in "${want[@]}"; do
         echo "FAIL $h (link)"; tail -3 "$OUT/$h.ld.log"; fail=$((fail+1)); continue
     fi
 
+    # Some harnesses are informational - they print the plan and contain no PASS string at all. For those,
+    # a clean exit plus their expected marker is the result; requiring PASS would report a working harness
+    # as broken, which is how apex_plan was first misread here.
+    case " $INFORMATIONAL " in
+        *" $h "*)
+            line=$(timeout 300 "$OUT/$h" "$MODEL" 2>&1 | grep -E "^FG_[A-Z0-9_]+ " | tail -1)
+            if [ -n "$line" ] && ! printf '%s' "$line" | grep -qiE "refused|assert"; then
+                printf 'ok   %-16s (informational) %s\n' "$h" "$line"
+            else
+                printf 'FAIL %-16s %s\n' "$h" "${line:-no output}"; fail=$((fail+1))
+            fi
+            continue ;;
+    esac
     line=$(timeout 300 "$OUT/$h" "$MODEL" 2>&1 | grep -E "PASS|FAIL|assert" | tail -1)
     case "$line" in
         *PASS*) printf 'ok   %-16s %s\n' "$h" "$line" ;;
