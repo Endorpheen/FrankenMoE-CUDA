@@ -106,3 +106,21 @@ state machinery, end to end on the 21.7 GB file. All of it was built, all of it 
 being run by anything.
 
 The gap is no longer "nothing executes" but "the layers have not been composed into one pass".
+
+## Resolution of the one failure: superseded, not fixed
+
+`layer_real` is **not** repaired, and the reason is the comparison rather than the effort.
+
+It loads `blk.3.attn_q/k/v/output.weight` and hand-rolls an attention chain. `apex_layer` loads **the same
+four tensors** and builds the chain through the Goose builder with per-head q/k RMS norm and IMRoPE - 15
+nodes, `nondet=0`, `wiring_differs=0`, `vs_ggml=0`, PASS.
+
+So `layer_real` is a second implementation of the same thing, written for MHA while Apex is GQA, and it has
+weaker evidence than the one that already passes. Fixing it would mean maintaining two attention chains
+where one is correct and gated; the honest move is to stop running the superseded one and say so, not to
+quietly delete it or to spend effort making a duplicate pass.
+
+It stays in the tree and is named in `verify-standalone-apex.sh` as superseded, so the decision is visible
+rather than inferred from an absence.
+
+Final tally with it excluded: **20 harnesses, all pass** (19 asserting, 1 informational).

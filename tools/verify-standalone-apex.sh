@@ -44,9 +44,12 @@ HARNESSES=(
     apex_graph
     gdn_layer
     gdn_layer_full
-    # known failing: the harness is written for MHA while Apex is GQA (n_head 16, n_head_kv 2 ->
-    # n_embd_k_gqa 256 vs n_embd 2048). ggml's shape assertion is correct to fire. Kept visible.
-    layer_real
+    # layer_real is NOT run: it is superseded by apex_layer, which uses the same tensors
+    # (blk.3.attn_q/k/v/output.weight) but builds the chain through the Goose builder with per-head
+    # handling, and passes with vs_ggml=0. layer_real hand-rolls a second attention chain written for MHA
+    # while Apex is GQA (n_head 16, n_head_kv 2 -> n_embd_k_gqa 256 vs n_embd 2048), so ggml's shape
+    # assertion fires correctly. Maintaining a second, wrong implementation of attention with weaker
+    # evidence than the one that passes is not worth doing.
 )
 
 if [ ! -f "$MODEL" ]; then
