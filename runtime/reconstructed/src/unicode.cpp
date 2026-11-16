@@ -1448,6 +1448,28 @@ unicode_cpt_flags unicode_cpt_flags_from_cpt(const uint32_t cpt) {
     return cpt < cpt_flags.size() ? cpt_flags[cpt] : undef;
 }
 
+// Normalised classification view for Goose (EXP-890).
+//
+// unicode_cpt_flags is C++ bitfields, and the header carries a TODO about their layout. as_uint() already encodes
+// them into a uint16 with the enum's explicit masks and handles both byte orders, so this exports the same
+// information as a plain uint16 array rather than exposing the bitfield struct itself. One entry per codepoint,
+// built once; a Goose caller reads view[cpt] and tests the masks from the enum directly.
+//
+// This is a representation change with no logic in it, which is the documented exception for C in this project.
+const uint16_t * fg_unicode_flags_view() {
+    static std::vector<uint16_t> bits;
+    if (bits.empty()) {
+        bits.resize(MAX_CODEPOINTS);
+        for (uint32_t cpt = 0; cpt < MAX_CODEPOINTS; ++cpt) {
+            bits[cpt] = unicode_cpt_flags_from_cpt(cpt).as_uint();
+        }
+    }
+    return bits.data();
+}
+
+extern "C" const uint16_t * fg_unicode_flags_view_c() { return fg_unicode_flags_view(); }
+extern "C" int64_t fg_unicode_flags_count_c() { return (int64_t) MAX_CODEPOINTS; }
+
 unicode_cpt_flags unicode_cpt_flags_from_utf8(const std::string & utf8) {
     static const unicode_cpt_flags undef(unicode_cpt_flags::UNDEFINED);
     if (utf8.empty()) {
