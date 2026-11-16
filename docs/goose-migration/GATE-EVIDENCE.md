@@ -155,3 +155,22 @@ second binding for the same symbol. What remains is the decoder, and it is prove
 
 | `fg215u` decoder | this commit | 1112064 | 0 mismatches | round trip: native encode, Goose decode, codepoint and bytes consumed both compared |
 | `fg216e` encoder | this commit | 1112064 | 0 mismatches | Goose bytes compared with the native encoder forced through the public entry point |
+
+## A constraint on gating the 139 switch sites: not every module can be probed standalone
+
+Three kv-cache modules (`norm_range`, `same_stream`, `head_after`) answer correctly when called through a dlopen
+probe with no setup. `fg199k_seq_cp_self` segfaults on every input that way - `(0,0)`, `(1,1)`, `(1,2)` all crash -
+because it needs the initialisation the host performs at model load. The probes above never called it; my probe did.
+
+So the 139 `if (enabled) {goose} else {native rule}` sites split in two:
+
+  - modules that self-initialise (or need nothing): gateable by a standalone probe, as the last six removals were;
+  - modules that need host state: NOT gateable that way, and their native branches must not be removed on the strength
+    of "it probably matches" - which is exactly the overstatement this project spent a day on.
+
+For the second kind the gate has to run inside the host: either a test mode that exposes the module through the
+runtime, or a comparison of the runtime's own output with the switch forced both ways. That is a piece of harness work
+that does not exist yet, and it blocks roughly two thirds of the remaining switch sites.
+
+Recorded so the next cycle does not start by writing a probe that crashes and concluding the module is broken. The
+module is not broken; it is not callable cold.
