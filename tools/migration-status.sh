@@ -113,10 +113,19 @@ say "                                       persists across rebuilds, reuse from
 say "   full 41-layer graph          dispatch yes / execution no   (EXP705: kinds at the"
 say "                                       right positions; not run as a stack)"
 say "   KV cache buffers             yes  (EXP701/702: one slot mechanism, 22 slots identical)"
-say "   tokenizer decisions          yes  (BPE decisions execute; see detok count above)"
-say "   tokenizer engine             no   (8 tok_* exports exist but are not in the unit -"
-say "                                       goose-tokenizer.goose has uncommitted edits by"
-say "                                       another agent; not touched, rule 5)"
+# Computed, not asserted: earlier this line claimed the tok_* exports were absent from the unit while
+# the built binary carried all eight. Count them in the artifact the run actually uses.
+_tok_n=0
+SA_BIN="$ROOT/builds/goose-standalone/frankenmoe-v4"
+if [ -f "$SA_BIN" ]; then
+    _tok_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T tok_")
+fi
+if [ "$_tok_n" -ge 8 ]; then
+say "   tokenizer decisions          yes  ($_tok_n tok_* exports in the unit; BPE decisions execute)"
+say "   tokenizer engine             linked, not yet called from a load-and-tokenise path in the standalone"
+else
+say "   tokenizer engine             no   (only $_tok_n tok_* exports in the unit)"
+fi
 say "   HTTP-server decisions        yes  (this run: detok 1063000 calls, sched 39500,"
 say "                                       graph-input-plan 200 - all witnessed live)"
 say "   HTTP server (transport)      no   (decisions run; no listener in the standalone)"
@@ -129,7 +138,8 @@ say "  (docs/goose-migration/ARCHITECTURE-MAP.md; Apex is one of the 13)"
 say ""
 say "Honest reading, split in two:"
 say "  - the STANDALONE runtime (this section) still lacks the engine: no CUDA, no"
-say "    tokenizer ENGINE, no HTTP transport, no full-stack execution. Decisions do run."
+say "    tokenizer LOAD-AND-TOKENISE path, no HTTP transport, no full-stack execution."
+say "    The 8 tok_* decisions are in the unit; what is missing is the engine around them."
 say "  - the INTEGRATED stage-run does run Apex end to end with Goose code witnessed, but it"
 say "    is llama.cpp plus Goose, not a standalone Goose runtime. Best measured: 2429.9"
 say "    prefill / 39.86 decode at 512 tokens, VRAM 7552 MiB, output identical to the"
