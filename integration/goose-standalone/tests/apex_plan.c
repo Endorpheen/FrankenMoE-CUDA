@@ -75,8 +75,13 @@ int main(int argc, char ** argv) {
     int64_t p[32] = { 0 };
     p[P_N_EMBD]        = kv_u32(ctx, "qwen35moe.embedding_length", 0);
     p[P_N_VOCAB]       = kv_u32(ctx, "qwen35moe.vocab_size", 0);
-    p[P_N_LAYER]       = kv_u32(ctx, "qwen35moe.block_count", 0);
-    p[P_N_LAYER_ALL]   = p[P_N_LAYER];
+    // The MTP block is stored IN the file at index n_layer, so n_layer is block_count minus the nextn
+    // count and NOT block_count. gdn_plan records the same rule; this harness had it wrong both ways in
+    // turn (first n_layer+1, which invented a 31st recurrent layer, then block_count, which made the MTP
+    // block look recurrent and reported mtp=0).
+    const int64_t n_nextn = kv_u32(ctx, "qwen35moe.nextn_predict_layers", 0);
+    p[P_N_LAYER]       = kv_u32(ctx, "qwen35moe.block_count", 0) - n_nextn;
+    p[P_N_LAYER_ALL]   = p[P_N_LAYER] + n_nextn;
     p[P_N_HEAD]        = kv_u32(ctx, "qwen35moe.attention.head_count", 0);
     p[P_N_HEAD_KV]     = kv_u32(ctx, "qwen35moe.attention.head_count_kv", 0);
     p[P_N_FF]          = kv_u32(ctx, "qwen35moe.feed_forward_length", 0);
@@ -96,8 +101,11 @@ int main(int argc, char ** argv) {
     p[P_INTERVAL]      = kv_u32(ctx, "qwen35moe.full_attention_interval", 0);
     p[P_HAS_OUTPUT]    = 1;
 
-    // n_layer_all covers the MTP block the loader appends.
-    p[P_N_LAYER_ALL] = p[P_N_LAYER] + 1;
+    // n_layer_all is n_layer, NOT n_layer + 1. The MTP block is blk.40 in the file itself - it carries
+    // nextn.eh_proj / enorm / hnorm / shared_head_norm - and no blk.41 exists, so the loader appends
+    // nothing. The earlier "+1" produced 42 layers and a 31st recurrent layer that does not exist, which
+    // gdn_plan and stack_dispatch both contradict. Verified by reading the tensor names out of the GGUF.
+
 
     int64_t kinds_storage[512];
     int64_t p_slice_storage[32];

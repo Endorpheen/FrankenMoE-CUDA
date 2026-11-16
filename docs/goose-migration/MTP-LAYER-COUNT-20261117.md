@@ -1,4 +1,6 @@
-# Two harnesses disagree on the layer count, and both are self-consistent
+# RESOLVED: the MTP layer count, and a harness that was wrong twice
+
+**Resolution:** `apex_plan` was wrong; `gdn_plan` and `stack_dispatch` were right. Fixed and re-verified.
 
 Found on the final sweep of the standalone harnesses. It is recorded as an open question rather than a
 defect, because the arithmetic says both readings are internally sound and only one of them can be what the
@@ -46,3 +48,40 @@ recurrent and the MTP is not a separate file block - which would make `gdn_plan`
 
 Neither harness was changed. Changing one to match the other before knowing which matches the loader would be
 guessing with a green gate as the reward.
+
+
+## Resolution
+
+One observation settled it, as it should have from the start. Reading the tensor names out of the GGUF:
+
+```
+blk.40 tensors include: blk.40.nextn.eh_proj.weight, blk.40.nextn.enorm.weight,
+                        blk.40.nextn.hnorm.weight, blk.40.nextn.shared_head_norm.weight
+blk.41: does not exist
+qwen35moe.block_count        = 41
+qwen35moe.nextn_predict_layers = 1
+```
+
+**The MTP block is blk.40, stored in the file.** Nothing is appended. So `n_layer = block_count - nextn =
+40` and `n_layer_all = 41`, giving 10 attention (3,7,...,39) + 30 recurrent + 1 MTP = 41.
+
+That is exactly what `gdn_plan` and `stack_dispatch` reported all along. `gdn_plan` even carries the rule in a
+comment; `apex_plan` did not use it.
+
+## apex_plan was wrong in two different ways
+
+| version | expression | result | why wrong |
+|---|---|---|---|
+| original | `n_layer` (from block_count) **+ 1** | 42 / 10 / 31 / 1 | invented a 31st recurrent layer |
+| intermediate | `n_layer_all = n_layer` | 41 / 10 / 31 / **0** | made the MTP block look recurrent |
+| **fixed** | `block_count - nextn` and `+ nextn` | **41 / 10 / 30 / 1** | matches gdn_plan and stack_dispatch |
+
+The intermediate is worth recording: my first correction removed the `+1` and made the plan *still* wrong, in
+a different way, and it produced a plausible-looking 41. A fix that lands on the right total by the wrong
+route is harder to notice than the original error.
+
+## Why it mattered
+
+A composition loop iterating `n_layer_all` with the original `42` would have run one layer too many and read a
+block that does not exist. The failure would have surfaced as a shape error in the last layer - the failure
+mode that is easiest to misread as a builder defect, which is exactly what this sweep was looking for.
