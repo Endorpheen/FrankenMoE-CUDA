@@ -46930,6 +46930,18 @@
       "gate": "the shared-expert branch and the combine, verified by property"
     },
     {
+      "goose": "cpu/graph-reuse.goose",
+      "native": "llama-graph.cpp llm_graph_input_*::can_reuse",
+      "native_targets": [
+        "llama-graph.cpp:136-1770 (can_reuse conjunction per graph input)"
+      ],
+      "experiment": "EXP-2026-11-17-886-graph-reuse-decision",
+      "task": "",
+      "status": "ported",
+      "sha256": "0517e6f5be46ff90fb05fbf40e62b2d60bf50270656b9379406b5470995835d1",
+      "gate": "4000 cases / 0 mismatches (tests/run.sh); 8 call sites ported, 2 exercised by the pinned profile"
+    },
+    {
       "goose": "model/gdn-ops.goose",
       "native": "llama.cpp/src/models/qwen35moe.cpp (l2_norm and repeat-to-extents graph ops)",
       "native_targets": [
