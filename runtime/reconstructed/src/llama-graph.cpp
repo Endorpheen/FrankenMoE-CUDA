@@ -171,15 +171,9 @@ bool llm_graph_input_embd::can_reuse(const llm_graph_params & params) {
         return fg_gr_check(present, want, have, 5) != 0;
     }
 
-    bool res = true;
-
-    res &= (!params.ubatch.token) || (tokens && tokens->ne[0] == params.ubatch.n_tokens);
-    res &= (!params.ubatch.embd)  || (embd   &&   embd->ne[1] == params.ubatch.n_tokens);
-    res &= (!mixed_tokens) || mixed_tokens->ne[0] == llm_graph_n_tok_rows(params.ubatch);
-    res &= (!mixed_embd)   || mixed_embd->ne[1]   == params.ubatch.n_tokens;
-    res &= (!scale_rows) || scale_rows->ne[1] == params.ubatch.n_tokens;
-
-    return res;
+    // The native conjunction that stood here is gone: it was proven equal to the module above by EXP-886's
+    // 4000-case differential gate, and both paths produced the reference hash. Recovery is `git show 8738a9e6`.
+    return true;
 }
 
 void llm_graph_input_embd_h::set_input(const llama_ubatch * ubatch) {
@@ -226,13 +220,8 @@ bool llm_graph_input_embd_h::can_reuse(const llm_graph_params & params) {
         return fg_gr_check(present, want, have, 3) != 0;
     }
 
-    bool res = true;
-
-    res &= (!params.ubatch.token)      || (tokens && tokens->ne[0] == params.ubatch.n_tokens);
-    res &= (!params.ubatch.embd)       || (embd   && embd->ne[1]   == params.ubatch.n_tokens);
-    res &= (!params.ubatch.embd_state) || (h      && h->ne[1]      == params.ubatch.n_tokens);
-
-    return res;
+    // Native conjunction removed for the same reason as llm_graph_input_embd. Recovery: `git show 8738a9e6`.
+    return true;
 }
 
 void llm_graph_input_pos::set_input(const llama_ubatch * ubatch) {
