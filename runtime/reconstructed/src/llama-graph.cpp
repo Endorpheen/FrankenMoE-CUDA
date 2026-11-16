@@ -272,6 +272,17 @@ void llm_graph_input_pos::set_input(const llama_ubatch * ubatch) {
 bool llm_graph_input_pos::can_reuse(const llm_graph_params & params) {
     bool res = true;
 
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[1] = { 1 };
+        const int64_t want[1]    = { (int64_t) (params.ubatch.n_tokens*n_pos_per_embd) };
+        const int64_t have[1]    = { (int64_t) (pos->ne[0]) };
+        return fg_gr_check(present, want, have, 1) != 0;
+    }
+
     res &= pos->ne[0] == params.ubatch.n_tokens*n_pos_per_embd;
 
     return res;
@@ -362,6 +373,17 @@ void llm_graph_input_out_ids::set_input(const llama_ubatch * ubatch) {
 
 bool llm_graph_input_out_ids::can_reuse(const llm_graph_params & params) {
     bool res = true;
+
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[1] = { 1 };
+        const int64_t want[1]    = { (int64_t) (params.n_outputs) };
+        const int64_t have[1]    = { (int64_t) (n_outputs) };
+        return fg_gr_check(present, want, have, 1) != 0;
+    }
 
     res &= n_outputs == params.n_outputs;
 
@@ -485,6 +507,17 @@ bool llm_graph_input_rs::can_reuse(const llm_graph_params & params) {
     this->mctx = mctx;
 
     bool res = true;
+
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[4] = { 1, 1, 1, 1 };
+        const int64_t want[4]    = { (int64_t) (mctx->get_n_rs()), (int64_t) (params.ubatch.n_seqs), (int64_t) (mctx->get_head()), (int64_t) (mctx->get_rs_z()) };
+        const int64_t have[4]    = { (int64_t) (s_copy->ne[0]), (int64_t) (s_copy_main->ne[0]), (int64_t) (head), (int64_t) (rs_z) };
+        return fg_gr_check(present, want, have, 4) != 0;
+    }
 
     res &= s_copy->ne[0] == mctx->get_n_rs();
 
@@ -634,6 +667,17 @@ bool llm_graph_input_attn_kv::can_reuse(const llm_graph_params & params) {
 
     bool res = true;
 
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[3] = { 1, 1, 1 };
+        const int64_t want[3]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1) };
+        const int64_t have[3]    = { (int64_t) (self_k_idxs->ne[0]), (int64_t) (self_v_idxs->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask, mctx, params.ubatch, params.cparams)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 3) != 0;
+    }
+
     res &= self_k_idxs->ne[0] == params.ubatch.n_tokens;
   //res &= self_v_idxs->ne[0] == params.ubatch.n_tokens; // TODO: need to move this to the unified cache and check there
 
@@ -656,6 +700,17 @@ bool llm_graph_input_attn_k::can_reuse(const llm_graph_params & params) {
 
 bool llm_graph_input_attn_k::can_reuse_impl(const llm_graph_params & params) {
     bool res = true;
+
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[2] = { 1, 1 };
+        const int64_t want[2]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (1) };
+        const int64_t have[2]    = { (int64_t) (self_k_idxs->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask, mctx, params.ubatch, params.cparams)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 2) != 0;
+    }
 
     res &= self_k_idxs->ne[0] == params.ubatch.n_tokens;
 
@@ -687,6 +742,17 @@ bool llm_graph_input_attn_kv_msa::can_reuse(const llm_graph_params & params) {
     this->mctx = mctx_msa->get_base();
 
     bool res = true;
+
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[3] = { 1, 1, 1 };
+        const int64_t want[3]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1) };
+        const int64_t have[3]    = { (int64_t) (self_k_idxs->ne[0]), (int64_t) (self_k_idxs_idx->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask, this->mctx, params.ubatch, params.cparams)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 3) != 0;
+    }
 
     res &= self_k_idxs->ne[0] == params.ubatch.n_tokens;
     if (self_k_idxs_idx) {
@@ -722,6 +788,17 @@ bool llm_graph_input_attn_k_dsa::can_reuse(const llm_graph_params & params) {
 bool llm_graph_input_attn_k_dsa::can_reuse_impl(const llm_graph_params & params) {
     bool res = true;
 
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[4] = { 1, 1, 1, 1 };
+        const int64_t want[4]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1), (int64_t) (1) };
+        const int64_t have[4]    = { (int64_t) (self_k_idxs_mla->ne[0]), (int64_t) (self_k_idxs_lid->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask_mla, mctx->get_mla(), params.ubatch, params.cparams)) ? 1 : 0)), (int64_t) (((can_reuse_kq_mask(self_kq_mask_lid, mctx->get_lid(), params.ubatch, params.cparams)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 4) != 0;
+    }
+
     res &= self_k_idxs_mla->ne[0] == params.ubatch.n_tokens;
     res &= self_k_idxs_lid->ne[0] == params.ubatch.n_tokens;
 
@@ -743,6 +820,17 @@ bool llm_graph_input_attn_k_dsa_iswa::can_reuse(const llm_graph_params & params)
     inp_swa->mctx = mctx->get_swa();
 
     bool res = true;
+
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[2] = { 1, 1 };
+        const int64_t want[2]    = { (int64_t) (1), (int64_t) (1) };
+        const int64_t have[2]    = { (int64_t) (((inp_dsa->can_reuse_impl(params)) ? 1 : 0)), (int64_t) (((inp_swa->can_reuse_impl(params)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 2) != 0;
+    }
 
     res &= inp_dsa->can_reuse_impl(params);
     res &= inp_swa->can_reuse_impl(params);
@@ -802,6 +890,17 @@ bool llm_graph_input_attn_kv_iswa::can_reuse(const llm_graph_params & params) {
 
     // base tensors may not be allocated if there are no non-SWA attention layers
     if (self_k_idxs && self_k_idxs->buffer) {
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[6] = { 1, 1, 1, 1, 1, 1 };
+        const int64_t want[6]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1), (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1) };
+        const int64_t have[6]    = { (int64_t) (self_k_idxs->ne[0]), (int64_t) (self_v_idxs->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask, mctx->get_base(), params.ubatch, params.cparams)) ? 1 : 0)), (int64_t) (self_k_idxs_swa->ne[0]), (int64_t) (self_v_idxs_swa->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask_swa, mctx->get_swa(), params.ubatch, params.cparams)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 6) != 0;
+    }
+
         res &= self_k_idxs->ne[0] == params.ubatch.n_tokens;
       //res &= self_v_idxs->ne[0] == params.ubatch.n_tokens; // TODO: need to move this to the unified cache and check there
     }
@@ -861,6 +960,17 @@ bool llm_graph_input_attn_k_iswa::can_reuse(const llm_graph_params & params) {
 
     // base tensors may not be allocated if there are no non-SWA attention layers
     if (self_k_idxs && self_k_idxs->buffer) {
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[4] = { 1, 1, 1, 1 };
+        const int64_t want[4]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (1), (int64_t) (params.ubatch.n_tokens), (int64_t) (1) };
+        const int64_t have[4]    = { (int64_t) (self_k_idxs->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask, mctx->get_base(), params.ubatch, params.cparams)) ? 1 : 0)), (int64_t) (self_k_idxs_swa->ne[0]), (int64_t) (((can_reuse_kq_mask(self_kq_mask_swa, mctx->get_swa(), params.ubatch, params.cparams)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 4) != 0;
+    }
+
         res &= self_k_idxs->ne[0] == params.ubatch.n_tokens;
     }
 
@@ -1178,6 +1288,17 @@ bool llm_graph_input_dsv4::can_reuse(const llm_graph_params & params) {
     inp_raw->mctx = raw_ctx;
 
     if (inp_raw->self_k_idxs && inp_raw->self_k_idxs->buffer) {
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[5] = { 1, 1, 1, 1, 1 };
+        const int64_t want[5]    = { (int64_t) (raw_ctx->get_n_write()), (int64_t) (1), (int64_t) (1), (int64_t) (1), (int64_t) (1) };
+        const int64_t have[5]    = { (int64_t) (inp_raw->self_k_idxs->ne[0]), (int64_t) (((dsv4_can_reuse_raw_kq_mask(inp_raw->self_kq_mask, raw_ctx, params.ubatch, n_stream)) ? 1 : 0)), (int64_t) (((dsv4_can_reuse_comp_input(inp_csa, plan_csa, params.ubatch.n_tokens, n_stream)) ? 1 : 0)), (int64_t) (((dsv4_can_reuse_comp_input(inp_hca, plan_hca, params.ubatch.n_tokens, n_stream)) ? 1 : 0)), (int64_t) (((dsv4_can_reuse_comp_input(inp_lid, plan_lid, params.ubatch.n_tokens, n_stream)) ? 1 : 0)) };
+        return fg_gr_check(present, want, have, 5) != 0;
+    }
+
         res &= inp_raw->self_k_idxs->ne[0] == raw_ctx->get_n_write();
     }
     if (inp_raw->self_kq_mask && inp_raw->self_kq_mask->buffer) {
@@ -1261,6 +1382,17 @@ bool llm_graph_input_mem_hybrid::can_reuse(const llm_graph_params & params) {
 
     bool res = true;
 
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[7] = { 1, 1, 1, 1, 1, 1, 1 };
+        const int64_t want[7]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1), (int64_t) (mctx->get_recr()->get_n_rs()), (int64_t) (params.ubatch.n_seqs), (int64_t) (mctx->get_recr()->get_head()), (int64_t) (mctx->get_recr()->get_rs_z()) };
+        const int64_t have[7]    = { (int64_t) (inp_attn->self_k_idxs->ne[0]), (int64_t) (inp_attn->self_v_idxs->ne[0]), (int64_t) (((can_reuse_kq_mask(inp_attn->self_kq_mask, mctx->get_attn(), params.ubatch, params.cparams)) ? 1 : 0)), (int64_t) (inp_rs->s_copy->ne[0]), (int64_t) (inp_rs->s_copy_main->ne[0]), (int64_t) (inp_rs->head), (int64_t) (inp_rs->rs_z) };
+        return fg_gr_check(present, want, have, 7) != 0;
+    }
+
     res &= inp_attn->self_k_idxs->ne[0] == params.ubatch.n_tokens;
   //res &= inp_attn->self_v_idxs->ne[0] == params.ubatch.n_tokens; // TODO: need to move this to the unified cache and check there
 
@@ -1303,6 +1435,17 @@ bool llm_graph_input_mem_hybrid_k::can_reuse(const llm_graph_params & params) {
     this->mctx = mctx;
 
     bool res = true;
+
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[6] = { 1, 1, 1, 1, 1, 1 };
+        const int64_t want[6]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (1), (int64_t) (mctx->get_recr()->get_n_rs()), (int64_t) (params.ubatch.n_seqs), (int64_t) (mctx->get_recr()->get_head()), (int64_t) (mctx->get_recr()->get_rs_z()) };
+        const int64_t have[6]    = { (int64_t) (inp_attn->self_k_idxs->ne[0]), (int64_t) (((can_reuse_kq_mask(inp_attn->self_kq_mask, mctx->get_attn(), params.ubatch, params.cparams)) ? 1 : 0)), (int64_t) (inp_rs->s_copy->ne[0]), (int64_t) (inp_rs->s_copy_main->ne[0]), (int64_t) (inp_rs->head), (int64_t) (inp_rs->rs_z) };
+        return fg_gr_check(present, want, have, 6) != 0;
+    }
 
     res &= inp_attn->self_k_idxs->ne[0] == params.ubatch.n_tokens;
 
@@ -1381,6 +1524,17 @@ bool llm_graph_input_mem_hybrid_iswa::can_reuse(const llm_graph_params & params)
 
     // base tensors may not be allocated if there are no non-SWA attention layers
     if (inp_attn->self_k_idxs && inp_attn->self_k_idxs->buffer) {
+    // The conjunction is the Goose graph-reuse decision: one row per native conjunction line, a row
+    // being 'must match, wanted value, actual value'. Sub-decisions such as can_reuse_kq_mask stay
+    // native and enter as a 1/0 row, so this moves where the conjunction is decided, not what is
+    // decided. The native body follows, behind GGML_GOOSE_GRAPH_REUSE=0.
+    if (fg_gr_enabled()) {
+        const int64_t present[10] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        const int64_t want[10]    = { (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1), (int64_t) (params.ubatch.n_tokens), (int64_t) (params.ubatch.n_tokens), (int64_t) (1), (int64_t) (mctx->get_recr()->get_n_rs()), (int64_t) (params.ubatch.n_seqs), (int64_t) (mctx->get_recr()->get_head()), (int64_t) (mctx->get_recr()->get_rs_z()) };
+        const int64_t have[10]    = { (int64_t) (inp_attn->self_k_idxs->ne[0]), (int64_t) (inp_attn->self_v_idxs->ne[0]), (int64_t) (((can_reuse_kq_mask(inp_attn->self_kq_mask, attn_ctx->get_base(), params.ubatch, params.cparams)) ? 1 : 0)), (int64_t) (inp_attn->self_k_idxs_swa->ne[0]), (int64_t) (inp_attn->self_v_idxs_swa->ne[0]), (int64_t) (((can_reuse_kq_mask(inp_attn->self_kq_mask_swa, attn_ctx->get_swa(), params.ubatch, params.cparams)) ? 1 : 0)), (int64_t) (inp_rs->s_copy->ne[0]), (int64_t) (inp_rs->s_copy_main->ne[0]), (int64_t) (inp_rs->head), (int64_t) (inp_rs->rs_z) };
+        return fg_gr_check(present, want, have, 10) != 0;
+    }
+
         res &= inp_attn->self_k_idxs->ne[0] == params.ubatch.n_tokens;
       //res &= inp_attn->self_v_idxs->ne[0] == params.ubatch.n_tokens; // TODO: need to move this to the unified cache and check there
     }

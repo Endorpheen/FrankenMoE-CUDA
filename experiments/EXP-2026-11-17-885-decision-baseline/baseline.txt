@@ -1,36 +1,22 @@
 file                         decisions  goose  native
-llama-graph.cpp                     21      2      19
 llama-hparams.cpp                   11      1      10
 llama-vocab.cpp                     10      0      10
+llama-graph.cpp                     21     16       5
 llama-model.cpp                      3      0       3
 llama-kv-cache.cpp                   1      0       1
 llama-memory-recurrent.cpp           1      0       1
 llama-sampler.cpp                    1      0       1
 llama-model-loader.cpp               1      1       0
-TOTAL                               49      4      45
+TOTAL                               49     18      31
 
-decision coverage: 4/49 = 8.2%
+decision coverage: 18/49 = 36.7%
 
 native decision bodies:
-   llama-graph.cpp:272 can_reuse
-   llama-graph.cpp:308 can_reuse
-   llama-graph.cpp:363 can_reuse
-   llama-graph.cpp:482 can_reuse
-   llama-graph.cpp:630 can_reuse
-   llama-graph.cpp:651 can_reuse
-   llama-graph.cpp:657 can_reuse_impl
-   llama-graph.cpp:683 can_reuse
-   llama-graph.cpp:716 can_reuse
-   llama-graph.cpp:722 can_reuse_impl
-   llama-graph.cpp:739 can_reuse
-   llama-graph.cpp:796 can_reuse
-   llama-graph.cpp:855 can_reuse
-   llama-graph.cpp:1164 can_reuse
-   llama-graph.cpp:1257 can_reuse
-   llama-graph.cpp:1300 can_reuse
-   llama-graph.cpp:1373 can_reuse
-   llama-graph.cpp:1431 can_reuse
-   llama-graph.cpp:1545 can_reuse
+   llama-graph.cpp:319 can_reuse
+   llama-graph.cpp:695 can_reuse
+   llama-graph.cpp:782 can_reuse
+   llama-graph.cpp:1585 can_reuse
+   llama-graph.cpp:1699 can_reuse
    llama-hparams.cpp:48 is_swa_any
    llama-hparams.cpp:176 is_n_embd_k_gqa_variable
    llama-hparams.cpp:187 is_n_embd_v_gqa_variable
