@@ -5,13 +5,18 @@ import subprocess, sys, re, os
 
 BASE = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108')
 FL = Path('/home/end0/AI/LlamaServer/llama.cpp-flint-cuda')
-SRC = BASE/'runtime/reconstructed/src'
+# The 13 sources the build compiles live in this repository and are tracked (EXP: eight of them were not,
+# see docs/goose-migration/UNTRACKED-SOURCES-20261116.md). Prefer the repo copy so a clone is buildable; fall
+# back to the external tree only for a checkout that predates the commit that added them.
+REPO_SRC = Path(__file__).resolve().parent/'src'
+SRC = REPO_SRC if (REPO_SRC/'llama-vocab.cpp').exists() else BASE/'runtime/reconstructed/src'
+print('sources:', SRC)
 W = BASE/'runtime/reconstructed/build'; W.mkdir(parents=True, exist_ok=True)
 RUN = BASE/'runtime/exp244/run'
 OUT = W/'libllama-exp371.so.0.7.0'
 
 FLAGS = ['-DGGML_BACKEND_SHARED','-DGGML_SHARED','-DGGML_USE_CPU','-DGGML_USE_CUDA','-DLLAMA_BUILD',
-         '-DLLAMA_SHARED','-Dllama_EXPORTS', f'-I{SRC}/.', f'-I{FL}/build-cuda/src', f'-I{FL}/include',
+         '-DLLAMA_SHARED','-Dllama_EXPORTS', f'-I{SRC}/.', f'-I{FL}/build-cuda/src', f'-I{FL}/src', f'-I{FL}/include',
          f'-I{FL}/ggml/include', '-O3','-DNDEBUG','-fPIC','-w']
 CXX = ['/usr/bin/g++-13'] + FLAGS
 
@@ -102,7 +107,14 @@ for mod, out_name in (('EXP-2026-11-11-347-goose-kv-write-bridge', 'b345.o'),
     if q.returncode: print('bridge failed', mod); print(q.stderr[:800]); sys.exit(1)
     bridge_objs.append(str(o))
 
-extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o']
+extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
+             W/'slru-policy.o', W/'slru-runtime.o', W/'slru-shim.o']
+# The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
+# linking a DSO with an undefined fg756s/slru symbol.
+for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
+    if not (W/need).exists():
+        print('MISSING', need, '- run: bash experiments/EXP-2026-11-16-756-slru-policy-goose/build.sh', W)
+        sys.exit(1)
 bridge_objs += [str(x) for x in extra_mod if x.exists()]
 flint_objs = sorted(str(x) for x in (FL/'build-cuda/src/CMakeFiles/llama.dir').rglob('*.o')
                     if x.name not in [c + '.o' for c in changed])
