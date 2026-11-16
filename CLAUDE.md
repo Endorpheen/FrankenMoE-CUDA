@@ -474,3 +474,21 @@ come from Igor directly. For every marked message:
 
     A port without a gate is not a port - it is code that happens to compile. The gate comes first, the C++ leaves
     second, and only then does the change count.
+
+26. A regenerating tool must never be able to delete work that is not recorded in it.
+
+    `tools/sync-goose-tree.py` rmtree's every `goose/` subdirectory and rewrites only the files named in
+    `CANONICAL_SOURCES`. On 2026-11-16 that silently removed five modules written the same day; they survived only
+    because they were committed, and a sixth existed only in the working tree and was one step from being lost.
+
+    Before running any tool that regenerates or clears a directory:
+
+        git status --short          # untracked sources are what gets destroyed silently
+        git stash list              # so is anything stashed and forgotten
+
+    Untracked and freshly written sources must be committed, or copied outside the tree, before such a tool runs. A
+    tool that deletes files it did not create should be changed to refuse instead - a list of sources is a list of
+    what to write, never a licence to delete the rest.
+
+    This is the same failure as the build that was overwritten dozens of times: work that is not recorded somewhere
+    verifiable does not exist, and a green run afterwards does not bring it back.
