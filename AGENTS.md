@@ -492,3 +492,25 @@ come from Igor directly. For every marked message:
 
     This is the same failure as the build that was overwritten dozens of times: work that is not recorded somewhere
     verifiable does not exist, and a green run afterwards does not bring it back.
+
+27. The migration target is a Goose runtime that does not need C++ at all.
+
+    Goal, stated so it cannot be quietly downgraded: the necessary runtime is implemented in Goose; C++ sources and
+    the C++ runtime are not required to build or run it; no permanent C++ wrappers or FFI shims stand in for a real
+    port; `libstdc++` is not linked; Unicode tables live in Goose data, generated from verified sources.
+
+    This changes what "done" means for every port. A module whose logic moved to Goose but whose containers are still
+    `std::string` and `std::vector`, or which calls `unicode_cpt_to_utf8` or `fg_unicode_flags_view` in C++, is NOT
+    complete - it is a ported decision inside a C++ host. The gates prove equality of the decision; they do not prove
+    independence, and the two must not be confused.
+
+    Scope is not "rewrite the C++ standard library": implement on Goose only what this runtime actually uses -
+    strings, buffers, arrays, Unicode handling, text parsing. The Goose compiler emits C, so a C compiler stays
+    acceptable; the C++ language and its runtime do not.
+
+    Order of work: Goose-owned primitives first, then tables as generated Goose data, then the decision functions on
+    top of them, then removal of the C++ bodies and of the library from the link line. Where Goose lacks a needed
+    capability, record the specific blocker for the compiler and continue with independent work.
+
+    Final acceptance: the necessary runtime code is Goose, and building and running it requires no C++ source and no
+    C++ runtime - with correctness proved by gates and performance not below the preserved 44.5 tok/s reference.
