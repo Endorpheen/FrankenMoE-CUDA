@@ -571,3 +571,20 @@ come from Igor directly. For every marked message:
     This is enforced, not merely written down: `tools/run-once.sh <port> <tag> ...` refuses to start when the port has
     an owner or when one of our servers is still alive, prints the model residency, and only then runs. It never counts
     or touches `igorek-llama-server`, which belongs to another service. Every benchmark goes through it.
+
+30. Every Apex test goes through `tools/apex-test.sh`, which holds a flock for the whole lifecycle.
+
+    Rule 29 was written after the fact and was violated again the same day, so it is now enforced by a lock rather than
+    by memory:
+
+        bash tools/apex-test.sh <tag> [len] [b] [ub] [cache]
+
+    The lock is `/tmp/apex-test.lock` and is held from before the server starts until after it exits; a second caller
+    WAITS on it instead of starting a second server. The script inspects real pids, command lines, ports and CUDA
+    processes - never process names alone - writes each run into its own `results/apex-runs/<tag>-<timestamp>/`
+    directory so results cannot mix, starts the server with `setsid` so it owns a process group, and terminates only
+    that group. Global `killall`, `pkill` by name and `kill -9` by name are forbidden. After the run it verifies the
+    port was released by the pid that owned it. On CUDA OOM it writes `diagnostics.txt` with pid, parameters, VRAM,
+    lock status and the server tail before exiting.
+
+    Apex parameters are fixed and are not to be tuned to make an error disappear: context 262144, GPU cache 4992 MiB.
