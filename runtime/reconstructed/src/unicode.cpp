@@ -925,26 +925,6 @@ static std::vector<size_t> unicode_regex_split_custom_qwen35(const std::string &
     return bpe_offsets;
 }
 
-// Test seam for the Qwen pre-tokenisation splitter (EXP-2026-11-17-897). The function above is static; this
-// exposes it by codepoints so a differential gate can compare it with the Goose implementation without
-// duplicating the native logic in the test. Test-only: nothing on the request path calls this.
-extern "C" size_t fg_unicode_split_qwen35_ref(const uint32_t * cpts, size_t n_cpts,
-                                              const size_t * offsets, size_t n_off,
-                                              size_t * out, size_t cap) {
-    std::string text;
-    (void) n_cpts;
-    for (size_t i = 0; i < n_cpts; ++i) {
-        text += unicode_cpt_to_utf8(cpts[i]);
-    }
-    const std::vector<size_t> segs(offsets, offsets + n_off);
-    const std::vector<size_t> res = unicode_regex_split_custom_qwen35(text, segs);
-    const size_t n = std::min(cap, res.size());
-    for (size_t i = 0; i < n; ++i) {
-        out[i] = res[i];
-    }
-    return res.size();
-}
-
 template <typename CharT>
 static std::vector<size_t> unicode_regex_split_stl(const std::basic_string<CharT> & text, const std::basic_string<CharT> & regex, const std::vector<size_t> & offsets) {
     using BidirIt = typename std::basic_string<CharT>::const_iterator;
