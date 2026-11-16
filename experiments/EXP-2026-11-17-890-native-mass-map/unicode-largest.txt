@@ -1,0 +1,33 @@
+native lines   fns file lines  file
+        3790   103       4096  llama-model.cpp
+        2133   143       4486  llama-sampler.cpp
+        1900   145       4875  llama-context.cpp
+        1852   127       4925  llama-vocab.cpp
+        1469    29       1729  unicode.cpp
+        1455    75       4553  llama-graph.cpp
+         940    70       3517  llama-kv-cache.cpp
+         811    35       1522  llama-memory-recurrent.cpp
+         495    40       1870  llama-batch.cpp
+         417    19       2006  llama-model-loader.cpp
+         304    36        370  llama-hparams.cpp
+         121    17        335  llama-memory-hybrid.cpp
+          52     9        840  llama-moe-cache.cpp
+
+total native function lines: 15739
+
+largest native functions in unicode.cpp:
+    197 lines  unicode_regex_split                      line 1532
+    169 lines  unicode_regex_split_custom_kimi_k2       line 967
+    146 lines  unicode_regex_split_custom_k2_horizon    line 516
+    139 lines  unicode_regex_split_custom_llama3        line 376
+    133 lines  unicode_regex_split_custom_qwen2         line 664
+    127 lines  unicode_regex_split_custom_qwen35        line 800
+    116 lines  unicode_regex_split_custom_gpt2          line 258
+     72 lines  unicode_regex_split_custom_afmoe         line 1138
+     42 lines  unicode_cpts_normalize_nfc               line 1376
+     38 lines  unicode_regex_split_custom               line 1240
+     35 lines  unicode_regex_split_stl                  line 929
+     31 lines  unicode_cpt_is_han                       line 1500
+     31 lines  unicode_cpt_flags_array                  line 146
+     26 lines  unicode_canonical_decompose              line 1338
+     26 lines  unicode_regex_split_custom_newlines      line 1213

@@ -1,0 +1,16 @@
+native lines   fns file lines  file
+        3790   103       4096  llama-model.cpp
+        2133   143       4486  llama-sampler.cpp
+        1900   145       4875  llama-context.cpp
+        1852   127       4925  llama-vocab.cpp
+        1469    29       1729  unicode.cpp
+        1455    75       4553  llama-graph.cpp
+         940    70       3517  llama-kv-cache.cpp
+         811    35       1522  llama-memory-recurrent.cpp
+         495    40       1870  llama-batch.cpp
+         417    19       2006  llama-model-loader.cpp
+         304    36        370  llama-hparams.cpp
+         121    17        335  llama-memory-hybrid.cpp
+          52     9        840  llama-moe-cache.cpp
+
+total native function lines: 15739
