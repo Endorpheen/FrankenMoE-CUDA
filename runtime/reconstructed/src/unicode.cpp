@@ -203,25 +203,12 @@ std::unordered_map<uint8_t, std::string> unicode_byte_to_utf8_map() {
 }
 
 static std::unordered_map<std::string, uint8_t> unicode_utf8_to_byte_map() {
+    // Derived from the forward map rather than re-deriving the same ranges. The decision of which byte maps to which
+    // codepoint lives in one place now (the Goose module), so the two directions cannot drift apart - which is what
+    // two hand-written copies of the same three ranges invite.
     std::unordered_map<std::string, uint8_t> map;
-    for (int ch = 0x21; ch <= 0x7E; ++ch) {  // u'!' to u'~'
-        assert(0 <= ch && ch < 256);
-        map[unicode_cpt_to_utf8(ch)] = ch;
-    }
-    for (int ch = 0xA1; ch <= 0xAC; ++ch) {  // u'¡' to u'¬'
-        assert(0 <= ch && ch < 256);
-        map[unicode_cpt_to_utf8(ch)] = ch;
-    }
-    for (int ch = 0xAE; ch <= 0xFF; ++ch) {  // u'®' to u'ÿ'
-        assert(0 <= ch && ch < 256);
-        map[unicode_cpt_to_utf8(ch)] = ch;
-    }
-    auto n = 0;
-    for (int ch = 0; ch < 256; ++ch) {
-        if (map.find(unicode_cpt_to_utf8(ch)) == map.end()) {
-            map[unicode_cpt_to_utf8(256 + n)] = ch;
-            ++n;
-        }
+    for (const auto & [ch, text] : unicode_byte_to_utf8_map()) {
+        map[text] = ch;
     }
     return map;
 }
