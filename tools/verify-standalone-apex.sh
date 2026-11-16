@@ -40,6 +40,7 @@ HARNESSES=(
     gdn_plan
     gdn_planfile
     stack_dispatch
+    real_values
     apex_layer
     apex_graph
     gdn_layer
