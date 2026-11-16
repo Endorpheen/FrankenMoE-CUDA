@@ -46916,6 +46916,43 @@
       "status": "external",
       "sha256": "f2728cb84ff0633f0bd14a77411f61c3b1e7f61b5d1cdb8b528e1aa13c2d8e07",
       "git_blob": "e5c94c9c13d3568b58895844255882e1c3fea21e"
+    },
+    {
+      "goose": "cpu/goose-moe-router.goose",
+      "native": "llama-graph.cpp build_moe_ffn (expert selection and weights)",
+      "native_targets": [
+        "llama-graph.cpp:1941-2100 (build_moe_ffn selection)"
+      ],
+      "experiment": "EXP-2026-11-15-697-moe-router",
+      "task": "",
+      "status": "ported",
+      "sha256": "0a7cf37af6dc824668819f3994d72da40af8b3bf9b72d1ab25204a4b849eabf5",
+      "gate": "the shared-expert branch and the combine, verified by property"
+    },
+    {
+      "goose": "model/gdn-ops.goose",
+      "native": "llama.cpp/src/models/qwen35moe.cpp (l2_norm and repeat-to-extents graph ops)",
+      "native_targets": [
+        "llama.cpp/src/models/qwen35moe.cpp:459-470 (l2_norm)",
+        "repeat_to_extents"
+      ],
+      "experiment": "EXP-2026-11-15-702-state-slot",
+      "task": "",
+      "status": "ported",
+      "sha256": "c974127f3ede068ed3a33d9c3faf97c3bd7d47deb69b155654029b2d2c75a994",
+      "gate": "one slot mechanism serves both caches, 22 slots identical"
+    },
+    {
+      "goose": "model/qgate-split.goose",
+      "native": "llama.cpp/src/models/qwen35moe.cpp (joint QG split via views)",
+      "native_targets": [
+        "llama.cpp/src/models/qwen35moe.cpp:293-300 (Qcur view_3d split)"
+      ],
+      "experiment": "EXP-2026-11-15-687-layer-qgate",
+      "task": "",
+      "status": "ported",
+      "sha256": "da3dc6cef8789a9cb2b4b67068e093f651083aed62bc1f7ca846f0170f8a0625",
+      "gate": "interleaved QG split matches the native views"
     }
   ]
 }
