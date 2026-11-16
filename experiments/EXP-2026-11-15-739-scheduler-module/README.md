@@ -52,6 +52,31 @@ Every measurement this session converges on the same component:
 A scheduler that owns dependency slots and graph optimisation is precisely the mechanism that would
 change those numbers, and it exists as Goose source in this repository.
 
+## 3b. The bindings are local symbols - this is the exact blocker
+
+Checked all 28 `fg164_*` externs against the loaded `libggml-base-scheduler-bafe3955c9ea`:
+
+```
+fg164 symbols: 54 local (t), 2 global (T)
+resolvable from outside: 0 of 28
+```
+
+`fg164_dep_slot`, `fg164_optimize` and `fg164_expert` all exist - as **local** symbols (`t`), which
+cannot be linked against. The two globals are not among the ones the module needs.
+
+And `FG164_SCHEDULER` is confirmed running in this build: it appears on clean shutdown with the same
+21 mode bits, `0x1400079f4003bf`, and the run that produced it measured 1848.1 prefill / 42.53 decode.
+Earlier I looked for it mid-run and concluded it was absent - it is a shutdown report, not a
+per-request marker. Correcting that: it runs every time.
+
+So the picture is precise and matches the expert cache exactly: **the scheduler is compiled into the
+prebuilt library, its entry points are static, and the Goose module that mirrors those decisions is
+neither exported nor linked.**
+
+Wiring the module therefore means either re-exporting 28 static symbols from a library we do not build,
+or writing 28 adapters - which rule 17 classifies as debt, not progress. Neither is a configuration
+change, and both are larger than anything attempted in this session.
+
 ## 4. What wiring it in requires, honestly
 
 1. The module has **no exports** - an exported surface must be added, as was done for the tokenizer
