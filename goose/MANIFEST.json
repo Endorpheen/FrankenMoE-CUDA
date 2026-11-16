@@ -46953,6 +46953,18 @@
       "status": "ported",
       "sha256": "da3dc6cef8789a9cb2b4b67068e093f651083aed62bc1f7ca846f0170f8a0625",
       "gate": "interleaved QG split matches the native views"
+    },
+    {
+      "goose": "cpu/goose-moe-cache-slru.goose",
+      "native": "runtime/reconstructed/src/llama-moe-cache.cpp moe_cache_slru (move/touch/victim/plan)",
+      "native_targets": [
+        "runtime/reconstructed/src/llama-moe-cache.cpp:66-167"
+      ],
+      "experiment": "EXP-2026-11-16-756-slru-policy-goose",
+      "task": "",
+      "status": "ported",
+      "sha256": "485c24fb74e529674d33b7e257ccfa24aacb6ed56d8ceb73ce9adb96eaf7d0b6",
+      "gate": "450 synthetic cases + 200 after the raw-pointer rewrite, all equal to native; Apex reference hash at 128 and 512"
     }
   ]
 }
