@@ -46963,7 +46963,7 @@
       "experiment": "EXP-2026-11-16-756-slru-policy-goose",
       "task": "",
       "status": "ported",
-      "sha256": "485c24fb74e529674d33b7e257ccfa24aacb6ed56d8ceb73ce9adb96eaf7d0b6",
+      "sha256": "67777b1fd8f120860f557cb272280ba82c0f45b023710f8dadb1dde2859708e6",
       "gate": "450 synthetic cases + 200 after the raw-pointer rewrite, all equal to native; Apex reference hash at 128 and 512"
     }
   ]
