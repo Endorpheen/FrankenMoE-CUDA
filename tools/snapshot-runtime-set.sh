@@ -9,7 +9,28 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W=${BUILD:-/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build}
-LABEL=${1:?usage: snapshot-runtime-set.sh <label>}
+if [ "${1:-}" = "--verify" ]; then
+    # Compare the runtime in the build tree against a snapshot. Exit 1 on any difference, so "this is the set that
+    # produced that number" is a checkable claim rather than a recollection.
+    W=${BUILD:-/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build}
+    SNAP="$ROOT/results/runtime-snapshots/${2:?usage: snapshot-runtime-set.sh --verify <label>}"
+    [ -d "$SNAP" ] || { echo "no snapshot: $SNAP"; exit 1; }
+    diffs=0
+    ref=$(grep -m1 'libllama.so$' "$SNAP/MANIFEST.txt" | cut -d' ' -f1 || true)
+    cur=$(sha256sum "$W/libllama-exp371.so.0.7.0" 2>/dev/null | cut -d' ' -f1)
+    if [ "$ref" = "$cur" ]; then echo "libllama        identical"; else echo "libllama        DIFFERS"; diffs=$((diffs+1)); fi
+    for f in "$SNAP"/objects/*; do
+        b=$(basename "$f")
+        a=$(sha256sum "$f" | cut -d' ' -f1)
+        c=$(sha256sum "$W/$b" 2>/dev/null | cut -d' ' -f1)
+        if [ "$a" = "$c" ]; then echo "$(printf '%-16s' "$b")identical"; else echo "$(printf '%-16s' "$b")DIFFERS"; diffs=$((diffs+1)); fi
+    done
+    echo "differences: $diffs"
+    [ $diffs -eq 0 ] || exit 1
+    exit 0
+fi
+
+LABEL=${1:?usage: snapshot-runtime-set.sh <label> | --verify <label>}
 DEST="$ROOT/results/runtime-snapshots/$LABEL"
 [ -e "$DEST" ] && { echo "refusing to overwrite $DEST"; exit 1; }
 mkdir -p "$DEST/objects"
