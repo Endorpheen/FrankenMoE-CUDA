@@ -970,11 +970,11 @@
       "native_targets": [
         "runtime/tests/CMakeLists.txt (test registry, fixtures, filters, statuses, summary, exit code)"
       ],
-      "experiment": "EXP-2026-11-15-652-p10-09-test-runners",
+      "experiment": "EXP-2026-11-15-665-p10-09-tr-standalone",
       "task": "",
       "status": "ported",
-      "sha256": "2f42df0fe0d69ea70913667d5f22b2695070e6c96b3f8f3c659f87d4d53a7465",
-      "gate": "23 scenarios / 0 failures, 15/15 mutations"
+      "sha256": "d6096281c91e334de042a207b58c1a52f62ea9852917366b2a42d01cbb6ff5b5",
+      "gate": "23 scenarios / 0 failures, 15/15 mutations; standalone C via private impls"
     },
     {
       "goose": "misc/fixture-plan.goose",

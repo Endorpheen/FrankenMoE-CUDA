@@ -288,7 +288,7 @@ fn tr_alt(pat: const u8[:], s: const u8[:]) -> bool {
 }
 
 // POSIX-ERE-subset match: every top-level `|` alternative is tried in order.
-export fn tr_match(pat: const u8[:], s: const u8[:]) -> bool {
+fn tr_match_impl(pat: const u8[:], s: const u8[:]) -> bool {
     if pat.len == 0 {
         return true;
     }
@@ -306,20 +306,30 @@ export fn tr_match(pat: const u8[:], s: const u8[:]) -> bool {
     return false;
 }
 
+export fn tr_match(pat: const u8[:], s: const u8[:]) -> bool {
+    return tr_match_impl(pat, s);
+}
+
+
 // ── selection ───────────────────────────────────────────────────────────────
 
 // ctest: an empty -R selects everything, an empty -E excludes nothing, and
 // both filters are searched, not anchored. DISABLED is not a filter: a disabled
 // test stays in the list and is reported, it just never runs (see tr_plan).
-export fn tr_selected(name: const u8[:], filter: const u8[:], exclude: const u8[:]) -> bool {
-    if filter.len != 0 && !tr_match(filter, name) {
+fn tr_selected_impl(name: const u8[:], filter: const u8[:], exclude: const u8[:]) -> bool {
+    if filter.len != 0 && !tr_match_impl(filter, name) {
         return false;
     }
-    if exclude.len != 0 && tr_match(exclude, name) {
+    if exclude.len != 0 && tr_match_impl(exclude, name) {
         return false;
     }
     return true;
 }
+
+export fn tr_selected(name: const u8[:], filter: const u8[:], exclude: const u8[:]) -> bool {
+    return tr_selected_impl(name, filter, exclude);
+}
+
 
 // ── fixture closure and execution order ─────────────────────────────────────
 
@@ -405,7 +415,7 @@ export fn tr_plan(
     var i: i64 = 0;
     while i < n {
         let name: const u8[:] = blob[names_off[i]..names_off[i] + names_len[i]];
-        if tr_selected(name, filter, exclude) {
+        if tr_selected_impl(name, filter, exclude) {
             inlist[i] = 1;
             list[nl] = i;
             nl = nl + 1;
