@@ -17,15 +17,29 @@ cp "$ROOT"/runtime/reconstructed/src/*.h "$DST/our-src/" 2>/dev/null || true
 
 # Modules: the same rule build.py applies - a file DEFINES the prefix when it carries <prefix>_enabled, and the
 # highest experiment number wins. Resolved once here and frozen, instead of re-decided at every build.
-python3 - "$DST" "$BASE" <<'PY'
+python3 - "$DST" "$BASE" "${OBJDIR:-$BASE/runtime/reconstructed/build}" <<'PY'
 import re, shutil, sys
 from pathlib import Path
 dst, base = Path(sys.argv[1]), Path(sys.argv[2])
 B = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments')
-src = Path('/home/end0/AI/FrankenMoE-CUDA/runtime/reconstructed/build.py').read_text()
+# Reproduce build.py's rule exactly, because approximations produced 27 then 0 modules:
+#   1. the prefixes are the ones OUR compiled objects reference as undefined symbols;
+#   2. an explicit list of 25 prefixes is skipped because those are the bridges linked separately.
+# Guessing from file names is what went wrong, so nothing here is inferred from a name.
+import subprocess
+objs_dir = Path(sys.argv[3]) if len(sys.argv) > 3 else None
+BRIDGE_PREFIXES = {'fg345w','fg367s','fg373s','fg375s','fg376s','fg377s','fg380s','fg381s','fg382s','fg383s',
+                   'fg384s','fg385s','fg386s','fg387s','fg388s','fg389s','fg390s','fg391s','fg392s','fg393s',
+                   'fg394s','fg395s','fg396s','fg397s','fg398s','fg401s'}
 prefixes = []
-for m in re.finditer(r"'?(fg\d{3}[a-z])'?", src):
-    if m.group(1) not in prefixes: prefixes.append(m.group(1))
+for o in sorted(list(Path(objs_dir).glob('our-*.o')) + list(Path(objs_dir).glob('*.cpp.o'))) if objs_dir else []:
+    out = subprocess.run(['nm','-u',str(o)], capture_output=True, text=True).stdout
+    for line in out.splitlines():
+        if not line.strip(): continue
+        m = re.match(r'^(fg\d{3}[a-z])', line.split()[-1])
+        if m and m.group(1) not in BRIDGE_PREFIXES and m.group(1) not in prefixes:
+            prefixes.append(m.group(1))
+print('modules needed:', len(prefixes))
 chosen = []
 for p in prefixes:
     cands = []
@@ -36,6 +50,10 @@ for p in prefixes:
             if mm: cands.append((int(mm.group(1)), hu))
     if cands:
         exp, hu = max(cands)
+        # A module whose source is a bridge.c belongs to the BRIDGE list, not here. build.py's module loop only
+        # produces <prefix>.o for files that are not bridges - fg401s.o does not exist in the real build tree, and
+        # its symbol comes from b401.o alone. Compiling bridge.c as a module too defines every entry point twice.
+        # No exclusion needed: modules are frozen as objects below, so this path only records the mapping.
         shutil.copy2(hu, dst/'modules'/(p + hu.suffix))
         # a module may #include a generated companion from its own directory; freeze the whole directory
         d = dst/'module-src'/hu.parent.parent.name
@@ -44,6 +62,7 @@ for p in prefixes:
             if f.is_file(): shutil.copy2(f, d/f.name)
         chosen.append((p, exp, hu.name))
 for p, exp, name in chosen: print(f"{p} EXP{exp} {name}")
+(dst/'module-objects.txt').write_text(''.join(p + '.o\n' for p, _, _ in chosen))
 PY
 
 # Bridges: the experiment directories build.py names explicitly.
@@ -65,11 +84,29 @@ cp "$FL"/ggml/src/*.h "$DST/upstream-src/" 2>/dev/null || true
 # Prebuilt objects and libraries, as bytes.
 find "$FL/build-cuda/src/CMakeFiles/llama.dir" -name '*.o' -exec cp {} "$DST/flint-objects/" \;
 W=${BUILD:-$BASE/runtime/reconstructed/build}
-for o in b291.o fx286pic.o fx262a.o fx263-pic.o gates.o slru-policy.o slru-runtime.o slru-shim.o \
-         fg-ar.o fg-ar-bridge.o fg-q35.o fg-qg.o fg-q35-bridge.o fg-plan-ffi.o fg-gr.o fg-gr-bridge.o; do
-    [ -f "$W/$o" ] && cp "$W/$o" "$DST/extra-objects/"
+# Every object build.py itself produced: the 39 Goose module objects, the 22 bridge objects, and the hand-built
+# extras. Frozen as bytes, exactly like the flint objects, so the clean build does not re-decide which file owns a
+# prefix at every run.
+# Only the objects build.py actually links: its module loop (fgNNNs.o), its bridge loop (bNNN.o) and the explicit
+# extra_mod list. A blanket copy pulled in old non-PIC variants (fx286.o, fx291.o) that the real link never uses -
+# fx286pic.o is the PIC one - and the clean build then failed on relocations.
+# Only the module objects this resolution actually chose. The build directory also holds stale objects from
+# earlier runs - fg367s.o is there although build.py excludes fg367s as a bridge - and a blanket copy of fg*.o
+# reproduced exactly the stale-object problem this consolidation exists to remove.
+while IFS= read -r mo; do [ -f "$W/$mo" ] && cp "$W/$mo" "$DST/extra-objects/"; done < "$DST/module-objects.txt"
+for o in "$W"/b[0-9][0-9][0-9].o \
+         "$W"/b291.o "$W"/fx286pic.o "$W"/fx262a.o "$W"/fx263-pic.o "$W"/gates.o \
+         "$W"/slru-policy.o "$W"/slru-runtime.o "$W"/slru-shim.o \
+         "$W"/fg-ar.o "$W"/fg-ar-bridge.o "$W"/fg-q35.o "$W"/fg-qg.o "$W"/fg-q35-bridge.o \
+         "$W"/fg-plan-ffi.o "$W"/fg-gr.o "$W"/fg-gr-bridge.o "$W"/fg-q35s.o "$W"/fg-q35s-bridge.o; do
+    [ -f "$o" ] && cp "$o" "$DST/extra-objects/"
 done
-for l in "$W"/stage-run/lib*.so.0*; do cp -L "$l" "$DST/libs/" 2>/dev/null || true; done
+# Only the seven libraries the runtime loads, and only their real files: resolving every symlink variant with -L
+# turned each into a full 220 MB copy and each consolidated tree into 9.6 GB.
+for l in libggml.so.0 libggml-base.so.0 libggml-cpu.so.0 libggml-cuda.so.0 \
+         libllama-common.so.0 libllama-server-impl.so libmtmd.so.0; do
+    [ -f "$W/stage-run/$l" ] && cp -L "$W/stage-run/$l" "$DST/libs/"
+done
 
 ( cd "$DST" && find . -type f -exec sha256sum {} \; | sort -k2 > SHA256SUMS )
 echo "consolidated tree: $DST"

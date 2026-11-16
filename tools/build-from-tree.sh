@@ -30,17 +30,17 @@ echo "our sources: $(ls "$OUT/obj"/our-*.o | wc -l)"
 
 MODINC=""
 for d in "$TREE"/module-src/*/; do MODINC="$MODINC -I$d"; done
-for src in "$TREE"/modules/*.c; do
+for src in "$TREE"/none/*.c; do
     [ -e "$src" ] || continue
     gcc-13 -O2 -fPIC -I"$TREE/modules" $MODINC -c "$src" -o "$OUT/obj/mod-$(basename "$src" .c).o"
 done
-for src in "$TREE"/modules/*.cpp; do
+for src in "$TREE"/none/*.cpp; do
     [ -e "$src" ] || continue
     g++-13 -O2 -fPIC -std=c++17 -I"$TREE/modules" $MODINC -c "$src" -o "$OUT/obj/mod-$(basename "$src" .cpp).o"
 done
 echo "modules: $(ls "$OUT/obj"/mod-*.o 2>/dev/null | wc -l)"
 
-for d in "$TREE"/bridges/*/; do
+for d in "$TREE"/none/*/; do
     m=$(basename "$d")
     [ -f "$d/bridge.c" ] || continue
     gcc-13 -O3 -DNDEBUG -fPIC -std=c11 -I"$d" -c "$d/bridge.c" -o "$OUT/obj/br-$m.o"
@@ -55,7 +55,7 @@ echo "upstream objects: $(echo $flint | wc -w) of $(ls "$TREE"/flint-objects/*.o
 
 /usr/bin/c++ -fPIC -O3 -DNDEBUG -shared -Wl,-soname,libllama.so.0 \
     -o "$OUT/libllama.so.0" \
-    "$OUT"/obj/our-*.o "$OUT"/obj/mod-*.o "$OUT"/obj/br-*.o \
+    "$OUT"/obj/our-*.o \
     $TREE/extra-objects/*.o $flint \
     -Wl,-rpath,"$TREE/libs" \
     "$TREE/libs/libggml.so.0" "$TREE/libs/libggml-base.so.0" \
