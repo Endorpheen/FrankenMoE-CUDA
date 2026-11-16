@@ -540,3 +540,24 @@ come from Igor directly. For every marked message:
     instead.
 
     End goal: 0 lines of C++ with no loss of necessary functionality.
+
+29. A verification run that overlaps another proves nothing, and a failed run is not evidence about the code.
+
+    On 2026-11-16 repeated measurement failures were blamed on the GPU being short of memory. nvidia-smi showed 3609
+    MiB used of 12282 at 18% utilisation, and a run started right afterwards succeeded. The real cause was runs
+    overlapping: every start that did not reach health inside the wait window left a server behind, the next start
+    raced it for the same port and for device memory, and the `cudaMalloc` failure was a symptom of that race.
+
+    Before every measurement:
+
+        ss -ltn | grep -E ':(9101|8950)'      # is the port already taken by an earlier attempt?
+        pgrep -af 'stage-run/llama-server'    # is an earlier server still alive?
+        nvidia-smi --query-gpu=memory.used --format=csv,noheader
+
+    Stop only your own previous server, verify it exited and released the port, then start. Never start a second run
+    while the first is alive, and never raise a wait timeout to "fix" a start that is actually blocked by a leftover.
+
+    Two claims are cheap to check and expensive to state without checking:
+      - "the environment is at fault" - one nvidia-smi decides it;
+      - "that change caused this" - rolling the library back to the last verified build decides it.
+    Both were asserted wrongly in this session before being tested, and both were wrong.
