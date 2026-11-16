@@ -18,6 +18,10 @@
 // Goose model-loader decisions (EXP201). GGML_GOOSE_MODEL_LOADER=0 restores the native checks.
 // Goose GGUF inventory decisions (EXP389). GGML_GOOSE_GGUF_INVENTORY=0 restores the native walk.
 extern "C" int fg389s_enabled(void);
+// Goose file-alignment decision (EXP-377): offset, size, alignment, cap -> {aligned_offset, bytes_to_read,
+// skip, buffer_size}. Default on; GGML_GOOSE_FILE_ALIGN=0 restores the native arithmetic.
+extern "C" int     fg377s_enabled(void);
+extern "C" int64_t fg377s_plan(int64_t offset, int64_t size, int64_t alignment, int64_t cap, int64_t * out);
 extern "C" int64_t fg389s_decide(int64_t op, int64_t a, int64_t b, int64_t c, int64_t * out2);
 
 // Goose loader alignment decision (EXP403). GGML_GOOSE_LOADER_ALIGN=0 restores the native test.
@@ -1859,13 +1863,29 @@ bool llama_model_loader::load_all_data(
                 if (upload_backend) {
                     size_t offset = weight->offs;
                     alignment = file->read_alignment();
-                    size_t aligned_offset = offset & ~(alignment - 1);
-                    size_t offset_from_alignment = offset - aligned_offset;
+
+                    // The aligned-read geometry is the Goose decision fg377s_plan (EXP-377), which was
+                    // linked but never called from this path. It returns the same four values the native
+                    // arithmetic computed: aligned start, rounded-up length, skip into the first block, and
+                    // a buffer size capped by the caller. GGML_GOOSE_FILE_ALIGN=0 restores the arithmetic.
+                    size_t aligned_offset          = offset & ~(alignment - 1);
+                    size_t offset_from_alignment   = offset - aligned_offset;
+                    size_t bytes_to_read           = (offset + n_size + alignment - 1) & ~(alignment - 1);
+                    bytes_to_read -= aligned_offset;
+                    if (fg377s_enabled()) {
+                        int64_t plan[4] = { 0, 0, 0, 0 };
+                        // cap = the staging buffer the caller already holds, so plan[3] cannot exceed it
+                        fg377s_plan((int64_t) offset, (int64_t) n_size, (int64_t) alignment,
+                                    (int64_t) buffer_size, plan);
+                        aligned_offset        = (size_t) plan[0];
+                        bytes_to_read         = (size_t) plan[1];
+                        offset_from_alignment = (size_t) plan[2];
+                    }
                     file->seek(aligned_offset, SEEK_SET);
 
                     // Calculate aligned read boundaries
                     size_t read_start = aligned_offset;
-                    size_t read_end = (offset + n_size + alignment - 1) & ~(alignment - 1);
+                    size_t read_end = read_start + bytes_to_read;
 
                     size_t bytes_read = 0;
                     size_t data_read = 0;  // Actual tensor data copied (excluding padding)
