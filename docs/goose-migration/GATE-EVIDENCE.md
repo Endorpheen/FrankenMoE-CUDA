@@ -147,3 +147,8 @@ portable in the runtime is the NFC table transfer described above, which is one 
 not a sweep over 15000 lines.
 
 | `unicode-utf8.goose` | this commit | 1112064 | 0 mismatches | every codepoint encoded and compared byte for byte with the C++ encoder, then decoded back and compared; surrogates skipped, as they are not codepoints |
+
+Correction to the line above: the encoder in that module was a duplicate of an existing Goose binding
+(`fg216e_cpt_to_utf8`, already reachable through `unicode_cpt_to_utf8`) and has been removed - rule 17 forbids a
+second binding for the same symbol. What remains is the decoder, and it is proved against the native decoder over all
+1,112,064 codepoints: U8D_GATE mismatches=0.

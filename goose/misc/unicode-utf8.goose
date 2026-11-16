@@ -1,4 +1,8 @@
-// UTF-8 codepoint conversion: unicode_cpt_to_utf8 and unicode_cpt_from_utf8.
+// UTF-8 decoding: unicode_cpt_from_utf8.
+//
+// Encoding is NOT here. The library already had a Goose binding for it - fg216e_cpt_to_utf8, reachable through
+// unicode_cpt_to_utf8 - and writing a second one was debt, not progress; it has been removed. What was missing is the
+// other direction, and that is what this module supplies.
 //
 // These are the primitives every other port needed from C++: the modules took `uint32_t *` because the conversion
 // between bytes and codepoints lived in std::string. Here that dependency ends - the encoder writes bytes itself and
@@ -17,34 +21,6 @@ const MAX_CPT: i64 = 0x10FFFF;
 
 fn is_surrogate(cpt: i64) -> bool {
     return cpt >= SURROGATE_LO && cpt <= SURROGATE_HI;
-}
-
-// Writes the UTF-8 form of cpt into buf and returns how many bytes were written, or 0 when the codepoint is not
-// encodable. A surrogate is not a codepoint and is refused rather than encoded.
-export fn u8_encode(cpt: i64, buf: u64) -> i64 {
-    if cpt < (0 as i64) || cpt > MAX_CPT || is_surrogate(cpt) {
-        return 0;
-    }
-    if cpt <= (0x7F as i64) {
-        st8(buf, 0 as i64, cpt);
-        return 1;
-    }
-    if cpt <= (0x7FF as i64) {
-        st8(buf, 0 as i64, 0xC0 | (cpt >> (6 as i64)));
-        st8(buf, 1 as i64, 0x80 | (cpt & (0x3F as i64)));
-        return 2;
-    }
-    if cpt <= (0xFFFF as i64) {
-        st8(buf, 0 as i64, 0xE0 | (cpt >> (12 as i64)));
-        st8(buf, 1 as i64, 0x80 | ((cpt >> (6 as i64)) & (0x3F as i64)));
-        st8(buf, 2 as i64, 0x80 | (cpt & (0x3F as i64)));
-        return 3;
-    }
-    st8(buf, 0 as i64, 0xF0 | (cpt >> (18 as i64)));
-    st8(buf, 1 as i64, 0x80 | ((cpt >> (12 as i64)) & (0x3F as i64)));
-    st8(buf, 2 as i64, 0x80 | ((cpt >> (6 as i64)) & (0x3F as i64)));
-    st8(buf, 3 as i64, 0x80 | (cpt & (0x3F as i64)));
-    return 4;
 }
 
 // Decodes the codepoint starting at byte offset pos. Returns the length consumed; the codepoint is written through
