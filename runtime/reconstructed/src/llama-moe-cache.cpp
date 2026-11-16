@@ -78,6 +78,8 @@ struct moe_cache_slru {
         tail[0] = n_slots - 1;
         is_protected.assign(n_slots, 0);
         seen.assign(n_expert, 0);
+        // uniq is the dedupe scratch; the Goose policy writes it before the native path ever sizes it
+        uniq.resize(n_slots);
         g_fills_e.resize(n_slots);
         g_fills_s.resize(n_slots);
         g_evicted.resize(n_slots);

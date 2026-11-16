@@ -119,3 +119,32 @@ per-layer storage where it belongs.
 ```
 slru gate: 100/100 cases match
 ```
+
+## 10. Accepted: the policy runs on Apex with the reference answer
+
+Wired into `moe_cache_slru::plan` behind `GGML_GOOSE_MOE_SLRU` (default on), rebuilt, and run on Apex
+with the pinned argv:
+
+| length | prefill | decode | reference | native baseline |
+|---:|---:|---:|---|---:|
+| 128 | 2447.7 | **39.90** | `9d90a010775f` - **matches** | 39.49 |
+| 512 | 2438.3 | **41.77** | `c2ff42cc1219` - **matches** | 41.61 |
+
+Same answer, no decode regression (+1.0% and +0.4%, within run-to-run spread). The plan runs 41 times per
+token and the FFI load/store costs nothing measurable, which is what the raw-pointer interface was for.
+
+## 11. Two defects found while wiring, both in my own code
+
+1. **`uniq` was never sized.** The native path grows it through `push_back`, so `.data()` is null on the
+   first call - and the Goose path writes into it first, because it is default on. The server died silently
+   during load. Fixed by sizing it in `init()` beside the other scratch. This is the kind of thing the
+   differential gate cannot catch: the gate allocates its own scratch.
+2. **A stale `gates.o`.** `fg756s_enabled` was added to `gates.c` but the prebuilt object was linked, so
+   the first link gave an undefined symbol. `build.py` now fails loudly when a required object is missing
+   instead of skipping it silently.
+
+## 12. Status
+
+The SLRU policy is migrated: the Goose export answers, it is wired, it reproduces the reference answer on
+Apex, and it costs no decode. Per rule 15 the native body is still present as the fallback behind the
+switch; removing it is a separate step after Igor's acceptance.
