@@ -1,4 +1,12 @@
 #include "unicode.h"
+
+#include <cstring>
+#include <cstdlib>
+
+// Goose Qwen pre-tokenisation splitter (goose/misc/qwen35-split.goose). One FFI per call, not per character.
+extern "C" int64_t q35s_split(int64_t packet);
+extern "C" void    fg_qwen35_split_init(void);
+const uint16_t * fg_unicode_flags_view();
 #include "unicode-data.h"
 
 #include <algorithm>
@@ -798,131 +806,29 @@ static std::vector<size_t> unicode_regex_split_custom_qwen2(const std::string & 
 // Qwen3.5 system regex: "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
 // Compared to Qwen2, letter-runs also consume Unicode combining marks (\p{M}): [\p{L}\p{M}]+ instead of \p{L}+
 static std::vector<size_t> unicode_regex_split_custom_qwen35(const std::string & text, const std::vector<size_t> & offsets) {
-    std::vector<size_t> bpe_offsets; // store the offset of each word
-    bpe_offsets.reserve(offsets.size()); // Reserve memory for the approximate size
+    // The split decision is the Goose module (goose/misc/qwen35-split.goose), verified 30/30 against the native
+    // automaton by the differential gate in EXP-2026-11-17-897 before that automaton was removed.
+    //
+    // The classification view is indexed by CODEPOINT; the module reads it through cpts[position] with bounds
+    // handling. Indexing it by position was the defect in the first version, and only a text corpus exposes it -
+    // the pinned request carries token ids and never enters here.
+    static const bool inited = [] { fg_qwen35_split_init(); return true; }();
+    (void) inited;
 
-    const auto cpts = unicode_cpts_from_utf8(text);
-
-    size_t start = 0;
-    for (auto offset : offsets) {
-        const size_t offset_ini = start;
-        const size_t offset_end = start + offset;
-        assert(offset_end <= cpts.size());
-        start = offset_end;
-
-        static const uint32_t OUT_OF_RANGE = 0xFFFFFFFF;
-        auto _get_cpt = [&] (const size_t pos) -> uint32_t {
-            return (offset_ini <= pos && pos < offset_end) ? cpts[pos] : OUT_OF_RANGE;
-        };
-
-        auto _get_flags = [&] (const size_t pos) -> unicode_cpt_flags {
-            return (offset_ini <= pos && pos < offset_end) ? unicode_cpt_flags_from_cpt(cpts[pos]) : unicode_cpt_flags{};
-        };
-
-        size_t _prev_end = offset_ini;
-        auto _add_token = [&] (const size_t end) -> size_t {
-            assert(_prev_end <= end && end <= offset_end);
-            size_t len = end - _prev_end;
-            if (len > 0) {
-                bpe_offsets.push_back(len);
-            }
-            _prev_end = end;
-            return len;
-        };
-
-        for (size_t pos = offset_ini; pos < offset_end; /*pos++*/ ) {
-            const uint32_t cpt = _get_cpt(pos);
-            const auto flags = _get_flags(pos);
-
-            // regex: (?i:'s|'t|'re|'ve|'m|'ll|'d) // case insensitive
-            if (cpt == '\'' && pos+1 < offset_end) {
-                uint32_t cpt_next = unicode_tolower(_get_cpt(pos+1));
-                if (cpt_next == 's' || cpt_next == 't' || cpt_next == 'm' || cpt_next == 'd') {
-                    pos += _add_token(pos+2);
-                    continue;
-                }
-                if (pos+2 < offset_end) {
-                    uint32_t cpt_next_next = unicode_tolower(_get_cpt(pos+2));
-                    if ((cpt_next == 'r' && cpt_next_next == 'e') ||
-                        (cpt_next == 'v' && cpt_next_next == 'e') ||
-                        (cpt_next == 'l' && cpt_next_next == 'l')) {
-                        pos += _add_token(pos+3);
-                        continue;
-                    }
-                }
-            }
-
-            // regex: [^\r\n\p{L}\p{N}]?[\p{L}\p{M}]+
-            if (!(cpt == '\r' || cpt == '\n' || flags.is_number)) {
-                if (flags.is_letter || flags.is_accent_mark || _get_flags(pos + 1).is_accent_mark || _get_flags(pos+1).is_letter) {
-                    pos++;
-                    while (_get_flags(pos).is_letter || _get_flags(pos).is_accent_mark) {
-                        pos++;
-                    }
-                    _add_token(pos);
-                    continue;
-                }
-            }
-
-            // regex: \p{N}
-            if (flags.is_number) {
-                pos++;
-                _add_token(pos);
-                continue;
-            }
-
-            // regex: <space>?[^\s\p{L}\p{M}\p{N}]+[\r\n]*
-            auto flags2 = (cpt == ' ' ? _get_flags(pos+1) : flags);
-            if (!(flags2.is_whitespace | flags2.is_letter | flags2.is_accent_mark | flags2.is_number) && flags.as_uint()) {
-                pos += (cpt == ' ');
-                while (!(flags2.is_whitespace | flags2.is_letter | flags2.is_accent_mark | flags2.is_number) && flags2.as_uint()) {
-                    flags2 = _get_flags(++pos);
-                }
-                uint32_t cpt2 = _get_cpt(pos);
-                while (cpt2 == '\r' || cpt2 == '\n') {
-                    cpt2 = _get_cpt(++pos);
-                }
-                _add_token(pos);
-                continue;
-            }
-
-            size_t num_whitespaces = 0;
-            size_t last_end_r_or_n = 0;
-            while (_get_flags(pos+num_whitespaces).is_whitespace) {
-                uint32_t cpt2 = _get_cpt(pos+num_whitespaces);
-                if (cpt2 == '\r' || cpt2 == '\n') {
-                    last_end_r_or_n = pos + num_whitespaces + 1;
-                }
-                num_whitespaces++;
-            }
-
-            // regex: \s*[\r\n]+
-            if (last_end_r_or_n > 0) {
-                pos = last_end_r_or_n;
-                _add_token(pos);
-                continue;
-            }
-
-            // regex: \s+(?!\S)
-            if (num_whitespaces > 1 && _get_cpt(pos+num_whitespaces) != OUT_OF_RANGE) {
-                pos += num_whitespaces - 1;
-                _add_token(pos);
-                continue;
-            }
-
-            // regex: \s+
-            if (num_whitespaces > 0) {
-                pos += num_whitespaces;
-                _add_token(pos);
-                continue;
-            }
-
-            // no matches
-            _add_token(++pos);
-        }
+    const std::vector<uint32_t> gcpts = unicode_cpts_from_utf8(text);
+    std::vector<size_t> out(gcpts.size() + offsets.size() + 8);
+    int64_t pkt[8] = {
+        (int64_t) (uintptr_t) gcpts.data(),   (int64_t) gcpts.size(),
+        (int64_t) (uintptr_t) offsets.data(), (int64_t) offsets.size(),
+        (int64_t) (uintptr_t) fg_unicode_flags_view(), (int64_t) (uintptr_t) out.data(),
+        (int64_t) out.size(), 0,
+    };
+    const int64_t n = q35s_split((int64_t) (uintptr_t) pkt);
+    if (n < 0) {
+        return {};
     }
-
-    return bpe_offsets;
+    out.resize((size_t) n);
+    return out;
 }
 
 template <typename CharT>
