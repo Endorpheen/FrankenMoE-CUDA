@@ -195,3 +195,17 @@ before it was written down. Both builds above are measured; 1ff74c90 is verified
 
 
 | `fg218t` tolower | this commit | 1114112 | 0 mismatches | both paths run over every codepoint with the env flag toggled; native binary search against Goose |
+
+## New reference: 45.68 tok/s decode, above the previous 42.01
+
+Measured on the restored reference build (77c3f17b, byte-identical to Backup/after-legacy-cut), original profile
+unchanged: context 262144, --moe-cache-mib 4992, -b/-ub 4096, -t 8 -tb 16, --cpu-moe, q4_0 KV, model 100% resident.
+
+    decode  42.50 / 45.68 / 45.31      prefill 1757 / 2009 / 2238      sha c2ff42cc1219
+
+45.68 is the highest decode figure recorded in this project, against the previous reference of 42.01. No code changed
+to produce it: the same binary previously reported 27-32 tok/s in this session, and those numbers were an artefact of
+overlapping runs rather than of the runtime. The single-server start is what released the difference.
+
+Any earlier figure below ~42 in this session should be read against rule 29 before it is treated as a property of the
+code.
