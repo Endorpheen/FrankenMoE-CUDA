@@ -1,59 +1,59 @@
-# Внешние зависимости FrankenMoE-CUDA: карта и план переноса
+# External dependencies of FrankenMoE-CUDA: map and transfer plan
 
-Цель — сборка из чистого клона репозитория, без скрытой зависимости от локальных каталогов. CUDA Toolkit, драйвер
-NVIDIA и системные библиотеки остаются системными зависимостями: это нормально и переносу внутрь репозитория не
-подлежит.
+Goal: a build from a clean clone of the repository, with no hidden dependency on local directories. The CUDA Toolkit,
+the NVIDIA driver and system libraries stay system dependencies - that is normal and is not to be moved into the
+repository.
 
-## Что сборка использует сейчас
+## What the build uses today
 
-`runtime/reconstructed/build.py` ссылается ровно на два внешних корня.
+`runtime/reconstructed/build.py` references exactly two external roots.
 
-| корень | что берётся | ссылок в build.py |
+| root | what is taken | references in build.py |
 |---|---|---|
-| `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108` | каталог сборки `runtime/reconstructed/build` (готовые объекты `b*.o`, `fx*.o`, `slru*.o`, `fg-*.o`, `gates.o`) и `experiments/*/source` (исходники Goose-модулей и мостов) | 35 + 3 |
-| `/home/end0/AI/LlamaServer/llama.cpp-flint-cuda` | `-I` заголовков, `src/models/models.h`, `build-cuda` с 44 готовыми объектами, 7 библиотек `libggml*`/`libllama-common` | 1 (но путь даёт всё перечисленное) |
+| `/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108` | the build directory `runtime/reconstructed/build` (prebuilt `b*.o`, `fx*.o`, `slru*.o`, `fg-*.o`, `gates.o`) and `experiments/*/source` (Goose module and bridge sources) | 35 + 3 |
+| `/home/end0/AI/LlamaServer/llama.cpp-flint-cuda` | `-I` for headers, `src/models/models.h`, `build-cuda` with 44 prebuilt objects, 7 `libggml*`/`libllama-common` libraries | 1 (but the path supplies all of it) |
 
-Внутри репозитория уже лежит: 13 заменённых C++-файлов, 35 заголовков, `models.h` посредством `-I`, 12 мостов
-`integration/m1/common/*.c`, модули `goose/misc/*.goose`.
+Inside the repository there already are: 13 replaced C++ files, 35 headers, `models.h` through `-I`, 12 bridges in
+`integration/m1/common/*.c`, and the `goose/misc/*.goose` modules.
 
-## Что это значит
+## What that means
 
-Сборка FrankenMoE **не воспроизводима из клона**: без каталога `LlamaServer/...` она не найдёт ни 44 объекта flint, ни
-7 библиотек, ни исходников модулей. Это и есть скрытая зависимость, которую нужно убрать.
+The FrankenMoE build is **not reproducible from a clone**: without the `LlamaServer/...` directory it finds neither the
+44 flint objects, nor the 7 libraries, nor the module sources. That is the hidden dependency to remove.
 
-## План переноса, по этапам
+## Transfer plan, in stages
 
-**Этап 1. Инвентаризация с происхождением.** Для каждого внешнего файла записать: путь, SHA-256, откуда он получен
-(коммит flint, коммит эксперимента), лицензия. Без этого перенос превратится в копирование неизвестно чего.
+**Stage 1. Inventory with provenance.** For every external file record: path, SHA-256, where it came from (flint commit,
+experiment commit), and licence. Without that, a transfer is copying something of unknown origin.
 
-**Этап 2. Перенос исходников внутрь.** Три группы:
-  - `goose/misc` и мосты — исходники модулей из `experiments/*/source` уже должны быть в `goose/`; расхождение между
-    ними и `CANONICAL_SOURCES` надо устранить, а не копировать второй раз;
-  - `vendor/flint/src` — те исходники flint, что реально нужны (заголовки плюс `models/models.h`), с фиксацией
-    коммита-источника и лицензии;
-  - `vendor/flint/objects` — 44 готовых объекта **не переносить**: их место занимает пересборка из перенесённых
-    исходников. Хранить бинарные объекты в Git — это ровно то, что правило 22 запрещает считать сохранением.
+**Stage 2. Move the sources inside.** Three groups:
+  - `goose/misc` and the bridges - module sources come from `experiments/*/source`; the divergence between them and
+    `CANONICAL_SOURCES` should be resolved rather than copied a second time;
+  - `vendor/flint/src` - the flint sources actually needed (headers plus `models/models.h`), with the source commit and
+    licence recorded;
+  - `vendor/flint/objects` - the 44 prebuilt objects must **not** be moved: their place is taken by rebuilding from the
+    moved sources. Keeping binary objects in Git is precisely what rule 22 forbids treating as preservation.
 
-**Этап 3. Перенастройка сборки.** `build.py` не должен содержать ни одного абсолютного пути вне репозитория. Пути
-выводятся из расположения скрипта, как это уже сделано в `tools/build-from-tree.sh`.
+**Stage 3. Repoint the build.** `build.py` must contain no absolute path outside the repository. Paths derive from the
+script's own location, as `tools/build-from-tree.sh` already does.
 
-**Этап 4. Проверка воспроизводимости.** Чистый клон, документированные системные зависимости (CUDA Toolkit, драйвер,
-gcc-13), сборка одной командой, `FG_MODULES 8/8`, загрузка Apex, хеш `c2ff42cc1219`, decode около 45, prefill около
-2500, VRAM в записанных пределах.
+**Stage 4. Reproducibility check.** A clean clone, documented system dependencies (CUDA Toolkit, driver, gcc-13), one
+build command, `FG_MODULES 8/8`, an Apex load, hash `c2ff42cc1219`, decode near 45, prefill near 2500, VRAM within the
+recorded range.
 
-**Этап 5. Приёмка.** Только после успешной проверки внешние оригиналы можно считать лишними, и то не удалять, а
-оставить как есть — правила запрещают удалять резервные копии.
+**Stage 5. Acceptance.** Only after a successful check can the external originals be considered redundant, and even
+then they are left in place: the rules forbid deleting backups.
 
-## Порядок и риски
+## Order and risks
 
-Первый по важности шаг — этап 1, инвентаризация, потому что без происхождения невозможно ни лицензионное
-соответствие, ни проверка, что перенесён именно тот исходник, из которого собраны работающие объекты.
+The first step that matters is stage 1, the inventory, because without provenance there is neither licence compliance
+nor any way to verify that the source moved is the source the working objects were built from.
 
-Главный риск — перенос исходников flint без пересборки их объектов: тогда в библиотеке останутся объекты, собранные
-из **другого** кода, чем лежит в репозитории, и воспроизводимость будет ложной. Поэтому этапы 2 и 3 идут вместе, а
-этап 4 проверяет именно это.
+The main risk is moving flint sources without rebuilding their objects: the library would then contain objects built
+from **different** code than the repository holds, and the reproducibility would be false. That is why stages 2 and 3
+go together and stage 4 checks exactly this.
 
-Отдельно: правка `vendor/flint/src/models/models.h` (удаление 160 legacy-классов) должна делаться разбором с
-корректным учётом вложенных структур. Первая попытка срезала часть `llm_build_delta_net_base`, потому что `};`
-встречается и внутри вложенных определений; файл восстановлен из бэкапа, и повтор должен идти по границам
-верхнего уровня, а не по первой встреченной `};`.
+Separately: editing `vendor/flint/src/models/models.h` to remove the 160 legacy classes must parse top-level
+declarations correctly. The first attempt cut into `llm_build_delta_net_base` because `};` also occurs inside nested
+definitions; the file was restored from the backup, and the retry must walk nesting depth instead of stopping at the
+first `};`.
