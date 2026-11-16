@@ -1,0 +1,61 @@
+file                         decisions  goose  native
+llama-graph.cpp                     21      0      21
+llama-hparams.cpp                   11      1      10
+llama-vocab.cpp                     10      0      10
+llama-model.cpp                      3      0       3
+llama-kv-cache.cpp                   1      0       1
+llama-memory-recurrent.cpp           1      0       1
+llama-sampler.cpp                    1      0       1
+llama-model-loader.cpp               1      1       0
+TOTAL                               49      2      47
+
+decision coverage: 2/49 = 4.1%
+
+native decision bodies:
+   llama-graph.cpp:136 can_reuse
+   llama-graph.cpp:169 can_reuse
+   llama-graph.cpp:213 can_reuse
+   llama-graph.cpp:249 can_reuse
+   llama-graph.cpp:304 can_reuse
+   llama-graph.cpp:423 can_reuse
+   llama-graph.cpp:571 can_reuse
+   llama-graph.cpp:592 can_reuse
+   llama-graph.cpp:598 can_reuse_impl
+   llama-graph.cpp:624 can_reuse
+   llama-graph.cpp:657 can_reuse
+   llama-graph.cpp:663 can_reuse_impl
+   llama-graph.cpp:680 can_reuse
+   llama-graph.cpp:737 can_reuse
+   llama-graph.cpp:796 can_reuse
+   llama-graph.cpp:1105 can_reuse
+   llama-graph.cpp:1198 can_reuse
+   llama-graph.cpp:1241 can_reuse
+   llama-graph.cpp:1314 can_reuse
+   llama-graph.cpp:1372 can_reuse
+   llama-graph.cpp:1486 can_reuse
+   llama-hparams.cpp:48 is_swa_any
+   llama-hparams.cpp:176 is_n_embd_k_gqa_variable
+   llama-hparams.cpp:187 is_n_embd_v_gqa_variable
+   llama-hparams.cpp:292 is_ple
+   llama-hparams.cpp:305 is_swa
+   llama-hparams.cpp:313 is_mla
+   llama-hparams.cpp:320 is_indexer_full
+   llama-hparams.cpp:336 has_kv
+   llama-hparams.cpp:349 has_rope
+   llama-hparams.cpp:367 use_mrope
+   llama-kv-cache.cpp:2230 has_cell_ext
+   llama-memory-recurrent.cpp:802 is_empty
+   llama-model.cpp:2811 select_buft
+   llama-model.cpp:2823 select_buft
+   llama-model.cpp:2833 has_tensor_overrides
+   llama-sampler.cpp:2982 is_disabled
+   llama-vocab.cpp:977 is_chinese_char
+   llama-vocab.cpp:1896 is_iupac
+   llama-vocab.cpp:3532 is_eog
+   llama-vocab.cpp:4357 is_normal
+   llama-vocab.cpp:4361 is_unknown
+   llama-vocab.cpp:4365 is_control
+   llama-vocab.cpp:4369 is_byte
+   llama-vocab.cpp:4373 is_user_defined
+   llama-vocab.cpp:4377 is_unused
+   llama-vocab.cpp:4381 is_eog
