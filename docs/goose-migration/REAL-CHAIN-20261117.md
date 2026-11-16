@@ -165,3 +165,24 @@ three on the raw side, all over real bytes, agreeing to the bit.
 
 So the layer's first four nodes exist and are equivalent. What a layer still needs is the QG split, rope and
 the attention over k/v, then the MoE block.
+
+## QG split: attempted, crashed, reverted - and the reason is the truncation, not the split
+
+Adding `qg_split` as the fifth node segfaulted. The likely cause is arithmetic this harness created for
+itself:
+
+`apex_layer` derives the head width from the **real** `wq` width: `8 192 / (2 * 16) = 256`, because the q
+projection emits `2 * HD * H` columns. This chain truncates `wq` to 4096 rows to make the middle of the chain
+connect to `wo`, so its q projection is 4096 wide and `HD` would be 128 - a **different model shape**, not a
+narrower version of the same one.
+
+So the split is being asked to divide a projection whose head structure it cannot know from the tensor alone.
+That is a property of a harness that trims rows to keep the shapes tidy, not of `qg_split` - which passes its
+own gate (`qg_split q_differs=0 gate_differs=0 PASS`) at the real 8192-wide projection.
+
+**The consequence is a design decision for the composition harness, not a bug to patch**: either it carries
+the real 8192-wide projection and the matching `wo` that consumes `HD * H = 4096`, or it stays a two-matmul
+chain and the split belongs to the next harness. Trimming rows to connect two tensors of different widths is
+what put the head structure out of reach.
+
+Harness reverted to its committed state (`nodes=4`, `builder_vs_ggml=0`, PASS).
