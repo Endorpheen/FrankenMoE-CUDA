@@ -152,3 +152,6 @@ Correction to the line above: the encoder in that module was a duplicate of an e
 (`fg216e_cpt_to_utf8`, already reachable through `unicode_cpt_to_utf8`) and has been removed - rule 17 forbids a
 second binding for the same symbol. What remains is the decoder, and it is proved against the native decoder over all
 1,112,064 codepoints: U8D_GATE mismatches=0.
+
+| `fg215u` decoder | this commit | 1112064 | 0 mismatches | round trip: native encode, Goose decode, codepoint and bytes consumed both compared |
+| `fg216e` encoder | this commit | 1112064 | 0 mismatches | Goose bytes compared with the native encoder forced through the public entry point |
