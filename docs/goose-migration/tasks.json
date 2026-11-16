@@ -5637,9 +5637,9 @@
     "TODO": 14
   },
   "work_front": {
-    "note": "Integrated stage-run: pinned at 4992 MiB cache, ctx 262144, reference argv (-b 4096 -ub 4096, -t 8 -tb 16). Best reference-equivalent decode: 41.61 @512, 41.01 @256, 39.49 @128, prefill ~2432, VRAM 11735 MiB; every accepted figure carries the reference answer hash. At ctx 65536 the same cache reaches 43.45 @512 (EXP-754). The expert cache is the dominant lever: removing it halves decode (20.66, EXP-752). Standalone still lacks CUDA, tokenizer engine, HTTP and full-stack execution.",
-    "slices_total": 12,
-    "slices_done": 9
+    "note": "Integrated stage-run: pinned at 4992 MiB cache, ctx 262144, reference argv (-b 4096 -ub 4096, -t 8 -tb 16). Best reference-equivalent decode: 41.77 @512, 41.01 @256, 39.90 @128, prefill ~2440, VRAM 11735 MiB; every accepted figure carries the reference answer hash. The MoE expert-cache SLRU policy is now Goose (EXP-756): wired behind GGML_GOOSE_MOE_SLRU, default on, reproduces the reference hash at 128 and 512 with no decode cost; the native body stays as the fallback until Igor accepts removal. At ctx 65536 the same cache reaches 43.45 @512 (EXP-754). The expert cache is the dominant lever: removing it halves decode (20.66, EXP-752). Standalone still lacks CUDA, tokenizer engine, HTTP and full-stack execution.",
+    "slices_total": 13,
+    "slices_done": 10
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }

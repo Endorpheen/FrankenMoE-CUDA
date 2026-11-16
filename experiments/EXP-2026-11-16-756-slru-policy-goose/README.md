@@ -148,3 +148,15 @@ token and the FFI load/store costs nothing measurable, which is what the raw-poi
 The SLRU policy is migrated: the Goose export answers, it is wired, it reproduces the reference answer on
 Apex, and it costs no decode. Per rule 15 the native body is still present as the fallback behind the
 switch; removing it is a separate step after Igor's acceptance.
+
+## 13. The switch, verified (rule 10)
+
+`GGML_GOOSE_MOE_SLRU=0` restores the native loop and must give the same answer:
+
+| arm | decode @128 | hash |
+|---|---:|---|
+| Goose policy (default) | 39.90 | `9d90a010775f` |
+| native fallback (`=0`) | 40.03 | `9d90a010775f` |
+
+Same answer, indistinguishable speed. The flag exists only to disable the feature, as rule 10 requires,
+and the fallback is a true equivalent rather than an approximation.
