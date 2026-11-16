@@ -22,7 +22,9 @@ SIG = re.compile(
     r"\s+(?:[A-Za-z_][A-Za-z0-9_]*::)*([a-z_][a-z0-9_]*)\s*\([^;]*?\)\s*(?:const\s*)?\{\s*$"
 )
 DECISION = re.compile(r"^(is_|can_|select_|should_|need_|use_|has_)")
-GOOSE = re.compile(r"fg\d{3}[a-z]_")
+# Bridges are either numbered (fg263c_, fg200g_) or named (fg_gr_, fg_n01s_, fg_q35s_). Matching
+# only the numbered form silently undercounts every module wired after the naming changed.
+GOOSE = re.compile(r"\bfg_?(?:\d{3}[a-z]|[a-z]{2,4}s?)_")
 
 
 def body_of(lines, start):
