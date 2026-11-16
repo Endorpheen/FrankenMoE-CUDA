@@ -145,3 +145,5 @@ fields being assigned.
 So the file stays C++, and that is the correct outcome under rule 17 rather than a gap. What remains genuinely
 portable in the runtime is the NFC table transfer described above, which is one piece of work with a defined proof,
 not a sweep over 15000 lines.
+
+| `unicode-utf8.goose` | this commit | 1112064 | 0 mismatches | every codepoint encoded and compared byte for byte with the C++ encoder, then decoded back and compared; surrogates skipped, as they are not codepoints |
