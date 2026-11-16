@@ -67,3 +67,28 @@ settled. Claiming a blocker without checking costs a cycle as surely as claiming
 
 | `unicode-qwen2.goose` | this commit | 28 | 28/28 | case-insensitive contractions, single digits vs runs, letters with combining marks, non-space prefix, the `\s*[\r\n]+` jump, whitespace runs, CJK, empty segment |
 | `unicode-llama3.goose` | this commit | 32 | 32/32 | everything Qwen2 covers, plus digit runs split into groups of three (`1234567890`, `12`, `1234`, digits inside text) |
+
+## REJECTED: qwen2 and llama3 passed their gates and still crash the runtime
+
+Both modules passed their differential gates (28/28 and 32/32) and both are rejected anyway.
+
+The assembled runtime aborts on the pinned profile:
+
+    #6  fg161_fail () from libggml-base.so.0
+    #7  fg161_gg_function_77.constprop () from libggml-base.so.0
+    #5  ggml_abort ()
+
+Rolling the library back to the build before those two ports (Backup/after-afmoe, sha 8ac4e5b7) restores it:
+decode 44.38 / 44.60 / 44.54, prefill 2346.9 / 2522.9 / 2521.9, hash c2ff42cc1219. So the break is in one or both of
+those commits, and the current installed library is the rolled-back one.
+
+This is the lesson the gates cannot teach on their own: a gate compares a function against its predecessor on a corpus
+I chose. It cannot see whether the OUTPUT the function produces is accepted by the code downstream, and here it is
+not - the failure surfaces inside a different module (fg161) in a different library (libggml-base), nowhere near the
+splitter.
+
+Next step is a bisect, not a guess: install the build with qwen2 but not llama3, run, and see whether it survives.
+Neither commit is reverted from git - they are good code that has not been shown safe, and the record must say
+exactly that rather than deleting them.
+
+Until the bisect says otherwise, the installed library is Backup/after-afmoe (8ac4e5b7), which measures 44.5 tok/s.
