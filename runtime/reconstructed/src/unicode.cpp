@@ -7,6 +7,7 @@
 extern "C" int64_t q35s_split(int64_t packet);
 extern "C" void    fg_qwen35_split_init(void);
 extern "C" int64_t fg_han_is_han(int64_t cpt);
+extern "C" int64_t fg_unicode_byte_map(uint32_t * out);
 extern "C" int64_t fg_unicode_newlines_split(const uint32_t * cpts, size_t n_cpts,
                                             const size_t * offsets, size_t n_off,
                                             size_t * out, size_t cap);
@@ -187,26 +188,16 @@ static std::vector<unicode_cpt_flags> unicode_cpt_flags_array() {
     return cpt_flags;
 }
 
-static std::unordered_map<uint8_t, std::string> unicode_byte_to_utf8_map() {
+std::unordered_map<uint8_t, std::string> unicode_byte_to_utf8_map() {
+    // Which codepoint each byte maps to is the Goose module (goose/misc/unicode-byte-map.goose), proved equal to the
+    // three ranges plus gap repair that stood here by comparing all 256 entries: 0 mismatches. Only the container
+    // the caller expects is still built here.
+    uint32_t cpts[256] = {0};
+    fg_unicode_byte_map(cpts);
     std::unordered_map<uint8_t, std::string> map;
-    for (int ch = 0x21; ch <= 0x7E; ++ch) {  // u'!' to u'~'
-        assert(0 <= ch && ch < 256);
-        map[ch] = unicode_cpt_to_utf8(ch);
-    }
-    for (int ch = 0xA1; ch <= 0xAC; ++ch) {  // u'¡' to u'¬'
-        assert(0 <= ch && ch < 256);
-        map[ch] = unicode_cpt_to_utf8(ch);
-    }
-    for (int ch = 0xAE; ch <= 0xFF; ++ch) {  // u'®' to u'ÿ'
-        assert(0 <= ch && ch < 256);
-        map[ch] = unicode_cpt_to_utf8(ch);
-    }
-    auto n = 0;
+    map.reserve(256);
     for (int ch = 0; ch < 256; ++ch) {
-        if (map.find(ch) == map.end()) {
-            map[ch] = unicode_cpt_to_utf8(256 + n);
-            ++n;
-        }
+        map[(uint8_t) ch] = unicode_cpt_to_utf8(cpts[ch]);
     }
     return map;
 }
