@@ -129,9 +129,26 @@ fi
 say "   HTTP-server decisions        yes  (this run: detok 1063000 calls, sched 39500,"
 say "                                       graph-input-plan 200 - all witnessed live)"
 say "   HTTP server (transport)      no   (decisions run; no listener in the standalone)"
-say "   model load + graph build     partial (EXP708/713: the integrated stage-run serves Apex"
-say "                                      32K/end-to-end with output identical to the reference,"
-say "                                      but that is the integrated tree, not this runtime)"
+# Computed from the artifact, not asserted. Reading and laying out 21.7 GB of real tensors is a capability;
+# executing them is a different one, and the two used to be collapsed into "partial".
+_apex_mismatch="-"
+APEX_GGUF=${FG_APEX_GGUF:-/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf}
+if [ -f "$SA_BIN" ] && [ -f "$APEX_GGUF" ]; then
+    _mdl=$(mktemp)
+    if timeout 180 "$SA_BIN" "$APEX_GGUF" >"$_mdl" 2>&1; then
+        _apex_mismatch=$(awk -F'mismatches=' '/FG_TENSOR_DATA/{split($2,a," ");print a[1]}' "$_mdl")
+        _apex_tensors=$(awk -F'tensors=' '/FG_TENSOR_DATA/{split($2,a," ");print a[1]}' "$_mdl")
+        _apex_agree=$(awk -F'agree=' '/FG_STANDALONE_V3/{split($2,a," ");print a[1]}' "$_mdl")
+    fi
+    rm -f "$_mdl"
+fi
+if [ "$_apex_mismatch" = "0" ]; then
+say "   model LOAD (read + layout)   yes  ($_apex_tensors tensors, Apex payload copied, 0 mismatches;"
+say "                                      Goose metadata table agrees=$_apex_agree)"
+say "   model EXECUTE (logits, serve) no  (loading a tensor is not running it - rule 15 untouched)"
+else
+say "   model load + graph build     unmeasured (run: frankenmoe-v4 <apex.gguf>; set FG_APEX_GGUF)"
+fi
 say ""
 say "Architectures: 13 have a Goose builder of 151 in the substrate"
 say "  (docs/goose-migration/ARCHITECTURE-MAP.md; Apex is one of the 13)"
