@@ -175,30 +175,21 @@ that does not exist yet, and it blocks roughly two thirds of the remaining switc
 Recorded so the next cycle does not start by writing a probe that crashes and concluding the module is broken. The
 module is not broken; it is not callable cold.
 
-## Blocked on the host, not the code: CUDA out of memory at the pinned profile
+## CORRECTED: there was no GPU shortage; the failures were my own overlapping runs
 
-Every verification run since about 19:00 fails the same way:
+I wrote here that verification was blocked because the KV cache no longer fitted in GPU memory, and pointed at the
+host's other applications. That was wrong, and Igor was right to reject it: nvidia-smi showed 3609 MiB used of 12282
+with the GPU at 18%, and a run started immediately afterwards succeeded.
 
-    EXP-2026-11-08-196-goose-cuda-pinned-pool/source/shared-cuda.cu:114: CUDA error
-    CUDA error: out of memory
-    -> ggml_backend_cuda_lazy_map -> llama_kv_cache::ensure_mapped
+    decode 44.52   prefill 2411.3   sha c2ff42cc1219      (rolled-back build 064d8bb7)
+    decode 44.48   prefill 2398.5   sha c2ff42cc1219      (build including the dead-code removal, 33c96760)
 
-What that is and is not:
+What actually caused the failures: my own trial runs overlapping. Each start that did not reach health within the
+wait window left a server behind, the next start then raced it for the port and for VRAM, and the CUDA allocation that
+failed was a symptom of that race rather than of the machine. The fix was to check for and kill leftover servers before
+each run, not to blame the host.
 
-  - it is NOT the dead-code removal in 1ff74c90: rolling the library back to the last verified build (Backup/
-    after-utf8-cpp-removed, sha 064d8bb7) fails identically;
-  - it is NOT the pinned-pool module specifically: GGML_GOOSE_CUDA_PINNED=0 fails identically;
-  - no leftover server of mine is running, ports 9101 and 8950 are free, and the only compute processes are Igor's
-    own (embeddings 314 MiB, chrome 661 MiB, opencode 330 MiB, nautilus, ptyxis), about 3.6 GiB of 12.2 GiB used.
+The lesson is the same one this file keeps recording in other forms: a failure that coincides with a change is not
+caused by it, and "the environment is at fault" is a claim that costs one nvidia-smi to check and was not checked
+before it was written down. Both builds above are measured; 1ff74c90 is verified after all.
 
-So about 8.6 GiB is free and the KV cache for 262144 context at q4_0 no longer fits in it, while it did earlier in the
-same session at the same settings. The difference is outside the code and outside my control, and I am not going to
-lower the context or the cache to make a number appear: that would measure a different profile and the comparison to
-44.5 tok/s would be worthless.
-
-Consequence, stated plainly: no commit after 1fce5b84 has a runtime measurement behind it. The library installed right
-now is the rolled-back 064d8bb7, which was measured at 44.75/44.93/45.01 before the environment changed.
-
-To resume: free GPU memory (close chrome's GPU process or the opencode GPU process) or restore enough of it that
-262144 context fits again, then re-run. Until then every cycle that edits the runtime produces unverified work, and
-the honest thing is to stop editing and say so.
