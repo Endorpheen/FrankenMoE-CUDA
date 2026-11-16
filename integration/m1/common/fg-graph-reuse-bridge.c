@@ -4,7 +4,6 @@
 // packs the caller's three arrays into the packet the module reads. No logic of its own.
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,25 +22,10 @@ int fg_gr_enabled(void) {
     return !(v && strcmp(v, "0") == 0);
 }
 
-// Reachability witness.
-//
-// The row count identifies the caller: 5 is llm_graph_input_embd, 3 embd_h, 4 rs, 2 attn_kv/attn_k, 3 attn_kv_msa,
-// 6 mem_hybrid, 8 mem_hybrid_iswa. A variant that never appears in a run log was never reached, so a matching
-// reference hash says nothing about it (EXP-893). Announcing each distinct count once is the cheapest way to see
-// which of the ported decisions the profile actually executes.
-static unsigned char g_seen[17];
-static unsigned long long g_calls;
-
 int64_t fg_gr_check(const int64_t * present, const int64_t * want, const int64_t * have, int64_t n) {
     if (!g_started) {
         fg_graph_reuse_goose_init(0, (char **) 0);
         g_started = 1;
-    }
-    ++g_calls;
-    if (n >= 0 && n <= 16 && !g_seen[n]) {
-        g_seen[n] = 1;
-        fprintf(stderr, "FG_GR_REUSE rows=%lld first_call calls=%llu\n", (long long) n, g_calls);
-        fflush(stderr);
     }
     int64_t packet[3][16];
     int64_t out = -1;
