@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define GS_RUNTIME_VERSION 1e714e6146bc
 #define GS_API
@@ -39,4 +40,22 @@ GS_NORETURN void gs_divfail(const char *file, int line) {
 void GS_CAT(gs_rt_start_, GS_RUNTIME_VERSION)(int argc, char **argv) {
     (void) argc;
     (void) argv;
+}
+
+// FFI used by the module to address the native int32 arrays without widening copies. Same two
+// primitives the fg263c bridge defines, and the same fail hook shape.
+int64_t slru_ld_i32(uint64_t b, int64_t byte) {
+    int32_t v;
+    __builtin_memcpy(&v, (void *) (uintptr_t) (b + (uint64_t) byte), 4);
+    return v;
+}
+
+void slru_st_i32(uint64_t b, int64_t byte, int64_t v) {
+    int32_t x = (int32_t) v;
+    __builtin_memcpy((void *) (uintptr_t) (b + (uint64_t) byte), &x, 4);
+}
+
+void slru_fail(int64_t c) {
+    fprintf(stderr, "SLRU validation code %lld\n", (long long) c);
+    abort();
 }
