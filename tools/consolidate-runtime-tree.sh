@@ -17,56 +17,10 @@ cp "$ROOT"/runtime/reconstructed/src/*.h "$DST/our-src/" 2>/dev/null || true
 
 # Modules: the same rule build.py applies - a file DEFINES the prefix when it carries <prefix>_enabled, and the
 # highest experiment number wins. Resolved once here and frozen, instead of re-decided at every build.
-python3 - "$DST" "$BASE" "${OBJDIR:-$BASE/runtime/reconstructed/build}" <<'PY'
-import re, shutil, sys
-from pathlib import Path
-dst, base = Path(sys.argv[1]), Path(sys.argv[2])
-B = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments')
-# Reproduce build.py's rule exactly, because approximations produced 27 then 0 modules:
-#   1. the prefixes are the ones OUR compiled objects reference as undefined symbols;
-#   2. an explicit list of 25 prefixes is skipped because those are the bridges linked separately.
-# Guessing from file names is what went wrong, so nothing here is inferred from a name.
-import subprocess
-objs_dir = Path(sys.argv[3]) if len(sys.argv) > 3 else None
-BRIDGE_PREFIXES = {'fg345w','fg367s','fg373s','fg375s','fg376s','fg377s','fg380s','fg381s','fg382s','fg383s',
-                   'fg384s','fg385s','fg386s','fg387s','fg388s','fg389s','fg390s','fg391s','fg392s','fg393s',
-                   'fg394s','fg395s','fg396s','fg397s','fg398s','fg401s'}
-prefixes = []
-for o in sorted(list(Path(objs_dir).glob('our-*.o')) + list(Path(objs_dir).glob('*.cpp.o'))) if objs_dir else []:
-    out = subprocess.run(['nm','-u',str(o)], capture_output=True, text=True).stdout
-    for line in out.splitlines():
-        if not line.strip(): continue
-        m = re.match(r'^(fg\d{3}[a-z])', line.split()[-1])
-        if m and m.group(1) not in BRIDGE_PREFIXES and m.group(1) not in prefixes:
-            prefixes.append(m.group(1))
-print('modules needed:', len(prefixes))
-chosen = []
-for p in prefixes:
-    cands = []
-    for hu in list(base.glob('experiments/*/source/*.c')) + list(base.glob('experiments/*/source/*.cpp')):
-        if 'generated' in hu.name: continue
-        if (p + '_enabled').encode() in hu.read_bytes():
-            mm = re.search(r'EXP-\d{4}-\d{2}-\d{2}-(\d+)', str(hu))
-            if mm: cands.append((int(mm.group(1)), hu))
-    if cands:
-        exp, hu = max(cands)
-        # A module whose source is a bridge.c belongs to the BRIDGE list, not here. build.py's module loop only
-        # produces <prefix>.o for files that are not bridges - fg401s.o does not exist in the real build tree, and
-        # its symbol comes from b401.o alone. Compiling bridge.c as a module too defines every entry point twice.
-        # No exclusion needed: modules are frozen as objects below, so this path only records the mapping.
-        shutil.copy2(hu, dst/'modules'/(p + hu.suffix))
-        # a module may #include a generated companion from its own directory; freeze the whole directory
-        d = dst/'module-src'/hu.parent.parent.name
-        d.mkdir(parents=True, exist_ok=True)
-        for f in hu.parent.iterdir():
-            if f.is_file(): shutil.copy2(f, d/f.name)
-        chosen.append((p, exp, hu.parent.parent, hu.suffix.lstrip('.')))
-for p, exp, d, ext in chosen: print(f"{p} EXP{exp} {d.name}")
-(dst/'module-objects.txt').write_text(''.join(p + '.o\n' for p, _, _, _ in chosen))
-# The include path must be the module's OWN experiment directory: a pool of all of them lets
-# #include "cp-generated.c" resolve to another experiment's copy, which fails or, worse, compiles the wrong code.
-(dst/'module-dirs.txt').write_text(''.join(f"{p}.{ext} {d.name}\n" for p, _, d, ext in chosen))
-PY
+# Resolution lives in its own script so it can be pinned: pass RESOLUTION=<file> and nothing is decided by
+# scanning directories. The rule is build.py's - prefixes from nm -u, the 25-bridge exclusion, highest
+# experiment number - reproduced there and verified against the preserved tree.
+python3 "$ROOT/tools/resolve-modules.py" "$DST" "$BASE" "${OBJDIR:-$BASE/runtime/reconstructed/build}" ${RESOLUTION:-}
 
 # Bridges: the experiment directories build.py names explicitly.
 for m in $(grep -oE "EXP-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-[a-z0-9-]+" "$ROOT/runtime/reconstructed/build.py" | sort -u); do
