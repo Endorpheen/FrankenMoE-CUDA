@@ -514,3 +514,29 @@ come from Igor directly. For every marked message:
 
     Final acceptance: the necessary runtime code is Goose, and building and running it requires no C++ source and no
     C++ runtime - with correctness proved by gates and performance not below the preserved 44.5 tok/s reference.
+
+28. Mandatory dead-C++ audit, after every port and every removal.
+
+    Search automatically for: unused C++ functions, classes, structs and variables; old C++ paths wholly replaced by
+    Goose; unreachable branches, stale fallbacks and legacy implementations; unused FFI bridges, wrappers, headers and
+    dependencies; duplicated logic and unreferenced object files.
+
+    If the code is provably needed by no supported scenario, delete it outright - do not port it to Goose first.
+
+    Before deleting, check every supported path: model loading, tokenisation, generation and the server. Never call
+    code dead because one Apex benchmark does not reach it. Account for dynamic loading, registration tables and
+    indirect calls.
+
+    After deleting, verify the build, correctness and - when the path is hot - performance.
+
+    Do not keep dead code for compatibility with architectures officially excluded from FrankenMoE.
+
+    Every report states three numbers separately:
+      1. C++ lines replaced by Goose;
+      2. dead C++ lines deleted without replacement;
+      3. the remaining total of necessary C++.
+
+    Work in small verifiable commits. Never delete on unproven unreachability - record such code for further audit
+    instead.
+
+    End goal: 0 lines of C++ with no loss of necessary functionality.
