@@ -10,6 +10,7 @@ PASS. That is why every line below records the commit at which the gate ran, whi
 | `unicode-han.goose` | `1c5d797f` | 1114112 | 0 mismatches | every codepoint in `0..0x10FFFF`; 89008 Han characters found; every range boundary |
 | `unicode-newlines.goose` | `d681de39` | 12 | 12/12 | a lone newline, runs of newlines, a run at the segment end, `\r\n` inside a run, leading and trailing newlines, a segment with no newline |
 | `unicode-byte-map.goose` | `eb8bec99` | 256 | 0 mismatches | every byte; range edges `0x21`, `0x7E`, `0xA1`, `0xAC`, `0xAE`, `0xFF`, and every gap byte |
+| `unicode-gpt2.goose` | `8cd24e06` | 27 | 27/27 | contractions both cases, letters, digit runs, punctuation with a leading space, whitespace runs, leading/trailing spaces, CJK, combining marks, empty segment |
 | `unicode-afmoe.goose` | `31cb32e3` | 18 | 18/18 | every remainder (1, 2, 0), runs of one to seven digits, digits inside text, text with no digits, leading zeros, digits inside spaces |
 
 ## What the numbers mean and do not mean
@@ -63,3 +64,5 @@ tracking `last_end_r_or_n`. Each of those must be translated and then gated, whi
 
 The lesson is small and worth keeping: "blocked on a missing FFI" was a claim about the build that one `nm` command
 settled. Claiming a blocker without checking costs a cycle as surely as claiming a pass without a gate.
+
+| `unicode-qwen2.goose` | this commit | 28 | 28/28 | case-insensitive contractions, single digits vs runs, letters with combining marks, non-space prefix, the `\s*[\r\n]+` jump, whitespace runs, CJK, empty segment |
