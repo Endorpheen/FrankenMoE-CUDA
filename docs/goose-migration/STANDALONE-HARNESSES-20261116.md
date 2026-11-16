@@ -124,3 +124,43 @@ It stays in the tree and is named in `verify-standalone-apex.sh` as superseded, 
 rather than inferred from an absence.
 
 Final tally with it excluded: **20 harnesses, all pass** (19 asserting, 1 informational).
+
+## Definitive run: 20/20
+
+One invocation of `bash tools/verify-standalone-apex.sh`, no arguments, on the real 21.7 GB Apex file:
+
+```
+ok   qg_split         q_differs=0 gate_differs=0 q_at_zero=1 gate_at_head=1
+ok   gdn_ops          skip_when_equal=1
+ok   gdn_recur        state_elems=24576 state_differs=0 state_nonzero=10120
+ok   moe_block        ids_match=1 router=PASS
+ok   layer_orch       differs_ab=0 differs_wrong_postnorm=32 differs_wrong_input=32 distinguishable=1
+ok   kv_cache         bad=0
+ok   state_slot       checks=22 bad=0
+ok   state_life       rebuilt=6 lost=0 stray=0
+ok   state_reuse      differs=0 distinguishable=1
+ok   prefill_decode   bit_diff=27 max_abs=4.77e-07 rel=1.14e-07 sensitive=1
+ok   apex_plan        (informational) layers=42 attn=10 recr=31 mtp=1
+ok   apex_shape       cases=24 mismatches=0
+ok   q35_shape        checked=32 mismatch=0 absent=0
+ok   gdn_plan         n=41 attn=10 recr=30 mtp=1 bad=0
+ok   gdn_planfile     layers=41 mismatch=0
+ok   stack_dispatch   pos_bad=0 shifted_differs=20 bad=0
+ok   apex_layer       nodes=15 nonfinite=0 nondet=0 wiring_differs=0 vs_ggml=0
+ok   apex_graph       first=0.134777 want=0.134777 rel=8.07e-08
+ok   gdn_layer        bad_nodes=0
+ok   gdn_layer_full   bad=0
+standalone-apex: 20/20 harness(es) pass
+```
+
+The list was also checked against the tree: every harness on disk is either in the list or explicitly
+excluded (the two the build runs, plus `layer_real` as superseded). Nothing is silently skipped.
+
+## The one thing this does not say
+
+Twenty pieces passing individually is not a composed pass. The residual stream is never carried between
+layers, the embedding and output projection are absent, and the KV/state arena is bound per harness rather
+than per layer. PASS-COMPOSITION-20261117 names all five missing pieces.
+
+What the twenty do establish is that composition is a **wiring** problem, not a correctness one: every
+component, at real Apex dimensions, on the real file, produces correct and deterministic output.
