@@ -307,6 +307,16 @@ void llm_graph_input_attn_temp::set_input(const llama_ubatch * ubatch) {
 
 bool llm_graph_input_attn_temp::can_reuse(const llm_graph_params & params) {
     // only the power form opts in; the log form keeps no reuse
+    // One row: when temperature scaling is on, the scale tensor must exist and have n_tokens rows. A missing
+    // tensor carries INT64_MIN so the row fails, exactly as the native `attn_scale != nullptr` guard did.
+    if (fg_gr_enabled()) {
+        const int64_t miss = INT64_MIN;
+        const int64_t present[1] = { attn_temp_pow ? 1 : 0 };
+        const int64_t want[1]    = { (int64_t) params.ubatch.n_tokens };
+        const int64_t have[1]    = { attn_scale ? (int64_t) attn_scale->ne[2] : miss };
+        return fg_gr_check(present, want, have, 1) != 0;
+    }
+
     return attn_temp_pow && attn_scale != nullptr && attn_scale->ne[2] == params.ubatch.n_tokens;
 }
 
@@ -734,6 +744,20 @@ bool llm_graph_input_attn_kv_msa::can_reuse(const llm_graph_params & params) {
     // the parent class operates on the base cache context
     this->mctx = mctx_msa->get_base();
 
+    if (fg_gr_enabled()) {
+        int64_t present[3], want[3], have[3];
+        int64_t n = 0;
+        present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+        have[n] = (int64_t) self_k_idxs->ne[0]; ++n;
+        if (self_k_idxs_idx) {
+            present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+            have[n] = (int64_t) self_k_idxs_idx->ne[0]; ++n;
+        }
+        present[n] = 1; want[n] = 1;
+        have[n] = can_reuse_kq_mask(self_kq_mask, this->mctx, params.ubatch, params.cparams) ? 1 : 0; ++n;
+        return fg_gr_check(present, want, have, n) != 0;
+    }
+
     bool res = true;
 
     res &= self_k_idxs->ne[0] == params.ubatch.n_tokens;
@@ -960,6 +984,28 @@ bool llm_graph_input_attn_k_iswa::can_reuse(const llm_graph_params & params) {
     const auto * mctx = static_cast<const llama_kv_cache_iswa_context *>(params.mctx);
 
     this->mctx = mctx;
+
+    if (fg_gr_enabled()) {
+        int64_t present[4], want[4], have[4];
+        int64_t n = 0;
+        if (self_k_idxs && self_k_idxs->buffer) {
+            present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+            have[n] = (int64_t) self_k_idxs->ne[0]; ++n;
+        }
+        if (self_kq_mask && self_kq_mask->buffer) {
+            present[n] = 1; want[n] = 1;
+            have[n] = can_reuse_kq_mask(self_kq_mask, mctx->get_base(), params.ubatch, params.cparams) ? 1 : 0; ++n;
+        }
+        if (self_k_idxs_swa && self_k_idxs_swa->buffer) {
+            present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+            have[n] = (int64_t) self_k_idxs_swa->ne[0]; ++n;
+        }
+        if (self_kq_mask_swa && self_kq_mask_swa->buffer) {
+            present[n] = 1; want[n] = 1;
+            have[n] = can_reuse_kq_mask(self_kq_mask_swa, mctx->get_swa(), params.ubatch, params.cparams) ? 1 : 0; ++n;
+        }
+        return fg_gr_check(present, want, have, n) != 0;
+    }
 
     bool res = true;
 
@@ -1281,6 +1327,31 @@ bool llm_graph_input_dsv4::can_reuse(const llm_graph_params & params) {
     const auto * raw_ctx = mctx->get_raw();
     inp_raw->mctx = raw_ctx;
 
+    // Rows are built inside the same guard the native code used, so dsv4_can_reuse_raw_kq_mask runs only when its
+    // tensor exists. The three comp-input rows are unguarded natively and stay that way.
+    if (fg_gr_enabled()) {
+        int64_t present[5], want[5], have[5];
+        int64_t n = 0;
+
+        if (inp_raw->self_k_idxs && inp_raw->self_k_idxs->buffer) {
+            present[n] = 1; want[n] = (int64_t) raw_ctx->get_n_write();
+            have[n] = (int64_t) inp_raw->self_k_idxs->ne[0]; ++n;
+        }
+        if (inp_raw->self_kq_mask && inp_raw->self_kq_mask->buffer) {
+            present[n] = 1; want[n] = 1;
+            have[n] = dsv4_can_reuse_raw_kq_mask(inp_raw->self_kq_mask, raw_ctx, params.ubatch, n_stream) ? 1 : 0; ++n;
+        }
+
+        present[n] = 1; want[n] = 1;
+        have[n] = dsv4_can_reuse_comp_input(inp_csa, plan_csa, params.ubatch.n_tokens, n_stream) ? 1 : 0; ++n;
+        present[n] = 1; want[n] = 1;
+        have[n] = dsv4_can_reuse_comp_input(inp_hca, plan_hca, params.ubatch.n_tokens, n_stream) ? 1 : 0; ++n;
+        present[n] = 1; want[n] = 1;
+        have[n] = dsv4_can_reuse_comp_input(inp_lid, plan_lid, params.ubatch.n_tokens, n_stream) ? 1 : 0; ++n;
+
+        return fg_gr_check(present, want, have, n) != 0;
+    }
+
     if (inp_raw->self_k_idxs && inp_raw->self_k_idxs->buffer) {
         res &= inp_raw->self_k_idxs->ne[0] == raw_ctx->get_n_write();
     }
@@ -1507,6 +1578,40 @@ bool llm_graph_input_mem_hybrid_iswa::can_reuse(const llm_graph_params & params)
     bool res = true;
 
     const auto * attn_ctx = mctx->get_attn();
+
+    // Rows are built inside the same guard the native code used, so can_reuse_kq_mask runs only when its tensor
+    // exists. attn_ctx is resolved above, before this point. The six remaining rows are unguarded natively.
+    if (fg_gr_enabled()) {
+        int64_t present[8], want[8], have[8];
+        int64_t n = 0;
+
+        // base tensors may not be allocated if there are no non-SWA attention layers
+        if (inp_attn->self_k_idxs && inp_attn->self_k_idxs->buffer) {
+            present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+            have[n] = (int64_t) inp_attn->self_k_idxs->ne[0]; ++n;
+        }
+        present[n] = 1; want[n] = 1;
+        have[n] = can_reuse_kq_mask(inp_attn->self_kq_mask, attn_ctx->get_base(), params.ubatch, params.cparams) ? 1 : 0; ++n;
+
+        // swa tensors may not be allocated if there are no SWA attention layers
+        if (inp_attn->self_k_idxs_swa && inp_attn->self_k_idxs_swa->buffer) {
+            present[n] = 1; want[n] = (int64_t) params.ubatch.n_tokens;
+            have[n] = (int64_t) inp_attn->self_k_idxs_swa->ne[0]; ++n;
+        }
+        present[n] = 1; want[n] = 1;
+        have[n] = can_reuse_kq_mask(inp_attn->self_kq_mask_swa, attn_ctx->get_swa(), params.ubatch, params.cparams) ? 1 : 0; ++n;
+
+        present[n] = 1; want[n] = (int64_t) mctx->get_recr()->get_n_rs();
+        have[n] = (int64_t) inp_rs->s_copy->ne[0]; ++n;
+        present[n] = 1; want[n] = (int64_t) params.ubatch.n_seqs;
+        have[n] = (int64_t) inp_rs->s_copy_main->ne[0]; ++n;
+        present[n] = 1; want[n] = (int64_t) mctx->get_recr()->get_head();
+        have[n] = (int64_t) inp_rs->head; ++n;
+        present[n] = 1; want[n] = (int64_t) mctx->get_recr()->get_rs_z();
+        have[n] = (int64_t) inp_rs->rs_z; ++n;
+
+        return fg_gr_check(present, want, have, n) != 0;
+    }
 
     // base tensors may not be allocated if there are no non-SWA attention layers
     if (inp_attn->self_k_idxs && inp_attn->self_k_idxs->buffer) {
