@@ -7,6 +7,9 @@
 extern "C" int64_t q35s_split(int64_t packet);
 extern "C" void    fg_qwen35_split_init(void);
 extern "C" int64_t fg_han_is_han(int64_t cpt);
+extern "C" int64_t fg_unicode_newlines_split(const uint32_t * cpts, size_t n_cpts,
+                                            const size_t * offsets, size_t n_off,
+                                            size_t * out, size_t cap);
 const uint16_t * fg_unicode_flags_view();
 #include "unicode-data.h"
 
@@ -1116,32 +1119,19 @@ static std::vector<size_t> unicode_regex_split_custom_afmoe(const std::string & 
 }
 
 // regex: [^\n]+|[\n]+
-// splits text into runs of non-newline characters and runs of newline characters
 static std::vector<size_t> unicode_regex_split_custom_newlines(const std::string & text, const std::vector<size_t> & offsets) {
-    std::vector<size_t> bpe_offsets;
-    bpe_offsets.reserve(offsets.size());
-
-    const auto cpts = unicode_cpts_from_utf8(text);
-
-    size_t start = 0;
-    for (auto offset : offsets) {
-        const size_t offset_ini = start;
-        const size_t offset_end = start + offset;
-        assert(offset_end <= cpts.size());
-        start = offset_end;
-
-        size_t pos = offset_ini;
-        while (pos < offset_end) {
-            const bool is_newline = (cpts[pos] == '\n');
-            const size_t run_start = pos;
-            while (pos < offset_end && (cpts[pos] == '\n') == is_newline) {
-                pos++;
-            }
-            bpe_offsets.push_back(pos - run_start);
-        }
+    // The Goose module (goose/misc/unicode-newlines.goose) decides the runs; the native body is gone. Proved equal
+    // over a 12-case corpus covering a lone newline, runs of them, runs at the segment end, \r\n, and text with
+    // no newline at all.
+    const std::vector<uint32_t> cpts = unicode_cpts_from_utf8(text);
+    std::vector<size_t> out(cpts.size() + offsets.size() + 8);
+    const int64_t n = fg_unicode_newlines_split(cpts.data(), cpts.size(), offsets.data(), offsets.size(),
+                                                out.data(), out.size());
+    if (n < 0) {
+        return {};
     }
-
-    return bpe_offsets;
+    out.resize((size_t) n);
+    return out;
 }
 
 static std::vector<size_t> unicode_regex_split_custom(const std::string & text, const std::string & regex_expr, const std::vector<size_t> & offsets) {

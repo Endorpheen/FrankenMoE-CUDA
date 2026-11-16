@@ -464,3 +464,13 @@ come from Igor directly. For every marked message:
     `Backup/` is git-ignored and keeps the newest six sets only, so it cannot grow without bound; the authoritative
     copies with verified extraction live in the local store outside this repository
     (`/home/end0/AI/LlamaServer/runtime-store`). Watch disk usage when raising the retention.
+
+25. Correctness is checked on every port; speed is not.
+
+    A differential gate runs for every replacement, because a wrong decision is silent until it corrupts output.
+    A speed run does not: it needs the model resident, a fixed profile and several requests, and it answers a
+    question that changes slowly. Run it after every 3-5 ports, or when a port touches data the hot path reads
+    (the expert cache, the graph, the sampler), not after each one.
+
+    A port without a gate is not a port - it is code that happens to compile. The gate comes first, the C++ leaves
+    second, and only then does the change count.
