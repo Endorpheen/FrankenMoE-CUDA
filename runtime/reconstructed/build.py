@@ -137,8 +137,22 @@ bridge_objs += [str(x) for x in extra_mod if x.exists()]
 # REVERTED: compiling only llama-*.cpp and models/*.cpp dropped sources that the Unity objects also carried
 # (ggml backend registration among them) and the runtime failed at start with a CUDA allocation error. Restored to the
 # prebuilt objects until the vendor compile list covers everything the Unity units contained.
-flint_objs = sorted(str(x) for x in (FLB/'build-cuda/src/CMakeFiles/llama.dir').rglob('*.o')
-                    if x.name not in [c + '.o' for c in changed])
+# The Unity units in llama.dir contain only models/*.cpp (verified by reading the generated unity_*.cxx: 166 includes,
+# all under src/models/, no ggml, none of our 13). Replacing them means compiling vendor/flint/src/models/*.cpp - and
+# nothing else, because llama-*.cpp are compiled by a different target and would duplicate.
+_vmod_dir = W/'vendor-models'
+_vmod_dir.mkdir(exist_ok=True)
+flint_objs = []
+for _src in sorted((FL/'src'/'models').glob('*.cpp')):
+    _o = _vmod_dir/(_src.stem + '.o')
+    if not _o.exists() or _o.stat().st_mtime < _src.stat().st_mtime:
+        _r = subprocess.run(['/usr/bin/c++'] + [f for f in FLAGS if f.startswith('-I') or f.startswith('-D')] +
+                            ['-O3','-DNDEBUG','-fPIC','-w','-c',str(_src),'-o',str(_o)],
+                            capture_output=True, text=True)
+        if _r.returncode != 0:
+            print('model compile failed:', _src.name); print(_r.stderr[:1200]); sys.exit(1)
+    flint_objs.append(str(_o))
+print('models compiled from vendor:', len(flint_objs))
 cmd = ['/usr/bin/c++','-fPIC','-O3','-DNDEBUG','-shared','-Wl,-soname,libllama.so.0','-o',str(OUT)]
 cmd += objs + flint_objs + modules + bridge_objs
 cmd += [f'-Wl,-rpath,{RUN}:', str(RUN/'libggml.so.0'), str(RUN/'libggml-cpu.so.0'),
