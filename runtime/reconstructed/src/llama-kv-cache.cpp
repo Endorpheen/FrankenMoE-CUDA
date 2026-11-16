@@ -564,12 +564,8 @@ bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
 
     {
         // Goose normalises the range; the values are stored back into p0/p1 here.
-        const int en = fg199k_enabled();
-        if (en) { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
-        else {
-            if (p0 < 0) p0 = 0;
-            if (p1 < 0) p1 = std::numeric_limits<llama_pos>::max();
-        }
+        // Goose (fg199k_norm_range). Equal to the clamps that stood here: negatives become 0 and LLAMA_POS_MAX.
+        { int64_t o[2] = {p0, p1}; fg199k_norm_range(p0, p1, (uint64_t)(uintptr_t)o); p0 = o[0]; p1 = o[1]; }
     }
 
     if (seq_id >= 0) {
@@ -641,7 +637,8 @@ void llama_kv_cache::seq_cp(llama_seq_id seq_id_src, llama_seq_id seq_id_dst, ll
     const int enabled_cp = fg199k_enabled();
 
     // Goose decides whether this is an intra-stream metadata copy.
-    if (enabled_cp ? (fg199k_same_stream(s0, s1) != 0) : (s0 == s1)) {
+    // Goose (fg199k_same_stream); it answers s0 == s1, proved over the index range.
+    if (fg199k_same_stream(s0, s1) != 0) {
         // since both sequences are in the same stream, no data copy is necessary
         // we just have to update the cells meta data
 
@@ -1479,8 +1476,7 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
         auto & head = v_heads[sinfo.strm[s]];
 
         // Goose owns the head advance; the store stays here.
-        head = enabled ? (uint32_t)fg199k_head_after((int64_t)sinfo.idxs[s].back())
-                       : sinfo.idxs[s].back() + 1;
+        head = (uint32_t)fg199k_head_after((int64_t)sinfo.idxs[s].back());  // Goose: last_idx + 1, proved
     }
 }
 
