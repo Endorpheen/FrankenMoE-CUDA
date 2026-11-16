@@ -23,12 +23,17 @@
 #include "ggml-cpu.h"
 #include "main.h"
 
-static struct ggml_tensor * gb(int64_t mode, struct ggml_context * gc,
-                               struct ggml_tensor * a, struct ggml_tensor * b) {
+static struct ggml_tensor * chain_gb(int64_t mode, struct ggml_context * gc,
+                                     struct ggml_tensor * a, struct ggml_tensor * b, int64_t op) {
     uint64_t args[16] = { (uint64_t) mode, (uint64_t) (uintptr_t) gc,
                           (uint64_t) (uintptr_t) a, (uint64_t) (uintptr_t) b, 0,
-                          (uint64_t) GGML_OP_MUL_MAT, 0, 0,0,0,0,0,0,0,0,0 };
+                          (uint64_t) op, 0, 0,0,0,0,0,0,0,0,0 };
     return (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) args);
+}
+
+static struct ggml_tensor * gb(int64_t mode, struct ggml_context * gc,
+                               struct ggml_tensor * a, struct ggml_tensor * b) {
+    return chain_gb(mode, gc, a, b, GGML_OP_MUL_MAT);
 }
 
 int main(int argc, char ** argv) {
@@ -40,9 +45,10 @@ int main(int argc, char ** argv) {
     struct gguf_context * g = gguf_init_from_file(argv[1], mp);
     if (g == NULL) { printf("FG_REAL_CHAIN cannot read %s\n", argv[1]); return 2; }
 
+    const int tn = gguf_find_tensor(g, "blk.3.attn_norm.weight");
     const int tq = gguf_find_tensor(g, "blk.3.attn_q.weight");
     const int to = gguf_find_tensor(g, "blk.3.attn_output.weight");
-    if (tq < 0 || to < 0) { printf("FG_REAL_CHAIN missing tensors\n"); gguf_free(g); return 2; }
+    if (tn < 0 || tq < 0 || to < 0) { printf("FG_REAL_CHAIN missing tensors\n"); gguf_free(g); return 2; }
 
     const enum ggml_type tq_type = gguf_get_tensor_type(g, tq);
     const enum ggml_type to_type = gguf_get_tensor_type(g, to);
@@ -61,6 +67,14 @@ int main(int argc, char ** argv) {
     if (fp == NULL) { printf("FG_REAL_CHAIN cannot reopen\n"); gguf_free(g); return 2; }
     const size_t data = gguf_get_data_offset(g);
 
+    const int64_t n_norm = gguf_get_tensor_ne(g, tn)[0];
+    const size_t n_norm_bytes = ggml_row_size(gguf_get_tensor_type(g, tn), n_norm);
+    uint8_t * n_raw = malloc(n_norm_bytes);
+    if (n_raw == NULL) { printf("FG_REAL_CHAIN alloc norm\n"); return 2; }
+    if (fseek(fp, (long) (data + gguf_get_tensor_offset(g, tn)), SEEK_SET) != 0 ||
+        fread(n_raw, 1, n_norm_bytes, fp) != n_norm_bytes) {
+        printf("FG_REAL_CHAIN short read norm\n"); return 2;
+    }
     uint8_t * q_raw = malloc(q_row * (size_t) ROWS);
     uint8_t * o_raw = malloc(o_row * (size_t) o_rows);
     if (q_raw == NULL || o_raw == NULL) { printf("FG_REAL_CHAIN alloc\n"); fclose(fp); gguf_free(g); return 2; }
@@ -82,6 +96,9 @@ int main(int argc, char ** argv) {
     struct ggml_tensor * wq = ggml_new_tensor_2d(gc, tq_type, q_ne0, ROWS);
     struct ggml_tensor * wo = ggml_new_tensor_2d(gc, to_type, o_ne0, o_rows);
     struct ggml_tensor * x  = ggml_new_tensor_2d(gc, GGML_TYPE_F32, q_ne0, 1);
+    struct ggml_tensor * nw = ggml_new_tensor_1d(gc, GGML_TYPE_F32, n_norm);
+    memcpy(nw->data, n_raw, n_norm_bytes);
+    free(n_raw);
     memcpy(wq->data, q_raw, q_row * (size_t) ROWS);
     memcpy(wo->data, o_raw, o_row * (size_t) o_rows);
     free(q_raw); free(o_raw);
@@ -91,11 +108,23 @@ int main(int argc, char ** argv) {
     memcpy(x->data, xd, (size_t) q_ne0 * sizeof(float));
     free(xd);
 
-    // chain 1: the builder emits both nodes, the first output feeding the second
-    struct ggml_tensor * h1 = gb(11, gc, wq, x);
+    // chain 1: the builder emits rms_norm, the norm scale, then both matmuls.
+    // Mode 0 takes its op from the argument, so MUL is reachable there - mode 11 asserts can_mul_mat and
+    // an elementwise multiply can never satisfy it.
+    uint64_t nargs[16] = { 4, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) x, 0, 0,
+                           (uint64_t) GGML_OP_RMS_NORM, 0, 0,0,0,0,0,0,0,0,0 };
+    {
+        int32_t eps_bits; const float epsv = 1e-6f; memcpy(&eps_bits, &epsv, sizeof eps_bits);
+        nargs[7] = (uint64_t) (int64_t) eps_bits;
+    }
+    struct ggml_tensor * hn = (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) nargs);
+    struct ggml_tensor * hs = hn != NULL ? chain_gb(0, gc, hn, nw, GGML_OP_MUL) : NULL;
+    struct ggml_tensor * h1 = hs != NULL ? gb(11, gc, wq, hs) : NULL;
     struct ggml_tensor * h2 = h1 != NULL ? gb(11, gc, wo, h1) : NULL;
-    // chain 2: the same two steps with raw ggml
-    struct ggml_tensor * r1 = ggml_mul_mat(gc, wq, x);
+    // chain 2: the same three steps with raw ggml
+    struct ggml_tensor * rn = ggml_rms_norm(gc, x, 1e-6f);
+    rn = ggml_mul(gc, rn, nw);
+    struct ggml_tensor * r1 = ggml_mul_mat(gc, wq, rn);
     struct ggml_tensor * r2 = ggml_mul_mat(gc, wo, r1);
 
     struct ggml_cgraph * cg = ggml_new_graph(gc);

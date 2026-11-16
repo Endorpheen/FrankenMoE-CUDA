@@ -131,3 +131,37 @@ needs is already implemented and exposed.
 **What is not done, and why**: no edit to the Goose module. Changing a hot builder whose gate is 100/100
 cross-checks against native, in a session that has already found seven stale claims, needs the change to be
 made with the gate updated in the same step - not appended at the end of a long run.
+
+
+## CORRECTION: the builder does have an elementwise multiply. Mode 0, not mode 11.
+
+My previous conclusion on this card - "the Goose builder has no elementwise multiply" - is **wrong**, and the
+error was in which mode I tried.
+
+`common()` dispatches on `mode`, and inside the `mode 0..9` block:
+
+```goose
+var actual = op;                    // the op comes from the ARGUMENT...
+...
+finish(r, actual, a, b, d);         // ...and mode 0 adds no validation of its own
+```
+
+**Mode 0 takes its op from the argument.** So `mode 0` with `GGML_OP_MUL` emits a multiply. Mode 11 was the
+wrong choice because it asserts `pred(8) == fg_can_mul_mat` before emitting - an elementwise multiply can
+never satisfy that, which is a property of mode 11, not of the builder.
+
+`gb_op`'s ten-entry table is a naming aid for a host that wants an op id without hard-coding it. It is not a
+capability list, and I read it as one.
+
+## The chain now includes the real norm, and it agrees
+
+```
+FG_REAL_CHAIN wq[2048x4096 q4_K] -> wo[4096x256 q4_K] nodes=2 out=256
+              builder_vs_ggml=0.000e+00 nonfinite=0 nonzero=256 PASS
+```
+
+Four nodes on the builder side - `rms_norm`, the scale by the real `blk.3.attn_norm.weight`, `wq`, `wo` - and
+three on the raw side, all over real bytes, agreeing to the bit.
+
+So the layer's first four nodes exist and are equivalent. What a layer still needs is the QG split, rope and
+the attention over k/v, then the MoE block.
