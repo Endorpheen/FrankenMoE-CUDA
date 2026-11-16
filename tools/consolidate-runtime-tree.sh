@@ -60,9 +60,12 @@ for p in prefixes:
         d.mkdir(parents=True, exist_ok=True)
         for f in hu.parent.iterdir():
             if f.is_file(): shutil.copy2(f, d/f.name)
-        chosen.append((p, exp, hu.name))
-for p, exp, name in chosen: print(f"{p} EXP{exp} {name}")
-(dst/'module-objects.txt').write_text(''.join(p + '.o\n' for p, _, _ in chosen))
+        chosen.append((p, exp, hu.parent.parent, hu.suffix.lstrip('.')))
+for p, exp, d, ext in chosen: print(f"{p} EXP{exp} {d.name}")
+(dst/'module-objects.txt').write_text(''.join(p + '.o\n' for p, _, _, _ in chosen))
+# The include path must be the module's OWN experiment directory: a pool of all of them lets
+# #include "cp-generated.c" resolve to another experiment's copy, which fails or, worse, compiles the wrong code.
+(dst/'module-dirs.txt').write_text(''.join(f"{p}.{ext} {d.name}\n" for p, _, d, ext in chosen))
 PY
 
 # Bridges: the experiment directories build.py names explicitly.

@@ -39,9 +39,21 @@ echo "our sources: $(ls "$OUT/obj"/our-*.o | wc -l)"
 
 MODINC=""
 for d in "$TREE"/module-src/*/; do MODINC="$MODINC -I$d"; done
+# Each module is compiled with ITS OWN experiment directory first. A shared pool of directories lets
+# #include "cp-generated.c" resolve to another experiment's copy - fg243c failed with "too many arguments to
+# function gg_function_1" for exactly that reason, and resolving to a compatible-looking wrong file would be worse
+# than failing.
+mod_own_dir() {
+    local want=$1
+    [ -f "$TREE/module-dirs.txt" ] || return 0
+    awk -v w="$want" '$1 == w { print $2; exit }' "$TREE/module-dirs.txt"
+}
 for src in "$TREE"/modules/*.c; do
     [ -e "$src" ] || continue
-    gcc-13 -O2 -fPIC -I"$TREE/modules" $MODINC -c "$src" -o "$OUT/obj/mod-$(basename "$src" .c).o"
+    b=$(basename "$src")
+    own=$(mod_own_dir "$b")
+    gcc-13 -O2 -fPIC -I"$TREE/modules" ${own:+-I"$TREE/module-src/$own"} $MODINC \
+        -c "$src" -o "$OUT/obj/mod-$(basename "$src" .c).o"
 done
 for src in "$TREE"/modules/*.cpp; do
     [ -e "$src" ] || continue
