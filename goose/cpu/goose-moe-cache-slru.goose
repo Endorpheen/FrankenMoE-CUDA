@@ -70,9 +70,9 @@ fn sl_move(prev: u64, next: u64, prot: u64, head: u64, tail: u64,
 }
 
 fn sl_touch(prev: u64, next: u64, prot: u64, head: u64, tail: u64,
-            scal: i64[:], s: i64, n_slots: i64) {
+            scal: i64[:], s: i64, prot_limit: i64) {
     sl_move(prev, next, prot, head, tail, scal, s, 1 as i64);
-    if scal[1] > n_slots / 2 as i64 {
+    if scal[1] > prot_limit {
         sl_move(prev, next, prot, head, tail, scal, g32(head, 1), 0 as i64);
     }
 }
@@ -108,6 +108,7 @@ export fn slru_plan(
     head: u64, tail: u64, seen: i64[:], slots: u64,
     ids: u64, n_ids: i64,
     il: i64, n_expert: i64, n_slots: i64,
+    prot_limit: i64,
     scal: i64[:], uniq: u64, fills_e: u64, fills_s: u64, evicted: u64
 ) -> i64 {
     scal[2] = 0;
@@ -149,7 +150,7 @@ export fn slru_plan(
         let e: i64 = g32(uniq, i);
         let slot: i64 = g32(slots, e);
         if slot >= 0 {
-            sl_touch(prev, next, prot, head, tail, scal, slot, n_slots);
+            sl_touch(prev, next, prot, head, tail, scal, slot, prot_limit);
             n_hit = n_hit + 1;
         }
         i = i + 1;

@@ -55,3 +55,43 @@ is recorded as a measured candidate with its numbers.
    re-measure all three lengths with paired repeats for a real verdict.
 3. Expected gain from the deterministic counters: hit rate +1.1 points, upload -6.7%. Decode gain is inside
    the noise at 256 and 512, so the honest expectation is small.
+
+## 5. Resolved: the fraction is a parameter, and the gate checks both claims
+
+The open question was whether the gate means provenance (equals native) or specification (implements the
+chosen policy). **It should mean both, and they are different checks - so the fraction stopped being a
+constant.**
+
+`slru_plan` now takes `prot_limit` as an argument. `fg756s_prot_num()` / `fg756s_prot_den()` supply it,
+defaulting to **7/8** and reading `GGML_GOOSE_SLRU_PROT=num/den` so `1/2` restores native parity exactly.
+The gate gained `--prot`, and its Python reference uses the same fraction.
+
+Both arms verified after the change:
+
+```
+gate --prot 1/2   100/100 cases match     provenance: Goose == native
+gate --prot 7/8   100/100 cases match     specification: Goose == chosen policy
+```
+
+So neither claim is traded away. Changing the policy no longer breaks certification - it moves the
+specification arm and leaves the provenance arm untouched.
+
+## 6. Accepted at 7/8
+
+Matched, same day, 4992 MiB, reference argv:
+
+| | 1/2 (native) | 7/8 (chosen) |
+|---|---:|---:|
+| decode @512 | 39.81 (39.27-42.01) | **40.43 (40.26-40.43)** |
+| hit rate | 83.7% | **84.8%** |
+| upload / 61440 plans | 149006 MiB | **139062 MiB** (-6.7%) |
+| answer hash | `c2ff42cc1219` | `c2ff42cc1219` |
+
+The ranges do not overlap at 512 and 7/8 is tighter, which is the first decode difference this session that
+is not explained by noise. The deterministic counters move the same way. Answers identical, as they must be.
+
+Reproduction check: with the parameter removed and the fraction hardcoded, the counters were
+`h=418933 m=75163 up=139061.5`; through the parameter they are the same to the last digit.
+
+Rollback: `GGML_GOOSE_SLRU_PROT=1/2` restores the native policy, and `GGML_GOOSE_MOE_SLRU=0` restores the
+native code.

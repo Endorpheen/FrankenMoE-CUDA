@@ -17,12 +17,17 @@
 // The SLRU policy itself (EXP-756): raw addresses for the int32 state, i64 slices for seen/scal, the
 // same shape as the fg263c bridge. Default on; GGML_GOOSE_MOE_SLRU=0 restores the native policy.
 extern "C" int fg756s_enabled(void);
+// Protected-segment ceiling as num/den. 1/2 restores the native policy exactly; the value is data so the
+// same module answers both "does it equal native" and "does it implement the chosen policy".
+extern "C" int64_t fg756s_prot_num(void);
+extern "C" int64_t fg756s_prot_den(void);
 extern "C" {
     typedef struct { int64_t * data; int64_t len; } fg756s_slice;
     int64_t slru_plan(uint64_t key_of, uint64_t prev, uint64_t next, uint64_t prot,
                       uint64_t head, uint64_t tail, fg756s_slice seen, uint64_t slots,
                       uint64_t ids, int64_t n_ids,
                       int64_t il, int64_t n_expert, int64_t n_slots,
+                      int64_t prot_limit,
                       fg756s_slice scal, uint64_t uniq, uint64_t fills_e, uint64_t fills_s,
                       uint64_t evicted);
 }
@@ -159,6 +164,9 @@ struct moe_cache_slru {
                 seen_s, (uint64_t) (uintptr_t) slot_map[il],
                 (uint64_t) (uintptr_t) ids, (int64_t) n_ids,
                 il, n_expert, n_slots,
+                // the protected ceiling, as data rather than baked into the policy: 1/2 is the native
+                // behaviour (provenance), 7/8 measured a better hit rate (EXP-757)
+                n_slots * fg756s_prot_num() / fg756s_prot_den(),
                 scal_s, (uint64_t) (uintptr_t) uniq.data(),
                 (uint64_t) (uintptr_t) g_fills_e.data(), (uint64_t) (uintptr_t) g_fills_s.data(),
                 (uint64_t) (uintptr_t) g_evicted.data());
