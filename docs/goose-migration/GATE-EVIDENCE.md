@@ -209,3 +209,21 @@ overlapping runs rather than of the runtime. The single-server start is what rel
 
 Any earlier figure below ~42 in this session should be read against rule 29 before it is treated as a property of the
 code.
+
+
+## New record: 47.64 tok/s decode, correct answer, on the reference build
+
+    decode  47.34 / 47.32 / 47.64        prefill 2317.0 / 2515.0 / 2508.6
+    sha     c2ff42cc1219                 VRAM 11317 MiB of 12282
+    build   77c3f17b37bb0bfa (Backup/record-47), context 262144, moe-cache 4992
+
+Previous record in this project was 45.68. No code changed between them: the same library, the same argv, the same
+profile. What differed was the state of the GPU before the run.
+
+Recorded with the condition that decides whether this profile runs at all: the run needs roughly 9 GiB of free VRAM
+at start. At 3466 MiB occupied before launch it completed and used 11317 MiB; at 11514 MiB occupied it failed with
+cudaMalloc on a 1284 MiB graph buffer while the model had already loaded. That is not a memory leak or a code
+regression - it is the profile's requirement, and it must be checked before a run rather than diagnosed afterwards.
+
+The conclusion that cost several hours and three wrong explanations: a failed run on this profile says nothing about
+the code until the free VRAM at start is known.
