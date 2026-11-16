@@ -1,5 +1,5 @@
 {
-  "name": "apex-best-20261115-v3",
+  "name": "apex-best-20261115-v4",
   "role": "pinned rollback baseline for Goose optimisation work",
   "created": "2026-11-15",
   "why": "The next optimisation stage must start here, not from a rebuild that silently loses what was measured. Every field below is what produced the recorded numbers; nothing is inferred.",
@@ -89,7 +89,10 @@
         "decode_tok_s": 39.86,
         "vram_mib": 7552,
         "runs": 3
-      }
+      },
+      "reference_equivalent": false,
+      "warning": "produces a different answer than the reference (EXP-743) - not a faster way to compute the same output",
+      "recommended": true
     },
     "long_generation": {
       "name": "best-balance",
@@ -126,7 +129,10 @@
           "reference": 41.94,
           "vs_reference": "+1.0%"
         }
-      }
+      },
+      "reference_equivalent": false,
+      "warning": "produces a different answer than the reference (EXP-743) - not a faster way to compute the same output",
+      "recommended": false
     },
     "maximum_decode": {
       "name": "decode-max",
@@ -142,7 +148,10 @@
         "decode_tok_s": 42.74,
         "vram_mib": 7972,
         "runs": 3
-      }
+      },
+      "reference_equivalent": false,
+      "warning": "produces a different answer than the reference (EXP-743) - not a faster way to compute the same output",
+      "recommended": false
     }
   },
   "thresholds": {
@@ -160,5 +169,6 @@
   "history": "superseded first entry: cache 4352 alone gave 39.86; see configurations above",
   "default": "long_generation (ub 2048, cache 5376) - now the script default",
   "full_matrix_measured": true,
-  "correction": "Every 'baseline' arm in this session used -ub 4096 from the reference argv, not 512 as several cards stated. The ubatch sweep varied it downward from 4096. Measurements are unaffected; only the labels were wrong, and they are corrected here."
+  "correction": "Every 'baseline' arm in this session used -ub 4096 from the reference argv, not 512 as several cards stated. The ubatch sweep varied it downward from 4096. Measurements are unaffected; only the labels were wrong, and they are corrected here.",
+  "CORRECTION_743": "Every configuration with ubatch != 4096 produces a DIFFERENT answer than the reference (three ubatch values, three stable hashes). The cache does not affect the answer; the batch size does, and the divergence is at token 1 with logprobs differing by 0.77 - not rounding. Those configurations are therefore NOT reference-equivalent and are not recommended as defaults, however fast they measure. The only reference-equivalent configuration is ub 4096."
 }
