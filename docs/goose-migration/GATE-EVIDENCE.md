@@ -66,3 +66,4 @@ The lesson is small and worth keeping: "blocked on a missing FFI" was a claim ab
 settled. Claiming a blocker without checking costs a cycle as surely as claiming a pass without a gate.
 
 | `unicode-qwen2.goose` | this commit | 28 | 28/28 | case-insensitive contractions, single digits vs runs, letters with combining marks, non-space prefix, the `\s*[\r\n]+` jump, whitespace runs, CJK, empty segment |
+| `unicode-llama3.goose` | this commit | 32 | 32/32 | everything Qwen2 covers, plus digit runs split into groups of three (`1234567890`, `12`, `1234`, digits inside text) |

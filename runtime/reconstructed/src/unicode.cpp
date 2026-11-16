@@ -8,6 +8,9 @@ extern "C" int64_t q35s_split(int64_t packet);
 extern "C" void    fg_qwen35_split_init(void);
 extern "C" int64_t fg_han_is_han(int64_t cpt);
 extern "C" int64_t fg_unicode_byte_map(uint32_t * out);
+extern "C" int64_t fg_unicode_llama3_split(const uint32_t * cpts, size_t n_cpts,
+                                          const size_t * offsets, size_t n_off,
+                                          size_t * out, size_t cap);
 extern "C" int64_t fg_unicode_qwen2_split(const uint32_t * cpts, size_t n_cpts,
                                          const size_t * offsets, size_t n_off,
                                          size_t * out, size_t cap);
@@ -270,145 +273,19 @@ static std::vector<size_t> unicode_regex_split_custom_gpt2(const std::string & t
     return out;
 }
 
-// LLAMA3 system regex: "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"
+// Llama3 pre-tokenisation: the Goose module (goose/misc/unicode-llama3.goose). Differs from Qwen2 in one branch -
+// a digit run is emitted in groups of three - and that branch is the only thing that was changed when this was
+// derived from the already-proved Qwen2 module, so the shared branches carry their proof with them.
 static std::vector<size_t> unicode_regex_split_custom_llama3(const std::string & text, const std::vector<size_t> & offsets) {
-    std::vector<size_t> bpe_offsets; // store the offset of each word
-    bpe_offsets.reserve(offsets.size()); // Reserve memory for the approximate size
-
-    const auto cpts = unicode_cpts_from_utf8(text);
-
-    size_t start = 0;
-    for (auto offset : offsets) {
-        const size_t offset_ini = start;
-        const size_t offset_end = start + offset;
-        assert(offset_end <= cpts.size());
-        start = offset_end;
-
-        static const uint32_t OUT_OF_RANGE = 0xFFFFFFFF;
-        auto _get_cpt = [&] (const size_t pos) -> uint32_t {
-            return (offset_ini <= pos && pos < offset_end) ? cpts[pos] : OUT_OF_RANGE;
-        };
-
-        auto _get_flags = [&] (const size_t pos) -> unicode_cpt_flags {
-            return (offset_ini <= pos && pos < offset_end) ? unicode_cpt_flags_from_cpt(cpts[pos]) : unicode_cpt_flags{};
-        };
-
-        size_t _prev_end = offset_ini;
-        auto _add_token = [&] (const size_t end) -> size_t {
-            assert(_prev_end <= end && end <= offset_end);
-            size_t len = end - _prev_end;
-            if (len > 0) {
-                bpe_offsets.push_back(len);
-            }
-            _prev_end = end;
-            //if (len > 0) {
-            //    std::string s = "";
-            //    for(size_t p = end-len; p < end; p++)
-            //        s += unicode_cpt_to_utf8(cpts[p]);
-            //    printf(">>> '%s'\n", s.c_str());
-            //}
-            return len;
-        };
-
-        for (size_t pos = offset_ini; pos < offset_end; /*pos++*/ ) {
-            const uint32_t cpt = _get_cpt(pos);
-            const auto flags = _get_flags(pos);
-
-            // regex: (?i:'s|'t|'re|'ve|'m|'ll|'d) // case insensitive
-            if (cpt == '\'' && pos+1 < offset_end) {
-                uint32_t cpt_next = unicode_tolower(_get_cpt(pos+1));
-                if (cpt_next == 's' || cpt_next == 't' || cpt_next == 'm' || cpt_next == 'd') {
-                    pos += _add_token(pos+2);
-                    continue;
-                }
-                if (pos+2 < offset_end) {
-                    uint32_t cpt_next_next = unicode_tolower(_get_cpt(pos+2));
-                    if ((cpt_next == 'r' && cpt_next_next == 'e') ||
-                        (cpt_next == 'v' && cpt_next_next == 'e') ||
-                        (cpt_next == 'l' && cpt_next_next == 'l')) {
-                        pos += _add_token(pos+3);
-                        continue;
-                    }
-                }
-            }
-
-            // regex: [^\r\n\p{L}\p{N}]?\p{L}+
-            if (!(cpt == '\r' || cpt == '\n' || flags.is_number)) {
-                if (flags.is_letter || _get_flags(pos+1).is_letter) {  // one or more letters
-                    pos++;
-                    while (_get_flags(pos).is_letter) {
-                        pos++;
-                    }
-                    _add_token(pos);
-                    continue;
-                }
-            }
-
-            // regex: \p{N}{1,3}
-            if (flags.is_number) {
-                size_t ini = pos;
-                while (_get_flags(pos).is_number) {
-                    if (++pos - ini >= 3 ) {
-                        _add_token(pos);
-                        ini = pos;
-                    }
-                }
-                _add_token(pos);
-                continue;
-            }
-
-            // regex: <space>?[^\s\p{L}\p{N}]+[\r\n]*
-            auto flags2 = (cpt == ' ' ? _get_flags(pos+1) : flags);
-            if (!(flags2.is_whitespace | flags2.is_letter | flags2.is_number) && flags.as_uint()) {
-                pos += (cpt == ' ');
-                while (!(flags2.is_whitespace | flags2.is_letter | flags2.is_number) && flags2.as_uint()) {
-                    flags2 = _get_flags(++pos);
-                }
-                uint32_t cpt2 = _get_cpt(pos);
-                while (cpt2 == '\r' || cpt2 == '\n') {
-                    cpt2 = _get_cpt(++pos);
-                }
-                _add_token(pos);
-                continue;
-            }
-
-            size_t num_whitespaces = 0;
-            size_t last_end_r_or_n = 0;
-            while (_get_flags(pos+num_whitespaces).is_whitespace) {
-                uint32_t cpt2 = _get_cpt(pos+num_whitespaces);
-                if (cpt2 == '\r' || cpt2 == '\n') {
-                    last_end_r_or_n = pos + num_whitespaces + 1;
-                }
-                num_whitespaces++;
-            }
-
-            // regex: \s*[\r\n]+
-            if (last_end_r_or_n > 0) {
-                pos = last_end_r_or_n;
-                _add_token(pos);
-                continue;
-            }
-
-            // regex: \s+(?!\S)
-            if (num_whitespaces > 1 && _get_cpt(pos+num_whitespaces) != OUT_OF_RANGE) {
-                pos += num_whitespaces - 1;
-                _add_token(pos);
-                continue;
-            }
-
-            // regex: \s+
-            if (num_whitespaces > 0) {
-                pos += num_whitespaces;
-                _add_token(pos);
-                continue;
-            }
-
-            // no matches
-            _add_token(++pos);
-        }
+    const std::vector<uint32_t> cpts = unicode_cpts_from_utf8(text);
+    std::vector<size_t> out(cpts.size() + offsets.size() + 8);
+    const int64_t n = fg_unicode_llama3_split(cpts.data(), cpts.size(), offsets.data(), offsets.size(),
+                                              out.data(), out.size());
+    if (n < 0) {
+        return {};
     }
-
-    return bpe_offsets;
+    out.resize((size_t) n);
+    return out;
 }
 
 static std::vector<size_t> unicode_regex_split_custom_k2_horizon(const std::string & text, const std::vector<size_t> & offsets) {
