@@ -81,7 +81,9 @@ for p in sorted(pref):
     modules.append(str(o))
 print('modules built:', len(modules))
 
-BR = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/experiments')
+BR = Path(__file__).resolve().parent.parent.parent / 'integration' / 'modules'
+if not BR.is_dir():
+    BR = Path('/home/end0/AI/FrankenMoE-CUDA/integration/modules')
 bridge_objs = []
 for mod, out_name in (('EXP-2026-11-11-347-goose-kv-write-bridge', 'b345.o'),
                       ('EXP-2026-11-11-367-flint-kv-state-clear-live', 'b367.o'),
