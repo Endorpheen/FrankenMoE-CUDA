@@ -14,13 +14,24 @@
 #
 # It never counts a call into Goose from old C++ as progress.
 #
-# Usage: bash tools/migration-status.sh
+# Usage: bash tools/migration-status.sh [--probe-load]
+# The optional probe loads a model; the default command only reads metadata.
 set -uo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 
 say() { printf '%s\n' "$*"; }
-fn_count() { grep -cE "^[A-Za-z_][A-Za-z_0-9 :<>,&*]*\**[A-Za-z_][A-Za-z_0-9]*\(" "$1" 2>/dev/null || echo 0; }
+fn_count() {
+    local count
+    count=$(grep -cE "^[A-Za-z_][A-Za-z_0-9 :<>,&*]*\**[A-Za-z_][A-Za-z_0-9]*\(" "$1" 2>/dev/null) || true
+    printf '%s\n' "${count:-0}"
+}
+PROBE_LOAD=0
+case "${1:-}" in
+    "") ;;
+    --probe-load) PROBE_LOAD=1 ;;
+    *) printf 'usage: %s [--probe-load]\n' "$0" >&2; exit 2 ;;
+esac
 
 # ---- 1. the unit -----------------------------------------------------------
 modules=$(awk '/^MODULES=\(/{f=1;next} /^\)/{f=0} f && /\.goose/{gsub(/^ +/,"");print}' \
@@ -77,6 +88,9 @@ done
 
 # ---- report ----------------------------------------------------------------
 say "MIGRATION ACCOUNTING (derived from the repository; no build)"
+say "Historical standalone accounting follows; it is NOT coverage of the accepted Apex binary."
+say "Current link-closure audit: docs/goose-migration/RUNTIME-MAP-20261117.md"
+say "Symbol presence, source ownership, observed execution and full replacement are separate facts."
 say ""
 say "1. Composed unit:            $n_modules modules"
 say ""
@@ -116,7 +130,7 @@ say "   KV cache buffers             yes  (EXP701/702: one slot mechanism, 22 sl
 # Computed, not asserted: earlier this line claimed the tok_* exports were absent from the unit while
 # the built binary carried all eight. Count them in the artifact the run actually uses.
 _tok_n=0
-SA_BIN="$ROOT/builds/goose-standalone/frankenmoe-v4"
+SA_BIN=${FG_STANDALONE_BIN:-"$ROOT/builds/goose-standalone/frankenmoe-v4"}
 if [ -f "$SA_BIN" ]; then
     _tok_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T tok_")
 fi
@@ -133,7 +147,7 @@ say "   HTTP server (transport)      no   (decisions run; no listener in the sta
 # executing them is a different one, and the two used to be collapsed into "partial".
 _apex_mismatch="-"
 APEX_GGUF=${FG_APEX_GGUF:-/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf}
-if [ -f "$SA_BIN" ] && [ -f "$APEX_GGUF" ]; then
+if [ "$PROBE_LOAD" -eq 1 ] && [ -f "$SA_BIN" ] && [ -f "$APEX_GGUF" ]; then
     _mdl=$(mktemp)
     if timeout 180 "$SA_BIN" "$APEX_GGUF" >"$_mdl" 2>&1; then
         _apex_mismatch=$(awk -F'mismatches=' '/FG_TENSOR_DATA/{split($2,a," ");print a[1]}' "$_mdl")
@@ -147,7 +161,7 @@ say "   model LOAD (read + layout)   yes  ($_apex_tensors tensors, Apex payload 
 say "                                      Goose metadata table agrees=$_apex_agree)"
 say "   model EXECUTE (logits, serve) no  (loading a tensor is not running it - rule 15 untouched)"
 else
-say "   model load + graph build     unmeasured (run: frankenmoe-v4 <apex.gguf>; set FG_APEX_GGUF)"
+say "   model load + graph build     not probed (explicit --probe-load opts into the model load)"
 fi
 say ""
 say "Architectures: 13 have a Goose builder of 151 in the substrate"
@@ -161,6 +175,8 @@ say "  - the INTEGRATED stage-run does run Apex end to end with Goose code witne
 say "    is llama.cpp plus Goose, not a standalone Goose runtime. Best measured: 2429.9"
 say "    prefill / 39.86 decode at 512 tokens, VRAM 7552 MiB, output identical to the"
 say "    reference (runtime/goose-stage/BEST-CONFIG.json)."
+say "    Those are historical stage figures, not the EXP906 baseline. The accepted independent"
+say "    Apex EXP906 median is 2625.21 prefill / 55.52 single-response decode (32K/512)."
 say "Do not report the second as progress on the first - that is the substitution rule 15"
 say "forbids. Nothing may be deleted until the standalone answers and Igor accepts it."
 say ""
