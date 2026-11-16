@@ -39,20 +39,27 @@ replaced. Neither is evidence any more. Re-run them only against a build from be
 
     git show <commit>^:runtime/reconstructed/src/unicode.cpp    # the native body
 
-## Blocked: qwen2 and llama3 need `unicode_tolower` as FFI
+## Not blocked after all: `unicode_tolower` is already reachable
 
-Both splitters open with a case-insensitive contraction test and call `unicode_tolower` on the following codepoints.
-A Goose module cannot reach a C++ function without a bridge entry point, and comparing against ASCII cases only would
-differ on non-ASCII input and be unprovable by the gate that is supposed to prove it.
+I wrote here that qwen2 and llama3 were blocked on a missing FFI for `unicode_tolower`. That was wrong, and it is
+corrected rather than deleted because the wrong version was in the repository for one commit.
 
-Unblock by adding to `integration/m1/common/fg-unicode-*.c`, in the same way `fg_unicode_flags_view_c` was added:
+What the library actually exports:
 
-    extern "C" int64_t fg_unicode_tolower_c(int64_t cpt);   /* wrapper over unicode_tolower */
-    int64_t tl(int64_t c) { return (int64_t) fg_unicode_tolower_c(c); }
+    nm -D libllama.so | grep tolower
+      00000000003d3cc0 T fg218t_tolower          <- a Goose module's own implementation
+      0000000000236420 T _Z15unicode_tolowerj    <- the C++ function, reachable by its mangled name
 
-Then the contraction branch compares `tl(cpt_next)` against 's', 't', 'm', 'd' and so on, exactly as the native code
-does. Until that exists, qwen2 (133 lines) and llama3 (139 lines) stay in C++ - and they stay there *knowingly*, not
-because nobody got to them.
+So a bridge can call it today, with no new wrapper:
 
-The rest of qwen2 is portable as it stands; only this one call is missing. Everything else in the file that could be
-ported without new FFI has been.
+    unsigned int _Z15unicode_tolowerj(unsigned int cpt);   /* declared in the bridge, called as usual */
+
+The contraction branch then compares the lowered codepoint against 's', 't', 'm', 'd' and the 're'/'ve'/'ll' pairs,
+exactly as the native code does.
+
+What remains for qwen2 (133 lines) is translation work, not a missing capability: single digit instead of runs,
+letters *and* marks, a prefix that is any non-CRLF non-digit rather than a space, and the `\s*[\r\n]+` branch
+tracking `last_end_r_or_n`. Each of those must be translated and then gated, which is why it is a cycle of its own.
+
+The lesson is small and worth keeping: "blocked on a missing FFI" was a claim about the build that one `nm` command
+settled. Claiming a blocker without checking costs a cycle as surely as claiming a pass without a gate.
