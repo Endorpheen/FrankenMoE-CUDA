@@ -120,18 +120,18 @@ for mod, out_name in (('EXP-2026-11-11-347-goose-kv-write-bridge', 'b345.o'),
 # Goose modules are compiled here from goose/misc and integration/m1/common instead of being linked as prebuilt
 # objects from the working directory. Each pair is (module source, bridge source, object stem).
 _GOOSE_PAIRS = [
-    ('goose/misc/unicode-han.goose',      'integration/m1/common/fg-unicode-han-bridge.c',      'fg-han'),
-    ('goose/misc/unicode-newlines.goose', 'integration/m1/common/fg-unicode-newlines-bridge.c', 'fg-nl'),
-    ('goose/misc/unicode-byte-map.goose', 'integration/m1/common/fg-unicode-byte-map-bridge.c', 'fg-b2u'),
-    ('goose/misc/unicode-afmoe.goose',    'integration/m1/common/fg-unicode-afmoe-bridge.c',    'fg-afmoe'),
-    ('goose/misc/unicode-gpt2.goose',     'integration/m1/common/fg-unicode-gpt2-bridge.c',     'fg-gpt2'),
-    ('goose/misc/unicode-hangul.goose',   'integration/m1/common/fg-unicode-hangul-bridge.c',   'fg-hangul'),
-    ('goose/misc/qwen35-split.goose',     'integration/m1/common/fg-qwen35-split-bridge.c',     'fg-q35s'),
+    ('goose/misc/unicode-han.goose',      'integration/m1/common/fg-unicode-han-bridge.c',      'fg-han', 'fg_unicode_han_goose_init'),
+    ('goose/misc/unicode-newlines.goose', 'integration/m1/common/fg-unicode-newlines-bridge.c', 'fg-nl', 'fg_unicode_nl_goose_init'),
+    ('goose/misc/unicode-byte-map.goose', 'integration/m1/common/fg-unicode-byte-map-bridge.c', 'fg-b2u', 'fg_b2u_goose_init'),
+    ('goose/misc/unicode-afmoe.goose',    'integration/m1/common/fg-unicode-afmoe-bridge.c',    'fg-afmoe', 'fg_afmoe_goose_init'),
+    ('goose/misc/unicode-gpt2.goose',     'integration/m1/common/fg-unicode-gpt2-bridge.c',     'fg-gpt2', 'fg_gpt2_goose_init'),
+    ('goose/misc/unicode-hangul.goose',   'integration/m1/common/fg-unicode-hangul-bridge.c',   'fg-hangul', 'fg_hangul_goose_init'),
+    ('goose/misc/qwen35-split.goose',     'integration/m1/common/fg-qwen35-split-bridge.c',     'fg-q35s', 'fg_qwen35_split_goose_init'),
     # mapping established from the object symbols, not from the file names: fg-ar exports ar_arch/ar_count/ar_exps
     # (arch-registry), fg-gr exports gr_run (graph-reuse), fg-qg exports qg_* (qgate-split)
-    ('goose/model/arch-registry.goose',   'integration/m1/common/fg-arch-registry-bridge.c',    'fg-ar'),
-    ('goose/cpu/graph-reuse.goose',       'integration/m1/common/fg-graph-reuse-bridge.c',      'fg-gr'),
-    ('goose/model/qgate-split.goose',     'integration/m1/common/fg-goose-quant-bridge.c',      'fg-qg'),
+    ('goose/model/arch-registry.goose',   'integration/m1/common/fg-arch-registry-bridge.c',    'fg-ar',  'fg_arch_registry_goose_init'),
+    ('goose/cpu/graph-reuse.goose',       'integration/m1/common/fg-graph-reuse-bridge.c',      'fg-gr',  'fg_graph_reuse_goose_init'),
+    ('goose/model/qgate-split.goose',     'integration/m1/common/fg-goose-quant-bridge.c',      'fg-qg',  'fg_qg_goose_init'),
 ]
 _GOOSE = Path(__file__).resolve().parent.parent.parent / 'goose'
 if not (_GOOSE / 'misc').is_dir():
@@ -139,7 +139,9 @@ if not (_GOOSE / 'misc').is_dir():
 _REPO = _GOOSE.parent
 _gobj = W/'goose-obj'; _gobj.mkdir(exist_ok=True)
 _goose_objs = []
-for _mod, _br, _stem in _GOOSE_PAIRS:
+for _pair in _GOOSE_PAIRS:
+    _mod, _br, _stem = _pair[0], _pair[1], _pair[2]
+    _init = _pair[3] if len(_pair) > 3 else _stem.replace('-', '_') + '_goose_init'
     _ms = _GOOSE / _mod.split('/', 1)[1] if _mod.startswith('goose/') else _GOOSE.parent / _mod
     _bs = _REPO / _br
     if not _ms.exists() or not _bs.exists():
@@ -150,7 +152,7 @@ for _mod, _br, _stem in _GOOSE_PAIRS:
     if _r.returncode != 0:
         print('goose compile failed:', _ms.name); print(_r.stderr[:800]); sys.exit(1)
     _mo = _gobj/(_stem + '.o')
-    _r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w',f'-Dgoose_init={_stem.replace("-","_")}_goose_init',
+    _r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w',f'-Dgoose_init={_init}',
                          '-c', str(_co), '-o', str(_mo)], capture_output=True, text=True)
     if _r.returncode != 0:
         print('module cc failed:', _stem); print(_r.stderr[:800]); sys.exit(1)
@@ -183,7 +185,7 @@ print('slru objects compiled:', len(_slru_objs))
 extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
              # compiled here from repository sources instead of taken prebuilt
              _slru_objs[0], _slru_objs[1], _slru_objs[2],
-             ] + [Path(x) for x in _goose_objs]
+             W/'fg-q35.o', W/'fg-q35-bridge.o', W/'fg-plan-ffi.o'] + [Path(x) for x in _goose_objs]
 # The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
 # linking a DSO with an undefined fg756s/slru symbol.
 for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
@@ -200,7 +202,11 @@ bridge_objs += [str(x) for x in extra_mod if x.exists()]
 _vmod_dir = W/'vendor-models'
 _vmod_dir.mkdir(exist_ok=True)
 flint_objs = []
-for _src in sorted((FL/'src'/'models').glob('*.cpp')):
+_replaced_cpp = set(changed)
+_vend_srcs = [x for x in sorted((FL/'src').glob('llama-*.cpp')) if x.name not in _replaced_cpp]
+_vend_srcs += sorted((FL/'src'/'models').glob('*.cpp'))
+_vend_srcs += [_REPO/'vendor'/'flint'/'src'/'unicode-data.cpp', _REPO/'vendor'/'flint'/'src'/'llama.cpp']
+for _src in _vend_srcs:
     _o = _vmod_dir/(_src.stem + '.o')
     if not _o.exists() or _o.stat().st_mtime < _src.stat().st_mtime:
         _r = subprocess.run(['/usr/bin/c++'] + [f for f in FLAGS if f.startswith('-I') or f.startswith('-D')] +

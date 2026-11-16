@@ -35,6 +35,11 @@ def tracked() -> set[str]:
     return set(out.splitlines())
 
 
+# vendor/flint supplies these two files; they are tracked under vendor/ and referenced from there, but the checker
+# resolves a bare file name to runtime/reconstructed/src/. Listing them explicitly keeps the check strict elsewhere.
+VENDOR_SOURCED = {"llama.cpp", "unicode-data.cpp"}
+
+
 def main() -> int:
     have = tracked()
     missing: list[tuple[str, str]] = []
@@ -47,6 +52,8 @@ def main() -> int:
                 name = m.group(1) if m.lastindex else m.group(0)
                 rel = name.replace("$ROOT/", "")
                 # a bare file name means runtime/reconstructed/src/<name>
+                if name in VENDOR_SOURCED:
+                    continue
                 cand = rel if "/" in rel else f"runtime/reconstructed/src/{rel}"
                 # build.py compiles from an external tree; the repository copy is what must be tracked
                 # Flag it whether or not the repo copy exists: a file the build compiles but the repository
