@@ -254,19 +254,6 @@ static int llama_sample_dist(llama_token_data_array * cur_p, std::mt19937 & rng)
 }
 
 /*
-static void llama_log_softmax(float * array, size_t size) {
-    float max_l = *std::max_element(array, array + size);
-    float sum = 0.f;
-    for (size_t i = 0; i < size; ++i) {
-        float p = expf(array[i] - max_l);
-        sum += p;
-        array[i] = p;
-    }
-
-    for (size_t i = 0; i < size; ++i) {
-        array[i] = logf(array[i] / sum);
-    }
-}
 */
 
 static void llama_sampler_temp_impl(llama_token_data_array * cur_p, float temp) {
