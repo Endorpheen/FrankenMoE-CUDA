@@ -17,8 +17,6 @@
 // Goose KV scanning helpers (EXP233). GGML_GOOSE_KV_SCAN=0 restores the native bodies.
 extern "C" int fg233c_enabled(void);
 extern "C" int64_t fg233c_has_shift(int64_t n, const int32_t * flags);
-extern "C" int64_t fg233c_pos_min(int64_t n_pos, const int32_t * positions);
-extern "C" int64_t fg233c_used_max_p1(int64_t n_used, const int32_t * used);
 
 
 // Goose K-shift input fill (EXP230). GGML_GOOSE_KV_K_SHIFT=0 restores the native loop.
