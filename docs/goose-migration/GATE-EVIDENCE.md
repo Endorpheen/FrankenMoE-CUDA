@@ -126,3 +126,22 @@ above. Functions whose decision needs the live runtime are not candidates for th
 
 Rule 17 says the scope is the modern 2026 architectures, 2025 selectively, legacy only with a reason. This boundary
 applies that rule to the code: the decision surface is ported, the plumbing stays.
+
+## Checked, not assumed: llama-batch has no decision surface to port
+
+Following the boundary above, `llama-batch.cpp` looked like the best next candidate - 495 native lines spread over 40
+functions, so mostly small ones. It is not a candidate, and here is the evidence rather than the impression.
+
+`split_simple`, the 33-line batch splitter and the largest policy-shaped function in the file, mutates `used` and
+`n_used` before calling `ubatch_add`:
+
+    while (cur_idx < used.size() && used[cur_idx]) { ++cur_idx; }   // reads member state
+    used[cur_idx] = true;  ++n_used;                                // writes member state
+
+The 39 others are setters and allocators: `set_token_state`, `set_token_pos`, `set_token_id`, `add_token`, `add_seq`,
+`clear`, `llama_batch_init`, `llama_batch_free`. There is no decision in them that a gate could compare - only
+fields being assigned.
+
+So the file stays C++, and that is the correct outcome under rule 17 rather than a gap. What remains genuinely
+portable in the runtime is the NFC table transfer described above, which is one piece of work with a defined proof,
+not a sweep over 15000 lines.
