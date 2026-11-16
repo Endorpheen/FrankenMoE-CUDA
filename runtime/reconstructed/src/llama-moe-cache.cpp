@@ -6,6 +6,7 @@
 #include "ggml-cpp.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <atomic>
 #include <stdexcept>
 #include <unordered_map>
