@@ -245,3 +245,47 @@ So the three attempts produced a clean progression, and none of the failures was
 `goose/model/qgate-split.goose` and is a read, not an experiment.
 
 Harness reverted to its committed state (`nodes=4`, `builder_vs_ggml=0`, PASS).
+
+
+## RESOLVED: the fact was `elem` means element size, and the chain now runs the split
+
+Read `goose/model/qgate-split.goose:39-50` instead of guessing the layout:
+
+```goose
+let head_stride = elem * head_dim * 2;
+let tok_stride  = head_stride * n_head;
+let seq_stride  = tok_stride * n_tokens;
+
+out[0] = view4(c, qfull, head_dim, n_head, n_tokens, 1, head_stride, tok_stride, seq_stride, 0);
+out[1] = view4(c, qfull, head_dim, n_head, n_tokens, 1, head_stride, tok_stride, seq_stride, elem * head_dim);
+```
+
+**`elem` is the element size in BYTES (4 for f32), not a mode.** That was the whole misreading. With
+`head_stride = 4*HD*2 = 2048` and the gate view at offset `elem*HD = 1024`, the raw arm reproduces the split
+exactly:
+
+```
+FG_REAL_CHAIN norm -> wq[2048x8192 q4_K] -> wo[4096x256 q4_K] nodes=4 out=256
+              builder_vs_ggml=0.000e+00 nonfinite=0 nonzero=256 PASS
+```
+
+The 2.138e+00 of the previous attempt came from using the tensor's row stride (`nb[1]*2` = 65536) where the
+split uses a per-head stride of 2048 - wrong by 32x, and it looked like a split defect.
+
+## What the chain now contains
+
+Six nodes over real bytes, the builder side and the raw side identical to the bit:
+
+```
+rms_norm(x) -> * blk.3.attn_norm.weight -> wq (q4_K, full 8192) -> qg_split -> CONT -> wo (q4_K)
+```
+
+That is everything an attention layer does **before** rope and the attention itself. The remaining nodes are
+rope, the k/v path and the softmax-weighted values, then the MoE block.
+
+## The method note this earned
+
+Three failed attempts, each from a guess: the head width from a trimmed projection, the view shape without a
+`CONT`, and the stride from `nb[1]` instead of from the module. The fourth worked because it stopped guessing
+and read the twelve lines that decide the layout. Guessing at a stride is not an experiment - it is arithmetic
+that can be checked by reading.

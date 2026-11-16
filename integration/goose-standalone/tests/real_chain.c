@@ -36,6 +36,14 @@ static struct ggml_tensor * gb(int64_t mode, struct ggml_context * gc,
     return chain_gb(mode, gc, a, b, GGML_OP_MUL_MAT);
 }
 
+static struct ggml_tensor * chain_cont(struct ggml_context * gc, struct ggml_tensor * a,
+                                       int64_t e0, int64_t e1, int64_t e2, int64_t e3) {
+    uint64_t args[16] = { 24, (uint64_t) (uintptr_t) gc, (uint64_t) (uintptr_t) a, 0, 0,
+                          (uint64_t) GGML_OP_CONT, 0,
+                          (uint64_t) e0, (uint64_t) e1, (uint64_t) e2, (uint64_t) e3, 0,0,0,0,0 };
+    return (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) args);
+}
+
 int main(int argc, char ** argv) {
     goose_init(0, (char **) 0);
     if (argc < 2) { fprintf(stderr, "usage: %s <apex.gguf>\n", argv[0]); return 2; }
@@ -57,7 +65,7 @@ int main(int argc, char ** argv) {
     const int64_t o_ne1 = gguf_get_tensor_ne(g, to)[1];   // 2048
     // the q projection emits 8192 columns; the o projection consumes 4096 of them (HD*H), so the middle of
     // the chain is 4096 wide. Take that many rows of wq: rows are columns of the projection.
-    const int64_t ROWS = 4096;
+    const int64_t ROWS = gguf_get_tensor_ne(g, tq)[1];
 
     const size_t q_row = ggml_row_size(tq_type, q_ne0);
     const size_t o_row = ggml_row_size(to_type, o_ne0);
@@ -120,12 +128,26 @@ int main(int argc, char ** argv) {
     struct ggml_tensor * hn = (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) nargs);
     struct ggml_tensor * hs = hn != NULL ? chain_gb(0, gc, hn, nw, GGML_OP_MUL) : NULL;
     struct ggml_tensor * h1 = hs != NULL ? gb(11, gc, wq, hs) : NULL;
-    struct ggml_tensor * h2 = h1 != NULL ? gb(11, gc, wo, h1) : NULL;
+    const int64_t HD = ROWS / (2 * 16);
+    int64_t views[2] = { 0, 0 };
+    const int64_t nsplit = h1 != NULL
+        ? qg_split((int64_t) (uintptr_t) gc, (int64_t) (uintptr_t) h1, HD, 16, 1, 4,
+                   (sl_i64) { views, 2 })
+        : -1;
+    struct ggml_tensor * qv = (struct ggml_tensor *) (uintptr_t) views[0];
+    struct ggml_tensor * qc = (nsplit == 2 && qv != NULL) ? chain_cont(gc, qv, HD * 16, 1, 1, 1) : NULL;
+    struct ggml_tensor * h2 = qc != NULL ? gb(11, gc, wo, qc) : NULL;
     // chain 2: the same three steps with raw ggml
     struct ggml_tensor * rn = ggml_rms_norm(gc, x, 1e-6f);
     rn = ggml_mul(gc, rn, nw);
     struct ggml_tensor * r1 = ggml_mul_mat(gc, wq, rn);
-    struct ggml_tensor * r2 = ggml_mul_mat(gc, wo, r1);
+    // qgate-split.goose:39-50 - head_stride = elem*head_dim*2, tok_stride = head_stride*n_head, the q view at
+    // offset 0 and the gate view at elem*head_dim. elem is the ELEMENT SIZE in bytes (4 for f32), not a mode.
+    const int64_t head_stride = 4 * HD * 2;
+    const int64_t tok_stride = head_stride * 16;
+    struct ggml_tensor * rq = ggml_cont(gc, ggml_view_3d(gc, r1, HD, 16, 1, head_stride, tok_stride, 0));
+    rq = ggml_reshape_2d(gc, rq, HD * 16, 1);
+    struct ggml_tensor * r2 = ggml_mul_mat(gc, wo, rq);
 
     struct ggml_cgraph * cg = ggml_new_graph(gc);
     if (h2 != NULL) ggml_build_forward_expand(cg, h2);
