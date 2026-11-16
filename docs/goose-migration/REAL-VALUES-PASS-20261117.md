@@ -69,3 +69,28 @@ Two allowances, both justified rather than convenient:
   exercise the same dequantisation. `output.weight` is 248320 rows, 1.2 GB once dequantised, which the
   harness has no reason to hold.
 - **5e-3 tolerance on the quantised types.** Explained above; F32 needs none and gets none.
+
+## The Goose builder on real weights: bit-identical to raw ggml
+
+The harness now runs three paths over the same real tensor: raw ggml quantised `mul_mat`, raw ggml f32
+`mul_mat` on the dequantised copy, and the same op through `gb_common` - the Goose graph builder apex_layer
+uses.
+
+```
+blk.3.attn_q.weight  q4_K  max_rel=3.532e-03  gb_vs_ggml=0.000e+00  PASS
+output.weight        q6_K  max_rel=2.889e-03  gb_vs_ggml=0.000e+00  PASS
+output_norm.weight   f32   max_rel=0.000e+00  gb_vs_ggml=0.000e+00  PASS
+FG_VALUES_ALL PASS
+```
+
+**`gb_vs_ggml = 0` exactly**, on all three types. So the builder is not merely shape-correct on synthetic
+input (which apex_layer showed) - it emits the same node, over the same real bytes, producing the same bits.
+That is a stronger statement than either harness made alone, and it is the combination that was missing.
+
+## The three paths, and what each one rules out
+
+| path | compared against | rules out |
+|---|---|---|
+| quantised `mul_mat` | f32 after `to_float` | wrong block size, misread offset, broken dequantisation |
+| f32 `mul_mat` | itself | a mis-wired comparison (it must be exactly 0) |
+| **`gb_common`** | quantised `mul_mat` | **the builder emitting a different node than the equivalent ggml call** |

@@ -23,6 +23,19 @@
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "main.h"
+
+// The Goose graph builder, called the way apex_layer calls it: a mode word, then a packed argument block.
+// Adding this path is the point of the harness - apex_layer proves the builder on SYNTHETIC values, this
+// proves it on the real quantised tensor, which nothing did before.
+static struct ggml_tensor * gb(int64_t mode, struct ggml_context * gc,
+                               struct ggml_tensor * a, struct ggml_tensor * b,
+                               struct ggml_tensor * d, int64_t op) {
+    uint64_t args[16] = { (uint64_t) mode, (uint64_t) (uintptr_t) gc,
+                          (uint64_t) (uintptr_t) a, (uint64_t) (uintptr_t) b, (uint64_t) (uintptr_t) d,
+                          (uint64_t) op, 0, 0,0,0,0,0,0,0,0,0 };
+    return (struct ggml_tensor *) (uintptr_t) gb_common((int64_t) (uintptr_t) args);
+}
 
 // The two paths do not accumulate identically: the quantised mul_mat dequantises per block and folds the
 // scales in, while the reference dequantises once then does f32. Measured on q4_K this is 2.8e-03 of the
@@ -47,6 +60,7 @@ static const char * DEFAULT_TENSORS[] = {
 static int check_one(struct gguf_context * gguf, const char * model_path, const char * name);
 
 int main(int argc, char ** argv) {
+    goose_init(0, (char **) 0);
     if (argc < 2) { fprintf(stderr, "usage: %s <apex.gguf> [tensor...]\n", argv[0]); return 2; }
 
     if (argc > 2) {
@@ -131,12 +145,14 @@ static int check_one(struct gguf_context * gguf_unused, const char * model_path,
     memcpy(x->data, xd, (size_t) ne0 * sizeof(float));
     free(xd);
 
-    struct ggml_tensor * a = ggml_mul_mat(gc, wq, x);   // quantised path
-    struct ggml_tensor * b = ggml_mul_mat(gc, wf, x);   // dequantised path
+    struct ggml_tensor * a = ggml_mul_mat(gc, wq, x);   // quantised path, raw ggml
+    struct ggml_tensor * b = ggml_mul_mat(gc, wf, x);   // dequantised path, raw ggml
+    struct ggml_tensor * c = gb(11, gc, wq, x, NULL, GGML_OP_MUL_MAT);  // same op via the Goose builder
 
     struct ggml_cgraph * cg = ggml_new_graph(gc);
     ggml_build_forward_expand(cg, a);
     ggml_build_forward_expand(cg, b);
+    if (c != NULL) ggml_build_forward_expand(cg, c);
 
     // plain ggml_graph_compute, not the backend API: this context owns its tensor memory already
     // (no_alloc = false), which the backend allocator rejects.
@@ -149,6 +165,7 @@ static int check_one(struct gguf_context * gguf_unused, const char * model_path,
 
     const float * ra = (const float *) a->data;
     const float * rb = (const float *) b->data;
+    const float * rc = c != NULL ? (const float *) c->data : NULL;
     // Relative error is measured against the magnitude of the whole result vector, not per element: a dot
     // product that lands near zero makes per-element relative error meaningless (the first version of this
     // gate reported max_rel=26 for agreement of 1e-03 absolute, which is a metric bug, not a value bug).
@@ -164,12 +181,22 @@ static int check_one(struct gguf_context * gguf_unused, const char * model_path,
     }
     const double rms = sqrt(sum_sq / (double) ne1);
     const double max_rel = scale > 0.0 ? max_abs / scale : 0.0;
+    // third path: the Goose builder must agree with raw ggml on the same tensor
+    double gb_abs = 0.0;
+    int gb_missing = c == NULL ? 1 : 0;
+    if (rc != NULL) {
+        for (int64_t i = 0; i < ne1; ++i) {
+            const double d = fabs((double) ra[i] - (double) rc[i]);
+            if (d > gb_abs) gb_abs = d;
+        }
+    }
 
-    const int ok = (nonfinite == 0) && (nonzero > 0) && (max_rel <= MAX_REL);
+    const int ok = (nonfinite == 0) && (nonzero > 0) && (max_rel <= MAX_REL) && (gb_abs == 0.0);
     printf("FG_VALUES tensor=%s type=%s ne=[%lld %lld] bytes=%zu max_abs=%.6e max_rel=%.3e "
-           "rms=%.6e nonfinite=%d nonzero=%d %s\n",
+           "rms=%.6e gb_vs_ggml=%.3e%s nonfinite=%d nonzero=%d %s\n",
            tname, ggml_type_name(type), (long long) ne0_full, (long long) ne1_full, nb * (size_t) ne1,
-           max_abs, max_rel, rms, nonfinite, nonzero, ok ? "PASS" : "FAIL");
+           max_abs, max_rel, rms, gb_abs, gb_missing ? " GB_MISSING" : "",
+           nonfinite, nonzero, (ok && gb_missing == 0) ? "PASS" : "FAIL");
 
     ggml_free(gc);
     gguf_free(gguf);
