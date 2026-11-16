@@ -92,3 +92,37 @@ Neither commit is reverted from git - they are good code that has not been shown
 exactly that rather than deleting them.
 
 Until the bisect says otherwise, the installed library is Backup/after-afmoe (8ac4e5b7), which measures 44.5 tok/s.
+
+## Boundary: unicode.cpp is done to the extent porting can reach
+
+The file's decisions are now Goose: `unicode_cpt_is_han`, the byte maps in both directions, the newline splitter, and
+the Qwen3.5, GPT-2 and AFMOE pre-tokenisers. What remains is 14830 native function lines across the whole runtime, but
+inside this file the remainder is of two kinds, and neither is translatable by the method used so far.
+
+**Table-driven normalisation.** `unicode_cpts_normalize_nfc`, `_nfd`, `unicode_canonical_decompose` and
+`unicode_canonical_compose` are decided by Unicode tables - decomposition mappings and combining classes - that live
+in C++. A Goose module cannot reach them by a call per codepoint without moving the tables into the module as data
+first. That is a different construction from everything above: it means passing a table through FFI once, proving the
+table transfer itself, and only then porting the loop. It is work worth doing, and it is not "translate 42 lines".
+
+**Framework, not decision.** `unicode_byte_encoding_process` and `unicode_regex_split_stl` drive `std::regex` and
+`std::string`. There is no policy in them to move - they are the C++ standard library doing its job, and replacing
+that is a different project.
+
+So the honest count for this file: everything that is a decision with pure inputs is ported and gated; nothing else in
+it is.
+
+## What is next, and why it is a different shape
+
+`llama-vocab.cpp` (4830), `llama-graph.cpp` (4325), `llama-sampler.cpp` (3790), `llama-model.cpp` (2784) hold the bulk.
+Each function there decides something about runtime state - a graph node, a sampler chain, a model tensor - rather than
+about its arguments. The gates that worked here (compare against the native function over an enumerable domain) do not
+transfer, because the domain is not enumerable and the state is not reproducible from a test harness.
+
+The method that can transfer is narrower and should be stated before starting: pick a function whose decision is a
+pure function of a small POD input, port it, gate over that input domain, delete the native body - the same shape as
+above. Functions whose decision needs the live runtime are not candidates for this migration, and counting them as
+"remaining work" is what makes a migration look endless.
+
+Rule 17 says the scope is the modern 2026 architectures, 2025 selectively, legacy only with a reason. This boundary
+applies that rule to the code: the decision surface is ported, the plumbing stays.
