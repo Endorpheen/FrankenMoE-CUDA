@@ -1,5 +1,5 @@
 {
-  "name": "apex-best-20261115-v2",
+  "name": "apex-best-20261115-v3",
   "role": "pinned rollback baseline for Goose optimisation work",
   "created": "2026-11-15",
   "why": "The next optimisation stage must start here, not from a rebuild that silently loses what was measured. Every field below is what produced the recorded numbers; nothing is inferred.",
@@ -75,7 +75,7 @@
     "headroom_at_4352": "~570 MiB"
   },
   "rollback": "bash runtime/goose-stage/run-apex.sh --cache 4352. The script verifies both CPU hashes and a free port before starting, so a wrong library or a busy port is refused rather than silently measured. Libraries are symlinks into the stage-run tree; nothing in that tree is modified.",
-  "updates": "Revised after the ubatch and cache sweep. Two configurations are now named: the reference profile for long prompts, and a long-generation profile that reaches 42.35 decode - above the 41.94 historical reference - at the cost of 16.9% prefill.",
+  "updates": "v3: the long-generation configuration was measured at all three lengths (EXP-740) and is ahead of the reference at each. It is now the script default. The reference profile remains available for prefill-dominated workloads.",
   "configurations": {
     "long_prompt_short_generation": {
       "name": "reference-profile",
@@ -99,13 +99,33 @@
         "--moe-cache-mib",
         "5376"
       ],
-      "note": "ubatch 2048; cache 5376 is a THRESHOLD not a limit - 5504 runs 1.9 tok/s slower and 5632 fails intermittently",
+      "note": "ubatch 2048; cache 5376 is a THRESHOLD not a limit - 5504 runs 1.9 tok/s slower and 5632 fails intermittently. Ahead of the reference at all three lengths; the advantage shrinks with length (+4.2% / +3.5% / +1.0%), which means per-token cost improved.",
       "measured_512_tokens": {
         "prefill_tok_s": 2019.3,
         "decode_tok_s": 42.35,
         "vram_mib": 7972,
         "runs": 6,
         "decode_range": "41.97-42.56"
+      },
+      "measured_all_lengths": {
+        "128": {
+          "prefill_tok_s": 2040.1,
+          "decode_tok_s": 41.27,
+          "reference": 39.6,
+          "vs_reference": "+4.2%"
+        },
+        "256": {
+          "prefill_tok_s": 2035.2,
+          "decode_tok_s": 42.43,
+          "reference": 41.0,
+          "vs_reference": "+3.5%"
+        },
+        "512": {
+          "prefill_tok_s": 2019.3,
+          "decode_tok_s": 42.35,
+          "reference": 41.94,
+          "vs_reference": "+1.0%"
+        }
       }
     },
     "maximum_decode": {
@@ -137,5 +157,7 @@
       "CUDA dispatch ablations (parity)"
     ]
   },
-  "history": "superseded first entry: cache 4352 alone gave 39.86; see configurations above"
+  "history": "superseded first entry: cache 4352 alone gave 39.86; see configurations above",
+  "default": "long_generation (ub 2048, cache 5376) - now the script default",
+  "full_matrix_measured": true
 }

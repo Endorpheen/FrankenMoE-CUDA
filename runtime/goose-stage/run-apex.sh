@@ -29,8 +29,11 @@ PORT=8081
 #
 # 5376 is a THRESHOLD, not a limit: 5504 MiB runs 1.9 tok/s slower and 5632 fails intermittently.
 # This script's default stays on the reference profile because its prefill is the highest measured.
-CACHE=4352
-UB=512
+# Defaults are now the measured best balance (EXP-740): ahead of the reference at 128, 256 and 512.
+#   reference profile:  --ub 512  --cache 4352   2429.9 prefill / 39.86 decode
+#   max decode:        --ub 1024 --cache 5632   1488.7 prefill / 42.74 decode (512 only)
+CACHE=5376
+UB=2048
 while [ $# -gt 0 ]; do
     case "$1" in
         --port)  PORT=${2:?--port needs a value}; shift 2 ;;
