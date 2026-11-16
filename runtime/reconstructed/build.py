@@ -12,7 +12,7 @@ FL = _HERE / 'vendor' / 'flint'
 if not (FL / 'include' / 'llama.h').exists():
     # build.py is copied into the working tree as well; the sources live in the repository either way
     FL = Path('/home/end0/AI/FrankenMoE-CUDA/vendor/flint')
-FLB  = Path('/home/end0/AI/LlamaServer/llama.cpp-flint-cuda')
+GOOSE_BIN = '/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose'
 # The 13 sources the build compiles live in this repository and are tracked (EXP: eight of them were not,
 # see docs/goose-migration/UNTRACKED-SOURCES-20261116.md). Prefer the repo copy so a clone is buildable; fall
 # back to the external tree only for a checkout that predates the commit that added them.
@@ -117,18 +117,51 @@ for mod, out_name in (('EXP-2026-11-11-347-goose-kv-write-bridge', 'b345.o'),
     if q.returncode: print('bridge failed', mod); print(q.stderr[:800]); sys.exit(1)
     bridge_objs.append(str(o))
 
+# Goose modules are compiled here from goose/misc and integration/m1/common instead of being linked as prebuilt
+# objects from the working directory. Each pair is (module source, bridge source, object stem).
+_GOOSE_PAIRS = [
+    ('goose/misc/unicode-han.goose',      'integration/m1/common/fg-unicode-han-bridge.c',      'fg-han'),
+    ('goose/misc/unicode-newlines.goose', 'integration/m1/common/fg-unicode-newlines-bridge.c', 'fg-nl'),
+    ('goose/misc/unicode-byte-map.goose', 'integration/m1/common/fg-unicode-byte-map-bridge.c', 'fg-b2u'),
+    ('goose/misc/unicode-afmoe.goose',    'integration/m1/common/fg-unicode-afmoe-bridge.c',    'fg-afmoe'),
+    ('goose/misc/unicode-gpt2.goose',     'integration/m1/common/fg-unicode-gpt2-bridge.c',     'fg-gpt2'),
+    ('goose/misc/unicode-hangul.goose',   'integration/m1/common/fg-unicode-hangul-bridge.c',   'fg-hangul'),
+    ('goose/misc/qwen35-split.goose',     'integration/m1/common/fg-qwen35-split-bridge.c',     'fg-q35s'),
+]
+_GOOSE = Path(__file__).resolve().parent.parent.parent / 'goose'
+if not (_GOOSE / 'misc').is_dir():
+    _GOOSE = Path('/home/end0/AI/FrankenMoE-CUDA/goose')
+_REPO = _GOOSE.parent
+_gobj = W/'goose-obj'; _gobj.mkdir(exist_ok=True)
+_goose_objs = []
+for _mod, _br, _stem in _GOOSE_PAIRS:
+    _ms = _GOOSE / _mod.split('/', 1)[1] if _mod.startswith('goose/') else _GOOSE.parent / _mod
+    _bs = _REPO / _br
+    if not _ms.exists() or not _bs.exists():
+        print('goose source missing:', _ms, _bs); sys.exit(1)
+    _co = _gobj/(_stem + '.c')
+    _r = subprocess.run([str(GOOSE_BIN), '-o', str(_co), '--header', str(_co.with_suffix('.h')), str(_ms)],
+                        capture_output=True, text=True)
+    if _r.returncode != 0:
+        print('goose compile failed:', _ms.name); print(_r.stderr[:800]); sys.exit(1)
+    _mo = _gobj/(_stem + '.o')
+    _r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w',f'-Dgoose_init={_stem.replace("-","_")}_goose_init',
+                         '-c', str(_co), '-o', str(_mo)], capture_output=True, text=True)
+    if _r.returncode != 0:
+        print('module cc failed:', _stem); print(_r.stderr[:800]); sys.exit(1)
+    _bo = _gobj/(_stem + '-bridge.o')
+    _r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w','-c', str(_bs), '-o', str(_bo)],
+                        capture_output=True, text=True)
+    if _r.returncode != 0:
+        print('bridge cc failed:', _stem); print(_r.stderr[:800]); sys.exit(1)
+    _goose_objs += [str(_mo), str(_bo)]
+print('goose modules compiled from sources:', len(_goose_objs)//2)
+
 extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
              W/'slru-policy.o', W/'slru-runtime.o', W/'slru-shim.o',
              W/'fg-ar.o', W/'fg-ar-bridge.o',
              W/'fg-q35.o', W/'fg-qg.o', W/'fg-q35-bridge.o', W/'fg-plan-ffi.o',
-             W/'fg-gr.o', W/'fg-gr-bridge.o',
-             W/'fg-q35s.o', W/'fg-q35s-bridge.o',
-             W/'fg-han.o', W/'fg-han-bridge.o',
-             W/'fg-nl.o', W/'fg-nl-bridge.o',
-             W/'fg-b2u.o', W/'fg-b2u-bridge.o',
-             W/'fg-afmoe.o', W/'fg-afmoe-bridge.o',
-             W/'fg-gpt2.o', W/'fg-gpt2-bridge.o',
-             W/'fg-hangul.o', W/'fg-hangul-bridge.o']
+             W/'fg-gr.o', W/'fg-gr-bridge.o'] + [Path(x) for x in _goose_objs]
 # The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
 # linking a DSO with an undefined fg756s/slru symbol.
 for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
