@@ -1,0 +1,218 @@
+--- a/scripts/make-release.sh
++++ b/scripts/make-release.sh
+@@ -5,10 +5,20 @@
+ #   scripts/make-release.sh --version v0.1.0 --notes-file notes.md [--asset FILE]... [--yes]
+ #
+ # Without --yes it only prints what would happen (dry run).
++#
++# The release decisions — tag acceptance, prerelease detection, the runtime
++# asset class, both size limits and the runtime-asset retention chain — are the
++# P10-05 S1 slice, `goose/misc/release-plan.goose`, reached through
++# `build/goose-hosts/pkg` (`bash tools/goose-hosts/build.sh`). git, gh, stat and
++# the archive work stay here. BMOE_GOOSE_PKG=0 restores the inline decisions.
+ set -euo pipefail
+ 
+ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ cd "$ROOT"
++# shellcheck source=../tools/goose-hosts/client.sh
++. "$ROOT/tools/goose-hosts/client.sh"
++
++if goosehost_init "$ROOT" pkg BMOE_GOOSE_PKG; then PKG_HOST=1; else PKG_HOST=0; fi
+ 
+ version=""
+ notes=""
+@@ -28,9 +38,15 @@
+ done
+ 
+ [ -n "$version" ] || { echo "--version is required" >&2; exit 2; }
+-[[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || {
+-    echo "version must look like v0.1.0 or v0.1.0-rc.1" >&2; exit 2;
+-}
++if [ "$PKG_HOST" = 1 ]; then
++    [ "$(goosehost_ask "VERSION $(goosehost_hex "$version")")" = "1" ] || {
++        echo "version must look like v0.1.0 or v0.1.0-rc.1" >&2; exit 2;
++    }
++else
++    [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || {
++        echo "version must look like v0.1.0 or v0.1.0-rc.1" >&2; exit 2;
++    }
++fi
+ [ -n "$notes" ] && [ -f "$notes" ] || { echo "--notes-file must exist" >&2; exit 2; }
+ 
+ echo "release $version"
+@@ -59,20 +75,42 @@
+     exit 1
+ fi
+ 
+-large=$(git ls-tree -r -l HEAD | awk '$4 > 100000000 {print $5}' | head -5)
++if [ "$PKG_HOST" = 1 ]; then
++    # git ls-tree's own field order, then the module's `> 100 MB` rule per row.
++    large=$(git ls-tree -r -l HEAD | awk '{print $4, $5}' | {
++        while read -r size path; do
++            [ -n "$size" ] || continue
++            [ "$(goosehost_ask "TREE_LIMIT $size")" = "1" ] && printf '%s\n' "$path"
++        done
++    } | head -5)
++else
++    large=$(git ls-tree -r -l HEAD | awk '$4 > 100000000 {print $5}' | head -5)
++fi
+ if [ -n "$large" ]; then
+     echo "files above 100 MB in the tag tree:" >&2
+     echo "$large" >&2
+     exit 1
+ fi
+ 
++has_runtime=0
+ for asset in "${assets[@]:-}"; do
+     [ -n "$asset" ] || continue
+     [ -f "$asset" ] || { echo "asset not found: $asset" >&2; exit 1; }
+     size=$(stat -c %s "$asset")
+-    if [ "$size" -gt 2147483648 ]; then
+-        echo "asset over the 2 GiB GitHub limit: $asset" >&2
+-        exit 1
++    if [ "$PKG_HOST" = 1 ]; then
++        if [ "$(goosehost_ask "ASSET_LIMIT $size")" = "1" ]; then
++            echo "asset over the 2 GiB GitHub limit: $asset" >&2
++            exit 1
++        fi
++        if [ "$(goosehost_ask "RUNTIME_ASSET $(goosehost_hex "$asset")")" = "1" ]; then
++            has_runtime=1
++        fi
++    else
++        if [ "$size" -gt 2147483648 ]; then
++            echo "asset over the 2 GiB GitHub limit: $asset" >&2
++            exit 1
++        fi
++        case "$(basename "$asset")" in goose-runtime-*) has_runtime=1 ;; esac
+     fi
+     echo "  asset: $asset ($(du -h "$asset" | cut -f1))"
+ done
+@@ -91,8 +129,14 @@
+ git push origin "$version"
+ 
+ args=(release create "$version" --title "$version" --notes-file "$notes")
+-if [[ "$version" == *-rc.* ]]; then
+-    args+=(--prerelease)
++if [ "$PKG_HOST" = 1 ]; then
++    if [ "$(goosehost_ask "PRERELEASE $(goosehost_hex "$version")")" = "1" ]; then
++        args+=(--prerelease)
++    fi
++else
++    if [[ "$version" == *-rc.* ]]; then
++        args+=(--prerelease)
++    fi
+ fi
+ for asset in "${assets[@]:-}"; do
+     [ -n "$asset" ] || continue
+@@ -109,21 +153,24 @@
+ # Keep one heavy runtime archive on GitHub: the newest. Older release notes stay,
+ # only their runtime assets are removed. Runs after the new release exists, so a
+ # failed publish never leaves the project without a binary.
+-has_runtime=0
+-for asset in "${assets[@]:-}"; do
+-    [ -n "$asset" ] || continue
+-    case "$(basename "$asset")" in goose-runtime-*) has_runtime=1 ;; esac
+-done
+-
+ if [ "$has_runtime" -eq 1 ] && [ "$keep_old_runtime" -eq 0 ]; then
+     while read -r old; do
+         [ -n "$old" ] || continue
+         [ "$old" = "$version" ] && continue
+         while read -r name; do
+             [ -n "$name" ] || continue
++            if [ "$PKG_HOST" = 1 ]; then
++                # One guard chain in the module: this release carries a runtime
++                # archive, --keep-old-runtime is off, the tag is present and is
++                # not the new one, and gh's asset name passes the selector.
++                if [ "$(goosehost_ask "KEEP 1 0 1 0 $(goosehost_hex "$name")")" = "1" ]; then
++                    continue
++                fi
++            else
++                case "$name" in goose-runtime-*) ;; *) continue ;; esac
++            fi
+             gh release delete-asset "$old" "$name" --yes
+             echo "removed old runtime asset: $old/$name"
+-        done < <(gh release view "$old" --json assets \
+-            --jq '.assets[] | select(.name | startswith("goose-runtime-")) | .name')
++        done < <(gh release view "$old" --json assets --jq '.assets[].name')
+     done < <(gh release list --limit 100 --json tagName --jq '.[].tagName')
+ fi
+--- a/tools/package-main-runtime.sh
++++ b/tools/package-main-runtime.sh
+@@ -6,6 +6,12 @@
+ # This is the packaging half of P10-06. It does not link a host and runs no
+ # model; the extern entry points are still supplied by the runtime wiring.
+ #
++# The document decisions — the dist file list and its order, the SHA256SUMS
++# bytes, the manifest key order, the module count and the compiler line — are
++# the P10-05 S1 slice, `goose/misc/release-plan.goose`, reached through
++# `build/goose-hosts/pkg` (`bash tools/goose-hosts/build.sh`). Hashing, stat()
++# and writing stay here. BMOE_GOOSE_PKG=0 restores the inline decisions.
++#
+ # Usage: bash tools/package-main-runtime.sh [out-dir]
+ #   out-dir defaults to build/goose-main; the package lands in <out-dir>/dist.
+ set -euo pipefail
+@@ -13,17 +19,62 @@
+ OUT=${1:-$ROOT/build/goose-main}
+ DIST=$OUT/dist
+ GOOSE=${GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
++# shellcheck source=goose-hosts/client.sh
++. "$ROOT/tools/goose-hosts/client.sh"
+ 
+ bash "$ROOT/tools/build-main-runtime.sh" "$OUT" >/dev/null
+ 
+ rm -rf "$DIST"
+ mkdir -p "$DIST"
+-cp "$OUT/main.goose" "$OUT/main.c" "$OUT/main.h" "$OUT/main.o" "$DIST/"
++
++if goosehost_init "$ROOT" pkg BMOE_GOOSE_PKG; then
++    # The dist list is the module's: six names in the order the script writes
++    # them. The four build products are copied; the two documents are composed
++    # below, from the same list.
++    mapfile -t DIST_FILES < <(goosehost_raw "$(goosehost_ask "DIST")")
++    for name in "${DIST_FILES[@]}"; do
++        [ -n "$name" ] || continue
++        [ -f "$OUT/$name" ] && cp "$OUT/$name" "$DIST/"
++    done
++
++    modules=$(goosehost_ask "COUNT $(goosehost_hex "$(cat "$ROOT/tools/build-main-runtime.sh")")")
++    defined=$(nm -g --defined-only "$OUT/main.o" | wc -l)
++    extern=$(nm -u "$OUT/main.o" | wc -l)
++    ver_text=$("$GOOSE" version 2>/dev/null) || ver_text=unknown
++    version=$(goosehost_raw "$(goosehost_ask "VERSION_LINE $(goosehost_hex "$ver_text")")")
++
++    hashes=$(python3 - "$DIST" <<'PY'
++import hashlib, sys
++from pathlib import Path
++dist = Path(sys.argv[1])
++for name in ["main.goose", "main.c", "main.h", "main.o"]:
++    print(hashlib.sha256((dist / name).read_bytes()).hexdigest(), name)
++PY
++)
++    sums_args=()
++    hash_args=()
++    while read -r hash name; do
++        [ -n "$hash" ] || continue
++        sums_args+=("$(goosehost_hex "$hash")" "$(goosehost_hex "$name")")
++        hash_args+=("$(goosehost_hex "$hash")")
++    done <<<"$hashes"
++
++    goosehost_raw "$(goosehost_ask "SUMS 4 ${sums_args[*]}")" > "$DIST/SHA256SUMS"
++
++    goosehost_raw "$(goosehost_ask "MANIFEST $(goosehost_hex goose-main) $(goosehost_hex "$version") \
++        "$modules" "$(stat -c %s "$OUT/main.c")" "$(stat -c %s "$OUT/main.o")" \
++        "$defined" "$extern" ${hash_args[*]}")" > "$DIST/manifest.json"
++
++    echo "package: $DIST"
++    cat "$DIST/manifest.json"
++    exit 0
++fi
+ 
+ modules=$(grep -cE '^\s+goose/.*\.goose\s*$' "$ROOT/tools/build-main-runtime.sh")
+ defined=$(nm -g --defined-only "$OUT/main.o" | wc -l)
+ extern=$(nm -u "$OUT/main.o" | wc -l)
+ version=$("$GOOSE" version 2>/dev/null | tail -1 || echo unknown)
++cp "$OUT/main.goose" "$OUT/main.c" "$OUT/main.h" "$OUT/main.o" "$DIST/"
+ 
+ python3 - "$DIST" "$modules" "$defined" "$extern" "$version" "$OUT" <<'PY'
+ import hashlib, json, os, sys

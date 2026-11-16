@@ -1,0 +1,41 @@
+# SHA-256 of the deliverables (EXP-2026-11-15-663, base 0da127f5, 2026-11-15T07:19:10Z)
+
+# modules (accepted sources; unchanged by this experiment)
+a7966bab0d1ce2c0a02552b9af5efce7d34fd5d3a5060a7476a58b105e177f1d  ../../goose/misc/generated-artifact-policy.goose
+aba4a46c1be8ecf5beb46ed15f8d6613e64ee2679cef9c7345c2755799538de3  ../../goose/misc/build-env.goose
+d970ab3e4113b49e419ba4d2cd4db86229274ee03548cb69379f9850f64eb4c2  ../../goose/misc/release-plan.goose
+3a6ed27760f9842768431c1aa984a01acff0cee700aa0e5d433040fa4786893d  ../../goose/misc/fixture-plan.goose
+2f42df0fe0d69ea70913667d5f22b2695070e6c96b3f8f3c659f87d4d53a7465  ../../goose/misc/test-runner.goose
+c79f6718fff6d671b80603716f6052bb3b3cfc6712dc04f77bb160da0f07d00f  ../../goose/metrics/bench-diagnostics.goose
+
+# patches (apply with git apply -p1 to a git archive 0da127f5 export)
+0b4dd13e10dac47ef9db069416c225c4b18a7d4db20030bb820585b269bcfb0d  /tmp/opencode/p10-patches/p10-wiring-01-hosts.patch
+e941c0751a6545a33ca00e473c64ea23f0d3d6303989c9a30a7e867906892ee5  /tmp/opencode/p10-patches/p10-wiring-02-art-check.patch
+802b46fc6f3709f4a0c6bc5c5a45ab8f5f0966dccea1a2cc2719f28a1f544b19  /tmp/opencode/p10-patches/p10-wiring-03-build-env.patch
+adccbe890ae21308797ea4f5c80f2e7e5f6692cc3b245f02fa2ea21e069c2b16  /tmp/opencode/p10-patches/p10-wiring-04-release-package.patch
+0fb28c69b85b1eb6293aacdb3a8053d65f155bf3890b2c2be28243559cdda7c5  /tmp/opencode/p10-patches/p10-wiring-05-fixture-plan.patch
+62faba2e240e8ce20c118d0745e40b0de78e3e6a5fd16f2c16f0ae4301aa64cb  /tmp/opencode/p10-patches/p10-wiring-06-gates.patch
+
+# gate scripts and transcripts
+d91f3d740b41d4fd2440293373eb02213e67d879d0d97a3291541a70c0422d33  gates/host.py
+60eb4c91486bc8d2108f432198d233b2dc5c1d6cd3a3fb5456ce36688b55b095  gates/mutate.py
+4e46bf33684cb972482876c5c35dd42dc5f2303b810eacf864dd5b4a08fa7306  gates/w1_art.py
+04070025b23004db51da9a85f2de6c949a30911e267da66576f311056f9a3e00  gates/w2_env.py
+4080bf31cd3fc9bb3273f611534dcac59123fb4f405777446a82c76496b5cb5f  gates/w3_pkg.py
+9c3ea7728a3dcee9460421ddcf124ec3ead8e6ca2d3de514a852300d8a47e382  gates/w3_release.py
+431be8cfcad0daccd6547c03f81b987eec9d2111cf2060e277e8638d6044b87f  gates/w4_fx.py
+23624821a654615f7ee299ae3864b8e7ad8b39e61b947f79aa14d1f37700d7b7  gates/make-patches.sh
+37bb91d5c6acb5b524336bbce529d1341753b512307d8f09a7c931a759548df2  gates/run.sh
+dc2b8e602db639bbad32ab2a2efdc265f03fbde6df7ecef3338aca60b03729d0  results/gate-w1_art.log
+77ea2ef40d1c265877aaf470e173c07f749101a0c4fe7df826c53f008490b806  results/gate-w2_env.log
+8e9d213de944d54af6b237b31a24593acb74850271d6111ca494a13e6d308230  results/gate-w3_pkg.log
+ba39745bacea77aa19a4497bb276ea4f14a9da33c4cd464edbe22b584fa373e1  results/gate-w3_release.log
+be4fc8a0ea1a8059c52568bc2691b20323b8aa7097a6e49f1a71ed71bf69df35  results/gate-w4_fx.log
+32ecebef7e01ab1530084258c52f8c2f0d4a819af0ff73ebae9301b2fd936478  results/mutate-1.log
+dca74d1e9e8261870d6779d22717bf298847b1b177c26b6957ca8f3d37c8c1d9  results/mutate-2.log
+
+# host binaries, -O1, gcc-13 13.4.0
+75538d9e8e5e20c29ac08e7f33464088114164600e76947d6bfa868b0a10b9fd  ../../build/goose-hosts/art
+1cb0a0d5dd13e0b04819dc8e67db6fbeb64ab1432d9b721536c04dfbeaf323b0  ../../build/goose-hosts/env
+57b2bcef763d469bf661f5c32ca161e47ec452c5947c37498b1bb1706ee10ce3  ../../build/goose-hosts/pkg
+2090946d9d1a556ddce4dc7efe753b439d0c6dbf5ab675f023eb7e4c2b50cfa6  ../../build/goose-hosts/fx

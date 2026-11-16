@@ -1,0 +1,725 @@
+--- /dev/null
++++ b/tools/goose-hosts/README.md
+@@ -0,0 +1,60 @@
++# Goose decision hosts
++
++Four small C programs that expose accepted Goose decisions to the scripts which
++own the surrounding work. Each host links one generated unit and speaks a
++one-line-at-a-time protocol on stdin/stdout, so a caller pays one process for a
++whole corpus instead of one per decision.
++
++| host | module | product caller | opt-out |
++|---|---|---|---|
++| `art` | `goose/misc/generated-artifact-policy.goose` | `tools/check-generated-files.py` | `BMOE_GOOSE_ART=0` |
++| `env` | `goose/misc/build-env.goose` | `scripts/build.sh` | `BMOE_GOOSE_ENV=0` |
++| `pkg` | `goose/misc/release-plan.goose` | `scripts/make-release.sh`, `tools/package-main-runtime.sh` | `BMOE_GOOSE_PKG=0` |
++| `fx` | `goose/misc/fixture-plan.goose` | `scripts/make-tiny-moe.py` | `BMOE_GOOSE_FX=0` |
++
++The features are on by default; the flag exists only to turn one off, which
++restores the inline code the script carried before the wiring. A missing host
++binary is not fatal: each caller prints one line on stderr and falls back to its
++inline decisions, so a fresh clone can still run the hook and the fixture
++generator before anything is built.
++
++## Build
++
++```bash
++bash tools/goose-hosts/build.sh              # -O1, into build/goose-hosts
++bash tools/goose-hosts/build.sh --mutate     # -O0, for a mutation run
++GOOSE=/path/to/goose CC=gcc-13 bash tools/goose-hosts/build.sh
++```
++
++Sources are never edited: the tool concatenates the module with an optional
++shim into `build/goose-hosts/<name>-unit.goose`, generates the C and the header
++there, and links `<name>-main.c` against it. Generated C, headers, objects and
++binaries are build artefacts and are not committed.
++
++`test-runner.goose` has no host. Its two slice-parameter `bool` exports
++(`tr_match`, `tr_selected`) cannot be emitted at an export boundary by
++`goose --standalone` (the toolchain refuses with "could not resolve one concrete
++function signature"), and a shim that calls them with concrete types does not
++help; the module only runs under `goose run`. That is recorded in the
++experiment report as the remaining blocker, not worked around here.
++
++## Protocol
++
++```
++request := COMMAND [SP field]...
++field   := text | '-'            '-' is the empty string
++text    := hex of the raw bytes  (no field can contain a space or a newline)
++reply   := "OK <value>" | "ERR <reason>"
++```
++
++`OK` values are decimals for integers, hex for text. `tools/goose-hosts/client.sh`
++provides `goosehost_init`, `goosehost_hex`, `goosehost_ask` and `goosehost_raw`
++for the shell callers; the two python callers carry the same ten-line client
++inline so a hook stays a single file.
++
++## What stays native
++
++The hosts own decisions only. Every caller keeps its own work: the git index and
++the head read in the hook, the cmake invocation and the file system in
++`build.sh`, `git`/`gh`/`stat`/`sha256sum` and the gguf writer in the release and
++fixture scripts, `numpy` in the generator.
+--- /dev/null
++++ b/tools/goose-hosts/host_io.h
+@@ -0,0 +1,113 @@
++/* Shared line protocol for the Goose decision hosts.
++ *
++ * Every host reads one request per line from stdin and writes exactly one line
++ * to stdout. This keeps a caller (python, bash, cmake) to a single subprocess
++ * for a whole corpus instead of one per decision.
++ *
++ *   request := COMMAND [SP field]...
++ *   field   := text | '-'            '-' is the empty string
++ *   text    := hex of the raw bytes  (so no field can contain a space or \n)
++ *   reply   := "OK <value>" | "ERR <reason>"
++ *
++ * Buffers are static: the hosts are single-threaded batch filters, not
++ * libraries. Nothing here allocates and nothing reads a file.
++ */
++#ifndef BMOE_GOOSE_HOST_IO_H
++#define BMOE_GOOSE_HOST_IO_H
++
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#define HIO_MAX_FIELDS 40
++#define HIO_MAX_DECODED (1 << 20)
++
++static uint8_t hio_a[HIO_MAX_DECODED];
++static uint8_t hio_b[HIO_MAX_DECODED];
++static uint8_t hio_c[HIO_MAX_DECODED];
++static uint8_t hio_out[4 * HIO_MAX_DECODED];
++static char hio_line[8 * HIO_MAX_DECODED];
++
++static int hio_nib(int c) {
++    if (c >= '0' && c <= '9') return c - '0';
++    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
++    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
++    return -1;
++}
++
++/* Decode into dst; returns the byte count, or -1 on a malformed field. */
++static int64_t hio_decode(const char *s, uint8_t *dst, int64_t cap) {
++    int64_t n = 0;
++    size_t i = 0;
++    if (s == NULL) return 0;
++    if (s[0] == '-' && s[1] == 0) return 0;
++    while (s[i] != 0) {
++        int hi = hio_nib((unsigned char) s[i]);
++        int lo = s[i + 1] ? hio_nib((unsigned char) s[i + 1]) : -1;
++        if (hi < 0 || lo < 0 || n >= cap) return -1;
++        dst[n] = (uint8_t) ((hi << 4) | lo);
++        n++;
++        i += 2;
++    }
++    return n;
++}
++
++/* Encode n bytes as hex, NUL-terminated, into dst. */
++static char *hio_encode(const uint8_t *src, int64_t n, char *dst) {
++    static const char *d = "0123456789abcdef";
++    int64_t i = 0;
++    if (n <= 0) {
++        dst[0] = '-';
++        dst[1] = 0;
++        return dst;
++    }
++    for (i = 0; i < n; i++) {
++        dst[2 * i] = d[src[i] >> 4];
++        dst[2 * i + 1] = d[src[i] & 15];
++    }
++    dst[2 * n] = 0;
++    return dst;
++}
++
++/* Split one line in place; returns the field count, -1 when it does not fit. */
++static int hio_split(char *line, char **f, int cap) {
++    int n = 0;
++    char *p = line;
++    if (p == NULL) return -1;
++    while (*p == ' ' || *p == '\t') p++;
++    if (*p == 0) return 0;
++    while (n < cap) {
++        f[n++] = p;
++        while (*p != 0 && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r') p++;
++        if (*p == 0) return n;
++        *p++ = 0;
++        while (*p == ' ' || *p == '\t') p++;
++        if (*p == 0) return n;
++    }
++    return -1;
++}
++
++/* Read one request line; returns 0 at end of input. */
++static int hio_readline(void) {
++    size_t n = 0;
++    int c = 0;
++    while ((c = getchar()) != EOF) {
++        if (c == '\n') break;
++        if (n + 1 < sizeof hio_line) hio_line[n++] = (char) c;
++    }
++    if (c == EOF && n == 0) return 0;
++    hio_line[n] = 0;
++    return 1;
++}
++
++static int64_t hio_int(const char *s) {
++    return (int64_t) strtoll(s, NULL, 10);
++}
++
++/* "-" is the empty string; a plain decimal is itself. */
++static int64_t hio_milli(const char *s) {
++    return hio_int(s);
++}
++
++#endif /* BMOE_GOOSE_HOST_IO_H */
+--- /dev/null
++++ b/tools/goose-hosts/client.sh
+@@ -0,0 +1,56 @@
++#!/usr/bin/env bash
++# Shell client for the Goose decision hosts (tools/goose-hosts/*-main.c).
++#
++# Product scripts source this file and call:
++#
++#   if goosehost_init "$ROOT" env BMOE_GOOSE_ENV; then ... goosehost_ask ... fi
++#
++# A host is on by default (BMOE_GOOSE_<NAME>=1); the flag exists only to turn it
++# off. A missing host binary is not fatal: the caller falls back to its inline
++# decisions and the client says so on stderr.
++#
++# Protocol: one request line per call, `OK <value>` in reply, strings hex
++# encoded, `-` for the empty string. Nothing here decides anything.
++
++goosehost_init() {
++    local root=$1 name=$2 optout=$3
++    GOOSEHOST_BIN="${root}/build/goose-hosts/${name}"
++    GOOSEHOST_ON=1
++    eval "local off=\${${optout}:-1}"
++    if [ "${off}" = "0" ]; then
++        GOOSEHOST_ON=0
++        return 1
++    fi
++    if [ ! -x "${GOOSEHOST_BIN}" ]; then
++        echo "$(basename "$0"): ${GOOSEHOST_BIN} is missing, using the inline decisions" \
++             "(build it with: bash tools/goose-hosts/build.sh)" >&2
++        GOOSEHOST_ON=0
++        return 1
++    fi
++    return 0
++}
++
++# Hex of a value; "-" is the empty string.
++goosehost_hex() {
++    if [ -z "${1:-}" ]; then printf '%s' '-'; return; fi
++    printf '%s' "$1" | od -An -tx1 | tr -d ' \n'
++}
++
++# One request, one reply; prints the value with `OK ` stripped.
++goosehost_ask() {
++    local reply
++    reply=$("${GOOSEHOST_BIN}" <<<"$1") || {
++        echo "$(basename "$0"): goose host ${GOOSEHOST_BIN} failed" >&2
++        exit 2
++    }
++    case "${reply}" in
++        OK\ *) printf '%s' "${reply#OK }" ;;
++        *) echo "$(basename "$0"): goose host refused: ${reply}" >&2; exit 2 ;;
++    esac
++}
++
++# Hex reply -> raw bytes, newlines preserved.
++goosehost_raw() {
++    if [ "$1" = "-" ]; then printf '%s' ''; return; fi
++    printf '%s' "$1" | xxd -r -p
++}
+--- /dev/null
++++ b/tools/goose-hosts/build.sh
+@@ -0,0 +1,44 @@
++#!/usr/bin/env bash
++# Build the Goose decision hosts.
++#
++#   bash tools/goose-hosts/build.sh                 # -O1, into build/goose-hosts
++#   bash tools/goose-hosts/build.sh --mutate        # -O0, for a mutation run
++#   GOOSE=/path/to/goose bash tools/goose-hosts/build.sh
++#
++# Each host links one generated unit. The Goose sources are never edited: the
++# generated C, the headers and the objects are build artefacts and are not
++# committed. The output directory derives from this script's location, so the
++# checkout can be moved.
++set -euo pipefail
++
++HOSTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++ROOT="$(cd "$HOSTS/../.." && pwd)"
++GOOSE=${GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
++CCB=${CC:-gcc-13}
++OUT=${BMOE_GOOSE_HOST_OUT:-$ROOT/build/goose-hosts}
++
++OPT=-O1
++if [ "${1:-}" = "--mutate" ]; then
++    OPT=-O0
++fi
++mkdir -p "$OUT"
++
++# host <name> <module> [shim]: generate the unit, compile it, link the host.
++host() {
++    local name=$1 module=$2 shim=${3:-}
++    local unit="$OUT/$name-unit.goose"
++    cat "$ROOT/$module" > "$unit"
++    if [ -n "$shim" ]; then
++        cat "$HOSTS/$shim" >> "$unit"
++    fi
++    timeout 300 "$GOOSE" --standalone -o "$OUT/$name.c" --header "$OUT/$name.h" "$unit" >/dev/null
++    "$CCB" "$OPT" -std=c11 -w -c "$OUT/$name.c" -o "$OUT/$name.o"
++    "$CCB" "$OPT" -std=c11 -I"$OUT" "$HOSTS/$name-main.c" "$OUT/$name.o" -lm -o "$OUT/$name"
++    printf '%s\n' "$OPT" > "$OUT/.opt-$name"
++    printf 'built %s %s\n' "$OUT/$name" "$OPT"
++}
++
++host art goose/misc/generated-artifact-policy.goose
++host env goose/misc/build-env.goose
++host pkg goose/misc/release-plan.goose
++host fx  goose/misc/fixture-plan.goose
+--- /dev/null
++++ b/tools/goose-hosts/art-main.c
+@@ -0,0 +1,40 @@
++/* Host for goose/misc/generated-artifact-policy.goose.
++ *
++ * Product caller: tools/check-generated-files.py (BMOE_GOOSE_ART=1, the
++ * default). The script keeps the git index access, the head truncation and the
++ * message formatting; the policy decisions come from here.
++ *
++ *   GEN  <path> <head>            art_is_generated  -> 0|1
++ *   LIM  <mb_milli>               art_limit         -> bytes
++ *   GATE <all> <size> <limit>     art_gate          -> 0 none, 1 warn, 2 fail
++ */
++#include "art.h"
++#include "host_io.h"
++
++int main(void) {
++    char *f[HIO_MAX_FIELDS];
++    goose_init(0, NULL);
++    while (hio_readline()) {
++        int n = hio_split(hio_line, f, HIO_MAX_FIELDS);
++        if (n <= 0) continue;
++        if (strcmp(f[0], "GEN") == 0 && n == 3) {
++            int64_t pn = hio_decode(f[1], hio_a, HIO_MAX_DECODED);
++            int64_t hn = hio_decode(f[2], hio_b, HIO_MAX_DECODED);
++            if (pn < 0 || hn < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            sl_u8 path = {hio_a, pn};
++            sl_u8 head = {hio_b, hn};
++            printf("OK %lld\n", (long long) art_is_generated(path, head));
++        } else if (strcmp(f[0], "LIM") == 0 && n == 2) {
++            printf("OK %lld\n", (long long) art_limit(hio_int(f[1])));
++        } else if (strcmp(f[0], "GATE") == 0 && n == 4) {
++            printf("OK %lld\n", (long long) art_gate(hio_int(f[1]), hio_int(f[2]), hio_int(f[3])));
++        } else {
++            printf("ERR unknown request\n");
++        }
++        fflush(stdout);
++    }
++    return 0;
++}
+--- /dev/null
++++ b/tools/goose-hosts/env-main.c
+@@ -0,0 +1,158 @@
++/* Host for goose/misc/build-env.goose.
++ *
++ * Product callers: scripts/build.sh (BMOE_GOOSE_ENV=1, the default) and
++ * scripts/prepare_upstreams.sh. The scripts keep the file system, git and
++ * cmake invocations; the defaults, the configure vector, the subdirectory mask
++ * and the upstream pin checks come from here.
++ *
++ *   DIR      <root> <set> <val>                    -> hex of the build dir
++ *   JOBS     <set> <val>                           -> hex of the -j value
++ *   ARGS     <root> <build_dir> <cc_set> <cc> <cxx_set> <cxx>
++ *            <cuda_set> <cuda> <arch_set> <arch>    -> hex, one token per line
++ *   TYPE     <set> <val> <multi>                   -> hex of the build type
++ *   SUBDIRS  <llama> <cli> <tests> <tools>         -> bit mask
++ *   OPTIONS  <cmakelists_text>                     -> hex, NAME<TAB>DEFAULT lines
++ *   PIN      <expected> <actual>                   -> 0|1
++ *   INTEG    <reverse_ok> <markers>                -> 1|2|3
++ *   LINK     <exists> <is_symlink>                 -> 0 ok, 1 guard fires
++ *   MARKERS  <text> <snip>...                      -> 0|1, all snippets present
++ *   UPSTREAM <prepare_upstreams_text>              -> hex, url<TAB>dir<TAB>sha<TAB>branch
++ */
++#include "env.h"
++#include "host_io.h"
++
++#define HIO_ARG_CAP 4096
++static uint8_t hio_args_cc[HIO_ARG_CAP];
++static uint8_t hio_args_cxx[HIO_ARG_CAP];
++static uint8_t hio_args_cuda[HIO_ARG_CAP];
++static uint8_t hio_args_arch[HIO_ARG_CAP];
++
++static int64_t dec_cap(const char *field, uint8_t *dst, int64_t cap, sl_u8 *out) {
++    int64_t n = hio_decode(field, dst, cap);
++    if (n < 0) return -1;
++    out->data = dst;
++    out->len = n;
++    return n;
++}
++
++static int64_t dec(int i, const char *field, uint8_t *dst, int64_t *len, sl_u8 *out) {
++    int64_t n = dec_cap(field, dst, HIO_MAX_DECODED, out);
++    if (n >= 0 && len != NULL) *len = n;
++    return n;
++}
++
++int main(void) {
++    char *f[HIO_MAX_FIELDS];
++    goose_init(0, NULL);
++    while (hio_readline()) {
++        int n = hio_split(hio_line, f, HIO_MAX_FIELDS);
++        if (n <= 0) continue;
++        if (strcmp(f[0], "DIR") == 0 && n == 4) {
++            sl_u8 root = {NULL, 0}, val = {NULL, 0}, out = {hio_out, 0};
++            if (dec(0, f[1], hio_a, NULL, &root) < 0 || dec(0, f[3], hio_b, NULL, &val) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = env_build_dir(root, hio_int(f[2]), val, out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(f[0], "JOBS") == 0 && n == 3) {
++            sl_u8 val = {NULL, 0}, out = {hio_out, 0};
++            if (dec(0, f[2], hio_a, NULL, &val) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = env_jobs(hio_int(f[1]), val, out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(f[0], "ARGS") == 0 && n == 11) {
++            sl_u8 root = {NULL, 0}, bd = {NULL, 0}, cc = {NULL, 0}, cxx = {NULL, 0};
++            sl_u8 cuda = {NULL, 0}, arch = {NULL, 0}, out = {hio_out, 0};
++            /* Each override keeps its own buffer: they are all live at the call,
++             * and a compiler path is far below the tool limit. */
++            if (dec(0, f[1], hio_a, NULL, &root) < 0 || dec(0, f[2], hio_b, NULL, &bd) < 0 ||
++                dec_cap(f[4], hio_args_cc, HIO_ARG_CAP, &cc) < 0 ||
++                dec_cap(f[6], hio_args_cxx, HIO_ARG_CAP, &cxx) < 0 ||
++                dec_cap(f[8], hio_args_cuda, HIO_ARG_CAP, &cuda) < 0 ||
++                dec_cap(f[10], hio_args_arch, HIO_ARG_CAP, &arch) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = env_cmake_args(root, bd, hio_int(f[3]), cc, hio_int(f[5]), cxx,
++                                       hio_int(f[7]), cuda, hio_int(f[9]), arch, out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(f[0], "TYPE") == 0 && n == 4) {
++            sl_u8 val = {NULL, 0}, out = {hio_out, 0};
++            if (dec(0, f[2], hio_a, NULL, &val) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = env_build_type(hio_int(f[1]), val, hio_int(f[3]), out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(f[0], "SUBDIRS") == 0 && n == 5) {
++            printf("OK %lld\n", (long long) env_subdirs(hio_int(f[1]), hio_int(f[2]),
++                                                        hio_int(f[3]), hio_int(f[4])));
++        } else if (strcmp(f[0], "OPTIONS") == 0 && n == 2) {
++            sl_u8 text = {NULL, 0}, out = {hio_out, 0};
++            if (dec(0, f[1], hio_a, NULL, &text) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = env_option_table(text, out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(f[0], "PIN") == 0 && n == 3) {
++            sl_u8 exp = {NULL, 0}, act = {NULL, 0};
++            if (dec(0, f[1], hio_a, NULL, &exp) < 0 || dec(0, f[2], hio_b, NULL, &act) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            printf("OK %lld\n", (long long) env_pin_ok(exp, act));
++        } else if (strcmp(f[0], "INTEG") == 0 && n == 3) {
++            printf("OK %lld\n", (long long) env_integration_state(hio_int(f[1]), hio_int(f[2])));
++        } else if (strcmp(f[0], "LINK") == 0 && n == 3) {
++            printf("OK %lld\n", (long long) env_link_guard(hio_int(f[1]), hio_int(f[2])));
++        } else if (strcmp(f[0], "MARKERS") == 0 && n >= 3) {
++            sl_u8 text = {NULL, 0};
++            sl_u8 snip = {hio_b, 0};
++            int64_t off[64], len[64];
++            int64_t k = 0, at = 0;
++            if (dec(0, f[1], hio_a, NULL, &text) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            while (2 + k < n && k < 64) {
++                int64_t l = hio_decode(f[2 + k], hio_b + at, HIO_MAX_DECODED - at);
++                if (l < 0) { at = -1; break; }
++                off[k] = at;
++                len[k] = l;
++                at += l;
++                k++;
++            }
++            if (at < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            snip.len = at;
++            {
++                sl_i64 swo = {off, k}, swl = {len, k};
++                printf("OK %lld\n", (long long) env_markers_all(text, snip, swo, swl, k));
++            }
++        } else if (strcmp(f[0], "UPSTREAM") == 0 && n == 2) {
++            sl_u8 text = {NULL, 0}, out = {hio_out, 0};
++            if (dec(0, f[1], hio_a, NULL, &text) < 0) {
++                printf("ERR malformed field\n");
++                continue;
++            }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = env_upstream_pins(text, out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else {
++            printf("ERR unknown request\n");
++        }
++        fflush(stdout);
++    }
++    return 0;
++}
+--- /dev/null
++++ b/tools/goose-hosts/pkg-main.c
+@@ -0,0 +1,139 @@
++/* Host for goose/misc/release-plan.goose.
++ *
++ * Product callers: scripts/make-release.sh and tools/package-main-runtime.sh
++ * (BMOE_GOOSE_PKG=1, the default). The scripts keep git, gh, stat, archive
++ * creation and file hashing; tag acceptance, the asset class, both size
++ * limits, the retention guards, the dist file list, SHA256SUMS and
++ * manifest.json bytes come from here.
++ *
++ *   VERSION       <tag>                                  -> 0|1
++ *   PRERELEASE    <tag>                                  -> 0|1
++ *   BASENAME      <path>                                 -> hex
++ *   RUNTIME_ASSET <path>                                 -> 0|1
++ *   SELECTED      <name>                                 -> 0|1
++ *   ASSET_LIMIT   <bytes>                                -> 0|1
++ *   TREE_LIMIT    <bytes>                                -> 0|1
++ *   KEEP          <has_runtime> <keep_old> <tag> <same> <name> -> 0 delete, 1 keep
++ *   DIST                                                 -> hex, one name per line
++ *   SUMS          <n> <hash> <name> ...                   -> hex of SHA256SUMS
++ *   MANIFEST      <unit> <compiler> <modules> <c_bytes> <obj_bytes>
++ *                 <defined> <extern> <h1> <h2> <h3> <h4>   -> hex of manifest.json
++ *   COUNT         <build_script_text>                    -> module count
++ *   VERSION_LINE  <goose_version_text>                    -> hex
++ */
++#include "pkg.h"
++#include "host_io.h"
++
++static sl_u8 one(const char *field, uint8_t *dst) {
++    sl_u8 s = {dst, 0};
++    s.len = hio_decode(field, dst, HIO_MAX_DECODED);
++    return s;
++}
++
++int main(void) {
++    char *f[HIO_MAX_FIELDS];
++    goose_init(0, NULL);
++    while (hio_readline()) {
++        int n = hio_split(hio_line, f, HIO_MAX_FIELDS);
++        if (n <= 0) continue;
++        const char *c = f[0];
++        if (strcmp(c, "VERSION") == 0 && n == 2) {
++            sl_u8 s = one(f[1], hio_a);
++            printf(s.len < 0 ? "ERR malformed field\n" : "OK %lld\n",
++                   (long long) (s.len < 0 ? 0 : pkg_version_ok(s)));
++        } else if (strcmp(c, "PRERELEASE") == 0 && n == 2) {
++            sl_u8 s = one(f[1], hio_a);
++            printf(s.len < 0 ? "ERR malformed field\n" : "OK %lld\n",
++                   (long long) (s.len < 0 ? 0 : pkg_prerelease(s)));
++        } else if (strcmp(c, "BASENAME") == 0 && n == 2) {
++            sl_u8 s = one(f[1], hio_a), out = {hio_out, 0};
++            if (s.len < 0) { printf("ERR malformed field\n"); continue; }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = pkg_basename(s, out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(c, "RUNTIME_ASSET") == 0 && n == 2) {
++            sl_u8 s = one(f[1], hio_a);
++            printf(s.len < 0 ? "ERR malformed field\n" : "OK %lld\n",
++                   (long long) (s.len < 0 ? 0 : pkg_runtime_asset(s)));
++        } else if (strcmp(c, "SELECTED") == 0 && n == 2) {
++            sl_u8 s = one(f[1], hio_a);
++            printf(s.len < 0 ? "ERR malformed field\n" : "OK %lld\n",
++                   (long long) (s.len < 0 ? 0 : pkg_asset_selected(s)));
++        } else if (strcmp(c, "ASSET_LIMIT") == 0 && n == 2) {
++            printf("OK %lld\n", (long long) pkg_asset_over_limit(hio_int(f[1])));
++        } else if (strcmp(c, "TREE_LIMIT") == 0 && n == 2) {
++            printf("OK %lld\n", (long long) pkg_tree_over_limit(hio_int(f[1])));
++        } else if (strcmp(c, "KEEP") == 0 && n == 6) {
++            sl_u8 name = one(f[5], hio_a);
++            if (name.len < 0) { printf("ERR malformed field\n"); continue; }
++            printf("OK %lld\n", (long long) pkg_keep_asset(hio_int(f[1]), hio_int(f[2]),
++                                                           hio_int(f[3]), hio_int(f[4]), name));
++        } else if (strcmp(c, "DIST") == 0 && n == 1) {
++            sl_u8 out = {hio_out, 0};
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = pkg_dist_files(out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(c, "SUMS") == 0 && n >= 4 && (n - 2) % 2 == 0) {
++            int64_t k = (n - 2) / 2, pairs = 0;
++            int64_t ho[8], hl[8], no[8], nl[8];
++            int64_t at_h = 0, at_n = 0;
++            int bad = 0;
++            sl_u8 hash = {hio_b, 0}, name = {hio_c, 0}, out = {hio_out, 0};
++            for (pairs = 0; pairs < k && pairs < 8; pairs++) {
++                int64_t a = hio_decode(f[2 + 2 * pairs], hio_b + at_h, HIO_MAX_DECODED - at_h);
++                int64_t b = hio_decode(f[3 + 2 * pairs], hio_c + at_n, HIO_MAX_DECODED - at_n);
++                if (a < 0 || b < 0) { bad = 1; break; }
++                ho[pairs] = at_h; hl[pairs] = a;
++                no[pairs] = at_n; nl[pairs] = b;
++                at_h += a; at_n += b;
++            }
++            if (bad || pairs < 1) { printf("ERR malformed field\n"); continue; }
++            hash.len = at_h;
++            name.len = at_n;
++            out.len = (int64_t) sizeof hio_out / 4;
++            {
++                sl_i64 sho = {ho, pairs}, shl = {hl, pairs}, sno = {no, pairs}, snl = {nl, pairs};
++                int64_t r = pkg_sha256sums(hash, sho, shl, name, sno, snl, pairs, out);
++                printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++            }
++        } else if (strcmp(c, "MANIFEST") == 0 && n == 12) {
++            int64_t ho[4], hl[4], at = 0;
++            int bad = 0;
++            sl_u8 unit = {hio_a, 0}, compiler = {hio_b, 0}, hash = {hio_c, 0}, out = {hio_out, 0};
++            int64_t k = 0;
++            for (k = 0; k < 4; k++) {
++                int64_t a = hio_decode(f[8 + k], hio_c + at, HIO_MAX_DECODED - at);
++                if (a < 0) { bad = 1; break; }
++                ho[k] = at; hl[k] = a;
++                at += a;
++            }
++            if (bad) { printf("ERR malformed field\n"); continue; }
++            unit.len = hio_decode(f[1], hio_a, HIO_MAX_DECODED);
++            compiler.len = hio_decode(f[2], hio_b, HIO_MAX_DECODED);
++            if (unit.len < 0 || compiler.len < 0) { printf("ERR malformed field\n"); continue; }
++            hash.len = at;
++            out.len = (int64_t) sizeof hio_out / 4;
++            {
++                sl_i64 sh = {ho, 4}, sl = {hl, 4};
++                int64_t r = pkg_manifest_json(unit, compiler, hio_int(f[3]), hio_int(f[4]),
++                                              hio_int(f[5]), hio_int(f[6]), hio_int(f[7]),
++                                              hash, sh, sl, out);
++                printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++            }
++        } else if (strcmp(c, "COUNT") == 0 && n == 2) {
++            sl_u8 text = one(f[1], hio_a);
++            if (text.len < 0) { printf("ERR malformed field\n"); continue; }
++            printf("OK %lld\n", (long long) pkg_module_count(text));
++        } else if (strcmp(c, "VERSION_LINE") == 0 && n == 2) {
++            sl_u8 text = one(f[1], hio_a), out = {hio_out, 0};
++            if (text.len < 0) { printf("ERR malformed field\n"); continue; }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = pkg_version_line(text, out);
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else {
++            printf("ERR unknown request\n");
++        }
++        fflush(stdout);
++    }
++    return 0;
++}
+--- /dev/null
++++ b/tools/goose-hosts/fx-main.c
+@@ -0,0 +1,91 @@
++/* Host for goose/misc/fixture-plan.goose.
++ *
++ * Product caller: scripts/make-tiny-moe.py (BMOE_GOOSE_FX=1, the default). The
++ * script keeps gguf, numpy and the writer; the tensor plan — every name, numpy
++ * shape and per-layer seed, in emission order — the mode guards, the shard
++ * count and the banner come from here.
++ *
++ *   ARCH      <name>                 -> arch id, -1 unknown
++ *   GUARD     <arch> <split>         -> "0 -" or "1 <message hex>"
++ *   SMALLFIRST <split>               -> 0|1
++ *   COUNT     <arch>                 -> tensor count
++ *   SHARDS    <n> <per_shard> <small_first> -> shard count
++ *   TENSOR    <arch> <i>             -> hex of "<name> <shape> <seed>"
++ *   METACOUNT <arch>                 -> metadata count
++ *   META      <arch> <i>             -> hex of the metadata row
++ *   BANNER    <arch> <out_path>      -> hex of the printed line
++ */
++#include "fx.h"
++#include "host_io.h"
++
++int main(void) {
++    char *f[HIO_MAX_FIELDS];
++    goose_init(0, NULL);
++    while (hio_readline()) {
++        int n = hio_split(hio_line, f, HIO_MAX_FIELDS);
++        if (n <= 0) continue;
++        const char *c = f[0];
++        if (strcmp(c, "ARCH") == 0 && n == 2) {
++            sl_u8 name = {hio_a, 0};
++            name.len = hio_decode(f[1], hio_a, 1024);
++            if (name.len < 0) { printf("ERR malformed field\n"); continue; }
++            printf("OK %lld\n", (long long) fx_arch(name));
++        } else if (strcmp(c, "GUARD") == 0 && n == 3) {
++            /* fx_split_guard writes the message without returning its length, so
++             * the buffer is pre-filled with a sentinel and the written prefix is
++             * measured. This keeps the text owned by the module. */
++            int64_t i = 0;
++            char enc[2 * 4096];
++            memset(hio_out, 0x7f, 4096);
++            sl_u8 msg = {hio_out, 4096};
++            int64_t r = fx_split_guard(hio_int(f[1]), hio_int(f[2]), msg);
++            if (r == 0) {
++                printf("OK 0 -\n");
++                continue;
++            }
++            while (i < 4096 && hio_out[i] != 0x7f) i++;
++            printf("OK 1 %s\n", hio_encode(hio_out, i, enc));
++        } else if (strcmp(c, "SMALLFIRST") == 0 && n == 2) {
++            printf("OK %lld\n", (long long) fx_small_first(hio_int(f[1])));
++        } else if (strcmp(c, "COUNT") == 0 && n == 2) {
++            printf("OK %lld\n", (long long) fx_tensor_count(hio_int(f[1])));
++        } else if (strcmp(c, "SHARDS") == 0 && n == 4) {
++            printf("OK %lld\n", (long long) fx_shards(hio_int(f[1]), hio_int(f[2]), hio_int(f[3])));
++        } else if (strcmp(c, "TENSOR") == 0 && n == 3) {
++            sl_u8 out = {hio_out, 0};
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = fx_tensor(hio_int(f[1]), hio_int(f[2]), out);
++            if (r < 0) {
++                printf("ERR out of range\n");
++                continue;
++            }
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(c, "METACOUNT") == 0 && n == 2) {
++            printf("OK %lld\n", (long long) fx_meta_count(hio_int(f[1])));
++        } else if (strcmp(c, "META") == 0 && n == 3) {
++            sl_u8 out = {hio_out, 0};
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = fx_meta(hio_int(f[1]), hio_int(f[2]), out);
++            if (r < 0) {
++                printf("ERR out of range\n");
++                continue;
++            }
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else if (strcmp(c, "BANNER") == 0 && n == 3) {
++            sl_u8 path = {hio_b, 0}, out = {hio_out, 0};
++            path.len = hio_decode(f[2], hio_b, HIO_MAX_DECODED);
++            if (path.len < 0) { printf("ERR malformed field\n"); continue; }
++            out.len = (int64_t) sizeof hio_out / 4;
++            int64_t r = fx_banner(hio_int(f[1]), path, out);
++            if (r < 0) {
++                printf("ERR out of range\n");
++                continue;
++            }
++            printf("OK %s\n", hio_encode(hio_out, r, (char *) hio_line));
++        } else {
++            printf("ERR unknown request\n");
++        }
++        fflush(stdout);
++    }
++    return 0;
++}
