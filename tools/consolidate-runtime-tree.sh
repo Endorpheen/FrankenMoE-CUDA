@@ -90,11 +90,10 @@ W=${BUILD:-$BASE/runtime/reconstructed/build}
 # Only the objects build.py actually links: its module loop (fgNNNs.o), its bridge loop (bNNN.o) and the explicit
 # extra_mod list. A blanket copy pulled in old non-PIC variants (fx286.o, fx291.o) that the real link never uses -
 # fx286pic.o is the PIC one - and the clean build then failed on relocations.
-# Only the module objects this resolution actually chose. The build directory also holds stale objects from
-# earlier runs - fg367s.o is there although build.py excludes fg367s as a bridge - and a blanket copy of fg*.o
-# reproduced exactly the stale-object problem this consolidation exists to remove.
-while IFS= read -r mo; do [ -f "$W/$mo" ] && cp "$W/$mo" "$DST/extra-objects/"; done < "$DST/module-objects.txt"
-for o in "$W"/b[0-9][0-9][0-9].o \
+# Only hand-built objects are frozen here. Module and bridge objects are NOT copied: build-from-tree.sh compiles
+# them from the sources in modules/ and bridges/, which is what makes this a build rather than a re-link. Copying
+# them as well produced duplicate definitions, which is how the earlier stale-object problem showed itself.
+for o in \
          "$W"/b291.o "$W"/fx286pic.o "$W"/fx262a.o "$W"/fx263-pic.o "$W"/gates.o \
          "$W"/slru-policy.o "$W"/slru-runtime.o "$W"/slru-shim.o \
          "$W"/fg-ar.o "$W"/fg-ar-bridge.o "$W"/fg-q35.o "$W"/fg-qg.o "$W"/fg-q35-bridge.o \
@@ -108,6 +107,6 @@ for l in libggml.so.0 libggml-base.so.0 libggml-cpu.so.0 libggml-cuda.so.0 \
     [ -f "$W/stage-run/$l" ] && cp -L "$W/stage-run/$l" "$DST/libs/"
 done
 
-( cd "$DST" && find . -type f -exec sha256sum {} \; | sort -k2 > SHA256SUMS )
+( cd "$DST" &&  find . -type f ! -name SHA256SUMS -exec sha256sum {} \; | sort -k2 > SHA256SUMS )
 echo "consolidated tree: $DST"
 for d in our-src modules bridges flint-objects extra-objects libs; do printf '  %-15s %s files\n' "$d" "$(find "$DST/$d" -type f | wc -l)"; done

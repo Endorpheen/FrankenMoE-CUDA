@@ -19,6 +19,15 @@ REPLACED=" llama-batch.cpp llama-context.cpp llama-graph.cpp llama-hparams.cpp l
 REPLACED=" $(echo $REPLACED) "
 is_replaced() { case "$REPLACED" in *" $1 "*) return 0;; *) return 1;; esac; }
 
+# Refuse to build from a tree whose inputs do not match its manifest: a build from silently different sources is
+# the failure this whole exercise exists to prevent.
+if [ -f "$TREE/SHA256SUMS" ]; then
+    ( cd "$TREE" && sha256sum -c SHA256SUMS --quiet ) || { echo "input verification failed: $TREE"; exit 1; }
+    echo "inputs verified against $TREE/SHA256SUMS"
+else
+    echo "no SHA256SUMS in $TREE - refusing to build unverified inputs"; exit 1
+fi
+
 n=0
 for src in "$TREE"/our-src/*.cpp; do
     b=$(basename "$src")
@@ -30,17 +39,17 @@ echo "our sources: $(ls "$OUT/obj"/our-*.o | wc -l)"
 
 MODINC=""
 for d in "$TREE"/module-src/*/; do MODINC="$MODINC -I$d"; done
-for src in "$TREE"/none/*.c; do
+for src in "$TREE"/modules/*.c; do
     [ -e "$src" ] || continue
     gcc-13 -O2 -fPIC -I"$TREE/modules" $MODINC -c "$src" -o "$OUT/obj/mod-$(basename "$src" .c).o"
 done
-for src in "$TREE"/none/*.cpp; do
+for src in "$TREE"/modules/*.cpp; do
     [ -e "$src" ] || continue
     g++-13 -O2 -fPIC -std=c++17 -I"$TREE/modules" $MODINC -c "$src" -o "$OUT/obj/mod-$(basename "$src" .cpp).o"
 done
 echo "modules: $(ls "$OUT/obj"/mod-*.o 2>/dev/null | wc -l)"
 
-for d in "$TREE"/none/*/; do
+for d in "$TREE"/bridges/*/; do
     m=$(basename "$d")
     [ -f "$d/bridge.c" ] || continue
     gcc-13 -O3 -DNDEBUG -fPIC -std=c11 -I"$d" -c "$d/bridge.c" -o "$OUT/obj/br-$m.o"
@@ -55,7 +64,7 @@ echo "upstream objects: $(echo $flint | wc -w) of $(ls "$TREE"/flint-objects/*.o
 
 /usr/bin/c++ -fPIC -O3 -DNDEBUG -shared -Wl,-soname,libllama.so.0 \
     -o "$OUT/libllama.so.0" \
-    "$OUT"/obj/our-*.o \
+    "$OUT"/obj/our-*.o "$OUT"/obj/mod-*.o "$OUT"/obj/br-*.o \
     $TREE/extra-objects/*.o $flint \
     -Wl,-rpath,"$TREE/libs" \
     "$TREE/libs/libggml.so.0" "$TREE/libs/libggml-base.so.0" \
