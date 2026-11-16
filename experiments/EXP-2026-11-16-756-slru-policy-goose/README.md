@@ -57,3 +57,28 @@ measurement decides whether it is accepted, not the gate alone.
 ## 5. Cost
 
 2 gate runs, 450 cases total, seconds each. No model run.
+
+## 6. Build status
+
+`build.sh` produces the three objects the link needs and is reproducible:
+
+```
+slru-policy.o   7352 B   exports goose_init, slru_plan
+slru-runtime.o 63528 B   the Goose runtime, emitted once from the pinned compiler
+slru-shim.o     2544 B   gs_panic / gs_idxfail / gs_divfail
+```
+
+Verified functionally through ctypes against the built object: `[0,1,2,3]` fills four slots 0..3 with
+no hits; the next request `[0,1]` fills nothing and reports two hits. Same as the native path.
+
+Unlike the older `fgNNN` bridges, this module is not post-processed to strip the runtime calls, so it
+links the emitted runtime. That is 63 KB of runtime for one module - acceptable, and the alternative
+(re-writing the emission into the fgNNN style) is a bigger change than the policy itself.
+
+## 7. What remains before it can be called migrated
+
+1. Call `slru_plan` from `moe_cache_slru::plan` in `llama-moe-cache.cpp`, behind a gate that defaults on
+   (rule 10), with the native loop kept as the fallback.
+2. Rebuild `libllama-exp371.so` and check the reference hash still matches at 128/256/512.
+3. Measure decode: the plan runs once per layer per token (41 times per token), so a Goose call there
+   must be free. If it costs decode, it is rejected regardless of the gate passing.
