@@ -550,12 +550,18 @@ come from Igor directly. For every marked message:
 
     Before every measurement:
 
-        ss -ltn | grep -E ':(9101|8950)'      # is the port already taken by an earlier attempt?
-        pgrep -af 'stage-run/llama-server'    # is an earlier server still alive?
+        ss -ltnp | grep -E ':(9101|8950)'     # owner of the port, by pid - not by process name
+        pgrep -af 'llama-server'              # and any server still alive under another name
         nvidia-smi --query-gpu=memory.used --format=csv,noheader
 
     Stop only your own previous server, verify it exited and released the port, then start. Never start a second run
     while the first is alive, and never raise a wait timeout to "fix" a start that is actually blocked by a leftover.
+
+    On 2026-11-16 this cost three hours and several wrong conclusions - the KV cache was blamed, then the GPU, then the
+    build - because `pgrep`/`ps` matched the process by the name `llama-server` while a leftover was still holding the
+    port. `ss -ltnp` names the pid that owns the socket; that is the check that settles it. One server, allowed to finish
+    starting, ran the full 262144 profile at 45.68 tok/s while a second attempt against the same port failed with
+    `cudaMalloc out of memory`.
 
     Two claims are cheap to check and expensive to state without checking:
       - "the environment is at fault" - one nvidia-smi decides it;
