@@ -285,3 +285,7 @@ experiments/EXP-2026-11-15-661-p8-12b-server-switches/source/server.h
 # binaries are not (they are reproducible and large).
 results/runtime-snapshots/*/libllama.so
 results/runtime-snapshots/*/objects/
+
+# Build backups: binary sets kept for rollback. Ignored by git because they are large concrete files; the
+# store outside the repository keeps the authoritative copies.
+Backup/

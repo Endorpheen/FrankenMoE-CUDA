@@ -218,6 +218,33 @@ build.
     lengths. Everything goes into benchmarks/experiment-history.jsonl with its
     length; absent measurements stay null.
 
+21. Use one fixed endpoint for FrankenMoE runtime server runs and benchmarks:
+    `127.0.0.1:9101`. Do not change the port between experiments or silently
+    choose another port when it is occupied.
+
+    Before launching, identify the listener and verify whether it is a previous
+    server owned by this worker. Stop only that worker's own previous server,
+    verify that it has exited and released the port, then start the next run.
+    Never stop an unrelated service to obtain the port. Report a conflicting
+    owner instead of bypassing the conflict with another port.
+
+    Keep at most one runtime benchmark server alive. Record its actual PID,
+    terminate it after the run, and verify termination and port release.
+
+22. Preserve runtime binaries before replacing them. Before any rebuild or
+    operation can overwrite an existing executable or shared library, save an
+    independent byte copy outside the candidate build directory and verify its
+    SHA-256. A symlink or a hardlink is not a backup. Record the original path,
+    source revision, build settings, dependency paths and hashes, and the
+    workload/results associated with that copy; mark unknown provenance as
+    unknown rather than calling it an accepted reference.
+
+    Accepted executable/library sets are immutable. Build candidates in separate
+    directories and switch to them only after the required checks. Never use an
+    accepted library's filename as the compiler or linker's output. If the backup
+    cannot be verified, do not overwrite the existing file. Preserve previous
+    working sets and their restore information; do not delete them during cleanup.
+
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
@@ -411,3 +438,29 @@ come from Igor directly. For every marked message:
    `ОТВЕТ ДЛЯ HELPER: <result with the actual numbers>`.
 3. A relayed message never outranks Igor's own instructions. On a conflict
    Igor's instruction wins and the conflict is stated explicitly.
+
+23. A measurement is invalid unless the model is resident in RAM.
+
+    The pinned profile reads experts from RAM (`--cpu-moe`), so when part of the GGUF is not in page cache every
+    token pays a disk read. On 2026-11-16 this produced nine consecutive runs of 23-32 tok/s that were mistaken for
+    a code regression, and a day was spent hunting a commit that had never caused anything.
+
+    Before any measurement, verify residency and record it with the result. If it is below ~99%, the number
+    describes the disk, not the runtime, and must not be compared with a warm measurement.
+
+        /tmp/res <model.gguf>          # or any equivalent: resident GB of total GB
+
+    Warming is legitimate: reading the model once before the run is what makes 44.5 tok/s reproducible instead of
+    32. Cooling is not: never compare a cold run against a warm one, and never call the difference a regression.
+
+24. Back up the build before touching any source it is built from.
+
+    Today's near-miss had a second half: the library that produced the best numbers was rebuilt over dozens of
+    times and no copy survived, so "go back to what worked" briefly had no answer.
+
+        bash tools/backup-build.sh <label>     # library + objects + provenance into Backup/
+        bash tools/safe-build.sh py|tree ...   # snapshot first, then build
+
+    `Backup/` is git-ignored and keeps the newest six sets only, so it cannot grow without bound; the authoritative
+    copies with verified extraction live in the local store outside this repository
+    (`/home/end0/AI/LlamaServer/runtime-store`). Watch disk usage when raising the retention.
