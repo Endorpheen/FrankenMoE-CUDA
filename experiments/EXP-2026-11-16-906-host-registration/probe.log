@@ -1,0 +1,7 @@
+{"case": "control-default", "bytes": 4096, "registered": false}
+exit: 0
+{"case": "candidate-default", "bytes": 4096, "registered": true}
+exit: 0
+{"case": "candidate-disabled", "bytes": 4096, "registered": false}
+exit: 0
+host-registration hardware probe: 3/3 passed

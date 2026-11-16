@@ -110,6 +110,8 @@ printf '%s\n' "$SRV" "${ARGS[@]}" > "${RUNDIR}/argv.txt"
 sha256sum "$REQUEST" "$SERVER_DIR"/*.so* "$SRV" > "${RUNDIR}/SHA256SUMS"
 ldd "$SRV" > "${RUNDIR}/dependencies.txt"
 cp "$REQUEST" "${RUNDIR}/request.json"
+cat /proc/vmstat > "${RUNDIR}/vmstat-prelaunch.txt"
+cat /proc/meminfo > "${RUNDIR}/meminfo-prelaunch.txt"
 
 # 5. own process group: setsid, so the group id is the server's pid and only it is terminated.
 setsid env LD_PRELOAD="${APEX_DEBUG_PRELOAD:-}" "${SRV}" "${ARGS[@]}" \
@@ -140,14 +142,25 @@ echo "[$(date +%H:%M:%S)] server ready" | tee -a "${RUNDIR}/run.log"
 cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt"
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-ready.txt"
 cat /proc/vmstat > "${RUNDIR}/vmstat-before.txt"
+cat /proc/meminfo > "${RUNDIR}/meminfo-ready.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-ready.txt"
 for ((i=1; i<=REQUEST_COUNT; i++)); do
     curl -fsS -m 1800 -X POST "http://127.0.0.1:${PORT}/${ENDPOINT}" -H 'Content-Type: application/json' \
         --data-binary @"${REQUEST}" -o "${RUNDIR}/r${i}.json" \
         -w '%{time_total}\n' > "${RUNDIR}/client-${i}-seconds.txt"
+    if [ -n "${APEX_EXPECT_REFERENCE:-}" ]; then
+        python3 - "${RUNDIR}/r${i}.json" "${APEX_EXPECT_REFERENCE}" <<'PY'
+import json, sys
+actual, expected = (json.load(open(p)) for p in sys.argv[1:])
+if actual.get("content") != expected["content"] or actual.get("tokens") != expected["tokens"]:
+    raise SystemExit("control response mismatch: stopping the lifecycle")
+print("control content/token gate passed")
+PY
+    fi
 done
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-after.txt"
 cat /proc/vmstat > "${RUNDIR}/vmstat-after.txt"
+cat /proc/meminfo > "${RUNDIR}/meminfo-after.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-after.txt"
 
 python3 - "${RUNDIR}" <<'PY'

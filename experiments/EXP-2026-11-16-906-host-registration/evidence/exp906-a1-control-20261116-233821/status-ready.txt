@@ -1,0 +1,61 @@
+Name:	llama-server
+Umask:	0002
+State:	S (sleeping)
+Tgid:	1400786
+Ngid:	0
+Pid:	1400786
+PPid:	1400746
+TracerPid:	0
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
+FDSize:	256
+Groups:	4 24 27 30 46 109 122 135 136 989 993 999 1000 
+NStgid:	1400786
+NSpid:	1400786
+NSpgid:	1400786
+NSsid:	1400786
+Kthread:	0
+VmPeak:	71990968 kB
+VmSize:	71925432 kB
+VmLck:	       0 kB
+VmPin:	       0 kB
+VmHWM:	21544236 kB
+VmRSS:	20835344 kB
+RssAnon:	  403792 kB
+RssFile:	20415996 kB
+RssShmem:	   15556 kB
+VmData:	 4204660 kB
+VmStk:	     132 kB
+VmExe:	       4 kB
+VmLib:	  578440 kB
+VmPTE:	   41372 kB
+VmSwap:	       0 kB
+HugetlbPages:	       0 kB
+CoreDumping:	0
+THP_enabled:	1
+untag_mask:	0xffffffffffffffff
+Threads:	39
+SigQ:	1/248207
+SigPnd:	0000000000000000
+ShdPnd:	0000000000000000
+SigBlk:	0000000000000000
+SigIgn:	0000000000001004
+SigCgt:	0000000100004442
+CapInh:	0000000800000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	0
+Seccomp_filters:	0
+Speculation_Store_Bypass:	thread vulnerable
+SpeculationIndirectBranch:	conditional enabled
+Cpus_allowed:	ffffffff
+Cpus_allowed_list:	0-31
+Mems_allowed:	00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001
+Mems_allowed_list:	0
+voluntary_ctxt_switches:	139
+nonvoluntary_ctxt_switches:	65
+x86_Thread_features:	
+x86_Thread_features_locked:	

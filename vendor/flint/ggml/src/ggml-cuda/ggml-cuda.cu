@@ -163,7 +163,9 @@ static bool ggml_cuda_pinned_memory_disabled() {
 }
 
 static bool ggml_cuda_register_host_enabled() {
-    static const bool enabled = ggml_cuda_env_flag("GGML_CUDA_REGISTER_HOST");
+    static const bool enabled = ggml_cuda_env_set("GGML_CUDA_REGISTER_HOST")
+        ? ggml_cuda_env_flag("GGML_CUDA_REGISTER_HOST")
+        : !ggml_cuda_pinned_memory_disabled();
     return enabled;
 }
 

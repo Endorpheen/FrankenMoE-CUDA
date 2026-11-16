@@ -1,0 +1,231 @@
+200000000-200200000 ---p 00000000 00:00 0 
+200200000-200400000 rw-s 00000000 00:07 1506                             /dev/nvidia0
+200400000-203400000 rw-s 00000000 00:07 1505                             /dev/nvidiactl
+203400000-206000000 ---p 00000000 00:00 0 
+206000000-206200000 rw-s 00000000 00:07 1505                             /dev/nvidiactl
+206200000-206400000 rw-s 00000000 00:07 1505                             /dev/nvidiactl
+206400000-206600000 rw-s 206400000 00:07 1507                            /dev/nvidia-uvm
+206600000-300200000 ---p 00000000 00:00 0 
+302000000-b5c000000 ---p 00000000 00:00 0 
+10000000000-10004000000 ---p 00000000 00:00 0 
+63f3756a4000-63f3756a5000 r--p 00000000 103:02 17957840                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/llama-server
+63f3756a5000-63f3756a6000 r-xp 00001000 103:02 17957840                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/llama-server
+63f3756a6000-63f3756a7000 r--p 00002000 103:02 17957840                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/llama-server
+63f3756a7000-63f3756a8000 r--p 00002000 103:02 17957840                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/llama-server
+63f3756a8000-63f3756a9000 rw-p 00003000 103:02 17957840                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/llama-server
+63f38cbdd000-63f39a01a000 rw-p 00000000 00:00 0                          [heap]
+745d0896f000-745dce000000 rw-p 00000000 00:00 0 
+745dce000000-745f57800000 ---p 00000000 00:00 0 
+745f57800000-745f57a00000 rw-s 00000000 00:01 962434                     /dev/zero (deleted)
+745f57a00000-745f58000000 ---p 00000000 00:00 0 
+745f58000000-745f58021000 rw-p 00000000 00:00 0 
+745f58021000-745f5c000000 ---p 00000000 00:00 0 
+745f68000000-745f68021000 rw-p 00000000 00:00 0 
+745f68021000-745f6c000000 ---p 00000000 00:00 0 
+745f6e000000-745f75c00000 ---p 00000000 00:00 0 
+745f75c00000-745f75e00000 rw-s 00000000 00:01 987243                     /dev/zero (deleted)
+745f75e00000-745f76000000 ---p 00000000 00:00 0 
+745f77457000-74644b5a0000 r--s 19857000 103:02 18088020                  /home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
+74644fdef000-746454021000 rw-p 00000000 00:00 0 
+746454021000-746458000000 ---p 00000000 00:00 0 
+74645ab8c000-746466000000 rw-p 00000000 00:00 0 
+746466000000-74646a000000 ---p 00000000 00:00 0 
+74646b791000-74646bf92000 rw-p 00000000 00:00 0 
+74646bf92000-74646bf93000 r--s 50e392000 103:02 18088020                 /home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
+74646c000000-746472c00000 ---p 00000000 00:00 0 
+746472c00000-746472f31000 rw-s 00000000 00:01 962435                     /dev/zero (deleted)
+746472f31000-746476400000 ---p 00000000 00:00 0 
+746476400000-746476600000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+746476600000-746476800000 rw-s 00000000 00:01 962429                     /dev/zero (deleted)
+746476800000-746476a00000 rw-s 00000000 00:01 962430                     /dev/zero (deleted)
+746476a00000-746477000000 ---p 00000000 00:00 0 
+746477000000-746477200000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+746477200000-746477400000 ---p 00000000 00:00 0 
+746477400000-746477600000 rw-s 00000000 00:01 962432                     /dev/zero (deleted)
+746477600000-746477a63000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+746477a63000-746478000000 ---p 00000000 00:00 0 
+746478000000-746478021000 rw-p 00000000 00:00 0 
+746478021000-74647c000000 ---p 00000000 00:00 0 
+74647c7be000-74647eddf000 rw-p 00000000 00:00 0 
+74647eddf000-74647ede0000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede0000-74647ede1000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede1000-74647ede2000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede2000-74647ede3000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede3000-74647ede4000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede4000-74647ede5000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede5000-74647ede6000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede6000-74647ede7000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede7000-74647ede8000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede8000-74647ede9000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647ede9000-74647edea000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647edea000-74647edeb000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647edeb000-74647edec000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647edec000-74647eded000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647eded000-74647edee000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647edee000-74647edef000 rw-s 00000000 00:07 1505                       /dev/nvidiactl
+74647edef000-746480000000 ---p 00000000 00:00 0 
+746480000000-746480021000 rw-p 00000000 00:00 0 
+746480021000-746484000000 ---p 00000000 00:00 0 
+74648473c000-7464850b6000 rw-p 00000000 00:00 0 
+7464850b6000-7464860b8000 rw-p 00000000 00:00 0 
+7464867e1000-746486fe2000 rw-p 00000000 00:00 0 
+746486fe2000-746496000000 rw-p 00000000 00:00 0 
+746496000000-74649c000000 ---p 00000000 00:00 0 
+74649c000000-74649c021000 rw-p 00000000 00:00 0 
+74649c021000-7464a0000000 ---p 00000000 00:00 0 
+7464a0347000-7464a0547000 rw-s 00000000 00:01 962431                     /dev/zero (deleted)
+7464a0547000-7464a1549000 rw-p 00000000 00:00 0 
+7464a1549000-7464a276a000 ---p 00000000 00:00 0 
+7464a276a000-7464a29fd000 rw-p 00000000 00:00 0 
+7464a29fd000-7464a4200000 rw-p 00000000 00:00 0 
+7464a4200000-7464bda69000 r-xp 00000000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7464bda69000-7464bdc69000 ---p 19869000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7464bdc69000-7464bdea7000 r--p 19869000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7464bdea7000-7464c185b000 rw-p 19aa7000 103:02 2557                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublasLt.so.12.6.4.1
+7464c185b000-7464c5a2c000 rw-p 00000000 00:00 0 
+7464c5c00000-7464c5d66000 r--p 00000000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7464c5d66000-7464c6cea000 r-xp 00166000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7464c6cea000-7464cb695000 r--p 010ea000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7464cb695000-7464cb696000 ---p 05a95000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7464cb696000-7464cb7cb000 r--p 05a95000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7464cb7cb000-7464cb7d4000 rw-p 05bca000 103:02 62263013                  /usr/lib/x86_64-linux-gnu/libcuda.so.580.178.04
+7464cb7d4000-7464cb84c000 rw-p 00000000 00:00 0 
+7464cba00000-7464d2128000 r-xp 00000000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7464d2128000-7464d2328000 ---p 06728000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7464d2328000-7464d2334000 r--p 06728000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7464d2334000-7464d233b000 rw-p 06734000 103:02 2555                      /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcublas.so.12.6.4.1
+7464d233b000-7464d2347000 rw-p 00000000 00:00 0 
+7464d2400000-7464d24a9000 r-xp 00000000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7464d24a9000-7464d26a9000 ---p 000a9000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7464d26a9000-7464d26ae000 r--p 000a9000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7464d26ae000-7464d26af000 rw-p 000ae000 103:02 29082                     /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so.12.6.77
+7464d26af000-7464d26b1000 rw-p 00000000 00:00 0 
+7464d273f000-7464d2800000 rw-p 00000000 00:00 0 
+7464d2800000-7464d283b000 r--p 00000000 103:02 17957834                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cuda.so.0
+7464d283b000-7464d382c000 r-xp 0003b000 103:02 17957834                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cuda.so.0
+7464d382c000-7464df080000 r--p 0102c000 103:02 17957834                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cuda.so.0
+7464df080000-7464df082000 r--p 0c87f000 103:02 17957834                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cuda.so.0
+7464df082000-7464df087000 rw-p 0c881000 103:02 17957834                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cuda.so.0
+7464df087000-7464df093000 rw-p 00000000 00:00 0 
+7464df13d000-7464df141000 r--p 00000000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7464df141000-7464df1f1000 r-xp 00004000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7464df1f1000-7464df1fe000 r--p 000b4000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7464df1fe000-7464df1ff000 r--p 000c1000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7464df1ff000-7464df200000 rw-p 000c2000 103:02 62265686                  /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7
+7464df200000-7464df2e4000 r--p 00000000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7464df2e4000-7464df678000 r-xp 000e4000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7464df678000-7464df797000 r--p 00478000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7464df797000-7464df814000 r--p 00597000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7464df814000-7464df817000 rw-p 00614000 103:02 62265313                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+7464df817000-7464df81a000 rw-p 00000000 00:00 0 
+7464df83a000-7464df84d000 r--p 00000000 103:02 17957833                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cpu.so.0
+7464df84d000-7464df94d000 r-xp 00013000 103:02 17957833                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cpu.so.0
+7464df94d000-7464df978000 r--p 00113000 103:02 17957833                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cpu.so.0
+7464df978000-7464df97a000 r--p 0013d000 103:02 17957833                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cpu.so.0
+7464df97a000-7464df97b000 rw-p 0013f000 103:02 17957833                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-cpu.so.0
+7464df97b000-7464dfa00000 rw-p 00000000 00:00 0 
+7464dfa00000-7464dfac7000 r--p 00000000 103:02 17957838                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama.so.0
+7464dfac7000-7464dfdf5000 r-xp 000c7000 103:02 17957838                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama.so.0
+7464dfdf5000-7464dfea7000 r--p 003f5000 103:02 17957838                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama.so.0
+7464dfea7000-7464dfeb6000 r--p 004a6000 103:02 17957838                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama.so.0
+7464dfeb6000-7464dfebd000 rw-p 004b5000 103:02 17957838                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama.so.0
+7464dfebd000-7464dfebf000 rw-p 00000000 00:00 0 
+7464dfeda000-7464dfeec000 r--p 00000000 103:02 62270819                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7464dfeec000-7464dff8c000 r-xp 00012000 103:02 62270819                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7464dff8c000-7464dfffe000 r--p 000b2000 103:02 62270819                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7464dfffe000-7464dffff000 r--p 00123000 103:02 62270819                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7464dffff000-7464e0000000 rw-p 00124000 103:02 62270819                  /usr/lib/x86_64-linux-gnu/libm.so.6
+7464e0000000-7464e00ba000 r--p 00000000 103:02 17957836                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-common.so.0
+7464e00ba000-7464e042a000 r-xp 000ba000 103:02 17957836                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-common.so.0
+7464e042a000-7464e04e7000 r--p 0042a000 103:02 17957836                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-common.so.0
+7464e04e7000-7464e04ee000 r--p 004e6000 103:02 17957836                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-common.so.0
+7464e04ee000-7464e04f4000 rw-p 004ed000 103:02 17957836                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-common.so.0
+7464e04f4000-7464e0514000 rw-p 00000000 00:00 0 
+7464e05a1000-7464e05ac000 r--p 00000000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7464e05ac000-7464e05ee000 r-xp 0000b000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7464e05ee000-7464e05fe000 r--p 0004d000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7464e05fe000-7464e05ff000 r--p 0005c000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7464e05ff000-7464e0600000 rw-p 0005d000 103:02 62293255                  /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+7464e0600000-7464e0628000 r--p 00000000 103:02 62270816                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7464e0628000-7464e07c0000 r-xp 00028000 103:02 62270816                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7464e07c0000-7464e080e000 r--p 001c0000 103:02 62270816                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7464e080e000-7464e0812000 r--p 0020e000 103:02 62270816                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7464e0812000-7464e0814000 rw-p 00212000 103:02 62270816                  /usr/lib/x86_64-linux-gnu/libc.so.6
+7464e0814000-7464e0821000 rw-p 00000000 00:00 0 
+7464e082d000-7464e0855000 r--p 00000000 103:02 17957839                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libmtmd.so.0
+7464e0855000-7464e09c1000 r-xp 00028000 103:02 17957839                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libmtmd.so.0
+7464e09c1000-7464e09fa000 r--p 00194000 103:02 17957839                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libmtmd.so.0
+7464e09fa000-7464e09fd000 r--p 001cc000 103:02 17957839                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libmtmd.so.0
+7464e09fd000-7464e09ff000 rw-p 001cf000 103:02 17957839                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libmtmd.so.0
+7464e09ff000-7464e0a00000 rw-p 00000000 00:00 0 
+7464e0a00000-7464e0aa3000 r--p 00000000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7464e0aa3000-7464e0bfe000 r-xp 000a3000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7464e0bfe000-7464e0c8a000 r--p 001fe000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7464e0c8a000-7464e0c99000 r--p 0028a000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7464e0c99000-7464e0c9c000 rw-p 00299000 103:02 62270192                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+7464e0c9c000-7464e0ca0000 rw-p 00000000 00:00 0 
+7464e0cae000-7464e0cef000 rw-p 00000000 00:00 0 
+7464e0cef000-7464e0d11000 r--p 00000000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7464e0d11000-7464e0dc4000 r-xp 00022000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7464e0dc4000-7464e0df2000 r--p 000d5000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7464e0df2000-7464e0dfc000 r--p 00102000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7464e0dfc000-7464e0e00000 rw-p 0010c000 103:02 62266077                  /usr/lib/x86_64-linux-gnu/libssl.so.3
+7464e0e00000-7464e0e90000 r--p 00000000 103:02 17957837                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-server-impl.so
+7464e0e90000-7464e10e6000 r-xp 00090000 103:02 17957837                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-server-impl.so
+7464e10e6000-7464e1160000 r--p 002e6000 103:02 17957837                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-server-impl.so
+7464e1160000-7464e1165000 r--p 00360000 103:02 17957837                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-server-impl.so
+7464e1165000-7464e116a000 rw-p 00365000 103:02 17957837                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libllama-server-impl.so
+7464e116a000-7464e116b000 rw-p 00000000 00:00 0 
+7464e116b000-7464e116c000 r--p 00000000 103:02 62270981                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7464e116c000-7464e116d000 r-xp 00001000 103:02 62270981                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7464e116d000-7464e116e000 r--p 00002000 103:02 62270981                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7464e116e000-7464e116f000 r--p 00002000 103:02 62270981                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7464e116f000-7464e1170000 rw-p 00003000 103:02 62270981                  /usr/lib/x86_64-linux-gnu/librt.so.1
+7464e1170000-7464e1171000 r--p 00000000 103:02 62270979                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7464e1171000-7464e1172000 r-xp 00001000 103:02 62270979                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7464e1172000-7464e1173000 r--p 00002000 103:02 62270979                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7464e1173000-7464e1174000 r--p 00002000 103:02 62270979                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7464e1174000-7464e1175000 rw-p 00003000 103:02 62270979                  /usr/lib/x86_64-linux-gnu/libpthread.so.0
+7464e1175000-7464e1176000 r--p 00000000 103:02 62270818                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7464e1176000-7464e1177000 r-xp 00001000 103:02 62270818                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7464e1177000-7464e1178000 r--p 00002000 103:02 62270818                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7464e1178000-7464e1179000 r--p 00002000 103:02 62270818                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7464e1179000-7464e117a000 rw-p 00003000 103:02 62270818                  /usr/lib/x86_64-linux-gnu/libdl.so.2
+7464e117a000-7464e117c000 rw-p 00000000 00:00 0 
+7464e117c000-7464e117f000 r--p 00000000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7464e117f000-7464e1192000 r-xp 00003000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7464e1192000-7464e1198000 r--p 00016000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7464e1198000-7464e1199000 r--p 0001c000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7464e1199000-7464e119a000 rw-p 0001d000 103:02 62259940                  /usr/lib/x86_64-linux-gnu/libz.so.1.3.1
+7464e119a000-7464e119e000 rw-p 00000000 00:00 0 
+7464e119e000-7464e11af000 r--p 00000000 103:02 17957832                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-base.so.0
+7464e11af000-7464e1245000 r-xp 00011000 103:02 17957832                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-base.so.0
+7464e1245000-7464e1269000 r--p 000a7000 103:02 17957832                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-base.so.0
+7464e1269000-7464e126b000 r--p 000ca000 103:02 17957832                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-base.so.0
+7464e126b000-7464e126c000 rw-p 000cc000 103:02 17957832                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml-base.so.0
+7464e126c000-7464e126d000 rw-p 00000000 00:00 0 
+7464e126d000-7464e1270000 r--p 00000000 103:02 17957835                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml.so.0
+7464e1270000-7464e1276000 r-xp 00003000 103:02 17957835                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml.so.0
+7464e1276000-7464e1278000 r--p 00009000 103:02 17957835                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml.so.0
+7464e1278000-7464e1279000 r--p 0000a000 103:02 17957835                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml.so.0
+7464e1279000-7464e127a000 rw-p 0000b000 103:02 17957835                  /home/end0/AI/LlamaServer/franken-recovery-20261116/exp906-host-registration/run/libggml.so.0
+7464e127a000-7464e127c000 rw-p 00000000 00:00 0 
+7464e127c000-7464e1280000 r--p 00000000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7464e1280000-7464e12a4000 r-xp 00004000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7464e12a4000-7464e12a8000 r--p 00028000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7464e12a8000-7464e12a9000 r--p 0002c000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7464e12a9000-7464e12aa000 rw-p 0002d000 103:02 62264624                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7464e12ad000-7464e12ae000 r--s 00000000 00:07 1505                       /dev/nvidiactl
+7464e12ae000-7464e12be000 -w-s 00000000 00:07 1506                       /dev/nvidia0
+7464e12be000-7464e12e1000 rw-p 00000000 00:00 0 
+7464e12e1000-7464e12e5000 r--p 00000000 00:00 0                          [vvar]
+7464e12e5000-7464e12e7000 r--p 00000000 00:00 0                          [vvar_vclock]
+7464e12e7000-7464e12e9000 r-xp 00000000 00:00 0                          [vdso]
+7464e12e9000-7464e12ea000 r--p 00000000 103:02 62263133                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7464e12ea000-7464e1319000 r-xp 00001000 103:02 62263133                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7464e1319000-7464e1324000 r--p 00030000 103:02 62263133                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7464e1324000-7464e1326000 r--p 0003b000 103:02 62263133                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7464e1326000-7464e1327000 rw-p 0003d000 103:02 62263133                  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7464e1327000-7464e1328000 rw-p 00000000 00:00 0 
+7ffda37d1000-7ffda37f2000 rw-p 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]

@@ -1,0 +1,630 @@
+{
+  "source_commit": "a11c5662e5b50040e08937d3a95073a0c1a978f6",
+  "source": "/home/end0/AI/FrankenMoE-CUDA/vendor/flint/ggml/src/ggml-cuda/ggml-cuda.cu",
+  "source_sha256": "92aeb2d95f6f12e7a56c55ddba2a14d07a9fcb8accfe35571024f5f1f1a60350",
+  "control": "/home/end0/AI/LlamaServer/franken-recovery-20261116/run-fixed",
+  "control_components": {
+    "libggml-base.so.0": {
+      "sha256": "23363cbd74857db91d4fdc3712b2bb32adf42893075fa5139011f439d0abcdb7",
+      "bytes": 922008
+    },
+    "libggml-cpu.so.0": {
+      "sha256": "33baf1f3ab8c2bfff6a543f9e1164c3d7c15ea443c0b96cc0c6c80dc972d50d6",
+      "bytes": 1402048
+    },
+    "libggml-cuda.so.0": {
+      "sha256": "992e4e46dfbecb5199ae040f35e3dc1b5df9dbbce0429acd8f18208d88b0469d",
+      "bytes": 212501528
+    },
+    "libggml.so.0": {
+      "sha256": "997d76362473a01ace7721edc17ccc0e34250e27b7e7d1e26e7c9662da46f86c",
+      "bytes": 56200
+    },
+    "libllama-common.so.0": {
+      "sha256": "864db114d46e785b4da2ab03462d88992aab5bafdf57cd6acf5ed8ce73c3d11a",
+      "bytes": 6537800
+    },
+    "libllama-server-impl.so": {
+      "sha256": "ae400a505df8c81d8d3b39d651dad0d9e2c50380ba0828b0fcbf8242d2d57c14",
+      "bytes": 4436192
+    },
+    "libllama.so.0": {
+      "sha256": "4eba824255f06ab1fb8e5b6a9e98ae7bd0706773abc8bf86547d86b60cde98ac",
+      "bytes": 5766688
+    },
+    "libmtmd.so.0": {
+      "sha256": "c5709b513baa189086e5d7ca2b2acb3d45d1ced98d5eb17c5382d16305f86186",
+      "bytes": 2089400
+    },
+    "llama-server": {
+      "sha256": "3e4437d9f3e906278944a765bd0ab0e1cc0a96b20c441fe3ea37aa5cc0934237",
+      "bytes": 17880
+    }
+  },
+  "reused_source_build_objects": [
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/acc.cu.o",
+      "sha256": "40c6f5a3c91b454a2e13c5943894b340012b6f6e5103f479c183a16cab3166b1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/add-id.cu.o",
+      "sha256": "81529ec5054a15dd6fef3115c6b571b6d4ebec045093b3964da2c3c2c3ed8e6d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/allreduce.cu.o",
+      "sha256": "95b95d05a38a194c1c05cfd9a0e8e7d8f26fd4fdc79ecca7870da60f16b01f18"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/arange.cu.o",
+      "sha256": "7ea39dd54a1d590f92f8f662551665ba5d50b514d1e462bfa98784b0dcbc7163"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/argmax.cu.o",
+      "sha256": "696198de20525b15ea0ef6afcbb2dc85b7a6a9db0984783fdd55d901bab8c86b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/argsort.cu.o",
+      "sha256": "c45969806cd4630ce49621c0ffa752e9ea28b7cc84ebfefc8e3e0f7e047cb536"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/binbcast.cu.o",
+      "sha256": "fdfe19a54d11191e95f080fb28e47469d6ea35887e063eb1d5159e56dea4ca0f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/clamp.cu.o",
+      "sha256": "126f5af870b7c60ffa63f213c5edcb9020fd0db23d4e6cd3eff3370f154e6c90"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/col2im-1d.cu.o",
+      "sha256": "c68e5162dfc8cc902de1a8821ad93508cbbee4310482f099faf48441d843af18"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/concat.cu.o",
+      "sha256": "ee43e42318d25bc1585f754f19df152ae051d6266c7a790efe5e89553678a0b7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv-transpose-1d.cu.o",
+      "sha256": "1bea61be575734a5821b935349a6413959a2c72192e6793b48319413791dba30"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv2d-dw.cu.o",
+      "sha256": "a4b157c069f63b9a8b46f7c8a49a2723b717cc76c7447ea1f559f606c0de8d13"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv2d-transpose.cu.o",
+      "sha256": "272dcd258dcab23a32b08b96017c2117f950722f929cd8b1a3946942a93df9a2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv2d.cu.o",
+      "sha256": "50965338710f280827e23da39c4b69df9b08143704ff0ac4dc04e8c12048de79"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv3d.cu.o",
+      "sha256": "f5dc1dedfe31519591cbdd1c660529a54ae4594dce6e9cce17870d7c2bfa1523"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/convert.cu.o",
+      "sha256": "e78742945fa49797e85b6be4709ac699bd576b65a56d7ff55eb171ae6b11b7f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/count-equal.cu.o",
+      "sha256": "b1328b99881a7f39a724965f4a75ff1a70a6c565f3f77de0f46c64420427d5f2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/cpy.cu.o",
+      "sha256": "fa9daaed5271b19bf3cb28a262472f6b66d653753e186331a25c044dc063456f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/cross-entropy-loss.cu.o",
+      "sha256": "f668bbd4d8d34e3dd96578642ac829c24098096ee324071257e33b721106f7fe"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/cumsum.cu.o",
+      "sha256": "fe227100476619a9a18c420d5883895b8ee4a1e7cb6e787e1c0f0041be83d860"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/diag.cu.o",
+      "sha256": "a313661b90cb576952692cf29f52eaedf0e4dd440cc3cd78ffd8b758e1809cc8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/diagmask.cu.o",
+      "sha256": "fd0f175723d8fcb7285c05ee0222dff2ff510466366baef27b3335150b105bef"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/dsv4-hc.cu.o",
+      "sha256": "e61b45f2c41dc7aef18036c0b040b6615b254c076f7d772104d29877793a5757"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fattn-tile.cu.o",
+      "sha256": "9431760547aabb10a3e1bbdc665b31820890b8d41e58283e40bcc66a51c6a0ba"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fattn.cu.o",
+      "sha256": "acfae6d9ee2059551e0c77bf1b83b5c1b2b459dfbe83b27c6b8c919f045413bc"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fill.cu.o",
+      "sha256": "244b73527747ba56ddee4ba47d895533fbe963a1c82082f6e4d7d645017edf4d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fwht.cu.o",
+      "sha256": "3b3d5debcbd69284ac65f56fbd7fd4eeaab1814aaefc0a28cd0bc8814ff32d00"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated-delta-net-mma.cu.o",
+      "sha256": "3013bd5984feb112fdad073a9224093ce160fb97e343dc4f2df2407c5173b5fa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated_delta_net.cu.o",
+      "sha256": "6a62b22cb043c4704c4f8fc71f33428cbb1f76c1727ea7d8887a0656037c570d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/getrows.cu.o",
+      "sha256": "9e6b0c5a5b5b728ad67902f914d0b953a66124129e0ce3a556f3f09b07e792cd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ggml-cuda.cu.o",
+      "sha256": "89645ba59a072fa3d97494f180dad47d2a2cac05be748589c05d7500609a8b3e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gla.cu.o",
+      "sha256": "d4fd2e187b7d72953e3919fe984b037bcdb73308b13cfb1fc3e26ed40d999ee4"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/im2col.cu.o",
+      "sha256": "8d154234c6db70b8265927faf4fe5e316c4d15f8ea5f640306657d7f8a19104d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/lightning-indexer.cu.o",
+      "sha256": "489c0d84643426fc976ae6b781767a453ff2df93a8adbd54c4e9438a6fe2245e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mean.cu.o",
+      "sha256": "8571425b3b537b894f7fbd6daf53771ae99d44599ea69bdda29cb5997191619e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmf.cu.o",
+      "sha256": "91296879d94d36c5687709ec0d5bf571a71e30ec8ce7ea2283fc62ac1e56078d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmid.cu.o",
+      "sha256": "d1aafd3a6688655133509d9211b72bda4384bab9c28245de965f9ff5ddb66374"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmq.cu.o",
+      "sha256": "7839389524f5f50408fa6863ac0132a9fa0ebae49639d2c8503dc54dfdf20717"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmvf.cu.o",
+      "sha256": "0a34d3edd0d439854ebba3e6bcbfcf54874f4292bb30e66af914ec2a84781bb3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmvq.cu.o",
+      "sha256": "35185fddc2c6c289a34cb0cbc932b1beff7d1f0f3c3c55dafca818c615c817ef"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/moe-weighted-reduction.cu.o",
+      "sha256": "8c26ce9ebef808acadd4f44d9daad4edc539f40f510060980238a181a9267ed6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/norm.cu.o",
+      "sha256": "6c573b40982db0454b8e806f6aacf0a080cd3daaffff38a67184500cb0752724"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/opt-step-adamw.cu.o",
+      "sha256": "952536c93ffd1851bf88395e03ad401e5e574e623025dfe723585804bc392620"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/opt-step-sgd.cu.o",
+      "sha256": "7c6a8510faae3be9357d893941915b9e9583e114eb98914d140feef3b6e2c2e5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/out-prod.cu.o",
+      "sha256": "9d62d2428a7ed616c1cb373a97bc36fb37d3684a9b9a17724eb6defbddada67c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pad.cu.o",
+      "sha256": "d9dab524451b808bfb9b2e8b376393904cf83ed7739f5f0595aef02f4469dc0e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pad_reflect_1d.cu.o",
+      "sha256": "1856ddb3048b61e390864e971e0d0e81ffeea33ebd348013b09084ac0811f982"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pool1d.cu.o",
+      "sha256": "612d2d7b8c6f83f722e1323c9a188e7832dce43b7b2b60ce4218ae84d7f54f81"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pool2d.cu.o",
+      "sha256": "e363656eaf790c13266af7969c0f7d796c5f56a73c470c4d8c3efdf4c10c68a6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/quantize.cu.o",
+      "sha256": "493cc9da95e81dded8df45592c211c21f51de644737f9d5e6b707c69d3b85a5b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/roll.cu.o",
+      "sha256": "c58b63e64318b6ffb598c50d093d0bac3fa59c2bb6f20cc978c5f1675e41f77a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/rope.cu.o",
+      "sha256": "fb7d8d3adf5ae19cc1a5433c06ce0967c68a3a1c4a5cc32d1826367a2109ef01"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/scale.cu.o",
+      "sha256": "62f1a2af44d1ced41f30e7354bf4dac44c539581ab61c2246f8acbd2ab356e8b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/set-rows.cu.o",
+      "sha256": "1eca397c8c323843b8d6fcb0729c07f1eec0db4612be0e72cdd949e7d15618d5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/set.cu.o",
+      "sha256": "0a6eb9af98e36603044fa2e579f3673ade46ff548c6ea1334016076c8419734b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/snake.cu.o",
+      "sha256": "1866a359181d1202785a98429bf6c502a24e1f0e02a5b65fceef961dbdfb52e9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/softcap.cu.o",
+      "sha256": "0e97653997e7b525e13bba285463efcc269f843e49bb8e0e936b944732eb25c1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/softmax.cu.o",
+      "sha256": "2bbd4f6203737b016a22ccc99f0d90e37ba682cd0ca453e4d3cb5ffffe5a6153"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/solve_tri.cu.o",
+      "sha256": "330e84f2aff7ae2589679cc868f1b9051436829ff388f82d6d5cad303ea885ff"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ssm-conv.cu.o",
+      "sha256": "623119d29917009c3449138a274c8ba233faf4a235e72e994c6164cbf6fb460b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ssm-scan.cu.o",
+      "sha256": "c5d701038e501933c7685c0fc7e0ae39ab16f70d2038f32b469ed6ff7e50baba"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/sum.cu.o",
+      "sha256": "ab2a1c35c279e3c1d4c70712f5bdd590f2ddd665f1055bcf00937bced34bdfd2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/sumrows.cu.o",
+      "sha256": "be53124a23f1be04e9da8a8566ca1266cc05383518777334792b9f10bd41a4d1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/top-k.cu.o",
+      "sha256": "33b9aaee4897e92ed4e49d081605c7af3f44cbd7afb59d0d513ddf48edb05383"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/topk-moe.cu.o",
+      "sha256": "7818498219b18450d6281b42a4178d6b7caa0ed83955629010a338a80507a909"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/tri.cu.o",
+      "sha256": "e7085b1cba644ed09f2d72eb29b4d431765ea42d445b71af2874043b9ad09e06"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/tsembd.cu.o",
+      "sha256": "ad3087462d3b09c81e54a1208345863eb72a84dfd93e3be8247171fa6bd74c2f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/unary.cu.o",
+      "sha256": "c08486b918b96962dcab2e44c76beac5a4a7580da1870a0c719ff18baf621bc7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/upscale.cu.o",
+      "sha256": "78945a784957a42ffa46d1841d044d1ed3360b0a0178126f84e2b8c76a2c5f09"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/wkv.cu.o",
+      "sha256": "7416f4a72326a2672ac89d5c146a1a510408ce9ba7f84fdd276e64b9fecb4742"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq112-dv112.cu.o",
+      "sha256": "807c8a564856c927dd541bebfc4dff36b19efb5f23a6217f99984cbcc5812abf"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq128-dv128.cu.o",
+      "sha256": "eb4aa4a1f3d22db864ccddce82526f12a60d3655eae530d7138f5eca3074d154"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq192-dv128.cu.o",
+      "sha256": "b1e461e32d8fe294b50685f3edf8c41326b1eeea33edbdf615566f5dd27fe757"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq256-dv256.cu.o",
+      "sha256": "a998f5d4d6cc30dc1763873e939795dd0a0120e6921625b46a970b7a239e1688"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq320-dv256.cu.o",
+      "sha256": "c8af85f42fca0da17230bfed4108e0eb59e1d4b6be83f86850423454021fe644"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq40-dv40.cu.o",
+      "sha256": "cbbee62755318edbea40b75a0e2f99ede9ef30bde75e64a32f2c7655dfef3515"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq512-dv512.cu.o",
+      "sha256": "5b2e3832fdc00e4a3ffb3cb6aa7da925eab7b325d416942633aadb8877d6ba53"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq576-dv512.cu.o",
+      "sha256": "648f56bb96b85ba17a97edecadd5b30e732d712b0a7d06830a8d4e6a8a81ffff"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq64-dv64.cu.o",
+      "sha256": "581739df14070d9de82607500e23cad7e6cc06ed44a20620f691af2f575fae91"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq72-dv72.cu.o",
+      "sha256": "3ca9d00f5ef5ebb996bace1f985e6ac09484c9b6f45a84442dd4c76c893f1653"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq80-dv80.cu.o",
+      "sha256": "a0b912c062a63c47fe37601d4b00d101a8745fc852804e844cf3d21693459e0e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq96-dv96.cu.o",
+      "sha256": "396f1b6296cfece37b156633f0e3e815da574e55d8c41e79c6497e1050004536"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu.o",
+      "sha256": "92716b38bd746d4541ad245b05008be968d02bd6b33e25a48633f68b048aad58"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_32.cu.o",
+      "sha256": "b3d97a4613ec721671a1523a44d2dc88a6a147192d4ced9cecdcb69c646a7f25"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_8.cu.o",
+      "sha256": "36d642b6495084b8672381963b59c118439245009b9ca5e0bd0c3bc56fcb1e68"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_16-ncols2_1.cu.o",
+      "sha256": "ed8e9115137e63e1a3b14b5af92fd6b8039a6d456a64cf2977d409f7e21cf2e0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_16-ncols2_2.cu.o",
+      "sha256": "06dea19e50c9ad7520215b8f289ee0f9b15ac904c4081a2c1be85e322d18f87f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_16-ncols2_4.cu.o",
+      "sha256": "86d067e8bbe81fbd53031b5c8ba2893f5b86e227a62984c599a46a8d7ee4308d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_16.cu.o",
+      "sha256": "541584debb8ea84d298280fe7b2ece3f9da6cd22b6c4a68e39bcadfcca73145d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_32.cu.o",
+      "sha256": "672a968829404c70d04f1ba3dc53529c95a07149f7abc679f539d97b168c5dca"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_4.cu.o",
+      "sha256": "7dea4efeb83501a4e8b10c06c7ae68d9f60dcd7c167b2ffa6244b323a3a60b32"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_8.cu.o",
+      "sha256": "bd879e34950fa32a09e39094bca6a7c8f24c9bc2626affea700632f3669fafc3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_32-ncols2_1.cu.o",
+      "sha256": "da4c192f72931a0e4d3e1784c6665a7761dc7ff388f3ba85864f00cd3f199574"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_32-ncols2_2.cu.o",
+      "sha256": "0efca9d727afb360f4b993c1694efe948d2c46c4c3412c1138a7fb3cd5252235"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_16.cu.o",
+      "sha256": "9902aed49e674971e92fa1fc83815735a0d662be8ecb652e92495eb452f68423"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_2.cu.o",
+      "sha256": "940931916949c3541123c9b60760d070a1f5e1c3afcebf6416f0d65565a6a4aa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_4.cu.o",
+      "sha256": "01bcf571864b53074d34ba1c85f2a5253fcd9f94b20a123f308082378d2b774a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_8.cu.o",
+      "sha256": "7b221c870be3670f29fd9f9078e6d2a7b7301953cc2d8db9e281654b1a7d06c3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_64-ncols2_1.cu.o",
+      "sha256": "aa1c9ad75502b0809a461c7f43f7dfe20df11182d477a34767f1fd3a135c5799"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_1.cu.o",
+      "sha256": "36ddfcbb5b489b6477a3343bb29d3411646aae03623cdc5096b88c76d596e3c5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_2.cu.o",
+      "sha256": "45518710aabccbca8fdeb45dbaecb825b4927cd55e804f7fca860b9e81359d80"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_4.cu.o",
+      "sha256": "93845d11b0f2968bd31dbdf0fa41d32907525fa7024139523a6348df707125f9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_8.cu.o",
+      "sha256": "99ec9f7b515bd6b443ea9423a39c043a4612aacd91b042cb03d41bc4c9defd0c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq1_s.cu.o",
+      "sha256": "e7ec56238348489d62ab993c55b0b55df55d560cabe4d614665f2d968e44bc0e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq2_s.cu.o",
+      "sha256": "e6583fb12d5102f61bcac8b370d1b89da32fbe297e6e1219c8070ab64ca72b96"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq2_xs.cu.o",
+      "sha256": "ebb4d447417f287657aa7a81fb927ed8a9e6172f60393620d86483b3d2b8aa2f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq2_xxs.cu.o",
+      "sha256": "8a54b19439d833ef9984ccad4f1b1374cba067a7de2bf25d5a99375817b9ff28"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq3_s.cu.o",
+      "sha256": "77fa518c25730dde53dcd936c72fbd1e1107af979637436f1ecfc226a5f9b183"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq3_xxs.cu.o",
+      "sha256": "ba0aa009aeb68e5e9c860c13d298f88207968cf89651931c907f1facc9986217"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq4_nl.cu.o",
+      "sha256": "4d9456dcb6ddfaf8fa58a35fafb9b6180f260940d5eccf87248eda3e4b1d59e8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq4_xs.cu.o",
+      "sha256": "00eef01a9aa046fc2927af1f12d8b320fe7ec7628e2a9321ef6c75c9ede9cd5a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-mxfp4.cu.o",
+      "sha256": "32e81dfa324993ba96cb4de8298c96d38b39f6a6a3b2ece7d58bd30714a775ac"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-nvfp4.cu.o",
+      "sha256": "fa2e5a7d95ff5f2c82dbc37b0afc7717d80c70c89b0535382a33cfa20495b88b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q1_0.cu.o",
+      "sha256": "7f3f0820c52746ec03cd6e4e00af3fb5f7b7dbe005bd7b4701d2fa93835b3126"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q2_0.cu.o",
+      "sha256": "e0d349967a070753858da4b425129f33ad8276c9e3dd4a42950493a4949d7fae"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q2_k.cu.o",
+      "sha256": "96ff43dd7cb9c55f508daf5e39569b352b5b40a4be20d97b6ec77fbd92810dbb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q3_k.cu.o",
+      "sha256": "df757d077218dbfcb884da6a6d1ece8d653a54f552a85ff0c8da8194ab1f3adb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q4_0.cu.o",
+      "sha256": "ba379927e0e4c8c455c6f7339ddbc9796178131fe7cb5fd02af85fcbb83b0c6e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q4_1.cu.o",
+      "sha256": "250c4b3210be6476495d362a8313be887690fdc34b44f180db4488fb41c846d3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q4_k.cu.o",
+      "sha256": "d577cb56b2d6fc9c13e0165ad1054461859029cae36b4fa51f4efedaaac81489"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q5_0.cu.o",
+      "sha256": "ddb40825404d05b05cb35cbe7db23f339ebae6ed2e7fc2b6da0a977bb93f5dc0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q5_1.cu.o",
+      "sha256": "a50e64d67283b666732affd61d2669efb4c8826c9249766c23125281ff9f6ed8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q5_k.cu.o",
+      "sha256": "d5870d4a84c0d2e937e8404cb4dc412b5a2ddb048f29ec692c82d8840acc2c59"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q6_k.cu.o",
+      "sha256": "2209eaf69e6cf7aeba5c1a15ea555bbbb20e6055e2c61bbb6bf1603919e83fb2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q8_0.cu.o",
+      "sha256": "59cde7cddd38f3fb58f08bb197263e2abb32bffe973f4d9a1a2912ce4d895151"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_1.cu.o",
+      "sha256": "e96096c865ca070de7c385decb7f66fb9a6e30da8e6cbbe52148eb8fb7798873"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_10.cu.o",
+      "sha256": "829f8c0f7f749e084091d7c953fc46cabc0081eb6e2ebe7066c39b8d1d053f75"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_11.cu.o",
+      "sha256": "e554a057d3b9608ad0ce33e6e6fefb5d06b35d1b5e363e7696a87a8572f5cf4b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_12.cu.o",
+      "sha256": "dcd7dc48c9ec7c8f1e3a63562e79114e04f5240f9ee328600be07f106dc8f9ba"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_13.cu.o",
+      "sha256": "d67be1bf76be1cdd1a0942d22ac52bdac06b230162a716995f4c1d5e070441a4"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_14.cu.o",
+      "sha256": "328ca88ab0555c16385709bec181a865914cfde1c8020acd54495699abaecfbc"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_15.cu.o",
+      "sha256": "24153ab4a46bc0f732af15cb840b585142290659953f66d8a52c6c6d8023bfb5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_16.cu.o",
+      "sha256": "440b6b2fb6978a012ce53faa0e7206ed4bb4cd5e91fdf7a9497489236859dd3a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_2.cu.o",
+      "sha256": "4e7dfd10d9a604602526ee449dea532da215820de3ea25b438d02580ad8904fd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_3.cu.o",
+      "sha256": "c2de0a43a7ed03fde8b52e0b0079dcdf86259e88c092da8b9ce49b6bc1aff2bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_4.cu.o",
+      "sha256": "1885a8304410acca40932f9429d23509ca41de29234719f714341a2bf955ff83"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_5.cu.o",
+      "sha256": "e76125118a497cfac2d6511af58951d0a0ff0156f25e133c923de44d7249e1e3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_6.cu.o",
+      "sha256": "36030a997693e6915de7941fc728722db8b0e169cec31a2336345d906b8e8b94"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_7.cu.o",
+      "sha256": "febe072c52ec6901f7cc6ad5853ac78e496a164846aa3378c76a84e19d512f31"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_8.cu.o",
+      "sha256": "0377de9c53866af56895b28559997ce45bd7afc14121f0a1f5be0744c897b478"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_9.cu.o",
+      "sha256": "115a6fb2c20f04e63b983823f63d2b02fac95141a6238474ee199e5f21d5c9e3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-f16-f16.cu.o",
+      "sha256": "e2131bed7e706092de1656a7ae0d90edef443d3a842288dbd1f0033aa5f5dc10"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-q4_0-q4_0.cu.o",
+      "sha256": "ed85d3adce75fbdba4851c609a65242f3a388828995e5df2efc3826c4d4c12fb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-q8_0-q8_0.cu.o",
+      "sha256": "29217fb996a36e4f66f6a1dd4af8627367d53ebd06d42e968206b0af2cd2a1ad"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-bf16-bf16.cu.o",
+      "sha256": "0b5de657af12a44a703cd7f0796c7e1ebb8abd8f97e86c3dbe1beed3b0a0bc1f"
+    }
+  ],
+  "changed_components": [
+    "libggml-cuda.so.0"
+  ],
+  "candidate_cuda_sha256": "17e79510f37817400c1b268e401d16eb2f392d1ef7f3da979d5ccf975cb32240"
+}
