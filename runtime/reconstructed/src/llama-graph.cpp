@@ -26,6 +26,11 @@
 #include <unordered_set>
 
 // Goose MoE routing decisions (EXP200). GGML_GOOSE_MODEL_GRAPH=0 restores the native bodies.
+// Goose graph-input reuse decision (goose/cpu/graph-reuse.goose): three equal-length rows - must check,
+// wanted extent, actual extent - answer "can this input be reused". Default on.
+extern "C" int     fg_gr_enabled(void);
+extern "C" int64_t fg_gr_check(const int64_t * present, const int64_t * want, const int64_t * have, int64_t n);
+
 extern "C" int fg200g_enabled(void);
 extern "C" int64_t fg200g_gating_kind(int64_t gating_op);
 extern "C" int64_t fg200g_group_select(int64_t n_expert_groups, int64_t n_tokens);
@@ -134,6 +139,38 @@ static int64_t llm_graph_n_tok_rows(const llama_ubatch & ubatch) {
 }
 
 bool llm_graph_input_embd::can_reuse(const llm_graph_params & params) {
+    // The decision is fg_gr_check: one row per field, "absent or equal". The five rows below are the same
+    // five conditions the native conjunction expressed; GGML_GOOSE_GRAPH_REUSE=0 keeps it native.
+    if (fg_gr_enabled()) {
+        // A row whose `present` is 0 cannot block reuse. For the token/embd rows that means the batch does not
+        // supply that input; for the tensor rows it means the tensor does not exist. A required row whose
+        // tensor is missing carries INT64_MIN as its extent, so it can never equal the wanted extent and the
+        // answer is false - which is what the native `tokens && ...` guard produced.
+        const int64_t miss = INT64_MIN;
+        const int64_t present[5] = {
+            params.ubatch.token != nullptr,
+            params.ubatch.embd  != nullptr,
+            mixed_tokens != nullptr,
+            mixed_embd   != nullptr,
+            scale_rows   != nullptr,
+        };
+        const int64_t want[5] = {
+            (int64_t) params.ubatch.n_tokens,
+            (int64_t) params.ubatch.n_tokens,
+            (int64_t) llm_graph_n_tok_rows(params.ubatch),
+            (int64_t) params.ubatch.n_tokens,
+            (int64_t) params.ubatch.n_tokens,
+        };
+        const int64_t have[5] = {
+            tokens       ? (int64_t) tokens->ne[0]       : miss,
+            embd         ? (int64_t) embd->ne[1]         : miss,
+            mixed_tokens ? (int64_t) mixed_tokens->ne[0] : miss,
+            mixed_embd   ? (int64_t) mixed_embd->ne[1]   : miss,
+            scale_rows   ? (int64_t) scale_rows->ne[1]   : miss,
+        };
+        return fg_gr_check(present, want, have, 5) != 0;
+    }
+
     bool res = true;
 
     res &= (!params.ubatch.token) || (tokens && tokens->ne[0] == params.ubatch.n_tokens);
