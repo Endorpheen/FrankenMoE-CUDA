@@ -28,3 +28,27 @@ of those wired between the nodes that already pass their own gates.
 The q projection emits 8192 columns (`2 * HD * H`) while the o projection consumes 4096 (`HD * H`), so the
 middle of the chain is 4096 wide. Taking 4096 rows of `wq` gives a chain whose shapes actually connect; taking
 all 8192 would have failed the matmul, and the failure would have looked like a builder defect.
+
+## Attempt to add rms_norm through the builder: blocked on the builder's MUL mode
+
+The next node a layer needs is the norm: `rms_norm(x, eps)` then multiply by `attn_norm.weight`. The RMS norm
+part works through the builder - `mode 4` with `GGML_OP_RMS_NORM` and the eps in the seventh argument, which
+is how `apex_layer` calls it. The **scale by the norm weight** does not: the chain was built as
+`rms_norm -> mul(nw) -> wq -> wo` and two attempts both failed.
+
+| attempt | result |
+|---|---|
+| builder does `rms_norm` only, raw chain does `rms_norm -> mul(nw)` | `builder_vs_ggml=3.416e-01` - **my bug**: the two chains were not the same computation |
+| builder does `rms_norm -> gb(11, ..., GGML_OP_MUL) -> ...` | **abort** - mode 11 with `MUL` is not supported |
+
+So `gb_common`'s mode for an elementwise multiply is not the mode it uses for matmul with a different op word,
+and nothing in the harnesses says what it is. `apex_layer` never multiplies by a norm weight at all - its
+weights are synthetic, so it had no reason to.
+
+**That is the next thing to establish, and it is a lookup rather than an experiment**: find the mode
+`gb_common` uses for `GGML_OP_MUL` in the generated unit, then the norm step joins the chain like the two
+matmuls did.
+
+The harness is back at its committed state (`builder_vs_ggml=0`, PASS). Reverting rather than leaving a
+half-working chain: a chain whose two arms compute different things is worse than no norm step, because it
+reports a difference and the difference is mine.
