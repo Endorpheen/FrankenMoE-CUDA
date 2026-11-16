@@ -52,3 +52,24 @@ matmuls did.
 The harness is back at its committed state (`builder_vs_ggml=0`, PASS). Reverting rather than leaving a
 half-working chain: a chain whose two arms compute different things is worse than no norm step, because it
 reports a difference and the difference is mine.
+
+
+### What the lookup found, and where it stopped
+
+`gb_common_g` is a one-line forwarder to `common_g`, so the mode dispatch lives in `common_g`. There is also
+`gb_op_g`, a table mapping a **logical** op index to a numeric code:
+
+```
+logical 0 -> 2,  1 -> 29,  2 -> 30,  3 -> 48,  4 -> 46,  5 -> 74,  6 -> 100,  7 -> 15,  8 -> 40,  9 -> 42
+```
+
+Those codes are not `ggml_op` enum values in ascending order, so the table is a separate logical ordering
+rather than a direct cast - which is consistent with mode 11 + `GGML_OP_MUL_MAT` working (the builder maps it)
+while mode 11 + `GGML_OP_MUL` aborting (the same mode does not accept an elementwise op).
+
+**Not resolved:** an extraction of the full logical→code map with a regex returned nothing, so which logical
+index corresponds to `MUL` is still unknown. The next step is to read `common_g`'s mode dispatch directly,
+or to call `gb_op_g` with candidate indices and see which one returns ggml's `MUL` code.
+
+That is a lookup with a clear success criterion - the chain's two arms agreeing again - and it is where the
+next attempt should start, not from another guess at the mode argument.
