@@ -36,7 +36,6 @@ const uint16_t * fg_unicode_flags_view();
 // Goose unicode routes from EXP215, EXP216 and EXP217; each has its own switch.
 extern "C" int64_t fg215u_cpt_from_utf8(const char * buf, int64_t size, int64_t off, int64_t * adv);
 extern "C" int64_t fg216e_cpt_to_utf8(int64_t cpt, char * out, int64_t cap);
-extern "C" int fg217c_enabled(void);
 extern "C" int64_t fg217c_cpts_from_utf8(const char * utf8, int64_t size, int32_t * out);
 
 // Goose Unicode lowercase mapping (EXP218). GGML_GOOSE_UNICODE_TOLOWER=0 restores native.
@@ -779,29 +778,16 @@ std::vector<uint32_t> unicode_cpts_normalize_nfc(const std::vector<uint32_t> & c
 }
 
 std::vector<uint32_t> unicode_cpts_from_utf8(const std::string & utf8) {
-    if (fg217c_enabled()) {
-        // Goose decodes and recovers inline: one U+FFFD per invalid byte, advancing one byte at a time,
-        // so the result never exceeds utf8.size(). No exception escapes, matching native.
-        if (utf8.empty()) return {};
-        std::vector<int32_t> tmp(utf8.size());
-        const int64_t n = fg217c_cpts_from_utf8(utf8.data(), (int64_t) utf8.size(), tmp.data());
-        return std::vector<uint32_t>(tmp.begin(), tmp.begin() + (size_t) n);
+    // Goose decodes and recovers inline: one U+FFFD per invalid byte, advancing one byte at a time, so the result never
+    // exceeds utf8.size() and no exception escapes. The native loop behind GGML_GOOSE_UNICODE_CPTS is deleted; it is
+    // also the reason it is deleted now rather than later - with the native decoder gone, that loop could abort where it
+    // used to catch, so keeping it as a fallback would have been a trap rather than a safety net.
+    if (utf8.empty()) {
+        return {};
     }
-
-    std::vector<uint32_t> result;
-    result.reserve(utf8.size());
-    size_t offset = 0;
-    while (offset < utf8.size()) {
-        try {
-            result.push_back(unicode_cpt_from_utf8(utf8, offset));
-        }
-        catch (const std::invalid_argument & /*ex*/) {
-            // Silently ignore invalid UTF-8 input to avoid leaking the exception beyond llama_tokenize
-            ++offset;
-            result.emplace_back(0xFFFD); // replacement character
-        }
-    }
-    return result;
+    std::vector<int32_t> tmp(utf8.size());
+    const int64_t n = fg217c_cpts_from_utf8(utf8.data(), (int64_t) utf8.size(), tmp.data());
+    return std::vector<uint32_t>(tmp.begin(), tmp.begin() + (size_t) n);
 }
 
 unicode_cpt_flags unicode_cpt_flags_from_cpt(const uint32_t cpt) {

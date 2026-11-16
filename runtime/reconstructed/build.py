@@ -4,7 +4,15 @@ from pathlib import Path
 import subprocess, sys, re, os
 
 BASE = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108')
-FL = Path('/home/end0/AI/LlamaServer/llama.cpp-flint-cuda')
+# Sources come from the repository (vendor/flint, provenance in vendor/flint/PROVENANCE.txt). The prebuilt objects
+# under build-cuda are still linked by the object list below and are the last external dependency; stage 4 removes them
+# by rebuilding from these sources.
+_HERE = Path(__file__).resolve().parent.parent
+FL = _HERE / 'vendor' / 'flint'
+if not (FL / 'include' / 'llama.h').exists():
+    # build.py is copied into the working tree as well; the sources live in the repository either way
+    FL = Path('/home/end0/AI/FrankenMoE-CUDA/vendor/flint')
+FLB  = Path('/home/end0/AI/LlamaServer/llama.cpp-flint-cuda')
 # The 13 sources the build compiles live in this repository and are tracked (EXP: eight of them were not,
 # see docs/goose-migration/UNTRACKED-SOURCES-20261116.md). Prefer the repo copy so a clone is buildable; fall
 # back to the external tree only for a checkout that predates the commit that added them.
@@ -126,7 +134,7 @@ for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
         print('MISSING', need, '- run: bash experiments/EXP-2026-11-16-756-slru-policy-goose/build.sh', W)
         sys.exit(1)
 bridge_objs += [str(x) for x in extra_mod if x.exists()]
-flint_objs = sorted(str(x) for x in (FL/'build-cuda/src/CMakeFiles/llama.dir').rglob('*.o')
+flint_objs = sorted(str(x) for x in (FLB/'build-cuda/src/CMakeFiles/llama.dir').rglob('*.o')
                     if x.name not in [c + '.o' for c in changed])
 cmd = ['/usr/bin/c++','-fPIC','-O3','-DNDEBUG','-shared','-Wl,-soname,libllama.so.0','-o',str(OUT)]
 cmd += objs + flint_objs + modules + bridge_objs
