@@ -42,6 +42,11 @@ ROOT = Path(__file__).resolve().parent.parent
 LOG = ROOT / "benchmarks" / "experiment-history.jsonl"
 STAGE_LIB = ROOT / "runtime" / "goose-stage" / "lib"
 
+# The answer this project is anchored to: the reference run's output for the pinned request
+# (EXP-2026-11-15-718, cache 4352). A row whose content hash differs from this computed a
+# different output and is never a faster version of the reference, however fast it is.
+REFERENCE_SHA = "c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f"
+
 # The libraries whose identity decides the result. Recorded by hash, from the file the
 # loader actually takes (resolved through the symlink chain).
 KEY_LIBS = [
@@ -200,19 +205,71 @@ def compare(rows: list[dict], include_historical: bool = False) -> None:
     conditions, and putting a 41.94 from a 512-token reference run next to a 128-token
     measurement of ours is exactly the kind of comparison that produced contradictory
     numbers before this journal existed. Pass --include-historical to see them anyway.
+
+    Rows are grouped by (prompt_n, predicted_n, content_sha256) before anything is ranked.
+    Two runs with a different prompt length are different workloads, and two runs with a
+    different content hash computed different outputs - neither is a speed-up of the other.
+    A group that disagrees with the reference hash is labelled as computing something else,
+    so a fast row can never be read as "the reference answer, faster".
+
+    This check exists because both mistakes actually happened: results reported as measured
+    at two prompt lengths were one length (a harness sent the wrong request file), and nine
+    experiments optimised a number whose output hash was stored but never compared.
     """
-    best: dict[int, dict] = {}
+    groups: dict[tuple, list[dict]] = {}
     for r in rows:
         if not include_historical and str(r.get("source", "")).startswith(("historical", "reconstructed")):
             continue
-        c, d = r.get("cache_mib"), r.get("decode_tok_s")
-        if not isinstance(c, int) or not isinstance(d, (int, float)):
+        if not isinstance(r.get("cache_mib"), int) or not isinstance(r.get("decode_tok_s"), (int, float)):
             continue
+        groups.setdefault((r.get("prompt_n"), r.get("predicted_n"), r.get("content_sha256")), []).append(r)
+
+    if len(groups) > 1:
+        print("NOTE: rows fall into distinct groups - not comparable across groups.")
+        print(f"      {'prompt_n':>8} {'predicted':>9} {'sha':>12} {'rows':>5} {'decode':>8}  verdict")
+        for (pn, pred, sha), g in sorted(groups.items(), key=lambda kv: -max(x["decode_tok_s"] for x in kv[1])):
+            best = max(x["decode_tok_s"] for x in g)
+            print(f"      {str(pn):>8} {str(pred):>9} {(sha or '-')[:12]:>12} {len(g):>5} "
+                  f"{best:>8.2f}  {group_verdict(sha)}")
+        print()
+
+    reference_sha = reference_hash(rows)
+    # A different predicted_n produces different text by construction, so the hash is only
+    # evidence of a different COMPUTATION when the workload matches. Compare within that.
+    ref_predicted = next((p for (pn, p, sha) in groups if sha == reference_sha), None)
+    for (pn, pred, sha) in sorted(groups, key=lambda k: (k[0] or 0, k[1] or 0, k[2] or "")):
+        g = groups[(pn, pred, sha)]
+        if reference_sha and sha and sha != reference_sha and pred == ref_predicted:
+            print(f"WARNING: prompt_n={pn} predicted_n={pred} sha={sha[:12]} differs from the "
+                  f"reference {reference_sha[:12]} at the SAME workload - these rows measure "
+                  f"a DIFFERENT output.\n")
+        _compare_group(g, pn, pred)
+
+
+def group_verdict(sha: str | None) -> str:
+    if not sha:
+        return "no hash recorded"
+    return f"reference-equivalent ({sha[:12]})" if sha == REFERENCE_SHA else "different output"
+
+
+def reference_hash(rows: list[dict]) -> str | None:
+    """The hash this project treats as the reference answer."""
+    if REFERENCE_SHA:
+        return REFERENCE_SHA
+    for r in rows:
+        if str(r.get("source", "")).startswith("reference") and r.get("content_sha256"):
+            return r["content_sha256"]
+    return None
+
+
+def _compare_group(rows: list[dict], prompt_n=None, predicted_n=None) -> None:
+    best: dict[int, dict] = {}
+    for r in rows:
+        c, d = r.get("cache_mib"), r.get("decode_tok_s")
         if c not in best or d > best[c]["decode_tok_s"]:
             best[c] = r
-    if not best:
-        print("no comparable rows (need cache_mib and decode_tok_s)")
-        return
+    if prompt_n is not None:
+        print(f"prompt_n={prompt_n} predicted_n={predicted_n}")
     print(f"{'cache':>6} {'best decode':>12} {'vram':>7} {'dMiB':>6} {'dDecode':>8} {'per 256MiB':>11}")
     prev = None
     for c in sorted(best):
