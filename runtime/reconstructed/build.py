@@ -108,7 +108,8 @@ for mod, out_name in (('EXP-2026-11-11-347-goose-kv-write-bridge', 'b345.o'),
     bridge_objs.append(str(o))
 
 extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
-             W/'slru-policy.o', W/'slru-runtime.o', W/'slru-shim.o']
+             W/'slru-policy.o', W/'slru-runtime.o', W/'slru-shim.o',
+             W/'fg-ar.o', W/'fg-ar-bridge.o']
 # The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
 # linking a DSO with an undefined fg756s/slru symbol.
 for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
