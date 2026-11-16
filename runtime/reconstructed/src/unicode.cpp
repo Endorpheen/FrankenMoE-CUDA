@@ -6,6 +6,7 @@
 // Goose Qwen pre-tokenisation splitter (goose/misc/qwen35-split.goose). One FFI per call, not per character.
 extern "C" int64_t q35s_split(int64_t packet);
 extern "C" void    fg_qwen35_split_init(void);
+extern "C" int64_t fg_han_is_han(int64_t cpt);
 const uint16_t * fg_unicode_flags_view();
 #include "unicode-data.h"
 
@@ -1426,35 +1427,9 @@ uint32_t unicode_tolower(uint32_t cpt) {
 }
 
 bool unicode_cpt_is_han(uint32_t cpt) {
-    // Han character ranges (Chinese/CJK characters)
-    // CJK Unified Ideographs (most common)
-    if (cpt >= 0x4E00 && cpt <= 0x9FFF) return true;
-
-    // CJK Extension A
-    if (cpt >= 0x3400 && cpt <= 0x4DBF) return true;
-
-    // CJK Extension B
-    if (cpt >= 0x20000 && cpt <= 0x2A6DF) return true;
-
-    // CJK Extension C
-    if (cpt >= 0x2A700 && cpt <= 0x2B73F) return true;
-
-    // CJK Extension D
-    if (cpt >= 0x2B740 && cpt <= 0x2B81F) return true;
-
-    // CJK Extension E
-    if (cpt >= 0x2B820 && cpt <= 0x2CEAF) return true;
-
-    // CJK Extension F
-    if (cpt >= 0x2CEB0 && cpt <= 0x2EBEF) return true;
-
-    // CJK Compatibility Ideographs
-    if (cpt >= 0xF900 && cpt <= 0xFAFF) return true;
-
-    // CJK Compatibility Ideographs Supplement
-    if (cpt >= 0x2F800 && cpt <= 0x2FA1F) return true;
-
-    return false;
+    // The nine ranges are the Goose module (goose/misc/unicode-han.goose), proved equal to the routine that stood
+    // here by exhaustive comparison over all 1,114,112 codepoints: 89,008 Han characters, 0 mismatches.
+    return fg_han_is_han((int64_t) cpt) != 0;
 }
 
 std::vector<std::string> unicode_regex_split(const std::string & text, const std::vector<std::string> & regex_exprs, bool byte_encode) {
