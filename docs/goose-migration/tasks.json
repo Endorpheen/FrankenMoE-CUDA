@@ -5637,9 +5637,9 @@
     "TODO": 14
   },
   "work_front": {
-    "note": "Integrated stage-run: pinned at 4992 MiB cache, ctx 262144, reference argv (-b 4096 -ub 4096, -t 8 -tb 16). Best reference-equivalent decode: 41.77 @512, 41.01 @256, 39.90 @128, prefill ~2440, VRAM 11735 MiB; every accepted figure carries the reference answer hash. The MoE expert-cache SLRU policy is now Goose (EXP-756): wired behind GGML_GOOSE_MOE_SLRU, default on, reproduces the reference hash at 128 and 512 with no decode cost; the native body stays as the fallback until Igor accepts removal. At ctx 65536 the same cache reaches 43.45 @512 (EXP-754). The expert cache is the dominant lever: removing it halves decode (20.66, EXP-752). Standalone still lacks CUDA, tokenizer engine, HTTP and full-stack execution.",
-    "slices_total": 13,
-    "slices_done": 10
+    "note": "Integrated stage-run: pinned at 4992 MiB cache, ctx 262144, reference argv. Decode ~40.4 @512 in this session's conditions (@256 ~38.4, @128 ~39.4); prefill ~2440. Every accepted figure carries the reference answer hash c2ff42cc1219. Note that nominally identical configurations measured 39.6-41.8 across one session, so only paired same-session comparisons are used. The MoE expert-cache path is Goose throughout: admission (fg262a), copy run-lengths (fg263c) and the SLRU policy (fg756s, EXP-756), each default-on with a native fallback behind its env switch. EXP-757 made the protected ceiling a parameter (default 7/8, GGML_GOOSE_SLRU_PROT=1/2 for native parity) and gave the gate two arms: provenance (equals native) and specification (implements the chosen policy), both 100/100. Measured effect: hit rate 83.7 -> 84.8%, upload -6.7%. EXP-758 showed 384 MiB of cache outweighs that policy gain, so VRAM stays the binding constraint. The tokenizer's eight decisions answer (gate 39 checks) and are live in the integrated runtime's hot path; the standalone still lacks the engine around them (load a vocab, drive the merge loop, produce ids), HTTP transport, CUDA and full-stack execution.",
+    "slices_total": 14,
+    "slices_done": 11
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
 }
