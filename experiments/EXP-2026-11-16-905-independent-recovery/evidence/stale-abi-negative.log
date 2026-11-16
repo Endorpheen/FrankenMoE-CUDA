@@ -1,0 +1,6 @@
+/home/end0/AI/FrankenMoE-CUDA/runtime/reconstructed/src/llama-moe-cache.cpp: In member function ‘bool {anonymous}::moe_cache_slru::plan(int32_t, const int32_t*, size_t, std::vector<fill>&, size_t&)’:
+/home/end0/AI/FrankenMoE-CUDA/runtime/reconstructed/src/llama-moe-cache.cpp:153:17: error: could not convert ‘(uintptr_t)(({anonymous}::moe_cache_slru*)this)->{anonymous}::moe_cache_slru::key_of.std::vector<int>::data()’ from ‘uint64_t’ {aka ‘long unsigned int’} to ‘sl_i64’
+  153 |                 (uint64_t) (uintptr_t) key_of.data(), (uint64_t) (uintptr_t) prev.data(),
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                 |
+      |                 uint64_t {aka long unsigned int}

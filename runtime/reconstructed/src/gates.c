@@ -8,7 +8,6 @@ static int goose_on(const char * name) {
 }
 int fg286m_enabled(void) { return goose_on("GGML_GOOSE_MMAP_BOOK"); }
 int fg262a_enabled(void) { return goose_on("GGML_GOOSE_MOE_CACHE_ADMIT"); }
-int fg263c_enabled(void) { return goose_on("GGML_GOOSE_MOE_CACHE_COPY"); }
 int fg756s_enabled(void) { return goose_on("GGML_GOOSE_MOE_SLRU"); }
 
 // The SLRU protected-segment ceiling, as num/den. Default 7/8: EXP-757 measured hit rate 83.7 -> 84.8% and

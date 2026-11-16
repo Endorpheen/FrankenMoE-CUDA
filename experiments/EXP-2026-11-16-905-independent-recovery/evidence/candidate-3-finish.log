@@ -1,0 +1,11 @@
+models compiled from vendor: 186
+/usr/bin/x86_64-linux-gnu-ld.bfd: /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/gates.o: in function `fg263c_enabled':
+gates.c:(.text+0x150): multiple definition of `fg263c_enabled'; /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/fx263-pic.o:bridge.c:(.text+0x2f0): first defined here
+/usr/bin/x86_64-linux-gnu-ld.bfd: /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/vendor-models/llama.o: in function `llama_model_llama::load_arch_hparams(llama_model_loader&)':
+llama.cpp:(.text+0x0): multiple definition of `llama_model_llama::load_arch_hparams(llama_model_loader&)'; /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/vendor-models/llama.o:llama.cpp:(.text+0x0): first defined here
+/usr/bin/x86_64-linux-gnu-ld.bfd: /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/vendor-models/llama.o: in function `llama_model_llama::load_arch_tensors(llama_model_loader&)':
+llama.cpp:(.text+0x1b0): multiple definition of `llama_model_llama::load_arch_tensors(llama_model_loader&)'; /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/vendor-models/llama.o:llama.cpp:(.text+0x1b0): first defined here
+/usr/bin/x86_64-linux-gnu-ld.bfd: /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/vendor-models/llama.o: in function `llama_model_llama::build_arch_graph(llm_graph_params const&) const':
+llama.cpp:(.text+0x1c10): multiple definition of `llama_model_llama::build_arch_graph(llm_graph_params const&) const'; /home/end0/AI/LlamaServer/franken-recovery-20261116/candidate-3/vendor-models/llama.o:llama.cpp:(.text+0x1c10): first defined here
+collect2: error: ld returned 1 exit status
+

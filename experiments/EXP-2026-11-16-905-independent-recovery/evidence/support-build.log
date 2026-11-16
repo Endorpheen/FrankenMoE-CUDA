@@ -1,0 +1,557 @@
+[1/376] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[2/376] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[3/376] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[4/376] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[5/376] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[6/376] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[7/376] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[8/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[9/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[10/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[11/376] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[12/376] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[13/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[14/376] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[15/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[16/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o
+[17/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[18/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[19/376] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[20/376] Linking CXX shared library bin/libggml-base.so.0.27.0
+[21/376] Creating library symlink bin/libggml-base.so.0 bin/libggml-base.so
+[22/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[23/376] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[24/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o
+[25/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[26/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[27/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[28/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/acc.cu.o
+[29/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/add-id.cu.o
+[30/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/allreduce.cu.o
+[31/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/arange.cu.o
+[32/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/argmax.cu.o
+[33/376] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[34/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/clamp.cu.o
+[35/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/col2im-1d.cu.o
+[36/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv-transpose-1d.cu.o
+[37/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/concat.cu.o
+[38/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv2d-dw.cu.o
+[39/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv2d-transpose.cu.o
+[40/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv2d.cu.o
+[41/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/count-equal.cu.o
+[42/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/conv3d.cu.o
+[43/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/convert.cu.o
+[44/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/cross-entropy-loss.cu.o
+[45/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/cpy.cu.o
+[46/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/diag.cu.o
+[47/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/diagmask.cu.o
+[48/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/dsv4-hc.cu.o
+[49/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fattn-tile.cu.o
+[50/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/cumsum.cu.o
+[51/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fill.cu.o
+[52/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fwht.cu.o
+[53/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated-delta-net-mma.cu.o
+[54/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gated_delta_net.cu.o
+[55/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/binbcast.cu.o
+[56/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/gla.cu.o
+[57/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/im2col.cu.o
+[58/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/getrows.cu.o
+[59/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ggml-cuda.cu.o
+/home/end0/AI/FrankenMoE-CUDA/vendor/flint/ggml/src/ggml-cuda/ggml-cuda.cu(1508): warning #177-D: function "ggml_backend_cuda_lazy_is_own_buffer" was declared but never referenced
+  static bool ggml_backend_cuda_lazy_is_own_buffer(ggml_backend_buffer_t buffer) {
+              ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+[60/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/argsort.cu.o
+[61/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmf.cu.o
+[62/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmid.cu.o
+[63/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/fattn.cu.o
+[64/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mean.cu.o
+[65/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/lightning-indexer.cu.o
+[66/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/moe-weighted-reduction.cu.o
+[67/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/opt-step-adamw.cu.o
+[68/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmq.cu.o
+[69/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/norm.cu.o
+[70/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/opt-step-sgd.cu.o
+[71/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/out-prod.cu.o
+[72/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pad.cu.o
+[73/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pad_reflect_1d.cu.o
+[74/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pool1d.cu.o
+[75/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/pool2d.cu.o
+[76/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/quantize.cu.o
+[77/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/roll.cu.o
+[78/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/scale.cu.o
+[79/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/rope.cu.o
+[80/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/set.cu.o
+[81/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/set-rows.cu.o
+[82/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/snake.cu.o
+[83/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/softcap.cu.o
+[84/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/softmax.cu.o
+[85/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/solve_tri.cu.o
+[86/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ssm-conv.cu.o
+[87/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/sumrows.cu.o
+[88/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ssm-scan.cu.o
+[89/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmvf.cu.o
+[90/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/top-k.cu.o
+[91/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/sum.cu.o
+[92/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/tri.cu.o
+[93/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/tsembd.cu.o
+[94/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/topk-moe.cu.o
+[95/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/upscale.cu.o
+[96/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/wkv.cu.o
+[97/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/unary.cu.o
+[98/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmvq.cu.o
+[99/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq320-dv256.cu.o
+[100/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq192-dv128.cu.o
+[101/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq112-dv112.cu.o
+[102/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq40-dv40.cu.o
+[103/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq128-dv128.cu.o
+[104/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq576-dv512.cu.o
+[105/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq64-dv64.cu.o
+[106/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq512-dv512.cu.o
+[107/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq72-dv72.cu.o
+[108/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq80-dv80.cu.o
+[109/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq256-dv256.cu.o
+[110/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu.o
+[111/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_32.cu.o
+[112/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-tile-instance-dkq96-dv96.cu.o
+[113/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_16.cu.o
+[114/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_32.cu.o
+[115/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_16-ncols2_2.cu.o
+[116/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_16-ncols2_1.cu.o
+[117/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_8.cu.o
+[118/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_16-ncols2_4.cu.o
+[119/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_8.cu.o
+[120/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_16.cu.o
+[121/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_2-ncols2_4.cu.o
+[122/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_32-ncols2_2.cu.o
+[123/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_32-ncols2_1.cu.o
+[124/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_2.cu.o
+[125/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_4.cu.o
+[126/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_4-ncols2_8.cu.o
+[127/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_2.cu.o
+[128/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_64-ncols2_1.cu.o
+[129/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_4.cu.o
+[130/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq1_s.cu.o
+[131/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_1.cu.o
+[132/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-mma-f16-instance-ncols1_8-ncols2_8.cu.o
+[133/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq2_s.cu.o
+[134/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq2_xs.cu.o
+[135/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq2_xxs.cu.o
+[136/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq3_s.cu.o
+[137/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq3_xxs.cu.o
+[138/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq4_nl.cu.o
+[139/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq4_xs.cu.o
+[140/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q1_0.cu.o
+[141/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q2_0.cu.o
+[142/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-mxfp4.cu.o
+[143/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q2_k.cu.o
+[144/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q3_k.cu.o
+[145/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q4_0.cu.o
+[146/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-nvfp4.cu.o
+[147/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q4_1.cu.o
+[148/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q4_k.cu.o
+[149/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q5_0.cu.o
+[150/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q5_1.cu.o
+[151/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q5_k.cu.o
+[152/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_1.cu.o
+[153/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q6_k.cu.o
+[154/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-q8_0.cu.o
+[155/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_10.cu.o
+[156/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_11.cu.o
+[157/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_12.cu.o
+[158/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_13.cu.o
+[159/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_14.cu.o
+[160/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_15.cu.o
+[161/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_16.cu.o
+[162/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_2.cu.o
+[163/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_3.cu.o
+[164/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_4.cu.o
+[165/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_5.cu.o
+[166/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_6.cu.o
+[167/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_7.cu.o
+[168/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_8.cu.o
+[169/376] Linking CXX shared library bin/libggml-cpu.so.0.27.0
+[170/376] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[171/376] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[172/376] Creating library symlink bin/libggml-cpu.so.0 bin/libggml-cpu.so
+[173/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-f16-f16.cu.o
+[174/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmf-instance-ncols_9.cu.o
+[175/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_10_cxx.cxx.o
+[176/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_9_cxx.cxx.o
+[177/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx.o
+[178/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx.o
+[179/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-q4_0-q4_0.cu.o
+[180/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx.o
+[181/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx.o
+[182/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx.o
+[183/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-q8_0-q8_0.cu.o
+[184/376] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/fattn-vec-instance-bf16-bf16.cu.o
+[185/376] Linking CUDA shared library bin/libggml-cuda.so.0.27.0
+[186/376] Creating library symlink bin/libggml-cuda.so.0 bin/libggml-cuda.so
+[187/376] Linking CXX shared library bin/libggml.so.0.27.0
+[188/376] Creating library symlink bin/libggml.so.0 bin/libggml.so
+[189/376] Building CXX object src/CMakeFiles/llama.dir/llama.cpp.o
+[190/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx.o
+[191/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx.o
+[192/376] Building CXX object src/CMakeFiles/llama.dir/llama-adapter.cpp.o
+[193/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx.o
+[194/376] Building CXX object src/CMakeFiles/llama.dir/llama-cparams.cpp.o
+[195/376] Building CXX object src/CMakeFiles/llama.dir/llama-arch.cpp.o
+[196/376] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx.o
+[197/376] Building CXX object src/CMakeFiles/llama.dir/llama-hparams.cpp.o
+[198/376] Building CXX object src/CMakeFiles/llama.dir/llama-chat.cpp.o
+[199/376] Building CXX object src/CMakeFiles/llama.dir/llama-io.cpp.o
+[200/376] Building CXX object src/CMakeFiles/llama.dir/llama-impl.cpp.o
+[201/376] Building CXX object src/CMakeFiles/llama.dir/llama-batch.cpp.o
+[202/376] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsa.cpp.o
+[203/376] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-iswa.cpp.o
+[204/376] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-msa.cpp.o
+[205/376] Building CXX object src/CMakeFiles/llama.dir/llama-context.cpp.o
+[206/376] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsa-iswa.cpp.o
+[207/376] Building CXX object src/CMakeFiles/llama.dir/llama-graph.cpp.o
+[208/376] Building CXX object src/CMakeFiles/llama.dir/llama-memory.cpp.o
+[209/376] Building CXX object src/CMakeFiles/llama.dir/llama-grammar.cpp.o
+[210/376] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid.cpp.o
+[211/376] Building CXX object src/CMakeFiles/llama.dir/llama-moe-cache.cpp.o
+[212/376] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid-iswa.cpp.o
+[213/376] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache.cpp.o
+[214/376] Building CXX object src/CMakeFiles/llama.dir/llama-mmap.cpp.o
+[215/376] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid-idx.cpp.o
+[216/376] Building CXX object src/CMakeFiles/llama.dir/llama-memory-recurrent.cpp.o
+[217/376] Building CXX object src/CMakeFiles/llama.dir/llama-model-saver.cpp.o
+[218/376] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsv4.cpp.o
+[219/376] Building CXX object src/CMakeFiles/llama.dir/llama-quant.cpp.o
+[220/376] Building CXX object src/CMakeFiles/llama.dir/llama-vocab.cpp.o
+[221/376] Building CXX object vendor/hash/CMakeFiles/vendor-hash.dir/hash.cpp.o
+[222/376] Building CXX object src/CMakeFiles/llama.dir/llama-model-loader.cpp.o
+[223/376] Building CXX object src/CMakeFiles/llama.dir/llama-sampler.cpp.o
+[224/376] Building CXX object vendor/hash/CMakeFiles/vendor-hash.dir/sha1/sha1.c.o
+[225/376] Building C object vendor/hash/CMakeFiles/vendor-hash.dir/sha256/sha256.c.o
+[226/376] Building CXX object common/CMakeFiles/llama-common-base.dir/build-info.cpp.o
+[227/376] Building C object vendor/hash/CMakeFiles/vendor-hash.dir/xxhash/xxhash.c.o
+[228/376] Linking CXX static library common/libllama-common-base.a
+[229/376] Linking CXX static library vendor/hash/libvendor-hash.a
+[230/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/parsers.cpp.o
+[231/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/cohere2moe.cpp.o
+[232/376] Building CXX object src/CMakeFiles/llama.dir/llama-model.cpp.o
+[233/376] Building CXX object src/CMakeFiles/llama.dir/unicode-data.cpp.o
+[234/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/deepseek.cpp.o
+[235/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/functionary-v3-2.cpp.o
+[236/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/gemma4.cpp.o
+[237/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/gigachat-v3.cpp.o
+[238/376] Building CXX object src/CMakeFiles/llama.dir/unicode.cpp.o
+[239/376] Linking CXX shared library bin/libllama.so.0.7.0
+[240/376] Creating library symlink bin/libllama.so.0 bin/libllama.so
+[241/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/gpt-oss.cpp.o
+[242/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/kimi-k2.cpp.o
+[243/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/harmony-xml.cpp.o
+[244/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/k2-horizon.cpp.o
+[245/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/kimi-k3.cpp.o
+[246/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/ling3.cpp.o
+[247/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/lfm2.cpp.o
+[248/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/llm-jp-harmony.cpp.o
+[249/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/minicpm5.cpp.o
+[250/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/minimax-m3.cpp.o
+[251/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/ministral3.cpp.o
+[252/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/muse-glimmer.cpp.o
+[253/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/muse-spark.cpp.o
+[254/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/qwen3-coder.cpp.o
+[255/376] Building CXX object common/CMakeFiles/llama-common.dir/parsers/translate-gemma.cpp.o
+[256/376] Building CXX object common/CMakeFiles/llama-common.dir/chat-auto-parser-helpers.cpp.o
+[257/376] Building CXX object common/CMakeFiles/llama-common.dir/chat-auto-parser-generator.cpp.o
+[258/376] Building CXX object vendor/cpp-httplib/CMakeFiles/cpp-httplib.dir/httplib.cpp.o
+[259/376] Linking CXX static library vendor/cpp-httplib/libcpp-httplib.a
+[260/376] Building CXX object common/CMakeFiles/llama-common.dir/chat-peg-parser.cpp.o
+[261/376] Building CXX object common/CMakeFiles/llama-common.dir/console.cpp.o
+[262/376] Building CXX object common/CMakeFiles/llama-common.dir/chat-diff-analyzer.cpp.o
+[263/376] Building CXX object common/CMakeFiles/llama-common.dir/debug.cpp.o
+[264/376] Building CXX object common/CMakeFiles/llama-common.dir/chat.cpp.o
+[265/376] Building CXX object common/CMakeFiles/llama-common.dir/fit.cpp.o
+[266/376] Building CXX object common/CMakeFiles/llama-common.dir/common.cpp.o
+[267/376] Building CXX object common/CMakeFiles/llama-common.dir/imatrix-loader.cpp.o
+[268/376] Building CXX object common/CMakeFiles/llama-common.dir/json-schema.cpp.o
+[269/376] Building CXX object common/CMakeFiles/llama-common.dir/hf-cache.cpp.o
+[270/376] Building CXX object common/CMakeFiles/llama-common.dir/llguidance.cpp.o
+[271/376] Building CXX object common/CMakeFiles/llama-common.dir/download.cpp.o
+[272/376] Building CXX object common/CMakeFiles/llama-common.dir/log.cpp.o
+[273/376] Building CXX object common/CMakeFiles/llama-common.dir/ngram-mod.cpp.o
+[274/376] Building CXX object common/CMakeFiles/llama-common.dir/ngram-cache.cpp.o
+[275/376] Building CXX object common/CMakeFiles/llama-common.dir/ngram-map.cpp.o
+[276/376] Building CXX object common/CMakeFiles/llama-common.dir/reasoning-budget.cpp.o
+[277/376] Building CXX object common/CMakeFiles/llama-common.dir/json-schema-to-grammar.cpp.o
+[278/376] Building CXX object common/CMakeFiles/llama-common.dir/arg.cpp.o
+[279/376] Building CXX object common/CMakeFiles/llama-common.dir/subproc.cpp.o
+[280/376] Building CXX object common/CMakeFiles/llama-common.dir/json.cpp.o
+[281/376] Building CXX object common/CMakeFiles/llama-common.dir/trie.cpp.o
+[282/376] Building CXX object common/CMakeFiles/llama-common.dir/unicode.cpp.o
+[283/376] Building CXX object common/CMakeFiles/llama-common.dir/jinja/lexer.cpp.o
+[284/376] Building CXX object common/CMakeFiles/llama-common.dir/sampling.cpp.o
+[285/376] Building CXX object common/CMakeFiles/llama-common.dir/preset.cpp.o
+[286/376] Building CXX object common/CMakeFiles/llama-common.dir/jinja/parser.cpp.o
+[287/376] Building CXX object common/CMakeFiles/llama-common.dir/speculative.cpp.o
+[288/376] Building CXX object common/CMakeFiles/llama-common.dir/jinja/string.cpp.o
+[289/376] Building CXX object common/CMakeFiles/llama-common.dir/peg-parser.cpp.o
+[290/376] Building CXX object common/CMakeFiles/llama-common.dir/jinja/runtime.cpp.o
+[291/376] Building CXX object common/CMakeFiles/llama-common.dir/jinja/caps.cpp.o
+[292/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-audio.cpp.o
+[293/376] Building CXX object common/CMakeFiles/llama-common.dir/jinja/value.cpp.o
+[294/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-image.cpp.o
+[295/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-helper-gen.cpp.o
+[296/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/cogvlm.cpp.o
+[297/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd.cpp.o
+[298/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/conformer.cpp.o
+[299/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/deepseek4v.cpp.o
+[300/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/dots3note.cpp.o
+[301/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/dotsocr.cpp.o
+[302/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/exaone4_5.cpp.o
+[303/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4v.cpp.o
+[304/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4a.cpp.o
+[305/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4ua.cpp.o
+[306/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4uv.cpp.o
+[307/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/glm4v.cpp.o
+[308/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/granite-speech.cpp.o
+[309/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/hunyuanvl.cpp.o
+[310/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/granite4-vision.cpp.o
+[311/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/internvl.cpp.o
+[312/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/kimivl.cpp.o
+[313/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/kimik25.cpp.o
+[314/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/nemotron-v2-vl.cpp.o
+[315/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/nemotron-omni.cpp.o
+[316/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/muse-glimmer.cpp.o
+[317/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/muse-spark-audio.cpp.o
+[318/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/llama4.cpp.o
+[319/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/llava.cpp.o
+[320/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/minicpmv.cpp.o
+[321/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/paddleocr.cpp.o
+[322/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pixtral.cpp.o
+[323/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen2vl.cpp.o
+[324/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/minimax-m3.cpp.o
+[325/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3vl.cpp.o
+[326/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/ling3vl.cpp.o
+[327/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3a.cpp.o
+[328/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/mimovl.cpp.o
+[329/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/mimo-audio.cpp.o
+[330/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3tts-spkenc.cpp.o
+[331/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-helper.cpp.o
+[332/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pockettts-seanet.cpp.o
+[333/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pockettts-spkenc.cpp.o
+[334/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/step3vl.cpp.o
+[335/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pockettts-gen.cpp.o
+[336/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3tts-gen.cpp.o
+[337/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/siglip.cpp.o
+[338/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/whisper-enc.cpp.o
+[339/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/voxtral-rt.cpp.o
+[340/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/deepseekocr2.cpp.o
+[341/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/deepseekocr.cpp.o
+[342/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/clip.cpp.o
+[343/376] Provisioning UI assets
+CMake Warning at /home/end0/AI/FrankenMoE-CUDA/vendor/flint/scripts/ui-assets.cmake:584 (message):
+  UI: no assets available - building without an embedded UI.  In a
+  disconnected environment, download the pre-built UI from a llama.cpp
+  release at https://github.com/ggml-org/llama.cpp/releases and extract to
+  tools/ui/dist.
+
+
+-- UI: embedded 0 assets
+[344/376] Building CXX object tools/ui/CMakeFiles/llama-ui.dir/ui.cpp.o
+[345/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/mobilenetv5.cpp.o
+[346/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/youtuvl.cpp.o
+[347/376] Linking CXX shared library bin/libllama-common.so.0.7.0
+[348/376] Creating library symlink bin/libllama-common.so.0 bin/libllama-common.so
+[349/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/yasa2.cpp.o
+[350/376] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/parakeet.cpp.o
+[351/376] Linking CXX shared library bin/libmtmd.so.0.7.0
+[352/376] Creating library symlink bin/libmtmd.so.0 bin/libmtmd.so
+[353/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-chat.cpp.o
+[354/376] Building CXX object tools/server/CMakeFiles/server-context.dir/home/end0/AI/FrankenMoE-CUDA/runtime/reconstructed/server-merge/server-queue.cpp.o
+[355/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-common.cpp.o
+[356/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-decision.cpp.o
+[357/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-task.cpp.o
+[358/376] Building C object tools/server/CMakeFiles/server-context.dir/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/bridge.c.o
+In file included from /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/bridge.c:16:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c: In function ‘fg268p_gg_fail’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c:14:28: warning: ISO C does not support omitting parameter names in function definitions before C2X [-Wpedantic]
+   14 | static void fg268p_gg_fail(const char*){asm("trap;");}
+      |                            ^~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c: In function ‘fg268p_gg_function_4’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c:24:70: warning: unused parameter ‘base’ [-Wunused-parameter]
+   24 | static int64_t fg268p_gg_function_4(uint64_t p0, int64_t p1, int64_t base) {
+      |                                                              ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c: In function ‘fg268p_gg_function_2’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c:98:66: warning: unused parameter ‘base’ [-Wunused-parameter]
+   98 | static void fg268p_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
+      |                                                          ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c: At top level:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c:412:9: warning: no previous prototype for ‘fg268p_near_evict_impl’ [-Wmissing-prototypes]
+  412 | int64_t fg268p_near_evict_impl(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int64_t p4, int64_t p5, uint64_t p6){return fg268p_gg_function_1(p0, p1, p2, p3, p4, p5, p6, 0);}
+      |         ^~~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c:413:9: warning: no previous prototype for ‘fg268p_make_room_impl’ [-Wmissing-prototypes]
+  413 | int64_t fg268p_make_room_impl(int64_t p0, int64_t p1){return fg268p_gg_function_8(p0, p1, 0);}
+      |         ^~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/checkpoint_policy-functions.c:414:9: warning: no previous prototype for ‘fg268p_supersede_impl’ [-Wmissing-prototypes]
+  414 | int64_t fg268p_supersede_impl(uint64_t p0, int64_t p1, int64_t p2, uint64_t p3){return fg268p_gg_function_9(p0, p1, p2, p3, 0);}
+      |         ^~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/bridge.c:25:9: warning: no previous prototype for ‘fg268p_near_evict’ [-Wmissing-prototypes]
+   25 | int64_t fg268p_near_evict(uint64_t a, uint64_t b, int64_t c, int64_t d, int64_t e, int64_t f, uint64_t g) {
+      |         ^~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/bridge.c:28:9: warning: no previous prototype for ‘fg268p_make_room’ [-Wmissing-prototypes]
+   28 | int64_t fg268p_make_room(int64_t a, int64_t b) { atomic_fetch_add(&g_room, 1); return fg268p_make_room_impl(a, b); }
+      |         ^~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/bridge.c:29:9: warning: no previous prototype for ‘fg268p_supersede’ [-Wmissing-prototypes]
+   29 | int64_t fg268p_supersede(uint64_t a, int64_t b, int64_t c, uint64_t d) {
+      |         ^~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-269-goose-checkpoint-policy-live/bridge.c:32:5: warning: no previous prototype for ‘fg268p_enabled’ [-Wmissing-prototypes]
+   32 | int fg268p_enabled(void) {
+      |     ^~~~~~~~~~~~~~
+[359/376] Building C object tools/server/CMakeFiles/server-context.dir/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/bridge.c.o
+In file included from /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/bridge.c:20:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c: In function ‘fg272s_gg_fail’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c:12:28: warning: ISO C does not support omitting parameter names in function definitions before C2X [-Wpedantic]
+   12 | static void fg272s_gg_fail(const char*){asm("trap;");}
+      |                            ^~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c: In function ‘fg272s_gg_function_5’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c:22:70: warning: unused parameter ‘base’ [-Wunused-parameter]
+   22 | static int64_t fg272s_gg_function_5(uint64_t p0, int64_t p1, int64_t base) {
+      |                                                              ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c: In function ‘fg272s_gg_function_2’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c:48:66: warning: unused parameter ‘base’ [-Wunused-parameter]
+   48 | static void fg272s_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
+      |                                                          ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c: At top level:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/bridge.c:17:29: warning: no previous prototype for ‘fg272s_pick_similar_impl’ [-Wmissing-prototypes]
+   17 | #define fg272s_pick_similar fg272s_pick_similar_impl
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c:337:9: note: in expansion of macro ‘fg272s_pick_similar’
+  337 | int64_t fg272s_pick_similar(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int64_t p4){return fg272s_gg_function_1(p0, p1, p2, p3, p4, 0);}
+      |         ^~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/bridge.c:18:29: warning: no previous prototype for ‘fg272s_pick_lru_impl’ [-Wmissing-prototypes]
+   18 | #define fg272s_pick_lru     fg272s_pick_lru_impl
+      |                             ^~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/slot_selection-functions.c:338:9: note: in expansion of macro ‘fg272s_pick_lru’
+  338 | int64_t fg272s_pick_lru(uint64_t p0, uint64_t p1, uint64_t p2, int64_t p3){return fg272s_gg_function_7(p0, p1, p2, p3, 0);}
+      |         ^~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/bridge.c:30:9: warning: no previous prototype for ‘fg272s_pick_similar’ [-Wmissing-prototypes]
+   30 | int64_t fg272s_pick_similar(uint64_t a, uint64_t b, int64_t c, int64_t d, int64_t e) {
+      |         ^~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/bridge.c:33:9: warning: no previous prototype for ‘fg272s_pick_lru’ [-Wmissing-prototypes]
+   33 | int64_t fg272s_pick_lru(uint64_t a, uint64_t b, uint64_t c, int64_t d) {
+      |         ^~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-273-goose-slot-selection-live/bridge.c:36:5: warning: no previous prototype for ‘fg272s_enabled’ [-Wmissing-prototypes]
+   36 | int fg272s_enabled(void) {
+      |     ^~~~~~~~~~~~~~
+[360/376] Building C object tools/server/CMakeFiles/server-context.dir/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/bridge.c.o
+In file included from /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/bridge.c:16:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c: In function ‘fg274b_gg_fail’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c:11:28: warning: ISO C does not support omitting parameter names in function definitions before C2X [-Wpedantic]
+   11 | static void fg274b_gg_fail(const char*){asm("trap;");}
+      |                            ^~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c: In function ‘fg274b_gg_function_4’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c:21:70: warning: unused parameter ‘base’ [-Wunused-parameter]
+   21 | static int64_t fg274b_gg_function_4(uint64_t p0, int64_t p1, int64_t base) {
+      |                                                              ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c: In function ‘fg274b_gg_function_2’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c:47:66: warning: unused parameter ‘base’ [-Wunused-parameter]
+   47 | static void fg274b_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
+      |                                                          ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c: At top level:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/bridge.c:14:26: warning: no previous prototype for ‘fg274b_can_batch_impl’ [-Wmissing-prototypes]
+   14 | #define fg274b_can_batch fg274b_can_batch_impl
+      |                          ^~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/batch_compat-functions.c:274:9: note: in expansion of macro ‘fg274b_can_batch’
+  274 | int64_t fg274b_can_batch(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t p4, int64_t p5, uint64_t p6, uint64_t p7, int64_t p8, uint64_t p9, uint64_t p10, int64_t p11){return fg274b_gg_function_1(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, 0);}
+      |         ^~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/bridge.c:25:9: warning: no previous prototype for ‘fg274b_can_batch’ [-Wmissing-prototypes]
+   25 | uint8_t fg274b_can_batch(int64_t a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t f,
+      |         ^~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-275-goose-batch-compat-live/bridge.c:32:5: warning: no previous prototype for ‘fg274b_enabled’ [-Wmissing-prototypes]
+   32 | int fg274b_enabled(void) {
+      |     ^~~~~~~~~~~~~~
+[361/376] Building C object tools/server/CMakeFiles/server-context.dir/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/bridge.c.o
+In file included from /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/bridge.c:19:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c: In function ‘fg276t_gg_fail’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c:13:28: warning: ISO C does not support omitting parameter names in function definitions before C2X [-Wpedantic]
+   13 | static void fg276t_gg_fail(const char*){asm("trap;");}
+      |                            ^~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c: In function ‘fg276t_gg_function_6’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c:23:70: warning: unused parameter ‘base’ [-Wunused-parameter]
+   23 | static int64_t fg276t_gg_function_6(uint64_t p0, int64_t p1, int64_t base) {
+      |                                                              ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c: In function ‘fg276t_gg_function_2’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c:45:66: warning: unused parameter ‘base’ [-Wunused-parameter]
+   45 | static void fg276t_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
+      |                                                          ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c: In function ‘fg276t_gg_function_4’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c:263:70: warning: unused parameter ‘base’ [-Wunused-parameter]
+  263 | static int64_t fg276t_gg_function_4(uint64_t p0, int64_t p1, int64_t base) {
+      |                                                              ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c: At top level:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/bridge.c:16:29: warning: no previous prototype for ‘fg276t_find_full_impl’ [-Wmissing-prototypes]
+   16 | #define fg276t_find_full    fg276t_find_full_impl
+      |                             ^~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c:563:9: note: in expansion of macro ‘fg276t_find_full’
+  563 | int64_t fg276t_find_full(uint64_t p0, int64_t p1, uint64_t p2, uint64_t p3, uint64_t p4, int64_t p5, int64_t p6, uint64_t p7){return fg276t_gg_function_1(p0, p1, p2, p3, p4, p5, p6, p7, 0);}
+      |         ^~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/bridge.c:17:29: warning: no previous prototype for ‘fg276t_find_partial_impl’ [-Wmissing-prototypes]
+   17 | #define fg276t_find_partial fg276t_find_partial_impl
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/stop_strings-functions.c:564:9: note: in expansion of macro ‘fg276t_find_partial’
+  564 | int64_t fg276t_find_partial(uint64_t p0, int64_t p1, uint64_t p2, int64_t p3){return fg276t_gg_function_9(p0, p1, p2, p3, 0);}
+      |         ^~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/bridge.c:29:9: warning: no previous prototype for ‘fg276t_find_full’ [-Wmissing-prototypes]
+   29 | int64_t fg276t_find_full(uint64_t t, int64_t l, uint64_t w, uint64_t o, uint64_t ln, int64_t n, int64_t lts, uint64_t ow) {
+      |         ^~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-277-goose-stop-strings-live/bridge.c:35:5: warning: no previous prototype for ‘fg276t_enabled’ [-Wmissing-prototypes]
+   35 | int fg276t_enabled(void) {
+      |     ^~~~~~~~~~~~~~
+[362/376] Building C object tools/server/CMakeFiles/server-context.dir/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/bridge.c.o
+In file included from /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/bridge.c:18:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c: In function ‘fg270q_gg_fail’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c:13:28: warning: ISO C does not support omitting parameter names in function definitions before C2X [-Wpedantic]
+   13 | static void fg270q_gg_fail(const char*){asm("trap;");}
+      |                            ^~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c: In function ‘fg270q_gg_function_4’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c:23:70: warning: unused parameter ‘base’ [-Wunused-parameter]
+   23 | static int64_t fg270q_gg_function_4(uint64_t p0, int64_t p1, int64_t base) {
+      |                                                              ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c: In function ‘fg270q_gg_function_2’:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c:97:66: warning: unused parameter ‘base’ [-Wunused-parameter]
+   97 | static void fg270q_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
+      |                                                          ~~~~~~~~^~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c: At top level:
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/bridge.c:15:30: warning: no previous prototype for ‘fg270q_pick_deferred_impl’ [-Wmissing-prototypes]
+   15 | #define fg270q_pick_deferred fg270q_pick_deferred_impl
+      |                              ^~~~~~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c:265:9: note: in expansion of macro ‘fg270q_pick_deferred’
+  265 | int64_t fg270q_pick_deferred(uint64_t p0, int64_t p1, int64_t p2){return fg270q_gg_function_1(p0, p1, p2, 0);}
+      |         ^~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/bridge.c:16:30: warning: no previous prototype for ‘fg270q_cleanup_mask_impl’ [-Wmissing-prototypes]
+   16 | #define fg270q_cleanup_mask  fg270q_cleanup_mask_impl
+      |                              ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/queue_decisions-functions.c:266:9: note: in expansion of macro ‘fg270q_cleanup_mask’
+  266 | int64_t fg270q_cleanup_mask(uint64_t p0, int64_t p1, int64_t p2, uint64_t p3){return fg270q_gg_function_6(p0, p1, p2, p3, 0);}
+      |         ^~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/bridge.c:28:9: warning: no previous prototype for ‘fg270q_pick_deferred’ [-Wmissing-prototypes]
+   28 | int64_t fg270q_pick_deferred(uint64_t a, int64_t b, int64_t c) {
+      |         ^~~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/bridge.c:31:9: warning: no previous prototype for ‘fg270q_cleanup_mask’ [-Wmissing-prototypes]
+   31 | int64_t fg270q_cleanup_mask(uint64_t a, int64_t b, int64_t c, uint64_t d) {
+      |         ^~~~~~~~~~~~~~~~~~~
+/home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-12-271-goose-queue-live/bridge.c:34:5: warning: no previous prototype for ‘fg270q_enabled’ [-Wmissing-prototypes]
+   34 | int fg270q_enabled(void) {
+      |     ^~~~~~~~~~~~~~
+[363/376] Linking CXX static library tools/ui/libllama-ui.a
+[364/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-stream.cpp.o
+[365/376] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-connect.cpp.o
+[366/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-mcp.cpp.o
+[367/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-schema.cpp.o
+[368/376] Building CXX object tools/server/CMakeFiles/llama-server.dir/main.cpp.o
+[369/376] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server.cpp.o
+[370/376] Building CXX object tools/server/CMakeFiles/server-context.dir/server-tools.cpp.o
+[371/376] Building CXX object tools/server/CMakeFiles/server-context.dir/home/end0/AI/FrankenMoE-CUDA/runtime/reconstructed/server-merge/server-context.cpp.o
+[372/376] Linking CXX static library tools/server/libserver-context.a
+[373/376] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-http.cpp.o
+[374/376] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-models.cpp.o
+[375/376] Linking CXX shared library bin/libllama-server-impl.so
+[376/376] Linking CXX executable bin/llama-server

@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include "slru-policy.h"
 
 
 // Goose copy decisions (EXP-263). Default on; GGML_GOOSE_MOE_CACHE_COPY=0 restores the native loops.
@@ -21,16 +22,7 @@ extern "C" int fg756s_enabled(void);
 // same module answers both "does it equal native" and "does it implement the chosen policy".
 extern "C" int64_t fg756s_prot_num(void);
 extern "C" int64_t fg756s_prot_den(void);
-extern "C" {
-    typedef struct { int64_t * data; int64_t len; } fg756s_slice;
-    int64_t slru_plan(uint64_t key_of, uint64_t prev, uint64_t next, uint64_t prot,
-                      uint64_t head, uint64_t tail, fg756s_slice seen, uint64_t slots,
-                      uint64_t ids, int64_t n_ids,
-                      int64_t il, int64_t n_expert, int64_t n_slots,
-                      int64_t prot_limit,
-                      fg756s_slice scal, uint64_t uniq, uint64_t fills_e, uint64_t fills_s,
-                      uint64_t evicted);
-}
+using fg756s_slice = sl_i64;
 extern "C" int     fg263c_enabled(void);
 extern "C" int64_t fg263c_run_from_slot(uint64_t slots, int64_t e, int64_t last);
 extern "C" int64_t fg263c_run_from_pairs(uint64_t pairs, int64_t i, int64_t n_fills);

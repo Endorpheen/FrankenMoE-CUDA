@@ -1,0 +1,52 @@
+--- OOM DIAGNOSTICS ---
+pid: 1343989
+port: 9101
+lock: /tmp/apex-test.lock (held)
+params: len=96 b=4096 ub=4096 cache=4992
+memory.used [MiB], memory.total [MiB]
+3394 MiB, 12282 MiB
+13409, 314 MiB
+36605, 702 MiB
+748110, 237 MiB
+854970, 113 MiB
+1049701, 313 MiB
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context18sched_copy_expertsEP12ggml_backendPK11ggml_tensorPS2_P11ggml_cgraphPv+0x3e) [0x7aca6a95ae2e]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0x54d73) [0x7aca5d0aad73]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0xd82fb) [0x7aca5d12e2fb]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0xd8678) [0x7aca5d12e678]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0xdc468) [0x7aca5d132468]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x452) [0x7aca5d0b3af2]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0x113) [0x7aca6a956de3]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x1ac) [0x7aca6a95abac]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x5a8) [0x7aca6a9648e8]
+/tmp/franken-recovery-906-diagnostic/libllama-common.so.0(_Z23common_init_from_paramsR13common_paramsb+0x521) [0x7aca6afed791]
+/tmp/franken-recovery-906-diagnostic/libllama-server-impl.so(_ZN19server_context_impl10load_modelER13common_params+0x5ec) [0x7aca6b443a6c]
+/tmp/franken-recovery-906-diagnostic/libllama-server-impl.so(_Z12llama_serverR13common_paramsiPPcR12server_child+0x3816) [0x7aca6b37aab6]
+/tmp/franken-recovery-906-diagnostic/libllama-server-impl.so(_Z12llama_serveriPPc+0x131) [0x7aca6b37c2d1]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x2a601) [0x7aca5c02a601]
+/usr/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x88) [0x7aca5c02a718]
+/tmp/franken-recovery-906-diagnostic/llama-server(+0x1095) [0x5bf4bcbe4095]
+
+RECOVERY_STACK
+/tmp/franken-recovery-stack.so(+0x12cc) [0x7aca6b9092cc]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x45cb0) [0x7aca5c045cb0]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(+0x271820) [0x7aca6ab0b820]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x45cb0) [0x7aca5c045cb0]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(slru_plan+0x1f3) [0x7aca6ab0a403]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN15llama_moe_cache4impl4copyEP12ggml_backendPK11ggml_tensorPS3_P11ggml_cgraph+0x84c) [0x7aca6aa5000c]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context18sched_copy_expertsEP12ggml_backendPK11ggml_tensorPS2_P11ggml_cgraphPv+0x3e) [0x7aca6a95ae2e]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0x54d73) [0x7aca5d0aad73]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0xd82fb) [0x7aca5d12e2fb]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0xd8678) [0x7aca5d12e678]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(+0xdc468) [0x7aca5d132468]
+/tmp/franken-recovery-906-diagnostic/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x452) [0x7aca5d0b3af2]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0x113) [0x7aca6a956de3]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x1ac) [0x7aca6a95abac]
+/tmp/franken-recovery-906-diagnostic/libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x5a8) [0x7aca6a9648e8]
+/tmp/franken-recovery-906-diagnostic/libllama-common.so.0(_Z23common_init_from_paramsR13common_paramsb+0x521) [0x7aca6afed791]
+/tmp/franken-recovery-906-diagnostic/libllama-server-impl.so(_ZN19server_context_impl10load_modelER13common_params+0x5ec) [0x7aca6b443a6c]
+/tmp/franken-recovery-906-diagnostic/libllama-server-impl.so(_Z12llama_serverR13common_paramsiPPcR12server_child+0x3816) [0x7aca6b37aab6]
+/tmp/franken-recovery-906-diagnostic/libllama-server-impl.so(_Z12llama_serveriPPc+0x131) [0x7aca6b37c2d1]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x2a601) [0x7aca5c02a601]
+/usr/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x88) [0x7aca5c02a718]
+/tmp/franken-recovery-906-diagnostic/llama-server(+0x1095) [0x5bf4bcbe4095]
