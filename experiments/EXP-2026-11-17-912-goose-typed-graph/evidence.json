@@ -1,0 +1,148 @@
+{
+  "source_checkpoint": "82381b54",
+  "status": "ACCEPTED_TYPED_GRAPH_COMPOSITION_NOT_FULL_MODEL",
+  "constructor_checks_per_route": 10408,
+  "constructor_tensors_per_route": 558,
+  "constructor_modes": 36,
+  "numeric_cases": 8,
+  "exact_numeric_values": 18432,
+  "typed_chain_packet_reads": 0,
+  "packet_read_positive_control": true,
+  "mutations_killed": 2,
+  "main_composed_modules": 123,
+  "main_typechecked_specializations": 4019,
+  "global_tree_check": "FAIL_UNRELATED_15_ISSUES_TARGET_ENTRY_MATCHES",
+  "model_runs": 0,
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/control.so",
+      "bytes": 1095496,
+      "sha256": "7ea322448d406508311f7b0752e5a187f275636945ce6d3149bb77af946ee985"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/candidate.so",
+      "bytes": 1187704,
+      "sha256": "cd9e8506978d007d55b2d4305004bc5487aa85f8e7c7db6d542f44fd341d9c4e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/standalone.so",
+      "bytes": 285152,
+      "sha256": "67d0ee1af6a5c3d47bdbff2e082540359026d4a55b4d50aa4230972c6912ba84"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/support-inputs.json",
+      "bytes": 1935,
+      "sha256": "f44fa26e48a4c004e4c0a5822e5febeb7738d472c90d8be39fa9ed960188cf7e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/build-inputs.json",
+      "bytes": 1089,
+      "sha256": "32cada787ad264b43a3281bd338639ac96ba35d19090c670a84ccb44a598c31d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/check.log",
+      "bytes": 978,
+      "sha256": "e294ccffbc32f1197c20ff876dc578d835755a0cbc82ee52669e90c94e74c9ac"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/prepare.log",
+      "bytes": 2127,
+      "sha256": "1b1e9c2340739304c854d0f4a9ddae4818a66241351c41895baff2eb2d99eb9b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/build.log",
+      "bytes": 32344,
+      "sha256": "bf83ae3fab3df00069e8500540afa5fefb4f0ed379b7800330c2c9cc2fb2a633"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/corpus.log",
+      "bytes": 1554,
+      "sha256": "17afe835d8a8dd71eb0f6b9e6b5df6a780d9d420ec34dbe4ef65f3e6ac71752d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/boundary.log",
+      "bytes": 814,
+      "sha256": "d9c98c1ffc81edae493c2b1e6144937e6a13495d0b5eeb413d21326cf2b6aace"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/numeric.log",
+      "bytes": 793,
+      "sha256": "bd808fcd0cb2fb498d1671d776ca6949322fb50e434be20d20f41fd5e5f94dfe"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/numeric-diagnostic.log",
+      "bytes": 899,
+      "sha256": "988f4ffa52995e5cd9da18693649f45cefdb3c8ea5062d0d4c96fc53c05507ae"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/numeric-materialized.log",
+      "bytes": 930,
+      "sha256": "e99ab75d0d231fc689906146762edfe45b84190ab741907eaf43b2dfd8d9d2b9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/mutations.log",
+      "bytes": 7296,
+      "sha256": "9416158fb74651568bab3090d7730e8171d0e70b6d71e42fde58dc21bb145e25"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/main-check.log",
+      "bytes": 487457,
+      "sha256": "234827dd52e0dfe3f62e473178b8d5b191472bc9ec7040d5bce250910b2ac835"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/tree-check.log",
+      "bytes": 3783,
+      "sha256": "c1b40d6c59c1b1b7d0cf91a907b18e9febd73e3ad198208086f3c46144348746"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/source/control.goose",
+      "bytes": 19574,
+      "sha256": "779c55ef041e6b9ff5f285324de493c8c7ab7498e5aaf24e567b5d58c98f9562"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/source/chain.goose",
+      "bytes": 1340,
+      "sha256": "1451009c46d54734dfb5bbee0ceaec7081f71a98713e2fd103d070223befd81c"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/source/runtime.goose",
+      "bytes": 20968,
+      "sha256": "306c2514309017b7b6603ac464c1f5071086d3209f93e0233f770800275473d8"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/tests/constructor_corpus.cpp",
+      "bytes": 12029,
+      "sha256": "11c57daa8e77db1824b249e4b3d3126e3b9bfca1f1b690c2faa5392d22e6a07f"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/tests/dispatch.c",
+      "bytes": 1046,
+      "sha256": "f17887d2bd07a36f7cd6ab6a96e9e7fcdfcfd1f0d64eb6fc8338ead731210d50"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/tests/boundary.cpp",
+      "bytes": 2997,
+      "sha256": "da0efc80da6f0cedc070e19adbe8bf7e83f2cdd37ce1023d405bbd5cfa1c24a0"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/tests/numeric.cpp",
+      "bytes": 6970,
+      "sha256": "6712dc120a1871742640119d2e8b30d5e512e687a301b1465e9f37ed24a55b0f"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/tests/build.py",
+      "bytes": 12925,
+      "sha256": "61aeab9c723086abdbb69f1436350af39c02bed255440881c956029c40828302"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-912-goose-typed-graph/tests/dispatch.h",
+      "bytes": 584,
+      "sha256": "9bc29158d7d711e9cfc8fd5665cb6ae02d47178e5ad26fea3c97746e47764e2f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp912-goose-typed-graph-20261117/baseline-preservation.log",
+      "bytes": 291,
+      "sha256": "8141c4558946ded3585e58a49b2a75e9698ff70f32bef46ae8844d97750938ed"
+    }
+  ]
+}

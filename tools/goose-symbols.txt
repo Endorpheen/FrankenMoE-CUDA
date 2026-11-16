@@ -222,3 +222,4 @@ goose/server/stream-provider.goose	accel_header
 goose/server/stream-provider.goose	complete_when
 goose/server/stream-provider.goose	is_stream
 goose/server/stream-provider.goose	step
+goose/cpu/goose-graph-builders.goose	gb_common_args
