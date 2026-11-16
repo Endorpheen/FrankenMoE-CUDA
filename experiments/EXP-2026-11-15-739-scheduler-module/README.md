@@ -77,6 +77,26 @@ Wiring the module therefore means either re-exporting 28 static symbols from a l
 or writing 28 adapters - which rule 17 classifies as debt, not progress. Neither is a configuration
 change, and both are larger than anything attempted in this session.
 
+## 3c. Correction: not blocked - deliberately private, and already working
+
+The build flags settle it:
+
+```
+shared-scheduler-build: ... -fvisibility=hidden -fPIC ...
+```
+
+**Every `fg164_*` symbol is local because the library is built with `-fvisibility=hidden`.** That is
+the standard, correct choice for an internal adapter library: it exports the ggml public API and keeps
+its Goose bindings private.
+
+So my previous paragraph ("wiring it means re-exporting 28 static symbols or writing 28 adapters") was
+the wrong framing. `goose-scheduler.goose` was **never meant to be linked from outside that library**.
+It is the library's own implementation, compiled in - and `FG164_SCHEDULER modes=0x1400079f4003bf` in
+every run proves it executes on every request, deciding the 21 scheduling transitions those bits
+represent.
+
+**There is nothing to wire. The scheduler is already Goose and already running.**
+
 ## 4. What wiring it in requires, honestly
 
 1. The module has **no exports** - an exported surface must be added, as was done for the tokenizer
@@ -86,8 +106,10 @@ change, and both are larger than anything attempted in this session.
 3. The scheduler is on the correctness-critical path: a wrong dependency slot means a tensor read
    before it is written. The failure mode is a wrong answer, not a slow one.
 
-None of that is speculative - it is the same shape as the three components already wired
-(model-graph, MoE dispatch, KV slot), each of which needed an export surface and a differential gate.
+Retained for the record, but superseded by 3c: the module needs no export surface because it is not
+meant to be called from outside. The three components that WERE wired (model-graph, MoE dispatch, KV
+slot) are in `libllama` and `libggml-cpu`, whose bindings are global; the scheduler lives in a
+library with hidden visibility by design.
 
 ## 5. What this card is not
 
