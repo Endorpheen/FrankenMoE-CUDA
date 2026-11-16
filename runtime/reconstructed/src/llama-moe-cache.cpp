@@ -12,6 +12,18 @@
 
 
 // Goose copy decisions (EXP-263). Default on; GGML_GOOSE_MOE_CACHE_COPY=0 restores the native loops.
+// The SLRU policy itself (EXP-756): raw addresses for the int32 state, i64 slices for seen/scal, the
+// same shape as the fg263c bridge. Default on; GGML_GOOSE_MOE_SLRU=0 restores the native policy.
+extern "C" int fg756s_enabled(void);
+extern "C" {
+    typedef struct { int64_t * data; int64_t len; } fg756s_slice;
+    int64_t slru_plan(uint64_t key_of, uint64_t prev, uint64_t next, uint64_t prot,
+                      uint64_t head, uint64_t tail, fg756s_slice seen, uint64_t slots,
+                      uint64_t ids, int64_t n_ids,
+                      int64_t il, int64_t n_expert, int64_t n_slots,
+                      fg756s_slice scal, uint64_t uniq, uint64_t fills_e, uint64_t fills_s,
+                      uint64_t evicted);
+}
 extern "C" int     fg263c_enabled(void);
 extern "C" int64_t fg263c_run_from_slot(uint64_t slots, int64_t e, int64_t last);
 extern "C" int64_t fg263c_run_from_pairs(uint64_t pairs, int64_t i, int64_t n_fills);
@@ -39,12 +51,17 @@ struct moe_cache_slru {
     std::vector<int32_t> next;
     int32_t head[2] = { -1, -1 };
     int32_t tail[2] = { -1, -1 };
-    std::vector<bool> is_protected;
+    // int32, not bool: the Goose policy addresses this array directly, and vector<bool> is bit-packed
+    std::vector<int32_t> is_protected;
     int32_t n_protected = 0;
 
-    std::vector<uint32_t> seen; // [n_expert]
-    uint32_t seen_gen = 0;
+    std::vector<int64_t>  seen; // [n_expert], i64 so the Goose policy can hold a full generation
+    int64_t seen_gen = 0;
     std::vector<int32_t> uniq;
+    // scratch for the Goose policy: it reports separate expert/slot arrays and the evicted key
+    std::vector<int32_t> g_fills_e;
+    std::vector<int32_t> g_fills_s;
+    std::vector<int32_t> g_evicted;
 
     void init(int32_t n_layer, int32_t n_expert, int32_t n_slots) {
         this->n_expert = n_expert;
@@ -59,13 +76,16 @@ struct moe_cache_slru {
         }
         head[0] = 0;
         tail[0] = n_slots - 1;
-        is_protected.assign(n_slots, false);
+        is_protected.assign(n_slots, 0);
         seen.assign(n_expert, 0);
+        g_fills_e.resize(n_slots);
+        g_fills_s.resize(n_slots);
+        g_evicted.resize(n_slots);
     }
 
     // move slot s to the most recently used end of a segment
     void move(int32_t s, bool protect) {
-        const bool from = is_protected[s];
+        const int32_t from = is_protected[s];
         if (from == protect && s == tail[from]) {
             return;
         }
@@ -88,7 +108,7 @@ struct moe_cache_slru {
             head[protect] = s;
         }
         tail[protect] = s;
-        is_protected[s] = protect;
+        is_protected[s] = protect ? 1 : 0;
         n_protected += int(protect) - int(from);
     }
 
@@ -122,6 +142,38 @@ struct moe_cache_slru {
     bool plan(int32_t il, const int32_t * ids, size_t n_ids, std::vector<fill> & fills, size_t & n_hit) {
         fills.clear();
         n_hit = 0;
+
+        // The policy, in Goose (EXP-756). The native loop below is the fallback behind the switch.
+        if (fg756s_enabled()) {
+            int64_t scal[5] = { seen_gen, n_protected, 0, 0, 1 };
+            const fg756s_slice seen_s { seen.data(), (int64_t) seen.size() };
+            const fg756s_slice scal_s { scal, 5 };
+            const int64_t nf = slru_plan(
+                (uint64_t) (uintptr_t) key_of.data(), (uint64_t) (uintptr_t) prev.data(),
+                (uint64_t) (uintptr_t) next.data(),   (uint64_t) (uintptr_t) is_protected.data(),
+                (uint64_t) (uintptr_t) head,          (uint64_t) (uintptr_t) tail,
+                seen_s, (uint64_t) (uintptr_t) slot_map[il],
+                (uint64_t) (uintptr_t) ids, (int64_t) n_ids,
+                il, n_expert, n_slots,
+                scal_s, (uint64_t) (uintptr_t) uniq.data(),
+                (uint64_t) (uintptr_t) g_fills_e.data(), (uint64_t) (uintptr_t) g_fills_s.data(),
+                (uint64_t) (uintptr_t) g_evicted.data());
+            if (nf < 0) {
+                return false;
+            }
+            seen_gen     = scal[0];
+            n_protected  = (int32_t) scal[1];
+            n_hit        = (size_t) scal[3];
+            for (int64_t i = 0; i < nf; ++i) {
+                // the evicted expert may belong to another layer; clearing it is the caller's job
+                const int32_t old = g_evicted[i];
+                if (old >= 0) {
+                    slot_map[old / n_expert][old % n_expert] = -1;
+                }
+                fills.push_back({ g_fills_e[i], g_fills_s[i] });
+            }
+            return true;
+        }
 
         if (++seen_gen == 0) {
             std::fill(seen.begin(), seen.end(), 0);
