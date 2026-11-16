@@ -567,3 +567,7 @@ come from Igor directly. For every marked message:
       - "the environment is at fault" - one nvidia-smi decides it;
       - "that change caused this" - rolling the library back to the last verified build decides it.
     Both were asserted wrongly in this session before being tested, and both were wrong.
+
+    This is enforced, not merely written down: `tools/run-once.sh <port> <tag> ...` refuses to start when the port has
+    an owner or when one of our servers is still alive, prints the model residency, and only then runs. It never counts
+    or touches `igorek-llama-server`, which belongs to another service. Every benchmark goes through it.
