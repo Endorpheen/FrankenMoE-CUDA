@@ -127,6 +127,11 @@ _GOOSE_PAIRS = [
     ('goose/misc/unicode-gpt2.goose',     'integration/m1/common/fg-unicode-gpt2-bridge.c',     'fg-gpt2'),
     ('goose/misc/unicode-hangul.goose',   'integration/m1/common/fg-unicode-hangul-bridge.c',   'fg-hangul'),
     ('goose/misc/qwen35-split.goose',     'integration/m1/common/fg-qwen35-split-bridge.c',     'fg-q35s'),
+    # mapping established from the object symbols, not from the file names: fg-ar exports ar_arch/ar_count/ar_exps
+    # (arch-registry), fg-gr exports gr_run (graph-reuse), fg-qg exports qg_* (qgate-split)
+    ('goose/model/arch-registry.goose',   'integration/m1/common/fg-arch-registry-bridge.c',    'fg-ar'),
+    ('goose/cpu/graph-reuse.goose',       'integration/m1/common/fg-graph-reuse-bridge.c',      'fg-gr'),
+    ('goose/model/qgate-split.goose',     'integration/m1/common/fg-goose-quant-bridge.c',      'fg-qg'),
 ]
 _GOOSE = Path(__file__).resolve().parent.parent.parent / 'goose'
 if not (_GOOSE / 'misc').is_dir():
@@ -178,9 +183,7 @@ print('slru objects compiled:', len(_slru_objs))
 extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
              # compiled here from repository sources instead of taken prebuilt
              _slru_objs[0], _slru_objs[1], _slru_objs[2],
-             W/'fg-ar.o', W/'fg-ar-bridge.o',
-             W/'fg-q35.o', W/'fg-qg.o', W/'fg-q35-bridge.o', W/'fg-plan-ffi.o',
-             W/'fg-gr.o', W/'fg-gr-bridge.o'] + [Path(x) for x in _goose_objs]
+             W/'fg-q35.o', W/'fg-q35-bridge.o', W/'fg-plan-ffi.o'] + [Path(x) for x in _goose_objs]
 # The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
 # linking a DSO with an undefined fg756s/slru symbol.
 for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
