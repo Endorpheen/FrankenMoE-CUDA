@@ -97,7 +97,50 @@ that out explicitly.
 
 ---
 
-## 3. Not blockers: work in progress, for context only
+## 3. Array payload reads through Goose break the vocabulary
+
+**Goal.** Let the Goose reader answer `gguf_get_arr_str` and `gguf_get_arr_data`
+so the vocabulary texts and the token-type array come from Goose instead of the C
+`gguf` container.
+
+**What was done.** Added `gr_val_span` (wire type, payload offset, bytes, element
+type) and `gr_arr_str_span` (offset/length of element i) to the reader, plus C++
+wrappers that return pointers into the reader's 64 MiB header mapping, with the C
+calls as fallback. Replaced the calls in `llama-vocab.cpp`, `llama-model.cpp` and
+`llama-model-loader.cpp`.
+
+**Result: the instrumented numbers improved dramatically and the behaviour broke.**
+
+    accepted library : gguf_get_arr_data = 8,     gguf_get_arr_str = 495921
+    candidate        : gguf_get_arr_data = 3,     gguf_get_arr_str = 14
+
+    pieces gate      : BAD (was identical)
+    tokenize gate    : BAD (was identical)
+    sampler gate     : OK
+
+So the vocabulary is now read through Goose - 495921 calls become 14 - but the
+texts it returns are not the same, i.e. the span arithmetic or the returned
+pointer is wrong somewhere. Not diagnosed further in this session.
+
+**Reverted.** The three files are back to using `gguf_get_arr_str`/`arr_data`,
+the candidate was rebuilt and re-gated: pieces OK, tokenize OK, sampler OK. The
+reader keeps `gr_val_span`/`gr_arr_str_span` (unused by the runtime) and everything
+else from the previous slices stays wired (tensors, keys, kv_type/arr_type/arr_n,
+tokenizer, sampler).
+
+**Next attempt should check, in this order:**
+
+1. whether `gr_arr_str_span`'s offset is measured from the header window or from
+   the file start, and which the wrapper adds;
+2. whether the payload offset `gr_val_span` returns for an array of strings is the
+   first string's length word or the first character (they differ by 8 bytes);
+3. whether any consumer needs a NUL-terminated string (our span is not
+   terminated) - a `std::string` copy would be fine, `strlen` would not.
+
+The instruments are `countarr.so` (LD_PRELOAD counters for the two calls) and the
+three gates above; `ggufcmp` already proves the reader's own key/tensor indexes.
+
+## 4. Not blockers: work in progress, for context only
 
 - Metadata: `gguf_get_kv_type/arr_type/arr_n` now go through Goose (252 -> 99,
   17 -> 5, 17 -> 5 on a load); the remainder is `gguf_kv_to_str` logging and
