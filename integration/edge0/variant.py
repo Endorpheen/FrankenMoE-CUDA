@@ -19,7 +19,8 @@ with (o/'build.log').open('x') as log:
   inputs[str(a.reuse_goose/'goose.o')]=hashlib.sha256((a.reuse_goose/'goose.o').read_bytes()).hexdigest()
  if a.goose:
   pin=json.loads((r/'runtime/compiler/current.json').read_text());g=Path(pin['compiler']);assert hashlib.sha256(g.read_bytes()).hexdigest()==pin['sha256'];(o/'generated').mkdir()
-  run(['python3',r/'tools/compose-goose.py',o/'generated/runtime.goose',b/'generated/runtime.goose',r/'goose/model/expert-lru.goose'])
+  modules=[r/'goose/cpu/goose-graph-builders.goose',r/'goose/cpu/goose-moe-router.goose',r/'goose/model/expert-lru.goose']+[r/f'experiments/EXP-2026-11-17-{v}/source/runtime.goose' for v in ['909-edge0-layout','910-edge0-ple-fp8','911-edge0-ple-provider','915-edge0-latent-expert']]+[r/'integration/edge0/runtime.goose']
+  run(['python3',r/'tools/compose-goose.py',o/'generated/runtime.goose',*modules])
   run([g,'check',o/'generated/runtime.goose']);run([g,'--standalone','-o',o/'generated/runtime.c','--header',o/'generated/runtime.h',o/'generated/runtime.goose'])
   run(['gcc-13','-O2','-fPIC','-c',o/'generated/runtime.c','-o',o/'goose.o'])
  for key,source,out in [('unity_10_cxx' ,o/'unit.cpp',o/'unit.o'),('cli.cpp',o/'cli.cpp',o/'cli.o')]:

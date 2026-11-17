@@ -1,0 +1,310 @@
+{
+  "status": "ACCEPTED_FIXED_75_256",
+  "reference_commit": "edb893ab89afd8194e75af6e9861e0910e7d957d",
+  "runs": [
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 3.43801,
+      "prefill_s": 12.153233,
+      "prefill_tps": 6.171197,
+      "ttft_s": 12.155204,
+      "decode_s": 39.691646,
+      "decode_steps": 255.0,
+      "decode_tps": 6.424526,
+      "eos": 0.0,
+      "maxrss_KiB": 11130084.0,
+      "tag": "a1-923",
+      "swapout": 0,
+      "rss_KiB": 11132704,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "accepted": true
+    },
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 3.454278,
+      "prefill_s": 11.388083,
+      "prefill_tps": 6.585832,
+      "ttft_s": 11.389719,
+      "decode_s": 37.753646,
+      "decode_steps": 255.0,
+      "decode_tps": 6.754315,
+      "eos": 0.0,
+      "maxrss_KiB": 11129412.0,
+      "tag": "b1-923",
+      "swapout": 310,
+      "rss_KiB": 11132636,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "accepted": false
+    },
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 3.519338,
+      "prefill_s": 11.171703,
+      "prefill_tps": 6.71339,
+      "ttft_s": 11.17349,
+      "decode_s": 36.923646,
+      "decode_steps": 255.0,
+      "decode_tps": 6.906143,
+      "eos": 0.0,
+      "maxrss_KiB": 11128968.0,
+      "tag": "b2-923",
+      "swapout": 0,
+      "rss_KiB": 11132716,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "accepted": true
+    },
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 3.250016,
+      "prefill_s": 12.18977,
+      "prefill_tps": 6.1527,
+      "ttft_s": 12.191475,
+      "decode_s": 39.753706,
+      "decode_steps": 255.0,
+      "decode_tps": 6.414496,
+      "eos": 0.0,
+      "maxrss_KiB": 11129576.0,
+      "tag": "a2-923",
+      "swapout": 0,
+      "rss_KiB": 11132644,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "accepted": true
+    },
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 3.437007,
+      "prefill_s": 11.458644,
+      "prefill_tps": 6.545277,
+      "ttft_s": 11.46045,
+      "decode_s": 37.235048,
+      "decode_steps": 255.0,
+      "decode_tps": 6.848386,
+      "eos": 0.0,
+      "maxrss_KiB": 11130176.0,
+      "tag": "b3-923",
+      "swapout": 0,
+      "rss_KiB": 11132680,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "accepted": true
+    }
+  ],
+  "medians": {
+    "a": {
+      "prefill_tps": 6.1619485,
+      "decode_tps": 6.419511,
+      "rss_KiB": 11132674.0,
+      "gpu_MiB": 5296.0
+    },
+    "b": {
+      "prefill_tps": 6.6293334999999995,
+      "decode_tps": 6.8772645,
+      "rss_KiB": 11132698.0,
+      "gpu_MiB": 5296.0
+    }
+  },
+  "relative_percent": {
+    "prefill_tps": 7.5850195761941075,
+    "decode_tps": 7.130659952136531,
+    "rss_KiB": 0.00021558162934809388,
+    "gpu_MiB": 0.0
+  },
+  "qualification": "Attempted ABBA, B1 excluded only for310pages global swap-out; repeated B3. Qualified actual order A1-B2-A2-B3. Same warm shared filesystem cache; no reset.",
+  "raw_sha256": {
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a1-923/log.txt": "29af355f376c99b7d172fd98a255777489e0c632fc7e43c91e8ac6c4a1bacc08",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a1-923/resources.json": "3ceab1a75a04b39f8c5c8f60b254ef6e2ff6abde21146b6fd87978cd40ea5630",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a1-923/answer.bin": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a1-923/prompt.txt": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a1-923/samples.jsonl": "8d093e66ba4ac1e2ecaef2096103d1d13224797b0eb0fe66fb6497141993a753",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b1-923/log.txt": "ffeb8ecc26ff9787a4a9e6e0f593bd2172c08c1942c64a47392abd4105b47049",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b1-923/resources.json": "42758caf912a3ca563e381b3e52d55a0db666b017ebfcc32cd7fc966d35b81bb",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b1-923/answer.bin": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b1-923/prompt.txt": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b1-923/samples.jsonl": "42b4f92d78658dc79d8de21b59909cc59277639b945dd1dda17c2aa77c1c1f18",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b2-923/log.txt": "9ebb0701e5dead8ee8377479b2b790915b5d5ec3e95be5c3d617f40077a2dcd8",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b2-923/resources.json": "e6079d170133f59d64da3b187c00d948efda21dadc24820a3355f63ac561c6b3",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b2-923/answer.bin": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b2-923/prompt.txt": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b2-923/samples.jsonl": "25153ec82d1ced0e52e852a8815140e9cd4c234e5c7cf61f1c191cb3e9d74682",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a2-923/log.txt": "78a312e151b79355e64ab98adbda26f893a481fff16ebb392d2125156f02c154",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a2-923/resources.json": "5420f9522dd1c53ecdf7c5aa439124008a3256f7cd640d5efed026ca4e00ebce",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a2-923/answer.bin": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a2-923/prompt.txt": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/a2-923/samples.jsonl": "7f7d5920611026ca63e6e633dafcf934a8fb8a22cc16b30c7dc0d3caea50d407",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b3-923/log.txt": "1024d836b8b2123fd60f58dc77ae7226ce7041746b99f4a24888151a9878ba3e",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b3-923/resources.json": "81fd1f98d2737ad85e492f4738fccf02ee0dfb10435d6854fa8fba5c05a6e5b6",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b3-923/answer.bin": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b3-923/prompt.txt": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/b3-923/samples.jsonl": "e9a0e27e790bea0c92f66db1d444f4be441ec8da773e6ca1af42205ef5f8a0b5",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/eos-923/log.txt": "52caf623a15298d526d054a5072254e4be66727a905d08a801ab793f71bfad61",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/eos-923/resources.json": "02a26f4a3b7c8ffd13c49590ef1007c8a3b072c25fd9158a7075e5dffd8fac96",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/eos-923/answer.bin": "fd4bca526fa9c822c80fd007b1a14851db4e63ebe898d4dc87add43f7c34f077",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/eos-923/prompt.txt": "c045d6dc40eef2f49b5bb8c43064bcce657d85171919fcad7a20903e754b6ed3",
+    "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/eos-923/samples.jsonl": "635db19be9069b1391b8e3fd22c87dbfd3a2d057418bcee535e20d98b0c2c22d"
+  },
+  "eos": {
+    "command": [
+      "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/build/edge0-cli",
+      "/home/end0/AI/LocalAI/Models/Edge0-120B-q3k",
+      "/home/end0/AI/LlamaServer/edge0-d-reuse-20261117/eos-923/prompt.txt",
+      "32"
+    ],
+    "ngl": 48,
+    "seconds": 9.363751075987238,
+    "exit_code": 0,
+    "stop_reason": null,
+    "samples": [
+      {
+        "s": 1.2375904020154849,
+        "pid": 1904921,
+        "rss_KiB": 2817104,
+        "swap_KiB": 0,
+        "gpu_MiB": 154,
+        "io": {
+          "rchar": 11444385,
+          "wchar": 6810,
+          "syscr": 2835,
+          "syscw": 82,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      {
+        "s": 2.2629801069851965,
+        "pid": 1904921,
+        "rss_KiB": 4786048,
+        "swap_KiB": 0,
+        "gpu_MiB": 154,
+        "io": {
+          "rchar": 11444385,
+          "wchar": 6810,
+          "syscr": 2835,
+          "syscw": 82,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      {
+        "s": 3.2681228179717436,
+        "pid": 1904921,
+        "rss_KiB": 10783236,
+        "swap_KiB": 0,
+        "gpu_MiB": 5122,
+        "io": {
+          "rchar": 1427021985,
+          "wchar": 119708,
+          "syscr": 2836,
+          "syscw": 2163,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      {
+        "s": 4.427897281013429,
+        "pid": 1904921,
+        "rss_KiB": 11129528,
+        "swap_KiB": 0,
+        "gpu_MiB": 5296,
+        "io": {
+          "rchar": 2705982743,
+          "wchar": 371519,
+          "syscr": 4001,
+          "syscw": 3901,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      {
+        "s": 5.447865578986239,
+        "pid": 1904921,
+        "rss_KiB": 11129528,
+        "swap_KiB": 0,
+        "gpu_MiB": 5296,
+        "io": {
+          "rchar": 4014068503,
+          "wchar": 372185,
+          "syscr": 5220,
+          "syscw": 3913,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      {
+        "s": 6.542847233999055,
+        "pid": 1904921,
+        "rss_KiB": 11129536,
+        "swap_KiB": 0,
+        "gpu_MiB": 5296,
+        "io": {
+          "rchar": 5081043223,
+          "wchar": 372976,
+          "syscr": 6248,
+          "syscw": 3927,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      {
+        "s": 7.604219049972016,
+        "pid": 1904921,
+        "rss_KiB": 11129536,
+        "swap_KiB": 0,
+        "gpu_MiB": 5296,
+        "io": {
+          "rchar": 6009406743,
+          "wchar": 373770,
+          "syscr": 7157,
+          "syscw": 3941,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      {
+        "s": 8.62775846698787,
+        "pid": 1904921,
+        "rss_KiB": 11132436,
+        "swap_KiB": 0,
+        "gpu_MiB": 5160,
+        "io": {
+          "rchar": 6885354373,
+          "wchar": 374833,
+          "syscr": 8023,
+          "syscw": 3968,
+          "read_bytes": 0,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      }
+    ],
+    "pswpout_start": 15863833,
+    "pswpout_end": 15863833,
+    "maxrss_KiB": 11132436,
+    "max_gpu_MiB": 5296,
+    "max_swap_KiB": 0
+  },
+  "cpp_baseline_replaced_removed": 0,
+  "dead_cpp_removed": 0,
+  "retained_cpp_closure_lines": 248213,
+  "necessary_cpp_minimum": "UNKNOWN"
+}

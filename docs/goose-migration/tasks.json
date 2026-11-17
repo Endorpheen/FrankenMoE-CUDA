@@ -5561,10 +5561,10 @@
       "slices_total": 3,
       "slices_done": 2,
       "remaining": [
-        "Profile latest retained-dense path; optimise measured CPU FFN, I/O, CUDA/placement and synchronisation toward15-17 tok/s"
+        "Profile current CPU FFN/expert I/O; optimise without changing exact256 output, memory quota or swap gate"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-17-921-edge0-dense-retention/README.md",
-      "accepted_checkpoint": "EXP921 exact256 result,6.518697 decode /6.247443 prefill in its paired regime; not15-17target completion",
+      "coverage_doc": "experiments/EXP-2026-11-17-923-edge0-group-projection-reuse/README.md",
+      "accepted_checkpoint": "EXP923 exact256:6.8772645 decode/6.6293335 prefill; +7.13%/+7.59% against same-cycle EXP921 control; target15-17 open",
       "target_decode_tps": [
         15,
         17
@@ -5677,10 +5677,10 @@
       "slices_total": 3,
       "slices_done": 2,
       "remaining": [
-        "Profile latest retained-dense path; optimise measured CPU FFN, I/O, CUDA/placement and synchronisation toward15-17 tok/s"
+        "Profile current CPU FFN/expert I/O; optimise without changing exact256 output, memory quota or swap gate"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-17-921-edge0-dense-retention/README.md",
-      "accepted_checkpoint": "EXP921 exact256 result,6.518697 decode /6.247443 prefill in its paired regime; not15-17target completion",
+      "coverage_doc": "experiments/EXP-2026-11-17-923-edge0-group-projection-reuse/README.md",
+      "accepted_checkpoint": "EXP923 exact256:6.8772645 decode/6.6293335 prefill; +7.13%/+7.59% against same-cycle EXP921 control; target15-17 open",
       "target_decode_tps": [
         15,
         17

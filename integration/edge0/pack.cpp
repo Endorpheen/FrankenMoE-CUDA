@@ -25,7 +25,7 @@ extern "C" {
 // internal threadpool/work preparation; CUDA kernel/copy timings come from nsys.
 struct e0_metrics {
     double arena=0, router=0, du_io=0, expert_io=0, copy=0, graph=0, cpu=0, ple=0, ffn=0;
-    uint64_t calls=0, du_bytes=0, expert_bytes=0, copy_bytes=0, ple_rows=0, expert_hits=0,expert_misses=0,du_hits=0,du_misses=0,dense_hits=0,dense_misses=0;
+    uint64_t calls=0, du_bytes=0, expert_bytes=0, copy_bytes=0, ple_rows=0, expert_hits=0,expert_misses=0,du_hits=0,du_misses=0,dense_hits=0,dense_misses=0,matvec_nodes=0;
 };
 static e0_metrics e0_profile[3];
 static int e0_phase=0;
@@ -35,7 +35,7 @@ struct e0_span { double & dst; double start; explicit e0_span(double & d):dst(d)
 void franken_edge0_profile_phase(int phase) {
     if (e0_profiling() && phase==3) for(int i=0;i<3;++i) {
         const auto & m=e0_profile[i];
-        std::fprintf(stderr,"EDGE0_PROFILE phase=%d ffn_s=%.9f arena_s=%.9f route_s=%.9f du_read_s=%.9f expert_read_s=%.9f weight_copy_s=%.9f graph_s=%.9f cpu_compute_s=%.9f ple_s=%.9f calls=%llu du_bytes=%llu expert_bytes=%llu copy_bytes=%llu ple_rows=%llu expert_hits=%llu expert_misses=%llu du_hits=%llu du_misses=%llu dense_hits=%llu dense_misses=%llu\n",i,m.ffn,m.arena,m.router,m.du_io,m.expert_io,m.copy,m.graph,m.cpu,m.ple,(unsigned long long)m.calls,(unsigned long long)m.du_bytes,(unsigned long long)m.expert_bytes,(unsigned long long)m.copy_bytes,(unsigned long long)m.ple_rows,(unsigned long long)m.expert_hits,(unsigned long long)m.expert_misses,(unsigned long long)m.du_hits,(unsigned long long)m.du_misses,(unsigned long long)m.dense_hits,(unsigned long long)m.dense_misses);
+        std::fprintf(stderr,"EDGE0_PROFILE phase=%d ffn_s=%.9f arena_s=%.9f route_s=%.9f du_read_s=%.9f expert_read_s=%.9f weight_copy_s=%.9f graph_s=%.9f cpu_compute_s=%.9f ple_s=%.9f calls=%llu du_bytes=%llu expert_bytes=%llu copy_bytes=%llu ple_rows=%llu expert_hits=%llu expert_misses=%llu du_hits=%llu du_misses=%llu dense_hits=%llu dense_misses=%llu matvec_nodes=%llu\n",i,m.ffn,m.arena,m.router,m.du_io,m.expert_io,m.copy,m.graph,m.cpu,m.ple,(unsigned long long)m.calls,(unsigned long long)m.du_bytes,(unsigned long long)m.expert_bytes,(unsigned long long)m.copy_bytes,(unsigned long long)m.ple_rows,(unsigned long long)m.expert_hits,(unsigned long long)m.expert_misses,(unsigned long long)m.du_hits,(unsigned long long)m.du_misses,(unsigned long long)m.dense_hits,(unsigned long long)m.dense_misses,(unsigned long long)m.matvec_nodes);
     }
     e0_phase=phase;
 }
@@ -56,7 +56,7 @@ struct franken_edge0_pack {
     std::array<int,3> fd{{-1,-1,-1}};
     std::array<std::array<float,1280>,48> inverse;
     std::vector<uint8_t> labels, du, experts, arena, expert_cache;
-    bool du_cached=true, dense_cached=true;
+    bool du_cached=true, dense_cached=true, d_reuse=true;
     int64_t cache_slots=0, next_slot=0;
     std::array<int64_t,192> layout{};
     std::array<int64_t,24576> valid{},spec{},prev{},next{},ever{},slot_of{};
@@ -91,6 +91,7 @@ std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path)
         try { exact_read(sf,s.data(),5120,0); } catch (...) { ::close(sf); throw; } ::close(sf);
         e0_require(e0_inverse_scales({s.data(),1280},{p->inverse[l].data(),1280})==1280,"invalid column scales");
     }
+    const char * reuse=std::getenv("FRANKEN_EDGE0_D_REUSE");p->d_reuse=!reuse || std::string(reuse)!="0";
     const char * dense=std::getenv("FRANKEN_EDGE0_DENSE_CACHE");p->dense_cached=!dense || std::string(dense)!="0";
     const char * dc=std::getenv("FRANKEN_EDGE0_DU_CACHE"); p->du_cached=!dc || std::string(dc)!="0";
     int64_t cache_mib=3072;
@@ -177,7 +178,8 @@ static uint8_t * expert_payload(franken_edge0_pack & p,int layer,int64_t expert,
 }
 static void compute(ggml_context * c, ggml_tensor * out,int threads) {
     ggml_cgraph * gf;
-    { e0_span timer(e0_profile[e0_phase].graph); gf=ggml_new_graph_custom(c,4096,false); ggml_build_forward_expand(gf,out); }
+    { e0_span timer(e0_profile[e0_phase].graph); gf=ggml_new_graph_custom(c,4096,false); ggml_build_forward_expand(gf,out);
+      if(e0_profiling())for(int i=0;i<ggml_graph_n_nodes(gf);++i)e0_profile[e0_phase].matvec_nodes+=ggml_graph_node(gf,i)->op==GGML_OP_MUL_MAT; }
     { e0_span timer(e0_profile[e0_phase].cpu);
       e0_require(ggml_graph_compute_with_ctx(c,gf,threads)==GGML_STATUS_SUCCESS,"inner CPU graph execution failed"); }
 }
@@ -200,9 +202,9 @@ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float 
         if(p.cache_slots)xl_retain({p.valid.data(),24576},{p.prev.data(),24576},{p.next.data(),24576},
                                   {p.lru.data(),2},l,{ids,10},10,512);
         auto * inv=external(c,GGML_TYPE_F32,1280,1,p.inverse[l].data());
-        int64_t weights[50],coeffs[10],shared[4],work[16],nodes[109];
+        int64_t weights[50],coeffs[10],shared[4],groups[10],work[16],nodes[109];
         for(int k=0;k<10;++k) {
-            const int g=(int)e0_route_group({p.labels.data(),98304},l,ids[k]); e0_require(g>=0,"selected expert group");
+            const int g=(int)e0_route_group({p.labels.data(),98304},l,ids[k]); e0_require(g>=0,"selected expert group");groups[k]=p.d_reuse?g:k;
             int64_t desc[8];
             e0_require(e0_expert_desc(l,ids[k],0,{desc,8})==0,"expert descriptor");
             uint8_t * payload=expert_payload(p,l,ids[k],k,desc[1]);
@@ -219,7 +221,7 @@ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float 
         for(int k=0;k<4;++k) shared[k]=eh(cpu_weight(c,ref.weights[k+1],p.dense_cached?&ref.cpu_weights[k+1]:nullptr));
         int64_t result;
         { e0_span timer(e0_profile[e0_phase].graph);
-          result=e0_routed_shared(eh(c),eh(x),eh(inv),{weights,50},{coeffs,10},{shared,4},{work,16},{nodes,109}); }
+          result=e0_routed_shared(eh(c),eh(x),eh(inv),{weights,50},{coeffs,10},{shared,4},{groups,10},{work,16},{nodes,109}); }
         e0_require(result!=0,"Goose routed/shared graph refused inputs");
         auto * y=(ggml_tensor*)(intptr_t)result; compute(c,y,p.threads);
         for(int i=0;i<2560;++i) e0_require(std::isfinite(((float*)y->data)[i]),"nonfinite FFN output");
