@@ -77,18 +77,23 @@ jobs:
   goose:
     name: Goose compose, typecheck, build (needs the pinned compiler)
     runs-on: ubuntu-24.04
-    if: ${{ secrets.GOOSE_URL != '' }}
+    env:
+      GOOSE_URL: ${{ secrets.GOOSE_URL }}
+      GOOSE_SHA256: ${{ secrets.GOOSE_SHA256 }}
     steps:
       - uses: actions/checkout@v4
       - name: Fetch the pinned Goose compiler
-        env:
-          GOOSE_URL: ${{ secrets.GOOSE_URL }}
-          GOOSE_SHA256: ${{ secrets.GOOSE_SHA256 }}
         run: |
+          if [ -z "$GOOSE_URL" ]; then
+            echo "GOOSE_URL is not configured; the Goose gate is skipped."
+            echo "Set GOOSE_URL and GOOSE_SHA256 repository secrets to enable it."
+            exit 0
+          fi
           curl -fsSL "$GOOSE_URL" -o /tmp/goose.tar.gz
           echo "${GOOSE_SHA256}  /tmp/goose.tar.gz" | sha256sum -c -
           mkdir -p "$HOME/goose"
           tar -xzf /tmp/goose.tar.gz -C "$HOME/goose" --strip-components=1
           echo "$HOME/goose/bin" >> "$GITHUB_PATH"
       - name: Goose fast gate
+        if: env.GOOSE_URL != ''
         run: bash tools/check.sh fast
