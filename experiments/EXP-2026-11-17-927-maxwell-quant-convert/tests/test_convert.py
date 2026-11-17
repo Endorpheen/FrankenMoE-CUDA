@@ -123,6 +123,10 @@ class Reader:
     def _elem(self, t):
         if t == 4:
             return self.u32()
+        if t == 5:
+            return struct.unpack("<i", self.fh.read(4))[0]
+        if t == 6:
+            return struct.unpack("<f", self.fh.read(4))[0]
         if t == 8:
             return self.string()
         raise ValueError(f"array elem {t}")
@@ -188,12 +192,12 @@ CFG = {
 }
 
 
-def build_tensors(rng):
+def build_tensors(rng, vocab=256):
     E, hc, C = CFG["num_experts"], CFG["num_residual_streams"], CFG["hidden_size"]
     mix = (2 + hc)*hc
     t = []
-    t.append(("model.embed_tokens.weight", (rng.standard_normal((256, C))*0.02).astype(np.float32)))
-    t.append(("lm_head.weight", (rng.standard_normal((256, C))*0.02).astype(np.float32)))
+    t.append(("model.embed_tokens.weight", (rng.standard_normal((vocab, C))*0.02).astype(np.float32)))
+    t.append(("lm_head.weight", (rng.standard_normal((vocab, C))*0.02).astype(np.float32)))
     t.append(("model.norm.weight", np.ones(C, dtype=np.float32)))
     t.append(("model.hc_head.hc_head_fn", (rng.standard_normal((hc, hc*C))*0.02).astype(np.float32)))
     t.append(("model.hc_head.hc_head_base", np.zeros(hc, dtype=np.float32)))
@@ -264,7 +268,7 @@ def main():
         json.dump(idx, open(os.path.join(td, "model.safetensors.index.json"), "w"))
 
         out = os.path.join(td, "maxwell.gguf")
-        r = subprocess.run([sys.executable, CONVERT, td, out], capture_output=True, text=True)
+        r = subprocess.run([sys.executable, CONVERT, td, out, "--stub-vocab"], capture_output=True, text=True)
         check(r.returncode == 0, f"convert rc={r.returncode} {r.stderr[-400:]}")
         if r.returncode != 0:
             return report()

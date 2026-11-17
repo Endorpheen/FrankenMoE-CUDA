@@ -132,6 +132,74 @@ def kv_array_string(w, key, values):
         w.string(v)
 
 
+def _split_pattern(pre):
+    if not isinstance(pre, dict):
+        return None
+    if pre.get("type") == "Split":
+        return pre.get("pattern")
+    if pre.get("type") == "Sequence":
+        for part in pre.get("pretokenizers", []):
+            p = _split_pattern(part)
+            if p is not None:
+                return p
+    return None
+
+
+def hf_pre_type(tj):
+    """Map the HF pre-tokenizer onto a llama.cpp pre type."""
+    pre = tj.get("pre_tokenizer")
+    pat = json.dumps(_split_pattern(pre) or "")
+    if pre and pre.get("type") == "ByteLevel" and not pat:
+        return "gpt-2"
+    # Qwen splits on letter/number/whitespace classes before byte-level BPE.
+    if "p{L}" in pat or "p{N}" in pat:
+        return "qwen2"
+    if "ByteLevel" in json.dumps(pre or {}):
+        return "gpt-2"
+    return "default"
+
+
+def read_hf_tokenizer(path, n_vocab):
+    """Return (tokens, types, scores, merges, pre) for a GGUF vocabulary."""
+    tj = json.load(open(path))
+    model = tj["model"]
+    if model.get("type") != "BPE":
+        raise SystemExit(f"unsupported tokenizer type: {model.get('type')}")
+    vocab = model["vocab"]
+    tokens = [None]*n_vocab
+    types = [1]*n_vocab
+    for tok, idx in vocab.items():
+        if 0 <= idx < n_vocab:
+            tokens[idx] = tok
+    for a in tj.get("added_tokens", []):
+        idx = int(a["id"])
+        if 0 <= idx < n_vocab:
+            tokens[idx] = a["content"]
+            types[idx] = 3 if a.get("special") else 1
+    missing = [i for i, t in enumerate(tokens) if t is None]
+    if missing:
+        raise SystemExit(f"tokenizer leaves {len(missing)} ids undefined, first {missing[0]}")
+    merges = model.get("merges", [])
+    merges = [" ".join(m) if isinstance(m, list) else m for m in merges]
+    scores = [0.0]*n_vocab
+    return tokens, types, scores, merges, hf_pre_type(tj)
+
+
+def write_hf_vocab(w, path, n_vocab, bos, eos, pad, unk=0):
+    tokens, types, scores, merges, pre = read_hf_tokenizer(path, n_vocab)
+    kv_scalar(w, "tokenizer.ggml.model", T_STRING, "gpt2")
+    kv_scalar(w, "tokenizer.ggml.pre", T_STRING, pre)
+    kv_array_string(w, "tokenizer.ggml.tokens", tokens)
+    kv_array_f32(w, "tokenizer.ggml.scores", scores)
+    kv_array_i32(w, "tokenizer.ggml.token_type", types)
+    kv_array_string(w, "tokenizer.ggml.merges", merges)
+    kv_scalar(w, "tokenizer.ggml.bos_token_id", T_UINT32, bos)
+    kv_scalar(w, "tokenizer.ggml.eos_token_id", T_UINT32, eos)
+    kv_scalar(w, "tokenizer.ggml.padding_token_id", T_UINT32, pad)
+    kv_scalar(w, "tokenizer.ggml.unknown_token_id", T_UINT32, unk)
+    return pre, len(merges)
+
+
 def write_stub_vocab(w, n_vocab):
     """A test-only vocabulary: enough for the loader, meaningless for text."""
     tokens = ["<unk>", "<s>", "</s>", "<pad>"] + [f"tok{i}" for i in range(4, n_vocab)]
@@ -386,11 +454,16 @@ def main():
               cfg["block_sparse_gqa_query_chunk_size"])
     kv_scalar(w, "maxwell_moe.block_sparse_gqa.total_support_blocks", T_UINT32,
               cfg["block_sparse_gqa_total_support_blocks"])
-    kv_scalar(w, "tokenizer.ggml.bos_token_id", T_UINT32, cfg["bos_token_id"])
-    kv_scalar(w, "tokenizer.ggml.eos_token_id", T_UINT32, cfg["eos_token_id"])
-    kv_scalar(w, "tokenizer.ggml.padding_token_id", T_UINT32, cfg["pad_token_id"])
+    tok_json = os.path.join(args.model_dir, "tokenizer.json")
     if args.stub_vocab:
         write_stub_vocab(w, cfg["vocab_size"])
+        pre, n_merges = "default", 0
+    else:
+        if not os.path.exists(tok_json):
+            raise SystemExit(f"{tok_json} is missing; pass --stub-vocab only for loader tests")
+        pre, n_merges = write_hf_vocab(w, tok_json, cfg["vocab_size"],
+                                       cfg["bos_token_id"], cfg["eos_token_id"],
+                                       cfg["pad_token_id"])
     n_kv = w.kv_count
 
     sizes = []
@@ -447,7 +520,7 @@ def main():
             fh.write(b"\x00" * pad)
             written += pad
 
-    print(f"tensors={len(plan)} kv={n_kv} bytes={os.path.getsize(args.out)}")
+    print(f"tensors={len(plan)} kv={n_kv} pre={pre} merges={n_merges} bytes={os.path.getsize(args.out)}")
     return 0
 
 
