@@ -2627,7 +2627,10 @@ struct llama_model_clef : public llama_model_qwen35 {
 };
 
 
+struct franken_edge0_pack;
+
 struct llama_model_qwen4exp : public llama_model_base {
+    std::shared_ptr<franken_edge0_pack> edge0;
     llama_model_qwen4exp(const struct llama_model_params & params) : llama_model_base(params) {}
 
     class llm_graph_input_kpool;
