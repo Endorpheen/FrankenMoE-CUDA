@@ -212,3 +212,41 @@ A chat turn now stops where it should:
 
 `/props` reports the set size (`n_eog`), and the gate asserts that the chat
 answer ends on 248046 with the stop token in the text.
+
+## First speed numbers, and the limit they exposed
+
+Single request, CPU only, `GOOSE_THREADS` sweep, prompt "The capital of France
+is" (5 tokens), 256 generated:
+
+| threads | prefill tok/s | decode tok/s |
+|---:|---:|---:|
+| 4 | 16.4 | 9.27 |
+| 8 | 18.5 | 9.50 |
+| 16 | 18.5 | 8.73 |
+
+Peak RSS during a run: **10966 MiB**. Memory: the weights are mapped read-only
+and the graph arena is per step.
+
+Against the accepted reference (2625.21 prefill / 55.52 decode) the standalone is
+about an order of magnitude slower on decode, and that comparison is not
+like-for-like: the reference runs with GPU offload and batched prefill, this is
+CPU only, one block at a time, with a freshly built graph per token.
+
+Prefill at 5 tokens is startup-dominated (0.30 s total), so the number above says
+almost nothing about prefill throughput; it needs a long prompt to be meaningful.
+
+### The real limit: a fixed graph arena does not scale with the prompt
+
+The graph context was a fixed 1 GiB, enough for a five-token smoke prompt and
+fatal for a normal one:
+
+    ggml_new_object: not enough space in the context's memory pool
+    (needed 1097320864, available 1073741824)
+
+Sizing it as `base + 6 MiB per token` moved the failure rather than fixing it:
+the arena grew and the request grew with it (2.72 GB → 3.79 GB → 4.63 GB, each
+time just above what was allocated). That behaviour is the argument for the real
+fix: allocate the graph through `ggml_gallocr`/the backend allocator, which reuses
+buffers by node lifetime instead of giving every node its own slice. Until that
+lands, prompts beyond roughly a thousand tokens cannot be served, and that is
+recorded rather than papered over.

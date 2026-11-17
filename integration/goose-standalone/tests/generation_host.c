@@ -18,6 +18,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "gguf.h"
 #include "ggml.h"
@@ -322,8 +323,15 @@ static void reset_state(void) {
 static int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
     const int64_t rows = q35_kv_read_rows((sl_i64){ H.kv_state, 6 }, count);
     if (rows <= 0) return -1;
-    ggml_context * c = ggml_init((struct ggml_init_params){ 1024u * 1024u * 1024u, NULL, false });
-    if (!c) return -1;
+    // The graph arena holds every node's data, so it scales with the prompt.
+    // A fixed 1 GiB was enough for a five-token smoke prompt and crashed on a
+    // normal one ("not enough space in the context's memory pool").
+    size_t arena = 1280u * 1024u * 1024u + (size_t) count * 6u * 1024u * 1024u;
+    const char * arena_env = getenv("GOOSE_ARENA_MIB");
+    if (arena_env) arena = (size_t) atoll(arena_env) * 1024u * 1024u;
+    ggml_context * c = ggml_init((struct ggml_init_params){ arena, NULL, false });
+    if (!c) { printf("GRAPH arena=%zu failed\n", arena); fflush(stdout); return -1; }
+    if (getenv("GOOSE_GRAPH_LOG")) { printf("GRAPH count=%lld arena=%zu MiB\n", (long long) count, arena / (1024u * 1024u)); fflush(stdout); }
 
     ggml_tensor * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, count);
     memcpy(ids->data, tokens, (size_t) count * 4);
@@ -363,7 +371,13 @@ static int64_t model_step(const int32_t * tokens, int64_t count, float ** logits
 
     ggml_cgraph * graph = ggml_new_graph_custom(c, 16384, false);
     for (int64_t i = 1; i <= roots[0]; ++i) ggml_build_forward_expand(graph, (ggml_tensor *) (intptr_t) roots[i]);
-    if (ggml_graph_compute_with_ctx(c, graph, 4) != GGML_STATUS_SUCCESS) return -1;
+    static int threads = 0;
+    if (threads == 0) {
+        const char * e = getenv("GOOSE_THREADS");
+        threads = e ? atoi(e) : 4;
+        if (threads <= 0) threads = 4;
+    }
+    if (ggml_graph_compute_with_ctx(c, graph, threads) != GGML_STATUS_SUCCESS) return -1;
 
     ggml_tensor * lg = (ggml_tensor *) (intptr_t) result;
     const int64_t n = ggml_nelements(lg);
@@ -379,6 +393,12 @@ static int64_t model_step(const int32_t * tokens, int64_t count, float ** logits
 // ---- generation over the listener ----------------------------------------
 
 static int64_t g_served = 0;
+
+static double now_s(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double) ts.tv_sec + (double) ts.tv_nsec / 1e9;
+}
 
 int64_t generation_serve(int64_t conn) {
     static unsigned char req[MAX_REQ], head[512], body[MAX_REQ * 2], path[1024];
@@ -411,10 +431,13 @@ int64_t generation_serve(int64_t conn) {
             for (int64_t i = 0; i < cnt; ++i) batch[i] = (int32_t) ids[i];
 
             int64_t past = cnt;
+            const double t0 = now_s();
+            double t_prefill = 0.0;
             for (int64_t step = 0; step < MAX_TOKENS; ++step) {
                 n_logits = model_step(batch, past, &logits);
                 free(batch);
                 if (n_logits <= 0) { printf("STEP failed at %lld past=%lld\n", (long long) step, (long long) past); fflush(stdout); break; }
+                if (step == 0) t_prefill = now_s() - t0;
                 // logits are [n_vocab, n_tokens]; the next token comes from the
                 // last position's row, and sm_greedy takes the count as its
                 // second argument.
@@ -431,6 +454,14 @@ int64_t generation_serve(int64_t conn) {
                 batch[0] = (int32_t) next;
                 past = 1;
             }
+
+            const double t_all = now_s() - t0;
+            const double t_dec = t_all - t_prefill;
+            printf("TIME prompt=%lld prefill_s=%.2f prefill_tok_s=%.1f decode_n=%lld decode_s=%.2f decode_tok_s=%.2f\n",
+                   (long long) cnt, t_prefill, cnt > 0 ? (double) cnt / (t_prefill > 0 ? t_prefill : 1e-9) : 0.0,
+                   (long long) (produced > 0 ? produced - 1 : 0), t_dec,
+                   (produced > 1 && t_dec > 0) ? (double) (produced - 1) / t_dec : 0.0);
+            fflush(stdout);
 
             unsigned char text[MAX_REQ];
             const int64_t tlen = produced ? detokenize(out_ids, produced, text, sizeof text) : 0;
