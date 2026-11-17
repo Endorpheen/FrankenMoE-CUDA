@@ -169,6 +169,26 @@ Goose reader.
 Gates unchanged: pieces OK, tokenize OK, sampler OK (byte-identical to the
 accepted library) and greedy ids on the two-block model identical.
 
+## Seventh slice: metadata shape questions
+
+`gguf_get_kv_type`, `gguf_get_arr_type` and `gguf_get_arr_n` are answered by the
+Goose reader in the loader, the vocabulary loader and the model builder
+(`gr_kv_type`, `gr_arr_type`, `gr_arr_n` added to the reader, with the C calls as
+the fallback when no Goose table exists for that context).
+
+Measured on the same two-block model, accepted library versus candidate:
+
+| call | accepted | candidate |
+| --- | ---: | ---: |
+| `gguf_get_kv_type` | 252 | **99** |
+| `gguf_get_arr_type` | 17 | **5** |
+| `gguf_get_arr_n` | 17 | **5** |
+
+The remaining calls come from `gguf_kv_to_str`, the metadata logging performed
+during load, which is the next target. Functionality is unchanged: the load
+reports the same parameter count and the tokenizer/sampler/piece gates stay
+byte-identical.
+
 ## Boundaries
 
 `llama_tokenize` now runs on Goose for BPE vocabularies whose merges fit the

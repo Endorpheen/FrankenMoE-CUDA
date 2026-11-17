@@ -245,3 +245,36 @@ export fn gr_string_array_index(data: const u8[:], state: i64[:], kv: i64[:], in
     while i < count { let n: i64 = gr_length(data, at); pairs[i * 2] = at + 8; pairs[i * 2 + 1] = n; at += 8 + n; i += 1; }
     return count;
 }
+
+// Header-field readers for a host that keeps its own container but wants the
+// Goose reader to answer the metadata questions. Index i is the key's position
+// in the file, which is what both readers use.
+export fn gr_kv_type(state: i64[:], kv: i64[:], index: i64) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 {
+        return -1;
+    }
+    return kv[index * 8 + 2];
+}
+
+export fn gr_arr_type(state: i64[:], kv: i64[:], index: i64) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       kv[index * 8 + 2] != 9 {
+        return -1;
+    }
+    return kv[index * 8 + 3];
+}
+
+export fn gr_arr_n(state: i64[:], kv: i64[:], index: i64) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       kv[index * 8 + 2] != 9 {
+        return -1;
+    }
+    return kv[index * 8 + 5];
+}
+
+export fn gr_n_kv(state: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 {
+        return -1;
+    }
+    return state[2];
+}
