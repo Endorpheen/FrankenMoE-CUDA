@@ -29,24 +29,13 @@ def wr(p, s): open(p, "w").write(s)
 
 p = f"{out}/src/llama-arch.h"; s = rd(p)
 if "LLM_ARCH_MAXWELL" not in s:
-    s = s.replace("    LLM_ARCH_UNKNOWN,", "    LLM_ARCH_MAXWELL,\n    LLM_ARCH_UNKNOWN,", 1)
+    s = s.replace("    LLM_ARCH_UNKNOWN,", "    LLM_ARCH_UNKNOWN,\n    LLM_ARCH_MAXWELL,", 1)
 if "LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE" not in s:
     end = s.index("};", s.index("enum llm_kv {"))
     s = s[:end] + """    LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE,
     LLM_KV_MAXWELL_BSGQA_SUPPORT_BLOCKS,
     LLM_KV_MAXWELL_BSGQA_PREFIX_WINDOW,
     LLM_KV_MAXWELL_BSGQA_REMOTE_BLOCKS,
-""" + s[end:]
-wr(p, s)
-
-p = f"{out}/src/llama-hparams.h"; s = rd(p)
-if "maxwell_bsgqa_block_size" not in s:
-    end = s.index("};", s.index("struct llama_hparams {"))
-    s = s[:end] + """
-    uint32_t maxwell_bsgqa_block_size     = 0;
-    uint32_t maxwell_bsgqa_support_blocks = 0;
-    uint32_t maxwell_bsgqa_prefix_window  = 0;
-    uint32_t maxwell_bsgqa_remote_blocks  = 0;
 """ + s[end:]
 wr(p, s)
 

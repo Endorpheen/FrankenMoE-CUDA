@@ -1,5 +1,9 @@
 #include "models.h"
 
+// Maxwell hyperparameters kept out of llama_hparams so an existing object layout
+// (created by accepted objects) is never shifted.
+static struct { uint32_t block_size, support_blocks, prefix_window, remote_blocks; } MW_CFG;
+
 // Maxwell-V1-Flash (maxwell_moe).
 //
 // Reference: huggingface.co/maxwell-model/Maxwell-V1-Flash, modeling_maxwell_moe.py
@@ -201,10 +205,10 @@ void llama_model_maxwell::load_arch_hparams(llama_model_loader & ml) {
     }
     hparams.expert_weights_norm = true;
 
-    ml.get_key(LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE,               hparams.maxwell_bsgqa_block_size);
-    ml.get_key(LLM_KV_MAXWELL_BSGQA_SUPPORT_BLOCKS,           hparams.maxwell_bsgqa_support_blocks);
-    ml.get_key(LLM_KV_MAXWELL_BSGQA_PREFIX_WINDOW,            hparams.maxwell_bsgqa_prefix_window, false);
-    ml.get_key(LLM_KV_MAXWELL_BSGQA_REMOTE_BLOCKS,            hparams.maxwell_bsgqa_remote_blocks, false);
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE,               MW_CFG.block_size);
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_SUPPORT_BLOCKS,           MW_CFG.support_blocks);
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_PREFIX_WINDOW,            MW_CFG.prefix_window, false);
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_REMOTE_BLOCKS,            MW_CFG.remote_blocks, false);
     ml.get_key(LLM_KV_ATTENTION_INDEXER_HEAD_COUNT,           hparams.indexer_n_head,    false);
     ml.get_key(LLM_KV_ATTENTION_INDEXER_KEY_LENGTH,           hparams.indexer_head_size, false);
     ml.get_key(LLM_KV_ATTENTION_INDEXER_TOP_K,                hparams.indexer_top_k,     false);
@@ -306,8 +310,8 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
     // Above the support window the block-sparse route drops blocks; this builder
     // does not implement the indexer yet, so refuse instead of returning a
     // silently different attention.
-    const int64_t support = (int64_t) hparams.maxwell_bsgqa_block_size *
-                            (int64_t) hparams.maxwell_bsgqa_support_blocks;
+    const int64_t support = (int64_t) MW_CFG.block_size *
+                            (int64_t) MW_CFG.support_blocks;
     if (support > 0 && (int64_t) cparams.n_ctx > support) {
         throw std::runtime_error(
             "maxwell_moe: the block-sparse indexer is not implemented; "
