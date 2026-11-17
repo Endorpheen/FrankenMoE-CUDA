@@ -18,14 +18,15 @@ extern "C" {
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <chrono>
 #include <cstdlib>
 
 // Profiling ranges are disjoint host intervals. CPU compute includes GGML's
 // internal threadpool/work preparation; CUDA kernel/copy timings come from nsys.
 struct e0_metrics {
-    double arena=0, router=0, du_io=0, expert_io=0, copy=0, graph=0, cpu=0, ple=0, ffn=0;
-    uint64_t calls=0, du_bytes=0, expert_bytes=0, copy_bytes=0, ple_rows=0, expert_hits=0,expert_misses=0,du_hits=0,du_misses=0,dense_hits=0,dense_misses=0,matvec_nodes=0;
+    double mapping=0, arena=0, router=0, du_io=0, expert_io=0, copy=0, graph=0, cpu=0, ple=0, ffn=0;
+    uint64_t calls=0, du_bytes=0, expert_bytes=0, copy_bytes=0, ple_rows=0, expert_hits=0,expert_misses=0,du_hits=0,du_misses=0,dense_hits=0,dense_misses=0,matvec_nodes=0,mapped_bytes=0,mapping_misses=0;
 };
 static e0_metrics e0_profile[3];
 static int e0_phase=0;
@@ -35,7 +36,7 @@ struct e0_span { double & dst; double start; explicit e0_span(double & d):dst(d)
 void franken_edge0_profile_phase(int phase) {
     if (e0_profiling() && phase==3) for(int i=0;i<3;++i) {
         const auto & m=e0_profile[i];
-        std::fprintf(stderr,"EDGE0_PROFILE phase=%d ffn_s=%.9f arena_s=%.9f route_s=%.9f du_read_s=%.9f expert_read_s=%.9f weight_copy_s=%.9f graph_s=%.9f cpu_compute_s=%.9f ple_s=%.9f calls=%llu du_bytes=%llu expert_bytes=%llu copy_bytes=%llu ple_rows=%llu expert_hits=%llu expert_misses=%llu du_hits=%llu du_misses=%llu dense_hits=%llu dense_misses=%llu matvec_nodes=%llu\n",i,m.ffn,m.arena,m.router,m.du_io,m.expert_io,m.copy,m.graph,m.cpu,m.ple,(unsigned long long)m.calls,(unsigned long long)m.du_bytes,(unsigned long long)m.expert_bytes,(unsigned long long)m.copy_bytes,(unsigned long long)m.ple_rows,(unsigned long long)m.expert_hits,(unsigned long long)m.expert_misses,(unsigned long long)m.du_hits,(unsigned long long)m.du_misses,(unsigned long long)m.dense_hits,(unsigned long long)m.dense_misses,(unsigned long long)m.matvec_nodes);
+        std::fprintf(stderr,"EDGE0_PROFILE phase=%d ffn_s=%.9f arena_s=%.9f route_s=%.9f du_read_s=%.9f expert_read_s=%.9f weight_copy_s=%.9f graph_s=%.9f cpu_compute_s=%.9f ple_s=%.9f calls=%llu du_bytes=%llu expert_bytes=%llu copy_bytes=%llu ple_rows=%llu expert_hits=%llu expert_misses=%llu du_hits=%llu du_misses=%llu dense_hits=%llu dense_misses=%llu matvec_nodes=%llu mapped_bytes=%llu mapping_misses=%llu mapping_prepare_s=%.9f\n",i,m.ffn,m.arena,m.router,m.du_io,m.expert_io,m.copy,m.graph,m.cpu,m.ple,(unsigned long long)m.calls,(unsigned long long)m.du_bytes,(unsigned long long)m.expert_bytes,(unsigned long long)m.copy_bytes,(unsigned long long)m.ple_rows,(unsigned long long)m.expert_hits,(unsigned long long)m.expert_misses,(unsigned long long)m.du_hits,(unsigned long long)m.du_misses,(unsigned long long)m.dense_hits,(unsigned long long)m.dense_misses,(unsigned long long)m.matvec_nodes,(unsigned long long)m.mapped_bytes,(unsigned long long)m.mapping_misses,m.mapping);
     }
     e0_phase=phase;
 }
@@ -56,6 +57,9 @@ struct franken_edge0_pack {
     std::array<int,3> fd{{-1,-1,-1}};
     std::array<std::array<float,1280>,48> inverse;
     std::vector<uint8_t> labels, du, experts, arena, expert_cache;
+    struct mapped_record {void * base=MAP_FAILED;size_t bytes=0;uint8_t * payload=nullptr;};
+    std::vector<mapped_record> mapped_records;
+    bool expert_mapped=true;size_t page_size=0,map_span=0;
     bool du_cached=true, dense_cached=true, d_reuse=true;
     int64_t cache_slots=0, next_slot=0;
     std::array<int64_t,192> layout{};
@@ -65,7 +69,7 @@ struct franken_edge0_pack {
     std::mutex mutex;
     int threads = 8;
     uint64_t calls = 0, bytes_read = 0;
-    ~franken_edge0_pack() { for (int f : fd) if (f >= 0) ::close(f); }
+    ~franken_edge0_pack() { for(const auto & m:mapped_records)if(m.base!=MAP_FAILED)munmap(m.base,m.bytes);for (int f : fd) if (f >= 0) ::close(f); }
 };
 std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path) {
     static std::once_flag init;
@@ -97,9 +101,12 @@ std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path)
     int64_t cache_mib=3072;
     if(const char * v=std::getenv("FRANKEN_EDGE0_CACHE_MIB")) cache_mib=std::stoll(v);
     e0_require(cache_mib>=0 && cache_mib<=6144,"expert cache budget must be 0..6144 MiB");
-    p->cache_slots=cache_mib*1024*1024/1164800;
+    const char * mapping=std::getenv("FRANKEN_EDGE0_EXPERT_MMAP");p->expert_mapped=cache_mib>0 && (!mapping || std::string(mapping)!="0");
+    const long page=::sysconf(_SC_PAGESIZE);e0_require(page>0,"page size");p->page_size=(size_t)page;
+    p->map_span=((1164800+p->page_size-1+p->page_size-1)/p->page_size)*p->page_size;
+    p->cache_slots=cache_mib*1024*1024/(p->expert_mapped?p->map_span:1164800);
     e0_require(!cache_mib || p->cache_slots>=10,"expert cache needs at least ten records");
-    p->expert_cache.resize(p->cache_slots*1164800);
+    if(p->expert_mapped)p->mapped_records.resize(p->cache_slots);else p->expert_cache.resize(p->cache_slots*1164800);
     p->slot_of.fill(-1);p->prev.fill(-1);p->next.fill(-1);
     for(int l=0;l<48;++l) {p->layout[l*4]=1;p->layout[l*4+1]=352000;p->layout[l*4+2]=352000;p->layout[l*4+3]=460800;}
     p->du.resize(p->du_cached?1415577600:29491200);
@@ -107,7 +114,8 @@ std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path)
         e0_span timer(e0_profile[0].du_io);exact_read(p->fd[1],p->du.data(),p->du.size(),0);
         e0_profile[0].du_bytes+=p->du.size();++e0_profile[0].du_misses;
     }
-    p->experts.resize(11648000); p->arena.resize(64*1024*1024);
+    p->experts.resize(p->expert_mapped?0:11648000); p->arena.resize(64*1024*1024);
+    std::fprintf(stderr,"Edge0 expert mapping: enabled=%d page_size=%zu max_span=%zu virtual_ceiling=%zu\n",p->expert_mapped,p->page_size,p->map_span,p->expert_mapped?p->cache_slots*p->map_span:0);
     std::fprintf(stderr,"Edge0 cache budget: DU=%zu expert=%zu slots=%lld cache policy=existing Goose expert-lru\n",p->du.size(),p->expert_cache.size(),(long long)p->cache_slots);
     std::fprintf(stderr,"Edge0 pack open: Q4 D/U, 10 routed + shared, external buffers=%zu bytes, no full PLE/expert mapping\n",p->du.size()+p->experts.size()+p->arena.size());
     return p;
@@ -157,9 +165,31 @@ static uint8_t * expert_payload(franken_edge0_pack & p,int layer,int64_t expert,
         e0_require(xl_touch({p.layout.data(),192},{p.valid.data(),24576},{p.spec.data(),24576},
             {p.prev.data(),24576},{p.next.data(),24576},{p.ever.data(),24576},{p.lru.data(),2},{p.account.data(),5},512,layer,expert,1,-1,1)==1,"LRU hit");
         e0_require(p.slot_of[key]>=0 && p.slot_of[key]<p.cache_slots,"cache slot map hit");
-        return p.expert_cache.data()+p.slot_of[key]*1164800;
+        return p.expert_mapped?p.mapped_records[p.slot_of[key]].payload:p.expert_cache.data()+p.slot_of[key]*1164800;
     }
-    ++m.expert_misses;uint8_t * staging=p.experts.data()+rank*1164800;
+    ++m.expert_misses;
+    if(p.expert_mapped) {
+        e0_span mapped_timer(m.mapping);
+        int64_t slot;
+        if(p.next_slot<p.cache_slots)slot=p.next_slot++;
+        else {
+            const int64_t old=xl_evict_tail({p.layout.data(),192},{p.valid.data(),24576},{p.spec.data(),24576},
+                {p.prev.data(),24576},{p.next.data(),24576},{p.ever.data(),24576},{p.lru.data(),2},{p.account.data(),5},512);
+            e0_require(old>=0 && old<24576,"mapped LRU victim");slot=p.slot_of[old];p.slot_of[old]=-1;
+        }
+        e0_require(slot>=0 && slot<p.cache_slots,"mapped slot");auto & record=p.mapped_records[slot];
+        if(record.base!=MAP_FAILED){e0_require(munmap(record.base,record.bytes)==0,"expert unmap");record={};}
+        const int64_t aligned=off-(off%(int64_t)p.page_size);const size_t delta=(size_t)(off-aligned);
+        const size_t bytes=((delta+1164800+p.page_size-1)/p.page_size)*p.page_size;
+        e0_require(bytes<=p.map_span,"mapping span bound");void * base;
+        base=mmap(nullptr,bytes,PROT_READ,MAP_PRIVATE,p.fd[0],aligned);
+        e0_require(base!=MAP_FAILED,"expert readonly mapping");record={base,bytes,(uint8_t*)base+delta};
+        m.mapped_bytes+=bytes;++m.mapping_misses;p.slot_of[key]=slot;
+        e0_require(xl_touch({p.layout.data(),192},{p.valid.data(),24576},{p.spec.data(),24576},
+            {p.prev.data(),24576},{p.next.data(),24576},{p.ever.data(),24576},{p.lru.data(),2},{p.account.data(),5},512,layer,expert,1,-1,1)==0,"mapped LRU fill");
+        return record.payload;
+    }
+    uint8_t * staging=p.experts.data()+rank*1164800;
     {e0_span timer(m.expert_io);exact_read(p.fd[0],staging,1164800,off);}
     m.expert_bytes+=1164800;p.bytes_read+=1164800;
     if(!p.cache_slots)return staging;

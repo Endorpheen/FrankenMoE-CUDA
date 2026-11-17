@@ -42,7 +42,8 @@ def swapout():
   if s.startswith('pswpout '):return int(s.split()[1])
 start_swap=swapout();start=time.monotonic();samples=[];reason=None
 with (o/'log.txt').open('x') as log,(o/'answer.bin').open('xb') as answer:
- header='$ env FRANKEN_EDGE0_NGL='+str(a.ngl)+' LD_LIBRARY_PATH='+runtime_env['LD_LIBRARY_PATH']+' '+shlex.join(command)
+ recorded_env={k:v for k,v in runtime_env.items() if k.startswith('FRANKEN_EDGE0_') or k=='LD_LIBRARY_PATH'}
+ header='$ '+shlex.join(['env',*[k+'='+v for k,v in sorted(recorded_env.items())],*command])
  print(header,flush=True);log.write(header+'\n');log.flush()
  child=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True,env=runtime_env)
  def cleanup_owned():
@@ -84,6 +85,6 @@ with (o/'log.txt').open('x') as log,(o/'answer.bin').open('xb') as answer:
    if key.data=='out':answer.write(data);answer.flush()
    txt=data.decode('utf8','replace');log.write(txt);log.flush();print(txt,end='',flush=True) if key.data=='out' or any(mark in txt for mark in ['EDGE0_','Edge0 FFN','Edge0 pack','failed','error','ASSERT']) else None
  rc=child.wait();log.write(f'\nexit_code={rc}\nstop_reason={reason}\n');log.flush()
-result={'command':command,'ngl':a.ngl,'seconds':time.monotonic()-start,'exit_code':rc,'stop_reason':reason,'samples':samples,'pswpout_start':start_swap,'pswpout_end':swapout(),'maxrss_KiB':max([x['rss_KiB'] for x in samples],default=0),'max_gpu_MiB':max([x['gpu_MiB'] or 0 for x in samples],default=0),'max_swap_KiB':max([x['swap_KiB'] for x in samples],default=0)}
+result={'command':command,'runtime_env':recorded_env,'ngl':a.ngl,'seconds':time.monotonic()-start,'exit_code':rc,'stop_reason':reason,'samples':samples,'pswpout_start':start_swap,'pswpout_end':swapout(),'maxrss_KiB':max([x['rss_KiB'] for x in samples],default=0),'max_gpu_MiB':max([x['gpu_MiB'] or 0 for x in samples],default=0),'max_swap_KiB':max([x['swap_KiB'] for x in samples],default=0)}
 (o/'resources.json').write_text(json.dumps(result,indent=2)+'\n');print('DIAGNOSTIC_RESULT',json.dumps({k:v for k,v in result.items() if k!='samples'}),flush=True)
 raise SystemExit(rc if rc>=0 else 128-rc)

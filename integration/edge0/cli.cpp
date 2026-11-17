@@ -70,7 +70,7 @@ int main(int argc,char ** argv) {
     if(profile && decode_steps<16 && profiler_stop) std::fprintf(stderr,"EDGE0_CUDA_PROFILE_STOP status=%d\n",profiler_stop());
     franken_edge0_profile_phase(3);
     struct rusage u{}; getrusage(RUSAGE_SELF,&u);
-    std::fprintf(stderr,"EDGE0_RESULT input_tokens=%d generated_tokens=%d load_s=%.6f prefill_s=%.6f prefill_tps=%.6f ttft_s=%.6f decode_s=%.6f decode_steps=%d decode_tps=%.6f eos=%d maxrss_KiB=%ld\n",n,generated,loaded-load_start,prefill_end-t0,n/(prefill_end-t0),first?first-t0:0,generated?end-decode_start:0,decode_steps,decode_steps>0?decode_steps/(end-decode_start):0,eos,u.ru_maxrss);
+    std::fprintf(stderr,"EDGE0_RESULT input_tokens=%d generated_tokens=%d load_s=%.6f prefill_s=%.6f prefill_tps=%.6f ttft_s=%.6f decode_s=%.6f decode_steps=%d decode_tps=%.6f eos=%d maxrss_KiB=%ld minor_faults=%ld major_faults=%ld user_cpu_s=%.6f system_cpu_s=%.6f\n",n,generated,loaded-load_start,prefill_end-t0,n/(prefill_end-t0),first?first-t0:0,generated?end-decode_start:0,decode_steps,decode_steps>0?decode_steps/(end-decode_start):0,eos,u.ru_maxrss,u.ru_minflt,u.ru_majflt,u.ru_utime.tv_sec+u.ru_utime.tv_usec*1e-6,u.ru_stime.tv_sec+u.ru_stime.tv_usec*1e-6);
     llama_sampler_free(sampler); llama_free(c); llama_model_free(m); llama_backend_free(); return 0;
  } catch(const std::exception & e) { std::fprintf(stderr,"EDGE0_ERROR %s\n",e.what()); return 1; }
 }

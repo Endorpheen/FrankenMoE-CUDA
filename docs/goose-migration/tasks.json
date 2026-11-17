@@ -5557,14 +5557,14 @@
       "qualification": "Five requested first-inference slices integrated with retained native qwen4exp/GGML. This is not standalone Goose or server/general-quality acceptance. EXP917-919 remain absent from Apex server."
     },
     "edge0_performance": {
-      "status": "IN_PROGRESS",
+      "status": "CHECKPOINT_SAVED_HANDOFF_TARGET_OPEN",
       "slices_total": 3,
       "slices_done": 2,
       "remaining": [
-        "Profile current CPU FFN/expert I/O; optimise without changing exact256 output, memory quota or swap gate"
+        "Edge0 speed target deferred: owner now prioritises100%Goose runtime migration in OpenCode from main EXP919; preserve EXP924 checkpoint and regression evidence"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-17-923-edge0-group-projection-reuse/README.md",
-      "accepted_checkpoint": "EXP923 exact256:6.8772645 decode/6.6293335 prefill; +7.13%/+7.59% against same-cycle EXP921 control; target15-17 open",
+      "coverage_doc": "experiments/EXP-2026-11-17-924-edge0-bounded-expert-mmap/README.md",
+      "accepted_checkpoint": "EXP924 exact256:8.184837 decode/8.155661 prefill; +19.59%/+25.45% against same-cycle EXP923 control; target15-17 open",
       "target_decode_tps": [
         15,
         17
@@ -5673,14 +5673,14 @@
       "qualification": "Five requested first-inference slices integrated with retained native qwen4exp/GGML. This is not standalone Goose or server/general-quality acceptance. EXP917-919 remain absent from Apex server."
     },
     "edge0_performance": {
-      "status": "IN_PROGRESS",
+      "status": "CHECKPOINT_SAVED_HANDOFF_TARGET_OPEN",
       "slices_total": 3,
       "slices_done": 2,
       "remaining": [
-        "Profile current CPU FFN/expert I/O; optimise without changing exact256 output, memory quota or swap gate"
+        "Edge0 speed target deferred: owner now prioritises100%Goose runtime migration in OpenCode from main EXP919; preserve EXP924 checkpoint and regression evidence"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-17-923-edge0-group-projection-reuse/README.md",
-      "accepted_checkpoint": "EXP923 exact256:6.8772645 decode/6.6293335 prefill; +7.13%/+7.59% against same-cycle EXP921 control; target15-17 open",
+      "coverage_doc": "experiments/EXP-2026-11-17-924-edge0-bounded-expert-mmap/README.md",
+      "accepted_checkpoint": "EXP924 exact256:8.184837 decode/8.155661 prefill; +19.59%/+25.45% against same-cycle EXP923 control; target15-17 open",
       "target_decode_tps": [
         15,
         17
