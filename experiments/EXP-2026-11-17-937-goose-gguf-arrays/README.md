@@ -126,3 +126,20 @@ The first engine walk asked the reader for the span of element i for every i,
 which re-walks the array each time and hung on 248320 entries. `te_array_bytes`
 and `te_fill` now walk each array once, reading the length prefix and advancing,
 and the unused span helper is gone.
+
+## Tokenisation through the engine
+
+The same gate also compares ids with libllama on a corpus, one line at a time:
+the line goes into `bt_bpe`, which runs the Qwen3.5 pre-tokenizer itself and
+then the merges.
+
+    FG_TOKENIZER_ENGINE tokenize cases=28 ref_ids=355 goose_ids=355 mismatches=0
+
+Two defects were fixed to get there:
+
+- `bt_bpe` pre-tokenizes internally, so it takes the whole line; slicing the line
+  by hand and passing encoded bytes made it encode twice and lose ids;
+- the hash tables must be handed over at the power-of-two size the layout
+  computed, not at `2 * n`, or the probing misses entries.
+
+Only the non-special path is compared: special-token matching is still C++.
