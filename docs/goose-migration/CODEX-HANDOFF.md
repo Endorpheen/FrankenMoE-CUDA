@@ -9,6 +9,20 @@ experiments already run with their results, the artefacts, and what is left.
 
 ---
 
+## 0. UPDATE 2026-11-17: the libc blocker is narrower than recorded
+
+EXP-2026-11-17-938 probed the actual boundary. `socket`, `bind` and `listen`
+declare with their own C names in Goose and compile with no conflict, and
+`socket -> bind -> listen -> close` returns `LISTEN_rc=0` on 127.0.0.1. Only
+names that included headers already declare (`open`, `close`, `read`, `write`)
+conflict; three one-line forwards with distinct names carry those, with no
+decision in them.
+
+Consequence: the standalone HTTP listener is **not** blocked by the compiler and
+should be written in Goose next. The `open`/`mmap` ownership item below stays
+open, but for a narrower reason: it needs either the compiler prototype feature
+or the same rename trick applied to a handful of symbols, not a new capability.
+
 ## 1. Goose cannot call a libc symbol that the generated C already declares
 
 **Goal.** Let Goose acquire the model's OS resources itself (open, fstat, mmap,
