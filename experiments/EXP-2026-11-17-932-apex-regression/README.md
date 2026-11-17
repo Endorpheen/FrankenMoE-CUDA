@@ -154,3 +154,21 @@ the binaries and their hashes matched the manifest (`4eba8242…`, CUDA
 The wrapper now passes the full accepted flag set, including
 `-ctk/-ctv q4_0`, `-fit off`, `--load-mode mmap`. Re-running 32768/512 with it
 is the acceptance check.
+
+## 32768/512 with the full accepted flag set (2026-11-17)
+
+`run/` (accepted reference), `-ctk q4_0 -ctv q4_0 -fit off --load-mode mmap`,
+32768 prompt / 512 generated, 1 warmup (excluded) + 3 measured:
+
+| run | prefill tok/s | decode tok/s |
+|---|---:|---:|
+| warmup | 2642.97 | 52.68 |
+| 1 | 2871.85 | 54.07 |
+| 2 | 2883.59 | 53.82 |
+| 3 | 2837.17 | 54.41 |
+| **median** | **2871.85** | **54.07** |
+
+RSS 21155 MiB, VRAM total 11480 MiB, RC 0. Against the accepted medians
+(2625.2066 / 55.5176): prefill +9.4%, decode -2.6% — both within run-to-run
+spread under resident unrelated processes. No OOM once the KV cache was q4_0,
+which confirms the cause stated above: the missing flags, not the runtime.
