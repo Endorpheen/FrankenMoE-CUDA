@@ -60,14 +60,21 @@ later regression round.
 The candidate build with Maxwell was started with the exact reference flags.
 The 32K/512 request failed with `CUDA error: out of memory` at prefill.
 
-Cause, checked with `nvidia-smi --query-compute-apps`: seven unrelated
-processes hold about 3.8 GiB of the 12 GiB card (pids 13409, 36605, 748110,
-854970, 1049701, 1763052 and one more). The reference profile needs about
-11.5 GiB, so it cannot fit while those owners are resident. No unrelated
-process was stopped and no parameter of the reference profile was changed.
+Cause, checked with `nvidia-smi --query-compute-apps`: unrelated processes held
+1.4-3.8 GiB of the 12 GiB card (pids 13409, 36605, 748110, 854970, 1049701,
+1763052 and one more). The request died on a concrete allocation:
+`cudaMalloc failed` for 1156.03 MiB while `total used` was 10686-11614 MiB.
+No unrelated process was stopped and no parameter of the reference profile was
+changed.
 
-This is an environment blocker, not a regression measurement. The regression
-run still needs a GPU window where the other owners are not resident.
+Correction of an earlier claim in this card: the accepted 11468 MiB figure is
+**total card usage during the accepted run (including unrelated owners)**, not
+a required free-memory threshold. Treating it as "needs 11.5 GiB free" was
+wrong, and the threshold that enforced it in `tools/apex-compare.sh` has been
+removed. Required free memory is not a measured number yet; the script now
+prints the actual figures and only warns when the card is obviously short.
+
+This is an environment blocker, not a regression measurement.
 
 ## Candidate assembled on the accepted base (2026-11-17)
 

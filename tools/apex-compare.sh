@@ -31,11 +31,13 @@ USED=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -
 TOTAL=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1)
 FREE=$((TOTAL - USED))
 echo "VRAM used=$USED MiB total=$TOTAL MiB free=$FREE MiB"
-if [ "$FREE" -lt 11500 ]; then
-    echo "not enough free VRAM for the accepted profile (needs ~11.5 GiB)"
-    nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader
-    echo "nothing was stopped; free the card or use a labelled reduced profile"
-    exit 3
+# No invented threshold: the accepted 11468 MiB is total card usage including
+# unrelated owners, not a free-memory requirement. Report the actual numbers,
+# list the owners, and let the run find a real OOM if the card is genuinely
+# short.
+nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader || true
+if [ "$FREE" -lt 6000 ]; then
+    echo "warning: only $FREE MiB free; an allocation failure is possible"
 fi
 
 mkdir -p "$(dirname "$LOG")"
