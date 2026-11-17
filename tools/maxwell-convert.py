@@ -254,20 +254,21 @@ def load_tensor(path, name, info):
 
 
 def quantize_q4_0(x):
-    """ggml reference packing; x is 1-D float32, len % 32 == 0."""
-    assert x.size % QK4_0 == 0
-    nb = x.size // QK4_0
-    out = np.empty(nb * 18, dtype=np.uint8)
-    for i in range(nb):
-        blk = x[i * QK4_0:(i + 1) * QK4_0]
-        mx = float(blk[int(np.argmax(np.abs(blk)))])
-        d = mx / -8.0
-        ident = 1.0 / d if d != 0.0 else 0.0
-        q = np.clip((blk * ident + 8.5).astype(np.int8), 0, 15).astype(np.uint8)
-        base = i * 18
-        out[base:base + 2] = np.frombuffer(np.float16(d).tobytes(), dtype=np.uint8)
-        out[base + 2:base + 18] = q[:16] | (q[16:] << 4)
-    return out
+    """ggml reference packing, vectorised over 32-value blocks.
+
+    d = max/-8 where max is the signed value of largest magnitude; each weight
+    becomes min(15, (int8)(x/d + 8.5)) and pairs (j, j+16) share one byte.
+    """
+    x = np.asarray(x, dtype=np.float32).reshape(-1, QK4_0)
+    amax = np.argmax(np.abs(x), axis=1)
+    mx = x[np.arange(x.shape[0]), amax]
+    d = (mx / -8.0).astype(np.float32)
+    ident = np.where(d != 0.0, 1.0/np.where(d != 0.0, d, 1.0), 0.0).astype(np.float32)
+    q = np.clip((x * ident[:, None] + 8.5).astype(np.int8), 0, 15).astype(np.uint8)
+    out = np.empty((x.shape[0], 18), dtype=np.uint8)
+    out[:, :2] = d.astype(np.float16).view(np.uint8).reshape(-1, 2)
+    out[:, 2:] = q[:, :16] | (q[:, 16:] << 4)
+    return out.reshape(-1)
 
 
 class Model:
