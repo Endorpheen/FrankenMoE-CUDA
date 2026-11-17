@@ -23,6 +23,7 @@
 #include "gguf.h"
 #include "ggml.h"
 #include "ggml-cpu.h"
+#include "ggml-alloc.h"
 #include "unit.h"
 
 // gguf.h declares struct tags only; C has no implicit typedef.
@@ -320,40 +321,26 @@ static void reset_state(void) {
 }
 
 // One full-model step: prompt ids in, logits out. Returns the logit count.
+//
+// The graph is built with no_alloc and then allocated through ggml_gallocr, which
+// reuses buffers by node lifetime. A fixed arena per step could not serve a
+// prompt longer than a few hundred tokens: the requirement tracked the arena and
+// the failure only moved. Inputs are filled AFTER allocation, because with
+// no_alloc the tensors have no data until the allocator places them.
 static int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
     const int64_t rows = q35_kv_read_rows((sl_i64){ H.kv_state, 6 }, count);
     if (rows <= 0) return -1;
-    // The graph arena holds every node's data, so it scales with the prompt.
-    // A fixed 1 GiB was enough for a five-token smoke prompt and crashed on a
-    // normal one ("not enough space in the context's memory pool").
-    size_t arena = 1280u * 1024u * 1024u + (size_t) count * 6u * 1024u * 1024u;
-    const char * arena_env = getenv("GOOSE_ARENA_MIB");
-    if (arena_env) arena = (size_t) atoll(arena_env) * 1024u * 1024u;
-    ggml_context * c = ggml_init((struct ggml_init_params){ arena, NULL, false });
-    if (!c) { printf("GRAPH arena=%zu failed\n", arena); fflush(stdout); return -1; }
-    if (getenv("GOOSE_GRAPH_LOG")) { printf("GRAPH count=%lld arena=%zu MiB\n", (long long) count, arena / (1024u * 1024u)); fflush(stdout); }
+
+    ggml_context * c = ggml_init((struct ggml_init_params){ 256u * 1024u * 1024u, NULL, true });
+    if (!c) return -1;
 
     ggml_tensor * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, count);
-    memcpy(ids->data, tokens, (size_t) count * 4);
-
     ggml_tensor * positions = ggml_new_tensor_1d(c, GGML_TYPE_I32, count * 4);
-    int64_t * pos = calloc((size_t) count * 4, sizeof(int64_t));
-    if (q35_kv_positions((sl_i64){ H.kv_state, 6 }, count, (sl_i64){ pos, count * 4 }) != count * 4) return -1;
-    for (int s = 0; s < 4; ++s)
-        for (int64_t t = 0; t < count; ++t) ((int32_t *) positions->data)[s * count + t] = (int32_t) pos[s * count + t];
-
     ggml_tensor * indices = ggml_new_tensor_1d(c, GGML_TYPE_I64, count);
-    if (q35_kv_indices((sl_i64){ H.kv_state, 6 }, count, (sl_i64){ (int64_t *) indices->data, count }) != count) return -1;
-
     ggml_tensor * mask = ggml_new_tensor_2d(c, GGML_TYPE_F16, rows, count);
-    float * raw = calloc((size_t) rows * count, sizeof(float));
-    if (q35_kv_mask((sl_i64){ H.kv_state, 6 }, count, (sl_f32){ raw, rows * count }) != rows) return -1;
-    for (int64_t t = 0; t < count; ++t)
-        for (int64_t k = 0; k < rows; ++k)
-            ((ggml_fp16_t *) mask->data)[t * rows + k] = ggml_fp32_to_fp16(raw[t * rows + k]);
 
     const int64_t ticket = q35_kv_begin((sl_i64){ H.kv_state, 6 }, count);
-    if (ticket <= 0) return -1;
+    if (ticket <= 0) { ggml_free(c); return -1; }
 
     int64_t work[16] = {0}, bn[40] = {0}, mn[42] = {0};
     int64_t * frames = calloc((size_t) (4 * H.layer_count + 4), sizeof(int64_t));
@@ -367,17 +354,50 @@ static int64_t model_step(const int32_t * tokens, int64_t count, float ** logits
                                      (int64_t) (intptr_t) H.sections, (sl_i64){ H.kv_state, 6 }, ticket,
                                      (sl_i64){ work, 16 }, (sl_i64){ bn, 40 }, (sl_i64){ mn, 42 },
                                      (sl_i64){ frames, 4 * H.layer_count + 4 }, (sl_i64){ roots, 2 * H.layer_count + 2 });
-    if (!result) return -1;
+    if (!result) { free(frames); free(roots); ggml_free(c); return -1; }
 
     ggml_cgraph * graph = ggml_new_graph_custom(c, 16384, false);
     for (int64_t i = 1; i <= roots[0]; ++i) ggml_build_forward_expand(graph, (ggml_tensor *) (intptr_t) roots[i]);
-    static int threads = 0;
-    if (threads == 0) {
+
+    static ggml_gallocr_t alloc = NULL;
+    static ggml_backend_t backend = NULL;
+    static int backend_threads = 0;
+    if (!alloc) alloc = ggml_gallocr_new(ggml_backend_cpu_buffer_type());
+    if (!backend) backend = ggml_backend_cpu_init();
+    if (!alloc || !backend) { free(frames); free(roots); ggml_free(c); return -1; }
+    if (backend_threads == 0) {
         const char * e = getenv("GOOSE_THREADS");
-        threads = e ? atoi(e) : 4;
-        if (threads <= 0) threads = 4;
+        backend_threads = e ? atoi(e) : 4;
+        if (backend_threads <= 0) backend_threads = 4;
+        ggml_backend_cpu_set_n_threads(backend, backend_threads);
     }
-    if (ggml_graph_compute_with_ctx(c, graph, threads) != GGML_STATUS_SUCCESS) return -1;
+    if (!ggml_gallocr_alloc_graph(alloc, graph)) {
+        free(frames); free(roots); ggml_free(c); return -1;
+    }
+
+    // inputs, now that the allocator has placed them
+    memcpy(ids->data, tokens, (size_t) count * 4);
+    int64_t * pos = calloc((size_t) count * 4, sizeof(int64_t));
+    if (q35_kv_positions((sl_i64){ H.kv_state, 6 }, count, (sl_i64){ pos, count * 4 }) != count * 4) {
+        free(pos); free(frames); free(roots); ggml_free(c); return -1;
+    }
+    for (int s = 0; s < 4; ++s)
+        for (int64_t t = 0; t < count; ++t)
+            ((int32_t *) positions->data)[s * count + t] = (int32_t) pos[s * count + t];
+    if (q35_kv_indices((sl_i64){ H.kv_state, 6 }, count, (sl_i64){ (int64_t *) indices->data, count }) != count) {
+        free(pos); free(frames); free(roots); ggml_free(c); return -1;
+    }
+    float * raw = calloc((size_t) rows * count, sizeof(float));
+    if (q35_kv_mask((sl_i64){ H.kv_state, 6 }, count, (sl_f32){ raw, rows * count }) != rows) {
+        free(pos); free(raw); free(frames); free(roots); ggml_free(c); return -1;
+    }
+    for (int64_t t = 0; t < count; ++t)
+        for (int64_t k = 0; k < rows; ++k)
+            ((ggml_fp16_t *) mask->data)[t * rows + k] = ggml_fp32_to_fp16(raw[t * rows + k]);
+
+    if (ggml_backend_graph_compute(backend, graph) != GGML_STATUS_SUCCESS) {
+        free(pos); free(raw); free(frames); free(roots); ggml_free(c); return -1;
+    }
 
     ggml_tensor * lg = (ggml_tensor *) (intptr_t) result;
     const int64_t n = ggml_nelements(lg);

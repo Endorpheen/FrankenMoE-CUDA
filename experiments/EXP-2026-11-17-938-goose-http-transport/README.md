@@ -250,3 +250,30 @@ fix: allocate the graph through `ggml_gallocr`/the backend allocator, which reus
 buffers by node lifetime instead of giving every node its own slice. Until that
 lands, prompts beyond roughly a thousand tokens cannot be served, and that is
 recorded rather than papered over.
+
+## Allocator with buffer reuse: the arena limit is gone
+
+The graph now builds with `no_alloc` and is placed by `ggml_gallocr` on the CPU
+backend, which reuses buffers by node lifetime. Inputs are filled AFTER
+allocation, because with `no_alloc` they have no data until the allocator places
+them. `ggml_backend_cpu_set_n_threads` replaces the per-call thread argument.
+
+A 517-token prompt, which the fixed arena could not serve in any size:
+
+    TIME prompt=517 prefill_s=5.78 prefill_tok_s=89.5 decode_n=122 decode_s=10.35 decode_tok_s=11.79
+
+Short prompt, unchanged ids and repeatable:
+`11751 11 264 3177 8807 303 3712 321 ...`, decode 11.70 and 11.59 tok/s.
+
+| configuration | prefill tok/s | decode tok/s | peak RSS |
+|---|---:|---:|---:|
+| fixed arena, 5-token prompt | 18.5 | 9.50 | 10966 MiB |
+| gallocr, 5-token prompt | 30.3 | 11.70 | — |
+| gallocr, 517-token prompt | 89.5 | 11.79 | 16528 MiB |
+
+Decode +23% against the fixed-arena build on the same prompt and thread count,
+and the long prompt works at all. RSS rises with the prompt because the allocator
+reserves for the largest graph; that is the next memory item.
+
+Gate: `bash tests/http-long-prompt.sh [outdir]` prints `HTTP_LONG_PROMPT OK` and
+fails if the allocator reports "not enough space".
