@@ -183,3 +183,27 @@ This is an accepted composition capability, not full-model or server coverage.
 The EXP906 binary set does not consume this canonical module and remains
 unchanged. See EXP912 for the independent oracles, preserved failed numerical
 test assumption about non-materialized CPU fusion outputs, and raw evidence.
+
+## EXP913: real-weight attention controlled by Goose
+
+The canonical Qwen3.5 attention module now owns the projection/norm/IMRoPE/GQA/
+gate/output/residual sequence, exposed as project and finish operations with a
+cache-free composition witness. This separation leaves a place for the upcoming
+Goose KV update between projection and attention. The module is included by
+default in canonical composition; three existing EXP156 POD field/name bindings
+are exported once by graph-bindings.c and remain explicit temporary adapter debt.
+
+Eight real-Apex-weight cases match an independent native GGML reference:
+29 observed stages and 1069056 F32/F16 values, one/three tokens, positions0/17,
+requested intermediates and ordinary CPU fusion. Type/op/flags, shape/strides,
+parameters, names, source edges and view ownership agree. The positive legacy
+packet witness works and the Goose branch makes zero C packet reads. Six
+structural mutations are killed. The whole 124-module composition typechecks.
+
+The input uses selected real embedding rows, not hidden states from a preceding
+three-layer pass. K/V are fresh with F16 conversion, not the protected profile's
+persistent Q4 KV. Therefore this proves a real-weight mathematical component,
+not native-model logits, decode history, server behavior or inference speed.
+The complete model SHA matches EXP906; only 15624192 weight bytes and three
+1152-byte embedding rows enter the component. Integrated gate peak RSS59068KiB
+is a test-process measurement, not whole-model memory. See EXP913.

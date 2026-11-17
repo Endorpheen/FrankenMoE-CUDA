@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "status": "TEMPORARY_RAW_TENSOR_ABI",
+  "runtime_binding": "integration/goose-standalone/graph-bindings.c",
+  "added_symbols": [
+    "fg156_tget",
+    "fg156_tset",
+    "fg156_name"
+  ],
+  "origin": "EXP156 accepted POD projections/name primitive",
+  "frozen_reference_snapshot": "experiments/EXP-2026-11-17-913-goose-real-attention/source/projections.c",
+  "snapshot_is_additional_runtime_binding": false,
+  "runtime_cpp_files_added": 0,
+  "new_native_algorithm_bodies": 0,
+  "counts_as_completed_runtime_migration": false,
+  "removal_target": true,
+  "remove_when": "The own Goose tensor/memory representation replaces this GGML layout boundary; preserve only required OS/CUDA primitive bindings."
+}

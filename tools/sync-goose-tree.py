@@ -32,6 +32,9 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("model/qwen35-attention.goose", "EXP-2026-11-17-913-goose-real-attention", "source/attention.goose",
+     "src/models/qwen35moe.cpp and src/llama-graph.cpp (single-stream attention branch; persistent KV pending)",
+     "8 real-weight cases / 29 stages / 1069056 exact F32-F16 values / 6 mutations; 124-module composition"),
     ("cpu/goose-graph-builders.goose", "EXP-2026-11-17-912-goose-typed-graph", "source/runtime.goose",
      "ggml/src/ggml.c (graph constructors; typed and legacy Goose entry points)",
      "36 modes / 558 tensors / 10408 checks per route; protected legacy packet; 18432 exact numeric values; 2/2 mutations"),

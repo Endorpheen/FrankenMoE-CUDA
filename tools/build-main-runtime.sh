@@ -29,15 +29,14 @@ H=$OUT/main.h
 OBJ=$OUT/main.o
 mkdir -p "$OUT"
 
-# Accepted canonical modules. Model builders stay out: they are per-architecture
-# alternatives, not one unit. Checked 2026-11-15: qwen35moe.goose, qwen3next.goose
-# and the other arch builders import base/model_graph.goose, whose fail/ensure
-# collide with the canonical ones in a shared unit. An Apex graph build therefore
-# needs a per-architecture unit of its own, not a bigger common one.
+# Accepted common modules and the current Qwen3.5 standalone capabilities
+# (shape plan, QG split and attention branch). Other architecture alternatives
+# remain separate. Compiling this unit alone does not execute a model.
 MODULES=(
     goose/model/goose-model-graph.goose
     goose/model/qwen35moe.goose
     goose/model/qgate-split.goose
+    goose/model/qwen35-attention.goose
     goose/model/gdn-ops.goose
     goose/model/goose-model-loader.goose
     goose/model/file-io.goose

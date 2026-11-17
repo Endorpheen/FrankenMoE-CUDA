@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-16T23:08:40.061403+00:00",
+  "updated_at": "2026-11-17T00:09:25.221841+00:00",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -46979,6 +46979,20 @@
       "status": "ported",
       "sha256": "67777b1fd8f120860f557cb272280ba82c0f45b023710f8dadb1dde2859708e6",
       "gate": "450 synthetic cases + 200 after the raw-pointer rewrite, all equal to native; Apex reference hash at 128 and 512"
+    },
+    {
+      "goose": "model/qwen35-attention.goose",
+      "native": "src/models/qwen35moe.cpp and src/llama-graph.cpp (attention branch)",
+      "native_targets": [
+        "src/models/qwen35moe.cpp",
+        "src/llama-graph.cpp"
+      ],
+      "experiment": "EXP-2026-11-17-913-goose-real-attention",
+      "source": "source/attention.goose",
+      "task": "P11-01",
+      "status": "slice",
+      "sha256": "28f2cfcb56aecae4e31d6b3c030d11eeeaa20d7c25add0febb7645821bff533d",
+      "gate": "8 real-weight cases /29 stages /1069056 exact F32-F16 values /6 semantic mutations; persistent KV pending"
     }
   ]
 }

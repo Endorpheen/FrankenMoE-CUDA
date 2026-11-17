@@ -223,3 +223,6 @@ goose/server/stream-provider.goose	complete_when
 goose/server/stream-provider.goose	is_stream
 goose/server/stream-provider.goose	step
 goose/cpu/goose-graph-builders.goose	gb_common_args
+goose/model/qwen35-attention.goose	q35_attn_project
+goose/model/qwen35-attention.goose	q35_attn_finish
+goose/model/qwen35-attention.goose	q35_attn_block
