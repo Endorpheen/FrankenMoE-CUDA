@@ -426,7 +426,13 @@ int main(int argc, char ** argv) {
         auto * store = trunk.stores[L][3];
         auto * vt = ggml_new_tensor_1d(c, GGML_TYPE_F32, hd * hk);
         ggml_get_type_traits(GGML_TYPE_Q4_0)->to_float((const uint8_t *) store->data, (float *) vt->data, hd * hk);
-        auto * gated = ggml_mul(c, vt, gsig);
+        // GQA: query head h uses KV head h/(n_head/n_head_kv); n_head/n_head_kv = 8 here
+        auto * v3 = ggml_reshape_4d(c, vt, hd, 1, hk, 1);
+        auto * vr = ggml_repeat_4d(c, v3, hd, nh / hk, hk, 1);
+        auto * v2 = ggml_cont_2d(c, vr, hd * nh, 1);
+        auto * gv2 = ggml_reshape_2d(c, gsig, hd, nh);
+        auto * gv3 = ggml_cont_2d(c, gv2, hd * nh, 1);
+        auto * gated = ggml_mul(c, v2, gv3);
         auto * wo = ggml_mul_mat(c, model.weight("blk." + std::to_string(L) + ".attn_output.weight"), gated);
         auto * res = ggml_add(c, wo, emb);
         auto * pn = ggml_mul(c, ggml_rms_norm(c, res, eps), model.weight("blk." + std::to_string(L) + ".post_attention_norm.weight"));

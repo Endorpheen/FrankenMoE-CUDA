@@ -286,6 +286,32 @@ the difference must be in how the 16 query heads map onto the 2 V heads, either
 inside the FA node (its K/V operand views) or in the gate's head order, because
 every input to that mapping is already proven exact.
 
+### The hand-built branch is bitwise the Goose path, and native is the outlier
+
+With the GQA expansion in place (query head `h` takes V head `h/8`), the
+hand-built branch - dequantised store -> gate view -> expansion -> `wo` ->
+residual -> post norm -> final norm -> head - gives:
+
+    manual vs Goose : max diff 0,        0 of 248320 differ
+    manual vs native: max diff 1.3537,   248320 of 248320 differ
+
+So the Goose attention branch is bitwise what an independent construction from
+the same bytes produces, and it is native that disagrees. That flips the framing
+of this whole experiment: it is no longer "the Goose trunk diverges" but "the
+Goose branch and a straightforward construction agree, while llama.cpp's graph
+differs from both".
+
+Therefore the next question is what llama.cpp does that this construction does
+not. Candidates worth checking first, because they are the only places where the
+two differ by construction:
+
+- the V it attends to may not be the cell this construction dequantises (a
+  different cell index or a transposed write would still be self-consistent
+  inside llama.cpp);
+- its gate may be taken from a different half or head order than the view this
+  construction reproduces;
+- its attention may dequantise V through F16 rather than F32.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -306,8 +332,10 @@ Continue inside the attention branch, using the same ablation method:
    recompute the same node over the same operands), and compare it against a
    manual dequantise-V-and-copy for the single-token case, where attention is
    exactly V;
-6. complete the manual branch with the GQA expansion (V head `h/8` for query
-   head `h`) or with the FA node itself, and compare the per-head attention
-   output - 16 heads of 256 values - against the Goose graph and against native;
-   the first head that disagrees names whether the defect is the KV group
-   mapping or the gate order.
+6. compare the *final hidden state* rather than the logits: llama.cpp exposes
+   `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
+   same construction can be compared one step earlier (before the head) and the
+   difference can be attributed to the branch or to the head;
+7. then check the three candidates above against llama.cpp's own values: the
+   cell llama.cpp attends to, the gate half/order, and whether its V is
+   dequantised through F16.
