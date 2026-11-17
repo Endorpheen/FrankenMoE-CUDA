@@ -187,3 +187,21 @@ Three defects were found by these gates and fixed:
   32-entry table;
 - `fg919`/`fg920` became one unit (`fg937`), so the library links one Goose
   object and the two `goose_init` entry points collapse into one.
+
+## Whole-fragment tokenisation through bt_tokenize
+
+The tokenize call now goes through `bt_tokenize`, which also owns the
+special-token decision: the order table is built once by `bt_special_order`
+(33 entries on the Apex vocabulary) and passed with the call. The fragment buffer
+still separates special tokens before the call, so the raw-text call passes
+`special = 0`; that is recorded in the code, not left implicit.
+
+Gates after the switch: tokdump identical, pieces identical, sampdump identical,
+model load unchanged. The log now states the live path explicitly instead of
+printing a readiness flag that was read before the tables existed:
+
+    tokenize: Goose tokenizer path live (special=33)
+
+That earlier flag is why an entire run looked like "Goose answered" while the
+C++ session was doing the work; the readiness check must be logged at the first
+use, after loading.

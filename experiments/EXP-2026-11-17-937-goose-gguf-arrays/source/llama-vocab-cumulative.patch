@@ -1,5 +1,5 @@
 --- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-vocab.cpp	2026-11-16 15:48:17.695288321 +0300
-+++ /home/end0/AI/LlamaServer/exp925-tokenizer-wire-20261117/our-src/llama-vocab.cpp	2026-11-18 01:12:18.697058170 +0300
++++ /home/end0/AI/LlamaServer/exp925-tokenizer-wire-20261117/our-src/llama-vocab.cpp	2026-11-18 01:14:51.644872717 +0300
 @@ -3,7 +3,48 @@
  #include "ggml.h"
  #include "gguf.h"
@@ -49,7 +49,7 @@
  
  #include "unicode.h"
  
-@@ -42,6 +83,25 @@
+@@ -42,6 +83,30 @@
  
  
  // Goose detokenization piece copy (EXP213). GGML_GOOSE_PIECE=0 restores _try_copy.
@@ -64,6 +64,11 @@
 +                          gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots, gsl_i64 ids, int64_t nout,
 +                          gsl_i64 cpts, gsl_i64 seg, gsl_u8 enc, gsl_i64 sym, gsl_i64 heap, gsl_i64 hc,
 +                          gsl_i64 info);
++extern "C" int64_t bt_special_order(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 attr, gsl_i64 order);
++extern "C" int64_t bt_tokenize(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
++                              gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots,
++                              gsl_i64 order, int64_t n_special, gsl_u8 text, gsl_i64 ids, int64_t special,
++                              gsl_i64 cpts, gsl_i64 seg, gsl_u8 enc, gsl_i64 sym, gsl_i64 heap, gsl_i64 hc, gsl_i64 info);
 +extern "C" int64_t bt_prepare_need(gsl_u8 data, gsl_i64 state, gsl_i64 kv, int64_t tok_index, int64_t mrg_index, gsl_i64 need);
 +extern "C" int64_t bt_prepare_from_gguf(gsl_u8 data, gsl_i64 state, gsl_i64 kv, int64_t tok_index, int64_t mrg_index,
 +                                       gsl_u8 blob, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
@@ -75,7 +80,7 @@
  extern "C" int fg213p_enabled(void);
  extern "C" int64_t fg213p_try_copy(uint64_t src, int64_t size, int64_t lstrip,
                                     uint64_t dst, int64_t avail);
-@@ -2158,6 +2218,18 @@
+@@ -2158,6 +2223,20 @@
  
      std::vector<llama_token> cache_special_tokens;
      std::vector<std::string> cache_token_to_piece; // llama_token_to_piece(special = true);
@@ -84,6 +89,8 @@
 +    // the Goose module can address them as spans, exactly as it does over a GGUF.
 +    std::string        goose_blob;
 +    std::vector<int64_t> goose_off, goose_len, goose_attr, goose_slots, goose_mrg_slots{0, 0};
++    std::vector<int64_t> goose_order;
++    int64_t              goose_n_special = 0;
 +    std::string          goose_mrg_blob;
 +    std::vector<int64_t> goose_mrg_off, goose_mrg_len;
 +    bool                 goose_bpe_ready = false;
@@ -94,7 +101,7 @@
      struct pair_hash {
          size_t operator()(const std::pair<std::string, std::string> & p) const {
              return std::hash<std::string>{}(p.first) ^  //create some hash for pair
-@@ -2307,7 +2379,7 @@
+@@ -2307,7 +2386,7 @@
              type = LLAMA_VOCAB_TYPE_BPE;
  
              // read bpe merges and populate bpe ranks
@@ -103,7 +110,7 @@
              // Kimi-K2 uses custom tokenization without traditional BPE merges
              const bool is_kimi_k2 = (tokenizer_pre == "kimi-k2");
  
-@@ -2318,14 +2390,14 @@
+@@ -2318,14 +2397,14 @@
                  // Kimi-K2 doesn't need merges, skip
                  LLAMA_LOG_INFO("%s: Kimi-K2 tokenizer detected, skipping BPE merges\n", __func__);
              } else {
@@ -122,7 +129,7 @@
                      //GGML_ASSERT(unicode_cpts_from_utf8(word).size() > 0);
  
                      std::string first;
-@@ -2360,17 +2432,17 @@
+@@ -2360,17 +2439,17 @@
              special_pad_id  = 0;
              special_mask_id = LLAMA_TOKEN_NULL;
  
@@ -144,7 +151,7 @@
                  const char * pc = (const char *) gguf_get_arr_data(ctx, precompiled_charsmap_keyidx);
                  precompiled_charsmap.assign(pc, pc + n_precompiled_charsmap);
                  if (precompiled_charsmap.size() < sizeof(uint32_t)) {
-@@ -2425,19 +2497,19 @@
+@@ -2425,19 +2504,19 @@
              type = LLAMA_VOCAB_TYPE_BPE;
  
              // read bpe merges and populate bpe ranks
@@ -169,7 +176,7 @@
  
                      std::string first;
                      std::string second;
-@@ -2784,29 +2856,29 @@
+@@ -2784,29 +2863,29 @@
          ml.get_key(LLM_KV_TOKENIZER_REMOVE_EXTRA_WS, remove_extra_whitespaces, false);
      }
  
@@ -207,7 +214,7 @@
          if (n_scores < n_tokens) {
              throw std::runtime_error("Index out of array bounds for scores (" + std::to_string(n_scores) + " < " + std::to_string(n_tokens) + ")\n");
          }
-@@ -2818,13 +2890,13 @@
+@@ -2818,13 +2897,13 @@
      }
  
      const int * toktypes = nullptr;
@@ -225,7 +232,7 @@
          if (n_toktypes < n_tokens) {
              throw std::runtime_error("Index out of array bounds for toktypes (" + std::to_string(n_toktypes) + " < " + std::to_string(n_tokens) + ")\n");
          }
-@@ -2835,7 +2907,7 @@
+@@ -2835,7 +2914,7 @@
      token_to_id.reserve(n_tokens);
  
      for (uint32_t i = 0; i < n_tokens; i++) {
@@ -234,7 +241,7 @@
          if (word.empty()) {
              LLAMA_LOG_WARN("%s: empty token at index %u\n", __func__, i);
              word = "[EMPTY_" + std::to_string(i) + "]";
-@@ -3001,13 +3073,13 @@
+@@ -3001,13 +3080,13 @@
  
          // suppress tokens
          {
@@ -252,7 +259,7 @@
                  const int32_t * data = (const int32_t *) gguf_get_arr_data(ctx, suppress_idx);
                  // drop out-of-range ids
                  suppress_tokens.reserve(n);
-@@ -3407,6 +3479,9 @@
+@@ -3407,6 +3486,9 @@
  
          std::swap(cache_token_to_piece, cache);
  
@@ -262,7 +269,7 @@
          LLAMA_LOG_INFO("%s: token to piece cache size = %.4f MB\n", __func__, size_cache / 1024.0 / 1024.0);
      }
  
-@@ -3728,6 +3803,122 @@
+@@ -3728,6 +3810,136 @@
  }
  
  // NOTE: avoid ever using this except for building the token_to_piece caches
@@ -335,6 +342,20 @@
 +                                gsl_i64{ stats, 4 });
 +    goose_ready = (rc == 0);
 +
++    // Special-token order for bt_tokenize: ids whose text is a special token,
++    // longest text first, decided by Goose.
++    if (goose_ready) {
++        goose_order.assign(goose_off.size(), 0);
++        goose_n_special = bt_special_order(gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++                                           gsl_i64{ goose_off.data(), (int64_t) goose_off.size() },
++                                           gsl_i64{ goose_len.data(), (int64_t) goose_len.size() },
++                                           gsl_i64{ goose_attr.data(), (int64_t) goose_attr.size() },
++                                           gsl_i64{ goose_order.data(), (int64_t) goose_order.size() });
++        if (goose_n_special < 0) {
++            goose_n_special = 0;
++        }
++    }
++
 +    // EXP925: the merge table, indexed by rank, exactly as the C++ map stores it.
 +    if (goose_ready && !bpe_ranks.empty()) {
 +        int max_rank = -1;
@@ -385,13 +406,16 @@
  std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
      std::string piece;
      piece.resize(piece.capacity());  // using string internal cache
-@@ -3868,7 +4059,41 @@
+@@ -3868,7 +4080,47 @@
  #ifdef PRETOKENIZERDEBUG
                          LLAMA_LOG_WARN("TT: (%ld %ld %ld) '%s'\n", text.length(), fragment.offset, fragment.length, text.c_str());
  #endif
 -                        session->tokenize(text, output);
-+                        static bool logged = false;
-+                        if (!logged) { logged = true; LLAMA_LOG_INFO("%s: BPE branch ready=%d\n", __func__, goose_bpe_ready ? 1 : 0); }
++                        static bool live_logged = false;
++                        if (goose_bpe_ready && !live_logged) {
++                            live_logged = true;
++                            LLAMA_LOG_INFO("%s: Goose tokenizer path live (special=%lld)\n", __func__, (long long) goose_n_special);
++                        }
 +                        if (goose_bpe_ready) {
 +                            const int64_t L = (int64_t) text.size();
 +                            std::vector<int64_t> ids((size_t) L * 4 + 64);
@@ -399,8 +423,7 @@
 +                            std::vector<uint8_t> enc(8 * ((size_t) L + 1));
 +                            std::vector<int64_t> sym(24 * ((size_t) L + 1)), heap(15 * ((size_t) L + 1) + 40);
 +                            int64_t hcb[2] = {0, 0}, inf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-+                            const int64_t got = bt_bpe(
-+                                gsl_u8{ (uint8_t *) text.data(), L },
++                            const int64_t got = bt_tokenize(
 +                                gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
 +                                gsl_i64{ const_cast<int64_t *>(goose_off.data()), (int64_t) goose_off.size() },
 +                                gsl_i64{ const_cast<int64_t *>(goose_len.data()), (int64_t) goose_len.size() },
@@ -408,6 +431,10 @@
 +                                gsl_i64{ const_cast<int64_t *>(goose_mrg_off.data()), (int64_t) goose_mrg_off.size() },
 +                                gsl_i64{ const_cast<int64_t *>(goose_mrg_len.data()), (int64_t) goose_mrg_len.size() },
 +                                gsl_i64{ const_cast<int64_t *>(goose_mrg_slots.data()), (int64_t) goose_mrg_slots.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_order.data()), (int64_t) goose_order.size() }, goose_n_special,
++                                // the fragment buffer already separated special tokens, so
++                                // this call only sees raw text
++                                gsl_u8{ (uint8_t *) text.data(), L },
 +                                gsl_i64{ ids.data(), (int64_t) ids.size() }, 0,
 +                                gsl_i64{ cpts.data(), (int64_t) cpts.size() },
 +                                gsl_i64{ seg.data(), (int64_t) seg.size() },
@@ -428,7 +455,7 @@
                      } else { // if (fragment.type == FRAGMENT_BUFFER_VARIANT_TYPE_TOKEN)
                          session->append(fragment.token, output);
                      }
-@@ -4045,6 +4270,18 @@
+@@ -4045,6 +4297,18 @@
          return 0;
      }
  
