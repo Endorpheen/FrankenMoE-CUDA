@@ -95,3 +95,33 @@ Apex 838.81/38.83.
 
 The trade is explicit: Maxwell is faster on both compute axes here and uses
 more RAM/VRAM; Apex keeps the much larger context (262144 vs 4096 verified).
+
+## Chat error: root cause and fix (2026-11-17)
+
+Symptom: `POST /v1/chat/completions` returned HTTP 500
+`The model produced output that does not match the expected peg-native format`.
+
+Evidence:
+
+- server log: `common_chat_peg_parse: unparsed peg-native output:
+  <|maxwell_start|>assistant\n<think>...`;
+- a raw completion with the chat prompt produced token `200001`
+  (`<|maxwell_end|>`) but `stop_type=limit`: 200001 was not end-of-generation;
+- `generation_config.json` declares `eos_token_id: [2, 200001]`, while the GGUF
+  carried only `2`;
+- restarting the same server with an equivalent plain template
+  (`<|maxwell_start|>{role}\n{content}<|maxwell_end|>\n`) made the chat endpoint
+  return HTTP 200 with the assistant text, still finishing by length because of
+  the EOS defect.
+
+Cause: (1) the upstream Jinja uses namespace/split/raise_exception/tojson,
+which the server's PEG auto-parser cannot turn into a grammar; (2) the second
+EOS id was missing, so the model never stopped at `<|maxwell_end|>` and the
+parser saw an unterminated reply.
+
+Fix: the converter writes the equivalent plain template (upstream kept with
+`--chat-template hf`) and writes eos/eot/eom from the generation config list.
+Checks: 89 converter checks, PEG-safe template asserted.
+
+Verification of the rebuilt GGUF (Russian dialogue, long prompt, HTML/Three.js,
+finish reason) is recorded below once the conversion completes.
