@@ -43,12 +43,18 @@ int main() {
     expect(32, p, {2048, 128});     // indexer k_proj
     expect(33, p, {128});           // indexer q norm
     expect(34, p, {128});           // indexer k norm
+    expect(35, p, {2048});          // mtp enorm
+    expect(36, p, {2048});          // mtp hnorm
+    expect(37, p, {2048, 2048});    // mtp e_proj
+    expect(38, p, {2048, 2048});    // mtp h_proj
+    expect(39, p, {8192, 4});       // mtp hc head fn
+    expect(40, p, {2048});          // mtp final norm
 
     std::vector<int64_t> kinds(45, -1);
     int64_t n = mx_plan(sl_i64{(int64_t*)p.data(), (int64_t)p.size()}, sl_i64{kinds.data(), (int64_t)kinds.size()});
     CHECK(n == 45, "plan n=%lld", (long long)n);
     for (int i = 0; i < 45; ++i) CHECK(kinds[i] == (i < 3 ? 0 : 1), "kind %d = %lld", i, (long long)kinds[i]);
-    CHECK(mx_n_tensors() == 35, "n tensors %lld", (long long)mx_n_tensors());
+    CHECK(mx_n_tensors() == 41, "n tensors %lld", (long long)mx_n_tensors());
     std::printf("checks=%d failures=%d\n", checks, fails);
     if (!fails) std::printf("MAXWELL-SHAPES OK\n");
     return fails ? 1 : 0;

@@ -64,7 +64,13 @@ const T_IDX_Q_PROJ: i64 = 31;
 const T_IDX_K_PROJ: i64 = 32;
 const T_IDX_Q_NORM: i64 = 33;
 const T_IDX_K_NORM: i64 = 34;
-const T_COUNT: i64 = 35;
+const T_MTP_ENORM: i64 = 35;
+const T_MTP_HNORM: i64 = 36;
+const T_MTP_E_PROJ: i64 = 37;
+const T_MTP_H_PROJ: i64 = 38;
+const T_MTP_HC_HEAD_FN: i64 = 39;
+const T_MTP_FINAL_NORM: i64 = 40;
+const T_COUNT: i64 = 41;
 
 export fn mx_n_tensors() -> i64 {
     return T_COUNT;
@@ -183,6 +189,15 @@ export fn mx_shape(tid: i64, p: i64[:], out4: i64[:]) -> i64 {
     }
     if tid == T_IDX_Q_NORM || tid == T_IDX_K_NORM {
         return put(out4, idx_hd, 1, 1, 1, 1);
+    }
+    if tid == T_MTP_E_PROJ || tid == T_MTP_H_PROJ {
+        return put(out4, n_embd, n_embd, 1, 1, 2);
+    }
+    if tid == T_MTP_ENORM || tid == T_MTP_HNORM || tid == T_MTP_FINAL_NORM {
+        return put(out4, n_embd, 1, 1, 1, 1);
+    }
+    if tid == T_MTP_HC_HEAD_FN {
+        return put(out4, hc * n_embd, hc, 1, 1, 2);
     }
     return -3;
 }
