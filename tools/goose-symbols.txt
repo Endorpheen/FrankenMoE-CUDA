@@ -245,3 +245,17 @@ goose/model/qwen35-gdn.goose	q35_gdn_layer
 goose/model/qwen35-trunk.goose	q35_bind_weight
 goose/model/qwen35-trunk.goose	q35_moe_ffn
 goose/model/qwen35-trunk.goose	q35_trunk
+goose/model/gguf-reader.goose	gr_array_int
+goose/model/gguf-reader.goose	gr_find_kv
+goose/model/gguf-reader.goose	gr_find_tensor
+goose/model/gguf-reader.goose	gr_meta_f32_bits
+goose/model/gguf-reader.goose	gr_meta_int
+goose/model/gguf-reader.goose	gr_parse
+goose/model/gguf-reader.goose	gr_string_array_index
+goose/model/model-ownership.goose	qo_context_free
+goose/model/model-ownership.goose	qo_context_new
+goose/model/model-ownership.goose	qo_tensor_zero
+goose/model/qwen35-model-loader.goose	qr_frame_close
+goose/model/qwen35-model-loader.goose	qr_frame_open
+goose/model/qwen35-model-loader.goose	qr_model_close
+goose/model/qwen35-model-loader.goose	qr_model_open

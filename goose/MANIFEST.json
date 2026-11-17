@@ -47034,6 +47034,46 @@
       "status": "slice",
       "sha256": "e8adc1a095d3725b8c19ac1f5ad65b40b5b338fe5a8a7473ccb9eb49aa374270",
       "gate": "40 real layers/logits,3 graph steps,checkpoint replay;12 FFN cases/815560 exact values;24 binder bounds;6 semantic mutations; CPU math only, native loader/backend retained"
+    },
+    {
+      "goose": "model/gguf-reader.goose",
+      "native": "ggml/src/gguf.cpp (qualified scope only)",
+      "native_targets": [
+        "ggml/src/gguf.cpp"
+      ],
+      "experiment": "EXP-2026-11-17-919-goose-model-reader",
+      "source": "source/reader.goose",
+      "task": "P11-01",
+      "status": "slice",
+      "sha256": "cf3268965e0846accf3c7274870cb8936c8e8f6bc0c08d5a810b02137b098cd2",
+      "gate": "typed engine reader/name lookup;Apex/Edge0 headers,334 synthetic checks,4 reader mutants,collision control,libc-only artifact"
+    },
+    {
+      "goose": "model/model-ownership.goose",
+      "native": "ggml/src/ggml.c (qualified scope only)",
+      "native_targets": [
+        "ggml/src/ggml.c"
+      ],
+      "experiment": "EXP-2026-11-17-919-goose-model-reader",
+      "source": "source/ownership.goose",
+      "task": "P11-01",
+      "status": "slice",
+      "sha256": "9bf5f4852c71d6bb4cb6dfae7d32f7a97c2e2558755981b7951c00abd1eeef0e",
+      "gate": "direct context ABI/zero and existing byte primitive;no new native shim"
+    },
+    {
+      "goose": "model/qwen35-model-loader.goose",
+      "native": "src/models/qwen35moe.cpp; src/llama-model-loader.cpp (qualified scope only)",
+      "native_targets": [
+        "src/models/qwen35moe.cpp",
+        "src/llama-model-loader.cpp"
+      ],
+      "experiment": "EXP-2026-11-17-919-goose-model-reader",
+      "source": "source/model.goose",
+      "task": "P11-01",
+      "status": "slice",
+      "sha256": "42e7d6429400f6562f0183c4c0917bb07d77635160220d7cec6988a58e8b0610",
+      "gate": "733 zero-copy weights/config/context lifetime;79 contracts,3 model mutants,full logits/replay;mapping borrowed"
     }
   ]
 }

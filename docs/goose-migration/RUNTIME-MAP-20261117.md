@@ -289,3 +289,39 @@ called by the candidate trunk. No C/C++ runtime body/adapter was added or
 removed. Loader/session ownership, whole-model failure atomicity, tokenizer/
 sampling/server, CUDA/backend integration, task correctness and protected
 32K/512 performance acceptance remain open. The EXP906 bundle is immutable.
+
+## EXP919: independent typed GGUF reader and Goose model planning
+
+The new bounded reader owns wire parsing, typed metadata/string-array spans,
+tensor descriptors, collision-safe name indexes, alignment/range/overflow and
+complete-publication decisions in Goose. It reuses accepted format/type tables;
+its isolated C-compiled library links libc only. All actual Apex52/753 and
+Edge0 skeleton57/1079 /PLE5/1 metadata/tensor records agree with independent
+wire/native GGUF oracles.334 synthetic checks cover hostile structure/ranges.
+The positive constant-hash diagnostic and hash-only mutant explicitly test byte
+equality under full hash collision, not only ordinary bucket collisions.
+
+The combined planner now derives Qwen3.5 configs/names, qualifies shapes/types,
+binds733 zero-copy tensors, enforces trunk/MTP inventory and owns native POD
+context/frame lifetime. RoPE I32 storage belongs to the model and reuses the
+existing host byte-store primitive. Candidate native GGUF/name queries are0.
+The unchanged mathematical trunk retains2502720 exact frame values/1241600
+logits and all persistent state bytes through checkpoint/replay.79 loader/
+lifetime checks and seven semantic mutants pass; CPU fixture RSS3810980KiB,
+process swap0, no throughput result. The130-module unit typechecks4125
+specializations and compiles to a C object with1110 globals/zero duplicates.
+
+The direct context ABI is qualified on pinned Linux x86_64 little-endian
+native24-byte init parameters. No new native runtime body/adapter was added;
+the isolated test links exact extracted existing byte-store bodies, while the
+main build keeps their single shared definition. Mapping and input/table storage
+are borrowed until close. A compiler probe rejects an extern borrowed-slice
+result; this proves that interface limit, not impossibility of all OS designs.
+No permanent C++ mapping wrapper or compiler modification was introduced.
+
+Native reader calls are reference-only in the combined fixture. The runtime
+still needs native GGML allocation/POD/math/CPU and libstdc++; a real independent
+CLI, model/session failure atomicity, tokenizer/sampling/task quality, HTTP,
+CUDA and protected-profile performance remain open. Native shipping reader/model
+bodies serve other supported paths and are retained. No C++ deletion or whole-
+runtime coverage percentage follows from this gate.

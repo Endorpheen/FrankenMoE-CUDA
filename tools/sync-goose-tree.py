@@ -32,6 +32,15 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("model/gguf-reader.goose", "EXP-2026-11-17-919-goose-model-reader", "source/reader.goose",
+     "ggml/src/gguf.cpp (bounded typed GGUF v2/v3 engine reader and name indexes)",
+     "Apex/Edge0 skeleton/PLE full header parity;334 synthetic checks;full-hash collision control;4 reader mutants;libc-only build"),
+    ("model/model-ownership.goose", "EXP-2026-11-17-919-goose-model-reader", "source/ownership.goose",
+     "ggml/src/ggml.c (direct context POD ABI and tensor clear; existing host byte-store reused)",
+     "native24-byte x86_64 init ABI;CPU/no-alloc contexts;full-model owned parameter storage"),
+    ("model/qwen35-model-loader.goose", "EXP-2026-11-17-919-goose-model-reader", "source/model.goose",
+     "src/models/qwen35moe.cpp and src/llama-model-loader.cpp (config/names/binding/lifetime;mapping remains borrowed)",
+     "733 bindings/native query count0;79 ownership/failure checks;3 model mutants;full40-layer exact logits/checkpoint replay"),
     ("model/qwen35-trunk.goose", "EXP-2026-11-17-918-goose-moe-trunk", "source/runtime.goose",
      "src/models/qwen35moe.cpp and src/llama-graph.cpp (full trunk/MoE graph and borrowed tensor binding)",
      "40 real layers/logits /3 rebuilt steps with checkpoint replay /12 FFN cases /24 binder bounds /6 semantic mutants"),
