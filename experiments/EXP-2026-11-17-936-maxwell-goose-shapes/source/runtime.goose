@@ -25,6 +25,8 @@ const P_N_EXPERT: i64 = 8;
 const P_N_LAYER: i64 = 9;
 const P_LEAD_DENSE: i64 = 10;
 const P_HC: i64 = 11;
+const P_IDX_HEADS: i64 = 12;
+const P_IDX_HEAD_DIM: i64 = 13;
 
 // tensor ids (one layer)
 const T_TOKEN_EMBD: i64 = 0;
@@ -58,7 +60,11 @@ const T_FFN_DOWN_SHEXP: i64 = 27;
 const T_HC_HEAD_FN: i64 = 28;
 const T_HC_HEAD_BASE: i64 = 29;
 const T_HC_HEAD_SCALE: i64 = 30;
-const T_COUNT: i64 = 31;
+const T_IDX_Q_PROJ: i64 = 31;
+const T_IDX_K_PROJ: i64 = 32;
+const T_IDX_Q_NORM: i64 = 33;
+const T_IDX_K_NORM: i64 = 34;
+const T_COUNT: i64 = 35;
 
 export fn mx_n_tensors() -> i64 {
     return T_COUNT;
@@ -86,7 +92,7 @@ fn put(out4: i64[:], a: i64, b: i64, c: i64, d: i64, nd: i64) -> i64 {
 // Shapes are ggml order: ne[0] first. Dense FFN tensors exist only on the lead
 // layers; routed tensors only after them.
 export fn mx_shape(tid: i64, p: i64[:], out4: i64[:]) -> i64 {
-    if p.len < 12 {
+    if p.len < 14 {
         return -1;
     }
     let n_embd: i64 = p[P_N_EMBD];
@@ -99,6 +105,8 @@ export fn mx_shape(tid: i64, p: i64[:], out4: i64[:]) -> i64 {
     let n_ff_shexp: i64 = p[P_N_FF_SHEXP];
     let n_expert: i64 = p[P_N_EXPERT];
     let hc: i64 = p[P_HC];
+    let idx_heads: i64 = p[P_IDX_HEADS];
+    let idx_hd: i64 = p[P_IDX_HEAD_DIM];
     let mix: i64 = (2 + hc) * hc;
 
     if tid == T_TOKEN_EMBD {
@@ -166,6 +174,15 @@ export fn mx_shape(tid: i64, p: i64[:], out4: i64[:]) -> i64 {
     }
     if tid == T_HC_HEAD_SCALE {
         return put(out4, 1, 1, 1, 1, 1);
+    }
+    if tid == T_IDX_Q_PROJ {
+        return put(out4, n_embd, idx_heads * idx_hd, 1, 1, 2);
+    }
+    if tid == T_IDX_K_PROJ {
+        return put(out4, n_embd, idx_hd, 1, 1, 2);
+    }
+    if tid == T_IDX_Q_NORM || tid == T_IDX_K_NORM {
+        return put(out4, idx_hd, 1, 1, 1, 1);
     }
     return -3;
 }

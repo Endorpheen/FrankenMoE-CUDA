@@ -18,7 +18,7 @@ int main() {
     goose_init(0, nullptr);
     // real Maxwell: hidden 2048, 32 heads, 4 kv, head_dim 128, ff 6144,
     // expert ff 512, shared 1024, 256 experts, 45 layers, 3 dense, hc 4
-    std::vector<int64_t> p = {2048, 200704, 32, 4, 128, 6144, 512, 1024, 256, 45, 3, 4};
+    std::vector<int64_t> p = {2048, 200704, 32, 4, 128, 6144, 512, 1024, 256, 45, 3, 4, 4, 128};
     expect(0, p, {2048, 200704});
     expect(5, p, {2048, 4096});     // attn_q
     expect(6, p, {2048, 512});      // attn_k
@@ -39,12 +39,16 @@ int main() {
     expect(28, p, {8192, 4});       // hc head fn
     expect(29, p, {4});             // hc head base
     expect(30, p, {1});             // hc head scale
+    expect(31, p, {2048, 512});     // indexer q_proj (4 groups x 128)
+    expect(32, p, {2048, 128});     // indexer k_proj
+    expect(33, p, {128});           // indexer q norm
+    expect(34, p, {128});           // indexer k norm
 
     std::vector<int64_t> kinds(45, -1);
-    int64_t n = mx_plan(sl_i64{(int64_t*)p.data(), 12}, sl_i64{kinds.data(), (int64_t)kinds.size()});
+    int64_t n = mx_plan(sl_i64{(int64_t*)p.data(), (int64_t)p.size()}, sl_i64{kinds.data(), (int64_t)kinds.size()});
     CHECK(n == 45, "plan n=%lld", (long long)n);
     for (int i = 0; i < 45; ++i) CHECK(kinds[i] == (i < 3 ? 0 : 1), "kind %d = %lld", i, (long long)kinds[i]);
-    CHECK(mx_n_tensors() == 31, "n tensors %lld", (long long)mx_n_tensors());
+    CHECK(mx_n_tensors() == 35, "n tensors %lld", (long long)mx_n_tensors());
     std::printf("checks=%d failures=%d\n", checks, fails);
     if (!fails) std::printf("MAXWELL-SHAPES OK\n");
     return fails ? 1 : 0;
