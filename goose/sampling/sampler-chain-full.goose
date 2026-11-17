@@ -381,3 +381,94 @@ export fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
     out[2] = n;
     return 0;
 }
+
+// ---- individual chain steps, for a host whose sampler chain applies them one
+// by one. Each works on the same candidate array the chain sees: logits in
+// candidate order, ids in parallel, and it reports what it changed.
+
+// top_k: keep the k highest logits, ordered as std::partial_sort leaves them.
+// The host re-orders its candidate array by `id` afterwards.
+export fn sm_apply_top_k(lv: f32[:], id: i64[:], n: i64, k: i64) -> i64 {
+    if n <= 0 || lv.len < n || id.len < n {
+        return -1;
+    }
+    var i: i64 = 0;
+    while i < n {
+        id[i] = i;
+        i = i + 1;
+    }
+    if k <= 0 {
+        return n;
+    }
+    let kk: i64 = if k < n { k } else { n };
+    if sm_partial_sort(lv, id, n, kk) < 0 {
+        return -1;
+    }
+    return kk;
+}
+
+// top_p: the shortest prefix whose softmax mass reaches p, honouring min_keep.
+export fn sm_apply_top_p(lv: f32[:], p: f32[:], n: i64, top_p: f32, min_keep: i64) -> i64 {
+    if n <= 0 || lv.len < n || p.len < n {
+        return -1;
+    }
+    if top_p >= 1.0 {
+        return n;
+    }
+    softmax_in_place(lv, p, n, 1);
+    var cum: f32 = 0.0;
+    var i: i64 = 0;
+    while i < n {
+        cum = cum + p[i];
+        if cum >= top_p && i + 1 >= min_keep {
+            return i + 1;
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
+// min_p: drop the tail below max_logit + log(p), honouring min_keep.
+export fn sm_apply_min_p(lv: f32[:], n: i64, min_p: f32, min_keep: i64) -> i64 {
+    if n <= 0 || lv.len < n {
+        return -1;
+    }
+    if min_p <= 0.0 {
+        return n;
+    }
+    let min_logit: f32 = lv[0] + c_logf(min_p);
+    var stop: i64 = 1;
+    var i: i64 = 1;
+    while i < n {
+        if lv[i] < min_logit && i >= min_keep {
+            break;
+        }
+        stop = i + 1;
+        i = i + 1;
+    }
+    return stop;
+}
+
+// temperature: divide in place; temp <= 0 keeps only the best candidate.
+export fn sm_apply_temp(lv: f32[:], n: i64, temp: f32) -> i64 {
+    if n <= 0 || lv.len < n {
+        return -1;
+    }
+    if temp <= 0.0 {
+        let sel: i64 = sm_greedy(lv, n);
+        var i: i64 = 0;
+        while i < n {
+            if i != sel {
+                lv[i] = 0.0 - 3.4028234663852886e38;
+            }
+            i = i + 1;
+        }
+        return sel + 1;
+    }
+    var i: i64 = 0;
+    while i < n {
+        lv[i] = lv[i] / temp;
+        i = i + 1;
+    }
+    return n;
+}

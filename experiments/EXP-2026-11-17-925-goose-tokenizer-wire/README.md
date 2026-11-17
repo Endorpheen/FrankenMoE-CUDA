@@ -93,6 +93,22 @@ candidate array and the interface.
 The C++ `std::mt19937` for this sampler is now unused for the draw; it is still
 kept for the other branches until they are ported, so nothing was deleted yet.
 
+## Fourth slice: the whole chain, not just the draw
+
+Every step of the sampler chain now runs on Goose: `top_k` (partial sort and the
+re-ordering of the candidate array), `top_p`, `min_p`, `temp` and the draw, with
+C++ keeping only the array and the interface. The Goose module gained
+`sm_apply_top_k`, `sm_apply_top_p`, `sm_apply_min_p` and `sm_apply_temp` for the
+host that applies steps one by one; the unit-level chain still exists and is
+covered by its own gate.
+
+| check | result |
+| --- | --- |
+| 384 draws, 3 configurations x 4 seeds x 32 | **identical** to the accepted library (`samp_candidate2.bin` = `samp_accepted.bin`, sha256 `4bae8efe…`) |
+| tokenizer gate re-run after the sampler change | still identical (`tok_candidate2.bin` = `tok_accepted.bin`) |
+| the new steps are live | mutant scaling `top_p` by 0.9 is **DETECTED** |
+| fallback | each step falls back to the previous C++ body when the Goose call refuses |
+
 ## Boundaries
 
 `llama_tokenize` now runs on Goose for BPE vocabularies whose merges fit the
