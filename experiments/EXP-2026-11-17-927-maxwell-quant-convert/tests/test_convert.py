@@ -262,6 +262,8 @@ def main():
 
     with tempfile.TemporaryDirectory() as td:
         json.dump(CFG, open(os.path.join(td, "config.json"), "w"))
+        json.dump({"eos_token_id": [2, 200001]},
+                  open(os.path.join(td, "generation_config.json"), "w"))
         shards = {"model-00001.safetensors": [], "model-00002.safetensors": [],
                   "model-00003.safetensors": []}
         for k, (name, arr) in enumerate(tensors):
@@ -280,7 +282,11 @@ def main():
             return report()
 
         rd = Reader(out)
+        tpl = rd.kv.get("tokenizer.chat_template", "")
+        check("<|maxwell_start|>" in tpl and "<|maxwell_end|>" in tpl, "template tags")
+        check("raise_exception" not in tpl and "namespace" not in tpl, "template PEG-safe")
         check(rd.kv.get("general.architecture") == "maxwell_moe", "architecture")
+        check(rd.kv.get("tokenizer.ggml.eot_token_id") == 200001, "eot token id")
         check(rd.kv.get("maxwell_moe.block_count") == 2, "block_count")
         check(rd.kv.get("maxwell_moe.attention.key_length") == 16, "key_length")
         check(rd.kv.get("maxwell_moe.leading_dense_block_count") == 1, "dense lead")

@@ -186,7 +186,19 @@ def read_hf_tokenizer(path, n_vocab):
     return tokens, types, scores, merges, hf_pre_type(tj)
 
 
-def write_hf_vocab(w, path, n_vocab, bos, eos, pad, unk=0):
+def read_eos_ids(model_dir, fallback):
+    """HF generation_config may list several EOS ids; the runtime uses
+    eos/eot/eom and puts all three into the end-of-generation set."""
+    p = os.path.join(model_dir, "generation_config.json")
+    if not os.path.exists(p):
+        return [fallback]
+    v = json.load(open(p)).get("eos_token_id", fallback)
+    if isinstance(v, list):
+        return [int(x) for x in v if x is not None]
+    return [int(v)]
+
+
+def write_hf_vocab(w, path, n_vocab, bos, eos, pad, unk=0, eot=None, eom=None):
     tokens, types, scores, merges, pre = read_hf_tokenizer(path, n_vocab)
     kv_scalar(w, "tokenizer.ggml.model", T_STRING, "gpt2")
     kv_scalar(w, "tokenizer.ggml.pre", T_STRING, pre)
@@ -198,10 +210,14 @@ def write_hf_vocab(w, path, n_vocab, bos, eos, pad, unk=0):
     kv_scalar(w, "tokenizer.ggml.eos_token_id", T_UINT32, eos)
     kv_scalar(w, "tokenizer.ggml.padding_token_id", T_UINT32, pad)
     kv_scalar(w, "tokenizer.ggml.unknown_token_id", T_UINT32, unk)
+    if eot is not None:
+        kv_scalar(w, "tokenizer.ggml.eot_token_id", T_UINT32, eot)
+    if eom is not None:
+        kv_scalar(w, "tokenizer.ggml.eom_token_id", T_UINT32, eom)
     return pre, len(merges)
 
 
-def write_stub_vocab(w, n_vocab):
+def write_stub_vocab(w, n_vocab, eot=None, eom=None):
     """A test-only vocabulary: enough for the loader, meaningless for text."""
     tokens = ["<unk>", "<s>", "</s>", "<pad>"] + [f"tok{i}" for i in range(4, n_vocab)]
     tokens = tokens[:n_vocab]
@@ -213,6 +229,10 @@ def write_stub_vocab(w, n_vocab):
     kv_array_string(w, "tokenizer.ggml.merges", [])
     kv_scalar(w, "tokenizer.ggml.unknown_token_id", T_UINT32, 0)
     kv_scalar(w, "tokenizer.ggml.pre", T_STRING, "default")
+    if eot is not None:
+        kv_scalar(w, "tokenizer.ggml.eot_token_id", T_UINT32, eot)
+    if eom is not None:
+        kv_scalar(w, "tokenizer.ggml.eom_token_id", T_UINT32, eom)
 
 
 def read_safetensors_header(path):
@@ -401,6 +421,8 @@ def main():
     ap.add_argument("--quant-io", action="store_true")
     ap.add_argument("--stub-vocab", action="store_true",
                     help="write a placeholder vocabulary for loader tests only")
+    ap.add_argument("--chat-template", choices=["simple", "hf"], default="simple",
+                    help="simple: PEG-compatible template; hf: the upstream Jinja")
     ap.add_argument("--f32", action="store_true",
                     help="write every tensor as F32 (numeric gate only)")
     args = ap.parse_args()
@@ -471,20 +493,40 @@ def main():
               cfg["block_sparse_gqa_block_size"])
     kv_scalar(w, "maxwell_moe.attention.indexer.local_blocks", T_UINT32,
               cfg["block_sparse_gqa_local_window_size"] // cfg["block_sparse_gqa_block_size"])
+    # The upstream Jinja template uses namespace(), split(), raise_exception and
+    # tojson; the server's PEG auto-parser cannot turn that into a grammar, and
+    # every parse fails. Write the equivalent plain form (same tags, same roles,
+    # same reasoning placement); the upstream file stays in the model directory.
+    simple_template = (
+        "{% for m in messages %}"
+        "{{ '<|maxwell_start|>' + m.role + '\n' + m.content + '<|maxwell_end|>\n' }}"
+        "{% endfor %}"
+        "{% if add_generation_prompt %}{{ '<|maxwell_start|>assistant\n' }}{% endif %}"
+    )
     chat_tpl = os.path.join(args.model_dir, "chat_template.jinja")
-    if os.path.exists(chat_tpl):
+    if args.chat_template == "hf" and os.path.exists(chat_tpl):
         kv_scalar(w, "tokenizer.chat_template", T_STRING, open(chat_tpl, encoding="utf-8").read())
+    else:
+        kv_scalar(w, "tokenizer.chat_template", T_STRING, simple_template)
 
     tok_json = os.path.join(args.model_dir, "tokenizer.json")
     if args.stub_vocab:
-        write_stub_vocab(w, cfg["vocab_size"])
+        eos_ids = read_eos_ids(args.model_dir, cfg["eos_token_id"])
+        write_stub_vocab(w, cfg["vocab_size"],
+                         eot=eos_ids[1] if len(eos_ids) > 1 else None,
+                         eom=eos_ids[2] if len(eos_ids) > 2 else None)
         pre, n_merges = "default", 0
+        extra_eos = eos_ids[1:]
     else:
         if not os.path.exists(tok_json):
             raise SystemExit(f"{tok_json} is missing; pass --stub-vocab only for loader tests")
+        eos_ids = read_eos_ids(args.model_dir, cfg["eos_token_id"])
         pre, n_merges = write_hf_vocab(w, tok_json, cfg["vocab_size"],
-                                       cfg["bos_token_id"], cfg["eos_token_id"],
-                                       cfg["pad_token_id"])
+                                       cfg["bos_token_id"], eos_ids[0],
+                                       cfg["pad_token_id"],
+                                       eot=eos_ids[1] if len(eos_ids) > 1 else None,
+                                       eom=eos_ids[2] if len(eos_ids) > 2 else None)
+        extra_eos = eos_ids[1:]
     n_kv = w.kv_count
 
     sizes = []
@@ -541,7 +583,8 @@ def main():
             fh.write(b"\x00" * pad)
             written += pad
 
-    print(f"tensors={len(plan)} kv={n_kv} pre={pre} merges={n_merges} bytes={os.path.getsize(args.out)}")
+    print(f"tensors={len(plan)} kv={n_kv} pre={pre} merges={n_merges} "
+          f"eos_extra={extra_eos} bytes={os.path.getsize(args.out)}")
     return 0
 
 
