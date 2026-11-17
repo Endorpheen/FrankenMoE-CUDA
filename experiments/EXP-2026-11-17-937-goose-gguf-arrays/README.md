@@ -75,3 +75,31 @@ candidate.
 - `gguf_kv_to_str` (metadata logging during load);
 - the remaining `gguf_get_val_*` accessors;
 - replacing `gguf_init_from_file` with the Goose parser.
+
+## Tokenizer engine: vocabulary laid out in Goose
+
+The standalone runtime lists "no tokenizer engine" as a gap: the 8 `tok_*`
+decisions exist, but the load-and-tokenise path around them does not. The piece
+that was missing was the vocabulary layout, which lived in C++ (`goose_prepare`
+in `llama-vocab.cpp` built the blob, the offsets, the lengths, the slot sizes and
+the merge block).
+
+`goose/model/tokenizer-engine.goose` now does that from the parsed header:
+
+- `bt_prepare_need` — reads both string arrays through the Goose reader and
+  answers the blob bytes, the entry counts and the slot sizes;
+- `bt_prepare_from_gguf` — writes the token texts followed by the merge texts
+  into one buffer, records every offset and length, and zeroes both hash tables
+  in the shape `bt_build` expects.
+
+The host only allocates buffers and calls `bt_build`/`bt_bpe`. Nothing in the
+engine consults the C++ vocabulary.
+
+### Compiler constraint found
+
+An exported Goose function cannot also be called from inside the same unit: the
+C ABI specialization and the internal one compete and the compiler answers
+"could not resolve one concrete function signature". Both `gr_arr_str_span` and
+`bt_prepare_need` are therefore split into a non-exported body (`gr_span_impl`,
+`te_need_impl`) plus a one-line export wrapper. The reader keeps its previous
+behaviour: the candidate still passes pieces and tokenize byte-identically.

@@ -1369,7 +1369,7 @@ export fn gr_val_span(state: i64[:], kv: i64[:], index: i64, out: i64[:]) -> i64
 }
 
 // Span of element `i` of a string array, as (offset, length) into the header.
-export fn gr_arr_str_span(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
+fn gr_span_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
        out.len < 2 || kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 || element < 0 ||
        element >= kv[index * 8 + 5] {
@@ -1398,6 +1398,12 @@ export fn gr_arr_str_span(data: const u8[:], state: i64[:], kv: i64[:], index: i
     out[0] = at + 8;
     out[1] = len as! i64;
     return 0;
+}
+
+// Export wrapper: the body stays non-exported so that callers inside the unit
+// and the C ABI do not compete for one concrete signature.
+export fn gr_arr_str_span(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
+    return gr_span_impl(data, state, kv, index, element, out);
 }
 
 // Lay out a whole GGUF string array as NUL-terminated C strings in one pass.
