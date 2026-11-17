@@ -77,6 +77,22 @@ Results, after the fix:
 | the path is live | mutant adding 1 to every emitted id is **DETECTED** |
 | fallback | `bt_bpe` returning <0 still falls back to the C++ session, so no vocabulary is lost |
 
+## Third slice: the draw itself
+
+`llama_sampler_dist_apply` now hands the whole draw to the Goose chain
+(`sm_select`): the generator is the Goose MT19937 seeded from `seed_cur`, the
+softmax and the cumulative selection are Goose, and the C++ side keeps only the
+candidate array and the interface.
+
+| check | result |
+| --- | --- |
+| 3 configurations (k20/p0.95/t1, k40/p0.9/t0.8, k100/p0.5/t1.2) x 4 seeds x 32 draws | **384 draws identical** to the accepted library (`samp_accepted.bin` = `samp_candidate.bin`, sha256 `4bae8efe…`) |
+| the path is live | mutant that forces `top_k = 1` in the Goose call is **DETECTED** |
+| fallback | a non-zero `sm_select` return falls through to the existing C++ branches |
+
+The C++ `std::mt19937` for this sampler is now unused for the draw; it is still
+kept for the other branches until they are ported, so nothing was deleted yet.
+
 ## Boundaries
 
 `llama_tokenize` now runs on Goose for BPE vocabularies whose merges fit the
