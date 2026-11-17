@@ -89,3 +89,31 @@ Checks done without running a model:
 The 32768/512 comparison has NOT been run yet: port 9101 is owned by another
 server and heavy GPU runs need Igor's approval. No number is claimed until that
 run exists.
+
+## First real run of the candidate (2026-11-17)
+
+The candidate loaded and served: `model loaded` in 3.5 s, `FG201L_`,
+`FG389S_` counters printed, health ok, RSS 21170 MiB.
+
+The 32768/512 request failed during prefill with a measured allocation
+failure:
+
+```
+ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1156.03 MiB ... cudaMalloc failed: out of memory
+decode: Compute error. off = 0, n_batch = 4096, ret = -2
+```
+
+At that moment `nvidia-smi` reported 10686 / 12282 MiB used, of which five
+unrelated processes held 314+240+113+252+457 = 1376 MiB. The reference profile
+fits at 11468 MiB total including those owners only when the card is otherwise
+free; here the allocation of the ubatch-4096 compute buffer had no room.
+
+No flag was changed and no foreign process was stopped. The comparison still
+needs a GPU window with the unrelated owners gone, or an explicitly labelled
+reduced profile (-ub 2048) that is not compared to the 4096 reference.
+
+The segfault found on the first attempt was real and is fixed: adding fields to
+`llama_hparams` shifted members of objects allocated by accepted translation
+units. The candidate now keeps Maxwell settings in a static in `maxwell.cpp`
+and appends `LLM_ARCH_MAXWELL` after `LLM_ARCH_UNKNOWN`, so no accepted layout
+moves.
