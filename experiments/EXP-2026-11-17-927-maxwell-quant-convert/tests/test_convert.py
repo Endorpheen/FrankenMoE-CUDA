@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Round-trip gate for tools/maxwell-convert.py.
 
-Builds a synthetic Maxwell-shaped safetensors set, converts it, then parses the
-GGUF independently (header, metadata, tensor descriptors) and dequantises the
-Q4_0 payload with a separate transcription of ggml's reference formula. No
-weights are needed and none are read.
+Builds a synthetic Maxwell-shaped safetensors set with the real HF names,
+converts it, then parses the GGUF independently (header, metadata, tensor
+descriptors) and dequantises the Q4_0 payload with a separate transcription of
+ggml's reference formula. No real weights are read.
 """
 import json
 import os
@@ -31,9 +31,7 @@ def check(cond, msg):
 
 
 def write_safetensors(path, tensors):
-    header = {}
-    blobs = []
-    off = 0
+    header, blobs, off = {}, [], 0
     for name, arr in tensors:
         raw = arr.tobytes()
         header[name] = {
@@ -77,7 +75,6 @@ class Reader:
         self.fh = open(path, "rb")
         magic, version, n_tensors, n_kv = struct.unpack("<IIQQ", self.fh.read(24))
         assert magic == 0x46554747 and version == 3, (hex(magic), version)
-        self.n_tensors = n_tensors
         self.kv = {}
         for _ in range(n_kv):
             key = self.string()
@@ -149,8 +146,8 @@ def ref_q4_0(x):
     out = bytearray(nb * 18)
     for i in range(nb):
         blk = x[i * QK:(i + 1) * QK]
-        mx = blk[int(np.argmax(np.abs(blk)))]
-        d = float(mx) / -8.0
+        mx = float(blk[int(np.argmax(np.abs(blk)))])
+        d = mx / -8.0
         ident = 1.0 / d if d != 0.0 else 0.0
         q = np.clip((blk * ident + 8.5).astype(np.int8), 0, 15).astype(np.uint8)
         out[i * 18:i * 18 + 2] = np.float16(d).tobytes()
@@ -169,101 +166,179 @@ def deq_q4_0(raw, row, n):
     return out.reshape(n // row, row)
 
 
+CFG = {
+    "architectures": ["MaxwellMoeForCausalLM"],
+    "num_hidden_layers": 2, "hidden_size": 64, "intermediate_size": 128,
+    "num_attention_heads": 4, "num_key_value_heads": 1, "attention_head_size": 16,
+    "rms_norm_eps": 1e-6, "rope_theta": 20000000, "max_position_embeddings": 4096,
+    "num_experts": 8, "num_experts_per_tok": 2, "moe_intermediate_size": 32,
+    "shared_expert_intermediate_size": 64, "vocab_size": 256,
+    "qk_layernorm": True, "router_score_function": "sigmoid",
+    "moe_router_enable_expert_bias": True, "mtp_num_layers": 1,
+    "mlp_only_layers": [0], "attention_variant": "block_sparse_gqa",
+    "block_sparse_gqa_indexer_n_heads": 1, "block_sparse_gqa_indexer_head_dim": 16,
+    "block_sparse_gqa_block_size": 8, "block_sparse_gqa_topk_blocks": 2,
+    "block_sparse_gqa_total_support_blocks": 4,
+    "block_sparse_gqa_prefix_window_size": 16,
+    "block_sparse_gqa_local_window_size": 16, "block_sparse_gqa_num_remote_blocks": 2,
+    "block_sparse_gqa_query_chunk_size": 4, "block_sparse_gqa_layer_freq": [1, 1],
+    "enable_hyper_connections": True, "num_residual_streams": 4,
+    "mhc_sinkhorn_iterations": 20, "mhc_init_gating_factor": 0.01,
+    "bos_token_id": 1, "eos_token_id": 2, "pad_token_id": 3,
+}
+
+
+def build_tensors(rng):
+    E, hc, C = CFG["num_experts"], CFG["num_residual_streams"], CFG["hidden_size"]
+    mix = (2 + hc)*hc
+    t = []
+    t.append(("model.embed_tokens.weight", (rng.standard_normal((256, C))*0.02).astype(np.float32)))
+    t.append(("lm_head.weight", (rng.standard_normal((256, C))*0.02).astype(np.float32)))
+    t.append(("model.norm.weight", np.ones(C, dtype=np.float32)))
+    t.append(("model.hc_head.hc_head_fn", (rng.standard_normal((hc, hc*C))*0.02).astype(np.float32)))
+    t.append(("model.hc_head.hc_head_base", np.zeros(hc, dtype=np.float32)))
+    t.append(("model.hc_head.hc_head_scale", np.ones(1, dtype=np.float32)))
+    for i in range(2):
+        p = f"model.layers.{i}"
+        t += [
+            (f"{p}.self_attn.q_proj.weight", (rng.standard_normal((C, C))*0.02).astype(np.float32)),
+            (f"{p}.self_attn.k_proj.weight", (rng.standard_normal((16, C))*0.02).astype(np.float32)),
+            (f"{p}.self_attn.v_proj.weight", (rng.standard_normal((16, C))*0.02).astype(np.float32)),
+            (f"{p}.self_attn.o_proj.weight", (rng.standard_normal((C, C))*0.02).astype(np.float32)),
+            (f"{p}.self_attn.q_layernorm.weight", np.ones(16, dtype=np.float32)),
+            (f"{p}.self_attn.k_layernorm.weight", np.ones(16, dtype=np.float32)),
+            (f"{p}.input_layernorm.weight", np.ones(C, dtype=np.float32)),
+            (f"{p}.post_attention_layernorm.weight", np.ones(C, dtype=np.float32)),
+        ]
+        for tag in ("self_attn_hyper_connection", "mlp_hyper_connection"):
+            t += [
+                (f"{p}.{tag}.mapping_proj.weight",
+                 (rng.standard_normal((mix, hc*C))*0.02).astype(np.float32)),
+                (f"{p}.{tag}.bias", (rng.standard_normal(mix)*0.01).astype(np.float32)),
+                (f"{p}.{tag}.alpha_pre", np.array([0.01], dtype=np.float32)),
+                (f"{p}.{tag}.alpha_post", np.array([0.01], dtype=np.float32)),
+                (f"{p}.{tag}.alpha_res", np.array([0.02], dtype=np.float32)),
+            ]
+        if i == 0:
+            t += [
+                (f"{p}.block_sparse_moe.w1.weight", (rng.standard_normal((128, C))*0.02).astype(np.float32)),
+                (f"{p}.block_sparse_moe.w3.weight", (rng.standard_normal((128, C))*0.02).astype(np.float32)),
+                (f"{p}.block_sparse_moe.w2.weight", (rng.standard_normal((C, 128))*0.02).astype(np.float32)),
+            ]
+        else:
+            t.append((f"{p}.block_sparse_moe.gate.weight",
+                      (rng.standard_normal((E, C))*0.02).astype(np.float32)))
+            t.append((f"{p}.block_sparse_moe.expert_bias",
+                      (rng.standard_normal(E)*0.001).astype(np.float32)))
+            for e in range(E):
+                t += [
+                    (f"{p}.block_sparse_moe.experts.{e}.w1.weight",
+                     (rng.standard_normal((32, C))*0.02).astype(np.float32)),
+                    (f"{p}.block_sparse_moe.experts.{e}.w3.weight",
+                     (rng.standard_normal((32, C))*0.02).astype(np.float32)),
+                    (f"{p}.block_sparse_moe.experts.{e}.w2.weight",
+                     (rng.standard_normal((C, 32))*0.02).astype(np.float32)),
+                ]
+            for nm, shape in (("w1", (64, C)), ("w3", (64, C)), ("w2", (C, 64))):
+                t.append((f"{p}.block_sparse_moe.shared_expert.{nm}.weight",
+                          (rng.standard_normal(shape)*0.02).astype(np.float32)))
+    return t
+
+
 def main():
-    cfg = {
-        "architectures": ["MaxwellMoeForCausalLM"],
-        "num_hidden_layers": 2, "hidden_size": 64, "intermediate_size": 128,
-        "num_attention_heads": 4, "num_key_value_heads": 1, "attention_head_size": 16,
-        "rms_norm_eps": 1e-6, "rope_theta": 20000000, "max_position_embeddings": 4096,
-        "num_experts": 8, "num_experts_per_tok": 2, "moe_intermediate_size": 32,
-        "shared_expert_intermediate_size": 64, "vocab_size": 256,
-        "qk_layernorm": True, "router_score_function": "sigmoid",
-        "moe_router_enable_expert_bias": True, "mtp_num_layers": 1,
-        "mlp_only_layers": [0], "attention_variant": "block_sparse_gqa",
-        "block_sparse_gqa_indexer_n_heads": 1, "block_sparse_gqa_indexer_head_dim": 16,
-        "block_sparse_gqa_block_size": 8, "block_sparse_gqa_topk_blocks": 2,
-        "block_sparse_gqa_total_support_blocks": 4,
-        "block_sparse_gqa_prefix_window_size": 16,
-        "block_sparse_gqa_local_window_size": 16, "block_sparse_gqa_num_remote_blocks": 2,
-        "block_sparse_gqa_query_chunk_size": 4,
-        "block_sparse_gqa_layer_freq": [1, 1],
-        "enable_hyper_connections": True, "num_residual_streams": 4,
-        "mhc_sinkhorn_iterations": 20, "mhc_init_gating_factor": 0.01,
-        "bos_token_id": 1, "eos_token_id": 2, "pad_token_id": 3,
-    }
     rng = np.random.default_rng(7)
-    w2 = (rng.standard_normal((64, 64)) * 0.02).astype(np.float32)
-    w3 = (rng.standard_normal((32, 64)) * 0.02).astype(np.float32)
-    n1 = (rng.standard_normal(64) * 0.5).astype(np.float32)
-    bias = (rng.standard_normal(8) * 0.001).astype(np.float32)
-    emb = (rng.standard_normal((256, 64)) * 0.02).astype(np.float32)
+    tensors = build_tensors(rng)
+    by_name = dict(tensors)
 
     with tempfile.TemporaryDirectory() as td:
-        write_safetensors(os.path.join(td, "model-00001.safetensors"),
-                          [("model.layers.0.self_attn.q_proj.weight", w2)])
-        write_safetensors_bf16(os.path.join(td, "model-00002.safetensors"),
-                               [("model.layers.0.block_sparse_moe.experts.0.w1.weight", w3)])
-        write_safetensors(os.path.join(td, "model-00003.safetensors"),
-                          [("model.layers.0.input_layernorm.weight", n1),
-                           ("model.layers.0.block_sparse_moe.expert_bias", bias),
-                           ("model.embed_tokens.weight", emb)])
-        json.dump(cfg, open(os.path.join(td, "config.json"), "w"))
-        # Index is optional for the converter; build it from the headers it wrote.
+        json.dump(CFG, open(os.path.join(td, "config.json"), "w"))
+        shards = {"model-00001.safetensors": [], "model-00002.safetensors": [],
+                  "model-00003.safetensors": []}
+        for k, (name, arr) in enumerate(tensors):
+            shards[list(shards)[k % 3]].append((name, arr))
         idx = {"weight_map": {}}
-        for fn, names in (("model-00001.safetensors", ["model.layers.0.self_attn.q_proj.weight"]),
-                          ("model-00002.safetensors", ["model.layers.0.block_sparse_moe.experts.0.w1.weight"]),
-                          ("model-00003.safetensors", ["model.layers.0.input_layernorm.weight",
-                                                       "model.layers.0.block_sparse_moe.expert_bias",
-                                                       "model.embed_tokens.weight"])):
-            for n in names:
-                idx["weight_map"][n] = fn
+        for fn, items in shards.items():
+            write_safetensors(os.path.join(td, fn), items)
+            for name, _ in items:
+                idx["weight_map"][name] = fn
         json.dump(idx, open(os.path.join(td, "model.safetensors.index.json"), "w"))
 
         out = os.path.join(td, "maxwell.gguf")
         r = subprocess.run([sys.executable, CONVERT, td, out], capture_output=True, text=True)
-        check(r.returncode == 0, f"convert rc={r.returncode} {r.stderr[-300:]}")
+        check(r.returncode == 0, f"convert rc={r.returncode} {r.stderr[-400:]}")
         if r.returncode != 0:
             return report()
 
         rd = Reader(out)
         check(rd.kv.get("general.architecture") == "maxwell_moe", "architecture")
-        check(rd.kv.get("maxwell.block_count") == 2, "block_count")
-        check(rd.kv.get("maxwell.expert_count") == 8, "expert_count")
-        check(rd.kv.get("maxwell.mlp_only_layers") == [0], "mlp_only_layers")
-        check(rd.kv.get("maxwell.hyper_connections.streams") == 4, "hc streams")
-        check(abs(rd.kv.get("maxwell.rope.freq_base") - 20000000.0) < 1.0, "rope base")
-        check(rd.kv.get("maxwell.block_sparse_gqa.block_size") == 8, "block size")
-        check(len(rd.tensors) == 5, f"tensor count {len(rd.tensors)}")
+        check(rd.kv.get("maxwell_moe.block_count") == 2, "block_count")
+        check(rd.kv.get("maxwell_moe.attention.key_length") == 16, "key_length")
+        check(rd.kv.get("maxwell_moe.leading_dense_block_count") == 1, "dense lead")
+        check(rd.kv.get("maxwell_moe.expert_gating_func") == 2, "gating sigmoid")
+        check(rd.kv.get("maxwell_moe.expert_weights_norm") is True, "weights norm")
+        check(rd.kv.get("maxwell_moe.hyper_connection.count") == 4, "hc count")
+        check(rd.kv.get("maxwell_moe.hyper_connection.sinkhorn_iterations") == 20, "hc iters")
+        check(abs(rd.kv.get("maxwell_moe.hyper_connection.epsilon") - 1e-6) < 1e-9, "hc eps")
+        check(abs(rd.kv.get("maxwell_moe.rope.freq_base") - 20000000.0) < 1.0, "rope base")
 
-        t = rd.tensors["model.layers.0.self_attn.q_proj.weight"]
-        check(t["type"] == 2 and t["dims"] == [64, 64], f"q_proj {t}")
-        raw, row, n = rd.raw("model.layers.0.self_attn.q_proj.weight")
-        check(raw == ref_q4_0(w2.reshape(-1)), "q_proj Q4_0 bytes differ from reference")
-        got = deq_q4_0(raw, row, n).reshape(w2.shape)
-        err = np.abs(got - w2)
-        check(err.max() < 0.01, f"q_proj dequant max err {err.max():.5f}")
+        # Every planned output exists and no HF spelling leaked through.
+        for name in rd.tensors:
+            check(not name.startswith(("model.", "lm_head.")), f"HF name leaked: {name}")
 
-        t = rd.tensors["model.layers.0.input_layernorm.weight"]
-        check(t["type"] == 0 and t["dims"] == [64], f"norm {t}")
-        raw, _, _ = rd.raw("model.layers.0.input_layernorm.weight")
-        check(np.array_equal(np.frombuffer(raw, dtype="<f4"), n1), "F32 norm not exact")
+        t = rd.tensors["blk.0.attn_q.weight"]
+        check(t["type"] == 2 and t["dims"] == [64, 64], f"attn_q {t}")
+        raw, row, n = rd.raw("blk.0.attn_q.weight")
+        check(raw == ref_q4_0(by_name["model.layers.0.self_attn.q_proj.weight"].reshape(-1)),
+              "attn_q Q4_0 differs from reference")
 
-        t = rd.tensors["model.layers.0.block_sparse_moe.expert_bias"]
-        check(t["type"] == 0 and t["dims"] == [8], f"bias {t}")
-        raw, _, _ = rd.raw("model.layers.0.block_sparse_moe.expert_bias")
-        check(np.array_equal(np.frombuffer(raw, dtype="<f4"), bias), "expert bias not exact")
+        t = rd.tensors["blk.0.attn_norm.weight"]
+        check(t["type"] == 0 and t["dims"] == [64], f"attn_norm {t}")
+        raw, _, _ = rd.raw("blk.0.attn_norm.weight")
+        check(np.array_equal(np.frombuffer(raw, dtype="<f4"), np.ones(64, np.float32)),
+              "F32 norm not exact")
 
-        t = rd.tensors["model.embed_tokens.weight"]
+        t = rd.tensors["blk.0.hc_attn_fn.weight"]
+        check(t["type"] == 1 and t["dims"] == [256, 24], f"hc_attn_fn {t}")
+        t = rd.tensors["blk.0.hc_attn_base.weight"]
+        check(t["type"] == 0 and t["dims"] == [24], f"hc_attn_base {t}")
+        raw, _, _ = rd.raw("blk.0.hc_attn_base.weight")
+        check(np.array_equal(np.frombuffer(raw, dtype="<f4"),
+                             by_name["model.layers.0.self_attn_hyper_connection.bias"]),
+              "hc base not exact")
+        t = rd.tensors["blk.0.hc_attn_scale.weight"]
+        check(t["type"] == 0 and t["dims"] == [3], f"hc_attn_scale {t}")
+        raw, _, _ = rd.raw("blk.0.hc_attn_scale.weight")
+        check(np.allclose(np.frombuffer(raw, dtype="<f4"), [0.01, 0.01, 0.02], atol=1e-9),
+              "hc scale values")
+
+        t = rd.tensors["blk.0.ffn_gate.weight"]
+        check(t["type"] == 2 and t["dims"] == [64, 128], f"dense gate {t}")
+
+        t = rd.tensors["blk.1.ffn_gate_exps.weight"]
+        check(t["type"] == 2 and t["dims"] == [64, 32, 8], f"gate_exps {t}")
+        raw, row, n = rd.raw("blk.1.ffn_gate_exps.weight")
+        stack = np.concatenate([by_name[f"model.layers.1.block_sparse_moe.experts.{e}.w1.weight"]
+                                for e in range(8)], axis=0).reshape(-1)
+        check(raw == ref_q4_0(stack), "gate_exps Q4_0 differs from aggregated reference")
+        got = deq_q4_0(raw, row, n).reshape(8*32, 64)
+        want = stack.reshape(8*32, 64)
+        check(np.abs(got - want).max() < 0.01, "gate_exps dequant")
+
+        t = rd.tensors["blk.1.ffn_down_exps.weight"]
+        check(t["type"] == 2 and t["dims"] == [32, 64, 8], f"down_exps {t}")
+        t = rd.tensors["blk.1.exp_probs_b.weight"]
+        check(t["type"] == 0 and t["dims"] == [8], f"exp_probs_b {t}")
+        raw, _, _ = rd.raw("blk.1.exp_probs_b.weight")
+        check(np.array_equal(np.frombuffer(raw, dtype="<f4"),
+                             by_name["model.layers.1.block_sparse_moe.expert_bias"]),
+              "expert bias not exact")
+
+        t = rd.tensors["output_hc_fn.weight"] if "output_hc_fn.weight" in rd.tensors else rd.tensors["output_hc_fn"]
+        check(t["type"] == 1 and t["dims"] == [256, 4], f"hc head {t}")
+        t = rd.tensors["token_embd.weight"]
         check(t["type"] == 1 and t["dims"] == [64, 256], f"embed {t}")
-        raw, _, _ = rd.raw("model.embed_tokens.weight")
-        check(np.allclose(np.frombuffer(raw, dtype="<f2").reshape(256, 64), emb,
-                          atol=1e-4), "embed F16 round-trip")
-
-        t = rd.tensors["model.layers.0.block_sparse_moe.experts.0.w1.weight"]
-        check(t["type"] == 2 and t["dims"] == [64, 32], f"bf16 expert {t}")
-        raw, row, n = rd.raw("model.layers.0.block_sparse_moe.experts.0.w1.weight")
-        got = deq_q4_0(raw, row, n).reshape(w3.shape)
-        check(np.abs(got - w3).max() < 0.01, "bf16 expert dequant")
+        t = rd.tensors["output.weight"]
+        check(t["type"] == 1 and t["dims"] == [64, 256], f"lm_head {t}")
 
     return report()
 

@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """Convert Maxwell-V1-Flash safetensors into a GGUF container for FrankenMoE.
 
-The runtime is our own; llama.cpp and vLLM are not used for conversion. The
-packing follows ggml's reference Q4_0 (ggml-quants.c:quantize_row_q4_0_ref), so
-the result is read by the existing quantised kernels without a new dequant path.
+The runtime is our own; llama.cpp and vLLM are not used for conversion. Packing
+follows ggml's reference Q4_0 (ggml-quants.c:quantize_row_q4_0_ref), so the
+existing quantised kernels read the result without a new dequant path.
+
+Tensor naming follows the runtime's `blk.%d.*` convention, because that is what
+`llm_tensor` resolves. The mapping, the expert aggregation and the metadata
+keys are the contract with src/models/maxwell.cpp.
 
 Rules:
   - 2-D linear weights become Q4_0 when the row length is a multiple of 32;
+  - mHC tensors (hc_*) stay F16: they are small and their gates are sensitive;
   - every 1-D tensor (norms, expert bias, mHC alphas, hc_head parameters) stays
-    F32: their spread is below bf16 resolution and routing depends on it;
-  - embed_tokens and lm_head stay F16 by default (accuracy of the IO layers),
-    Q4_0 with --quant-io;
-  - tensor names keep the HF spelling; the arch builder maps them.
+    F32: the expert-bias spread is below bf16 resolution;
+  - embed_tokens and lm_head stay F16 by default, Q4_0 with --quant-io;
+  - routed experts of one projection are aggregated into one 3-D tensor
+    [n_embd, n_ff, n_expert] ([n_ff, n_embd, n_expert] for down);
+  - the block-sparse indexer and the MTP head are not loaded yet (the first
+    build runs dense causal attention up to the 4096-token support window).
 
 Usage:
   python3 tools/maxwell-convert.py <model-dir> <out.gguf> [--quant-io]
@@ -26,7 +33,7 @@ import sys
 
 import numpy as np
 
-GGUF_MAGIC = 0x46554747  # "GGUF" little-endian
+GGUF_MAGIC = 0x46554747
 GGUF_VERSION = 3
 ALIGN = 32
 
@@ -58,7 +65,7 @@ class Writer:
         self.fh.write(struct.pack("<d", v))
 
     def string(self, s):
-        b = s.encode()
+        b = s.encode() if isinstance(s, str) else s
         self.u64(len(b))
         self.fh.write(b)
 
@@ -95,6 +102,26 @@ def kv_array_u32(w, key, values):
         w.u32(int(v))
 
 
+def kv_array_i32(w, key, values):
+    w.kv_count += 1
+    w.string(key)
+    w.u32(T_ARRAY)
+    w.u32(T_INT32)
+    w.u64(len(values))
+    for v in values:
+        w.i32(int(v))
+
+
+def kv_array_f32(w, key, values):
+    w.kv_count += 1
+    w.string(key)
+    w.u32(T_ARRAY)
+    w.u32(T_FLOAT32)
+    w.u64(len(values))
+    for v in values:
+        w.f32(float(v))
+
+
 def kv_array_string(w, key, values):
     w.kv_count += 1
     w.string(key)
@@ -102,19 +129,39 @@ def kv_array_string(w, key, values):
     w.u32(T_STRING)
     w.u64(len(values))
     for v in values:
-        w.string(str(v))
+        w.string(v)
+
+
+def write_stub_vocab(w, n_vocab):
+    """A test-only vocabulary: enough for the loader, meaningless for text."""
+    tokens = ["<unk>", "<s>", "</s>", "<pad>"] + [f"tok{i}" for i in range(4, n_vocab)]
+    tokens = tokens[:n_vocab]
+    types = [2, 3, 3, 3] + [1]*(n_vocab - 4)
+    kv_scalar(w, "tokenizer.ggml.model", T_STRING, "gpt2")
+    kv_array_string(w, "tokenizer.ggml.tokens", tokens)
+    kv_array_f32(w, "tokenizer.ggml.scores", [0.0]*n_vocab)
+    kv_array_i32(w, "tokenizer.ggml.token_type", types)
+    kv_array_string(w, "tokenizer.ggml.merges", [])
+    kv_scalar(w, "tokenizer.ggml.unknown_token_id", T_UINT32, 0)
+    kv_scalar(w, "tokenizer.ggml.pre", T_STRING, "default")
 
 
 def read_safetensors_header(path):
     with open(path, "rb") as fh:
-        raw = fh.read(8)
-        if len(raw) != 8:
-            raise ValueError(f"{path}: short header")
-        (n,) = struct.unpack("<Q", raw)
+        (n,) = struct.unpack("<Q", fh.read(8))
         header = json.loads(fh.read(n))
-    if "__metadata__" in header:
-        header.pop("__metadata__")
+    header.pop("__metadata__", None)
     return header
+
+
+_HDRLEN = {}
+
+
+def header_len(path):
+    if path not in _HDRLEN:
+        with open(path, "rb") as fh:
+            (_HDRLEN[path],) = struct.unpack("<Q", fh.read(8))
+    return _HDRLEN[path]
 
 
 def load_tensor(path, name, info):
@@ -122,7 +169,7 @@ def load_tensor(path, name, info):
     shape = tuple(info["shape"])
     a, b = info["data_offsets"]
     with open(path, "rb") as fh:
-        fh.seek(8 + _header_len(path) + a)
+        fh.seek(8 + header_len(path) + a)
         raw = fh.read(b - a)
     if dtype == "F32":
         arr = np.frombuffer(raw, dtype="<f4")
@@ -138,17 +185,6 @@ def load_tensor(path, name, info):
     return arr.reshape(shape)
 
 
-_HDRLEN = {}
-
-
-def _header_len(path):
-    if path not in _HDRLEN:
-        with open(path, "rb") as fh:
-            (n,) = struct.unpack("<Q", fh.read(8))
-        _HDRLEN[path] = n
-    return _HDRLEN[path]
-
-
 def quantize_q4_0(x):
     """ggml reference packing; x is 1-D float32, len % 32 == 0."""
     assert x.size % QK4_0 == 0
@@ -156,11 +192,9 @@ def quantize_q4_0(x):
     out = np.empty(nb * 18, dtype=np.uint8)
     for i in range(nb):
         blk = x[i * QK4_0:(i + 1) * QK4_0]
-        amax_idx = int(np.argmax(np.abs(blk)))
-        mx = float(blk[amax_idx])
+        mx = float(blk[int(np.argmax(np.abs(blk)))])
         d = mx / -8.0
-        with np.errstate(divide="ignore"):
-            ident = 1.0 / d if d != 0.0 else 0.0
+        ident = 1.0 / d if d != 0.0 else 0.0
         q = np.clip((blk * ident + 8.5).astype(np.int8), 0, 15).astype(np.uint8)
         base = i * 18
         out[base:base + 2] = np.frombuffer(np.float16(d).tobytes(), dtype=np.uint8)
@@ -168,118 +202,205 @@ def quantize_q4_0(x):
     return out
 
 
+class Model:
+    def __init__(self, model_dir, quant_io):
+        self.dir = model_dir
+        self.cfg = json.load(open(os.path.join(model_dir, "config.json")))
+        self.quant_io = quant_io
+        index = os.path.join(model_dir, "model.safetensors.index.json")
+        if os.path.exists(index):
+            self.weight_map = json.load(open(index))["weight_map"]
+        else:
+            self.weight_map = {}
+            for fn in sorted(os.listdir(model_dir)):
+                if not fn.endswith(".safetensors"):
+                    continue
+                for name in read_safetensors_header(os.path.join(model_dir, fn)):
+                    self.weight_map[name] = fn
+        self._hdr = {fn: read_safetensors_header(os.path.join(model_dir, fn))
+                     for fn in sorted(set(self.weight_map.values()))}
+
+    def take(self, name):
+        if name not in self.weight_map:
+            raise KeyError(f"missing tensor {name}")
+        shard = self.weight_map[name]
+        return load_tensor(os.path.join(self.dir, shard), name, self._hdr[shard][name])
+
+    def shape(self, name):
+        return [int(v) for v in self._hdr[self.weight_map[name]][name]["shape"]]
+
+
+def out_plan(model):
+    """Return (name, dims, kind, loader) for every output tensor."""
+    cfg = model.cfg
+    n_layer, n_embd = cfg["num_hidden_layers"], cfg["hidden_size"]
+    n_ff_exp = cfg["moe_intermediate_size"]
+    n_expert, hc = cfg["num_experts"], cfg["num_residual_streams"]
+    dense = set(cfg["mlp_only_layers"])
+    mix = (2 + hc)*hc
+
+    plan = []
+
+    def add(name, dims, loader, kind):
+        plan.append((name, list(dims), kind, loader))
+
+    def weight_kind(dims):
+        return "q4" if len(dims) == 2 and dims[0] % QK4_0 == 0 else "f16"
+
+    def plain(hf, name):
+        dims = list(reversed(model.shape(hf)))
+        add(name, dims, lambda hf=hf: model.take(hf).reshape(-1), weight_kind(dims))
+
+    def one_d(hf, name):
+        add(name, [int(np.prod(model.shape(hf)))],
+            lambda hf=hf: model.take(hf).astype(np.float32).reshape(-1), "f32")
+
+    def io(hf, name):
+        dims = list(reversed(model.shape(hf)))
+        add(name, dims, lambda hf=hf: model.take(hf).reshape(-1),
+            "q4" if model.quant_io else "f16")
+
+    io("model.embed_tokens.weight", "token_embd.weight")
+    one_d("model.norm.weight", "output_norm.weight")
+    io("lm_head.weight", "output.weight")
+
+    hc_fn = model.take("model.hc_head.hc_head_fn").astype(np.float32)
+    add("output_hc_fn.weight", [hc*n_embd, hc], lambda hc_fn=hc_fn: hc_fn.reshape(-1), "f16")
+    one_d("model.hc_head.hc_head_base", "output_hc_base.weight")
+    one_d("model.hc_head.hc_head_scale", "output_hc_scale.weight")
+
+    for i in range(n_layer):
+        p = f"model.layers.{i}"
+        plain(f"{p}.self_attn.q_proj.weight", f"blk.{i}.attn_q.weight")
+        plain(f"{p}.self_attn.k_proj.weight", f"blk.{i}.attn_k.weight")
+        plain(f"{p}.self_attn.v_proj.weight", f"blk.{i}.attn_v.weight")
+        plain(f"{p}.self_attn.o_proj.weight", f"blk.{i}.attn_output.weight")
+        one_d(f"{p}.self_attn.q_layernorm.weight", f"blk.{i}.attn_q_norm.weight")
+        one_d(f"{p}.self_attn.k_layernorm.weight", f"blk.{i}.attn_k_norm.weight")
+        one_d(f"{p}.input_layernorm.weight", f"blk.{i}.attn_norm.weight")
+        one_d(f"{p}.post_attention_layernorm.weight", f"blk.{i}.ffn_norm.weight")
+
+        for tag, prefix in (("self_attn_hyper_connection", "hc_attn"),
+                            ("mlp_hyper_connection", "hc_ffn")):
+            fn = model.take(f"{p}.{tag}.mapping_proj.weight").astype(np.float32)
+            add(f"blk.{i}.{prefix}_fn.weight", [hc*n_embd, mix],
+                lambda fn=fn: fn.reshape(-1), "f16")
+            one_d(f"{p}.{tag}.bias", f"blk.{i}.{prefix}_base.weight")
+            sc = np.array([float(model.take(f"{p}.{tag}.alpha_pre").reshape(-1)[0]),
+                           float(model.take(f"{p}.{tag}.alpha_post").reshape(-1)[0]),
+                           float(model.take(f"{p}.{tag}.alpha_res").reshape(-1)[0])],
+                          dtype=np.float32)
+            add(f"blk.{i}.{prefix}_scale.weight", [3], lambda sc=sc: sc, "f32")
+
+        if i in dense:
+            plain(f"{p}.block_sparse_moe.w1.weight", f"blk.{i}.ffn_gate.weight")
+            plain(f"{p}.block_sparse_moe.w3.weight", f"blk.{i}.ffn_up.weight")
+            plain(f"{p}.block_sparse_moe.w2.weight", f"blk.{i}.ffn_down.weight")
+            continue
+
+        plain(f"{p}.block_sparse_moe.gate.weight", f"blk.{i}.ffn_gate_inp.weight")
+        one_d(f"{p}.block_sparse_moe.expert_bias", f"blk.{i}.exp_probs_b.weight")
+
+        for hf, name, out_dims in (
+                ("w1", "ffn_gate_exps", [n_embd, n_ff_exp, n_expert]),
+                ("w3", "ffn_up_exps",   [n_embd, n_ff_exp, n_expert]),
+                ("w2", "ffn_down_exps", [n_ff_exp, n_embd, n_expert])):
+            def load(hf=hf, p=p):
+                mats = [model.take(f"{p}.block_sparse_moe.experts.{e}.{hf}.weight")
+                        .astype(np.float32).reshape(n_ff_exp, n_embd)
+                        for e in range(n_expert)]
+                return np.concatenate(mats, axis=0).reshape(-1)
+            add(f"blk.{i}.{name}.weight", out_dims, load, "q4")
+
+        plain(f"{p}.block_sparse_moe.shared_expert.w1.weight", f"blk.{i}.ffn_gate_shexp.weight")
+        plain(f"{p}.block_sparse_moe.shared_expert.w3.weight", f"blk.{i}.ffn_up_shexp.weight")
+        plain(f"{p}.block_sparse_moe.shared_expert.w2.weight", f"blk.{i}.ffn_down_shexp.weight")
+
+    return plan
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("model_dir")
     ap.add_argument("out")
-    ap.add_argument("--quant-io", action="store_true",
-                    help="quantise embed_tokens and lm_head to Q4_0")
+    ap.add_argument("--quant-io", action="store_true")
+    ap.add_argument("--stub-vocab", action="store_true",
+                    help="write a placeholder vocabulary for loader tests only")
     args = ap.parse_args()
 
-    cfg = json.load(open(os.path.join(args.model_dir, "config.json")))
+    model = Model(args.model_dir, args.quant_io)
+    cfg = model.cfg
     if cfg.get("architectures") != ["MaxwellMoeForCausalLM"]:
         raise SystemExit(f"unexpected architectures: {cfg.get('architectures')}")
 
-    index_path = os.path.join(args.model_dir, "model.safetensors.index.json")
-    if os.path.exists(index_path):
-        weight_map = json.load(open(index_path))["weight_map"]
-        shards = {}
-        for name, shard in weight_map.items():
-            shards.setdefault(shard, []).append(name)
-    else:
-        shards = {}
-        for fn in sorted(os.listdir(args.model_dir)):
-            if fn.endswith(".safetensors"):
-                hdr = read_safetensors_header(os.path.join(args.model_dir, fn))
-                shards[fn] = sorted(hdr)
+    dense = cfg["mlp_only_layers"]
+    if dense != list(range(len(dense))):
+        raise SystemExit(f"mlp_only_layers must be a leading prefix, got {dense}")
 
-    plan = []  # (name, file, info, ggml_type, dims)
-    total_bytes = 0
-    for shard, names in sorted(shards.items()):
-        path = os.path.join(args.model_dir, shard)
-        hdr = read_safetensors_header(path)
-        for name in sorted(names):
-            info = hdr[name]
-            shape = [int(v) for v in info["shape"]]
-            if len(shape) == 0:
-                raise ValueError(f"{name}: scalar tensor")
-            dims = list(reversed(shape))  # ggml ne[0] first
-            quantise = (len(shape) == 2 and dims[0] % QK4_0 == 0 and
-                        (args.quant_io or not name.endswith(("embed_tokens.weight",
-                                                             "lm_head.weight"))))
-            gt = GGML_Q4_0 if quantise else (
-                GGML_F16 if len(shape) == 2 or info["dtype"] == "F16" else GGML_F32)
-            row = dims[0]
-            if gt == GGML_Q4_0:
-                nbytes = (row // QK4_0) * 18 * (int(np.prod(dims)) // row)
-            elif gt == GGML_F16:
-                nbytes = int(np.prod(dims)) * 2
-            else:
-                nbytes = int(np.prod(dims)) * 4
-            plan.append((name, path, info, gt, dims, nbytes))
-            total_bytes += nbytes
+    plan = out_plan(model)
 
     kvbuf = io.BytesIO()
     w = Writer(kvbuf)
-    if True:
-
-        kv_scalar(w, "general.architecture", T_STRING, "maxwell_moe")
-        kv_scalar(w, "general.name", T_STRING, "Maxwell-V1-Flash")
-        kv_scalar(w, "general.file_type", T_UINT32, 2)  # mostly Q4_0
-        kv_scalar(w, "maxwell.block_count", T_UINT32, cfg["num_hidden_layers"])
-        kv_scalar(w, "maxwell.embedding_length", T_UINT32, cfg["hidden_size"])
-        kv_scalar(w, "maxwell.feed_forward_length", T_UINT32, cfg["intermediate_size"])
-        kv_scalar(w, "maxwell.attention.head_count", T_UINT32, cfg["num_attention_heads"])
-        kv_scalar(w, "maxwell.attention.head_count_kv", T_UINT32, cfg["num_key_value_heads"])
-        kv_scalar(w, "maxwell.attention.head_dim", T_UINT32, cfg["attention_head_size"])
-        kv_scalar(w, "maxwell.attention.layer_norm_rms_epsilon", T_FLOAT32, cfg["rms_norm_eps"])
-        kv_scalar(w, "maxwell.rope.freq_base", T_FLOAT32, cfg["rope_theta"])
-        kv_scalar(w, "maxwell.context_length", T_UINT32, cfg["max_position_embeddings"])
-        kv_scalar(w, "maxwell.expert_count", T_UINT32, cfg["num_experts"])
-        kv_scalar(w, "maxwell.expert_used_count", T_UINT32, cfg["num_experts_per_tok"])
-        kv_scalar(w, "maxwell.expert_feed_forward_length", T_UINT32, cfg["moe_intermediate_size"])
-        kv_scalar(w, "maxwell.expert_shared_feed_forward_length", T_UINT32,
-                  cfg["shared_expert_intermediate_size"])
-        kv_scalar(w, "maxwell.vocab_size", T_UINT32, cfg["vocab_size"])
-        kv_scalar(w, "maxwell.qk_layernorm", T_BOOL, cfg["qk_layernorm"])
-        kv_scalar(w, "maxwell.router.sigmoid", T_BOOL, cfg["router_score_function"] == "sigmoid")
-        kv_scalar(w, "maxwell.router.expert_bias", T_BOOL, cfg["moe_router_enable_expert_bias"])
-        kv_scalar(w, "maxwell.mtp.layer_count", T_UINT32, cfg["mtp_num_layers"])
-        kv_array_u32(w, "maxwell.mlp_only_layers", cfg["mlp_only_layers"])
-        kv_scalar(w, "maxwell.attention.variant", T_STRING, cfg["attention_variant"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.n_heads", T_UINT32,
-                  cfg["block_sparse_gqa_indexer_n_heads"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.head_dim", T_UINT32,
-                  cfg["block_sparse_gqa_indexer_head_dim"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.block_size", T_UINT32,
-                  cfg["block_sparse_gqa_block_size"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.topk_blocks", T_UINT32,
-                  cfg["block_sparse_gqa_topk_blocks"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.total_support_blocks", T_UINT32,
-                  cfg["block_sparse_gqa_total_support_blocks"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.prefix_window_size", T_UINT32,
-                  cfg["block_sparse_gqa_prefix_window_size"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.local_window_size", T_UINT32,
-                  cfg["block_sparse_gqa_local_window_size"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.num_remote_blocks", T_UINT32,
-                  cfg["block_sparse_gqa_num_remote_blocks"])
-        kv_scalar(w, "maxwell.block_sparse_gqa.query_chunk_size", T_UINT32,
-                  cfg["block_sparse_gqa_query_chunk_size"])
-        kv_array_u32(w, "maxwell.block_sparse_gqa.layer_freq",
-                     cfg["block_sparse_gqa_layer_freq"])
-        kv_scalar(w, "maxwell.hyper_connections.enabled", T_BOOL,
-                  cfg["enable_hyper_connections"])
-        kv_scalar(w, "maxwell.hyper_connections.streams", T_UINT32,
-                  cfg["num_residual_streams"])
-        kv_scalar(w, "maxwell.hyper_connections.sinkhorn_iterations", T_UINT32,
-                  cfg["mhc_sinkhorn_iterations"])
-        kv_scalar(w, "maxwell.hyper_connections.init_gating_factor", T_FLOAT32,
-                  cfg["mhc_init_gating_factor"])
-        kv_scalar(w, "maxwell.tokenizer.bos_id", T_UINT32, cfg["bos_token_id"])
-        kv_scalar(w, "maxwell.tokenizer.eos_id", T_UINT32, cfg["eos_token_id"])
-        kv_scalar(w, "maxwell.tokenizer.pad_id", T_UINT32, cfg["pad_token_id"])
-
+    kv_scalar(w, "general.architecture", T_STRING, "maxwell_moe")
+    kv_scalar(w, "general.name", T_STRING, "Maxwell-V1-Flash")
+    kv_scalar(w, "general.file_type", T_UINT32, 2)
+    kv_scalar(w, "maxwell_moe.block_count", T_UINT32, cfg["num_hidden_layers"])
+    kv_scalar(w, "maxwell_moe.embedding_length", T_UINT32, cfg["hidden_size"])
+    kv_scalar(w, "maxwell_moe.feed_forward_length", T_UINT32, cfg["intermediate_size"])
+    kv_scalar(w, "maxwell_moe.attention.head_count", T_UINT32, cfg["num_attention_heads"])
+    kv_scalar(w, "maxwell_moe.attention.head_count_kv", T_UINT32, cfg["num_key_value_heads"])
+    kv_scalar(w, "maxwell_moe.attention.key_length", T_UINT32, cfg["attention_head_size"])
+    kv_scalar(w, "maxwell_moe.attention.value_length", T_UINT32, cfg["attention_head_size"])
+    kv_scalar(w, "maxwell_moe.attention.layer_norm_rms_epsilon", T_FLOAT32, cfg["rms_norm_eps"])
+    kv_scalar(w, "maxwell_moe.rope.freq_base", T_FLOAT32, cfg["rope_theta"])
+    kv_scalar(w, "maxwell_moe.rope.dimension_count", T_UINT32, cfg["attention_head_size"])
+    kv_scalar(w, "maxwell_moe.context_length", T_UINT32, cfg["max_position_embeddings"])
+    kv_scalar(w, "maxwell_moe.expert_count", T_UINT32, cfg["num_experts"])
+    kv_scalar(w, "maxwell_moe.expert_used_count", T_UINT32, cfg["num_experts_per_tok"])
+    kv_scalar(w, "maxwell_moe.expert_feed_forward_length", T_UINT32, cfg["moe_intermediate_size"])
+    kv_scalar(w, "maxwell_moe.expert_shared_feed_forward_length", T_UINT32,
+              cfg["shared_expert_intermediate_size"])
+    kv_scalar(w, "maxwell_moe.leading_dense_block_count", T_UINT32, len(dense))
+    kv_scalar(w, "maxwell_moe.expert_weights_norm", T_BOOL, True)
+    kv_scalar(w, "maxwell_moe.expert_weights_scale", T_FLOAT32, 1.0)
+    kv_scalar(w, "maxwell_moe.expert_gating_func", T_UINT32, 2)  # sigmoid
+    kv_scalar(w, "maxwell_moe.hyper_connection.count", T_UINT32, cfg["num_residual_streams"])
+    kv_scalar(w, "maxwell_moe.hyper_connection.sinkhorn_iterations", T_UINT32,
+              cfg["mhc_sinkhorn_iterations"])
+    kv_scalar(w, "maxwell_moe.hyper_connection.epsilon", T_FLOAT32, 1e-6)
+    kv_scalar(w, "maxwell_moe.vocab_size", T_UINT32, cfg["vocab_size"])
+    kv_scalar(w, "maxwell_moe.attention.variant", T_STRING, cfg["attention_variant"])
+    kv_scalar(w, "maxwell_moe.block_sparse_gqa.block_size", T_UINT32,
+              cfg["block_sparse_gqa_block_size"])
+    kv_scalar(w, "maxwell_moe.block_sparse_gqa.prefix_window_size", T_UINT32,
+              cfg["block_sparse_gqa_prefix_window_size"])
+    kv_scalar(w, "maxwell_moe.block_sparse_gqa.local_window_size", T_UINT32,
+              cfg["block_sparse_gqa_local_window_size"])
+    kv_scalar(w, "maxwell_moe.block_sparse_gqa.num_remote_blocks", T_UINT32,
+              cfg["block_sparse_gqa_num_remote_blocks"])
+    kv_scalar(w, "maxwell_moe.block_sparse_gqa.query_chunk_size", T_UINT32,
+              cfg["block_sparse_gqa_query_chunk_size"])
+    kv_scalar(w, "maxwell_moe.block_sparse_gqa.total_support_blocks", T_UINT32,
+              cfg["block_sparse_gqa_total_support_blocks"])
+    kv_scalar(w, "tokenizer.ggml.bos_token_id", T_UINT32, cfg["bos_token_id"])
+    kv_scalar(w, "tokenizer.ggml.eos_token_id", T_UINT32, cfg["eos_token_id"])
+    kv_scalar(w, "tokenizer.ggml.padding_token_id", T_UINT32, cfg["pad_token_id"])
+    if args.stub_vocab:
+        write_stub_vocab(w, cfg["vocab_size"])
     n_kv = w.kv_count
+
+    sizes = []
+    for name, dims, kind, _ in plan:
+        n = int(np.prod(dims))
+        if kind == "q4":
+            assert dims[0] % QK4_0 == 0, (name, dims)
+            nb = (dims[0] // QK4_0) * 18 * (n // dims[0])
+        elif kind == "f16":
+            nb = n * 2
+        else:
+            nb = n * 4
+        sizes.append(nb)
+
     with open(args.out, "wb") as fh:
         w2 = Writer(fh)
         w2.u32(GGUF_MAGIC)
@@ -287,43 +408,42 @@ def main():
         w2.u64(len(plan))
         w2.u64(n_kv)
         fh.write(kvbuf.getvalue())
-        w = Writer(fh)
 
+        w = Writer(fh)
         offset = 0
-        for name, path, info, gt, dims, nbytes in plan:
+        for (name, dims, kind, _), nb in zip(plan, sizes):
             w.string(name)
             w.u32(len(dims))
             for d in dims:
                 w.u64(d)
-            w.u32(gt)
+            w.u32({"q4": GGML_Q4_0, "f16": GGML_F16, "f32": GGML_F32}[kind])
             w.u64(offset)
-            offset += nbytes
-            pad = (-offset) % ALIGN
-            offset += pad
+            offset += nb
+            offset += (-offset) % ALIGN
         pos = fh.tell()
         fh.write(b"\x00" * ((-pos) % ALIGN))
 
         written = 0
-        for name, path, info, gt, dims, nbytes in plan:
-            arr = load_tensor(path, name, info)
-            flat = arr.reshape(-1)
-            if gt == GGML_Q4_0:
-                rows = flat.size // dims[0]
-                parts = [quantize_q4_0(flat[r * dims[0]:(r + 1) * dims[0]])
-                         for r in range(rows)]
-                data = np.concatenate(parts) if parts else b""
-            elif gt == GGML_F16:
+        for (name, dims, kind, loader), nb in zip(plan, sizes):
+            flat = np.asarray(loader(), dtype=np.float32).reshape(-1)
+            if kind == "q4":
+                row = dims[0]
+                rows = flat.size // row
+                data = b"".join(quantize_q4_0(flat[r*row:(r+1)*row]).tobytes()
+                                for r in range(rows))
+            elif kind == "f16":
                 data = flat.astype("<f2").tobytes()
             else:
                 data = flat.astype("<f4").tobytes()
-            if len(data) != nbytes:
-                raise RuntimeError(f"{name}: wrote {len(data)}, planned {nbytes}")
+            if len(data) != nb:
+                raise RuntimeError(f"{name}: wrote {len(data)}, planned {nb}")
             fh.write(data)
             written += len(data)
-            fh.write(b"\x00" * ((-written) % ALIGN))
+            pad = (-written) % ALIGN
+            fh.write(b"\x00" * pad)
+            written += pad
 
-    print(f"tensors={len(plan)} kv={n_kv} tensors_bytes={total_bytes} "
-          f"file_bytes={os.path.getsize(args.out)}")
+    print(f"tensors={len(plan)} kv={n_kv} bytes={os.path.getsize(args.out)}")
     return 0
 
 

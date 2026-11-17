@@ -14,17 +14,25 @@ dequant path and no llama.cpp/vLLM converter are needed.
 `tools/maxwell-convert.py`:
 
 - reads `config.json`, the safetensors index or the shard headers;
-- writes GGUF v3 with `general.architecture = maxwell_moe` and the Maxwell
-  hyperparameters (`block_sparse_gqa.*`, `hyper_connections.*`, `mtp.*`,
-  `mlp_only_layers`, router flags, token ids);
+- writes GGUF v3 with `general.architecture = maxwell_moe` and the keys the
+  loader expects (`maxwell_moe.*`: block count, head geometry, expert sizes,
+  leading dense blocks, sigmoid gating, mHC count/iterations/eps, rope base,
+  block-sparse geometry);
+- renames tensors to the runtime convention (`token_embd.weight`,
+  `output.weight`, `blk.N.attn_q.weight`, `blk.N.hc_attn_fn.weight`, ...);
+- aggregates the 256 routed experts of one projection into a single 3-D tensor
+  ([n_embd, n_ff, n_expert], [n_ff, n_embd, n_expert] for down), packed Q4_0
+  row-wise;
 - packs every 2-D linear weight to Q4_0 with ggml's reference formula
-  (`quantize_row_q4_0_ref`, `ggml-quants.c:113`), row-wise, 18 bytes per 32
-  values;
+  (`quantize_row_q4_0_ref`, `ggml-quants.c:113`), 18 bytes per 32 values;
 - keeps every 1-D tensor in F32: expert bias spreads ~0.005 and bf16's step is
   ~0.06, so truncating it collapses routing (modeling_maxwell_moe.py
   `_fix_expert_bias_precision`);
+- keeps mHC projections (`hc_*`) in F16;
 - keeps `embed_tokens` and `lm_head` in F16; `--quant-io` switches them to Q4_0;
-- BF16/F16/F32 input, shard-by-shard streaming (no whole-model load).
+- BF16/F16/F32 input, shard-by-shard streaming (no whole-model load);
+- `--stub-vocab` writes a placeholder vocabulary for loader tests only; the real
+  BPE vocabulary is a separate slice.
 
 ## Gate
 

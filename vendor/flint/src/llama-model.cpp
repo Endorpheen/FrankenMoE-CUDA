@@ -274,6 +274,8 @@ static llama_model * llama_model_mapping(llm_arch arch, const llama_model_params
             return new llama_model_bailingmoe2(params);
         case LLM_ARCH_BAILINGMOE3:
             return new llama_model_bailingmoe3(params);
+        case LLM_ARCH_MAXWELL:
+            return new llama_model_maxwell(params);
         case LLM_ARCH_SEED_OSS:
             return new llama_model_seed_oss(params);
         case LLM_ARCH_DOTS1:
@@ -3500,6 +3502,7 @@ llama_rope_type llama_model_rope_type(const llama_model * model) {
             return LLAMA_ROPE_TYPE_NONE;
 
         // use what we call a normal RoPE, operating on pairs of consecutive head values
+        case LLM_ARCH_MAXWELL:
         case LLM_ARCH_LLAMA:
         case LLM_ARCH_LLADA:
         case LLM_ARCH_LLAMA4:
