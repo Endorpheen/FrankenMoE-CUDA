@@ -78,3 +78,19 @@ Gate: `bash tests/run.sh [outdir]` prints `HTTP_LISTENER OK`.
 - `accept` cannot take a Goose slice for `sockaddr`/`socklen_t`: slices are
   passed by value, so the host supplies those buffers and the forward passes
   their pointers.
+
+## Router behind the listener
+
+`integration/goose-standalone/tests/http_server.c` closes the loop: accept, read,
+take the path span, ask `route_id`, answer with the status the route implies and
+a body per route category, honouring keep-alive.
+
+    /health  -> HTTP/1.1 200 OK      route=1
+    /props   -> HTTP/1.1 200 OK      route=3
+    /metrics -> HTTP/1.1 200 OK      route=2
+    /nope    -> HTTP/1.1 404 Not Found  route=0
+
+Gate: `bash tests/server-route.sh [outdir]` prints `HTTP_ROUTES OK`.
+
+`route_id` signals "no route" with **0**, not -1; the first version treated 0 as
+a hit and answered 200 to an unknown path. The host now maps `route > 0` to 200.
