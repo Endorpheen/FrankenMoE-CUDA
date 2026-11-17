@@ -22,6 +22,10 @@ Status: ACCEPTED (load + generation); long-context MBSA not implemented
   ` Paris.\n\n**Constraints:**\n- The user asks: "What is`
 - CPU timings at 16 threads: prompt 23.39 tok/s, decode 9.47 tok/s
   (5 prompt tokens, 16 predicted; not a benchmark profile).
+- GPU profile (RTX 4070 12 GB, `-ngl all --cpu-moe --moe-cache-mib 4992 -fa on
+  -c 4096 -b/-ub 512 -t 8 -tb 16`), raw `/completion`, prompt 601 tokens,
+  128 generated, temperature 0: prefill 236.98 tok/s, decode 26.17 tok/s,
+  TTFT 2.54 s, VRAM 11617 MiB, RSS 21009 MiB (one run, not three).
 
 ## Known limitations (stated, not hidden)
 
