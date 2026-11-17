@@ -569,3 +569,56 @@ export fn mx_route_bias(n_blocks: i64, chunk_len: i64, prefix_blocks: i64,
     }
     return 0;
 }
+
+// ---------------------------------------------------------------------------
+// Configuration validation and derived MBSA geometry.
+//
+// Returns 0 when the configuration is self-consistent; negative codes name the
+// first violated rule. The host calls this once at load time instead of
+// re-deriving the checks in C++.
+//   -1 short buffer
+//   -2 head_dim <= 0
+//   -3 n_head <= 0 or n_head_kv <= 0 or n_head % n_head_kv != 0
+//   -4 indexer heads must equal the KV head count (one per GQA group)
+//   -5 indexer head_dim must equal attention head_dim
+//   -6 leading dense blocks exceed the layer count
+//   -7 block size / prefix / local / remote invalid
+//   -8 expert feed-forward sizes invalid
+// ---------------------------------------------------------------------------
+export fn mx_cfg_check(n_embd: i64, n_head: i64, n_head_kv: i64, head_dim: i64,
+                       idx_heads: i64, idx_hd: i64, n_layer: i64, lead: i64,
+                       blk: i64, prefix_win: i64, local_win: i64, remote: i64,
+                       n_ff_exp: i64, n_ff_shexp: i64, out: i64[:]) -> i64 {
+    if out.len < 4 {
+        return -1;
+    }
+    if head_dim <= 0 || n_embd <= 0 {
+        return -2;
+    }
+    if n_head <= 0 || n_head_kv <= 0 || n_head % n_head_kv != 0 {
+        return -3;
+    }
+    if idx_heads != n_head_kv {
+        return -4;
+    }
+    if idx_hd != head_dim {
+        return -5;
+    }
+    if lead < 0 || lead > n_layer {
+        return -6;
+    }
+    if blk <= 0 || prefix_win <= 0 || local_win <= 0 || remote <= 0 {
+        return -7;
+    }
+    if prefix_win % blk != 0 || local_win % blk != 0 {
+        return -7;
+    }
+    if n_ff_exp <= 0 || n_ff_shexp <= 0 {
+        return -8;
+    }
+    out[0] = prefix_win / blk;   // n_prefix_blocks
+    out[1] = local_win / blk;    // n_local_blocks
+    out[2] = remote;               // requested remote blocks
+    out[3] = (2 + 4) * 4;          // mHC mix width for four streams
+    return 0;
+}

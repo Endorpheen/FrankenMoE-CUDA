@@ -69,3 +69,11 @@ regression blocks acceptance (Igor's addendum, 2026-11-17).
 Loader and tensor map for `maxwell_moe` (safetensors shards → our 4-bit
 container), then the graph: QK-norm/RoPE, block-sparse attention route wiring,
 mHC streams, router/shared expert, MTP head.
+
+## Configuration validation (added)
+
+`mx_cfg_check` owns the load-time rules and derived MBSA geometry: GQA
+divisibility, indexer heads == KV heads, indexer head_dim == attention
+head_dim, dense lead within the layer count, block alignment of the prefix and
+local windows, positive remote/FF sizes, and `n_prefix`, `n_local`, remote and
+mHC mix width on success. Gate: 2777 checks, 0 failures.

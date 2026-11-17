@@ -410,6 +410,22 @@ static void test_route_bias() {
     }
 }
 
+static void test_cfg_check() {
+    std::vector<int64_t> o(4, -1);
+    // real Maxwell: 2048 embd, 32/4 heads x128, indexer 4x128, 45 layers, 3
+    // dense, block 128, prefix 1024, local 1024, 16 remote, ff 512/1024
+    CHECK(mx_cfg_check(2048, 32, 4, 128, 4, 128, 45, 3, 128, 1024, 1024, 16, 512, 1024, I(o)) == 0,
+          "cfg real");
+    CHECK(o[0] == 8 && o[1] == 8 && o[2] == 16 && o[3] == 24, "cfg derived");
+    CHECK(mx_cfg_check(2048, 32, 4, 128, 2, 128, 45, 3, 128, 1024, 1024, 16, 512, 1024, I(o)) == -4, "idx heads");
+    CHECK(mx_cfg_check(2048, 32, 4, 128, 4, 64, 45, 3, 128, 1024, 1024, 16, 512, 1024, I(o)) == -5, "idx hd");
+    CHECK(mx_cfg_check(2048, 32, 4, 128, 4, 128, 45, 46, 128, 1024, 1024, 16, 512, 1024, I(o)) == -6, "lead");
+    CHECK(mx_cfg_check(2048, 32, 4, 128, 4, 128, 45, 3, 100, 1024, 1024, 16, 512, 1024, I(o)) == -7, "align");
+    CHECK(mx_cfg_check(2048, 32, 4, 128, 4, 128, 45, 3, 128, 1024, 1024, 0, 512, 1024, I(o)) == -7, "remote");
+    CHECK(mx_cfg_check(2048, 32, 6, 128, 6, 128, 45, 3, 128, 1024, 1024, 16, 512, 1024, I(o)) == -3, "gqa");
+    CHECK(mx_cfg_check(2048, 32, 4, 128, 4, 128, 45, 3, 128, 1024, 1024, 16, 0, 1024, I(o)) == -8, "ff");
+}
+
 static void test_mtp() {
     for (int t = 0; t < 50; ++t) {
         int64_t n = irand(1, 40);
@@ -435,6 +451,7 @@ int main() {
     test_mtp();
     test_route_real_geometry();
     test_route_bias();
+    test_cfg_check();
     std::printf("checks=%d failures=%d\n", g_checks, g_fail);
     if (g_fail == 0) std::printf("MAXWELL-DECISIONS OK\n");
     return g_fail == 0 ? 0 : 1;
