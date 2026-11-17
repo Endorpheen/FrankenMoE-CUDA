@@ -367,6 +367,30 @@ static void test_route_final() {
     }
 }
 
+// Real Maxwell geometry: block 128, prefix 8, local 8, remote 16. For every
+// query inside the 4096-token support window the route must cover every block
+// up to the query (the dense-equivalence claim used by the builder).
+static void test_route_real_geometry() {
+    const int64_t blk = 128, prefix = 8, local = 8, remote = 16;
+    const int64_t n_blocks = 32;
+    for (int64_t q = 0; q < n_blocks; ++q) {
+        std::vector<float> scores((size_t) n_blocks);
+        for (auto &v : scores) v = frand(-5.0f, 5.0f);
+        int64_t qpos = q*blk + irand(0, blk - 1);
+        std::vector<int64_t> r((size_t) remote, -1), fin((size_t)(prefix + remote + local), -2);
+        std::vector<int64_t> qp{qpos};
+        CHECK(mx_route(S(scores), n_blocks, 1, 1, remote, prefix, local,
+                       I(qp), blk, I(r)) == 0, "real route rc");
+        CHECK(mx_route_final(I(r), 1, 1, remote, prefix, local, I(qp), blk, I(fin)) == 0,
+              "real route_final rc");
+        std::vector<int> seen(n_blocks, 0);
+        for (int64_t b : fin) if (b >= 0 && b < n_blocks) seen[b] = 1;
+        int missing = 0;
+        for (int64_t b = 0; b <= q; ++b) if (!seen[b]) missing++;
+        CHECK(missing == 0, "real geometry q=%lld missing %d blocks", (long long)q, missing);
+    }
+}
+
 static void test_mtp() {
     for (int t = 0; t < 50; ++t) {
         int64_t n = irand(1, 40);
@@ -390,6 +414,7 @@ int main() {
     test_route();
     test_route_final();
     test_mtp();
+    test_route_real_geometry();
     std::printf("checks=%d failures=%d\n", g_checks, g_fail);
     if (g_fail == 0) std::printf("MAXWELL-DECISIONS OK\n");
     return g_fail == 0 ? 0 : 1;
