@@ -12,7 +12,7 @@
   "cuda_library_sha256": "17e79510f37817400c1b268e401d16eb2f392d1ef7f3da979d5ccf975cb32240",
   "model": {
     "path": "/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf",
-    "sha256": null,
+    "sha256": "c3b92d94cd03a7730ad45cc45de8c753e369e0228b2f5d83d819ce2ea6ab3355",
     "note": "model weights are not part of the runtime release; hash recorded separately"
   },
   "files": {
@@ -52,5 +52,12 @@
       "sha256": "3e4437d9f3e906278944a765bd0ab0e1cc0a96b20c441fe3ea37aa5cc0934237",
       "bytes": 17880
     }
+  },
+  "release": {
+    "tag": "exp906-runtime-v1.0",
+    "asset": "exp906-runtime-linux-x86_64.tar.gz",
+    "bytes": 80623245,
+    "sha256": "05f7b1b75d6fc15b65543b29a4751ff5066d3da08fa04787d18a6499ec1ce18f",
+    "url": "https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/exp906-runtime-v1.0"
   }
 }
