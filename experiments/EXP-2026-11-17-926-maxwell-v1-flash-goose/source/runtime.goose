@@ -659,3 +659,62 @@ export fn mx_route_tokens(route: i64[:], block_size: i64, n_kv: i64,
     }
     return n;
 }
+
+// ---------------------------------------------------------------------------
+// Reasoning split: separate "<think>...</think>" from the visible answer.
+//
+// out = [think_off, think_len, answer_off, answer_len].
+//   0  tags present and closed
+//   1  no tags: the whole text is the answer (answer 0..len), think empty
+//  -1  opening tag without a closing one (unterminated reasoning)
+//  -2  short buffer
+// ---------------------------------------------------------------------------
+fn mx_find(hay: const u8[:], needle: const u8[:], from: i64) -> i64 {
+    if needle.len == 0 {
+        return from;
+    }
+    var i: i64 = from;
+    while i + needle.len <= hay.len {
+        var k: i64 = 0;
+        var same: i64 = 1;
+        while k < needle.len {
+            if hay[i + k] != needle[k] {
+                same = 0;
+            }
+            k += 1;
+        }
+        if same == 1 {
+            return i;
+        }
+        i += 1;
+    }
+    return -1;
+}
+
+export fn mx_split_reasoning(s: const u8[:], out: i64[:]) -> i64 {
+    if out.len < 4 {
+        return -2;
+    }
+    let open: const u8[:] = "<think>";
+    let close: const u8[:] = "</think>";
+    out[0] = 0; out[1] = 0; out[2] = 0; out[3] = s.len;
+    let a: i64 = mx_find(s, open, 0);
+    if a < 0 {
+        return 1;
+    }
+    let body: i64 = a + open.len;
+    let b: i64 = mx_find(s, close, body);
+    if b < 0 {
+        return -1;
+    }
+    out[0] = body;
+    out[1] = b - body;
+    var tail: i64 = b + close.len;
+    // skip one leading newline after the closing tag, like the template does
+    if tail < s.len && s[tail] == 10 {
+        tail += 1;
+    }
+    out[2] = tail;
+    out[3] = s.len - tail;
+    return 0;
+}

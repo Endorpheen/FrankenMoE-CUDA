@@ -83,3 +83,10 @@ mHC mix width on success. Gate: 2777 checks, 0 failures.
 `mx_route_tokens` turns a selected block route into token positions and a
 validity mask (`block >= 0`, `0 <= pos < n_kv`), so the gather indices the
 sparse graph needs are decided in Goose rather than in C++. Gate: 2787 checks.
+
+## Reasoning split (added)
+
+`mx_split_reasoning` separates `<think>...</think>` from the visible answer and
+returns the two byte spans, distinguishing "no tags" (answer is everything) from
+"unterminated reasoning" (an error the server should report, not silently
+accept). Gate: 2795 checks.

@@ -451,6 +451,31 @@ static void test_route_tokens() {
     }
 }
 
+static void test_reasoning_split() {
+    auto u8s = [](const char *t) {
+        return sl_u8{(uint8_t *)t, (int64_t)std::strlen(t)};
+    };
+    {
+        std::vector<int64_t> o(4, -1);
+        const char *t = "<think>abc\n</think>\nHello";
+        CHECK(mx_split_reasoning(u8s(t), I(o)) == 0, "split ok rc");
+        CHECK(o[0] == 7 && o[1] == 4, "think span %lld/%lld", (long long)o[0], (long long)o[1]);
+        CHECK(o[2] == 20 && o[3] == 5, "answer span %lld/%lld", (long long)o[2], (long long)o[3]);
+        CHECK(std::strncmp(t + o[2], "Hello", 5) == 0, "answer text");
+    }
+    {
+        std::vector<int64_t> o(4, -1);
+        CHECK(mx_split_reasoning(u8s("Plain answer"), I(o)) == 1, "no tags rc");
+        CHECK(o[2] == 0 && o[3] == 12, "no tags answer");
+    }
+    {
+        std::vector<int64_t> o(4, -1);
+        CHECK(mx_split_reasoning(u8s("<think>abc"), I(o)) == -1, "unterminated");
+        std::vector<int64_t> small(3, 0);
+        CHECK(mx_split_reasoning(u8s("x"), I(small)) == -2, "short out");
+    }
+}
+
 static void test_mtp() {
     for (int t = 0; t < 50; ++t) {
         int64_t n = irand(1, 40);
@@ -478,6 +503,7 @@ int main() {
     test_route_bias();
     test_cfg_check();
     test_route_tokens();
+    test_reasoning_split();
     std::printf("checks=%d failures=%d\n", g_checks, g_fail);
     if (g_fail == 0) std::printf("MAXWELL-DECISIONS OK\n");
     return g_fail == 0 ? 0 : 1;
