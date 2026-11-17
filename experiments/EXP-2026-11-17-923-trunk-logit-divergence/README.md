@@ -228,6 +228,21 @@ module does not:
 
 `ggml_prec_set_acc(fa, GGML_PREC_F32)` is set by both.
 
+### Measured: n_kv_max does not change the result
+
+A probe builds three identical flash-attention nodes over the same Q4_0 K/V and
+F16 mask in the permuted layout llama.cpp uses, with `n_kv_max` unset, set to the
+row count, and set to 256. All three produce bitwise-identical output on CPU, so
+`ggml_flash_attn_ext_set_n_kv_max` is not the cause and that hypothesis is
+closed.
+
+With the gate zeroed the difference also persists, and with V zeroed it
+disappears, so the disagreement is the V values the attention node reads - not
+the gate, not the kernel's algorithm selection, and not the bytes in the store
+(which are canonical). What is left is the *geometry* the module gives that node:
+the permuted view of a quantised tensor, and the strides it derives for the K/V
+cells.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -242,9 +257,8 @@ Continue inside the attention branch, using the same ablation method:
    with `ggml_quantize_chunk(Q4_0)` over the exact V values (both computed inside
    the fixture from the same weights), to decide whether Goose stores V
    differently or llama.cpp reads a different cache layout;
-5. measure whether `ggml_flash_attn_ext_set_n_kv_max` changes the result: build
-   two identical flash-attention nodes over the same Q4_0 K/V and F16 mask, one
-   with `n_kv_max` set to the row count and one without, and compare the output
-   bits. The first probe attempt used non-GQA shapes and tripped
-   `ggml_can_mul_mat`, so it is being redone with `n_head` a multiple of
-   `n_head_kv`.
+5. dump the attention node's geometry - dims, strides and type - for the K, V
+   and mask operands as the Goose module builds them, and compare with the
+   native construction for the same cache; a wrong cell stride on a quantised
+   tensor would misread V while leaving the stored bytes correct, which is
+   exactly the shape of the evidence so far.
