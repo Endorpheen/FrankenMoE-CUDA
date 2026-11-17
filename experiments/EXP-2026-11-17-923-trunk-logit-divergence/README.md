@@ -144,6 +144,30 @@ already there, which points at the V projection's write/read through the Q4_0
 cache, the q-gate split, or the output projection - not at KV growth with
 context.
 
+### Measured: the difference is the V value path
+
+Continuing the same ablation on the attention-only model (one token, so
+attention is `wv -> sigmoid(qgate) -> wo` with a single-position softmax):
+
+| model | goose vs native (mean abs) | bitwise equal |
+| --- | ---: | ---: |
+| attention-only (GDN and MoE zeroed) | 0.1723 | 0 / 248320 |
+| same, but the gate half of `attn_q` zeroed (sigmoid(gate) = 0.5 for both) | 0.2064 | 2 / 248320 |
+| same, but `attn_v` zeroed | **0.0** | **248320 / 248320** |
+
+Zeroing the gate half does not help, so the q-gate split is not the cause.
+Zeroing `attn_v` makes the two implementations identical again. Combined with
+the earlier result (attention zeroed -> identical), the whole divergence is in
+the path that carries V: the projection output, its write into the Q4_0 KV
+cache, and the read back through attention. Everything else - q, k, both head
+norms, rope, the gate, `wo`, the MoE, the residuals, the final norm and the head
+- is already exact.
+
+The F32 V values themselves cannot be the difference: the same ablation shows
+`mul_mat` on Q4_K weights is exact, and zeroing only `attn_v` zeroes both sides.
+That leaves the KV write/read path: which op writes V, in which layout, and with
+which quantiser.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -154,7 +178,11 @@ Continue inside the attention branch, using the same ablation method:
    disappears, the V path is the cause;
 3. zero only the q-gate half's consumer (`attn_output`) - separates the gate
    split from the projections;
-4. compare llama.cpp with flash attention disabled against the Goose graph that
+4. dump the bytes the Goose fixture wrote into the Q4_0 V store and compare them
+   with `ggml_quantize_chunk(Q4_0)` over the exact V values (both computed inside
+   the fixture from the same weights), to decide whether Goose stores V
+   differently or llama.cpp reads a different cache layout;
+5. compare llama.cpp with flash attention disabled against the Goose graph that
    uses `flash_attn_ext`, to separate the attention kernel from the projection
    arithmetic (the first attempt at this aborted in the native decode and is
    being re-run with the crash recorded).

@@ -83,6 +83,8 @@ def main():
                     help="output block indices whose tensor payloads are zeroed (isolation)")
     ap.add_argument("--zero-match", nargs="*", default=[],
                     help="written tensor names containing any of these strings are zeroed")
+    ap.add_argument("--zero-qgate", type=int, nargs="*", default=[],
+                    help="output block indices whose attn_q gate half (second hd rows of each 2*hd) is zeroed")
     a = ap.parse_args()
 
     f = open(a.source, "rb")
@@ -179,6 +181,25 @@ def main():
 
     out.write(b"\0" * ((-out.tell()) % alignment))
     zero_prefix = tuple("blk.%d." % b for b in a.zero_blocks)
+    # the q projection emits, per head, hd query rows then hd gate rows
+    hd = None
+    for key, t, val in kvs:
+        if key == "qwen35moe.attention.key_length":
+            hd = struct.unpack("<I", val)[0]
+    qgate_rows = {}
+    if a.zero_qgate:
+        if hd is None:
+            raise SystemExit("--zero-qgate needs attention.key_length")
+        for b in a.zero_qgate:
+            name = "blk.%d.attn_q.weight" % a.src_blocks[b]
+            if name not in by_name:
+                raise SystemExit("no " + name)
+            n_, dims_, ttype_, _ = by_name[name]
+            blk, tb = TYPE[ttype_]
+            if dims_[0] % blk:
+                raise SystemExit("row not block aligned")
+            row_bytes = (dims_[0] // blk) * tb
+            qgate_rows[rename.get(name, name)] = (row_bytes, dims_[1], hd)
     for name, dims, ttype, off in chosen:
         start, length = tt_sizes[name]
         f.seek(start)
@@ -187,6 +208,13 @@ def main():
         written = rename.get(name, name)
         if written.startswith(zero_prefix) or any(m in written for m in a.zero_match):
             payload = bytes(length)
+        elif written in qgate_rows:
+            row_bytes, n_rows, hd_v = qgate_rows[written]
+            buf = bytearray(payload)
+            for r in range(n_rows):
+                if (r % (2 * hd_v)) >= hd_v:
+                    buf[r * row_bytes:(r + 1) * row_bytes] = bytes(row_bytes)
+            payload = bytes(buf)
         out.write(payload)
         out.write(b"\0" * ((-length) % alignment))
 
