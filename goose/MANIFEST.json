@@ -5,6 +5,18 @@
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
     {
+      "goose": "sampling/sampler-chain-full.goose",
+      "native": "src/llama-sampler.cpp (MT19937, canonical double draw, top-k/top-p/min-p/temp/dist)",
+      "native_targets": [
+        "src/llama-sampler.cpp"
+      ],
+      "experiment": "EXP-2026-11-17-921-goose-sampler",
+      "task": "P6-10",
+      "status": "ported",
+      "sha256": "2ebd471d9c92a24f2ff2f3b5c49b78ca4461f994ccedceb77d5a6a2aaeca8975",
+      "gate": "207 comparisons vs llama_sampler_chain, 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected"
+    },
+    {
       "goose": "misc/unicode-tables.goose",
       "native": "src/unicode-data.cpp (derived flag array and lowercase map, generated)",
       "native_targets": [

@@ -32,6 +32,9 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("sampling/sampler-chain-full.goose", "EXP-2026-11-17-921-goose-sampler", "source/sampler-chain-full.goose",
+     "src/llama-sampler.cpp (MT19937, canonical double draw, top-k/top-p/min-p/temp/dist)",
+     "207 comparisons vs llama_sampler_chain / 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected"),
     ("misc/unicode-tables.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/unicode-tables.goose",
      "src/unicode-data.cpp (derived codepoint flag array and lowercase map, generated)",
      "3512 flag ranges and 1433 lowercase entries; every reader/tokenizer gate uses them"),

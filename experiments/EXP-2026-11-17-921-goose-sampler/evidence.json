@@ -1,0 +1,59 @@
+{
+  "experiment": "EXP-2026-11-17-921-goose-sampler",
+  "date": "2026-11-17",
+  "base_commit": "f027ef7a",
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+    "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+    "status": "RELEASE_2026_3_STRING",
+    "version": "goose-2026.3-string",
+    "runtime_version": "1e714e6146bc",
+    "release_sha256": "5c6fdf169408f687a49f3f9ce3ebc0804ece16da0320bbbcb893721f5422558b",
+    "release_file": "/tmp/opencode/release/goose-2026.3-string-linux-x86_64.tar.gz",
+    "source_commit": "e0501dc7dee4522428a46f813cebbce0ad62736e",
+    "qualification": "Compatibility re-run of the EXP445..EXP459 gates on this binary; see docs/goose-migration/COMPILER-2026-3-STRING.md",
+    "rollback": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+    "rollback_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+    "previous_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+    "qualified_at": "2026-11-12T23:31:07.783674+00:00"
+  },
+  "native_reference": {
+    "bundle": "/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run",
+    "libllama.so.0": "4eba824255f06ab1fb8e5b6a9e98ae7bd0706773abc8bf86547d86b60cde98ac",
+    "use": "llama_sampler_chain top_k/top_p/min_p/temp/dist; no model, no GPU, no server"
+  },
+  "modules": {
+    "goose/sampling/sampler-chain-full.goose": "2ebd471d9c92a24f2ff2f3b5c49b78ca4461f994ccedceb77d5a6a2aaeca8975"
+  },
+  "artifacts": {
+    "sampler.so": "cdb8d575b6669a500f50f5fe80db2336d90bb76c21354e519cfb966de3fa9bf5",
+    "runtime.c": "ec7d57e5d0fff19a294029cc92b8d267b9ccd6c7b3e6549d8d8b0705175cacb6",
+    "gate": "gate-v3",
+    "mutations": "mut-v1"
+  },
+  "gate": {
+    "comparisons": 207,
+    "failures": 0,
+    "cases": "7 logit sets x 5 configs x 5 seeds + a 32-draw stream",
+    "seeds": "0,1,42,123456789,987654321 (0xFFFFFFFF is LLAMA_DEFAULT_SEED and is randomised natively)",
+    "result": "PASS"
+  },
+  "mutations": {
+    "heap-top-root": "REJECTED",
+    "canonical-single-draw": "REJECTED",
+    "top-p-scale": "REJECTED",
+    "skip-temperature": "REJECTED",
+    "dist-first-candidate": "REJECTED"
+  },
+  "bugs_found_by_the_gate": [
+    "sort_heap must decrement the end BEFORE popping: the repaired range is one shorter and the result sits at the new end",
+    "adjust_heap's push_heap stops at the ORIGINAL hole index, not at the root; using 0 reordered equal logits in make_heap"
+  ],
+  "residual": {
+    "shipping_path": "unchanged; the C++ sampler chain still decides in Apex",
+    "unsorted_top_p": "refused when top_k is 0; the profile always uses top_k 20",
+    "ported_not_replaced": true,
+    "cxx_lines_removed": 0,
+    "new_cxx_lines": 0
+  }
+}

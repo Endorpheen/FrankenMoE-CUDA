@@ -1,0 +1,383 @@
+// Sampler chain in Goose: MT19937, the canonical double draw and the
+// top-k / top-p / min-p / temperature / distribution sequence, ported from
+// src/llama-sampler.cpp.
+//
+// The chain this profile uses is
+//   penalties (no-op) -> dry (off) -> top_n_sigma (off) -> top_k 20 ->
+//   typical_p (off) -> top_p 0.95 -> min_p 0 -> xtc (off) -> temp 1 -> dist
+// so the arithmetic that decides the token is: a partial sort of the logits,
+// a softmax, a cumulative cut, a division by the temperature, and one draw.
+//
+// Exactness details that are not cosmetic:
+//   - top_k uses std::partial_sort through libstdc++'s heap_select/sort_heap
+//     with `logit > logit` as the comparator. The heap layout decides which
+//     equal-logit candidates survive, so the heap operations below are the
+//     canonical push_heap/adjust_heap/pop_heap sequence, not any sort;
+//   - softmax and the cumulative sums are float probabilities accumulated into
+//     a double, exactly like the native code;
+//   - the draw is std::generate_canonical<double,53> over MT19937, which is two
+//     32-bit draws combined as (r1 + r2 * 2^32) / 2^64;
+//   - size == 1 still consumes one draw, because the native code keeps the RNG
+//     aligned with backend sampling.
+//
+// expf/logf come from libm: they are primitives, not decisions, and the native
+// code calls the same functions.
+//
+// MT19937 state: 625 i64 words, state[0..623] are the generator words and
+// state[624] is the position (624 = a twist is due).
+
+extern "expf" fn c_expf(x: f32) -> f32;
+extern "logf" fn c_logf(x: f32) -> f32;
+
+const MT_N: i64 = 624;
+const MT_M: i64 = 397;
+const MT_MATRIX_A: i64 = 0x9908B0DF;
+const MT_UPPER: i64 = 0x80000000;
+const MT_LOWER: i64 = 0x7FFFFFFF;
+const M32: i64 = 0xFFFFFFFF;
+
+export fn sm_mt_seed(state: i64[:], seed: i64) -> i64 {
+    if state.len < 625 {
+        return -1;
+    }
+    state[0] = seed & M32;
+    var i: i64 = 1;
+    while i < MT_N {
+        let prev: i64 = state[i - 1];
+        state[i] = (1812433253 * (prev ^ (prev >> 30)) + i) & M32;
+        i = i + 1;
+    }
+    state[624] = MT_N;
+    return 0;
+}
+
+fn mt_twist(state: i64[:]) {
+    var i: i64 = 0;
+    while i < MT_N {
+        let x: i64 = (state[i] & MT_UPPER) | (state[(i + 1) % MT_N] & MT_LOWER);
+        var xa: i64 = x >> 1;
+        if (x & 1) != 0 {
+            xa = xa ^ MT_MATRIX_A;
+        }
+        state[i] = state[(i + MT_M) % MT_N] ^ xa;
+        i = i + 1;
+    }
+    state[624] = 0;
+}
+
+export fn sm_mt_next(state: i64[:]) -> i64 {
+    if state.len < 625 {
+        return 0;
+    }
+    if state[624] >= MT_N {
+        mt_twist(state);
+    }
+    var y: i64 = state[state[624]];
+    state[624] = state[624] + 1;
+    y = y ^ (y >> 11);
+    y = y ^ ((y << 7) & 0x9D2C5680);
+    y = y ^ ((y << 15) & 0xEFC60000);
+    y = y ^ (y >> 18);
+    return y & M32;
+}
+
+// std::generate_canonical<double, 53> for a 32-bit generator.
+fn mt_canonical(state: i64[:]) -> f64 {
+    let r1: f64 = sm_mt_next(state) as f64;
+    let r2: f64 = sm_mt_next(state) as f64;
+    return (r1 + r2 * 4294967296.0) / 18446744073709551616.0;
+}
+
+fn less_at(lv: f32[:], a: i64, b: i64) -> bool {
+    return lv[a] > lv[b];
+}
+
+fn swap_at(lv: f32[:], id: i64[:], a: i64, b: i64) {
+    let t: f32 = lv[a];
+    lv[a] = lv[b];
+    lv[b] = t;
+    let u: i64 = id[a];
+    id[a] = id[b];
+    id[b] = u;
+}
+
+// __push_heap(first, hole, top, value)
+fn push_heap(lv: f32[:], id: i64[:], first: i64, hole_in: i64, top: i64, v_l: f32, v_id: i64) -> i64 {
+    var hole: i64 = hole_in;
+    var parent: i64 = (hole - 1) / 2;
+    while hole > top && lv[first + parent] > v_l {
+        lv[first + hole] = lv[first + parent];
+        id[first + hole] = id[first + parent];
+        hole = parent;
+        parent = (hole - 1) / 2;
+    }
+    lv[first + hole] = v_l;
+    id[first + hole] = v_id;
+    return hole;
+}
+
+// __adjust_heap(first, hole, len, value)
+fn adjust_heap(lv: f32[:], id: i64[:], first: i64, hole_in: i64, len: i64, v_l: f32, v_id: i64) {
+    var hole: i64 = hole_in;
+    var second: i64 = hole;
+    while second < (len - 1) / 2 {
+        second = 2 * (second + 1);
+        if lv[first + second] > lv[first + second - 1] {
+            second = second - 1;
+        }
+        lv[first + hole] = lv[first + second];
+        id[first + hole] = id[first + second];
+        hole = second;
+    }
+    if (len & 1) == 0 && second == (len - 2) / 2 {
+        second = 2 * (second + 1);
+        lv[first + hole] = lv[first + second - 1];
+        id[first + hole] = id[first + second - 1];
+        hole = second - 1;
+    }
+    // __push_heap stops at the ORIGINAL hole, not at the root: make_heap calls
+    // adjust_heap with a non-root hole, and using 0 there reorders ties.
+    push_heap(lv, id, first, hole, hole_in, v_l, v_id);
+}
+
+fn make_heap(lv: f32[:], id: i64[:], first: i64, len: i64) {
+    if len < 2 {
+        return;
+    }
+    var parent: i64 = (len - 2) / 2;
+    while true {
+        let v_l: f32 = lv[first + parent];
+        let v_id: i64 = id[first + parent];
+        adjust_heap(lv, id, first, parent, len, v_l, v_id);
+        if parent == 0 {
+            return;
+        }
+        parent = parent - 1;
+    }
+}
+
+// __pop_heap(first, last, result): moves *first into *result and repairs the heap
+fn pop_heap_to(lv: f32[:], id: i64[:], first: i64, last: i64, result: i64) {
+    let v_l: f32 = lv[result];
+    let v_id: i64 = id[result];
+    lv[result] = lv[first];
+    id[result] = id[first];
+    adjust_heap(lv, id, first, 0, last - first, v_l, v_id);
+}
+
+// std::__sort_heap decrements the end BEFORE popping, so the repaired range is
+// [first, last) with last already one shorter and the result at that position.
+fn sort_heap(lv: f32[:], id: i64[:], first: i64, len: i64) {
+    var last: i64 = len;
+    while last > 1 {
+        last = last - 1;
+        pop_heap_to(lv, id, first, last, last);
+    }
+}
+
+// std::partial_sort(first, first+npartial, first+n, comp)
+export fn sm_partial_sort(lv: f32[:], id: i64[:], n: i64, npartial: i64) -> i64 {
+    if n <= 0 || npartial <= 0 || npartial > n || lv.len < n || id.len < n {
+        return -1;
+    }
+    make_heap(lv, id, 0, npartial);
+    var i: i64 = npartial;
+    while i < n {
+        if lv[i] > lv[0] {
+            pop_heap_to(lv, id, 0, npartial, i);
+        }
+        i = i + 1;
+    }
+    sort_heap(lv, id, 0, npartial);
+    return npartial;
+}
+
+// Greedy: the first position with a strictly larger logit wins.
+export fn sm_greedy(lv: f32[:], n: i64) -> i64 {
+    if n <= 0 || lv.len < n {
+        return -1;
+    }
+    var sel: i64 = 0;
+    var i: i64 = 1;
+    while i < n {
+        if lv[i] > lv[sel] {
+            sel = i;
+        }
+        i = i + 1;
+    }
+    return sel;
+}
+
+fn softmax_in_place(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f64 {
+    var max_l: f32 = lv[0];
+    if sorted == 0 {
+        var i: i64 = 1;
+        while i < n {
+            if lv[i] > max_l {
+                max_l = lv[i];
+            }
+            i = i + 1;
+        }
+    }
+    var cum: f32 = 0.0;
+    var i: i64 = 0;
+    while i < n {
+        let e: f32 = c_expf(lv[i] - max_l);
+        p[i] = e;
+        cum = cum + e;
+        i = i + 1;
+    }
+    i = 0;
+    while i < n {
+        p[i] = p[i] / cum;
+        i = i + 1;
+    }
+    return cum as f64;
+}
+
+// Full chain on a candidate array that starts as the whole vocabulary.
+// ip: 0 top_k, 1 min_keep, 2 use_dist (0 = greedy after the temperature).
+// fp: 0 top_p, 1 min_p, 2 temp.
+// out: 0 selected position, 1 token id, 2 surviving candidate count.
+export fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
+                    ip: const i64[:], fp: const f32[:], state: i64[:], out: i64[:]) -> i64 {
+    if ip.len < 3 || fp.len < 3 || out.len < 3 || lv.len < n_in || id.len < n_in || p.len < n_in || n_in <= 0 {
+        return -1;
+    }
+    let k: i64 = ip[0];
+    let min_keep: i64 = ip[1];
+    let use_dist: i64 = ip[2];
+    let top_p: f32 = fp[0];
+    let min_p: f32 = fp[1];
+    let temp: f32 = fp[2];
+
+    var n: i64 = n_in;
+    var i: i64 = 0;
+    while i < n {
+        id[i] = i;
+        i = i + 1;
+    }
+
+    // top_k
+    var sorted: i64 = 0;
+    if k > 0 {
+        let kk: i64 = if k < n { k } else { n };
+        if sm_partial_sort(lv, id, n, kk) < 0 {
+            return -1;
+        }
+        n = kk;
+        sorted = 1;
+    }
+
+    // top_p: the native code sorts when it is not already sorted, which only
+    // happens when top_k is disabled. This port requires the sorted path.
+    if top_p < 1.0 {
+        if sorted == 0 {
+            return -2;
+        }
+        softmax_in_place(lv, p, n, 1);
+        var cum: f32 = 0.0;
+        var last: i64 = n;
+        i = 0;
+        while i < n {
+            cum = cum + p[i];
+            if cum >= top_p && i + 1 >= min_keep {
+                last = i + 1;
+                break;
+            }
+            i = i + 1;
+        }
+        n = last;
+    }
+
+    // min_p
+    if min_p > 0.0 {
+        if sorted == 0 {
+            return -3;
+        }
+        let min_logit: f32 = lv[0] + c_logf(min_p);
+        var stop: i64 = 1;
+        i = 1;
+        while i < n {
+            if lv[i] < min_logit && i >= min_keep {
+                break;
+            }
+            stop = i + 1;
+            i = i + 1;
+        }
+        n = stop;
+    }
+
+    // temperature
+    if temp <= 0.0 {
+        let sel: i64 = sm_greedy(lv, n);
+        out[0] = sel;
+        out[1] = id[sel];
+        out[2] = n;
+        return 0;
+    }
+    i = 0;
+    while i < n {
+        lv[i] = lv[i] / temp;
+        i = i + 1;
+    }
+
+    // dist
+    if n == 1 {
+        let ignored: f64 = mt_canonical(state);
+        p[0] = 1.0;
+        out[0] = 0;
+        out[1] = id[0];
+        out[2] = n;
+        return 0;
+    }
+    if use_dist == 0 {
+        let sel: i64 = sm_greedy(lv, n);
+        out[0] = sel;
+        out[1] = id[sel];
+        out[2] = n;
+        return 0;
+    }
+    var max_l: f32 = lv[0];
+    if sorted == 0 {
+        i = 1;
+        while i < n {
+            if lv[i] > max_l {
+                max_l = lv[i];
+            }
+            i = i + 1;
+        }
+    }
+    var sum_cum: f64 = 0.0;
+    i = 0;
+    while i < n {
+        let e: f32 = c_expf(lv[i] - max_l);
+        p[i] = e;
+        sum_cum = sum_cum + (e as f64);
+        i = i + 1;
+    }
+    let rnd: f64 = mt_canonical(state);
+    let tgt: f64 = sum_cum * rnd;
+    var run: f64 = 0.0;
+    var sel: i64 = 0;
+    var found: bool = false;
+    i = 0;
+    while i < n {
+        if !found {
+            run = run + (p[i] as f64);
+            if run >= tgt {
+                sel = i;
+                found = true;
+            }
+        }
+        p[i] = (p[i] as f64 / sum_cum) as f32;
+        i = i + 1;
+    }
+    if !found {
+        sel = n - 1;
+    }
+    out[0] = sel;
+    out[1] = id[sel];
+    out[2] = n;
+    return 0;
+}
