@@ -79,3 +79,19 @@ Caveats, stated rather than hidden:
   best-of;
 - Maxwell is limited to the 4096-token window (dense path), Apex has no such
   limit in this run.
+
+### Warm medians (warmup excluded)
+
+| axis | Maxwell Q4_0 | Apex Q4_K_M | Maxwell vs Apex |
+|---|---:|---:|---:|
+| prefill tok/s | 1895.80 | 1348.55 | +40.6% |
+| decode tok/s | 65.92 | 46.11 | +43.0% |
+| RSS MiB | 20310.1 | 18770.7 | +8.2% |
+| VRAM total MiB | 11134 | 10503 | +6.0% |
+
+Ranges: Maxwell prefill 1887-1907, decode 65.6-66.1; Apex prefill 1305-1350,
+decode 46.0-46.9. Warmup passes (excluded): Maxwell 1524.65/58.29,
+Apex 838.81/38.83.
+
+The trade is explicit: Maxwell is faster on both compute axes here and uses
+more RAM/VRAM; Apex keeps the much larger context (262144 vs 4096 verified).
