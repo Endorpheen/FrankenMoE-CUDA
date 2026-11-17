@@ -144,6 +144,20 @@ those bridges with the complete EXP920 modules (`pt_*`/`bt_*`) and delete the C+
 bodies once the gates pass - the order rule 27 prescribes. No new adapter is
 needed for that, because the bridge surface already exists.
 
+### Where the bridges actually live
+
+The bridge implementations are in `integration/m1/host/goose_host.c` (for example
+`fg202t_st_i64` at line 294, with the comment "EXP683: goose-tokenizer.goose binds
+its i64 store to fg202t_*"). The vendored `vendor/flint/src` does not reference
+`fg202t`/`fg213p` at all, and neither do `patches/` or `work/`, so the *call
+sites* inside the shipped binary come from the staged build tree produced by
+`tools/stage-m1-tree.sh`, not from the sources in this checkout.
+
+That matters for the replacement: before touching anything, the staged tree has
+to be inspected to see where the C++ calls the bridge, because that is the seam
+the complete EXP920 modules will occupy and the code that has to leave afterwards.
+Blaming or editing the vendored copy would be editing the wrong file.
+
 ### Next step
 
 EXP924 stops here, blocked on the compiler capability, with the blocker stated
