@@ -192,7 +192,7 @@ CFG = {
 }
 
 
-def build_tensors(rng, vocab=256):
+def build_tensors(rng, vocab=256, n_layer=2, dense=(0,)):
     E, hc, C = CFG["num_experts"], CFG["num_residual_streams"], CFG["hidden_size"]
     mix = (2 + hc)*hc
     t = []
@@ -202,7 +202,7 @@ def build_tensors(rng, vocab=256):
     t.append(("model.hc_head.hc_head_fn", (rng.standard_normal((hc, hc*C))*0.02).astype(np.float32)))
     t.append(("model.hc_head.hc_head_base", np.zeros(hc, dtype=np.float32)))
     t.append(("model.hc_head.hc_head_scale", np.ones(1, dtype=np.float32)))
-    for i in range(2):
+    for i in range(n_layer):
         p = f"model.layers.{i}"
         t += [
             (f"{p}.self_attn.q_proj.weight", (rng.standard_normal((C, C))*0.02).astype(np.float32)),
@@ -223,7 +223,7 @@ def build_tensors(rng, vocab=256):
                 (f"{p}.{tag}.alpha_post", np.array([0.01], dtype=np.float32)),
                 (f"{p}.{tag}.alpha_res", np.array([0.02], dtype=np.float32)),
             ]
-        if i == 0:
+        if i in dense:
             t += [
                 (f"{p}.block_sparse_moe.w1.weight", (rng.standard_normal((128, C))*0.02).astype(np.float32)),
                 (f"{p}.block_sparse_moe.w3.weight", (rng.standard_normal((128, C))*0.02).astype(np.float32)),
