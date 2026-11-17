@@ -386,6 +386,28 @@ either layout. That does not yet prove the values differ - a serialisation may
 re-pack cells - but combined with the earlier exact-byte search it means the
 state blob cannot be used as the comparison artefact.
 
+### The quantitative clue: native's quantisation barely perturbs anything
+
+Reading the measured numbers as perturbation sizes on the same model and prompt:
+
+| what changed | logits max |d| |
+| --- | ---: |
+| exact V vs Goose's Q4_0 V (my round trip) | 0.8240 |
+| native F32-KV vs native Q4_0-KV (its round trip) | 0.1462 |
+| exact V vs native F32-KV (residual difference) | 0.0746 |
+| exact V vs native Q4_0-KV | 1.3507 |
+
+Native's own Q4_0 cache perturbs its logits about **5.6x less** than my Q4_0 store
+perturbs mine, even though both use the same quantiser on the same values. That
+is what "the two tables disagree" looks like when the cache types are not
+actually the same in effect: native's V reaches attention at a precision closer
+to F16/F32 than to Q4_0, while mine is genuinely Q4_0.
+
+This explains the earlier anomaly (Goose looked *closer* to native's F32 run than
+to its Q4_0 run) and it is the first hypothesis that fits every measurement: the
+Goose cache is quantised as declared, and native's is not, in the way the
+attention reads it.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -410,9 +432,9 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. stop using the serialized state as the artefact and read native's attention
-   output directly: with `attn_output.weight` zeroed the branch contributes
-   nothing and the hidden state equals the residual, which both sides already
-   reproduce exactly; then zero `attn_v` but keep `attn_output`, so the branch
-   emits the gate-only term, and compare the two measurements to separate what
-   the branch adds from what V contributes.
+7. check what precision native actually feeds to attention when `type_v` is
+   Q4_0: read `llama-kv-cache`/`build_attn` for a dequantise-to-F16 step before
+   `ggml_flash_attn_ext` (the fork casts only *F32* V to F16 explicitly), and
+   confirm by building a model whose V weights make coarse quantisation obvious:
+   if native's result tracks the exact V within F16 error, its attention never
+   sees Q4_0 V.
