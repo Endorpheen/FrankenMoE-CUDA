@@ -21,6 +21,7 @@ int main(int argc, char ** argv) {
     const int max_tokens = argc > 3 ? std::atoi(argv[3]) : 8;
     const std::string mode = argc > 4 ? argv[4] : "greedy";
     const bool dump_state = mode == "state";
+    const bool dump_emb = mode == "emb";
     const bool dump_logits = mode == "logits" || mode == "logits-f32kv" || mode == "logits-nofa";
     const bool f32_kv = mode == "logits-f32kv";
     const bool no_fa = mode == "logits-nofa";
@@ -44,6 +45,7 @@ int main(int argc, char ** argv) {
     cp.n_threads = 8;
     cp.n_threads_batch = 16;
     cp.offload_kqv = false;
+    if (dump_emb) cp.embeddings = true;
     // the accepted profile: Q4_0 KV and flash attention, so the comparison is
     // against the same arithmetic the Goose fixture runs
     cp.type_k = f32_kv ? GGML_TYPE_F32 : GGML_TYPE_Q4_0;
@@ -90,6 +92,19 @@ int main(int argc, char ** argv) {
     if (decode(prompt.data(), n_prompt) != 0) {
         std::fprintf(stderr, "native decode failed\n");
         return 1;
+    }
+
+    if (dump_emb) {
+        if (argc <= 5) { std::fprintf(stderr, "emb mode needs an output path\n"); return 2; }
+        const float * e = llama_get_embeddings_ith(ctx, -1);
+        if (!e) { std::fprintf(stderr, "no embeddings\n"); return 1; }
+        const int32_t ne = llama_model_n_embd(model);
+        FILE * f = std::fopen(argv[5], "wb");
+        if (!f || std::fwrite(e, sizeof(float), (size_t) ne, f) != (size_t) ne) { std::fprintf(stderr, "emb write failed\n"); return 1; }
+        std::fclose(f);
+        std::printf("EMB_DIM %d EMB_DUMP %s\n", ne, argv[5]);
+        llama_free(ctx); llama_model_free(model); llama_backend_free();
+        return 0;
     }
 
     if (dump_state) {

@@ -427,6 +427,10 @@ int main(int argc, char ** argv) {
         auto * vt = ggml_new_tensor_1d(c, GGML_TYPE_F32, hd * hk);
         ggml_get_type_traits(GGML_TYPE_Q4_0)->to_float((const uint8_t *) store->data, (float *) vt->data, hd * hk);
         // GQA: query head h uses KV head h/(n_head/n_head_kv); n_head/n_head_kv = 8 here
+        if (argc > 9 && std::string(argv[9]) == "f16v") {
+            // emulate a kernel that dequantises V through F16
+            vt = ggml_cast(c, ggml_cast(c, vt, GGML_TYPE_F16), GGML_TYPE_F32);
+        }
         auto * v3 = ggml_reshape_4d(c, vt, hd, 1, hk, 1);
         auto * vr = ggml_repeat_4d(c, v3, hd, nh / hk, hk, 1);
         auto * v2 = ggml_cont_2d(c, vr, hd * nh, 1);
@@ -460,6 +464,14 @@ int main(int argc, char ** argv) {
         require(f && std::fread(nat.data(), sizeof(float), (size_t) V, f) == (size_t) V, "native logits read");
         std::fclose(f);
         auto vs_native = diff(nat.data());
+        if (argc > 8) {
+            FILE * e = std::fopen(argv[8], "wb");
+            require(e != nullptr, "emb file");
+            const int64_t ne = ggml_nelements(fin);
+            require(std::fwrite(fin->data, sizeof(float), (size_t) ne, e) == (size_t) ne, "emb write");
+            std::fclose(e);
+            std::printf("MCHECK_EMB_DIM %lld MCHECK_EMB %s\n", (long long) ne, argv[8]);
+        }
         std::printf("MCHECK layer=%d manual_vs_goose max=%.9g bad=%lld manual_vs_native max=%.9g bad=%lld\n",
                     L, vs_goose.first, (long long) vs_goose.second, vs_native.first, (long long) vs_native.second);
         return 0;

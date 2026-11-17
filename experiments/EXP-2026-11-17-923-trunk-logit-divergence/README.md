@@ -312,6 +312,21 @@ two differ by construction:
   construction reproduces;
 - its attention may dequantise V through F16 rather than F32.
 
+### The difference is in the branch, not the head
+
+Comparing the post-`output_norm` hidden state (`llama_get_embeddings_ith`, 2048
+values) between the hand-built branch and native:
+
+    mean |d| 0.2211   max |d| 0.9208   bitwise 0 of 2048
+
+So the disagreement is already present before the LM head, i.e. in the
+attention/residual branch itself, and the head is exonerated.
+
+The first attempt to explain it as native dequantising V through F16 (a variant
+that casts the dequantised V to F16 and back before the gate multiply) produced
+no output in this session and is left recorded as not yet measured rather than
+guessed.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -336,6 +351,8 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. then check the three candidates above against llama.cpp's own values: the
-   cell llama.cpp attends to, the gate half/order, and whether its V is
-   dequantised through F16.
+7. finish the F16-V variant (it produced no output; likely the empty output-path
+   argument aborted the run) and, if that does not explain it, compare the
+   *attention output alone*: native's `llama_get_embeddings_ith` for a model
+   whose `attn_output` weight is zeroed isolates the residual from the attention,
+   so the two can be separated without reading llama.cpp's internals.
