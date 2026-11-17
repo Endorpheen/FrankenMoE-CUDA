@@ -128,7 +128,8 @@ struct Trunk {
     explicit Trunk(Mapping & mapping) : model(mapping) {
         auto * m = model.metadata;
         layer_count = integer(m, "qwen35moe.block_count") - integer(m, "qwen35moe.nextn_predict_layers");
-        require(layer_count == 40, "actual trunk layer count");
+        // Diagnostic models (EXP923) carry fewer blocks; the Apex file has 40.
+        require(layer_count >= 1 && layer_count <= 41, "trunk layer count");
         hidden = integer(m, "qwen35moe.embedding_length");
         vocab = gguf_find_key(m, "qwen35moe.vocab_size") >= 0 ? integer(m, "qwen35moe.vocab_size") : 248320;
         const auto h = integer(m, "qwen35moe.ssm.state_size");
@@ -153,7 +154,7 @@ struct Trunk {
         require(key >= 0 && gguf_get_arr_n(m, key) == 4, "rope sections");
         std::memcpy(sections, gguf_get_arr_data(m, key), sizeof sections);
         key = gguf_find_key(m, "qwen35moe.attention.recurrent_layers");
-        require(key >= 0 && gguf_get_arr_type(m, key) == GGUF_TYPE_BOOL && gguf_get_arr_n(m, key) >= 40, "layer flags");
+        require(key >= 0 && gguf_get_arr_type(m, key) == GGUF_TYPE_BOOL && gguf_get_arr_n(m, key) >= layer_count, "layer flags");
         auto * flags = (const uint8_t *) gguf_get_arr_data(m, key);
         records.resize(layer_count * 32);
         branch.resize(layer_count);
@@ -197,8 +198,11 @@ struct Trunk {
         head = tied ? emb : model.weight("output.weight");
         norm = model.weight("output_norm.weight");
         require(q35_kv_init(capacity, 32, {state, 6}) == 0, "model-step init");
-        std::printf("MODEL layers=%lld GDN=30 attention=10 zero_copy_bindings=%d persistent_bytes=%zu\n",
-                    (long long) layer_count, model.bindings, ggml_used_mem(owner));
+        int64_t n_recr = 0;
+        for (int i = 0; i < layer_count; ++i) n_recr += records[32 * i] ? 1 : 0;
+        std::printf("MODEL layers=%lld GDN=%lld attention=%lld zero_copy_bindings=%d persistent_bytes=%zu\n",
+                    (long long) layer_count, (long long) n_recr, (long long) (layer_count - n_recr),
+                    model.bindings, ggml_used_mem(owner));
     }
     ~Trunk() { ggml_free(owner); }
 

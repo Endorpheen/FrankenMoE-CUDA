@@ -119,9 +119,42 @@ Still open, and not separable by reading:
 - CPU-backend fused variants llama.cpp may select at graph build time
   (e.g. rms_norm fused with the weight multiply) whose accumulation differs.
 
+### Measured: the divergence is in the attention branch
+
+A one/two-block GGUF was generated from the real weights (metadata copied, only
+the chosen blocks' tensors kept, block indices renumbered; `tests/make_layer_gguf.py`).
+A single-block model cannot be loaded by llama.cpp (its hybrid memory asserts
+when there is no attention cache), so the diagnostic models keep one recurrent
+and one full-attention block.
+
+| model | mean abs diff | max abs diff | bitwise equal |
+| --- | ---: | ---: | ---: |
+| 2 blocks (GDN 0 + attention 3), real weights | 0.1649 | 1.0876 | 0 / 248320 |
+| same, GDN block zeroed | 0.2921 (argmax differs) | - | 0 / 248320 |
+| same, attention branch of block 1 zeroed (norms, MoE, residuals, head remain) | **0.0** | **0.0** | **248320 / 248320** |
+
+The third row is the result: with the attention branch's own weights zeroed, the
+two implementations agree bit for bit over the whole vocabulary. The MoE block,
+both RMS norms, the residual chain, the final norm and the LM head are therefore
+already exact, and the divergence lives entirely in the attention branch.
+
+The prompt is a single token ("Hi"), so attention reduces to `wv` -> gated by
+`sigmoid(qgate)` -> `wo` with softmax over one position; the difference appears
+already there, which points at the V projection's write/read through the Q4_0
+cache, the q-gate split, or the output projection - not at KV growth with
+context.
+
 ### Next step
 
-Build a one-layer GGUF from the real weights (`block_count = 1`, layer-0
-tensors, embedding, output norm and head) so both implementations can be
-compared at the layer boundary on real data, without touching the accepted
-modules and without guessing which of the open items matters.
+Continue inside the attention branch, using the same ablation method:
+
+1. zero the MoE tensors of the attention block (keep its attention) - if the
+   difference stays, the attention branch alone carries it;
+2. zero only `attn_v` - the attention output becomes zero if the difference
+   disappears, the V path is the cause;
+3. zero only the q-gate half's consumer (`attn_output`) - separates the gate
+   split from the projections;
+4. compare llama.cpp with flash attention disabled against the Goose graph that
+   uses `flash_attn_ext`, to separate the attention kernel from the projection
+   arithmetic (the first attempt at this aborted in the native decode and is
+   being re-run with the crash recorded).
