@@ -32,21 +32,27 @@ for p in 18871 18872 18873 18874; do
 done
 [ "$PORT" != 0 ] || { echo "no free port"; exit 1; }
 
-LD_LIBRARY_PATH="$SUP" "$OUT/server" "$MODEL" "$PORT" 3 > "$OUT/server.log" 2>&1 &
+LD_LIBRARY_PATH="$SUP" "$OUT/server" "$MODEL" "$PORT" 5 > "$OUT/server.log" 2>&1 &
 SRV=$!
 for _ in $(seq 1 120); do grep -q 'SERVER listening' "$OUT/server.log" 2>/dev/null && break; sleep 1; done
 
 A=$(curl -s --max-time 30 -X POST --data-binary 'The capital of France is' "http://127.0.0.1:$PORT/tokenize")
 B=$(curl -s --max-time 30 -X POST --data-binary 'Hello, world!' "http://127.0.0.1:$PORT/tokenize")
 H=$(curl -s --max-time 30 "http://127.0.0.1:$PORT/health")
+D1=$(curl -s --max-time 30 -X POST --data-binary '{"ids":[760,6511,314,9338,369]}' "http://127.0.0.1:$PORT/detokenize")
+D2=$(curl -s --max-time 30 -X POST --data-binary '{"ids":[9419,11,1814,0]}' "http://127.0.0.1:$PORT/detokenize")
 kill $SRV 2>/dev/null || true
 wait $SRV 2>/dev/null || true
 
 echo "A: $A"
 echo "B: $B"
 echo "H: $H"
+echo "D1: $D1"
+echo "D2: $D2"
 fail=0
 echo "$A" | grep -q '\[760,6511,314,9338,369\]' || fail=1
 echo "$B" | grep -q '\[9419,11,1814,0\]'            || fail=1
 echo "$H" | grep -q '"route":1'                     || fail=1
+echo "$D1" | grep -q '"text":"The capital of France is"' || fail=1
+echo "$D2" | grep -q '"text":"Hello, world!"'            || fail=1
 [ "$fail" = 0 ] && echo "HTTP_TOKENIZE OK" || { echo "HTTP_TOKENIZE FAIL"; tail -5 "$OUT/server.log"; exit 1; }

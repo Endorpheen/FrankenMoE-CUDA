@@ -123,3 +123,16 @@ Gate: `bash tests/http-tokenize.sh [outdir]` prints `HTTP_TOKENIZE OK`.
   every key length;
 - `gr_parse` succeeding says nothing about lookups working: the first run printed
   `parse ok keys=52` and then failed at the first key lookup.
+
+## Round trip over HTTP
+
+`POST /detokenize` takes `{"ids":[...]}` and returns the text the Goose piece
+path produces:
+
+    POST /tokenize    "The capital of France is" -> {"ids":[760,6511,314,9338,369],"count":5}
+    POST /detokenize  {"ids":[760,6511,314,9338,369]} -> {"text":"The capital of France is","count":24}
+    POST /tokenize    "Hello, world!" -> {"ids":[9419,11,1814,0],"count":4}
+    POST /detokenize  {"ids":[9419,11,1814,0]} -> {"text":"Hello, world!","count":13}
+
+Text -> ids -> text is therefore answered end to end inside one Goose unit, over
+TCP, with no libllama and no GPU. The gate checks all four calls.

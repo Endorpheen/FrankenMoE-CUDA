@@ -36,6 +36,7 @@ static int64_t    g_blob_len = 0;
 static int64_t *  g_tok_off = NULL, * g_tok_len = NULL, * g_tok_slots = NULL;
 static int64_t *  g_mrg_off = NULL, * g_mrg_len = NULL, * g_mrg_slots = NULL;
 static int64_t *  g_order = NULL;
+static int64_t *  g_attr = NULL;
 static int64_t    g_n_tok = 0, g_n_special = 0, g_n_tok_slots = 0, g_n_mrg_slots = 0;
 
 // Scratch buffers for one tokenize call, sized for the request text.
@@ -134,6 +135,7 @@ static int load_vocabulary(const char * path) {
         printf("LOAD step=bt_build failed\n");
         return -1;
     }
+    g_attr = attr;
     g_order = calloc((size_t) g_n_tok, sizeof(int64_t));
     g_n_special = bt_special_order((sl_u8){ g_blob, g_blob_len }, (sl_i64){ g_tok_off, g_n_tok },
                                    (sl_i64){ g_tok_len, g_n_tok }, (sl_i64){ attr, g_n_tok },
@@ -163,6 +165,38 @@ static int64_t tokenize(const unsigned char * text, int64_t len, int64_t * ids) 
                        (sl_u8){ g_enc, 8 * (MAX_REQ + 1) },
                        (sl_i64){ g_sym, 24 * (MAX_REQ + 1) }, (sl_i64){ g_heap, 15 * (MAX_REQ + 1) + 40 },
                        (sl_i64){ g_hc, 2 }, (sl_i64){ g_info, 8 });
+}
+
+// ids -> text through the Goose piece path.
+static int64_t detokenize(const int64_t * ids, int64_t n, unsigned char * out, int64_t cap) {
+    int64_t at = 0;
+    for (int64_t i = 0; i < n; ++i) {
+        if (ids[i] < 0 || ids[i] >= g_n_tok || at >= cap) { return -1; }
+        const int64_t got = bt_token_to_piece((sl_u8){ g_blob, g_blob_len },
+                                             (sl_i64){ g_tok_off, g_n_tok }, (sl_i64){ g_tok_len, g_n_tok },
+                                             (sl_i64){ g_attr, g_n_tok }, ids[i],
+                                             (sl_u8){ out + at, cap - at }, 0, 0, 1, 0);
+        if (got < 0) { return -1; }
+        at += got;
+    }
+    return at;
+}
+
+// Parse a JSON array of integers out of the request body, stopping at ']'.
+static int64_t parse_id_array(const unsigned char * b, int64_t n, int64_t * ids, int64_t cap) {
+    int64_t i = 0, count = 0;
+    while (i < n && b[i] != '[') { i++; }
+    if (i >= n) { return -1; }
+    i++;
+    while (i < n && count < cap) {
+        while (i < n && (b[i] == ' ' || b[i] == ',' || b[i] == 10 || b[i] == 13)) { i++; }
+        if (i >= n || b[i] == ']') { break; }
+        if (b[i] < '0' || b[i] > '9') { return -1; }
+        int64_t v = 0;
+        while (i < n && b[i] >= '0' && b[i] <= '9') { v = v * 10 + (b[i] - '0'); i++; }
+        ids[count++] = v;
+    }
+    return count;
 }
 
 static int serve(int64_t conn) {
@@ -197,6 +231,28 @@ static int serve(int64_t conn) {
                 at += (int64_t) sprintf((char *) body + at, i ? ",%lld" : "%lld", (long long) ids[i]);
             }
             at += (int64_t) sprintf((char *) body + at, "],\"count\":%lld}", (long long) cnt);
+            blen = at;
+        }
+    } else if (plen == 11 && memcmp(path, "/detokenize", 11) == 0 && method == 2) {
+        static int64_t dids[MAX_IDS];
+        static unsigned char text[MAX_REQ];
+        const int64_t cnt = parse_id_array(req + info[0], n - info[0], dids, MAX_IDS);
+        const int64_t tlen = cnt < 0 ? -1 : detokenize(dids, cnt, text, sizeof(text));
+        if (tlen < 0) {
+            blen = (int64_t) sprintf((char *) body, "{\"error\":\"detokenize failed\"}");
+            status = 400;
+        } else {
+            int64_t at = (int64_t) sprintf((char *) body, "{\"text\":\"");
+            for (int64_t i = 0; i < tlen && at < (int64_t) sizeof(body) - 8; ++i) {
+                const unsigned char c = text[i];
+                if (c == '"' || c == '\\') { body[at++] = '\\'; body[at++] = c; }
+                else if (c == 10) { body[at++] = '\\'; body[at++] = 'n'; }
+                else if (c == 13) { body[at++] = '\\'; body[at++] = 'r'; }
+                else if (c == 9)  { body[at++] = '\\'; body[at++] = 't'; }
+                else if (c < 32)  { at += (int64_t) sprintf((char *) body + at, "\\u%04x", c); }
+                else { body[at++] = c; }
+            }
+            at += (int64_t) sprintf((char *) body + at, "\",\"count\":%lld}", (long long) tlen);
             blen = at;
         }
     } else if (route > 0) {
