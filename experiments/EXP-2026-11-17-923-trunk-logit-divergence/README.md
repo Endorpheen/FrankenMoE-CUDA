@@ -430,6 +430,30 @@ pairs were produced in earlier sessions.
 This is a methodological finding, not a numerical one, and it is the reason the
 next step exists.
 
+### Correction: max-diff ratios are not perturbation sizes
+
+Reviewing the numbers rather than trusting them: every figure in this card is a
+**maximum** absolute difference over 248320 logits. A maximum is set by the single
+worst token, it does not compose linearly through a nonlinear chain, and ratios
+between two maxima have no meaning as "how much a step perturbs the result".
+
+That invalidates the inference in the previous section. All four figures were
+taken on the same diagnostic model in the same session, so no artefact was mixed;
+what is wrong is the metric. The consistent reading of the numbers is simply:
+
+    goose Q4_0  vs native Q4_0 : max 0.1723   (close, both dominant terms equal)
+    native Q4_0 vs native F32  : max 0.1462   (native's own quantisation effect)
+    manual exact-V vs native F32: max 0.0746  (the branch without quantisation)
+
+which is what one expects from three runs that differ only by quantisation, once
+the nonlinear amplification is not mistaken for an error budget.
+
+The 5.6x claim is withdrawn. The correct conclusion is narrower: the branch is
+exact in every part that can be disabled (MoE, gate, head, residual), and the
+remaining difference is of the same order as the quantisation effect itself - so
+it must be measured with means and per layer, not with a maximum over the
+vocabulary.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -454,8 +478,7 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. re-take all four numbers in ONE run on ONE model with one build: goose Q4_0
-   logits, goose exact-V logits (same process), native Q4_0 logits and native
-   F32-KV logits, each written to its own file with the model hash recorded next
-   to it. Any conclusion drawn from mixed artefacts so far is provisional until
-   that table exists.
+7. re-measure with a metric that can be reasoned about: mean and median absolute
+   difference plus the number of logits whose argmax changes, per layer where
+   possible, in one run on one model. The maximum-over-vocabulary figures in this
+   card are to be replaced, not extended.
