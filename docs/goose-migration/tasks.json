@@ -5555,6 +5555,21 @@
       "remaining": [],
       "coverage_doc": "experiments/EXP-2026-11-17-916-edge0-first-inference/README.md",
       "qualification": "Five requested first-inference slices integrated with retained native qwen4exp/GGML. This is not standalone Goose or server/general-quality acceptance. EXP917-919 remain absent from Apex server."
+    },
+    "edge0_performance": {
+      "status": "IN_PROGRESS",
+      "slices_total": 3,
+      "slices_done": 1,
+      "remaining": [
+        "Profile the accepted cached Edge0 path",
+        "Optimise measured remaining bottlenecks toward 15-17 tok/s with exact 256-token parity and zero swap"
+      ],
+      "coverage_doc": "experiments/EXP-2026-11-17-920-edge0-bounded-cache/README.md",
+      "accepted_checkpoint": "EXP920 bounded RAM caches, 75/256 exact A-B-B-A gate",
+      "target_decode_tps": [
+        15,
+        17
+      ]
     }
   },
   "active_checkpoint": {
@@ -5657,6 +5672,21 @@
       "remaining": [],
       "coverage_doc": "experiments/EXP-2026-11-17-916-edge0-first-inference/README.md",
       "qualification": "Five requested first-inference slices integrated with retained native qwen4exp/GGML. This is not standalone Goose or server/general-quality acceptance. EXP917-919 remain absent from Apex server."
+    },
+    "edge0_performance": {
+      "status": "IN_PROGRESS",
+      "slices_total": 3,
+      "slices_done": 1,
+      "remaining": [
+        "Profile the accepted cached Edge0 path",
+        "Optimise measured remaining bottlenecks toward 15-17 tok/s with exact 256-token parity and zero swap"
+      ],
+      "coverage_doc": "experiments/EXP-2026-11-17-920-edge0-bounded-cache/README.md",
+      "accepted_checkpoint": "EXP920 bounded RAM caches, 75/256 exact A-B-B-A gate",
+      "target_decode_tps": [
+        15,
+        17
+      ]
     }
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."

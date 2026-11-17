@@ -10,6 +10,14 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <sys/resource.h>
+#include <dlfcn.h>
+#include "pack.h"
+static void log_io(const char * phase) {
+    std::ifstream in("/proc/self/io");std::string key;unsigned long long v;
+    std::fprintf(stderr,"EDGE0_IO phase=%s",phase);
+    while(in>>key>>v)std::fprintf(stderr," %s%llu",key.c_str(),v);
+    std::fprintf(stderr,"\n");
+}
 static double now() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 static void check(bool ok,const char * msg) { if(!ok) throw std::runtime_error(msg); }
 int main(int argc,char ** argv) {
@@ -32,11 +40,18 @@ int main(int argc,char ** argv) {
     check(n>0 && n+limit<=512,"prompt tokens do not fit context"); tokens.resize(n);
     auto * sampler=llama_sampler_init_greedy(); double t0=now(),first=0,decode_start=0; int generated=0,decode_steps=0; bool eos=false;
     std::fprintf(stderr,"EDGE0_BEGIN load_s=%.6f context_s=%.6f input_tokens=%d max_new=%d\n",loaded-load_start,t0-loaded,n,limit);
+    log_io("prefill-start");franken_edge0_profile_phase(1);
     for (int i=0;i<n;++i) {
         auto tok=tokens[i]; check(llama_decode(c,llama_batch_get_one(&tok,1))==0,"prefill failed");
         std::fprintf(stderr,"EDGE0_PREFILL token=%d/%d elapsed_s=%.3f\n",i+1,n,now()-t0);
     }
-    double prefill_end=now();
+    llama_synchronize(c); double prefill_end=now();
+    log_io("decode-start");franken_edge0_profile_phase(2);
+    const bool profile=std::getenv("FRANKEN_EDGE0_PROFILE")!=nullptr;
+    using profiler_fn=int(*)();
+    auto profiler_start=(profiler_fn)dlsym(RTLD_DEFAULT,"cudaProfilerStart");
+    auto profiler_stop=(profiler_fn)dlsym(RTLD_DEFAULT,"cudaProfilerStop");
+    if(profile && profiler_start) std::fprintf(stderr,"EDGE0_CUDA_PROFILE_START status=%d\n",profiler_start());
     for(int i=0;i<limit;++i) {
         auto tok=llama_sampler_sample(sampler,c,-1); llama_sampler_accept(sampler,tok);
         if(llama_vocab_is_eog(vocab,tok)) { eos=true; break; }
@@ -44,9 +59,17 @@ int main(int argc,char ** argv) {
         if(!generated) { first=now(); decode_start=first; }
         std::fwrite(buf,1,len,stdout); std::fflush(stdout); ++generated;
         std::fprintf(stderr,"EDGE0_TOKEN index=%d id=%d elapsed_s=%.3f\n",generated,tok,now()-t0);
-        if (i+1<limit) { check(llama_decode(c,llama_batch_get_one(&tok,1))==0,"decode failed"); ++decode_steps; }
+        if (i+1<limit) {
+            double step=now(); check(llama_decode(c,llama_batch_get_one(&tok,1))==0,"decode failed"); double enqueued=now();
+            llama_synchronize(c); double complete=now(); ++decode_steps;
+            if(profile && decode_steps==16 && profiler_stop) std::fprintf(stderr,"EDGE0_CUDA_PROFILE_STOP16 status=%d\n",profiler_stop());
+            if(profile) std::fprintf(stderr,"EDGE0_STEP index=%d decode_call_s=%.9f synchronize_s=%.9f total_s=%.9f\n",decode_steps,enqueued-step,complete-enqueued,complete-step);
+        }
     }
-    double end=now(); struct rusage u{}; getrusage(RUSAGE_SELF,&u);
+    double end=now();log_io("decode-end");
+    if(profile && decode_steps<16 && profiler_stop) std::fprintf(stderr,"EDGE0_CUDA_PROFILE_STOP status=%d\n",profiler_stop());
+    franken_edge0_profile_phase(3);
+    struct rusage u{}; getrusage(RUSAGE_SELF,&u);
     std::fprintf(stderr,"EDGE0_RESULT input_tokens=%d generated_tokens=%d load_s=%.6f prefill_s=%.6f prefill_tps=%.6f ttft_s=%.6f decode_s=%.6f decode_steps=%d decode_tps=%.6f eos=%d maxrss_KiB=%ld\n",n,generated,loaded-load_start,prefill_end-t0,n/(prefill_end-t0),first?first-t0:0,generated?end-decode_start:0,decode_steps,decode_steps>0?decode_steps/(end-decode_start):0,eos,u.ru_maxrss);
     llama_sampler_free(sampler); llama_free(c); llama_model_free(m); llama_backend_free(); return 0;
  } catch(const std::exception & e) { std::fprintf(stderr,"EDGE0_ERROR %s\n",e.what()); return 1; }

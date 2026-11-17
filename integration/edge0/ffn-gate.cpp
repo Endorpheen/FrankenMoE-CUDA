@@ -27,7 +27,7 @@ int main(int argc,char ** argv) { try {
  ggml_context * meta=nullptr;auto * info=gguf_init_from_file((path+"/model-skeleton.gguf").c_str(),{true,&meta});require(info,"GGUF metadata");
  int sf=open((path+"/model-skeleton.gguf").c_str(),O_RDONLY),ef=open((path+"/experts.bin").c_str(),O_RDONLY),df=open((path+"/latent_dense_q4.bin").c_str(),O_RDONLY);
  int lf=open((path+"/labels.bin").c_str(),O_RDONLY);int32_t labels[48*512];readat(lf,labels,sizeof(labels),0);close(lf);
- for(int layer:{0,47}) {
+ for(int layer:{0,0,47,0}) {
   auto * c=ggml_init({128*1024*1024,nullptr,false});require(c,"context");
   std::array<ggml_tensor *,5>w;std::array<ggml_backend_buffer_t,5> buffers;
   const char * suffix[]={"ffn_gate_inp.weight","ffn_gate_shexp.weight","ffn_up_shexp.weight","ffn_down_shexp.weight","ffn_gate_inp_shexp.weight"};
@@ -64,5 +64,5 @@ int main(int argc,char ** argv) { try {
   require(peak>0,"nonzero");std::printf("PASS full FFN layer=%d routed=10 shared=1 values=2560 max_abs_error=%.9g peak=%.9g\n",layer,max_error,peak);
   for(auto b:buffers)ggml_backend_buffer_free(b);ggml_free(c);
  }
- close(sf);close(ef);close(df);gguf_free(info);ggml_free(meta);std::puts("RESULT PASS: actual callback + Goose latent/top10/shared integration");return 0;
+ franken_edge0_profile_phase(3);close(sf);close(ef);close(df);gguf_free(info);ggml_free(meta);std::puts("RESULT PASS: actual callback + Goose latent/top10/shared integration");return 0;
  }catch(const std::exception&e){std::fprintf(stderr,"FAIL %s\n",e.what());return 1;}}

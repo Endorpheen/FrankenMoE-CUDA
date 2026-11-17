@@ -21,7 +21,7 @@ with log.open('x') as f:
   (o/'stage-inputs.json').write_text(json.dumps({str(p.relative_to(R)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [*(R/'integration/edge0').glob('*'),R/'vendor/flint/src/models/qwen4exp.cpp',R/'vendor/flint/src/models/models.h'] if p.is_file()},indent=2)+'\n')
  elif a.step=='goose':
   pin=json.loads((R/'runtime/compiler/current.json').read_text());g=Path(pin['compiler']);assert hashlib.sha256(g.read_bytes()).hexdigest()==pin['sha256']
-  modules=[R/'goose/cpu/goose-graph-builders.goose',R/'goose/cpu/goose-moe-router.goose']+[R/f'experiments/EXP-2026-11-17-{v}/source/runtime.goose' for v in ['909-edge0-layout','910-edge0-ple-fp8','911-edge0-ple-provider','915-edge0-latent-expert']]+[R/'integration/edge0/runtime.goose']
+  modules=[R/'goose/cpu/goose-graph-builders.goose',R/'goose/cpu/goose-moe-router.goose',R/'goose/model/expert-lru.goose']+[R/f'experiments/EXP-2026-11-17-{v}/source/runtime.goose' for v in ['909-edge0-layout','910-edge0-ple-fp8','911-edge0-ple-provider','915-edge0-latent-expert']]+[R/'integration/edge0/runtime.goose']
   (o/'generated').mkdir(exist_ok=True)
   run([sys.executable,R/'tools/compose-goose.py',o/'generated/runtime.goose',*modules]);run([g,'check',o/'generated/runtime.goose'])
   run([g,'--standalone','-o',o/'generated/runtime.c','--header',o/'generated/runtime.h',o/'generated/runtime.goose'])
