@@ -1,8 +1,77 @@
 #include "models.h"
+#include "llama-kv-cache-msa.h"
+#include <vector>
 
 // Maxwell hyperparameters kept out of llama_hparams so an existing object layout
 // (created by accepted objects) is never shifted.
 static struct { uint32_t block_size, support_blocks, prefix_window, remote_blocks; } MW_CFG;
+
+// Per-graph MSA state: position/cell maps and the block selection inputs. Same
+// role as minimax-m3's input class, with the Maxwell route bias applied on the
+// host side (prefix and local blocks are forced, remote blocks are ranked).
+class mw_input_msa : public llm_graph_input_i {
+public:
+    mw_input_msa(const llama_kv_cache_msa_context * mctx, int blk, int local, int prefix_blocks)
+        : mctx(mctx), blk(blk), local(local), prefix_blocks(prefix_blocks) {}
+
+    void set_input(const llama_ubatch * ubatch) override {
+        if (pos_slot_i) { mctx->set_input_pos_slot(pos_slot_i, ubatch); }
+        if (pos_slot_f) { mctx->set_input_pos_slot(pos_slot_f, ubatch); }
+        if (pos_mask)   { mctx->set_input_pos_mask(pos_mask, ubatch); }
+        if (cell_blk && ubatch->pos) {
+            mctx->set_input_cell_pos(cell_blk, ubatch, blk);
+        }
+        // Route bias, the same decision as the Goose mx_route_bias: prefix
+        // blocks up to the query and the local window are forced.
+        if (bias && ubatch->pos) {
+            const int64_t n_tok = ubatch->n_tokens;
+            const int64_t nb    = bias->ne[0];
+            std::vector<float> data((size_t) nb * n_tok, 0.0f);
+            for (int64_t i = 0; i < n_tok; ++i) {
+                const int64_t cur = ubatch->pos[i] / blk;
+                for (int64_t b = 0; b < prefix_blocks && b <= cur && b < nb; ++b) {
+                    data[(size_t) i * nb + b] = 1e30f;
+                }
+                for (int l = 0; l < local; ++l) {
+                    const int64_t b = cur - l;
+                    if (b >= prefix_blocks && b >= 0 && b < nb) {
+                        data[(size_t) i * nb + b] = 1e30f;
+                    }
+                }
+            }
+            ggml_backend_tensor_set(bias, data.data(), 0, data.size() * sizeof(float));
+        }
+    }
+
+    bool can_reuse(const llm_graph_params & params) override {
+        const auto * m2 = static_cast<const llama_kv_cache_msa_context *>(params.mctx);
+        mctx = m2;
+        const int64_t n_ps = GGML_PAD((int64_t) m2->get_n_pos(), blk);
+        const int64_t ns = params.cparams.kv_unified ? 1 : params.ubatch.n_seqs_unq;
+        const bool decode = params.ubatch.n_tokens == ns;
+        bool res = true;
+        res &= pos_mask->ne[0] == n_ps;
+        res &= pos_mask->ne[1] == params.ubatch.n_tokens;
+        res &= pos_slot_i->ne[0] == n_ps;
+        res &= pos_slot_i->ne[1] == ns;
+        res &= decode == (pos_slot_f != nullptr);
+        res &= decode == (cell_blk == nullptr);
+        if (pos_slot_f) { res &= pos_slot_f->ne[0] == n_ps && pos_slot_f->ne[1] == ns; }
+        if (cell_blk)   { res &= cell_blk->ne[0] == (int64_t) m2->get_base()->get_n_kv() && cell_blk->ne[1] == ns; }
+        return res;
+    }
+
+    ggml_tensor * pos_mask   = nullptr; // F32 [n_ps, n_tokens] 0/-inf visibility
+    ggml_tensor * pos_slot_i = nullptr; // I32 [n_ps, ns]       pos -> cell
+    ggml_tensor * pos_slot_f = nullptr; // F32 [n_ps, ns]       decode gather
+    ggml_tensor * cell_blk   = nullptr; // I32 [n_kv, ns]       cell -> position block
+    ggml_tensor * bias       = nullptr; // F32 [nblk, n_tokens] forced route blocks
+
+    const llama_kv_cache_msa_context * mctx;
+    int blk;
+    int local;
+    int prefix_blocks;
+};
 
 // Maxwell-V1-Flash (maxwell_moe).
 //
@@ -312,7 +381,7 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
     // silently different attention.
     const int64_t support = (int64_t) MW_CFG.block_size *
                             (int64_t) MW_CFG.support_blocks;
-    if (support > 0 && (int64_t) cparams.n_ctx > support) {
+    if (support > 0 && (int64_t) cparams.n_ctx > support) { // lifted when the sparse branch lands
         throw std::runtime_error(
             "maxwell_moe: the block-sparse indexer is not implemented; "
             "context above " + std::to_string(support) + " tokens is refused");
@@ -327,7 +396,24 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
     cb(inpL, "model.input_embed", -1);
 
     ggml_tensor * inp_pos = build_inp_pos();
-    auto * inp_attn = build_attn_inp_kv_msa(false); // MSA input also serves the dense path
+
+    const bool has_indexer = model.layers[0].index_q_proj != nullptr;
+    const bool msa_enabled = false; // B2 will enable the sparse branch; dense until then
+
+    auto * inp_attn = build_attn_inp_kv_msa(msa_enabled);
+
+    mw_input_msa * msa = nullptr;
+    ggml_tensor * msa_mf = nullptr;
+    int64_t n_kv = 0, n_ps = 0, nblk = 0, ns = 1, n_tps = 0;
+    bool msa_decode = false;
+
+    // MSA input tensors are created together with the sparse branch (B2);
+    // creating them unused makes the scheduler assert on a buffer-less input.
+    GGML_UNUSED(msa);
+    GGML_UNUSED(msa_mf);
+    GGML_UNUSED(n_kv); GGML_UNUSED(n_ps); GGML_UNUSED(nblk); GGML_UNUSED(ns);
+    GGML_UNUSED(n_tps); GGML_UNUSED(msa_decode);
+
     ggml_tensor * inp_out_ids = build_inp_out_ids();
 
     // expand the single stream into hc residual streams
