@@ -40,3 +40,41 @@ not about reaching the kernel.
     goose --standalone -o r.c --header r.h source/listen.goose
     gcc-13 -O1 -o listen tests/main.c r.c source/libc-wrappers.c -lm
     ./listen          # prints LISTEN_rc=0
+
+## The listener itself
+
+`goose/server/http-listener.goose` now carries the transport decisions:
+
+- `ht_open` — socket, SO_REUSEADDR, bind, listen, with a distinct return code
+  per failing step so a gate can name the step;
+- `ht_accept` — one connection, with the peer address buffers owned by the host
+  (a Goose slice is passed by value, so a local array cannot stand in for the
+  C pointer);
+- `ht_read_request` — read until CRLFCRLF, bounded by the header limit, then the
+  method code, the path span (query excluded) and the header end;
+- `ht_keep_alive`, `ht_contains_ci` — case-insensitive header search and the
+  keep-alive rule;
+- `ht_response_head`, `ht_write_all` — status line, Content-Length, content
+  type, connection header, and a short-write loop.
+
+Real request through it:
+
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+    Content-Length: 11
+    Connection: keep-alive
+
+    {"ok":true}
+
+Server-side log of the same request: `ACCEPT conn=4`, `REQ n=60 method=1
+hend=60 path_off=4 path_len=6`.
+
+Gate: `bash tests/run.sh [outdir]` prints `HTTP_LISTENER OK`.
+
+### Two defects the probe exposed
+
+- reading before `accept` gives `ENOTCONN` (107) on the listening socket; the
+  first version did exactly that and looked like a broken read;
+- `accept` cannot take a Goose slice for `sockaddr`/`socklen_t`: slices are
+  passed by value, so the host supplies those buffers and the forward passes
+  their pointers.
