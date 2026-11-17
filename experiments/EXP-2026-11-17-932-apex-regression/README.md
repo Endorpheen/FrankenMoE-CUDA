@@ -68,3 +68,24 @@ process was stopped and no parameter of the reference profile was changed.
 
 This is an environment blocker, not a regression measurement. The regression
 run still needs a GPU window where the other owners are not resident.
+
+## Candidate assembled on the accepted base (2026-11-17)
+
+`/home/end0/AI/LlamaServer/maxwell-candidate-20261117/run/` is built by
+`tools/build-maxwell-candidate.sh` from `our-src` (13 Goose/EXP906 files) plus
+flint models/arch, recompiling only arch, model, context and maxwell, and
+relinking with `link-fixed/commands.json`. The reference is copied, never
+written.
+
+Checks done without running a model:
+
+- `libllama.so.0` size 5,765,136, 183 `FG…` strings (reference has 183);
+- `libggml-cuda.so.0` sha256 `17e79510f378…` (accepted EXP906);
+- `maxwell_moe` registered inside libllama (architecture table);
+- `llama-server --version` from the candidate prints `FG270Q_`, `FG276T_`,
+  `FG274B_` counters;
+- EXP906 symbol `pin_mmap_experts` present in the candidate libllama.
+
+The 32768/512 comparison has NOT been run yet: port 9101 is owned by another
+server and heavy GPU runs need Igor's approval. No number is claimed until that
+run exists.
