@@ -147,6 +147,28 @@ Gates with the reader in place: pieces OK, tokenize OK, sampler OK - all
 byte-identical to the accepted library - and greedy generation on the two-block
 model is unchanged (107194 169222 16544 2280 on both).
 
+## Sixth slice: metadata keys as well as tensors
+
+`gguf_find_key` is now answered by the Goose reader too, in the loader, the
+vocabulary loader and the model builder, with the C gguf lookup used only when no
+Goose table exists for that context. The indices are interchangeable: over the
+real Apex file the Goose index equals `gguf`'s for **52 of 52 keys** (`ggufcmp`).
+
+| build | `gguf_find_tensor` | `gguf_find_key` |
+| --- | ---: | ---: |
+| before this slice | 0 | 94 |
+| Goose keys enabled | 0 | **1** |
+| Goose keys refused (`EXP925_MUTATE_KV=1`) | 0 | 94 |
+
+The single remaining call is inside `gguf_init_from_file` itself (`general.alignment`),
+i.e. in the C parser that is not yet replaced. With Goose keys enabled but the
+Goose key lookup refused, the load fails with "unknown model architecture: ''" -
+which is the direct proof that the architecture and every hparam now come from the
+Goose reader.
+
+Gates unchanged: pieces OK, tokenize OK, sampler OK (byte-identical to the
+accepted library) and greedy ids on the two-block model identical.
+
 ## Boundaries
 
 `llama_tokenize` now runs on Goose for BPE vocabularies whose merges fit the

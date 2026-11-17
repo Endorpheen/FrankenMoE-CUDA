@@ -1,0 +1,28 @@
+--- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-model.cpp	2026-11-16 15:48:17.694917076 +0300
++++ our-src/llama-model.cpp	2026-11-17 15:18:57.285917051 +0300
+@@ -4,6 +4,16 @@
+ #include "llama-ext.h"
+ #include "llama-hparams.h"
+ #include "llama-impl.h"
++// EXP925: the Goose reader answers the key lookup when it has the file.
++int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key);
++int llama_goose_ready(const struct gguf_context * ctx);
++static inline int64_t llama_goose_find_kv_or_gguf(const struct gguf_context * ctx, const char * key) {
++    if (!llama_goose_ready(ctx)) {
++        return gguf_find_key(ctx, key);
++    }
++    return llama_goose_find_kv(ctx, key);
++}
++
+ #include "llama-mmap-expert-pin.h"
+ #include <fstream>
+ #include <mutex>
+@@ -1400,7 +1410,7 @@
+ 
+     const gguf_context * ctx = ml.metadata;
+     const std::string key = ml.llm_kv(LLM_KV_GENERAL_TENSOR_EXTRA_PREC_A4);
+-    const int kid = gguf_find_key(ctx, key.c_str());
++    const int kid = llama_goose_find_kv_or_gguf(ctx, key.c_str());
+     if (kid < 0 || gguf_get_kv_type(ctx, kid) != GGUF_TYPE_ARRAY || gguf_get_arr_type(ctx, kid) != GGUF_TYPE_BOOL) {
+         throw std::runtime_error(format("%s must be a bool array", key.c_str()));
+     }
