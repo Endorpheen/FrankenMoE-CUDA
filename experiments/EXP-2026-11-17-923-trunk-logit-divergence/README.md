@@ -243,6 +243,21 @@ the gate, not the kernel's algorithm selection, and not the bytes in the store
 the permuted view of a quantised tensor, and the strides it derives for the K/V
 cells.
 
+### The view geometry reads correctly
+
+`goose/model/qwen35-kv.goose` (q35_attn_cached) builds the K/V operands as
+`view4(cache, head, n_head_kv, read_rows, 1, head_bytes, row_bytes, stream_bytes, 0)`
+with `head_bytes = row_size(Q4_0, head) = 144` and `row_bytes = row_size(Q4_0,
+width) = 288` for this model. For a Q4_0 store of `[512, capacity]` that is the
+correct geometry: head 0 at offset 0, head 1 at 144, the next cell at 288. The
+strides are therefore not obviously wrong, and `ne[3] = 1` makes `stream_bytes`
+inert.
+
+So the remaining suspects inside the attention output are narrower than "the
+geometry": either the flash-attention kernel's quantised V handling on CPU, or
+the exact operand the module hands it. Both need the node's own output to
+compare, not its inputs.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -257,8 +272,12 @@ Continue inside the attention branch, using the same ablation method:
    with `ggml_quantize_chunk(Q4_0)` over the exact V values (both computed inside
    the fixture from the same weights), to decide whether Goose stores V
    differently or llama.cpp reads a different cache layout;
-5. dump the attention node's geometry - dims, strides and type - for the K, V
-   and mask operands as the Goose module builds them, and compare with the
-   native construction for the same cache; a wrong cell stride on a quantised
-   tensor would misread V while leaving the stored bytes correct, which is
-   exactly the shape of the evidence so far.
+5. compare the attention node's *output* rather than its inputs: have the
+   fixture hand the graph's flash-attention result back (the module can be asked
+   to return that node through the existing `nodes` array, or the fixture can
+   recompute the same node over the same operands), and compare it against a
+   manual dequantise-V-and-copy for the single-token case, where attention is
+   exactly V;
+6. if that matches, the difference is inside the kernel's quantised-V path
+   (`ggml_flash_attn_ext` with Q4_0 V on CPU) and the next artefact is a direct
+   probe of that op against a dequantise-then-matmul reference.
