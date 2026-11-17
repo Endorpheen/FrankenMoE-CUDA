@@ -109,6 +109,19 @@ covered by its own gate.
 | the new steps are live | mutant scaling `top_p` by 0.9 is **DETECTED** |
 | fallback | each step falls back to the previous C++ body when the Goose call refuses |
 
+## End to end through the shipped API
+
+The candidate library, loaded by the same generation harness used for EXP922,
+reproduces the accepted run exactly:
+
+    PROMPT ids=5: 760 6511 314 9338 369          (both)
+    GENERATED ids=8: 11751 11 264 3177 8807 303 3712 321   (both)
+    text: " Paris, a city rich in history and"  (34 bytes, both)
+
+So the integration is not only correct step by step: a real greedy generation
+through libllama's own tokenizer, decoder and sampler loop produces the same ids
+and the same text when those three pieces are answered by Goose.
+
 ## Boundaries
 
 `llama_tokenize` now runs on Goose for BPE vocabularies whose merges fit the
