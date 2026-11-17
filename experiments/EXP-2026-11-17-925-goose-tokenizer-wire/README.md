@@ -122,6 +122,35 @@ So the integration is not only correct step by step: a real greedy generation
 through libllama's own tokenizer, decoder and sampler loop produces the same ids
 and the same text when those three pieces are answered by Goose.
 
+## Attempt: the reader inside the loader (reverted, blocker recorded)
+
+Aim: let the Goose GGUF reader answer the loader's tensor lookup. First the data
+was checked, and it is sound: over the real Apex file the Goose index resolves
+**753 of 753 tensors with 0 offset or type differences** and the same 52 metadata
+entries as `gguf` (`ggufcmp`, kept in `source/`).
+
+The wiring was then added in two places - the inline `llama_tensor_weight`
+constructor and `get_tensor_meta` - with `gguf` as the fallback, plus a one-time
+`gr_parse` over a 64 MiB header mapping registered next to the metadata context.
+
+It had **no effect**: a mutant that makes the Goose lookup return -1 for every
+name still loaded the two-block model with the same parameter count and the same
+greedy ids, and the instrumented entry point never logged a call while the
+registration log did appear. Rebuilding `llama-model.cpp` was necessary because
+the constructor is inline in the header, and that rebuild required an overlay
+header to avoid a double `llama-arch.h` definition; even after it, the lookup was
+never reached.
+
+So the path that fills `weights_map` in this build is not the one assumed, and
+guessing further would be worse than stopping. **The loader change is reverted**,
+`llama-model-loader.*` and `llama-model.cpp` are back to the accepted tree, and
+the candidate was re-gated afterwards: pieces OK, tokenize OK, sampler OK - all
+three byte-identical to the accepted library.
+
+Next for this thread: count `gguf_find_tensor` calls during a load (a temporary
+counter in the C gguf library) to see whether the lookup happens at all on this
+path, and only then wire the reader where the calls actually are.
+
 ## Boundaries
 
 `llama_tokenize` now runs on Goose for BPE vocabularies whose merges fit the
