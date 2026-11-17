@@ -327,7 +327,7 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
     cb(inpL, "model.input_embed", -1);
 
     ggml_tensor * inp_pos = build_inp_pos();
-    auto * inp_attn = build_attn_inp_kv();
+    auto * inp_attn = build_attn_inp_kv_msa(false); // MSA input also serves the dense path
     ggml_tensor * inp_out_ids = build_inp_out_ids();
 
     // expand the single stream into hc residual streams

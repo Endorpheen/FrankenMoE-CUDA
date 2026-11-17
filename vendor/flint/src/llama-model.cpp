@@ -2807,7 +2807,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
             } break;
         case LLM_ARCH_MAXWELL:
             {
-                if (false) { // MSA graph not implemented yet: the dense graph needs the plain cache
+                if (hparams.indexer_head_size > 0) {
                     // every Maxwell layer has an indexer, dense FFN layers included
                     res = new llama_kv_cache_msa(
                             *this,
