@@ -199,6 +199,35 @@ fixture can compute `v = wv @ (attn_norm(embedding))` itself, quantise it with
 `ggml_quantize_chunk(Q4_0)` and compare those bytes directly with what the graph
 wrote into the store.
 
+### The V write is canonical; the difference is the attention call
+
+Recomputing V inside the fixture on the attention-only model (`v = wv @
+(attn_norm(embedding))`, layer 1's input is the embedding because block 0 is
+zeroed) and quantising it with `ggml_quantize_chunk(Q4_0)`:
+
+    prefix_equal = 288 of 288 bytes
+
+The graph's stored V is byte-identical to canonical Q4_0 quantisation of the
+straightforwardly recomputed V. A separate probe also shows `ggml_cpy` and
+`ggml_set_rows` produce exactly the same bytes as `ggml_quantize_chunk` for the
+same values, so all three writers agree.
+
+An earlier run of this check reported a 3-ulp scale difference; that was a bug in
+the check itself (it passed `sqrt(1+eps)-1` instead of `eps` to the norm). The
+corrected run is the one above.
+
+So the write path is right and the remaining difference is on the read side, in
+how attention is invoked. Reading `src/llama-graph.cpp` against
+`goose/model/qwen35-attention.goose`, the native call does two things the Goose
+module does not:
+
+- `ggml_flash_attn_ext_set_n_kv_max(cur, n_kv_max)` - the kernel is told how many
+  KV cells the cache can hold, which selects its algorithm;
+- `ggml_flash_attn_ext_add_sinks(cur, sinks)` - no sinks for this model, so this
+  one is inert here.
+
+`ggml_prec_set_acc(fa, GGML_PREC_F32)` is set by both.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -213,7 +242,9 @@ Continue inside the attention branch, using the same ablation method:
    with `ggml_quantize_chunk(Q4_0)` over the exact V values (both computed inside
    the fixture from the same weights), to decide whether Goose stores V
    differently or llama.cpp reads a different cache layout;
-5. compare llama.cpp with flash attention disabled against the Goose graph that
-   uses `flash_attn_ext`, to separate the attention kernel from the projection
-   arithmetic (the first attempt at this aborted in the native decode and is
-   being re-run with the crash recorded).
+5. measure whether `ggml_flash_attn_ext_set_n_kv_max` changes the result: build
+   two identical flash-attention nodes over the same Q4_0 K/V and F16 mask, one
+   with `n_kv_max` set to the row count and one without, and compare the output
+   bits. The first probe attempt used non-GQA shapes and tripped
+   `ggml_can_mul_mat`, so it is being redone with `n_head` a multiple of
+   `n_head_kv`.

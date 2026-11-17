@@ -403,6 +403,46 @@ int main(int argc, char ** argv) {
     const int64_t V = trunk.vocab;
     require((int64_t) logits.size() == V * (int64_t) prompt.size(), "logits shape");
 
+    if (std::string(argv[5]) == "vcheck") {
+        // On the attention-only diagnostic model the layer-1 input is the token
+        // embedding (block 0 is zeroed), so V can be recomputed here and its
+        // canonical Q4_0 bytes compared with what the graph stored.
+        require(argc > 6, "vcheck mode needs a layer index");
+        const int layer = std::atoi(argv[6]);
+        std::vector<int32_t> one = {(int32_t) prompt[0]};
+        auto * c = ggml_init({64 * 1024 * 1024, nullptr, false});
+        require(c, "vcheck arena");
+        auto * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, 1);
+        ((int32_t *) ids->data)[0] = one[0];
+        auto * emb = ggml_get_rows(c, trunk.emb, ids);
+        const float eps_norm = real(model.metadata, "qwen35moe.attention.layer_norm_rms_epsilon");
+        auto * nrm = ggml_rms_norm(c, emb, eps_norm);
+        auto * wn = model.weight("blk." + std::to_string(layer) + ".attn_norm.weight");
+        auto * xn = ggml_mul(c, nrm, wn);
+        auto * wv = model.weight("blk." + std::to_string(layer) + ".attn_v.weight");
+        auto * v = ggml_mul_mat(c, wv, xn);
+        auto * g = ggml_new_graph(c);
+        ggml_build_forward_expand(g, v);
+        require(ggml_graph_compute_with_ctx(c, g, 1) == GGML_STATUS_SUCCESS, "vcheck compute");
+        const int64_t n = ggml_nelements(v);
+        std::vector<uint8_t> q((size_t) ggml_row_size(GGML_TYPE_Q4_0, n));
+        require(ggml_quantize_chunk(GGML_TYPE_Q4_0, (const float *) v->data, q.data(), 0, 1, n, nullptr) > 0, "quantize");
+        auto * store = trunk.stores[layer][3];
+        require(store && store->type == GGML_TYPE_Q4_0, "V store");
+        const uint8_t * raw = (const uint8_t *) store->data;
+        size_t same = 0;
+        while (same < q.size() && raw[same] == q[same]) same++;
+        std::printf("VCHECK layer=%d values=%lld qbytes=%zu store_bytes=%zu prefix_equal=%zu\n",
+                    layer, (long long) n, q.size(), ggml_nbytes(store), same);
+        std::printf("VCHECK canonical:"); for (int i = 0; i < 16 && i < (int) q.size(); i++) std::printf(" %02x", q[i]);
+        std::printf("\nVCHECK stored   :"); for (int i = 0; i < 16 && i < (int) ggml_nbytes(store); i++) std::printf(" %02x", raw[i]);
+        std::printf("\n");
+        const float * f = (const float *) v->data;
+        std::printf("VCHECK first values:"); for (int i = 0; i < 8; i++) std::printf(" %.6f", f[i]);
+        std::printf("\n");
+        return 0;
+    }
+
     if (std::string(argv[5]) == "kvbytes") {
         require(argc > 6, "kvbytes mode needs an output path");
         // the store tensors of every layer, K then V, as written by the graph
