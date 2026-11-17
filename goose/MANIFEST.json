@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-17T00:09:25.221841+00:00",
+  "updated_at": "2026-11-17",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -46993,6 +46993,19 @@
       "status": "slice",
       "sha256": "28f2cfcb56aecae4e31d6b3c030d11eeeaa20d7c25add0febb7645821bff533d",
       "gate": "8 real-weight cases /29 stages /1069056 exact F32-F16 values /6 semantic mutations; persistent KV pending"
+    },
+    {
+      "goose": "model/qwen35-kv.goose",
+      "native": "src/llama-kv-cache.cpp (compact Q4_0 single-stream cache/checkpoint policy)",
+      "native_targets": [
+        "src/llama-kv-cache.cpp"
+      ],
+      "experiment": "EXP-2026-11-17-914-goose-q4-kv",
+      "source": "source/cache.goose",
+      "task": "P11-01",
+      "status": "slice",
+      "sha256": "f4af61270982d83071186f0e9aebabd18158055ba8e65d8efcc29bb95d2939fd",
+      "gate": "6 exact real-weight steps /1 aborted graph /49 planner +50 host checks /42 invalid layouts /6 mutations; not full-model or CUDA acceptance"
     }
   ]
 }

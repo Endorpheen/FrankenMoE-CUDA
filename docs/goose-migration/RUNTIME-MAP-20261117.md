@@ -207,3 +207,25 @@ not native-model logits, decode history, server behavior or inference speed.
 The complete model SHA matches EXP906; only 15624192 weight bytes and three
 1152-byte embedding rows enter the component. Integrated gate peak RSS59068KiB
 is a test-process measurement, not whole-model memory. See EXP913.
+
+## EXP914: persistent Q4 attention KV controlled by Goose
+
+The default Goose composition now includes compact single-stream Q4_0 KV
+planning, positions/indices/causal masks, whole-model-step tickets, abort/rewind
+and active-prefix host checkpoints. Attention read views depend directly on
+SET_ROWS outputs, so cache writes remain reachable without a host-side expansion
+order. Cache storage outlives graphs; backend completion precedes the single
+model-step commit. Twelve public exports add no native adapter or C++ policy.
+
+Six real-weight steps match native Q4 K/V and attention output bits across graph
+destruction, decode, checkpoint restore/replay, rewind and retry after an
+unexecuted abort. Gates include 49 planner checks, 42 invalid layouts, 50 host
+checkpoint checks and six semantic mutants. The complete 125-module composition
+typechecks; fixture peak RSS59380KiB describes the small CPU process only.
+
+This is a component acceptance, not final generation correctness or a speedup.
+Persistent recurrent state, MoE, full logits, CUDA/backend staging and HTTP
+execution remain open. Host checkpoint buffers must be CPU-addressable and the
+backend quiescent. Full-model cache equality, task correctness and performance
+gates are still required. Native cache implementations remain live dependencies
+of the current server and other cache modes; no C++ deletion is justified here.

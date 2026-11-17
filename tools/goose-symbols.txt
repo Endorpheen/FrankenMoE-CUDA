@@ -226,3 +226,15 @@ goose/cpu/goose-graph-builders.goose	gb_common_args
 goose/model/qwen35-attention.goose	q35_attn_project
 goose/model/qwen35-attention.goose	q35_attn_finish
 goose/model/qwen35-attention.goose	q35_attn_block
+goose/model/qwen35-kv.goose	q35_attn_cached
+goose/model/qwen35-kv.goose	q35_kv_abort
+goose/model/qwen35-kv.goose	q35_kv_begin
+goose/model/qwen35-kv.goose	q35_kv_commit
+goose/model/qwen35-kv.goose	q35_kv_host_restore
+goose/model/qwen35-kv.goose	q35_kv_host_save
+goose/model/qwen35-kv.goose	q35_kv_indices
+goose/model/qwen35-kv.goose	q35_kv_init
+goose/model/qwen35-kv.goose	q35_kv_mask
+goose/model/qwen35-kv.goose	q35_kv_positions
+goose/model/qwen35-kv.goose	q35_kv_read_rows
+goose/model/qwen35-kv.goose	q35_kv_rewind

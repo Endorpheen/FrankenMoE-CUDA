@@ -30,13 +30,14 @@ OBJ=$OUT/main.o
 mkdir -p "$OUT"
 
 # Accepted common modules and the current Qwen3.5 standalone capabilities
-# (shape plan, QG split and attention branch). Other architecture alternatives
+# (shape plan, QG split, attention and persistent Q4 KV). Other architecture alternatives
 # remain separate. Compiling this unit alone does not execute a model.
 MODULES=(
     goose/model/goose-model-graph.goose
     goose/model/qwen35moe.goose
     goose/model/qgate-split.goose
     goose/model/qwen35-attention.goose
+    goose/model/qwen35-kv.goose
     goose/model/gdn-ops.goose
     goose/model/goose-model-loader.goose
     goose/model/file-io.goose
