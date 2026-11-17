@@ -25,6 +25,7 @@ What the workflow can already gate without either blocker:
 - a static check that every architecture in `llama-arch.h` has a name row and a
   factory branch (cheap, catches the exact class of mistake this work made).
 
-Branch protection: GitHub cannot be configured from a file. After the workflow
-is merged, enable "Require status checks to pass" for `main` and select the CI
-job; that part is a manual repository setting.
+Branch protection: enabled on `main` via the API. Required checks are the two
+blocking jobs (`tree, generated files, tools, architecture registry` and
+`C++ type check of the changed model sources`); force pushes and deletions are
+disabled. The Goose job stays optional until GOOSE_URL/GOOSE_SHA256 exist.
