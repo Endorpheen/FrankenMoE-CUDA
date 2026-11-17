@@ -28,10 +28,6 @@ fn te_slot_count(n: i64) -> i64 {
     return te_next_pow2(n * 2);
 }
 
-fn te_span_len(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
-    return gr_span_impl(data, state, kv, index, element, out);
-}
-
 // Total bytes the two arrays occupy once each entry carries a terminator slot.
 fn te_need_impl(data: const u8[:], state: i64[:], kv: i64[:], tok_index: i64, mrg_index: i64, need: i64[:]) -> i64 {
     if need.len < 5 {
@@ -42,25 +38,12 @@ fn te_need_impl(data: const u8[:], state: i64[:], kv: i64[:], tok_index: i64, mr
     if n_tok < 0 || n_mrg < 0 {
         return -1;
     }
-    var bytes: i64 = 0;
-    var i: i64 = 0;
-    var span: i64[:] = need[0 .. 2];
-    while i < n_tok {
-        if te_span_len(data, state, kv, tok_index, i, span) != 0 {
-            return -1;
-        }
-        bytes = bytes + span[1];
-        i = i + 1;
+    let tok_bytes: i64 = te_array_bytes(data, state, kv, tok_index, n_tok);
+    let mrg_bytes: i64 = te_array_bytes(data, state, kv, mrg_index, n_mrg);
+    if tok_bytes < 0 || mrg_bytes < 0 {
+        return -1;
     }
-    i = 0;
-    while i < n_mrg {
-        if te_span_len(data, state, kv, mrg_index, i, span) != 0 {
-            return -1;
-        }
-        bytes = bytes + span[1];
-        i = i + 1;
-    }
-    need[0] = bytes;
+    need[0] = tok_bytes + mrg_bytes;
     need[1] = n_tok;
     need[2] = n_mrg;
     need[3] = te_slot_count(n_tok);
@@ -68,34 +51,68 @@ fn te_need_impl(data: const u8[:], state: i64[:], kv: i64[:], tok_index: i64, mr
     return 0;
 }
 
+// Bytes of one string array, walked once from its first element.
+fn te_array_bytes(data: const u8[:], state: i64[:], kv: i64[:], index: i64, n: i64) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 || kv[index * 8 + 5] != n {
+        return -1;
+    }
+    var at: i64 = kv[index * 8 + 4];
+    var total: i64 = 0;
+    var i: i64 = 0;
+    while i < n {
+        if !gr_fits(data, at, 8) {
+            return -1;
+        }
+        let l: u64 = gr_bits(data, at, 8);
+        if l > 9223372036854775807 || !gr_fits(data, at + 8, l as! i64) {
+            return -1;
+        }
+        total = total + (l as! i64);
+        at = at + 8 + (l as! i64);
+        i = i + 1;
+    }
+    return total;
+}
 export fn bt_prepare_need(data: const u8[:], state: i64[:], kv: i64[:], tok_index: i64, mrg_index: i64, need: i64[:]) -> i64 {
     return te_need_impl(data, state, kv, tok_index, mrg_index, need);
 }
 
-// Copy one string array into `blob` from `base`, recording offsets and lengths.
+// Copy one string array into `blob` from `base`, walking the entries once and
+// recording each offset and length.
 fn te_fill(data: const u8[:], state: i64[:], kv: i64[:], index: i64, n: i64,
-           blob: u8[:], base: i64, off: i64[:], len: i64[:], span: i64[:]) -> i64 {
-    var at: i64 = base;
+           blob: u8[:], base: i64, off: i64[:], len: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 || kv[index * 8 + 5] != n {
+        return -1;
+    }
+    var at: i64 = kv[index * 8 + 4];
+    var pos: i64 = base;
     var i: i64 = 0;
     while i < n {
-        if te_span_len(data, state, kv, index, i, span) != 0 {
+        if !gr_fits(data, at, 8) {
             return -1;
         }
-        let ln: i64 = span[1];
-        if at + ln > blob.len {
+        let l: u64 = gr_bits(data, at, 8);
+        if l > 9223372036854775807 || !gr_fits(data, at + 8, l as! i64) {
+            return -1;
+        }
+        let ln: i64 = l as! i64;
+        if pos + ln > blob.len {
             return -2;
         }
-        off[i] = at;
+        off[i] = pos;
         len[i] = ln;
         var k: i64 = 0;
         while k < ln {
-            blob[at + k] = data[span[0] + k];
+            blob[pos + k] = data[at + 8 + k];
             k = k + 1;
         }
-        at = at + ln;
+        pos = pos + ln;
+        at = at + 8 + ln;
         i = i + 1;
     }
-    return at;
+    return pos;
 }
 
 export fn bt_prepare_from_gguf(data: const u8[:], state: i64[:], kv: i64[:], tok_index: i64, mrg_index: i64,
@@ -113,11 +130,11 @@ export fn bt_prepare_from_gguf(data: const u8[:], state: i64[:], kv: i64[:], tok
        mrg_off.len < n_mrg || mrg_len.len < n_mrg || mrg_slots.len < n_mrg_slots {
         return -2;
     }
-    let after_tok: i64 = te_fill(data, state, kv, tok_index, n_tok, blob, 0, tok_off, tok_len, need[0 .. 2]);
+    let after_tok: i64 = te_fill(data, state, kv, tok_index, n_tok, blob, 0, tok_off, tok_len);
     if after_tok < 0 {
         return after_tok;
     }
-    let end: i64 = te_fill(data, state, kv, mrg_index, n_mrg, blob, after_tok, mrg_off, mrg_len, need[0 .. 2]);
+    let end: i64 = te_fill(data, state, kv, mrg_index, n_mrg, blob, after_tok, mrg_off, mrg_len);
     if end < 0 {
         return end;
     }

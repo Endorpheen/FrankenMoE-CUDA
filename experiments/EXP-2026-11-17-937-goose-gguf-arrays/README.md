@@ -103,3 +103,26 @@ C ABI specialization and the internal one compete and the compiler answers
 `bt_prepare_need` are therefore split into a non-exported body (`gr_span_impl`,
 `te_need_impl`) plus a one-line export wrapper. The reader keeps its previous
 behaviour: the candidate still passes pieces and tokenize byte-identically.
+
+## Standalone engine gate
+
+`integration/goose-standalone/tests/tokenizer_engine.c` runs the path with no
+llama.cpp vocabulary at all: header -> Goose reader -> `bt_prepare_from_gguf`
+-> `bt_build` -> `bt_token_to_piece` for every id in both modes, written as
+length-prefixed records for byte comparison against a dump produced through the
+accepted libllama.
+
+    FG_TOKENIZER_ENGINE tokens=248320 merges=247587 blob=5972470 bytes=3686598 refused=0 build_rc=0
+    ENGINE PIECES IDENTICAL 5673158 bytes
+
+md5 `ce130048d0dfef254bc72fa0042fc4c5` on both sides. The vocabulary layout, the
+hash tables and every piece are therefore answered without libllama.
+
+Reproduce: `bash build/engine-gate.sh <model.gguf> <reference.bin> [outdir]`.
+
+### Second O(n^2) removed
+
+The first engine walk asked the reader for the span of element i for every i,
+which re-walks the array each time and hung on 248320 entries. `te_array_bytes`
+and `te_fill` now walk each array once, reading the length prefix and advancing,
+and the unused span helper is gone.
