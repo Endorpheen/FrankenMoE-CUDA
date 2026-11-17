@@ -39,3 +39,16 @@ Status: ACCEPTED (load + generation); long-context MBSA not implemented
   yet.
 - Tokenizer pre-type maps to `qwen35`; Han/Thai splits and `\p{N}{1,3}` from the
   original file are a known difference.
+
+## Same-load comparison with Apex (method)
+
+Maxwell is verified to 4096 tokens, so the common profile is 2048 prompt /
+128 generated, identical token ids for both models (first 2048 tokens of
+`/tmp/req512.json`), `ignore_eos=true`, temperature 0, seed 42.
+
+Both runtimes use the same flags where they apply: `-ngl all --cpu-moe
+--moe-cache-mib 4992 -fa on -b 2048 -ub 2048 -t 8 -tb 16`, context 4096 for
+both so the KV and compute buffers are the same size. Apex is the accepted
+reference directory; Maxwell is the Q4_0 GGUF. Three repeats each, medians.
+
+Numbers are added below only after both runs complete.
