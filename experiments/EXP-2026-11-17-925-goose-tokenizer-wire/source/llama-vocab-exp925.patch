@@ -1,6 +1,6 @@
 --- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-vocab.cpp	2026-11-16 15:48:17.695288321 +0300
-+++ our-src/llama-vocab.cpp	2026-11-17 14:30:13.719584483 +0300
-@@ -42,6 +42,17 @@
++++ our-src/llama-vocab.cpp	2026-11-17 14:48:28.106330454 +0300
+@@ -42,6 +42,21 @@
  
  
  // Goose detokenization piece copy (EXP213). GGML_GOOSE_PIECE=0 restores _try_copy.
@@ -12,13 +12,17 @@
 +extern "C" void    fg920_goose_init(int argc, char ** argv);
 +extern "C" int64_t bt_build(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
 +                            gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots, gsl_i64 stats);
++extern "C" int64_t bt_bpe(gsl_u8 text, gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
++                          gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots, gsl_i64 ids, int64_t nout,
++                          gsl_i64 cpts, gsl_i64 seg, gsl_u8 enc, gsl_i64 sym, gsl_i64 heap, gsl_i64 hc,
++                          gsl_i64 info);
 +extern "C" int64_t bt_token_to_piece(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 attr,
 +                                     int64_t token, gsl_u8 out, int64_t at, int64_t lstrip,
 +                                     int64_t special, int64_t escape_ws);
  extern "C" int fg213p_enabled(void);
  extern "C" int64_t fg213p_try_copy(uint64_t src, int64_t size, int64_t lstrip,
                                     uint64_t dst, int64_t avail);
-@@ -2158,6 +2169,14 @@
+@@ -2158,6 +2173,17 @@
  
      std::vector<llama_token> cache_special_tokens;
      std::vector<std::string> cache_token_to_piece; // llama_token_to_piece(special = true);
@@ -27,13 +31,16 @@
 +    // the Goose module can address them as spans, exactly as it does over a GGUF.
 +    std::string        goose_blob;
 +    std::vector<int64_t> goose_off, goose_len, goose_attr, goose_slots, goose_mrg_slots{0, 0};
++    std::string          goose_mrg_blob;
++    std::vector<int64_t> goose_mrg_off, goose_mrg_len;
++    bool                 goose_bpe_ready = false;
 +    bool               goose_ready = false;
 +    void goose_prepare();
 +
      struct pair_hash {
          size_t operator()(const std::pair<std::string, std::string> & p) const {
              return std::hash<std::string>{}(p.first) ^  //create some hash for pair
-@@ -3407,6 +3426,9 @@
+@@ -3407,6 +3433,9 @@
  
          std::swap(cache_token_to_piece, cache);
  
@@ -43,7 +50,7 @@
          LLAMA_LOG_INFO("%s: token to piece cache size = %.4f MB\n", __func__, size_cache / 1024.0 / 1024.0);
      }
  
-@@ -3728,6 +3750,47 @@
+@@ -3728,6 +3757,94 @@
  }
  
  // NOTE: avoid ever using this except for building the token_to_piece caches
@@ -51,6 +58,7 @@
 +    if (goose_ready) {
 +        return;
 +    }
++    LLAMA_LOG_INFO("%s: type=%d pre=%d bpe_ranks=%zu\n", __func__, (int) type, (int) pre_type, bpe_ranks.size());
 +    static bool init_done = false;
 +    if (!init_done) {
 +        fg920_goose_init(0, nullptr);
@@ -81,17 +89,106 @@
 +        gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
 +        gsl_i64{ goose_off.data(), (int64_t) n },
 +        gsl_i64{ goose_len.data(), (int64_t) n },
-+        gsl_i64{ goose_slots.data(), (int64_t) goose_slots.size() },
++        gsl_i64{ const_cast<int64_t *>(goose_slots.data()), (int64_t) goose_slots.size() },
 +        empty, empty,
-+        gsl_i64{ goose_mrg_slots.data(), (int64_t) goose_mrg_slots.size() },
++        gsl_i64{ const_cast<int64_t *>(goose_mrg_slots.data()), (int64_t) goose_mrg_slots.size() },
 +        gsl_i64{ stats, 4 });
 +    goose_ready = (rc == 0);
++
++    // EXP925: the merge table, indexed by rank, exactly as the C++ map stores it.
++    if (goose_ready && !bpe_ranks.empty()) {
++        int max_rank = -1;
++        for (const auto & it : bpe_ranks) {
++            max_rank = std::max(max_rank, it.second);
++        }
++        std::vector<std::string> merges((size_t) max_rank + 1);
++        for (const auto & it : bpe_ranks) {
++            merges[(size_t) it.second] = it.first.first + " " + it.first.second;
++        }
++        goose_mrg_off.assign(merges.size(), 0);
++        goose_mrg_len.assign(merges.size(), 0);
++        goose_mrg_blob.clear();
++        for (size_t i = 0; i < merges.size(); ++i) {
++            goose_mrg_off[i] = (int64_t) goose_mrg_blob.size();
++            goose_mrg_len[i] = (int64_t) merges[i].size();
++            goose_mrg_blob += merges[i];
++        }
++        size_t mslots = 1;
++        while (mslots < 2 * merges.size()) {
++            mslots <<= 1;
++        }
++        // bt_build addresses tokens and merges in ONE buffer: append the merge
++        // texts and shift their offsets past the token texts.
++        const int64_t mbase = (int64_t) goose_blob.size();
++        goose_blob += goose_mrg_blob;
++        for (size_t i = 0; i < goose_mrg_off.size(); ++i) {
++            goose_mrg_off[i] += mbase;
++        }
++        goose_mrg_blob.clear();
++        goose_mrg_slots.assign(mslots, 0);
++        int64_t stats2[4] = {0, 0, 0, 0};
++        const int64_t bt_rc = bt_build(
++            gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++            gsl_i64{ goose_off.data(), (int64_t) n },
++            gsl_i64{ goose_len.data(), (int64_t) n },
++            gsl_i64{ const_cast<int64_t *>(goose_slots.data()), (int64_t) goose_slots.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_mrg_off.data()), (int64_t) goose_mrg_off.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_mrg_len.data()), (int64_t) goose_mrg_len.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_mrg_slots.data()), (int64_t) goose_mrg_slots.size() },
++            gsl_i64{ stats2, 4 });
++        goose_bpe_ready = (bt_rc == 0);
++        LLAMA_LOG_INFO("%s: Goose token tables: %zu tokens, %zu merges\n", __func__, n, merges.size());
++        LLAMA_LOG_INFO("%s: Goose bpe build rc=%d ready=%d\n", __func__, (int) bt_rc, goose_bpe_ready ? 1 : 0);
++    }
 +}
 +
  std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
      std::string piece;
      piece.resize(piece.capacity());  // using string internal cache
-@@ -4045,6 +4108,18 @@
+@@ -3868,7 +3985,41 @@
+ #ifdef PRETOKENIZERDEBUG
+                         LLAMA_LOG_WARN("TT: (%ld %ld %ld) '%s'\n", text.length(), fragment.offset, fragment.length, text.c_str());
+ #endif
+-                        session->tokenize(text, output);
++                        static bool logged = false;
++                        if (!logged) { logged = true; LLAMA_LOG_INFO("%s: BPE branch ready=%d\n", __func__, goose_bpe_ready ? 1 : 0); }
++                        if (goose_bpe_ready) {
++                            const int64_t L = (int64_t) text.size();
++                            std::vector<int64_t> ids((size_t) L * 4 + 64);
++                            std::vector<int64_t> cpts((size_t) L + 1), seg(4 * ((size_t) L + 1));
++                            std::vector<uint8_t> enc(8 * ((size_t) L + 1));
++                            std::vector<int64_t> sym(24 * ((size_t) L + 1)), heap(15 * ((size_t) L + 1) + 40);
++                            int64_t hcb[2] = {0, 0}, inf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
++                            const int64_t got = bt_bpe(
++                                gsl_u8{ (uint8_t *) text.data(), L },
++                                gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_off.data()), (int64_t) goose_off.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_len.data()), (int64_t) goose_len.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_slots.data()), (int64_t) goose_slots.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_mrg_off.data()), (int64_t) goose_mrg_off.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_mrg_len.data()), (int64_t) goose_mrg_len.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_mrg_slots.data()), (int64_t) goose_mrg_slots.size() },
++                                gsl_i64{ ids.data(), (int64_t) ids.size() }, 0,
++                                gsl_i64{ cpts.data(), (int64_t) cpts.size() },
++                                gsl_i64{ seg.data(), (int64_t) seg.size() },
++                                gsl_u8{ enc.data(), (int64_t) enc.size() },
++                                gsl_i64{ sym.data(), (int64_t) sym.size() },
++                                gsl_i64{ heap.data(), (int64_t) heap.size() },
++                                gsl_i64{ hcb, 2 }, gsl_i64{ inf, 8 });
++                            if (got < 0) {
++                                session->tokenize(text, output);
++                            } else {
++                                for (int64_t k = 0; k < got; ++k) {
++                                    output.push_back((llama_token) ids[(size_t) k]);
++                                }
++                            }
++                        } else {
++                            session->tokenize(text, output);
++                        }
+                     } else { // if (fragment.type == FRAGMENT_BUFFER_VARIANT_TYPE_TOKEN)
+                         session->append(fragment.token, output);
+                     }
+@@ -4045,6 +4196,18 @@
          return 0;
      }
  

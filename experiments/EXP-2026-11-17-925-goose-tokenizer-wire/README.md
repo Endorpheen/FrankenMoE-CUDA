@@ -50,10 +50,38 @@ C++ replaced and removed: 0 lines yet - the C++ copy is still present as the
 fallback for vocabularies the Goose table cannot serve. Goose lines answering the
 path: the whole `token_to_piece` decision, ~90 lines of Goose.
 
+## Second slice: the BPE tokeniser itself
+
+`llama_tokenize` now calls the Goose BPE (`bt_bpe`) for every raw text fragment,
+after the C++ special-token partition. The tables are built once from the
+vocabulary: 248320 token texts and 247587 merges flattened into one buffer, with
+the merge texts appended after the token texts because `bt_build` addresses both
+in a single span space.
+
+Two defects were found by the gate itself, both mine:
+
+- the first attempt passed the merge spans against the token buffer, and
+  `bt_build` refused with rc -2 (offset past the end). The buffers are now one,
+  with the merge offsets shifted by the token length;
+- a first mutation control (a corrupted merge rank, then half the text) reported
+  "not detected" - because the Goose branch was inactive and the C++ fallback was
+  answering. The log line `BPE branch ready=` showed `0`; the cause was the rc -2
+  above. With `ready=1` the same class of mutation is caught.
+
+Results, after the fix:
+
+| check | result |
+| --- | --- |
+| corpus of 31 cases x parse_special on/off | **687 ids byte-identical** to the accepted library (`tok_accepted.bin` = `tok_candidate.bin`, sha256 `86193663…`) |
+| tables | 248320 tokens, 247587 merges, `bt_build` rc 0 |
+| the path is live | mutant adding 1 to every emitted id is **DETECTED** |
+| fallback | `bt_bpe` returning <0 still falls back to the C++ session, so no vocabulary is lost |
+
 ## Boundaries
 
-This is the piece path only. `llama_tokenize` (the BPE tokeniser itself) still
-runs in C++; that is the next slice. The C++ body of `token_to_piece` is not yet
+`llama_tokenize` now runs on Goose for BPE vocabularies whose merges fit the
+table; the C++ bodies are still compiled and remain the fallback, so no C++ has
+been removed yet. Sampler, session/CLI, backend and server paths are untouched. The C++ body of `token_to_piece` is not yet
 deleted, because the Goose table is built from the vocabulary and its refusal
 path is only exercised on this model. No speed claim; no server or GPU run.
 
