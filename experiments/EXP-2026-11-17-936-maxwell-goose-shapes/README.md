@@ -34,3 +34,10 @@ shape above, the plan, and the tensor count.
 - C++ runtime: **+0 / -0** (only the test fixture is C++, it is not runtime);
 - Goose: ~205 lines in `source/runtime.goose`;
 - Moved under Goose control: Maxwell tensor shapes and layer-kind plan.
+
+## Composition check
+
+The two Goose halves (decisions from EXP-926 and shapes/plan here) concatenate
+into one unit and typecheck together: 73 top-level declarations, 22
+specializations, no duplicate symbols. That is the local gate before the unit
+is wired into the runtime.
