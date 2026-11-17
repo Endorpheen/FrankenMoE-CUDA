@@ -25,7 +25,7 @@ fi
 
 setsid env LD_LIBRARY_PATH="$RUN" "$RUN/llama-server" -m "$MODEL" \
     -c "$CTX" -ngl all --cpu-moe --moe-cache-mib 4992 -fa on \
-    -b "$B" -ub "$UB" -t 8 -tb 16 --host 127.0.0.1 --port "$PORT" > "$LOG" 2>&1 &
+    -b "$B" -ub "$UB" -t 8 -tb 16 -np 1 --host 127.0.0.1 --port "$PORT" > "$LOG" 2>&1 &
 SRV=$!
 cleanup() { kill "$SRV" 2>/dev/null || true; for _ in $(seq 1 30); do ss -H -ltn "sport = :$PORT" | grep -q . || break; sleep 1; done; }
 trap cleanup EXIT
@@ -42,13 +42,17 @@ python3 - "$PORT" "$REPEATS" "$PAYLOAD" <<'PY'
 import json, statistics, sys, urllib.request
 port, repeats, payload = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 req = json.load(open(payload))
-rows = []
-for i in range(repeats):
+def call():
     r = urllib.request.Request(f"http://127.0.0.1:{port}/completion",
                                data=json.dumps(req).encode(),
                                headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(r, timeout=1800) as f:
-        t = json.load(f)["timings"]
+        return json.load(f)["timings"]
+w = call()
+print(f"  warmup: prompt_n={w['prompt_n']} prefill={w['prompt_per_second']:.2f} decode={w['predicted_per_second']:.2f} (not counted)")
+rows = []
+for i in range(repeats):
+    t = call()
     rows.append(t)
     print(f"  run {i+1}: prompt_n={t['prompt_n']} prefill={t['prompt_per_second']:.2f} "
           f"predicted_n={t['predicted_n']} decode={t['predicted_per_second']:.2f}")
