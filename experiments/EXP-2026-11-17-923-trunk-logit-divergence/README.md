@@ -358,6 +358,18 @@ same 512 values with the same block size and the same writer, yet their results
 diverge as if the quantised values differed. The next artefact must therefore be
 native's own cell, not goose's.
 
+### The scan needs a faster tool
+
+Searching native's 2196156-byte state blob for a 288-byte Q4_0 window matching
+the exact V (512 values) is too slow in Python at a two-byte stride; the attempt
+timed out twice and is recorded as not yet done rather than as a negative result.
+The planned artefact is a C scanner, or a targeted search for the first block's
+16-bit scale, which is a two-byte pattern.
+
+The earlier exact-byte search is still valid for what it covered: goose's stored
+K and V cells and every 64-byte chunk of them do not appear anywhere in native's
+state blob for the same model, so the two sides do not store identical bytes.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -382,8 +394,7 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. locate native's V cell in its serialized state: scan the `state` blob for a
-   Q4_0 block whose dequantisation matches the hand-built V within one
-   quantisation step, head by head. If it is found, the two sides store the same
-   vector and the read differs; if no block matches, native writes a different V
-   and the question moves to what it quantises.
+7. write the scan in C (a two-byte stride over 2.2 MB is trivial there) and look
+   for a Q4_0 window matching the exact V within one quantisation step, head by
+   head; if none matches, native quantises a different vector and the next
+   question is which.

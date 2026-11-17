@@ -425,7 +425,12 @@ int main(int argc, char ** argv) {
         // V: dequantise cell 0 of the store into an F32 tensor
         auto * store = trunk.stores[L][3];
         auto * vt = ggml_new_tensor_1d(c, GGML_TYPE_F32, hd * hk);
-        ggml_get_type_traits(GGML_TYPE_Q4_0)->to_float((const uint8_t *) store->data, (float *) vt->data, hd * hk);
+        if (argc > 9 && std::string(argv[9]) == "exactv") {
+            // exact V: the projection itself, without the Q4_0 round trip
+            vt = ggml_mul_mat(c, model.weight("blk." + std::to_string(L) + ".attn_v.weight"), xn);
+        } else {
+            ggml_get_type_traits(GGML_TYPE_Q4_0)->to_float((const uint8_t *) store->data, (float *) vt->data, hd * hk);
+        }
         // GQA: query head h uses KV head h/(n_head/n_head_kv); n_head/n_head_kv = 8 here
         if (argc > 9 && std::string(argv[9]) == "f16v") {
             // emulate a kernel that dequantises V through F16
@@ -471,6 +476,14 @@ int main(int argc, char ** argv) {
             require(std::fwrite(fin->data, sizeof(float), (size_t) ne, e) == (size_t) ne, "emb write");
             std::fclose(e);
             std::printf("MCHECK_EMB_DIM %lld MCHECK_EMB %s\n", (long long) ne, argv[8]);
+        }
+        if (argc > 10) {
+            FILE * vf = std::fopen(argv[10], "wb");
+            require(vf != nullptr, "V file");
+            const int64_t ne = ggml_nelements(vt);
+            require(std::fwrite(vt->data, sizeof(float), (size_t) ne, vf) == (size_t) ne, "V write");
+            std::fclose(vf);
+            std::printf("MCHECK_V_DIM %lld MCHECK_V %s\n", (long long) ne, argv[10]);
         }
         std::printf("MCHECK layer=%d manual_vs_goose max=%.9g bad=%lld manual_vs_native max=%.9g bad=%lld\n",
                     L, vs_goose.first, (long long) vs_goose.second, vs_native.first, (long long) vs_native.second);
