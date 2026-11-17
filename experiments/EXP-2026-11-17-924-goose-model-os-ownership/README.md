@@ -92,10 +92,30 @@ Recorded as the specific blocker, per the repository rule; the remaining parts
 of the ownership work (owner record, generation, close ordering, live-frame
 refusal) do not depend on it and are unaffected.
 
+### The blocker is definitive for this compiler
+
+The remaining idea - name the Goosе-side function differently from the libc
+symbol - does not exist: the extern *string* is the C symbol name, and the
+generated translation unit declares that name with the Goose prototype. So
+`extern "open" fn goose_open(...)` still emits `int64_t open(sl_u8, int64_t,
+int64_t)` and conflicts with `<fcntl.h>`. Same for `close` (verified by compiling
+the generated C).
+
+With that, the three candidate resolutions shrink to one that does not need a C
+body: **no libc name that the generated C already declares can be called from
+Goose today**. What remains possible without touching the compiler:
+
+- the host keeps passing the mapping (today's state), and Goose owns everything
+  else: the owner record, the generation counter, the close ordering and the
+  live-frame refusal;
+- or the compiler gains an explicit C prototype (a recorded requirement, not a
+  change this experiment may make).
+
 ## Next step
 
-Search the compiler's surface for a way to declare a libc-compatible prototype
-(1) and for a working alias (2) before choosing anything; if neither exists,
-write the requirement down for the compiler and continue with the owner record
-and its failure semantics using a caller-provided handle, which is still a real
-improvement over today's borrowed mapping.
+Record the compiler requirement (a way to declare a libc-compatible prototype or
+to bind a symbol separately from its C identifier) and continue with the part
+that does not need it: a Goose owner record that takes a caller-provided handle,
+tracks generations, enforces close ordering and refuses use while a frame is
+live - a real step beyond today's borrowed mapping, and the foundation the OS
+acquisition will plug into once the compiler can express it.
