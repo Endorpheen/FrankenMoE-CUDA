@@ -255,6 +255,19 @@ static int serve(int64_t conn) {
             at += (int64_t) sprintf((char *) body + at, "\",\"count\":%lld}", (long long) tlen);
             blen = at;
         }
+    } else if (plen == 6 && memcmp(path, "/props", 6) == 0) {
+        // Real model facts, read by the Goose reader, not a canned body.
+        int64_t n_layer = 0, n_embd = 0, one = 0;
+        gr_meta_int((sl_u8){ (unsigned char *) g_hdr, g_hdr_len }, (sl_i64){ g_state, 8 },
+                    (sl_i64){ g_kv, 256 * 8 }, find_key("qwen35moe.block_count"), (sl_i64){ &n_layer, 1 });
+        gr_meta_int((sl_u8){ (unsigned char *) g_hdr, g_hdr_len }, (sl_i64){ g_state, 8 },
+                    (sl_i64){ g_kv, 256 * 8 }, find_key("qwen35moe.embedding_length"), (sl_i64){ &n_embd, 1 });
+        gr_meta_int((sl_u8){ (unsigned char *) g_hdr, g_hdr_len }, (sl_i64){ g_state, 8 },
+                    (sl_i64){ g_kv, 256 * 8 }, find_key("tokenizer.ggml.eos_token_id"), (sl_i64){ &one, 1 });
+        blen = (int64_t) sprintf((char *) body,
+                    "{\"n_vocab\":%lld,\"n_special\":%lld,\"n_layer\":%lld,\"n_embd\":%lld,\"eos\":%lld}",
+                    (long long) g_n_tok, (long long) g_n_special, (long long) n_layer,
+                    (long long) n_embd, (long long) one);
     } else if (route > 0) {
         blen = (int64_t) sprintf((char *) body, "{\"route\":%lld}", (long long) route);
     } else {

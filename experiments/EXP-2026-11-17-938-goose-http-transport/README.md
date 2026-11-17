@@ -136,3 +136,15 @@ path produces:
 
 Text -> ids -> text is therefore answered end to end inside one Goose unit, over
 TCP, with no libllama and no GPU. The gate checks all four calls.
+
+## /props reports the model, read by Goose
+
+The endpoint no longer returns a canned body. It reads the numbers out of the
+GGUF header with `gr_meta_int` and reports the vocabulary the tokenizer engine
+built:
+
+    {"n_vocab":248320,"n_special":33,"n_layer":41,"n_embd":2048,"eos":248046}
+
+`n_layer` 41 and `n_embd` 2048 match the Apex file; `eos` 248046 is the
+`<|im_end|>` the chat format stops on. The gate now checks these two numbers, so
+a reader regression that leaves the transport working still fails the gate.
