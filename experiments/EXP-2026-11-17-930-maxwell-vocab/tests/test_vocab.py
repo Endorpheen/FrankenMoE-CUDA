@@ -58,6 +58,7 @@ def main():
     with tempfile.TemporaryDirectory() as td:
         json.dump(cfg, open(os.path.join(td, "config.json"), "w"))
         json.dump(build_tokenizer_json(VB), open(os.path.join(td, "tokenizer.json"), "w"))
+        open(os.path.join(td, "chat_template.jinja"), "w").write("{{ messages[0].role }}")
         shards = {f"model-0000{i}.safetensors": [] for i in (1, 2, 3)}
         idx = {"weight_map": {}}
         for k, (n, a) in enumerate(tensors):
@@ -74,6 +75,8 @@ def main():
             return report(checks, fails)
         check("pre=gpt-2" in r.stdout, f"pre type not detected: {r.stdout.strip()}")
         check("merges=8" in r.stdout, f"merges count: {r.stdout.strip()}")
+        rd = T.Reader(out)
+        check(rd.kv.get("tokenizer.chat_template") == "{{ messages[0].role }}", "chat template key")
 
         probe = os.path.join(BUILD, "tokenize_probe")
         cc = subprocess.run(["g++-13", "-O2", "-std=c++17", f"-I{LLAMA}/include",

@@ -455,6 +455,10 @@ def main():
               cfg["block_sparse_gqa_query_chunk_size"])
     kv_scalar(w, "maxwell_moe.block_sparse_gqa.total_support_blocks", T_UINT32,
               cfg["block_sparse_gqa_total_support_blocks"])
+    chat_tpl = os.path.join(args.model_dir, "chat_template.jinja")
+    if os.path.exists(chat_tpl):
+        kv_scalar(w, "tokenizer.chat_template", T_STRING, open(chat_tpl, encoding="utf-8").read())
+
     tok_json = os.path.join(args.model_dir, "tokenizer.json")
     if args.stub_vocab:
         write_stub_vocab(w, cfg["vocab_size"])

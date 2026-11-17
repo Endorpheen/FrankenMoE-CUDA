@@ -22,6 +22,8 @@ the runtime path.
   a Split regex over letter/number classes (Qwen-style) → `qwen2`;
   otherwise `default`;
 - bos/eos/pad/unk ids from the model config;
+- `tokenizer.chat_template` from `chat_template.jinja`, so the server's Jinja
+  path can use the model's own template without a built-in fallback;
 - a refusal when `tokenizer.json` is missing, unless `--stub-vocab` is passed
   for loader-only tests.
 
@@ -32,7 +34,7 @@ half-complete GGUF.
 ## Gate
 
 `python3 experiments/EXP-2026-11-17-930-maxwell-vocab/tests/test_vocab.py`
-→ `checks=8 failures=0`, `MAXWELL-VOCAB OK`.
+→ `checks=9 failures=0`, `MAXWELL-VOCAB OK`.
 
 The test builds a synthetic BPE `tokenizer.json` (50 ids, 8 merges), converts a
 synthetic model with `vocab_size=50`, loads it through the runtime API and asks
