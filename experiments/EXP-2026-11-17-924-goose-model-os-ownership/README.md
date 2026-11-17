@@ -214,6 +214,9 @@ That is a native rebuild, i.e. exactly the class of work the repository says to
 batch and to justify by a risk the cheap gates cannot see - here the link and the
 binary's behaviour. It is a fresh-context task, not a tail-of-session one.
 
+Costed: the source tree to copy is 5.2 MiB in 240 files, so step 1 is trivial and
+the whole cost is the rebuild itself.
+
 ### Next step
 
 EXP924 stops here, blocked on the compiler capability, with the blocker stated
