@@ -408,6 +408,28 @@ to its Q4_0 run) and it is the first hypothesis that fits every measurement: the
 Goose cache is quantised as declared, and native's is not, in the way the
 attention reads it.
 
+### The measurements contradict each other, so at least one mixed artefacts
+
+Two facts cannot both hold:
+
+- goose's store contains the canonical Q4_0 quantisation of the exact V
+  (`vcheck`: 288 of 288 bytes equal for the recomputed V on the attention-only
+  model), and this fork's attention reads that tensor directly - `get_v` returns
+  a plain view of the Q4_0 cache, with no dequantise-to-F16 step anywhere before
+  `ggml_flash_attn_ext`, and the op only casts *F32* V to F16;
+- yet the quantisation round trip moves goose's logits by 0.8240 and native's by
+  0.1462, on inputs that differ by only 0.0746.
+
+If both stores hold the same canonical bytes and both attention calls read them
+the same way, those two perturbation sizes must be equal. They are not, so at
+least one of the four numbers came from a different model or a different run:
+`v.bin` and the state scan were taken from the *attention-only* model, while the
+byte-level K/V dump was taken from the *two-block* model, and several logits
+pairs were produced in earlier sessions.
+
+This is a methodological finding, not a numerical one, and it is the reason the
+next step exists.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -432,9 +454,8 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. check what precision native actually feeds to attention when `type_v` is
-   Q4_0: read `llama-kv-cache`/`build_attn` for a dequantise-to-F16 step before
-   `ggml_flash_attn_ext` (the fork casts only *F32* V to F16 explicitly), and
-   confirm by building a model whose V weights make coarse quantisation obvious:
-   if native's result tracks the exact V within F16 error, its attention never
-   sees Q4_0 V.
+7. re-take all four numbers in ONE run on ONE model with one build: goose Q4_0
+   logits, goose exact-V logits (same process), native Q4_0 logits and native
+   F32-KV logits, each written to its own file with the model hash recorded next
+   to it. Any conclusion drawn from mixed artefacts so far is provisional until
+   that table exists.
