@@ -454,6 +454,27 @@ remaining difference is of the same order as the quantisation effect itself - so
 it must be measured with means and per layer, not with a maximum over the
 vocabulary.
 
+### The consistent metric table
+
+Recomputing the same three dumps with means, medians and p99 instead of maxima:
+
+| comparison | mean | median | p99 | argmax same |
+| --- | ---: | ---: | ---: | --- |
+| goose Q4_0 vs native Q4_0 | 0.1723 | 0.1449 | 0.5689 | yes |
+| native Q4_0 vs native F32 | 0.1462 | 0.1247 | 0.4639 | yes |
+| goose Q4_0 vs native F32 | 0.1244 | 0.1038 | 0.4143 | yes |
+
+This is a coherent picture and it also explains the withdrawn claim: the 0.824
+figure came from a function that prints *max*, and it was compared against a
+*mean*. With one metric throughout, goose sits between native's own Q4_0 and F32
+runs - that is, the Goose-vs-native gap is the same order as the gap between two
+of native's own configurations, and no single decision stands out as wrong.
+
+The one remaining structural difference of that order is that both sides
+`ggml_permute` a *quantised* cache view before `ggml_flash_attn_ext`, which is the
+known-dangerous operation for block-quantised types, and the two may lay the
+permutation out differently.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -478,7 +499,7 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. re-measure with a metric that can be reasoned about: mean and median absolute
-   difference plus the number of logits whose argmax changes, per layer where
-   possible, in one run on one model. The maximum-over-vocabulary figures in this
-   card are to be replaced, not extended.
+7. compare the permutations themselves: print the dims and nb[] of the tensor
+   each side hands to `ggml_flash_attn_ext` for K and V, since a permuted
+   Q4_0 view is not a block-quantised layout and the two sides may build it
+   differently - this is the last structural difference of the measured size.
