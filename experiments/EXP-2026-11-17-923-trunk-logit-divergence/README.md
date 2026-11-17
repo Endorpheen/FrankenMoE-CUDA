@@ -271,6 +271,21 @@ disagrees end to end, which means the difference is introduced between those
 pieces - most plausibly in what the graph *passes* to the op rather than in the
 pieces themselves.
 
+### The manual branch hit the GQA ratio
+
+Rebuilding the attention branch by hand in the fixture with
+`out = V * sigmoid(gate)` aborted on `ggml_can_repeat`: the gate has
+`n_head * head_dim = 16 * 256 = 4096` elements while V has
+`n_head_kv * head_dim = 2 * 256 = 512`. This model is GQA 8:1, so a
+single-token attention output has one head per *query* head, with each query head
+taking the V of its KV group - the hand-built branch must expand V accordingly,
+which is exactly the step the flash-attention node performs internally.
+
+That is a useful confirmation in itself, and it sharpens the remaining question:
+the difference must be in how the 16 query heads map onto the 2 V heads, either
+inside the FA node (its K/V operand views) or in the gate's head order, because
+every input to that mapping is already proven exact.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -291,8 +306,8 @@ Continue inside the attention branch, using the same ablation method:
    recompute the same node over the same operands), and compare it against a
    manual dequantise-V-and-copy for the single-token case, where attention is
    exactly V;
-6. if that matches, walk the graph *backwards* from the logits: mark the FA
-   node, the gate multiply, the `wo` result and the first residual as outputs
-   in the fixture and compare each against a value recomputed by hand from the
-   store, so the first node that disagrees names the defect instead of its
-   neighbourhood.
+6. complete the manual branch with the GQA expansion (V head `h/8` for query
+   head `h`) or with the FA node itself, and compare the per-head attention
+   output - 16 heads of 256 values - against the Goose graph and against native;
+   the first head that disagrees names whether the defect is the KV group
+   mapping or the gate order.

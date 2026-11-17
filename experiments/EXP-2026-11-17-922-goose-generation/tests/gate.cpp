@@ -403,6 +403,62 @@ int main(int argc, char ** argv) {
     const int64_t V = trunk.vocab;
     require((int64_t) logits.size() == V * (int64_t) prompt.size(), "logits shape");
 
+    if (std::string(argv[5]) == "mcheck") {
+        // Rebuild the attention branch by hand from the same tensors and compare
+        // the resulting logits with the Goose path (in memory) and native (file).
+        require(argc > 7, "mcheck needs <layer> <native logits file>");
+        const int L = std::atoi(argv[6]);
+        const std::string native_path = argv[7];
+        auto * c = ggml_init({256 * 1024 * 1024, nullptr, false});
+        require(c, "mcheck arena");
+        const float eps = real(model.metadata, "qwen35moe.attention.layer_norm_rms_epsilon");
+        auto * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, 1);
+        ((int32_t *) ids->data)[0] = (int32_t) prompt[0];
+        auto * emb = ggml_get_rows(c, trunk.emb, ids);
+        auto * xn = ggml_mul(c, ggml_rms_norm(c, emb, eps), model.weight("blk." + std::to_string(L) + ".attn_norm.weight"));
+        auto * qp = ggml_mul_mat(c, model.weight("blk." + std::to_string(L) + ".attn_q.weight"), xn);
+        const int64_t hd = 256, nh = trunk.vocab > 0 ? 16 : 16, hk = 2;
+        // gate: second hd of every 2*hd block, as native's view_3d does
+        auto * gate_v = ggml_view_3d(c, qp, hd, nh, 1, (size_t) hd * 2 * 4, (size_t) hd * 2 * nh * 4, (size_t) hd * 4);
+        auto * gate2 = ggml_cont_2d(c, gate_v, hd * nh, 1);
+        auto * gsig = ggml_sigmoid(c, gate2);
+        // V: dequantise cell 0 of the store into an F32 tensor
+        auto * store = trunk.stores[L][3];
+        auto * vt = ggml_new_tensor_1d(c, GGML_TYPE_F32, hd * hk);
+        ggml_get_type_traits(GGML_TYPE_Q4_0)->to_float((const uint8_t *) store->data, (float *) vt->data, hd * hk);
+        auto * gated = ggml_mul(c, vt, gsig);
+        auto * wo = ggml_mul_mat(c, model.weight("blk." + std::to_string(L) + ".attn_output.weight"), gated);
+        auto * res = ggml_add(c, wo, emb);
+        auto * pn = ggml_mul(c, ggml_rms_norm(c, res, eps), model.weight("blk." + std::to_string(L) + ".post_attention_norm.weight"));
+        // the MoE of this block is zeroed in the diagnostic model, so the layer
+        // output is the residual itself
+        auto * fin = ggml_mul(c, ggml_rms_norm(c, res, eps), trunk.norm);
+        auto * lg = ggml_mul_mat(c, trunk.head, fin);
+        ggml_set_output(lg);
+        struct ggml_cgraph * g = ggml_new_graph(c);
+        ggml_build_forward_expand(g, lg);
+        require(ggml_graph_compute_with_ctx(c, g, 4) == GGML_STATUS_SUCCESS, "mcheck compute");
+        const float * mine = (const float *) lg->data;
+        auto diff = [&](const float * other) {
+            double mx = 0; int64_t bad = 0;
+            for (int64_t i = 0; i < V; ++i) {
+                double d = std::fabs((double) mine[i] - other[i]);
+                if (d > mx) mx = d;
+                if (d != 0.0) bad++;
+            }
+            return std::pair<double, int64_t>(mx, bad);
+        };
+        auto vs_goose = diff(logits.data());
+        std::vector<float> nat((size_t) V);
+        FILE * f = std::fopen(native_path.c_str(), "rb");
+        require(f && std::fread(nat.data(), sizeof(float), (size_t) V, f) == (size_t) V, "native logits read");
+        std::fclose(f);
+        auto vs_native = diff(nat.data());
+        std::printf("MCHECK layer=%d manual_vs_goose max=%.9g bad=%lld manual_vs_native max=%.9g bad=%lld\n",
+                    L, vs_goose.first, (long long) vs_goose.second, vs_native.first, (long long) vs_native.second);
+        return 0;
+    }
+
     if (std::string(argv[5]) == "vcheck") {
         // On the attention-only diagnostic model the layer-1 input is the token
         // embedding (block 0 is zeroed), so V can be recomputed here and its
