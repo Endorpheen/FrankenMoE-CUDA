@@ -1,0 +1,112 @@
+--- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-vocab.cpp	2026-11-16 15:48:17.695288321 +0300
++++ our-src/llama-vocab.cpp	2026-11-17 14:30:13.719584483 +0300
+@@ -42,6 +42,17 @@
+ 
+ 
+ // Goose detokenization piece copy (EXP213). GGML_GOOSE_PIECE=0 restores _try_copy.
++// EXP925: full Goose tokenizer/detokenizer object (EXP920). It owns the piece
++// bytes; the C++ side keeps the containers. The ABI is the compiler's own
++// {data,len} pair, so the declarations below mirror the generated header.
++struct gsl_u8  { uint8_t * data; int64_t len; };
++struct gsl_i64 { int64_t * data; int64_t len; };
++extern "C" void    fg920_goose_init(int argc, char ** argv);
++extern "C" int64_t bt_build(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
++                            gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots, gsl_i64 stats);
++extern "C" int64_t bt_token_to_piece(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 attr,
++                                     int64_t token, gsl_u8 out, int64_t at, int64_t lstrip,
++                                     int64_t special, int64_t escape_ws);
+ extern "C" int fg213p_enabled(void);
+ extern "C" int64_t fg213p_try_copy(uint64_t src, int64_t size, int64_t lstrip,
+                                    uint64_t dst, int64_t avail);
+@@ -2158,6 +2169,14 @@
+ 
+     std::vector<llama_token> cache_special_tokens;
+     std::vector<std::string> cache_token_to_piece; // llama_token_to_piece(special = true);
++
++    // EXP925: the Goose piece table. The texts are flattened into one buffer so
++    // the Goose module can address them as spans, exactly as it does over a GGUF.
++    std::string        goose_blob;
++    std::vector<int64_t> goose_off, goose_len, goose_attr, goose_slots, goose_mrg_slots{0, 0};
++    bool               goose_ready = false;
++    void goose_prepare();
++
+     struct pair_hash {
+         size_t operator()(const std::pair<std::string, std::string> & p) const {
+             return std::hash<std::string>{}(p.first) ^  //create some hash for pair
+@@ -3407,6 +3426,9 @@
+ 
+         std::swap(cache_token_to_piece, cache);
+ 
++        // EXP925: build the Goose piece table from the same texts.
++        goose_prepare();
++
+         LLAMA_LOG_INFO("%s: token to piece cache size = %.4f MB\n", __func__, size_cache / 1024.0 / 1024.0);
+     }
+ 
+@@ -3728,6 +3750,47 @@
+ }
+ 
+ // NOTE: avoid ever using this except for building the token_to_piece caches
++void llama_vocab::impl::goose_prepare() {
++    if (goose_ready) {
++        return;
++    }
++    static bool init_done = false;
++    if (!init_done) {
++        fg920_goose_init(0, nullptr);
++        init_done = true;
++    }
++    const size_t n = id_to_token.size();
++    goose_off.assign(n, 0);
++    goose_len.assign(n, 0);
++    goose_attr.assign(n, 0);
++    goose_blob.clear();
++    goose_blob.reserve(cache_token_to_piece.empty() ? 0 : 0);
++    for (size_t i = 0; i < n; ++i) {
++        const std::string & text = id_to_token[i].text;
++        goose_off[i] = (int64_t) goose_blob.size();
++        goose_len[i] = (int64_t) text.size();
++        goose_blob += text;
++        const uint8_t a = (uint8_t) id_to_token[i].attr;
++        goose_attr[i] = (int64_t) a;
++    }
++    size_t slots = 1;
++    while (slots < 2 * n) {
++        slots <<= 1;
++    }
++    goose_slots.assign(slots, 0);
++    int64_t stats[4] = {0, 0, 0, 0};
++    gsl_i64 empty{nullptr, 0};
++    const int64_t rc = bt_build(
++        gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++        gsl_i64{ goose_off.data(), (int64_t) n },
++        gsl_i64{ goose_len.data(), (int64_t) n },
++        gsl_i64{ goose_slots.data(), (int64_t) goose_slots.size() },
++        empty, empty,
++        gsl_i64{ goose_mrg_slots.data(), (int64_t) goose_mrg_slots.size() },
++        gsl_i64{ stats, 4 });
++    goose_ready = (rc == 0);
++}
++
+ std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
+     std::string piece;
+     piece.resize(piece.capacity());  // using string internal cache
+@@ -4045,6 +4108,18 @@
+         return 0;
+     }
+ 
++    if (goose_ready && token >= 0 && (size_t) token < goose_off.size()) {
++        const int64_t n = bt_token_to_piece(
++            gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_off.data()), (int64_t) goose_off.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_len.data()), (int64_t) goose_len.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_attr.data()), (int64_t) goose_attr.size() },
++            (int64_t) token,
++            gsl_u8{ (uint8_t *) buf, (int64_t) length },
++            0, (int64_t) lstrip, special ? 1 : 0, escape_whitespaces ? 1 : 0);
++        return (int32_t) n;
++    }
++
+     // copy piece chars to output text buffer
+     // skip up to 'lstrip' leading spaces before copying
+     auto _try_copy = [=] (const char * token, size_t size) -> int32_t {
