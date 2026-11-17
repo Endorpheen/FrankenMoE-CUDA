@@ -258,6 +258,19 @@ geometry": either the flash-attention kernel's quantised V handling on CPU, or
 the exact operand the module hands it. Both need the node's own output to
 compare, not its inputs.
 
+### The kernel is exact too
+
+A direct probe of `ggml_flash_attn_ext` with Q4_0 K/V, F32 Q, an F16 mask with a
+single valid cell and the permuted layout: the output equals the dequantised V
+cell for both heads with **0 mismatches out of 512 values**. So on CPU the op
+reads quantised V exactly as a manual dequantise would.
+
+That closes every single piece of the V path in isolation: the projection, the
+canonical store bytes, the view geometry, and the kernel. The chain still
+disagrees end to end, which means the difference is introduced between those
+pieces - most plausibly in what the graph *passes* to the op rather than in the
+pieces themselves.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -278,6 +291,8 @@ Continue inside the attention branch, using the same ablation method:
    recompute the same node over the same operands), and compare it against a
    manual dequantise-V-and-copy for the single-token case, where attention is
    exactly V;
-6. if that matches, the difference is inside the kernel's quantised-V path
-   (`ggml_flash_attn_ext` with Q4_0 V on CPU) and the next artefact is a direct
-   probe of that op against a dequantise-then-matmul reference.
+6. if that matches, walk the graph *backwards* from the logits: mark the FA
+   node, the gate multiply, the `wo` result and the first residual as outputs
+   in the fixture and compare each against a value recomputed by hand from the
+   store, so the first node that disagrees names the defect instead of its
+   neighbourhood.
