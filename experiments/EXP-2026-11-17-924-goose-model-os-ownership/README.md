@@ -111,11 +111,31 @@ Goose today**. What remains possible without touching the compiler:
 - or the compiler gains an explicit C prototype (a recorded requirement, not a
   change this experiment may make).
 
-## Next step
+### What already exists, and what is actually missing
 
-Record the compiler requirement (a way to declare a libc-compatible prototype or
-to bind a symbol separately from its C identifier) and continue with the part
-that does not need it: a Goose owner record that takes a caller-provided handle,
-tracks generations, enforces close ordering and refuses use while a frame is
-live - a real step beyond today's borrowed mapping, and the foundation the OS
-acquisition will plug into once the compiler can express it.
+Checking before writing anything: `qr_model_open` (EXP919,
+`goose/model/qwen35-model-loader.goose`) already takes the mapping pointer, the
+slice and the file length, and maintains a twelve-word owner record with a
+generation counter, while `qr_frame_open`/`qr_frame_close` refuse a model close
+with a live frame and a double close. EXP919 gated 79 lifecycle/failure checks
+over exactly that.
+
+So the ownership semantics are implemented; the only missing piece is that the
+*pointer, fd and length* come from the caller. That piece is precisely what the
+compiler currently cannot express. There is therefore no separate module to write
+here: EXP924's remaining scope is the OS acquisition, and it is blocked on the
+recorded compiler requirement.
+
+A C adapter is not a permitted answer - the repository rule counts every new
+adapter as debt, and this one would exist only to work around a compiler
+limitation.
+
+### Next step
+
+EXP924 stops here, blocked on the compiler capability, with the blocker stated
+precisely in this card. The next experiment does not have to wait for it: the
+Goose tokenizer, sampler, detokenizer and generation loop are accepted as
+standalone units, so the next useful front is the one the ledger still shows as
+open - wiring those units into a path that the runtime can actually ship, which
+also exposes the mapping lifetime question in its real setting instead of a
+laboratory one.
