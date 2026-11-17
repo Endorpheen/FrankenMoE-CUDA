@@ -1,0 +1,94 @@
+name: ci
+
+# Integrity gate for pull requests into main. No weights, no inference, no GPU,
+# no benchmark. Every check below runs from a clean checkout.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integrity:
+    name: tree, generated files, tools, architecture registry
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python
+        run: python3 --version
+      # Existing tree/ledger drift (manifest gaps, canonical files older than
+      # their experiment sources) makes this check fail on main today. Keep it
+      # visible but non-blocking until that debt is fixed; blocking checks below
+      # are the ones a pull request must not break.
+      - name: Goose tree and ledger (informational)
+        continue-on-error: true
+        run: python3 tools/check-goose-tree.py
+      - name: Generated artefacts policy
+        run: python3 tools/check-generated-files.py
+      - name: Tracked python tools compile
+        run: |
+          files=$(git ls-files 'tools/*.py' 'experiments/*/tests/*.py')
+          python3 -m py_compile $files
+          echo "compiled $(echo "$files" | wc -l) python files"
+      - name: Every architecture is registered
+        run: |
+          python3 - <<'PY'
+          import re, sys, pathlib
+          arch_h = pathlib.Path("vendor/flint/src/llama-arch.h").read_text()
+          arch_cpp = pathlib.Path("vendor/flint/src/llama-arch.cpp").read_text()
+          model_cpp = pathlib.Path("vendor/flint/src/llama-model.cpp").read_text()
+          enum = re.search(r"enum llm_arch \{(.*?)\};", arch_h, re.S).group(1)
+          names = set(re.findall(r"LLM_ARCH_[A-Z0-9_]+", enum))
+          names.discard("LLM_ARCH_UNKNOWN")
+          missing_name = sorted(a for a in names if not re.search(r"\{\s*" + a + r"\s*,", arch_cpp))
+          missing_factory = sorted(a for a in names
+                                   if not re.search(r"case\s+" + a + r"\s*:", model_cpp))
+          print(f"architectures={len(names)}")
+          if missing_name:
+              print("missing name row:", missing_name)
+          if missing_factory:
+              print("missing factory branch:", missing_factory)
+          sys.exit(1 if (missing_name or missing_factory) else 0)
+          PY
+
+  cpp-syntax:
+    name: C++ type check of the changed model sources
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compiler
+        run: sudo apt-get update && sudo apt-get install -y g++-13
+      - name: Syntax-check model sources
+        run: |
+          set -e
+          INC="-Ivendor/flint/src -Ivendor/flint/include -Ivendor/flint/ggml/include"
+          files="vendor/flint/src/llama-arch.cpp vendor/flint/src/models/*.cpp"
+          echo "$files" | wc -w
+          for f in $files; do
+            echo "checking $f"
+            g++-13 -std=c++17 -fsyntax-only $INC "$f"
+          done
+
+  goose:
+    name: Goose compose, typecheck, build (needs the pinned compiler)
+    runs-on: ubuntu-24.04
+    if: ${{ secrets.GOOSE_URL != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the pinned Goose compiler
+        env:
+          GOOSE_URL: ${{ secrets.GOOSE_URL }}
+          GOOSE_SHA256: ${{ secrets.GOOSE_SHA256 }}
+        run: |
+          curl -fsSL "$GOOSE_URL" -o /tmp/goose.tar.gz
+          echo "${GOOSE_SHA256}  /tmp/goose.tar.gz" | sha256sum -c -
+          mkdir -p "$HOME/goose"
+          tar -xzf /tmp/goose.tar.gz -C "$HOME/goose" --strip-components=1
+          echo "$HOME/goose/bin" >> "$GITHUB_PATH"
+      - name: Goose fast gate
+        run: bash tools/check.sh fast
