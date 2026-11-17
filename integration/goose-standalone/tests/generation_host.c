@@ -371,6 +371,13 @@ static int64_t model_step(const int32_t * tokens, int64_t count, float ** logits
         if (backend_threads <= 0) backend_threads = 4;
         ggml_backend_cpu_set_n_threads(backend, backend_threads);
     }
+    static int64_t logged = 0;
+    if (getenv("GOOSE_GRAPH_LOG") && (logged++ < 3 || count != 1)) {
+        printf("GRAPH count=%lld nodes=%d used_mem=%.0f MiB alloc_buf=%.0f MiB\n", (long long) count,
+               ggml_graph_n_nodes(graph), (double) ggml_used_mem(c) / 1048576.0,
+               (double) ggml_gallocr_get_buffer_size(alloc, 0) / 1048576.0);
+        fflush(stdout);
+    }
     if (!ggml_gallocr_alloc_graph(alloc, graph)) {
         free(frames); free(roots); ggml_free(c); return -1;
     }

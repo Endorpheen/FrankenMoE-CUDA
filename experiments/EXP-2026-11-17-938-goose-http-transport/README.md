@@ -277,3 +277,34 @@ reserves for the largest graph; that is the next memory item.
 
 Gate: `bash tests/http-long-prompt.sh [outdir]` prints `HTTP_LONG_PROMPT OK` and
 fails if the allocator reports "not enough space".
+
+## Where the memory goes, and where the speed gap really is
+
+Measured, not guessed:
+
+| quantity | value |
+|---|---:|
+| graph context metadata | 2 MiB |
+| gallocr buffer, 517-token prefill | 502 MiB |
+| allocated logits copy per step | 513 MB at 517 tokens |
+| RSS during a 517-token request | 16150 MiB |
+| VmSize of the process | 32136 MiB |
+| mappings of the model file | 1 |
+
+So the arena question is settled: the graph costs about half a gigabyte at that
+prompt length, and the rest of RSS is resident pages of the read-only weight
+mapping (21.7 GB mapped). RSS therefore grows with how many expert tensors the
+prompt touches, which is paging behaviour, not a leak.
+
+Decode at 11.9 tok/s is not a mystery either. With the Apex MoE active weights at
+roughly 3.5 GB of Q4 bytes per token, 11.9 tok/s is about 42 GB/s of RAM traffic
+- a plausible DDR figure. The standalone is memory-bandwidth-bound on the expert
+reads and has no expert cache.
+
+That also explains the reference: its 55.52 decode is measured with
+`--moe-cache-mib 4992`, i.e. the hot experts served from VRAM. The standalone has
+no such cache, so the comparison is not "the same work, slower" - it is "less
+work avoided". Closing it means bringing the expert cache into the standalone,
+whose admission, copy and SLRU decisions are already Goose modules
+(`fg262a`, `fg263c`, `fg756s` in the accepted library). That is the next
+substantive step, not a micro-optimisation of this graph.
