@@ -78,6 +78,9 @@ typedef struct {
     int sections[4];
     int64_t * records;
     ggml_tensor * emb, * head, * norm;
+    // Per-request state that must start at zero: GDN conv/state and the KV cells.
+    ggml_tensor ** reset_tensors;
+    int64_t reset_count;
     int64_t * scratch_cpts, * scratch_seg, * scratch_sym, * scratch_heap, * scratch_hc, * scratch_info;
     uint8_t * scratch_enc;
 } host_t;
@@ -235,6 +238,8 @@ static void init_trunk(void) {
     const uint8_t * flags = (const uint8_t *) gguf_get_arr_data(H.meta, fk);
 
     H.records = calloc((size_t) H.layer_count * 32, sizeof(int64_t));
+    H.reset_tensors = calloc((size_t) H.layer_count * 2, sizeof(ggml_tensor *));
+    H.reset_count = 0;
     static const char * recurrent[11] = { "attn_norm.weight", "attn_qkv.weight", "attn_gate.weight", "ssm_beta.weight",
                                           "ssm_alpha.weight", "ssm_dt.bias", "ssm_a", "ssm_conv1d.weight",
                                           "ssm_norm.weight", "ssm_out.weight", "post_attention_norm.weight" };
@@ -268,6 +273,8 @@ static void init_trunk(void) {
             memset(state->data, 0, ggml_nbytes(state));
             row[20] = (int64_t) (intptr_t) conv;
             row[21] = (int64_t) (intptr_t) state;
+            H.reset_tensors[H.reset_count++] = conv;
+            H.reset_tensors[H.reset_count++] = state;
         } else {
             ggml_tensor * kc = ggml_new_tensor_2d(owner, GGML_TYPE_Q4_0, hd * hk, KV_CAP);
             ggml_tensor * vc = ggml_new_tensor_2d(owner, GGML_TYPE_Q4_0, hd * hk, KV_CAP);
@@ -275,12 +282,22 @@ static void init_trunk(void) {
             memset(vc->data, 0, ggml_nbytes(vc));
             row[22] = (int64_t) (intptr_t) kc;
             row[23] = (int64_t) (intptr_t) vc;
+            H.reset_tensors[H.reset_count++] = kc;
+            H.reset_tensors[H.reset_count++] = vc;
         }
     }
     H.emb = weight("token_embd.weight");
     H.head = gguf_find_tensor(H.meta, "output.weight") < 0 ? H.emb : weight("output.weight");
     H.norm = weight("output_norm.weight");
     if (q35_kv_init(KV_CAP, 32, (sl_i64){ H.kv_state, 6 }) != 0) die("kv init");
+}
+
+// Start a request from zero: KV bookkeeping plus every recurrent/KV cell buffer.
+static void reset_state(void) {
+    if (q35_kv_init(KV_CAP, 32, (sl_i64){ H.kv_state, 6 }) != 0) die("kv reset");
+    for (int64_t i = 0; i < H.reset_count; ++i) {
+        memset(H.reset_tensors[i]->data, 0, ggml_nbytes(H.reset_tensors[i]));
+    }
 }
 
 // One full-model step: prompt ids in, logits out. Returns the logit count.
@@ -362,6 +379,9 @@ int64_t generation_serve(int64_t conn) {
 
     const int is_completion = (plen == 11 && memcmp(path, "/completion", 11) == 0 && method == 2);
     if (is_completion) {
+        // Requests are independent: the KV bookkeeping starts from zero for each
+        // one, so a second prompt never sees the first prompt's positions.
+        reset_state();
         const int64_t cnt = tokenize(req + info[0], n - info[0], ids, MAX_IDS);
         if (cnt <= 0) {
             blen = (int64_t) sprintf((char *) body, "{\"error\":\"tokenize failed\"}");
@@ -424,12 +444,15 @@ int64_t generation_serve(int64_t conn) {
         blen = (int64_t) sprintf((char *) body, "{\"error\":{\"code\":404}}");
     }
 
+respond:
+    {
     const int64_t hl = ht_response_head(status, blen, keep, (sl_u8){ head, sizeof(head) });
     if (hl < 0) return -1;
     if (ht_write_all(conn, (sl_u8){ head, hl }) != 0) return -1;
     if (ht_write_all(conn, (sl_u8){ body, blen }) != 0) return -1;
     printf("REQ method=%lld path=%.*s status=%lld\n", (long long) method, (int) plen, path, (long long) status);
     return keep ? 0 : 1;
+    }
 }
 
 int main(int argc, char ** argv) {

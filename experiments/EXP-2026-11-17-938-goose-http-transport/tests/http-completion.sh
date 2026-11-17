@@ -40,6 +40,7 @@ for _ in $(seq 1 180); do grep -q 'SERVER listening' "$OUT/server.log" 2>/dev/nu
 
 P=$(curl -s --max-time 60 "http://127.0.0.1:$PORT/props")
 C=$(curl -s --max-time 900 -X POST --data-binary 'The capital of France is' "http://127.0.0.1:$PORT/completion")
+C2=$(curl -s --max-time 900 -X POST --data-binary 'The capital of France is' "http://127.0.0.1:$PORT/completion")
 kill $SRV 2>/dev/null || true
 wait $SRV 2>/dev/null || true
 
@@ -49,4 +50,7 @@ fail=0
 echo "$P" | grep -q '"n_layer":40' || fail=1
 echo "$C" | grep -q '"ids":\[11751,11,264,3177,8807,303,3712,321' || fail=1
 echo "$C" | grep -q '"text":" Paris, a city rich in history' || fail=1
+# A second request must reproduce the first: the per-request state is reset, so
+# nothing from the previous request leaks into the next one.
+[ "$C" = "$C2" ] || { echo "repeat differs"; fail=1; }
 [ "$fail" = 0 ] && echo "HTTP_COMPLETION OK" || { echo "HTTP_COMPLETION FAIL"; tail -5 "$OUT/server.log"; exit 1; }

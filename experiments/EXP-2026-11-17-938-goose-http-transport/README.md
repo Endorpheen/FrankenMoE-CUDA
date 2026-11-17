@@ -183,3 +183,14 @@ in the host.
 - the logits tensor is `[n_vocab, n_tokens]`, so the next token comes from the
   last position's row. Reading row 0 instead of row `past-1` would have sampled
   from the wrong position while still producing plausible text.
+
+### Requests must not leak into each other
+
+The first server reset only the KV bookkeeping. A second request then produced
+`11751 369 524 9444 369 524 9444 ...` — plausible-looking text built on the
+previous request's recurrent state. Resetting the KV counters is not enough:
+every GDN conv/state buffer and every KV cell buffer is per-request state and
+must be zeroed too.
+
+With that fixed, two identical requests return byte-identical id lists, and the
+gate asserts it.
