@@ -175,6 +175,24 @@ That file is the seam: it is the C++ that the complete EXP920 implementation
 It is not in this repository, and it is not `vendor/flint` - editing either would
 be editing the wrong file.
 
+### Guard rail before touching that file
+
+The seam is inside `franken-goose-exp150-restored-20261108`, which is preserved
+runtime material used by accepted builds. Two rules apply and neither allows an
+in-place edit:
+
+- accepted executable and library sets are immutable (rule 22), and this tree is
+  what produced them;
+- a candidate is built in a separate directory and switched to only after the
+  required checks.
+
+So the wire-up does **not** edit that file. The next step copies the tree into a
+new candidate directory, applies the replacement there, builds, and runs the
+tokenizer gate - the EXP920 differential gate, which already passes byte-exactly
+against the native tokenizer - before anything is adopted. Recording this before
+the edit is the point: the seam being found is not permission to change accepted
+material in place.
+
 ### Next step
 
 EXP924 stops here, blocked on the compiler capability, with the blocker stated
