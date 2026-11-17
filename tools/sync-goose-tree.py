@@ -32,6 +32,21 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("misc/unicode-tables.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/unicode-tables.goose",
+     "src/unicode-data.cpp (derived codepoint flag array and lowercase map, generated)",
+     "3512 flag ranges and 1433 lowercase entries; every reader/tokenizer gate uses them"),
+    ("misc/unicode-text.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/unicode-text.goose",
+     "src/unicode.cpp (unicode_cpt_from_utf8 recovery, unicode_cpt_to_utf8, byte maps)",
+     "tokenizer gate:496640 pieces /70 id cases exact;invalid UTF-8 recovery corpus"),
+    ("misc/pretokenizer-qwen35.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/pretokenizer-qwen35.goose",
+     "src/unicode.cpp (unicode_regex_split_custom_qwen35 and unicode_byte_encoding_process)",
+     "tokenizer gate:Russian/English/code/CJK/emoji/whitespace ids exact;split-marks mutant rejected"),
+    ("model/bpe-tokenize.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/bpe-tokenize.goose",
+     "src/llama-vocab.cpp (BPE session, token/merge maps, attribute passes, EOG set)",
+     "tokenizer gate:70 cases/11017 ids exact;tables 248320/247587;eog 5/0;merge-stale mutant rejected"),
+    ("model/bpe-detokenize.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/bpe-detokenize.goose",
+     "src/llama-vocab.cpp (token_to_piece and detokenize)",
+     "tokenizer gate:496640 pieces and 140 detokenize calls exact;byte-map mutant rejected"),
     ("model/gguf-reader.goose", "EXP-2026-11-17-919-goose-model-reader", "source/reader.goose",
      "ggml/src/gguf.cpp (bounded typed GGUF v2/v3 engine reader and name indexes)",
      "Apex/Edge0 skeleton/PLE full header parity;334 synthetic checks;full-hash collision control;4 reader mutants;libc-only build"),

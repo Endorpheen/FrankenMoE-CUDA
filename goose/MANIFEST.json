@@ -5,6 +5,66 @@
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
     {
+      "goose": "misc/unicode-tables.goose",
+      "native": "src/unicode-data.cpp (derived flag array and lowercase map, generated)",
+      "native_targets": [
+        "src/unicode-data.cpp (derived flag array and lowercase map, generated)"
+      ],
+      "experiment": "EXP-2026-11-17-920-goose-tokenizer",
+      "task": "P7-06",
+      "status": "ported",
+      "sha256": "06719d61594fc1a03bfe1e06fddb12e7bf16d76e2af588ab1ab9b818f37921f9",
+      "gate": "tokenizer gate:3512 flag ranges and 1433 lowercase entries from native sha256 5c80b44db0958e67"
+    },
+    {
+      "goose": "misc/unicode-text.goose",
+      "native": "src/unicode.cpp (cpt_from_utf8 recovery, cpt_to_utf8, byte maps)",
+      "native_targets": [
+        "src/unicode.cpp (cpt_from_utf8 recovery, cpt_to_utf8, byte maps)"
+      ],
+      "experiment": "EXP-2026-11-17-920-goose-tokenizer",
+      "task": "P7-06",
+      "status": "ported",
+      "sha256": "a57b6e432b73e442672201fdf08cae22f97c2a8a5e30efcd339366b471c1fb35",
+      "gate": "tokenizer gate:496640 pieces/70 id cases exact;invalid UTF-8 corpus"
+    },
+    {
+      "goose": "misc/pretokenizer-qwen35.goose",
+      "native": "src/unicode.cpp (unicode_regex_split_custom_qwen35 and byte encoding)",
+      "native_targets": [
+        "src/unicode.cpp (unicode_regex_split_custom_qwen35 and byte encoding)"
+      ],
+      "experiment": "EXP-2026-11-17-920-goose-tokenizer",
+      "task": "P7-06",
+      "status": "ported",
+      "sha256": "9583c5d7d3dcb19bfe3ee238cc93c98babf03afeedc79c95eb8cb157cba967b8",
+      "gate": "tokenizer gate:Russian/English/code/CJK/emoji/whitespace ids exact;split-marks mutant rejected"
+    },
+    {
+      "goose": "model/bpe-tokenize.goose",
+      "native": "src/llama-vocab.cpp (BPE session, token/merge maps, attribute passes, EOG set)",
+      "native_targets": [
+        "src/llama-vocab.cpp (BPE session, token/merge maps, attribute passes, EOG set)"
+      ],
+      "experiment": "EXP-2026-11-17-920-goose-tokenizer",
+      "task": "P7-06",
+      "status": "ported",
+      "sha256": "b1fe42f7e647e5fabe55475dd2d39605db7863517135a3133858bab6b4f84d12",
+      "gate": "tokenizer gate:70 cases/11017 ids exact;tables 248320/247587;eog 5/0;merge-stale mutant rejected"
+    },
+    {
+      "goose": "model/bpe-detokenize.goose",
+      "native": "src/llama-vocab.cpp (token_to_piece, detokenize)",
+      "native_targets": [
+        "src/llama-vocab.cpp (token_to_piece, detokenize)"
+      ],
+      "experiment": "EXP-2026-11-17-920-goose-tokenizer",
+      "task": "P7-06",
+      "status": "ported",
+      "sha256": "b084f7e43aa6a81b097a8f7892332db2692540433187ff08be6f3cc39da48567",
+      "gate": "tokenizer gate:496640 pieces and 140 detokenize calls exact;detokenize byte-map mutant rejected"
+    },
+    {
       "goose": "chat/parse-params.goose",
       "native": "common/peg-parser.cpp (arena load) and runtime chat_parse.cpp",
       "native_targets": [
