@@ -1,6 +1,6 @@
 --- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-model-loader.cpp	2026-11-16 15:48:17.695022273 +0300
-+++ /home/end0/AI/LlamaServer/exp925-tokenizer-wire-20261117/our-src/llama-model-loader.cpp	2026-11-18 00:38:36.134394584 +0300
-@@ -1,4 +1,211 @@
++++ /home/end0/AI/LlamaServer/exp925-tokenizer-wire-20261117/our-src/llama-model-loader.cpp	2026-11-18 01:12:18.695577275 +0300
+@@ -1,4 +1,232 @@
  #include "llama-model-loader.h"
 +// EXP925: Goose answers the array/value shape questions when it has the file.
 +int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
@@ -39,7 +39,7 @@
 +
 +struct gsl_u8x  { uint8_t * data; int64_t len; };
 +struct gsl_i64x { int64_t * data; int64_t len; };
-+extern "C" void    fg919_goose_init(int argc, char ** argv);
++extern "C" void    fg937_goose_init(int argc, char ** argv);
 +extern "C" int64_t gr_parse(gsl_u8x data, int64_t file_bytes, gsl_i64x state, gsl_i64x kv, gsl_i64x tensors,
 +                            gsl_i64x kv_slots, gsl_i64x tensor_slots);
 +extern "C" int64_t gr_find_tensor(gsl_u8x data, gsl_i64x state, gsl_i64x tensors, gsl_i64x slots, gsl_u8x key);
@@ -76,7 +76,7 @@
 +static void goose_register(const struct gguf_context * ctx, const char * path) {
 +    static bool inited = false;
 +    std::lock_guard<std::mutex> lock(g_goose_mu);
-+    if (!inited) { fg919_goose_init(0, nullptr); inited = true; }
++    if (!inited) { fg937_goose_init(0, nullptr); inited = true; }
 +    auto m = std::make_unique<goose_meta>();
 +    struct stat st{};
 +    m->fd = open(path, O_RDONLY);
@@ -175,6 +175,27 @@
 +    return it->second.text.data() + it->second.offs[(size_t) element];
 +}
 +
++// Read the reader's mapped header and its parse tables. Pure accessor: the
++// layout decisions stay in Goose.
++int llama_goose_reader(const struct gguf_context * ctx, const uint8_t ** hdr, int64_t * len,
++                       const int64_t ** state, const int64_t ** kv, const int64_t ** kvsl,
++                       int64_t * kv_count, int64_t * kvsl_count) {
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    auto it = g_goose_metas.find(ctx);
++    if (it == g_goose_metas.end() || !it->second->ok) {
++        return 0;
++    }
++    const goose_meta & m = *it->second;
++    *hdr = (const uint8_t *) m.hdr;
++    *len = m.len;
++    *state = m.state.data();
++    *kv = m.kv.data();
++    *kvsl = m.kvsl.data();
++    *kv_count = (int64_t) m.kv.size();   // the reader takes the slice length, not the record count
++    *kvsl_count = (int64_t) m.kvsl.size();
++    return 1;
++}
++
 +int llama_goose_ready(const struct gguf_context * ctx) {
 +    std::lock_guard<std::mutex> lock(g_goose_mu);
 +    auto it = g_goose_metas.find(ctx);
@@ -212,7 +233,7 @@
  
  #include "ggml-alloc.h"
  #include "ggml.h"
-@@ -181,10 +388,10 @@
+@@ -181,10 +409,10 @@
          public:
          static constexpr gguf_type gt = GGUF_TYPE_ARRAY;
          static ArrayInfo getter(const gguf_context *ctx, const int k) {
@@ -225,7 +246,7 @@
                  arr_type == GGUF_TYPE_STRING ? nullptr : gguf_get_arr_data(ctx, k),
              };
          }
-@@ -196,7 +403,7 @@
+@@ -196,7 +424,7 @@
  
          public:
          static T get_kv(const gguf_context * ctx, const int k) {
@@ -234,7 +255,7 @@
  
              if (kt != GKV::gt) {
                  throw std::runtime_error(format("key %s has wrong type %s but expected type %s",
-@@ -296,7 +503,7 @@
+@@ -296,7 +524,7 @@
          }
  
          static bool set(const gguf_context * ctx, const char * key, T & target, const struct llama_model_kv_override * ovrd = nullptr) {
@@ -243,7 +264,7 @@
          }
  
          static bool set(const gguf_context * ctx, const std::string & key, T & target, const struct llama_model_kv_override * ovrd = nullptr) {
-@@ -308,7 +515,7 @@
+@@ -308,7 +536,7 @@
      template<typename T>
      typename std::enable_if<std::is_integral<T>::value, bool>::type
      llama_model_loader::get_arr_n(const std::string & key, T & result, bool required) {
@@ -252,7 +273,7 @@
  
          if (kid < 0) {
              if (required) {
-@@ -338,9 +545,9 @@
+@@ -338,9 +566,9 @@
      template<typename T>
      bool llama_model_loader::get_arr(const std::string & key, std::vector<T> & result, bool required) {
          const gguf_context * ctx = metadata;
@@ -264,7 +285,7 @@
              if (required) {
                  throw std::runtime_error(format("array key not found in model: %s", key.c_str()));
              }
-@@ -366,11 +573,11 @@
+@@ -366,11 +594,11 @@
          }
  
          if constexpr (std::is_same<T, std::string>::value) {
@@ -278,7 +299,7 @@
                  result.emplace_back(value);
              }
          } else {
-@@ -384,9 +591,9 @@
+@@ -384,9 +612,9 @@
      template<typename T, size_t N_MAX>
      bool llama_model_loader::get_arr(const std::string & key, std::array<T, N_MAX> & result, bool required) {
          const gguf_context * ctx = metadata;
@@ -290,7 +311,7 @@
              if (required) {
                  throw std::runtime_error(format("array key not found in model: %s", key.c_str()));
              }
-@@ -417,10 +624,10 @@
+@@ -417,10 +645,10 @@
          }
  
          if constexpr (std::is_same<T, std::string>::value) {
@@ -303,7 +324,7 @@
                  result[i] = value;
              }
          } else {
-@@ -491,7 +698,7 @@
+@@ -491,7 +719,7 @@
      // get array of n <= N_MAX elements, or a single element repeated n times
      template<typename T, size_t N_MAX>
      bool llama_model_loader::get_key_or_arr(const std::string & key, std::array<T, N_MAX> & result, uint32_t n, bool required) {
@@ -312,7 +333,7 @@
  
          if (kid < 0) {
              if (required) {
-@@ -505,7 +712,7 @@
+@@ -505,7 +733,7 @@
              throw std::runtime_error(format("n > N_MAX: %u > %u for key %s", n, (uint32_t) N_MAX, key.c_str()));
          }
  
@@ -321,7 +342,7 @@
              struct GGUFMeta::ArrayInfo arr_info =
                  GGUFMeta::GKV<GGUFMeta::ArrayInfo>::get_kv(metadata, kid);
  
-@@ -539,7 +746,7 @@
+@@ -539,7 +767,7 @@
      bool llama_model_loader::get_key_or_arr(enum llm_kv kid, uint32_t & result, bool required) {
          const std::string key = llm_kv(kid);
  
@@ -330,7 +351,7 @@
  
          if (id < 0) {
              if (required) {
-@@ -549,7 +756,7 @@
+@@ -549,7 +777,7 @@
          }
  
          // throw and error if type is an array
@@ -339,7 +360,7 @@
              if (required) {
                  throw std::runtime_error(format("expected scalar, found array for key: %s", key.c_str()));
              }
-@@ -609,6 +816,7 @@
+@@ -609,6 +837,7 @@
          };
  
          metadata_ptr.reset(gguf_init_from_file(fname.c_str(), params));
@@ -347,7 +368,7 @@
          metadata = metadata_ptr.get();
          if (metadata == nullptr) {
              throw std::runtime_error(format("%s: failed to load model from %s", __func__, fname.c_str()));
-@@ -676,7 +884,7 @@
+@@ -676,7 +905,7 @@
  
                  // check idx
                  {
@@ -356,7 +377,7 @@
                      if (kid < 0) {
                          throw std::runtime_error(format("missing key %s in GGUF split %s", kv_split_no.c_str(), fname_split));
                      }
-@@ -850,10 +1058,10 @@
+@@ -850,10 +1079,10 @@
  
          for (int i = 0; i < n_kv; i++) {
              const char * name           = gguf_get_key(metadata, i);

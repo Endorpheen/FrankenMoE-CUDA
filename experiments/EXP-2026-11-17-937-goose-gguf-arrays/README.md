@@ -159,3 +159,31 @@ exercised. Pieces stay byte-identical.
 `bt_bpe` needed the same impl/export split as the reader functions: an exported
 function that is also called inside the unit cannot resolve one concrete
 signature, so the body is `bt_bpe_body` and the export is a one-line forward.
+
+## The shipping vocabulary layout is Goose now
+
+`goose_prepare` in `llama-vocab.cpp` used to walk every token, flatten the texts
+and size the hash tables. It now asks the engine:
+
+    bt_prepare_need      -> blob bytes, token/merge counts, power-of-two slots
+    bt_prepare_from_gguf -> the blob, the offsets, the lengths, zeroed slots
+    bt_build             -> unchanged, consumes exactly those tables
+
+The C++ that remains is buffer ownership plus the per-token attribute copy
+(attributes move to Goose with the attribute port).
+
+Gates on the candidate after the switch, all byte-identical to the accepted
+library: pieces 5673158 B, tokdump, sampdump, and `gguf_find_tensor` 0. The log
+shows the live path: "Goose token tables: 248320 tokens, 247587 merges" and
+"bpe build rc=0 ready=1".
+
+Three defects were found by these gates and fixed:
+
+- the reader accessor returned the key COUNT where the reader takes a slice
+  LENGTH, so every lookup answered -1 and the piece path silently fell back to
+  C++ while the byte comparison still passed. The fallback has to be watched in
+  the log, not inferred from equality;
+- the key-slot table is bounded by `slots.len / 2`, so 52 keys do not fit a
+  32-entry table;
+- `fg919`/`fg920` became one unit (`fg937`), so the library links one Goose
+  object and the two `goose_init` entry points collapse into one.
