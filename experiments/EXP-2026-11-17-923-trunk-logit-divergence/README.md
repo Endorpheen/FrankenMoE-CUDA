@@ -370,6 +370,22 @@ The earlier exact-byte search is still valid for what it covered: goose's stored
 K and V cells and every 64-byte chunk of them do not appear anywhere in native's
 state blob for the same model, so the two sides do not store identical bytes.
 
+### Scan result: native's state does not contain goose's V cell
+
+A C scanner (two-byte stride over the 2196156-byte state of the *matching*
+diagnostic model) looked for a Q4_0 window matching the exact V (512 values,
+absmax 1.767, mean abs 0.424), both as one 288-byte window and as two head-major
+144-byte windows:
+
+    best 288-byte window : mean abs err 0.267
+    best head-major (h0) : mean abs err 0.401
+    best head-major (h1) : mean abs err 0.441
+
+Nothing even close, so native's serialized state does not contain goose's V in
+either layout. That does not yet prove the values differ - a serialisation may
+re-pack cells - but combined with the earlier exact-byte search it means the
+state blob cannot be used as the comparison artefact.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -394,7 +410,9 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. write the scan in C (a two-byte stride over 2.2 MB is trivial there) and look
-   for a Q4_0 window matching the exact V within one quantisation step, head by
-   head; if none matches, native quantises a different vector and the next
-   question is which.
+7. stop using the serialized state as the artefact and read native's attention
+   output directly: with `attn_output.weight` zeroed the branch contributes
+   nothing and the hidden state equals the residual, which both sides already
+   reproduce exactly; then zero `attn_v` but keep `attn_output`, so the branch
+   emits the gate-only term, and compare the two measurements to separate what
+   the branch adds from what V contributes.
