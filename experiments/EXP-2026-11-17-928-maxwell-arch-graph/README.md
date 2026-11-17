@@ -61,6 +61,10 @@ yet. This is an equivalence, not an approximation, for the supported length.
 - The MTP head and the block-sparse indexer are not loaded or executed.
 - Numeric equivalence in F32 is proved in EXP-2026-11-17-929
   (`max_abs=1.74e-4`, matching argmax); quantised accuracy is not measured yet.
+- The mHC path uses the runtime's fused DSV4 HC ops
+  (`ggml_dsv4_hc_pre/comb/post`, the same kernels DeepSeek4 uses) when the
+  backend accepts them, with the unfused ggml path as fallback. Both paths give
+  the same logits (max_abs 1.7375e-4 against the oracle).
 - The expert-bias precision fix (fp32) is preserved by keeping every 1-D tensor
   in F32 during conversion.
 

@@ -37,6 +37,10 @@ static ggml_tensor * mw_view_2d(ggml_context * ctx, ggml_tensor * t, int64_t ne0
 // instead of outside it, a ~1e-9 relative difference at hidden 2048).
 static ggml_tensor * mw_hc_gates(
         ggml_context * ctx,
+        llm_graph_result * res,
+        int           il,
+        bool          fused_pre,
+        bool          fused_comb,
         ggml_tensor  * fn,
         ggml_tensor  * scale,
         ggml_tensor  * base,
@@ -71,26 +75,37 @@ static ggml_tensor * mw_hc_gates(
     *post = ggml_add(ctx, *post, base_post);
     *post = ggml_scale(ctx, ggml_sigmoid(ctx, *post), 2.0f);
 
-    ggml_tensor * c = mw_view_2d(ctx, mixes, hc*hc, nt, mixes->nb[1], mw_elem_offset(mixes, 2*hc));
-    c = ggml_mul(ctx, c, scale_comb);
-    c = ggml_add(ctx, c, base_comb);
-    c = ggml_reshape_3d(ctx, c, hc, hc, nt); // [dst, src, nt]
+    if (fused_comb) {
+        *comb = ggml_dsv4_hc_comb(ctx, mixes, scale, base, eps, (int32_t) iters);
+        res->add_fused_node({LLM_FUSED_OP_DSV4_HC_COMB, *comb, il});
+    } else {
+        ggml_tensor * c = mw_view_2d(ctx, mixes, hc*hc, nt, mixes->nb[1], mw_elem_offset(mixes, 2*hc));
+        c = ggml_mul(ctx, c, scale_comb);
+        c = ggml_add(ctx, c, base_comb);
+        c = ggml_reshape_3d(ctx, c, hc, hc, nt); // [dst, src, nt]
 
-    // Sinkhorn: row (dst) softmax + eps, one column (src) norm, then
-    // sinkhorn_iters-1 x (row norm, column norm).
-    c = ggml_soft_max(ctx, c);
-    ggml_tensor * eps_t = ggml_fill(ctx, ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 1), eps);
-    c = ggml_add(ctx, c, eps_t);
-    for (int64_t it = 0; it < iters; ++it) {
-        if (it > 0) {
-            ggml_tensor * rs = ggml_sum_rows(ctx, c);
-            c = ggml_div(ctx, c, ggml_add(ctx, rs, eps_t));
+        // Sinkhorn: row (dst) softmax + eps, one column (src) norm, then
+        // sinkhorn_iters-1 x (row norm, column norm).
+        c = ggml_soft_max(ctx, c);
+        ggml_tensor * eps_t = ggml_fill(ctx, ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 1), eps);
+        c = ggml_add(ctx, c, eps_t);
+        for (int64_t it = 0; it < iters; ++it) {
+            if (it > 0) {
+                ggml_tensor * rs = ggml_sum_rows(ctx, c);
+                c = ggml_div(ctx, c, ggml_add(ctx, rs, eps_t));
+            }
+            ggml_tensor * cs = ggml_sum_rows(ctx, ggml_cont(ctx, ggml_permute(ctx, c, 1, 0, 2, 3)));
+            cs = ggml_permute(ctx, ggml_add(ctx, cs, eps_t), 1, 0, 2, 3);
+            c = ggml_div(ctx, c, cs);
         }
-        ggml_tensor * cs = ggml_sum_rows(ctx, ggml_cont(ctx, ggml_permute(ctx, c, 1, 0, 2, 3)));
-        cs = ggml_permute(ctx, ggml_add(ctx, cs, eps_t), 1, 0, 2, 3);
-        c = ggml_div(ctx, c, cs);
+        *comb = c;
     }
-    *comb = c;
+
+    if (fused_pre) {
+        ggml_tensor * out = ggml_dsv4_hc_pre(ctx, x, pre);
+        res->add_fused_node({LLM_FUSED_OP_DSV4_HC_PRE, out, il});
+        return out;
+    }
 
     // aggregate: sum_h pre_h * x_h
     ggml_tensor * out = nullptr;
@@ -106,6 +121,9 @@ static ggml_tensor * mw_hc_gates(
 // expand_and_mix: out_dst = post_dst * layer_out + sum_src comb[dst, src] * residual_src
 static ggml_tensor * mw_hc_post(
         ggml_context * ctx,
+        llm_graph_result * res,
+        int           il,
+        bool          fused,
         ggml_tensor  * layer_out,
         ggml_tensor  * residual,
         ggml_tensor  * post,
@@ -113,6 +131,12 @@ static ggml_tensor * mw_hc_post(
         int64_t        hc) {
     const int64_t n_embd = layer_out->ne[0];
     const int64_t nt     = layer_out->ne[1];
+
+    if (fused) {
+        ggml_tensor * out = ggml_dsv4_hc_post(ctx, layer_out, residual, post, comb);
+        res->add_fused_node({LLM_FUSED_OP_DSV4_HC_POST, out, il});
+        return out;
+    }
 
     ggml_tensor * out = nullptr;
     for (int64_t dst = 0; dst < hc; ++dst) {
@@ -282,7 +306,8 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
         ggml_tensor * post = nullptr;
         ggml_tensor * comb = nullptr;
 
-        cur = mw_hc_gates(ctx0, layer.hc_attn_fn, layer.hc_attn_scale, layer.hc_attn_base,
+        cur = mw_hc_gates(ctx0, res, il, cparams.fused_dsv4_hc_pre, cparams.fused_dsv4_hc_comb,
+                          layer.hc_attn_fn, layer.hc_attn_scale, layer.hc_attn_base,
                           x, hc, (int64_t) hparams.dsv4_hc_sinkhorn_iters, eps, &post, &comb);
         cb(cur, "hc_attn_pre", il);
 
@@ -311,12 +336,13 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
                          1.0f/sqrtf(float(n_embd_head)), il);
         cb(cur, "attn_out", il);
 
-        x = mw_hc_post(ctx0, cur, residual, post, comb, hc);
+        x = mw_hc_post(ctx0, res, il, cparams.fused_dsv4_hc_post, cur, residual, post, comb, hc);
         cb(x, "hc_attn_post", il);
 
         // --- feed-forward with mHC ---
         residual = x;
-        cur = mw_hc_gates(ctx0, layer.hc_ffn_fn, layer.hc_ffn_scale, layer.hc_ffn_base,
+        cur = mw_hc_gates(ctx0, res, il, cparams.fused_dsv4_hc_pre, cparams.fused_dsv4_hc_comb,
+                          layer.hc_ffn_fn, layer.hc_ffn_scale, layer.hc_ffn_base,
                           x, hc, (int64_t) hparams.dsv4_hc_sinkhorn_iters, eps, &post, &comb);
         cb(cur, "hc_ffn_pre", il);
 
@@ -353,7 +379,7 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
             cb(cur, "ffn_out", il);
         }
 
-        x = mw_hc_post(ctx0, cur, residual, post, comb, hc);
+        x = mw_hc_post(ctx0, res, il, cparams.fused_dsv4_hc_post, cur, residual, post, comb, hc);
         x = build_cvec(x, il);
         cb(x, "l_out", il);
     }
