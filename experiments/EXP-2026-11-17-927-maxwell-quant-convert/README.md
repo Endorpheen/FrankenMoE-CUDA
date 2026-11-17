@@ -50,6 +50,16 @@ embedding), converts, then:
 
 No real weights were read or downloaded for this gate.
 
+## Measured on real (already downloaded) shards
+
+Read-only checks, no conversion of the full model yet:
+
+- `model.layers.15.self_attn.q_proj.weight` [4096, 2048] BF16: Q4_0 error
+  max 0.0515, mean 0.00170 at std 0.0252, 4.500 bpw.
+- `model.layers.15.block_sparse_moe.experts.*.w1` (256 tensors, 0.268B values):
+  aggregation 5.1 s, vectorised packing 8.0 s, peak RSS 3.35 GB.
+  Extrapolated for 36.8B values: about 18 min of packing.
+
 ## Explicit non-claims
 
 - The converter has not yet been run on a real Maxwell shard (the download is
