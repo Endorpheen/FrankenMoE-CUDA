@@ -130,12 +130,28 @@ A C adapter is not a permitted answer - the repository rule counts every new
 adapter as debt, and this one would exist only to work around a compiler
 limitation.
 
+### Verified: the shipped library already calls Goose for the tokenizer
+
+`libllama.so.0` in the accepted Apex bundle (sha256 4eba8242…) exports 15
+`fg202t*`/`fg213p*` symbols and contains the counter strings
+`FG202T_TOKENIZER calls=%llu` and `FG213P_PIECE_COPY calls=%llu`. The shipping
+runtime therefore already routes tokenizer and piece-copy decisions through Goose
+bridges (the EXP202/EXP213 slices, visible in every native run's output), with
+the C++ side still holding the strings and containers.
+
+So the wire-up is not from zero: what remains is to replace the decisions behind
+those bridges with the complete EXP920 modules (`pt_*`/`bt_*`) and delete the C++
+bodies once the gates pass - the order rule 27 prescribes. No new adapter is
+needed for that, because the bridge surface already exists.
+
 ### Next step
 
 EXP924 stops here, blocked on the compiler capability, with the blocker stated
-precisely in this card. The next experiment does not have to wait for it: the
-Goose tokenizer, sampler, detokenizer and generation loop are accepted as
-standalone units, so the next useful front is the one the ledger still shows as
-open - wiring those units into a path that the runtime can actually ship, which
-also exposes the mapping lifetime question in its real setting instead of a
-laboratory one.
+precisely in this card. The next experiment does not have to wait for it.
+
+The wire-up starts from what is already true: the shipped library calls Goose for
+tokenizer decisions (`fg202t*`) and piece copies (`fg213p*`). The work is to put
+the complete EXP920 implementations behind that existing surface, gate them
+against native (EXP920's differential gate already passes), and then remove the
+C++ bodies - in that order, with the measured tolerance question still open for
+the trunk but not for the tokenizer, which is byte-exact.
