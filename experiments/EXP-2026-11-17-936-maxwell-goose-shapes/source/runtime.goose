@@ -77,7 +77,11 @@ export fn mx_n_tensors() -> i64 {
 }
 
 // The leading blocks are dense; Maxwell's mlp_only_layers is a prefix.
-export fn mx_layer_kind(il: i64, lead: i64) -> i64 {
+// 0 dense FFN, 1 routed MoE, 2 MTP head layer (after the trunk)
+export fn mx_layer_kind(il: i64, lead: i64, n_trunk: i64) -> i64 {
+    if il >= n_trunk {
+        return 2;
+    }
     if il < lead {
         return 0;
     }
@@ -213,7 +217,7 @@ export fn mx_plan(p: i64[:], kinds: i64[:]) -> i64 {
     }
     var i: i64 = 0;
     while i < n_layer {
-        kinds[i] = mx_layer_kind(i, lead);
+        kinds[i] = mx_layer_kind(i, lead, n_layer);
         i += 1;
     }
     return n_layer;

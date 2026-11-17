@@ -54,6 +54,9 @@ int main() {
     int64_t n = mx_plan(sl_i64{(int64_t*)p.data(), (int64_t)p.size()}, sl_i64{kinds.data(), (int64_t)kinds.size()});
     CHECK(n == 45, "plan n=%lld", (long long)n);
     for (int i = 0; i < 45; ++i) CHECK(kinds[i] == (i < 3 ? 0 : 1), "kind %d = %lld", i, (long long)kinds[i]);
+    // MTP: one extra layer after the trunk
+    CHECK(mx_layer_kind(45, 3, 45) == 2, "mtp kind");
+    CHECK(mx_layer_kind(44, 3, 45) == 1, "last trunk kind");
     CHECK(mx_n_tensors() == 41, "n tensors %lld", (long long)mx_n_tensors());
     std::printf("checks=%d failures=%d\n", checks, fails);
     if (!fails) std::printf("MAXWELL-SHAPES OK\n");
