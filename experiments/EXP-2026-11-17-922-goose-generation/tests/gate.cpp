@@ -32,6 +32,9 @@ static void require(bool ok, const char * what) {
     if (!ok) die(what);
 }
 static int64_t handle(const void * p) { return (int64_t) (uintptr_t) p; }
+// Diagnostic switch for EXP923: F32 KV instead of the profile's Q4_0, to
+// separate the KV write/read path from the rest of the trunk graph.
+static bool f32_kv() { return std::getenv("GOOSE_EXP923_F32_KV") != nullptr; }
 static sl_u8 U(const void * p, long long n) {
     return sl_u8{const_cast<uint8_t *>(static_cast<const uint8_t *>(p)), (int64_t) n};
 }
@@ -181,8 +184,9 @@ struct Trunk {
                 s[0] = ggml_new_tensor_2d(owner, GGML_TYPE_F32, kernel - 1, h * (2 * nk + nv));
                 s[1] = ggml_new_tensor_4d(owner, GGML_TYPE_F32, h, h, nv, 1);
             } else {
-                s[2] = ggml_new_tensor_2d(owner, GGML_TYPE_Q4_0, hd * hk, capacity);
-                s[3] = ggml_new_tensor_2d(owner, GGML_TYPE_Q4_0, hd * hk, capacity);
+                const ggml_type kvt = f32_kv() ? GGML_TYPE_F32 : GGML_TYPE_Q4_0;
+                s[2] = ggml_new_tensor_2d(owner, kvt, hd * hk, capacity);
+                s[3] = ggml_new_tensor_2d(owner, kvt, hd * hk, capacity);
             }
             for (auto * t : s)
                 if (t) std::memset(t->data, 0, ggml_nbytes(t));

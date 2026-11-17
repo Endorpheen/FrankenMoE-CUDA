@@ -65,4 +65,63 @@ result.
 
 ## Results
 
-Pending.
+### A direct F32-KV comparison is not possible through the accepted module
+
+The first isolation attempt switched the fixture's KV tensors to F32
+(`GOOSE_EXP923_F32_KV=1`, a diagnostic switch added to the EXP922 fixture) to
+separate the KV write/read path from the rest of the graph. The Goose trunk
+refuses to build with F32 KV stores: `q35_trunk` expects the Q4_0 cache layout,
+so the accepted module cannot answer this comparison without changing an
+accepted module. Recorded rather than forced.
+
+That leaves two ways forward, and they need different work:
+
+1. read llama.cpp's `src/models/qwen35moe.cpp` and `src/models/delta-net-base.cpp`
+   against `goose/model/qwen35-trunk.goose`, `qwen35-attention.goose`,
+   `qwen35-gdn.goose` line by line and list every decision where the port
+   could differ from the shipped graph;
+2. build a one-layer GGUF from the real weights (metadata `block_count=1`, the
+   layer-0 tensors plus embedding and head) so both implementations can be
+   compared layer by layer on the real data without touching the accepted
+   modules.
+
+Work continues with (1) first, because it needs no new artifact and can name
+the candidates before any more compute is spent.
+
+### Source read: what was eliminated
+
+Reading `src/models/qwen35moe.cpp`, `src/models/delta-net-base.cpp`,
+`src/models/models.h` and `src/llama-graph.cpp` against
+`goose/model/qwen35-gdn.goose`, `qwen35-attention.goose`,
+`qwen35-trunk.goose` and `cpu/goose-graph-builders.goose` eliminated several
+candidates:
+
+| decision | native | Goose | verdict |
+| --- | --- | --- | --- |
+| GDN q/k norm | `rms_norm(x, eps/n)` then `scale(1/sqrt(n))` | `cfg[5]=eps/n`, `cfg[6]=1/sqrt(n)`, rms then scale | same |
+| GDN delta rule | `ggml_gated_delta_net` (fused, default on) | `gated_delta_net` fused op | same |
+| GDN beta/alpha/gate | sigmoid, softplus(+dt.bias), `* ssm_a` | same order | same |
+| GDN output norm | `rms_norm(out, ssm_norm) * silu(z)` | same | same |
+| MoE weights | softmax, top-k, `sum_rows`, clamp `6.103515625e-5`, div, optional scale | same | same |
+| MoE accumulation | per-expert view + sequential add | same | same |
+| expert order | `ggml_argsort_top_k` | `argsort` + view | probe: identical indices on a tie-heavy vector |
+| weight before FFN | LLaMA4 only | not used | same |
+| attention scale | `1/sqrt(256) = 1/16` (no attention.scale key in the GGUF) | 1/16 | same |
+| rope packing | p1=n_dims, p2=mode, p4=n_ctx_orig, p5..p10 freqs, p11..14 sections | same layout | same |
+
+Still open, and not separable by reading:
+
+- the KV write and read path: the fixture stores K/V as `[hd*hk, capacity]` rows,
+  llama.cpp uses a head-major `[hd, hk, capacity]` cache, and the quantisation
+  path (which op converts to Q4_0) is not proven identical;
+- the attention mask construction (`build_inp_mem_hybrid` versus the fixture's
+  F16 0/-inf mask);
+- CPU-backend fused variants llama.cpp may select at graph build time
+  (e.g. rms_norm fused with the weight multiply) whose accumulation differs.
+
+### Next step
+
+Build a one-layer GGUF from the real weights (`block_count = 1`, layer-0
+tensors, embedding, output norm and head) so both implementations can be
+compared at the layer boundary on real data, without touching the accepted
+modules and without guessing which of the open items matters.
