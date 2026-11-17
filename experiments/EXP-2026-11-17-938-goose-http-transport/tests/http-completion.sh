@@ -11,7 +11,7 @@ mkdir -p "$OUT"
 
 python3 "$ROOT/tools/compose-goose.py" "$OUT/unit.goose" \
     "$ROOT/goose/server/http-listener.goose" "$ROOT/goose/server/route-table.goose" \
-    "$ROOT/experiments/EXP-2026-11-17-937-goose-gguf-arrays/source/reader.goose" \
+    "$ROOT/goose/model/gguf-reader.goose" \
     "$ROOT/goose/misc/unicode-tables.goose" "$ROOT/goose/misc/unicode-text.goose" \
     "$ROOT/goose/misc/pretokenizer-qwen35.goose" \
     "$ROOT/goose/model/bpe-tokenize.goose" "$ROOT/goose/model/bpe-detokenize.goose" \
@@ -19,8 +19,8 @@ python3 "$ROOT/tools/compose-goose.py" "$OUT/unit.goose" \
     "$ROOT/goose/cpu/goose-graph-builders.goose" "$ROOT/goose/model/qgate-split.goose" \
     "$ROOT/goose/model/qwen35-attention.goose" "$ROOT/goose/model/gdn-ops.goose" \
     "$ROOT/goose/model/qwen35-gdn.goose" "$ROOT/goose/model/qwen35-kv.goose" \
-    "$ROOT/goose/model/qwen35-trunk.goose" "$ROOT/goose/model/gguf-tensors.goose" \
-    "$ROOT/goose/misc/gguf-headers.goose" "$ROOT/goose/model/gguf-reader.goose" \
+    "$ROOT/goose/model/qwen35-trunk.goose" \
+    "$ROOT/goose/misc/gguf-headers.goose" "$ROOT/goose/model/gguf-tensors.goose" "$ROOT/goose/model/gguf-format.goose" \
     "$ROOT/goose/model/special-partition.goose" "$ROOT/goose/sampling/sampler-chain-full.goose" >/dev/null
 ( cd "$OUT" && "$GOOSE" --standalone -o unit.c --header unit.h unit.goose >/dev/null )
 

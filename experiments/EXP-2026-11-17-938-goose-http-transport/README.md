@@ -308,3 +308,31 @@ work avoided". Closing it means bringing the expert cache into the standalone,
 whose admission, copy and SLRU decisions are already Goose modules
 (`fg262a`, `fg263c`, `fg756s` in the accepted library). That is the next
 substantive step, not a micro-optimisation of this graph.
+
+## One reader, not two
+
+The server unit was composing two readers (`goose/model/gguf-reader.goose` and
+the EXP937 copy), which emitted `gr_parse`/`gr_find_kv` twice. The second body
+won silently and the host called a parser whose state layout differed.
+
+The first attempt at a fix - reducing the canonical module to a comment - broke
+the **shipping** standalone build (`tools/build-main-runtime.sh` composes the
+canonical reader directly and needs its own bodies), which the build caught
+immediately: `unknown function: gr_lookup`.
+
+The right fix keeps one body: the newer functions (`gr_val_span`,
+`gr_arr_str_table`) moved into `goose/model/gguf-reader.goose`, the EXP937 copy
+stays as the experiment record only, and every gate and the server now compose
+the canonical module alone.
+
+    main runtime ok: 1117 global symbols, 0 duplicates, 136 extern
+    SERVER vocab=248320 special=33 eog=5 eos=248046 layers=40 bindings=733
+    HTTP_COMPLETION OK
+
+Same ids, same text, decode 11.86 tok/s.
+
+### The lesson recorded
+
+A local fix that makes one test pass can break the shipping build. The shipping
+build is `tools/build-main-runtime.sh`; it is cheap (seconds) and it is the thing
+that decides whether the runtime exists. It runs before a claim, not after.
