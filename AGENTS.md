@@ -588,3 +588,17 @@ come from Igor directly. For every marked message:
     lock status and the server tail before exiting.
 
     Apex parameters are fixed and are not to be tuned to make an error disappear: context 262144, GPU cache 4992 MiB.
+
+31. C++ must die. Goose must fly.
+
+    FrankenMoE-CUDA is a Goose runtime project, not a C++ project. New
+    functionality - architecture logic, algorithms, memory, graph and model
+    management - is written in Goose. The only permitted new C++ is a temporary
+    bridge that brings Goose in and is removed afterwards, and only when it
+    enables the deletion of substantially more C++ than it adds; every exception
+    states that plan. Functionality is never moved from Goose back into C++.
+
+    Every commit reports three numbers: C++ lines added, C++ lines deleted, and
+    which functions moved under Goose control. Reviews check this policy. The
+    end state is a standalone Goose runtime with no C++ in the compute
+    architecture.
