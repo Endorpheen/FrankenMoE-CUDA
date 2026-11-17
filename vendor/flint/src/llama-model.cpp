@@ -2805,6 +2805,46 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
             {
                 res = nullptr;
             } break;
+        case LLM_ARCH_MAXWELL:
+            {
+                if (false) { // MSA graph not implemented yet: the dense graph needs the plain cache
+                    // every Maxwell layer has an indexer, dense FFN layers included
+                    res = new llama_kv_cache_msa(
+                            *this,
+                            params.type_k,
+                            params.type_v,
+                            !cparams.flash_attn,
+                            cparams.offload_kqv,
+                            cparams.kv_unified,
+                            cparams.n_ctx_seq,
+                            cparams.n_seq_max,
+                            1,
+                            hparams.n_swa,
+                            hparams.swa_type,
+                            nullptr,
+                            nullptr,
+                            nullptr);
+                } else {
+                    // GGUF without the indexer tensors: plain cache for the dense <=support path
+                    res = new llama_kv_cache(
+                            *this,
+                            hparams,
+                            params.type_k,
+                            params.type_v,
+                            !cparams.flash_attn,
+                            cparams.offload_kqv,
+                            cparams.kv_unified,
+                            cparams.n_ctx_seq,
+                            cparams.n_seq_max,
+                            1,
+                            hparams.n_swa,
+                            hparams.swa_type,
+                            nullptr,
+                            nullptr,
+                            nullptr,
+                            nullptr);
+                }
+            } break;
         case LLM_ARCH_MINIMAX_M3:
             {
                 // sparse (MSA) layers carry an indexer key cache, but leading dense layers do not

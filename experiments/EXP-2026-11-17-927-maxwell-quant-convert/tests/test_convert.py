@@ -180,7 +180,7 @@ CFG = {
     "qk_layernorm": True, "router_score_function": "sigmoid",
     "moe_router_enable_expert_bias": True, "mtp_num_layers": 1,
     "mlp_only_layers": [0], "attention_variant": "block_sparse_gqa",
-    "block_sparse_gqa_indexer_n_heads": 1, "block_sparse_gqa_indexer_head_dim": 16,
+    "block_sparse_gqa_indexer_n_heads": 4, "block_sparse_gqa_indexer_head_dim": 16,
     "block_sparse_gqa_block_size": 8, "block_sparse_gqa_topk_blocks": 2,
     "block_sparse_gqa_total_support_blocks": 64,
     "block_sparse_gqa_prefix_window_size": 16,
@@ -213,6 +213,12 @@ def build_tensors(rng, vocab=256, n_layer=2, dense=(0,)):
             (f"{p}.self_attn.k_layernorm.weight", np.ones(16, dtype=np.float32)),
             (f"{p}.input_layernorm.weight", np.ones(C, dtype=np.float32)),
             (f"{p}.post_attention_layernorm.weight", np.ones(C, dtype=np.float32)),
+            (f"{p}.self_attn.indexer.linear_q_proj.weight",
+             (rng.standard_normal((4*16, C))*0.02).astype(np.float32)),
+            (f"{p}.self_attn.indexer.linear_k_proj.weight",
+             (rng.standard_normal((16, C))*0.02).astype(np.float32)),
+            (f"{p}.self_attn.indexer.q_layernorm.weight", np.ones(16, dtype=np.float32)),
+            (f"{p}.self_attn.indexer.k_layernorm.weight", np.ones(16, dtype=np.float32)),
         ]
         for tag in ("self_attn_hyper_connection", "mlp_hyper_connection"):
             t += [
@@ -288,6 +294,13 @@ def main():
         # Every planned output exists and no HF spelling leaked through.
         for name in rd.tensors:
             check(not name.startswith(("model.", "lm_head.")), f"HF name leaked: {name}")
+
+        t = rd.tensors["blk.0.indexer.q_proj.weight"]
+        check(t["type"] == 2 and t["dims"] == [64, 64], f"indexer q_proj {t}")
+        t = rd.tensors["blk.0.indexer.k_proj.weight"]
+        check(t["type"] == 2 and t["dims"] == [64, 16], f"indexer k_proj {t}")
+        t = rd.tensors["blk.0.indexer.q_norm.weight"]
+        check(t["type"] == 0 and t["dims"] == [16], f"indexer q_norm {t}")
 
         t = rd.tensors["blk.0.attn_q.weight"]
         check(t["type"] == 2 and t["dims"] == [64, 64], f"attn_q {t}")

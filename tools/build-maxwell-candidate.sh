@@ -55,7 +55,7 @@ if "llama_model_maxwell" not in s:
         sys.exit("msa anchor not found")
     s = s[:idx] + """        case LLM_ARCH_MAXWELL:
             {
-                if (hparams.indexer_head_size > 0) {
+                if (false) { // MSA graph not implemented yet: dense graph needs the plain cache
                     res = new llama_kv_cache_msa(
                             *this, params.type_k, params.type_v, !cparams.flash_attn,
                             cparams.offload_kqv, cparams.kv_unified, cparams.n_ctx_seq,
