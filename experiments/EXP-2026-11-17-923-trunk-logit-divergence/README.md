@@ -327,6 +327,19 @@ that casts the dequantised V to F16 and back before the gate multiply) produced
 no output in this session and is left recorded as not yet measured rather than
 guessed.
 
+### F16-V and gate order are both closed
+
+    F16-V variant   : manual vs native max 1.3507  (gate kept)
+    gate-zeroed model: manual vs native max 1.3665 (gate = 0.5 on both sides)
+
+Neither explains it. A kernel that dequantises V through F16 would have moved
+the hand-built branch towards native; it does not. With the gate half zeroed the
+gate order cannot matter, and the disagreement is unchanged.
+
+So of the three candidates only one is left: **which V native attends to**. Every
+other input to that branch has been checked one by one and matches, and the
+hand-built branch is bitwise the Goose path.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -351,8 +364,9 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. finish the F16-V variant (it produced no output; likely the empty output-path
-   argument aborted the run) and, if that does not explain it, compare the
-   *attention output alone*: native's `llama_get_embeddings_ith` for a model
-   whose `attn_output` weight is zeroed isolates the residual from the attention,
-   so the two can be separated without reading llama.cpp's internals.
+7. compare with the quantisation removed on both sides: native with
+   `type_v = F32` against the hand-built branch using the exact recomputed V
+   instead of the dequantised store. If those agree, native's V content is right
+   and the difference is in its Q4_0 write/read after all; if they still differ,
+   native is attending to a different vector entirely and the next artefact is a
+   dump of its cache cell.
