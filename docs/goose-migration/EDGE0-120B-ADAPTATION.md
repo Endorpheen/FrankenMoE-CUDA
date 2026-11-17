@@ -1,8 +1,58 @@
 # Edge0-120B Q3_K adaptation (out-of-ledger work item)
 
-Status: **NOT IMPLEMENTED**. This document records the verified pack layout, the
-gap against the current fork and the staged plan. Nothing here is a claim that
-the model loads or runs. No server, model or benchmark was started.
+Status: **PARTIAL COMPONENT SUPPORT; MODEL INFERENCE NOT IMPLEMENTED**.
+The current verified checkpoint is below. The older inventory, readiness check
+and target command later in this document are historical 2026-11-13 planning
+material; they must not be used as current download or launch instructions.
+
+## Verified checkpoint: 2026-11-17
+
+- All 68 required pack files match pinned HF revision
+  `dab5ce727d494e2018626fe8896bfdc774215b17` in EXP908's full hashing pass.
+  The two original `.part` files were finalized only after complete hash
+  verification. Their exact sizes are 28626124800 B (`experts.bin`) and
+  51200246112 B (`ple-fp8.gguf`). Current size inventory has no errors, and
+  the finalized files still match their rename receipts' inode/mtime/size.
+  No new full-file hash pass is claimed here; unchanged evidence is reused.
+- Actual architecture: `general.architecture=qwen4exp`, latent sparse MoE,
+  48 layers, 512 experts, 10 routed plus a shared expert; not an established
+  architecture called QN4. External weights mix Q3_K gate/up with IQ4_NL down.
+  Local D/U files match the pinned old revision; current HF main replaced them
+  with same-sized files. Do not mix revisions silently.
+- EXP909: bounded, stateless external tensor descriptors and routing-group
+  lookup, tested against independent pack arithmetic.
+- EXP910: exact E4M3 FP8 PLE row decoding. The GGUF I8 storage tag does not mean
+  integer-valued embeddings.
+- EXP911: bounded synchronous PLE row provider, 26 cases, 512 concurrent calls,
+  six semantic mutations. This remains a component, not model-state integration.
+- EXP912: accepted shared typed graph builder reused in this branch, without
+  changing the immutable Apex runtime or the main Goose branch.
+- [EXP915](../../experiments/EXP-2026-11-17-915-edge0-latent-expert/README.md):
+  real-weight Goose orchestration of one selected expert's
+  `D -> inverse scale -> gate/up -> SiLU/product -> down -> U`.
+  24 cases, 192 nonzero stages, 430080 exact finite F32 values, 288 invalid-graph
+  checks, five semantic mutations. Component peak RSS 26216 KiB, GPU runs zero.
+
+The scale placement is specified in the developer's
+[pinned expert layout](https://github.com/Edge0-AI/Edge0/blob/f6bfa5546bcf89919f86946ec669bcc7f4cd526d/edge0-strata/src/kernels/cpu/expert_layout.cpp):
+gate/up contain `A*diag(s)`; their input must receive `1/s` once after D.
+EXP915 compares graph orchestration using the same native GGML quantization
+primitives; it does not establish parity with Strata's full activation protocol.
+
+Full residency of experts + PLE + skeleton + dense + Q4 D/U would require
+82.68 GiB before workspaces, exceeding 64 GB RAM. This does not rule out a
+bounded implementation. The minimal route is streaming PLE, bounded expert
+caches, a short initial context and MTP disabled. No conversion or second copy
+of the 85.94 GiB pack is needed. Test artifacts for EXP915 total about 4.52 MiB.
+
+Remaining before the requested first Russian response: loader-owned external
+tensor lifetimes, top-10 weighting/group reduction and shared-expert path,
+external PLE history/convolution/restore wiring, complete backbone and server
+integration, then a measured memory gate and one controlled inference. Full
+Edge0 correctness, prefill/decode and peak RAM/VRAM remain **unmeasured**.
+No Edge0 server was launched. The nine accepted Apex runtime ELF hashes match.
+
+## Historical adaptation plan (2026-11-13)
 
 The Edge0/strata engine is **not** used as a backend. It is a format reference
 only: no process, no Python server, no linked library. All loading and compute
