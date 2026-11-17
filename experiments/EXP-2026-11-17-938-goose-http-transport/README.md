@@ -194,3 +194,21 @@ must be zeroed too.
 
 With that fixed, two identical requests return byte-identical id lists, and the
 gate asserts it.
+
+## End of generation is the Goose set, not the token cap
+
+`bt_eog_ids` builds the stop set from the token texts (5 entries on Apex) and
+`bt_is_eog` answers the stop question; the first version passed an EMPTY table,
+so generation could only ever end at the cap.
+
+A chat turn now stops where it should:
+
+    <|im_start|>user
+    What is 2+2?<|im_end|>
+    <|im_start|>assistant
+
+    -> 50 tokens, last id 248046 (<|im_end|>)
+    -> " ... The answer is 4.\n\n**4**\n\nIs there anything else I can help you with?<|im_end|>"
+
+`/props` reports the set size (`n_eog`), and the gate asserts that the chat
+answer ends on 248046 with the stop token in the text.

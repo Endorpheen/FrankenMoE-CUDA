@@ -34,18 +34,21 @@ PORT=0
 for p in 18931 18932 18933; do ss -H -ltn 2>/dev/null | grep -q ":$p " || { PORT=$p; break; }; done
 [ "$PORT" != 0 ] || { echo "no free port"; exit 1; }
 
-LD_LIBRARY_PATH="$SUP" "$OUT/server" "$MODEL" "$PORT" 2 > "$OUT/server.log" 2>&1 &
+LD_LIBRARY_PATH="$SUP" "$OUT/server" "$MODEL" "$PORT" 4 > "$OUT/server.log" 2>&1 &
 SRV=$!
 for _ in $(seq 1 180); do grep -q 'SERVER listening' "$OUT/server.log" 2>/dev/null && break; sleep 1; done
 
 P=$(curl -s --max-time 60 "http://127.0.0.1:$PORT/props")
 C=$(curl -s --max-time 900 -X POST --data-binary 'The capital of France is' "http://127.0.0.1:$PORT/completion")
 C2=$(curl -s --max-time 900 -X POST --data-binary 'The capital of France is' "http://127.0.0.1:$PORT/completion")
+CHAT=$(curl -s --max-time 900 -X POST --data-binary $'<|im_start|>user\nWhat is 2+2?<|im_end|>\n<|im_start|>assistant\n' \
+       "http://127.0.0.1:$PORT/completion")
 kill $SRV 2>/dev/null || true
 wait $SRV 2>/dev/null || true
 
 echo "P: $P"
-echo "C: $(echo "$C" | head -c 200)..."
+echo "C: $(echo "$C" | head -c 160)..."
+echo "CHAT: $(echo "$CHAT" | head -c 160)..."
 fail=0
 echo "$P" | grep -q '"n_layer":40' || fail=1
 echo "$C" | grep -q '"ids":\[11751,11,264,3177,8807,303,3712,321' || fail=1
@@ -53,4 +56,7 @@ echo "$C" | grep -q '"text":" Paris, a city rich in history' || fail=1
 # A second request must reproduce the first: the per-request state is reset, so
 # nothing from the previous request leaks into the next one.
 [ "$C" = "$C2" ] || { echo "repeat differs"; fail=1; }
+# The chat turn must stop on the Goose end-of-generation set, not at the cap.
+echo "$CHAT" | grep -q ',248046\]' || { echo "chat did not stop on im_end"; fail=1; }
+echo "$CHAT" | grep -q '<|im_end|>' || { echo "chat text missing the stop token"; fail=1; }
 [ "$fail" = 0 ] && echo "HTTP_COMPLETION OK" || { echo "HTTP_COMPLETION FAIL"; tail -5 "$OUT/server.log"; exit 1; }

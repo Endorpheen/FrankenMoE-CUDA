@@ -73,6 +73,8 @@ typedef struct {
     uint8_t * blob;
     int64_t * tok_off, * tok_len, * tok_slots, * mrg_off, * mrg_len, * mrg_slots, * attr, * order;
     int64_t n_tok, n_mrg, n_special, n_tok_slots, n_mrg_slots, blob_len;
+    int64_t * eog;
+    int64_t n_eog, eos;
     // trunk state
     int64_t layer_count, hidden, acfg[14], gcfg[7], mcfg[3], kv_state[6];
     int sections[4];
@@ -165,6 +167,22 @@ static void load_vocab(void) {
                                    (sl_i64){ H.tok_len, H.n_tok }, (sl_i64){ H.attr, H.n_tok },
                                    (sl_i64){ H.order, H.n_tok });
     if (H.n_special < 0) H.n_special = 0;
+
+    // End-of-generation set, decided by Goose from the token texts.
+    H.eos = -1;
+    {
+        const int64_t ei = find_key("tokenizer.ggml.eos_token_id");
+        if (ei >= 0) {
+            int64_t one = 0;
+            gr_meta_int((sl_u8){ H.base, hdr }, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
+                        ei, (sl_i64){ &one, 1 });
+            H.eos = one;
+        }
+    }
+    H.eog = calloc((size_t) H.n_tok, sizeof(int64_t));
+    H.n_eog = bt_eog_ids((sl_u8){ H.blob, H.blob_len }, (sl_i64){ H.tok_off, H.n_tok },
+                         (sl_i64){ H.tok_len, H.n_tok }, H.eos, -1, -1, (sl_i64){ H.eog, H.n_tok });
+    if (H.n_eog < 0) H.n_eog = 0;
 
     const int64_t cap = MAX_REQ + 1;
     H.scratch_cpts = calloc((size_t) cap, sizeof(int64_t));
@@ -408,7 +426,7 @@ int64_t generation_serve(int64_t conn) {
                 logits = NULL;
                 if (next < 0) { printf("SAMPLE failed\n"); fflush(stdout); break; }
                 out_ids[produced++] = next;
-                if (bt_is_eog((sl_i64){ NULL, 0 }, 0, next) != 0) break;
+                if (bt_is_eog((sl_i64){ H.eog, H.n_eog }, H.n_eog, next) != 0) break;
                 batch = malloc(4);
                 batch[0] = (int32_t) next;
                 past = 1;
@@ -434,9 +452,9 @@ int64_t generation_serve(int64_t conn) {
         }
     } else if (plen == 6 && memcmp(path, "/props", 6) == 0) {
         blen = (int64_t) sprintf((char *) body,
-            "{\"n_vocab\":%lld,\"n_special\":%lld,\"n_layer\":%lld,\"n_embd\":%lld,\"bindings\":%d}",
-            (long long) H.n_tok, (long long) H.n_special, (long long) H.layer_count,
-            (long long) H.hidden, H.bindings);
+            "{\"n_vocab\":%lld,\"n_special\":%lld,\"n_eog\":%lld,\"n_layer\":%lld,\"n_embd\":%lld,\"bindings\":%d}",
+            (long long) H.n_tok, (long long) H.n_special, (long long) H.n_eog,
+            (long long) H.layer_count, (long long) H.hidden, H.bindings);
     } else if (route > 0) {
         blen = (int64_t) sprintf((char *) body, "{\"route\":%lld}", (long long) route);
     } else {
@@ -476,8 +494,9 @@ int main(int argc, char ** argv) {
 
     load_vocab();
     init_trunk();
-    printf("SERVER vocab=%lld special=%lld layers=%lld bindings=%d\n",
-           (long long) H.n_tok, (long long) H.n_special, (long long) H.layer_count, H.bindings);
+    printf("SERVER vocab=%lld special=%lld eog=%lld eos=%lld layers=%lld bindings=%d\n",
+           (long long) H.n_tok, (long long) H.n_special, (long long) H.n_eog, (long long) H.eos,
+           (long long) H.layer_count, H.bindings);
     fflush(stdout);
 
     const int64_t max_req = argc > 3 ? atoll(argv[3]) : 1;
