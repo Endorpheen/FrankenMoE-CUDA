@@ -168,6 +168,37 @@ The F32 V values themselves cannot be the difference: the same ablation shows
 That leaves the KV write/read path: which op writes V, in which layout, and with
 which quantiser.
 
+### Byte level: the stores hold one cell, and the bytes differ
+
+Two new dumps on the two-block model, one token:
+
+- the fixture writes every persistent store tensor after the step
+  (`kvbytes` mode): layer 0 slots 0/1 are the GDN conv/state (F32), layer 1
+  slots 2/3 are K and V (`GGML_TYPE_Q4_0`, 589824 bytes each), and only the
+  first 288 bytes of each K/V store are non-zero, i.e. exactly one cell;
+- llama.cpp's `llama_state_seq_get_data` for the same context writes a
+  2196156-byte blob (`state` mode).
+
+Searching the native blob for goose's first K cell (288 bytes) and its first V
+cell: **not found**, and no 64-byte chunk of either appears either. So the two
+sides do not store the same bytes, which rules out "the write is identical and
+only the read differs".
+
+What that leaves, precisely:
+
+1. the V (and K) F32 values feeding the store differ, even though the projection
+   matmul is exact on this model - the remaining way that can happen is a
+   different *slice* of the projection output being stored, or a different
+   reshape/permute before the write;
+2. the write op quantises differently - e.g. a different block alignment or a
+   cast through F16 before Q4_0.
+
+The next test decides between them without guessing: on the attention-only model
+the layer-1 input is the token embedding (block 0's weights are zero), so the
+fixture can compute `v = wv @ (attn_norm(embedding))` itself, quantise it with
+`ggml_quantize_chunk(Q4_0)` and compare those bytes directly with what the graph
+wrote into the store.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:

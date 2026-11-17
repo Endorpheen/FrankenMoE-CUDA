@@ -20,6 +20,7 @@ int main(int argc, char ** argv) {
     }
     const int max_tokens = argc > 3 ? std::atoi(argv[3]) : 8;
     const std::string mode = argc > 4 ? argv[4] : "greedy";
+    const bool dump_state = mode == "state";
     const bool dump_logits = mode == "logits" || mode == "logits-f32kv" || mode == "logits-nofa";
     const bool f32_kv = mode == "logits-f32kv";
     const bool no_fa = mode == "logits-nofa";
@@ -89,6 +90,22 @@ int main(int argc, char ** argv) {
     if (decode(prompt.data(), n_prompt) != 0) {
         std::fprintf(stderr, "native decode failed\n");
         return 1;
+    }
+
+    if (dump_state) {
+        if (argc <= 5) { std::fprintf(stderr, "state mode needs an output path\n"); return 2; }
+        const size_t need = llama_state_seq_get_size(ctx, 0);
+        std::vector<uint8_t> blob(need);
+        const size_t got = llama_state_seq_get_data(ctx, blob.data(), blob.size(), 0);
+        if (got == 0 || got > need) { std::fprintf(stderr, "state dump failed\n"); return 1; }
+        FILE * f = std::fopen(argv[5], "wb");
+        if (!f || std::fwrite(blob.data(), 1, got, f) != got) { std::fprintf(stderr, "state write failed\n"); return 1; }
+        std::fclose(f);
+        std::printf("STATE_BYTES %zu\nSTATE_DUMP %s\n", got, argv[5]);
+        llama_free(ctx);
+        llama_model_free(model);
+        llama_backend_free();
+        return 0;
     }
 
     if (dump_logits) {

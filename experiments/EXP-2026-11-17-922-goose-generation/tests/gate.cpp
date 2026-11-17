@@ -403,6 +403,24 @@ int main(int argc, char ** argv) {
     const int64_t V = trunk.vocab;
     require((int64_t) logits.size() == V * (int64_t) prompt.size(), "logits shape");
 
+    if (std::string(argv[5]) == "kvbytes") {
+        require(argc > 6, "kvbytes mode needs an output path");
+        // the store tensors of every layer, K then V, as written by the graph
+        FILE * f = std::fopen(argv[6], "wb");
+        require(f != nullptr, "kvbytes file");
+        for (int i = 0; i < trunk.layer_count; ++i) {
+            for (int s = 0; s < 4; ++s) {
+                auto * t = trunk.stores[i][s];
+                if (!t) continue;
+                std::printf("STORE layer=%d slot=%d type=%d bytes=%zu\n", i, s, (int) t->type, ggml_nbytes(t));
+                require(std::fwrite(t->data, 1, ggml_nbytes(t), f) == ggml_nbytes(t), "store write");
+            }
+        }
+        std::fclose(f);
+        std::printf("KVBYTES_DUMP %s\n", argv[6]);
+        return 0;
+    }
+
     if (dump_logits) {
         // last-position logits only, raw f32, for an independent comparison
         require(argc > 6, "logits mode needs an output path");
