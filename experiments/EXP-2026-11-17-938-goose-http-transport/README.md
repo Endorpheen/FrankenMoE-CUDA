@@ -148,3 +148,38 @@ built:
 `n_layer` 41 and `n_embd` 2048 match the Apex file; `eos` 248046 is the
 `<|im_end|>` the chat format stops on. The gate now checks these two numbers, so
 a reader regression that leaves the transport working still fails the gate.
+
+## Generation: the full runtime answers /completion
+
+The standalone binary now loads the Apex weights, binds 733 tensors by offset,
+builds the whole 40-block trunk through Goose and generates over HTTP.
+
+    POST /completion "The capital of France is"
+    -> ids 11751 11 264 3177 8807 303 3712 321 ... (256 tokens)
+    -> text " Paris, a city rich in history and culture. Established in the 9th
+       century, Paris grew from a small settlement on the Seine River ..."
+
+The first eight ids are identical to the recorded EXP922 run, so the trunk path
+in the server is the same one the gate measured. `/props` in the same process
+reports `n_layer=40`, the vocabulary the engine built and the binding count.
+
+Gate: `bash tests/http-completion.sh [outdir]` prints `HTTP_COMPLETION OK`.
+
+### What is Goose here and what is not
+
+Goose: the trunk plan and every layer decision, attention and GDN branches, MoE
+routing, KV bookkeeping, the tokenizer, the sampler and the piece path.
+
+Native, and stated as such: the GGUF container walk (`gguf_init_from_file`,
+tensor offsets) and the ggml CPU compute call. Both are the substrate the
+audit already lists under P10-12 G8; no layer, branch or token decision is made
+in the host.
+
+### Two host defects the run exposed
+
+- `sm_greedy` takes the candidate COUNT as its second argument, not a flag; the
+  first version passed 0 and every step "failed" with the logits already
+  computed;
+- the logits tensor is `[n_vocab, n_tokens]`, so the next token comes from the
+  last position's row. Reading row 0 instead of row `past-1` would have sampled
+  from the wrong position while still producing plausible text.
