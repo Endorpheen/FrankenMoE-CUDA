@@ -39,6 +39,7 @@ MODULES=(
     goose/model/qwen35-attention.goose
     goose/model/qwen35-kv.goose
     goose/model/gdn-ops.goose
+    goose/model/qwen35-gdn.goose
     goose/model/goose-model-loader.goose
     goose/model/file-io.goose
     goose/model/arch-registry.goose

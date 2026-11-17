@@ -229,3 +229,32 @@ execution remain open. Host checkpoint buffers must be CPU-addressable and the
 backend quiescent. Full-model cache equality, task correctness and performance
 gates are still required. Native cache implementations remain live dependencies
 of the current server and other cache modes; no C++ deletion is justified here.
+
+## EXP917: real-weight recurrent GDN and persistent state
+
+Goose now orchestrates the real Apex recurrent layer: weighted pre-norm,
+QKV/Z/beta/alpha projections, dt/negative-A gate, convolution and state tail,
+RMS-based Q/K normalization, fused GDN, gated output norm/projection and
+residual/post-norm. The module owns its derived F32 parameter packing and host
+state snapshots; the executor expands explicit output/conv-copy/state-copy roots.
+Default composition includes it (126 modules/4055 specializations typecheck).
+
+Eight real-weight prefill/decode steps compare 7239360 F32 values bitwise,
+including persistent conv/matrix state and restore/replay across graph
+destruction. Two unexecuted aborts leave state unchanged. Additional gates:
+210 invalid construction inputs, 115 config/host checks and five semantic
+mutations. Peak CPU fixture RSS83964KiB is not model RAM or a speed result.
+
+This real path exposed an overstrict shared constructor guard: native RMS
+supports row-contiguous views with independent outer strides. Only the RMS arm
+was corrected; other norm guards are unchanged. Legacy/typed constructor
+regression and native rollback pass all 36 modes/558 tensors/10408 checks each.
+Existing binaries and EXP912 snapshots remain preserved.
+
+The old GDN L2 export is not used as a substitute: current native models use
+RMS(eps/head_dim) followed by scale(1/sqrt(head_dim)). Fused GDN performs the
+query scale and key-head mapping internally; neither is repeated by Goose.
+Native GGML allocation/POD/math, CPU backend and C++ runtime still remain.
+No new adapter or C/C++ runtime body was added or removed. Full MoE/trunk/logits,
+model-step transactions, generation/session, CUDA and final performance gates
+are open; no Goose-only engine or acceleration is claimed from this component.

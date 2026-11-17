@@ -32,15 +32,18 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("model/qwen35-gdn.goose", "EXP-2026-11-17-917-goose-real-gdn", "source/runtime.goose",
+     "src/models/qwen35moe.cpp and src/models/delta-net-base.cpp (single-stream fused GDN layer/state)",
+     "8 real-weight steps /7239360 exact F32 values /210 invalid inputs /115 host-config checks /5 mutations"),
     ("model/qwen35-kv.goose", "EXP-2026-11-17-914-goose-q4-kv", "source/cache.goose",
      "src/llama-kv-cache.cpp (single-stream compact Q4_0 cache and host checkpoint policy)",
      "6 exact real-weight steps / 1 aborted graph / 49 planner + 50 host checks / 42 invalid layouts / 6 mutations"),
     ("model/qwen35-attention.goose", "EXP-2026-11-17-913-goose-real-attention", "source/attention.goose",
      "src/models/qwen35moe.cpp and src/llama-graph.cpp (single-stream attention branch; persistent KV pending)",
      "8 real-weight cases / 29 stages / 1069056 exact F32-F16 values / 6 mutations; 124-module composition"),
-    ("cpu/goose-graph-builders.goose", "EXP-2026-11-17-912-goose-typed-graph", "source/runtime.goose",
-     "ggml/src/ggml.c (graph constructors; typed and legacy Goose entry points)",
-     "36 modes / 558 tensors / 10408 checks per route; protected legacy packet; 18432 exact numeric values; 2/2 mutations"),
+    ("cpu/goose-graph-builders.goose", "EXP-2026-11-17-917-goose-real-gdn", "source/graph-builders.goose",
+     "ggml/src/ggml.c (typed/legacy constructors; strided-row RMS support)",
+     "36 modes /558 tensors /10408 checks per route and rollback; real GDN strided RMS numerical parity"),
     ("chat/parse-params.goose", "EXP-2026-11-14-575-p9-06-arena-load", "source/parse_params.goose",
      "common/peg-parser.cpp (arena load) and runtime chat_parse.cpp", "10 cases / 58 values / 0 failures, 15/15 mutations"),
     ("chat/jsonparse.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",

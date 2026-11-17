@@ -244,7 +244,13 @@ fn common_values(p: i64, values: i64[:]) -> i64 {
         }
 
         if mode == 4 {
-            ensure(pred(2, a, 0) != 0, 9);
+            if op == 25 {
+                // RMS supports independent outer strides, as the native CPU
+                // kernel walks nb[1..3]; only each F32 row is contiguous.
+                rows(a);
+            } else {
+                ensure(pred(2, a, 0) != 0, 9);
+            }
         }
 
         if mode == 5 {

@@ -1,0 +1,356 @@
+{
+  "experiment": "EXP-2026-11-17-917-goose-real-gdn",
+  "source_checkpoint": "e1a4c648eb1dfb7ce9cc32b3494361991c91b102",
+  "verdict": "ACCEPTED_COMPONENT_ONLY",
+  "computed_steps": 8,
+  "unexecuted_aborted_graphs": 2,
+  "compared_F32_values": 7239360,
+  "invalid_construction_calls": 210,
+  "config_host_checks": 115,
+  "mutations_killed": [
+    "beta",
+    "gate-operator",
+    "conv-tail",
+    "config-scale",
+    "restore-state"
+  ],
+  "shared_constructor_regression": {
+    "modes": 36,
+    "paired_tensors_per_route": 558,
+    "checks_per_route": 10408,
+    "routes": [
+      "legacy",
+      "typed",
+      "native rollback"
+    ]
+  },
+  "fixture_peak_rss_KiB": 83964,
+  "model_server_runs": 0,
+  "GPU_runs": 0,
+  "model_integrity_reused": {
+    "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/model-proof.json",
+    "sha256": "fe58a54ea6e2e383b073314e324e69d53a9f6c5981db0bdaa3a0a3efa880d027"
+  },
+  "GDN_source_sha256": "c3d54bf3d9694584f89984c08753db04b2726ca357ca9aad296601c612fa9aa6",
+  "builder_source_sha256": "0956a5bd3092c7f08e65eb28da4bd001d9539a835ce501fcc57b45e8a9df0ed5",
+  "native_source_anchors": [
+    {
+      "path": "vendor/flint/src/models/qwen35moe.cpp",
+      "sha256": "579426f57c8691279ab9231264b5a0bceb214e57b3876d58020a1f40a98647a4"
+    },
+    {
+      "path": "vendor/flint/src/models/delta-net-base.cpp",
+      "sha256": "757ffa2fabd995bebe2b916412a387949dcc71f1263577f9a8a88bfd20214189"
+    },
+    {
+      "path": "vendor/flint/src/models/models.h",
+      "sha256": "b6323dc9e12f8a3a5a398560067ef3d042d17ece4543765cd62ef851e0149121"
+    },
+    {
+      "path": "vendor/flint/ggml/src/ggml-cpu/ops.cpp",
+      "sha256": "b565fea101889b8b73011ad26c5cafc242e3d10b0eb65d3aba4b53808d0f2e71"
+    }
+  ],
+  "model_metadata_receipt": {
+    "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117/metadata.json",
+    "sha256": "9c1cbb56e6497d18f42bf9ec24cd980f604e3889bf08e342533df7c662553366"
+  },
+  "native_retention_audit": {
+    "path": "Backup/exp917-goose-real-gdn/retention-audit.log",
+    "sha256": "92164ddc331c0fda6a38ba7306a07805bb4d4e321f55f5b22aa7a573dadaf344",
+    "cpp_replaced_and_removed_lines": 0,
+    "dead_cpp_deleted_lines": 0,
+    "baseline_closure_cpp_lines": 248213,
+    "baseline_closure_cpp_files": 350,
+    "minimum_necessary_subset": null,
+    "new_native_adapters": 0
+  },
+  "limits": "One sequence, fused K=1, real layer0. Full model/logits/generation, CUDA, multi-sequence, model-step transactions, standalone no-C++ build and speed unproven.",
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/beta/gdn.so",
+      "bytes": 724816,
+      "sha256": "58b17edd9a97f01347df0e2d17af3d5096bfcba5634a227b4b31fd180bc819b0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/beta/runtime.c",
+      "bytes": 412104,
+      "sha256": "9df0ebdfa3c5b955bbc6e401bf9371847e590c3cfe1c679e3ef7d23c05b5fe83"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/beta/runtime.h",
+      "bytes": 4368,
+      "sha256": "f1af6e5d6c96b5c20787700f3a5af6a3c2c263b8dc535a8babbf856dfdf0931f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/beta/unit.goose",
+      "bytes": 49618,
+      "sha256": "4aa9f772d0ac530eb95576ddb42ea1962ca0ac08306b44c1bc81ad8db25ce28d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/bindings.o",
+      "bytes": 52928,
+      "sha256": "1a7ce16758fe0da5e724d23780fc13cc34564f8bed28e4fdb307f409f380ca06"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/build.log",
+      "bytes": 2518,
+      "sha256": "a3134932bc058572a5f0ec5076f75662efc00bb4289a1a036300ae7030a1e599"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/check.log",
+      "bytes": 2297,
+      "sha256": "83e313fcf8b8e4dbd513539c31d86363786058d2edfeed00093f42e9b36245aa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/config-scale/gdn.so",
+      "bytes": 724760,
+      "sha256": "af7abbafad153c31765ae1df5053720742aa03dfa995d416ac7198d9bc7d6098"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/config-scale/runtime.c",
+      "bytes": 412037,
+      "sha256": "3ce26168a5423debbea01853b794f93209efc9941cbea9f677083b8fe79c90c3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/config-scale/runtime.h",
+      "bytes": 4368,
+      "sha256": "f1af6e5d6c96b5c20787700f3a5af6a3c2c263b8dc535a8babbf856dfdf0931f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/config-scale/unit.goose",
+      "bytes": 49610,
+      "sha256": "67901964a718b01c7dd68358bd879b6cd1a18b4131acd7c086619a284bcbe61b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/constructor.d",
+      "bytes": 6120,
+      "sha256": "ff1811d30ddb9ff40376ed35899636dd114c4fbefccdbcfdbc5c3c57aaeb97a2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/constructor.so",
+      "bytes": 1329584,
+      "sha256": "ee08ec1e605b2cc1d535fd2fe5c273a710e3979a4a62c9fb4583264e0406fb90"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/contracts.log",
+      "bytes": 261,
+      "sha256": "4adac7df339f150abfbefd43ed23b2d16fd9b5418257270018d7d9d864fd7d4d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/conv-tail/gdn.so",
+      "bytes": 724824,
+      "sha256": "5963ecda3dca960df94d03aa53cec5fad335ebc495f4cdb179386e5f561b712e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/conv-tail/runtime.c",
+      "bytes": 412155,
+      "sha256": "5692f1b967a20a4aeccfdf03cb551ef7e1cb0c75971589e2b4fae79cb9e00cd9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/conv-tail/runtime.h",
+      "bytes": 4368,
+      "sha256": "f1af6e5d6c96b5c20787700f3a5af6a3c2c263b8dc535a8babbf856dfdf0931f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/conv-tail/unit.goose",
+      "bytes": 49621,
+      "sha256": "6e37bc712cf9c259d420069cb3a71649284b88af567fee57f3d968a16fe629f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/fixture-gate-contracts.log",
+      "bytes": 1233,
+      "sha256": "cff87b5eb843616b5f9c3d0a34971c9bef36d5a85ec6d74f8c40c8aa30580208"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/fixture-gate-detail.log",
+      "bytes": 1230,
+      "sha256": "a3b56eaac0cc98f0aab939fb5e7d2c2b9108728b12957af9ab22d162ea71a3d6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/fixture-gate-views.log",
+      "bytes": 1229,
+      "sha256": "4ba74fea90c1a98cfbd140d2392bf5fe59dfe15795708b2ff08a0cef097f7900"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/fixture-source.json",
+      "bytes": 90,
+      "sha256": "71a4a3a28b80244709301345b080521a466d6f33f0978e9e446f47ab0f1ec504"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/fixture.log",
+      "bytes": 1223,
+      "sha256": "5d5334c5c780e6512f2b58372042f655900f876ca20ad3b3fef13a0af67feccb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate",
+      "bytes": 442888,
+      "sha256": "3c939ed1d3bd6e568a11c818b497fd4327e5fa763ba17088a1a3755ee179048e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-contracts",
+      "bytes": 464816,
+      "sha256": "c71f321cfee8938190cde92f2b14af9e70db0196914386b3abadfe356fff8a56"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-contracts-source.json",
+      "bytes": 90,
+      "sha256": "fe990475c52b7d9c8c226d289b7b689a6731b25e0c088d225644f371e58667cd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-detail",
+      "bytes": 443248,
+      "sha256": "0003c1f54c6a6df7587cca6d10f64d497c18514d866fbdbd7c6e83905ea71636"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-detail-source.json",
+      "bytes": 90,
+      "sha256": "29f43e73b23ba630bcfa8463c367fc1262ae603974a194fefded0be9fc7e1ca7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-gate-contracts.log",
+      "bytes": 2542,
+      "sha256": "4725963c19c6fc22b03e4c6e929cbe71847af25d72c2a2615cf3056ee46b5f39"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-gate-detail.log",
+      "bytes": 2144,
+      "sha256": "91bcdd26a8fd8b7cd5c9fdc1438e0c6d881c6be5f769e6f4c2cf5b03b15e3e73"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-gate-views.log",
+      "bytes": 2525,
+      "sha256": "500a53bd7c7df7d042a19f2500af4d62c1696dba5af780dd7b252c2fe3dc3d9c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-operator/gdn.so",
+      "bytes": 724832,
+      "sha256": "97c6be6e9183a9d1604c767d949e2bdf5c94dac45bd4608a0ba5fb1f2adda4cb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-operator/runtime.c",
+      "bytes": 412121,
+      "sha256": "df4ed70b5f120dc36a6e2821e6820957efe919504b9ad359f36af6308d7a11f7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-operator/runtime.h",
+      "bytes": 4368,
+      "sha256": "f1af6e5d6c96b5c20787700f3a5af6a3c2c263b8dc535a8babbf856dfdf0931f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-operator/unit.goose",
+      "bytes": 49617,
+      "sha256": "6965bfe5e67e50e2c9f77d04241e6803803ba182407db979e5e365c57c6550a6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-views",
+      "bytes": 448568,
+      "sha256": "858b736a49fa831050473f0a6d5c6ffe28077de9962f2cb3bb4fc6435d758c90"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate-views-source.json",
+      "bytes": 90,
+      "sha256": "92400bbe2f1dadeb5ce8c4cd5002ef12ed78aa89812b060affbc32ca68d40fd4"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gate.log",
+      "bytes": 2108,
+      "sha256": "85f428ec2aff30f8deb0a6675a7d9ce7e6248a76cf6fbd69880b7e169cfbe470"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/gdn.so",
+      "bytes": 410032,
+      "sha256": "c7d953e43bf357eed04943ace5e0f60bb73a55854ee76b893e7d7a8ba62b631d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/inputs.json",
+      "bytes": 1253,
+      "sha256": "26707ca0ad09ec12e6945c7511f18e5937158b2e5186d97593dcd1cf1399a329"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/main-check.log",
+      "bytes": 453390,
+      "sha256": "83a9181336f84aa0fc08acdd8c85dd3c3d33b4b3555662b85701c45fe13b35c0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/main.goose",
+      "bytes": 3426022,
+      "sha256": "1b614267e7d2463eb1984192aefe541207d0335ae18343043322c5b0d7d91b5f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/mutations-config-scale.log",
+      "bytes": 4842,
+      "sha256": "b2510d7bff0229263da12a4a1e244c2cad708c2589b2efaa3bac54e3cb4c9efe"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/mutations-conv-tail.log",
+      "bytes": 6043,
+      "sha256": "4b6e6237b36137cd637c8b8d275ce43ffc77f44ecb0136967e4b2d823eb9162e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/mutations-gate-operator.log",
+      "bytes": 6145,
+      "sha256": "cc60eacd012610b9c0f02c757d7c9f7477bc313aebc98550af565e59bf4f3561"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/mutations-gate.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/mutations-restore-state.log",
+      "bytes": 4799,
+      "sha256": "ef91abe67c54e628b7f1ca89c9ac59fe37c3888131f29cecfcd8eff782c083a9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/mutations.log",
+      "bytes": 5900,
+      "sha256": "ea5f31e16af1128c9dbfd5932444e0cad7734f44e2aeaa85255512e0822557db"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/regression.log",
+      "bytes": 3054,
+      "sha256": "bf0920c3610e9416c2ae56188cc78137bce303558717c0795f25cc081afa1cbc"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/restore-state/gdn.so",
+      "bytes": 724832,
+      "sha256": "359137de9a54e417df36222a398e399bca7c46685519c279421b65da89b01661"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/restore-state/runtime.c",
+      "bytes": 412076,
+      "sha256": "7225dd852f58e7a07da2d89238dcfe687e7fbfe53b7421c3ba21ace6284f33a5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/restore-state/runtime.h",
+      "bytes": 4368,
+      "sha256": "f1af6e5d6c96b5c20787700f3a5af6a3c2c263b8dc535a8babbf856dfdf0931f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/restore-state/unit.goose",
+      "bytes": 49612,
+      "sha256": "c137190e4800d573a6b71a84ab0583c24a4c536f7632fed0d1204a0bd6725afa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/runtime.c",
+      "bytes": 412093,
+      "sha256": "92b508341126214d0d9a0fefbc64f9d556b1fe6602454b22d222ed62d127e1fe"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/runtime.h",
+      "bytes": 4368,
+      "sha256": "f1af6e5d6c96b5c20787700f3a5af6a3c2c263b8dc535a8babbf856dfdf0931f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/runtime.o",
+      "bytes": 729072,
+      "sha256": "2c21c744695891f821b7195ceffc96df7c78d17ad6b9e6c92c1ad1e160bab580"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp917-goose-real-gdn-20261117-v3/unit.goose",
+      "bytes": 49617,
+      "sha256": "aeef3d470dddeaf560b6a0fb44a32a6dc53f5a79493a80134769efae3c785f73"
+    }
+  ]
+}
