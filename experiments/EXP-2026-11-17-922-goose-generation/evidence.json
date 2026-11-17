@@ -175,5 +175,39 @@
   ],
   "cxx_lines_removed": 0,
   "new_cxx_lines": 0,
-  "artifacts_root": "/home/end0/AI/LlamaServer/exp922-goose-generation-20261117"
+  "artifacts_root": "/home/end0/AI/LlamaServer/exp922-goose-generation-20261117",
+  "correction": {
+    "finding": "greedy ids and text match, but the logits do not: the Goose trunk is not numerically equal to llama.cpp's model graph",
+    "measurements": {
+      "single_token_prompt_goose_vs_native_q4kv": {
+        "mean_abs_diff": 0.10680894955912289,
+        "max_abs_diff": 0.7492470741271973,
+        "bitwise_equal": 0
+      },
+      "single_token_prompt_goose_vs_native_f32kv": {
+        "mean_abs_diff": 0.09892622972991601,
+        "max_abs_diff": 0.6374127864837646,
+        "bitwise_equal": 0
+      },
+      "single_token_prompt_native_q4kv_vs_native_f32kv": {
+        "mean_abs_diff": 0.0769315578165577,
+        "max_abs_diff": 0.5541448593139648,
+        "bitwise_equal": 0
+      },
+      "multi_token_prompt_goose_vs_native_q4kv": {
+        "mean_abs_diff": 0.20102016232045458,
+        "max_abs_diff": 1.3137459754943848,
+        "bitwise_equal": 0
+      }
+    },
+    "artifacts": [
+      "logits-v1/goose.f32",
+      "logits-v1/native.f32",
+      "logits-v2/goose_hi.f32",
+      "logits-v2/native_hi.f32",
+      "logits-v2/native_hi_f32.f32"
+    ],
+    "why_it_matters": "EXP918 compared the trunk against a hand-written native graph in the same fixture; agreement there does not imply agreement with llama.cpp's own graph. The stochastic chain cannot be compared until logits agree.",
+    "status": "open, isolation in EXP-2026-11-17-923"
+  }
 }

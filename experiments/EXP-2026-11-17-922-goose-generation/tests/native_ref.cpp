@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -18,6 +19,9 @@ int main(int argc, char ** argv) {
         return 2;
     }
     const int max_tokens = argc > 3 ? std::atoi(argv[3]) : 8;
+    const std::string mode = argc > 4 ? argv[4] : "greedy";
+    const bool dump_logits = mode == "logits" || mode == "logits-f32kv";
+    const bool f32_kv = mode == "logits-f32kv";
     llama_backend_init();
 
     struct llama_model_params mp = llama_model_default_params();
@@ -40,8 +44,8 @@ int main(int argc, char ** argv) {
     cp.offload_kqv = false;
     // the accepted profile: Q4_0 KV and flash attention, so the comparison is
     // against the same arithmetic the Goose fixture runs
-    cp.type_k = GGML_TYPE_Q4_0;
-    cp.type_v = GGML_TYPE_Q4_0;
+    cp.type_k = f32_kv ? GGML_TYPE_F32 : GGML_TYPE_Q4_0;
+    cp.type_v = f32_kv ? GGML_TYPE_F32 : GGML_TYPE_Q4_0;
     cp.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
     struct llama_context * ctx = llama_init_from_model(model, cp);
     if (!ctx) {
@@ -84,6 +88,30 @@ int main(int argc, char ** argv) {
     if (decode(prompt.data(), n_prompt) != 0) {
         std::fprintf(stderr, "native decode failed\n");
         return 1;
+    }
+
+    if (dump_logits) {
+        if (argc <= 5) {
+            std::fprintf(stderr, "logits mode needs an output path\n");
+            return 2;
+        }
+        const float * logits = llama_get_logits_ith(ctx, -1);
+        if (!logits) { std::fprintf(stderr, "no logits\n"); return 1; }
+        FILE * f = std::fopen(argv[5], "wb");
+        if (!f || std::fwrite(logits, sizeof(float), (size_t) n_vocab, f) != (size_t) n_vocab) {
+            std::fprintf(stderr, "logits write failed\n");
+            return 1;
+        }
+        std::fclose(f);
+        int32_t best = 0;
+        for (int32_t i = 1; i < n_vocab; ++i)
+            if (logits[i] > logits[best]) best = i;
+        std::printf("LOGITS_VOCAB %d ARGMAX %d ARGMAX_VALUE %.9g\n", n_vocab, best, logits[best]);
+        std::printf("LOGITS_DUMP %s\n", argv[5]);
+        llama_free(ctx);
+        llama_model_free(model);
+        llama_backend_free();
+        return 0;
     }
 
     std::vector<llama_token> generated;

@@ -81,12 +81,48 @@ A 32-token greedy run with the plain prompt produced continuous, coherent text
 Paris grew from a small settlement on the Seine River to become one of`) and did
 not stop, which is the model's choice, not a tokenizer decision.
 
+## Correction: the ids agree, the logits do not
+
+The id and text equality above is real, but it is NOT evidence that the trunk is
+numerically faithful to llama.cpp, and this experiment found that it is not.
+Dumping the last-position logits of the same prompt from both paths:
+
+| comparison | mean abs diff | max abs diff |
+| --- | ---: | ---: |
+| one-token prompt "Hi", Goose vs native (Q4_0 KV) | 0.1068 | 0.7492 |
+| one-token prompt "Hi", Goose vs native (F32 KV) | 0.0989 | 0.6374 |
+| one-token prompt, native Q4_0 KV vs native F32 KV | 0.0769 | 0.5541 |
+| multi-token prompt, Goose vs native (Q4_0 KV) | 0.2010 | 1.3137 |
+
+Bitwise-equal logits: 0 of 248320 in every comparison.
+
+The third row is the whole point: native's own KV-quantisation effect is smaller
+than the Goose-vs-native gap, and Goose is not closer to native's Q4_0 run than
+to native's F32 run - so the difference is not just "KV is quantised". Something
+in the Goose trunk's arithmetic does not match llama.cpp's, and the greeding
+token agreement is robustness of a confident model, not numerical equality.
+
+Consequences, stated plainly:
+
+- EXP918's "bitwise equal" gate compared the Goose trunk against a hand-written
+  native graph inside the same fixture, not against llama.cpp's own model graph.
+  Both can agree with each other and still differ from llama.cpp.
+- The stochastic chain cannot be compared end to end until the logits agree,
+  because any difference changes the probabilities.
+- The end-to-end id/text/EOS agreement stands as a functional result for these
+  prompts only.
+
+Isolation continues in EXP-2026-11-17-923.
+
 ## What this proves and what it does not
 
 Proves: on the real Apex weights, the composed Goose unit tokenises, decodes,
-samples, detokenises and stops exactly like native llama.cpp under the same
-profile; the trunk path carries KV and recurrent state across steps; the
-end-of-generation set works.
+samples, detokenises and stops like native llama.cpp on the tested greedy runs;
+the trunk path carries KV and recurrent state across steps; the end-of-generation
+set works.
+
+Does not prove: numerical equality of the trunk (see the correction above),
+stochastic equality, or that the shipping server uses these modules.
 
 Does not prove: that the shipping server uses these modules (it still does not),
 grammar/chat-template handling, the stochastic chain end to end, batch > 1, GPU,

@@ -378,6 +378,7 @@ int main(int argc, char ** argv) {
     const int max_tokens = argc > 3 ? std::atoi(argv[3]) : 8;
     const int64_t seed = argc > 4 ? std::atoll(argv[4]) : 42;
     const bool greedy = argc <= 5 || std::string(argv[5]) == "greedy";
+    const bool dump_logits = argc > 5 && std::string(argv[5]) == "logits";
 
     Mapping model(argv[1]);
     Vocab vocab(model);
@@ -393,6 +394,22 @@ int main(int argc, char ** argv) {
     auto logits = trunk.step(batch);
     const int64_t V = trunk.vocab;
     require((int64_t) logits.size() == V * (int64_t) prompt.size(), "logits shape");
+
+    if (dump_logits) {
+        // last-position logits only, raw f32, for an independent comparison
+        require(argc > 6, "logits mode needs an output path");
+        const float * last = logits.data() + (int64_t) (prompt.size() - 1) * V;
+        FILE * f = std::fopen(argv[6], "wb");
+        require(f != nullptr, "logits file");
+        require(std::fwrite(last, sizeof(float), (size_t) V, f) == (size_t) V, "logits write");
+        std::fclose(f);
+        int64_t best = 0;
+        for (int64_t i = 1; i < V; ++i)
+            if (last[i] > last[best]) best = i;
+        std::printf("LOGITS_VOCAB %lld ARGMAX %lld ARGMAX_VALUE %.9g\n", (long long) V, (long long) best, last[best]);
+        std::printf("LOGITS_DUMP %s\n", argv[6]);
+        return 0;
+    }
 
     std::vector<float> lv(V), pbuf(V);
     std::vector<int64_t> ids(V), out(3), ip(3), state(625);
