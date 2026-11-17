@@ -4,6 +4,8 @@
 #include "ggml-cpu.h"
 #include "ggml-backend.h"
 #include "ggml-alloc.h"
+#include "ggml-cuda.h"
+#include <cstdlib>
 extern "C" {
 #include "runtime.h"
 }
@@ -27,6 +29,10 @@ int main(int argc,char ** argv) { try {
  ggml_context * meta=nullptr;auto * info=gguf_init_from_file((path+"/model-skeleton.gguf").c_str(),{true,&meta});require(info,"GGUF metadata");
  int sf=open((path+"/model-skeleton.gguf").c_str(),O_RDONLY),ef=open((path+"/experts.bin").c_str(),O_RDONLY),df=open((path+"/latent_dense_q4.bin").c_str(),O_RDONLY);
  int lf=open((path+"/labels.bin").c_str(),O_RDONLY);int32_t labels[48*512];readat(lf,labels,sizeof(labels),0);close(lf);
+ const bool gpu_weights=std::getenv("EDGE0_GATE_GPU_WEIGHTS")!=nullptr;
+ const bool rebind_stress=std::getenv("EDGE0_GATE_REBIND_STRESS")!=nullptr;
+ auto * gpu=gpu_weights?ggml_backend_cuda_init(0):nullptr;
+ require(!gpu_weights||gpu,"CUDA backend");int case_index=0;
  for(int layer:{0,0,47,0}) {
   auto * c=ggml_init({128*1024*1024,nullptr,false});require(c,"context");
   std::array<ggml_tensor *,5>w;std::array<ggml_backend_buffer_t,5> buffers;
@@ -37,7 +43,19 @@ int main(int argc,char ** argv) { try {
     buffers[i]=ggml_backend_buft_alloc_buffer(ggml_backend_cpu_buffer_type(),ggml_nbytes(w[i]));
     require(buffers[i],"CPU weight buffer");void * data=ggml_backend_buffer_get_base(buffers[i]);std::memcpy(data,w[i]->data,ggml_nbytes(w[i]));w[i]->data=data;w[i]->buffer=buffers[i];
   }
-  franken_edge0_bind(*pack,layer,w[0],w[1],w[2],w[3],w[4]);
+  if(rebind_stress) {
+    auto * raw=(uint16_t*)w[4]->data;
+    for(int i=0;i<2560;++i) {const bool positive=((i*17+layer*7)%47-23)>=0;raw[i]=(uint16_t)(0x4180|((positive^(case_index%2!=0))?0:0x8000));}
+  }
+  ggml_context * wc=nullptr;ggml_backend_buffer_t wb=nullptr;
+  std::array<ggml_tensor*,5> bound=w;
+  if(gpu_weights) {
+    wc=ggml_init({65536,nullptr,true});require(wc,"GPU weight metadata context");
+    for(int i=0;i<5;++i)bound[i]=ggml_dup_tensor(wc,w[i]);
+    wb=ggml_backend_alloc_ctx_tensors(wc,gpu);require(wb,"GPU weight buffer");
+    for(int i=0;i<5;++i)ggml_backend_tensor_set(bound[i],w[i]->data,0,ggml_nbytes(w[i]));
+  }
+  franken_edge0_bind(*pack,layer,bound[0],bound[1],bound[2],bound[3],bound[4]);
   auto * x=ggml_new_tensor_2d(c,GGML_TYPE_F32,2560,1);for(int i=0;i<2560;++i)((float*)x->data)[i]=((i*17+layer*7)%47-23)/64.0f;
   auto * logits=ggml_mul_mat(c,w[0],x);auto * probs=ggml_soft_max(c,logits);auto * ids=ggml_argsort_top_k(c,probs,10);compute(c,ids);
   int64_t gi[10];float gw[10],gp[512];require(moe_route({(float*)logits->data,512},10,1,1.0f,{gi,10},{gw,10},{gp,512})==10,"Goose route");
@@ -62,7 +80,10 @@ int main(int argc,char ** argv) { try {
   auto * candidate=franken_edge0_ffn(*pack,c,x,layer);compute(c,candidate);
   float max_error=0,peak=0;for(int i=0;i<2560;++i) {float a=((float*)candidate->data)[i],b=((float*)result->data)[i];require(std::isfinite(a)&&std::isfinite(b),"finite");max_error=std::max(max_error,std::fabs(a-b));peak=std::max(peak,std::fabs(a));require(std::fabs(a-b)<=2e-5f+2e-5f*std::fabs(b),"full FFN mismatch");}
   require(peak>0,"nonzero");std::printf("PASS full FFN layer=%d routed=10 shared=1 values=2560 max_abs_error=%.9g peak=%.9g\n",layer,max_error,peak);
-  for(auto b:buffers)ggml_backend_buffer_free(b);ggml_free(c);
+  auto * again=franken_edge0_ffn(*pack,c,x,layer);compute(c,again);
+  require(std::memcmp(again->data,candidate->data,ggml_nbytes(candidate))==0,"repeat/cached dense bytes changed FFN output");
+  if(wb)ggml_backend_buffer_free(wb);if(wc)ggml_free(wc);
+  for(auto b:buffers)ggml_backend_buffer_free(b);ggml_free(c);++case_index;
  }
- franken_edge0_profile_phase(3);close(sf);close(ef);close(df);gguf_free(info);ggml_free(meta);std::puts("RESULT PASS: actual callback + Goose latent/top10/shared integration");return 0;
+ if(gpu)ggml_backend_free(gpu);franken_edge0_profile_phase(3);close(sf);close(ef);close(df);gguf_free(info);ggml_free(meta);std::puts("RESULT PASS: actual callback + Goose latent/top10/shared integration");return 0;
  }catch(const std::exception&e){std::fprintf(stderr,"FAIL %s\n",e.what());return 1;}}

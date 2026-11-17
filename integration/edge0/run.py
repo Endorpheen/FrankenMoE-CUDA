@@ -18,7 +18,7 @@ command=[str(p/'build/edge0-cli'),str(pack),str(o/'prompt.txt'),str(a.tokens)]
 runtime_env={**os.environ,'FRANKEN_EDGE0_NGL':str(a.ngl),'LD_LIBRARY_PATH':str(p/'build/llama')+':/home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin'}
 if a.profile:
  runtime_env['FRANKEN_EDGE0_PROFILE']='1'
- command=['nsys','profile','--capture-range=cudaProfilerApi','--capture-range-end=stop','--trace=cuda,nvtx,osrt','--sample=none','--cpuctxsw=none','--force-overwrite=false','--output='+str(o/'decode'),*command]
+ command=['nsys','profile','--capture-range=cudaProfilerApi','--capture-range-end=stop','--trace=cuda,nvtx,osrt','--cuda-graph-trace=node','--sample=none','--cpuctxsw=none','--force-overwrite=false','--output='+str(o/'decode'),*command]
 def descendants(pid):
  found=[];todo=[pid]
  while todo:

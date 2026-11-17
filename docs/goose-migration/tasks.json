@@ -5559,13 +5559,12 @@
     "edge0_performance": {
       "status": "IN_PROGRESS",
       "slices_total": 3,
-      "slices_done": 1,
+      "slices_done": 2,
       "remaining": [
-        "Profile the accepted cached Edge0 path",
-        "Optimise measured remaining bottlenecks toward 15-17 tok/s with exact 256-token parity and zero swap"
+        "Profile latest retained-dense path; optimise measured CPU FFN, I/O, CUDA/placement and synchronisation toward15-17 tok/s"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-17-920-edge0-bounded-cache/README.md",
-      "accepted_checkpoint": "EXP920 bounded RAM caches, 75/256 exact A-B-B-A gate",
+      "coverage_doc": "experiments/EXP-2026-11-17-921-edge0-dense-retention/README.md",
+      "accepted_checkpoint": "EXP921 exact256 result,6.518697 decode /6.247443 prefill in its paired regime; not15-17target completion",
       "target_decode_tps": [
         15,
         17
@@ -5676,13 +5675,12 @@
     "edge0_performance": {
       "status": "IN_PROGRESS",
       "slices_total": 3,
-      "slices_done": 1,
+      "slices_done": 2,
       "remaining": [
-        "Profile the accepted cached Edge0 path",
-        "Optimise measured remaining bottlenecks toward 15-17 tok/s with exact 256-token parity and zero swap"
+        "Profile latest retained-dense path; optimise measured CPU FFN, I/O, CUDA/placement and synchronisation toward15-17 tok/s"
       ],
-      "coverage_doc": "experiments/EXP-2026-11-17-920-edge0-bounded-cache/README.md",
-      "accepted_checkpoint": "EXP920 bounded RAM caches, 75/256 exact A-B-B-A gate",
+      "coverage_doc": "experiments/EXP-2026-11-17-921-edge0-dense-retention/README.md",
+      "accepted_checkpoint": "EXP921 exact256 result,6.518697 decode /6.247443 prefill in its paired regime; not15-17target completion",
       "target_decode_tps": [
         15,
         17

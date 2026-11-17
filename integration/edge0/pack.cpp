@@ -25,7 +25,7 @@ extern "C" {
 // internal threadpool/work preparation; CUDA kernel/copy timings come from nsys.
 struct e0_metrics {
     double arena=0, router=0, du_io=0, expert_io=0, copy=0, graph=0, cpu=0, ple=0, ffn=0;
-    uint64_t calls=0, du_bytes=0, expert_bytes=0, copy_bytes=0, ple_rows=0, expert_hits=0,expert_misses=0,du_hits=0,du_misses=0;
+    uint64_t calls=0, du_bytes=0, expert_bytes=0, copy_bytes=0, ple_rows=0, expert_hits=0,expert_misses=0,du_hits=0,du_misses=0,dense_hits=0,dense_misses=0;
 };
 static e0_metrics e0_profile[3];
 static int e0_phase=0;
@@ -35,7 +35,7 @@ struct e0_span { double & dst; double start; explicit e0_span(double & d):dst(d)
 void franken_edge0_profile_phase(int phase) {
     if (e0_profiling() && phase==3) for(int i=0;i<3;++i) {
         const auto & m=e0_profile[i];
-        std::fprintf(stderr,"EDGE0_PROFILE phase=%d ffn_s=%.9f arena_s=%.9f route_s=%.9f du_read_s=%.9f expert_read_s=%.9f weight_copy_s=%.9f graph_s=%.9f cpu_compute_s=%.9f ple_s=%.9f calls=%llu du_bytes=%llu expert_bytes=%llu copy_bytes=%llu ple_rows=%llu expert_hits=%llu expert_misses=%llu du_hits=%llu du_misses=%llu\n",i,m.ffn,m.arena,m.router,m.du_io,m.expert_io,m.copy,m.graph,m.cpu,m.ple,(unsigned long long)m.calls,(unsigned long long)m.du_bytes,(unsigned long long)m.expert_bytes,(unsigned long long)m.copy_bytes,(unsigned long long)m.ple_rows,(unsigned long long)m.expert_hits,(unsigned long long)m.expert_misses,(unsigned long long)m.du_hits,(unsigned long long)m.du_misses);
+        std::fprintf(stderr,"EDGE0_PROFILE phase=%d ffn_s=%.9f arena_s=%.9f route_s=%.9f du_read_s=%.9f expert_read_s=%.9f weight_copy_s=%.9f graph_s=%.9f cpu_compute_s=%.9f ple_s=%.9f calls=%llu du_bytes=%llu expert_bytes=%llu copy_bytes=%llu ple_rows=%llu expert_hits=%llu expert_misses=%llu du_hits=%llu du_misses=%llu dense_hits=%llu dense_misses=%llu\n",i,m.ffn,m.arena,m.router,m.du_io,m.expert_io,m.copy,m.graph,m.cpu,m.ple,(unsigned long long)m.calls,(unsigned long long)m.du_bytes,(unsigned long long)m.expert_bytes,(unsigned long long)m.copy_bytes,(unsigned long long)m.ple_rows,(unsigned long long)m.expert_hits,(unsigned long long)m.expert_misses,(unsigned long long)m.du_hits,(unsigned long long)m.du_misses,(unsigned long long)m.dense_hits,(unsigned long long)m.dense_misses);
     }
     e0_phase=phase;
 }
@@ -51,12 +51,12 @@ static void exact_read(int fd, void * p, size_t n, int64_t off) {
     }
 }
 struct franken_edge0_pack {
-    struct layer_ref { franken_edge0_pack * owner = nullptr; int id = 0; std::array<ggml_tensor *,5> weights{}; };
+    struct layer_ref { franken_edge0_pack * owner = nullptr; int id = 0; std::array<ggml_tensor *,5> weights{}; std::array<std::vector<uint8_t>,5> cpu_weights; };
     std::array<layer_ref,48> layers;
     std::array<int,3> fd{{-1,-1,-1}};
     std::array<std::array<float,1280>,48> inverse;
     std::vector<uint8_t> labels, du, experts, arena, expert_cache;
-    bool du_cached=true;
+    bool du_cached=true, dense_cached=true;
     int64_t cache_slots=0, next_slot=0;
     std::array<int64_t,192> layout{};
     std::array<int64_t,24576> valid{},spec{},prev{},next{},ever{},slot_of{};
@@ -91,6 +91,7 @@ std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path)
         try { exact_read(sf,s.data(),5120,0); } catch (...) { ::close(sf); throw; } ::close(sf);
         e0_require(e0_inverse_scales({s.data(),1280},{p->inverse[l].data(),1280})==1280,"invalid column scales");
     }
+    const char * dense=std::getenv("FRANKEN_EDGE0_DENSE_CACHE");p->dense_cached=!dense || std::string(dense)!="0";
     const char * dc=std::getenv("FRANKEN_EDGE0_DU_CACHE"); p->du_cached=!dc || std::string(dc)!="0";
     int64_t cache_mib=3072;
     if(const char * v=std::getenv("FRANKEN_EDGE0_CACHE_MIB")) cache_mib=std::stoll(v);
@@ -114,13 +115,31 @@ void franken_edge0_bind(franken_edge0_pack & p,int l,ggml_tensor * r,ggml_tensor
     e0_require(l>=0 && l<48,"layer out of range");
     p.layers[l].weights={{r,g,u,d,sr}};
     for(auto * t:p.layers[l].weights) e0_require(t!=nullptr,"missing dense FFN weight");
+    const int64_t n0[5]={2560,2560,2560,640,2560},n1[5]={512,640,640,2560,1};
+    size_t bytes=0;
+    for(int k=0;k<5;++k) {
+        auto * t=p.layers[l].weights[k];
+        e0_require(t->ne[0]==n0[k] && t->ne[1]==n1[k] && t->ne[2]==1 && t->ne[3]==1 &&
+            t->type==(k==0||k==4?GGML_TYPE_BF16:GGML_TYPE_Q8_0),"unqualified dense FFN layout");
+        bytes+=ggml_nbytes(t);p.layers[l].cpu_weights[k].clear();
+    }
+    e0_require(bytes<=8*1024*1024,"dense CPU retention exceeds per-layer bound");
 }
 static ggml_tensor * external(ggml_context * c, ggml_type ty, int64_t n0, int64_t n1, void * data) {
     ggml_set_no_alloc(c,true); auto * t=ggml_new_tensor_2d(c,ty,n0,n1); ggml_set_no_alloc(c,false);
     t->data=data; return t;
 }
-static ggml_tensor * cpu_weight(ggml_context * c, ggml_tensor * source) {
+static ggml_tensor * cpu_weight(ggml_context * c, ggml_tensor * source, std::vector<uint8_t> * retained) {
     if (source->buffer && ggml_backend_buffer_is_host(source->buffer)) return external(c,source->type,source->ne[0],source->ne[1],source->data);
+    if(retained) {
+        if(retained->empty()) {
+            retained->resize(ggml_nbytes(source));
+            {e0_span timer(e0_profile[e0_phase].copy);ggml_backend_tensor_get(source,retained->data(),0,retained->size());}
+            e0_profile[e0_phase].copy_bytes+=retained->size();++e0_profile[e0_phase].dense_misses;
+        } else ++e0_profile[e0_phase].dense_hits;
+        return external(c,source->type,source->ne[0],source->ne[1],retained->data());
+    }
+    ++e0_profile[e0_phase].dense_misses;
     auto * t=ggml_new_tensor_2d(c,source->type,source->ne[0],source->ne[1]);
     { e0_span timer(e0_profile[e0_phase].copy);
       ggml_backend_tensor_get(source,t->data,0,ggml_nbytes(source)); }
@@ -170,7 +189,7 @@ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float 
     try {
         auto * x=ggml_new_tensor_2d(c,GGML_TYPE_F32,2560,1); std::memcpy(x->data,in,2560*4);
         e0_profile[e0_phase].arena+=e0_now()-arena_begin;
-        auto * r=cpu_weight(c,ref.weights[0]); auto * logits=ggml_mul_mat(c,r,x); compute(c,logits,p.threads);
+        auto * r=cpu_weight(c,ref.weights[0],p.dense_cached?&ref.cpu_weights[0]:nullptr); auto * logits=ggml_mul_mat(c,r,x); compute(c,logits,p.threads);
         int64_t ids[10]; float coefficients[10],probs[512];
         { e0_span timer(e0_profile[e0_phase].router);
           e0_require(moe_route({(float*)logits->data,512},10,1,1.0f,{ids,10},{coefficients,10},{probs,512})==10,"Goose top-10 routing failed"); }
@@ -197,7 +216,7 @@ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float 
             }
             coeffs[k]=eh(external(c,GGML_TYPE_F32,1,1,coefficients+k));
         }
-        for(int k=0;k<4;++k) shared[k]=eh(cpu_weight(c,ref.weights[k+1]));
+        for(int k=0;k<4;++k) shared[k]=eh(cpu_weight(c,ref.weights[k+1],p.dense_cached?&ref.cpu_weights[k+1]:nullptr));
         int64_t result;
         { e0_span timer(e0_profile[e0_phase].graph);
           result=e0_routed_shared(eh(c),eh(x),eh(inv),{weights,50},{coeffs,10},{shared,4},{work,16},{nodes,109}); }
