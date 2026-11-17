@@ -132,29 +132,30 @@ def kv_array_string(w, key, values):
         w.string(v)
 
 
-def _split_pattern(pre):
+def _split_patterns(pre, out):
     if not isinstance(pre, dict):
-        return None
+        return
     if pre.get("type") == "Split":
-        return pre.get("pattern")
-    if pre.get("type") == "Sequence":
-        for part in pre.get("pretokenizers", []):
-            p = _split_pattern(part)
-            if p is not None:
-                return p
-    return None
+        out.append(json.dumps(pre.get("pattern") or ""))
+    for part in pre.get("pretokenizers", []) if pre.get("type") == "Sequence" else []:
+        _split_patterns(part, out)
 
 
 def hf_pre_type(tj):
-    """Map the HF pre-tokenizer onto a llama.cpp pre type."""
+    """Map the HF pre-tokenizer onto the closest llama.cpp pre type."""
     pre = tj.get("pre_tokenizer")
-    pat = json.dumps(_split_pattern(pre) or "")
-    if pre and pre.get("type") == "ByteLevel" and not pat:
-        return "gpt-2"
-    # Qwen splits on letter/number/whitespace classes before byte-level BPE.
+    pats = []
+    _split_patterns(pre, pats)
+    pat = " ".join(pats)
+    has_bytelevel = "ByteLevel" in json.dumps(pre or {})
+    # Maxwell/Qwen split on \p{L}\p{M} runs before byte-level BPE; qwen35 is
+    # the closest built-in. Its Han/Thai splits and \p{N}{1,3} remain a known
+    # difference (documented in the experiment card).
+    if "p{M}" in pat:
+        return "qwen35"
     if "p{L}" in pat or "p{N}" in pat:
         return "qwen2"
-    if "ByteLevel" in json.dumps(pre or {}):
+    if has_bytelevel:
         return "gpt-2"
     return "default"
 
