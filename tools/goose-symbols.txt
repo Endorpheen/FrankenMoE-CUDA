@@ -242,3 +242,6 @@ goose/model/qwen35-gdn.goose	q35_gdn_config
 goose/model/qwen35-gdn.goose	q35_gdn_host_restore
 goose/model/qwen35-gdn.goose	q35_gdn_host_save
 goose/model/qwen35-gdn.goose	q35_gdn_layer
+goose/model/qwen35-trunk.goose	q35_bind_weight
+goose/model/qwen35-trunk.goose	q35_moe_ffn
+goose/model/qwen35-trunk.goose	q35_trunk

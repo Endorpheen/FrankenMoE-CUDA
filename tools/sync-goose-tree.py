@@ -32,6 +32,9 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("model/qwen35-trunk.goose", "EXP-2026-11-17-918-goose-moe-trunk", "source/runtime.goose",
+     "src/models/qwen35moe.cpp and src/llama-graph.cpp (full trunk/MoE graph and borrowed tensor binding)",
+     "40 real layers/logits /3 rebuilt steps with checkpoint replay /12 FFN cases /24 binder bounds /6 semantic mutants"),
     ("model/qwen35-gdn.goose", "EXP-2026-11-17-917-goose-real-gdn", "source/runtime.goose",
      "src/models/qwen35moe.cpp and src/models/delta-net-base.cpp (single-stream fused GDN layer/state)",
      "8 real-weight steps /7239360 exact F32 values /210 invalid inputs /115 host-config checks /5 mutations"),

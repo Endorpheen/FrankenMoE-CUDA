@@ -47020,6 +47020,20 @@
       "status": "slice",
       "sha256": "c3d54bf3d9694584f89984c08753db04b2726ca357ca9aad296601c612fa9aa6",
       "gate": "8 real-weight steps /7239360 exact F32 values /210 invalid inputs /115 config-host checks /5 mutations; not full model or CUDA acceptance"
+    },
+    {
+      "goose": "model/qwen35-trunk.goose",
+      "native": "src/models/qwen35moe.cpp and src/llama-graph.cpp (full mathematical trunk/MoE and borrowed weight placement; not OS/GGUF ownership)",
+      "native_targets": [
+        "src/models/qwen35moe.cpp",
+        "src/llama-graph.cpp"
+      ],
+      "experiment": "EXP-2026-11-17-918-goose-moe-trunk",
+      "source": "source/runtime.goose",
+      "task": "P11-01",
+      "status": "slice",
+      "sha256": "e8adc1a095d3725b8c19ac1f5ad65b40b5b338fe5a8a7473ccb9eb49aa374270",
+      "gate": "40 real layers/logits,3 graph steps,checkpoint replay;12 FFN cases/815560 exact values;24 binder bounds;6 semantic mutations; CPU math only, native loader/backend retained"
     }
   ]
 }

@@ -258,3 +258,34 @@ Native GGML allocation/POD/math, CPU backend and C++ runtime still remain.
 No new adapter or C/C++ runtime body was added or removed. Full MoE/trunk/logits,
 model-step transactions, generation/session, CUDA and final performance gates
 are open; no Goose-only engine or acceleration is claimed from this component.
+
+## EXP918: complete real-weight CPU mathematical trunk
+
+Goose now builds the full40-layer Apex trunk through LM head, combining the
+accepted GDN/attention paths with actual routed/shared MoE. A borrowed-weight
+binder reuses the Goose GGUF block/type table and enforces mapping/no-allocation
+context, range/alignment and byte/element overflow constraints. The model's
+733 candidate weight tensors reference a single read-only GGUF mapping.
+
+The FFN preserves the native vector softmax, argsort/top-8 view, selected-weight
+normalization/clamp, SwiGLU and ordered expert reduction plus the separate gated
+shared expert. Twelve cases compare815560 values, including one/three tokens,
+used1 scaling, tie logits and ordinary fusion.24 binder/168 FFN invalid cases
+are rejected before allocation. Existing scalar Goose routing is not assumed
+bit-equivalent to the native vector protocol.
+
+The final full-model CPU gate evaluates prefill3, decode1 and checkpoint/replay:
+all40 layers,2502720 frame values including1241600 logits, all persistent
+conv/matrix/Q4 KV bytes,61 explicit candidate roots and one model-step commit.
+Six semantic mutants fail; a resource-stopped residual mutant was not counted
+until a minimal dependency probe detected it. Fixture peak RSS3801220KiB is
+a sparse short-context functional footprint, not production RAM or throughput.
+The127-module default composition typechecks (4062 specializations).
+
+This is mathematical integration, not an independent deployed engine. Native
+GGUF/name lookup and OS/mapping ownership remain in the test caller; GGML/POD,
+CPU backend and libstdc++ are still needed. No native llama model builder is
+called by the candidate trunk. No C/C++ runtime body/adapter was added or
+removed. Loader/session ownership, whole-model failure atomicity, tokenizer/
+sampling/server, CUDA/backend integration, task correctness and protected
+32K/512 performance acceptance remain open. The EXP906 bundle is immutable.
