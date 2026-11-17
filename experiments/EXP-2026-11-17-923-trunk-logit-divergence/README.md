@@ -475,6 +475,46 @@ The one remaining structural difference of that order is that both sides
 known-dangerous operation for block-quantised types, and the two may lay the
 permutation out differently.
 
+### The permutation matches too, and with it every structural candidate is gone
+
+`qa_permute` swaps axes 1 and 2, i.e. `permute(0, 2, 1, 3)`, exactly what
+llama.cpp's `build_attn` does. So the last structural difference of the measured
+size is closed as well.
+
+Summary of what this experiment established:
+
+- the MoE, both RMS norms, the residual chain, the output norm and the LM head are
+  bitwise equal (attention zeroed -> 248320/248320);
+- the q/k projections, head norms, rope, gate split and output projection are not
+  the difference (V zeroed -> bitwise equal; gate zeroed -> difference persists);
+- goose's stored V is the canonical Q4_0 quantisation of the exact V (288/288
+  bytes), the view geometry is right (144/288), and the kernel reads quantised V
+  exactly (512/512 values);
+- the permutation is identical;
+- what remains is a difference whose mean (0.1723) is the same order as the gap
+  between two of native's own configurations (native Q4_0 vs native F32: 0.1462),
+  with argmax identical everywhere.
+
+### The acceptance question, stated rather than assumed
+
+Two independent implementations that quantise KV at different points in their
+own graphs cannot be expected to agree bit for bit, and the evidence now says the
+residue is at exactly that level rather than at the level of a wrong decision.
+
+The rule for this repository is that no tolerance is chosen before the cause is
+known. The cause is now characterised, so the criterion becomes a decision to be
+taken deliberately rather than assumed here:
+
+1. identical argmax over every measured logits vector (already true everywhere);
+2. identical greedy id sequences over the tested prompts (already true);
+3. for the stochastic chain, identical ids when both sides are given the same
+   logits - which EXP921 already established independently of the trunk;
+4. an explicitly recorded tolerance band for the logits (for example mean <= 0.2
+   with argmax preserved), with any regression beyond it failing the gate.
+
+Points 1-3 are measurable now; point 4 changes the acceptance bar and therefore
+belongs to Igor.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -499,7 +539,7 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. compare the permutations themselves: print the dims and nb[] of the tensor
-   each side hands to `ggml_flash_attn_ext` for K and V, since a permuted
-   Q4_0 view is not a block-quantised layout and the two sides may build it
-   differently - this is the last structural difference of the measured size.
+7. hand the tolerance question to Igor with the numbers above; if a band is
+   accepted, run the stochastic chain end to end (EXP921's sampler on the Goose
+   logits) and record the ids and text, then continue with the wire-up and the
+   model/OS ownership work that are still open.
