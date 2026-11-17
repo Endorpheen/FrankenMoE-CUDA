@@ -602,3 +602,18 @@ come from Igor directly. For every marked message:
     which functions moved under Goose control. Reviews check this policy. The
     end state is a standalone Goose runtime with no C++ in the compute
     architecture.
+
+32. Apex regressions are always measured against the accepted EXP906 runtime.
+
+    The only accepted reference is
+    `/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run/`, with the
+    manifest and hashes in `docs/reference/apex-exp906/manifest.json`
+    (decode 55.517645, prefill 2625.206607 on the 32768/512 profile, CUDA
+    library sha256 `17e79510f378...`). A CMake build, an old binary or any other
+    assembly is a CANDIDATE, never a reference; candidate numbers are compared
+    to this manifest under identical flags.
+
+    `bash tools/verify-apex-reference.sh` must pass before an Apex measurement
+    and refuses on any hash mismatch. The reference directory is never rebuilt,
+    overwritten or repackaged in place; new builds live in their own directory
+    and releases carry a byte copy with its own SHA256SUMS.
