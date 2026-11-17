@@ -340,6 +340,24 @@ So of the three candidates only one is left: **which V native attends to**. Ever
 other input to that branch has been checked one by one and matches, and the
 hand-built branch is bitwise the Goose path.
 
+### The quantisation round trip carries almost all of it
+
+Removing the Q4_0 round trip from the hand-built branch (V straight from the
+projection) and comparing against native with `type_v = F32`:
+
+    exact-V branch vs native F32-KV : max 0.0746   (248318 of 248320 differ)
+    exact-V branch vs Goose Q4-V    : max 0.8240
+    quantised-V branch vs native Q4 : max 1.3537   (from before)
+
+So the Q4 round trip is the dominant term: with it removed the disagreement falls
+by more than an order of magnitude. What remains (0.075) is the residue of native
+still using its own F32 cache path rather than a hand computation.
+
+That is a sharper statement than "the V path differs": both sides quantise the
+same 512 values with the same block size and the same writer, yet their results
+diverge as if the quantised values differed. The next artefact must therefore be
+native's own cell, not goose's.
+
 ### Next step
 
 Continue inside the attention branch, using the same ablation method:
@@ -364,9 +382,8 @@ Continue inside the attention branch, using the same ablation method:
    `llama_get_embeddings_ith`, which is the post-`output_norm` tensor, so the
    same construction can be compared one step earlier (before the head) and the
    difference can be attributed to the branch or to the head;
-7. compare with the quantisation removed on both sides: native with
-   `type_v = F32` against the hand-built branch using the exact recomputed V
-   instead of the dequantised store. If those agree, native's V content is right
-   and the difference is in its Q4_0 write/read after all; if they still differ,
-   native is attending to a different vector entirely and the next artefact is a
-   dump of its cache cell.
+7. locate native's V cell in its serialized state: scan the `state` blob for a
+   Q4_0 block whose dequantisation matches the hand-built V within one
+   quantisation step, head by head. If it is found, the two sides store the same
+   vector and the read differs; if no block matches, native writes a different V
+   and the question moves to what it quantises.
