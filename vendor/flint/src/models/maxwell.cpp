@@ -201,6 +201,9 @@ void llama_model_maxwell::load_arch_hparams(llama_model_loader & ml) {
     }
     hparams.expert_weights_norm = true;
 
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE,               hparams.maxwell_bsgqa_block_size);
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_SUPPORT_BLOCKS,           hparams.maxwell_bsgqa_support_blocks);
+
     ml.get_key(LLM_KV_HYPER_CONNECTION_COUNT,               hparams.dsv4_hc_mult);
     ml.get_key(LLM_KV_HYPER_CONNECTION_SINKHORN_ITERATIONS, hparams.dsv4_hc_sinkhorn_iters);
     ml.get_key(LLM_KV_HYPER_CONNECTION_EPSILON,             hparams.dsv4_hc_eps);
@@ -279,6 +282,17 @@ llama_model_maxwell::graph::graph(const llama_model & model, const llm_graph_par
     const int64_t n_embd_head = hparams.n_embd_head_v();
     const int64_t hc          = hparams.dsv4_hc_mult;
     const float   eps         = hparams.dsv4_hc_eps;
+
+    // Above the support window the block-sparse route drops blocks; this builder
+    // does not implement the indexer yet, so refuse instead of returning a
+    // silently different attention.
+    const int64_t support = (int64_t) hparams.maxwell_bsgqa_block_size *
+                            (int64_t) hparams.maxwell_bsgqa_support_blocks;
+    if (support > 0 && (int64_t) cparams.n_ctx > support) {
+        throw std::runtime_error(
+            "maxwell_moe: the block-sparse indexer is not implemented; "
+            "context above " + std::to_string(support) + " tokens is refused");
+    }
 
     GGML_ASSERT(n_embd_head == hparams.n_embd_head_k());
 

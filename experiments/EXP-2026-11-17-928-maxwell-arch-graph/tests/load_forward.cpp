@@ -27,7 +27,7 @@ int main(int argc, char ** argv) {
                 llama_model_n_layer(model));
 
     auto cparams = llama_context_default_params();
-    cparams.n_ctx = 64;
+    cparams.n_ctx = std::getenv("MX_CTX") ? (uint32_t) std::atoi(std::getenv("MX_CTX")) : 32;
     cparams.n_batch = 8;
     cparams.n_ubatch = 8;
     cparams.n_threads = 4;

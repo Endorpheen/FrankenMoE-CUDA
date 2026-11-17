@@ -330,6 +330,10 @@ struct llama_hparams {
     uint32_t dsv4_hash_layer_count     = 0;
     float    dsv4_compress_rope_base   = 0.0f;
     float    dsv4_hc_eps               = 0.0f;
+
+    // maxwell_moe: the block-sparse route covers this many tokens" worth of blocks
+    uint32_t maxwell_bsgqa_block_size     = 0;
+    uint32_t maxwell_bsgqa_support_blocks = 0;
     std::array<uint32_t, LLAMA_MAX_LAYERS> dsv4_compress_ratios;
 
     // 0 = full rank (DeepSeek-V4)

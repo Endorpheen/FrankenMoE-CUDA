@@ -182,7 +182,7 @@ CFG = {
     "mlp_only_layers": [0], "attention_variant": "block_sparse_gqa",
     "block_sparse_gqa_indexer_n_heads": 1, "block_sparse_gqa_indexer_head_dim": 16,
     "block_sparse_gqa_block_size": 8, "block_sparse_gqa_topk_blocks": 2,
-    "block_sparse_gqa_total_support_blocks": 4,
+    "block_sparse_gqa_total_support_blocks": 64,
     "block_sparse_gqa_prefix_window_size": 16,
     "block_sparse_gqa_local_window_size": 16, "block_sparse_gqa_num_remote_blocks": 2,
     "block_sparse_gqa_query_chunk_size": 4, "block_sparse_gqa_layer_freq": [1, 1],
