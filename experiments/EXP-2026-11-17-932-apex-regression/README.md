@@ -172,3 +172,22 @@ RSS 21155 MiB, VRAM total 11480 MiB, RC 0. Against the accepted medians
 (2625.2066 / 55.5176): prefill +9.4%, decode -2.6% — both within run-to-run
 spread under resident unrelated processes. No OOM once the KV cache was q4_0,
 which confirms the cause stated above: the missing flags, not the runtime.
+
+## Candidate with Maxwell on the accepted profile (2026-11-17)
+
+`maxwell-candidate-v3/run`, Apex 32768/512, identical flags, warmup excluded:
+
+| run | prefill tok/s | decode tok/s |
+|---|---:|---:|
+| warmup | 2649.46 | 52.81 |
+| 1 | 2899.90 | 54.07 |
+| 2 | 2916.74 | 51.81 |
+| 3 | 2856.76 | 53.57 |
+| **median** | **2899.90** | **53.57** |
+
+RSS 21359 MiB, VRAM 11287 MiB, RC 0.
+
+Against the reference on the same profile today (2871.85 / 54.07): prefill
++1.0%, decode -0.9%, both inside the three-run spread. Against the accepted
+EXP906 medians (2625.2066 / 55.5176): prefill +10.5%, decode -3.5%. No Apex
+regression is detectable from the Maxwell candidate.
