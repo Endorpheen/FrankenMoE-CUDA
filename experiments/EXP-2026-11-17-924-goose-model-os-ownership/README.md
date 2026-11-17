@@ -158,6 +158,23 @@ to be inspected to see where the C++ calls the bridge, because that is the seam
 the complete EXP920 modules will occupy and the code that has to leave afterwards.
 Blaming or editing the vendored copy would be editing the wrong file.
 
+### The seam is in the reconstructed runtime tree
+
+Searching the runtime store for the bridge symbols located the call sites: they
+are in
+
+    /home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/src/llama-vocab.cpp
+
+lines 34-39 declare the Goose entry points (`fg202t_enabled`,
+`fg202t_clamp_symbol_len`, `fg202t_bigram_valid`, `fg202t_try_add_allowed`,
+`fg202t_resegment_kind`, `fg202t_bpe_add_allowed`), i.e. the EXP202 slice's
+decision helpers are called from the BPE tokeniser in that file.
+
+That file is the seam: it is the C++ that the complete EXP920 implementation
+(`pt_*`/`bt_*`) has to replace, and it is where the deletion happens afterwards.
+It is not in this repository, and it is not `vendor/flint` - editing either would
+be editing the wrong file.
+
 ### Next step
 
 EXP924 stops here, blocked on the compiler capability, with the blocker stated
