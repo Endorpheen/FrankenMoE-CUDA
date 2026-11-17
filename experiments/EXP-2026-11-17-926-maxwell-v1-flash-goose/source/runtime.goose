@@ -519,3 +519,53 @@ export fn mx_mtp_roll(ids: i64[:], pad_id: i64, out: i64[:]) -> i64 {
     out[n - 1] = pad_id;
     return 0;
 }
+
+// ---------------------------------------------------------------------------
+// MBSA route bias: the blocks the reference always attends.
+//
+//   prefix: blocks 0 .. min(prefix_blocks-1, cur_block)
+//   local : cur_block-local_blocks+1 .. cur_block, keeping only >= prefix_blocks
+//
+// out layout [chunk][n_blocks]; forced blocks get +1e30 so a top-k over block
+// scores that already contain this bias reproduces the reference route.
+// ---------------------------------------------------------------------------
+export fn mx_route_bias(n_blocks: i64, chunk_len: i64, prefix_blocks: i64,
+                        local_blocks: i64, qpos: i64[:], block_size: i64,
+                        out: f32[:]) -> i64 {
+    if n_blocks <= 0 || chunk_len <= 0 || block_size <= 0 {
+        return -1;
+    }
+    if prefix_blocks < 0 || local_blocks <= 0 {
+        return -2;
+    }
+    if qpos.len < chunk_len {
+        return -3;
+    }
+    if out.len < chunk_len * n_blocks {
+        return -4;
+    }
+    var q: i64 = 0;
+    while q < chunk_len {
+        var i: i64 = 0;
+        while i < n_blocks {
+            out[q * n_blocks + i] = 0.0;
+            i += 1;
+        }
+        let cur: i64 = qpos[q] / block_size;
+        i = 0;
+        while i < prefix_blocks && i <= cur && i < n_blocks {
+            out[q * n_blocks + i] = 1.0e30;
+            i += 1;
+        }
+        var l: i64 = 0;
+        while l < local_blocks {
+            let b: i64 = cur - l;
+            if b >= prefix_blocks && b >= 0 && b < n_blocks {
+                out[q * n_blocks + b] = 1.0e30;
+            }
+            l += 1;
+        }
+        q += 1;
+    }
+    return 0;
+}

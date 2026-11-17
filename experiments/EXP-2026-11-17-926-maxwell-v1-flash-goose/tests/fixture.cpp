@@ -391,6 +391,25 @@ static void test_route_real_geometry() {
     }
 }
 
+// Route bias: prefix 0..min(prefix-1,cur) plus local cur-local+1..cur with the
+// >= prefix_blocks filter; everything else zero.
+static void test_route_bias() {
+    const int64_t blk = 128, prefix = 8, local = 8, n_blocks = 40;
+    for (int64_t q = 0; q < 12; ++q) {
+        std::vector<int64_t> qp{ q*blk + irand(0, blk-1) };
+        std::vector<float> out((size_t) n_blocks, -1.0f);
+        CHECK(mx_route_bias(n_blocks, 1, prefix, local, I(qp), blk, S(out)) == 0, "route_bias rc");
+        int64_t cur = qp[0] / blk;
+        for (int64_t b = 0; b < n_blocks; ++b) {
+            bool forced = (b <= cur && b < prefix) ||
+                          (b <= cur && b > cur - local && b >= prefix);
+            CHECK((out[b] > 1.0e29) == forced,
+                  "route_bias q=%lld b=%lld got=%f forced=%d", (long long)q, (long long)b,
+                  (double)out[b], forced ? 1 : 0);
+        }
+    }
+}
+
 static void test_mtp() {
     for (int t = 0; t < 50; ++t) {
         int64_t n = irand(1, 40);
@@ -415,6 +434,7 @@ int main() {
     test_route_final();
     test_mtp();
     test_route_real_geometry();
+    test_route_bias();
     std::printf("checks=%d failures=%d\n", g_checks, g_fail);
     if (g_fail == 0) std::printf("MAXWELL-DECISIONS OK\n");
     return g_fail == 0 ? 0 : 1;
