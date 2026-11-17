@@ -32,6 +32,7 @@ static int64_t find_key(sl_u8 data, sl_i64 state, sl_i64 kv, sl_i64 kvsl, const 
 static int64_t goose_tokenize(const uint8_t * blob, int64_t blob_len,
                               const int64_t * tok_off, const int64_t * tok_len, const int64_t * tok_sl, int64_t n_tok_slots,
                               const int64_t * mrg_off, const int64_t * mrg_len, const int64_t * mrg_sl, int64_t n_mrg_slots,
+                              const uint8_t * order, int64_t n_special, int64_t special,
                               const char * text, int64_t text_len, int64_t * ids, int64_t ids_cap) {
     int64_t * cpts = calloc((size_t) text_len + 1, sizeof(int64_t));
     int64_t * seg  = calloc(4 * ((size_t) text_len + 1), sizeof(int64_t));
@@ -40,12 +41,13 @@ static int64_t goose_tokenize(const uint8_t * blob, int64_t blob_len,
     int64_t * heap = calloc(15 * ((size_t) text_len + 1) + 40, sizeof(int64_t));
     int64_t * hc   = calloc(2, sizeof(int64_t));
     int64_t * info = calloc(8, sizeof(int64_t));
-    const int64_t got = bt_bpe((sl_u8){ (uint8_t *) text, text_len }, (sl_u8){ (uint8_t *) blob, blob_len },
+    const int64_t got = bt_tokenize((sl_u8){ (uint8_t *) blob, blob_len },
                                (sl_i64){ (int64_t *) tok_off, n_tok_slots }, (sl_i64){ (int64_t *) tok_len, n_tok_slots },
                                (sl_i64){ (int64_t *) tok_sl, n_tok_slots },
                                (sl_i64){ (int64_t *) mrg_off, n_mrg_slots }, (sl_i64){ (int64_t *) mrg_len, n_mrg_slots },
                                (sl_i64){ (int64_t *) mrg_sl, n_mrg_slots },
-                               (sl_i64){ ids, ids_cap }, 0,
+                               (sl_i64){ (int64_t *) order, n_special }, n_special,
+                               (sl_u8){ (uint8_t *) text, text_len }, (sl_i64){ ids, ids_cap }, special,
                                (sl_i64){ cpts, text_len + 1 }, (sl_i64){ seg, 4 * (text_len + 1) },
                                (sl_u8){ enc, 8 * (text_len + 1) },
                                (sl_i64){ sym, 24 * (text_len + 1) }, (sl_i64){ heap, 15 * (text_len + 1) + 40 },
@@ -134,6 +136,11 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
+    int64_t * order = calloc((size_t) n_tok, sizeof(int64_t));
+    const int64_t n_special = bt_special_order((sl_u8){ blob, need[0] }, (sl_i64){ tok_off, n_tok },
+                                               (sl_i64){ tok_len, n_tok }, (sl_i64){ attr, n_tok },
+                                               (sl_i64){ order, n_tok });
+
     int64_t stats[4] = {0};
     const int64_t build_rc = bt_build((sl_u8){ blob, need[0] }, (sl_i64){ tok_off, n_tok }, (sl_i64){ tok_len, n_tok },
                                       (sl_i64){ tok_sl, need[3] }, (sl_i64){ mrg_off, n_mrg }, (sl_i64){ mrg_len, n_mrg },
@@ -165,17 +172,20 @@ int main(int argc, char ** argv) {
             size_t len = strlen(line);
             while (len && (line[len - 1] == '\n' || line[len - 1] == '\r')) { line[--len] = 0; }
             if (len == 0) { continue; }
-            const int32_t n_ref = llama_tokenize(v, line, (int32_t) len, ref, (int32_t) (1 << 16), false, false);
-            const int64_t n_g = goose_tokenize(blob, need[0], tok_off, tok_len, tok_sl, need[3],
-                                               mrg_off, mrg_len, mrg_sl, need[4], line, (int64_t) len,
-                                               gids, 1 << 16);
-            cases++;
-            if (n_ref < 0 || n_g < 0) { bad++; printf("FG_TOKENIZER_ENGINE line %lld refused ref=%d goose=%lld\n", (long long) cases, (int) n_ref, (long long) n_g); continue; }
-            ref_total += n_ref;
-            goose_total += n_g;
-            if (n_ref != n_g) { bad++; continue; }
-            for (int32_t i = 0; i < n_ref; ++i) {
-                if ((int64_t) ref[i] != gids[i]) { bad++; break; }
+            for (int special = 0; special <= 1; ++special) {
+                const int32_t n_ref = llama_tokenize(v, line, (int32_t) len, ref, (int32_t) (1 << 16), false, special != 0);
+                const int64_t n_g = goose_tokenize(blob, need[0], tok_off, tok_len, tok_sl, need[3],
+                                                   mrg_off, mrg_len, mrg_sl, need[4],
+                                                   (const uint8_t *) order, n_special, (int64_t) special,
+                                                   line, (int64_t) len, gids, 1 << 16);
+                cases++;
+                if (n_ref < 0 || n_g < 0) { bad++; continue; }
+                ref_total += n_ref;
+                goose_total += n_g;
+                if (n_ref != n_g) { bad++; continue; }
+                for (int32_t i = 0; i < n_ref; ++i) {
+                    if ((int64_t) ref[i] != gids[i]) { bad++; break; }
+                }
             }
         }
         fclose(in);

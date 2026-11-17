@@ -150,3 +150,81 @@ export fn bt_prepare_from_gguf(data: const u8[:], state: i64[:], kv: i64[:], tok
     }
     return 0;
 }
+
+// Longest special-token match at `at`, or -1. `order` is the special-token id
+// list sorted by descending text length (bt_special_order), so the first hit is
+// the longest one.
+fn te_match_special(text: const u8[:], at: i64, blob: const u8[:],
+                    tok_off: const i64[:], tok_len: const i64[:], order: const i64[:], n_special: i64) -> i64 {
+    var i: i64 = 0;
+    while i < n_special {
+        let id: i64 = order[i];
+        let ln: i64 = tok_len[id];
+        if ln > 0 && at + ln <= text.len {
+            var k: i64 = 0;
+            var same: bool = true;
+            while k < ln {
+                if text[at + k] != blob[tok_off[id] + k] {
+                    same = false;
+                    k = ln;
+                } else {
+                    k = k + 1;
+                }
+            }
+            if same {
+                return id;
+            }
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+// Tokenize `text` the way llama_tokenize does: when `special` is set, special
+// tokens are matched first and the gaps between them go through bt_bpe;
+// otherwise the whole text goes through bt_bpe.
+export fn bt_tokenize(blob: const u8[:], tok_off: const i64[:], tok_len: const i64[:], tok_slots: const i64[:],
+                      mrg_off: const i64[:], mrg_len: const i64[:], mrg_slots: const i64[:],
+                      order: const i64[:], n_special: i64, text: const u8[:], ids: i64[:], special: i64,
+                      cpts: i64[:], seg: i64[:], enc: u8[:], sym: i64[:], heap: i64[:], hc: i64[:], info: i64[:]) -> i64 {
+    if special == 0 || n_special == 0 {
+        return bt_bpe_body(text, blob, tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots,
+                      ids, 0, cpts, seg, enc, sym, heap, hc, info);
+    }
+    var total: i64 = 0;
+    var plain: i64 = 0;
+    var at: i64 = 0;
+    while at <= text.len {
+        var hit: i64 = -1;
+        if at < text.len {
+            hit = te_match_special(text, at, blob, tok_off, tok_len, order, n_special);
+        }
+        if hit < 0 && at < text.len {
+            at = at + 1;
+        } else {
+            if at > plain {
+                if total >= ids.len {
+                    return -1;
+                }
+                let got: i64 = bt_bpe_body(text[plain .. at], blob, tok_off, tok_len, tok_slots,
+                                      mrg_off, mrg_len, mrg_slots, ids[total .. ids.len], 0,
+                                      cpts, seg, enc, sym, heap, hc, info);
+                if got < 0 {
+                    return -1;
+                }
+                total = total + got;
+            }
+            if hit < 0 {
+                return total;
+            }
+            if total >= ids.len {
+                return -1;
+            }
+            ids[total] = hit;
+            total = total + 1;
+            at = at + tok_len[hit];
+            plain = at;
+        }
+    }
+    return total;
+}

@@ -143,3 +143,19 @@ Two defects were fixed to get there:
   computed, not at `2 * n`, or the probing misses entries.
 
 Only the non-special path is compared: special-token matching is still C++.
+
+## Special tokens, and with them the whole tokenize path
+
+`bt_tokenize` now matches special tokens first — longest text first, using the
+order `bt_special_order` already produced — then sends each gap through
+`bt_bpe`. The comparison covers both `parse_special` modes:
+
+    FG_TOKENIZER_ENGINE tokenize cases=56 ref_ids=685 goose_ids=685 mismatches=0
+
+The corpus carries `<|im_start|>`, `<|im_end|>` and the negative case
+`<|not_a_token|>`, so both the recognised and the unrecognised text are
+exercised. Pieces stay byte-identical.
+
+`bt_bpe` needed the same impl/export split as the reader functions: an exported
+function that is also called inside the unit cannot resolve one concrete
+signature, so the body is `bt_bpe_body` and the export is a one-line forward.
