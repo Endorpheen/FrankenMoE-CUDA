@@ -326,6 +326,8 @@ def main():
     ap.add_argument("--quant-io", action="store_true")
     ap.add_argument("--stub-vocab", action="store_true",
                     help="write a placeholder vocabulary for loader tests only")
+    ap.add_argument("--f32", action="store_true",
+                    help="write every tensor as F32 (numeric gate only)")
     args = ap.parse_args()
 
     model = Model(args.model_dir, args.quant_io)
@@ -338,6 +340,8 @@ def main():
         raise SystemExit(f"mlp_only_layers must be a leading prefix, got {dense}")
 
     plan = out_plan(model)
+    if args.f32:
+        plan = [(n, d, "f32", l) for n, d, _k, l in plan]
 
     kvbuf = io.BytesIO()
     w = Writer(kvbuf)

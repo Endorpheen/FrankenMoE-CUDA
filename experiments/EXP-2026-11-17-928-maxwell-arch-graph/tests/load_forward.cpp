@@ -9,7 +9,7 @@
 
 int main(int argc, char ** argv) {
     if (argc < 2) {
-        std::fprintf(stderr, "usage: %s model.gguf\n", argv[0]);
+        std::fprintf(stderr, "usage: %s model.gguf [logits.tsv]\n", argv[0]);
         return 2;
     }
     llama_backend_init();
@@ -33,6 +33,8 @@ int main(int argc, char ** argv) {
     cparams.n_threads = 4;
     cparams.n_threads_batch = 4;
     cparams.no_perf = true;
+    cparams.type_k = GGML_TYPE_F32;
+    cparams.type_v = GGML_TYPE_F32;
     llama_context * ctx = llama_init_from_model(model, cparams);
     if (!ctx) {
         std::fprintf(stderr, "CONTEXT FAILED\n");
@@ -71,6 +73,13 @@ int main(int argc, char ** argv) {
     }
     std::printf("finite=%d argmax=%d l1=%.6f logits[0..3]=%.4f %.4f %.4f %.4f\n",
                 finite ? 1 : 0, best, sum, logits[0], logits[1], logits[2], logits[3]);
+    if (argc >= 3) {
+        FILE * f = std::fopen(argv[2], "w");
+        if (!f) { std::perror("logits file"); return 1; }
+        for (int i = 0; i < n_vocab; ++i) std::fprintf(f, "%.9g\n", logits[i]);
+        std::fclose(f);
+        std::printf("wrote %s\n", argv[2]);
+    }
 
     llama_batch_free(batch);
     llama_free(ctx);

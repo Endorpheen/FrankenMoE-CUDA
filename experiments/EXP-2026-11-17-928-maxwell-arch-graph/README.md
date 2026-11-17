@@ -43,7 +43,7 @@ top-k renormalisation.
   attention builder.
 
 Registration: `LLM_ARCH_MAXWELL` enum + `"maxwell_moe"` name + factory branch +
-rope type NORM.
+rope type NEOX (HF `rotate_half` rotates `(i, i + head_dim/2)`).
 
 ## The block-sparse reduction
 
@@ -59,6 +59,8 @@ yet. This is an equivalence, not an approximation, for the supported length.
 - mHC folds the `1/(rms+eps)` scale into an RMS normalisation (`eps` under the
   sqrt). At hidden 2048 the relative difference is ~1e-9.
 - The MTP head and the block-sparse indexer are not loaded or executed.
+- Numeric equivalence in F32 is proved in EXP-2026-11-17-929
+  (`max_abs=1.74e-4`, matching argmax); quantised accuracy is not measured yet.
 - The expert-bias precision fix (fp32) is preserved by keeping every 1-D tensor
   in F32 during conversion.
 

@@ -3502,7 +3502,6 @@ llama_rope_type llama_model_rope_type(const llama_model * model) {
             return LLAMA_ROPE_TYPE_NONE;
 
         // use what we call a normal RoPE, operating on pairs of consecutive head values
-        case LLM_ARCH_MAXWELL:
         case LLM_ARCH_LLAMA:
         case LLM_ARCH_LLADA:
         case LLM_ARCH_LLAMA4:
@@ -3636,6 +3635,7 @@ llama_rope_type llama_model_rope_type(const llama_model * model) {
         case LLM_ARCH_HRM_TEXT:
         case LLM_ARCH_BEAM:
         case LLM_ARCH_KOLIBRI1:
+        case LLM_ARCH_MAXWELL: // HF rotate_half rotates (i, i + head_dim/2)
             return LLAMA_ROPE_TYPE_NEOX;
 
         case LLM_ARCH_DFLASH:
