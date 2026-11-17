@@ -124,3 +124,33 @@ The segfault found on the first attempt was real and is fixed: adding fields to
 units. The candidate now keeps Maxwell settings in a static in `maxwell.cpp`
 and appends `LLM_ARCH_MAXWELL` after `LLM_ARCH_UNKNOWN`, so no accepted layout
 moves.
+
+## Root cause of today's CUDA OOM (measured, 2026-11-17)
+
+Yesterday's accepted runs (`results/apex-runs/exp906-*`) executed with this
+argv (from `argv.txt`):
+
+    ... -c 262144 -ngl all -fit off --cpu-moe -fa on \
+        -ctk q4_0 -ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 \
+        --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1 \
+        --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap ...
+
+My benchmark wrapper at the time omitted `-ctk q4_0 -ctv q4_0`, `-fit off` and
+`--load-mode mmap`. Without them the KV cache was F16 instead of q4_0: for a
+32768-token prefill that is roughly 3.0 GB of KV instead of ~0.85 GB, i.e.
+about +2.2 GB of VRAM at the moment of the graph allocation. That is exactly
+the class of failure seen: `cudaMalloc failed` for a 1156.03 MiB buffer with
+10686-11614 MiB already used.
+
+Second contributing difference: the card was busier before the run. Yesterday's
+`vram-ready.txt` was 10198 MiB (a1) and 9803 MiB (b1); today the same point was
+11614 MiB, i.e. ~1.4-1.8 GiB more already resident from unrelated processes.
+
+So "what changed" is the launch flags of my wrapper, not the accepted runtime:
+the binaries and their hashes matched the manifest (`4eba8242…`, CUDA
+`17e79510…`), `-c/-b/-ub/-np` were identical, and no swap was involved (RSS
+21.5 GiB resident, model 99.1% resident).
+
+The wrapper now passes the full accepted flag set, including
+`-ctk/-ctv q4_0`, `-fit off`, `--load-mode mmap`. Re-running 32768/512 with it
+is the acceptance check.

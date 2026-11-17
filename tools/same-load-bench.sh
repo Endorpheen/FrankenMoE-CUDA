@@ -24,8 +24,11 @@ if [ -n "$(ss -H -ltn "sport = :$PORT")" ]; then
 fi
 
 setsid env LD_LIBRARY_PATH="$RUN" "$RUN/llama-server" -m "$MODEL" \
-    -c "$CTX" -ngl all --cpu-moe --moe-cache-mib 4992 -fa on \
-    -b "$B" -ub "$UB" -t 8 -tb 16 -np 1 --host 127.0.0.1 --port "$PORT" > "$LOG" 2>&1 &
+    -c "$CTX" -ngl all -fit off --cpu-moe --moe-cache-mib 4992 -fa on \
+    -ctk q4_0 -ctv q4_0 --load-mode mmap --alias bench \
+    -b "$B" -ub "$UB" -t 8 -tb 16 -np 1 \
+    --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1 \
+    --poll 0 --cache-ram 0 --ctx-checkpoints 32 --spec-type none --jinja --host 127.0.0.1 --port "$PORT" > "$LOG" 2>&1 &
 SRV=$!
 cleanup() { kill "$SRV" 2>/dev/null || true; for _ in $(seq 1 30); do ss -H -ltn "sport = :$PORT" | grep -q . || break; sleep 1; done; }
 trap cleanup EXIT
