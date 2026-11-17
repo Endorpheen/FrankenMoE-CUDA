@@ -426,6 +426,31 @@ static void test_cfg_check() {
     CHECK(mx_cfg_check(2048, 32, 4, 128, 4, 128, 45, 3, 128, 1024, 1024, 16, 0, 1024, I(o)) == -8, "ff");
 }
 
+static void test_route_tokens() {
+    {
+        std::vector<int64_t> route{0, 5};
+        std::vector<int64_t> pos(2*128, -9), ok(2*128, -9);
+        CHECK(mx_route_tokens(I(route), 128, 600, I(pos), I(ok)) == 256, "tokens rc");
+        CHECK(pos[0] == 0 && ok[0] == 1, "block 0 first");
+        CHECK(pos[127] == 127 && ok[127] == 1, "block 0 last");
+        CHECK(pos[128] == 640 && ok[128] == 0, "block 5 beyond kv");
+        CHECK(pos[256-1] == 767 && ok[256-1] == 0, "last position");
+    }
+    {
+        std::vector<int64_t> route{-1, 1};
+        std::vector<int64_t> pos(2*8, -9), ok(2*8, -9);
+        CHECK(mx_route_tokens(I(route), 8, 100, I(pos), I(ok)) == 16, "pad rc");
+        CHECK(ok[0] == 0 && ok[7] == 0, "pad block invalid");
+        CHECK(pos[8] == 8 && ok[8] == 1, "second block valid");
+    }
+    {
+        std::vector<int64_t> route{0};
+        std::vector<int64_t> pos(4, 0), ok(4, 0);
+        CHECK(mx_route_tokens(I(route), 0, 100, I(pos), I(ok)) == -1, "zero block size");
+        CHECK(mx_route_tokens(I(route), 8, 100, I(pos), I(ok)) == -2, "short out");
+    }
+}
+
 static void test_mtp() {
     for (int t = 0; t < 50; ++t) {
         int64_t n = irand(1, 40);
@@ -452,6 +477,7 @@ int main() {
     test_route_real_geometry();
     test_route_bias();
     test_cfg_check();
+    test_route_tokens();
     std::printf("checks=%d failures=%d\n", g_checks, g_fail);
     if (g_fail == 0) std::printf("MAXWELL-DECISIONS OK\n");
     return g_fail == 0 ? 0 : 1;

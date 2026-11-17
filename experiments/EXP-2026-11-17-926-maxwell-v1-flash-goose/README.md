@@ -77,3 +77,9 @@ divisibility, indexer heads == KV heads, indexer head_dim == attention
 head_dim, dense lead within the layer count, block alignment of the prefix and
 local windows, positive remote/FF sizes, and `n_prefix`, `n_local`, remote and
 mHC mix width on success. Gate: 2777 checks, 0 failures.
+
+## MBSA gather plan (added)
+
+`mx_route_tokens` turns a selected block route into token positions and a
+validity mask (`block >= 0`, `0 <= pos < n_kv`), so the gather indices the
+sparse graph needs are decided in Goose rather than in C++. Gate: 2787 checks.

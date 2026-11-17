@@ -622,3 +622,40 @@ export fn mx_cfg_check(n_embd: i64, n_head: i64, n_head_kv: i64, head_dim: i64,
     out[3] = (2 + 4) * 4;          // mHC mix width for four streams
     return 0;
 }
+
+// ---------------------------------------------------------------------------
+// MBSA gather plan: token positions and validity from a selected block route.
+//
+// route holds block ids in reference order (prefix, remote, local), with -1 for
+// padding. For every slot the block contributes block_size consecutive token
+// positions; a position is valid when its block is non-negative and the
+// position is below the current KV length.
+// out_pos/out_valid hold route.len*block_size entries.
+// ---------------------------------------------------------------------------
+export fn mx_route_tokens(route: i64[:], block_size: i64, n_kv: i64,
+                          out_pos: i64[:], out_valid: i64[:]) -> i64 {
+    if block_size <= 0 || n_kv < 0 {
+        return -1;
+    }
+    let n: i64 = route.len * block_size;
+    if out_pos.len < n || out_valid.len < n {
+        return -2;
+    }
+    var b: i64 = 0;
+    while b < route.len {
+        let blk: i64 = route[b];
+        var t: i64 = 0;
+        while t < block_size {
+            let pos: i64 = blk * block_size + t;
+            out_pos[b * block_size + t] = pos;
+            if blk >= 0 && pos >= 0 && pos < n_kv {
+                out_valid[b * block_size + t] = 1;
+            } else {
+                out_valid[b * block_size + t] = 0;
+            }
+            t += 1;
+        }
+        b += 1;
+    }
+    return n;
+}
