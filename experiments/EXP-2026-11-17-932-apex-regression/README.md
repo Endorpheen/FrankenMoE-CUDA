@@ -54,3 +54,17 @@ the four-axis run above is the evidence the rule requires.
 Not selected by Igor for this acceptance round (Apex only). Qwen3.8-Flash-Next
 stays available with its own reference (7.25 tok/s cold, 8.96 tok/s warm) for a
 later regression round.
+
+## Attempt on 2026-11-17 (blocked by the environment)
+
+The candidate build with Maxwell was started with the exact reference flags.
+The 32K/512 request failed with `CUDA error: out of memory` at prefill.
+
+Cause, checked with `nvidia-smi --query-compute-apps`: seven unrelated
+processes hold about 3.8 GiB of the 12 GiB card (pids 13409, 36605, 748110,
+854970, 1049701, 1763052 and one more). The reference profile needs about
+11.5 GiB, so it cannot fit while those owners are resident. No unrelated
+process was stopped and no parameter of the reference profile was changed.
+
+This is an environment blocker, not a regression measurement. The regression
+run still needs a GPU window where the other owners are not resident.
