@@ -1,0 +1,179 @@
+{
+  "experiment": "EXP-2026-11-17-922-goose-generation",
+  "date": "2026-11-17",
+  "base_commit": "e5548997",
+  "goal": "a real generation loop answered only by the Goose unit, matched against native llama.cpp on the same profile",
+  "profile": {
+    "kv": "Q4_0 keys and values",
+    "attention": "flash attention enabled",
+    "cpu_threads": "8/16",
+    "device": "CPU only",
+    "model_sha256": "c3b92d94cd03a7730ad45cc45de8c753e369e0228b2f5d83d819ce2ea6ab3355",
+    "gpu": false,
+    "server": false
+  },
+  "composition": [
+    {
+      "path": "goose/cpu/goose-graph-builders.goose",
+      "sha256": "0956a5bd3092c7f08e65eb28da4bd001d9539a835ce501fcc57b45e8a9df0ed5"
+    },
+    {
+      "path": "goose/model/qgate-split.goose",
+      "sha256": "da3dc6cef8789a9cb2b4b67068e093f651083aed62bc1f7ca846f0170f8a0625"
+    },
+    {
+      "path": "goose/model/qwen35-attention.goose",
+      "sha256": "28f2cfcb56aecae4e31d6b3c030d11eeeaa20d7c25add0febb7645821bff533d"
+    },
+    {
+      "path": "goose/model/gdn-ops.goose",
+      "sha256": "c974127f3ede068ed3a33d9c3faf97c3bd7d47deb69b155654029b2d2c75a994"
+    },
+    {
+      "path": "goose/model/qwen35-gdn.goose",
+      "sha256": "c3d54bf3d9694584f89984c08753db04b2726ca357ca9aad296601c612fa9aa6"
+    },
+    {
+      "path": "goose/model/qwen35-kv.goose",
+      "sha256": "f4af61270982d83071186f0e9aebabd18158055ba8e65d8efcc29bb95d2939fd"
+    },
+    {
+      "path": "goose/model/qwen35-trunk.goose",
+      "sha256": "e8adc1a095d3725b8c19ac1f5ad65b40b5b338fe5a8a7473ccb9eb49aa374270"
+    },
+    {
+      "path": "goose/model/gguf-tensors.goose",
+      "sha256": "884ac25bc495e9953ae6043c4847e031e01dac23c47c8fc858220a557e6f27fe"
+    },
+    {
+      "path": "goose/misc/gguf-headers.goose",
+      "sha256": "936bc8869df254c4bbd03829c37ec0e729828fe3c2713e27d3202376ca79144c"
+    },
+    {
+      "path": "goose/model/gguf-reader.goose",
+      "sha256": "cf3268965e0846accf3c7274870cb8936c8e8f6bc0c08d5a810b02137b098cd2"
+    },
+    {
+      "path": "goose/model/special-partition.goose",
+      "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682"
+    },
+    {
+      "path": "goose/misc/unicode-tables.goose",
+      "sha256": "06719d61594fc1a03bfe1e06fddb12e7bf16d76e2af588ab1ab9b818f37921f9"
+    },
+    {
+      "path": "goose/misc/unicode-text.goose",
+      "sha256": "a57b6e432b73e442672201fdf08cae22f97c2a8a5e30efcd339366b471c1fb35"
+    },
+    {
+      "path": "goose/misc/pretokenizer-qwen35.goose",
+      "sha256": "9583c5d7d3dcb19bfe3ee238cc93c98babf03afeedc79c95eb8cb157cba967b8"
+    },
+    {
+      "path": "goose/model/bpe-tokenize.goose",
+      "sha256": "b1fe42f7e647e5fabe55475dd2d39605db7863517135a3133858bab6b4f84d12"
+    },
+    {
+      "path": "goose/model/bpe-detokenize.goose",
+      "sha256": "b084f7e43aa6a81b097a8f7892332db2692540433187ff08be6f3cc39da48567"
+    },
+    {
+      "path": "goose/sampling/sampler-chain-full.goose",
+      "sha256": "2ebd471d9c92a24f2ff2f3b5c49b78ca4461f994ccedceb77d5a6a2aaeca8975"
+    }
+  ],
+  "runs": {
+    "greedy_8": {
+      "artifacts": [
+        "gate-v2",
+        "native-v1/native_ref4"
+      ],
+      "prompt": "The capital of France is",
+      "prompt_ids": [
+        760,
+        6511,
+        314,
+        9338,
+        369
+      ],
+      "generated": [
+        11751,
+        11,
+        264,
+        3177,
+        8807,
+        303,
+        3712,
+        321
+      ],
+      "text": " Paris, a city rich in history and",
+      "mismatches": 0
+    },
+    "greedy_32": {
+      "artifacts": [
+        "gate-v3"
+      ],
+      "prompt": "The capital of France is",
+      "generated_count": 32,
+      "text": " Paris, a city rich in history and culture. Established in the 9th century, Paris grew from a small settlement on the Seine River to become one of",
+      "end_of_generation": false
+    },
+    "chat_eos": {
+      "artifacts": [
+        "gate-v5",
+        "native-v1/clean.log"
+      ],
+      "prompt": "<|im_start|>user Say hi.<|im_end|><|im_start|>assistant ",
+      "prompt_ids": [
+        248045,
+        846,
+        24127,
+        15131,
+        13,
+        248046,
+        248045,
+        74455,
+        220
+      ],
+      "generated": [
+        16,
+        198,
+        248069,
+        271,
+        12675,
+        1017,
+        0,
+        59720,
+        233,
+        2500,
+        628,
+        353,
+        1438,
+        488,
+        3242,
+        30,
+        248046
+      ],
+      "text": "1\n</think>\n\nHi there! 👋 How can I help you today?<|im_end|>",
+      "stop": {
+        "eog_id": 248046,
+        "step": 16
+      },
+      "compare": "tests/compare.py RESULT PASS"
+    }
+  },
+  "findings": [
+    "the first native control disagreed because it used F32 KV and auto attention; with Q4_0 KV and flash attention it matches",
+    "a position-less batch (llama_batch_get_one) made the native harness re-read the prompt on this hybrid model; explicit positions fixed it"
+  ],
+  "not_proven": [
+    "shipping path still native",
+    "stochastic chain end to end",
+    "batch > 1",
+    "GPU",
+    "speed (no measurement, none claimed)"
+  ],
+  "cxx_lines_removed": 0,
+  "new_cxx_lines": 0,
+  "artifacts_root": "/home/end0/AI/LlamaServer/exp922-goose-generation-20261117"
+}
