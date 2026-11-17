@@ -193,6 +193,27 @@ against the native tokenizer - before anything is adopted. Recording this before
 the edit is the point: the seam being found is not permission to change accepted
 material in place.
 
+### How that tree is built, and what the change therefore costs
+
+The reconstructed tree is 6.7 GiB and is not copied by hand: `CANDIDATE.md` and
+`assemble_candidate.py` build `runtime/reconstructed/candidate-20261112` from the
+EXP340 stage plus the merged `libllama-exp371.so.0.7.0` and the merged server
+libraries. The tokenizer seam is in the *source* used to produce that merged
+`libllama` (`runtime/reconstructed/src/llama-vocab.cpp`).
+
+So a tokenizer wire-up candidate means:
+
+1. a copy of `runtime/reconstructed/src` (sources only, not the 6.7 GiB of build
+   output) in a new candidate directory;
+2. rebuilding `libllama` from it with the `fg202t_*` decisions replaced by the
+   complete EXP920 exports;
+3. re-running `assemble_candidate.py` against the new library;
+4. the tokenizer gate on the result, and only then the Apex smoke run.
+
+That is a native rebuild, i.e. exactly the class of work the repository says to
+batch and to justify by a risk the cheap gates cannot see - here the link and the
+binary's behaviour. It is a fresh-context task, not a tail-of-session one.
+
 ### Next step
 
 EXP924 stops here, blocked on the compiler capability, with the blocker stated
