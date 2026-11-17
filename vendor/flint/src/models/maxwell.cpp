@@ -203,6 +203,13 @@ void llama_model_maxwell::load_arch_hparams(llama_model_loader & ml) {
 
     ml.get_key(LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE,               hparams.maxwell_bsgqa_block_size);
     ml.get_key(LLM_KV_MAXWELL_BSGQA_SUPPORT_BLOCKS,           hparams.maxwell_bsgqa_support_blocks);
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_PREFIX_WINDOW,            hparams.maxwell_bsgqa_prefix_window, false);
+    ml.get_key(LLM_KV_MAXWELL_BSGQA_REMOTE_BLOCKS,            hparams.maxwell_bsgqa_remote_blocks, false);
+    ml.get_key(LLM_KV_ATTENTION_INDEXER_HEAD_COUNT,           hparams.indexer_n_head,    false);
+    ml.get_key(LLM_KV_ATTENTION_INDEXER_KEY_LENGTH,           hparams.indexer_head_size, false);
+    ml.get_key(LLM_KV_ATTENTION_INDEXER_TOP_K,                hparams.indexer_top_k,     false);
+    ml.get_key(LLM_KV_ATTENTION_INDEXER_BLOCK_SIZE,           hparams.indexer_block_size, false);
+    ml.get_key(LLM_KV_ATTENTION_INDEXER_LOCAL_BLOCKS,         hparams.indexer_local_blocks, false);
 
     ml.get_key(LLM_KV_HYPER_CONNECTION_COUNT,               hparams.dsv4_hc_mult);
     ml.get_key(LLM_KV_HYPER_CONNECTION_SINKHORN_ITERATIONS, hparams.dsv4_hc_sinkhorn_iters);
@@ -244,6 +251,19 @@ void llama_model_maxwell::load_arch_tensors(llama_model_loader & ml) {
 
         layer.attn_q_norm = create_tensor(tn(LLM_TENSOR_ATTN_Q_NORM, "weight", i), {n_embd_head_k}, 0);
         layer.attn_k_norm = create_tensor(tn(LLM_TENSOR_ATTN_K_NORM, "weight", i), {n_embd_head_k}, 0);
+
+        // Block-sparse indexer. Optional so a GGUF without it still loads for the
+        // dense <=support path; the builder refuses long contexts in that case.
+        if (hparams.indexer_head_size > 0) {
+            layer.index_q_proj = create_tensor(tn(LLM_TENSOR_INDEXER_Q_PROJ, "weight", i),
+                    {n_embd, (int64_t) hparams.indexer_n_head * hparams.indexer_head_size}, TENSOR_NOT_REQUIRED);
+            layer.index_k_proj = create_tensor(tn(LLM_TENSOR_INDEXER_K_PROJ, "weight", i),
+                    {n_embd, hparams.indexer_head_size}, TENSOR_NOT_REQUIRED);
+            layer.index_q_norm = create_tensor(tn(LLM_TENSOR_INDEXER_Q_NORM, "weight", i),
+                    {hparams.indexer_head_size}, TENSOR_NOT_REQUIRED);
+            layer.index_k_norm = create_tensor(tn(LLM_TENSOR_INDEXER_K_NORM, "weight", i),
+                    {hparams.indexer_head_size}, TENSOR_NOT_REQUIRED);
+        }
 
         layer.hc_attn_fn    = create_tensor(tn(LLM_TENSOR_HC_ATTN_FN,    "weight", i), {hc*n_embd, hc_mix_dim}, 0);
         layer.hc_attn_base  = create_tensor(tn(LLM_TENSOR_HC_ATTN_BASE,  "weight", i), {hc_mix_dim}, 0);

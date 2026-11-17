@@ -323,6 +323,8 @@ static const std::map<llm_kv, const char *> LLM_KV_NAMES = {
     { LLM_KV_HYPER_CONNECTION_EPSILON,               "%s.hyper_connection.epsilon"               },
     { LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE,               "%s.block_sparse_gqa.block_size"            },
     { LLM_KV_MAXWELL_BSGQA_SUPPORT_BLOCKS,           "%s.block_sparse_gqa.total_support_blocks"  },
+    { LLM_KV_MAXWELL_BSGQA_PREFIX_WINDOW,            "%s.block_sparse_gqa.prefix_window_size"    },
+    { LLM_KV_MAXWELL_BSGQA_REMOTE_BLOCKS,            "%s.block_sparse_gqa.num_remote_blocks"     },
     { LLM_KV_HYPER_CONNECTION_MAGNITUDE,             "%s.hyper_connection.magnitude"             },
     { LLM_KV_HYPER_CONNECTION_LOW_RANK,              "%s.hyper_connection.low_rank"              },
 

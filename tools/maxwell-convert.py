@@ -346,6 +346,11 @@ def out_plan(model):
         plain(f"{p}.self_attn.v_proj.weight", f"blk.{i}.attn_v.weight")
         plain(f"{p}.self_attn.o_proj.weight", f"blk.{i}.attn_output.weight")
         one_d(f"{p}.self_attn.q_layernorm.weight", f"blk.{i}.attn_q_norm.weight")
+        if f"{p}.self_attn.indexer.linear_q_proj.weight" in model.weight_map:
+            plain(f"{p}.self_attn.indexer.linear_q_proj.weight", f"blk.{i}.indexer.q_proj.weight")
+            plain(f"{p}.self_attn.indexer.linear_k_proj.weight", f"blk.{i}.indexer.k_proj.weight")
+            one_d(f"{p}.self_attn.indexer.q_layernorm.weight", f"blk.{i}.indexer.q_norm.weight")
+            one_d(f"{p}.self_attn.indexer.k_layernorm.weight", f"blk.{i}.indexer.k_norm.weight")
         one_d(f"{p}.self_attn.k_layernorm.weight", f"blk.{i}.attn_k_norm.weight")
         one_d(f"{p}.input_layernorm.weight", f"blk.{i}.attn_norm.weight")
         one_d(f"{p}.post_attention_layernorm.weight", f"blk.{i}.ffn_norm.weight")
@@ -456,6 +461,16 @@ def main():
               cfg["block_sparse_gqa_query_chunk_size"])
     kv_scalar(w, "maxwell_moe.block_sparse_gqa.total_support_blocks", T_UINT32,
               cfg["block_sparse_gqa_total_support_blocks"])
+    kv_scalar(w, "maxwell_moe.attention.indexer.head_count", T_UINT32,
+              cfg["block_sparse_gqa_indexer_n_heads"])
+    kv_scalar(w, "maxwell_moe.attention.indexer.key_length", T_UINT32,
+              cfg["block_sparse_gqa_indexer_head_dim"])
+    kv_scalar(w, "maxwell_moe.attention.indexer.top_k", T_UINT32,
+              cfg["block_sparse_gqa_num_remote_blocks"])
+    kv_scalar(w, "maxwell_moe.attention.indexer.block_size", T_UINT32,
+              cfg["block_sparse_gqa_block_size"])
+    kv_scalar(w, "maxwell_moe.attention.indexer.local_blocks", T_UINT32,
+              cfg["block_sparse_gqa_local_window_size"] // cfg["block_sparse_gqa_block_size"])
     chat_tpl = os.path.join(args.model_dir, "chat_template.jinja")
     if os.path.exists(chat_tpl):
         kv_scalar(w, "tokenizer.chat_template", T_STRING, open(chat_tpl, encoding="utf-8").read())
