@@ -94,3 +94,32 @@ Gate: `bash tests/server-route.sh [outdir]` prints `HTTP_ROUTES OK`.
 
 `route_id` signals "no route" with **0**, not -1; the first version treated 0 as
 a hit and answered 200 to an unknown path. The host now maps `route > 0` to 200.
+
+## One unit, HTTP in, real ids out
+
+`tests/http-tokenize.sh` composes listener + router + GGUF reader + vocabulary
+layout + tokenizer into **one** Goose unit, builds it with a host that owns only
+buffers and the model path, and drives it over TCP:
+
+    POST /tokenize  "The capital of France is" -> {"ids":[760,6511,314,9338,369],"count":5}
+    POST /tokenize  "Hello, world!"            -> {"ids":[9419,11,1814,0],"count":4}
+    GET  /health                               -> {"route":1}
+
+Both id lists were checked against libllama on the same strings and match,
+including the trailing 0 for "Hello, world!" (it is a real token, not a bug).
+Loader log from the same binary: `LOAD parse ok keys=52 tensors=753`,
+`vocabulary tokens=248320 special=33`.
+
+Gate: `bash tests/http-tokenize.sh [outdir]` prints `HTTP_TOKENIZE OK`.
+
+### Three defects the integration exposed
+
+- composing two readers (`goose/model/gguf-reader.goose` and the EXP937 reader)
+  emitted `gr_parse`/`gr_find_kv` twice and the second copy silently won, so the
+  host called a parser whose state layout differed. `gguf-reader.goose` is now a
+  thin import target naming the EXP937 implementation as the single body;
+- key lengths were typed by hand (`"tokenizer.ggml.token_type"` is 25 bytes, not
+  26) and a wrong length answers -1 with no other symptom. The host now computes
+  every key length;
+- `gr_parse` succeeding says nothing about lookups working: the first run printed
+  `parse ok keys=52` and then failed at the first key lookup.
