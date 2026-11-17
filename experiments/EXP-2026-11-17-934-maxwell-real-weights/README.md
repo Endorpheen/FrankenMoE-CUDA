@@ -52,3 +52,30 @@ both so the KV and compute buffers are the same size. Apex is the accepted
 reference directory; Maxwell is the Q4_0 GGUF. Three repeats each, medians.
 
 Numbers are added below only after both runs complete.
+
+## Same-load result: Maxwell Q4_0 vs Apex Q4_K_M
+
+Profile: 2048 prompt tokens (identical ids) / 128 generated, ctx 4096 for both,
+`-ngl all --cpu-moe --moe-cache-mib 4992 -fa on -b 2048 -ub 2048 -t 8 -tb 16
+-np 1`, 3 repeats, medians. Maxwell ran on the candidate runtime
+(our-src/EXP906 + Maxwell objects); Apex on the accepted reference `run/`.
+
+| axis | Maxwell Q4_0 | Apex Q4_K_M |
+|---|---:|---:|
+| prefill tok/s (median) | 1512.06 | 1396.30 |
+| prefill range | 1262–1579 | 466–1463 |
+| decode tok/s (median) | 54.08 | 39.53 |
+| decode range | 48.93–54.56 | 37.34–48.76 |
+| RSS MiB | 21136.8 | 18485.5 |
+| VRAM total MiB | 10892 | 10685 |
+| GGUF size | 21.42 GB | ~21 GB |
+
+Caveats, stated rather than hidden:
+
+- this profile is NOT the accepted 32768/512 one; the Apex 55.5176 figure must
+  not be compared to the 39.53 here;
+- the first Apex run was cold (prefill 466) and the spread is wide because
+  unrelated GPU processes were resident; medians of three are reported, not
+  best-of;
+- Maxwell is limited to the 4096-token window (dense path), Apex has no such
+  limit in this run.
