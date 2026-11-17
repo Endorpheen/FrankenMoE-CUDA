@@ -15,7 +15,7 @@ int main(int argc, char ** argv) {
     llama_backend_init();
 
     auto mparams = llama_model_default_params();
-    mparams.n_gpu_layers = 0;
+    mparams.n_gpu_layers = std::getenv("MX_GPU") ? 999 : 0;
     llama_model * model = llama_model_load_from_file(argv[1], mparams);
     if (!model) {
         std::fprintf(stderr, "MODEL LOAD FAILED\n");

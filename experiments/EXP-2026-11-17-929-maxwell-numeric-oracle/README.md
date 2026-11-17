@@ -33,6 +33,8 @@ out of the comparison.
   permuted at conversion, so NEOX is the correct type.
 - After the fix: `max_abs=1.73769e-4`, `mean_abs=4.24e-5`, `argmax` matches
   (204), `MAXWELL-NUMERIC OK`.
+- The same comparison on CUDA (`MX_GPU=1`, all layers on the GPU, fused HC
+  kernels active): `max_abs=3.51e-4`, `mean_abs=1.07e-4`, same `argmax=204`.
 
 ## What this proves and what it does not
 
