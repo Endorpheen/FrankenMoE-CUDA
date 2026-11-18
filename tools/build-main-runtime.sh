@@ -77,6 +77,7 @@ MODULES=(
     goose/model/control-vectors.goose
     goose/model/lora-apply.goose
     goose/model/special-partition.goose
+    goose/sampling/sampler-chain-full.goose
     goose/misc/common-strings.goose
     goose/misc/edge0-pack-index.goose
     goose/misc/release-plan.goose
@@ -129,6 +130,7 @@ MODULES=(
     goose/model/tokenizer-engine.goose
     goose/model/gguf-format.goose
     goose/model/special-partition.goose
+    goose/sampling/sampler-chain-full.goose
     goose/misc/goose-tokenizer.goose
     goose/misc/prefill-plan.goose
     goose/misc/trace-frame-order.goose

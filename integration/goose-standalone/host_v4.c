@@ -21,9 +21,11 @@
 #include "gguf.h"
 #include "ggml.h"
 #include "tensor-data.h"
+#include "goose-host-llm.h"
 
 typedef struct { uint8_t * data; int64_t len; } sl_u8;
 typedef struct { int64_t * data; int64_t len; } sl_i64;
+typedef struct { float * data; int64_t len; } sl_f32;
 typedef struct { double  * data; int64_t len; } sl_f64;
 
 extern void fg_goose_host_ensure_init(void);
@@ -32,6 +34,7 @@ extern int64_t abi_type_count(void);
 extern int64_t cfg_validate(sl_i64 iv, sl_f64 fv);
 // The Goose reader and tokenizer engine (EXP937/EXP939): the same unit that
 // builds the metadata table also parses the container and tokenises.
+extern int64_t sm_greedy(sl_f32 lv, int64_t n);
 extern int64_t gr_parse(sl_u8 data, int64_t file_bytes, sl_i64 state, sl_i64 kv, sl_i64 tensors,
                         sl_i64 kv_slots, sl_i64 tensor_slots);
 extern int64_t gr_find_kv(sl_u8 data, sl_i64 state, sl_i64 kv, sl_i64 slots, sl_u8 key);
@@ -445,6 +448,37 @@ int main(int argc, char ** argv) {
         }
         if (tokenised < 0) {
             printf("FG_TOKENIZE engine=unavailable\n");
+        }
+    }
+
+    // ---- one generated step, through the same trunk host the server uses ----
+    // The probe text is tokenised by the Goose engine and one model step runs on
+    // the real weights. The point is that the shipping binary generates, not that
+    // this particular text is meaningful.
+    if (argc > 2 && strcmp(argv[2], "--generate") == 0) {
+        hose_host_load(argv[1]);
+        int64_t hs[5] = {0};
+        hose_stats(hs);
+        const char * probe = "The capital of France is";
+        static int64_t pids[256];
+        const int64_t n_ids = hose_tokenize((const unsigned char *) probe, (int64_t) strlen(probe), pids, 256);
+        if (n_ids > 0) {
+            static int32_t batch[256];
+            for (int64_t i = 0; i < n_ids; ++i) batch[i] = (int32_t) pids[i];
+            float * logits = NULL;
+            const int64_t n_logits = hose_step(batch, n_ids, &logits);
+            if (n_logits > 0) {
+                const int64_t vocab = n_logits / n_ids;
+                const int64_t next = sm_greedy((sl_f32){ logits + (n_ids - 1) * vocab, vocab }, vocab);
+                unsigned char piece[256];
+                const int64_t pl = hose_detokenize(&next, 1, piece, sizeof piece);
+                printf("FG_GENERATE vocab=%lld prompt_ids=%lld next=%lld piece=\"%.*s\"\n",
+                       (long long) hs[0], (long long) n_ids, (long long) next,
+                       (int) (pl > 0 ? pl : 0), piece);
+                free(logits);
+            } else {
+                printf("FG_GENERATE step failed\n");
+            }
         }
     }
 

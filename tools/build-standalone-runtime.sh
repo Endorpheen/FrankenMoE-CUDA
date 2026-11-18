@@ -78,8 +78,11 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
     # ggml_critical_section_start references std::__throw_system_error. So libstdc++ is a
     # SUBSTRATE dependency, not ours. Our own sources are now all C - graph-bindings and
     # tensor-data were converted - which is the part we control.
+    $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$INC" -I "$ROOT/build/goose-main" \
+        -I "$ROOT/integration/goose-standalone" \
+        -I "$ROOT/build/goose-main" -c "$ROOT/integration/goose-standalone/goose-host-llm.c" -o "$OUT/goose-host-llm.o"
     $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v4.o" \
-        "$OUT/tensor-data.o" "$OUT/graph-bindings.o" \
+        "$OUT/tensor-data.o" "$OUT/graph-bindings.o" "$OUT/goose-host-llm.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/frankenmoe-v4"
     printf '  v4:     %s (%s B)\n' "$OUT/frankenmoe-v4" "$(stat -c%s "$OUT/frankenmoe-v4")"
