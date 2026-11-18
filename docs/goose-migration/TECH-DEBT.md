@@ -127,3 +127,47 @@ before and after the edit, and keep the pre-edit file recoverable.
 
 No data was lost: the deleted entries were restored from HEAD and the penalties
 gate still reports 200/200.
+
+## TD-S8: `export fn` exists in the canonical compiler, and it emits a stable name
+
+Recorded 2026-11-18. **This corrects TD-S4**, which said Goose has no export mechanism. That
+was true of the caret `simd7` compiler and false of the canonical build compiler, and the
+difference changes how entry points should be named.
+
+Reproduction, one file, two compilers:
+
+```
+printf 'export fn foo(a: i64) -> i64 {\n    return a + 1;\n}\n\nfn main() {\n    let r = foo(41);\n    if r < 0 {\n        return;\n    }\n}\n' > exptest.goose
+
+# canonical compiler (the one tools/build-main-runtime.sh uses)
+/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose -o exptest.c exptest.goose
+grep -n foo exptest.c
+  1332:static int64_t foo_g(int64_t p0);
+  1365:int64_t foo(int64_t gs_export_arg0) { ... }
+
+# caret compiler
+/home/end0/AI/Fried-Goose/.cache/goose/simd7 --check exptest.goose
+  error: expected top-level declaration  (at `export fn`)
+```
+
+The emitted C contains a real global function:
+
+```
+gcc -O1 -c exptest.c -o exptest.o && nm -g --defined-only exptest.o
+0000000000000000 T foo
+0000000000000022 T main
+```
+
+Consequences:
+
+1. Every id-based workaround was a workaround for one compiler, not for the language. The
+   `gg_function_N` derivation, the "entry point must be called from the build root or it is
+   deleted with its id landing on a neighbour" rule, and `gen_ids.py` exist because of it.
+2. The shipping sampler chain should switch its entry points to `export fn` with stable names,
+   which removes the whole class of failures that cost this run several iterations: a shifted
+   index silently ran typical-p where top-p was measured, and 747 of 900 comparisons were
+   wasted on a misidentified function.
+3. An exported function still needs a call to exist in the output? **No** - the emitted
+   `foo` is present because it is exported, and `main` in that file also calls it. The case
+   of an exported function with no caller has not been tested yet, and it must be: if export
+   alone keeps the body, TD-S5's rule can be relaxed to "export it" instead of "call it".

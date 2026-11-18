@@ -74,6 +74,7 @@ MODULES=(
     goose/cuda/goose-mmq-dispatch.goose
     goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
+    goose/model/tokenizer-decisions.goose
     goose/model/control-vectors.goose
     goose/model/lora-apply.goose
     goose/model/special-partition.goose
