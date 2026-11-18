@@ -49,6 +49,24 @@ extern "C" int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const flo
                                              float freq, float present) __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_pen_calls{0};
 
+
+extern "C" int64_t fg_sampler_dry_call(const int64_t * last, int64_t * rc, const int64_t * bh,
+                                       const int64_t * bts, const int64_t * btl, const int64_t * btail,
+                                       float * lv, const int64_t * id, int64_t nl, int64_t nc,
+                                       int64_t allowed, int64_t nb, float mult, float base)
+                                       __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_dry_calls{0};
+
+// DRY stays opt-in: its native body cannot be compared without a vocabulary,
+// so the substitution is proven only by the module gate until a real run.
+static bool fg_goose_dry_enabled() {
+    static const bool on = []() {
+        const char * f = getenv("GGML_GOOSE_SAMPLER_DRY");
+        return f && strcmp(f, "1") == 0;
+    }();
+    return on;
+}
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -3556,6 +3574,51 @@ static void llama_sampler_dry_apply(struct llama_sampler * smpl, llama_token_dat
 
     if (ctx->dry_multiplier == 0.0f || ctx->dry_base < 1.0f || ctx->dry_penalty_last_n == 0) {
         return;
+    }
+
+
+    if (fg_sampler_dry_call != nullptr && fg_goose_dry_enabled() && cur_p->size > 0 && ctx->last_tokens.size() > 0) {
+        const int64_t nl = (int64_t) std::min<size_t>(ctx->last_tokens.size(),
+                                                      (size_t) ctx->dry_penalty_last_n);
+        const int64_t nc = (int64_t) cur_p->size;
+        std::vector<int64_t> last(nl), rc(nl, 0), id(nc);
+        for (int64_t i = 0; i < nl; ++i) {
+            last[i] = (int64_t) ctx->last_tokens.rat((size_t) i);
+        }
+        std::vector<int64_t> bh, bts, btl, btail;
+        for (const auto & kv : ctx->dry_processed_breakers) {
+            bh.push_back((int64_t) kv.first);
+            bts.push_back((int64_t) btail.size());
+            btl.push_back((int64_t) kv.second.size());
+            for (llama_token t : kv.second) {
+                btail.push_back((int64_t) t);
+            }
+        }
+        const int64_t nb = (int64_t) bh.size();
+        if (btail.empty()) {
+            btail.push_back(0);
+        }
+        std::vector<float> lv(nc);
+        for (int64_t i = 0; i < nc; ++i) {
+            lv[i] = cur_p->data[i].logit;
+            id[i] = cur_p->data[i].id;
+        }
+        const int64_t r = fg_sampler_dry_call(last.data(), rc.data(), bh.data(), bts.data(),
+                                              btl.data(), btail.data(), lv.data(), id.data(),
+                                              nl, nc, ctx->dry_allowed_length, nb,
+                                              ctx->dry_multiplier, ctx->dry_base);
+        if (r == nc) {
+            for (int64_t i = 0; i < nc; ++i) {
+                cur_p->data[i].logit = lv[i];
+            }
+            cur_p->sorted = false;
+            const unsigned long long c = ++g_goose_dry_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_DRY goose calls=%llu nl=%lld nb=%lld\n",
+                        (unsigned long long) c, (long long) nl, (long long) nb);
+            }
+            return;
+        }
     }
 
     int last_n_repeat = std::min((int) ctx->last_tokens.size(), ctx->dry_penalty_last_n);

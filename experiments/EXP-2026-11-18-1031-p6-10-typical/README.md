@@ -692,3 +692,19 @@ Logits after the penalty match the native body exactly.
 
 Live now: typical-p, top-p, XTC, penalties. Remaining for the chain: DRY in the
 path, and `dist`/`temp_ext` which wait on TD-S1.
+
+## DRY hook installed, opt-in, comparison needs a vocabulary
+
+The DRY substitution is in place (`GGML_GOOSE_SAMPLER_DRY=1`) and the build is
+clean, but it cannot be compared against the native body the way the other
+stages were: `llama_sampler_init_dry_testing` is not exported by the library, and
+`llama_sampler_init_dry` needs a real vocabulary, so a synthetic differential is
+not available.
+
+That produced a false positive worth recording: an empty output on both sides
+made `diff` report "identical" while the test binary had failed to link. The
+DRY stage therefore stays opt-in, with its module gate (120/120) as the only
+evidence so far, until a real run with a model provides the comparison.
+
+Live and verified by API: typical-p, top-p, XTC, penalties. DRY: hook present,
+opt-in, awaiting a model run.
