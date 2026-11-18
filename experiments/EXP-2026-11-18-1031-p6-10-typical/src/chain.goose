@@ -613,6 +613,17 @@ fn gate_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, tp: f32, mk: i64) -> i6
     return sm_apply_top_p_unsorted(lv, p, id, n, tp, mk);
 }
 
+
+// single exported entry: op 0 typical-p, op 1 unsorted top-p
+fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: i64) -> i64 {
+    if op == 0 {
+        return sm_apply_typical(lv, p, id, n, f, k);
+    }
+    if op == 1 {
+        return sm_apply_top_p_unsorted(lv, p, id, n, f, k);
+    }
+    return -2;
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -621,4 +632,5 @@ fn main() {
     let ignored = gate_typical(lv, p, id, 4, 1.0, 0);
     let ignored3 = gate_sort(lv, id, 4);
     let ignored4 = gate_top_p(lv, p, id, 4, 1.0, 0);
+    let ignored5 = gate_dispatch(9, lv, p, id, 4, 1.0, 0);
 }
