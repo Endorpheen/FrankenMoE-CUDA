@@ -96,3 +96,19 @@ Eight cases, and two of them are the ones that matter:
 The remaining piece of this path, `common_ngram_map_accept` (store `n_accepted` into the
 chosen slot behind the `last_draft_created` guard), is a two-line store and is left with the
 container itself, which is P9-05's subject.
+
+## Slice 4: maximum draft width across configured types
+
+`g_spec_n_max` reproduces `common_speculative_n_max`: the model-based types contribute
+`max(0, draft.n_max)`, the three ngram-map types contribute their `size_m`, `NGRAM_MOD`
+contributes its own `n_max` clamped at zero, `NGRAM_CACHE` contributes a fixed 8, and
+`NONE`/`COUNT` contribute nothing.
+
+```
+spec n_max: cases=10 fails=0
+```
+
+Ten cases, including a negative draft width (clamped to zero, not treated as a maximum), a
+mix where the largest value comes from the third type, and an empty type list. The type ids
+are written into the source as a comment against `enum common_speculative_type`, because
+guessing them is the mistake this project has already paid for twice.
