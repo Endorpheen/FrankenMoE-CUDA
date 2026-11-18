@@ -147,6 +147,27 @@ int main() {
         check(line.compare((size_t) out[3], (size_t) out[4], "a b") == 0, "header value trimmed");
     }
 
+    // ---- RFC 9112 §3.2: the Host rules as cpp-httplib applies them ----
+    {
+        // rq_host_violation(count, version, host_ok, have_host); version 2 = HTTP/1.1.
+        check(rq_host_violation(0, 2, 1, 0) == 1, "HTTP/1.1 without Host is a violation");
+        check(rq_host_violation(0, 1, 1, 0) == 0, "HTTP/1.0 without Host is fine");
+        check(rq_host_violation(1, 2, 1, 1) == 0, "one valid Host is fine");
+        check(rq_host_violation(2, 2, 1, 1) == 1, "two Host fields are a violation");
+        check(rq_host_violation(1, 2, 0, 1) == 1, "an invalid Host value is a violation");
+        check(rq_host_violation(0, 1, 0, 0) == 0, "an absent Host is not checked for validity");
+
+        check(rq_is_host_char('a') == 1 && rq_is_host_char('9') == 1, "alnum allowed");
+        check(rq_is_host_char('-') == 1 && rq_is_host_char('.') == 1, "- and . allowed");
+        check(rq_is_host_char(':') == 1 && rq_is_host_char('[') == 1 && rq_is_host_char(']') == 1,
+              ": [ ] allowed, so a port and an IPv6 literal pass");
+        check(rq_is_host_char(' ') == 0 && rq_is_host_char('/') == 0 && rq_is_host_char('@') == 0,
+              "space, / and @ are refused");
+        check(rq_is_host_char('\t') == 0, "a tab is refused");
+
+        check(rq_uri_max() == 8192, "the URI limit is cpp-httplib's 8192");
+    }
+
     std::printf("%s checks=%d failures=%d\n", fails == 0 ? "PASS" : "BAD", checks, fails);
     return fails ? 1 : 0;
 }

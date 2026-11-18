@@ -304,6 +304,7 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
     var key_off: i64 = -1; var key_len: i64 = 0;
     var origin_off: i64 = -1; var origin_len: i64 = 0;
     var close_req: i64 = 0;
+    var host_count: i64 = 0; var host_off: i64 = -1; var host_len: i64 = 0;
     var line_end: i64 = -1;
     var i: i64 = 0;
     while i + 1 < n {
@@ -346,6 +347,13 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
                         key_off = hp + ho[3]; key_len = ho[4];
                     } else if hl_ci_eq(req, hp + ho[1], ho[2], "Origin") {
                         origin_off = hp + ho[3]; origin_len = ho[4];
+                    } else if hl_ci_eq(req, hp + ho[1], ho[2], "Host") {
+                        // Counted, not last-wins: RFC 9112 forbids more than one, and
+                        // cpp-httplib rejects that rather than picking a winner.
+                        host_count = host_count + 1;
+                        if host_count == 1 {
+                            host_off = hp + ho[3]; host_len = ho[4];
+                        }
                     } else if hl_ci_eq(req, hp + ho[1], ho[2], "Connection") {
                         // Half-close is honoured: the answer says so and the loop stops.
                         if hl_ci_eq(req, hp + ho[3], ho[4], "close") {
@@ -355,6 +363,33 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
                 }
                 hp = he + 2;
             }
+            // Header faults are decided before routing: a request without an authority
+            // is refused whatever path it asks for, which is what native does.
+            // The literal 1/0 in an argument position leaves the export without one
+            // concrete signature, so the flag is typed before the call.
+            var have_host: i64 = 0;
+            if host_off >= 0 {
+                have_host = 1;
+            }
+            let host_slice: const u8[:] = if host_off >= 0 { req[host_off .. host_off + host_len] } else { req[0 .. 0] };
+            var host_ok: i64 = 1;
+            if have_host != 0 {
+                var hk: i64 = 0;
+                while hk < host_slice.len {
+                    if !rq_is_host_char(host_slice[hk]) {
+                        host_ok = 0;
+                        break;
+                    }
+                    hk = hk + 1;
+                }
+            }
+            let bad_host: i64 = rq_host_violation(host_count, parsed[7], host_ok, have_host);
+            var fault: i64 = 0;
+            if bad_host != 0 {
+                fault = 400;
+            } else if tl > rq_uri_max() {
+                fault = 414;
+            }
             var mcode: i64 = 0;
             if hl_eq(req, mo, ml, "GET") {
                 mcode = 1;
@@ -363,7 +398,10 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
             } else if hl_eq(req, mo, ml, "DELETE") {
                 mcode = 3;
             }
-            if hl_eq(req, mo, ml, "OPTIONS") {
+            if fault != 0 {
+                status = fault;
+                close_req = 1;
+            } else if hl_eq(req, mo, ml, "OPTIONS") {
                 // A preflight is answered before routing: cors_is_preflight owns that
                 // decision, and 204 is what the native server returns.
                 status = if cors_is_preflight(req[mo .. mo + ml]) != 0 { 204 } else { 405 };

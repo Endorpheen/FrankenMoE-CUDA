@@ -41,7 +41,7 @@ static void client_fragmented(int port, int echo_fd) {
     // Split INSIDE the request line: a fragment that already contains the whole
     // line parses as a complete request and would not exercise the defect at all.
     const char * first = "GET /hea";
-    const char * second = "lth HTTP/1.1\r\n\r\n";
+    const char * second = "lth HTTP/1.1\r\nHost: x\r\n\r\n";
     if (write(fd, first, strlen(first)) != (ssize_t) strlen(first)) _exit(12);
     usleep(20000);   // let the server's first read return with a partial request
     if (write(fd, second, strlen(second)) != (ssize_t) strlen(second)) _exit(13);
@@ -62,7 +62,7 @@ static std::string exchange_fragmented(int * serve_rc) {
     const pid_t pid = fork();
     if (pid == 0) { close(pfd[0]); client_fragmented((int) port_out[0], pfd[1]); _exit(20); }
     close(pfd[1]);
-    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    std::vector<uint8_t> req_buf(16384, 0), resp_buf(4096, 0);
     std::vector<int64_t> koff{ 0 };
     *serve_rc = (int) hl_serve_full(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
                                     (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
@@ -160,7 +160,7 @@ static std::string exchange_pipeline(const std::vector<std::string> & requests,
         _exit(20);
     }
     close(pfd[1]);
-    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    std::vector<uint8_t> req_buf(16384, 0), resp_buf(4096, 0);
     std::vector<int64_t> koff{ 0 };
     *served_out = hl_serve_keep(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
                                 (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
@@ -186,7 +186,7 @@ static std::string exchange_keep(const std::vector<std::string> & requests, int6
     const pid_t pid = fork();
     if (pid == 0) { close(pfd[0]); client_keep((int) port_out[0], requests, pfd[1]); _exit(20); }
     close(pfd[1]);
-    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    std::vector<uint8_t> req_buf(16384, 0), resp_buf(4096, 0);
     std::vector<int64_t> koff{ 0 };
     *served_out = hl_serve_keep(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
                                 (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
@@ -233,7 +233,7 @@ static std::string exchange_full(const std::string & request, const std::string 
     const pid_t pid = fork();
     if (pid == 0) { close(pfd[0]); client((int) port_out[0], request, pfd[1]); _exit(20); }
     close(pfd[1]);
-    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    std::vector<uint8_t> req_buf(16384, 0), resp_buf(4096, 0);
     const int64_t rc = hl_serve_full(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
                                      (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
                                      (sl_u8){ (uint8_t *) keys.data(), (int64_t) keys.size() },
@@ -268,7 +268,7 @@ static std::string exchange_keyed(const std::string & request, const std::string
         _exit(20);
     }
     close(pfd[1]);
-    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    std::vector<uint8_t> req_buf(16384, 0), resp_buf(4096, 0);
     const int64_t rc = hl_serve_keyed(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
                                       (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
                                       (sl_u8){ (uint8_t *) keys.data(), (int64_t) keys.size() },
@@ -303,7 +303,7 @@ static std::string exchange(const std::string & request, int * serve_rc) {
     }
     close(pfd[1]);
 
-    std::vector<uint8_t> req_buf(8192, 0);
+    std::vector<uint8_t> req_buf(16384, 0);
     std::vector<uint8_t> resp_buf(4096, 0);
     const int64_t rc = hl_serve(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
                                 (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() });
@@ -340,7 +340,7 @@ int main() {
     // ---- a path the table does not carry ----
     {
         int rc = 0;
-        const std::string got = exchange("GET /nope HTTP/1.1\r\n\r\n", &rc);
+        const std::string got = exchange("GET /nope HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
         check(rc > 0, "hl_serve answered the unknown path");
         check(got.rfind("HTTP/1.1 404 Not Found\r\n", 0) == 0, "unknown path is 404");
         check(got.find("Content-Length: 0\r\n") != std::string::npos, "404 has no body");
@@ -349,14 +349,14 @@ int main() {
     // ---- a query string is stripped before the table sees the path ----
     {
         int rc = 0;
-        const std::string got = exchange("GET /metrics?v=1 HTTP/1.1\r\n\r\n", &rc);
+        const std::string got = exchange("GET /metrics?v=1 HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
         check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "path with a query still routes");
     }
 
     // ---- a method the table does not carry ----
     {
         int rc = 0;
-        const std::string got = exchange("PUT /health HTTP/1.1\r\n\r\n", &rc);
+        const std::string got = exchange("PUT /health HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
         check(got.rfind("HTTP/1.1 405 Method Not Allowed\r\n", 0) == 0, "unknown method is 405");
     }
 
@@ -374,7 +374,7 @@ int main() {
     {
         int rc = 0;
         const std::string got = exchange_keyed(
-            "GET /props HTTP/1.1\r\nAuthorization: Bearer secret\r\n\r\n",
+            "GET /props HTTP/1.1\r\nHost: x\r\nAuthorization: Bearer secret\r\n\r\n",
             "secret", { 0, 6 }, &rc);
         check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "Bearer credential is accepted");
     }
@@ -383,7 +383,7 @@ int main() {
     {
         int rc = 0;
         const std::string got = exchange_keyed(
-            "GET /props HTTP/1.1\r\nAuthorization: Bearer wrong\r\n\r\n",
+            "GET /props HTTP/1.1\r\nHost: x\r\nAuthorization: Bearer wrong\r\n\r\n",
             "secret", { 0, 6 }, &rc);
         check(got.rfind("HTTP/1.1 401 Unauthorized\r\n", 0) == 0, "wrong credential is 401");
     }
@@ -391,7 +391,7 @@ int main() {
     // ---- a public path passes even with a key configured ----
     {
         int rc = 0;
-        const std::string got = exchange_keyed("GET /health HTTP/1.1\r\n\r\n",
+        const std::string got = exchange_keyed("GET /health HTTP/1.1\r\nHost: x\r\n\r\n",
                                                "secret", { 0, 6 }, &rc);
         check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "health is public, key or not");
     }
@@ -399,14 +399,14 @@ int main() {
     // ---- OPTIONS is a preflight, decided by cors_is_preflight ----
     {
         int rc = 0;
-        const std::string got = exchange("OPTIONS /health HTTP/1.1\r\n\r\n", &rc);
+        const std::string got = exchange("OPTIONS /health HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
         check(got.rfind("HTTP/1.1 204 No Content\r\n", 0) == 0, "preflight is 204");
     }
 
     // ---- CORS: a literal policy is emitted on the preflight ----
     {
         int rc = 0;
-        const std::string got = exchange_full("OPTIONS /health HTTP/1.1\r\n\r\n", "",
+        const std::string got = exchange_full("OPTIONS /health HTTP/1.1\r\nHost: x\r\n\r\n", "",
                                               { 0 }, "*", 0, &rc);
         check(got.rfind("HTTP/1.1 204 No Content\r\n", 0) == 0, "cors preflight is 204");
         check(got.find("Access-Control-Allow-Origin: *\r\n") != std::string::npos,
@@ -419,7 +419,7 @@ int main() {
     {
         int rc = 0;
         const std::string got = exchange_full(
-            "OPTIONS /health HTTP/1.1\r\nOrigin: http://example.test\r\n\r\n", "",
+            "OPTIONS /health HTTP/1.1\r\nHost: x\r\nOrigin: http://example.test\r\n\r\n", "",
             { 0 }, "*", 1, &rc);
         check(got.find("Access-Control-Allow-Origin: http://example.test\r\n") != std::string::npos,
               "the origin is echoed when credentials are on");
@@ -431,7 +431,7 @@ int main() {
     {
         int rc = 0;
         const std::string got = exchange_full(
-            "OPTIONS /health HTTP/1.1\r\nOrigin: http://localhost:8080\r\n\r\n", "",
+            "OPTIONS /health HTTP/1.1\r\nHost: x\r\nOrigin: http://localhost:8080\r\n\r\n", "",
             { 0 }, "localhost", 1, &rc);
         check(got.find("Access-Control-Allow-Origin: http://localhost:8080\r\n") != std::string::npos,
               "localhost origin is reflected");
@@ -441,7 +441,7 @@ int main() {
     {
         int rc = 0;
         const std::string got = exchange_full(
-            "OPTIONS /health HTTP/1.1\r\nOrigin: http://127.0.0.1:3000\r\n\r\n", "",
+            "OPTIONS /health HTTP/1.1\r\nHost: x\r\nOrigin: http://127.0.0.1:3000\r\n\r\n", "",
             { 0 }, "localhost", 0, &rc);
         check(got.find("Access-Control-Allow-Origin: http://127.0.0.1:3000\r\n") != std::string::npos,
               "127.0.0.1 origin is reflected");
@@ -449,7 +449,7 @@ int main() {
     {
         int rc = 0;
         const std::string got = exchange_full(
-            "OPTIONS /health HTTP/1.1\r\nOrigin: http://evil.example\r\n\r\n", "",
+            "OPTIONS /health HTTP/1.1\r\nHost: x\r\nOrigin: http://evil.example\r\n\r\n", "",
             { 0 }, "localhost", 1, &rc);
         check(got.find("Access-Control-Allow-Origin") == std::string::npos,
               "a foreign origin gets no header in localhost mode");
@@ -458,7 +458,7 @@ int main() {
     // ---- CORS is emitted on an ordinary response, not only the preflight ----
     {
         int rc = 0;
-        const std::string got = exchange_full("GET /health HTTP/1.1\r\nOrigin: http://x.test\r\n\r\n",
+        const std::string got = exchange_full("GET /health HTTP/1.1\r\nHost: x\r\nOrigin: http://x.test\r\n\r\n",
                                               "", { 0 }, "*", 0, &rc);
         check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "ordinary response still 200");
         check(got.find("Access-Control-Allow-Origin: *\r\n") != std::string::npos,
@@ -469,7 +469,7 @@ int main() {
     {
         int64_t served = -1;
         const std::string got = exchange_pipeline(
-            { "GET /health HTTP/1.1\r\nConnection: close\r\n\r\n", "GET /nope HTTP/1.1\r\n\r\n" },
+            { "GET /health HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n", "GET /nope HTTP/1.1\r\nHost: x\r\n\r\n" },
             1, 2, &served);
         check(served == 1, "only the first request is served when it asks to close");
         check(got.find("Connection: close\r\n") != std::string::npos, "the response says close");
@@ -479,7 +479,7 @@ int main() {
     // ---- no policy, no header ----
     {
         int rc = 0;
-        const std::string got = exchange_full("OPTIONS /health HTTP/1.1\r\n\r\n", "",
+        const std::string got = exchange_full("OPTIONS /health HTTP/1.1\r\nHost: x\r\n\r\n", "",
                                               { 0 }, "", 0, &rc);
         check(got.find("Access-Control-Allow-Origin") == std::string::npos,
               "no policy means no CORS header");
@@ -489,7 +489,7 @@ int main() {
     {
         int64_t served = -1;
         const std::string got = exchange_keep(
-            { "GET /health HTTP/1.1\r\n\r\n", "GET /nope HTTP/1.1\r\n\r\n" }, 2, &served);
+            { "GET /health HTTP/1.1\r\nHost: x\r\n\r\n", "GET /nope HTTP/1.1\r\nHost: x\r\n\r\n" }, 2, &served);
         check(served == 2, "both requests were served on the same connection");
         check(got.find("HTTP/1.1 200 OK\r\n") != std::string::npos, "first answer is 200");
         check(got.find("HTTP/1.1 404 Not Found\r\n") != std::string::npos, "second answer is 404");
@@ -501,7 +501,7 @@ int main() {
     {
         int64_t served = -1;
         const std::string got = exchange_pipeline(
-            { "GET /health HTTP/1.1\r\n\r\n", "GET /nope HTTP/1.1\r\n\r\n" }, 2, 2, &served);
+            { "GET /health HTTP/1.1\r\nHost: x\r\n\r\n", "GET /nope HTTP/1.1\r\nHost: x\r\n\r\n" }, 2, 2, &served);
         check(served == 2, "both pipelined requests were served");
         check(got.find("HTTP/1.1 200 OK\r\n") != std::string::npos, "pipelined first is 200");
         check(got.find("HTTP/1.1 404 Not Found\r\n") != std::string::npos, "pipelined second is 404");
@@ -511,7 +511,7 @@ int main() {
     // ---- the loop stops at max_requests ----
     {
         int64_t served = -1;
-        exchange_keep({ "GET /health HTTP/1.1\r\n\r\n" }, 1, &served);
+        exchange_keep({ "GET /health HTTP/1.1\r\nHost: x\r\n\r\n" }, 1, &served);
         check(served == 1, "max_requests bounds the loop");
     }
 
@@ -522,6 +522,53 @@ int main() {
         check(rc > 0, "hl_serve_full answered the fragmented request");
         check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0,
               "a request in two fragments is not answered with 400");
+    }
+
+    // ---- RFC 9112 §3.2, as cpp-httplib applies it ----
+    {
+        int rc = 0;
+        const std::string got = exchange("GET /health HTTP/1.1\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 400 Bad Request\r\n", 0) == 0,
+              "HTTP/1.1 without Host is refused");
+        check(got.find("Connection: close\r\n") != std::string::npos,
+              "a refused request closes the connection");
+    }
+    {
+        int rc = 0;
+        const std::string got = exchange("GET /health HTTP/1.1\r\nHost: a\r\nHost: b\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 400 Bad Request\r\n", 0) == 0,
+              "two Host fields are refused, not last-wins");
+    }
+    {
+        int rc = 0;
+        const std::string got = exchange("GET /health HTTP/1.1\r\nHost: a b\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 400 Bad Request\r\n", 0) == 0,
+              "a Host value with a space is refused");
+        const std::string ok = exchange("GET /health HTTP/1.1\r\nHost: a-b.c:8080\r\n\r\n", &rc);
+        check(ok.rfind("HTTP/1.1 200 OK\r\n", 0) == 0,
+              "a Host value with - . and : is accepted");
+    }
+    {
+        int rc = 0;
+        const std::string got = exchange("GET /health HTTP/1.0\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0,
+              "HTTP/1.0 needs no Host");
+    }
+    {
+        // is_host is all_of over the bytes, so an empty value passes. Reproduced,
+        // not corrected: this is what the library does.
+        int rc = 0;
+        const std::string got = exchange("GET /health HTTP/1.1\r\nHost: \r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0,
+              "an empty Host is accepted, as the library accepts it");
+    }
+    {
+        const std::string long_path(8200, 'a');
+        int rc = 0;
+        const std::string got = exchange("GET /" + long_path + " HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 414 URI Too Long\r\n", 0) == 0 ||
+              got.rfind("HTTP/1.1 404 Not Found\r\n", 0) == 0,
+              "an over-long target is refused or unrouted, never served");
     }
 
     // ---- a malformed request line gets 400 ----

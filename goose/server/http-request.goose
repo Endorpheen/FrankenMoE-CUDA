@@ -237,3 +237,44 @@ fn rq_parse_header_impl(line: const u8[:], out: i64[:]) -> i64 {
     out[3] = v0; out[4] = v1 - v0;
     return 0;
 }
+
+// RFC 9112 §3.2 as cpp-httplib applies it (httplib.cpp:10246-10254): a request is
+// rejected when it carries more than one Host field, when it carries none and
+// speaks HTTP/1.1, or when a Host value contains a character outside the allowed
+// set. Note the native quirk, reproduced rather than corrected: is_host is
+// all_of over the bytes, so an EMPTY value passes, and an empty Host is therefore
+// accepted. version is the code rq_parse_line writes: 2 for HTTP/1.1, 1 for HTTP/1.0.
+// Scalars only: this decision is about counts and a flag the caller already
+// computed with rq_is_host. Keeping the slice out of the signature means the export
+// has one concrete instantiation and needs no generic chain.
+export fn rq_host_violation(count: i64, version: i64, host_ok: i64, have_host: i64) -> i64 {
+    if count > 1 {
+        return 1;
+    }
+    if count == 0 && version == 2 {
+        return 1;
+    }
+    if have_host != 0 && host_ok == 0 {
+        return 1;
+    }
+    return 0;
+}
+
+// cpp-httplib's character set for a Host value: alnum plus - . _ ~ ! $ & ' ( ) * +
+// , ; = % : [ ] . It is wider than a token and narrower than a field value.
+// One byte at a time: a slice-typed export is only resolved when the module itself
+// calls it with a concrete argument, and the caller here is another module. The rule
+// stays owned here and the caller only loops.
+export fn rq_is_host_char(c: i64) -> bool {
+    if (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) {
+        return true;
+    }
+    return c == 45 || c == 46 || c == 95 || c == 126 || c == 33 || c == 36 || c == 38
+        || c == 39 || c == 40 || c == 41 || c == 42 || c == 43 || c == 44 || c == 59
+        || c == 61 || c == 37 || c == 58 || c == 91 || c == 93;
+}
+
+// CPPHTTPLIB_REQUEST_URI_MAX_LENGTH (httplib.h:117-118).
+export fn rq_uri_max() -> i64 {
+    return 8192;
+}
