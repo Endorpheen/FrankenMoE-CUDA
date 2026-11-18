@@ -786,3 +786,23 @@ Plan for the Goose build on the correct base:
 Everything measured before this point used a library built from `work/`, which
 lacks the MoE cache, so those numbers describe a different runtime and are not
 used for acceptance.
+
+## Pivot, step 1 result: the restored ggml is partial too
+
+```
+reconstructed/ggml   -> only src/, no CMakeLists.txt
+reconstructed/src    -> full, including llama-moe-cache
+```
+
+So the accepted tree can seed `src/` but not the ggml build. Step 2 is one of:
+
+1. pair the restored `src/` with the `ggml/` build files from
+   `work/llama.cpp-integration` (same lineage, but the ggml sources would come
+   from a different snapshot);
+2. or start from the full `work/` tree and port `llama-moe-cache.{h,cpp}` plus its
+   call sites into our copy there.
+
+The first is a small experiment; the second is faithful but touches graph and
+context code. The next iteration tries (1) and, if the ggml API does not line up,
+falls back to (2). The minimal top-level CMakeLists for the accepted sources is
+committed in `builds/rt-accepted/CMakeLists.txt`.
