@@ -826,3 +826,18 @@ why the first two attempts failed on `add_subdirectory` and on missing
 Next: finish the build, confirm the soname matches the accepted server's
 expectation, then add the shim and the hooks to this tree and re-run the stage
 differentials on it.
+
+## Pivot, step 3: the accepted src pairs with the flint ggml and headers
+
+Three pairings were tried; only one compiles:
+
+| ggml / headers | result |
+|---|---|
+| restored ggml + work headers | no build files at all in the restored ggml |
+| work ggml + work headers | `llama_embd` undeclared (the type lives in the flint header) |
+| work ggml + flint headers | `ggml_dsv4_hc_pre_gated` and `ggml_prec_set_acc` undeclared |
+| **flint ggml + flint headers** | configures cleanly, compiles with no errors so far |
+
+So the accepted `src/` is the same lineage as `vendor/flint` and needs its ggml
+and its public headers, not the `work/` ones. The build was still running at the
+end of the iteration (CUDA objects), with zero compile errors.
