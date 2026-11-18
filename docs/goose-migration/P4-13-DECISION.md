@@ -45,3 +45,20 @@ confines the change to the allocator adapter. It still needs a differential gate
 on the adapter before any call site is switched.
 
 No code change is proposed by this note.
+
+## Decision (2026-11-18)
+
+Option **B** is adopted: the stream source owns the block tables and the
+allocator receives ordered plans. Rationale: it preserves the already-accepted
+`xl_`/`sp_` streaming contracts and confines the change to the allocator
+adapter. The eviction shape is therefore a returned plan (not a callback), and
+the scheduler keeps one block size on both paths. The differential gate on the
+adapter is mandatory before any call site is switched.
+
+Surface confirmed in this repository: `ggml/src/ggml-alloc.c` and
+`ggml/src/ggml-backend.cpp` for the allocator side; the ported Goose allocator
+module `goose/cpu/goose-allocator/allocator.goose` (fg161 primitives:
+`allocate_buffer`, `free_buffer`, `set_usage`, `reset_buffer`, `tensor_alloc`,
+`bulk`) plus `goose/cpu/goose-runtime/{allocator-reuse,allocator-coalesce,
+tensor-lifetime}` for reuse and lifetime; the scheduler side stays on the ported
+`fg387s`/`fg398s` decision modules.
