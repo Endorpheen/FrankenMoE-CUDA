@@ -1017,3 +1017,25 @@ one to work on.
 Remaining decode work, measured not guessed: the hook still copies 100k logits and
 100k ids per token for penalties and per token for typical (four arrays). Those
 copies are now the largest known term.
+
+## Instrumented: the hooks cost about 1 %, so the measured gap is mostly noise
+
+Per-stage timers inside the hooks, one 512-token request:
+
+```
+FG_TIME penalties ... per_call_us=248.8   (including the array copies)
+FG_TIME typical   ... per_call_us=1.0
+FG_TIME top_p     ... per_call_us=0.0
+```
+
+248.8 us per token at ~45 tok/s is 1.1 % of the token budget; typical and top-p
+are below one microsecond each. Copies account for ~98 us of that 248.8.
+
+Meanwhile the same binary measured decode 43.87 in this run and 46.56 in another,
+with identical flags. The spread between runs of one configuration is of the same
+order as the -6.5 % "regression", so that figure is not established.
+
+Method fix for the next measurement: interleave the configurations (ON, OFF, ON,
+OFF, ON, OFF) with separate server launches and compare paired differences, rather
+than three runs of one side followed by three of the other. A slow drift of the
+machine then cancels instead of being attributed to the stages.

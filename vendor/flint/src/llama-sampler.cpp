@@ -24,6 +24,7 @@
 // The shipped chain module exposes one entry per stage; the references are weak
 // so the runtime works without the shim. GGML_GOOSE_SAMPLER_CHAIN=0 disables.
 #include <atomic>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 
@@ -46,6 +47,23 @@ struct fg_scratch_buf {
     }
 };
 static thread_local fg_scratch_buf fg_scratch;
+
+// deterministic accounting of the time spent inside each Goose stage
+static std::atomic<long long> fg_ns_typical{0}, fg_ns_top_p{0}, fg_ns_penalties{0}, fg_ns_xtc{0};
+static std::atomic<long long> fg_n_calls{0};
+
+static inline long long fg_now_ns() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+static void fg_report_stage(const char * name, std::atomic<long long> & acc, long long dt) {
+    acc.fetch_add(dt, std::memory_order_relaxed);
+    const long long c = fg_n_calls.fetch_add(1, std::memory_order_relaxed) + 1;
+    if ((c % 400) == 0) {
+        fprintf(stderr, "FG_TIME %s total_ms=%.1f per_call_us=%.1f calls=%lld\n", name,
+                acc.load() / 1e6, (double) acc.load() / 1e3 / (double) c, c);
+    }
+}
 static std::atomic<unsigned long long> g_goose_top_p_calls{0};
 
 // top-p is enabled with the chain; GGML_GOOSE_SAMPLER_TOP_P=0 disables it
@@ -1663,8 +1681,10 @@ static void llama_sampler_top_p_apply(struct llama_sampler * smpl, llama_token_d
             pp[i]  = cur_p->data[i].p;
             ids[i] = cur_p->data[i].id;
         }
+        const long long t0 = fg_now_ns();
         const int64_t kept = fg_sampler_top_p_call(lv.data(), pp.data(), ids.data(),
                                                    (int64_t) cur_p->size, ctx->p, ctx->min_keep);
+        fg_report_stage("top_p", fg_ns_top_p, fg_now_ns() - t0);
         if (kept > 0 && kept <= (int64_t) cur_p->size) {
             for (int64_t i = 0; i < kept; ++i) {
                 cur_p->data[i].logit = lv[i];
@@ -2057,8 +2077,10 @@ static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token
             pp[i]  = cur_p->data[i].p;
             ids[i] = cur_p->data[i].id;
         }
+        const long long t0 = fg_now_ns();
         const int64_t kept = fg_sampler_typical_call(lv.data(), pp.data(), ids.data(), scr.data(),
                                                     (int64_t) cur_p->size, ctx->p, ctx->min_keep);
+        fg_report_stage("typical", fg_ns_typical, fg_now_ns() - t0);
         if (kept > 0 && kept <= (int64_t) cur_p->size) {
             for (int64_t i = 0; i < kept; ++i) {
                 cur_p->data[i].logit = lv[i];
@@ -3148,6 +3170,7 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
         for (size_t i = 0; i < hn; ++i) {
             hist[i] = (float) ctx->prev.rat(i);
         }
+        const long long t0 = fg_now_ns();
         fg_scratch.ensure(cur_p->size);
         std::vector<float>   & lv = fg_scratch.lv;
         std::vector<int64_t> & ids = fg_scratch.ids;
@@ -3163,6 +3186,7 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
                                                       ctx->penalty_present,
                                                       fg_pen_keys, fg_pen_cnt,
                                                       (int64_t) FG_PEN_SLOTS);
+        fg_report_stage("penalties", fg_ns_penalties, fg_now_ns() - t0);
         if (kept == (int64_t) cur_p->size) {
             for (size_t i = 0; i < cur_p->size; ++i) {
                 cur_p->data[i].logit = lv[i];
