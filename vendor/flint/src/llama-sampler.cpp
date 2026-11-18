@@ -2483,7 +2483,7 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
     if (chance > ctx->probability) {
         return;
     }
-    if (fg_sampler_xtc_call != nullptr && cur_p->size > 0) {
+    if (fg_sampler_xtc_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
         std::vector<float>   lv(cur_p->size), pp(cur_p->size);
         std::vector<int64_t> ids(cur_p->size);
         for (size_t i = 0; i < cur_p->size; ++i) {
@@ -3110,7 +3110,7 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
     }
 
 
-    if (fg_sampler_penalties_call != nullptr && cur_p->size > 0 && ctx->prev.size() > 0) {
+    if (fg_sampler_penalties_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0 && ctx->prev.size() > 0) {
         const size_t hn = std::min<size_t>(ctx->prev.size(), (size_t) ctx->penalty_last_n);
         std::vector<float>   hist(hn);
         for (size_t i = 0; i < hn; ++i) {

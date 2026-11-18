@@ -708,3 +708,22 @@ evidence so far, until a real run with a model provides the comparison.
 
 Live and verified by API: typical-p, top-p, XTC, penalties. DRY: hook present,
 opt-in, awaiting a model run.
+
+## Real-path A/B on the shipped server: identical output, real Goose calls
+
+Server built from our library copy, Apex-35B-V1.0-Q4_K_M, fixed seed 42, the
+same request twice:
+
+```
+[ON ] " Paris, and its population is approximately "   counters=2
+[OFF] " Paris, and its population is approximately "   counters=0
+```
+
+`counters` is the number of `FG171_* goose calls` lines, so the ON run really
+executed Goose stages (top-p and penalties in the default chain) and the OFF run
+executed none. The generated text is identical.
+
+A defect of mine found here: `GGML_GOOSE_SAMPLER_CHAIN=0` did not disable XTC and
+penalties because those hooks lacked the guard, so the first "OFF" run was not
+off at all and would have produced a meaningless equality. The guards are in
+place and the run above is the valid one, verified by the counter being zero.
