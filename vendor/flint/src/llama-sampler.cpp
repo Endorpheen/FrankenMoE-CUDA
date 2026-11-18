@@ -127,6 +127,10 @@ static std::atomic<unsigned long long> g_goose_mirostat_calls{0};
 extern "C" int64_t fg_sampler_dist_words_call(float * p, int64_t n, int64_t w1, int64_t w2) __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_dist_calls{0};
 
+extern "C" int64_t fg_sampler_dist_pick_call(float * lv, float * p, int64_t n, int64_t w1,
+                                             int64_t w2) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_distpick_calls{0};
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -1321,6 +1325,32 @@ static void llama_sampler_dist_apply(struct llama_sampler * smpl, llama_token_da
     if (!cur_p->sorted) {
         for (size_t i = 1; i < cur_p->size; ++i) {
             max_l = std::max(max_l, cur_p->data[i].logit);
+        }
+    }
+
+    if (fg_sampler_dist_pick_call != nullptr && fg_goose_chain_enabled()) {
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float> & lv = fg_scratch.lv;
+        std::vector<float> & pp = fg_scratch.pp;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i] = cur_p->data[i].logit;
+        }
+        // one draw pair, the same consumption generate_canonical<double,53> uses
+        const int64_t w1 = (int64_t) ctx->rng();
+        const int64_t w2 = (int64_t) ctx->rng();
+        const int64_t sel = fg_sampler_dist_pick_call(lv.data(), pp.data(),
+                                                     (int64_t) cur_p->size, w1, w2);
+        if (sel >= 0 && sel < (int64_t) cur_p->size) {
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                cur_p->data[i].p = pp[i];
+            }
+            cur_p->selected = (int) sel;
+            const unsigned long long c = ++g_goose_distpick_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_DIST goose calls=%llu sel=%lld\n",
+                        (unsigned long long) c, (long long) sel);
+            }
+            return;
         }
     }
 

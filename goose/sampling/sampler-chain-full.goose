@@ -1121,6 +1121,46 @@ fn fg_sampler_dist_words(p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i6
     return n - 1;
 }
 
+// dist sampler exactly as llama_sampler_dist_apply computes it: float expf
+// probabilities, double accumulation, and a double draw formed from the two words
+// the caller obtained from its generator
+fn fg_sampler_dist_pick(lv: f32[:], p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i64 {
+    if marker != 178 || n <= 0 {
+        return -1;
+    }
+    var max_l: f32 = lv[0];
+    var i: i64 = 1;
+    while i < n {
+        if lv[i] > max_l { max_l = lv[i]; }
+        i = i + 1;
+    }
+    var sum_cum: f64 = 0.0;
+    i = 0;
+    while i < n {
+        let pv: f32 = c_expf(lv[i] - max_l);
+        p[i] = pv;
+        sum_cum = sum_cum + (pv as f64);
+        i = i + 1;
+    }
+    let rnd: f64 = ((w1 as f64) + (w2 as f64) * 4294967296.0) / 18446744073709551616.0;
+    let sum_tgt: f64 = sum_cum * rnd;
+    var sum_run: f64 = 0.0;
+    var sel: i64 = -1;
+    i = 0;
+    while i < n {
+        if sel < 0 {
+            sum_run = sum_run + (p[i] as f64);
+            if sum_run >= sum_tgt {
+                sel = i;
+            }
+        }
+        p[i] = ((p[i] as f64) / sum_cum) as f32;
+        i = i + 1;
+    }
+    if sel < 0 { sel = n - 1; }
+    return sel;
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.

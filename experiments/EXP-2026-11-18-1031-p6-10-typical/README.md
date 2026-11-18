@@ -1173,3 +1173,22 @@ be gated against `llama_sampler_dist_apply`'s own algorithm, and the hook belong
 in that function.
 
 This is recorded as a correction, not as a completion: `dist` is not migrated yet.
+
+## dist live and identical (correct function this time)
+
+The hook now sits in `llama_sampler_dist_apply`, the sampler the chain actually
+contains, and reproduces its algorithm exactly: float `expf` probabilities, double
+accumulation, double draw formed from the two words the caller draws.
+
+```
+dist pick: cases=400 mismatches=0        (selected index and normalised p, bitwise)
+live:      lines 64/64, FG171_DIST fires, output identical ON vs OFF
+```
+
+The two words are drawn from `ctx->rng` in the same order and count the native code
+uses, so the stream stays aligned for the samplers after it - which the 64 seeded
+cases confirm.
+
+Eight stages are now live with identical behaviour: typical-p, top-p, XTC,
+penalties, DRY, adaptive-p, mirostat and dist. `temp_ext` remains (TD-S1 in its
+double renormalisation) and then grammars.
