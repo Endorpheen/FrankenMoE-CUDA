@@ -953,3 +953,22 @@ So the full-scan algorithm was ~35 % of decode; the remaining gap is ~12 %. The
 remaining suspects, in order: the per-token copies of the 100k-entry candidate
 arrays into vectors, then the call overhead. The next step measures a variant
 that avoids the id copy before changing the ABI.
+
+## Reused scratch buffers; the remaining cost is the per-candidate search
+
+| config | before buffers | after buffers |
+|---|---|---|
+| base (all off) | 46.5 | 46.5 |
+| penalties alone | 39.7 | **41.6** |
+| typical alone | 47.4 | 47.5 |
+| all stages | 41.3 | **41.0** |
+
+Allocation per token was worth about 4 % on penalties. The remaining ~11 % is the
+two binary searches per candidate: about 1.2 M probes per token over a 100 k
+vocabulary.
+
+Next design, cheaper by construction: let the hook own a small direct-mapped table
+(keys and counts, a few hundred slots) and pass it to the Goose entry as two
+slices, so each candidate costs one probe instead of two searches. The arrays
+cannot be declared inside a Goose function (the compiler rejects the literal
+form), but slices passed from the caller are fine.

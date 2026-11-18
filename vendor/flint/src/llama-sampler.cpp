@@ -34,6 +34,18 @@ extern "C" int64_t fg_sampler_top_p_call(float * lv, float * p, int64_t * id, in
                                          float top_p, int64_t min_keep) __attribute__((weak));
 
 static std::atomic<unsigned long long> g_goose_chain_calls{0};
+
+// Reused across calls: sampling runs per token, and allocating four vectors of
+// vocabulary size on every token is measurable. thread_local keeps contexts on
+// different threads independent.
+struct fg_scratch_buf {
+    std::vector<float>   lv, pp, scr;
+    std::vector<int64_t> ids;
+    void ensure(size_t n) {
+        if (lv.size() < n) { lv.resize(n); pp.resize(n); scr.resize(n); ids.resize(n); }
+    }
+};
+static thread_local fg_scratch_buf fg_scratch;
 static std::atomic<unsigned long long> g_goose_top_p_calls{0};
 
 // top-p is enabled with the chain; GGML_GOOSE_SAMPLER_TOP_P=0 disables it
@@ -1639,8 +1651,9 @@ static void llama_sampler_top_p_apply(struct llama_sampler * smpl, llama_token_d
         return;
     }
     if (fg_sampler_top_p_call != nullptr && fg_goose_top_p_enabled() && cur_p->size > 0) {
-        std::vector<float>   lv(cur_p->size), pp(cur_p->size);
-        std::vector<int64_t> ids(cur_p->size);
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv = fg_scratch.lv, & pp = fg_scratch.pp;
+        std::vector<int64_t> & ids = fg_scratch.ids;
         for (size_t i = 0; i < cur_p->size; ++i) {
             lv[i]  = cur_p->data[i].logit;
             pp[i]  = cur_p->data[i].p;
@@ -2032,8 +2045,9 @@ static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token
     }
 
     if (fg_sampler_typical_call != nullptr && fg_goose_typical_enabled() && cur_p->size > 0) {
-        std::vector<float>   lv(cur_p->size), pp(cur_p->size), scr(cur_p->size);
-        std::vector<int64_t> ids(cur_p->size);
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv = fg_scratch.lv, & pp = fg_scratch.pp, & scr = fg_scratch.scr;
+        std::vector<int64_t> & ids = fg_scratch.ids;
         for (size_t i = 0; i < cur_p->size; ++i) {
             lv[i]  = cur_p->data[i].logit;
             pp[i]  = cur_p->data[i].p;
@@ -3130,8 +3144,9 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
         for (size_t i = 0; i < hn; ++i) {
             hist[i] = (float) ctx->prev.rat(i);
         }
-        std::vector<float>   lv(cur_p->size);
-        std::vector<int64_t> ids(cur_p->size);
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv = fg_scratch.lv;
+        std::vector<int64_t> & ids = fg_scratch.ids;
         for (size_t i = 0; i < cur_p->size; ++i) {
             lv[i]  = cur_p->data[i].logit;
             ids[i] = cur_p->data[i].id;
