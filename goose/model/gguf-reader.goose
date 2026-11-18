@@ -186,6 +186,12 @@ export fn gr_find_kv(data: const u8[:], state: i64[:], kv: i64[:], slots: i64[:]
     return gr_lookup(data, state, kv, slots, key, 8, 2);
 }
 
+// Same decision as gr_find_kv for callers inside the unit: the export must keep
+// one concrete signature, so internal callers use this body directly.
+fn gr_find_kv_impl(data: const u8[:], state: i64[:], kv: i64[:], slots: i64[:], key: const u8[:]) -> i64 {
+    return gr_lookup(data, state, kv, slots, key, 8, 2);
+}
+
 export fn gr_find_tensor(data: const u8[:], state: i64[:], tensors: i64[:], slots: i64[:], key: const u8[:]) -> i64 {
     return gr_lookup(data, state, tensors, slots, key, 12, 3);
 }
@@ -236,6 +242,10 @@ export fn gr_meta_f32_bits(data: const u8[:], state: i64[:], kv: i64[:], index: 
 }
 
 export fn gr_string_array_index(data: const u8[:], state: i64[:], kv: i64[:], index: i64, pairs: i64[:]) -> i64 {
+    return gr_string_array_index_impl(data, state, kv, index, pairs);
+}
+
+fn gr_string_array_index_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, pairs: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
        kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 { return -1; }
     let count: i64 = kv[index * 8 + 5]; if count < 0 || count > pairs.len / 2 { return -1; }
@@ -265,6 +275,10 @@ export fn gr_arr_type(state: i64[:], kv: i64[:], index: i64) -> i64 {
 }
 
 export fn gr_arr_n(state: i64[:], kv: i64[:], index: i64) -> i64 {
+    return gr_arr_n_impl(state, kv, index);
+}
+
+fn gr_arr_n_impl(state: i64[:], kv: i64[:], index: i64) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
        kv[index * 8 + 2] != 9 {
         return -1;

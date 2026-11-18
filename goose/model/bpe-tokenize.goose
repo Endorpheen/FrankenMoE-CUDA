@@ -101,6 +101,17 @@ export fn bt_build(
     mrg_off: const i64[:], mrg_len: const i64[:], mrg_slots: i64[:],
     stats: i64[:]
 ) -> i64 {
+    return bt_build_impl(gguf, tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots, stats);
+}
+
+// Same decision for callers inside the unit: an export keeps one concrete
+// signature, so internal callers use this body directly.
+fn bt_build_impl(
+    gguf: const u8[:],
+    tok_off: const i64[:], tok_len: const i64[:], tok_slots: i64[:],
+    mrg_off: const i64[:], mrg_len: const i64[:], mrg_slots: i64[:],
+    stats: i64[:]
+) -> i64 {
     let n_tok: i64 = tok_off.len;
     let n_mrg: i64 = mrg_off.len;
     if tok_len.len != n_tok || mrg_len.len != n_mrg || stats.len < 4 {
@@ -299,6 +310,11 @@ fn bt_merge_rank(gguf: const u8[:], mrg_off: const i64[:], mrg_len: const i64[:]
 // same length can only both match where they are identical.
 export fn bt_special_order(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:],
                            attr: const i64[:], order: i64[:]) -> i64 {
+    return bt_special_order_impl(gguf, tok_off, tok_len, attr, order);
+}
+
+fn bt_special_order_impl(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:],
+                         attr: const i64[:], order: i64[:]) -> i64 {
     if attr.len < tok_off.len || order.len < tok_off.len || tok_len.len < tok_off.len {
         return -1;
     }
@@ -606,6 +622,11 @@ fn bt_has_unused(gguf: const u8[:], off: i64, len: i64) -> bool {
 
 export fn bt_attrs(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:],
                    tok_type: const i64[:], attr: i64[:]) -> i64 {
+    return bt_attrs_impl(gguf, tok_off, tok_len, tok_type, attr);
+}
+
+fn bt_attrs_impl(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:],
+                 tok_type: const i64[:], attr: i64[:]) -> i64 {
     if attr.len < tok_off.len || tok_len.len < tok_off.len || tok_type.len < tok_off.len {
         return -1;
     }
@@ -661,6 +682,11 @@ export fn bt_attrs(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[
 // pad/repo/separator ids, and the configured eos/eot/eom ids.
 export fn bt_eog_ids(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:],
                      eos_id: i64, eot_id: i64, eom_id: i64, out: i64[:]) -> i64 {
+    return bt_eog_ids_impl(gguf, tok_off, tok_len, eos_id, eot_id, eom_id, out);
+}
+
+fn bt_eog_ids_impl(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:],
+                   eos_id: i64, eot_id: i64, eom_id: i64, out: i64[:]) -> i64 {
     var n: i64 = 0;
     var i: i64 = 0;
     while i < tok_off.len {
