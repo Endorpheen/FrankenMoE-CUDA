@@ -161,3 +161,19 @@ candidate; a token rule consumes the whole token, so the cursor is moved to the 
 
 Remaining scope for `reject`: alternates inside a rule expand only one level, and
 `TOKEN_NOT` is implemented but not yet exercised by a case.
+
+## Composed entry: compiles, gate blocked by the fixture, not by the port
+
+`g_grammar_reject` chains `g_advance` (expand rule references, alternates included)
+into `g_reject_multi`, which is the shape the sampler filter needs. It compiles
+together with all the previously gated pieces.
+
+Its gate is not passing yet, and the reason is my fixture rather than the port: with
+the hand-built table `rule0 = ref1, ref2, END` the **native** oracle aborts on
+`GGML_ASSERT(is_positive_char || pos->type == LLAMA_GRETYPE_CHAR_NOT)` inside
+`llama_grammar_match_char`, i.e. the native advance left a `RULE_REF` on a stack top
+for this layout. A rule table built by hand has to match what the parser produces;
+until the fixture uses parser output (or a layout the native accepts), this gate
+proves nothing and is recorded as blocked.
+
+No claim of equality is made for the composed entry.

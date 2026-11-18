@@ -3,7 +3,7 @@
 // stacks is nstacks rows of maxd element indexes; stackd holds each depth.
 fn g_reject_multi(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                   stacks: i64[:], stackd: i64[:], nstacks: i64,
-                  cand_cp: i64[:], cp_len: i64[:], pval: i64[:], pnr: i64[:],
+                  cand_cp: i64[:], cp_len: i64[:], pval: i64[:], pnr: i64[:], cand_id: i64[:],
                   rej: i64[:], scratch: i64[:], tmp_rej: i64[:], tmp_cur: i64[:],
                   rowbuf: i64[:],
                   ncand: i64, maxd: i64, maxcp: i64) -> i64 {
@@ -29,7 +29,7 @@ fn g_reject_multi(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         let ignored = g_reject(etype, eval, roff, rlen,
                                rowbuf, stackd[s],
                                cand_cp, cp_len, tmp_cur, tmp_rej, ncand,
-                               pval, pnr, scratch, maxd, maxcp);
+                               pval, pnr, cand_id, scratch, maxd, maxcp);
         i = 0;
         while i < ncand {
             if tmp_rej[i] == 0 {
@@ -64,7 +64,8 @@ fn main() {
     let tr: i64[3] = [0, 0, 0];
     let tc: i64[3] = [0, 0, 0];
     let rb: i64[8] = [0,0,0,0,0,0,0,0];
-    let r = g_reject_multi(et, ev, ro, rl, stk, std, 2, cp, cpl, pv, pn, rej, sc, tr, tc, rb, 3, 8, 2);
+    let cid: i64[3] = [0, 0, 0];
+    let r = g_reject_multi(et, ev, ro, rl, stk, std, 2, cp, cpl, pv, pn, cid, rej, sc, tr, tc, rb, 3, 8, 2);
     if r < 0 {
         return;
     }
