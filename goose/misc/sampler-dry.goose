@@ -32,8 +32,8 @@
 
 import std;
 
-extern "powf" fn pow32(x: f32, y: f32) -> f32;
-extern "logf" fn log32(x: f32) -> f32;
+extern "powf" fn dry_pow32(x: f32, y: f32) -> f32;
+extern "logf" fn dry_log32(x: f32) -> f32;
 
 // Empty sampler test: the chain should not contain DRY at all.
 export fn dry_is_empty(multiplier: f32, base: f32, penalty_last_n: i64) -> bool {
@@ -213,7 +213,7 @@ export fn dry_apply(
     // Step 4: penalty, with the exponent clamp native applies
     var max_exponent: i64 = 0;
     if base > 1.000001 {
-        let lim: f32 = 88.7228391 / log32(base);
+        let lim: f32 = 88.7228391 / dry_log32(base);
         max_exponent = lim as i64;
     }
 
@@ -245,7 +245,7 @@ export fn dry_apply(
                 if max_exponent > 0 && repeat_exp > max_exponent {
                     repeat_exp = max_exponent;
                 }
-                let penalty: f32 = multiplier * pow32(base, repeat_exp as f32);
+                let penalty: f32 = multiplier * dry_pow32(base, repeat_exp as f32);
                 logits[c] = logits[c] - penalty;
             }
         }

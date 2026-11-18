@@ -169,6 +169,9 @@ MODULES=(
     goose/model/bpe-tokenize.goose
     goose/model/bpe-detokenize.goose
     goose/model/bpe-load.goose
+    goose/misc/sampler-typical.goose
+    goose/misc/sampler-top-n-sigma.goose
+    goose/misc/sampler-dry.goose
 )
 
 echo "[1/5] compose ${#MODULES[@]} modules"

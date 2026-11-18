@@ -24,7 +24,7 @@
 
 import std;
 
-extern "sqrtf" fn sqrt32(x: f32) -> f32;
+extern "sqrtf" fn tns_sqrt32(x: f32) -> f32;
 
 const TNS_NEG_INF: f32 = 0.0 - 3.4028234663852886e38;
 
@@ -91,7 +91,7 @@ export fn tns_apply(logits: f32[:], n_candidates: i64, n: f32) -> i64 {
     }
     var std: f32 = 0.0;
     if valid > 0 {
-        std = sqrt32(acc / (valid as f32));
+        std = tns_sqrt32(acc / (valid as f32));
     }
 
     let cut: f32 = mx - n * std;

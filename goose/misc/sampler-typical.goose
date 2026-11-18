@@ -28,8 +28,8 @@ import std;
 // libm, declared the way the shipped unit already declares exp for perplexity
 // (build/goose-main/main.goose: `extern "exp" fn exp64`). The names differ from
 // the C functions only to keep one obvious spelling per width in Goose code.
-extern "log" fn ln64(x: f64) -> f64;
-extern "fabs" fn abs64(x: f64) -> f64;
+extern "log" fn tp_ln64(x: f64) -> f64;
+extern "fabs" fn tp_abs64(x: f64) -> f64;
 
 // Returns the number of survivors, or -1 on a bad argument (n < 0, or any of the
 // arrays shorter than n). `probs` are the caller's softmax values; `order` and
@@ -62,7 +62,7 @@ export fn tp_apply(
     i = 0;
     while i < n {
         if probs[i] > 0.0 {
-            entropy = entropy - probs[i] * ln64(probs[i]);
+            entropy = entropy - probs[i] * tp_ln64(probs[i]);
         }
         i = i + 1;
     }
@@ -71,7 +71,7 @@ export fn tp_apply(
     i = 0;
     while i < n {
         if probs[i] > 0.0 {
-            scratch[i] = abs64((0.0 - ln64(probs[i])) - entropy);
+            scratch[i] = tp_abs64((0.0 - tp_ln64(probs[i])) - entropy);
         } else {
             // -ln(0) is +inf, so a zero-probability candidate scores +inf and
             // sorts last. Native computes the same way through fabsf(-logf(p)).
