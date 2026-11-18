@@ -1,4 +1,8 @@
 #include "llama-grammar.h"
+#include <atomic>
+#include <cstdlib>
+#include <cstring>
+#include <unordered_map>
 
 #include "llama-impl.h"
 #include "llama-vocab.h"
@@ -1356,6 +1360,65 @@ struct llama_grammar * llama_grammar_clone_impl(const struct llama_grammar & gra
     return result;
 }
 
+
+// ---- Goose grammar decision hook -------------------------------------------
+// The reject decision is computed by the Goose automaton; the host keeps the
+// vocabulary-side work (piece decoding) and the -inf marking.
+// same layout as the generated code's slice descriptor
+typedef struct { void * data; int64_t len; } fg_slice_rec;
+
+extern "C" int64_t fg_grammar_reject_call(
+        fg_slice_rec s_etype, fg_slice_rec s_eval, fg_slice_rec s_roff, fg_slice_rec s_rlen, fg_slice_rec s_seed,
+        int64_t v_seedd,
+        fg_slice_rec s_cand_cp, fg_slice_rec s_cp_len, fg_slice_rec s_pval, fg_slice_rec s_pnr, fg_slice_rec s_cand_id,
+        int64_t v_ncand,
+        fg_slice_rec s_wp, fg_slice_rec s_wpd, fg_slice_rec s_stacks, fg_slice_rec s_stackd, fg_slice_rec s_scratch,
+        fg_slice_rec s_tmp_rej, fg_slice_rec s_tmp_cur, fg_slice_rec s_rowbuf, fg_slice_rec s_rej,
+        int64_t v_maxs, int64_t v_maxd, int64_t v_maxcp) __attribute__((weak));
+
+static bool fg_grammar_enabled() {
+    static const bool on = []() {
+        const char * f = getenv("GGML_GOOSE_GRAMMAR");
+        return !(f && strcmp(f, "0") == 0);
+    }();
+    return on;
+}
+
+// The rule table is immutable, so it is flattened once per grammar object.
+struct fg_flat_rules {
+    std::vector<int64_t> etype, eval, roff, rlen;
+    bool ready = false;
+};
+
+static fg_flat_rules & fg_flatten(const llama_grammar_rules & rules) {
+    static thread_local std::unordered_map<const void *, fg_flat_rules> cache;
+    const void * key = &rules;
+    auto it = cache.find(key);
+    if (it != cache.end() && it->second.ready) {
+        return it->second;
+    }
+    fg_flat_rules f;
+    f.roff.resize(rules.size());
+    f.rlen.resize(rules.size());
+    for (size_t r = 0; r < rules.size(); ++r) {
+        f.roff[r] = (int64_t) f.etype.size();
+        f.rlen[r] = (int64_t) rules[r].size();
+        for (const auto & e : rules[r]) {
+            f.etype.push_back((int64_t) e.type);
+            f.eval.push_back((int64_t) e.value);
+        }
+    }
+    f.ready = true;
+    cache[key] = std::move(f);
+    return cache[key];
+}
+
+static constexpr int64_t FG_MAXD = 64;
+static constexpr int64_t FG_MAXS = 16;
+static constexpr int64_t FG_MAXCP = 16;
+
+static std::atomic<unsigned long long> g_goose_grammar_calls{0};
+
 void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_data_array * cur_p) {
     GGML_ASSERT(grammar.vocab != nullptr);
 
@@ -1393,9 +1456,94 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         }
     }
 
-    const auto rejects = llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
-    for (const auto & reject : rejects) {
-        cur_p->data[reject.index].logit = -INFINITY;
+    bool fg_done = false;
+    if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() && !candidates_grammar.empty()) {
+        fg_flat_rules & flat = fg_flatten(grammar.rules);
+
+        const int64_t ncand = (int64_t) candidates_grammar.size();
+        std::vector<int64_t> cp(ncand * FG_MAXCP, 0), cpl(ncand, 0), pv(ncand, 0), pn(ncand, 0);
+        std::vector<int64_t> cid(ncand, 0);
+        for (int64_t i = 0; i < ncand; ++i) {
+            const auto & c = candidates_grammar[i];
+            int64_t n = 0;
+            while (n < FG_MAXCP && c.code_points[n] != 0) {
+                cp[i * FG_MAXCP + n] = (int64_t) c.code_points[n];
+                n++;
+            }
+            cpl[i] = n;
+            pn[i]  = (int64_t) c.partial_utf8.n_remain;
+            pv[i]  = (int64_t) c.partial_utf8.value;
+            cid[i] = (int64_t) c.id;
+        }
+
+        const int64_t nstacks = (int64_t) grammar.stacks.size();
+        if (nstacks > 0 && nstacks <= FG_MAXS) {
+            std::vector<int64_t> stk(FG_MAXS * FG_MAXD, 0), stdk(FG_MAXS, 0), seed(FG_MAXD, 0);
+            for (int64_t sIdx = 0; sIdx < nstacks; ++sIdx) {
+                const auto & st = grammar.stacks[sIdx];
+                int64_t d = 0;
+                for (const auto * e : st) {
+                    if (d >= FG_MAXD) break;
+                    stk[sIdx * FG_MAXD + d] = (int64_t) (e - grammar.rules[0].data());
+                    d++;
+                }
+                stdk[sIdx] = d;
+            }
+
+            std::vector<int64_t> rej(ncand, 0), tmp_rej(ncand, 0), tmp_cur(ncand, 0);
+            std::vector<int64_t> wp(FG_MAXS * FG_MAXD, 0), wpd(FG_MAXS, 0);
+            std::vector<int64_t> out(FG_MAXS * FG_MAXD, 0), outd(FG_MAXS, 0);
+            std::vector<int64_t> scratch(FG_MAXD, 0), rowbuf(FG_MAXD, 0);
+
+            fg_slice_rec s_et   { flat.etype.data(), (int64_t) flat.etype.size() };
+            fg_slice_rec s_ev   { flat.eval.data(),  (int64_t) flat.eval.size()  };
+            fg_slice_rec s_roff { flat.roff.data(),  (int64_t) flat.roff.size()  };
+            fg_slice_rec s_rlen { flat.rlen.data(),  (int64_t) flat.rlen.size()  };
+            fg_slice_rec s_seed { stk.data(), FG_MAXS * FG_MAXD };
+            fg_slice_rec s_cp   { cp.data(), ncand * FG_MAXCP };
+            fg_slice_rec s_cpl  { cpl.data(), ncand };
+            fg_slice_rec s_pv   { pv.data(), ncand };
+            fg_slice_rec s_pn   { pn.data(), ncand };
+            fg_slice_rec s_cid  { cid.data(), ncand };
+            fg_slice_rec s_wp   { wp.data(), FG_MAXS * FG_MAXD };
+            fg_slice_rec s_wpd  { wpd.data(), FG_MAXS };
+            fg_slice_rec s_stk  { stk.data(), FG_MAXS * FG_MAXD };
+            fg_slice_rec s_std  { stdk.data(), FG_MAXS };
+            fg_slice_rec s_scr  { scratch.data(), FG_MAXD };
+            fg_slice_rec s_tr   { tmp_rej.data(), ncand };
+            fg_slice_rec s_tc   { tmp_cur.data(), ncand };
+            fg_slice_rec s_row  { rowbuf.data(), FG_MAXD };
+            fg_slice_rec s_rej  { rej.data(), ncand };
+
+            (void) out; (void) outd;
+
+            const int64_t r = fg_grammar_reject_call(
+                s_et, s_ev, s_roff, s_rlen, s_seed, stdk[0],
+                s_cp, s_cpl, s_pv, s_pn, s_cid, ncand,
+                s_wp, s_wpd, s_stk, s_std, s_scr, s_tr, s_tc, s_row, s_rej,
+                FG_MAXS, FG_MAXD, FG_MAXCP);
+
+            if (r >= 0) {
+                for (int64_t i = 0; i < ncand; ++i) {
+                    if (rej[i]) {
+                        cur_p->data[candidates_grammar[i].index].logit = -INFINITY;
+                    }
+                }
+                const unsigned long long n = ++g_goose_grammar_calls;
+                if (n == 1 || (n % 100) == 0) {
+                    fprintf(stderr, "FG171_GRAMMAR goose calls=%llu cand=%lld stacks=%lld\n",
+                            (unsigned long long) n, (long long) ncand, (long long) nstacks);
+                }
+                fg_done = true;
+            }
+        }
+    }
+
+    if (!fg_done) {
+        const auto rejects = llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
+        for (const auto & reject : rejects) {
+            cur_p->data[reject.index].logit = -INFINITY;
+        }
     }
 }
 

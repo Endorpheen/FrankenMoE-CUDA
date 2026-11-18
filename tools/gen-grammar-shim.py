@@ -43,8 +43,12 @@ def main(out):
              '                                   gg_slice s_tmp_cur, gg_slice s_rowbuf, gg_slice s_rej,\n'
              '                                   int64_t v_maxs, int64_t v_maxd, int64_t v_maxcp)')
     body = ('{\n    return FG_GRAMMAR_REJECT(%s, 180, 0);\n}\n' % ', '.join(NAMES))
-    path = os.path.join(out, 'sampler_chain_grammar.c')
-    open(path, 'w').write('#include "sampler_chain.c"\n#include "sampler_chain_ids.h"\n\n' + proto + '\n' + body)
+    # the wrapper joins the existing shim, because a second translation unit that
+    # includes sampler_chain.c would duplicate every symbol
+    shim = os.path.join(out, 'sampler_chain_shim.c')
+    text = open(shim).read()
+    if 'fg_grammar_reject_call' not in text:
+        open(shim, 'a').write('\n' + proto + '\n' + body)
     print('grammar entry:', func)
 
 if __name__ == '__main__':

@@ -186,4 +186,5 @@ int64_t fg_sampler_temp_ext_call(float * lv, float * p, int64_t n, float temp, f
 open(out + '/sampler_chain_shim.c', 'w').write(SHIM)
 print('entry points:', found)
 PY
+python3 "$root/tools/gen-grammar-shim.py" "$out"
 echo "built into $out"

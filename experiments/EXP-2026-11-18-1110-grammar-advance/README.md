@@ -443,3 +443,22 @@ No port defect was involved.
 
 Next: the hook in `llama_grammar_apply_impl`, flattening the immutable rule table
 once per grammar object and the stacks per call.
+
+## Grammar decision live in the server
+
+```
+[ON ] 'yes'   counters: FG171_GRAMMAR goose calls=1
+[OFF] 'yes'   counters: none
+```
+
+Server, Apex model, `--grammar-file` with `root ::= "yes" | "no"`, temperature 0:
+the grammar-constrained output is identical with the Goose decision enabled and
+disabled, and the counter proves the call happens.
+
+Two wiring defects were needed to get here and both are recorded: the shim wrapper
+had to join the existing shim file (a second translation unit would duplicate every
+symbol from `sampler_chain.c`), and the chain build regenerates that file, so the
+wrapper is now emitted by `build-sampler-chain.sh` itself through
+`tools/gen-grammar-shim.py`. Before that the symbol was a weak *undefined* reference
+and the hook silently fell back to the native path - visible only because the counter
+did not fire.
