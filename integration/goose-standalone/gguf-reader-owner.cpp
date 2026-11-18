@@ -81,6 +81,10 @@ struct reader_meta {
     }
 };
 
+// Positive witness: incremented by every answer the reader gives, so a test can
+// tell "Goose decided" from "Goose was linked but the native path ran".
+extern "C" int llama_goose_queries = 0;
+
 std::mutex g_mu;
 std::map<const void *, std::unique_ptr<reader_meta>> g_metas;
 bool g_inited = false;
@@ -131,6 +135,7 @@ extern "C" int llama_goose_ready(const struct gguf_context * ctx) {
 
 extern "C" int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key) {
     std::lock_guard<std::mutex> lock(g_mu);
+    llama_goose_queries++;
     const reader_meta * m = meta_of(ctx);
     if (!m) return -1;
     return gr_find_kv(u8x(m->hdr, m->len), i64x(m->state), i64x(m->kv), i64x(m->kvsl),
@@ -139,6 +144,7 @@ extern "C" int64_t llama_goose_find_kv(const struct gguf_context * ctx, const ch
 
 extern "C" int64_t llama_goose_tensor_index(const struct gguf_context * ctx, const char * name) {
     std::lock_guard<std::mutex> lock(g_mu);
+    llama_goose_queries++;
     const reader_meta * m = meta_of(ctx);
     if (!m) return -1;
     return gr_find_tensor(u8x(m->hdr, m->len), i64x(m->state), i64x(m->tens), i64x(m->tensl),
@@ -147,18 +153,21 @@ extern "C" int64_t llama_goose_tensor_index(const struct gguf_context * ctx, con
 
 extern "C" int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index) {
     std::lock_guard<std::mutex> lock(g_mu);
+    llama_goose_queries++;
     const reader_meta * m = meta_of(ctx);
     return m ? gr_kv_type(i64x(m->state), i64x(m->kv), index) : -1;
 }
 
 extern "C" int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index) {
     std::lock_guard<std::mutex> lock(g_mu);
+    llama_goose_queries++;
     const reader_meta * m = meta_of(ctx);
     return m ? gr_arr_type(i64x(m->state), i64x(m->kv), index) : -1;
 }
 
 extern "C" int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index) {
     std::lock_guard<std::mutex> lock(g_mu);
+    llama_goose_queries++;
     const reader_meta * m = meta_of(ctx);
     return m ? gr_arr_n(i64x(m->state), i64x(m->kv), index) : -1;
 }
@@ -167,6 +176,7 @@ extern "C" int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t in
 // the pointer and the byte count. The bytes stay owned by the mapping.
 extern "C" const void * llama_goose_arr_data(const struct gguf_context * ctx, int64_t index, int64_t * bytes) {
     std::lock_guard<std::mutex> lock(g_mu);
+    llama_goose_queries++;
     const reader_meta * m = meta_of(ctx);
     if (!m) return nullptr;
     int64_t out[4] = {0, 0, 0, 0};
@@ -181,6 +191,7 @@ extern "C" const void * llama_goose_arr_data(const struct gguf_context * ctx, in
 // write from the known lengths; this function only holds that table.
 extern "C" const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element) {
     std::lock_guard<std::mutex> lock(g_mu);
+    llama_goose_queries++;
     const reader_meta * m = meta_of(ctx);
     if (!m) return nullptr;
     auto it = m->arr_str.find(index);

@@ -183,6 +183,11 @@ struct llama_model_loader {
         const llama_model_kv_override * param_overrides_p,
         const llama_model_tensor_buft_override * param_tensor_buft_overrides_p);
 
+    // The Goose reader keeps a mapping keyed by the gguf context. The loader owns
+    // that context, so the registration must not outlive it: a later context at
+    // the same address would otherwise answer from a stale mapping.
+    ~llama_model_loader();
+
     template<typename T>
     typename std::enable_if<std::is_integral<T>::value, bool>::type
     get_arr_n(const std::string & key, T & result, bool required = true);

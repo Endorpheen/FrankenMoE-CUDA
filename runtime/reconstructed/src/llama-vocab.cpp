@@ -5,6 +5,44 @@
 #include "llama-impl.h"
 #include "llama-model-loader.h"
 
+// Same seam as the loader: the Goose reader answers when it has the file, and
+// every helper falls back to the native container so a refused file keeps the
+// old behaviour. Declaration order matches llama-model-loader.cpp.
+extern "C" int     llama_goose_ready(const struct gguf_context * ctx);
+extern "C" int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
+extern "C" int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index);
+extern "C" int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
+extern "C" const void * llama_goose_arr_data(const struct gguf_context * ctx, int64_t index, int64_t * bytes);
+extern "C" const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element);
+
+static inline gguf_type goose_kv_type(const struct gguf_context * ctx, int64_t i) {
+    const int64_t v = llama_goose_ready(ctx) ? llama_goose_kv_type(ctx, i) : -1;
+    return v >= 0 ? (gguf_type) v : gguf_get_kv_type(ctx, (int) i);
+}
+static inline gguf_type goose_arr_type(const struct gguf_context * ctx, int64_t i) {
+    const int64_t v = llama_goose_ready(ctx) ? llama_goose_arr_type(ctx, i) : -1;
+    return v >= 0 ? (gguf_type) v : gguf_get_arr_type(ctx, (int) i);
+}
+static inline int64_t goose_arr_n(const struct gguf_context * ctx, int64_t i) {
+    const int64_t v = llama_goose_ready(ctx) ? llama_goose_arr_n(ctx, i) : -1;
+    return v >= 0 ? v : (int64_t) gguf_get_arr_n(ctx, (int) i);
+}
+static inline const void * goose_arr_data(const struct gguf_context * ctx, int64_t i) {
+    if (llama_goose_ready(ctx)) {
+        int64_t bytes = 0;
+        const void * p = llama_goose_arr_data(ctx, i, &bytes);
+        if (p) return p;
+    }
+    return gguf_get_arr_data(ctx, (int) i);
+}
+static inline const char * goose_arr_str(const struct gguf_context * ctx, int64_t i, int64_t e) {
+    if (llama_goose_ready(ctx)) {
+        const char * p = llama_goose_arr_str(ctx, i, e);
+        if (p) return p;
+    }
+    return gguf_get_arr_str(ctx, (int) i, (size_t) e);
+}
+
 #include "unicode.h"
 
 #include <algorithm>
@@ -2318,14 +2356,14 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
                 // Kimi-K2 doesn't need merges, skip
                 LLAMA_LOG_INFO("%s: Kimi-K2 tokenizer detected, skipping BPE merges\n", __func__);
             } else {
-                if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
-                    gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
+                if (goose_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
+                    goose_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
                     throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
                 }
-                const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
+                const int n_merges = (int) goose_arr_n(ctx, merges_keyidx);
                 bpe_ranks.reserve(n_merges);
                 for (int i = 0; i < n_merges; i++) {
-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    const char * word = goose_arr_str(ctx, merges_keyidx, i);
                     //GGML_ASSERT(unicode_cpts_from_utf8(word).size() > 0);
 
                     std::string first;
@@ -2430,14 +2468,14 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
                 throw std::runtime_error("cannot find tokenizer merges in model file\n");
             }
             {
-                if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
-                    gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
+                if (goose_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
+                    goose_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
                     throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
                 }
-                const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
+                const int n_merges = (int) goose_arr_n(ctx, merges_keyidx);
                 bpe_ranks.reserve(n_merges);
                 for (int i = 0; i < n_merges; i++) {
-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    const char * word = goose_arr_str(ctx, merges_keyidx, i);
 
                     std::string first;
                     std::string second;
@@ -2794,7 +2832,7 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
         throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_LIST).c_str()));
     }
 
-    const uint32_t n_tokens = gguf_get_arr_n(ctx, token_idx);
+    const uint32_t n_tokens = (uint32_t) goose_arr_n(ctx, token_idx);
 
     const float * scores = nullptr;
     const int * iscores = nullptr;
@@ -2820,22 +2858,22 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
     const int * toktypes = nullptr;
     const int toktype_idx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_TOKEN_TYPE).c_str());
     if (toktype_idx != -1) {
-        if (gguf_get_kv_type(ctx, toktype_idx) != GGUF_TYPE_ARRAY ||
-            gguf_get_arr_type(ctx, toktype_idx) != GGUF_TYPE_INT32) {
+        if (goose_kv_type(ctx, toktype_idx) != GGUF_TYPE_ARRAY ||
+            goose_arr_type(ctx, toktype_idx) != GGUF_TYPE_INT32) {
             throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_TOKEN_TYPE).c_str()));
         }
-        const uint32_t n_toktypes = gguf_get_arr_n(ctx, toktype_idx);
+        const uint32_t n_toktypes = (uint32_t) goose_arr_n(ctx, toktype_idx);
         if (n_toktypes < n_tokens) {
             throw std::runtime_error("Index out of array bounds for toktypes (" + std::to_string(n_toktypes) + " < " + std::to_string(n_tokens) + ")\n");
         }
-        toktypes = (const int * ) gguf_get_arr_data(ctx, toktype_idx);
+        toktypes = (const int * ) goose_arr_data(ctx, toktype_idx);
     }
 
     id_to_token.resize(n_tokens);
     token_to_id.reserve(n_tokens);
 
     for (uint32_t i = 0; i < n_tokens; i++) {
-        std::string word = gguf_get_arr_str(ctx, token_idx, i);
+        std::string word = goose_arr_str(ctx, token_idx, i);
         if (word.empty()) {
             LLAMA_LOG_WARN("%s: empty token at index %u\n", __func__, i);
             word = "[EMPTY_" + std::to_string(i) + "]";
