@@ -1309,3 +1309,21 @@ prefill and memory unchanged; the grammar hook's cost is not measured yet.
 Not done, and not claimed: removing the replaced native bodies (needs the acceptance
 run), the grammar cost measurement, and the triple A/B on the cumulative baseline
 with the full stage set.
+
+## Acceptance measurement: sampler stages cost 0.97 % decode
+
+Triple A/B on the accepted profile (7001-token prompt, 512 generated, three runs per
+side, grammar off because that stage is opt-in):
+
+| axis | on | off | delta |
+|---|---|---|---|
+| decode (median) | 44.07 | 44.50 | **-0.97 %** |
+| prefill (warm median) | 2906.74 | 2899.75 | +0.24 % |
+| VRAM | 9462 / 10748 | 9462 / 10748 | 0.00 % |
+| RSS | 21634920 | 21630156 | +0.02 % |
+
+The sampler stages are inside one percent of decode with prefill and memory unchanged,
+which is the acceptance criterion this stage was missing. The grammar stage is excluded
+from this measurement because it is opt-in and measured 3-5x on its full-set path.
+
+Raw results: `results/p610-acc/`.
