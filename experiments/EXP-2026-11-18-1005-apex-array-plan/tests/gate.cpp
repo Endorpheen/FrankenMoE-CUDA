@@ -37,10 +37,15 @@ int main(int argc, char ** argv) {
     check(g != nullptr, "the file opens");
     if (!g) return 1;
 
-    const int64_t n_layer    = kv_u32(g, "qwen35moe.block_count", 0) -
-                               kv_u32(g, "qwen35moe.nextn_predict_layers", 0);
-    const int64_t n_nextn    = kv_u32(g, "qwen35moe.nextn_predict_layers", 0);
-    const int64_t n_layer_all = n_layer + n_nextn;
+    // The loader assigns n_layer_all = block_count directly
+    // (llama-model.cpp:1396) and derives n_layer() = n_layer_all - n_layer_nextn
+    // (llama-hparams.cpp:348). Subtracting nextn and adding it back happens to give the
+    // same number, but it is a different statement: if the two keys ever disagreed, the
+    // round trip would hide it while the loader would not.
+    const int64_t n_layer_all = kv_u32(g, "qwen35moe.block_count", 0);
+    const int64_t n_nextn     = kv_u32(g, "qwen35moe.nextn_predict_layers", 0);
+    const int64_t n_layer     = n_layer_all - n_nextn;
+    check(n_nextn <= n_layer_all, "nextn does not exceed the block count, as the loader asserts");
     const int64_t interval   = kv_u32(g, "qwen35moe.full_attention_interval", 0);
     std::printf("layers %lld + %lld nextn = %lld, interval %lld\n",
                 (long long) n_layer, (long long) n_nextn, (long long) n_layer_all,

@@ -220,6 +220,20 @@ if [ -f "$_extra" ] && [ -f "$ROOT/build/goose-main/.source-sha256" ]; then
             if [ -n "$_called" ]; then
                 say "   ... of which something calls $_called (the rest are exported only)"
             fi
+            # The bridges are the other half of the answer, and the bigger half: the
+            # unit's exports can all be uncalled while the frozen bridges run the
+            # decisions. Counting only the unit made Apex look like it ran no Goose at
+            # all, when 206 of 336 bridge exports are called.
+            _b_all=$(grep -oE " T fg[0-9]+[a-z]?_[a-z0-9_]+" /dev/null 2>/dev/null | wc -l)
+            _blist=$(nm -D --defined-only "$_extra" 2>/dev/null \
+                     | grep -oE "fg[0-9]+[a-z]?_[a-z0-9_]+" | LC_ALL=C sort -u | tr '\n' ',' | sed 's/,$//' || true)
+            if [ -n "$_blist" ]; then
+                _bc=$(timeout 200 python3 "$ROOT/tools/check-symbol-callers.py" "$_extra" \
+                          --only "$_blist" 2>/dev/null | awk '/^called:/{print $2}' || true)
+                if [ -n "$_bc" ]; then
+                    say "   bridge exports called         $_bc of $(printf '%s' "$_blist" | tr ',' '\n' | wc -l)"
+                fi
+            fi
         fi
         if [ -n "$_fresh" ] && [ -f "$_fresh/libllama.so.0" ]; then
             _fn=$(python3 -W ignore - "$_fresh/libllama.so.0" "$ROOT/runtime/reconstructed/build.py" <<'PYF' 2>/dev/null || true
