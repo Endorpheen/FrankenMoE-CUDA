@@ -278,3 +278,104 @@ export fn gr_n_kv(state: i64[:]) -> i64 {
     }
     return state[2];
 }
+
+// Payload spans for a host that keeps reading values from its own container but
+// wants the Goose reader to say where they are. Offsets are relative to the
+// header window the reader parsed; a value outside it is refused.
+export fn gr_val_span(state: i64[:], kv: i64[:], index: i64, out: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 || out.len < 4 {
+        return -1;
+    }
+    out[0] = kv[index * 8 + 2]; // wire type
+    out[1] = kv[index * 8 + 4]; // payload offset
+    out[2] = kv[index * 8 + 6]; // payload bytes
+    out[3] = kv[index * 8 + 3]; // element type, -1 for scalars
+    return 0;
+}
+
+// Span of element `i` of a string array, as (offset, length) into the header.
+export fn gr_arr_str_span(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       out.len < 2 || kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 || element < 0 ||
+       element >= kv[index * 8 + 5] {
+        return -1;
+    }
+    var at: i64 = kv[index * 8 + 4];
+    var i: i64 = 0;
+    while i < element {
+        if !gr_fits(data, at, 8) {
+            return -1;
+        }
+        let n: u64 = gr_bits(data, at, 8);
+        if n > 9223372036854775807 {
+            return -1;
+        }
+        at = at + 8 + (n as! i64);
+        i = i + 1;
+    }
+    if !gr_fits(data, at, 8) {
+        return -1;
+    }
+    let len: u64 = gr_bits(data, at, 8);
+    if len > 9223372036854775807 || !gr_fits(data, at + 8, len as! i64) {
+        return -1;
+    }
+    out[0] = at + 8;
+    out[1] = len as! i64;
+    return 0;
+}
+
+// Lay out a whole GGUF string array as NUL-terminated C strings in one pass.
+// GGUF strings are length-prefixed and carry no terminator, so the terminator
+// is written here, where the length is known; a consumer that treats the mapped
+// bytes as a C string would otherwise run past the element into the next
+// entry's length word. `offs[i]` receives the offset of element i inside
+// `text`, which holds every entry back to back. Returns the element count, or
+// -(needed + 1) when `text` is smaller than needed, or -1 on a bad span, or -2
+// when `offs` is too small.
+export fn gr_arr_str_table(data: const u8[:], state: i64[:], kv: i64[:], index: i64,
+                           text: u8[:], offs: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 {
+        return -1;
+    }
+    let n: i64 = kv[index * 8 + 5];
+    if offs.len < n {
+        return -2;
+    }
+    var at: i64 = kv[index * 8 + 4];
+    var total: i64 = 0;
+    var i: i64 = 0;
+    while i < n {
+        if !gr_fits(data, at, 8) {
+            return -1;
+        }
+        let len: u64 = gr_bits(data, at, 8);
+        if len > 9223372036854775807 || !gr_fits(data, at + 8, len as! i64) {
+            return -1;
+        }
+        offs[i] = total;
+        total = total + (len as! i64) + 1;
+        at = at + 8 + (len as! i64);
+        i = i + 1;
+    }
+    if text.len < total {
+        return -(total + 1);
+    }
+    at = kv[index * 8 + 4];
+    i = 0;
+    while i < n {
+        let len: u64 = gr_bits(data, at, 8);
+        let ln: i64 = len as! i64;
+        let base: i64 = offs[i];
+        var k: i64 = 0;
+        while k < ln {
+            text[base + k] = data[at + 8 + k];
+            k = k + 1;
+        }
+        text[base + ln] = 0;
+        at = at + 8 + ln;
+        i = i + 1;
+    }
+    return n;
+}
