@@ -49,6 +49,18 @@ extern "C" int64_t gr_arr_str_table(gsl_u8x data, gsl_i64x state, gsl_i64x kv, i
                                     gsl_u8x text, gsl_i64x offs);
 extern "C" int64_t gr_array_int(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index, int64_t element,
                                 gsl_i64x out);
+extern "C" int64_t bt_bpe(gsl_u8x text, gsl_u8x gguf,
+                          gsl_i64x tok_off, gsl_i64x tok_len, gsl_i64x tok_slots,
+                          gsl_i64x mrg_off, gsl_i64x mrg_len, gsl_i64x mrg_slots,
+                          gsl_i64x ids, int64_t nout,
+                          gsl_i64x cpts, gsl_i64x seg, gsl_u8x enc,
+                          gsl_i64x sym, gsl_i64x heap, gsl_i64x hc, gsl_i64x info);
+extern "C" int64_t btl_load(gsl_u8x gguf, gsl_i64x state, gsl_i64x kv, gsl_i64x kvslots,
+                            gsl_i64x tok_off, gsl_i64x tok_len, gsl_i64x tok_slots,
+                            gsl_i64x mrg_off, gsl_i64x mrg_len, gsl_i64x mrg_slots,
+                            gsl_i64x pairs, gsl_i64x tok_type, gsl_i64x attr, gsl_i64x order,
+                            gsl_i64x eog, int64_t eos_id, int64_t eot_id, int64_t eom_id,
+                            gsl_i64x stats);
 extern "C" int64_t btl_load(gsl_u8x gguf, gsl_i64x state, gsl_i64x kv, gsl_i64x kvslots,
                             gsl_i64x tok_off, gsl_i64x tok_len, gsl_i64x tok_slots,
                             gsl_i64x mrg_off, gsl_i64x mrg_len, gsl_i64x mrg_slots,
@@ -75,6 +87,13 @@ struct reader_meta {
     bool ok = false;
     struct arr_text { std::string text; std::vector<int64_t> offs; };
     mutable std::map<int64_t, arr_text> arr_str; // stable for the model's life
+
+    // BPE tables built once by btl_load. Present only when the file carries the
+    // three tokenizer keys; `tok_ok` says whether the engine can tokenise.
+    bool tok_ok = false;
+    std::vector<int64_t> tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots;
+    std::vector<int64_t> pairs, tok_type, attr, order, eog;
+    std::vector<int64_t> stats;
     ~reader_meta() {
         if (hdr && hdr != MAP_FAILED) munmap(hdr, (size_t) len);
         if (fd >= 0) close(fd);
@@ -118,6 +137,41 @@ extern "C" void llama_goose_register(const struct gguf_context * ctx, const char
             m->tensl.assign(TENSOR_SLOTS, 0);
             m->ok = gr_parse(u8x(m->hdr, m->len), st.st_size, i64x(m->state), i64x(m->kv),
                              i64x(m->tens), i64x(m->kvsl), i64x(m->tensl)) == 0;
+            if (m->ok) {
+                // btl_load sizes nothing itself: give it the array counts first.
+                const int64_t ti = gr_find_kv(u8x(m->hdr, m->len), i64x(m->state), i64x(m->kv),
+                                              i64x(m->kvsl), u8x("tokenizer.ggml.tokens", 21));
+                const int64_t mi = gr_find_kv(u8x(m->hdr, m->len), i64x(m->state), i64x(m->kv),
+                                              i64x(m->kvsl), u8x("tokenizer.ggml.merges", 21));
+                if (ti >= 0 && mi >= 0) {
+                    const int64_t n_tok = gr_arr_n(i64x(m->state), i64x(m->kv), ti);
+                    const int64_t n_mrg = gr_arr_n(i64x(m->state), i64x(m->kv), mi);
+                    if (n_tok > 0 && n_mrg >= 0) {
+                        // Hash tables need a power-of-two capacity above twice the entries.
+                        int64_t tcap = 16, mcap = 16;
+                        while (tcap < 2 * n_tok + 2) tcap <<= 1;
+                        while (mcap < 2 * n_mrg + 2) mcap <<= 1;
+                        m->tok_off.assign(n_tok, 0);
+                        m->tok_len.assign(n_tok, 0);
+                        m->tok_slots.assign(tcap, 0);
+                        m->mrg_off.assign(n_mrg > 0 ? n_mrg : 1, 0);
+                        m->mrg_len.assign(n_mrg > 0 ? n_mrg : 1, 0);
+                        m->mrg_slots.assign(mcap, 0);
+                        m->pairs.assign(2 * (n_tok > n_mrg ? n_tok : n_mrg), 0);
+                        m->tok_type.assign(n_tok, 0);
+                        m->attr.assign(n_tok, 0);
+                        m->order.assign(n_tok, 0);
+                        m->eog.assign(n_tok, 0);
+                        m->stats.assign(8, 0);
+                        m->tok_ok = btl_load(u8x(m->hdr, m->len), i64x(m->state), i64x(m->kv),
+                                             i64x(m->kvsl), i64x(m->tok_off), i64x(m->tok_len),
+                                             i64x(m->tok_slots), i64x(m->mrg_off), i64x(m->mrg_len),
+                                             i64x(m->mrg_slots), i64x(m->pairs), i64x(m->tok_type),
+                                             i64x(m->attr), i64x(m->order), i64x(m->eog),
+                                             -1, -1, -1, i64x(m->stats)) == 0;
+                    }
+                }
+            }
         }
     }
     g_metas[ctx] = std::move(m);
@@ -215,6 +269,43 @@ extern "C" const char * llama_goose_arr_str(const struct gguf_context * ctx, int
     }
     if (element < 0 || element >= (int64_t) it->second.offs.size()) return nullptr;
     return it->second.text.data() + it->second.offs[(size_t) element];
+}
+
+// The context that the vocabulary path can use. The loader registers one file per
+// model and the tokenizer belongs to that model, so a single lookup is enough and
+// the caller never has to thread the gguf pointer through the vocab object.
+extern "C" int64_t llama_goose_tokenizer_ctx(void) {
+    std::lock_guard<std::mutex> lock(g_mu);
+    for (const auto & kv : g_metas) {
+        if (kv.second && kv.second->ok && kv.second->tok_ok) {
+            return (int64_t) (uintptr_t) kv.first;
+        }
+    }
+    return 0;
+}
+
+// One raw text fragment through the BPE engine. Returns the id count, or -1 when
+// the file has no usable tokenizer table or the engine refuses the input.
+extern "C" int64_t llama_goose_tokenize(const struct gguf_context * ctx,
+                                        const char * text, int64_t len,
+                                        int32_t * out, int64_t out_cap) {
+    std::lock_guard<std::mutex> lock(g_mu);
+    const reader_meta * m = meta_of(ctx);
+    if (!m || !m->tok_ok || len < 0 || out_cap < 0) return -1;
+    // Scratch is sized from the fragment, exactly as the gated EXP920 corpus did.
+    const int64_t n = len + 1;
+    std::vector<int64_t> cpts(n, 0), seg(4 * n, 0), sym(24 * n, 0), heap(15 * n + 40, 0);
+    std::vector<uint8_t> enc(8 * n, 0);
+    std::vector<int64_t> ids(out_cap > 0 ? out_cap : 1, 0), hc(2, 0), info(8, 0);
+    const int64_t rc = bt_bpe(u8x(text, len), u8x(m->hdr, m->len),
+                              i64x(m->tok_off), i64x(m->tok_len), i64x(m->tok_slots),
+                              i64x(m->mrg_off), i64x(m->mrg_len), i64x(m->mrg_slots),
+                              i64x(ids), 0, i64x(cpts), i64x(seg), u8x(enc.data(), (int64_t) enc.size()),
+                              i64x(sym), i64x(heap), i64x(hc), i64x(info));
+    if (rc < 0 || rc > out_cap) return -1;
+    for (int64_t i = 0; i < rc; i++) out[i] = ids[(size_t) i];
+    llama_goose_queries++;
+    return rc;
 }
 
 // The mapped window and the parse tables, for a caller that runs Goose

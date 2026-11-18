@@ -54,9 +54,12 @@ int main(int argc, char ** argv) {
     // Tokenise and detokenise a word that needs a merge.
     const char * text = "abc";
     std::vector<llama_token> ids(16);
+    const int before = llama_goose_queries;
     const int n_ids = llama_tokenize(vocab, text, (int) std::strlen(text), ids.data(), (int) ids.size(), false, true);
     std::printf("tokenize(\"%s\") -> %d ids\n", text, n_ids);
     check(n_ids == 1 && ids[0] == 257, "abc is the merged token");
+    std::printf("goose queries during tokenize=%d\n", llama_goose_queries - before);
+    check(llama_goose_queries > before, "tokenisation went through Goose");
 
     char out[64];
     const int len = llama_token_to_piece(vocab, ids[0], out, sizeof(out), 0, true);

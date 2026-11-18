@@ -56,7 +56,7 @@ def main():
         (b'general.name', 8, b'exp954-synthetic'),
         (b'llama.vocab_size', 4, len(tokens)),
         (b'tokenizer.ggml.model', 8, b'gpt2'),
-        (b'tokenizer.ggml.pre', 8, b'default'),
+        (b'tokenizer.ggml.pre', 8, b'qwen35'),
         (b'tokenizer.ggml.tokens', 9, (8, tokens)),
         (b'tokenizer.ggml.merges', 9, (8, merges)),
         (b'tokenizer.ggml.token_type', 9, (5, types)),

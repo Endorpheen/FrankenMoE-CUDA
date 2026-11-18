@@ -43,6 +43,16 @@ static inline const char * goose_arr_str(const struct gguf_context * ctx, int64_
     return gguf_get_arr_str(ctx, (int) i, (size_t) e);
 }
 
+// The BPE engine lives in the composed unit. The adapter owns the tables and the
+// scratch buffers; the engine owns the QWEN35 pre-tokenizer, the merge queue and
+// the id emission.
+// One fragment through the loaded Goose tables. The adapter owns the scratch
+// buffers because they are host memory; the engine decides every id.
+extern "C" int64_t llama_goose_tokenizer_ctx(void);
+extern "C" int64_t llama_goose_tokenize(const struct gguf_context * ctx,
+                                        const char * text, int64_t len,
+                                        int32_t * out, int64_t out_cap);
+
 #include "unicode.h"
 
 #include <algorithm>
@@ -3895,6 +3905,16 @@ std::vector<llama_token> llama_vocab::impl::tokenize(
                 if (add_special) {
                     session->append_bos(output);
                 }
+                // The Goose engine owns the QWEN35 pre-tokenizer and the merge
+                // queue. It is used only for the pre-tokenizer it implements, and
+                // only when escape_whitespaces is off: the engine expects raw text.
+                const struct gguf_context * gctx =
+                    (const struct gguf_context *) (uintptr_t) llama_goose_tokenizer_ctx();
+                const bool goose_bpe = gctx != nullptr
+                    && pre_type == LLAMA_VOCAB_PRE_TYPE_QWEN35
+                    && !escape_whitespaces
+                    && vocab.get_tokenizer_model() == "gpt2";
+
                 for (const auto & fragment : fragment_buffer) {
                     if (fragment.type == FRAGMENT_BUFFER_VARIANT_TYPE_RAW_TEXT) {
                         std::string text = fragment.raw_text.substr(fragment.offset, fragment.length);
@@ -3906,6 +3926,16 @@ std::vector<llama_token> llama_vocab::impl::tokenize(
 #ifdef PRETOKENIZERDEBUG
                         LLAMA_LOG_WARN("TT: (%ld %ld %ld) '%s'\n", text.length(), fragment.offset, fragment.length, text.c_str());
 #endif
+                        if (goose_bpe) {
+                            std::vector<llama_token> g((size_t) text.size() + 8);
+                            const int64_t n = llama_goose_tokenize(gctx, text.data(), (int64_t) text.size(),
+                                                                   g.data(), (int64_t) g.size());
+                            if (n >= 0) {
+                                output.insert(output.end(), g.begin(), g.begin() + n);
+                                continue;
+                            }
+                            // fall through to the native session on an engine refusal
+                        }
                         session->tokenize(text, output);
                     } else { // if (fragment.type == FRAGMENT_BUFFER_VARIANT_TYPE_TOKEN)
                         session->append(fragment.token, output);
