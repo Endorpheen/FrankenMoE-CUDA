@@ -379,3 +379,20 @@ relative to the loop.
 
 Per the repository rule, trial and error stops here: this needs the senior
 helper's diagnosis rather than a fourth variant.
+
+## temp_ext written, low-bit divergence; softmax cleared
+
+`sm_apply_temp_ext` follows the native path (sorted softmax, entropy, dynamic
+temperature, double renormalisation). The gate reports 200/200 cases differing,
+but the printed values are both ~1.0, i.e. the divergence is in the low bits and
+the whole distribution collapses in that case, which points at the dynamic
+temperature itself rather than at the probabilities.
+
+A separate probe confirms the sorted softmax is **bitwise equal** to the native
+formula on a fixed vector (`0x3f115d3e` etc.), so the softmax is not the cause.
+The remaining suspects are `max_entropy`, the entropy accumulation, or the
+`powf` exponent inside the dynamic temperature.
+
+temp_ext is therefore NOT accepted. The next step is to print `entropy`,
+`max_entropy`, `normalized_entropy` and `dyn_temp` from both sides for the fixed
+case (n=8, temp=0.8, delta=0.4, exponent=1.0), not another sweep.

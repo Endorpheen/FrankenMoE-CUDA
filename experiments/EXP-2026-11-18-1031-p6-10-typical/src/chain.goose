@@ -1,3 +1,4 @@
+extern fn exp(x: f64) -> f64;
 extern fn logf(x: f32) -> f32;
 extern fn powf(x: f32, y: f32) -> f32;
 // Sampler chain in Goose: MT19937, the canonical double draw and the
@@ -662,6 +663,16 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 19 {
+        let rc_sm = softmax_in_place(lv, p, n, 1);
+        if rc_sm < 0.0 {
+            return -1;
+        }
+        return n;
+    }
+    if op == 18 {
+        return sm_apply_temp_ext(lv, p, id, n, f, f2, f3);
+    }
     if op == 17 {
         // selection without a stored f64: the two 32-bit words are kept as i64
         // and the comparison is a single expression
@@ -1073,6 +1084,60 @@ fn sm_sample_dist(p: f32[:], n: i64, state: i64[:]) -> i64 {
 
 fn gate_dist(p: f32[:], n: i64, state: i64[:]) -> i64 {
     return sm_sample_dist(p, n, state);
+}
+
+// temp_ext: dynamic temperature from the entropy of the candidate set, then a
+// double-precision renormalisation of the scaled logits
+fn sm_apply_temp_ext(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                     temp: f32, delta: f32, exponent: f32) -> i64 {
+    if delta <= 0.0 || n <= 1 {
+        return n;
+    }
+    var min_temp: f32 = temp - delta;
+    if min_temp < 0.0 { min_temp = 0.0; }
+    let max_temp: f32 = temp + delta;
+    softmax_in_place(lv, p, n, 1);
+    let max_entropy: f32 = 0.0 - logf(1.0 / (n as f32));
+    var entropy: f32 = 0.0;
+    var i: i64 = 0;
+    while i < n {
+        let prob: f32 = p[i];
+        if prob > 0.0 {
+            entropy = entropy - prob * logf(prob);
+        }
+        i = i + 1;
+    }
+    let norm_ent: f32 = entropy / max_entropy;
+    let dyn_temp: f32 = min_temp + (max_temp - min_temp) * powf(norm_ent, exponent);
+    if dyn_temp <= 0.0 {
+        i = 0;
+        while i < n {
+            lv[i] = -3.4028235e38;
+            i = i + 1;
+        }
+        lv[0] = 0.0;
+    } else {
+        i = 0;
+        while i < n {
+            lv[i] = lv[i] / dyn_temp;
+            i = i + 1;
+        }
+    }
+    let max_l: f64 = lv[0] as f64;
+    var cum: f64 = 0.0;
+    i = 0;
+    while i < n {
+        let e: f64 = exp((lv[i] as f64) - max_l);
+        p[i] = e as f32;
+        cum = cum + e;
+        i = i + 1;
+    }
+    i = 0;
+    while i < n {
+        p[i] = ((p[i] as f64) / cum) as f32;
+        i = i + 1;
+    }
+    return n;
 }
 fn main() {
     print("p6-10 typical gate");
