@@ -102,3 +102,25 @@ compiled into the fixture.
 The remaining piece for `reject_candidates` is `match_token` (a token id inside the
 rule, small) and then the recursive descent itself, which now has both of its
 matching primitives ported and gated.
+
+## reject_candidates: first gated version
+
+```
+reject: cases=2 fails=0
+```
+
+Cases: rule `"abc"` with candidates `a, b, z`, and rule `[a-c]` with `a, d, Z`,
+against the native `llama_grammar_reject_candidates`. The descent is iterative
+because the stack transition after a class is candidate independent; a matched
+class clears the candidate's codepoint, which is what the native cursor does.
+
+Scope of this version, stated so it is not mistaken for the whole function:
+
+- one stack (the native combines several by intersecting their rejects);
+- one codepoint per candidate, so no partial UTF-8 path yet;
+- no `TOKEN`/`TOKEN_NOT` rules;
+- the rule-reference case expands only the first alternate.
+
+The first full run of this version caught a real defect of mine: without clearing
+the codepoint the loop retested the same character at the next class and rejected
+`"abc"` for candidate `a`. Fixed and re-gated.
