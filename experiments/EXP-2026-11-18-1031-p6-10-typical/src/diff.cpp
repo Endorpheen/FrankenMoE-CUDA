@@ -8,7 +8,7 @@
 #include <numeric>
 #include <random>
 #include <vector>
-extern "C" int64_t gate_dispatch_c(int64_t, const float*, float*, int64_t*, int64_t, float, int64_t);
+extern "C" int64_t gate_dispatch_c(int64_t, const float*, float*, int64_t*, int64_t, float, int64_t, float, float);
 static int64_t native_typical(const std::vector<float>& logits_in, float tp, int64_t mk,
                               std::vector<int64_t>& ids_out, std::vector<float>* probs_out) {
     std::vector<float> lv = logits_in;
@@ -47,7 +47,7 @@ int main() {
             int64_t nn = native_typical(logits, tp, mk, nid, &np);
             std::vector<int64_t> gid(N); std::iota(gid.begin(), gid.end(), 0);
             std::vector<float> glv = logits, gp(N, 0.f);
-            int64_t gn = gate_dispatch_c(0, glv.data(), gp.data(), gid.data(), N, tp, mk);
+            int64_t gn = gate_dispatch_c(0, glv.data(), gp.data(), gid.data(), N, tp, mk, 0.f, 0.f);
             cases++;
             bool eq = (gn == nn);
             if (eq) for (int64_t i = 0; i < nn; ++i) if (gid[i] != nid[i]) { eq = false; break; }
@@ -70,7 +70,7 @@ int main() {
             for (size_t i=0;i<(size_t)N;++i){ cum+=p[i]; if (cum>=tp && (int64_t)(i+1)>=mk){last=i+1;break;} }
             std::vector<int64_t> gid(N); std::iota(gid.begin(), gid.end(), 0);
             std::vector<float> glv = logits, gp(N,0.f);
-            int64_t gn = gate_dispatch_c(1, glv.data(), gp.data(), gid.data(), N, tp, mk);
+            int64_t gn = gate_dispatch_c(1, glv.data(), gp.data(), gid.data(), N, tp, mk, 0.f, 0.f);
             cases2++;
             bool eq = (gn == (int64_t)last);
             if (eq) for (size_t i=0;i<last;++i) if (gid[i]!=id[i]) { eq=false; break; }
@@ -93,7 +93,7 @@ int main() {
             for (size_t i=0;i<(size_t)N2;++i){ cum+=p[i]; if (cum>=tp && (int64_t)(i+1)>=mk){last=i+1;break;} }
             std::vector<int64_t> gid(N2); std::iota(gid.begin(), gid.end(), 0);
             std::vector<float> glv = logits, gp(N2,0.f);
-            int64_t gn = gate_dispatch_c(1, glv.data(), gp.data(), gid.data(), N2, tp, mk);
+            int64_t gn = gate_dispatch_c(1, glv.data(), gp.data(), gid.data(), N2, tp, mk, 0.f, 0.f);
             cases3++;
             bool eq = (gn == (int64_t)last);
             if (eq) for (size_t i=0;i<last;++i) if (gid[i]!=id[i]) { eq=false; break; }
@@ -101,5 +101,33 @@ int main() {
         }
     }
     printf("top-p large: cases=%d mismatches=%d\n", cases3, bad3);
-    return (bad||bad2||bad3) ? 1 : 0;
+    int bad4 = 0, cases4 = 0;
+    const float thr[] = {0.1f, 0.3f};
+    const int64_t xtcmk[] = {1, 3};
+    const float chances[] = {0.0f, 0.4f, 0.9f};
+    for (int it = 0; it < 60; ++it) {
+        std::vector<float> logits(N); for (auto& v : logits) v = nd(rng);
+        std::vector<int64_t> id(N); std::iota(id.begin(), id.end(), 0);
+        std::sort(id.begin(), id.end(), [&](int64_t a, int64_t b){ return logits[a] > logits[b]; });
+        std::vector<float> sv(N), p(N); for (int i=0;i<N;++i) sv[i]=logits[id[i]];
+        float mx=sv[0], c=0; for (int i=0;i<N;++i){p[i]=expf(sv[i]-mx);c+=p[i];}
+        for (int i=0;i<N;++i) p[i]/=c;
+        for (float th : thr) for (int64_t mk : xtcmk) for (float ch : chances) {
+            int64_t pos_last = 0;
+            for (int i=0;i<N;++i){ if (p[i] >= th) pos_last = i; else break; }
+            int64_t cut = N;
+            bool apply = (0.5f > 0 && th <= 0.5f && N >= 2 && ch <= 0.5f);
+            if (apply && N - pos_last >= mk && pos_last > 0) cut = N - pos_last;
+            std::vector<int64_t> gid = id;                    // token ids in sorted order
+            std::vector<float> glv(N), gp(N,0.f);
+            for (int i=0;i<N;++i) glv[i] = sv[i];             // sorted-desc logits
+            int64_t gn = gate_dispatch_c(2, glv.data(), gp.data(), gid.data(), N, 0.5f, mk, th, ch);
+            cases4++;
+            bool eq = (gn == cut);
+            if (eq && cut < N) { for (int64_t i=0;i<cut;++i) if (gid[i] != id[pos_last + i]) { eq=false; break; } }
+            if (!eq) { bad4++; if (bad4<=3) printf("XTC MISMATCH th=%g mk=%lld ch=%g goose=%lld native=%lld\n",(double)th,(long long)mk,(double)ch,(long long)gn,(long long)cut); }
+        }
+    }
+    printf("xtc: cases=%d mismatches=%d\n", cases4, bad4);
+    return (bad||bad2||bad3||bad4) ? 1 : 0;
 }

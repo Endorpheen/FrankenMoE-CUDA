@@ -104,3 +104,20 @@ top-p large:    cases=45   mismatches=0   (n = 2048)
 
 Cut and kept ids match the native filter in every case, including the large
 vocabulary where the native heuristic is active.
+
+## XTC accepted
+
+Transcribed from `llama_sample_xtc_apply`: guard on probability, threshold and
+size; the caller draws the uniform value and passes it in (`chance`), so the
+filter stays pure while the RNG stream remains a separate port; softmax over the
+sorted candidates; find the last index with `p >= threshold`; drop that prefix
+when a tail of at least `min_keep` survives. The dispatch carries the extra
+parameters (`f2` = threshold, `f3` = chance).
+
+```
+xtc: cases=720 mismatches=0
+```
+
+60 distributions x threshold {0.1, 0.3} x min_keep {1, 3} x chance {0.0, 0.4,
+0.9}; the cut and the surviving token ids match native in every case, including
+the no-op branch when chance exceeds the probability.

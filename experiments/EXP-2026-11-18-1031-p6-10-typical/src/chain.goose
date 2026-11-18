@@ -615,14 +615,52 @@ fn gate_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, tp: f32, mk: i64) -> i6
 
 
 // single exported entry: op 0 typical-p, op 1 unsorted top-p
-fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: i64) -> i64 {
+fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: i64, f2: f32, f3: f32) -> i64 {
     if op == 0 {
         return sm_apply_typical(lv, p, id, n, f, k);
     }
     if op == 1 {
         return sm_apply_top_p_unsorted(lv, p, id, n, f, k);
     }
+    if op == 2 {
+        return sm_apply_xtc(lv, p, id, n, f, f2, k, f3);
+    }
     return -2;
+}
+
+// xtc: with probability `probability` (the caller draws the uniform value),
+// drop the prefix of tokens whose probability is at or above `threshold`, as
+// long as a tail of at least min_keep tokens remains.
+fn sm_apply_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                probability: f32, threshold: f32, min_keep: i64, chance: f32) -> i64 {
+    if probability <= 0.0 || threshold > 0.5 || n < 2 {
+        return n;
+    }
+    if chance > probability {
+        return n;
+    }
+    softmax_in_place(lv, p, n, 1);
+    var pos_last: i64 = 0;
+    var i: i64 = 0;
+    while i < n {
+        if p[i] >= threshold {
+            pos_last = i;
+        } else {
+            break;
+        }
+        i = i + 1;
+    }
+    if n - pos_last >= min_keep && pos_last > 0 {
+        i = 0;
+        while i < n - pos_last {
+            lv[i] = lv[i + pos_last];
+            id[i] = id[i + pos_last];
+            p[i] = p[i + pos_last];
+            i = i + 1;
+        }
+        return n - pos_last;
+    }
+    return n;
 }
 fn main() {
     print("p6-10 typical gate");
@@ -632,5 +670,5 @@ fn main() {
     let ignored = gate_typical(lv, p, id, 4, 1.0, 0);
     let ignored3 = gate_sort(lv, id, 4);
     let ignored4 = gate_top_p(lv, p, id, 4, 1.0, 0);
-    let ignored5 = gate_dispatch(9, lv, p, id, 4, 1.0, 0);
+    let ignored5 = gate_dispatch(9, lv, p, id, 4, 1.0, 0, 0.0, 0.0);
 }
