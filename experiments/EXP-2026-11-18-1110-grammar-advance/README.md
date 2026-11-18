@@ -88,3 +88,17 @@ state and token id).
 Not started, and not claimed: this slice is the next step, gated against
 `llama_grammar_reject_candidates` compiled into the fixture exactly as the previous
 two slices were.
+
+## match_partial_char ported
+
+```
+match_partial: cases=148 fails=0
+```
+
+Exact characters, ranges, negated ranges, `CHAR_ANY` and class alternation, each
+across `n_remain` 0..3 and a sweep of partial values, against the native function
+compiled into the fixture.
+
+The remaining piece for `reject_candidates` is `match_token` (a token id inside the
+rule, small) and then the recursive descent itself, which now has both of its
+matching primitives ported and gated.
