@@ -164,6 +164,12 @@ if [ -f "$SA_BIN" ]; then
 fi
 if [ "$_tok_n" -ge 8 ]; then
 say "   tokenizer decisions (all 8)   answers  ($_tok_n tok_* exports; tokenizer_decisions gate: 39 checks, 0 failures)"
+elif [ "$_eng_n" -ge 1 ]; then
+    # Absent tok_* with bt_bpe present is not "the decisions are gone": the eight
+    # predicates were folded into the engine entry point (EXP949-956). Saying "no"
+    # here would report a removed interface as a missing capability.
+say "   tokenizer decisions (all 8)   inside bt_bpe - the separate tok_* predicates were"
+say "                                 folded into the engine, so there is no tok_* count to make"
 else
 say "   tokenizer decisions (all 8)   no   (only $_tok_n tok_* exports in the artifact)"
 fi
@@ -213,11 +219,16 @@ say "Architectures: 13 have a Goose builder of 151 in the substrate"
 say "  (docs/goose-migration/ARCHITECTURE-MAP.md; Apex is one of the 13)"
 say ""
 say "Honest reading, split in two:"
-say "  - the STANDALONE runtime (this section) still lacks CUDA, HTTP transport,"
-say "    full-stack execution, and an artifact new enough to contain the engine."
-say "    The unit itself carries the engine (btl_load, bt_bpe,"
-say "    bt_token_to_piece, gated in EXP950/955/956); the shipping library links it and"
-say "    calls it (EXP954-957). What is missing is a rebuilt standalone artifact, not code."
+# The engine sentence must follow the artifact, not the other way round: after the
+# rebuild it is present, and a fixed sentence would be the same lie EXP972 fixed.
+if [ "$_eng_n" -ge 4 ]; then
+say "  - the STANDALONE runtime (this section) carries the tokenizer engine"
+say "    ($_eng_n exports) and the three sampler filters, and still lacks CUDA, HTTP"
+say "    transport and full-stack execution."
+else
+say "  - the STANDALONE runtime (this section) lacks the tokenizer engine in this"
+say "    artifact ($_eng_n of 4 exports) plus CUDA, HTTP transport and full-stack execution."
+fi
 say "  - the INTEGRATED stage-run does run Apex end to end with Goose code witnessed, but it"
 say "    is llama.cpp plus Goose, not a standalone Goose runtime. Best measured: 2429.9"
 say "    prefill / 39.86 decode at 512 tokens, VRAM 7552 MiB, output identical to the"

@@ -90,11 +90,25 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
     # host symbol the whole unit references. Function sections let the unused ones drop.
     $CC -O1 -ffunction-sections -fdata-sections -std=c11 -w -c "$ROOT/build/goose-main/main.c" \
         -o "$OUT/main-gc.o"
-    $CC -O1 -std=c11 -w -I "$ROOT/build/goose-main" -I "$ROOT/integration/m1/host" \
-        -c "$ROOT/integration/goose-standalone/tests/tokenizer_decisions.c" -o "$OUT/tokenizer_decisions.o"
-    $CXX -O1 -Wl,--gc-sections "$OUT/tokenizer_decisions.o" "$OUT/main-gc.o" "$OUT/host.o" \
-        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/tokenizer_decisions"
-    printf '  gate:   %s\n' "$OUT/tokenizer_decisions"
+    # This gate tests the eight tok_* predicates. That interface was replaced by the
+    # single bt_bpe entry point when the tokenizer engine landed (EXP949-956), so the
+    # gate can no longer link. It is skipped with a reason instead of failing the
+    # build; the tokenizer's evidence is the EXP920 differential (70 tokenize cases /
+    # 11017 ids, 496640 pieces) and EXP955/956 (13 and 12 checks, byte-identical).
+    # grep -c exits 1 when it counts zero, and set -e would end the script there.
+    _tok_syms=$(nm "$OUT/main-gc.o" 2>/dev/null | grep -cE " T tok_" || true)
+    _tok_syms=${_tok_syms:-0}
+    if [ "$_tok_syms" -ge 8 ]; then
+        $CC -O1 -std=c11 -w -I "$ROOT/build/goose-main" -I "$ROOT/integration/m1/host" \
+            -c "$ROOT/integration/goose-standalone/tests/tokenizer_decisions.c" -o "$OUT/tokenizer_decisions.o"
+        $CXX -O1 -Wl,--gc-sections "$OUT/tokenizer_decisions.o" "$OUT/main-gc.o" "$OUT/host.o" \
+            -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/tokenizer_decisions"
+        printf '  gate:   %s\n' "$OUT/tokenizer_decisions"
+    else
+        printf '  gate:   tokenizer_decisions SKIPPED - the unit has %s tok_* exports;\n' "$_tok_syms"
+        printf '          that interface was replaced by bt_bpe (EXP949-956), whose\n'
+        printf '          evidence is the EXP920 differential and EXP955/956.\n'
+    fi
 fi
 
 echo "[5/5] result"
