@@ -500,3 +500,29 @@ The fix: `fg_flat_rules` now carries a pointer-to-index map built during flatten
 and the hook refuses (returning to the native path) if any stack element is not in the
 map rather than computing an offset from `rules[0]`. Refusing loudly on an unmapped
 pointer is what turned a silent corruption into a visible fallback.
+
+## Grammar hook cost: nearly 3x on decode, not acceptable
+
+Paired runs, 512 tokens, same grammar and request:
+
+```
+on  16.49   off 51.59
+on  16.46   off 52.08
+```
+
+Decode falls from about 51.8 to 16.5 tok/s (-68 %). Prefill numbers in the same runs
+(4.1 against 17.0) are dominated by the tiny prompt's fixed cost and are not a
+prefill measurement.
+
+Causes, in the order worth fixing:
+
+1. each token allocates roughly a dozen vectors (candidates, stacks, work pools) and
+   rebuilds them from scratch;
+2. the hook calls the entry **once per stack**, and each call walks all 100k
+   candidates, so the cost multiplies by the stack count;
+3. inside Goose every candidate does a bounded slice read with the runtime's bounds
+   check, which is far more expensive than the native pointer walk.
+
+Until this is fixed the grammar stage is live but must not be enabled by default: it
+is correct, and it is also three times slower. The next step is buffer reuse plus one
+call carrying all stacks, then re-measure.
