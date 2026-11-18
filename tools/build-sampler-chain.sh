@@ -22,6 +22,15 @@ fn main() {
     if dryr < 0 {
         return;
     }
+    let scr: f32[8] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    let typ = fg_sampler_typical(lv, p, id, scr, 8, 0.9, 1);
+    if typ < 0 {
+        return;
+    }
+    let topr = fg_sampler_top_p(lv, p, id, 8, 0.9, 1, 171);
+    if topr < 0 {
+        return;
+    }
     if keep < 0 {
         return;
     }
@@ -39,7 +48,7 @@ m = re.search(r'static int64_t (gg_function_\d+)\(int64_t p0, gg_slice p1, gg_sl
 if not m:
     sys.exit('entry point prototype not found in the generated C')
 tp = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2,'
-               r' int64_t p3, float p4, int64_t p5, int64_t base\);', src)
+               r' int64_t p3, float p4, int64_t p5, int64_t p6, int64_t base\);', src)
 t = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
               r' int64_t p4, float p5, int64_t p6, int64_t base\);', src)
 d = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
@@ -77,7 +86,7 @@ open(out + '/sampler_chain_shim.c', 'w').write(
     'int64_t fg_sampler_top_p_call(float * lv, float * p, int64_t * id, int64_t n,'
     ' float top_p, int64_t min_keep) {\n'
     '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };\n'
-    '    return FG_SAMPLER_TOP_P(s0, s1, s2, n, top_p, min_keep, 0);\n'
+    '    return FG_SAMPLER_TOP_P(s0, s1, s2, n, top_p, min_keep, 171, 0);\n'
     '}\n')
 print('entry point:', m.group(1))
 PY

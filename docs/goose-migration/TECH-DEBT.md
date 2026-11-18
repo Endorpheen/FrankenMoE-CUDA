@@ -46,7 +46,7 @@ is no export flag. A module without `main` cannot be compiled, and functions not
 reachable from `main` are removed. Mitigated: the build appends a root that
 calls the entry points.
 
-## TD-S5: an edit to a module signature did not reach the generated C
+## TD-S5 (resolved): an entry removed as unreachable re-points its id
 
 Observed while making the top-p entry's signature unique.
 
@@ -62,6 +62,10 @@ of that same root file reports rc=0 and still produces no `171` and no
 seven-argument prototype. A different edit to the same file (a constant value)
 did change the output earlier, so this is not a blanket cache.
 
-Impact: an entry point cannot be made uniquely identifiable by signature until
-this is understood, which is what the top-p hook needs. Reproduction is the two
-commands above. The top-p stage stays behind its own opt-in flag meanwhile.
+Cause found: the entry was not reachable from `main`, so the compiler removed
+the function entirely and the id the build script matched belonged to a *neighbour*
+with the same prototype shape. That is why the shim called different code and why
+the signature edit never appeared.
+
+Rule that follows: every entry point must be called from the build root. The
+build script now calls each one, and the id header is generated only after that.

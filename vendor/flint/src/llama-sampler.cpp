@@ -36,11 +36,11 @@ extern "C" int64_t fg_sampler_top_p_call(float * lv, float * p, int64_t * id, in
 static std::atomic<unsigned long long> g_goose_chain_calls{0};
 static std::atomic<unsigned long long> g_goose_top_p_calls{0};
 
-// top-p stays opt-in: its logits column does not yet match the native body
+// top-p is enabled with the chain; GGML_GOOSE_SAMPLER_TOP_P=0 disables it
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
-        return f && strcmp(f, "1") == 0;
+        return !(f && strcmp(f, "0") == 0);
     }();
     return on;
 }

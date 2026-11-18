@@ -642,3 +642,22 @@ the same shape.
 The stage is therefore behind its own flag, default off, and the default build
 is verified unchanged (`default (top-p off) matches native`). Typical-p remains
 live and identical.
+
+## top-p live and identical; TD-S5 resolved
+
+The same 200-case comparison through the real sampler API is now identical with
+top-p on and off, with the counter firing:
+
+```
+TOP-P IDENTICAL ON vs OFF
+FG171_TOP_P goose calls (1, 100, 200)
+typical still matches
+```
+
+Cause of the earlier divergence: `fg_sampler_top_p` was not reachable from
+`main`, so the compiler dropped it and the id the build matched pointed at a
+neighbour with the same prototype shape. The build root now calls every entry,
+and the id header is produced after that. Recorded in the ledger as TD-S5
+(resolved) with the rule it implies.
+
+Both stages are default-on; each can be disabled with its own flag.
